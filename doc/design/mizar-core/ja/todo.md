@@ -142,7 +142,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      注釈はすべて規則により正当化される）。
    - 依存: 8。仕様: `elaborator.md`（消去の節）。
 
-10. **項と論理式の lowering。** [ ]
+10. **項と論理式の lowering。** [x]
     - Step 3 を実装する: 挿入された `qua` view を含む解決済みの項と
       論理式を binder 正規化された core 形へ下ろす。
     - テスト: surface 形ごとの lowering フィクスチャ。失敗した意味論

@@ -224,6 +224,13 @@ Output:
 
 - `CoreTermTable` rows;
 - `CoreFormulaTable` rows;
+- a merged generated-origin table for validation, newly required
+  `GeneratedOriginTable` delta rows, and references to generated origins that
+  already exist in the Step 1 registry or current lowering delta;
+- generated-origin use records that tie each generated application term to its
+  `GeneratedOriginId`, generated functor symbol, and lowered arguments;
+- Fraenkel membership/sethood obligation seed rows when checker evidence is
+  not already carried by Step 2;
 - expression source-map entries;
 - explicit diagnostics for failed sites.
 
@@ -243,9 +250,26 @@ Term rules:
 - Stable choice generated symbols are keyed by the owning core item/proof or
   definition context, alpha-normalized target type, and explicit free
   parameters. The same owner/key pair reuses the same generated symbol.
+- Step 3 must first look up `(owner, kind, key)` in the Step 1
+  generated-origin registry and then in the current lowering delta. If present,
+  it records a reference to the existing `GeneratedOriginId`; if absent, it
+  emits exactly one new generated-origin delta row for that key.
+- Reused generated origins must have the same normalized parameter payload as
+  the current seed. A mismatch is malformed checker input and must not lower to
+  a valid generated application.
+- The generated functor selected for the `Apply` term must match the functor
+  recorded on the generated origin and generated-origin use. A missing registry
+  functor or mismatched ordinary functor is malformed checker input.
 - Fraenkel comprehensions lower to generated set-valued symbols with
   alpha-normalized generator/mapper/predicate keys and explicit free-parameter
   payloads.
+- Fraenkel comprehensions must preserve required sethood or membership evidence
+  as either checker provenance on the generated origin or as an explicit
+  active `ObligationSeedKind::FraenkelMembershipAxiom` handoff row. If the
+  membership axiom was already carried by an earlier checker slice, Step 3 must record an
+  explicit already-carried marker. Missing evidence lowers to an error term and,
+  when the checker provides a deferred `ObligationSeedKind::GeneratedSethood`
+  seed, that deferred seed; it is not fabricated as a valid set term.
 - Algorithm statement picks lower to `CoreAlgorithmStmtKind::Pick` in Step 6,
   not to shared stable choice symbols.
 
@@ -253,8 +277,13 @@ Formula rules:
 
 - Predicate applications, equality, type assertions, attributes, connectives,
   and quantifiers lower to explicit `CoreFormulaKind` rows.
+- `contradiction` lowers to `CoreFormulaKind::False`; checker-provided tautology
+  or synthetic guard constants may lower to `CoreFormulaKind::True`. `thesis`
+  remains owned by Step 5 proof-skeleton lowering.
 - Quantifier binders are processed left to right. A binder's guard may see
-  prior binders and itself, but not later binders.
+  prior binders and itself, but not later binders. This check is derived from
+  the actual guard term/formula seed graph, not only caller-supplied summary
+  metadata.
 - Failed overload sites, missing selected roots, malformed type evidence, or
   unsupported surface forms lower to `Error(CoreDiagnosticId)` and never to a
   valid logical node.

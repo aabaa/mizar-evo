@@ -211,6 +211,13 @@ task 10 がこの section を実装する。
 
 - `CoreTermTable` row。
 - `CoreFormulaTable` row。
+- validation 用に merge された generated-origin table、新たに必要になった
+  `GeneratedOriginTable` delta row、そして Step 1 registry または現在の lowering delta に
+  既に存在する generated origin への参照。
+- generated application term をその `GeneratedOriginId`、generated functor symbol、lowered argument に
+  結びつける generated-origin use record。
+- checker evidence が Step 2 で既に carry されていない Fraenkel membership/sethood
+  obligation seed row。
 - expression source-map entry。
 - failed site の明示的 diagnostic。
 
@@ -228,8 +235,23 @@ term 規則:
 - stable choice generated symbol は owning core item/proof または definition context、
   alpha-normalized target type、明示的 free parameter により key 付ける。同じ owner/key pair は同じ
   generated symbol を再利用する。
+- Step 3 は `(owner, kind, key)` をまず Step 1 の generated-origin registry で検索し、
+  次に現在の lowering delta で検索する。存在する場合は既存の `GeneratedOriginId` への参照を
+  記録し、存在しない場合だけその key に対してちょうど 1 つの新しい generated-origin delta row を
+  出力する。
+- 再利用される generated origin は現在の seed と同じ normalized parameter payload を持たなければ
+  ならない。異なる場合は malformed checker input とし、有効な generated application へ lower しない。
+- `Apply` term に選択された generated functor は generated-origin use に記録された functor と一致しなければ
+  ならず、かつ generated origin に記録された functor とも一致しなければならない。registry functor が
+  欠けている場合や通常 functor などと不一致なら malformed checker input とする。
 - Fraenkel comprehension は alpha-normalized generator/mapper/predicate key と explicit free-parameter
   payload を持つ generated set-valued symbol へ lower する。
+- Fraenkel comprehension は必要な sethood / membership evidence を generated origin の checker
+  provenance、または明示的で active な `ObligationSeedKind::FraenkelMembershipAxiom` handoff row として
+  保持しなければならない。membership axiom が以前の checker slice によって既に carry されている
+  場合は、Step 3 が明示的な already-carried marker を記録する。evidence が欠ける場合は error term と、
+  checker が deferred `ObligationSeedKind::GeneratedSethood` seed を提供するならその deferred seed へ
+  lower し、有効な set term を捏造しない。
 - algorithm statement の pick は Step 6 の `CoreAlgorithmStmtKind::Pick` へ lower し、
   shared stable choice symbol を使わない。
 
@@ -237,8 +259,12 @@ formula 規則:
 
 - predicate application、equality、type assertion、attribute、connective、quantifier は明示的な
   `CoreFormulaKind` row に lower する。
+- `contradiction` は `CoreFormulaKind::False` へ lower する。checker 由来の tautology または
+  synthetic guard constant は `CoreFormulaKind::True` へ lower してよい。`thesis` は Step 5 の
+  proof-skeleton lowering の責務として残す。
 - quantifier binder は左から右へ処理する。binder の guard は prior binder と自身を見られるが、
-  later binder は見られない。
+  later binder は見られない。この検査は caller-supplied summary metadata だけでなく、実際の
+  guard term/formula seed graph から導出する。
 - failed overload site、missing selected root、malformed type evidence、unsupported surface form は
   `Error(CoreDiagnosticId)` へ lower し、valid logical node にしてはならない。
 - generated term semantic record は owner、kind、key、normalized params、normalized arguments を含む。

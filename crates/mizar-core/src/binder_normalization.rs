@@ -4281,6 +4281,7 @@ mod tests {
             owner: CoreItemId::new(0),
             kind,
             key: GeneratedOriginKey::new(key),
+            functor: None,
             params,
             evidence: vec![CoreProvenance::new(CoreProvenancePhase::Generated, "test")],
             source: source.clone(),

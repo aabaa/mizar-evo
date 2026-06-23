@@ -384,6 +384,7 @@ struct GeneratedOrigin {
     owner: CoreItemId,
     kind: GeneratedOriginKind,
     key: GeneratedOriginKey,
+    functor: Option<SymbolId>,
     params: Vec<CoreVarId>,
     evidence: Vec<CoreProvenance>,
     source: CoreSourceRef,
@@ -398,6 +399,9 @@ Generated keys use normalized semantic origins and alpha-normalized payloads.
 They must not use source display names as identity. Generated names are
 diagnostic-only unless an owning module spec later gives a stable artifact
 projection.
+Generated origins that correspond to an internal symbol record the generated
+functor symbol in `functor`; origins that describe non-term bookkeeping may
+leave it absent.
 
 ## Obligation Seeds
 

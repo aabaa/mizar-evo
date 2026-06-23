@@ -1,6 +1,6 @@
 //! Core elaboration context preparation.
 //!
-//! Implements the task-8 and task-9 elaboration slices specified in
+//! Implements the task-8, task-9, and task-10 elaboration slices specified in
 //! [elaborator.md](../../../../doc/design/mizar-core/en/elaborator.md).
 
 use crate::{
@@ -304,6 +304,7 @@ pub struct GeneratedOriginSeed {
     owner: SymbolId,
     kind: GeneratedOriginKind,
     key: GeneratedOriginKey,
+    functor: Option<SymbolId>,
     params: Vec<CoreVarId>,
     evidence: Vec<CoreProvenance>,
     source: CoreSourceRef,
@@ -322,6 +323,7 @@ impl GeneratedOriginSeed {
             owner,
             kind,
             key: key.into(),
+            functor: None,
             params: Vec::new(),
             evidence: Vec::new(),
             source,
@@ -331,6 +333,11 @@ impl GeneratedOriginSeed {
 
     pub fn with_params(mut self, params: Vec<CoreVarId>) -> Self {
         self.params = params;
+        self
+    }
+
+    pub fn with_functor(mut self, functor: SymbolId) -> Self {
+        self.functor = Some(functor);
         self
     }
 
@@ -1052,6 +1059,7 @@ fn prepare_generated_origins(
             owner,
             kind: seed.kind,
             key: seed.key,
+            functor: seed.functor,
             params: seed.params,
             evidence,
             source: source.clone(),
@@ -2079,6 +2087,1492 @@ fn missing_evidence_message_key(kind: MissingEvidenceKind) -> &'static str {
     }
 }
 
+pub type TermAndFormulaResult<T> = Result<T, TermAndFormulaLoweringError>;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum TermAndFormulaLoweringError {
+    MissingOwnerItem {
+        owner: CoreItemId,
+    },
+    MissingTermSeed {
+        seed: CoreTermSeedId,
+    },
+    MissingFormulaSeed {
+        seed: CoreFormulaSeedId,
+    },
+    CyclicTermSeed {
+        seed: CoreTermSeedId,
+    },
+    CyclicFormulaSeed {
+        seed: CoreFormulaSeedId,
+    },
+    UndeclaredVariable {
+        var: CoreVarId,
+    },
+    NonTermVariable {
+        var: CoreVarId,
+        sort: NormalizedVarSort,
+    },
+    FutureBinderInGuard {
+        binder: CoreVarId,
+        later: CoreVarId,
+    },
+    GeneratedOriginParameterMismatch {
+        origin: GeneratedOriginId,
+        key: GeneratedOriginKey,
+    },
+    MissingGeneratedOriginFunctor {
+        origin: GeneratedOriginId,
+        key: GeneratedOriginKey,
+    },
+    GeneratedFunctorMismatch {
+        key: GeneratedOriginKey,
+        expected: Box<SymbolId>,
+        actual: Box<SymbolId>,
+    },
+    InvalidFraenkelMembershipObligation {
+        kind: ObligationSeedKind,
+        status: ObligationSeedStatus,
+    },
+    InvalidFraenkelMissingSethoodObligation {
+        kind: ObligationSeedKind,
+    },
+    MissingActiveObligationGoal {
+        kind: ObligationSeedKind,
+    },
+    InvalidSeedProvenance(CoreContextError),
+}
+
+impl fmt::Display for TermAndFormulaLoweringError {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingOwnerItem { owner } => {
+                write!(formatter, "missing core item owner {}", owner.index())
+            }
+            Self::MissingTermSeed { seed } => {
+                write!(formatter, "missing term seed {}", seed.index())
+            }
+            Self::MissingFormulaSeed { seed } => {
+                write!(formatter, "missing formula seed {}", seed.index())
+            }
+            Self::CyclicTermSeed { seed } => {
+                write!(formatter, "cyclic term seed {}", seed.index())
+            }
+            Self::CyclicFormulaSeed { seed } => {
+                write!(formatter, "cyclic formula seed {}", seed.index())
+            }
+            Self::UndeclaredVariable { var } => {
+                write!(
+                    formatter,
+                    "undeclared term/formula variable {}",
+                    var.index()
+                )
+            }
+            Self::NonTermVariable { var, sort } => {
+                write!(
+                    formatter,
+                    "term/formula variable {} has non-term sort {sort:?}",
+                    var.index()
+                )
+            }
+            Self::FutureBinderInGuard { binder, later } => {
+                write!(
+                    formatter,
+                    "guard for binder {} references later binder {}",
+                    binder.index(),
+                    later.index()
+                )
+            }
+            Self::GeneratedOriginParameterMismatch { origin, key } => {
+                write!(
+                    formatter,
+                    "generated origin {} for key {} has different normalized params",
+                    origin.index(),
+                    key.as_str()
+                )
+            }
+            Self::MissingGeneratedOriginFunctor { origin, key } => {
+                write!(
+                    formatter,
+                    "generated origin {} for key {} is missing its generated functor",
+                    origin.index(),
+                    key.as_str()
+                )
+            }
+            Self::GeneratedFunctorMismatch {
+                key,
+                expected,
+                actual,
+            } => {
+                write!(
+                    formatter,
+                    "generated origin key {} expected functor {expected:?}, got {actual:?}",
+                    key.as_str()
+                )
+            }
+            Self::InvalidFraenkelMembershipObligation { kind, status } => {
+                write!(
+                    formatter,
+                    "Fraenkel membership obligation must be active FraenkelMembershipAxiom, got {kind:?}/{status:?}"
+                )
+            }
+            Self::InvalidFraenkelMissingSethoodObligation { kind } => {
+                write!(
+                    formatter,
+                    "missing Fraenkel sethood obligation must be GeneratedSethood, got {kind:?}"
+                )
+            }
+            Self::MissingActiveObligationGoal { kind } => {
+                write!(formatter, "active {kind:?} obligation is missing a goal")
+            }
+            Self::InvalidSeedProvenance(error) => write!(formatter, "{error}"),
+        }
+    }
+}
+
+impl Error for TermAndFormulaLoweringError {}
+
+impl From<CoreContextError> for TermAndFormulaLoweringError {
+    fn from(value: CoreContextError) -> Self {
+        Self::InvalidSeedProvenance(value)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CoreTermSeedId(usize);
+
+impl CoreTermSeedId {
+    pub const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CoreFormulaSeedId(usize);
+
+impl CoreFormulaSeedId {
+    pub const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    pub const fn index(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TermAndFormulaLoweringInput {
+    pub owner: CoreItemId,
+    pub terms: Vec<CoreTermSeed>,
+    pub formulas: Vec<CoreFormulaSeed>,
+    pub failed_sites: Vec<FailedSemanticSiteSeed>,
+}
+
+impl TermAndFormulaLoweringInput {
+    pub const fn new(owner: CoreItemId) -> Self {
+        Self {
+            owner,
+            terms: Vec::new(),
+            formulas: Vec::new(),
+            failed_sites: Vec::new(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CoreTermSeed {
+    pub kind: CoreTermSeedKind,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl CoreTermSeed {
+    pub fn new(
+        kind: CoreTermSeedKind,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            kind,
+            source,
+            provenance,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum CoreTermSeedKind {
+    Var(CoreVarId),
+    Const(SymbolId),
+    Apply {
+        functor: SymbolId,
+        args: Vec<CoreTermSeedId>,
+    },
+    Select {
+        selector: SymbolId,
+        base: CoreTermSeedId,
+    },
+    Tuple(Vec<CoreTermSeedId>),
+    SetEnum(Vec<CoreTermSeedId>),
+    Qua {
+        base: CoreTermSeedId,
+        explanation: ViewExplanationSeed,
+    },
+    StableChoice {
+        functor: SymbolId,
+        origin_functor: SymbolId,
+        key: GeneratedOriginKey,
+        params: Vec<CoreVarId>,
+        args: Vec<CoreTermSeedId>,
+        evidence: Vec<CoreProvenance>,
+    },
+    Fraenkel {
+        functor: SymbolId,
+        origin_functor: SymbolId,
+        key: GeneratedOriginKey,
+        params: Vec<CoreVarId>,
+        args: Vec<CoreTermSeedId>,
+        sethood_evidence: Vec<CoreProvenance>,
+        membership_obligation: Box<FraenkelMembershipObligationSeed>,
+        missing_sethood_obligation: Option<Box<CoreObligationSeed>>,
+    },
+    Error(FailedSemanticSiteSeed),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CoreFormulaSeed {
+    pub kind: CoreFormulaSeedKind,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl CoreFormulaSeed {
+    pub fn new(
+        kind: CoreFormulaSeedKind,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            kind,
+            source,
+            provenance,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum CoreFormulaSeedKind {
+    True,
+    False,
+    Atom {
+        predicate: SymbolId,
+        args: Vec<CoreTermSeedId>,
+    },
+    Equals {
+        left: CoreTermSeedId,
+        right: CoreTermSeedId,
+    },
+    TypePred {
+        subject: CoreTermSeedId,
+        ty: CoreTypePredicate,
+    },
+    Not(CoreFormulaSeedId),
+    And(Vec<CoreFormulaSeedId>),
+    Or(Vec<CoreFormulaSeedId>),
+    Implies {
+        premise: CoreFormulaSeedId,
+        conclusion: CoreFormulaSeedId,
+    },
+    Iff {
+        left: CoreFormulaSeedId,
+        right: CoreFormulaSeedId,
+    },
+    Forall {
+        binders: Vec<QuantifierBinderSeed>,
+        body: CoreFormulaSeedId,
+    },
+    Exists {
+        binders: Vec<QuantifierBinderSeed>,
+        body: CoreFormulaSeedId,
+    },
+    Error(FailedSemanticSiteSeed),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct QuantifierBinderSeed {
+    pub var: CoreVarId,
+    pub role: CoreVarRole,
+    pub guard: Option<CoreFormulaSeedId>,
+    pub guard_mentions: Vec<CoreVarId>,
+    pub source_name: Option<String>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl QuantifierBinderSeed {
+    pub fn new(
+        var: CoreVarId,
+        role: impl Into<CoreVarRole>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            var,
+            role: role.into(),
+            guard: None,
+            guard_mentions: Vec::new(),
+            source_name: None,
+            source,
+            provenance,
+        }
+    }
+
+    pub fn with_guard(mut self, guard: CoreFormulaSeedId, mentions: Vec<CoreVarId>) -> Self {
+        self.guard = Some(guard);
+        self.guard_mentions = mentions;
+        self
+    }
+
+    pub fn with_source_name(mut self, source_name: impl Into<String>) -> Self {
+        self.source_name = Some(source_name.into());
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FailedSemanticSiteSeed {
+    pub class: CoreDiagnosticClass,
+    pub severity: CoreDiagnosticSeverity,
+    pub recovery: CoreDiagnosticRecovery,
+    pub message_key: CoreDiagnosticMessageKey,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl FailedSemanticSiteSeed {
+    pub fn error(
+        message_key: impl Into<CoreDiagnosticMessageKey>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            class: CoreDiagnosticClass::UnsupportedLowering,
+            severity: CoreDiagnosticSeverity::Error,
+            recovery: CoreDiagnosticRecovery::Fatal,
+            message_key: message_key.into(),
+            source,
+            provenance,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CoreObligationSeed {
+    pub kind: ObligationSeedKind,
+    pub status: ObligationSeedStatus,
+    pub goal: Option<CoreFormulaSeedId>,
+    pub context: Vec<CoreFormulaSeedId>,
+    pub local_path: LocalProofOrProgramPath,
+    pub label: Option<crate::core_ir::CoreLabelRef>,
+    pub semantic_origin: NormalizedSemanticOrigin,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+impl CoreObligationSeed {
+    pub fn active(
+        kind: ObligationSeedKind,
+        goal: CoreFormulaSeedId,
+        local_path: impl Into<LocalProofOrProgramPath>,
+        semantic_origin: impl Into<NormalizedSemanticOrigin>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            kind,
+            status: ObligationSeedStatus::Active,
+            goal: Some(goal),
+            context: Vec::new(),
+            local_path: local_path.into(),
+            label: None,
+            semantic_origin: semantic_origin.into(),
+            source,
+            provenance,
+        }
+    }
+
+    pub fn deferred(
+        kind: ObligationSeedKind,
+        local_path: impl Into<LocalProofOrProgramPath>,
+        semantic_origin: impl Into<NormalizedSemanticOrigin>,
+        source: CoreSourceRef,
+        provenance: CheckerOwnedProvenance,
+    ) -> Self {
+        Self {
+            kind,
+            status: ObligationSeedStatus::Deferred,
+            goal: None,
+            context: Vec::new(),
+            local_path: local_path.into(),
+            label: None,
+            semantic_origin: semantic_origin.into(),
+            source,
+            provenance,
+        }
+    }
+
+    pub fn with_context(mut self, context: Vec<CoreFormulaSeedId>) -> Self {
+        self.context = context;
+        self
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum FraenkelMembershipObligationSeed {
+    New(CoreObligationSeed),
+    AlreadyCarried(AlreadyCarriedFraenkelMembershipSeed),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AlreadyCarriedFraenkelMembershipSeed {
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TermAndFormulaLoweringOutput {
+    pub terms: CoreTermTable,
+    pub formulas: CoreFormulaTable,
+    /// Step-1 generated origins merged with Task-10 additions for `CoreIr` validation.
+    pub generated: GeneratedOriginTable,
+    /// Generated origins newly emitted by this lowering slice only.
+    pub generated_delta: GeneratedOriginTable,
+    pub obligation_seeds: ObligationSeedTable,
+    pub source_map: CoreSourceMap,
+    pub diagnostics: CoreDiagnosticTable,
+    pub term_map: BTreeMap<CoreTermSeedId, CoreTermId>,
+    pub formula_map: BTreeMap<CoreFormulaSeedId, CoreFormulaId>,
+    pub new_generated_origins: Vec<GeneratedOriginId>,
+    pub generated_origin_refs: Vec<GeneratedOriginUse>,
+    pub view_explanations: Vec<ViewExplanation>,
+    pub generated_obligations: Vec<LoweredGeneratedObligation>,
+    pub already_carried_generated_obligations: Vec<AlreadyCarriedGeneratedObligation>,
+    pub failed_sites: Vec<CoreDiagnosticId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GeneratedOriginUse {
+    pub term: CoreTermId,
+    pub origin: GeneratedOriginId,
+    pub kind: GeneratedOriginKind,
+    pub key: GeneratedOriginKey,
+    pub functor: SymbolId,
+    pub args: Vec<CoreTermId>,
+    pub source: CoreSourceRef,
+    pub reused_existing: bool,
+    pub reuse_source: GeneratedOriginReuseSource,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum GeneratedOriginReuseSource {
+    ExistingRegistry,
+    NewDelta,
+    CurrentDelta,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct GeneratedOriginDraft {
+    origin: GeneratedOriginId,
+    kind: GeneratedOriginKind,
+    key: GeneratedOriginKey,
+    source: CoreSourceRef,
+    reused_existing: bool,
+    reuse_source: GeneratedOriginReuseSource,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct GeneratedOriginRequest {
+    kind: GeneratedOriginKind,
+    key: GeneratedOriginKey,
+    functor: SymbolId,
+    params: Vec<CoreVarId>,
+    evidence: Vec<CoreProvenance>,
+    source: CoreSourceRef,
+    provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoweredGeneratedObligation {
+    pub obligation: ObligationSeedId,
+    pub kind: ObligationSeedKind,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AlreadyCarriedGeneratedObligation {
+    pub origin: GeneratedOriginId,
+    pub kind: ObligationSeedKind,
+    pub source: CoreSourceRef,
+    pub provenance: Vec<CoreProvenance>,
+}
+
+#[derive(Debug, Clone)]
+struct TermAndFormulaLoweringState {
+    owner: CoreItemId,
+    terms: CoreTermTable,
+    formulas: CoreFormulaTable,
+    generated: GeneratedOriginTable,
+    generated_delta: GeneratedOriginTable,
+    initial_generated_keys: BTreeSet<(CoreItemId, GeneratedOriginKind, GeneratedOriginKey)>,
+    generated_by_key:
+        BTreeMap<(CoreItemId, GeneratedOriginKind, GeneratedOriginKey), GeneratedOriginId>,
+    obligation_seeds: ObligationSeedTable,
+    source_map: CoreSourceMap,
+    diagnostics: CoreDiagnosticTable,
+    term_map: BTreeMap<CoreTermSeedId, CoreTermId>,
+    formula_map: BTreeMap<CoreFormulaSeedId, CoreFormulaId>,
+    term_stack: BTreeSet<CoreTermSeedId>,
+    formula_stack: BTreeSet<CoreFormulaSeedId>,
+    new_generated_origins: Vec<GeneratedOriginId>,
+    generated_origin_refs: Vec<GeneratedOriginUse>,
+    view_explanations: Vec<ViewExplanation>,
+    generated_obligations: Vec<LoweredGeneratedObligation>,
+    already_carried_generated_obligations: Vec<AlreadyCarriedGeneratedObligation>,
+    failed_sites: Vec<CoreDiagnosticId>,
+}
+
+impl TermAndFormulaLoweringState {
+    fn new(context: &CoreContext, owner: CoreItemId) -> Self {
+        let generated = context.generated_origins().table().clone();
+        let mut generated_by_key = BTreeMap::new();
+        let mut initial_generated_keys = BTreeSet::new();
+        for (id, origin) in generated.iter() {
+            let key = (origin.owner, origin.kind, origin.key.clone());
+            initial_generated_keys.insert(key.clone());
+            generated_by_key.insert(key, id);
+        }
+
+        let mut source_map = CoreSourceMap::new();
+        source_map.item_sources = context.source_map().item_sources.clone();
+        source_map.generated_sources = context.source_map().generated_sources.clone();
+
+        Self {
+            owner,
+            terms: CoreTermTable::new(),
+            formulas: CoreFormulaTable::new(),
+            generated,
+            generated_delta: GeneratedOriginTable::new(),
+            initial_generated_keys,
+            generated_by_key,
+            obligation_seeds: ObligationSeedTable::new(),
+            source_map,
+            diagnostics: CoreDiagnosticTable::new(),
+            term_map: BTreeMap::new(),
+            formula_map: BTreeMap::new(),
+            term_stack: BTreeSet::new(),
+            formula_stack: BTreeSet::new(),
+            new_generated_origins: Vec::new(),
+            generated_origin_refs: Vec::new(),
+            view_explanations: Vec::new(),
+            generated_obligations: Vec::new(),
+            already_carried_generated_obligations: Vec::new(),
+            failed_sites: Vec::new(),
+        }
+    }
+
+    fn insert_term(&mut self, kind: CoreTermKind, source: CoreSourceRef) -> CoreTermId {
+        let source = normalized_source(source);
+        let id = self.terms.insert(CoreTerm::new(kind, source.clone()));
+        self.source_map.term_sources.insert(id, source);
+        id
+    }
+
+    fn insert_formula(&mut self, kind: CoreFormulaKind, source: CoreSourceRef) -> CoreFormulaId {
+        let source = normalized_source(source);
+        let id = self.formulas.insert(CoreFormula::new(kind, source.clone()));
+        self.source_map.formula_sources.insert(id, source);
+        id
+    }
+
+    fn insert_failed_site(&mut self, site: FailedSemanticSiteSeed) -> CoreDiagnosticId {
+        self.diagnostics.insert(diagnostic(
+            site.class,
+            site.severity,
+            site.recovery,
+            site.message_key,
+            source_with_provenance(site.source, &site.provenance),
+            Some(CoreNodeRef::Item(self.owner)),
+        ))
+    }
+
+    fn set_diagnostic_owner(&mut self, diagnostic_id: CoreDiagnosticId, owner: CoreNodeRef) {
+        if let Some(diagnostic) = self.diagnostics.get_mut(diagnostic_id) {
+            diagnostic.owner = Some(owner);
+        }
+    }
+
+    fn ensure_generated_origin(
+        &mut self,
+        request: GeneratedOriginRequest,
+    ) -> TermAndFormulaResult<GeneratedOriginDraft> {
+        let GeneratedOriginRequest {
+            kind,
+            key,
+            functor,
+            params,
+            evidence,
+            source,
+            provenance,
+        } = request;
+        let map_key = (self.owner, kind, key.clone());
+        let source = source_with_provenance(source, &provenance);
+        if let Some(origin) = self.generated_by_key.get(&map_key).copied() {
+            let existing = self
+                .generated
+                .get(origin)
+                .expect("generated_by_key points into generated table");
+            if existing.params != params {
+                return Err(
+                    TermAndFormulaLoweringError::GeneratedOriginParameterMismatch { origin, key },
+                );
+            }
+            match &existing.functor {
+                Some(existing_functor) if existing_functor == &functor => {}
+                Some(existing_functor) => {
+                    return Err(TermAndFormulaLoweringError::GeneratedFunctorMismatch {
+                        key,
+                        expected: Box::new(existing_functor.clone()),
+                        actual: Box::new(functor),
+                    });
+                }
+                None => {
+                    return Err(TermAndFormulaLoweringError::MissingGeneratedOriginFunctor {
+                        origin,
+                        key,
+                    });
+                }
+            }
+            let reuse_source = if self.initial_generated_keys.contains(&map_key) {
+                GeneratedOriginReuseSource::ExistingRegistry
+            } else {
+                GeneratedOriginReuseSource::CurrentDelta
+            };
+            return Ok(GeneratedOriginDraft {
+                origin,
+                kind,
+                key,
+                source: normalized_source(source),
+                reused_existing: true,
+                reuse_source,
+            });
+        }
+
+        let mut origin_evidence = evidence;
+        origin_evidence.extend(provenance.as_slice().iter().cloned());
+        origin_evidence.sort();
+        origin_evidence.dedup();
+        let origin = GeneratedOrigin {
+            owner: self.owner,
+            kind,
+            key: key.clone(),
+            functor: Some(functor),
+            params,
+            evidence: origin_evidence,
+            source: normalized_source(source.clone()),
+        };
+        let origin_id = self.generated.insert(origin.clone());
+        self.generated_delta.insert(origin);
+        self.generated_by_key.insert(map_key, origin_id);
+        self.new_generated_origins.push(origin_id);
+        self.source_map
+            .generated_sources
+            .insert(origin_id, normalized_source(source.clone()));
+        Ok(GeneratedOriginDraft {
+            origin: origin_id,
+            kind,
+            key,
+            source: normalized_source(source),
+            reused_existing: false,
+            reuse_source: GeneratedOriginReuseSource::NewDelta,
+        })
+    }
+
+    fn push_generated_origin_use(
+        &mut self,
+        draft: GeneratedOriginDraft,
+        term: CoreTermId,
+        functor: SymbolId,
+        args: Vec<CoreTermId>,
+    ) {
+        self.generated_origin_refs.push(GeneratedOriginUse {
+            term,
+            origin: draft.origin,
+            kind: draft.kind,
+            key: draft.key,
+            functor,
+            args,
+            source: draft.source,
+            reused_existing: draft.reused_existing,
+            reuse_source: draft.reuse_source,
+        });
+    }
+
+    fn insert_core_obligation(
+        &mut self,
+        input: &TermAndFormulaLoweringInput,
+        seed: CoreObligationSeed,
+    ) -> TermAndFormulaResult<ObligationSeedId> {
+        if seed.status == ObligationSeedStatus::Active && seed.goal.is_none() {
+            return Err(TermAndFormulaLoweringError::MissingActiveObligationGoal {
+                kind: seed.kind,
+            });
+        }
+
+        let goal = seed
+            .goal
+            .map(|goal| self.lower_formula_seed(input, goal))
+            .transpose()?;
+        let mut context = Vec::new();
+        for formula in seed.context {
+            context.push(self.lower_formula_seed(input, formula)?);
+        }
+
+        let mut core_refs = vec![CoreNodeRef::Item(self.owner)];
+        if let Some(goal) = goal {
+            core_refs.push(CoreNodeRef::Formula(goal));
+        }
+        for formula in &context {
+            core_refs.push(CoreNodeRef::Formula(*formula));
+        }
+
+        let kind = seed.kind;
+        let source = source_with_provenance(seed.source, &seed.provenance);
+        let obligation = ObligationSeed {
+            owner: self.owner,
+            kind: kind.clone(),
+            goal,
+            context,
+            local_path: seed.local_path,
+            label: seed.label,
+            semantic_origin: seed.semantic_origin,
+            provenance: seed.provenance.as_slice().to_vec(),
+            source: normalized_source(source.clone()),
+            core_refs,
+            status: seed.status,
+            diagnostics: Vec::new(),
+        };
+        let id = self.obligation_seeds.insert(obligation);
+        self.source_map
+            .obligation_sources
+            .insert(id, normalized_source(source));
+        self.generated_obligations.push(LoweredGeneratedObligation {
+            obligation: id,
+            kind,
+        });
+        Ok(id)
+    }
+
+    fn lower_term_seed(
+        &mut self,
+        input: &TermAndFormulaLoweringInput,
+        seed_id: CoreTermSeedId,
+    ) -> TermAndFormulaResult<CoreTermId> {
+        if let Some(term) = self.term_map.get(&seed_id).copied() {
+            return Ok(term);
+        }
+        if !self.term_stack.insert(seed_id) {
+            return Err(TermAndFormulaLoweringError::CyclicTermSeed { seed: seed_id });
+        }
+
+        let result = self.lower_term_seed_inner(input, seed_id);
+        self.term_stack.remove(&seed_id);
+        let term = result?;
+        self.term_map.insert(seed_id, term);
+        Ok(term)
+    }
+
+    fn lower_term_seed_inner(
+        &mut self,
+        input: &TermAndFormulaLoweringInput,
+        seed_id: CoreTermSeedId,
+    ) -> TermAndFormulaResult<CoreTermId> {
+        let seed = input
+            .terms
+            .get(seed_id.index())
+            .cloned()
+            .ok_or(TermAndFormulaLoweringError::MissingTermSeed { seed: seed_id })?;
+        let source = source_with_provenance(seed.source.clone(), &seed.provenance);
+
+        match seed.kind {
+            CoreTermSeedKind::Var(var) => self.insert_declared_var_term(var, source),
+            CoreTermSeedKind::Const(symbol) => {
+                Ok(self.insert_term(CoreTermKind::Const(symbol), source))
+            }
+            CoreTermSeedKind::Apply { functor, args } => {
+                let args = self.lower_term_refs(input, args)?;
+                Ok(self.insert_term(CoreTermKind::Apply { functor, args }, source))
+            }
+            CoreTermSeedKind::Select { selector, base } => {
+                let base = self.lower_term_seed(input, base)?;
+                Ok(self.insert_term(CoreTermKind::Select { selector, base }, source))
+            }
+            CoreTermSeedKind::Tuple(args) => {
+                let args = self.lower_term_refs(input, args)?;
+                Ok(self.insert_term(CoreTermKind::Tuple(args), source))
+            }
+            CoreTermSeedKind::SetEnum(args) => {
+                let args = self.lower_term_refs(input, args)?;
+                Ok(self.insert_term(CoreTermKind::SetEnum(args), source))
+            }
+            CoreTermSeedKind::Qua { base, explanation } => {
+                let lowered = self.lower_term_seed(input, base)?;
+                self.push_view_explanation(explanation);
+                Ok(lowered)
+            }
+            CoreTermSeedKind::StableChoice {
+                functor,
+                origin_functor,
+                key,
+                params,
+                args,
+                evidence,
+            } => {
+                validate_generated_functor(&key, &origin_functor, &functor)?;
+                let draft = self.ensure_generated_origin(GeneratedOriginRequest {
+                    kind: GeneratedOriginKind::StableChoice,
+                    key,
+                    functor: origin_functor,
+                    params,
+                    evidence,
+                    source: seed.source,
+                    provenance: seed.provenance.clone(),
+                })?;
+                let args = self.lower_term_refs(input, args)?;
+                let term = self.insert_term(
+                    CoreTermKind::Apply {
+                        functor: functor.clone(),
+                        args: args.clone(),
+                    },
+                    source,
+                );
+                self.push_generated_origin_use(draft, term, functor, args);
+                Ok(term)
+            }
+            CoreTermSeedKind::Fraenkel {
+                functor,
+                origin_functor,
+                key,
+                params,
+                args,
+                sethood_evidence,
+                membership_obligation,
+                missing_sethood_obligation,
+            } => {
+                validate_generated_functor(&key, &origin_functor, &functor)?;
+                if sethood_evidence.is_empty() {
+                    let diagnostic_id = self.diagnostics.insert(diagnostic(
+                        CoreDiagnosticClass::UnresolvedSemanticInput,
+                        CoreDiagnosticSeverity::Error,
+                        CoreDiagnosticRecovery::Partial,
+                        "missing-fraenkel-sethood-evidence",
+                        source.clone(),
+                        Some(CoreNodeRef::Item(self.owner)),
+                    ));
+                    if let Some(mut obligation) = missing_sethood_obligation {
+                        obligation.status = ObligationSeedStatus::Deferred;
+                        self.insert_core_obligation(input, *obligation)?;
+                    }
+                    let term = self.insert_term(CoreTermKind::Error(diagnostic_id), source);
+                    self.set_diagnostic_owner(diagnostic_id, CoreNodeRef::Term(term));
+                    return Ok(term);
+                }
+
+                let draft = self.ensure_generated_origin(GeneratedOriginRequest {
+                    kind: GeneratedOriginKind::FraenkelComprehension,
+                    key,
+                    functor: origin_functor,
+                    params,
+                    evidence: sethood_evidence,
+                    source: seed.source,
+                    provenance: seed.provenance.clone(),
+                })?;
+                match *membership_obligation {
+                    FraenkelMembershipObligationSeed::New(obligation) => {
+                        self.insert_core_obligation(input, obligation)?;
+                    }
+                    FraenkelMembershipObligationSeed::AlreadyCarried(already_carried) => {
+                        self.already_carried_generated_obligations.push(
+                            AlreadyCarriedGeneratedObligation {
+                                origin: draft.origin,
+                                kind: ObligationSeedKind::FraenkelMembershipAxiom,
+                                source: source_with_provenance(
+                                    already_carried.source,
+                                    &already_carried.provenance,
+                                ),
+                                provenance: already_carried.provenance.as_slice().to_vec(),
+                            },
+                        );
+                    }
+                }
+                let args = self.lower_term_refs(input, args)?;
+                let term = self.insert_term(
+                    CoreTermKind::Apply {
+                        functor: functor.clone(),
+                        args: args.clone(),
+                    },
+                    source,
+                );
+                self.push_generated_origin_use(draft, term, functor, args);
+                Ok(term)
+            }
+            CoreTermSeedKind::Error(site) => {
+                let diagnostic_id = self.insert_failed_site(site);
+                let term = self.insert_term(CoreTermKind::Error(diagnostic_id), source);
+                self.set_diagnostic_owner(diagnostic_id, CoreNodeRef::Term(term));
+                Ok(term)
+            }
+        }
+    }
+
+    fn lower_term_refs(
+        &mut self,
+        input: &TermAndFormulaLoweringInput,
+        refs: Vec<CoreTermSeedId>,
+    ) -> TermAndFormulaResult<Vec<CoreTermId>> {
+        refs.into_iter()
+            .map(|seed| self.lower_term_seed(input, seed))
+            .collect()
+    }
+
+    fn insert_declared_var_term(
+        &mut self,
+        var: CoreVarId,
+        source: CoreSourceRef,
+    ) -> TermAndFormulaResult<CoreTermId> {
+        Ok(self.insert_term(CoreTermKind::Var(var), source))
+    }
+
+    fn lower_formula_seed(
+        &mut self,
+        input: &TermAndFormulaLoweringInput,
+        seed_id: CoreFormulaSeedId,
+    ) -> TermAndFormulaResult<CoreFormulaId> {
+        if let Some(formula) = self.formula_map.get(&seed_id).copied() {
+            return Ok(formula);
+        }
+        if !self.formula_stack.insert(seed_id) {
+            return Err(TermAndFormulaLoweringError::CyclicFormulaSeed { seed: seed_id });
+        }
+
+        let result = self.lower_formula_seed_inner(input, seed_id);
+        self.formula_stack.remove(&seed_id);
+        let formula = result?;
+        self.formula_map.insert(seed_id, formula);
+        Ok(formula)
+    }
+
+    fn lower_formula_seed_inner(
+        &mut self,
+        input: &TermAndFormulaLoweringInput,
+        seed_id: CoreFormulaSeedId,
+    ) -> TermAndFormulaResult<CoreFormulaId> {
+        let seed = input
+            .formulas
+            .get(seed_id.index())
+            .cloned()
+            .ok_or(TermAndFormulaLoweringError::MissingFormulaSeed { seed: seed_id })?;
+        let source = source_with_provenance(seed.source.clone(), &seed.provenance);
+
+        let kind = match seed.kind {
+            CoreFormulaSeedKind::True => CoreFormulaKind::True,
+            CoreFormulaSeedKind::False => CoreFormulaKind::False,
+            CoreFormulaSeedKind::Atom { predicate, args } => CoreFormulaKind::Atom {
+                predicate,
+                args: self.lower_term_refs(input, args)?,
+            },
+            CoreFormulaSeedKind::Equals { left, right } => CoreFormulaKind::Equals {
+                left: self.lower_term_seed(input, left)?,
+                right: self.lower_term_seed(input, right)?,
+            },
+            CoreFormulaSeedKind::TypePred { subject, ty } => CoreFormulaKind::TypePred {
+                subject: self.lower_term_seed(input, subject)?,
+                ty,
+            },
+            CoreFormulaSeedKind::Not(inner) => {
+                CoreFormulaKind::Not(self.lower_formula_seed(input, inner)?)
+            }
+            CoreFormulaSeedKind::And(children) => CoreFormulaKind::And(
+                children
+                    .into_iter()
+                    .map(|child| self.lower_formula_seed(input, child))
+                    .collect::<TermAndFormulaResult<Vec<_>>>()?,
+            ),
+            CoreFormulaSeedKind::Or(children) => CoreFormulaKind::Or(
+                children
+                    .into_iter()
+                    .map(|child| self.lower_formula_seed(input, child))
+                    .collect::<TermAndFormulaResult<Vec<_>>>()?,
+            ),
+            CoreFormulaSeedKind::Implies {
+                premise,
+                conclusion,
+            } => CoreFormulaKind::Implies {
+                premise: self.lower_formula_seed(input, premise)?,
+                conclusion: self.lower_formula_seed(input, conclusion)?,
+            },
+            CoreFormulaSeedKind::Iff { left, right } => CoreFormulaKind::Iff {
+                left: self.lower_formula_seed(input, left)?,
+                right: self.lower_formula_seed(input, right)?,
+            },
+            CoreFormulaSeedKind::Forall { binders, body } => CoreFormulaKind::Forall {
+                binders: self.lower_quantifier_binders(input, binders)?,
+                body: self.lower_formula_seed(input, body)?,
+            },
+            CoreFormulaSeedKind::Exists { binders, body } => CoreFormulaKind::Exists {
+                binders: self.lower_quantifier_binders(input, binders)?,
+                body: self.lower_formula_seed(input, body)?,
+            },
+            CoreFormulaSeedKind::Error(site) => {
+                let diagnostic_id = self.insert_failed_site(site);
+                let formula = self.insert_formula(CoreFormulaKind::Error(diagnostic_id), source);
+                self.set_diagnostic_owner(diagnostic_id, CoreNodeRef::Formula(formula));
+                return Ok(formula);
+            }
+        };
+
+        Ok(self.insert_formula(kind, source))
+    }
+
+    fn lower_quantifier_binders(
+        &mut self,
+        input: &TermAndFormulaLoweringInput,
+        binders: Vec<QuantifierBinderSeed>,
+    ) -> TermAndFormulaResult<Vec<CoreBinder>> {
+        let mut lowered = Vec::new();
+        for binder in binders {
+            let guard = binder
+                .guard
+                .map(|guard| self.lower_formula_seed(input, guard))
+                .transpose()?;
+            lowered.push(CoreBinder {
+                var: binder.var,
+                role: binder.role,
+                ty_guard: guard,
+                source_name: binder.source_name,
+                source: source_with_provenance(binder.source, &binder.provenance),
+            });
+        }
+        Ok(lowered)
+    }
+
+    fn push_view_explanation(&mut self, mut seed: ViewExplanationSeed) {
+        seed.evidence_facts.sort();
+        seed.evidence_facts.dedup();
+        self.view_explanations.push(ViewExplanation {
+            kind: seed.kind,
+            inserted_view: seed.inserted_view,
+            target_type: seed.target_type,
+            evidence_facts: seed.evidence_facts,
+            source: source_with_provenance(seed.source, &seed.provenance),
+            provenance: seed.provenance.as_slice().to_vec(),
+        });
+    }
+}
+
+pub fn lower_term_and_formula_inputs(
+    context: &CoreContext,
+    input: TermAndFormulaLoweringInput,
+) -> TermAndFormulaResult<TermAndFormulaLoweringOutput> {
+    if context.item_registry().items().get(input.owner).is_none() {
+        return Err(TermAndFormulaLoweringError::MissingOwnerItem { owner: input.owner });
+    }
+    validate_term_and_formula_input(context, &input)?;
+
+    let mut state = TermAndFormulaLoweringState::new(context, input.owner);
+    for site in input.failed_sites.iter().cloned() {
+        let diagnostic_id = state.insert_failed_site(site);
+        state.failed_sites.push(diagnostic_id);
+    }
+    for index in 0..input.terms.len() {
+        state.lower_term_seed(&input, CoreTermSeedId::new(index))?;
+    }
+    for index in 0..input.formulas.len() {
+        state.lower_formula_seed(&input, CoreFormulaSeedId::new(index))?;
+    }
+
+    Ok(TermAndFormulaLoweringOutput {
+        terms: state.terms,
+        formulas: state.formulas,
+        generated: state.generated,
+        generated_delta: state.generated_delta,
+        obligation_seeds: state.obligation_seeds,
+        source_map: state.source_map,
+        diagnostics: state.diagnostics,
+        term_map: state.term_map,
+        formula_map: state.formula_map,
+        new_generated_origins: state.new_generated_origins,
+        generated_origin_refs: state.generated_origin_refs,
+        view_explanations: state.view_explanations,
+        generated_obligations: state.generated_obligations,
+        already_carried_generated_obligations: state.already_carried_generated_obligations,
+        failed_sites: state.failed_sites,
+    })
+}
+
+fn validate_term_and_formula_input(
+    context: &CoreContext,
+    input: &TermAndFormulaLoweringInput,
+) -> TermAndFormulaResult<()> {
+    for seed in &input.terms {
+        validate_checker_owned_provenance("term seed", seed.provenance.as_slice())?;
+        validate_term_seed_kind(context, &seed.kind)?;
+    }
+    for seed in &input.formulas {
+        validate_checker_owned_provenance("formula seed", seed.provenance.as_slice())?;
+        validate_formula_seed_kind(context, input, &seed.kind)?;
+    }
+    for site in &input.failed_sites {
+        validate_checker_owned_provenance("failed semantic site", site.provenance.as_slice())?;
+    }
+    Ok(())
+}
+
+fn validate_term_seed_kind(
+    context: &CoreContext,
+    kind: &CoreTermSeedKind,
+) -> TermAndFormulaResult<()> {
+    match kind {
+        CoreTermSeedKind::Var(var) => ensure_declared_term_variable(context, *var),
+        CoreTermSeedKind::StableChoice {
+            params, evidence, ..
+        } => {
+            validate_generated_params(context, params)?;
+            if !evidence.is_empty() {
+                validate_checker_owned_provenance("stable choice evidence", evidence)?;
+            }
+            Ok(())
+        }
+        CoreTermSeedKind::Fraenkel {
+            params,
+            sethood_evidence,
+            membership_obligation,
+            missing_sethood_obligation,
+            ..
+        } => {
+            validate_generated_params(context, params)?;
+            if !sethood_evidence.is_empty() {
+                validate_checker_owned_provenance("fraenkel sethood evidence", sethood_evidence)?;
+            }
+            match membership_obligation.as_ref() {
+                FraenkelMembershipObligationSeed::New(obligation) => {
+                    validate_fraenkel_membership_obligation(obligation)?;
+                }
+                FraenkelMembershipObligationSeed::AlreadyCarried(already_carried) => {
+                    validate_checker_owned_provenance(
+                        "already carried fraenkel membership",
+                        already_carried.provenance.as_slice(),
+                    )?;
+                }
+            }
+            if let Some(obligation) = missing_sethood_obligation.as_deref() {
+                validate_fraenkel_missing_sethood_obligation(obligation)?;
+            }
+            Ok(())
+        }
+        CoreTermSeedKind::Qua { explanation, .. } => {
+            validate_checker_owned_provenance(
+                "qua view explanation",
+                explanation.provenance.as_slice(),
+            )?;
+            Ok(())
+        }
+        CoreTermSeedKind::Error(site) => {
+            validate_checker_owned_provenance("term error seed", site.provenance.as_slice())?;
+            Ok(())
+        }
+        CoreTermSeedKind::Const(_)
+        | CoreTermSeedKind::Apply { .. }
+        | CoreTermSeedKind::Select { .. }
+        | CoreTermSeedKind::Tuple(_)
+        | CoreTermSeedKind::SetEnum(_) => Ok(()),
+    }
+}
+
+fn validate_formula_seed_kind(
+    context: &CoreContext,
+    input: &TermAndFormulaLoweringInput,
+    kind: &CoreFormulaSeedKind,
+) -> TermAndFormulaResult<()> {
+    match kind {
+        CoreFormulaSeedKind::Forall { binders, .. }
+        | CoreFormulaSeedKind::Exists { binders, .. } => {
+            validate_quantifier_binder_seeds(context, input, binders)
+        }
+        CoreFormulaSeedKind::Error(site) => {
+            validate_checker_owned_provenance("formula error seed", site.provenance.as_slice())?;
+            Ok(())
+        }
+        CoreFormulaSeedKind::True
+        | CoreFormulaSeedKind::False
+        | CoreFormulaSeedKind::Atom { .. }
+        | CoreFormulaSeedKind::Equals { .. }
+        | CoreFormulaSeedKind::TypePred { .. }
+        | CoreFormulaSeedKind::Not(_)
+        | CoreFormulaSeedKind::And(_)
+        | CoreFormulaSeedKind::Or(_)
+        | CoreFormulaSeedKind::Implies { .. }
+        | CoreFormulaSeedKind::Iff { .. } => Ok(()),
+    }
+}
+
+fn validate_generated_params(
+    context: &CoreContext,
+    params: &[CoreVarId],
+) -> TermAndFormulaResult<()> {
+    for param in params {
+        ensure_declared_term_variable(context, *param)?;
+    }
+    Ok(())
+}
+
+fn validate_generated_functor(
+    key: &GeneratedOriginKey,
+    expected: &SymbolId,
+    actual: &SymbolId,
+) -> TermAndFormulaResult<()> {
+    if expected == actual {
+        Ok(())
+    } else {
+        Err(TermAndFormulaLoweringError::GeneratedFunctorMismatch {
+            key: key.clone(),
+            expected: Box::new(expected.clone()),
+            actual: Box::new(actual.clone()),
+        })
+    }
+}
+
+fn validate_quantifier_binder_seeds(
+    context: &CoreContext,
+    input: &TermAndFormulaLoweringInput,
+    binders: &[QuantifierBinderSeed],
+) -> TermAndFormulaResult<()> {
+    for (index, binder) in binders.iter().enumerate() {
+        validate_checker_owned_provenance("quantifier binder seed", binder.provenance.as_slice())?;
+        ensure_declared_term_variable(context, binder.var)?;
+        let later = binders
+            .iter()
+            .skip(index + 1)
+            .map(|later| later.var)
+            .collect::<BTreeSet<_>>();
+        let mut mentions = binder
+            .guard_mentions
+            .iter()
+            .copied()
+            .collect::<BTreeSet<_>>();
+        if let Some(guard) = binder.guard {
+            mentions.extend(seed_formula_free_variables(input, guard)?);
+        }
+        for mention in mentions {
+            ensure_declared_term_variable(context, mention)?;
+            if later.contains(&mention) {
+                return Err(TermAndFormulaLoweringError::FutureBinderInGuard {
+                    binder: binder.var,
+                    later: mention,
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
+fn seed_term_free_variables(
+    input: &TermAndFormulaLoweringInput,
+    seed_id: CoreTermSeedId,
+) -> TermAndFormulaResult<BTreeSet<CoreVarId>> {
+    seed_term_free_variables_inner(input, seed_id, &mut BTreeSet::new())
+}
+
+fn seed_term_free_variables_inner(
+    input: &TermAndFormulaLoweringInput,
+    seed_id: CoreTermSeedId,
+    stack: &mut BTreeSet<CoreTermSeedId>,
+) -> TermAndFormulaResult<BTreeSet<CoreVarId>> {
+    if !stack.insert(seed_id) {
+        return Err(TermAndFormulaLoweringError::CyclicTermSeed { seed: seed_id });
+    }
+    let seed = input
+        .terms
+        .get(seed_id.index())
+        .ok_or(TermAndFormulaLoweringError::MissingTermSeed { seed: seed_id })?;
+    let mut vars = BTreeSet::new();
+    match &seed.kind {
+        CoreTermSeedKind::Var(var) => {
+            vars.insert(*var);
+        }
+        CoreTermSeedKind::Const(_) | CoreTermSeedKind::Error(_) => {}
+        CoreTermSeedKind::Apply { args, .. }
+        | CoreTermSeedKind::Tuple(args)
+        | CoreTermSeedKind::SetEnum(args) => {
+            for arg in args {
+                vars.extend(seed_term_free_variables_inner(input, *arg, stack)?);
+            }
+        }
+        CoreTermSeedKind::Select { base, .. } | CoreTermSeedKind::Qua { base, .. } => {
+            vars.extend(seed_term_free_variables_inner(input, *base, stack)?);
+        }
+        CoreTermSeedKind::StableChoice { params, args, .. }
+        | CoreTermSeedKind::Fraenkel { params, args, .. } => {
+            vars.extend(params.iter().copied());
+            for arg in args {
+                vars.extend(seed_term_free_variables_inner(input, *arg, stack)?);
+            }
+        }
+    }
+    stack.remove(&seed_id);
+    Ok(vars)
+}
+
+fn seed_formula_free_variables(
+    input: &TermAndFormulaLoweringInput,
+    seed_id: CoreFormulaSeedId,
+) -> TermAndFormulaResult<BTreeSet<CoreVarId>> {
+    seed_formula_free_variables_inner(input, seed_id, &mut BTreeSet::new())
+}
+
+fn seed_formula_free_variables_inner(
+    input: &TermAndFormulaLoweringInput,
+    seed_id: CoreFormulaSeedId,
+    stack: &mut BTreeSet<CoreFormulaSeedId>,
+) -> TermAndFormulaResult<BTreeSet<CoreVarId>> {
+    if !stack.insert(seed_id) {
+        return Err(TermAndFormulaLoweringError::CyclicFormulaSeed { seed: seed_id });
+    }
+    let seed = input
+        .formulas
+        .get(seed_id.index())
+        .ok_or(TermAndFormulaLoweringError::MissingFormulaSeed { seed: seed_id })?;
+    let mut vars = BTreeSet::new();
+    match &seed.kind {
+        CoreFormulaSeedKind::True | CoreFormulaSeedKind::False | CoreFormulaSeedKind::Error(_) => {}
+        CoreFormulaSeedKind::Atom { args, .. } => {
+            for arg in args {
+                vars.extend(seed_term_free_variables(input, *arg)?);
+            }
+        }
+        CoreFormulaSeedKind::Equals { left, right } => {
+            vars.extend(seed_term_free_variables(input, *left)?);
+            vars.extend(seed_term_free_variables(input, *right)?);
+        }
+        CoreFormulaSeedKind::TypePred { subject, .. } => {
+            vars.extend(seed_term_free_variables(input, *subject)?);
+        }
+        CoreFormulaSeedKind::Not(inner) => {
+            vars.extend(seed_formula_free_variables_inner(input, *inner, stack)?);
+        }
+        CoreFormulaSeedKind::And(children) | CoreFormulaSeedKind::Or(children) => {
+            for child in children {
+                vars.extend(seed_formula_free_variables_inner(input, *child, stack)?);
+            }
+        }
+        CoreFormulaSeedKind::Implies {
+            premise,
+            conclusion,
+        } => {
+            vars.extend(seed_formula_free_variables_inner(input, *premise, stack)?);
+            vars.extend(seed_formula_free_variables_inner(
+                input,
+                *conclusion,
+                stack,
+            )?);
+        }
+        CoreFormulaSeedKind::Iff { left, right } => {
+            vars.extend(seed_formula_free_variables_inner(input, *left, stack)?);
+            vars.extend(seed_formula_free_variables_inner(input, *right, stack)?);
+        }
+        CoreFormulaSeedKind::Forall { binders, body }
+        | CoreFormulaSeedKind::Exists { binders, body } => {
+            for binder in binders {
+                if let Some(guard) = binder.guard {
+                    vars.extend(seed_formula_free_variables_inner(input, guard, stack)?);
+                }
+            }
+            vars.extend(seed_formula_free_variables_inner(input, *body, stack)?);
+            for binder in binders {
+                vars.remove(&binder.var);
+            }
+        }
+    }
+    stack.remove(&seed_id);
+    Ok(vars)
+}
+
+fn validate_core_obligation_seed(seed: &CoreObligationSeed) -> TermAndFormulaResult<()> {
+    validate_checker_owned_provenance("core obligation seed", seed.provenance.as_slice())?;
+    if seed.status == ObligationSeedStatus::Active && seed.goal.is_none() {
+        return Err(TermAndFormulaLoweringError::MissingActiveObligationGoal {
+            kind: seed.kind.clone(),
+        });
+    }
+    Ok(())
+}
+
+fn validate_fraenkel_membership_obligation(seed: &CoreObligationSeed) -> TermAndFormulaResult<()> {
+    validate_core_obligation_seed(seed)?;
+    if seed.kind != ObligationSeedKind::FraenkelMembershipAxiom
+        || seed.status != ObligationSeedStatus::Active
+    {
+        return Err(
+            TermAndFormulaLoweringError::InvalidFraenkelMembershipObligation {
+                kind: seed.kind.clone(),
+                status: seed.status,
+            },
+        );
+    }
+    Ok(())
+}
+
+fn validate_fraenkel_missing_sethood_obligation(
+    seed: &CoreObligationSeed,
+) -> TermAndFormulaResult<()> {
+    validate_core_obligation_seed(seed)?;
+    if seed.kind != ObligationSeedKind::GeneratedSethood {
+        return Err(
+            TermAndFormulaLoweringError::InvalidFraenkelMissingSethoodObligation {
+                kind: seed.kind.clone(),
+            },
+        );
+    }
+    Ok(())
+}
+
+fn ensure_declared_term_variable(
+    context: &CoreContext,
+    var: CoreVarId,
+) -> TermAndFormulaResult<()> {
+    match context.binder_context().variable_sorts.get(&var) {
+        Some(NormalizedVarSort::Term) => Ok(()),
+        Some(sort) => Err(TermAndFormulaLoweringError::NonTermVariable { var, sort: *sort }),
+        None => Err(TermAndFormulaLoweringError::UndeclaredVariable { var }),
+    }
+}
+
+fn source_with_provenance(
+    source: CoreSourceRef,
+    provenance: &CheckerOwnedProvenance,
+) -> CoreSourceRef {
+    let mut entries = source.provenance.clone();
+    entries.extend(provenance.as_slice().iter().cloned());
+    source.with_provenance(entries)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2193,6 +3687,84 @@ mod tests {
         (context, owner)
     }
 
+    fn context_with_var_sorts(
+        vars: Vec<(CoreVarId, NormalizedVarSort)>,
+    ) -> (CoreContext, CoreItemId) {
+        let mut input = input_with_items(vec![item_seed("Owner", 0)]);
+        input.variable_seeds = vars
+            .iter()
+            .map(|(var, sort)| {
+                CoreVariableSeed::new(
+                    *var,
+                    NormalizedVarClass::Free,
+                    "term-binder",
+                    *sort,
+                    provenance(format!("checker:var:{}", var.index()).as_str()),
+                )
+            })
+            .collect();
+        input.binder_seeds = vars
+            .iter()
+            .map(|(var, _)| {
+                CoreBinderSeed::new(
+                    *var,
+                    direct(var.index() + 1, var.index() + 2),
+                    provenance(format!("checker:binder:{}", var.index()).as_str()),
+                )
+            })
+            .collect();
+        let context = prepare_core_context(input).expect("context");
+        let owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("Owner"))
+            .expect("owner id");
+        (context, owner)
+    }
+
+    fn context_with_existing_choice_origin(
+        var: CoreVarId,
+        key: GeneratedOriginKey,
+    ) -> (CoreContext, CoreItemId, GeneratedOriginId) {
+        let mut input = input_with_items(vec![item_seed("Owner", 0)]);
+        input.variable_seeds = vec![CoreVariableSeed::new(
+            var,
+            NormalizedVarClass::Free,
+            "term-binder",
+            NormalizedVarSort::Term,
+            provenance("checker:choice-var"),
+        )];
+        input.binder_seeds = vec![CoreBinderSeed::new(
+            var,
+            direct(1, 2),
+            provenance("checker:choice-binder"),
+        )];
+        input.generated_origin_seeds = vec![
+            GeneratedOriginSeed::new(
+                symbol("Owner"),
+                GeneratedOriginKind::StableChoice,
+                key.clone(),
+                direct(90, 91),
+                provenance("checker:existing-choice"),
+            )
+            .with_functor(symbol("choice_existing"))
+            .with_params(vec![var])
+            .with_evidence(vec![CoreProvenance::new(
+                CoreProvenancePhase::Checker,
+                "checker:existing-choice:evidence",
+            )]),
+        ];
+        let context = prepare_core_context(input).expect("context");
+        let owner = context
+            .item_registry()
+            .id_for_symbol(&symbol("Owner"))
+            .expect("owner id");
+        let origin = context
+            .generated_origins()
+            .get_by_key(owner, GeneratedOriginKind::StableChoice, &key)
+            .expect("existing generated origin");
+        (context, owner, origin)
+    }
+
     fn type_fact(
         subject: CoreVarId,
         predicate: &str,
@@ -2224,6 +3796,30 @@ mod tests {
         )
     }
 
+    fn term_seed(kind: CoreTermSeedKind, start: usize) -> CoreTermSeed {
+        CoreTermSeed::new(
+            kind,
+            direct(start, start + 1),
+            provenance(format!("checker:term:{start}").as_str()),
+        )
+    }
+
+    fn formula_seed(kind: CoreFormulaSeedKind, start: usize) -> CoreFormulaSeed {
+        CoreFormulaSeed::new(
+            kind,
+            direct(start, start + 1),
+            provenance(format!("checker:formula:{start}").as_str()),
+        )
+    }
+
+    fn failed_site(message: &str, start: usize) -> FailedSemanticSiteSeed {
+        FailedSemanticSiteSeed::error(
+            message,
+            direct(start, start + 1),
+            provenance(format!("checker:failed:{message}").as_str()),
+        )
+    }
+
     fn assert_step2_delta_valid(context: &CoreContext, output: &TypeAndFactLoweringOutput) {
         let mut source_map = output.source_map.clone();
         source_map.item_sources = context.source_map().item_sources.clone();
@@ -2244,6 +3840,26 @@ mod tests {
             diagnostics: output.diagnostics.clone(),
         };
         CoreIr::try_new(parts).expect("step 2 delta validates when merged with context items");
+    }
+
+    fn assert_step3_delta_valid(context: &CoreContext, output: &TermAndFormulaLoweringOutput) {
+        let parts = CoreIrParts {
+            source_id: context.source_id(),
+            module_id: context.module_id().clone(),
+            items: context.item_registry().items().clone(),
+            terms: output.terms.clone(),
+            formulas: output.formulas.clone(),
+            definitions: CoreDefinitionTable::new(),
+            proofs: CoreProofTable::new(),
+            proof_nodes: CoreProofNodeTable::new(),
+            algorithms: CoreAlgorithmTable::new(),
+            algorithm_statements: CoreAlgorithmStmtTable::new(),
+            generated: output.generated.clone(),
+            obligation_seeds: output.obligation_seeds.clone(),
+            source_map: output.source_map.clone(),
+            diagnostics: output.diagnostics.clone(),
+        };
+        CoreIr::try_new(parts).expect("step 3 delta validates when merged with context items");
     }
 
     fn assert_type_predicate(
@@ -2686,6 +4302,890 @@ mod tests {
             Err(TypeAndFactLoweringError::ClusterFactMissingCheckerFact { cluster_fact })
                 if cluster_fact == ClusterFactId::new(9)
         ));
+    }
+
+    #[test]
+    fn term_lowering_covers_core_term_shapes() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 60),
+            term_seed(CoreTermSeedKind::Const(symbol("Const")), 61),
+            term_seed(
+                CoreTermSeedKind::Apply {
+                    functor: symbol("Functor"),
+                    args: vec![CoreTermSeedId::new(0), CoreTermSeedId::new(1)],
+                },
+                62,
+            ),
+            term_seed(
+                CoreTermSeedKind::Select {
+                    selector: symbol("selector"),
+                    base: CoreTermSeedId::new(2),
+                },
+                63,
+            ),
+            term_seed(
+                CoreTermSeedKind::Tuple(vec![CoreTermSeedId::new(0), CoreTermSeedId::new(3)]),
+                64,
+            ),
+            term_seed(
+                CoreTermSeedKind::SetEnum(vec![CoreTermSeedId::new(1), CoreTermSeedId::new(4)]),
+                65,
+            ),
+        ];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let term_id = |seed| output.term_map[&CoreTermSeedId::new(seed)];
+
+        assert!(matches!(
+            output.terms.get(term_id(0)).expect("var").kind,
+            CoreTermKind::Var(var) if var == x
+        ));
+        assert!(matches!(
+            &output.terms.get(term_id(1)).expect("const").kind,
+            CoreTermKind::Const(symbol_id) if symbol_id == &symbol("Const")
+        ));
+        assert!(matches!(
+            &output.terms.get(term_id(2)).expect("apply").kind,
+            CoreTermKind::Apply { functor, args }
+                if functor == &symbol("Functor") && args == &vec![term_id(0), term_id(1)]
+        ));
+        assert!(matches!(
+            &output.terms.get(term_id(3)).expect("select").kind,
+            CoreTermKind::Select { selector, base }
+                if selector == &symbol("selector") && *base == term_id(2)
+        ));
+        assert!(matches!(
+            &output.terms.get(term_id(4)).expect("tuple").kind,
+            CoreTermKind::Tuple(args) if args == &vec![term_id(0), term_id(3)]
+        ));
+        assert!(matches!(
+            &output.terms.get(term_id(5)).expect("set enum").kind,
+            CoreTermKind::SetEnum(args) if args == &vec![term_id(1), term_id(4)]
+        ));
+        assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn formula_lowering_covers_constants_atoms_connectives_and_type_predicates() {
+        let x = CoreVarId::new(0);
+        let y = CoreVarId::new(1);
+        let (context, owner) = context_with_var_sorts(vec![
+            (x, NormalizedVarSort::Term),
+            (y, NormalizedVarSort::Term),
+        ]);
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 70),
+            term_seed(CoreTermSeedKind::Var(y), 71),
+        ];
+        input.formulas = vec![
+            formula_seed(CoreFormulaSeedKind::True, 72),
+            formula_seed(CoreFormulaSeedKind::False, 73),
+            formula_seed(
+                CoreFormulaSeedKind::Atom {
+                    predicate: symbol("Predicate"),
+                    args: vec![CoreTermSeedId::new(0), CoreTermSeedId::new(1)],
+                },
+                74,
+            ),
+            formula_seed(
+                CoreFormulaSeedKind::Equals {
+                    left: CoreTermSeedId::new(0),
+                    right: CoreTermSeedId::new(1),
+                },
+                75,
+            ),
+            formula_seed(
+                CoreFormulaSeedKind::TypePred {
+                    subject: CoreTermSeedId::new(0),
+                    ty: CoreTypePredicate::new("set"),
+                },
+                76,
+            ),
+            formula_seed(CoreFormulaSeedKind::Not(CoreFormulaSeedId::new(1)), 77),
+            formula_seed(
+                CoreFormulaSeedKind::And(vec![
+                    CoreFormulaSeedId::new(2),
+                    CoreFormulaSeedId::new(3),
+                    CoreFormulaSeedId::new(4),
+                ]),
+                78,
+            ),
+            formula_seed(
+                CoreFormulaSeedKind::Or(vec![CoreFormulaSeedId::new(0), CoreFormulaSeedId::new(1)]),
+                79,
+            ),
+            formula_seed(
+                CoreFormulaSeedKind::Implies {
+                    premise: CoreFormulaSeedId::new(2),
+                    conclusion: CoreFormulaSeedId::new(3),
+                },
+                80,
+            ),
+            formula_seed(
+                CoreFormulaSeedKind::Iff {
+                    left: CoreFormulaSeedId::new(8),
+                    right: CoreFormulaSeedId::new(7),
+                },
+                81,
+            ),
+        ];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let term_id = |seed| output.term_map[&CoreTermSeedId::new(seed)];
+        let formula_id = |seed| output.formula_map[&CoreFormulaSeedId::new(seed)];
+
+        assert!(matches!(
+            output.formulas.get(formula_id(0)).expect("true").kind,
+            CoreFormulaKind::True
+        ));
+        assert!(matches!(
+            output.formulas.get(formula_id(1)).expect("false").kind,
+            CoreFormulaKind::False
+        ));
+        assert!(matches!(
+            &output.formulas.get(formula_id(2)).expect("atom").kind,
+            CoreFormulaKind::Atom { predicate, args }
+                if predicate == &symbol("Predicate") && args == &vec![term_id(0), term_id(1)]
+        ));
+        assert!(matches!(
+            output.formulas.get(formula_id(3)).expect("equals").kind,
+            CoreFormulaKind::Equals { left, right } if left == term_id(0) && right == term_id(1)
+        ));
+        assert!(matches!(
+            &output.formulas.get(formula_id(4)).expect("type pred").kind,
+            CoreFormulaKind::TypePred { subject, ty } if *subject == term_id(0) && ty.as_str() == "set"
+        ));
+        assert!(matches!(
+            output.formulas.get(formula_id(5)).expect("not").kind,
+            CoreFormulaKind::Not(inner) if inner == formula_id(1)
+        ));
+        assert!(matches!(
+            &output.formulas.get(formula_id(6)).expect("and").kind,
+            CoreFormulaKind::And(children)
+                if children == &vec![formula_id(2), formula_id(3), formula_id(4)]
+        ));
+        assert!(matches!(
+            &output.formulas.get(formula_id(7)).expect("or").kind,
+            CoreFormulaKind::Or(children) if children == &vec![formula_id(0), formula_id(1)]
+        ));
+        assert!(matches!(
+            output.formulas.get(formula_id(8)).expect("implies").kind,
+            CoreFormulaKind::Implies { premise, conclusion }
+                if premise == formula_id(2) && conclusion == formula_id(3)
+        ));
+        assert!(matches!(
+            output.formulas.get(formula_id(9)).expect("iff").kind,
+            CoreFormulaKind::Iff { left, right } if left == formula_id(8) && right == formula_id(7)
+        ));
+        assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn quantifier_guards_allow_self_and_prior_binders_but_reject_later_binders() {
+        let x = CoreVarId::new(0);
+        let y = CoreVarId::new(1);
+        let (context, owner) = context_with_var_sorts(vec![
+            (x, NormalizedVarSort::Term),
+            (y, NormalizedVarSort::Term),
+        ]);
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.formulas = vec![
+            formula_seed(CoreFormulaSeedKind::True, 82),
+            formula_seed(
+                CoreFormulaSeedKind::Forall {
+                    binders: vec![
+                        QuantifierBinderSeed::new(
+                            x,
+                            "term-binder",
+                            direct(83, 84),
+                            provenance("checker:forall:x"),
+                        )
+                        .with_guard(CoreFormulaSeedId::new(0), vec![x])
+                        .with_source_name("x"),
+                        QuantifierBinderSeed::new(
+                            y,
+                            "term-binder",
+                            direct(85, 86),
+                            provenance("checker:forall:y"),
+                        )
+                        .with_guard(CoreFormulaSeedId::new(0), vec![x, y])
+                        .with_source_name("y"),
+                    ],
+                    body: CoreFormulaSeedId::new(0),
+                },
+                87,
+            ),
+            formula_seed(
+                CoreFormulaSeedKind::Exists {
+                    binders: vec![
+                        QuantifierBinderSeed::new(
+                            x,
+                            "term-binder",
+                            direct(87, 88),
+                            provenance("checker:exists:x"),
+                        )
+                        .with_source_name("x"),
+                    ],
+                    body: CoreFormulaSeedId::new(0),
+                },
+                88,
+            ),
+        ];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let forall = output.formula_map[&CoreFormulaSeedId::new(1)];
+        let CoreFormulaKind::Forall { binders, body } =
+            &output.formulas.get(forall).expect("forall").kind
+        else {
+            panic!("expected forall");
+        };
+        assert_eq!(binders.len(), 2);
+        assert_eq!(binders[0].source_name.as_deref(), Some("x"));
+        assert_eq!(binders[1].source_name.as_deref(), Some("y"));
+        assert!(binders.iter().all(|binder| binder.ty_guard.is_some()));
+        assert_eq!(*body, output.formula_map[&CoreFormulaSeedId::new(0)]);
+        let exists = output.formula_map[&CoreFormulaSeedId::new(2)];
+        let CoreFormulaKind::Exists {
+            binders: exists_binders,
+            body: exists_body,
+        } = &output.formulas.get(exists).expect("exists").kind
+        else {
+            panic!("expected exists");
+        };
+        assert_eq!(exists_binders.len(), 1);
+        assert_eq!(exists_binders[0].var, x);
+        assert_eq!(*exists_body, output.formula_map[&CoreFormulaSeedId::new(0)]);
+        assert_step3_delta_valid(&context, &output);
+
+        let mut bad_input = TermAndFormulaLoweringInput::new(owner);
+        bad_input.terms = vec![term_seed(CoreTermSeedKind::Var(y), 88)];
+        bad_input.formulas = vec![
+            formula_seed(
+                CoreFormulaSeedKind::TypePred {
+                    subject: CoreTermSeedId::new(0),
+                    ty: CoreTypePredicate::new("Nat"),
+                },
+                88,
+            ),
+            formula_seed(
+                CoreFormulaSeedKind::Forall {
+                    binders: vec![
+                        QuantifierBinderSeed::new(
+                            x,
+                            "term-binder",
+                            direct(89, 90),
+                            provenance("checker:forall:bad-x"),
+                        )
+                        .with_guard(CoreFormulaSeedId::new(0), Vec::new()),
+                        QuantifierBinderSeed::new(
+                            y,
+                            "term-binder",
+                            direct(91, 92),
+                            provenance("checker:forall:bad-y"),
+                        ),
+                    ],
+                    body: CoreFormulaSeedId::new(0),
+                },
+                93,
+            ),
+        ];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, bad_input),
+            Err(TermAndFormulaLoweringError::FutureBinderInGuard { binder, later })
+                if binder == x && later == y
+        ));
+    }
+
+    #[test]
+    fn qua_terms_reuse_underlying_term_and_record_view_explanation() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 94),
+            term_seed(
+                CoreTermSeedKind::Qua {
+                    base: CoreTermSeedId::new(0),
+                    explanation: ViewExplanationSeed {
+                        kind: ViewExplanationKind::SourceQua,
+                        inserted_view: None,
+                        target_type: Some(NormalizedTypeId::new(12)),
+                        evidence_facts: vec![
+                            TypeFactId::new(3),
+                            TypeFactId::new(2),
+                            TypeFactId::new(2),
+                        ],
+                        source: direct(95, 96),
+                        provenance: provenance("checker:term-qua"),
+                    },
+                },
+                95,
+            ),
+            term_seed(
+                CoreTermSeedKind::Qua {
+                    base: CoreTermSeedId::new(0),
+                    explanation: ViewExplanationSeed {
+                        kind: ViewExplanationKind::InsertedView,
+                        inserted_view: Some(CoercionInsertionId::new(7)),
+                        target_type: Some(NormalizedTypeId::new(13)),
+                        evidence_facts: vec![TypeFactId::new(5)],
+                        source: direct(96, 97),
+                        provenance: provenance("checker:term-inserted-view"),
+                    },
+                },
+                96,
+            ),
+        ];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+
+        assert_eq!(output.terms.len(), 1);
+        assert_eq!(
+            output.term_map[&CoreTermSeedId::new(1)],
+            output.term_map[&CoreTermSeedId::new(0)]
+        );
+        assert_eq!(
+            output.term_map[&CoreTermSeedId::new(2)],
+            output.term_map[&CoreTermSeedId::new(0)]
+        );
+        assert_eq!(output.view_explanations.len(), 2);
+        assert_eq!(
+            output.view_explanations[0].evidence_facts,
+            vec![TypeFactId::new(2), TypeFactId::new(3)]
+        );
+        assert_eq!(
+            output.view_explanations[1].kind,
+            ViewExplanationKind::InsertedView
+        );
+        assert_eq!(
+            output.view_explanations[1].inserted_view,
+            Some(CoercionInsertionId::new(7))
+        );
+        assert_eq!(
+            output.view_explanations[1].evidence_facts,
+            vec![TypeFactId::new(5)]
+        );
+        assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn stable_choice_reuses_existing_and_delta_generated_origin_keys() {
+        let x = CoreVarId::new(0);
+        let existing_key = GeneratedOriginKey::new("choice:existing");
+        let new_key = GeneratedOriginKey::new("choice:new");
+        let (context, owner, existing_origin) =
+            context_with_existing_choice_origin(x, existing_key.clone());
+        let existing_generated_len = context.generated_origins().table().len();
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 96),
+            term_seed(
+                CoreTermSeedKind::StableChoice {
+                    functor: symbol("choice_existing"),
+                    origin_functor: symbol("choice_existing"),
+                    key: existing_key.clone(),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:choice:use-existing-1",
+                    )],
+                },
+                97,
+            ),
+            term_seed(
+                CoreTermSeedKind::StableChoice {
+                    functor: symbol("choice_existing"),
+                    origin_functor: symbol("choice_existing"),
+                    key: existing_key,
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:choice:use-existing-2",
+                    )],
+                },
+                98,
+            ),
+            term_seed(
+                CoreTermSeedKind::StableChoice {
+                    functor: symbol("choice_new"),
+                    origin_functor: symbol("choice_new"),
+                    key: new_key.clone(),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:choice:new-1",
+                    )],
+                },
+                99,
+            ),
+            term_seed(
+                CoreTermSeedKind::StableChoice {
+                    functor: symbol("choice_new"),
+                    origin_functor: symbol("choice_new"),
+                    key: new_key.clone(),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:choice:new-2",
+                    )],
+                },
+                100,
+            ),
+        ];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+
+        assert_eq!(output.generated.len(), existing_generated_len + 1);
+        assert_eq!(output.generated_delta.len(), 1);
+        assert_eq!(output.new_generated_origins.len(), 1);
+        let (_, delta_origin) = output
+            .generated_delta
+            .iter()
+            .next()
+            .expect("single generated delta");
+        assert_eq!(delta_origin.kind, GeneratedOriginKind::StableChoice);
+        assert_eq!(delta_origin.key, new_key);
+        assert_eq!(delta_origin.params, vec![x]);
+        assert_eq!(output.generated_origin_refs.len(), 4);
+        assert_eq!(output.generated_origin_refs[0].origin, existing_origin);
+        assert!(output.generated_origin_refs[0].reused_existing);
+        assert_eq!(
+            output.generated_origin_refs[0].reuse_source,
+            GeneratedOriginReuseSource::ExistingRegistry
+        );
+        assert_eq!(output.generated_origin_refs[1].origin, existing_origin);
+        assert!(output.generated_origin_refs[1].reused_existing);
+        assert_eq!(
+            output.generated_origin_refs[1].reuse_source,
+            GeneratedOriginReuseSource::ExistingRegistry
+        );
+        let new_origin = output.generated_origin_refs[2].origin;
+        assert_ne!(new_origin, existing_origin);
+        assert!(!output.generated_origin_refs[2].reused_existing);
+        assert_eq!(
+            output.generated_origin_refs[2].reuse_source,
+            GeneratedOriginReuseSource::NewDelta
+        );
+        assert_eq!(output.new_generated_origins, vec![new_origin]);
+        assert_eq!(output.generated_origin_refs[3].origin, new_origin);
+        assert!(output.generated_origin_refs[3].reused_existing);
+        assert_eq!(
+            output.generated_origin_refs[3].reuse_source,
+            GeneratedOriginReuseSource::CurrentDelta
+        );
+        for (seed, expected_functor, expected_key) in [
+            (1, symbol("choice_existing"), "choice:existing"),
+            (2, symbol("choice_existing"), "choice:existing"),
+            (3, symbol("choice_new"), "choice:new"),
+            (4, symbol("choice_new"), "choice:new"),
+        ] {
+            let CoreTermKind::Apply { functor, args } = &output
+                .terms
+                .get(output.term_map[&CoreTermSeedId::new(seed)])
+                .expect("choice term")
+                .kind
+            else {
+                panic!("expected stable choice apply");
+            };
+            assert_eq!(functor, &expected_functor);
+            assert_eq!(args, &vec![output.term_map[&CoreTermSeedId::new(0)]]);
+            let use_record = &output.generated_origin_refs[seed - 1];
+            assert_eq!(use_record.term, output.term_map[&CoreTermSeedId::new(seed)]);
+            assert_eq!(use_record.key.as_str(), expected_key);
+            assert_eq!(use_record.functor, expected_functor);
+            assert_eq!(
+                use_record.args,
+                vec![output.term_map[&CoreTermSeedId::new(0)]]
+            );
+        }
+        assert_step3_delta_valid(&context, &output);
+
+        let mut mismatch_input = TermAndFormulaLoweringInput::new(owner);
+        mismatch_input.terms = vec![term_seed(
+            CoreTermSeedKind::StableChoice {
+                functor: symbol("choice_existing"),
+                origin_functor: symbol("choice_existing"),
+                key: GeneratedOriginKey::new("choice:existing"),
+                params: Vec::new(),
+                args: Vec::new(),
+                evidence: vec![CoreProvenance::new(
+                    CoreProvenancePhase::Checker,
+                    "checker:choice:param-mismatch",
+                )],
+            },
+            100,
+        )];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, mismatch_input),
+            Err(TermAndFormulaLoweringError::GeneratedOriginParameterMismatch { origin, key })
+                if origin == existing_origin && key.as_str() == "choice:existing"
+        ));
+
+        let mut functor_mismatch = TermAndFormulaLoweringInput::new(owner);
+        functor_mismatch.terms = vec![term_seed(
+            CoreTermSeedKind::StableChoice {
+                functor: symbol("ordinary_functor"),
+                origin_functor: symbol("choice_existing"),
+                key: GeneratedOriginKey::new("choice:existing"),
+                params: vec![x],
+                args: Vec::new(),
+                evidence: vec![CoreProvenance::new(
+                    CoreProvenancePhase::Checker,
+                    "checker:choice:functor-mismatch",
+                )],
+            },
+            100,
+        )];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, functor_mismatch),
+            Err(TermAndFormulaLoweringError::GeneratedFunctorMismatch { key, .. })
+                if key.as_str() == "choice:existing"
+        ));
+
+        let mut registry_functor_mismatch = TermAndFormulaLoweringInput::new(owner);
+        registry_functor_mismatch.terms = vec![term_seed(
+            CoreTermSeedKind::StableChoice {
+                functor: symbol("ordinary_functor"),
+                origin_functor: symbol("ordinary_functor"),
+                key: GeneratedOriginKey::new("choice:existing"),
+                params: vec![x],
+                args: Vec::new(),
+                evidence: vec![CoreProvenance::new(
+                    CoreProvenancePhase::Checker,
+                    "checker:choice:registry-functor-mismatch",
+                )],
+            },
+            101,
+        )];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, registry_functor_mismatch),
+            Err(TermAndFormulaLoweringError::GeneratedFunctorMismatch { key, expected, actual })
+                if key.as_str() == "choice:existing"
+                    && expected.as_ref() == &symbol("choice_existing")
+                    && actual.as_ref() == &symbol("ordinary_functor")
+        ));
+    }
+
+    #[test]
+    fn fraenkel_lowering_preserves_evidence_and_membership_obligation() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 101),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("fraenkel_set"),
+                    origin_functor: symbol("fraenkel_set"),
+                    key: GeneratedOriginKey::new("fraenkel:mapper:predicate"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:fraenkel:sethood",
+                    )],
+                    membership_obligation: Box::new(FraenkelMembershipObligationSeed::New(
+                        CoreObligationSeed::active(
+                            ObligationSeedKind::FraenkelMembershipAxiom,
+                            CoreFormulaSeedId::new(0),
+                            "fraenkel/membership",
+                            "pkg::main::Owner.fraenkel.membership",
+                            direct(103, 104),
+                            provenance("checker:fraenkel:obligation"),
+                        ),
+                    )),
+                    missing_sethood_obligation: None,
+                },
+                102,
+            ),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("fraenkel_set"),
+                    origin_functor: symbol("fraenkel_set"),
+                    key: GeneratedOriginKey::new("fraenkel:mapper:predicate"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:fraenkel:sethood:reuse",
+                    )],
+                    membership_obligation: Box::new(
+                        FraenkelMembershipObligationSeed::AlreadyCarried(
+                            AlreadyCarriedFraenkelMembershipSeed {
+                                source: direct(104, 105),
+                                provenance: provenance("checker:fraenkel:already-carried"),
+                            },
+                        ),
+                    ),
+                    missing_sethood_obligation: None,
+                },
+                104,
+            ),
+        ];
+        input.formulas = vec![formula_seed(CoreFormulaSeedKind::True, 103)];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let fraenkel_term = output.term_map[&CoreTermSeedId::new(1)];
+        let generated_ref = &output.generated_origin_refs[0];
+        let generated = output
+            .generated
+            .get(generated_ref.origin)
+            .expect("fraenkel origin");
+        let reused_generated_ref = &output.generated_origin_refs[1];
+        let obligation = output
+            .obligation_seeds
+            .get(output.generated_obligations[0].obligation)
+            .expect("fraenkel obligation");
+
+        assert!(matches!(
+            output.terms.get(fraenkel_term).expect("fraenkel").kind,
+            CoreTermKind::Apply { .. }
+        ));
+        assert_eq!(output.generated_delta.len(), 1);
+        assert_eq!(output.generated_origin_refs.len(), 2);
+        assert_eq!(
+            generated_ref.reuse_source,
+            GeneratedOriginReuseSource::NewDelta
+        );
+        assert_eq!(
+            reused_generated_ref.reuse_source,
+            GeneratedOriginReuseSource::CurrentDelta
+        );
+        assert_eq!(reused_generated_ref.origin, generated_ref.origin);
+        assert_eq!(
+            reused_generated_ref.term,
+            output.term_map[&CoreTermSeedId::new(2)]
+        );
+        assert_eq!(reused_generated_ref.functor, symbol("fraenkel_set"));
+        assert_eq!(
+            reused_generated_ref.args,
+            vec![output.term_map[&CoreTermSeedId::new(0)]]
+        );
+        assert_eq!(generated.kind, GeneratedOriginKind::FraenkelComprehension);
+        assert!(generated.evidence.iter().any(|entry| {
+            entry.phase == CoreProvenancePhase::Checker
+                && entry.key.as_str() == "checker:fraenkel:sethood"
+        }));
+        assert_eq!(
+            output.generated_obligations[0].kind,
+            ObligationSeedKind::FraenkelMembershipAxiom
+        );
+        assert_eq!(obligation.status, ObligationSeedStatus::Active);
+        assert!(obligation.goal.is_some());
+        assert_eq!(output.already_carried_generated_obligations.len(), 1);
+        assert_eq!(
+            output.already_carried_generated_obligations[0].origin,
+            generated_ref.origin
+        );
+        assert_step3_delta_valid(&context, &output);
+
+        let mut bad_membership = TermAndFormulaLoweringInput::new(owner);
+        bad_membership.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 107),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("fraenkel_set"),
+                    origin_functor: symbol("fraenkel_set"),
+                    key: GeneratedOriginKey::new("fraenkel:bad-membership"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:fraenkel:bad:sethood",
+                    )],
+                    membership_obligation: Box::new(FraenkelMembershipObligationSeed::New(
+                        CoreObligationSeed::active(
+                            ObligationSeedKind::GeneratedSethood,
+                            CoreFormulaSeedId::new(0),
+                            "fraenkel/bad-membership",
+                            "pkg::main::Owner.fraenkel.bad-membership",
+                            direct(108, 109),
+                            provenance("checker:fraenkel:bad-membership"),
+                        ),
+                    )),
+                    missing_sethood_obligation: None,
+                },
+                108,
+            ),
+        ];
+        bad_membership.formulas = vec![formula_seed(CoreFormulaSeedKind::True, 109)];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, bad_membership),
+            Err(TermAndFormulaLoweringError::InvalidFraenkelMembershipObligation {
+                kind,
+                status: ObligationSeedStatus::Active,
+            }) if kind == ObligationSeedKind::GeneratedSethood
+        ));
+
+        let mut deferred_membership = TermAndFormulaLoweringInput::new(owner);
+        deferred_membership.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 110),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("fraenkel_set"),
+                    origin_functor: symbol("fraenkel_set"),
+                    key: GeneratedOriginKey::new("fraenkel:deferred-membership"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:fraenkel:deferred:sethood",
+                    )],
+                    membership_obligation: Box::new(FraenkelMembershipObligationSeed::New(
+                        CoreObligationSeed::deferred(
+                            ObligationSeedKind::FraenkelMembershipAxiom,
+                            "fraenkel/deferred-membership",
+                            "pkg::main::Owner.fraenkel.deferred-membership",
+                            direct(111, 112),
+                            provenance("checker:fraenkel:deferred-membership"),
+                        ),
+                    )),
+                    missing_sethood_obligation: None,
+                },
+                111,
+            ),
+        ];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, deferred_membership),
+            Err(TermAndFormulaLoweringError::InvalidFraenkelMembershipObligation {
+                kind,
+                status: ObligationSeedStatus::Deferred,
+            }) if kind == ObligationSeedKind::FraenkelMembershipAxiom
+        ));
+    }
+
+    #[test]
+    fn fraenkel_missing_sethood_remains_error_and_deferred_seed() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 104),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("fraenkel_missing"),
+                    origin_functor: symbol("fraenkel_missing"),
+                    key: GeneratedOriginKey::new("fraenkel:missing"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: Vec::new(),
+                    membership_obligation: Box::new(
+                        FraenkelMembershipObligationSeed::AlreadyCarried(
+                            AlreadyCarriedFraenkelMembershipSeed {
+                                source: direct(105, 106),
+                                provenance: provenance("checker:fraenkel:already-carried"),
+                            },
+                        ),
+                    ),
+                    missing_sethood_obligation: Some(Box::new(CoreObligationSeed::deferred(
+                        ObligationSeedKind::GeneratedSethood,
+                        "fraenkel/missing-sethood",
+                        "pkg::main::Owner.fraenkel.missing-sethood",
+                        direct(106, 107),
+                        provenance("checker:fraenkel:missing-sethood"),
+                    ))),
+                },
+                105,
+            ),
+        ];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let fraenkel_term = output.term_map[&CoreTermSeedId::new(1)];
+        let CoreTermKind::Error(diagnostic_id) =
+            output.terms.get(fraenkel_term).expect("error term").kind
+        else {
+            panic!("expected error term");
+        };
+        let diagnostic = output.diagnostics.get(diagnostic_id).expect("diagnostic");
+        let obligation = output
+            .obligation_seeds
+            .get(output.generated_obligations[0].obligation)
+            .expect("deferred obligation");
+
+        assert_eq!(
+            diagnostic.message_key.as_str(),
+            "missing-fraenkel-sethood-evidence"
+        );
+        assert!(output.generated_origin_refs.is_empty());
+        assert_eq!(obligation.status, ObligationSeedStatus::Deferred);
+        assert_eq!(obligation.kind, ObligationSeedKind::GeneratedSethood);
+        assert_step3_delta_valid(&context, &output);
+
+        let mut bad_missing = TermAndFormulaLoweringInput::new(owner);
+        bad_missing.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 109),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("fraenkel_missing"),
+                    origin_functor: symbol("fraenkel_missing"),
+                    key: GeneratedOriginKey::new("fraenkel:bad-missing"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: Vec::new(),
+                    membership_obligation: Box::new(
+                        FraenkelMembershipObligationSeed::AlreadyCarried(
+                            AlreadyCarriedFraenkelMembershipSeed {
+                                source: direct(109, 110),
+                                provenance: provenance("checker:fraenkel:already-carried:bad"),
+                            },
+                        ),
+                    ),
+                    missing_sethood_obligation: Some(Box::new(CoreObligationSeed::deferred(
+                        ObligationSeedKind::DefinitionCorrectness,
+                        "fraenkel/bad-missing-sethood",
+                        "pkg::main::Owner.fraenkel.bad-missing-sethood",
+                        direct(110, 111),
+                        provenance("checker:fraenkel:bad-missing-sethood"),
+                    ))),
+                },
+                110,
+            ),
+        ];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, bad_missing),
+            Err(TermAndFormulaLoweringError::InvalidFraenkelMissingSethoodObligation { kind })
+                if kind == ObligationSeedKind::DefinitionCorrectness
+        ));
+    }
+
+    #[test]
+    fn failed_semantic_sites_lower_to_error_nodes_and_diagnostics() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![term_seed(
+            CoreTermSeedKind::Error(failed_site("failed-term-overload", 108)),
+            108,
+        )];
+        input.formulas = vec![formula_seed(
+            CoreFormulaSeedKind::Error(failed_site("unsupported-formula", 109)),
+            109,
+        )];
+        input.failed_sites = vec![failed_site("standalone-failed-site", 110)];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let term = output.term_map[&CoreTermSeedId::new(0)];
+        let formula = output.formula_map[&CoreFormulaSeedId::new(0)];
+
+        assert!(matches!(
+            output.terms.get(term).expect("term").kind,
+            CoreTermKind::Error(_)
+        ));
+        assert!(matches!(
+            output.formulas.get(formula).expect("formula").kind,
+            CoreFormulaKind::Error(_)
+        ));
+        assert_eq!(output.failed_sites.len(), 1);
+        assert_eq!(output.diagnostics.len(), 3);
+        assert_step3_delta_valid(&context, &output);
     }
 
     #[test]

@@ -148,7 +148,7 @@ Keep `cargo test -p mizar-core` green after each task (see
      dropped annotation is justified by a rule).
    - Deps: 8. Spec: `elaborator.md` (erasure section).
 
-10. **Term and formula lowering.** [ ]
+10. **Term and formula lowering.** [x]
     - Implement Step 3: lower resolved terms and formulas, including
       inserted `qua` views, into binder-normalized core forms.
     - Tests: lowering fixtures per surface form; failed semantic sites stay

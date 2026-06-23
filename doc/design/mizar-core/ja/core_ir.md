@@ -368,6 +368,7 @@ struct GeneratedOrigin {
     owner: CoreItemId,
     kind: GeneratedOriginKind,
     key: GeneratedOriginKey,
+    functor: Option<SymbolId>,
     params: Vec<CoreVarId>,
     evidence: Vec<CoreProvenance>,
     source: CoreSourceRef,
@@ -380,6 +381,8 @@ generated type predicate、skipped/error placeholder、algorithm `Pick` binding 
 generated key は normalized semantic origin と alpha-normalized payload を使う。
 source display name を identity に使ってはならない。owning module spec が stable
 artifact projection を後で定めない限り、generated name は diagnostic-only である。
+internal symbol に対応する generated origin は generated functor symbol を `functor` に記録する。
+term 以外の bookkeeping を表す origin では省略してよい。
 
 ## obligation seed
 
