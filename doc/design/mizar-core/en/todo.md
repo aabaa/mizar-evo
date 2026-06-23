@@ -279,13 +279,16 @@ Keep `cargo test -p mizar-core` green after each task (see
     - Tests: docs-only diff checks.
     - Deps: 22. Spec: repository documentation policy.
 
-24. **Module-boundary refactor gate.** [ ]
+24. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
       Split any review-bottleneck implementation files into private modules
       without changing public APIs, diagnostics, deterministic renderings,
       artifact-facing schemas, or consumer-visible behavior.
+      Current result: `module_boundary_audit.md` records large but cohesive
+      module-owned source files and no current review-bottleneck requiring a
+      source split before closeout.
     - After any split, update this module table/source paths as needed and
       re-run the source/spec and bilingual documentation audit scopes for the
       moved APIs. Do not mix behavior cleanup or API exposure into the move;
@@ -293,6 +296,7 @@ Keep `cargo test -p mizar-core` green after each task (see
     - Deps: 23. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+    - Tests: docs-only diff checks because no Rust source is moved.
 
 ## Recommended Verification
 

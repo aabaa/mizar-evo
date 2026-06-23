@@ -21,6 +21,7 @@ metadata、behavior を変更しない。
 - `control_flow.md`
 - `core_ir.md`
 - `elaborator.md`
+- `module_boundary_audit.md`
 - `source_spec_audit.md`
 - `task_ledger.md`
 - `todo.md`
@@ -51,15 +52,21 @@ drift として扱わない。
 | `control_flow.md` | `ControlFlowIr`、block、local、context、contract、ghost effect、termination、diagnostic、handoff site、determinism、enum policy、test を仕様化する。 | 同じ phase-10 design を localized prose で mirror する。 | No drift。architecture-07 ownership drift は両 file で分類済み。 |
 | `core_ir.md` | `CoreIr` data shape、generated origin、obligation seed、source map、diagnostic、validation、enum policy、gap、forbidden behavior を仕様化する。 | 同じ data-shape と boundary policy を mirror する。 | No drift。 |
 | `elaborator.md` | phase-9 input/output contract、6 lowering step、diagnostic、determinism、enum policy、forbidden behavior を仕様化する。 | 同じ six-step elaboration design と external/deferred classification を mirror する。 | No drift。 |
+| `module_boundary_audit.md` | Task 24 source-layout gate、large review-risk file、closeout 前に必須 split がないこと、deferred move-only follow-up を記録する。 | 同じ audit-only decision と classification を mirror する。 | No drift。Task 24 で追加。 |
 | `source_spec_audit.md` | public module/API inventory、source/spec/test/deferred correspondence、`source_undocumented_behavior` pass、CORE-AUDIT follow-up register を記録する。 | 同じ audit structure と CORE-AUDIT gap ID/class を mirror する。 | No drift。Task 22 lint guard も source/spec audit pair を検査する。 |
-| `task_ledger.md` | Task 22 までの restart status、review result、verification、deferred reason を記録する。 | 同じ ledger row を localized prose で mirror する。 | No drift。Task 23 row は stage 前にこの commit で更新する。 |
-| `todo.md` | ordered task list、status legend、verification、notes を定義する。 | ordered task list と verification policy を mirror する。 | No drift。Task 23 status は stage 前にこの commit で更新する。 |
+| `task_ledger.md` | current task までの restart status、review result、verification、deferred reason を記録する。 | 同じ ledger row を localized prose で mirror する。 | No drift。Task 24 row は stage 前にこの commit で更新する。 |
+| `todo.md` | ordered task list、status legend、verification、notes を定義する。 | ordered task list と verification policy を mirror する。 | No drift。Task 24 status は stage 前にこの commit で更新する。 |
 
-## Classification
+## Resolved Pair Updates
+
+| ID | Prior class | Resolution |
+|---|---|---|
+| CORE-BILINGUAL-G001 | `deferred` | Task 24 で解消済み: `module_boundary_audit.md` は両言語に存在し、paired-file inventory に記録済み。future edit では pair を同期し続ける。 |
+
+## Remaining Classification
 
 | ID | Class | Evidence | Action |
 |---|---|---|---|
-| CORE-BILINGUAL-G001 | `deferred` | `module_boundary_audit.md` は Task 24 output なので、まだどちらの言語にも存在しない。 | Task 24 は English と Japanese companion を同じ commit で追加する。 |
 | CORE-BILINGUAL-G002 | `deferred` | `crate_exit_report.md` は closeout output なので、まだどちらの言語にも存在しない。 | Closeout は English と Japanese companion を同じ commit で追加する。 |
 
 この bilingual audit では `spec_gap`、`source_drift`、
