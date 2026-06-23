@@ -10,7 +10,7 @@ verification 結果、deferred 理由が揃って初めて完了とする。
 | task | status | commit | reviews | verification | deferred / notes |
 |---|---|---|---|---|---|
 | 0. Crate plan | ready to commit | commit 後に task handoff で記録する。この行を作る commit 自身に self-hash は埋め込めない | Spec/doc review: blocking/high/medium finding なし。Test sufficiency review: staged-check gap の medium を修正し、再 review で finding なし。Full implementation review: blocking/high/medium finding なし。Source/doc consistency review: blocking/high/medium finding なし。 | stage 前の `git diff --check` 通過。明示 path stage 後の `git diff --cached --check` 通過。 | docs-only。external gap は `00.crate_plan.md` で分類済み。task-local deferred なし。 |
-| 1. Crate scaffold and lint-policy guard | not started | pending | pending | pending | task 0 commit hash が先に必要。 |
+| 1. Crate scaffold and lint-policy guard | ready to commit | commit 後に task handoff で記録する。この行を更新する commit 自身に self-hash は埋め込めない | Spec/doc review: lint boundary の medium を修正し、再 review で finding なし。Test sufficiency review: alias/API surface の medium を修正し、再 review で finding なし。Full implementation review: blocking/high/medium finding なし。Source/doc consistency review: blocking/high/medium finding なし。 | `cargo fmt --check`; `cargo test -p mizar-core`; `cargo clippy -p mizar-core --all-targets -- -D warnings`; stage 前の `git diff --check`; 明示 path stage 後の `git diff --cached --check`。 | scaffold-only。workspace member、lockfile entry、最小 crate、lint guard を追加。task-local deferred なし。 |
 | 2. Spec: `core_ir.md` | not started | pending | pending | pending |  |
 | 3. Implement `core_ir` data shapes | not started | pending | pending | pending |  |
 | 4. Spec: `binder_normalization.md` | not started | pending | pending | pending |  |

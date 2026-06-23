@@ -73,7 +73,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### Core IR と binder の基盤
 
-1. **crate の足場と lint 方針のガード。** [ ]
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session`、`mizar-resolve`、`mizar-checker` に依存する workspace
      メンバー `mizar-core` を追加し、`mizar-frontend` のガードに倣った
      `tests/lint_policy.rs` を追加する。

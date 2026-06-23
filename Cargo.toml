@@ -3,6 +3,7 @@ members = [
     "crates/mizar-artifact",
     "crates/mizar-build",
     "crates/mizar-checker",
+    "crates/mizar-core",
     "crates/mizar-frontend",
     "crates/mizar-lexer",
     "crates/mizar-lsp",

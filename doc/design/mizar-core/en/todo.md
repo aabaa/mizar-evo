@@ -75,7 +75,7 @@ Keep `cargo test -p mizar-core` green after each task (see
 
 ### Core IR and binder foundation
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-core` workspace member depending on `mizar-session`,
      `mizar-resolve`, and `mizar-checker`; add `tests/lint_policy.rs`
      mirroring the `mizar-frontend` guard.
