@@ -95,7 +95,7 @@ fn vc_manifest_dependency_boundary_is_task_one_minimal() {
 }
 
 #[test]
-fn task_one_lib_exposes_no_semantic_modules_before_specs() {
+fn vc_lib_exposes_only_current_spec_backed_modules() {
     let lib_path = crate_root().join("src/lib.rs");
     let source = read_to_string(&lib_path);
     let declarations = public_semantic_declarations(&source);
@@ -109,21 +109,32 @@ fn task_one_lib_exposes_no_semantic_modules_before_specs() {
         })
         .collect::<Vec<_>>();
 
-    assert!(
-        declarations.is_empty(),
-        "{} must not expose public VC modules or APIs before their owning \
-         English/Japanese module specs exist; found:\n{}",
+    assert_eq!(
+        declarations,
+        ["6: pub mod vc_ir;"],
+        "{} must expose only the task-3 `vc_ir` module until later module \
+         specs exist; found:\n{}",
         lib_path.display(),
         declarations.join("\n")
     );
     assert_eq!(
         source_files,
-        ["src/lib.rs"],
-        "task 1 is scaffold-only; private VC modules must wait for their \
-         task-scoped specs, found {source_files:?}"
+        ["src/lib.rs", "src/vc_ir.rs"],
+        "task 3 owns exactly the vc_ir source module; later private VC modules \
+         must wait for their task-scoped specs, found {source_files:?}"
     );
+    for spec in [
+        workspace_root().join("doc/design/mizar-vc/en/vc_ir.md"),
+        workspace_root().join("doc/design/mizar-vc/ja/vc_ir.md"),
+    ] {
+        assert!(
+            spec.exists(),
+            "{} must exist before src/vc_ir.rs is exposed",
+            spec.display()
+        );
+    }
     for forbidden in [
-        "mod ",
+        "pub use ",
         "pub(crate) ",
         "pub(super) ",
         "pub(in ",
@@ -133,11 +144,34 @@ fn task_one_lib_exposes_no_semantic_modules_before_specs() {
     ] {
         assert!(
             !source.contains(forbidden),
-            "{} must remain a documentation-only library shell before module \
-             specs exist; found forbidden token `{forbidden}`",
+            "{} must remain a module-registration library shell; found \
+             forbidden token `{forbidden}`",
             lib_path.display()
         );
     }
+}
+
+#[test]
+fn vc_ir_public_enums_are_forward_compatible() {
+    let source_path = crate_root().join("src/vc_ir.rs");
+    let source = read_to_string(&source_path);
+    let lines = source.lines().collect::<Vec<_>>();
+    let mut violations = Vec::new();
+
+    for (line_index, line) in lines.iter().enumerate() {
+        if line.trim_start().starts_with("pub enum ")
+            && !previous_attribute_is_non_exhaustive(&lines, line_index)
+        {
+            violations.push(format!("{}:{}", source_path.display(), line_index + 1));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "public vc_ir enums must stay #[non_exhaustive] until task 17 records \
+         a different public-enum policy:\n{}",
+        violations.join("\n")
+    );
 }
 
 #[test]
@@ -476,6 +510,17 @@ fn has_adjacent_allow_rationale(lines: &[&str], start: usize, end: usize) -> boo
         || lines
             .get(end + 1)
             .is_some_and(|line| line.trim_start().starts_with("// reason:"))
+}
+
+fn previous_attribute_is_non_exhaustive(lines: &[&str], line_index: usize) -> bool {
+    lines[..line_index]
+        .iter()
+        .rev()
+        .find(|line| {
+            let trimmed = line.trim();
+            !trimmed.is_empty() && !trimmed.starts_with("///")
+        })
+        .is_some_and(|line| line.trim() == "#[non_exhaustive]")
 }
 
 fn compact_attribute_tokens(attribute: &str) -> String {

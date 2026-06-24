@@ -64,7 +64,7 @@ struct VcSet {
     schema_version: VcSchemaVersion,
     snapshot: BuildSnapshotId,
     source: SourceId,
-    module: ModuleId,
+    module: VcModuleRef,
     generated_formulas: Vec<VcGeneratedFormula>,
     vcs: Vec<VcIr>,
     seed_accounting: SeedAccountingTable,
@@ -87,6 +87,11 @@ struct VcIr {
 
 `VcSet` は immutable snapshot である。後続 phase は side table や status projection を
 生成できるが、`CoreIr`、`ControlFlowIr`、seed handoff を mutate してはならない。
+
+`VcModuleRef` は、task 3 で `mizar-resolve` への新規依存を追加せずに、生成元 core
+snapshot が与える正準 module identity を保持する。後続の boundary task は、workspace
+dependency boundary と lint guard を同じ task 内で更新する場合に限り、これを直接の
+resolved module id に置き換えてよい。
 
 `VcFormulaRef` は borrowed core formula または VC-local generated formula を識別する:
 
@@ -195,9 +200,11 @@ struct ExpandedVcRef {
 - goal を持つ `Active` seed は concrete VC generation の対象になる;
 - `Skipped`、`Deferred`、`Error` seed は diagnostic または provenance reason を持つ場合、
   concrete VC を 0 個にできる;
-- disabled または policy-open seed は silent omission ではなく visible mapping と status で表す;
-- multi-VC expansion は、generated VC ごとの stable `expansion_index` を記録する explicit
-  `Expanded` mapping を通じてのみ許される;
+- disabled seed は visible no-VC mapping を使ってよいが、policy-open obligation は
+  `PolicyOpen` status を持つ concrete VC のままにする。どちらの場合も silent omission
+  にしてはならない;
+- multi-VC expansion は、generated VC ごとの stable zero-based dense
+  `expansion_index` を記録する explicit `Expanded` mapping を通じてのみ許される;
 - ordinary theorem、definition、checker-initial、generated type、現在の flow-derived
   milestone seed は、owning generator spec が特定の expansion schema を記録しない限り `One` を使う;
 - 同じ canonical seed key と origin を持つ duplicate handoff entry は、`VcId` assignment 前に

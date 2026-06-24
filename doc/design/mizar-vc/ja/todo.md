@@ -93,7 +93,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
    - 依存: 1。仕様: アーキテクチャ 07「VC IR」「VC Status」、
      [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 
-3. **`vc_ir` データ形状の実装。** [ ]
+3. **`vc_ir` データ形状の実装。** [x]
    - task 2 に従って `VcIr`、状態、コンテキスト構造を実装し、決定的
      debug レンダリングを加える。
    - テスト: 構築のラウンドトリップ。premise 参照はシンボリックのまま。

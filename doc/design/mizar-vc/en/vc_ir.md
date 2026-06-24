@@ -68,7 +68,7 @@ struct VcSet {
     schema_version: VcSchemaVersion,
     snapshot: BuildSnapshotId,
     source: SourceId,
-    module: ModuleId,
+    module: VcModuleRef,
     generated_formulas: Vec<VcGeneratedFormula>,
     vcs: Vec<VcIr>,
     seed_accounting: SeedAccountingTable,
@@ -92,6 +92,11 @@ struct VcIr {
 `VcSet` is an immutable snapshot. Later phases may produce side tables or
 status projections, but they must not mutate `CoreIr`, `ControlFlowIr`, or the
 seed handoff.
+
+`VcModuleRef` preserves the canonical module identity supplied by the producing
+core snapshot without adding a new task-3 dependency on `mizar-resolve`. A later
+boundary task may replace it with a direct resolved module id only if the
+workspace dependency boundary and lint guard are updated in the same task.
 
 `VcFormulaRef` identifies either a borrowed core formula or a VC-local generated
 formula:
@@ -204,10 +209,12 @@ Rules:
 - `Active` seeds with a goal are eligible for concrete VC generation;
 - `Skipped`, `Deferred`, and `Error` seeds may produce no concrete VC when they
   carry a diagnostic or provenance reason;
-- disabled or policy-open seeds must be represented by a visible mapping and
-  status, not by silent omission;
+- disabled seeds may use a visible no-VC mapping, while policy-open obligations
+  must remain concrete VCs with `PolicyOpen` status; neither case may be a
+  silent omission;
 - multi-VC expansion is allowed only through an explicit `Expanded` mapping
-  that records a stable `expansion_index` for each generated VC;
+  that records a stable zero-based dense `expansion_index` for each generated
+  VC;
 - ordinary theorem, definition, checker-initial, generated type, and current
   flow-derived milestone seeds use `One` unless their owning generator spec
   records a specific expansion schema;

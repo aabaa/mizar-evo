@@ -97,7 +97,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
    - Deps: 1. Spec: architecture 07 "VC IR"/"VC Status",
      [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
 
-3. **Implement `vc_ir` data shapes.** [ ]
+3. **Implement `vc_ir` data shapes.** [x]
    - Implement `VcIr`, status, and context structures per task 2, plus a
      deterministic debug rendering.
    - Tests: construction round-trips; premise refs stay symbolic; rendering
