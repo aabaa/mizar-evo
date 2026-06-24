@@ -32,8 +32,8 @@ exactly once, and `mizar-atp` receives only canonical `VcIr` with `NeedsAtp`
 status.
 
 Dependency order: `vc_ir` data → seed intake → `generator` (theorem,
-definition, algorithm VCs) → normalization/status → `discharge` →
-`dependency_slice`.
+definition, registration-style correctness, algorithm VCs) →
+normalization/status → `discharge` → `dependency_slice`.
 
 Each task below is deliberately small — one module spec, or one behavior slice
 of one module — so that a single task can be implemented, tested, and
@@ -117,17 +117,26 @@ Keep `cargo test -p mizar-vc` green after each task (see
 5. **Spec: `generator.md`.** [ ]
    - Write the generation spec (English and Japanese, no code) with named
      sections: local-context construction, theorem/definition VCs (Step 3),
-     algorithm VCs over structured control flow (Step 4), controlled
-     definition unfolding, and normalization/classification (Step 5).
+     explicit registration/redefinition/reduction correctness seeds when
+     available, algorithm VCs over structured control flow (Step 4),
+     controlled definition unfolding, and normalization/classification
+     (Step 5).
    - Deps: 2. Spec: architecture 07 "Step 3"-"Step 5",
+     [17.clusters_and_registrations.md](../../../spec/en/17.clusters_and_registrations.md),
      [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md),
      [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
-6. **Theorem and definition VCs.** [ ]
+6. **Theorem, definition, and registration-style correctness VCs.** [ ]
    - Generate VCs for theorem proof steps, citations, and definition
-     correctness conditions, preserving explicit local contexts.
+     correctness conditions, preserving explicit local contexts. When
+     checker-initial or core correctness seeds explicitly represent
+     registration, redefinition, or reduction correctness, preserve them as
+     registration-style correctness VCs; when those explicit payloads are not
+     available, classify the gap as external/deferred rather than fabricating
+     registration activation or proof acceptance.
    - Tests: VC fixtures per obligation kind; local contexts explicit, never
-     implied by global state.
+     implied by global state; unavailable explicit registration payloads
+     recorded as deferred.
    - Deps: 4, 5. Spec: `generator.md` (theorem/definition section).
 
 7. **Algorithm VCs.** [ ]
@@ -204,10 +213,14 @@ Keep `cargo test -p mizar-vc` green after each task (see
     - Deps: 8, 13. Spec: `dependency_slice.md`.
 
 15. **Corpus runner at stage `proof_verification`.** [ ]
-    - Wire `tests/miz/{pass,fail}/` cases at stage `proof_verification`
-      through the harness with `spec_trace.toml` entries; seed cases for
-      generation and discharge, including the algorithm VC review-audit cases
-      listed in task 7.
+    - Reassess `mizar-test` support before editing. If an active
+      `proof_verification` runner and source-to-core extraction seams exist,
+      wire `tests/miz/{pass,fail}/` cases through the harness with
+      `spec_trace.toml` entries; seed cases for generation and discharge,
+      including the algorithm VC review-audit cases listed in task 7.
+      If the runner or extraction seams are still missing, record the corpus
+      obligations as deferred with concrete external-dependency reasons instead
+      of fabricating active fixtures.
     - Deps: 11. Spec: [staged_model.md](../../mizar-test/en/staged_model.md).
 
 16. **Determinism suite.** [ ]
@@ -287,12 +300,17 @@ cargo test -p mizar-test
 ```
 
 For the architecture-22 reuse-identity contract, also run the consumers of
-the anchor and proof metadata:
+the anchor and proof metadata when those crates exist in the workspace and the
+task actually touches the integration boundary:
 
 ```text
 cargo test -p mizar-cache
 cargo test -p mizar-proof
 ```
+
+If either crate is not yet available, classify the missing command as an
+`external_dependency_gap` / `deferred` verification item for that task rather
+than adding placeholder crates.
 
 Check the task off here once tests pass.
 

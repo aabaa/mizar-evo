@@ -30,7 +30,8 @@ obligation seed は正確に 1 回だけ VC になり、`mizar-atp` は `NeedsAt
 状態の正準 `VcIr` のみを受け取る。
 
 依存順序: `vc_ir` データ → seed 取り込み → `generator`（定理、定義、
-アルゴリズムの VC）→ 正規化/状態 → `discharge` → `dependency_slice`。
+registration-style correctness、アルゴリズムの VC）→ 正規化/状態 →
+`discharge` → `dependency_slice`。
 
 以下の各タスクは意図的に小さくしてある — 1 つのモジュール仕様、または
 1 モジュールの 1 挙動スライス — 。これにより、crate の残りを抱え込まずに
@@ -111,17 +112,24 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 5. **仕様: `generator.md`。** [ ]
    - 生成の仕様を、名前付き節とともに執筆する（英語と日本語、コード
      なし）: ローカルコンテキストの構築、定理/定義の VC（Step 3）、
-     構造化制御フロー上のアルゴリズム VC（Step 4）、制御された定義
+     利用可能な場合の explicit registration/redefinition/reduction correctness
+     seed、構造化制御フロー上のアルゴリズム VC（Step 4）、制御された定義
      unfold、正規化/分類（Step 5）。
    - 依存: 2。仕様: アーキテクチャ 07「Step 3」〜「Step 5」、
+     [17.clusters_and_registrations.md](../../../spec/ja/17.clusters_and_registrations.md)、
      [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)、
      [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
-6. **定理と定義の VC。** [ ]
+6. **定理、定義、registration-style correctness の VC。** [ ]
    - 定理の証明ステップ、引用、定義の correctness condition から、明示的な
-     ローカルコンテキストを保持した VC を生成する。
+     ローカルコンテキストを保持した VC を生成する。checker-initial または core
+     correctness seed が registration、redefinition、reduction correctness を
+     明示的に表す場合は、それを registration-style correctness VC として保持
+     する。その explicit payload が利用できない場合は、registration activation
+     や proof acceptance を捏造せず external/deferred gap として分類する。
    - テスト: 義務種別ごとの VC フィクスチャ。ローカルコンテキストは明示的
-     であり、グローバル状態に暗黙に依存しない。
+     であり、グローバル状態に暗黙に依存しない。利用不能な explicit
+     registration payload は deferred として記録する。
    - 依存: 4、5。仕様: `generator.md`（定理/定義の節）。
 
 7. **アルゴリズムの VC。** [ ]
@@ -195,10 +203,13 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 依存: 8、13。仕様: `dependency_slice.md`。
 
 15. **stage `proof_verification` のコーパスランナー。** [ ]
-    - `tests/miz/{pass,fail}/` のケースを stage `proof_verification` で
-      ハーネスに接続し、`spec_trace.toml` 項目を付ける。生成と discharge の
-      ケースをシードする。task 7 に列挙した algorithm VC のレビュー監査ケース
-      も含める。
+    - 編集前に `mizar-test` support を再評価する。active `proof_verification`
+      runner と source-to-core extraction seam が存在するなら、
+      `tests/miz/{pass,fail}/` のケースをハーネスに接続し、`spec_trace.toml`
+      項目を付ける。生成と discharge のケースをシードする。task 7 に列挙した
+      algorithm VC のレビュー監査ケースも含める。runner または extraction seam
+      がまだない場合は、active fixture を捏造せず、具体的な
+      external-dependency reason つきで corpus obligation を deferred 記録する。
     - 依存: 11。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)。
 
 16. **決定性スイート。** [ ]
@@ -274,13 +285,17 @@ cargo test -p mizar-core
 cargo test -p mizar-test
 ```
 
-architecture-22 の reuse-identity 契約では、anchor と proof metadata の
-consumer も追加で実行する:
+architecture-22 の reuse-identity 契約では、該当 crate が workspace に存在し、
+task が実際に integration boundary に触れる場合に限り、anchor と proof metadata
+の consumer も追加で実行する:
 
 ```text
 cargo test -p mizar-cache
 cargo test -p mizar-proof
 ```
+
+どちらかの crate がまだ利用できない場合は、placeholder crate を追加せず、その
+task の `external_dependency_gap` / `deferred` verification item として分類する。
 
 テストが通ったらここでタスクにチェックを付ける。
 
