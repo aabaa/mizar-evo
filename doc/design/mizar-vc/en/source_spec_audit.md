@@ -191,6 +191,15 @@ public module responsibilities. Several files remain a maintenance watchlist by
 line count, but no required move-only split, public API move, or source/spec
 drift was found before closeout.
 
+## Closeout Follow-Up
+
+The closeout task adds the paired
+[crate_exit_report.md](./crate_exit_report.md) documents and records final hard
+gates, quality score, verification, deferred items, and handoff. It changes no
+Rust source, public APIs, `.miz` fixtures, expectations, `doc/spec`,
+traceability metadata, runner behavior, or downstream consumers, and it records
+no new source/spec drift.
+
 ## Remaining Classified Follow-Ups
 
 Task 18 introduced no new source/spec correspondence gap. Task 21 re-ran the
@@ -218,6 +227,7 @@ records no required split before closeout. Existing classified records remain:
 - `deferred`: optional private helper/test splits inside large `vc_ir`,
   `generator`, and `dependency_slice` implementation files may be pursued as
   later move-only maintenance tasks, but they are not required for crate exit.
-- `deferred`: closeout records final quality review and crate-exit status.
 
-No `repo_metadata_conflict` was observed.
+The final quality review and crate-exit status are recorded in
+[crate_exit_report.md](./crate_exit_report.md). No `repo_metadata_conflict` was
+observed.

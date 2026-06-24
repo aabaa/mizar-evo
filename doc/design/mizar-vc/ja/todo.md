@@ -307,6 +307,20 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 依存: 21。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
 
+23. **Closeout report and quality review。** [x]
+    - 英語/日本語 `crate_exit_report.md` pair を追加し、ledger で Task 22 commit
+      hash を backfill し、closeout bilingual audit row を解決し、broad verification を
+      実行し、final quality review score を記録する。
+      現在の結果: crate development は quality score 94/100、すべての hard gate
+      passing、broad workspace verification passing、残る `external_dependency_gap` /
+      `deferred` item 記録済み、next-phase handoff 記載済みで complete である。
+    - Tests: `cargo fmt --check`,
+      `cargo clippy --all-targets --all-features -- -D warnings`,
+      `cargo test`、`git diff --check`、staged `git diff --cached --check`。
+    - 依存: 22。仕様:
+      [autonomous_crate_development.md](../../autonomous_crate_development.md)、
+      本 TODO、crate exit criteria。
+
 ## 推奨検証
 
 各タスクの後で実行する:

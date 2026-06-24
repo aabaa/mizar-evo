@@ -322,6 +322,21 @@ Keep `cargo test -p mizar-vc` green after each task (see
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
 
+23. **Closeout report and quality review.** [x]
+    - Add the English/Japanese `crate_exit_report.md` pair, backfill the Task
+      22 commit hash in the ledgers, resolve the closeout bilingual audit row,
+      run broad verification, and record the final quality review score.
+      Current result: crate development is complete with quality score 94/100,
+      all hard gates passing, broad workspace verification passing, remaining
+      `external_dependency_gap` / `deferred` items recorded, and the next-phase
+      handoff included in the closeout report.
+    - Tests: `cargo fmt --check`,
+      `cargo clippy --all-targets --all-features -- -D warnings`,
+      `cargo test`, `git diff --check`, and staged `git diff --cached --check`.
+    - Deps: 22. Spec:
+      [autonomous_crate_development.md](../../autonomous_crate_development.md),
+      this TODO, and the crate exit criteria.
+
 ## Recommended Verification
 
 Run after each task:

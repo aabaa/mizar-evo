@@ -30,8 +30,9 @@ to the English canonical document.
 
 Result: all current document pairs exist and are semantically synchronized. No
 meaning-changing bilingual drift, missing companion, stale status, or
-`repo_metadata_conflict` was observed. Task 18's self-hash was still pending in
-the ledger by design and is backfilled by this task.
+`repo_metadata_conflict` was observed. Task 22's self-hash is backfilled by the
+closeout task; the closeout self-hash is recorded in the final user handoff
+because a commit cannot embed its own hash.
 
 ## Pair Inventory
 
@@ -43,11 +44,12 @@ the ledger by design and is backfilled by this task.
 | `discharge.md` | Deterministic pre-ATP scope, supported classes, limits, evidence/explanation model, status interaction, no-erase ATP boundary, planned tests, and public enum policy. | Synchronized. |
 | `dependency_slice.md` | Conservative slice inputs/outputs, dependency entry classes, unknown coverage, reusable fingerprint contract, planned tests, and public enum policy. | Synchronized. |
 | `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, and classified external/deferred follow-ups. | Synchronized. |
-| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19/21/22 sync edits. | Synchronized by this paired audit document. |
+| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19/21/22/closeout sync edits. | Synchronized by this paired audit document. |
 | `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence, deterministic-discharge branch evidence, remaining external/deferred gaps, and no-drift classification. | Synchronized by Task 21. |
 | `module_boundary_audit.md` | Task 22 source-layout line counts, module-boundary review, no-required-split decision, and optional maintenance deferrals. | Synchronized by Task 22. |
-| `task_ledger.md` | Task status, commit hashes available through Task 21, review outcomes, verification summaries, deferred notes, and handoff prompts. | Synchronized after Task 22 backfills the Task 21 hash and records the Task 22 audit checkpoint. |
-| `todo.md` | Ordered task list, completed tasks, remaining closeout scope, recommended verification, and notes. | Synchronized after Task 22 marks the module-boundary refactor gate complete. |
+| `crate_exit_report.md` | Final status, quality score, hard gates, task commits, verification, review outcomes, remaining deferred/external items, and next-crate handoff. | Synchronized by closeout. |
+| `task_ledger.md` | Task status, commit hashes available through Task 22, review outcomes, verification summaries, deferred notes, and handoff prompts. | Synchronized after closeout backfills the Task 22 hash and records final quality evidence. |
+| `todo.md` | Ordered task list, completed tasks, closeout status, recommended verification, and notes. | Synchronized after closeout records crate completion. |
 
 ## Classification
 
@@ -55,6 +57,8 @@ Task 19 recorded no new `spec_gap`, `test_gap`, `design_drift`,
 `source_drift`, `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, or `repo_metadata_conflict`. The Task 22 update preserves
 that classification while adding the module-boundary pair to the inventory.
+Closeout preserves the same no-drift classification while adding the paired
+exit reports.
 
 Existing classified records remain:
 
@@ -77,8 +81,8 @@ Existing classified records remain:
   candidate keys.
 - `deferred`: optional private helper/test splits inside large `vc_ir`,
   `generator`, and `dependency_slice` implementation files remain future
-  move-only maintenance tasks if pursued; closeout owns final quality review
-  and crate-exit reporting.
+  move-only maintenance tasks if pursued. Final quality review and crate-exit
+  status are recorded in [crate_exit_report.md](./crate_exit_report.md).
 
 ## Task 19 Sync Edits
 
@@ -105,3 +109,11 @@ internal crate-layout guidance. It backfills the Task 21 commit hash in the
 paired ledgers, records the Task 22 review/verification outcome, marks Task 22
 complete in the paired todos, and records that optional private helper/test
 splits are future move-only maintenance work rather than crate-exit blockers.
+
+## Closeout Sync Edits
+
+Closeout adds the paired crate exit reports, backfills the Task 22 commit hash
+in the paired ledgers, records final quality review score 94/100, records the
+passing broad workspace verification, and adds closeout status to the paired
+todos. It keeps the English canonical report and Japanese companion
+semantically synchronized.
