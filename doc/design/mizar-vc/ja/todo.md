@@ -230,7 +230,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       mismatched `DischargeOutput`/`VcSet` の reject。status-boundary preservation。
     - 依存: 8、12、13。仕様: `dependency_slice.md`。
 
-15. **stage `proof_verification` のコーパスランナー。** [ ]
+15. **stage `proof_verification` のコーパスランナー。** [x]
     - 編集前に `mizar-test` support を再評価する。active `proof_verification`
       runner と source-to-core extraction seam が存在するなら、
       `tests/miz/{pass,fail}/` のケースをハーネスに接続し、`spec_trace.toml`

@@ -240,7 +240,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
       status-boundary preservation.
     - Deps: 8, 12, 13. Spec: `dependency_slice.md`.
 
-15. **Corpus runner at stage `proof_verification`.** [ ]
+15. **Corpus runner at stage `proof_verification`.** [x]
     - Reassess `mizar-test` support before editing. If an active
       `proof_verification` runner and source-to-core extraction seams exist,
       wire `tests/miz/{pass,fail}/` cases through the harness with
