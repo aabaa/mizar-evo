@@ -10,14 +10,14 @@
 
 ## モジュール実装
 
-モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより前に、
-専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。モジュール名は
+残るモジュール仕様は、それを引用する実装タスクより前に、専用の仕様タスクが
+（英語と日本語を同じ変更で）執筆する。モジュール名は
 [internal 07](../../internal/ja/07.crate_module_layout.md) の最小分割に従う。
 この crate はアーキテクチャ 07、16、18、19 を精緻化する。
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| vc_ir | `vc_ir.md`（task 2） | `src/vc_ir.rs` | [ ] |
+| vc_ir | `vc_ir.md`（task 2） | `src/vc_ir.rs` | [x] |
 | generator | `generator.md`（task 5） | `src/generator.rs` | [ ] |
 | discharge | `discharge.md`（task 10） | `src/discharge.rs` | [ ] |
 | dependency_slice | `dependency_slice.md`（task 13） | `src/dependency_slice.rs` | [ ] |
@@ -26,8 +26,8 @@
 `ControlFlowIr`、出力は prover 非依存の `VcIr` であり、外部 prover の実行に
 先立って決定的な pre-ATP discharge が証拠を生産する。Mizar 側の義務生成と
 prover 側の翻訳の境界であり、`VcId` を割り当てる唯一の場所である。各
-obligation seed は正確に 1 回だけ VC になり、`mizar-atp` は `NeedsAtp`
-状態の正準 `VcIr` のみを受け取る。
+obligation seed は正確に 1 回だけ intake-accounted され、concrete VC cardinality
+を明示的に記録する。`mizar-atp` は `NeedsAtp` 状態の正準 `VcIr` のみを受け取る。
 
 依存順序: `vc_ir` データ → seed 取り込み → `generator`（定理、定義、
 registration-style correctness、アルゴリズムの VC）→ 正規化/状態 →
@@ -52,8 +52,8 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
   `ControlFlowIr` を構築する（phase 10）。この crate はアルゴリズム VC の
   ためにそれを消費し、決して変更しない。
 - **`VcId` の割り当て: アーキテクチャ 07 により解決済み。** `VcId` を
-  割り当てるのは phase 11 のみであり、seed は正確に 1 回だけ VC になる
-  （task 8 が両方を強制する）。
+  割り当てるのは phase 11 のみである。seed は正確に 1 回 intake-accounted
+  され、task 8 は no-VC / one-VC / expanded の明示 mapping を強制する。
 - **discharge の計算上限: 未解決。task 11 で解決する。** pre-ATP discharge
   は同一のソース、依存、ツールチェーン、ポリシー、計算上限に対して決定的で
   なければならない。上限モデル（ステップ数予算、再帰深さ、数値範囲）と
@@ -79,11 +79,12 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: `mizar-core` task 1。仕様: アーキテクチャ 07。
 
-2. **仕様: `vc_ir.md`。** [ ]
+2. **仕様: `vc_ir.md`。** [x]
    - `VcIr` のデータ形状仕様を執筆する（英語と日本語、コードなし）:
      `VcId`、`VcKind`、`LocalContext`、シンボリックな `PremiseRef`、goal
      論理式、`ProofHint`、VC 状態モデル（`NeedsAtp` とポリシー状態を
-     含む）、「seed は正確に 1 回だけ VC になる」規則、architecture-22 の
+     含む）、seed accounting と concrete cardinality mapping の規則、
+     architecture-22 の
      `ObligationAnchor` 契約。anchor 仕様には anchor-ready な局所 proof /
      program path、label role、正規化された semantic origin、source/core
      provenance を記録し、`VcId` と source range は snapshot-local に
@@ -146,10 +147,11 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 8. **正規化、分類、`VcId` の割り当て。** [ ]
    - VC を正規化・分類し（Step 5）、決定的な `VcId` を割り当てる。すべての
-     seed が正確に 1 つの VC になり、ほかの場所では id を割り当てないことを
-     強制する。
-   - テスト: 実行をまたぐ id の決定性。seed と VC の全単射。分類の
-     フィクスチャ。
+     seed が正確に 1 回 intake-accounted され、concrete cardinality が no VC /
+     one VC / explicit expansion として表され、ほかの場所では id を割り当てない
+     ことを強制する。
+   - テスト: 実行をまたぐ id の決定性。seed accounting と seed-to-VC mapping の
+     フィクスチャ。分類のフィクスチャ。
    - 依存: 7。仕様: `generator.md`（正規化の節）、`vc_ir.md`。
 
 9. **状態とポリシーのモデル。** [ ]

@@ -13,8 +13,8 @@ commit が履歴に存在し、最終 review outcome、verification result、def
 | Task | 状態 | Commit | Reviews | Verification | Deferred / notes |
 |---|---|---|---|---|---|
 | 0. Crate plan | complete | `9697036b0f012cfc578a015dc5a0d6f37bf85143` | Spec/doc review: medium registration-correctness と derived-doc authority findings を修正し、final re-review は no blocking/high/medium findings。Test sufficiency review: no findings。Full implementation review: low future-link と stale task-scope findings を修正し、final re-review は no blocking/high/medium findings。Source/doc consistency review: medium task-15 と conditional-verification findings を修正し、final re-review は no blocking/high/medium findings。 | `git diff --check` は明示 staging 前に passed; `git diff --cached --check` は明示 path staging 後に passed。 | Docs-only。初期 `spec_gap`、`test_gap`、`design_drift`、`source_drift`、`external_dependency_gap`、`deferred` rows を `00.crate_plan.md` に分類し、現在の runner / verification gap と registration-style correctness seed scope に合わせて todo wording を同期する。crate source は作らない。 |
-| 1. Crate scaffold and lint-policy guard | ready to commit | pending self-hash; commit 後に `git log` で確認 | Spec/doc review: no blocking/high/medium/low findings。Test sufficiency review: low private-scope guard finding を修正し、final re-review は no findings。Full implementation review: guard 強化後 no findings。Source/doc consistency review: no blocking/high/medium/low findings。 | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Scaffold-only。workspace member、lockfile entry、minimal crate manifest、documentation-only `src/lib.rs`、lint guard を追加する。semantic VC API、module source file、`.miz` fixture、expectation、`doc/spec`、module spec は変更しない。 |
-| 2. Spec: `vc_ir.md` | not started | pending | pending | pending | scaffold 後の spec-only task。 |
+| 1. Crate scaffold and lint-policy guard | complete | `adfff1cbc3ebce9db13e73d4d29bfd9b1ac1971d` | Spec/doc review: no blocking/high/medium/low findings。Test sufficiency review: low private-scope guard finding を修正し、final re-review は no findings。Full implementation review: guard 強化後 no findings。Source/doc consistency review: no blocking/high/medium/low findings。 | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Scaffold-only。workspace member、lockfile entry、minimal crate manifest、documentation-only `src/lib.rs`、lint guard を追加する。semantic VC API、module source file、`.miz` fixture、expectation、`doc/spec`、module spec は変更しない。 |
+| 2. Spec: `vc_ir.md` | ready to commit | pending self-hash; commit 後に `git log` で確認 | Spec/doc review: medium seed-accounting、generated-goal、status-name、expansion-index findings を修正し、final re-review は ledger-status bookkeeping のみ残り、それも修正済み。Test sufficiency review: medium task-8 seed-bijection wording を修正し、final re-review は no blocking/high/medium findings。Full implementation review: medium status-name、proof-hint、algorithm-subkind、ledger-status findings を修正。Source/doc consistency review: medium todo seed-accounting drift を修正し、final re-review は no blocking/high/medium findings。 | `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Spec-only。英語/日本語 `vc_ir.md` を追加し、task 2 と task 8 の todo wording を seed accounting / explicit concrete cardinality に同期する。Rust source、`.miz` fixture、expectation、`doc/spec`、traceability metadata は変更しない。proof-verification runner、ATP/kernel/proof/cache consumer、source-derived payload の external gaps は deferred のまま。 |
 | 3. Implement `vc_ir` data shapes | not started | pending | pending | pending | Rust source task。 |
 | 4. Obligation-seed intake | not started | pending | pending | pending | Rust source task。 |
 | 5. Spec: `generator.md` | not started | pending | pending | pending | Spec-only task。explicit payload が存在する場合の registration-style correctness seed scope を含む。 |
@@ -85,3 +85,30 @@ review phases.
 Rationale: task 2 は semantic API が現れる前に central VC IR と anchor contract
 を定義する。proof / identity boundary なので `xhigh` を保つ。typo-only の
 documentation cleanup だけなら lower reasoning でもよい。
+
+## Task 2 Handoff
+
+Recommended reasoning: `xhigh`。
+
+Prompt:
+
+```text
+Continue mizar-vc autonomous crate development from the completed task 2
+vc_ir.md spec commit. Before starting task 3, verify a clean worktree, confirm
+the task 2 commit exists in git log, and re-read
+doc/design/mizar-vc/en/vc_ir.md, 00.crate_plan.md, task_ledger.md, and todo.md.
+Implement task 3 only: add src/vc_ir.rs and expose the vc_ir module from
+src/lib.rs according to vc_ir.md. Implement data shapes, validation, and
+deterministic debug rendering only; do not implement seed intake, generator
+logic, discharge, dependency slices, ATP translation, cache/proof reuse, or
+kernel acceptance. Add Rust tests for construction, symbolic premise refs,
+status/context preservation, generated formula table behavior, incomplete
+anchor markers, and rendering stability. Run cargo fmt --check,
+cargo test -p mizar-vc, cargo clippy -p mizar-vc --all-targets -- -D warnings,
+git diff --check, and git diff --cached --check after explicit path staging.
+Use review-only agents for the required AGENTS.md review phases.
+```
+
+Rationale: task 3 は `mizar-vc` 最初の semantic Rust surface であるため、
+proof-boundary、identity、downstream ownership 禁止を保つには `xhigh` が適している。
+documentation-only typo fix だけなら lower reasoning でもよい。

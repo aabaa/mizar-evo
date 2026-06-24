@@ -14,8 +14,8 @@ backfilled by a later committed bookkeeping point or the closeout task.
 | Task | Status | Commit | Reviews | Verification | Deferred / notes |
 |---|---|---|---|---|---|
 | 0. Crate plan | complete | `9697036b0f012cfc578a015dc5a0d6f37bf85143` | Spec/doc review: medium registration-correctness and derived-doc authority findings fixed; final re-review no blocking/high/medium findings. Test sufficiency review: no findings. Full implementation review: low future-link and stale task-scope findings fixed; final re-review no blocking/high/medium findings. Source/doc consistency review: medium task-15 and conditional-verification findings fixed; final re-review no blocking/high/medium findings. | `git diff --check` passed before explicit staging; `git diff --cached --check` passed after explicit path staging. | Docs-only. Classifies initial `spec_gap`, `test_gap`, `design_drift`, `source_drift`, `external_dependency_gap`, and `deferred` rows in `00.crate_plan.md`; synchronizes todo wording for current runner/verification gaps and registration-style correctness seed scope; no crate source is created. |
-| 1. Crate scaffold and lint-policy guard | ready to commit | pending self-hash; verify from `git log` after commit | Spec/doc review: no blocking/high/medium/low findings. Test sufficiency review: low private-scope guard finding fixed; final re-review no findings. Full implementation review: no findings after guard strengthening. Source/doc consistency review: no blocking/high/medium/low findings. | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Scaffold-only. Adds workspace member, lockfile entry, minimal crate manifest, documentation-only `src/lib.rs`, and lint guard. No semantic VC APIs, module source files, `.miz` fixtures, expectations, `doc/spec`, or module specs changed. |
-| 2. Spec: `vc_ir.md` | not started | pending | pending | pending | Spec-only task after scaffold. |
+| 1. Crate scaffold and lint-policy guard | complete | `adfff1cbc3ebce9db13e73d4d29bfd9b1ac1971d` | Spec/doc review: no blocking/high/medium/low findings. Test sufficiency review: low private-scope guard finding fixed; final re-review no findings. Full implementation review: no findings after guard strengthening. Source/doc consistency review: no blocking/high/medium/low findings. | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Scaffold-only. Adds workspace member, lockfile entry, minimal crate manifest, documentation-only `src/lib.rs`, and lint guard. No semantic VC APIs, module source files, `.miz` fixtures, expectations, `doc/spec`, or module specs changed. |
+| 2. Spec: `vc_ir.md` | ready to commit | pending self-hash; verify from `git log` after commit | Spec/doc review: medium seed-accounting, generated-goal, status-name, and expansion-index findings fixed; final re-review only ledger-status bookkeeping remained, then fixed. Test sufficiency review: medium task-8 seed-bijection wording fixed; final re-review no blocking/high/medium findings. Full implementation review: medium status-name, proof-hint, algorithm-subkind, and ledger-status findings fixed. Source/doc consistency review: medium todo seed-accounting drift fixed; final re-review no blocking/high/medium findings. | `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Spec-only. Adds English/Japanese `vc_ir.md`, syncs task 2 and task 8 todo wording to seed accounting / explicit concrete cardinality, and changes no Rust source, `.miz` fixtures, expectations, `doc/spec`, or traceability metadata. External gaps for proof-verification runner, ATP/kernel/proof/cache consumers, and source-derived payloads remain deferred. |
 | 3. Implement `vc_ir` data shapes | not started | pending | pending | pending | Rust source task. |
 | 4. Obligation-seed intake | not started | pending | pending | pending | Rust source task. |
 | 5. Spec: `generator.md` | not started | pending | pending | pending | Spec-only task; includes registration-style correctness seed scope when explicit payloads exist. |
@@ -86,3 +86,30 @@ review phases.
 Rationale: task 2 defines the central VC IR and anchor contract before any
 semantic API appears. Keep `xhigh` for the proof/identity boundary; lower
 reasoning is acceptable only for typo-only documentation cleanup.
+
+## Task 2 Handoff
+
+Recommended reasoning: `xhigh`.
+
+Prompt:
+
+```text
+Continue mizar-vc autonomous crate development from the completed task 2
+vc_ir.md spec commit. Before starting task 3, verify a clean worktree, confirm
+the task 2 commit exists in git log, and re-read
+doc/design/mizar-vc/en/vc_ir.md, 00.crate_plan.md, task_ledger.md, and todo.md.
+Implement task 3 only: add src/vc_ir.rs and expose the vc_ir module from
+src/lib.rs according to vc_ir.md. Implement data shapes, validation, and
+deterministic debug rendering only; do not implement seed intake, generator
+logic, discharge, dependency slices, ATP translation, cache/proof reuse, or
+kernel acceptance. Add Rust tests for construction, symbolic premise refs,
+status/context preservation, generated formula table behavior, incomplete
+anchor markers, and rendering stability. Run cargo fmt --check,
+cargo test -p mizar-vc, cargo clippy -p mizar-vc --all-targets -- -D warnings,
+git diff --check, and git diff --cached --check after explicit path staging.
+Use review-only agents for the required AGENTS.md review phases.
+```
+
+Rationale: task 3 is the first semantic Rust surface in `mizar-vc`, so `xhigh`
+keeps the proof-boundary, identity, and no-downstream-ownership constraints in
+view. Lower reasoning is acceptable only for documentation-only typo fixes.

@@ -10,15 +10,15 @@
 
 ## Module Implementation
 
-Module specs do not exist yet; each is written by its own spec task (English
-and Japanese in the same change) before the implementation tasks that cite it.
+Remaining module specs are written by their own spec tasks (English and
+Japanese in the same change) before the implementation tasks that cite them.
 Module names follow the minimum split of
 [internal 07](../../internal/en/07.crate_module_layout.md); the crate refines
 architecture 07, 16, 18, and 19.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| vc_ir | `vc_ir.md` (task 2) | `src/vc_ir.rs` | [ ] |
+| vc_ir | `vc_ir.md` (task 2) | `src/vc_ir.rs` | [x] |
 | generator | `generator.md` (task 5) | `src/generator.rs` | [ ] |
 | discharge | `discharge.md` (task 10) | `src/discharge.rs` | [ ] |
 | dependency_slice | `dependency_slice.md` (task 13) | `src/dependency_slice.rs` | [ ] |
@@ -27,9 +27,9 @@ architecture 07, 16, 18, and 19.
 prover-independent `VcIr` out, with deterministic pre-ATP discharge producing
 evidence before any external prover runs. It is the boundary between
 Mizar-side obligation generation and prover-side translation: this crate is
-the only place that assigns `VcId`s, every obligation seed becomes a VC
-exactly once, and `mizar-atp` receives only canonical `VcIr` with `NeedsAtp`
-status.
+the only place that assigns `VcId`s, every obligation seed is intake-accounted
+exactly once with explicit concrete-VC cardinality, and `mizar-atp` receives
+only canonical `VcIr` with `NeedsAtp` status.
 
 Dependency order: `vc_ir` data → seed intake → `generator` (theorem,
 definition, registration-style correctness, algorithm VCs) →
@@ -54,8 +54,8 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
   `ControlFlowIr` (phase 10); this crate consumes it for algorithm VCs and
   never mutates it.
 - **`VcId` assignment: resolved by architecture 07.** Phase 11 is the only
-  phase that assigns `VcId`s; seeds become VCs exactly once (task 8 enforces
-  both).
+  phase that assigns `VcId`s; seeds are intake-accounted exactly once and task
+  8 enforces explicit no-VC / one-VC / expanded seed mappings.
 - **Computation limits for discharge: open, resolved by task 11.** Pre-ATP
   discharge must be deterministic for identical source, dependencies,
   toolchain, policy, and computation limits; decide the limit model
@@ -83,11 +83,11 @@ Keep `cargo test -p mizar-vc` green after each task (see
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: `mizar-core` task 1. Spec: architecture 07.
 
-2. **Spec: `vc_ir.md`.** [ ]
+2. **Spec: `vc_ir.md`.** [x]
    - Write the `VcIr` data-shape spec (English and Japanese, no code):
      `VcId`, `VcKind`, `LocalContext`, symbolic `PremiseRef`s, goal formula,
      `ProofHint`, the VC status model (including `NeedsAtp` and policy
-     statuses), the seeds-become-VCs-exactly-once rule, and the
+     statuses), the seed accounting and concrete cardinality mapping rule, and the
      architecture-22 `ObligationAnchor` contract. The anchor spec must record
      anchor-ready local proof/program paths, label roles, normalized semantic
      origins, and source/core provenance, while keeping `VcId` and source
@@ -154,10 +154,11 @@ Keep `cargo test -p mizar-vc` green after each task (see
 
 8. **Normalization, classification, and `VcId` assignment.** [ ]
    - Normalize and classify VCs (Step 5), assigning deterministic `VcId`s;
-     enforce that every seed becomes exactly one VC and nothing else assigns
-     ids.
-   - Tests: id determinism across runs; seed↔VC bijection; classification
-     fixtures.
+     enforce that every seed is intake-accounted exactly once, that concrete
+     cardinality is represented as no VC / one VC / explicit expansion, and
+     that nothing else assigns ids.
+   - Tests: id determinism across runs; seed accounting and seed-to-VC mapping
+     fixtures; classification fixtures.
    - Deps: 7. Spec: `generator.md` (normalization section), `vc_ir.md`.
 
 9. **Status and policy model.** [ ]
