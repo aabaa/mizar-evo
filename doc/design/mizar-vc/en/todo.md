@@ -157,7 +157,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
    - Deps: 6, `mizar-core` task 16. Spec: `generator.md` (algorithm
      section).
 
-8. **Normalization, classification, and `VcId` assignment.** [ ]
+8. **Normalization, classification, and `VcId` assignment.** [x]
    - Normalize and classify VCs (Step 5), assigning deterministic `VcId`s;
      enforce that every seed is intake-accounted exactly once, that concrete
      cardinality is represented as no VC / one VC / explicit expansion, and

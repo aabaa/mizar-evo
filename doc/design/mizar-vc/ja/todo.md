@@ -149,7 +149,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
    - 依存: 6、`mizar-core` task 16。仕様: `generator.md`（アルゴリズムの
      節）。
 
-8. **正規化、分類、`VcId` の割り当て。** [ ]
+8. **正規化、分類、`VcId` の割り当て。** [x]
    - VC を正規化・分類し（Step 5）、決定的な `VcId` を割り当てる。すべての
      seed が正確に 1 回 intake-accounted され、concrete cardinality が no VC /
      one VC / explicit expansion として表され、ほかの場所では id を割り当てない

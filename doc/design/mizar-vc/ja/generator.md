@@ -28,6 +28,8 @@ Rust source は task 6、algorithm VC generation は task 7、normalization、cl
 | GEN-G004 | `external_dependency_gap` | active source-derived `proof_verification` `.miz` runner support と extraction seam はまだ利用不能である。 | tasks 6-8 では explicit core/control-flow payload 上の Rust fixture を使い、source-derived corpus activation は task 15 まで deferred に保つ。 |
 | GEN-G005 | `external_dependency_gap` | `ObligationSeed` は first-class theorem status dependency metadata や dedicated registration/redefinition/reduction correctness payload field をまだ露出していない。 | Task 6 は upstream fixture が供給する namespaced explicit `CoreProvenance` marker だけを保持する。marker がない場合は seed kind / status に従って通常 candidate または visible no-candidate record になり、label、generic path、source text からこれらの semantics を推測してはならない。 |
 | GEN-G006 | `external_dependency_gap` | 現在の `ObligationSeedHandoff` は contract、assertion、invariant obligations 用の flow-site metadata と goal formula を持つが、call-precondition、branch、match、range-loop、collection-loop、term-only termination、ghost-erasure obligations 用の generated formula schema はまだ公開していない。 | Task 7 は `ControlFlowObligationSite` metadata と goal formula を持つ explicit flow-derived seed row だけから candidate を生成する。欠けている algorithm payload family は fabricated VC ではなく visible no-candidate/deferred record に保つ。 |
+| GEN-G007 | `source_drift` / `test_gap` | task 7 後の Rust source には task-6/task-7 の pre-normalized candidate はあるが、final `VcSet` normalizer、documented `VcKind` ordering rank、dense `VcId` assignment、normalizer tests はない。 | Task 8 は normalizer を実装し、下記の stable classification order を文書化し、dense id、seed accounting、duplicate rejection、deferred status preservation、expanded-mapping validation、stable rendering input の Rust test を追加する。 |
+| GEN-G008 | `deferred` | Status transition、deterministic discharge、dependency slice、ATP translation、kernel/proof/cache/corpus integration、source-derived corpus runner activation は後続 module spec または未提供 external seam に依存する。 | Task 8 はそれらを out of scope として記録し、discharge、transition、slice、translation、publish、external integration record の fabricate を行わず existing status を保持しなければならない。 |
 
 Task 5 では `doc/spec`、`.miz` fixture、expectation、traceability metadata を変更しない。
 この文書は既存 architecture/spec requirement を精緻化するものであり、新しい language
@@ -372,6 +374,54 @@ Task 7 は Rust fixture が `ControlFlowIr` に必要な `SymbolId` を構築で
 `mizar-resolve` dev-dependency を追加してよい。production `mizar-vc` code は
 `mizar-core` と `mizar-session` input に限定される。
 
+## Task 8 Implementation Slice
+
+Task 8 は task-6/task-7 の pre-normalized candidate set を final `VcSet` data に
+normalize する。`VcId` は current build snapshot 内でのみ dense に割り当て、concrete VC は
+stable classification rank、candidate sort key、handoff id の順で ordering し、final
+seed accounting row は handoff id 順に構築する。
+
+Task-8 の `VcKind` classification rank:
+
+1. `TheoremProofStep`
+2. `TerminalProofGoal`
+3. `DefinitionCorrectness`
+4. `RegistrationStyleCorrectness`: `Registration`, `Redefinition`, `Reduction`,
+   `ExplicitCoreSeed` の順
+5. `CheckerInitial`
+6. `GeneratedNonEmptiness`
+7. `GeneratedSethood`
+8. `FraenkelMembershipAxiom`
+9. `AlgorithmPrecondition`
+10. `AlgorithmPostcondition`
+11. `CallPrecondition`
+12. `AlgorithmAssertion`
+13. `LoopInvariant`: `Entry`, `Preservation`, `Break`, `Continue`, `Exit` の順
+14. `RangeLoop`: `PositiveStep`, `RangeBound`, `HiddenIndex` の順
+15. `CollectionLoop`: `Finiteness`, `OrderIndependence` の順
+16. `Termination`
+17. `PartialTermination`
+18. `GhostErasureSafety`
+19. `PolicyDeferredTraceability`
+
+将来の `VcKind` variant は、generator が emit する前に owning spec task によって末尾に追加する。
+Task 8 は既存 candidate sort key を stable tie-breaker と duplicate-detection key として扱い、
+kind classification semantics の唯一の供給元にはしない。
+
+Task 8 が support するもの:
+
+- concrete task-6/task-7 candidate ごとの `One` mapping。
+- visible no-candidate record ごとの `NoConcreteVc` mapping。
+- 既存 `VcSet` の `Expanded` mapping shape の validation。ただし explicit expansion schema
+  が導入されるまでは、task-8 generator family は expanded candidate を作らない。
+
+Normalization は duplicate candidate sort key と duplicate seed ownership を決定的に拒否する。
+source reference、local context、symbolic premise、proof hint、status、provenance、
+incomplete anchor、intake/generation が記録した元の `seed_status` を保持しなければならない。
+normalization provenance は追加してよいが、VC discharge、policy status transition、
+dependency slice 計算、ATP 呼び出し、corpus fixture activation、新しい algorithm payload family
+の追加は行ってはならない。
+
 ## Planned Tests
 
 Task 6 が追加すべき Rust coverage:
@@ -402,7 +452,8 @@ Task 7 が追加すべき Rust coverage:
 Task 8 が追加すべき Rust coverage:
 
 - deterministic candidate normalization と dense `VcId` assignment;
-- no-VC、one-VC、expanded mapping を含む complete seed-to-VC accounting;
+- no-VC と one-VC mapping を含む complete seed-to-VC accounting、および既存
+  expanded-mapping contract の validation coverage;
 - duplicate candidate または seed ownership rejection;
 - local context、generated formula、incomplete anchor の stable rendering/fingerprinting input。
 

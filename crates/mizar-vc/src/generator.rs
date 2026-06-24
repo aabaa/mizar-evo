@@ -7,12 +7,13 @@
 
 use crate::vc_ir::{
     AnchorCompleteness, AnchorIngredient, AnchorLabel, AnchorLabelRole, AnchorOwner,
-    AnchorUnavailableReason, CanonicalSortKey, ContextEntry, ContextEntryId, ContextEntryKind,
-    DefinitionOpacityOverride, DefinitionUnfoldRequest, GenerationSchemaVersion, HashMarker,
-    LocalContext, LoopInvariantPhase, PolicyKey, PolicyValue, PremiseRef, ProofHint,
-    RegistrationCorrectnessKind, SeedIntakeMapping, SeedIntakeTable, SeedNoVcReason, SeedOriginRef,
-    VcFormulaRef, VcIrError, VcKind, VcModuleRef, VcProvenance, VcProvenancePhase, VcSourceRef,
-    VcStatus, VcText, VerifierPolicyInput,
+    AnchorUnavailableReason, CanonicalSortKey, CollectionLoopObligation, ContextEntry,
+    ContextEntryId, ContextEntryKind, DefinitionOpacityOverride, DefinitionUnfoldRequest,
+    GenerationSchemaVersion, HashMarker, LocalContext, LoopInvariantPhase, PolicyKey, PolicyValue,
+    PremiseRef, ProofHint, RangeLoopObligation, RegistrationCorrectnessKind, SeedAccounting,
+    SeedIntakeMapping, SeedIntakeTable, SeedNoVcReason, SeedOriginRef, SeedVcMapping, SeedVcRef,
+    VcFormulaRef, VcId, VcIr, VcIrError, VcKind, VcModuleRef, VcProvenance, VcProvenancePhase,
+    VcSchemaVersion, VcSet, VcSetParts, VcSourceRef, VcStatus, VcText, VerifierPolicyInput,
 };
 use mizar_core::{
     control_flow::{
@@ -27,9 +28,9 @@ use mizar_core::{
         ObligationSeedStatus,
     },
 };
-use mizar_session::SourceRange;
+use mizar_session::{BuildSnapshotId, SourceId, SourceRange};
 use std::{
-    collections::BTreeSet,
+    collections::{BTreeMap, BTreeSet},
     error::Error,
     fmt::{self, Write as _},
 };
@@ -41,6 +42,14 @@ pub struct CoreGenerationInput<'a> {
     pub intake: &'a SeedIntakeTable,
     pub handoff: &'a ObligationSeedHandoff,
     pub flow_output: Option<&'a ControlFlowOutput>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct VcNormalizationInput<'a> {
+    pub schema_version: &'a VcSchemaVersion,
+    pub snapshot: BuildSnapshotId,
+    pub source: SourceId,
+    pub candidates: &'a CoreGenerationCandidateSet,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -164,6 +173,85 @@ impl CoreGenerationCandidateSet {
             .find(|candidate| candidate.handoff == handoff)
     }
 
+    pub fn try_normalize(input: VcNormalizationInput<'_>) -> Result<VcSet, GeneratorError> {
+        let mut candidates = input.candidates.candidates.iter().collect::<Vec<_>>();
+        let mut seen_sort_keys = BTreeSet::new();
+
+        for candidate in &candidates {
+            if !seen_sort_keys.insert(candidate.sort_key.clone()) {
+                return Err(GeneratorError::DuplicateCandidateSortKey {
+                    sort_key: candidate.sort_key.clone(),
+                });
+            }
+        }
+
+        candidates.sort_by_key(|candidate| {
+            (
+                kind_classification_rank(&candidate.kind),
+                candidate.sort_key.clone(),
+                candidate.handoff,
+            )
+        });
+
+        let mut seed_accounting = BTreeMap::new();
+        let mut vcs = Vec::with_capacity(candidates.len());
+
+        for (index, candidate) in candidates.into_iter().enumerate() {
+            let id = VcId::new(index);
+            insert_seed_accounting(
+                &mut seed_accounting,
+                SeedAccounting {
+                    handoff: candidate.handoff,
+                    origin: candidate.origin.clone(),
+                    seed_status: candidate.seed_status,
+                    mapping: SeedVcMapping::One { vc: id },
+                },
+            )?;
+            vcs.push(VcIr {
+                id,
+                kind: candidate.kind.clone(),
+                source: candidate.source.clone(),
+                seed: SeedVcRef {
+                    handoff: candidate.handoff,
+                },
+                anchor: candidate.anchor.clone(),
+                local_context: candidate.local_context.clone(),
+                premises: candidate.premises.clone(),
+                goal: candidate.goal,
+                proof_hint: candidate.proof_hint.clone(),
+                status: candidate.status.clone(),
+                provenance: normalized_provenance(candidate.provenance.clone()),
+            });
+        }
+
+        let mut no_candidates = input.candidates.no_candidates.iter().collect::<Vec<_>>();
+        no_candidates.sort_by_key(|no_candidate| no_candidate.handoff);
+        for no_candidate in no_candidates {
+            insert_seed_accounting(
+                &mut seed_accounting,
+                SeedAccounting {
+                    handoff: no_candidate.handoff,
+                    origin: no_candidate.origin.clone(),
+                    seed_status: no_candidate.seed_status,
+                    mapping: SeedVcMapping::NoConcreteVc {
+                        reason: no_candidate.reason.clone(),
+                    },
+                },
+            )?;
+        }
+
+        VcSet::try_new(VcSetParts {
+            schema_version: input.schema_version.clone(),
+            snapshot: input.snapshot,
+            source: input.source,
+            module: input.candidates.module.clone(),
+            generated_formulas: Vec::new(),
+            vcs,
+            seed_accounting: seed_accounting.into_values().collect(),
+        })
+        .map_err(GeneratorError::VcSet)
+    }
+
     pub fn debug_text(&self) -> String {
         let mut output = String::from("core-generation-candidates-debug-v1\n");
         writeln!(&mut output, "schema-version: {:?}", self.schema_version).expect("write string");
@@ -231,8 +319,10 @@ pub enum GeneratorError {
     MissingHandoffEntry { handoff: ObligationHandoffId },
     IntakeHandoffMismatch { handoff: ObligationHandoffId },
     DuplicateCandidateSortKey { sort_key: CanonicalSortKey },
+    DuplicateSeedOutput { handoff: ObligationHandoffId },
     LocalContext(VcIrError),
     SeedIntake(VcIrError),
+    VcSet(VcIrError),
 }
 
 impl fmt::Display for GeneratorError {
@@ -251,8 +341,12 @@ impl fmt::Display for GeneratorError {
                     "duplicate generation candidate sort key {sort_key:?}"
                 )
             }
+            Self::DuplicateSeedOutput { handoff } => {
+                write!(formatter, "duplicate generation output for {handoff:?}")
+            }
             Self::LocalContext(error) => write!(formatter, "invalid generated context: {error}"),
             Self::SeedIntake(error) => write!(formatter, "invalid seed intake: {error}"),
+            Self::VcSet(error) => write!(formatter, "invalid normalized VC set: {error}"),
         }
     }
 }
@@ -367,6 +461,86 @@ fn no_candidate(
         origin,
         seed_status,
         reason,
+    }
+}
+
+fn insert_seed_accounting(
+    rows: &mut BTreeMap<ObligationHandoffId, SeedAccounting>,
+    row: SeedAccounting,
+) -> Result<(), GeneratorError> {
+    let handoff = row.handoff;
+    if rows.insert(handoff, row).is_some() {
+        return Err(GeneratorError::DuplicateSeedOutput { handoff });
+    }
+    Ok(())
+}
+
+fn normalized_provenance(mut provenance: Vec<VcProvenance>) -> Vec<VcProvenance> {
+    provenance.push(VcProvenance {
+        phase: VcProvenancePhase::Normalization,
+        key: VcText::new("task-8-normalized-vc"),
+        core: None,
+    });
+    provenance
+}
+
+fn kind_classification_rank(kind: &VcKind) -> (u8, u8) {
+    match kind {
+        VcKind::TheoremProofStep => (0, 0),
+        VcKind::TerminalProofGoal => (1, 0),
+        VcKind::DefinitionCorrectness => (2, 0),
+        VcKind::RegistrationStyleCorrectness { style } => {
+            (3, registration_correctness_rank(*style))
+        }
+        VcKind::CheckerInitial => (4, 0),
+        VcKind::GeneratedNonEmptiness => (5, 0),
+        VcKind::GeneratedSethood => (6, 0),
+        VcKind::FraenkelMembershipAxiom => (7, 0),
+        VcKind::AlgorithmPrecondition => (8, 0),
+        VcKind::AlgorithmPostcondition => (9, 0),
+        VcKind::CallPrecondition => (10, 0),
+        VcKind::AlgorithmAssertion => (11, 0),
+        VcKind::LoopInvariant { phase } => (12, loop_invariant_rank(*phase)),
+        VcKind::RangeLoop { obligation } => (13, range_loop_rank(*obligation)),
+        VcKind::CollectionLoop { obligation } => (14, collection_loop_rank(*obligation)),
+        VcKind::Termination => (15, 0),
+        VcKind::PartialTermination => (16, 0),
+        VcKind::GhostErasureSafety => (17, 0),
+        VcKind::PolicyDeferredTraceability => (18, 0),
+    }
+}
+
+fn registration_correctness_rank(style: RegistrationCorrectnessKind) -> u8 {
+    match style {
+        RegistrationCorrectnessKind::Registration => 0,
+        RegistrationCorrectnessKind::Redefinition => 1,
+        RegistrationCorrectnessKind::Reduction => 2,
+        RegistrationCorrectnessKind::ExplicitCoreSeed => 3,
+    }
+}
+
+fn loop_invariant_rank(phase: LoopInvariantPhase) -> u8 {
+    match phase {
+        LoopInvariantPhase::Entry => 0,
+        LoopInvariantPhase::Preservation => 1,
+        LoopInvariantPhase::Break => 2,
+        LoopInvariantPhase::Continue => 3,
+        LoopInvariantPhase::Exit => 4,
+    }
+}
+
+fn range_loop_rank(obligation: RangeLoopObligation) -> u8 {
+    match obligation {
+        RangeLoopObligation::PositiveStep => 0,
+        RangeLoopObligation::RangeBound => 1,
+        RangeLoopObligation::HiddenIndex => 2,
+    }
+}
+
+fn collection_loop_rank(obligation: CollectionLoopObligation) -> u8 {
+    match obligation {
+        CollectionLoopObligation::Finiteness => 0,
+        CollectionLoopObligation::OrderIndependence => 1,
     }
 }
 
@@ -1031,6 +1205,7 @@ fn candidate_sort_key(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::vc_ir::{ExpandedVcRef, ExpansionSchemaVersion};
     use mizar_core::control_flow::{
         AssertionPlacement, AssertionSite, BasicBlockId, CallSiteTable, ContextFactTable,
         ContractSite, ContractSiteKind, ContractSitePlacement, ControlFlowBlockTable,
@@ -2208,6 +2383,442 @@ mod tests {
         );
     }
 
+    #[test]
+    fn normalizes_candidates_to_dense_vc_set_and_seed_accounting() {
+        let source = sample_source_id();
+        let handoff = seed_handoff(vec![
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::TheoremProof,
+                    Some(CoreFormulaId::new(10)),
+                    "proof/step/0",
+                    "theorem:sample:proof-step:0",
+                )
+                .with_context(vec![CoreFormulaId::new(1)])
+                .into(),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(0),
+                },
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::GeneratedSethood,
+                    Some(CoreFormulaId::new(11)),
+                    "generated/sethood/0",
+                    "generated:sethood:0",
+                )
+                .into(),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(1),
+                },
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::DefinitionCorrectness,
+                    None,
+                    "definition/missing-goal",
+                    "definition:missing-goal",
+                )
+                .into(),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(2),
+                },
+            ),
+        ]);
+        let candidates = generate(&handoff);
+
+        let vc_set = normalize(&candidates);
+
+        assert_eq!(vc_set.generated_formulas(), []);
+        assert_eq!(
+            vc_set.vcs().iter().map(|vc| vc.id).collect::<Vec<_>>(),
+            vec![VcId::new(0), VcId::new(1)]
+        );
+        assert_eq!(
+            vc_set.vcs().iter().map(|vc| &vc.kind).collect::<Vec<_>>(),
+            vec![&VcKind::TheoremProofStep, &VcKind::GeneratedSethood]
+        );
+        assert!(
+            vc_set.vcs()[0]
+                .provenance
+                .iter()
+                .any(|provenance| provenance.phase == VcProvenancePhase::Normalization)
+        );
+        assert_eq!(
+            vc_set
+                .seed_accounting()
+                .iter()
+                .map(|row| row.handoff)
+                .collect::<Vec<_>>(),
+            vec![
+                ObligationHandoffId::new(0),
+                ObligationHandoffId::new(1),
+                ObligationHandoffId::new(2),
+            ]
+        );
+        assert!(matches!(
+            vc_set.seed_accounting_for(ObligationHandoffId::new(0)),
+            Some(SeedAccounting {
+                mapping: SeedVcMapping::One { vc },
+                ..
+            }) if *vc == VcId::new(0)
+        ));
+        assert!(matches!(
+            vc_set.seed_accounting_for(ObligationHandoffId::new(1)),
+            Some(SeedAccounting {
+                mapping: SeedVcMapping::One { vc },
+                ..
+            }) if *vc == VcId::new(1)
+        ));
+        assert!(matches!(
+            vc_set.seed_accounting_for(ObligationHandoffId::new(2)),
+            Some(SeedAccounting {
+                mapping: SeedVcMapping::NoConcreteVc {
+                    reason: SeedNoVcReason::MissingGoal(reason),
+                },
+                ..
+            }) if reason.as_str().contains("active seed has no goal")
+        ));
+    }
+
+    #[test]
+    fn normalization_uses_documented_kind_rank_before_candidate_sort_key() {
+        let source = sample_source_id();
+        let handoff = seed_handoff(vec![
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::GeneratedSethood,
+                    Some(CoreFormulaId::new(0)),
+                    "generated/sethood/0",
+                    "generated:sethood:0",
+                )
+                .into(),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(0),
+                },
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::TheoremProof,
+                    Some(CoreFormulaId::new(1)),
+                    "proof/step/0",
+                    "theorem:sample:proof-step:0",
+                )
+                .into(),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(1),
+                },
+            ),
+        ]);
+        let mut candidates = generate(&handoff);
+        candidates
+            .candidates
+            .iter_mut()
+            .find(|candidate| candidate.kind == VcKind::TheoremProofStep)
+            .expect("theorem candidate")
+            .sort_key = CanonicalSortKey::new("zzz-theorem-tiebreak");
+        candidates
+            .candidates
+            .iter_mut()
+            .find(|candidate| candidate.kind == VcKind::GeneratedSethood)
+            .expect("sethood candidate")
+            .sort_key = CanonicalSortKey::new("aaa-sethood-tiebreak");
+
+        let vc_set = normalize(&candidates);
+
+        assert_eq!(vc_set.vcs()[0].kind, VcKind::TheoremProofStep);
+        assert_eq!(vc_set.vcs()[1].kind, VcKind::GeneratedSethood);
+    }
+
+    #[test]
+    fn documented_kind_rank_covers_all_task_eight_variants() {
+        let kinds = vec![
+            VcKind::TheoremProofStep,
+            VcKind::TerminalProofGoal,
+            VcKind::DefinitionCorrectness,
+            VcKind::RegistrationStyleCorrectness {
+                style: RegistrationCorrectnessKind::Registration,
+            },
+            VcKind::RegistrationStyleCorrectness {
+                style: RegistrationCorrectnessKind::Redefinition,
+            },
+            VcKind::RegistrationStyleCorrectness {
+                style: RegistrationCorrectnessKind::Reduction,
+            },
+            VcKind::RegistrationStyleCorrectness {
+                style: RegistrationCorrectnessKind::ExplicitCoreSeed,
+            },
+            VcKind::CheckerInitial,
+            VcKind::GeneratedNonEmptiness,
+            VcKind::GeneratedSethood,
+            VcKind::FraenkelMembershipAxiom,
+            VcKind::AlgorithmPrecondition,
+            VcKind::AlgorithmPostcondition,
+            VcKind::CallPrecondition,
+            VcKind::AlgorithmAssertion,
+            VcKind::LoopInvariant {
+                phase: LoopInvariantPhase::Entry,
+            },
+            VcKind::LoopInvariant {
+                phase: LoopInvariantPhase::Preservation,
+            },
+            VcKind::LoopInvariant {
+                phase: LoopInvariantPhase::Break,
+            },
+            VcKind::LoopInvariant {
+                phase: LoopInvariantPhase::Continue,
+            },
+            VcKind::LoopInvariant {
+                phase: LoopInvariantPhase::Exit,
+            },
+            VcKind::RangeLoop {
+                obligation: RangeLoopObligation::PositiveStep,
+            },
+            VcKind::RangeLoop {
+                obligation: RangeLoopObligation::RangeBound,
+            },
+            VcKind::RangeLoop {
+                obligation: RangeLoopObligation::HiddenIndex,
+            },
+            VcKind::CollectionLoop {
+                obligation: CollectionLoopObligation::Finiteness,
+            },
+            VcKind::CollectionLoop {
+                obligation: CollectionLoopObligation::OrderIndependence,
+            },
+            VcKind::Termination,
+            VcKind::PartialTermination,
+            VcKind::GhostErasureSafety,
+            VcKind::PolicyDeferredTraceability,
+        ];
+
+        for pair in kinds.windows(2) {
+            assert!(
+                kind_classification_rank(&pair[0]) < kind_classification_rank(&pair[1]),
+                "{:?} must rank before {:?}",
+                pair[0],
+                pair[1]
+            );
+        }
+    }
+
+    #[test]
+    fn normalization_preserves_deferred_flow_status_accounting() {
+        let source = sample_source_id();
+        let flow_output = sample_flow_output(source);
+        let handoff = seed_handoff_with_sites(vec![flow_seed(
+            source,
+            CoreFormulaId::new(10),
+            "program/0/contract/requires/0",
+            "flow:0:requires:0",
+            flow_site(ControlFlowObligationSiteKind::Requires, 0),
+        )]);
+        let candidates = generate_with_flows(&handoff, &flow_output);
+
+        let vc_set = normalize(&candidates);
+
+        assert_eq!(vc_set.vcs().len(), 1);
+        assert_eq!(vc_set.vcs()[0].kind, VcKind::AlgorithmPrecondition);
+        assert_eq!(vc_set.vcs()[0].status, VcStatus::Open);
+        assert!(matches!(
+            vc_set.seed_accounting_for(ObligationHandoffId::new(0)),
+            Some(SeedAccounting {
+                seed_status: ObligationSeedStatus::Deferred,
+                mapping: SeedVcMapping::One { vc },
+                ..
+            }) if *vc == VcId::new(0)
+        ));
+    }
+
+    #[test]
+    fn normalization_preserves_non_open_status_without_later_phase_outputs() {
+        let source = sample_source_id();
+        let handoff = seed_handoff(vec![(
+            obligation_seed(
+                source,
+                ObligationSeedKind::TheoremProof,
+                Some(CoreFormulaId::new(0)),
+                "proof/step/0",
+                "theorem:sample:proof-step:0",
+            )
+            .into(),
+            ObligationHandoffOrigin::ExistingCore {
+                seed: ObligationSeedId::new(0),
+            },
+        )]);
+        let mut candidates = generate(&handoff);
+        candidates.candidates[0].status = VcStatus::PolicyOpen {
+            policy: PolicyKey::new("task-8-preserve-status"),
+        };
+
+        let vc_set = normalize(&candidates);
+        let vc = &vc_set.vcs()[0];
+
+        assert_eq!(
+            vc.status,
+            VcStatus::PolicyOpen {
+                policy: PolicyKey::new("task-8-preserve-status")
+            }
+        );
+        assert!(
+            vc.provenance
+                .iter()
+                .any(|provenance| provenance.phase == VcProvenancePhase::Normalization)
+        );
+        assert!(!vc.provenance.iter().any(|provenance| matches!(
+            provenance.phase,
+            VcProvenancePhase::StatusPolicy
+                | VcProvenancePhase::Discharge
+                | VcProvenancePhase::DependencySlice
+        )));
+        assert_eq!(vc_set.generated_formulas(), []);
+    }
+
+    #[test]
+    fn normalization_debug_rendering_is_deterministic_and_preserves_incomplete_anchors() {
+        let source = sample_source_id();
+        let handoff = seed_handoff(vec![(
+            obligation_seed(
+                source,
+                ObligationSeedKind::TheoremProof,
+                Some(CoreFormulaId::new(0)),
+                "proof/step/0",
+                "theorem:sample:proof-step:0",
+            )
+            .with_context(vec![CoreFormulaId::new(1)])
+            .with_label("A1")
+            .into(),
+            ObligationHandoffOrigin::ExistingCore {
+                seed: ObligationSeedId::new(0),
+            },
+        )]);
+
+        let first = normalize(&generate(&handoff));
+        let second = normalize(&generate(&handoff));
+
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert!(first.debug_text().contains("vc-set-debug-v1"));
+        assert_eq!(first.vcs()[0].local_context.entries().len(), 1);
+        assert!(matches!(
+            first.vcs()[0].anchor.completeness,
+            AnchorCompleteness::Incomplete { .. }
+        ));
+    }
+
+    #[test]
+    fn normalization_rejects_duplicate_candidate_sort_key() {
+        let source = sample_source_id();
+        let handoff = seed_handoff(vec![
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::TheoremProof,
+                    Some(CoreFormulaId::new(0)),
+                    "proof/step/0",
+                    "theorem:sample:proof-step:0",
+                )
+                .into(),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(0),
+                },
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::GeneratedSethood,
+                    Some(CoreFormulaId::new(1)),
+                    "generated/sethood/0",
+                    "generated:sethood:0",
+                )
+                .into(),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(1),
+                },
+            ),
+        ]);
+        let mut candidates = generate(&handoff);
+        candidates.candidates[1].sort_key = candidates.candidates[0].sort_key.clone();
+
+        assert!(matches!(
+            try_normalize(&candidates),
+            Err(GeneratorError::DuplicateCandidateSortKey { .. })
+        ));
+    }
+
+    #[test]
+    fn normalization_rejects_duplicate_seed_output() {
+        let source = sample_source_id();
+        let handoff = seed_handoff(vec![(
+            obligation_seed(
+                source,
+                ObligationSeedKind::TheoremProof,
+                Some(CoreFormulaId::new(0)),
+                "proof/step/0",
+                "theorem:sample:proof-step:0",
+            )
+            .into(),
+            ObligationHandoffOrigin::ExistingCore {
+                seed: ObligationSeedId::new(0),
+            },
+        )]);
+        let mut candidates = generate(&handoff);
+        let candidate = candidates.candidates()[0].clone();
+        candidates.no_candidates.push(CoreGenerationNoCandidate {
+            handoff: candidate.handoff,
+            origin: candidate.origin,
+            seed_status: candidate.seed_status,
+            reason: SeedNoVcReason::DeferredExternal(VcText::new("duplicate test row")),
+        });
+
+        assert!(matches!(
+            try_normalize(&candidates),
+            Err(GeneratorError::DuplicateSeedOutput { handoff })
+                if handoff == ObligationHandoffId::new(0)
+        ));
+    }
+
+    #[test]
+    fn normalization_keeps_existing_expanded_mapping_contract_validated() {
+        let source = sample_source_id();
+        let handoff = seed_handoff(vec![(
+            obligation_seed(
+                source,
+                ObligationSeedKind::TheoremProof,
+                Some(CoreFormulaId::new(0)),
+                "proof/step/0",
+                "theorem:sample:proof-step:0",
+            )
+            .into(),
+            ObligationHandoffOrigin::ExistingCore {
+                seed: ObligationSeedId::new(0),
+            },
+        )]);
+        let vc_set = normalize(&generate(&handoff));
+        let mut parts = VcSetParts {
+            schema_version: vc_set.schema_version().clone(),
+            snapshot: vc_set.snapshot(),
+            source: vc_set.source(),
+            module: vc_set.module().clone(),
+            generated_formulas: vc_set.generated_formulas().to_vec(),
+            vcs: vc_set.vcs().to_vec(),
+            seed_accounting: vc_set.seed_accounting().to_vec(),
+        };
+        parts.seed_accounting[0].mapping = SeedVcMapping::Expanded {
+            vcs: vec![ExpandedVcRef {
+                expansion_index: 0,
+                vc: VcId::new(0),
+            }],
+            expansion_schema: ExpansionSchemaVersion::new("task-8-validation-test"),
+        };
+
+        VcSet::try_new(parts).expect("expanded mapping remains validated by VcSet");
+    }
+
     fn generate(handoff: &ObligationSeedHandoff) -> CoreGenerationCandidateSet {
         let intake = SeedIntakeTable::try_from_handoff(handoff).expect("intake");
         CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
@@ -2218,6 +2829,20 @@ mod tests {
             flow_output: None,
         })
         .expect("generation candidates")
+    }
+
+    fn normalize(candidates: &CoreGenerationCandidateSet) -> VcSet {
+        try_normalize(candidates).expect("normalized vc set")
+    }
+
+    fn try_normalize(candidates: &CoreGenerationCandidateSet) -> Result<VcSet, GeneratorError> {
+        let source = sample_source_id();
+        CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
+            schema_version: &VcSchemaVersion::new("vc-task-8-test"),
+            snapshot: sample_snapshot_id(),
+            source,
+            candidates,
+        })
     }
 
     fn generate_with_flows(
@@ -2632,14 +3257,17 @@ mod tests {
     }
 
     fn sample_source_id() -> mizar_session::SourceId {
-        let snapshot = BuildSnapshotId::from_published_schema_str(
+        InMemorySessionIdAllocator::new()
+            .next_source_id(sample_snapshot_id())
+            .expect("source id")
+    }
+
+    fn sample_snapshot_id() -> BuildSnapshotId {
+        BuildSnapshotId::from_published_schema_str(
             "mizar-session-build-snapshot-v1:\
              2222222222222222222222222222222222222222222222222222222222222222",
         )
-        .expect("snapshot id");
-        InMemorySessionIdAllocator::new()
-            .next_source_id(snapshot)
-            .expect("source id")
+        .expect("snapshot id")
     }
 
     #[test]

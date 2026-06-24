@@ -28,6 +28,8 @@ registration-style correctness VCs is task 6; algorithm VC generation is task
 | GEN-G004 | `external_dependency_gap` | Active source-derived `proof_verification` `.miz` runner support and extraction seams remain unavailable. | Use Rust fixtures over explicit core/control-flow payloads in tasks 6-8 and keep source-derived corpus activation deferred to task 15. |
 | GEN-G005 | `external_dependency_gap` | `ObligationSeed` does not yet expose first-class theorem status dependency metadata or dedicated registration/redefinition/reduction correctness payload fields. | Task 6 preserves only namespaced explicit `CoreProvenance` markers supplied by upstream fixtures. Absent markers produce ordinary candidates or visible no-candidate records according to the seed kind/status; the generator must not infer these semantics from labels, generic paths, or source text. |
 | GEN-G006 | `external_dependency_gap` | The current `ObligationSeedHandoff` carries flow-site metadata and goal formulas for contract, assertion, and invariant obligations, but it does not yet expose call-precondition, branch, match, range-loop, collection-loop, or generated formula schemas for term-only termination and ghost-erasure obligations. | Task 7 generates candidates only for explicit flow-derived seed rows that have `ControlFlowObligationSite` metadata and a goal formula. Missing algorithm payload families remain visible no-candidate/deferred records instead of fabricated VCs. |
+| GEN-G007 | `source_drift` / `test_gap` | After task 7 the Rust source has pre-normalized task-6/task-7 candidates, but no final `VcSet` normalizer, documented `VcKind` ordering rank, dense `VcId` assignment, or normalizer tests. | Task 8 implements the normalizer, documents the stable classification order below, and adds Rust tests for dense ids, seed accounting, duplicate rejection, deferred status preservation, expanded-mapping validation, and stable rendering inputs. |
+| GEN-G008 | `deferred` | Status transitions, deterministic discharge, dependency slices, ATP translation, kernel/proof/cache/corpus integration, and source-derived corpus runner activation depend on later module specs or unavailable external seams. | Task 8 records those paths as out of scope and must preserve existing statuses instead of discharging, transitioning, slicing, translating, publishing, or fabricating external integration records. |
 
 No `doc/spec`, `.miz` fixtures, expectations, or traceability metadata change
 in task 5. This document refines existing architecture/spec requirements; it
@@ -416,6 +418,58 @@ Task 7 may add a test-only `mizar-resolve` dev-dependency so Rust fixtures can
 construct the `SymbolId` values required by `ControlFlowIr`. Production
 `mizar-vc` code remains limited to `mizar-core` and `mizar-session` inputs.
 
+## Task 8 Implementation Slice
+
+Task 8 normalizes the task-6/task-7 pre-normalized candidate set into final
+`VcSet` data. It assigns dense `VcId`s only within the current build snapshot,
+orders concrete VCs by stable classification rank, candidate sort key, and
+handoff id, and builds final seed accounting rows sorted by handoff id.
+
+The task-8 `VcKind` classification rank is:
+
+1. `TheoremProofStep`
+2. `TerminalProofGoal`
+3. `DefinitionCorrectness`
+4. `RegistrationStyleCorrectness`, ordered by
+   `Registration`, `Redefinition`, `Reduction`, `ExplicitCoreSeed`
+5. `CheckerInitial`
+6. `GeneratedNonEmptiness`
+7. `GeneratedSethood`
+8. `FraenkelMembershipAxiom`
+9. `AlgorithmPrecondition`
+10. `AlgorithmPostcondition`
+11. `CallPrecondition`
+12. `AlgorithmAssertion`
+13. `LoopInvariant`, ordered by `Entry`, `Preservation`, `Break`,
+    `Continue`, `Exit`
+14. `RangeLoop`, ordered by `PositiveStep`, `RangeBound`, `HiddenIndex`
+15. `CollectionLoop`, ordered by `Finiteness`, `OrderIndependence`
+16. `Termination`
+17. `PartialTermination`
+18. `GhostErasureSafety`
+19. `PolicyDeferredTraceability`
+
+Future `VcKind` variants must be appended by an owning spec task before the
+generator may emit them. Task 8 treats the existing candidate sort key as a
+stable tie-breaker and duplicate-detection key, not as the sole source of kind
+classification semantics.
+
+Task 8 supports:
+
+- `One` mappings for every concrete task-6/task-7 candidate;
+- `NoConcreteVc` mappings for every visible no-candidate record;
+- validation of the existing `Expanded` mapping shape in `VcSet`, while no
+  task-8 generator family creates expanded candidates until an explicit
+  expansion schema is introduced.
+
+Normalization must reject duplicate candidate sort keys and duplicate seed
+ownership deterministically. It must preserve source references, local
+contexts, symbolic premises, proof hints, status, provenance, incomplete
+anchors, and the original `seed_status` recorded by intake/generation. It may
+append normalization provenance, but it must not discharge VCs, transition
+policy status, compute dependency slices, call ATP, activate corpus fixtures,
+or add new algorithm payload families.
+
 ## Planned Tests
 
 Task 6 must add Rust coverage for:
@@ -453,7 +507,8 @@ Task 7 must add Rust coverage for:
 Task 8 must add Rust coverage for:
 
 - deterministic candidate normalization and dense `VcId` assignment;
-- complete seed-to-VC accounting with no-VC, one-VC, and expanded mappings;
+- complete seed-to-VC accounting with no-VC and one-VC mappings, plus
+  validation coverage for the existing expanded-mapping contract;
 - duplicate candidate or seed ownership rejection;
 - stable rendering/fingerprinting inputs for local contexts, generated
   formulas, and incomplete anchors.
