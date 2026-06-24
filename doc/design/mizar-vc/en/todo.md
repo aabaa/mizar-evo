@@ -266,7 +266,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 17. Spec: all module specs and this TODO.
 
-19. **Bilingual documentation sync audit.** [ ]
+19. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under `doc/design/mizar-vc/en/`
       with its Japanese companion and synchronize content.
     - Deps: 18. Spec: repository documentation policy.
