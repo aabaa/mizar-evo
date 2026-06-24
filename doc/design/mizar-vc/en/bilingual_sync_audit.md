@@ -43,16 +43,18 @@ the ledger by design and is backfilled by this task.
 | `discharge.md` | Deterministic pre-ATP scope, supported classes, limits, evidence/explanation model, status interaction, no-erase ATP boundary, planned tests, and public enum policy. | Synchronized. |
 | `dependency_slice.md` | Conservative slice inputs/outputs, dependency entry classes, unknown coverage, reusable fingerprint contract, planned tests, and public enum policy. | Synchronized. |
 | `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, and classified external/deferred follow-ups. | Synchronized. |
-| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19 sync edits. | Synchronized by this paired Task 19 document. |
+| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19/21/22 sync edits. | Synchronized by this paired audit document. |
 | `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence, deterministic-discharge branch evidence, remaining external/deferred gaps, and no-drift classification. | Synchronized by Task 21. |
-| `task_ledger.md` | Task status, commit hashes available through Task 20, review outcomes, verification summaries, deferred notes, and handoff prompts. | Synchronized after Task 21 backfills the Task 20 hash and records the Task 21 audit checkpoint. |
-| `todo.md` | Ordered task list, completed tasks, remaining Task 22 and closeout scope, recommended verification, and notes. | Synchronized after Task 21 marks the architecture-22 follow-up audit complete. |
+| `module_boundary_audit.md` | Task 22 source-layout line counts, module-boundary review, no-required-split decision, and optional maintenance deferrals. | Synchronized by Task 22. |
+| `task_ledger.md` | Task status, commit hashes available through Task 21, review outcomes, verification summaries, deferred notes, and handoff prompts. | Synchronized after Task 22 backfills the Task 21 hash and records the Task 22 audit checkpoint. |
+| `todo.md` | Ordered task list, completed tasks, remaining closeout scope, recommended verification, and notes. | Synchronized after Task 22 marks the module-boundary refactor gate complete. |
 
 ## Classification
 
-Task 19 records no new `spec_gap`, `test_gap`, `design_drift`,
+Task 19 recorded no new `spec_gap`, `test_gap`, `design_drift`,
 `source_drift`, `source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, or `repo_metadata_conflict`.
+`boundary_violation`, or `repo_metadata_conflict`. The Task 22 update preserves
+that classification while adding the module-boundary pair to the inventory.
 
 Existing classified records remain:
 
@@ -73,8 +75,10 @@ Existing classified records remain:
   artifact consumers, and source-derived runner integration remain downstream
   before architecture-22 reuse can be accepted outside deterministic-discharge
   candidate keys.
-- `deferred`: Task 22 owns the module-boundary refactor gate, and closeout owns
-  final quality review and crate-exit reporting.
+- `deferred`: optional private helper/test splits inside large `vc_ir`,
+  `generator`, and `dependency_slice` implementation files remain future
+  move-only maintenance tasks if pursued; closeout owns final quality review
+  and crate-exit reporting.
 
 ## Task 19 Sync Edits
 
@@ -92,3 +96,12 @@ companions. It backfills the Task 20 commit hash in the paired ledgers, records
 the Task 21 review/verification outcome, marks Task 21 complete in the paired
 todos, and records that the remaining architecture-22 gaps are classified
 external/deferred rather than untracked drift.
+
+## Task 22 Sync Edits
+
+Task 22 adds the paired module-boundary audit documents and rechecks source
+layout against the English canonical module specs, Japanese companions, and
+internal crate-layout guidance. It backfills the Task 21 commit hash in the
+paired ledgers, records the Task 22 review/verification outcome, marks Task 22
+complete in the paired todos, and records that optional private helper/test
+splits are future move-only maintenance work rather than crate-exit blockers.

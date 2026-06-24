@@ -181,11 +181,22 @@ architecture-22 identity contract is implemented for stable generated payloads.
 The paired [architecture_22_audit.md](./architecture_22_audit.md) document is
 the focused Task 21 artifact.
 
+## Task 22 Module-Boundary Follow-Up
+
+Task 22 audited the source layout against the module specifications and
+repository crate-layout guidance. The paired
+[module_boundary_audit.md](./module_boundary_audit.md) document records that
+`vc_ir`, `generator`, `discharge`, and `dependency_slice` still match their
+public module responsibilities. Several files remain a maintenance watchlist by
+line count, but no required move-only split, public API move, or source/spec
+drift was found before closeout.
+
 ## Remaining Classified Follow-Ups
 
 Task 18 introduced no new source/spec correspondence gap. Task 21 re-ran the
 audit after the architecture-22 identity work and likewise records no new
-unclassified source/spec gap. Existing classified records remain:
+unclassified source/spec gap. Task 22 re-ran the module-boundary gate and
+records no required split before closeout. Existing classified records remain:
 
 - `external_dependency_gap`: active `proof_verification` runner support and
   source-to-core / source-to-VC extraction seams are absent from `mizar-test`;
@@ -204,7 +215,9 @@ unclassified source/spec gap. Existing classified records remain:
   artifact consumers, and source-derived runner integration must be implemented
   before architecture-22 reuse can be accepted outside the deterministic
   discharge candidate key.
-- `deferred`: Task 22 records the module-boundary refactor gate, and closeout
-  records final quality review and crate-exit status.
+- `deferred`: optional private helper/test splits inside large `vc_ir`,
+  `generator`, and `dependency_slice` implementation files may be pursued as
+  later move-only maintenance tasks, but they are not required for crate exit.
+- `deferred`: closeout records final quality review and crate-exit status.
 
 No `repo_metadata_conflict` was observed.

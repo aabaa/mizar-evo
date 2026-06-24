@@ -290,7 +290,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 依存: 20。仕様: 全モジュール仕様、本 TODO、リポジトリの
       ドキュメント方針。
 
-22. **module 境界リファクタリング gate。** [ ]
+22. **module 境界リファクタリング gate。** [x]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、
       oversized file、混在した責務、module table と module spec 境界に沿って
       分割すべき private helper を洗い出す。review bottleneck になった実装
@@ -300,6 +300,10 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       API について source/spec 対応監査と二言語ドキュメント同期監査の範囲を
       再実行する。挙動 cleanup や API 公開を移動と混ぜない。それらは独立した
       spec task を要求する。
+      Task 22 は paired `module_boundary_audit.md` artifact を記録し、closeout 前に
+      必須の move-only split はないと判断する。大きい implementation file 内の任意の
+      private helper / test split は将来の maintenance work として残り、実施する場合は
+      独立した move-only task にしなければならない。
     - 依存: 21。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
 

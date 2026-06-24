@@ -303,7 +303,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
     - Deps: 20. Spec: all module specs, this TODO, and repository
       documentation policy.
 
-22. **Module-boundary refactor gate.** [ ]
+22. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
@@ -314,6 +314,10 @@ Keep `cargo test -p mizar-vc` green after each task (see
       re-run the source/spec and bilingual documentation audit scopes for the
       moved APIs. Do not mix behavior cleanup or API exposure into the move;
       those require their own spec tasks.
+      Task 22 records the paired `module_boundary_audit.md` artifact and finds
+      no required move-only split before closeout. Optional private helper/test
+      splits inside large implementation files remain future maintenance work
+      and must be separate move-only tasks if pursued.
     - Deps: 21. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
