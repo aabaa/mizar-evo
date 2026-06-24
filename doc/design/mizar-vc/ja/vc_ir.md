@@ -213,6 +213,37 @@ struct ExpandedVcRef {
 これにより task-0 drift を解消する。「exactly once」は各 seed が正確に 1 回 accounted される
 ことを意味し、concrete VC cardinality は explicit かつ audit 可能である。
 
+### Task 4 の intake table
+
+Task 4 は `VcId` 割り当て前の intake table を実装する:
+
+```rust
+struct SeedIntakeTable {
+    rows: Vec<SeedIntakeRow>,
+}
+
+struct SeedIntakeRow {
+    handoff: ObligationHandoffId,
+    origin: SeedOriginRef,
+    seed_status: ObligationSeedStatus,
+    canonical_key: ObligationSeedCanonicalKey,
+    source: CoreSourceRef,
+    mapping: SeedIntakeMapping,
+}
+
+enum SeedIntakeMapping {
+    EligibleOneVc { goal: CoreFormulaId },
+    NoConcreteVc { reason: SeedNoVcReason },
+}
+```
+
+この table は `VcSet` に格納される最終的な `SeedAccountingTable` ではない。`VcId`
+を割り当てず、concrete `VcIr` も構築しない。handoff order と seed origin を保持し、
+duplicate `(canonical_key, origin)` row を決定的に拒否し、後続の `VcId` assignment
+より前に matching `source_map` entry を欠く handoff row も拒否する。
+skipped/deferred/error/missing-goal row はすべて visible no-VC mapping として記録する。
+Task 8 は deterministic `VcId` を割り当てるときに eligible row を消費する。
+
 ## LocalContext
 
 `LocalContext` は self-contained である。ATP translation は semantic context を source text から

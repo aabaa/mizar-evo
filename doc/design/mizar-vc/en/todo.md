@@ -104,7 +104,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
      stability.
    - Deps: 2. Spec: `vc_ir.md`.
 
-4. **Obligation-seed intake.** [ ]
+4. **Obligation-seed intake.** [x]
    - Consume the `mizar-core` seed handoff (theorem bodies, correctness
      conditions, checker-initial obligations, algorithm contracts) into a
      deterministic seed table (architecture 07 Step 2).

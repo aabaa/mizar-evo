@@ -4,11 +4,14 @@
 //! [vc_ir.md](../../../doc/design/mizar-vc/en/vc_ir.md).
 
 use mizar_core::{
-    control_flow::{ControlFlowId, ObligationHandoffId},
+    control_flow::{
+        ControlFlowId, ObligationHandoffId, ObligationHandoffOrigin, ObligationSeedHandoff,
+    },
     core_ir::{
         CoreAlgorithmId, CoreDefinitionId, CoreDiagnosticId, CoreFormulaId, CoreItemId,
         CoreLabelRef, CoreProvenance, CoreSourceRef, CoreVarId, LocalProofOrProgramPath,
-        NormalizedSemanticOrigin, ObligationSeedId, ObligationSeedStatus,
+        NormalizedSemanticOrigin, ObligationSeedCanonicalKey, ObligationSeedId,
+        ObligationSeedStatus,
     },
 };
 use mizar_session::{BuildSnapshotId, Hash, SourceId, SourceRange};
@@ -504,6 +507,85 @@ pub struct SeedAccounting {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SeedIntakeTable {
+    rows: Vec<SeedIntakeRow>,
+}
+
+impl SeedIntakeTable {
+    pub fn try_from_handoff(handoff: &ObligationSeedHandoff) -> Result<Self, VcIrError> {
+        let mut rows = Vec::new();
+        let mut seen = BTreeMap::new();
+
+        for (handoff_id, entry) in handoff.entries.iter() {
+            let origin = seed_origin_ref(&entry.origin);
+            let canonical_key = entry.seed.canonical_key();
+            if let Some(first_handoff) =
+                seen.insert((canonical_key.clone(), origin.clone()), handoff_id)
+            {
+                return Err(VcIrError::DuplicateSeedIntake {
+                    first_handoff,
+                    second_handoff: handoff_id,
+                });
+            }
+            let source = handoff.source_map.get(&handoff_id).cloned().ok_or(
+                VcIrError::MissingHandoffSource {
+                    handoff: handoff_id,
+                },
+            )?;
+
+            rows.push(SeedIntakeRow {
+                handoff: handoff_id,
+                origin,
+                seed_status: entry.seed.status,
+                canonical_key,
+                source,
+                mapping: intake_mapping(
+                    entry.seed.status,
+                    entry.seed.goal,
+                    &entry.seed.diagnostics,
+                ),
+            });
+        }
+
+        Ok(Self { rows })
+    }
+
+    pub fn rows(&self) -> &[SeedIntakeRow] {
+        &self.rows
+    }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("seed-intake-table-debug-v1\n");
+        for row in &self.rows {
+            writeln!(
+                &mut output,
+                "handoff {:?}: origin={:?}; status={:?}; canonical-key={:?}; source={:?}; mapping={:?}",
+                row.handoff, row.origin, row.seed_status, row.canonical_key, row.source, row.mapping
+            )
+            .expect("write string");
+        }
+        output
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SeedIntakeRow {
+    pub handoff: ObligationHandoffId,
+    pub origin: SeedOriginRef,
+    pub seed_status: ObligationSeedStatus,
+    pub canonical_key: ObligationSeedCanonicalKey,
+    pub source: CoreSourceRef,
+    pub mapping: SeedIntakeMapping,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SeedIntakeMapping {
+    EligibleOneVc { goal: CoreFormulaId },
+    NoConcreteVc { reason: SeedNoVcReason },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum SeedOriginRef {
     ExistingCore {
@@ -512,6 +594,9 @@ pub enum SeedOriginRef {
     FlowDerived {
         flow: ControlFlowId,
         algorithm: CoreAlgorithmId,
+    },
+    Unsupported {
+        origin: VcText,
     },
 }
 
@@ -545,8 +630,59 @@ impl SeedVcMapping {
 pub enum SeedNoVcReason {
     SkippedInvalidInput,
     DeferredExternal(VcText),
+    MissingGoal(VcText),
     PolicyDisabled(PolicyKey),
     Error(CoreDiagnosticId),
+    ErrorWithoutDiagnostic(VcText),
+}
+
+fn seed_origin_ref(origin: &ObligationHandoffOrigin) -> SeedOriginRef {
+    match origin {
+        ObligationHandoffOrigin::ExistingCore { seed } => {
+            SeedOriginRef::ExistingCore { seed: *seed }
+        }
+        ObligationHandoffOrigin::FlowDerived { flow, algorithm } => SeedOriginRef::FlowDerived {
+            flow: *flow,
+            algorithm: *algorithm,
+        },
+        origin => SeedOriginRef::Unsupported {
+            origin: VcText::new(format!("{origin:?}")),
+        },
+    }
+}
+
+fn intake_mapping(
+    status: ObligationSeedStatus,
+    goal: Option<CoreFormulaId>,
+    diagnostics: &[CoreDiagnosticId],
+) -> SeedIntakeMapping {
+    match (status, goal) {
+        (ObligationSeedStatus::Active, Some(goal)) => SeedIntakeMapping::EligibleOneVc { goal },
+        (ObligationSeedStatus::Active, None) => SeedIntakeMapping::NoConcreteVc {
+            reason: SeedNoVcReason::MissingGoal(VcText::new("active seed has no goal")),
+        },
+        (ObligationSeedStatus::Skipped, _) => SeedIntakeMapping::NoConcreteVc {
+            reason: SeedNoVcReason::SkippedInvalidInput,
+        },
+        (ObligationSeedStatus::Deferred, _) => SeedIntakeMapping::NoConcreteVc {
+            reason: SeedNoVcReason::DeferredExternal(VcText::new("seed status is deferred")),
+        },
+        (ObligationSeedStatus::Error, _) => SeedIntakeMapping::NoConcreteVc {
+            reason: diagnostics.first().copied().map_or_else(
+                || {
+                    SeedNoVcReason::ErrorWithoutDiagnostic(VcText::new(
+                        "error seed has no diagnostic",
+                    ))
+                },
+                SeedNoVcReason::Error,
+            ),
+        },
+        (status, _) => SeedIntakeMapping::NoConcreteVc {
+            reason: SeedNoVcReason::DeferredExternal(VcText::new(format!(
+                "unsupported seed status {status:?}"
+            ))),
+        },
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -767,6 +903,13 @@ pub enum VcIrError {
     DuplicateSeedAccounting {
         handoff: ObligationHandoffId,
     },
+    DuplicateSeedIntake {
+        first_handoff: ObligationHandoffId,
+        second_handoff: ObligationHandoffId,
+    },
+    MissingHandoffSource {
+        handoff: ObligationHandoffId,
+    },
     SeedAccountingNotSorted {
         previous: ObligationHandoffId,
         current: ObligationHandoffId,
@@ -862,6 +1005,19 @@ impl fmt::Display for VcIrError {
             ),
             Self::DuplicateSeedAccounting { handoff } => {
                 write!(formatter, "duplicate seed accounting row for {handoff:?}")
+            }
+            Self::DuplicateSeedIntake {
+                first_handoff,
+                second_handoff,
+            } => write!(
+                formatter,
+                "duplicate seed intake rows {first_handoff:?} and {second_handoff:?}"
+            ),
+            Self::MissingHandoffSource { handoff } => {
+                write!(
+                    formatter,
+                    "missing handoff source map entry for {handoff:?}"
+                )
             }
             Self::SeedAccountingNotSorted { previous, current } => write!(
                 formatter,
@@ -1518,9 +1674,13 @@ fn sorted_anchor_missing(missing: &[AnchorIngredient]) -> Vec<AnchorIngredient> 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use mizar_core::control_flow::{
+        ObligationHandoffEntry, ObligationHandoffOrigin, ObligationHandoffTable,
+        ObligationSeedHandoff,
+    };
     use mizar_core::core_ir::{
         CoreNodeRef, CoreProvenanceKey, CoreProvenancePhase, GeneratedFrom, GeneratedOriginKey,
-        GeneratedOriginKind,
+        GeneratedOriginKind, ObligationSeed, ObligationSeedKind,
     };
     use mizar_session::{InMemorySessionIdAllocator, SessionIdAllocator};
 
@@ -1582,6 +1742,234 @@ mod tests {
                 .expect("generated formula")
                 .shape,
             VcGeneratedFormulaShape::And(_)
+        ));
+    }
+
+    #[test]
+    fn seed_intake_preserves_handoff_order_and_debug_rendering() {
+        let source = sample_source_id();
+        let handoff = seed_handoff(vec![
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::TheoremProof,
+                    ObligationSeedStatus::Active,
+                    Some(CoreFormulaId::new(0)),
+                    "proof/step/0",
+                    Vec::new(),
+                ),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(0),
+                },
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::DefinitionCorrectness,
+                    ObligationSeedStatus::Deferred,
+                    None,
+                    "definition/deferred",
+                    Vec::new(),
+                ),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(1),
+                },
+            ),
+        ]);
+
+        let first = SeedIntakeTable::try_from_handoff(&handoff).expect("seed intake");
+        let second = SeedIntakeTable::try_from_handoff(&handoff).expect("seed intake");
+
+        assert_eq!(first.rows().len(), 2);
+        assert_eq!(first.rows()[0].handoff, ObligationHandoffId::new(0));
+        assert_eq!(first.rows()[1].handoff, ObligationHandoffId::new(1));
+        assert!(matches!(
+            first.rows()[0].mapping,
+            SeedIntakeMapping::EligibleOneVc { goal }
+                if goal == CoreFormulaId::new(0)
+        ));
+        assert!(matches!(
+            first.rows()[1].mapping,
+            SeedIntakeMapping::NoConcreteVc {
+                reason: SeedNoVcReason::DeferredExternal(_)
+            }
+        ));
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert!(first.debug_text().contains("seed-intake-table-debug-v1"));
+        assert!(
+            first
+                .debug_text()
+                .contains("handoff ObligationHandoffId(0):")
+        );
+    }
+
+    #[test]
+    fn seed_intake_records_visible_no_vc_reasons() {
+        let source = sample_source_id();
+        let handoff = seed_handoff(vec![
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::CheckerInitial,
+                    ObligationSeedStatus::Skipped,
+                    None,
+                    "checker/skipped",
+                    Vec::new(),
+                ),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(0),
+                },
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::AlgorithmTermination,
+                    ObligationSeedStatus::Active,
+                    None,
+                    "algorithm/missing-goal",
+                    Vec::new(),
+                ),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(1),
+                },
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::GeneratedSethood,
+                    ObligationSeedStatus::Error,
+                    None,
+                    "generated/error",
+                    vec![CoreDiagnosticId::new(3)],
+                ),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(2),
+                },
+            ),
+        ]);
+
+        let table = SeedIntakeTable::try_from_handoff(&handoff).expect("seed intake");
+
+        assert!(matches!(
+            table.rows()[0].mapping,
+            SeedIntakeMapping::NoConcreteVc {
+                reason: SeedNoVcReason::SkippedInvalidInput
+            }
+        ));
+        assert!(matches!(
+            table.rows()[1].mapping,
+            SeedIntakeMapping::NoConcreteVc {
+                reason: SeedNoVcReason::MissingGoal(_)
+            }
+        ));
+        assert!(matches!(
+            table.rows()[2].mapping,
+            SeedIntakeMapping::NoConcreteVc {
+                reason: SeedNoVcReason::Error(diagnostic)
+            } if diagnostic == CoreDiagnosticId::new(3)
+        ));
+    }
+
+    #[test]
+    fn seed_intake_rejects_duplicate_seed_origin_and_missing_source() {
+        let source = sample_source_id();
+        let seed = obligation_seed(
+            source,
+            ObligationSeedKind::TheoremProof,
+            ObligationSeedStatus::Active,
+            Some(CoreFormulaId::new(0)),
+            "proof/duplicate",
+            Vec::new(),
+        );
+        let duplicate = seed_handoff(vec![
+            (
+                seed.clone(),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(0),
+                },
+            ),
+            (
+                seed,
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(0),
+                },
+            ),
+        ]);
+
+        assert!(matches!(
+            SeedIntakeTable::try_from_handoff(&duplicate),
+            Err(VcIrError::DuplicateSeedIntake {
+                first_handoff,
+                second_handoff
+            }) if first_handoff == ObligationHandoffId::new(0)
+                && second_handoff == ObligationHandoffId::new(1)
+        ));
+
+        let mut missing_source = seed_handoff(vec![(
+            obligation_seed(
+                source,
+                ObligationSeedKind::TheoremProof,
+                ObligationSeedStatus::Active,
+                Some(CoreFormulaId::new(0)),
+                "proof/source-missing",
+                Vec::new(),
+            ),
+            ObligationHandoffOrigin::ExistingCore {
+                seed: ObligationSeedId::new(0),
+            },
+        )]);
+        missing_source.source_map.clear();
+
+        assert!(matches!(
+            SeedIntakeTable::try_from_handoff(&missing_source),
+            Err(VcIrError::MissingHandoffSource { handoff })
+                if handoff == ObligationHandoffId::new(0)
+        ));
+    }
+
+    #[test]
+    fn seed_intake_preserves_distinct_origins_for_same_canonical_seed() {
+        let source = sample_source_id();
+        let seed = obligation_seed(
+            source,
+            ObligationSeedKind::AlgorithmContract,
+            ObligationSeedStatus::Active,
+            Some(CoreFormulaId::new(0)),
+            "algorithm/requires/0",
+            Vec::new(),
+        );
+        let handoff = seed_handoff(vec![
+            (
+                seed.clone(),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(0),
+                },
+            ),
+            (
+                seed,
+                ObligationHandoffOrigin::FlowDerived {
+                    flow: ControlFlowId::new(0),
+                    algorithm: CoreAlgorithmId::new(2),
+                },
+            ),
+        ]);
+
+        let table = SeedIntakeTable::try_from_handoff(&handoff)
+            .expect("same canonical key with distinct origins is allowed");
+
+        assert_eq!(table.rows().len(), 2);
+        assert!(matches!(
+            table.rows()[0].origin,
+            SeedOriginRef::ExistingCore { seed }
+                if seed == ObligationSeedId::new(0)
+        ));
+        assert!(matches!(
+            table.rows()[1].origin,
+            SeedOriginRef::FlowDerived {
+                flow,
+                algorithm,
+            } if flow == ControlFlowId::new(0)
+                && algorithm == CoreAlgorithmId::new(2)
         ));
     }
 
@@ -2040,6 +2428,52 @@ mod tests {
         }
     }
 
+    fn seed_handoff(
+        entries: Vec<(ObligationSeed, ObligationHandoffOrigin)>,
+    ) -> ObligationSeedHandoff {
+        let mut table = ObligationHandoffTable::new();
+        let mut source_map = std::collections::BTreeMap::new();
+
+        for (seed, origin) in entries {
+            let source = seed.source.clone();
+            let id = table.insert(ObligationHandoffEntry {
+                seed,
+                origin,
+                flow_site: None,
+            });
+            source_map.insert(id, source);
+        }
+
+        ObligationSeedHandoff {
+            entries: table,
+            source_map,
+        }
+    }
+
+    fn obligation_seed(
+        source: SourceId,
+        kind: ObligationSeedKind,
+        status: ObligationSeedStatus,
+        goal: Option<CoreFormulaId>,
+        local_path: &str,
+        diagnostics: Vec<CoreDiagnosticId>,
+    ) -> ObligationSeed {
+        ObligationSeed {
+            owner: CoreItemId::new(0),
+            kind,
+            goal,
+            context: Vec::new(),
+            local_path: LocalProofOrProgramPath::new(local_path),
+            label: None,
+            semantic_origin: NormalizedSemanticOrigin::new(local_path),
+            provenance: Vec::new(),
+            source: source_ref(source),
+            core_refs: goal.map(CoreNodeRef::Formula).into_iter().collect(),
+            status,
+            diagnostics,
+        }
+    }
+
     fn incomplete_anchor(source: SourceId, source_ref: CoreSourceRef) -> ObligationAnchor {
         ObligationAnchor {
             owner: AnchorOwner::Theorem(CoreItemId::new(0)),
@@ -2090,6 +2524,17 @@ mod tests {
             });
             self
         }
+    }
+
+    fn sample_source_id() -> SourceId {
+        let snapshot = BuildSnapshotId::from_published_schema_str(
+            "mizar-session-build-snapshot-v1:\
+             1111111111111111111111111111111111111111111111111111111111111111",
+        )
+        .expect("snapshot id");
+        InMemorySessionIdAllocator::new()
+            .next_source_id(snapshot)
+            .expect("source id")
     }
 
     fn source_ref(source: SourceId) -> CoreSourceRef {

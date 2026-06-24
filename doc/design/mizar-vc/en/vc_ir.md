@@ -225,6 +225,38 @@ Rules:
 This resolves the task-0 drift: "exactly once" means every seed is accounted for
 exactly once, while concrete VC cardinality is explicit and auditable.
 
+### Task 4 Intake Table
+
+Task 4 implements a pre-`VcId` intake table:
+
+```rust
+struct SeedIntakeTable {
+    rows: Vec<SeedIntakeRow>,
+}
+
+struct SeedIntakeRow {
+    handoff: ObligationHandoffId,
+    origin: SeedOriginRef,
+    seed_status: ObligationSeedStatus,
+    canonical_key: ObligationSeedCanonicalKey,
+    source: CoreSourceRef,
+    mapping: SeedIntakeMapping,
+}
+
+enum SeedIntakeMapping {
+    EligibleOneVc { goal: CoreFormulaId },
+    NoConcreteVc { reason: SeedNoVcReason },
+}
+```
+
+This table is not the final `SeedAccountingTable` stored in `VcSet`: it does
+not assign `VcId`s and does not construct concrete `VcIr`s. It preserves the
+handoff order and seed origin, rejects duplicate `(canonical_key, origin)` rows
+deterministically, rejects any handoff row that lacks a matching `source_map`
+entry before later `VcId` assignment, and records every skipped/deferred/error/
+missing-goal row as a visible no-VC mapping. Task 8 consumes eligible rows when
+deterministic `VcId`s are assigned.
+
 ## LocalContext
 
 `LocalContext` is self-contained. ATP translation must not reconstruct semantic

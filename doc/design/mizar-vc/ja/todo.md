@@ -100,7 +100,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      レンダリングの安定性。
    - 依存: 2。仕様: `vc_ir.md`。
 
-4. **obligation seed の取り込み。** [ ]
+4. **obligation seed の取り込み。** [x]
    - `mizar-core` の seed 受け渡し（定理本体、correctness condition、
      checker の initial obligation、アルゴリズム契約）を決定的な seed
      テーブルへ取り込む（アーキテクチャ 07 Step 2）。
