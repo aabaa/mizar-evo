@@ -42,10 +42,10 @@ Out of scope:
 | ID | Class | Evidence | Handling |
 |---|---|---|---|
 | DIS-G001 | `spec_gap` | `discharge.md` did not exist before task 10, while tasks 11-12 need a phase-12 contract. | Task 10 adds the English/Japanese discharge spec only. |
-| DIS-G002 | `source_drift` / `test_gap` | `src/discharge.rs`, discharge evidence data, and discharge tests do not exist yet. | Tasks 11-12 implement the source and tests against this spec. |
+| DIS-G002 | `source_drift` / `test_gap` | Before task 11, `src/discharge.rs`, `pub mod discharge`, lint-policy coverage, the task-11 discharge API, and focused engine tests did not exist. | Task 11 adds those source/module/test surfaces for explicit classes already represented in `VcIr`, with minimal stable `DischargeEvidenceRef` values. Task 12 expands replayable evidence and explanation serialization. |
 | DIS-G003 | `external_dependency_gap` | `mizar-atp`, `mizar-kernel`, `mizar-proof`, `mizar-cache`, and active corpus-runner consumers are not wired to `mizar-vc`. | This spec records only prover-independent statuses, untrusted evidence, and deferred downstream integration points. |
 | DIS-G004 | `external_dependency_gap` | Some type, cluster, registration, reduction, and computation traces may not yet be available as explicit upstream payloads for every VC. | Discharge uses only explicit facts, premise refs, proof hints, and policy inputs already present in `VcIr`; absent traces leave the VC `NeedsAtp` or deferred with an explanation, never silently discharged. |
-| DIS-G005 | `deferred` | Concrete numeric computation limits, evidence serialization, dependency-slice fingerprints, corpus fixtures, and kernel/proof/cache validation are owned by later tasks or crates. | Task 10 defines required shapes and invariants; tasks 11-12 and later dependency/consumer tasks fill implementation details. |
+| DIS-G005 | `deferred` | Detailed evidence serialization, dependency-slice fingerprints, corpus fixtures, and kernel/proof/cache validation are owned by later tasks or crates. | Task 10 defines required shapes and invariants; task 11 records the engine default limit and leaves detailed evidence, dependency, and downstream consumer work deferred. |
 
 ## Inputs And Outputs
 
@@ -84,11 +84,13 @@ Tasks 11-12 may discharge only when all required facts and traces are explicit:
   identity checks;
 - type, sethood, and non-emptiness facts already present in the local context;
 - cluster, registration, and reduction facts with explicit replayable trace or
-  premise references;
+  premise references and a goal-linked explicit generated or local fact;
 - definitional reductions allowed by the VC's unfold requests and policy
-  inputs;
+  inputs, with a goal-linked explicit generated or local fact after the
+  reduction boundary;
 - bounded `by computation` or verification-time computation when the requested
-  computation and its limit policy are explicit.
+  computation, its limit policy, and an explicit goal-linked computation result
+  fact are present.
 
 Unsupported or unavailable classes must not produce negative evidence. They
 leave the VC in `NeedsAtp`, `PolicyOpen`, `AssumedByPolicy`, `DeferredExternal`,
@@ -105,8 +107,11 @@ Every computation-based discharge is governed by a deterministic limit tuple:
   nondeterministic timing;
 - the definition-unfolding and reduction policy active for the VC.
 
-Task 10 fixes this shape but does not choose numeric defaults. Task 11 records
-the concrete default and per-policy limit interpretation. Exceeding a limit is
+Task 10 fixes this shape but does not choose numeric defaults. Task 11 sets the
+engine default policy key to `task-11-computation-step-limit` with
+`max_steps = 64`; callers may provide a different deterministic
+`DischargePolicy`. A `LimitPolicy` computation hint must match the active policy
+key, while `ByComputation` uses the active policy directly. Exceeding a limit is
 not a failed proof: the VC remains `NeedsAtp` or deferred with a stable
 explanation and no `Discharged` evidence.
 
@@ -116,7 +121,17 @@ Discharge evidence is untrusted production evidence. It may justify a
 pre-ATP status, diagnostics, and later proof/cache decisions, but it is not a
 kernel-accepted proof.
 
-Each discharged VC must record:
+Task 11 stores only the minimal status evidence that already exists in `VcIr`:
+the deterministic rule name/version and a stable evidence hash in
+`DischargeEvidenceRef`. The selected rule may rely only on preserved `VcIr`
+inputs: local context entries, premise refs, proof-hint citations, unfold
+requests, computation hints, policy inputs, generated formula refs, and the
+unchanged goal. A trace, unfold, or computation marker alone is not discharge
+evidence; it must be tied to an explicit generated or local fact for the same
+goal.
+
+Task 12 expands this into a replayable evidence record. That full record must
+include:
 
 - the discharged `VcId`;
 - the deterministic rule name and version;

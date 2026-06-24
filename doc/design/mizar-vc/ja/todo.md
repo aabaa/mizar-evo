@@ -19,7 +19,7 @@
 |---|---|---|---|
 | vc_ir | `vc_ir.md`（task 2） | `src/vc_ir.rs` | [x] |
 | generator | `generator.md`（task 5） | `src/generator.rs` | [x] |
-| discharge | `discharge.md`（task 10） | `src/discharge.rs` | [ ] |
+| discharge | `discharge.md`（task 10） | `src/discharge.rs` | [x] |
 | dependency_slice | `dependency_slice.md`（task 13） | `src/dependency_slice.rs` | [ ] |
 
 `mizar-vc` はパイプライン phase 11-12 を実装する。入力は `CoreIr` と
@@ -54,10 +54,10 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 - **`VcId` の割り当て: アーキテクチャ 07 により解決済み。** `VcId` を
   割り当てるのは phase 11 のみである。seed は正確に 1 回 intake-accounted
   され、task 8 は no-VC / one-VC / expanded の明示 mapping を強制する。
-- **discharge の計算上限: 未解決。task 11 で解決する。** pre-ATP discharge
-  は同一のソース、依存、ツールチェーン、ポリシー、計算上限に対して決定的で
-  なければならない。上限モデル（ステップ数予算、再帰深さ、数値範囲）と
-  その設定面を決め、`discharge.md` に記録する。
+- **discharge の計算上限: task 11 により解決済み。** pre-ATP discharge は
+  deterministic `DischargePolicy` data を使う。engine default policy key は
+  `task-11-computation-step-limit`、`max_steps = 64` である。呼び出し側は別の
+  deterministic policy で上書きしてよい。
 - **discharge 証拠の検証範囲: 未解決。`mizar-proof` task 6 が所有する。**
   task 12 の discharge 証拠を kernel が再生するか、ポリシーに従う
   決定的な built-in 証拠として受理するか。この crate はどちらの場合でも
@@ -179,11 +179,21 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       Deterministic and Explainable」、
       [08.reasoning_boundary.md](../../architecture/ja/08.reasoning_boundary.md)。
 
-11. **決定的 discharge エンジン。** [ ]
-    - 対応する義務形に対して、決定済みの計算上限つき discharge を実装
-      する。計算上限の決定を解決し記録する。
-    - テスト: discharge されたフィクスチャがビット同一に再現する。上限
-      超過ケースは誤答ではなく安定した診断を生む。
+11. **決定的 discharge エンジン。** [x]
+    - `src/discharge.rs` を追加し、`pub mod discharge` を公開し、lint
+      guard を更新し、`VcIr` に既に表現された explicit class 向けの
+      task-11 discharge API を実装する。
+    - engine default computation limit を記録する。discharged VC には最小の
+      stable `DischargeEvidenceRef` を使い、詳細な evidence serialization
+      は task 12 に残す。
+    - テスト: tautology/contradiction、explicit local fact、explicit trace
+      ref、policy-gated definitional reduction、bounded computation が discharge
+      されること。limit exceeded または unsupported case は full `NeedsAtp`
+      context と stable explanation を保持すること。
+    - gap 分類: engine、module declaration、lint guard、focused tests について
+      task-11 の `source_drift`/`test_gap` を解消する。dependency slice、
+      ATP/kernel/proof/cache/corpus integration、`.miz` fixture、expectation、
+      `doc/spec`、traceability metadata は deferred のままにする。
     - 依存: 9、10。仕様: `discharge.md`。
 
 12. **discharge の証拠と説明。** [ ]

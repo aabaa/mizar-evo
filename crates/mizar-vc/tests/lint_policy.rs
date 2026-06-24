@@ -118,7 +118,11 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
 
     assert_eq!(
         declarations,
-        ["6: pub mod generator;", "7: pub mod vc_ir;"],
+        [
+            "6: pub mod discharge;",
+            "7: pub mod generator;",
+            "8: pub mod vc_ir;",
+        ],
         "{} must expose only the current spec-backed modules until later module \
          specs exist; found:\n{}",
         lib_path.display(),
@@ -126,11 +130,18 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
     );
     assert_eq!(
         source_files,
-        ["src/generator.rs", "src/lib.rs", "src/vc_ir.rs"],
+        [
+            "src/discharge.rs",
+            "src/generator.rs",
+            "src/lib.rs",
+            "src/vc_ir.rs",
+        ],
         "task 6 owns the generator source module; later private VC modules \
          must wait for their task-scoped specs, found {source_files:?}"
     );
     for spec in [
+        workspace_root().join("doc/design/mizar-vc/en/discharge.md"),
+        workspace_root().join("doc/design/mizar-vc/ja/discharge.md"),
         workspace_root().join("doc/design/mizar-vc/en/generator.md"),
         workspace_root().join("doc/design/mizar-vc/ja/generator.md"),
         workspace_root().join("doc/design/mizar-vc/en/vc_ir.md"),

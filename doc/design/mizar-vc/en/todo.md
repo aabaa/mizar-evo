@@ -20,7 +20,7 @@ architecture 07, 16, 18, and 19.
 |---|---|---|---|
 | vc_ir | `vc_ir.md` (task 2) | `src/vc_ir.rs` | [x] |
 | generator | `generator.md` (task 5) | `src/generator.rs` | [x] |
-| discharge | `discharge.md` (task 10) | `src/discharge.rs` | [ ] |
+| discharge | `discharge.md` (task 10) | `src/discharge.rs` | [x] |
 | dependency_slice | `dependency_slice.md` (task 13) | `src/dependency_slice.rs` | [ ] |
 
 `mizar-vc` implements pipeline phases 11-12: `CoreIr` and `ControlFlowIr` in,
@@ -56,11 +56,10 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
 - **`VcId` assignment: resolved by architecture 07.** Phase 11 is the only
   phase that assigns `VcId`s; seeds are intake-accounted exactly once and task
   8 enforces explicit no-VC / one-VC / expanded seed mappings.
-- **Computation limits for discharge: open, resolved by task 11.** Pre-ATP
-  discharge must be deterministic for identical source, dependencies,
-  toolchain, policy, and computation limits; decide the limit model
-  (step-count budgets, recursion depth, numeric bounds) and its
-  configuration surface, and record it in `discharge.md`.
+- **Computation limits for discharge: resolved by task 11.** Pre-ATP discharge
+  uses deterministic `DischargePolicy` data. The engine default policy key is
+  `task-11-computation-step-limit` with `max_steps = 64`; callers may override
+  it with another deterministic policy.
 - **Discharge-evidence validation scope: open, owned by `mizar-proof`
   task 6.** Whether the task-12 discharge evidence is kernel-replayed or
   accepted as deterministic built-in evidence per policy; this crate
@@ -187,12 +186,21 @@ Keep `cargo test -p mizar-vc` green after each task (see
       Deterministic and Explainable",
       [08.reasoning_boundary.md](../../architecture/en/08.reasoning_boundary.md).
 
-11. **Deterministic discharge engine.** [ ]
-    - Implement discharge for the supported obligation forms with the
-      decided computation limits; resolve the computation-limit decision and
-      record it.
-    - Tests: discharged fixtures reproduce bit-identically; limit-exceeded
-      cases produce stable diagnostics, not wrong answers.
+11. **Deterministic discharge engine.** [x]
+    - Add `src/discharge.rs`, expose `pub mod discharge`, update the lint
+      guard, and implement the task-11 discharge API for explicit classes
+      already represented in `VcIr`.
+    - Record the engine default computation limit. Use minimal stable
+      `DischargeEvidenceRef` values for discharged VCs; detailed evidence
+      serialization remains task 12.
+    - Tests: discharge tautology/contradiction, explicit local facts, explicit
+      trace refs, policy-gated definitional reductions, and bounded computation;
+      limit-exceeded or unsupported cases preserve full `NeedsAtp` context and
+      stable explanations.
+    - Gap classification: resolve the task-11 `source_drift`/`test_gap` for
+      engine, module declaration, lint guard, and focused tests. Keep dependency
+      slices, ATP/kernel/proof/cache/corpus integration, `.miz` fixtures,
+      expectations, `doc/spec`, and traceability metadata deferred.
     - Deps: 9, 10. Spec: `discharge.md`.
 
 12. **Discharge evidence and explanations.** [ ]
