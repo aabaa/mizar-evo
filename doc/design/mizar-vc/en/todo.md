@@ -166,11 +166,13 @@ Keep `cargo test -p mizar-vc` green after each task (see
      fixtures; classification fixtures.
    - Deps: 7. Spec: `generator.md` (normalization section), `vc_ir.md`.
 
-9. **Status and policy model.** [ ]
-   - Implement the VC status transitions (open, discharged, `NeedsAtp`,
-     policy-assigned statuses) so verifier policy is reflected in VCs
-     without erasing or weakening ATP-bound obligations.
-   - Tests: transition fixtures; policy statuses never drop contexts.
+9. **Status and policy model.** [x]
+   - Implement deterministic status-policy projection (`Preserve`,
+     `NeedsAtp`, `PolicyOpen`, `AssumedByPolicy`) so verifier policy is
+     reflected in VCs without erasing or weakening ATP-bound obligations.
+     Discharged evidence remains deferred to the discharge tasks.
+   - Tests: transition fixtures; policy statuses never drop contexts; no
+     discharge evidence is created by status projection.
    - Deps: 8. Spec: `vc_ir.md` (status section), architecture 07 "Status
      and Policy Are Reflected in VCs".
 

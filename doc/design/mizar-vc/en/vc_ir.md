@@ -15,8 +15,8 @@ backend process settings, proof witnesses, kernel acceptance, or artifact
 publication.
 
 Task 2 is specification-only. Rust data shapes are implemented by task 3; seed
-intake by task 4; generation, normalization, and `VcId` assignment by later
-generator tasks.
+intake by task 4; generation, normalization, and `VcId` assignment by generator
+tasks 6-8; status and policy projection by task 9.
 
 ## Responsibility
 
@@ -53,6 +53,8 @@ Out of scope:
 | VCIR-G002 | `external_dependency_gap` | `mizar-core` currently carries registration/redefinition/reduction correctness through `DefinitionCorrectness`, `CheckerInitial`, provenance, and non-exhaustive seed kinds rather than dedicated VC seed kinds. | Preserve the available explicit seed/provenance data, classify unavailable payloads as external/deferred, and keep `VcKind` forward-compatible. |
 | VCIR-G003 | `external_dependency_gap` | `mizar-atp`, `mizar-kernel`, `mizar-proof`, and `mizar-cache` are not active workspace consumers. | Specify only prover-independent IR, untrusted deterministic evidence references, status states, and reuse-candidate data. |
 | VCIR-G004 | `test_gap` | No `vc_ir` Rust data shapes or tests exist before task 3. | Planned tests below become task 3 and task 8 obligations. |
+| VCIR-G005 | `source_drift` / `test_gap` | After task 8, final `VcSet` normalization exists, but there is no deterministic API or focused test suite for projecting verifier policy into `NeedsAtp`, `PolicyOpen`, or `AssumedByPolicy` statuses. | Task 9 adds status-policy projection over immutable `VcSet` data, plus tests that status changes preserve context, proof hints, anchors, seed accounting, and ATP-bound obligations. |
+| VCIR-G006 | `deferred` | Discharge evidence, dependency slices, ATP translation, kernel/proof/cache/corpus consumers, and source-derived corpus runner activation are later tasks or external seams. | Task 9 must not generate discharge evidence, compute dependency slices, translate ATP problems, invoke kernel/proof/cache/corpus paths, or fabricate downstream integration records. |
 
 No `doc/spec` or `.miz` tests change in task 2. This spec refines existing
 architecture and core handoff contracts; it does not introduce new language
@@ -373,6 +375,34 @@ Status rules:
 - status transitions belong to task 9 and discharge tasks, not to raw data-shape
   constructors.
 
+## Task 9 Implementation Slice
+
+Task 9 adds a deterministic status-policy projection over an immutable `VcSet`.
+The projection returns a new `VcSet` and must not mutate the input set.
+
+Task 9 supports:
+
+- preserving the current status;
+- marking concrete VCs as `NeedsAtp`;
+- marking concrete VCs as `PolicyOpen` with an explicit policy key;
+- marking concrete VCs as `AssumedByPolicy` with an explicit policy key and
+  premise marker.
+
+Policy overrides must be sorted by `VcId`, must not duplicate a `VcId`, and
+must target an existing VC. Missing targets, duplicate overrides, and unsorted
+overrides are deterministic errors. `AssumedByPolicy` markers are validated by
+the existing `VcSet` validation path, so invalid context, premise, or generated
+formula references fail closed.
+
+A status change must append `StatusPolicy` provenance to the changed VC. A
+preserve/no-op action must not add provenance. Projection must preserve
+`VcId`, order, kind, source refs, seed refs, anchors, local contexts, premises,
+goals, proof hints, generated formula tables, seed accounting, and existing
+non-status provenance. It must not create `Discharged` evidence; deterministic
+discharge tasks own evidence creation. It must not compute dependency slices,
+call ATP, activate corpus fixtures, accept kernel/proof/cache results, or add
+new generator payload families.
+
 ## ObligationAnchor
 
 `ObligationAnchor` is a best-effort cross-edit candidate identity. It is not
@@ -431,7 +461,11 @@ Task 3 must add Rust coverage for:
   mutating `CoreIr`.
 
 Task 4 and task 8 extend coverage for deterministic seed intake, duplicate seed
-rejection, seed-to-VC mapping, and `VcId` assignment.
+rejection, seed-to-VC mapping, and `VcId` assignment. Task 9 extends coverage
+for deterministic status-policy projection, `NeedsAtp` classification,
+policy-open and policy-assumed statuses, rejection of invalid overrides, and
+preservation of context, proof hints, anchors, generated formulas, and seed
+accounting across status changes.
 
 No active `.miz` fixture is added by task 2 because the `proof_verification`
 runner and source-derived payload seams remain external gaps.

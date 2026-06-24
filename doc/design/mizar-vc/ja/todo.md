@@ -158,11 +158,13 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      フィクスチャ。分類のフィクスチャ。
    - 依存: 7。仕様: `generator.md`（正規化の節）、`vc_ir.md`。
 
-9. **状態とポリシーのモデル。** [ ]
-   - VC 状態遷移（open、discharged、`NeedsAtp`、ポリシー割り当て状態）を
-     実装し、ATP 行きの義務を消したり弱めたりせずに verifier ポリシーを
-     VC に反映する。
+9. **状態とポリシーのモデル。** [x]
+   - deterministic status-policy projection（`Preserve`、`NeedsAtp`、
+     `PolicyOpen`、`AssumedByPolicy`）を実装し、ATP 行きの義務を消したり
+     弱めたりせずに verifier policy を VC に反映する。Discharged evidence は
+     discharge task に deferred のままにする。
    - テスト: 遷移のフィクスチャ。ポリシー状態がコンテキストを落とさない。
+     status projection が discharge evidence を作らないこと。
    - 依存: 8。仕様: `vc_ir.md`（状態の節）、アーキテクチャ 07「Status and
      Policy Are Reflected in VCs」。
 

@@ -152,6 +152,38 @@ impl VcSet {
             .find(|accounting| accounting.handoff == handoff)
     }
 
+    pub fn try_with_status_plan(&self, plan: &VcStatusPlan) -> Result<Self, VcIrError> {
+        validate_status_plan_targets(plan, &self.vcs)?;
+        let overrides = plan
+            .overrides()
+            .iter()
+            .map(|entry| (entry.vc, &entry.action))
+            .collect::<BTreeMap<_, _>>();
+        let vcs = self
+            .vcs
+            .iter()
+            .map(|vc| {
+                project_vc_status(
+                    vc,
+                    overrides
+                        .get(&vc.id)
+                        .copied()
+                        .unwrap_or_else(|| plan.default()),
+                )
+            })
+            .collect();
+
+        Self::try_new(VcSetParts {
+            schema_version: self.schema_version.clone(),
+            snapshot: self.snapshot,
+            source: self.source,
+            module: self.module.clone(),
+            generated_formulas: self.generated_formulas.clone(),
+            vcs,
+            seed_accounting: self.seed_accounting.clone(),
+        })
+    }
+
     pub fn debug_text(&self) -> String {
         let mut output = String::from("vc-set-debug-v1\n");
         writeln!(&mut output, "schema-version: {:?}", self.schema_version).expect("write string");
@@ -174,6 +206,50 @@ pub struct VcSetParts {
     pub generated_formulas: Vec<VcGeneratedFormula>,
     pub vcs: Vec<VcIr>,
     pub seed_accounting: Vec<SeedAccounting>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VcStatusPlan {
+    default: VcStatusAction,
+    overrides: Vec<VcStatusOverride>,
+}
+
+impl VcStatusPlan {
+    pub fn try_new(
+        default: VcStatusAction,
+        overrides: Vec<VcStatusOverride>,
+    ) -> Result<Self, VcIrError> {
+        validate_status_overrides(&overrides)?;
+        Ok(Self { default, overrides })
+    }
+
+    pub const fn default(&self) -> &VcStatusAction {
+        &self.default
+    }
+
+    pub fn overrides(&self) -> &[VcStatusOverride] {
+        &self.overrides
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VcStatusOverride {
+    pub vc: VcId,
+    pub action: VcStatusAction,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum VcStatusAction {
+    Preserve,
+    NeedsAtp,
+    PolicyOpen {
+        policy: PolicyKey,
+    },
+    AssumeByPolicy {
+        policy: PolicyKey,
+        marker: PremiseRef,
+    },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -925,6 +1001,16 @@ pub enum VcIrError {
         previous: CanonicalSortKey,
         current: CanonicalSortKey,
     },
+    DuplicateStatusOverride {
+        vc: VcId,
+    },
+    StatusOverridesNotSorted {
+        previous: VcId,
+        current: VcId,
+    },
+    MissingStatusOverrideTarget {
+        vc: VcId,
+    },
     DuplicateSeedAccounting {
         handoff: ObligationHandoffId,
     },
@@ -1028,6 +1114,16 @@ impl fmt::Display for VcIrError {
                 formatter,
                 "policy inputs must be sorted; {current:?} appears after {previous:?}"
             ),
+            Self::DuplicateStatusOverride { vc } => {
+                write!(formatter, "duplicate status override for {vc:?}")
+            }
+            Self::StatusOverridesNotSorted { previous, current } => write!(
+                formatter,
+                "status overrides must be sorted; {current:?} appears after {previous:?}"
+            ),
+            Self::MissingStatusOverrideTarget { vc } => {
+                write!(formatter, "status override targets missing {vc:?}")
+            }
             Self::DuplicateSeedAccounting { handoff } => {
                 write!(formatter, "duplicate seed accounting row for {handoff:?}")
             }
@@ -1139,6 +1235,88 @@ fn validate_vc_set_parts(parts: &VcSetParts) -> Result<(), VcIrError> {
     validate_generated_formulas(&parts.generated_formulas)?;
     validate_vcs(&parts.vcs, &parts.generated_formulas)?;
     validate_seed_accounting(&parts.seed_accounting, &parts.vcs)
+}
+
+fn validate_status_overrides(overrides: &[VcStatusOverride]) -> Result<(), VcIrError> {
+    let mut previous = None;
+    for override_entry in overrides {
+        if let Some(previous_vc) = previous
+            && override_entry.vc <= previous_vc
+        {
+            return if override_entry.vc == previous_vc {
+                Err(VcIrError::DuplicateStatusOverride {
+                    vc: override_entry.vc,
+                })
+            } else {
+                Err(VcIrError::StatusOverridesNotSorted {
+                    previous: previous_vc,
+                    current: override_entry.vc,
+                })
+            };
+        }
+        previous = Some(override_entry.vc);
+    }
+    Ok(())
+}
+
+fn validate_status_plan_targets(plan: &VcStatusPlan, vcs: &[VcIr]) -> Result<(), VcIrError> {
+    let vc_ids = vcs.iter().map(|vc| vc.id).collect::<BTreeSet<_>>();
+    for override_entry in plan.overrides() {
+        if !vc_ids.contains(&override_entry.vc) {
+            return Err(VcIrError::MissingStatusOverrideTarget {
+                vc: override_entry.vc,
+            });
+        }
+    }
+    Ok(())
+}
+
+fn project_vc_status(vc: &VcIr, action: &VcStatusAction) -> VcIr {
+    let status = status_for_action(&vc.status, action);
+    if status == vc.status {
+        return vc.clone();
+    }
+
+    let mut projected = vc.clone();
+    projected.status = status;
+    projected.provenance.push(status_policy_provenance(action));
+    projected
+}
+
+fn status_for_action(current: &VcStatus, action: &VcStatusAction) -> VcStatus {
+    match action {
+        VcStatusAction::Preserve => current.clone(),
+        VcStatusAction::NeedsAtp => VcStatus::NeedsAtp,
+        VcStatusAction::PolicyOpen { policy } => VcStatus::PolicyOpen {
+            policy: policy.clone(),
+        },
+        VcStatusAction::AssumeByPolicy { policy, marker } => VcStatus::AssumedByPolicy {
+            policy: policy.clone(),
+            marker: marker.clone(),
+        },
+    }
+}
+
+fn status_policy_provenance(action: &VcStatusAction) -> VcProvenance {
+    VcProvenance {
+        phase: VcProvenancePhase::StatusPolicy,
+        key: status_policy_key(action),
+        core: None,
+    }
+}
+
+fn status_policy_key(action: &VcStatusAction) -> VcText {
+    match action {
+        VcStatusAction::Preserve => VcText::new("task-9-status:preserve"),
+        VcStatusAction::NeedsAtp => VcText::new("task-9-status:needs-atp"),
+        VcStatusAction::PolicyOpen { policy } => {
+            VcText::new(format!("task-9-status:policy-open:{}", policy.as_str()))
+        }
+        VcStatusAction::AssumeByPolicy { policy, .. } => VcText::new(format!(
+            "task-9-status:assumed-by-policy:{}",
+            policy.as_str()
+        )),
+    }
 }
 
 fn validate_generated_formulas(formulas: &[VcGeneratedFormula]) -> Result<(), VcIrError> {
@@ -1754,6 +1932,293 @@ mod tests {
     }
 
     #[test]
+    fn status_plan_marks_open_vcs_needs_atp_without_losing_data() {
+        let original = fixture_set(VcStatus::Open);
+        let plan =
+            VcStatusPlan::try_new(VcStatusAction::NeedsAtp, Vec::new()).expect("status plan");
+
+        let projected = original.try_with_status_plan(&plan).expect("projection");
+        let original_vc = &original.vcs()[0];
+        let projected_vc = &projected.vcs()[0];
+
+        assert!(matches!(original_vc.status, VcStatus::Open));
+        assert!(matches!(projected_vc.status, VcStatus::NeedsAtp));
+        assert_eq!(projected_vc.id, original_vc.id);
+        assert_eq!(projected_vc.kind, original_vc.kind);
+        assert_eq!(projected_vc.source, original_vc.source);
+        assert_eq!(projected_vc.seed, original_vc.seed);
+        assert_eq!(projected_vc.anchor, original_vc.anchor);
+        assert_eq!(projected_vc.local_context, original_vc.local_context);
+        assert_eq!(projected_vc.premises, original_vc.premises);
+        assert_eq!(projected_vc.goal, original_vc.goal);
+        assert_eq!(projected_vc.proof_hint, original_vc.proof_hint);
+        assert_eq!(
+            projected.generated_formulas(),
+            original.generated_formulas()
+        );
+        assert_eq!(projected.seed_accounting(), original.seed_accounting());
+        assert_eq!(
+            projected_vc.provenance.len(),
+            original_vc.provenance.len() + 1
+        );
+        let provenance = projected_vc.provenance.last().expect("status provenance");
+        assert_eq!(provenance.phase, VcProvenancePhase::StatusPolicy);
+        assert_eq!(provenance.key.as_str(), "task-9-status:needs-atp");
+        assert!(!matches!(projected_vc.status, VcStatus::Discharged { .. }));
+        assert!(!projected_vc.provenance.iter().any(|provenance| matches!(
+            provenance.phase,
+            VcProvenancePhase::Discharge | VcProvenancePhase::DependencySlice
+        )));
+    }
+
+    #[test]
+    fn status_plan_policy_overrides_preserve_context_and_seed_accounting() {
+        let original = fixture_set(VcStatus::Open);
+        let policy_open_plan = VcStatusPlan::try_new(
+            VcStatusAction::NeedsAtp,
+            vec![VcStatusOverride {
+                vc: VcId::new(0),
+                action: VcStatusAction::PolicyOpen {
+                    policy: PolicyKey::new("interactive-open"),
+                },
+            }],
+        )
+        .expect("policy-open plan");
+
+        let policy_open = original
+            .try_with_status_plan(&policy_open_plan)
+            .expect("policy-open projection");
+
+        assert!(matches!(
+            &policy_open.vcs()[0].status,
+            VcStatus::PolicyOpen { policy } if policy == &PolicyKey::new("interactive-open")
+        ));
+        assert_eq!(
+            policy_open.vcs()[0].local_context,
+            original.vcs()[0].local_context
+        );
+        assert_eq!(
+            policy_open.vcs()[0].proof_hint,
+            original.vcs()[0].proof_hint
+        );
+        assert_eq!(policy_open.seed_accounting(), original.seed_accounting());
+        let policy_provenance = policy_open.vcs()[0]
+            .provenance
+            .last()
+            .expect("policy-open provenance");
+        assert_eq!(policy_provenance.phase, VcProvenancePhase::StatusPolicy);
+        assert_eq!(
+            policy_provenance.key.as_str(),
+            "task-9-status:policy-open:interactive-open"
+        );
+
+        let assumed_plan = VcStatusPlan::try_new(
+            VcStatusAction::Preserve,
+            vec![VcStatusOverride {
+                vc: VcId::new(0),
+                action: VcStatusAction::AssumeByPolicy {
+                    policy: PolicyKey::new("assume-labeled-premise"),
+                    marker: PremiseRef::LocalContext(ContextEntryId::new(0)),
+                },
+            }],
+        )
+        .expect("assumed plan");
+        let assumed = original
+            .try_with_status_plan(&assumed_plan)
+            .expect("assumed projection");
+
+        assert!(matches!(
+            &assumed.vcs()[0].status,
+            VcStatus::AssumedByPolicy { policy, marker }
+                if policy == &PolicyKey::new("assume-labeled-premise")
+                    && marker == &PremiseRef::LocalContext(ContextEntryId::new(0))
+        ));
+        assert_eq!(
+            assumed.vcs()[0].local_context,
+            original.vcs()[0].local_context
+        );
+        assert_eq!(assumed.vcs()[0].premises, original.vcs()[0].premises);
+        assert_eq!(assumed.seed_accounting(), original.seed_accounting());
+        let assumed_provenance = assumed.vcs()[0]
+            .provenance
+            .last()
+            .expect("assumed provenance");
+        assert_eq!(assumed_provenance.phase, VcProvenancePhase::StatusPolicy);
+        assert_eq!(
+            assumed_provenance.key.as_str(),
+            "task-9-status:assumed-by-policy:assume-labeled-premise"
+        );
+    }
+
+    #[test]
+    fn status_plan_applies_defaults_and_sorted_overrides_across_multiple_vcs() {
+        let original = two_vc_fixture_set(VcStatus::Open, VcStatus::Open);
+        let plan = VcStatusPlan::try_new(
+            VcStatusAction::NeedsAtp,
+            vec![VcStatusOverride {
+                vc: VcId::new(1),
+                action: VcStatusAction::PolicyOpen {
+                    policy: PolicyKey::new("second-vc-open"),
+                },
+            }],
+        )
+        .expect("multi-vc status plan");
+
+        let projected = original.try_with_status_plan(&plan).expect("projection");
+
+        assert_eq!(
+            projected.vcs().iter().map(|vc| vc.id).collect::<Vec<_>>(),
+            vec![VcId::new(0), VcId::new(1)]
+        );
+        assert!(matches!(projected.vcs()[0].status, VcStatus::NeedsAtp));
+        assert!(matches!(
+            &projected.vcs()[1].status,
+            VcStatus::PolicyOpen { policy } if policy == &PolicyKey::new("second-vc-open")
+        ));
+        assert_eq!(
+            projected.generated_formulas(),
+            original.generated_formulas()
+        );
+        assert_eq!(projected.seed_accounting(), original.seed_accounting());
+        assert_eq!(
+            projected.vcs()[0].local_context,
+            original.vcs()[0].local_context
+        );
+        assert_eq!(
+            projected.vcs()[1].local_context,
+            original.vcs()[1].local_context
+        );
+        assert_eq!(
+            projected.vcs()[0]
+                .provenance
+                .last()
+                .expect("default provenance")
+                .key
+                .as_str(),
+            "task-9-status:needs-atp"
+        );
+        assert_eq!(
+            projected.vcs()[1]
+                .provenance
+                .last()
+                .expect("override provenance")
+                .key
+                .as_str(),
+            "task-9-status:policy-open:second-vc-open"
+        );
+    }
+
+    #[test]
+    fn status_plan_preserve_noop_does_not_add_status_provenance() {
+        let original = fixture_set(VcStatus::NeedsAtp);
+        let plan =
+            VcStatusPlan::try_new(VcStatusAction::Preserve, Vec::new()).expect("preserve plan");
+
+        let projected = original.try_with_status_plan(&plan).expect("projection");
+
+        assert_eq!(projected, original);
+    }
+
+    #[test]
+    fn status_plan_rejects_duplicate_unsorted_and_missing_overrides() {
+        assert!(matches!(
+            VcStatusPlan::try_new(
+                VcStatusAction::Preserve,
+                vec![
+                    VcStatusOverride {
+                        vc: VcId::new(1),
+                        action: VcStatusAction::NeedsAtp,
+                    },
+                    VcStatusOverride {
+                        vc: VcId::new(0),
+                        action: VcStatusAction::NeedsAtp,
+                    },
+                ],
+            ),
+            Err(VcIrError::StatusOverridesNotSorted {
+                previous,
+                current
+            }) if previous == VcId::new(1) && current == VcId::new(0)
+        ));
+
+        assert!(matches!(
+            VcStatusPlan::try_new(
+                VcStatusAction::Preserve,
+                vec![
+                    VcStatusOverride {
+                        vc: VcId::new(0),
+                        action: VcStatusAction::NeedsAtp,
+                    },
+                    VcStatusOverride {
+                        vc: VcId::new(0),
+                        action: VcStatusAction::PolicyOpen {
+                            policy: PolicyKey::new("duplicate")
+                        },
+                    },
+                ],
+            ),
+            Err(VcIrError::DuplicateStatusOverride { vc }) if vc == VcId::new(0)
+        ));
+
+        let original = fixture_set(VcStatus::Open);
+        let plan = VcStatusPlan::try_new(
+            VcStatusAction::Preserve,
+            vec![VcStatusOverride {
+                vc: VcId::new(1),
+                action: VcStatusAction::NeedsAtp,
+            }],
+        )
+        .expect("missing target plan");
+
+        assert!(matches!(
+            original.try_with_status_plan(&plan),
+            Err(VcIrError::MissingStatusOverrideTarget { vc }) if vc == VcId::new(1)
+        ));
+    }
+
+    #[test]
+    fn status_plan_invalid_assumption_marker_fails_closed() {
+        let original = fixture_set(VcStatus::Open);
+        let plan = VcStatusPlan::try_new(
+            VcStatusAction::Preserve,
+            vec![VcStatusOverride {
+                vc: VcId::new(0),
+                action: VcStatusAction::AssumeByPolicy {
+                    policy: PolicyKey::new("invalid-marker"),
+                    marker: PremiseRef::LocalContext(ContextEntryId::new(99)),
+                },
+            }],
+        )
+        .expect("invalid marker plan");
+
+        assert!(matches!(
+            original.try_with_status_plan(&plan),
+            Err(VcIrError::MissingContextEntry { context })
+                if context == ContextEntryId::new(99)
+        ));
+
+        let generated_formula_plan = VcStatusPlan::try_new(
+            VcStatusAction::Preserve,
+            vec![VcStatusOverride {
+                vc: VcId::new(0),
+                action: VcStatusAction::AssumeByPolicy {
+                    policy: PolicyKey::new("invalid-generated-marker"),
+                    marker: PremiseRef::GeneratedFact {
+                        formula: VcFormulaRef::Generated(VcGeneratedFormulaId::new(99)),
+                    },
+                },
+            }],
+        )
+        .expect("invalid generated marker plan");
+
+        assert!(matches!(
+            original.try_with_status_plan(&generated_formula_plan),
+            Err(VcIrError::MissingGeneratedFormula { formula })
+                if formula == VcGeneratedFormulaId::new(99)
+        ));
+    }
+
+    #[test]
     fn generated_formula_table_owns_split_goal_shape() {
         let set = fixture_set(VcStatus::NeedsAtp);
 
@@ -2365,6 +2830,28 @@ mod tests {
 
     fn fixture_set(status: VcStatus) -> VcSet {
         VcSet::try_new(fixture_parts(status)).expect("valid fixture")
+    }
+
+    fn two_vc_fixture_set(first_status: VcStatus, second_status: VcStatus) -> VcSet {
+        let mut parts = fixture_parts(first_status);
+        let mut second_vc = parts.vcs[0].clone();
+        second_vc.id = VcId::new(1);
+        second_vc.seed = SeedVcRef {
+            handoff: ObligationHandoffId::new(1),
+        };
+        second_vc.status = second_status;
+        second_vc.provenance = vec![provenance("vc-second")];
+        parts.vcs.push(second_vc);
+        parts.seed_accounting.push(SeedAccounting {
+            handoff: ObligationHandoffId::new(1),
+            origin: SeedOriginRef::ExistingCore {
+                seed: ObligationSeedId::new(1),
+            },
+            seed_status: ObligationSeedStatus::Active,
+            mapping: SeedVcMapping::One { vc: VcId::new(1) },
+        });
+
+        VcSet::try_new(parts).expect("valid two-vc fixture")
     }
 
     fn fixture_parts(status: VcStatus) -> VcSetParts {
