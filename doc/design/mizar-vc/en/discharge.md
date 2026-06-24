@@ -45,7 +45,7 @@ Out of scope:
 | DIS-G002 | `source_drift` / `test_gap` | Before task 11, `src/discharge.rs`, `pub mod discharge`, lint-policy coverage, the task-11 discharge API, and focused engine tests did not exist. | Task 11 adds those source/module/test surfaces for explicit classes already represented in `VcIr`, with minimal stable `DischargeEvidenceRef` values. Task 12 expands replayable evidence and explanation serialization. |
 | DIS-G003 | `external_dependency_gap` | `mizar-atp`, `mizar-kernel`, `mizar-proof`, `mizar-cache`, and active corpus-runner consumers are not wired to `mizar-vc`. | This spec records only prover-independent statuses, untrusted evidence, and deferred downstream integration points. |
 | DIS-G004 | `external_dependency_gap` | Some type, cluster, registration, reduction, and computation traces may not yet be available as explicit upstream payloads for every VC. | Discharge uses only explicit facts, premise refs, proof hints, and policy inputs already present in `VcIr`; absent traces leave the VC `NeedsAtp` or deferred with an explanation, never silently discharged. |
-| DIS-G005 | `deferred` | Detailed evidence serialization, dependency-slice fingerprints, corpus fixtures, and kernel/proof/cache validation are owned by later tasks or crates. | Task 10 defines required shapes and invariants; task 11 records the engine default limit and leaves detailed evidence, dependency, and downstream consumer work deferred. |
+| DIS-G005 | `deferred` | Artifact serialization, dependency-slice fingerprints, corpus fixtures, and kernel/proof/cache validation are owned by later tasks or crates. | Task 10 defines required shapes and invariants; task 11 records the engine default limit; task 12 adds in-memory replayable evidence/explanation records on `DischargeOutput` and leaves artifact/dependency/downstream consumer work deferred. |
 
 ## Inputs And Outputs
 
@@ -130,8 +130,10 @@ unchanged goal. A trace, unfold, or computation marker alone is not discharge
 evidence; it must be tied to an explicit generated or local fact for the same
 goal.
 
-Task 12 expands this into a replayable evidence record. That full record must
-include:
+Task 12 expands this into an in-memory replayable evidence record exposed by
+`DischargeOutput`. It must be deterministic to render and clone, and it must be
+paired with the stable not-discharged explanations produced by the same pass.
+The record must include:
 
 - the discharged `VcId`;
 - the deterministic rule name and version;
@@ -142,6 +144,20 @@ include:
 - replay data or premise refs for every cluster, registration, reduction, or
   computation trace used by the rule;
 - a stable evidence hash suitable for dependency-slice and artifact records.
+
+Every `Discharged` VC in a `DischargeOutput` must have an evidence record whose
+status evidence matches the VC status. VCs left `NeedsAtp`, `PolicyOpen`,
+`AssumedByPolicy`, skipped, deferred, or error must have explanations but must
+not be treated as discharged evidence. Artifact serialization, persistence, and
+kernel-side replay validation remain outside task 12.
+
+If the input `VcSet` already contains `VcStatus::Discharged`, task 12 preserves
+that status and records a preserved-evidence record rather than fabricating
+missing replay data. The preserved record must identify the VC, copy the
+existing rule name and evidence hash, mark the evidence source as pre-existing
+input status, and explain that detailed replay data was not reconstructed by
+this pass. Such records are valid for status preservation and diagnostics only;
+they are not newly produced proof evidence.
 
 Unavailable trace markers belong only to not-discharged explanations or to trace
 classes that the selected rule did not use.

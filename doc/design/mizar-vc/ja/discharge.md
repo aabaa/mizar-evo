@@ -40,7 +40,7 @@ fixture、expectation、`doc/spec`、traceability metadata は変更しない。
 | DIS-G002 | `source_drift` / `test_gap` | task 11 より前には `src/discharge.rs`、`pub mod discharge`、lint-policy coverage、task-11 discharge API、focused engine tests が存在しなかった。 | Task 11 は `VcIr` に既に表現された explicit class だけを対象に、これらの source/module/test surface と最小の stable `DischargeEvidenceRef` を追加する。Task 12 が replayable evidence と explanation serialization を拡張する。 |
 | DIS-G003 | `external_dependency_gap` | `mizar-atp`、`mizar-kernel`、`mizar-proof`、`mizar-cache`、active corpus-runner consumer は `mizar-vc` に接続されていない。 | prover-independent status、untrusted evidence、deferred downstream integration point だけを記録する。 |
 | DIS-G004 | `external_dependency_gap` | 一部の type、cluster、registration、reduction、computation trace は、すべての VC について explicit upstream payload としてまだ利用できない場合がある。 | Discharge は `VcIr` に既に存在する explicit fact、premise ref、proof hint、policy input だけを使う。trace が欠ける場合は silent discharge ではなく explanation 付きで VC を `NeedsAtp` または deferred に保つ。 |
-| DIS-G005 | `deferred` | 詳細な evidence serialization、dependency-slice fingerprint、corpus fixture、kernel/proof/cache validation は後続 task または crate が所有する。 | Task 10 は必要な shape と invariant を定義する。task 11 は engine default limit を記録し、詳細 evidence、dependency、downstream consumer work は deferred のままにする。 |
+| DIS-G005 | `deferred` | artifact serialization、dependency-slice fingerprint、corpus fixture、kernel/proof/cache validation は後続 task または crate が所有する。 | Task 10 は必要な shape と invariant を定義する。task 11 は engine default limit を記録する。task 12 は `DischargeOutput` 上の in-memory replayable evidence/explanation record を追加し、artifact/dependency/downstream consumer work は deferred のままにする。 |
 
 ## 入力と出力
 
@@ -105,7 +105,9 @@ proof-hint citation、unfold request、computation hint、policy input、generat
 変更されない goal だけに依存してよい。trace、unfold、computation marker だけでは discharge
 evidence にならない。同じ goal に対する explicit generated/local fact と結びついていなければならない。
 
-Task 12 はこれを replayable evidence record へ拡張する。その full record は次を含まなければならない:
+Task 12 はこれを `DischargeOutput` から公開される in-memory replayable evidence record へ拡張する。
+それは deterministic に render/clone でき、同じ pass が生成する stable な not-discharged explanation
+と対応しなければならない。この record は次を含まなければならない:
 
 - discharged された `VcId`;
 - deterministic rule name と version;
@@ -113,6 +115,18 @@ Task 12 はこれを replayable evidence record へ拡張する。その full re
 - 関連する policy key、unfold request、computation hint、limit tuple;
 - rule が使用した cluster、registration、reduction、computation trace すべてに対する replay data または premise ref;
 - dependency-slice と artifact record に使える stable evidence hash。
+
+`DischargeOutput` 内の `Discharged` VC はすべて、VC status の evidence と一致する evidence record
+を持たなければならない。`NeedsAtp`、`PolicyOpen`、`AssumedByPolicy`、skipped、deferred、error
+のままの VC は explanation を持つが、discharged evidence として扱ってはならない。artifact
+serialization、persistence、kernel-side replay validation は task 12 の範囲外に残す。
+
+入力 `VcSet` に既に `VcStatus::Discharged` が含まれる場合、task 12 はその status を保持し、
+欠けている replay data を捏造するのではなく preserved-evidence record を記録する。この preserved
+record は VC、既存の rule name、evidence hash を識別し、evidence source が pre-existing input
+status であること、および詳細 replay data をこの pass が再構築していないことを説明しなければならない。
+この record は status preservation と diagnostics のためだけに有効であり、新しく生成された proof
+evidence ではない。
 
 unavailable trace marker は not-discharged explanation、または selected rule が使用しなかった
 trace class に対してのみ現れる。

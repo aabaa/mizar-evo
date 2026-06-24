@@ -196,11 +196,14 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       `doc/spec`、traceability metadata は deferred のままにする。
     - 依存: 9、10。仕様: `discharge.md`。
 
-12. **discharge の証拠と説明。** [ ]
-    - discharge された各 VC について再生可能な証拠（適用規則、入力、計算
-      ステップ）を記録し、診断・artifact・後のポリシーに応じた kernel 側
-      検証に備える。
-    - テスト: 証拠のラウンドトリップ。discharge された全 VC が証拠を持つ。
+12. **discharge の証拠と説明。** [x]
+    - 新しく discharge された各 VC について in-memory replayable evidence
+      （適用規則、入力、explicit trace ref、policy input、computation hint、
+      limit tuple が存在する場合はそれら）を記録し、入力に既に存在する
+      `Discharged` VC には preserved-evidence record を記録する。
+    - テスト: deterministic evidence render/clone/accessor coverage。discharge
+      された出力 VC はすべて一致する evidence を持つ。policy/deferred/error
+      VC は explanation を持つが discharged evidence は持たない。
     - 依存: 11。仕様: `discharge.md`（証拠の節）。
 
 ### 依存スライスとフォローアップ

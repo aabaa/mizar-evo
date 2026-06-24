@@ -5,14 +5,15 @@
 //! prover-independent, fail-closed discharge pass over validated `VcSet` data.
 
 use crate::vc_ir::{
-    ContextEntry, ContextEntryId, ContextEntryKind, DefinitionOpacityOverride,
-    DischargeEvidenceRef, HashMarker, LocalContext, PolicyKey, PremiseRef, VcFormulaRef,
-    VcGeneratedFormulaId, VcGeneratedFormulaShape, VcId, VcIr, VcIrError, VcProvenance,
-    VcProvenancePhase, VcSet, VcSetParts, VcStatus, VcText,
+    ComputationHint, ContextEntry, ContextEntryId, ContextEntryKind, DefinitionOpacityOverride,
+    DefinitionUnfoldRequest, DischargeEvidenceRef, HashMarker, LocalContext, PolicyKey,
+    PolicyValue, PremiseRef, ProofHintKey, VcFormulaRef, VcGeneratedFormulaId,
+    VcGeneratedFormulaShape, VcId, VcIr, VcIrError, VcProvenance, VcProvenancePhase, VcSet,
+    VcSetParts, VcStatus, VcText,
 };
 use mizar_core::core_ir::CoreDefinitionId;
 use mizar_session::Hash;
-use std::collections::BTreeSet;
+use std::{collections::BTreeSet, fmt::Write as _};
 
 pub const DEFAULT_COMPUTATION_STEP_LIMIT: u32 = 64;
 pub const DEFAULT_COMPUTATION_LIMIT_POLICY: &str = "task-11-computation-step-limit";
@@ -50,6 +51,7 @@ pub struct ComputationLimit {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DischargeOutput {
     vc_set: VcSet,
+    evidence_records: Vec<DischargeEvidenceRecord>,
     explanations: Vec<DischargeExplanation>,
 }
 
@@ -58,9 +60,95 @@ impl DischargeOutput {
         &self.vc_set
     }
 
+    pub fn evidence_records(&self) -> &[DischargeEvidenceRecord] {
+        &self.evidence_records
+    }
+
     pub fn explanations(&self) -> &[DischargeExplanation] {
         &self.explanations
     }
+
+    pub fn debug_text(&self) -> String {
+        let mut output = String::from("discharge-output-debug-v1\n");
+        output.push_str(&self.vc_set.debug_text());
+        writeln!(&mut output, "[discharge-evidence]").expect("write string");
+        for record in &self.evidence_records {
+            writeln!(
+                &mut output,
+                "evidence {:?}: source={:?}; rule={:?}; rule-name={:?}; \
+                 status-evidence={:?}; inputs={:?}; replay={:?}",
+                record.vc,
+                record.source,
+                record.rule,
+                record.rule_name,
+                record.status_evidence,
+                record.inputs,
+                record.replay
+            )
+            .expect("write string");
+        }
+        writeln!(&mut output, "[discharge-explanations]").expect("write string");
+        for explanation in &self.explanations {
+            writeln!(
+                &mut output,
+                "explanation {:?}: category={:?}; rule={:?}; detail={:?}",
+                explanation.vc, explanation.category, explanation.rule, explanation.detail
+            )
+            .expect("write string");
+        }
+        output
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DischargeEvidenceRecord {
+    pub vc: VcId,
+    pub source: DischargeEvidenceSource,
+    pub rule: Option<DischargeRule>,
+    pub rule_name: VcText,
+    pub status_evidence: DischargeEvidenceRef,
+    pub inputs: DischargeEvidenceInputs,
+    pub replay: DischargeEvidenceReplay,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum DischargeEvidenceSource {
+    NewlyProduced,
+    PreExistingStatus,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DischargeEvidenceInputs {
+    pub goal: VcFormulaRef,
+    pub local_context: Vec<ContextEntryId>,
+    pub premises: Vec<PremiseRef>,
+    pub generated_formulas: Vec<VcGeneratedFormulaId>,
+    pub policy_inputs: Vec<DischargePolicyEvidence>,
+    pub unfold_requests: Vec<DefinitionUnfoldRequest>,
+    pub computation: Option<DischargeComputationEvidence>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct DischargePolicyEvidence {
+    pub key: PolicyKey,
+    pub value: PolicyValue,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DischargeComputationEvidence {
+    pub hint: ComputationHint,
+    pub active_policy: PolicyKey,
+    pub max_steps: u32,
+    pub requested_steps: Option<u32>,
+    pub timeout: Option<ProofHintKey>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DischargeEvidenceReplay {
+    ExplicitInputRefs,
+    PreservedStatusOnly { reason: VcText },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -99,12 +187,19 @@ pub enum DischargeRule {
 
 pub fn try_discharge(input: DischargeInput<'_>) -> Result<DischargeOutput, VcIrError> {
     let mut vcs = input.vc_set.vcs().to_vec();
+    let mut evidence_records = Vec::new();
     let mut explanations = Vec::with_capacity(vcs.len());
 
     for vc in &mut vcs {
-        let decision = select_discharge(vc, input.vc_set, input.policy);
+        let original = vc.clone();
+        let decision = select_discharge(&original, input.vc_set, input.policy);
         explanations.push(explanation_for(vc.id, &decision));
         apply_decision(vc, &decision);
+        if let Some(record) =
+            evidence_record_for(&original, vc, input.vc_set, input.policy, &decision)
+        {
+            evidence_records.push(record);
+        }
     }
 
     let vc_set = VcSet::try_new(VcSetParts {
@@ -119,6 +214,7 @@ pub fn try_discharge(input: DischargeInput<'_>) -> Result<DischargeOutput, VcIrE
 
     Ok(DischargeOutput {
         vc_set,
+        evidence_records,
         explanations,
     })
 }
@@ -397,6 +493,205 @@ fn evidence_hash(vc: VcId, rule: DischargeRule) -> HashMarker {
     }
 
     HashMarker::Available(Hash::from_bytes(bytes))
+}
+
+fn evidence_record_for(
+    original: &VcIr,
+    output: &VcIr,
+    vc_set: &VcSet,
+    policy: &DischargePolicy,
+    decision: &DischargeDecision,
+) -> Option<DischargeEvidenceRecord> {
+    match decision {
+        DischargeDecision::Discharged { rule, .. } => {
+            let evidence = status_evidence(output)?;
+            Some(DischargeEvidenceRecord {
+                vc: output.id,
+                source: DischargeEvidenceSource::NewlyProduced,
+                rule: Some(*rule),
+                rule_name: evidence.rule.clone(),
+                status_evidence: evidence.clone(),
+                inputs: evidence_inputs(original, vc_set, policy),
+                replay: DischargeEvidenceReplay::ExplicitInputRefs,
+            })
+        }
+        DischargeDecision::Preserved {
+            category: DischargeExplanationCategory::Discharged,
+            ..
+        } => {
+            let evidence = status_evidence(output)?;
+            Some(DischargeEvidenceRecord {
+                vc: output.id,
+                source: DischargeEvidenceSource::PreExistingStatus,
+                rule: DischargeRule::from_key(evidence.rule.as_str()),
+                rule_name: evidence.rule.clone(),
+                status_evidence: evidence.clone(),
+                inputs: evidence_inputs(original, vc_set, policy),
+                replay: DischargeEvidenceReplay::PreservedStatusOnly {
+                    reason: VcText::new(
+                        "pre-existing discharged status preserved; replay data not reconstructed",
+                    ),
+                },
+            })
+        }
+        DischargeDecision::NeedsAtp { .. } | DischargeDecision::Preserved { .. } => None,
+    }
+}
+
+fn status_evidence(vc: &VcIr) -> Option<&DischargeEvidenceRef> {
+    match &vc.status {
+        VcStatus::Discharged { evidence } => Some(evidence),
+        VcStatus::Open
+        | VcStatus::NeedsAtp
+        | VcStatus::PolicyOpen { .. }
+        | VcStatus::AssumedByPolicy { .. }
+        | VcStatus::SkippedDueToInvalidInput { .. }
+        | VcStatus::DeferredExternal { .. }
+        | VcStatus::Error { .. } => None,
+    }
+}
+
+fn evidence_inputs(vc: &VcIr, vc_set: &VcSet, policy: &DischargePolicy) -> DischargeEvidenceInputs {
+    let mut generated_formulas = BTreeSet::new();
+    collect_generated_formula_refs(vc_set, vc.goal, &mut generated_formulas);
+
+    let mut premises = BTreeSet::new();
+    for premise in &vc.premises {
+        collect_premise_evidence(vc_set, premise, &mut premises, &mut generated_formulas);
+    }
+
+    let mut local_context = Vec::with_capacity(vc.local_context.entries().len());
+    for entry in vc.local_context.entries() {
+        local_context.push(entry.id);
+        if let Some(formula) = entry.formula {
+            collect_generated_formula_refs(vc_set, formula, &mut generated_formulas);
+        }
+    }
+
+    let mut unfold_requests = Vec::new();
+    let mut computation = None;
+    if let Some(hint) = &vc.proof_hint {
+        for premise in &hint.citations {
+            collect_premise_evidence(vc_set, premise, &mut premises, &mut generated_formulas);
+        }
+        for restriction in &hint.premise_restrictions {
+            match restriction {
+                crate::vc_ir::PremiseRestriction::Only(restricted)
+                | crate::vc_ir::PremiseRestriction::Exclude(restricted) => {
+                    for premise in restricted {
+                        collect_premise_evidence(
+                            vc_set,
+                            premise,
+                            &mut premises,
+                            &mut generated_formulas,
+                        );
+                    }
+                }
+                crate::vc_ir::PremiseRestriction::Intent(_) => {}
+            }
+        }
+        unfold_requests = hint.unfold_requests.clone();
+        computation =
+            hint.computation
+                .clone()
+                .map(|computation_hint| DischargeComputationEvidence {
+                    hint: computation_hint,
+                    active_policy: policy.computation_limit.policy.clone(),
+                    max_steps: policy.computation_limit.max_steps,
+                    requested_steps: hint.max_axioms,
+                    timeout: hint.timeout.clone(),
+                });
+    }
+
+    DischargeEvidenceInputs {
+        goal: vc.goal,
+        local_context,
+        premises: premises.into_iter().collect(),
+        generated_formulas: generated_formulas.into_iter().collect(),
+        policy_inputs: vc
+            .local_context
+            .policy_inputs()
+            .iter()
+            .map(|input| DischargePolicyEvidence {
+                key: input.key.clone(),
+                value: input.value.clone(),
+            })
+            .collect(),
+        unfold_requests,
+        computation,
+    }
+}
+
+fn collect_premise_evidence(
+    vc_set: &VcSet,
+    premise: &PremiseRef,
+    premises: &mut BTreeSet<PremiseRef>,
+    generated_formulas: &mut BTreeSet<VcGeneratedFormulaId>,
+) {
+    premises.insert(premise.clone());
+    if let PremiseRef::GeneratedFact { formula } = premise {
+        collect_generated_formula_refs(vc_set, *formula, generated_formulas);
+    }
+}
+
+fn collect_generated_formula_refs(
+    vc_set: &VcSet,
+    formula: VcFormulaRef,
+    generated_formulas: &mut BTreeSet<VcGeneratedFormulaId>,
+) {
+    collect_generated_formula_refs_inner(vc_set, formula, generated_formulas, &mut BTreeSet::new());
+}
+
+fn collect_generated_formula_refs_inner(
+    vc_set: &VcSet,
+    formula: VcFormulaRef,
+    generated_formulas: &mut BTreeSet<VcGeneratedFormulaId>,
+    active: &mut BTreeSet<VcGeneratedFormulaId>,
+) {
+    let VcFormulaRef::Generated(id) = formula else {
+        return;
+    };
+    if !generated_formulas.insert(id) || !active.insert(id) {
+        return;
+    }
+
+    if let Some(generated) = vc_set.generated_formula(id) {
+        match &generated.shape {
+            VcGeneratedFormulaShape::True
+            | VcGeneratedFormulaShape::False
+            | VcGeneratedFormulaShape::Diagnostic(_) => {}
+            VcGeneratedFormulaShape::Ref(inner) | VcGeneratedFormulaShape::Not(inner) => {
+                collect_generated_formula_refs_inner(vc_set, *inner, generated_formulas, active);
+            }
+            VcGeneratedFormulaShape::And(formulas) | VcGeneratedFormulaShape::Or(formulas) => {
+                for formula in formulas {
+                    collect_generated_formula_refs_inner(
+                        vc_set,
+                        *formula,
+                        generated_formulas,
+                        active,
+                    );
+                }
+            }
+            VcGeneratedFormulaShape::Implies {
+                premise,
+                conclusion,
+            } => {
+                collect_generated_formula_refs_inner(vc_set, *premise, generated_formulas, active);
+                collect_generated_formula_refs_inner(
+                    vc_set,
+                    *conclusion,
+                    generated_formulas,
+                    active,
+                );
+            }
+            VcGeneratedFormulaShape::Quantified { body, .. } => {
+                collect_generated_formula_refs_inner(vc_set, *body, generated_formulas, active);
+            }
+        }
+    }
+
+    active.remove(&id);
 }
 
 fn has_local_contradiction(vc: &VcIr, vc_set: &VcSet) -> bool {
@@ -726,6 +1021,18 @@ fn needs_atp_key(category: DischargeExplanationCategory) -> &'static str {
 }
 
 impl DischargeRule {
+    fn from_key(key: &str) -> Option<Self> {
+        match key {
+            "task-11-generated-tautology-v1" => Some(Self::GeneratedTautology),
+            "task-11-local-contradiction-v1" => Some(Self::LocalContradiction),
+            "task-11-direct-local-fact-v1" => Some(Self::DirectLocalFact),
+            "task-11-trace-premise-v1" => Some(Self::TracePremise),
+            "task-11-definitional-reduction-v1" => Some(Self::DefinitionalReduction),
+            "task-11-bounded-computation-v1" => Some(Self::BoundedComputation),
+            _ => None,
+        }
+    }
+
     const fn key(self) -> &'static str {
         match self {
             Self::GeneratedTautology => "task-11-generated-tautology-v1",
@@ -763,7 +1070,7 @@ mod tests {
     use mizar_core::{
         control_flow::ObligationHandoffId,
         core_ir::{
-            CoreFormulaId, CoreItemId, CoreLabelRef, CoreNodeRef, CoreProvenance,
+            CoreDiagnosticId, CoreFormulaId, CoreItemId, CoreLabelRef, CoreNodeRef, CoreProvenance,
             CoreProvenanceKey, CoreProvenancePhase, GeneratedFrom, GeneratedOriginKey,
             GeneratedOriginKind, LocalProofOrProgramPath, NormalizedSemanticOrigin,
             ObligationSeedId, ObligationSeedStatus,
@@ -806,6 +1113,23 @@ mod tests {
                 detail: VcText::new("goal is a task-11 syntactic tautology"),
             }]
         );
+        let record = only_evidence_record(&output);
+        assert_eq!(record.source, DischargeEvidenceSource::NewlyProduced);
+        assert_eq!(record.rule, Some(DischargeRule::GeneratedTautology));
+        assert_eq!(
+            &record.status_evidence,
+            status_evidence(vc).expect("discharged status evidence")
+        );
+        assert_eq!(
+            record.inputs.generated_formulas,
+            vec![VcGeneratedFormulaId::new(0)]
+        );
+        assert!(matches!(
+            record.replay,
+            DischargeEvidenceReplay::ExplicitInputRefs
+        ));
+        assert!(output.debug_text().contains("discharge-output-debug-v1"));
+        assert!(output.debug_text().contains("[discharge-evidence]"));
     }
 
     #[test]
@@ -933,7 +1257,7 @@ mod tests {
             let formula = CoreFormulaId::new(12 + index);
             let trace = fixture_set(with_premises(
                 parts_with_generated_goal_support(VcStatus::NeedsAtp, formula),
-                vec![premise, goal_generated_fact()],
+                vec![premise.clone(), goal_generated_fact()],
             ));
             let trace_output = try_discharge(DischargeInput {
                 vc_set: &trace,
@@ -941,6 +1265,19 @@ mod tests {
             })
             .expect("trace discharge");
             assert_discharged_rule(&trace_output.vc_set().vcs()[0], DischargeRule::TracePremise);
+            let trace_record = only_evidence_record(&trace_output);
+            assert_eq!(trace_record.rule, Some(DischargeRule::TracePremise));
+            assert!(trace_record.inputs.premises.contains(&premise));
+            assert!(
+                trace_record
+                    .inputs
+                    .premises
+                    .contains(&goal_generated_fact())
+            );
+            assert_eq!(
+                trace_record.inputs.generated_formulas,
+                vec![VcGeneratedFormulaId::new(0)]
+            );
         }
 
         let reduction_citation = fixture_set(with_proof_hint(
@@ -961,6 +1298,21 @@ mod tests {
             &reduction_output.vc_set().vcs()[0],
             DischargeRule::TracePremise,
         );
+        let reduction_record = only_evidence_record(&reduction_output);
+        assert!(
+            reduction_record
+                .inputs
+                .premises
+                .contains(&PremiseRef::ReductionTrace {
+                    trace: VcText::new("reduction:0"),
+                })
+        );
+        assert!(
+            reduction_record
+                .inputs
+                .premises
+                .contains(&goal_generated_fact())
+        );
 
         let definitional = fixture_set(with_proof_hint(
             with_policy_input(
@@ -978,6 +1330,24 @@ mod tests {
         assert_discharged_rule(
             &definitional_output.vc_set().vcs()[0],
             DischargeRule::DefinitionalReduction,
+        );
+        let definitional_record = only_evidence_record(&definitional_output);
+        assert_eq!(
+            definitional_record.inputs.policy_inputs,
+            vec![DischargePolicyEvidence {
+                key: PolicyKey::new(DEFINITIONAL_REDUCTION_POLICY),
+                value: PolicyValue::new(DEFINITIONAL_REDUCTION_ALLOW),
+            }]
+        );
+        assert_eq!(
+            definitional_record.inputs.unfold_requests,
+            vec![transparent_request(CoreDefinitionId::new(0))]
+        );
+        assert!(
+            definitional_record
+                .inputs
+                .premises
+                .contains(&goal_generated_fact())
         );
 
         let computation = fixture_set(with_proof_hint(
@@ -998,6 +1368,115 @@ mod tests {
         assert_discharged_rule(
             &computation_output.vc_set().vcs()[0],
             DischargeRule::BoundedComputation,
+        );
+        let computation_record = only_evidence_record(&computation_output);
+        assert_eq!(
+            computation_record.inputs.computation,
+            Some(DischargeComputationEvidence {
+                hint: ComputationHint::ByComputation,
+                active_policy: PolicyKey::new(DEFAULT_COMPUTATION_LIMIT_POLICY),
+                max_steps: 4,
+                requested_steps: Some(3),
+                timeout: Some(ProofHintKey::new(DEFAULT_COMPUTATION_LIMIT_POLICY)),
+            })
+        );
+        assert!(
+            computation_record
+                .inputs
+                .premises
+                .contains(&goal_generated_fact())
+        );
+    }
+
+    #[test]
+    fn evidence_records_cover_preserved_discharged_statuses() {
+        let evidence = DischargeEvidenceRef {
+            rule: VcText::new(DischargeRule::DirectLocalFact.key()),
+            evidence_hash: HashMarker::Available(Hash::from_bytes([7; Hash::BYTE_LEN])),
+        };
+        let input = fixture_set(fixture_parts(
+            VcStatus::Discharged {
+                evidence: evidence.clone(),
+            },
+            VcFormulaRef::Core(CoreFormulaId::new(31)),
+            Vec::new(),
+        ));
+
+        let output = try_discharge(DischargeInput {
+            vc_set: &input,
+            policy: &DischargePolicy::default(),
+        })
+        .expect("preserved discharged evidence");
+
+        assert_eq!(output.vc_set(), &input);
+        assert_eq!(
+            output.explanations()[0].category,
+            DischargeExplanationCategory::Discharged
+        );
+        let record = only_evidence_record(&output);
+        assert_eq!(record.source, DischargeEvidenceSource::PreExistingStatus);
+        assert_eq!(record.rule, Some(DischargeRule::DirectLocalFact));
+        assert_eq!(
+            record.rule_name.as_str(),
+            DischargeRule::DirectLocalFact.key()
+        );
+        assert_eq!(record.status_evidence, evidence);
+        assert!(matches!(
+            &record.replay,
+            DischargeEvidenceReplay::PreservedStatusOnly { reason }
+                if reason.as_str().contains("pre-existing discharged status preserved")
+        ));
+    }
+
+    #[test]
+    fn evidence_records_cover_multiple_discharged_outputs_in_order() {
+        let preserved_evidence = DischargeEvidenceRef {
+            rule: VcText::new(DischargeRule::DirectLocalFact.key()),
+            evidence_hash: HashMarker::Available(Hash::from_bytes([9; Hash::BYTE_LEN])),
+        };
+        let mut parts = fixture_parts(
+            VcStatus::NeedsAtp,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+            vec![generated_formula(0, VcGeneratedFormulaShape::True)],
+        );
+        push_second_vc(
+            &mut parts,
+            VcStatus::Discharged {
+                evidence: preserved_evidence.clone(),
+            },
+            VcFormulaRef::Core(CoreFormulaId::new(32)),
+            Vec::new(),
+        );
+        let input = fixture_set(parts);
+
+        let output = try_discharge(DischargeInput {
+            vc_set: &input,
+            policy: &DischargePolicy::default(),
+        })
+        .expect("mixed evidence output");
+
+        assert_eq!(
+            output
+                .evidence_records()
+                .iter()
+                .map(|record| (record.vc, record.source))
+                .collect::<Vec<_>>(),
+            vec![
+                (VcId::new(0), DischargeEvidenceSource::NewlyProduced),
+                (VcId::new(1), DischargeEvidenceSource::PreExistingStatus),
+            ]
+        );
+        for record in output.evidence_records() {
+            let vc = output.vc_set().vc(record.vc).expect("recorded vc");
+            assert_eq!(
+                Some(&record.status_evidence),
+                status_evidence(vc),
+                "evidence record must match output status evidence"
+            );
+        }
+        assert_eq!(
+            output.evidence_records()[1].status_evidence,
+            preserved_evidence
         );
     }
 
@@ -1066,6 +1545,7 @@ mod tests {
             trace_output.explanations()[0].rule,
             Some(DischargeRule::TracePremise)
         );
+        assert!(trace_output.evidence_records().is_empty());
 
         let unfold_marker_only = fixture_set(with_proof_hint(
             with_policy_input(
@@ -1104,6 +1584,7 @@ mod tests {
             computation_output.explanations()[0].rule,
             Some(DischargeRule::BoundedComputation)
         );
+        assert!(computation_output.evidence_records().is_empty());
     }
 
     #[test]
@@ -1166,53 +1647,68 @@ mod tests {
             unsupported_output.explanations()[0].category,
             DischargeExplanationCategory::UnsupportedRule
         );
+        assert!(limit_output.evidence_records().is_empty());
+        assert!(unsupported_output.evidence_records().is_empty());
     }
 
     #[test]
     fn policy_and_deferred_statuses_are_preserved_without_discharge_evidence() {
-        let policy_open = fixture_set(fixture_parts(
-            VcStatus::PolicyOpen {
-                policy: PolicyKey::new("interactive"),
-            },
-            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
-            vec![generated_formula(0, VcGeneratedFormulaShape::True)],
-        ));
-        let policy_output = try_discharge(DischargeInput {
-            vc_set: &policy_open,
-            policy: &DischargePolicy::default(),
-        })
-        .expect("policy preserved");
+        for (status, category) in [
+            (
+                VcStatus::PolicyOpen {
+                    policy: PolicyKey::new("interactive"),
+                },
+                DischargeExplanationCategory::PolicyOpen,
+            ),
+            (
+                VcStatus::AssumedByPolicy {
+                    policy: PolicyKey::new("assume-for-test"),
+                    marker: PremiseRef::GeneratedFact {
+                        formula: VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+                    },
+                },
+                DischargeExplanationCategory::AssumedByPolicy,
+            ),
+            (
+                VcStatus::SkippedDueToInvalidInput {
+                    reason: VcText::new("invalid task-12 fixture"),
+                },
+                DischargeExplanationCategory::SkippedInvalidInput,
+            ),
+            (
+                VcStatus::DeferredExternal {
+                    reason: VcText::new("atp bridge unavailable"),
+                },
+                DischargeExplanationCategory::DeferredExternal,
+            ),
+            (
+                VcStatus::Error {
+                    diagnostic: CoreDiagnosticId::new(3),
+                },
+                DischargeExplanationCategory::Error,
+            ),
+        ] {
+            let input = fixture_set(fixture_parts(
+                status,
+                VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+                vec![generated_formula(0, VcGeneratedFormulaShape::True)],
+            ));
+            let output = try_discharge(DischargeInput {
+                vc_set: &input,
+                policy: &DischargePolicy::default(),
+            })
+            .expect("status preserved");
 
-        assert_eq!(policy_output.vc_set(), &policy_open);
-        assert_eq!(
-            policy_output.explanations()[0].category,
-            DischargeExplanationCategory::PolicyOpen
-        );
-        assert!(
-            !policy_output.vc_set().vcs()[0]
-                .provenance
-                .iter()
-                .any(|provenance| provenance.phase == VcProvenancePhase::Discharge)
-        );
-
-        let deferred = fixture_set(fixture_parts(
-            VcStatus::DeferredExternal {
-                reason: VcText::new("atp bridge unavailable"),
-            },
-            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
-            vec![generated_formula(0, VcGeneratedFormulaShape::True)],
-        ));
-        let deferred_output = try_discharge(DischargeInput {
-            vc_set: &deferred,
-            policy: &DischargePolicy::default(),
-        })
-        .expect("deferred preserved");
-
-        assert_eq!(deferred_output.vc_set(), &deferred);
-        assert_eq!(
-            deferred_output.explanations()[0].category,
-            DischargeExplanationCategory::DeferredExternal
-        );
+            assert_eq!(output.vc_set(), &input);
+            assert_eq!(output.explanations()[0].category, category);
+            assert!(output.evidence_records().is_empty());
+            assert!(
+                !output.vc_set().vcs()[0]
+                    .provenance
+                    .iter()
+                    .any(|provenance| provenance.phase == VcProvenancePhase::Discharge)
+            );
+        }
     }
 
     #[test]
@@ -1238,7 +1734,13 @@ mod tests {
         .expect("second discharge");
 
         assert_eq!(first, second);
+        assert_eq!(first.clone(), first);
+        assert_eq!(
+            first.evidence_records()[0].clone(),
+            first.evidence_records()[0]
+        );
         assert_eq!(first.vc_set().debug_text(), second.vc_set().debug_text());
+        assert_eq!(first.debug_text(), second.debug_text());
         assert_eq!(
             first
                 .explanations()
@@ -1249,6 +1751,14 @@ mod tests {
         );
         assert_discharged_rule(&first.vc_set().vcs()[0], DischargeRule::GeneratedTautology);
         assert!(matches!(first.vc_set().vcs()[1].status, VcStatus::NeedsAtp));
+        assert_eq!(
+            first
+                .evidence_records()
+                .iter()
+                .map(|record| record.vc)
+                .collect::<Vec<_>>(),
+            vec![VcId::new(0)]
+        );
     }
 
     fn assert_unsupported_after_discharge(input: &VcSet) {
@@ -1264,6 +1774,12 @@ mod tests {
             DischargeExplanationCategory::UnsupportedRule
         );
         assert_eq!(output.explanations()[0].rule, None);
+        assert!(output.evidence_records().is_empty());
+    }
+
+    fn only_evidence_record(output: &DischargeOutput) -> &DischargeEvidenceRecord {
+        assert_eq!(output.evidence_records().len(), 1);
+        &output.evidence_records()[0]
     }
 
     fn assert_discharged_rule(vc: &VcIr, expected: DischargeRule) {
@@ -1468,13 +1984,28 @@ mod tests {
     }
 
     fn push_second_unsupported_vc(parts: &mut VcSetParts) {
+        push_second_vc(
+            parts,
+            VcStatus::NeedsAtp,
+            VcFormulaRef::Core(CoreFormulaId::new(99)),
+            Vec::new(),
+        );
+    }
+
+    fn push_second_vc(
+        parts: &mut VcSetParts,
+        status: VcStatus,
+        goal: VcFormulaRef,
+        generated_formulas: Vec<VcGeneratedFormula>,
+    ) {
+        parts.generated_formulas.extend(generated_formulas);
         let mut second_vc = parts.vcs[0].clone();
         second_vc.id = VcId::new(1);
         second_vc.seed = SeedVcRef {
             handoff: ObligationHandoffId::new(1),
         };
-        second_vc.goal = VcFormulaRef::Core(CoreFormulaId::new(99));
-        second_vc.status = VcStatus::NeedsAtp;
+        second_vc.goal = goal;
+        second_vc.status = status;
         second_vc.provenance = vec![provenance("vc-second")];
         parts.vcs.push(second_vc);
         parts.seed_accounting.push(SeedAccounting {

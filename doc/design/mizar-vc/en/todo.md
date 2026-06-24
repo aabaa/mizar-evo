@@ -203,11 +203,14 @@ Keep `cargo test -p mizar-vc` green after each task (see
       expectations, `doc/spec`, and traceability metadata deferred.
     - Deps: 9, 10. Spec: `discharge.md`.
 
-12. **Discharge evidence and explanations.** [ ]
-    - Record replayable evidence for each discharged VC (rule applied,
-      inputs, computation steps) for diagnostics, artifacts, and later
-      kernel-side validation per policy.
-    - Tests: evidence round-trips; every discharged VC has evidence.
+12. **Discharge evidence and explanations.** [x]
+    - Record in-memory replayable evidence for each newly discharged VC
+      (rule applied, inputs, explicit trace refs, policy inputs, computation
+      hints, and limit tuple when present) and preserved-evidence records for
+      pre-existing `Discharged` inputs.
+    - Tests: deterministic evidence render/clone/accessor coverage; every
+      discharged output VC has matching evidence; policy/deferred/error VCs
+      have explanations but no discharged evidence.
     - Deps: 11. Spec: `discharge.md` (evidence section).
 
 ### Dependency slices and follow-ups
