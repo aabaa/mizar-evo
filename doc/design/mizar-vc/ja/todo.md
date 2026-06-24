@@ -18,7 +18,7 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | vc_ir | `vc_ir.md`（task 2） | `src/vc_ir.rs` | [x] |
-| generator | `generator.md`（task 5） | `src/generator.rs` | [ ] |
+| generator | `generator.md`（task 5） | `src/generator.rs` | [~] |
 | discharge | `discharge.md`（task 10） | `src/discharge.rs` | [ ] |
 | dependency_slice | `dependency_slice.md`（task 13） | `src/dependency_slice.rs` | [ ] |
 
@@ -110,7 +110,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### 生成（phase 11）
 
-5. **仕様: `generator.md`。** [ ]
+5. **仕様: `generator.md`。** [x]
    - 生成の仕様を、名前付き節とともに執筆する（英語と日本語、コード
      なし）: ローカルコンテキストの構築、定理/定義の VC（Step 3）、
      利用可能な場合の explicit registration/redefinition/reduction correctness
@@ -121,16 +121,17 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)、
      [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
-6. **定理、定義、registration-style correctness の VC。** [ ]
+6. **定理、定義、generated core、registration-style correctness の VC。** [ ]
    - 定理の証明ステップ、引用、定義の correctness condition から、明示的な
-     ローカルコンテキストを保持した VC を生成する。checker-initial または core
-     correctness seed が registration、redefinition、reduction correctness を
-     明示的に表す場合は、それを registration-style correctness VC として保持
+     ローカルコンテキストを保持した VC を生成する。non-emptiness、sethood、
+     Fraenkel membership axiom の explicit core-seed obligation を生成する。
+     checker-initial または core correctness seed が registration、redefinition、
+     reduction correctness を明示的に表す場合は、それを registration-style correctness VC として保持
      する。その explicit payload が利用できない場合は、registration activation
      や proof acceptance を捏造せず external/deferred gap として分類する。
-   - テスト: 義務種別ごとの VC フィクスチャ。ローカルコンテキストは明示的
-     であり、グローバル状態に暗黙に依存しない。利用不能な explicit
-     registration payload は deferred として記録する。
+   - テスト: 義務種別ごとの VC フィクスチャ。generated core seed fixture。
+     ローカルコンテキストは明示的であり、グローバル状態に暗黙に依存しない。
+     利用不能な explicit registration payload は deferred として記録する。
    - 依存: 4、5。仕様: `generator.md`（定理/定義の節）。
 
 7. **アルゴリズムの VC。** [ ]

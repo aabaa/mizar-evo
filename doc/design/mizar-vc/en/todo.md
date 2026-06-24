@@ -19,7 +19,7 @@ architecture 07, 16, 18, and 19.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | vc_ir | `vc_ir.md` (task 2) | `src/vc_ir.rs` | [x] |
-| generator | `generator.md` (task 5) | `src/generator.rs` | [ ] |
+| generator | `generator.md` (task 5) | `src/generator.rs` | [~] |
 | discharge | `discharge.md` (task 10) | `src/discharge.rs` | [ ] |
 | dependency_slice | `dependency_slice.md` (task 13) | `src/dependency_slice.rs` | [ ] |
 
@@ -114,7 +114,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
 
 ### Generation (phase 11)
 
-5. **Spec: `generator.md`.** [ ]
+5. **Spec: `generator.md`.** [x]
    - Write the generation spec (English and Japanese, no code) with named
      sections: local-context construction, theorem/definition VCs (Step 3),
      explicit registration/redefinition/reduction correctness seeds when
@@ -126,17 +126,18 @@ Keep `cargo test -p mizar-vc` green after each task (see
      [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md),
      [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
-6. **Theorem, definition, and registration-style correctness VCs.** [ ]
+6. **Theorem, definition, generated core, and registration-style correctness VCs.** [ ]
    - Generate VCs for theorem proof steps, citations, and definition
-     correctness conditions, preserving explicit local contexts. When
-     checker-initial or core correctness seeds explicitly represent
+     correctness conditions, preserving explicit local contexts. Generate
+     explicit core-seed obligations for non-emptiness, sethood, and Fraenkel
+     membership axioms. When checker-initial or core correctness seeds explicitly represent
      registration, redefinition, or reduction correctness, preserve them as
      registration-style correctness VCs; when those explicit payloads are not
      available, classify the gap as external/deferred rather than fabricating
      registration activation or proof acceptance.
-   - Tests: VC fixtures per obligation kind; local contexts explicit, never
-     implied by global state; unavailable explicit registration payloads
-     recorded as deferred.
+   - Tests: VC fixtures per obligation kind; generated core seed fixtures;
+     local contexts explicit, never implied by global state; unavailable
+     explicit registration payloads recorded as deferred.
    - Deps: 4, 5. Spec: `generator.md` (theorem/definition section).
 
 7. **Algorithm VCs.** [ ]

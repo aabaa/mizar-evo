@@ -17,9 +17,9 @@ backfilled by a later committed bookkeeping point or the closeout task.
 | 1. Crate scaffold and lint-policy guard | complete | `adfff1cbc3ebce9db13e73d4d29bfd9b1ac1971d` | Spec/doc review: no blocking/high/medium/low findings. Test sufficiency review: low private-scope guard finding fixed; final re-review no findings. Full implementation review: no findings after guard strengthening. Source/doc consistency review: no blocking/high/medium/low findings. | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Scaffold-only. Adds workspace member, lockfile entry, minimal crate manifest, documentation-only `src/lib.rs`, and lint guard. No semantic VC APIs, module source files, `.miz` fixtures, expectations, `doc/spec`, or module specs changed. |
 | 2. Spec: `vc_ir.md` | complete | `ac778b008be75ea21eda4d2e69c7713a88b0d4ea` | Spec/doc review: medium seed-accounting, generated-goal, status-name, and expansion-index findings fixed; final re-review only ledger-status bookkeeping remained, then fixed. Test sufficiency review: medium task-8 seed-bijection wording fixed; final re-review no blocking/high/medium findings. Full implementation review: medium status-name, proof-hint, algorithm-subkind, and ledger-status findings fixed. Source/doc consistency review: medium todo seed-accounting drift fixed; final re-review no blocking/high/medium findings. | `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Spec-only. Adds English/Japanese `vc_ir.md`, syncs task 2 and task 8 todo wording to seed accounting / explicit concrete cardinality, and changes no Rust source, `.miz` fixtures, expectations, `doc/spec`, or traceability metadata. External gaps for proof-verification runner, ATP/kernel/proof/cache consumers, and source-derived payloads remain deferred. |
 | 3. Implement `vc_ir` data shapes | complete | `c32d767368ef9d16fdcf92620c2b2afecb13fc9d` | Spec/doc review: medium `ModuleId`, expanded-index/rendering, incomplete-anchor, and quantified-binder findings fixed; final re-review no blocking/high/medium findings. Test sufficiency review: medium rendering, seed-accounting, and status/context coverage findings fixed; final re-review no blocking/high/medium findings. Full implementation review: medium seed-mapping, nested-reference, anchor-completeness, and quantified-binder findings fixed; final re-review no blocking/high/medium findings. Source/doc consistency review: medium `PolicyOpen` no-VC mismatch fixed and low module-link finding fixed; final re-review no blocking/high/medium findings. | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Rust source task. Adds `src/vc_ir.rs`, exposes only `pub mod vc_ir;`, updates lint guard for the spec-backed module, adds validation and deterministic debug rendering tests, and keeps seed intake, generator logic, status transitions, discharge, dependency slices, ATP translation, proof/cache reuse, kernel acceptance, `.miz` fixtures, expectations, `doc/spec`, and traceability metadata deferred/out of scope. |
-| 4. Obligation-seed intake | ready to commit | pending self-hash; verify from `git log` after commit | Spec/doc review: medium missing source-map documentation finding fixed; final re-review no blocking/high/medium findings. Test sufficiency review: medium origin-preservation coverage finding fixed; final re-review no blocking/high/medium findings. Full implementation review: no blocking/high/medium findings after follow-up. Source/doc consistency review: no blocking/high/medium findings after follow-up. | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Rust source task. Adds a pre-`VcId` `SeedIntakeTable` over `ObligationSeedHandoff`, preserving handoff order and origins, rejecting duplicate `(canonical_key, origin)` rows and missing source-map entries, representing skipped/deferred/error/missing-goal rows as visible no-VC mappings, and keeping concrete VC generation, generator normalization, final `VcId` assignment, discharge, dependency slices, ATP translation, proof/cache reuse, kernel acceptance, `.miz` fixtures, expectations, `doc/spec`, and traceability metadata deferred/out of scope. |
-| 5. Spec: `generator.md` | not started | pending | pending | pending | Spec-only task; includes registration-style correctness seed scope when explicit payloads exist. |
-| 6. Theorem, definition, and registration-style correctness VCs | not started | pending | pending | pending | Rust source task; unavailable explicit registration payloads stay external/deferred. |
+| 4. Obligation-seed intake | complete | `ba20db550cf92979bdb8809e9f64fbe5cd193c1b` | Spec/doc review: medium missing source-map documentation finding fixed; final re-review no blocking/high/medium findings. Test sufficiency review: medium origin-preservation coverage finding fixed; final re-review no blocking/high/medium findings. Full implementation review: no blocking/high/medium findings after follow-up. Source/doc consistency review: no blocking/high/medium findings after follow-up. | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Rust source task. Adds a pre-`VcId` `SeedIntakeTable` over `ObligationSeedHandoff`, preserving handoff order and origins, rejecting duplicate `(canonical_key, origin)` rows and missing source-map entries, representing skipped/deferred/error/missing-goal rows as visible no-VC mappings, and keeping concrete VC generation, generator normalization, final `VcId` assignment, discharge, dependency slices, ATP translation, proof/cache reuse, kernel acceptance, `.miz` fixtures, expectations, `doc/spec`, and traceability metadata deferred/out of scope. |
+| 5. Spec: `generator.md` | ready to commit | pending self-hash; verify from `git log` after commit | Spec/doc review: high generated-core ownership, medium Pick non-emptiness, and medium module-table findings fixed; final re-review no blocking/high/medium findings after verification/staging. Test sufficiency review: medium theorem-status, sethood/non-emptiness, and call/return coverage findings fixed; final re-review no blocking/high/medium findings. Full implementation review: medium module-table finding fixed; final re-review no blocking/high/medium findings. Source/doc consistency review: medium module-table finding fixed; final re-review no blocking/high/medium findings. | `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Spec-only. Adds English/Japanese `generator.md`, records local-context construction, theorem/definition generation, generated core obligations, explicit registration-style correctness payload handling, algorithm VC families including Pick non-emptiness, controlled unfolding, and task-8 normalization/classification handoff. Leaves Rust source, `.miz` fixtures, expectations, `doc/spec`, traceability metadata, proof-verification runner activation, and unavailable dedicated registration/redefinition/reduction payloads deferred/out of scope. |
+| 6. Theorem, definition, generated core, and registration-style correctness VCs | not started | pending | pending | pending | Rust source task; unavailable explicit registration payloads stay external/deferred. |
 | 7. Algorithm VCs | not started | pending | pending | pending | Rust source task. |
 | 8. Normalization, classification, and `VcId` assignment | not started | pending | pending | pending | Rust source task. |
 | 9. Status and policy model | not started | pending | pending | pending | Rust source task. |
@@ -173,3 +173,40 @@ Rationale: task 5 defines the generation contract before implementation tasks
 6-8. Keep `xhigh` because it spans proof obligations, registration-style
 correctness boundaries, and algorithm-control-flow VC categories; lower
 reasoning is acceptable only for typo-only documentation cleanup.
+
+## Task 5 Handoff
+
+Recommended reasoning: `xhigh`.
+
+Prompt:
+
+```text
+Continue mizar-vc autonomous crate development from the completed task 5
+generator.md spec commit. Before starting task 6, verify a clean worktree,
+confirm the task 5 commit exists in git log, and re-read
+doc/design/mizar-vc/en/generator.md, vc_ir.md, 00.crate_plan.md,
+task_ledger.md, todo.md, and crates/mizar-vc/src/vc_ir.rs. Implement task 6
+only: theorem, definition, generated core, and registration-style correctness
+VC generation over explicit mizar-core payloads. Generate theorem/proof-step
+terminal goals, definition correctness candidates, generated non-emptiness,
+generated sethood, and Fraenkel membership axiom candidates, and preserve
+registration/redefinition/reduction correctness only when explicit core/checker
+payloads exist. Missing dedicated registration-style payloads must stay
+DeferredExternal or visible no-VC records; do not fabricate them from
+registration activation or source syntax. Do not implement algorithm VCs,
+normalization/final VcId assignment, status transitions, discharge, dependency
+slices, ATP translation, proof/cache reuse, kernel acceptance, or active .miz
+proof_verification fixtures. Add focused Rust tests for local contexts,
+symbolic citations, theorem status dependency preservation, generated core
+obligations, definition correctness families, registration-style payload
+presence/absence, proof hints, and local unfold requests. Run cargo fmt --check,
+cargo test -p mizar-vc, cargo clippy -p mizar-vc --all-targets -- -D warnings,
+git diff --check, and git diff --cached --check after explicit path staging.
+Use review-only agents for the required AGENTS.md review phases.
+```
+
+Rationale: task 6 is the first generator implementation slice and touches proof
+obligation completeness without yet assigning final `VcId`s. Keep `xhigh` for
+the seed accounting, registration-style correctness, and generated core
+obligation boundaries; lower reasoning is acceptable only for typo-only
+documentation cleanup.
