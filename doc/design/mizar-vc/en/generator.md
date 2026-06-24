@@ -470,6 +470,27 @@ append normalization provenance, but it must not discharge VCs, transition
 policy status, compute dependency slices, call ATP, activate corpus fixtures,
 or add new algorithm payload families.
 
+## Task 20 Reuse-Identity Wiring
+
+Task 20 completes the milestone's generated-obligation reuse identity wiring.
+For every concrete generated candidate, the generator must build an
+`ObligationAnchor` with stable source-shape, canonical-goal, and
+canonical-context hash markers. The generator-owned source-shape hash is
+available whenever source-shaped provenance is available, uses stable
+source-shaped ingredients, and excludes `VcId`, source range, `SourceId`,
+handoff id, candidate sort key, and dense owner row id. Canonical goal/context
+hash markers are available only when `mizar-vc` has stable payloads for the
+referenced formulas and context entries. Current CoreFormulaId-only generator
+payloads therefore remain incomplete/conservative-unknown rather than hashing
+raw upstream row ids.
+
+Task 20 does not authorize cache reuse by itself. It only supplies stable
+candidate ingredients to later consumers: complete `ObligationAnchor`,
+canonical VC fingerprint, local-context fingerprint, dependency-slice
+fingerprint, compatible verifier-policy fingerprint, and selected
+proof-evidence hash. Matching `VcId`, source range, or anchor alone remains
+insufficient.
+
 ## Planned Tests
 
 Task 6 must add Rust coverage for:

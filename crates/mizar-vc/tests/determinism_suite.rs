@@ -4,9 +4,9 @@ use mizar_core::{
         ObligationSeedHandoff,
     },
     core_ir::{
-        CoreFormulaId, CoreItemId, CoreNodeRef, CoreProvenance, CoreProvenancePhase, CoreSourceRef,
-        LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed, ObligationSeedId,
-        ObligationSeedKind, ObligationSeedStatus,
+        CoreDiagnosticId, CoreFormulaId, CoreItemId, CoreNodeRef, CoreProvenance,
+        CoreProvenancePhase, CoreSourceRef, LocalProofOrProgramPath, NormalizedSemanticOrigin,
+        ObligationSeed, ObligationSeedId, ObligationSeedKind, ObligationSeedStatus,
     },
 };
 use mizar_session::{
@@ -17,10 +17,13 @@ use mizar_vc::{
     discharge::{DischargeInput, DischargeOutput, DischargePolicy, DischargeRule, try_discharge},
     generator::{CoreGenerationCandidateSet, CoreGenerationInput, VcNormalizationInput},
     vc_ir::{
-        GenerationSchemaVersion, PremiseRef, SeedIntakeTable, VcFormulaRef, VcGeneratedFormula,
-        VcGeneratedFormulaId, VcGeneratedFormulaKind, VcGeneratedFormulaShape, VcId, VcKind,
-        VcModuleRef, VcProvenance, VcProvenancePhase, VcSchemaVersion, VcSet, VcSetParts, VcStatus,
-        VcStatusAction, VcStatusOverride, VcStatusPlan, VcText,
+        AnchorCompleteness, AnchorIngredient, AnchorUnavailableReason, CanonicalSortKey,
+        ContextEntry, ContextEntryId, ContextEntryKind, DischargeEvidenceRef,
+        GenerationSchemaVersion, HashMarker, LocalContext, PolicyKey, PolicyValue, PremiseRef,
+        SeedIntakeTable, VcFormulaRef, VcGeneratedFormula, VcGeneratedFormulaId,
+        VcGeneratedFormulaKind, VcGeneratedFormulaShape, VcId, VcKind, VcModuleRef, VcProvenance,
+        VcProvenancePhase, VcSchemaVersion, VcSet, VcSetParts, VcStatus, VcStatusAction,
+        VcStatusOverride, VcStatusPlan, VcText, VerifierPolicyInput,
     },
 };
 use std::collections::BTreeMap;
@@ -111,6 +114,96 @@ fn identical_public_inputs_have_deterministic_pipeline_outputs() {
     );
 }
 
+#[test]
+fn cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs() {
+    let base = run_reuse_pipeline(false, VcId::new(0));
+    let edited = run_reuse_pipeline(true, VcId::new(1));
+
+    assert_eq!(vc_ids(&base.normalized), vec![VcId::new(0)]);
+    assert_eq!(vc_ids(&edited.normalized), vec![VcId::new(0), VcId::new(1)]);
+    assert_eq!(base.discharge.evidence_records()[0].vc, VcId::new(0));
+    assert_eq!(edited.discharge.evidence_records()[0].vc, VcId::new(1));
+
+    let base_key = base
+        .slices
+        .proof_reuse_key_for(&base.discharge, VcId::new(0))
+        .expect("base target has a reuse key");
+    let edited_key = edited
+        .slices
+        .proof_reuse_key_for(&edited.discharge, VcId::new(1))
+        .expect("edited target has a reuse key despite shifted VcId");
+
+    assert_eq!(base_key, edited_key);
+
+    let generated_id_shifted = run_generated_formula_id_shift_reuse_pipeline();
+    let generated_id_shifted_key = generated_id_shifted
+        .slices
+        .proof_reuse_key_for(&generated_id_shifted.discharge, VcId::new(0))
+        .expect("generated formula id shifts do not change the reuse key");
+    assert_eq!(base_key, generated_id_shifted_key);
+
+    let policy_changed = run_policy_changed_reuse_pipeline();
+    let policy_changed_key = policy_changed
+        .slices
+        .proof_reuse_key_for(&policy_changed.discharge, VcId::new(0))
+        .expect("policy-changed target still has a key");
+    assert_ne!(base_key, policy_changed_key);
+    assert!(
+        base.slices
+            .proof_reuse_key_for(&policy_changed.discharge, VcId::new(0))
+            .is_none(),
+        "stale slice fingerprints must not authorize reuse"
+    );
+
+    let context_changed = run_context_changed_reuse_pipeline();
+    let context_changed_key = context_changed
+        .slices
+        .proof_reuse_key_for(&context_changed.discharge, VcId::new(0))
+        .expect("context-changed target still has a key");
+    assert_ne!(base_key, context_changed_key);
+    assert_ne!(
+        base.discharge.evidence_records()[0]
+            .status_evidence
+            .evidence_hash,
+        context_changed.discharge.evidence_records()[0]
+            .status_evidence
+            .evidence_hash
+    );
+
+    let changed_goal = run_changed_generated_goal_reuse_pipeline();
+    assert!(
+        !changed_goal.discharge.evidence_records()[0]
+            .status_evidence
+            .evidence_hash
+            .is_available()
+    );
+    assert!(
+        changed_goal
+            .slices
+            .proof_reuse_key_for(&changed_goal.discharge, VcId::new(0))
+            .is_none(),
+        "changed generated goal without complete evidence must fail closed"
+    );
+
+    let pre_existing = run_pre_existing_discharge_pipeline();
+    assert!(
+        pre_existing
+            .slices
+            .proof_reuse_key_for(&pre_existing.discharge, VcId::new(0))
+            .is_none(),
+        "pre-existing discharged status is preserved evidence, not a newly produced reuse key"
+    );
+
+    let incomplete_anchor = run_incomplete_anchor_reuse_pipeline();
+    assert!(
+        incomplete_anchor
+            .slices
+            .proof_reuse_key_for(&incomplete_anchor.discharge, VcId::new(0))
+            .is_none(),
+        "incomplete anchors must fail closed"
+    );
+}
+
 struct PipelineOutput {
     normalized: VcSet,
     projected_statuses: VcSet,
@@ -150,6 +243,91 @@ fn run_public_pipeline() -> PipelineOutput {
     PipelineOutput {
         normalized,
         projected_statuses,
+        discharge,
+        slices,
+    }
+}
+
+fn run_reuse_pipeline(insert_before_target: bool, target: VcId) -> PipelineOutput {
+    let normalized = normalize_reuse_handoff(insert_before_target);
+    run_reuse_pipeline_from_normalized(with_generated_tautology_goal_at(normalized, target))
+}
+
+fn run_policy_changed_reuse_pipeline() -> PipelineOutput {
+    let normalized = with_policy_input_at(
+        normalize_reuse_handoff(false),
+        VcId::new(0),
+        "task-20-policy",
+        "changed",
+    );
+    run_reuse_pipeline_from_normalized(with_generated_tautology_goal_at(normalized, VcId::new(0)))
+}
+
+fn run_generated_formula_id_shift_reuse_pipeline() -> PipelineOutput {
+    let normalized =
+        with_shifted_generated_tautology_goal_at(normalize_reuse_handoff(false), VcId::new(0));
+    run_reuse_pipeline_from_normalized(normalized)
+}
+
+fn run_context_changed_reuse_pipeline() -> PipelineOutput {
+    let normalized = with_context_entry_at(
+        with_generated_tautology_goal_at(normalize_reuse_handoff(false), VcId::new(0)),
+        VcId::new(0),
+    );
+    run_reuse_pipeline_from_normalized(normalized)
+}
+
+fn run_changed_generated_goal_reuse_pipeline() -> PipelineOutput {
+    let normalized = with_generated_goal_at(
+        normalize_reuse_handoff(false),
+        VcId::new(0),
+        VcGeneratedFormulaShape::Diagnostic(CoreDiagnosticId::new(20)),
+        22,
+    );
+    run_reuse_pipeline_from_normalized(normalized)
+}
+
+fn run_pre_existing_discharge_pipeline() -> PipelineOutput {
+    let normalized = with_generated_tautology_goal_at(normalize_reuse_handoff(false), VcId::new(0));
+    let mut parts = parts_from_set(&normalized);
+    parts.vcs[0].status = VcStatus::Discharged {
+        evidence: DischargeEvidenceRef {
+            rule: VcText::new("task-11-generated-tautology-v1"),
+            evidence_hash: HashMarker::Available(sample_hash(7)),
+        },
+    };
+    let pre_existing = VcSet::try_new(parts).expect("pre-existing discharged fixture");
+    run_reuse_pipeline_from_normalized(pre_existing)
+}
+
+fn run_incomplete_anchor_reuse_pipeline() -> PipelineOutput {
+    let normalized = with_generated_tautology_goal_at(normalize_reuse_handoff(false), VcId::new(0));
+    let mut parts = parts_from_set(&normalized);
+    parts.vcs[0].anchor.source_shape_hash = HashMarker::Unavailable {
+        reason: AnchorUnavailableReason::new("task-20 test removes source-shape hash"),
+    };
+    parts.vcs[0].anchor.completeness = AnchorCompleteness::Incomplete {
+        missing: vec![AnchorIngredient::SourceShapeHash],
+    };
+    let incomplete = VcSet::try_new(parts).expect("incomplete anchor fixture");
+    run_reuse_pipeline_from_normalized(incomplete)
+}
+
+fn run_reuse_pipeline_from_normalized(discharge_input: VcSet) -> PipelineOutput {
+    let discharge = try_discharge(DischargeInput {
+        vc_set: &discharge_input,
+        policy: &DischargePolicy::default(),
+    })
+    .expect("deterministic reuse discharge");
+    let slices = try_compute_dependency_slices(DependencySliceInput {
+        vc_set: discharge.vc_set(),
+        discharge_output: Some(&discharge),
+    })
+    .expect("reuse dependency slices");
+
+    PipelineOutput {
+        normalized: discharge_input.clone(),
+        projected_statuses: discharge_input,
         discharge,
         slices,
     }
@@ -206,24 +384,171 @@ fn normalize_public_handoff() -> VcSet {
     .expect("normalized VC set")
 }
 
+fn normalize_reuse_handoff(insert_before_target: bool) -> VcSet {
+    let snapshot = sample_snapshot_id();
+    let source = sample_source_id(snapshot);
+    let target = (
+        obligation_seed(
+            source,
+            ObligationSeedKind::TheoremProof,
+            Some(CoreFormulaId::new(20)),
+            "proof/reuse-target",
+            "theorem:task-20:reuse-target",
+        )
+        .into(),
+        ObligationHandoffOrigin::ExistingCore {
+            seed: ObligationSeedId::new(20),
+        },
+    );
+    let entries = if insert_before_target {
+        vec![
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::TheoremProof,
+                    Some(CoreFormulaId::new(19)),
+                    "proof/inserted-before-target",
+                    "theorem:task-20:inserted",
+                )
+                .with_context(vec![CoreFormulaId::new(1)])
+                .into(),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(19),
+                },
+            ),
+            target,
+        ]
+    } else {
+        vec![target]
+    };
+    let handoff = seed_handoff(entries);
+    let intake = SeedIntakeTable::try_from_handoff(&handoff).expect("reuse seed intake");
+    let candidates = CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
+        schema_version: &GenerationSchemaVersion::new("task-20-generator"),
+        module: &VcModuleRef::new("task-20"),
+        intake: &intake,
+        handoff: &handoff,
+        flow_output: None,
+    })
+    .expect("reuse generation candidates");
+
+    CoreGenerationCandidateSet::try_normalize(VcNormalizationInput {
+        schema_version: &VcSchemaVersion::new("task-20-vc"),
+        snapshot,
+        source,
+        candidates: &candidates,
+    })
+    .expect("reuse normalized VC set")
+}
+
 fn with_generated_tautology_goal(input: VcSet) -> VcSet {
+    with_generated_tautology_goal_at(input, VcId::new(0))
+}
+
+fn with_generated_tautology_goal_at(input: VcSet, target: VcId) -> VcSet {
+    with_generated_goal_at(input, target, VcGeneratedFormulaShape::True, 20)
+}
+
+fn with_generated_goal_at(
+    input: VcSet,
+    target: VcId,
+    shape: VcGeneratedFormulaShape,
+    canonical_goal_hash: u8,
+) -> VcSet {
     let generated_goal = VcFormulaRef::Generated(VcGeneratedFormulaId::new(0));
-    let mut parts = VcSetParts {
+    let mut parts = parts_from_set(&input);
+    parts.generated_formulas = vec![generated_formula(0, shape)];
+    let index = target.index();
+    parts.vcs[index].goal = generated_goal;
+    parts.vcs[index].premises = vec![PremiseRef::GeneratedFact {
+        formula: generated_goal,
+    }];
+    parts.vcs[index].status = VcStatus::NeedsAtp;
+    parts.vcs[index].anchor.canonical_goal_hash =
+        HashMarker::Available(sample_hash(canonical_goal_hash));
+    parts.vcs[index].anchor.canonical_context_hash = HashMarker::Available(sample_hash(21));
+    if parts.vcs[index].anchor.source_shape_hash.is_available() {
+        parts.vcs[index].anchor.completeness = AnchorCompleteness::Complete;
+    }
+
+    VcSet::try_new(parts).expect("discharge fixture VC set")
+}
+
+fn with_shifted_generated_tautology_goal_at(input: VcSet, target: VcId) -> VcSet {
+    let generated_goal = VcFormulaRef::Generated(VcGeneratedFormulaId::new(1));
+    let mut parts = parts_from_set(&input);
+    parts.generated_formulas = vec![
+        generated_formula(
+            0,
+            VcGeneratedFormulaShape::Diagnostic(CoreDiagnosticId::new(99)),
+        ),
+        generated_formula(1, VcGeneratedFormulaShape::True),
+    ];
+    let index = target.index();
+    parts.vcs[index].goal = generated_goal;
+    parts.vcs[index].premises = vec![PremiseRef::GeneratedFact {
+        formula: generated_goal,
+    }];
+    parts.vcs[index].status = VcStatus::NeedsAtp;
+    parts.vcs[index].anchor.canonical_goal_hash = HashMarker::Available(sample_hash(20));
+    parts.vcs[index].anchor.canonical_context_hash = HashMarker::Available(sample_hash(21));
+    if parts.vcs[index].anchor.source_shape_hash.is_available() {
+        parts.vcs[index].anchor.completeness = AnchorCompleteness::Complete;
+    }
+
+    VcSet::try_new(parts).expect("shifted generated formula fixture VC set")
+}
+
+fn with_context_entry_at(input: VcSet, target: VcId) -> VcSet {
+    let mut parts = parts_from_set(&input);
+    let index = target.index();
+    let context = &parts.vcs[index].local_context;
+    let mut entries = context.entries().to_vec();
+    let policy_inputs = context.policy_inputs().to_vec();
+    entries.push(ContextEntry {
+        id: ContextEntryId::new(entries.len()),
+        sort_key: CanonicalSortKey::new("999-task-20-context"),
+        kind: ContextEntryKind::TypePredicate,
+        formula: None,
+        provenance: vec![VcProvenance {
+            phase: VcProvenancePhase::Generator,
+            key: VcText::new("task-20-context-change"),
+            core: None,
+        }],
+    });
+    parts.vcs[index].local_context =
+        LocalContext::try_new(entries, policy_inputs).expect("context changed fixture");
+    parts.vcs[index].anchor.canonical_context_hash = HashMarker::Available(sample_hash(31));
+
+    VcSet::try_new(parts).expect("context changed VC set")
+}
+
+fn with_policy_input_at(input: VcSet, target: VcId, key: &str, value: &str) -> VcSet {
+    let mut parts = parts_from_set(&input);
+    let index = target.index();
+    let context = &parts.vcs[index].local_context;
+    parts.vcs[index].local_context = LocalContext::try_new(
+        context.entries().to_vec(),
+        vec![VerifierPolicyInput {
+            sort_key: CanonicalSortKey::new("000-task-20-policy"),
+            key: PolicyKey::new(key),
+            value: PolicyValue::new(value),
+        }],
+    )
+    .expect("policy context");
+    VcSet::try_new(parts).expect("policy changed VC set")
+}
+
+fn parts_from_set(input: &VcSet) -> VcSetParts {
+    VcSetParts {
         schema_version: input.schema_version().clone(),
         snapshot: input.snapshot(),
         source: input.source(),
         module: input.module().clone(),
-        generated_formulas: vec![generated_formula(0, VcGeneratedFormulaShape::True)],
+        generated_formulas: input.generated_formulas().to_vec(),
         vcs: input.vcs().to_vec(),
         seed_accounting: input.seed_accounting().to_vec(),
-    };
-    parts.vcs[0].goal = generated_goal;
-    parts.vcs[0].premises = vec![PremiseRef::GeneratedFact {
-        formula: generated_goal,
-    }];
-    parts.vcs[0].status = VcStatus::NeedsAtp;
-
-    VcSet::try_new(parts).expect("discharge fixture VC set")
+    }
 }
 
 fn seed_handoff(entries: Vec<(ObligationSeed, ObligationHandoffOrigin)>) -> ObligationSeedHandoff {
@@ -328,6 +653,10 @@ fn sample_snapshot_id() -> BuildSnapshotId {
          4444444444444444444444444444444444444444444444444444444444444444",
     )
     .expect("snapshot id")
+}
+
+fn sample_hash(seed: u8) -> mizar_session::Hash {
+    mizar_session::Hash::from_bytes([seed; mizar_session::Hash::BYTE_LEN])
 }
 
 fn vc_ids(set: &VcSet) -> Vec<VcId> {

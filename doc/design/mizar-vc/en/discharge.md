@@ -159,6 +159,14 @@ input status, and explain that detailed replay data was not reconstructed by
 this pass. Such records are valid for status preservation and diagnostics only;
 they are not newly produced proof evidence.
 
+Task 20 makes newly produced deterministic evidence hashes cross-edit stable.
+The hash input is the deterministic rule plus the canonical VC and local-context
+fingerprints, not the snapshot-local `VcId`. Preserved/pre-existing discharged
+status records do not synthesize proof evidence and are not eligible for
+cross-edit proof reuse keys. If either canonical fingerprint is unavailable, the
+evidence hash marker must be conservative unknown and the VC is not eligible for
+the Task 20 proof-reuse candidate key.
+
 Unavailable trace markers belong only to not-discharged explanations or to trace
 classes that the selected rule did not use.
 

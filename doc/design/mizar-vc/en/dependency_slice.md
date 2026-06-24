@@ -55,7 +55,10 @@ Required input:
   seed accounting, and discharge output evidence/explanations when available;
 - explicit upstream identifiers already present in `VcIr`, such as
   `CoreFormulaId`, `ContextEntryId`, `CoreDefinitionId`, premise refs,
-  trace refs, policy keys, and evidence hashes.
+  trace refs, policy keys, and evidence hashes. These identifiers may appear in
+  diagnostic dependency entries, but they are not reusable cross-edit
+  fingerprint payloads unless the producing crate also exposes stable payload
+  content.
 
 Required output for each concrete VC:
 
@@ -71,25 +74,35 @@ The slice must preserve VC order in any batch output. It must not remove VCs,
 rewrite goals, mutate statuses, infer hidden facts, or treat a missing upstream
 payload as proof that no dependency exists.
 
-`VcId` is ownership and ordering metadata for one `BuildSnapshot`; it is not an
-input to the reusable cross-edit dependency-slice fingerprint. Artifact records
-may store the current `VcId` next to the fingerprint for diagnostics and result
-collation, but proof/cache reuse must validate the fingerprint content through
-the `ObligationAnchor` and canonical VC/context keys described by
+`VcId`, `ContextEntryId`, `VcGeneratedFormulaId`, `CoreFormulaId`,
+`CoreDefinitionId`, seed handoff ids, candidate sort keys, source ids/ranges,
+and dense owner ids are ownership and ordering metadata for one build snapshot;
+they are not reusable cross-edit dependency-slice fingerprint inputs. Artifact
+records may store the current ids next to the fingerprint for diagnostics and
+result collation, but proof/cache reuse must validate fingerprint content
+through the `ObligationAnchor` and canonical VC/context keys described by
 [architecture 22](../../architecture/en/22.incremental_verification_contract.md).
 
 ## Dependency Entry Classes
 
 Task 14 may introduce a structured Rust enum, but the semantic classes are:
 
-- `local_context`: a `ContextEntryId` and its formula, kind, provenance, and
-  policy-input relationship;
-- `generated_formula`: a `VcGeneratedFormulaId` and every generated formula it
-  transitively references;
-- `core_formula`: a `CoreFormulaId` used as a goal, context formula, checker
-  fact, type predicate, generated formula leaf, or premise target;
-- `definition`: a `CoreDefinitionId` referenced by definition boundaries,
-  permitted unfoldings, unfold requests, or definitional discharge evidence;
+- `local_context`: a context entry diagnostic id plus stable sort key, kind,
+  provenance, policy-input relationship, and resolved formula payload when
+  available;
+- `generated_formula`: a generated-formula diagnostic id plus formula
+  kind/shape/provenance payload and every generated formula it transitively
+  references, with generated ids resolved before fingerprinting;
+- `core_formula`: a diagnostic `CoreFormulaId` used as a goal, context formula,
+  checker fact, type predicate, generated formula leaf, or premise target. A
+  raw core row id is not reusable payload; if stable core formula content is
+  unavailable, the slice must add conservative unknown coverage and use only an
+  unresolved marker in the fingerprint payload;
+- `definition`: a diagnostic `CoreDefinitionId` referenced by definition
+  boundaries, permitted unfoldings, unfold requests, or definitional discharge
+  evidence. A raw definition row id is not reusable payload; if stable
+  definition content is unavailable, the slice must add conservative unknown
+  coverage and use only an unresolved marker in the fingerprint payload;
 - `imported_fact`: imported symbols and cited premises already present as
   `PremiseRef`;
 - `trace`: explicit registration, cluster, reduction, and conservative-unknown
@@ -101,7 +114,8 @@ Task 14 may introduce a structured Rust enum, but the semantic classes are:
 - `discharge_evidence`: rule names, evidence hashes, evidence inputs, and
   preserved-evidence markers from `DischargeOutput`;
 - `seed`: seed handoff ids and seed mapping rows needed to keep concrete-VC
-  cardinality stable.
+  cardinality stable for diagnostics, while reusable fingerprint payloads use
+  the current-obligation mapping shape rather than handoff ids.
 
 Entries must be ordered by VC id, class rank, stable local key, then debug-stable
 payload. Hash-map iteration order, absolute paths, wall-clock time, backend
@@ -129,7 +143,9 @@ must not be silently dropped from fingerprints.
 
 The dependency-slice fingerprint is not a proof certificate. It is an
 untrusted, deterministic reuse input. The reusable cross-edit fingerprint must
-exclude snapshot-local `VcId` and include:
+exclude snapshot-local ids (`VcId`, context/generated-formula/core/definition
+row ids, handoff ids, source ids/ranges, candidate sort keys, and dense owner
+ids) and include:
 
 - dependency-slice schema version;
 - `VcKind`, status boundary, and evidence boundary;
@@ -138,6 +154,13 @@ exclude snapshot-local `VcId` and include:
 - generated formula references and discharge evidence boundaries;
 - stable anchor and context hash markers when available, or conservative
   unknown markers when unavailable.
+
+Diagnostic entry local keys may contain snapshot-local ids so that a developer
+can inspect the slice, but fingerprint construction must not hash those local
+keys. It must hash stable entry payloads and conservative-unknown family/reason
+markers. When the only available payload for a dependency family is an opaque
+row id, the slice is incomplete/uncacheable and the Task 20 proof-reuse
+candidate key must not be produced.
 
 Discharge evidence records may carry raw evidence-hash bytes for diagnostics or
 artifact payloads. A reusable cross-edit dependency-slice fingerprint may include
@@ -152,6 +175,29 @@ range, or anchor alone. Later reuse tasks must combine a confident
 `ObligationAnchor` match, canonical VC fingerprint, context fingerprint,
 dependency-slice fingerprint, policy/evidence hash, and consumer-specific
 validation policy.
+
+Task 20 adds a proof-reuse candidate-key helper for the currently available
+deterministic discharge evidence boundary. The helper must return a key only
+when all of the following hold:
+
+- the queried VC is taken from the same `DischargeOutput::vc_set()` that
+  produced the evidence;
+- the supplied `DependencySliceSet` matches a freshly computed slice for that
+  same `VcSet` and `DischargeOutput` by fingerprint, completeness, kind, and
+  status;
+- the `ObligationAnchor` is complete and the slice is complete;
+- canonical VC and local-context fingerprints are available;
+- explicit verifier-policy inputs and status policy are included in a policy
+  fingerprint;
+- a newly produced replayable deterministic discharge evidence record exists
+  for the same VC and matches the VC's `Discharged` status evidence.
+
+The helper must return no key for preserved/pre-existing discharged status,
+missing replay data, missing or unstable evidence hashes, incomplete anchors,
+incomplete slices, stale slice sets, non-discharged statuses, or policy/evidence
+mismatches. Proof-witness hashes, cache lookup, kernel acceptance, ATP
+certificate validation, and artifact consumers remain downstream
+`external_dependency_gap`s.
 
 ## Planned Tests
 

@@ -260,7 +260,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       同期する。
     - 依存: 18。仕様: リポジトリのドキュメント方針。
 
-20. **obligation anchor と編集をまたぐ再利用 identity。** [ ]
+20. **obligation anchor と編集をまたぐ再利用 identity。** [x]
     - task 2 の `VcIr` / seed 契約に対する編集横断 reuse 実装を完成させる:
       `ObligationAnchor`、canonical VC fingerprint、local-context fingerprint、
       dependency-slice fingerprint を生成済み obligation へ接続する。
@@ -271,6 +271,8 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       dependency slice fingerprint、compatible verifier policy、選択された
       proof witness hash または deterministic discharge hash が一致する場合に
       限って再利用可能になること。
+      Proof-witness branch は downstream の `external_dependency_gap` のままであり、
+      Task 20 は現在利用可能な deterministic-discharge branch を対象にする。
     - 依存: 2、12、14、16。仕様:
       [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md),
       [07.vc_generation.md](../../architecture/ja/07.vc_generation.md),

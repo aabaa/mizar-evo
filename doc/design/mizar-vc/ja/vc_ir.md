@@ -400,6 +400,36 @@ snapshot-local evidence として現れてよいが、編集横断 proof-reuse i
 必須 anchor ingredient が利用不能な場合、anchor は incomplete と印付けし、downstream proof/cache
 reuse は fail closed しなければならない。
 
+## Task 20 fingerprints
+
+Task 20 は generated obligation 向けの deterministic cross-edit fingerprint helper を追加する:
+
+- `CanonicalVcFingerprint` は VC kind、canonical goal payload、symbolic premise、
+  proof hint、owning `VcSet` の generated-formula table から解決した generated formula
+  payload を対象にする。
+- `LocalContextFingerprint` は stable sort key、kind、解決済み formula payload、
+  provenance、explicit verifier-policy input によって local-context entry を対象にする。
+
+これらの fingerprint は `VcId`、source range、`SourceId`、handoff id、candidate sort key、
+単一 build snapshot に局所的な row id を除外する。Generated formula reference は hash 前に
+formula kind / shape / provenance payload へ解決される。invalid set に含まれる未解決 generated
+formula reference は、reuse input になる前に validation で失敗しなければならない。
+`CoreFormulaId`、`CoreDefinitionId`、dense owner id のような opaque upstream row identifier は
+編集横断 payload ではない。stable な formula、definition、owner、context payload が `mizar-vc`
+から利用できない場合、fingerprint helper は fingerprint を返さず、downstream reuse は fail
+closed しなければならない。
+Task 20 では quantified generated formula も、stable な binder-entry payload が利用可能でない限り
+fail closed である。binder count や `ContextEntryId` だけでは canonical VC fingerprint を構成しない。
+
+Task 20 は generated `ObligationAnchor` に source-shape、canonical-goal、canonical-context
+hash marker も接続する。source-shape hash は source-shaped provenance が利用可能な場合に
+available になり、owner class、`VcKind`、local proof/program path、label、semantic origin、
+source/core provenance marker のような stable ingredient から導出する。`VcId`、source range、
+`SourceId`、handoff id、candidate sort key、dense owner row id から導出してはならない。
+Canonical goal/context hash marker は stable payload が利用可能な場合だけ available になる。
+現在の CoreFormulaId-only goal と context entry は incomplete / conservative-unknown reuse input
+のままである。
+
 ## 決定的 rendering
 
 Task 3 は `VcIr` と関連 table の deterministic debug rendering を実装する。rendering は次を含む:

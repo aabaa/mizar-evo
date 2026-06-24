@@ -7,13 +7,14 @@
 
 use crate::vc_ir::{
     AnchorCompleteness, AnchorIngredient, AnchorLabel, AnchorLabelRole, AnchorOwner,
-    AnchorUnavailableReason, CanonicalSortKey, CollectionLoopObligation, ContextEntry,
-    ContextEntryId, ContextEntryKind, DefinitionOpacityOverride, DefinitionUnfoldRequest,
-    GenerationSchemaVersion, HashMarker, LocalContext, LoopInvariantPhase, PolicyKey, PolicyValue,
-    PremiseRef, ProofHint, RangeLoopObligation, RegistrationCorrectnessKind, SeedAccounting,
-    SeedIntakeMapping, SeedIntakeTable, SeedNoVcReason, SeedOriginRef, SeedVcMapping, SeedVcRef,
-    VcFormulaRef, VcId, VcIr, VcIrError, VcKind, VcModuleRef, VcProvenance, VcProvenancePhase,
-    VcSchemaVersion, VcSet, VcSetParts, VcSourceRef, VcStatus, VcText, VerifierPolicyInput,
+    CanonicalSortKey, CollectionLoopObligation, ContextEntry, ContextEntryId, ContextEntryKind,
+    DefinitionOpacityOverride, DefinitionUnfoldRequest, GenerationSchemaVersion, LocalContext,
+    LoopInvariantPhase, PolicyKey, PolicyValue, PremiseRef, ProofHint, RangeLoopObligation,
+    RegistrationCorrectnessKind, SeedAccounting, SeedIntakeMapping, SeedIntakeTable,
+    SeedNoVcReason, SeedOriginRef, SeedVcMapping, SeedVcRef, VcFormulaRef, VcId, VcIr, VcIrError,
+    VcKind, VcModuleRef, VcProvenance, VcProvenancePhase, VcSchemaVersion, VcSet, VcSetParts,
+    VcSourceRef, VcStatus, VcText, VerifierPolicyInput, canonical_goal_hash_marker,
+    hash_marker_for_payload, local_context_hash_marker,
 };
 use mizar_core::{
     control_flow::{
@@ -420,14 +421,17 @@ fn build_candidate(
         primary: source.clone(),
         related: related_sources(&source, &seed.source),
     };
-    let anchor = anchor_for_seed(
+    let goal = VcFormulaRef::Core(goal);
+    let anchor = anchor_for_seed(AnchorForSeedInput {
         schema_version,
         seed,
-        &kind,
-        owner.clone(),
-        label.clone(),
-        &source,
-    );
+        kind: &kind,
+        owner: owner.clone(),
+        label: label.clone(),
+        source: &source,
+        goal,
+        local_context: &local_context,
+    });
 
     Ok(CoreGenerationCandidate {
         handoff,
@@ -442,7 +446,7 @@ fn build_candidate(
         semantic_origin: seed.semantic_origin.clone(),
         local_context,
         premises,
-        goal: VcFormulaRef::Core(goal),
+        goal,
         proof_hint,
         status: VcStatus::Open,
         provenance,
@@ -1079,23 +1083,56 @@ fn generator_stage_key(kind: &VcKind) -> &'static str {
     }
 }
 
-fn anchor_for_seed(
-    schema_version: &GenerationSchemaVersion,
-    seed: &ObligationSeed,
-    kind: &VcKind,
+struct AnchorForSeedInput<'a> {
+    schema_version: &'a GenerationSchemaVersion,
+    seed: &'a ObligationSeed,
+    kind: &'a VcKind,
     owner: AnchorOwner,
     label: Option<AnchorLabel>,
-    source: &CoreSourceRef,
-) -> crate::vc_ir::ObligationAnchor {
+    source: &'a CoreSourceRef,
+    goal: VcFormulaRef,
+    local_context: &'a LocalContext,
+}
+
+fn anchor_for_seed(input: AnchorForSeedInput<'_>) -> crate::vc_ir::ObligationAnchor {
+    let AnchorForSeedInput {
+        schema_version,
+        seed,
+        kind,
+        owner,
+        label,
+        source,
+        goal,
+        local_context,
+    } = input;
     let anchor_provenance = source_provenance(seed, source);
-    let mut missing = vec![
-        AnchorIngredient::SourceShapeHash,
-        AnchorIngredient::CanonicalGoalHash,
-        AnchorIngredient::CanonicalContextHash,
-    ];
+    let source_shape_hash =
+        source_shape_hash_marker(&owner, kind, seed, label.as_ref(), &anchor_provenance);
+    let canonical_goal_hash = canonical_goal_hash_marker(goal);
+    let canonical_context_hash = local_context_hash_marker(local_context);
+    let mut missing = Vec::new();
     if anchor_provenance.is_empty() {
-        missing.insert(0, AnchorIngredient::SourceProvenance);
+        missing.push(AnchorIngredient::SourceProvenance);
     }
+    for (ingredient, marker) in [
+        (AnchorIngredient::SourceShapeHash, &source_shape_hash),
+        (AnchorIngredient::CanonicalGoalHash, &canonical_goal_hash),
+        (
+            AnchorIngredient::CanonicalContextHash,
+            &canonical_context_hash,
+        ),
+    ] {
+        if !marker.is_available() {
+            missing.push(ingredient);
+        }
+    }
+    missing.sort();
+
+    let completeness = if missing.is_empty() {
+        AnchorCompleteness::Complete
+    } else {
+        AnchorCompleteness::Incomplete { missing }
+    };
 
     crate::vc_ir::ObligationAnchor {
         owner,
@@ -1105,11 +1142,11 @@ fn anchor_for_seed(
         semantic_origin: seed.semantic_origin.clone(),
         source_range: source_range(source),
         provenance: anchor_provenance,
-        source_shape_hash: unavailable_hash("task-6 candidate lacks source-shape hash"),
-        canonical_goal_hash: unavailable_hash("task-8 owns canonical goal hashes"),
-        canonical_context_hash: unavailable_hash("task-8 owns canonical context hashes"),
+        source_shape_hash,
+        canonical_goal_hash,
+        canonical_context_hash,
         generation_schema_version: schema_version.clone(),
-        completeness: AnchorCompleteness::Incomplete { missing },
+        completeness,
     }
 }
 
@@ -1126,9 +1163,37 @@ fn source_provenance(seed: &ObligationSeed, source: &CoreSourceRef) -> Vec<VcPro
         .collect()
 }
 
-fn unavailable_hash(reason: &str) -> HashMarker {
-    HashMarker::Unavailable {
-        reason: AnchorUnavailableReason::new(reason),
+fn source_shape_hash_marker(
+    owner: &AnchorOwner,
+    kind: &VcKind,
+    seed: &ObligationSeed,
+    label: Option<&AnchorLabel>,
+    provenance: &[VcProvenance],
+) -> crate::vc_ir::HashMarker {
+    let mut payload = String::from("source-shape-hash-v1\n");
+    writeln!(
+        &mut payload,
+        "owner: {}",
+        stable_anchor_owner_payload(owner)
+    )
+    .expect("write string");
+    writeln!(&mut payload, "kind: {kind:?}").expect("write string");
+    writeln!(&mut payload, "local-path: {:?}", seed.local_path).expect("write string");
+    writeln!(&mut payload, "label: {label:?}").expect("write string");
+    writeln!(&mut payload, "semantic-origin: {:?}", seed.semantic_origin).expect("write string");
+    writeln!(&mut payload, "provenance: {provenance:?}").expect("write string");
+    hash_marker_for_payload("mizar-vc-source-shape", &payload)
+}
+
+fn stable_anchor_owner_payload(owner: &AnchorOwner) -> String {
+    match owner {
+        AnchorOwner::Theorem(_) => "theorem".to_owned(),
+        AnchorOwner::Definition(_) => "definition".to_owned(),
+        AnchorOwner::Registration(_) => "registration".to_owned(),
+        AnchorOwner::GeneratedSymbol(_) => "generated-symbol".to_owned(),
+        AnchorOwner::Algorithm(_) => "algorithm".to_owned(),
+        AnchorOwner::ProofBlock(_) => "proof-block".to_owned(),
+        AnchorOwner::CheckerOrigin(origin) => format!("checker-origin:{}", origin.as_str()),
     }
 }
 
@@ -1332,6 +1397,14 @@ mod tests {
                 &VcKind::FraenkelMembershipAxiom,
             ]
         );
+        for candidate in set.candidates() {
+            assert!(candidate.anchor.source_shape_hash.is_available());
+            assert!(!candidate.anchor.canonical_goal_hash.is_available());
+            let AnchorCompleteness::Incomplete { missing } = &candidate.anchor.completeness else {
+                panic!("core goal candidates must fail closed until canonical payloads exist");
+            };
+            assert!(missing.contains(&AnchorIngredient::CanonicalGoalHash));
+        }
         let theorem = &set.candidates()[0];
         assert_eq!(
             theorem.local_context.entries()[0].formula,
@@ -1351,6 +1424,9 @@ mod tests {
             theorem.anchor.completeness,
             AnchorCompleteness::Incomplete { .. }
         ));
+        assert!(theorem.anchor.source_shape_hash.is_available());
+        assert!(!theorem.anchor.canonical_goal_hash.is_available());
+        assert!(!theorem.anchor.canonical_context_hash.is_available());
     }
 
     #[test]
@@ -1887,6 +1963,16 @@ mod tests {
                 },
             ]
         );
+        for candidate in set.candidates() {
+            assert!(candidate.anchor.source_shape_hash.is_available());
+            assert!(!candidate.anchor.canonical_goal_hash.is_available());
+            let AnchorCompleteness::Incomplete { missing } = &candidate.anchor.completeness else {
+                panic!(
+                    "algorithm core-goal candidates must fail closed until canonical payloads exist"
+                );
+            };
+            assert!(missing.contains(&AnchorIngredient::CanonicalGoalHash));
+        }
         let requires = &set.candidates()[0];
         assert_eq!(requires.seed_status, ObligationSeedStatus::Deferred);
         assert_eq!(requires.status, VcStatus::Open);
@@ -2680,7 +2766,7 @@ mod tests {
     }
 
     #[test]
-    fn normalization_debug_rendering_is_deterministic_and_preserves_incomplete_anchors() {
+    fn normalization_debug_rendering_is_deterministic_and_fails_closed_for_core_goal_anchors() {
         let source = sample_source_id();
         let handoff = seed_handoff(vec![(
             obligation_seed(
@@ -2704,10 +2790,14 @@ mod tests {
         assert_eq!(first.debug_text(), second.debug_text());
         assert!(first.debug_text().contains("vc-set-debug-v1"));
         assert_eq!(first.vcs()[0].local_context.entries().len(), 1);
+        let anchor = &first.vcs()[0].anchor;
         assert!(matches!(
-            first.vcs()[0].anchor.completeness,
+            anchor.completeness,
             AnchorCompleteness::Incomplete { .. }
         ));
+        assert!(anchor.source_shape_hash.is_available());
+        assert!(!anchor.canonical_goal_hash.is_available());
+        assert!(!anchor.canonical_context_hash.is_available());
     }
 
     #[test]

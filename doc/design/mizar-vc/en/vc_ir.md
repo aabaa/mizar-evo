@@ -429,6 +429,41 @@ be used as cross-edit proof-reuse identity.
 If any required anchor ingredient is unavailable, the anchor must be marked
 incomplete and downstream proof/cache reuse must fail closed.
 
+## Task 20 Fingerprints
+
+Task 20 adds deterministic cross-edit fingerprint helpers for generated
+obligations:
+
+- `CanonicalVcFingerprint` covers the VC kind, canonical goal payload,
+  symbolic premises, proof hints, and generated formula payloads resolved from
+  the owning `VcSet` generated-formula table.
+- `LocalContextFingerprint` covers local-context entries by stable sort key,
+  kind, resolved formula payload, provenance, and explicit verifier-policy
+  inputs.
+
+These fingerprints exclude `VcId`, source range, `SourceId`, handoff ids,
+candidate sort keys, and row ids that are local to one build snapshot. Generated
+formula references are resolved to formula kind/shape/provenance payloads before
+hashing; unresolved generated formula references in an invalid set must fail
+validation before they can become reuse inputs. Opaque upstream row identifiers
+such as `CoreFormulaId`, `CoreDefinitionId`, and dense owner ids are not
+cross-edit payloads. If the stable formula, definition, owner, or context
+payload is unavailable to `mizar-vc`, the fingerprint helper must return no
+fingerprint and downstream reuse must fail closed.
+Quantified generated formulas are also fail-closed in Task 20 unless stable
+binder-entry payloads are available; binder counts or `ContextEntryId`s alone
+are not enough to form a canonical VC fingerprint.
+
+Task 20 also wires generated `ObligationAnchor` values with source-shape,
+canonical-goal, and canonical-context hash markers. The source-shape hash is
+available when source-shaped provenance is available and is derived from stable
+ingredients such as owner class, `VcKind`, local proof/program path, label,
+semantic origin, and source/core provenance markers. It must not be derived from
+`VcId`, source range, `SourceId`, handoff id, candidate sort key, or dense owner
+row id. Canonical goal/context hash markers are available only when the stable
+payloads are available; current CoreFormulaId-only goals and context entries
+remain incomplete/conservative-unknown reuse inputs.
+
 ## Deterministic Rendering
 
 Task 3 implements a deterministic debug rendering for `VcIr` and related

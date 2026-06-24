@@ -5,14 +5,13 @@
 //! prover-independent, fail-closed discharge pass over validated `VcSet` data.
 
 use crate::vc_ir::{
-    ComputationHint, ContextEntry, ContextEntryId, ContextEntryKind, DefinitionOpacityOverride,
-    DefinitionUnfoldRequest, DischargeEvidenceRef, HashMarker, LocalContext, PolicyKey,
-    PolicyValue, PremiseRef, ProofHintKey, VcFormulaRef, VcGeneratedFormulaId,
-    VcGeneratedFormulaShape, VcId, VcIr, VcIrError, VcProvenance, VcProvenancePhase, VcSet,
-    VcSetParts, VcStatus, VcText,
+    AnchorUnavailableReason, ComputationHint, ContextEntry, ContextEntryId, ContextEntryKind,
+    DefinitionOpacityOverride, DefinitionUnfoldRequest, DischargeEvidenceRef, HashMarker,
+    LocalContext, PolicyKey, PolicyValue, PremiseRef, ProofHintKey, VcFormulaRef,
+    VcGeneratedFormulaId, VcGeneratedFormulaShape, VcId, VcIr, VcIrError, VcProvenance,
+    VcProvenancePhase, VcSet, VcSetParts, VcStatus, VcText, stable_fingerprint_hash,
 };
 use mizar_core::core_ir::CoreDefinitionId;
-use mizar_session::Hash;
 use std::{collections::BTreeSet, fmt::Write as _};
 
 pub const DEFAULT_COMPUTATION_STEP_LIMIT: u32 = 64;
@@ -194,7 +193,7 @@ pub fn try_discharge(input: DischargeInput<'_>) -> Result<DischargeOutput, VcIrE
         let original = vc.clone();
         let decision = select_discharge(&original, input.vc_set, input.policy);
         explanations.push(explanation_for(vc.id, &decision));
-        apply_decision(vc, &decision);
+        apply_decision(vc, input.vc_set, &decision);
         if let Some(record) =
             evidence_record_for(&original, vc, input.vc_set, input.policy, &decision)
         {
@@ -445,19 +444,19 @@ fn explanation_for(vc: VcId, decision: &DischargeDecision) -> DischargeExplanati
     }
 }
 
-fn apply_decision(vc: &mut VcIr, decision: &DischargeDecision) {
+fn apply_decision(vc: &mut VcIr, vc_set: &VcSet, decision: &DischargeDecision) {
     match decision {
-        DischargeDecision::Discharged { rule, .. } => apply_discharged(vc, *rule),
+        DischargeDecision::Discharged { rule, .. } => apply_discharged(vc, vc_set, *rule),
         DischargeDecision::NeedsAtp { category, .. } => apply_needs_atp(vc, *category),
         DischargeDecision::Preserved { .. } => {}
     }
 }
 
-fn apply_discharged(vc: &mut VcIr, rule: DischargeRule) {
+fn apply_discharged(vc: &mut VcIr, vc_set: &VcSet, rule: DischargeRule) {
     let status = VcStatus::Discharged {
         evidence: DischargeEvidenceRef {
             rule: VcText::new(rule.key()),
-            evidence_hash: evidence_hash(vc.id, rule),
+            evidence_hash: evidence_hash(vc_set, vc.id, rule),
         },
     };
 
@@ -483,16 +482,29 @@ fn discharge_provenance(key: impl Into<String>) -> VcProvenance {
     }
 }
 
-fn evidence_hash(vc: VcId, rule: DischargeRule) -> HashMarker {
-    let mut bytes = [0; Hash::BYTE_LEN];
-    bytes[..8].copy_from_slice(b"mzvc11dh");
-    bytes[8] = rule.rank();
-
-    for (offset, byte) in vc.index().to_le_bytes().iter().enumerate() {
-        bytes[16 + offset] = *byte;
-    }
-
-    HashMarker::Available(Hash::from_bytes(bytes))
+fn evidence_hash(vc_set: &VcSet, vc: VcId, rule: DischargeRule) -> HashMarker {
+    let Some(canonical_vc) = vc_set.canonical_vc_fingerprint(vc) else {
+        return HashMarker::ConservativeUnknown {
+            reason: AnchorUnavailableReason::new(
+                "discharged VC contains unresolved core formula payloads",
+            ),
+        };
+    };
+    let Some(local_context) = vc_set.local_context_fingerprint(vc) else {
+        return HashMarker::ConservativeUnknown {
+            reason: AnchorUnavailableReason::new(
+                "discharged VC contains unresolved local-context payloads",
+            ),
+        };
+    };
+    let mut payload = String::from("deterministic-discharge-evidence-v2\n");
+    writeln!(&mut payload, "rule: {}", rule.key()).expect("write string");
+    writeln!(&mut payload, "canonical-vc: {:?}", canonical_vc.hash()).expect("write string");
+    writeln!(&mut payload, "local-context: {:?}", local_context.hash()).expect("write string");
+    HashMarker::Available(stable_fingerprint_hash(
+        "mizar-vc-deterministic-discharge",
+        payload.as_bytes(),
+    ))
 }
 
 fn evidence_record_for(
@@ -1043,17 +1055,6 @@ impl DischargeRule {
             Self::BoundedComputation => "task-11-bounded-computation-v1",
         }
     }
-
-    const fn rank(self) -> u8 {
-        match self {
-            Self::GeneratedTautology => 1,
-            Self::LocalContradiction => 2,
-            Self::DirectLocalFact => 3,
-            Self::TracePremise => 4,
-            Self::DefinitionalReduction => 5,
-            Self::BoundedComputation => 6,
-        }
-    }
 }
 
 #[cfg(test)]
@@ -1077,7 +1078,8 @@ mod tests {
         },
     };
     use mizar_session::{
-        BuildSnapshotId, InMemorySessionIdAllocator, SessionIdAllocator, SourceId, SourceRange,
+        BuildSnapshotId, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
+        SourceRange,
     };
 
     #[test]
@@ -1787,7 +1789,6 @@ mod tests {
             &vc.status,
             VcStatus::Discharged { evidence }
                 if evidence.rule.as_str() == expected.key()
-                    && matches!(evidence.evidence_hash, HashMarker::Available(_))
         ));
         assert_eq!(
             vc.provenance.last().expect("discharge provenance").phase,

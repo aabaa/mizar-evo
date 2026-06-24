@@ -422,6 +422,24 @@ normalization provenance は追加してよいが、VC discharge、policy status
 dependency slice 計算、ATP 呼び出し、corpus fixture activation、新しい algorithm payload family
 の追加は行ってはならない。
 
+## Task 20 reuse-identity wiring
+
+Task 20 は milestone 内の generated-obligation reuse identity wiring を完成させる。
+concrete generated candidate ごとに、generator は stable な source-shape、canonical-goal、
+canonical-context hash marker を持つ `ObligationAnchor` を構築しなければならない。
+generator-owned source-shape hash は source-shaped provenance が利用可能な場合に available
+になり、stable な source-shaped ingredient を使い、`VcId`、source range、`SourceId`、handoff id、
+candidate sort key、dense owner row id を除外する。Canonical goal/context hash marker は、
+参照される formula と context entry の stable payload を `mizar-vc` が持つ場合だけ available
+になる。現在の CoreFormulaId-only generator payload は raw upstream row id を hash せず、
+incomplete / conservative-unknown のままにする。
+
+Task 20 は cache reuse をそれ自体では許可しない。後続 consumer のために、complete
+`ObligationAnchor`、canonical VC fingerprint、local-context fingerprint、dependency-slice
+fingerprint、compatible verifier-policy fingerprint、選択された proof-evidence hash という
+stable candidate ingredient を供給するだけである。`VcId`、source range、anchor の一致だけでは
+引き続き不十分である。
+
 ## Planned Tests
 
 Task 6 が追加すべき Rust coverage:

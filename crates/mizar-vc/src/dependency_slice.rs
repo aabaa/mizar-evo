@@ -6,12 +6,15 @@
 //! data.
 
 use crate::{
-    discharge::{DischargeEvidenceRecord, DischargeEvidenceReplay, DischargeOutput},
+    discharge::{
+        DischargeEvidenceRecord, DischargeEvidenceReplay, DischargeEvidenceSource, DischargeOutput,
+    },
     vc_ir::{
         AnchorCompleteness, AnchorIngredient, ComputationHint, ContextEntry, ContextEntryId,
         DefinitionUnfoldRequest, DischargeEvidenceRef, HashMarker, ObligationAnchor, PolicyKey,
         PremiseRef, PremiseRestriction, ProofHint, VcFormulaRef, VcGeneratedFormulaId,
         VcGeneratedFormulaShape, VcId, VcIr, VcKind, VcSet, VcStatus, VcText,
+        stable_fingerprint_hash,
     },
 };
 use mizar_core::control_flow::ObligationHandoffId;
@@ -47,6 +50,29 @@ impl DependencySliceSet {
 
     pub fn slice_for(&self, vc: VcId) -> Option<&DependencySlice> {
         self.slices.iter().find(|slice| slice.vc == vc)
+    }
+
+    pub fn proof_reuse_key_for(
+        &self,
+        discharge_output: &DischargeOutput,
+        vc: VcId,
+    ) -> Option<ProofReuseCandidateKey> {
+        let current_slices = try_compute_dependency_slices(DependencySliceInput {
+            vc_set: discharge_output.vc_set(),
+            discharge_output: Some(discharge_output),
+        })
+        .ok()?;
+        let provided_slice = self.slice_for(vc)?;
+        let current_slice = current_slices.slice_for(vc)?;
+        if provided_slice.fingerprint != current_slice.fingerprint
+            || provided_slice.completeness != current_slice.completeness
+            || provided_slice.kind != current_slice.kind
+            || provided_slice.status != current_slice.status
+        {
+            return None;
+        }
+        let current_vc = discharge_output.vc_set().vc(vc)?;
+        proof_reuse_key(current_vc, current_slice, discharge_output)
     }
 
     pub fn debug_text(&self) -> String {
@@ -140,6 +166,15 @@ impl DependencySlice {
 pub struct DependencySliceFingerprint(Hash);
 
 impl DependencySliceFingerprint {
+    pub const fn hash(self) -> Hash {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct ProofReuseCandidateKey(Hash);
+
+impl ProofReuseCandidateKey {
     pub const fn hash(self) -> Hash {
         self.0
     }
@@ -467,16 +502,25 @@ impl<'a> SliceBuilder<'a> {
         active_context: &mut BTreeSet<ContextEntryId>,
     ) {
         match formula {
-            VcFormulaRef::Core(formula) => self.add_entry(
-                DependencyEntryClass::CoreFormula,
-                format!("core-formula:{}", formula.index()),
-                format!("{formula:?}"),
-            ),
+            VcFormulaRef::Core(formula) => {
+                self.add_entry_with_fingerprint_payload(
+                    DependencyEntryClass::CoreFormula,
+                    format!("core-formula:{}", formula.index()),
+                    format!("{formula:?}"),
+                    "core-formula:unresolved",
+                );
+                self.add_unknown(
+                    DependencyUnknownFamily::UpstreamPayload,
+                    "core-formula:unresolved",
+                    "core formula payload is unavailable",
+                );
+            }
             VcFormulaRef::Generated(id) => {
-                self.add_entry(
+                self.add_entry_with_fingerprint_payload(
                     DependencyEntryClass::GeneratedFormula,
                     format!("generated-formula:{}", id.index()),
                     format!("{id:?}"),
+                    "generated-formula:ref",
                 );
                 if !active_formulas.insert(id) {
                     self.add_unknown(
@@ -496,10 +540,21 @@ impl<'a> SliceBuilder<'a> {
                     active_formulas.remove(&id);
                     return;
                 };
-                self.add_entry(
+                let fingerprint_payload =
+                    formula_fingerprint_payload(self.vc_set, VcFormulaRef::Generated(generated.id));
+                if fingerprint_payload.is_none() {
+                    self.add_unknown(
+                        DependencyUnknownFamily::UpstreamPayload,
+                        "generated-formula:unresolved",
+                        "generated formula payload is unavailable for reuse fingerprinting",
+                    );
+                }
+                self.add_entry_with_fingerprint_payload(
                     DependencyEntryClass::GeneratedFormula,
                     format!("generated-formula:{}:payload", id.index()),
                     format!("kind={:?}; shape={:?}", generated.kind, generated.shape),
+                    fingerprint_payload
+                        .unwrap_or_else(|| "generated-formula:unresolved".to_owned()),
                 );
                 match &generated.shape {
                     VcGeneratedFormulaShape::True
@@ -576,13 +631,38 @@ impl<'a> SliceBuilder<'a> {
         active_formulas: &mut BTreeSet<VcGeneratedFormulaId>,
         active_context: &mut BTreeSet<ContextEntryId>,
     ) {
-        self.add_entry(
+        let mut fingerprint_payload = format!(
+            "sort-key={:?}; kind={}; provenance={:?}",
+            entry.sort_key,
+            context_entry_kind_fingerprint_payload(&entry.kind),
+            entry.provenance
+        );
+        if let Some(formula) = entry.formula {
+            let formula_payload = formula_fingerprint_payload(self.vc_set, formula)
+                .unwrap_or_else(|| "formula:unresolved".to_owned());
+            write!(&mut fingerprint_payload, "; formula={formula_payload}").expect("write string");
+        } else {
+            fingerprint_payload.push_str("; formula=<none>");
+        }
+        if matches!(
+            entry.kind,
+            crate::vc_ir::ContextEntryKind::BinderDeclaration { .. }
+        ) {
+            self.add_unknown(
+                DependencyUnknownFamily::UpstreamPayload,
+                "context:binder-declaration",
+                "binder declaration payload is unavailable",
+            );
+        }
+
+        self.add_entry_with_fingerprint_payload(
             DependencyEntryClass::LocalContext,
             format!("context:{}", entry.id.index()),
             format!(
                 "sort-key={:?}; kind={:?}; formula={:?}; provenance={:?}",
                 entry.sort_key, entry.kind, entry.formula, entry.provenance
             ),
+            fingerprint_payload,
         );
         if let Some(formula) = entry.formula {
             self.collect_formula_inner(formula, active_formulas, active_context);
@@ -724,10 +804,11 @@ impl<'a> SliceBuilder<'a> {
     }
 
     fn collect_anchor(&mut self, anchor: &ObligationAnchor) {
-        self.add_entry(
+        self.add_entry_with_fingerprint_payload(
             DependencyEntryClass::Anchor,
             "anchor:owner",
             format!("{:?}", anchor.owner),
+            stable_anchor_owner_payload(&anchor.owner),
         );
         self.add_entry(
             DependencyEntryClass::Anchor,
@@ -814,12 +895,17 @@ impl<'a> SliceBuilder<'a> {
             return;
         };
 
-        self.add_entry(
+        self.add_entry_with_fingerprint_payload(
             DependencyEntryClass::Seed,
-            format!("seed:{handoff:?}"),
+            "seed:current-obligation",
             format!(
-                "origin={:?}; status={:?}; mapping={}",
+                "handoff={handoff:?}; origin={:?}; status={:?}; mapping={}",
                 row.origin,
+                row.seed_status,
+                seed_mapping_payload(row, self.vc.id)
+            ),
+            format!(
+                "status={:?}; mapping={}",
                 row.seed_status,
                 seed_mapping_payload(row, self.vc.id)
             ),
@@ -920,10 +1006,16 @@ impl<'a> SliceBuilder<'a> {
         definition: mizar_core::core_ir::CoreDefinitionId,
         payload: String,
     ) {
-        self.add_entry(
+        self.add_entry_with_fingerprint_payload(
             DependencyEntryClass::Definition,
             format!("definition:{}", definition.index()),
             payload,
+            "definition:unresolved",
+        );
+        self.add_unknown(
+            DependencyUnknownFamily::Definition,
+            "definition:unresolved",
+            "definition payload is unavailable",
         );
     }
 
@@ -1004,6 +1096,85 @@ fn hash_marker_fingerprint_payload(marker: &HashMarker) -> String {
     }
 }
 
+fn context_entry_kind_fingerprint_payload(kind: &crate::vc_ir::ContextEntryKind) -> String {
+    match kind {
+        crate::vc_ir::ContextEntryKind::BinderDeclaration { .. } => "BinderDeclaration".to_owned(),
+        other => format!("{other:?}"),
+    }
+}
+
+fn formula_fingerprint_payload(vc_set: &VcSet, formula: VcFormulaRef) -> Option<String> {
+    formula_fingerprint_payload_inner(vc_set, formula, &mut BTreeSet::new())
+}
+
+fn formula_fingerprint_payload_inner(
+    vc_set: &VcSet,
+    formula: VcFormulaRef,
+    active: &mut BTreeSet<VcGeneratedFormulaId>,
+) -> Option<String> {
+    match formula {
+        VcFormulaRef::Core(_) => None,
+        VcFormulaRef::Generated(id) => {
+            if !active.insert(id) {
+                return None;
+            }
+            let Some(generated) = vc_set.generated_formula(id) else {
+                active.remove(&id);
+                return None;
+            };
+            let Some(shape) = formula_shape_fingerprint_payload(vc_set, &generated.shape, active)
+            else {
+                active.remove(&id);
+                return None;
+            };
+            active.remove(&id);
+            Some(format!(
+                "generated kind={:?}; provenance={:?}; {shape}",
+                generated.kind, generated.provenance
+            ))
+        }
+    }
+}
+
+fn formula_shape_fingerprint_payload(
+    vc_set: &VcSet,
+    shape: &VcGeneratedFormulaShape,
+    active: &mut BTreeSet<VcGeneratedFormulaId>,
+) -> Option<String> {
+    match shape {
+        VcGeneratedFormulaShape::True => Some("shape=true".to_owned()),
+        VcGeneratedFormulaShape::False => Some("shape=false".to_owned()),
+        VcGeneratedFormulaShape::Diagnostic(_) => None,
+        VcGeneratedFormulaShape::Ref(formula) => {
+            formula_fingerprint_payload_inner(vc_set, *formula, active)
+                .map(|inner| format!("shape=ref({inner})"))
+        }
+        VcGeneratedFormulaShape::Not(formula) => {
+            formula_fingerprint_payload_inner(vc_set, *formula, active)
+                .map(|inner| format!("shape=not({inner})"))
+        }
+        VcGeneratedFormulaShape::And(formulas) => formulas
+            .iter()
+            .map(|formula| formula_fingerprint_payload_inner(vc_set, *formula, active))
+            .collect::<Option<Vec<_>>>()
+            .map(|payloads| format!("shape=and({})", payloads.join(";"))),
+        VcGeneratedFormulaShape::Or(formulas) => formulas
+            .iter()
+            .map(|formula| formula_fingerprint_payload_inner(vc_set, *formula, active))
+            .collect::<Option<Vec<_>>>()
+            .map(|payloads| format!("shape=or({})", payloads.join(";"))),
+        VcGeneratedFormulaShape::Implies {
+            premise,
+            conclusion,
+        } => {
+            let premise = formula_fingerprint_payload_inner(vc_set, *premise, active)?;
+            let conclusion = formula_fingerprint_payload_inner(vc_set, *conclusion, active)?;
+            Some(format!("shape=implies({premise};{conclusion})"))
+        }
+        VcGeneratedFormulaShape::Quantified { .. } => None,
+    }
+}
+
 fn status_fingerprint_payload(status: &VcStatus) -> String {
     match status {
         VcStatus::Open => "Open".to_owned(),
@@ -1048,24 +1219,161 @@ fn fingerprint_for(
     .expect("write string");
     writeln!(&mut payload, "completeness: {completeness:?}").expect("write string");
     writeln!(&mut payload, "[entries]").expect("write string");
-    for entry in entries {
-        writeln!(
-            &mut payload,
-            "{:?}\t{}\t{}",
-            entry.class, entry.local_key, entry.fingerprint_payload
-        )
-        .expect("write string");
+    let mut entry_payloads = entries
+        .iter()
+        .map(|entry| (entry.class, entry.fingerprint_payload.as_str()))
+        .collect::<Vec<_>>();
+    entry_payloads.sort();
+    for (class, fingerprint_payload) in entry_payloads {
+        writeln!(&mut payload, "{class:?}\t{fingerprint_payload}").expect("write string");
     }
     writeln!(&mut payload, "[unknowns]").expect("write string");
-    for unknown in unknowns {
+    let mut unknown_payloads = unknowns
+        .iter()
+        .map(|unknown| (unknown.family, unknown.reason.as_str()))
+        .collect::<Vec<_>>();
+    unknown_payloads.sort();
+    for (family, reason) in unknown_payloads {
+        writeln!(&mut payload, "{family:?}\t{reason}").expect("write string");
+    }
+    DependencySliceFingerprint(stable_hash(payload.as_bytes()))
+}
+
+fn proof_reuse_key(
+    vc: &VcIr,
+    slice: &DependencySlice,
+    discharge_output: &DischargeOutput,
+) -> Option<ProofReuseCandidateKey> {
+    if vc.id != slice.vc || vc.kind != slice.kind || vc.status != slice.status {
+        return None;
+    }
+    if !vc.anchor.is_complete() || !slice.is_complete() {
+        return None;
+    }
+    let VcStatus::Discharged { evidence } = &vc.status else {
+        return None;
+    };
+    let record = discharge_output.evidence_records().iter().find(|record| {
+        record.vc == vc.id
+            && matches!(record.source, DischargeEvidenceSource::NewlyProduced)
+            && matches!(&record.replay, DischargeEvidenceReplay::ExplicitInputRefs)
+    })?;
+    if &record.status_evidence != evidence {
+        return None;
+    }
+    let HashMarker::Available(evidence_hash) = record.status_evidence.evidence_hash else {
+        return None;
+    };
+    let canonical_vc = discharge_output.vc_set().canonical_vc_fingerprint(vc.id)?;
+    let local_context = discharge_output.vc_set().local_context_fingerprint(vc.id)?;
+    let policy = policy_fingerprint_for(vc);
+
+    let mut payload = String::from("proof-reuse-candidate-key-v1\n");
+    write_reuse_anchor_payload(&mut payload, &vc.anchor);
+    writeln!(&mut payload, "canonical-vc: {:?}", canonical_vc.hash()).expect("write string");
+    writeln!(&mut payload, "local-context: {:?}", local_context.hash()).expect("write string");
+    writeln!(
+        &mut payload,
+        "dependency-slice: {:?}",
+        slice.fingerprint.hash()
+    )
+    .expect("write string");
+    writeln!(&mut payload, "verifier-policy: {policy:?}").expect("write string");
+    writeln!(
+        &mut payload,
+        "deterministic-evidence: rule={:?}; hash={evidence_hash:?}",
+        record.status_evidence.rule
+    )
+    .expect("write string");
+
+    Some(ProofReuseCandidateKey(stable_fingerprint_hash(
+        "mizar-vc-proof-reuse-key",
+        payload.as_bytes(),
+    )))
+}
+
+fn write_reuse_anchor_payload(output: &mut String, anchor: &ObligationAnchor) {
+    writeln!(output, "[anchor]").expect("write string");
+    writeln!(
+        output,
+        "owner: {}",
+        stable_anchor_owner_payload(&anchor.owner)
+    )
+    .expect("write string");
+    writeln!(output, "kind: {:?}", anchor.kind).expect("write string");
+    writeln!(output, "local-path: {:?}", anchor.local_path).expect("write string");
+    writeln!(output, "label: {:?}", anchor.label).expect("write string");
+    writeln!(output, "semantic-origin: {:?}", anchor.semantic_origin).expect("write string");
+    writeln!(
+        output,
+        "source-shape: {}",
+        hash_marker_fingerprint_payload(&anchor.source_shape_hash)
+    )
+    .expect("write string");
+    writeln!(
+        output,
+        "canonical-goal: {}",
+        hash_marker_fingerprint_payload(&anchor.canonical_goal_hash)
+    )
+    .expect("write string");
+    writeln!(
+        output,
+        "canonical-context: {}",
+        hash_marker_fingerprint_payload(&anchor.canonical_context_hash)
+    )
+    .expect("write string");
+    writeln!(
+        output,
+        "generation-schema: {:?}",
+        anchor.generation_schema_version
+    )
+    .expect("write string");
+}
+
+fn policy_fingerprint_for(vc: &VcIr) -> Hash {
+    let mut payload = String::from("verifier-policy-fingerprint-v1\n");
+    for input in vc.local_context.policy_inputs() {
         writeln!(
             &mut payload,
-            "{:?}\t{}\t{}",
-            unknown.family, unknown.local_key, unknown.reason
+            "policy-input: sort={:?}; key={:?}; value={:?}",
+            input.sort_key, input.key, input.value
         )
         .expect("write string");
     }
-    DependencySliceFingerprint(stable_hash(payload.as_bytes()))
+    match &vc.status {
+        VcStatus::PolicyOpen { policy } => {
+            writeln!(&mut payload, "status-policy-open: {policy:?}").expect("write string");
+        }
+        VcStatus::AssumedByPolicy { policy, marker } => {
+            writeln!(
+                &mut payload,
+                "status-assumed-by-policy: policy={policy:?}; marker={marker:?}"
+            )
+            .expect("write string");
+        }
+        VcStatus::Discharged { evidence } => {
+            writeln!(&mut payload, "status-discharged-rule: {:?}", evidence.rule)
+                .expect("write string");
+        }
+        other => {
+            writeln!(&mut payload, "status-boundary: {other:?}").expect("write string");
+        }
+    }
+    stable_fingerprint_hash("mizar-vc-verifier-policy", payload.as_bytes())
+}
+
+fn stable_anchor_owner_payload(owner: &crate::vc_ir::AnchorOwner) -> String {
+    match owner {
+        crate::vc_ir::AnchorOwner::Theorem(_) => "theorem".to_owned(),
+        crate::vc_ir::AnchorOwner::Definition(_) => "definition".to_owned(),
+        crate::vc_ir::AnchorOwner::Registration(_) => "registration".to_owned(),
+        crate::vc_ir::AnchorOwner::GeneratedSymbol(_) => "generated-symbol".to_owned(),
+        crate::vc_ir::AnchorOwner::Algorithm(_) => "algorithm".to_owned(),
+        crate::vc_ir::AnchorOwner::ProofBlock(_) => "proof-block".to_owned(),
+        crate::vc_ir::AnchorOwner::CheckerOrigin(origin) => {
+            format!("checker-origin:{}", origin.as_str())
+        }
+    }
 }
 
 fn stable_hash(bytes: &[u8]) -> Hash {
@@ -1285,7 +1593,7 @@ mod tests {
         assert!(has_entry(
             slice,
             DependencyEntryClass::Seed,
-            "seed:ObligationHandoffId(0)"
+            "seed:current-obligation"
         ));
         assert!(slice.requires_cache_miss());
         assert!(
@@ -1548,14 +1856,14 @@ mod tests {
     fn unknown_markers_are_cache_miss_and_fingerprint_inputs() {
         let complete_set = fixture_set(fixture_parts(
             VcStatus::NeedsAtp,
-            VcFormulaRef::Core(CoreFormulaId::new(0)),
-            Vec::new(),
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+            vec![generated_formula(0, VcGeneratedFormulaShape::True)],
             complete_anchor_fixture(),
         ));
         let mut unknown_parts = fixture_parts(
             VcStatus::NeedsAtp,
-            VcFormulaRef::Core(CoreFormulaId::new(0)),
-            Vec::new(),
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+            vec![generated_formula(0, VcGeneratedFormulaShape::True)],
             complete_anchor_fixture(),
         );
         unknown_parts.vcs[0].premises = vec![PremiseRef::ConservativeUnknown {
@@ -1584,6 +1892,149 @@ mod tests {
         );
         assert!(unknown_slice.requires_cache_miss());
         assert_ne!(complete_slice.fingerprint(), unknown_slice.fingerprint());
+    }
+
+    #[test]
+    fn unresolved_core_formula_payloads_are_independently_incomplete() {
+        let set = fixture_set(fixture_parts(
+            VcStatus::NeedsAtp,
+            VcFormulaRef::Core(CoreFormulaId::new(0)),
+            Vec::new(),
+            complete_anchor_fixture(),
+        ));
+
+        let slices = try_compute_dependency_slices(DependencySliceInput {
+            vc_set: &set,
+            discharge_output: None,
+        })
+        .expect("core formula slice");
+        let slice = only_slice(&slices);
+
+        assert_eq!(
+            slice.completeness(),
+            DependencySliceCompleteness::IncompleteUncacheable
+        );
+        assert!(slice.unknowns().iter().any(|unknown| {
+            unknown.family() == DependencyUnknownFamily::UpstreamPayload
+                && unknown.local_key() == "core-formula:unresolved"
+                && unknown.reason().contains("core formula payload")
+        }));
+    }
+
+    #[test]
+    fn unresolved_definition_payloads_are_independently_incomplete() {
+        let mut parts = fixture_parts(
+            VcStatus::NeedsAtp,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+            vec![generated_formula(0, VcGeneratedFormulaShape::True)],
+            complete_anchor_fixture(),
+        );
+        parts.vcs[0].premises = vec![PremiseRef::DefinitionBoundary {
+            definition: CoreDefinitionId::new(0),
+        }];
+        let set = fixture_set(parts);
+
+        let slices = try_compute_dependency_slices(DependencySliceInput {
+            vc_set: &set,
+            discharge_output: None,
+        })
+        .expect("definition slice");
+        let slice = only_slice(&slices);
+
+        assert_eq!(
+            slice.completeness(),
+            DependencySliceCompleteness::IncompleteUncacheable
+        );
+        assert!(slice.unknowns().iter().any(|unknown| {
+            unknown.family() == DependencyUnknownFamily::Definition
+                && unknown.local_key() == "definition:unresolved"
+                && unknown.reason().contains("definition payload")
+        }));
+    }
+
+    #[test]
+    fn unresolved_generated_payloads_are_independently_incomplete() {
+        let set = fixture_set(fixture_parts(
+            VcStatus::NeedsAtp,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+            vec![generated_formula(
+                0,
+                VcGeneratedFormulaShape::Diagnostic(CoreDiagnosticId::new(0)),
+            )],
+            complete_anchor_fixture(),
+        ));
+
+        let slices = try_compute_dependency_slices(DependencySliceInput {
+            vc_set: &set,
+            discharge_output: None,
+        })
+        .expect("generated diagnostic slice");
+        let slice = only_slice(&slices);
+
+        assert_eq!(
+            slice.completeness(),
+            DependencySliceCompleteness::IncompleteUncacheable
+        );
+        assert!(slice.unknowns().iter().any(|unknown| {
+            unknown.family() == DependencyUnknownFamily::UpstreamPayload
+                && unknown.local_key() == "generated-formula:unresolved"
+                && unknown.reason().contains("generated formula payload")
+        }));
+    }
+
+    #[test]
+    fn quantified_binder_payloads_are_independently_incomplete() {
+        let mut parts = fixture_parts(
+            VcStatus::NeedsAtp,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+            vec![
+                generated_formula(
+                    0,
+                    VcGeneratedFormulaShape::Quantified {
+                        kind: crate::vc_ir::QuantifierKind::Forall,
+                        binders: vec![ContextEntryId::new(0)],
+                        body: VcFormulaRef::Generated(VcGeneratedFormulaId::new(1)),
+                    },
+                ),
+                generated_formula(1, VcGeneratedFormulaShape::True),
+            ],
+            complete_anchor_fixture(),
+        );
+        parts.vcs[0].local_context = LocalContext::try_new(
+            vec![ContextEntry {
+                id: ContextEntryId::new(0),
+                sort_key: CanonicalSortKey::new("000-binder"),
+                kind: ContextEntryKind::BinderDeclaration {
+                    var: CoreVarId::new(0),
+                    role: VcText::new("binder"),
+                },
+                formula: None,
+                provenance: vec![provenance("binder")],
+            }],
+            Vec::new(),
+        )
+        .expect("binder context");
+        let set = fixture_set(parts);
+
+        let slices = try_compute_dependency_slices(DependencySliceInput {
+            vc_set: &set,
+            discharge_output: None,
+        })
+        .expect("quantified binder slice");
+        let slice = only_slice(&slices);
+
+        assert_eq!(
+            slice.completeness(),
+            DependencySliceCompleteness::IncompleteUncacheable
+        );
+        assert!(slice.unknowns().iter().any(|unknown| {
+            unknown.family() == DependencyUnknownFamily::UpstreamPayload
+                && unknown.local_key() == "generated-formula:unresolved"
+        }));
+        assert!(slice.unknowns().iter().any(|unknown| {
+            unknown.family() == DependencyUnknownFamily::UpstreamPayload
+                && unknown.local_key() == "context:binder-declaration"
+        }));
     }
 
     #[test]
@@ -1627,10 +2078,10 @@ mod tests {
     #[test]
     fn reusable_fingerprint_excludes_snapshot_local_vc_id() {
         let entries = vec![DependencyEntry {
-            class: DependencyEntryClass::CoreFormula,
-            local_key: "core-formula:0".to_owned(),
-            payload: "CoreFormulaId(0)".to_owned(),
-            fingerprint_payload: "CoreFormulaId(0)".to_owned(),
+            class: DependencyEntryClass::Policy,
+            local_key: "policy:stable".to_owned(),
+            payload: "stable policy payload".to_owned(),
+            fingerprint_payload: "stable policy payload".to_owned(),
         }];
         let first = DependencySlice {
             vc: VcId::new(0),

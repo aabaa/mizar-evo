@@ -271,7 +271,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
       with its Japanese companion and synchronize content.
     - Deps: 18. Spec: repository documentation policy.
 
-20. **Obligation anchors and cross-edit reuse identity.** [ ]
+20. **Obligation anchors and cross-edit reuse identity.** [x]
     - Complete the cross-edit reuse implementation for the task-2 `VcIr` /
       seed contract by wiring `ObligationAnchor`, canonical VC fingerprints,
       local-context fingerprints, and dependency-slice fingerprints through the
@@ -283,6 +283,8 @@ Keep `cargo test -p mizar-vc` green after each task (see
       canonical VC fingerprint, local context fingerprint, dependency slice
       fingerprint, compatible verifier policy, and selected proof witness hash
       or deterministic discharge hash match.
+      The proof-witness branch remains a downstream `external_dependency_gap`;
+      Task 20 covers the currently available deterministic-discharge branch.
     - Deps: 2, 12, 14, 16. Spec:
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
       [07.vc_generation.md](../../architecture/en/07.vc_generation.md),

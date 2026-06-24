@@ -128,6 +128,13 @@ status であること、および詳細 replay data をこの pass が再構築
 この record は status preservation と diagnostics のためだけに有効であり、新しく生成された proof
 evidence ではない。
 
+Task 20 は newly produced deterministic evidence hash を cross-edit stable にする。hash input は
+deterministic rule と canonical VC / local-context fingerprint であり、snapshot-local な `VcId`
+ではない。Preserved / pre-existing discharged status record は proof evidence を合成せず、
+cross-edit proof reuse key の対象にならない。どちらかの canonical fingerprint が利用不可なら、
+evidence hash marker は conservative unknown になり、その VC は Task 20 の proof-reuse
+candidate key の対象にならない。
+
 unavailable trace marker は not-discharged explanation、または selected rule が使用しなかった
 trace class に対してのみ現れる。
 

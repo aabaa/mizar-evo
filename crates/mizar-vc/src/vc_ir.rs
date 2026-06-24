@@ -83,6 +83,24 @@ string_key!(ProofHintKey);
 string_key!(AnchorUnavailableReason);
 string_key!(VcText);
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct CanonicalVcFingerprint(Hash);
+
+impl CanonicalVcFingerprint {
+    pub const fn hash(self) -> Hash {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct LocalContextFingerprint(Hash);
+
+impl LocalContextFingerprint {
+    pub const fn hash(self) -> Hash {
+        self.0
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VcSet {
     schema_version: VcSchemaVersion,
@@ -194,6 +212,19 @@ impl VcSet {
         write_seed_accounting(&mut output, &self.seed_accounting);
         write_vcs(&mut output, &self.vcs);
         output
+    }
+
+    pub fn canonical_vc_fingerprint(&self, vc: VcId) -> Option<CanonicalVcFingerprint> {
+        let vc = self.vc(vc)?;
+        canonical_vc_fingerprint(vc, &generated_formula_map(&self.generated_formulas))
+    }
+
+    pub fn local_context_fingerprint(&self, vc: VcId) -> Option<LocalContextFingerprint> {
+        let vc = self.vc(vc)?;
+        local_context_fingerprint(
+            &vc.local_context,
+            &generated_formula_map(&self.generated_formulas),
+        )
     }
 }
 
@@ -973,6 +1004,35 @@ impl HashMarker {
     pub const fn is_available(&self) -> bool {
         matches!(self, Self::Available(_))
     }
+}
+
+pub(crate) fn hash_marker_for_payload(domain: &str, payload: &str) -> HashMarker {
+    HashMarker::Available(stable_fingerprint_hash(domain, payload.as_bytes()))
+}
+
+pub(crate) fn canonical_goal_hash_marker(goal: VcFormulaRef) -> HashMarker {
+    match goal {
+        VcFormulaRef::Generated(_) => HashMarker::ConservativeUnknown {
+            reason: AnchorUnavailableReason::new(
+                "generated formula payload table is unavailable to anchor builder",
+            ),
+        },
+        VcFormulaRef::Core(_) => HashMarker::ConservativeUnknown {
+            reason: AnchorUnavailableReason::new("core formula payload is unavailable to mizar-vc"),
+        },
+    }
+}
+
+pub(crate) fn local_context_hash_marker(context: &LocalContext) -> HashMarker {
+    let empty_generated = BTreeMap::new();
+    local_context_fingerprint(context, &empty_generated).map_or_else(
+        || HashMarker::ConservativeUnknown {
+            reason: AnchorUnavailableReason::new(
+                "local context contains unresolved core row payloads",
+            ),
+        },
+        |fingerprint| HashMarker::Available(fingerprint.hash()),
+    )
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1838,6 +1898,379 @@ fn sorted_premises(premises: &[PremiseRef]) -> Vec<PremiseRef> {
     let mut sorted = premises.to_vec();
     sorted.sort();
     sorted
+}
+
+fn generated_formula_map(
+    generated_formulas: &[VcGeneratedFormula],
+) -> BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula> {
+    generated_formulas
+        .iter()
+        .map(|formula| (formula.id, formula))
+        .collect()
+}
+
+fn canonical_vc_fingerprint(
+    vc: &VcIr,
+    generated_formulas: &BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula>,
+) -> Option<CanonicalVcFingerprint> {
+    let mut payload = String::from("canonical-vc-fingerprint-v1\n");
+    let mut available = true;
+    writeln!(&mut payload, "kind: {:?}", vc.kind).expect("write string");
+    writeln!(&mut payload, "[goal]").expect("write string");
+    available &= write_formula_payload(
+        &mut payload,
+        vc.goal,
+        generated_formulas,
+        &mut BTreeSet::new(),
+    );
+    writeln!(&mut payload, "[premises]").expect("write string");
+    for premise in sorted_premises(&vc.premises) {
+        available &= write_premise_payload(
+            &mut payload,
+            &premise,
+            &vc.local_context,
+            generated_formulas,
+            &mut BTreeSet::new(),
+        );
+    }
+    writeln!(&mut payload, "[proof-hint]").expect("write string");
+    available &= write_proof_hint_payload(
+        &mut payload,
+        vc.proof_hint.as_ref(),
+        &vc.local_context,
+        generated_formulas,
+    );
+    available.then(|| {
+        CanonicalVcFingerprint(stable_fingerprint_hash(
+            "mizar-vc-canonical-vc",
+            payload.as_bytes(),
+        ))
+    })
+}
+
+fn local_context_fingerprint(
+    context: &LocalContext,
+    generated_formulas: &BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula>,
+) -> Option<LocalContextFingerprint> {
+    let mut payload = String::from("local-context-fingerprint-v1\n");
+    let mut available = true;
+    writeln!(&mut payload, "[entries]").expect("write string");
+    for entry in context.entries() {
+        available &= write_context_entry_payload(&mut payload, entry, generated_formulas);
+    }
+    writeln!(&mut payload, "[policy-inputs]").expect("write string");
+    for input in context.policy_inputs() {
+        writeln!(
+            &mut payload,
+            "policy-input sort={:?}; key={:?}; value={:?}",
+            input.sort_key, input.key, input.value
+        )
+        .expect("write string");
+    }
+    available.then(|| {
+        LocalContextFingerprint(stable_fingerprint_hash(
+            "mizar-vc-local-context",
+            payload.as_bytes(),
+        ))
+    })
+}
+
+fn write_context_entry_payload(
+    output: &mut String,
+    entry: &ContextEntry,
+    generated_formulas: &BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula>,
+) -> bool {
+    let mut available = !matches!(entry.kind, ContextEntryKind::BinderDeclaration { .. });
+    writeln!(
+        output,
+        "context sort={:?}; kind={:?}",
+        entry.sort_key, entry.kind
+    )
+    .expect("write string");
+    if let Some(formula) = entry.formula {
+        available &=
+            write_formula_payload(output, formula, generated_formulas, &mut BTreeSet::new());
+    } else {
+        writeln!(output, "formula: <none>").expect("write string");
+    }
+    writeln!(output, "provenance: {:?}", entry.provenance).expect("write string");
+    available
+}
+
+fn write_formula_payload(
+    output: &mut String,
+    formula: VcFormulaRef,
+    generated_formulas: &BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula>,
+    active_generated: &mut BTreeSet<VcGeneratedFormulaId>,
+) -> bool {
+    match formula {
+        VcFormulaRef::Core(core) => {
+            writeln!(output, "core-formula-unresolved: {core:?}").expect("write string");
+            false
+        }
+        VcFormulaRef::Generated(generated) => {
+            if !active_generated.insert(generated) {
+                writeln!(output, "generated-formula-cycle: {generated:?}").expect("write string");
+                return false;
+            }
+            let available = if let Some(formula) = generated_formulas.get(&generated) {
+                writeln!(
+                    output,
+                    "generated-formula kind={:?}; provenance={:?}",
+                    formula.kind, formula.provenance
+                )
+                .expect("write string");
+                write_formula_shape_payload(
+                    output,
+                    &formula.shape,
+                    generated_formulas,
+                    active_generated,
+                )
+            } else {
+                writeln!(output, "generated-formula-missing: {generated:?}").expect("write string");
+                false
+            };
+            active_generated.remove(&generated);
+            available
+        }
+    }
+}
+
+fn write_formula_shape_payload(
+    output: &mut String,
+    shape: &VcGeneratedFormulaShape,
+    generated_formulas: &BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula>,
+    active_generated: &mut BTreeSet<VcGeneratedFormulaId>,
+) -> bool {
+    match shape {
+        VcGeneratedFormulaShape::True => {
+            writeln!(output, "shape: true").expect("write string");
+            true
+        }
+        VcGeneratedFormulaShape::False => {
+            writeln!(output, "shape: false").expect("write string");
+            true
+        }
+        VcGeneratedFormulaShape::Diagnostic(diagnostic) => {
+            writeln!(output, "shape: diagnostic {diagnostic:?}").expect("write string");
+            false
+        }
+        VcGeneratedFormulaShape::Ref(formula) => {
+            writeln!(output, "shape: ref").expect("write string");
+            write_formula_payload(output, *formula, generated_formulas, active_generated)
+        }
+        VcGeneratedFormulaShape::Not(formula) => {
+            writeln!(output, "shape: not").expect("write string");
+            write_formula_payload(output, *formula, generated_formulas, active_generated)
+        }
+        VcGeneratedFormulaShape::And(formulas) => {
+            writeln!(output, "shape: and len={}", formulas.len()).expect("write string");
+            let mut available = true;
+            for formula in formulas {
+                available &=
+                    write_formula_payload(output, *formula, generated_formulas, active_generated);
+            }
+            available
+        }
+        VcGeneratedFormulaShape::Or(formulas) => {
+            writeln!(output, "shape: or len={}", formulas.len()).expect("write string");
+            let mut available = true;
+            for formula in formulas {
+                available &=
+                    write_formula_payload(output, *formula, generated_formulas, active_generated);
+            }
+            available
+        }
+        VcGeneratedFormulaShape::Implies {
+            premise,
+            conclusion,
+        } => {
+            writeln!(output, "shape: implies premise").expect("write string");
+            let premise_available =
+                write_formula_payload(output, *premise, generated_formulas, active_generated);
+            writeln!(output, "shape: implies conclusion").expect("write string");
+            let conclusion_available =
+                write_formula_payload(output, *conclusion, generated_formulas, active_generated);
+            premise_available && conclusion_available
+        }
+        VcGeneratedFormulaShape::Quantified {
+            kind,
+            binders,
+            body,
+        } => {
+            writeln!(
+                output,
+                "shape: quantified {kind:?}; binder-count={}",
+                binders.len()
+            )
+            .expect("write string");
+            let _ = write_formula_payload(output, *body, generated_formulas, active_generated);
+            false
+        }
+    }
+}
+
+fn write_premise_payload(
+    output: &mut String,
+    premise: &PremiseRef,
+    context: &LocalContext,
+    generated_formulas: &BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula>,
+    active_generated: &mut BTreeSet<VcGeneratedFormulaId>,
+) -> bool {
+    match premise {
+        PremiseRef::LocalContext(context_id) => {
+            writeln!(output, "premise: local-context").expect("write string");
+            if let Some(entry) = context
+                .entries()
+                .iter()
+                .find(|entry| entry.id == *context_id)
+            {
+                write_context_entry_payload(output, entry, generated_formulas)
+            } else {
+                writeln!(output, "premise-local-context-missing: {context_id:?}")
+                    .expect("write string");
+                false
+            }
+        }
+        PremiseRef::GeneratedFact { formula } => {
+            writeln!(output, "premise: generated-fact").expect("write string");
+            write_formula_payload(output, *formula, generated_formulas, active_generated)
+        }
+        PremiseRef::DefinitionBoundary { .. }
+        | PremiseRef::PermittedUnfolding { .. }
+        | PremiseRef::CheckerFact { .. }
+        | PremiseRef::TypePredicate { .. }
+        | PremiseRef::ConservativeUnknown { .. } => {
+            writeln!(output, "premise-unresolved: {premise:?}").expect("write string");
+            false
+        }
+        other => {
+            writeln!(output, "premise: {other:?}").expect("write string");
+            true
+        }
+    }
+}
+
+fn write_proof_hint_payload(
+    output: &mut String,
+    proof_hint: Option<&ProofHint>,
+    context: &LocalContext,
+    generated_formulas: &BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula>,
+) -> bool {
+    let Some(proof_hint) = proof_hint else {
+        writeln!(output, "<none>").expect("write string");
+        return true;
+    };
+
+    let mut available = true;
+    writeln!(output, "citations").expect("write string");
+    for citation in &proof_hint.citations {
+        available &= write_premise_payload(
+            output,
+            citation,
+            context,
+            generated_formulas,
+            &mut BTreeSet::new(),
+        );
+    }
+    writeln!(output, "unfold-requests: {:?}", proof_hint.unfold_requests).expect("write string");
+    available &= proof_hint.unfold_requests.is_empty();
+    writeln!(output, "premise-restrictions").expect("write string");
+    for restriction in &proof_hint.premise_restrictions {
+        available &=
+            write_premise_restriction_payload(output, restriction, context, generated_formulas);
+    }
+    writeln!(
+        output,
+        "solver={:?}; max-axioms={:?}; timeout={:?}; computation={:?}; provenance={:?}",
+        proof_hint.solver,
+        proof_hint.max_axioms,
+        proof_hint.timeout,
+        proof_hint.computation,
+        proof_hint.provenance
+    )
+    .expect("write string");
+    available
+}
+
+fn write_premise_restriction_payload(
+    output: &mut String,
+    restriction: &PremiseRestriction,
+    context: &LocalContext,
+    generated_formulas: &BTreeMap<VcGeneratedFormulaId, &VcGeneratedFormula>,
+) -> bool {
+    match restriction {
+        PremiseRestriction::Only(premises) => {
+            writeln!(output, "restriction: only").expect("write string");
+            let mut available = true;
+            for premise in premises {
+                available &= write_premise_payload(
+                    output,
+                    premise,
+                    context,
+                    generated_formulas,
+                    &mut BTreeSet::new(),
+                );
+            }
+            available
+        }
+        PremiseRestriction::Exclude(premises) => {
+            writeln!(output, "restriction: exclude").expect("write string");
+            let mut available = true;
+            for premise in premises {
+                available &= write_premise_payload(
+                    output,
+                    premise,
+                    context,
+                    generated_formulas,
+                    &mut BTreeSet::new(),
+                );
+            }
+            available
+        }
+        PremiseRestriction::Intent(intent) => {
+            writeln!(output, "restriction: intent {intent:?}").expect("write string");
+            true
+        }
+    }
+}
+
+pub(crate) fn stable_fingerprint_hash(domain: &str, bytes: &[u8]) -> Hash {
+    let mut lanes = [
+        0x6d_69_7a_61_72_2d_76_63_u64,
+        0x70_72_6f_6f_66_2d_69_64_u64,
+        0x74_61_73_6b_32_30_2d_76_u64,
+        0x66_69_6e_67_65_72_2d_31_u64,
+    ];
+
+    for (index, byte) in domain
+        .as_bytes()
+        .iter()
+        .copied()
+        .chain([0])
+        .chain(bytes.iter().copied())
+        .enumerate()
+    {
+        let lane = index % lanes.len();
+        let mixed_index = (index as u64).rotate_left((lane as u32) + 1);
+        lanes[lane] ^= u64::from(byte)
+            .wrapping_add(0x9e37_79b9_7f4a_7c15)
+            .wrapping_add(mixed_index);
+        lanes[lane] = lanes[lane]
+            .rotate_left(11 + lane as u32)
+            .wrapping_mul(0x1000_0000_01b3);
+    }
+
+    lanes[0] ^= bytes.len() as u64;
+    lanes[1] ^= (domain.len() as u64).rotate_left(17);
+    lanes[2] ^= lanes[0].rotate_left(7);
+    lanes[3] ^= lanes[1].rotate_left(13);
+
+    let mut output = [0_u8; Hash::BYTE_LEN];
+    for (chunk, lane) in output.chunks_exact_mut(8).zip(lanes) {
+        chunk.copy_from_slice(&lane.to_be_bytes());
+    }
+    Hash::from_bytes(output)
 }
 
 fn render_anchor(anchor: &ObligationAnchor) -> String {
