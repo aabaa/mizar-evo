@@ -261,7 +261,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
       record decisions in the owning module specs.
     - Deps: 14. Spec: all module specs.
 
-18. **Source/spec correspondence audit.** [ ]
+18. **Source/spec correspondence audit.** [x]
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 17. Spec: all module specs and this TODO.

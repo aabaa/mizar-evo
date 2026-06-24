@@ -272,6 +272,44 @@ fn vc_public_enums_are_forward_compatible_and_documented() {
 }
 
 #[test]
+fn vc_source_spec_audit_covers_public_modules_and_deferred_gaps() {
+    for language in ["en", "ja"] {
+        let audit_path = workspace_root()
+            .join("doc/design/mizar-vc")
+            .join(language)
+            .join("source_spec_audit.md");
+        let audit = read_to_string(&audit_path);
+
+        for required in [
+            "vc_ir",
+            "generator",
+            "discharge",
+            "dependency_slice",
+            "crates/mizar-vc/src/vc_ir.rs",
+            "crates/mizar-vc/src/generator.rs",
+            "crates/mizar-vc/src/discharge.rs",
+            "crates/mizar-vc/src/dependency_slice.rs",
+            "vc_public_enums_are_forward_compatible_and_documented",
+            "identical_public_inputs_have_deterministic_pipeline_outputs",
+            "proof_verification",
+            "mizar-atp",
+            "mizar-kernel",
+            "mizar-proof",
+            "mizar-cache",
+            "source-to-core",
+            "source-to-VC",
+            "Task 20",
+        ] {
+            assert!(
+                audit.contains(required),
+                "{} must mention `{required}`",
+                audit_path.display()
+            );
+        }
+    }
+}
+
+#[test]
 fn vc_source_has_no_undocumented_lint_allows() {
     let root = crate_root();
     let mut violations = Vec::new();
