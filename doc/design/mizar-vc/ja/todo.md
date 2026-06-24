@@ -245,7 +245,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       生むことのプロパティ的検証。
     - 依存: 14。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 
-17. **公開 enum の前方互換性ポリシー。** [ ]
+17. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用し、所有
       モジュール仕様に決定を記録する。
     - 依存: 14。仕様: 全モジュール仕様。

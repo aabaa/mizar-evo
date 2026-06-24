@@ -472,7 +472,41 @@ runner and source-derived payload seams remain external gaps.
 
 ## Public Enum Policy
 
-Task 17 owns the final public enum forward-compatibility audit. Until then,
-implementation tasks must default public `vc_ir` enums to downstream
-forward-compatible `#[non_exhaustive]` surfaces unless a later spec explicitly
-documents an exhaustive exception.
+Task 17 classifies every `vc_ir` public enum as a downstream
+forward-compatible API surface. Each enum must keep `#[non_exhaustive]` so later
+VC, policy, evidence, dependency, and diagnostic categories can be added without
+breaking downstream exhaustive matches.
+
+| public enum | decision |
+|---|---|
+| `VcStatusAction` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `VcGeneratedFormulaKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `VcGeneratedFormulaShape` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `QuantifierKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `VcFormulaRef` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `VcKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `RegistrationCorrectnessKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `LoopInvariantPhase` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `RangeLoopObligation` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CollectionLoopObligation` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ContextEntryKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `PremiseRef` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DefinitionOpacityOverride` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `PremiseRestriction` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ComputationHint` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `VcStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SeedIntakeMapping` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SeedOriginRef` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SeedVcMapping` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `SeedNoVcReason` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `AnchorOwner` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `AnchorLabelRole` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `AnchorCompleteness` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `AnchorIngredient` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `VcProvenancePhase` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `HashMarker` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `VcIrError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module. Internal
+`mizar-vc` matches that intentionally enumerate current variants may remain
+exhaustive.

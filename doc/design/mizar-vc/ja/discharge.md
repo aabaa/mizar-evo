@@ -177,3 +177,20 @@ Task 12 は Rust coverage として次を追加しなければならない:
 - discharge evidence として扱われない policy status;
 - missing trace data が discharge ではなく fail closed になること;
 - discharge をまたいだ seed accounting、anchor、proof hint、generated formula ref の保持。
+
+## public enum policy
+
+task 17 は `discharge` の public enum をすべて downstream forward-compatible API surface
+として分類する。後続の evidence source、replay mode、explanation category、deterministic
+discharge rule を downstream の exhaustive match を壊さず追加できるよう、各 enum は
+`#[non_exhaustive]` を維持しなければならない。
+
+| public enum | decision |
+|---|---|
+| `DischargeEvidenceSource` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DischargeEvidenceReplay` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DischargeExplanationCategory` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DischargeRule` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+
+この module が所有する exhaustive public enum exception はない。現在の variant を意図的に
+列挙する `mizar-vc` 内部 match は exhaustive のままでよい。

@@ -145,3 +145,20 @@ Task 14 は Rust coverage として次を追加しなければならない:
 
 canonical VC/context fingerprint と artifact consumer が存在する後続 task では、cross-edit reuse identity と
 architecture-22 gate の coverage を追加しなければならない。
+
+## public enum policy
+
+task 17 は `dependency_slice` の public enum をすべて downstream forward-compatible API surface
+として分類する。後続の slice completeness state、dependency class、unknown family、slice error
+を downstream の exhaustive match を壊さず追加できるよう、各 enum は `#[non_exhaustive]`
+を維持しなければならない。
+
+| public enum | decision |
+|---|---|
+| `DependencySliceCompleteness` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DependencyEntryClass` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DependencyUnknownFamily` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DependencySliceError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+
+この module が所有する exhaustive public enum exception はない。現在の variant を意図的に
+列挙する `mizar-vc` 内部 match は exhaustive のままでよい。

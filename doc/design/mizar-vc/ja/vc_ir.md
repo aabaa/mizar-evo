@@ -439,6 +439,39 @@ seam が external gap として残るためである。
 
 ## public enum policy
 
-Task 17 が最終的な public enum forward-compatibility audit を所有する。それまでは、implementation
-task は後続 spec が exhaustive exception を明示しない限り、public `vc_ir` enum を downstream
-forward-compatible な `#[non_exhaustive]` surface にする。
+task 17 は `vc_ir` の public enum をすべて downstream forward-compatible API surface
+として分類する。後続の VC、policy、evidence、dependency、diagnostic category を downstream
+の exhaustive match を壊さず追加できるよう、各 enum は `#[non_exhaustive]` を維持しなければならない。
+
+| public enum | decision |
+|---|---|
+| `VcStatusAction` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `VcGeneratedFormulaKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `VcGeneratedFormulaShape` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `QuantifierKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `VcFormulaRef` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `VcKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `RegistrationCorrectnessKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `LoopInvariantPhase` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `RangeLoopObligation` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `CollectionLoopObligation` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ContextEntryKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `PremiseRef` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `DefinitionOpacityOverride` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `PremiseRestriction` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ComputationHint` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `VcStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SeedIntakeMapping` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SeedOriginRef` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SeedVcMapping` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SeedNoVcReason` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `AnchorOwner` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `AnchorLabelRole` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `AnchorCompleteness` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `AnchorIngredient` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `VcProvenancePhase` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `HashMarker` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `VcIrError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+
+この module が所有する exhaustive public enum exception はない。現在の variant を意図的に
+列挙する `mizar-vc` 内部 match は exhaustive のままでよい。

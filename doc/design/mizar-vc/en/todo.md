@@ -256,7 +256,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
       ids, orders, statuses, slices, and discharge evidence.
     - Deps: 14. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-17. **Public-enum forward-compatibility policy.** [ ]
+17. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;
       record decisions in the owning module specs.
     - Deps: 14. Spec: all module specs.

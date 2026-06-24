@@ -175,3 +175,21 @@ Task 14 must add Rust coverage for:
 
 Later tasks must add coverage for cross-edit reuse identity and architecture-22
 gates when canonical VC/context fingerprints and artifact consumers exist.
+
+## Public Enum Policy
+
+Task 17 classifies every `dependency_slice` public enum as a downstream
+forward-compatible API surface. Each enum must keep `#[non_exhaustive]` so later
+slice completeness states, dependency classes, unknown families, and slice
+errors can be added without breaking downstream exhaustive matches.
+
+| public enum | decision |
+|---|---|
+| `DependencySliceCompleteness` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DependencyEntryClass` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DependencyUnknownFamily` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DependencySliceError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module. Internal
+`mizar-vc` matches that intentionally enumerate current variants may remain
+exhaustive.

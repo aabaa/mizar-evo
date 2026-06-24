@@ -515,3 +515,18 @@ Task 8 must add Rust coverage for:
 
 No active `.miz` proof-verification fixture is added by task 5 because runner
 support and source-derived extraction seams remain external gaps.
+
+## Public Enum Policy
+
+Task 17 classifies every `generator` public enum as a downstream
+forward-compatible API surface. Each enum must keep `#[non_exhaustive]` so later
+candidate, normalization, and handoff validation errors can be added without
+breaking downstream exhaustive matches.
+
+| public enum | decision |
+|---|---|
+| `GeneratorError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module. Internal
+`mizar-vc` matches that intentionally enumerate current variants may remain
+exhaustive.

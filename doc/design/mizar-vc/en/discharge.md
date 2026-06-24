@@ -218,3 +218,21 @@ Task 12 must add Rust coverage for:
 - missing trace data that fails closed instead of discharging;
 - preservation of seed accounting, anchors, proof hints, and generated formula
   refs across discharge.
+
+## Public Enum Policy
+
+Task 17 classifies every `discharge` public enum as a downstream
+forward-compatible API surface. Each enum must keep `#[non_exhaustive]` so later
+evidence sources, replay modes, explanation categories, and deterministic
+discharge rules can be added without breaking downstream exhaustive matches.
+
+| public enum | decision |
+|---|---|
+| `DischargeEvidenceSource` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DischargeEvidenceReplay` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DischargeExplanationCategory` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DischargeRule` | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module. Internal
+`mizar-vc` matches that intentionally enumerate current variants may remain
+exhaustive.
