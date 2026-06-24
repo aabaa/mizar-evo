@@ -12,8 +12,8 @@ commit が履歴に存在し、最終 review outcome、verification result、def
 
 | Task | 状態 | Commit | Reviews | Verification | Deferred / notes |
 |---|---|---|---|---|---|
-| 0. Crate plan | ready to commit | pending self-hash; commit 後に `git log` で確認 | Spec/doc review: medium registration-correctness と derived-doc authority findings を修正し、final re-review は no blocking/high/medium findings。Test sufficiency review: no findings。Full implementation review: low future-link と stale task-scope findings を修正し、final re-review は no blocking/high/medium findings。Source/doc consistency review: medium task-15 と conditional-verification findings を修正し、final re-review は no blocking/high/medium findings。 | `git diff --check` は明示 staging 前に passed; `git diff --cached --check` は明示 path staging 後に passed。 | Docs-only。初期 `spec_gap`、`test_gap`、`design_drift`、`source_drift`、`external_dependency_gap`、`deferred` rows を `00.crate_plan.md` に分類し、現在の runner / verification gap と registration-style correctness seed scope に合わせて todo wording を同期する。crate source は作らない。 |
-| 1. Crate scaffold and lint-policy guard | not started | pending | pending | pending | task 0 commit が `git log` に存在するまで開始しない。 |
+| 0. Crate plan | complete | `9697036b0f012cfc578a015dc5a0d6f37bf85143` | Spec/doc review: medium registration-correctness と derived-doc authority findings を修正し、final re-review は no blocking/high/medium findings。Test sufficiency review: no findings。Full implementation review: low future-link と stale task-scope findings を修正し、final re-review は no blocking/high/medium findings。Source/doc consistency review: medium task-15 と conditional-verification findings を修正し、final re-review は no blocking/high/medium findings。 | `git diff --check` は明示 staging 前に passed; `git diff --cached --check` は明示 path staging 後に passed。 | Docs-only。初期 `spec_gap`、`test_gap`、`design_drift`、`source_drift`、`external_dependency_gap`、`deferred` rows を `00.crate_plan.md` に分類し、現在の runner / verification gap と registration-style correctness seed scope に合わせて todo wording を同期する。crate source は作らない。 |
+| 1. Crate scaffold and lint-policy guard | ready to commit | pending self-hash; commit 後に `git log` で確認 | Spec/doc review: no blocking/high/medium/low findings。Test sufficiency review: low private-scope guard finding を修正し、final re-review は no findings。Full implementation review: guard 強化後 no findings。Source/doc consistency review: no blocking/high/medium/low findings。 | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Scaffold-only。workspace member、lockfile entry、minimal crate manifest、documentation-only `src/lib.rs`、lint guard を追加する。semantic VC API、module source file、`.miz` fixture、expectation、`doc/spec`、module spec は変更しない。 |
 | 2. Spec: `vc_ir.md` | not started | pending | pending | pending | scaffold 後の spec-only task。 |
 | 3. Implement `vc_ir` data shapes | not started | pending | pending | pending | Rust source task。 |
 | 4. Obligation-seed intake | not started | pending | pending | pending | Rust source task。 |
@@ -60,3 +60,28 @@ Rationale: task 1 は workspace と Rust crate scaffold を変更するため、
 manifest、lint policy、one-task-one-commit constraints を保つには `xhigh` が
 適している。純粋に機械的な ledger typo 修正だけなら lower reasoning でもよい。
 dependencies、lint policy、workspace membership に触れるなら `xhigh` を保つ。
+
+## Task 1 Handoff
+
+Recommended reasoning: `xhigh`。
+
+Prompt:
+
+```text
+Continue mizar-vc autonomous crate development from the completed task 1
+scaffold commit. Before starting task 2, verify a clean worktree, confirm the
+task 1 commit exists in git log, and re-read
+doc/design/mizar-vc/en/00.crate_plan.md, task_ledger.md, and todo.md. Implement
+task 2 only: write the English/Japanese vc_ir.md module spec with no Rust source
+changes. Cover VcId, VcKind, LocalContext, symbolic PremiseRefs, goal formula,
+ProofHint, VC status including NeedsAtp and policy statuses, the seed-intake
+mapping rule, and the architecture-22 ObligationAnchor contract. Preserve the
+task-0 design_drift classification around active seed intake versus skipped or
+expanded obligations. Run git diff --check and git diff --cached --check after
+explicit path staging, and use review-only agents for the required AGENTS.md
+review phases.
+```
+
+Rationale: task 2 は semantic API が現れる前に central VC IR と anchor contract
+を定義する。proof / identity boundary なので `xhigh` を保つ。typo-only の
+documentation cleanup だけなら lower reasoning でもよい。

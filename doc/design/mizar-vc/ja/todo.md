@@ -72,7 +72,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### VC IR と seed の取り込み
 
-1. **crate の足場と lint 方針のガード。** [ ]
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session` と `mizar-core` に依存する workspace メンバー
      `mizar-vc` を追加し、`mizar-frontend` のガードに倣った
      `tests/lint_policy.rs` を追加する。

@@ -13,8 +13,8 @@ backfilled by a later committed bookkeeping point or the closeout task.
 
 | Task | Status | Commit | Reviews | Verification | Deferred / notes |
 |---|---|---|---|---|---|
-| 0. Crate plan | ready to commit | pending self-hash; verify from `git log` after commit | Spec/doc review: medium registration-correctness and derived-doc authority findings fixed; final re-review no blocking/high/medium findings. Test sufficiency review: no findings. Full implementation review: low future-link and stale task-scope findings fixed; final re-review no blocking/high/medium findings. Source/doc consistency review: medium task-15 and conditional-verification findings fixed; final re-review no blocking/high/medium findings. | `git diff --check` passed before explicit staging; `git diff --cached --check` passed after explicit path staging. | Docs-only. Classifies initial `spec_gap`, `test_gap`, `design_drift`, `source_drift`, `external_dependency_gap`, and `deferred` rows in `00.crate_plan.md`; synchronizes todo wording for current runner/verification gaps and registration-style correctness seed scope; no crate source is created. |
-| 1. Crate scaffold and lint-policy guard | not started | pending | pending | pending | Must not start until task 0 commit exists in `git log`. |
+| 0. Crate plan | complete | `9697036b0f012cfc578a015dc5a0d6f37bf85143` | Spec/doc review: medium registration-correctness and derived-doc authority findings fixed; final re-review no blocking/high/medium findings. Test sufficiency review: no findings. Full implementation review: low future-link and stale task-scope findings fixed; final re-review no blocking/high/medium findings. Source/doc consistency review: medium task-15 and conditional-verification findings fixed; final re-review no blocking/high/medium findings. | `git diff --check` passed before explicit staging; `git diff --cached --check` passed after explicit path staging. | Docs-only. Classifies initial `spec_gap`, `test_gap`, `design_drift`, `source_drift`, `external_dependency_gap`, and `deferred` rows in `00.crate_plan.md`; synchronizes todo wording for current runner/verification gaps and registration-style correctness seed scope; no crate source is created. |
+| 1. Crate scaffold and lint-policy guard | ready to commit | pending self-hash; verify from `git log` after commit | Spec/doc review: no blocking/high/medium/low findings. Test sufficiency review: low private-scope guard finding fixed; final re-review no findings. Full implementation review: no findings after guard strengthening. Source/doc consistency review: no blocking/high/medium/low findings. | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Scaffold-only. Adds workspace member, lockfile entry, minimal crate manifest, documentation-only `src/lib.rs`, and lint guard. No semantic VC APIs, module source files, `.miz` fixtures, expectations, `doc/spec`, or module specs changed. |
 | 2. Spec: `vc_ir.md` | not started | pending | pending | pending | Spec-only task after scaffold. |
 | 3. Implement `vc_ir` data shapes | not started | pending | pending | pending | Rust source task. |
 | 4. Obligation-seed intake | not started | pending | pending | pending | Rust source task. |
@@ -61,3 +61,28 @@ Rationale: task 1 changes workspace and Rust crate scaffolding, so xhigh keeps
 the manifest, lint policy, and one-task-one-commit constraints in view. Lower
 reasoning is acceptable only for a purely mechanical ledger typo fix; keep
 `xhigh` if dependencies, lint policy, or workspace membership are touched.
+
+## Task 1 Handoff
+
+Recommended reasoning: `xhigh`.
+
+Prompt:
+
+```text
+Continue mizar-vc autonomous crate development from the completed task 1
+scaffold commit. Before starting task 2, verify a clean worktree, confirm the
+task 1 commit exists in git log, and re-read
+doc/design/mizar-vc/en/00.crate_plan.md, task_ledger.md, and todo.md. Implement
+task 2 only: write the English/Japanese vc_ir.md module spec with no Rust source
+changes. Cover VcId, VcKind, LocalContext, symbolic PremiseRefs, goal formula,
+ProofHint, VC status including NeedsAtp and policy statuses, the seed-intake
+mapping rule, and the architecture-22 ObligationAnchor contract. Preserve the
+task-0 design_drift classification around active seed intake versus skipped or
+expanded obligations. Run git diff --check and git diff --cached --check after
+explicit path staging, and use review-only agents for the required AGENTS.md
+review phases.
+```
+
+Rationale: task 2 defines the central VC IR and anchor contract before any
+semantic API appears. Keep `xhigh` for the proof/identity boundary; lower
+reasoning is acceptable only for typo-only documentation cleanup.

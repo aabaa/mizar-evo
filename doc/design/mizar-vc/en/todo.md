@@ -76,7 +76,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
 
 ### VC IR and seed intake
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-vc` workspace member depending on `mizar-session` and
      `mizar-core`; add `tests/lint_policy.rs` mirroring the `mizar-frontend`
      guard.

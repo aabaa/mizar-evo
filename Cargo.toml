@@ -12,6 +12,7 @@ members = [
     "crates/mizar-session",
     "crates/mizar-syntax",
     "crates/mizar-test",
+    "crates/mizar-vc",
 ]
 exclude = ["fuzz"]
 resolver = "3"
