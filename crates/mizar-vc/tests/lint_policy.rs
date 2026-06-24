@@ -111,25 +111,27 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
 
     assert_eq!(
         declarations,
-        ["6: pub mod vc_ir;"],
-        "{} must expose only the task-3 `vc_ir` module until later module \
+        ["6: pub mod generator;", "7: pub mod vc_ir;"],
+        "{} must expose only the current spec-backed modules until later module \
          specs exist; found:\n{}",
         lib_path.display(),
         declarations.join("\n")
     );
     assert_eq!(
         source_files,
-        ["src/lib.rs", "src/vc_ir.rs"],
-        "task 3 owns exactly the vc_ir source module; later private VC modules \
+        ["src/generator.rs", "src/lib.rs", "src/vc_ir.rs"],
+        "task 6 owns the generator source module; later private VC modules \
          must wait for their task-scoped specs, found {source_files:?}"
     );
     for spec in [
+        workspace_root().join("doc/design/mizar-vc/en/generator.md"),
+        workspace_root().join("doc/design/mizar-vc/ja/generator.md"),
         workspace_root().join("doc/design/mizar-vc/en/vc_ir.md"),
         workspace_root().join("doc/design/mizar-vc/ja/vc_ir.md"),
     ] {
         assert!(
             spec.exists(),
-            "{} must exist before src/vc_ir.rs is exposed",
+            "{} must exist before its matching source module is exposed",
             spec.display()
         );
     }
@@ -152,23 +154,24 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
 }
 
 #[test]
-fn vc_ir_public_enums_are_forward_compatible() {
-    let source_path = crate_root().join("src/vc_ir.rs");
-    let source = read_to_string(&source_path);
-    let lines = source.lines().collect::<Vec<_>>();
+fn vc_public_enums_are_forward_compatible() {
     let mut violations = Vec::new();
 
-    for (line_index, line) in lines.iter().enumerate() {
-        if line.trim_start().starts_with("pub enum ")
-            && !previous_attribute_is_non_exhaustive(&lines, line_index)
-        {
-            violations.push(format!("{}:{}", source_path.display(), line_index + 1));
+    for source_path in rust_source_files(&crate_root().join("src")) {
+        let source = read_to_string(&source_path);
+        let lines = source.lines().collect::<Vec<_>>();
+        for (line_index, line) in lines.iter().enumerate() {
+            if line.trim_start().starts_with("pub enum ")
+                && !previous_attribute_is_non_exhaustive(&lines, line_index)
+            {
+                violations.push(format!("{}:{}", source_path.display(), line_index + 1));
+            }
         }
     }
 
     assert!(
         violations.is_empty(),
-        "public vc_ir enums must stay #[non_exhaustive] until task 17 records \
+        "public mizar-vc enums must stay #[non_exhaustive] until task 17 records \
          a different public-enum policy:\n{}",
         violations.join("\n")
     );

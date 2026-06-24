@@ -26,6 +26,7 @@ Rust source は task 6、algorithm VC generation は task 7、normalization、cl
 | GEN-G002 | `external_dependency_gap` | `mizar-core` は現在、registration、redefinition、reduction correctness をすべての registration-style condition 向けの dedicated payload ではなく、利用可能な definition/checker seed と provenance を通じて運ぶ。 | 既に存在する explicit core/checker seed と provenance からのみ registration-style correctness VC を生成する。dedicated payload が欠けている場合は fabricated obligation ではなく `DeferredExternal` または no-VC record とする。 |
 | GEN-G003 | `test_gap` / `source_drift` | tasks 6-8 より前に `src/generator.rs` や generator tests は存在しない。 | この仕様は implementation task の behavior と test obligation を名付ける。task 5 は Rust source を変更しない。 |
 | GEN-G004 | `external_dependency_gap` | active source-derived `proof_verification` `.miz` runner support と extraction seam はまだ利用不能である。 | tasks 6-8 では explicit core/control-flow payload 上の Rust fixture を使い、source-derived corpus activation は task 15 まで deferred に保つ。 |
+| GEN-G005 | `external_dependency_gap` | `ObligationSeed` は first-class theorem status dependency metadata や dedicated registration/redefinition/reduction correctness payload field をまだ露出していない。 | Task 6 は upstream fixture が供給する namespaced explicit `CoreProvenance` marker だけを保持する。marker がない場合は seed kind / status に従って通常 candidate または visible no-candidate record になり、label、generic path、source text からこれらの semantics を推測してはならない。 |
 
 Task 5 では `doc/spec`、`.miz` fixture、expectation、traceability metadata を変更しない。
 この文書は既存 architecture/spec requirement を精緻化するものであり、新しい language
@@ -258,6 +259,63 @@ Task 8 が final canonicalization、classification、`VcId` assignment を所有
 Task 8 はこれらの candidate を canonical `VcIr` に変換し、dense within-snapshot `VcId` を割り当て、
 final `SeedAccountingTable` を作成し、duplicate を deterministic に拒否し、fingerprint input を
 準備する。candidate key、source range、将来の `VcId` の一致は編集横断 proof reuse ではない。
+
+## Task 6 Implementation Slice
+
+Task 6 は最初の source module `src/generator.rs` を、explicit core seed family だけに対して
+実装する。public surface は validated `SeedIntakeTable` と対応する `ObligationSeedHandoff`
+から構築される normalize 前の `CoreGenerationCandidateSet` である。
+
+Task 6 candidate が保持するもの:
+
+- handoff id、seed origin、seed status、stable candidate sort key、schema version;
+- 選択された `VcKind`、source reference、owner、local proof path、label、semantic origin、
+  local context、symbolic premise、proof hint、goal formula、open status、provenance、
+  incomplete anchor;
+- skipped、deferred、error、missing-goal、後続 generator task が所有する seed kind 向けの
+  no-candidate record。
+
+candidate を生成する前に、Task 6 は同じ `ObligationSeedHandoff` から seed-intake table を
+再計算し、供給された `SeedIntakeTable` と完全に一致しない場合は要求を拒否する。これにより
+stale、partial、reordered、その他 mismatch のある intake が obligation を silent omission
+したり復活させたりすることを防ぐ。
+
+Task 6 が対応する active seed kind:
+
+- `TheoremProof`;
+- `DefinitionCorrectness`;
+- `CheckerInitial`;
+- `GeneratedNonEmptiness`;
+- `GeneratedSethood`;
+- `FraenkelMembershipAxiom`。
+
+`AlgorithmContract`、`AlgorithmTermination`、`GhostErasure` の active seed は、task 7 まで
+visible `DeferredExternal` no-candidate record として表す。Task 6 は final `VcId` の割り当て、
+final `VcSet` の構築、algorithm VC generation、`Open` / visible no-candidate record を超える
+status transition、dependency slice 計算、obligation discharge、ATP 呼び出し、corpus fixture
+activation を行わない。
+
+Task 6 の stable candidate sort key は module、generation schema、owner、seed canonical key、
+source、core provenance、dense expansion index、handoff id、candidate kind から構築する。
+Context entry は dense context id を割り当てる前に core formula id で sort する。元の context
+insertion order は duplicate formula reference の tie-breaker としてのみ使う。
+
+Registration-style correctness は `vc-registration-style:registration`、
+`vc-registration-style:redefinition`、`vc-registration-style:reduction`、
+`vc-registration-style:explicit-core-seed` のような namespaced explicit `CoreProvenance`
+marker だけから検出する。label、generic local path、semantic-origin text だけでは seed を
+registration-style correctness と分類しない。それ以外の `DefinitionCorrectness` と
+`CheckerInitial` は通常の core/checker candidate または visible no-candidate record のままにする。
+
+`vc-theorem-status:clean`、`vc-theorem-status:non-clean`、`vc-theorem-status:open`、
+`vc-theorem-status:assumed`、`vc-theorem-status:conditional` のような explicit theorem status
+dependency marker は、candidate local context の `VerifierPolicyInput` entry として保持する。
+theorem-status payload がない場合、label、path、semantic origin、source text から捏造しない。
+
+Task 6 は upstream provenance が explicit `vc-proof-goal:terminal` marker を含む場合に限り
+terminal proof goal candidate を出す。それ以外の `TheoremProof` seed は proof-step candidate
+のままである。Task 6 は explicit `vc-unfold:*` provenance marker が local unfolding を許す場合に
+限り、local definition unfold request を作成する。
 
 ## Planned Tests
 

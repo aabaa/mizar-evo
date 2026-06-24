@@ -18,7 +18,7 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | vc_ir | `vc_ir.md`（task 2） | `src/vc_ir.rs` | [x] |
-| generator | `generator.md`（task 5） | `src/generator.rs` | [~] |
+| generator | `generator.md`（task 5） | `src/generator.rs` | [x] |
 | discharge | `discharge.md`（task 10） | `src/discharge.rs` | [ ] |
 | dependency_slice | `dependency_slice.md`（task 13） | `src/dependency_slice.rs` | [ ] |
 
@@ -121,7 +121,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      [16.theorems_and_proofs.md](../../../spec/ja/16.theorems_and_proofs.md)、
      [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md)。
 
-6. **定理、定義、generated core、registration-style correctness の VC。** [ ]
+6. **定理、定義、generated core、registration-style correctness の VC。** [x]
    - 定理の証明ステップ、引用、定義の correctness condition から、明示的な
      ローカルコンテキストを保持した VC を生成する。non-emptiness、sethood、
      Fraenkel membership axiom の explicit core-seed obligation を生成する。

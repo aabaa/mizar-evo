@@ -19,7 +19,7 @@ architecture 07, 16, 18, and 19.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | vc_ir | `vc_ir.md` (task 2) | `src/vc_ir.rs` | [x] |
-| generator | `generator.md` (task 5) | `src/generator.rs` | [~] |
+| generator | `generator.md` (task 5) | `src/generator.rs` | [x] |
 | discharge | `discharge.md` (task 10) | `src/discharge.rs` | [ ] |
 | dependency_slice | `dependency_slice.md` (task 13) | `src/dependency_slice.rs` | [ ] |
 
@@ -126,7 +126,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
      [16.theorems_and_proofs.md](../../../spec/en/16.theorems_and_proofs.md),
      [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md).
 
-6. **Theorem, definition, generated core, and registration-style correctness VCs.** [ ]
+6. **Theorem, definition, generated core, and registration-style correctness VCs.** [x]
    - Generate VCs for theorem proof steps, citations, and definition
      correctness conditions, preserving explicit local contexts. Generate
      explicit core-seed obligations for non-emptiness, sethood, and Fraenkel

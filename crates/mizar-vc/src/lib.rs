@@ -3,4 +3,5 @@
 //! This crate owns pipeline phases 11-12. Public semantic modules are added
 //! only after their owning English/Japanese design specifications exist.
 
+pub mod generator;
 pub mod vc_ir;

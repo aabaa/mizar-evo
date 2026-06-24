@@ -26,6 +26,7 @@ registration-style correctness VCs is task 6; algorithm VC generation is task
 | GEN-G002 | `external_dependency_gap` | `mizar-core` currently carries registration, redefinition, and reduction correctness through available definition/checker seeds and provenance rather than dedicated payloads for every registration-style condition. | Generate registration-style correctness VCs only from explicit core/checker seeds and provenance that are already present. Missing dedicated payloads are `DeferredExternal` or no-VC records, not fabricated obligations. |
 | GEN-G003 | `test_gap` / `source_drift` | No `src/generator.rs` or generator tests exist before tasks 6-8. | This spec names the behavior and test obligations for the implementation tasks; task 5 changes no Rust source. |
 | GEN-G004 | `external_dependency_gap` | Active source-derived `proof_verification` `.miz` runner support and extraction seams remain unavailable. | Use Rust fixtures over explicit core/control-flow payloads in tasks 6-8 and keep source-derived corpus activation deferred to task 15. |
+| GEN-G005 | `external_dependency_gap` | `ObligationSeed` does not yet expose first-class theorem status dependency metadata or dedicated registration/redefinition/reduction correctness payload fields. | Task 6 preserves only namespaced explicit `CoreProvenance` markers supplied by upstream fixtures. Absent markers produce ordinary candidates or visible no-candidate records according to the seed kind/status; the generator must not infer these semantics from labels, generic paths, or source text. |
 
 No `doc/spec`, `.miz` fixtures, expectations, or traceability metadata change
 in task 5. This document refines existing architecture/spec requirements; it
@@ -287,6 +288,73 @@ Task 8 converts these candidates into canonical `VcIr`, assigns dense
 within-snapshot `VcId`s, creates the final `SeedAccountingTable`, rejects
 duplicates deterministically, and prepares fingerprint inputs. A matching
 candidate key, source range, or future `VcId` is not cross-edit proof reuse.
+
+## Task 6 Implementation Slice
+
+Task 6 implements the first source module, `src/generator.rs`, for explicit core
+seed families only. The public surface is a pre-normalized
+`CoreGenerationCandidateSet` built from a validated `SeedIntakeTable` plus the
+matching `ObligationSeedHandoff`.
+
+Task 6 candidates preserve:
+
+- the handoff id, seed origin, seed status, stable candidate sort key, and
+  schema version;
+- the selected `VcKind`, source reference, owner, local proof path, label,
+  semantic origin, local context, symbolic premises, proof hint, goal formula,
+  open status, provenance, and incomplete anchor;
+- no-candidate records for skipped, deferred, error, missing-goal, and later
+  generator-task seed kinds.
+
+Before generating candidates, Task 6 recomputes the seed-intake table from the
+same `ObligationSeedHandoff` and rejects the request unless the supplied
+`SeedIntakeTable` matches it exactly. This rejects stale, partial, reordered, or
+otherwise mismatched intake rather than silently omitting or resurrecting
+obligations.
+
+Task 6 supports these active seed kinds:
+
+- `TheoremProof`;
+- `DefinitionCorrectness`;
+- `CheckerInitial`;
+- `GeneratedNonEmptiness`;
+- `GeneratedSethood`;
+- `FraenkelMembershipAxiom`.
+
+`AlgorithmContract`, `AlgorithmTermination`, and `GhostErasure` active seeds
+are represented as visible `DeferredExternal` no-candidate records until task
+7. Task 6 does not assign final `VcId`s, build a final `VcSet`, generate
+algorithm VCs, transition status beyond `Open` / visible no-candidate records,
+compute dependency slices, discharge obligations, call ATP, or activate corpus
+fixtures.
+
+Task 6 stable candidate sort keys are built from the module, generation schema,
+owner, seed canonical key, source, core provenance, dense expansion index,
+handoff id, and candidate kind. Context entries are sorted by core formula id
+before dense context ids are assigned; original context insertion order is used
+only as a tie-breaker for duplicate formula references.
+
+Registration-style correctness is detected only from namespaced explicit
+`CoreProvenance` markers such as `vc-registration-style:registration`,
+`vc-registration-style:redefinition`,
+`vc-registration-style:reduction`, or
+`vc-registration-style:explicit-core-seed`. Labels, generic local paths, and
+semantic-origin text alone do not classify a seed as registration-style
+correctness. Otherwise `DefinitionCorrectness` and `CheckerInitial` remain
+ordinary core/checker candidates or visible no-candidate records.
+
+Explicit theorem status dependency markers such as `vc-theorem-status:clean`,
+`vc-theorem-status:non-clean`, `vc-theorem-status:open`,
+`vc-theorem-status:assumed`, and `vc-theorem-status:conditional` are preserved
+as `VerifierPolicyInput` entries in the candidate local context. Absent
+theorem-status payloads are not invented from labels, paths, semantic origins,
+or source text.
+
+Task 6 emits terminal proof goal candidates only when the upstream provenance
+includes an explicit `vc-proof-goal:terminal` marker; otherwise `TheoremProof`
+seeds remain proof-step candidates. Task 6 creates local definition unfold
+requests only when an explicit `vc-unfold:*` provenance marker permits local
+unfolding.
 
 ## Planned Tests
 
