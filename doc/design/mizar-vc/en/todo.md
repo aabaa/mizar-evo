@@ -290,11 +290,16 @@ Keep `cargo test -p mizar-vc` green after each task (see
       [07.vc_generation.md](../../architecture/en/07.vc_generation.md),
       [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
 
-21. **Architecture-22 follow-up audit.** [ ]
+21. **Architecture-22 follow-up audit.** [x]
     - Re-run the source/spec correspondence and bilingual documentation sync
       audits for the task-20 anchor, fingerprint, and proof-reuse identity
       contract; record any remaining architecture-22 gaps as follow-up tasks
       before consumers depend on the contract.
+      Task 21 records the focused paired `architecture_22_audit.md` artifact
+      and leaves proof-witness hashes, ATP/kernel/proof/cache/artifact
+      consumers, source-derived runner support, and incomplete upstream stable
+      payload families as classified `external_dependency_gap` / `deferred`
+      follow-up.
     - Deps: 20. Spec: all module specs, this TODO, and repository
       documentation policy.
 

@@ -278,11 +278,15 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       [07.vc_generation.md](../../architecture/ja/07.vc_generation.md),
       [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
 
-21. **architecture-22 フォローアップ監査。** [ ]
+21. **architecture-22 フォローアップ監査。** [x]
     - task 20 の anchor、fingerprint、proof-reuse identity 契約について、
       ソース/仕様対応監査と二言語ドキュメント同期監査を再実行する。
       consumer がこの契約へ依存する前に、残る architecture-22 gap を
       フォローアップタスクとして記録する。
+      Task 21 は focused paired `architecture_22_audit.md` artifact を記録し、
+      proof-witness hash、ATP/kernel/proof/cache/artifact consumer、source-derived
+      runner support、不完全な upstream stable payload family を classified
+      `external_dependency_gap` / `deferred` follow-up として残す。
     - 依存: 20。仕様: 全モジュール仕様、本 TODO、リポジトリの
       ドキュメント方針。
 

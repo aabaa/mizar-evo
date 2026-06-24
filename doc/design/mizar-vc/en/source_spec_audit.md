@@ -66,7 +66,8 @@ Generated public newtypes:
 Literal top-level public items:
 
 - `VcSet`, `VcSetParts`, `VcStatusPlan`, `VcStatusOverride`,
-  `VcStatusAction`, `VcIr`, `VcSourceRef`, `SeedVcRef`,
+  `VcStatusAction`, `CanonicalVcFingerprint`, `LocalContextFingerprint`,
+  `VcIr`, `VcSourceRef`, `SeedVcRef`,
   `VcGeneratedFormula`, `VcGeneratedFormulaKind`, `VcGeneratedFormulaShape`,
   `QuantifierKind`, `VcFormulaRef`, `VcKind`,
   `RegistrationCorrectnessKind`, `LoopInvariantPhase`, `RangeLoopObligation`,
@@ -88,6 +89,7 @@ Correspondence:
 | `VcSet` owns schema, snapshot/source/module identity, generated formulas, VCs, seed accounting, validation, deterministic debug rendering, lookup helpers, and immutable status projection. | `crates/mizar-vc/src/vc_ir.rs` `VcSet`, `VcSetParts`, `VcStatusPlan`, `VcStatusAction`, `VcStatusOverride`, validation helpers. | `constructs_minimal_vc_set_with_symbolic_refs`, `rendering_is_byte_identical_and_marks_incomplete_anchor`, status-plan tests, generated formula and validation rejection tests. | Implemented for explicit payloads. |
 | Seed intake tracks every handoff entry exactly once and records no-VC reasons for skipped/deferred/error/missing-goal rows. | `SeedIntakeTable`, `SeedIntakeRow`, `SeedIntakeMapping`, seed-origin/mapping helpers. | `seed_intake_preserves_handoff_order_and_debug_rendering`, `seed_intake_records_visible_no_vc_reasons`, duplicate/missing-source and distinct-origin tests. | Implemented. |
 | `VcIr` keeps source refs, seed refs, anchors, local context, premises, goal refs, proof hints, status, and provenance without proving or erasing obligations. | `VcIr`, `VcSourceRef`, `LocalContext`, `ProofHint`, `VcStatus`, `ObligationAnchor`, validation helpers. | context/status/anchor/generated-goal validation tests and downstream generator/discharge/dependency tests. | Implemented; source-derived extraction stays external. |
+| Canonical VC and local-context fingerprints resolve stable generated formula/context payloads and fail closed on raw upstream row ids, quantified binder gaps, and unresolved payloads. | `CanonicalVcFingerprint`, `LocalContextFingerprint`, `VcSet::canonical_vc_fingerprint`, `VcSet::local_context_fingerprint`, fingerprint payload helpers. | Task 20 determinism and unresolved-payload dependency tests exercise the public reuse path and fail-closed boundaries. | Implemented for stable generated payloads; upstream core/definition/binder payloads remain external. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on all public enums. | `vc_public_enums_are_forward_compatible_and_documented`. | Guarded by task 17. |
 
 ### `generator`
@@ -108,6 +110,7 @@ Correspondence:
 | Task-6 theorem, definition, generated-core, and explicit registration-style candidates preserve source, context, proof hints, statuses, and visible no-candidate records for unavailable payloads. | `build_candidate`, task-six generation helpers, no-candidate helpers. | task-six candidate tests, theorem-status, registration-style, local-context, and deferred-row tests. | Implemented for explicit upstream payloads; dedicated missing payloads remain external. |
 | Task-7 algorithm candidates are generated only from explicit flow-site metadata and goal formulas; unsupported families stay visible no-candidate/deferred rows. | flow-derived generation and no-candidate helpers. | flow-site generation tests, flow mismatch tests, unavailable algorithm family tests. | Implemented for explicit flow payloads; call-precondition, branch, match, range-loop, collection-loop, term-only termination, partial termination, Pick, and ghost-erasure payload families remain external/deferred. |
 | Normalization assigns dense `VcId`s by documented kind rank, candidate sort key, and handoff id while preserving seed accounting and statuses. | `CoreGenerationCandidateSet::try_normalize`. | normalization id/order, duplicate, deferred status, expanded mapping, debug rendering tests. | Implemented. |
+| Generated anchors carry source-shape hashes when stable source-shaped provenance exists, but canonical goal/context hash markers fail closed when stable formula/context payloads are unavailable. | `anchor_for_seed`, source-shape and canonical marker helpers. | task-six and algorithm candidate tests assert source-shape availability and raw-core canonical-goal incompleteness. | Implemented for current candidates. |
 | Public enums are forward-compatible. | `GeneratorError` is `#[non_exhaustive]`. | `vc_public_enums_are_forward_compatible_and_documented`. | Guarded by task 17. |
 
 ### `discharge`
@@ -131,6 +134,7 @@ Correspondence:
 |---|---|---|---|
 | Deterministic pre-ATP discharge only applies supported explicit rules and preserves unsupported VCs for ATP. | `try_discharge`, rule selection and decision application helpers. | generated tautology, reflexivity, contradiction/direct fact, trace/definition/computation, unsupported and limit-exceeded tests. | Implemented for explicit `VcIr` data. |
 | Evidence and explanations are deterministic, replayable in memory, and never treated as trusted kernel proof. | `DischargeOutput`, `DischargeEvidenceRecord`, `DischargeExplanation`, `debug_text`. | evidence-record, preserved-status, policy/deferred, multi-output order, deterministic repeat tests. | Implemented for in-memory evidence; artifact serialization and kernel/proof/cache validation remain external/deferred. |
+| Newly produced deterministic discharge evidence hashes are cross-edit stable only when canonical VC/context fingerprints are available. | `evidence_hash`, canonical fingerprint lookups, conservative-unknown markers. | Task 20 reuse tests cover stable deterministic discharge evidence and fail-closed evidence boundaries. | Implemented for deterministic-discharge branch. |
 | Policy statuses remain explicit and are not discharged evidence. | status-preserving paths in `try_discharge`. | `policy_and_deferred_statuses_are_preserved_without_discharge_evidence`, determinism suite. | Implemented. |
 | Public enums are forward-compatible. | discharge public enums are `#[non_exhaustive]`. | `vc_public_enums_are_forward_compatible_and_documented`. | Guarded by task 17. |
 
@@ -144,7 +148,8 @@ Literal top-level public items:
 - `DependencySliceInput`, `DependencySliceSet`, `DependencySlice`,
   `DependencySliceFingerprint`, `DependencySliceCompleteness`,
   `DependencyEntry`, `DependencyEntryClass`, `DependencyUnknown`,
-  `DependencyUnknownFamily`, `DependencySliceError`,
+  `DependencyUnknownFamily`, `ProofReuseCandidateKey`,
+  `DependencySliceError`,
   `try_compute_dependency_slices`
 
 Correspondence:
@@ -154,7 +159,8 @@ Correspondence:
 | Slices are deterministic per-VC records preserving VC order, kind/status boundary, entries, unknowns, completeness, and fingerprint. | `try_compute_dependency_slices`, `DependencySliceSet`, `DependencySlice`, debug/fingerprint helpers. | dependency ordering/debug/fingerprint tests, status-boundary tests, determinism suite. | Implemented. |
 | Dependency entries collect local context, generated/core formulas, definitions, imports, traces, policy, anchors, discharge evidence, and seed mapping data. | slice collector helpers over `VcSet` and optional `DischargeOutput`. | `collects_dependency_classes_from_vc_ir_inputs`, discharge-evidence, pre-existing evidence, unused-context tests. | Implemented for current explicit payloads. |
 | Unknown coverage is fail-closed and causes uncacheable slices. | `DependencyUnknown`, completeness and cache-miss helpers. | conservative unknown, incomplete anchor, binder/context cycle, unavailable evidence tests. | Implemented. |
-| Reusable fingerprints exclude snapshot-local `VcId` and normalize snapshot-local discharge evidence hashes. | fingerprint payload helpers. | `reusable_fingerprint_excludes_snapshot_local_vc_id`, `reusable_fingerprint_normalizes_snapshot_local_discharge_hashes`, anchor hash tests. | Implemented; full cross-edit reuse identity is Task 20. |
+| Reusable fingerprints exclude snapshot-local ids and normalize snapshot-local discharge evidence hashes. | fingerprint payload helpers that hash stable payloads rather than diagnostic local keys. | `reusable_fingerprint_excludes_snapshot_local_vc_id`, `reusable_fingerprint_normalizes_snapshot_local_discharge_hashes`, generated-formula-id shift and unresolved-payload tests. | Implemented for current deterministic-discharge reuse candidates. |
+| Proof-reuse candidate keys require complete anchors/slices, current matching slice computation, canonical VC/context fingerprints, compatible policy fingerprint, and newly produced replayable deterministic discharge evidence. | `DependencySliceSet::proof_reuse_key_for`, `ProofReuseCandidateKey`, `proof_reuse_key`. | `cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs` and dependency-slice fail-closed tests. | Implemented for deterministic-discharge branch; proof-witness/cache/kernel consumers remain external/deferred. |
 | Public enums are forward-compatible. | dependency-slice public enums are `#[non_exhaustive]`. | `vc_public_enums_are_forward_compatible_and_documented`. | Guarded by task 17. |
 
 ## Cross-Module Evidence
@@ -163,13 +169,23 @@ Correspondence:
 |---|---|
 | Crate scaffolding and dependency boundary | `Cargo.toml`, `src/lib.rs`, and `tests/lint_policy.rs`; guarded by manifest, workspace, dependency, module-export, and allow-rationale tests. |
 | Identical public inputs produce identical VC sets, ids, order, statuses, discharge evidence, and slices | `crates/mizar-vc/tests/determinism_suite.rs`; `identical_public_inputs_have_deterministic_pipeline_outputs`. |
+| Architecture-22 cross-edit reuse identity for deterministic discharge candidates | `crates/mizar-vc/tests/determinism_suite.rs`; shifted `VcId`, shifted generated-formula id, stale slice, policy/context/goal changes, pre-existing evidence, incomplete anchor, and unresolved-payload checks. |
 | Public enum forward compatibility | Source attributes, EN/JA module policy tables, and `vc_public_enums_are_forward_compatible_and_documented`. |
 | Active source-derived corpus coverage | No active proof-verification corpus is implemented; Task 15 records deferred traceability rows instead of fake `.miz` fixtures. |
 
+## Task 21 Architecture-22 Follow-Up
+
+Task 21 re-ran this source/spec audit after Task 20 and records no new
+unclassified source/spec drift. The deterministic-discharge branch of the
+architecture-22 identity contract is implemented for stable generated payloads.
+The paired [architecture_22_audit.md](./architecture_22_audit.md) document is
+the focused Task 21 artifact.
+
 ## Remaining Classified Follow-Ups
 
-No new source/spec correspondence gap is introduced by Task 18. Existing
-classified records remain:
+Task 18 introduced no new source/spec correspondence gap. Task 21 re-ran the
+audit after the architecture-22 identity work and likewise records no new
+unclassified source/spec gap. Existing classified records remain:
 
 - `external_dependency_gap`: active `proof_verification` runner support and
   source-to-core / source-to-VC extraction seams are absent from `mizar-test`;
@@ -178,15 +194,17 @@ classified records remain:
   `mizar-cache` are not active workspace consumers, so ATP translation,
   certificate acceptance, proof policy, cache lookup/reuse, and artifact
   persistence remain outside this crate.
-- `external_dependency_gap`: upstream explicit payloads are still incomplete
-  for some registration/redefinition/reduction details, call-precondition,
-  branch, match, range-loop, collection-loop, term-only termination, partial
-  termination, Pick non-emptiness, ghost-erasure, and complete trace families.
-- `deferred`: Task 20 owns `ObligationAnchor` and cross-edit reuse identity
-  follow-through against architecture 22 once canonical VC/context identity and
-  consumer policy seams are in place.
-- `deferred`: Task 21 records the architecture-22 follow-up audit, Task 22
-  records the module-boundary refactor gate, and closeout records final quality
-  review and crate-exit status.
+- `external_dependency_gap`: upstream explicit/stable payloads are still
+  incomplete for registration/redefinition/reduction details,
+  call-precondition, branch, match, range-loop, collection-loop, term-only
+  termination, partial termination, Pick non-emptiness, ghost-erasure, complete
+  trace families, source-derived core formula payloads, definition payloads,
+  quantified binder payloads, and source-derived obligation payload families.
+- `deferred`: proof-witness hashes, ATP/kernel/proof/cache validation,
+  artifact consumers, and source-derived runner integration must be implemented
+  before architecture-22 reuse can be accepted outside the deterministic
+  discharge candidate key.
+- `deferred`: Task 22 records the module-boundary refactor gate, and closeout
+  records final quality review and crate-exit status.
 
 No `repo_metadata_conflict` was observed.

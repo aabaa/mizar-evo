@@ -44,8 +44,9 @@ the ledger by design and is backfilled by this task.
 | `dependency_slice.md` | Conservative slice inputs/outputs, dependency entry classes, unknown coverage, reusable fingerprint contract, planned tests, and public enum policy. | Synchronized. |
 | `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, and classified external/deferred follow-ups. | Synchronized. |
 | `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19 sync edits. | Synchronized by this paired Task 19 document. |
-| `task_ledger.md` | Task status, commit hashes available before Task 19, review outcomes, verification summaries, deferred notes, and handoff prompts. | Synchronized after this task backfills the Task 18 hash and records Task 19. |
-| `todo.md` | Ordered task list, completed tasks, remaining Task 20-22 and closeout scope, recommended verification, and notes. | Synchronized after this task marks Task 19 complete. |
+| `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence, deterministic-discharge branch evidence, remaining external/deferred gaps, and no-drift classification. | Synchronized by Task 21. |
+| `task_ledger.md` | Task status, commit hashes available through Task 20, review outcomes, verification summaries, deferred notes, and handoff prompts. | Synchronized after Task 21 backfills the Task 20 hash and records the Task 21 audit checkpoint. |
+| `todo.md` | Ordered task list, completed tasks, remaining Task 22 and closeout scope, recommended verification, and notes. | Synchronized after Task 21 marks the architecture-22 follow-up audit complete. |
 
 ## Classification
 
@@ -62,16 +63,18 @@ Existing classified records remain:
   `mizar-cache` are not active workspace consumers, so ATP translation,
   certificate acceptance, proof policy, cache lookup/reuse, and artifact
   persistence remain downstream.
-- `external_dependency_gap`: upstream explicit payloads remain incomplete for
-  some registration/redefinition/reduction details, call-precondition, branch,
-  match, range-loop, collection-loop, term-only termination, partial
-  termination, Pick non-emptiness, ghost-erasure, and complete trace families.
-- `deferred`: Task 20 owns the remaining architecture-22 cross-edit reuse
-  identity work for anchors, canonical VC/context fingerprints, dependency
-  fingerprints, compatible verifier policy, and witness/discharge hashes.
-- `deferred`: Task 21 owns the architecture-22 follow-up audit, Task 22 owns
-  the module-boundary refactor gate, and closeout owns final quality review and
-  crate-exit reporting.
+- `external_dependency_gap`: upstream explicit/stable payloads remain
+  incomplete for registration/redefinition/reduction details,
+  call-precondition, branch, match, range-loop, collection-loop, term-only
+  termination, partial termination, Pick non-emptiness, ghost-erasure, complete
+  trace families, source-derived core formula payloads, definition payloads,
+  quantified binder payloads, and source-derived obligation payload families.
+- `deferred`: proof-witness hashes, ATP/kernel/proof/cache validation,
+  artifact consumers, and source-derived runner integration remain downstream
+  before architecture-22 reuse can be accepted outside deterministic-discharge
+  candidate keys.
+- `deferred`: Task 22 owns the module-boundary refactor gate, and closeout owns
+  final quality review and crate-exit reporting.
 
 ## Task 19 Sync Edits
 
@@ -80,3 +83,12 @@ commit hash in the paired ledgers, records the Task 19 review/verification
 outcome in the paired ledgers, and marks Task 19 complete in the paired todos.
 
 No other paired content needed synchronization.
+
+## Task 21 Sync Edits
+
+Task 21 adds the paired architecture-22 audit documents and rechecks the
+Task 20 identity contract across the English canonical documents and Japanese
+companions. It backfills the Task 20 commit hash in the paired ledgers, records
+the Task 21 review/verification outcome, marks Task 21 complete in the paired
+todos, and records that the remaining architecture-22 gaps are classified
+external/deferred rather than untracked drift.
