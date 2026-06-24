@@ -21,7 +21,7 @@ architecture 07, 16, 18, and 19.
 | vc_ir | `vc_ir.md` (task 2) | `src/vc_ir.rs` | [x] |
 | generator | `generator.md` (task 5) | `src/generator.rs` | [x] |
 | discharge | `discharge.md` (task 10) | `src/discharge.rs` | [x] |
-| dependency_slice | `dependency_slice.md` (task 13) | `src/dependency_slice.rs` | [ ] |
+| dependency_slice | `dependency_slice.md` (task 13) | `src/dependency_slice.rs` | [x] |
 
 `mizar-vc` implements pipeline phases 11-12: `CoreIr` and `ControlFlowIr` in,
 prover-independent `VcIr` out, with deterministic pre-ATP discharge producing
@@ -225,7 +225,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
     - Deps: 2. Spec:
       [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
 
-14. **Dependency-slice computation.** [ ]
+14. **Dependency-slice computation.** [x]
     - Compute per-VC dependency slices deterministically from local contexts,
       generated formulas, premises, proof hints, anchors, statuses, seed
       accounting, policy inputs, trace references, and task-12 discharge
@@ -235,7 +235,9 @@ Keep `cargo test -p mizar-vc` green after each task (see
       dependencies; definition/unfold dependencies; trace refs; unused facts
       excluded; conservative unknown coverage; deterministic ordering and
       fingerprint/debug rendering; `VcId` excluded from reusable fingerprints;
-      unknown markers included in fingerprints; status-boundary preservation.
+      unknown markers included in fingerprints; completeness/cache-miss intent
+      is consumer-visible; mismatched `DischargeOutput`/`VcSet` is rejected;
+      status-boundary preservation.
     - Deps: 8, 12, 13. Spec: `dependency_slice.md`.
 
 15. **Corpus runner at stage `proof_verification`.** [ ]

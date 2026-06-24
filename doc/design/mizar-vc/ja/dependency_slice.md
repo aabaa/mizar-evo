@@ -113,8 +113,15 @@ reuse 可能な cross-edit fingerprint は snapshot-local `VcId` を除外し、
 - `VcKind`、status boundary、evidence boundary;
 - ordered dependency entries と conservative unknown marker;
 - 関連する policy key/value;
-- generated formula reference と discharge evidence hash;
+- generated formula reference と discharge evidence boundary;
 - stable anchor/context hash marker が利用可能な場合はそれ、利用不能な場合は conservative unknown marker。
+
+discharge evidence record は diagnostics または artifact payload のために raw evidence-hash
+bytes を保持してよい。reuse 可能な cross-edit dependency-slice fingerprint は、その hash が
+cross-edit stable であることが分かる場合だけ bytes を含めてよい。現在の evidence hash が
+`VcId` など snapshot-local ingredient を含み得る場合、slice は rule と hash availability/stability
+boundary を fingerprint し、実際の witness または deterministic-discharge hash validation は
+consumer-specific proof-evidence gate に委ねなければならない。
 
 consumer は matching `VcId`、source range、anchor だけで proof/cache reuse を許可してはならない。後続の reuse
 task は confident な `ObligationAnchor` match、canonical VC fingerprint、context fingerprint、

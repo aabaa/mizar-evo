@@ -135,9 +135,17 @@ exclude snapshot-local `VcId` and include:
 - `VcKind`, status boundary, and evidence boundary;
 - ordered dependency entries and conservative unknown markers;
 - relevant policy keys/values;
-- generated formula references and discharge evidence hashes;
+- generated formula references and discharge evidence boundaries;
 - stable anchor and context hash markers when available, or conservative
   unknown markers when unavailable.
+
+Discharge evidence records may carry raw evidence-hash bytes for diagnostics or
+artifact payloads. A reusable cross-edit dependency-slice fingerprint may include
+those bytes only when the hash is known to be cross-edit stable. If the current
+evidence hash may include snapshot-local ingredients such as `VcId`, the slice
+must fingerprint the rule and hash availability/stability boundary instead, and
+leave actual witness or deterministic-discharge hash validation to the
+consumer-specific proof-evidence gate.
 
 Consumers must not authorize proof/cache reuse from matching `VcId`, source
 range, or anchor alone. Later reuse tasks must combine a confident

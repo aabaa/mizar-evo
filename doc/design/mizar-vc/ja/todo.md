@@ -20,7 +20,7 @@
 | vc_ir | `vc_ir.md`（task 2） | `src/vc_ir.rs` | [x] |
 | generator | `generator.md`（task 5） | `src/generator.rs` | [x] |
 | discharge | `discharge.md`（task 10） | `src/discharge.rs` | [x] |
-| dependency_slice | `dependency_slice.md`（task 13） | `src/dependency_slice.rs` | [ ] |
+| dependency_slice | `dependency_slice.md`（task 13） | `src/dependency_slice.rs` | [x] |
 
 `mizar-vc` はパイプライン phase 11-12 を実装する。入力は `CoreIr` と
 `ControlFlowIr`、出力は prover 非依存の `VcIr` であり、外部 prover の実行に
@@ -217,7 +217,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 依存: 2。仕様:
       [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
 
-14. **依存スライスの計算。** [ ]
+14. **依存スライスの計算。** [x]
     - local context、generated formula、premise、proof hint、anchor、status、
       seed accounting、policy input、trace 参照、task-12 discharge evidence/explanation
       から VC ごとの dependency slice を決定的に計算する。
@@ -226,7 +226,8 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       definition/unfold dependency。trace ref。未使用 fact の除外。
       conservative unknown coverage。deterministic ordering と fingerprint/debug
       rendering。reusable fingerprint からの `VcId` 除外。unknown marker の
-      fingerprint 参加。status-boundary preservation。
+      fingerprint 参加。completeness/cache-miss intent の consumer-visible surface。
+      mismatched `DischargeOutput`/`VcSet` の reject。status-boundary preservation。
     - 依存: 8、12、13。仕様: `dependency_slice.md`。
 
 15. **stage `proof_verification` のコーパスランナー。** [ ]

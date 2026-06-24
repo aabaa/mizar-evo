@@ -119,9 +119,10 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
     assert_eq!(
         declarations,
         [
-            "6: pub mod discharge;",
-            "7: pub mod generator;",
-            "8: pub mod vc_ir;",
+            "7: pub mod dependency_slice;",
+            "8: pub mod discharge;",
+            "9: pub mod generator;",
+            "10: pub mod vc_ir;",
         ],
         "{} must expose only the current spec-backed modules until later module \
          specs exist; found:\n{}",
@@ -131,6 +132,7 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
     assert_eq!(
         source_files,
         [
+            "src/dependency_slice.rs",
             "src/discharge.rs",
             "src/generator.rs",
             "src/lib.rs",
@@ -140,6 +142,8 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
          must wait for their task-scoped specs, found {source_files:?}"
     );
     for spec in [
+        workspace_root().join("doc/design/mizar-vc/en/dependency_slice.md"),
+        workspace_root().join("doc/design/mizar-vc/ja/dependency_slice.md"),
         workspace_root().join("doc/design/mizar-vc/en/discharge.md"),
         workspace_root().join("doc/design/mizar-vc/ja/discharge.md"),
         workspace_root().join("doc/design/mizar-vc/en/generator.md"),
