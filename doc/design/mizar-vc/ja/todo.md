@@ -240,7 +240,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       external-dependency reason つきで corpus obligation を deferred 記録する。
     - 依存: 11。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)。
 
-16. **決定性スイート。** [ ]
+16. **決定性スイート。** [x]
     - 同一入力が同一の VC 集合、id、順序、状態、スライス、discharge 証拠を
       生むことのプロパティ的検証。
     - 依存: 14。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。

@@ -251,7 +251,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
       of fabricating active fixtures.
     - Deps: 11. Spec: [staged_model.md](../../mizar-test/en/staged_model.md).
 
-16. **Determinism suite.** [ ]
+16. **Determinism suite.** [x]
     - Property coverage that identical inputs produce identical VC sets,
       ids, orders, statuses, slices, and discharge evidence.
     - Deps: 14. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
