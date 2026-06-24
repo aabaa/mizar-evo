@@ -178,7 +178,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
 
 ### Pre-ATP discharge (phase 12)
 
-10. **Spec: `discharge.md`.** [ ]
+10. **Spec: `discharge.md`.** [x]
     - Write the pre-ATP discharge spec (English and Japanese, no code):
       which obligation forms are discharged Mizar-side (deterministic or
       computation-based), the computation-limit model, explainability

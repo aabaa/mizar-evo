@@ -170,7 +170,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### pre-ATP discharge（phase 12）
 
-10. **仕様: `discharge.md`。** [ ]
+10. **仕様: `discharge.md`。** [x]
     - pre-ATP discharge の仕様を執筆する（英語と日本語、コードなし）:
       Mizar 側で discharge する義務形（決定的または計算ベース）、計算上限
       モデル、説明可能性レコード、「ATP 行きの VC を消したり弱めたりしない」
