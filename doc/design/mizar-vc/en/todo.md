@@ -215,7 +215,7 @@ Keep `cargo test -p mizar-vc` green after each task (see
 
 ### Dependency slices and follow-ups
 
-13. **Spec: `dependency_slice.md`.** [ ]
+13. **Spec: `dependency_slice.md`.** [x]
     - Write the dependency-slice spec (English and Japanese, no code): which
       imported facts, registrations, and definitions each VC depends on, and
       how slices feed canonical dependency-slice fingerprints, proof reuse,
@@ -226,10 +226,17 @@ Keep `cargo test -p mizar-vc` green after each task (see
       [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
 
 14. **Dependency-slice computation.** [ ]
-    - Compute per-VC dependency slices deterministically from premises,
-      local contexts, and trace references.
-    - Tests: slice fixtures; unused facts excluded; deterministic ordering.
-    - Deps: 8, 13. Spec: `dependency_slice.md`.
+    - Compute per-VC dependency slices deterministically from local contexts,
+      generated formulas, premises, proof hints, anchors, statuses, seed
+      accounting, policy inputs, trace references, and task-12 discharge
+      evidence/explanations.
+    - Tests: slice fixtures; local context/generated formula/core-goal
+      formula/premise/proof hint/policy/anchor/seed/discharge-evidence
+      dependencies; definition/unfold dependencies; trace refs; unused facts
+      excluded; conservative unknown coverage; deterministic ordering and
+      fingerprint/debug rendering; `VcId` excluded from reusable fingerprints;
+      unknown markers included in fingerprints; status-boundary preservation.
+    - Deps: 8, 12, 13. Spec: `dependency_slice.md`.
 
 15. **Corpus runner at stage `proof_verification`.** [ ]
     - Reassess `mizar-test` support before editing. If an active

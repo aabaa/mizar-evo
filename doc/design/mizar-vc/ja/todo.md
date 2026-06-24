@@ -208,7 +208,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### 依存スライスとフォローアップ
 
-13. **仕様: `dependency_slice.md`。** [ ]
+13. **仕様: `dependency_slice.md`。** [x]
     - 依存スライスの仕様を執筆する（英語と日本語、コードなし）: 各 VC が
       依存する import 済み事実・registration・定義と、スライスが
       canonical dependency-slice fingerprint、proof reuse、増分再ビルドへ
@@ -218,10 +218,16 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
 
 14. **依存スライスの計算。** [ ]
-    - premise、ローカルコンテキスト、trace 参照から VC ごとの依存スライスを
-      決定的に計算する。
-    - テスト: スライスのフィクスチャ。未使用の事実の除外。決定的な順序。
-    - 依存: 8、13。仕様: `dependency_slice.md`。
+    - local context、generated formula、premise、proof hint、anchor、status、
+      seed accounting、policy input、trace 参照、task-12 discharge evidence/explanation
+      から VC ごとの dependency slice を決定的に計算する。
+    - テスト: slice fixture。local context/generated formula/core-goal
+      formula/premise/proof hint/policy/anchor/seed/discharge-evidence dependency。
+      definition/unfold dependency。trace ref。未使用 fact の除外。
+      conservative unknown coverage。deterministic ordering と fingerprint/debug
+      rendering。reusable fingerprint からの `VcId` 除外。unknown marker の
+      fingerprint 参加。status-boundary preservation。
+    - 依存: 8、12、13。仕様: `dependency_slice.md`。
 
 15. **stage `proof_verification` のコーパスランナー。** [ ]
     - 編集前に `mizar-test` support を再評価する。active `proof_verification`
