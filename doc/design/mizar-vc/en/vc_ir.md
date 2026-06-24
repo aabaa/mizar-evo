@@ -207,6 +207,11 @@ Rules:
 
 - no concrete `VcIr` exists without a seed accounting row;
 - `Active` seeds with a goal are eligible for concrete VC generation;
+- `Deferred` flow-derived `AlgorithmContract` seeds with a goal and supported
+  explicit `ControlFlowObligationSite` metadata are also eligible for concrete
+  VC generation, because `mizar-core` marks those rows deferred until
+  `mizar-vc` applies the task-7 algorithm schema; the original deferred
+  `seed_status` remains recorded for task-8 accounting;
 - `Skipped`, `Deferred`, and `Error` seeds may produce no concrete VC when they
   carry a diagnostic or provenance reason;
 - disabled seeds may use a visible no-VC mapping, while policy-open obligations
@@ -215,9 +220,9 @@ Rules:
 - multi-VC expansion is allowed only through an explicit `Expanded` mapping
   that records a stable zero-based dense `expansion_index` for each generated
   VC;
-- ordinary theorem, definition, checker-initial, generated type, and current
-  flow-derived milestone seeds use `One` unless their owning generator spec
-  records a specific expansion schema;
+- ordinary theorem, definition, checker-initial, generated type, and eligible
+  goal-bearing flow-derived milestone seeds use `One` unless their owning
+  generator spec records a specific expansion schema;
 - duplicate handoff entries with the same canonical seed key and origin must be
   rejected or represented as deterministic diagnostics before `VcId`
   assignment.
@@ -254,8 +259,10 @@ not assign `VcId`s and does not construct concrete `VcIr`s. It preserves the
 handoff order and seed origin, rejects duplicate `(canonical_key, origin)` rows
 deterministically, rejects any handoff row that lacks a matching `source_map`
 entry before later `VcId` assignment, and records every skipped/deferred/error/
-missing-goal row as a visible no-VC mapping. Task 8 consumes eligible rows when
-deterministic `VcId`s are assigned.
+missing-goal row as a visible no-VC mapping except for task-7-eligible
+goal-bearing deferred `FlowDerived` `AlgorithmContract` rows with supported
+explicit flow-site metadata. Task 8 consumes eligible rows when deterministic
+`VcId`s are assigned.
 
 ## LocalContext
 

@@ -27,6 +27,7 @@ registration-style correctness VCs is task 6; algorithm VC generation is task
 | GEN-G003 | `test_gap` / `source_drift` | No `src/generator.rs` or generator tests exist before tasks 6-8. | This spec names the behavior and test obligations for the implementation tasks; task 5 changes no Rust source. |
 | GEN-G004 | `external_dependency_gap` | Active source-derived `proof_verification` `.miz` runner support and extraction seams remain unavailable. | Use Rust fixtures over explicit core/control-flow payloads in tasks 6-8 and keep source-derived corpus activation deferred to task 15. |
 | GEN-G005 | `external_dependency_gap` | `ObligationSeed` does not yet expose first-class theorem status dependency metadata or dedicated registration/redefinition/reduction correctness payload fields. | Task 6 preserves only namespaced explicit `CoreProvenance` markers supplied by upstream fixtures. Absent markers produce ordinary candidates or visible no-candidate records according to the seed kind/status; the generator must not infer these semantics from labels, generic paths, or source text. |
+| GEN-G006 | `external_dependency_gap` | The current `ObligationSeedHandoff` carries flow-site metadata and goal formulas for contract, assertion, and invariant obligations, but it does not yet expose call-precondition, branch, match, range-loop, collection-loop, or generated formula schemas for term-only termination and ghost-erasure obligations. | Task 7 generates candidates only for explicit flow-derived seed rows that have `ControlFlowObligationSite` metadata and a goal formula. Missing algorithm payload families remain visible no-candidate/deferred records instead of fabricated VCs. |
 
 No `doc/spec`, `.miz` fixtures, expectations, or traceability metadata change
 in task 5. This document refines existing architecture/spec requirements; it
@@ -208,7 +209,7 @@ Algorithm candidates are generated from `ControlFlowIr` and the algorithm seed
 rows prepared from it. The generator follows the structured Hoare-style schema
 from the language spec and must not reconstruct control flow from source text.
 
-Required candidate families:
+The complete algorithm VC model includes these candidate families:
 
 - call preconditions for each algorithm call;
 - postconditions for every return edge and algorithm contract exit;
@@ -243,10 +244,12 @@ Algorithm contexts must preserve:
 - ghost facts only in logical verification contexts, never as runtime
   dependencies.
 
-Task 7 owns the concrete generator implementation and tests for these families,
-including audit fixtures for old-state assignment, field-update alias identity,
-`break` exits without `not C`, `continue` decreasing checks, `downto` and
-`step` range loops, and ghost-only `Pick` erasure.
+Task 7 owns the concrete generator implementation only for the subset whose
+flow-derived handoff rows currently carry explicit `ControlFlowObligationSite`
+metadata and goal formulas: requires, ensures, assertions, and supported
+loop-invariant phases. The remaining listed families stay visible
+no-candidate/deferred records until upstream payloads and generated formula
+schemas expose them explicitly.
 
 ## Controlled Definition Unfolding
 
@@ -356,6 +359,63 @@ seeds remain proof-step candidates. Task 6 creates local definition unfold
 requests only when an explicit `vc-unfold:*` provenance marker permits local
 unfolding.
 
+## Task 7 Implementation Slice
+
+Task 7 extends `src/generator.rs` to generate algorithm candidates from
+explicit flow-derived handoff rows. The input may include immutable
+`ControlFlowOutput` so the generator can validate that a flow-derived seed's
+`ControlFlowObligationSite` belongs to the referenced `ControlFlowIr` and can
+classify loop-invariant phases from explicit CFG metadata. Raw source text,
+labels, and generic semantic-origin strings are not algorithm payloads.
+
+Task 7 may generate an open candidate for a deferred flow-derived seed when the
+task-7 seed-intake rule has marked the row eligible and all of these conditions
+hold:
+
+- the row origin is `FlowDerived`;
+- the entry has a `ControlFlowObligationSite`;
+- the referenced `ControlFlowIr` exists in the supplied `ControlFlowOutput`;
+- the seed kind and site kind form an owned task-7 algorithm family;
+- the seed carries an explicit goal formula.
+
+Seed intake preserves the original deferred seed status in bookkeeping while
+using an eligible one-candidate mapping for goal-bearing flow rows. The
+generated candidate uses `VcStatus::Open`. Task 8 owns the final seed-to-VC
+mapping and must make this status transition auditable.
+
+Task 7 supports these explicit goal-bearing site mappings:
+
+- `Requires` -> `AlgorithmPrecondition`;
+- `Ensures` -> `AlgorithmPostcondition`;
+- `AlgorithmAssertion` and `StatementAssertion` -> `AlgorithmAssertion`;
+- `AlgorithmInvariant` -> `LoopInvariant { phase: Entry }`;
+- `LoopInvariant` -> `LoopInvariant` with phase `Entry`, `Preservation`,
+  `Break`, or `Continue` when the supplied `ControlFlowIr` exposes the loop
+  header or exit kind required to distinguish the phase.
+
+Task 7 records these cases as visible no-candidate records:
+
+- flow-derived algorithm rows without a `ControlFlowObligationSite`;
+- rows whose referenced `ControlFlowIr` is missing from the input;
+- algorithm rows with no explicit goal formula, including current
+  `TerminationMeasure`, `PartialTermination`, `GhostPick`, and
+  `GhostAssignment` rows;
+- call-precondition, branch, match, range-loop, collection-loop, Pick
+  non-emptiness, and ghost-erasure proof families that are named by the spec
+  but not yet present as explicit handoff payloads.
+
+Task 7 algorithm context entries are symbolic and conservative. They may record
+explicit site metadata such as site kind, ordinal, statement, block, loop id,
+exit id, local id, assignment-effect id, and the matching flow id as
+`VerifierPolicyInput` records or metadata-only local-context entries. They must
+not invent path conditions, old-state assignment facts, alias identities,
+post-havoc facts, hidden range values, branch facts, or ghost runtime facts when
+those formulas are absent from the handoff or `ControlFlowIr`.
+
+Task 7 may add a test-only `mizar-resolve` dev-dependency so Rust fixtures can
+construct the `SymbolId` values required by `ControlFlowIr`. Production
+`mizar-vc` code remains limited to `mizar-core` and `mizar-session` inputs.
+
 ## Planned Tests
 
 Task 6 must add Rust coverage for:
@@ -377,12 +437,16 @@ Task 6 must add Rust coverage for:
 
 Task 7 must add Rust coverage for:
 
-- call-precondition, return-postcondition, assertion, branch, match, loop,
-  range-loop, collection-loop, termination, partial-termination, and
-  ghost-erasure candidates;
-- context preservation for old-state assignment, field-update alias identity,
-  post-havoc loops, break/continue exits, range-loop hidden metadata, and
-  Pick non-emptiness plus ghost-only `Pick` erasure;
+- goal-bearing algorithm precondition, postcondition, assertion, and
+  loop-invariant candidates from explicit flow-derived sites;
+- visible no-candidate/deferred records for unavailable call-precondition,
+  branch, match, range-loop, collection-loop, term-only termination,
+  partial-termination, Pick non-emptiness, and ghost-erasure payload families;
+- conservative symbolic context preservation for explicit flow-site metadata,
+  including loop header/backedge and break/continue exit classification, while
+  not inventing old-state assignment facts, field-update alias identity,
+  post-havoc facts, range-loop hidden metadata, branch facts, or Pick facts
+  that are not present in the payload;
 - deterministic ordering of algorithm candidates independent of traversal
   helper map iteration.
 

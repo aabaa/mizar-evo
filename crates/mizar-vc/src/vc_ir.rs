@@ -5,12 +5,13 @@
 
 use mizar_core::{
     control_flow::{
-        ControlFlowId, ObligationHandoffId, ObligationHandoffOrigin, ObligationSeedHandoff,
+        ControlFlowId, ControlFlowObligationSiteKind, ObligationHandoffEntry, ObligationHandoffId,
+        ObligationHandoffOrigin, ObligationSeedHandoff,
     },
     core_ir::{
         CoreAlgorithmId, CoreDefinitionId, CoreDiagnosticId, CoreFormulaId, CoreItemId,
         CoreLabelRef, CoreProvenance, CoreSourceRef, CoreVarId, LocalProofOrProgramPath,
-        NormalizedSemanticOrigin, ObligationSeedCanonicalKey, ObligationSeedId,
+        NormalizedSemanticOrigin, ObligationSeedCanonicalKey, ObligationSeedId, ObligationSeedKind,
         ObligationSeedStatus,
     },
 };
@@ -539,11 +540,7 @@ impl SeedIntakeTable {
                 seed_status: entry.seed.status,
                 canonical_key,
                 source,
-                mapping: intake_mapping(
-                    entry.seed.status,
-                    entry.seed.goal,
-                    &entry.seed.diagnostics,
-                ),
+                mapping: intake_mapping(entry),
             });
         }
 
@@ -651,11 +648,15 @@ fn seed_origin_ref(origin: &ObligationHandoffOrigin) -> SeedOriginRef {
     }
 }
 
-fn intake_mapping(
-    status: ObligationSeedStatus,
-    goal: Option<CoreFormulaId>,
-    diagnostics: &[CoreDiagnosticId],
-) -> SeedIntakeMapping {
+fn intake_mapping(entry: &ObligationHandoffEntry) -> SeedIntakeMapping {
+    let status = entry.seed.status;
+    let goal = entry.seed.goal;
+    let diagnostics = &entry.seed.diagnostics;
+
+    if let Some(goal) = eligible_deferred_flow_goal(entry) {
+        return SeedIntakeMapping::EligibleOneVc { goal };
+    }
+
     match (status, goal) {
         (ObligationSeedStatus::Active, Some(goal)) => SeedIntakeMapping::EligibleOneVc { goal },
         (ObligationSeedStatus::Active, None) => SeedIntakeMapping::NoConcreteVc {
@@ -683,6 +684,30 @@ fn intake_mapping(
             ))),
         },
     }
+}
+
+fn eligible_deferred_flow_goal(entry: &ObligationHandoffEntry) -> Option<CoreFormulaId> {
+    if entry.seed.status != ObligationSeedStatus::Deferred
+        || !matches!(entry.origin, ObligationHandoffOrigin::FlowDerived { .. })
+        || !matches!(entry.seed.kind, ObligationSeedKind::AlgorithmContract)
+    {
+        return None;
+    }
+
+    let site = entry.flow_site.as_ref()?;
+    if !matches!(
+        site.kind,
+        ControlFlowObligationSiteKind::Requires
+            | ControlFlowObligationSiteKind::Ensures
+            | ControlFlowObligationSiteKind::AlgorithmAssertion
+            | ControlFlowObligationSiteKind::StatementAssertion
+            | ControlFlowObligationSiteKind::AlgorithmInvariant
+            | ControlFlowObligationSiteKind::LoopInvariant
+    ) {
+        return None;
+    }
+
+    entry.seed.goal
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]

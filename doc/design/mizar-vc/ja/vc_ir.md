@@ -198,6 +198,11 @@ struct ExpandedVcRef {
 
 - seed accounting row なしの concrete `VcIr` は存在しない;
 - goal を持つ `Active` seed は concrete VC generation の対象になる;
+- goal と supported explicit `ControlFlowObligationSite` metadata を持つ `Deferred`
+  flow-derived `AlgorithmContract` seed も concrete VC generation の対象になる。
+  `mizar-core` は task-7 algorithm schema を `mizar-vc` が適用するまでこれらの row を
+  deferred として印付けるためである。元の deferred `seed_status` は task-8 accounting 用に
+  記録され続ける;
 - `Skipped`、`Deferred`、`Error` seed は diagnostic または provenance reason を持つ場合、
   concrete VC を 0 個にできる;
 - disabled seed は visible no-VC mapping を使ってよいが、policy-open obligation は
@@ -205,8 +210,9 @@ struct ExpandedVcRef {
   にしてはならない;
 - multi-VC expansion は、generated VC ごとの stable zero-based dense
   `expansion_index` を記録する explicit `Expanded` mapping を通じてのみ許される;
-- ordinary theorem、definition、checker-initial、generated type、現在の flow-derived
-  milestone seed は、owning generator spec が特定の expansion schema を記録しない限り `One` を使う;
+- ordinary theorem、definition、checker-initial、generated type、eligible な goal-bearing
+  flow-derived milestone seed は、owning generator spec が特定の expansion schema を記録しない限り
+  `One` を使う;
 - 同じ canonical seed key と origin を持つ duplicate handoff entry は、`VcId` assignment 前に
   拒否するか deterministic diagnostic として表す。
 
@@ -241,8 +247,10 @@ enum SeedIntakeMapping {
 を割り当てず、concrete `VcIr` も構築しない。handoff order と seed origin を保持し、
 duplicate `(canonical_key, origin)` row を決定的に拒否し、後続の `VcId` assignment
 より前に matching `source_map` entry を欠く handoff row も拒否する。
-skipped/deferred/error/missing-goal row はすべて visible no-VC mapping として記録する。
-Task 8 は deterministic `VcId` を割り当てるときに eligible row を消費する。
+skipped/deferred/error/missing-goal row は、task-7-eligible な goal-bearing deferred
+`FlowDerived` `AlgorithmContract` row が supported explicit flow-site metadata を持つ場合を
+除き、visible no-VC mapping として記録する。Task 8 は deterministic `VcId` を割り当てる
+ときに eligible row を消費する。
 
 ## LocalContext
 

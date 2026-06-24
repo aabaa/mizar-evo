@@ -18,8 +18,8 @@ commit が履歴に存在し、最終 review outcome、verification result、def
 | 3. Implement `vc_ir` data shapes | complete | `c32d767368ef9d16fdcf92620c2b2afecb13fc9d` | Spec/doc review: medium `ModuleId`、expanded-index/rendering、incomplete-anchor、quantified-binder findings を修正し、final re-review は no blocking/high/medium findings。Test sufficiency review: medium rendering、seed-accounting、status/context coverage findings を修正し、final re-review は no blocking/high/medium findings。Full implementation review: medium seed-mapping、nested-reference、anchor-completeness、quantified-binder findings を修正し、final re-review は no blocking/high/medium findings。Source/doc consistency review: medium `PolicyOpen` no-VC mismatch を修正し、low module-link finding も修正; final re-review は no blocking/high/medium findings。 | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Rust source task。`src/vc_ir.rs` を追加し、`pub mod vc_ir;` だけを expose し、spec-backed module 用に lint guard を更新し、validation と deterministic debug rendering tests を追加する。seed intake、generator logic、status transition、discharge、dependency slice、ATP translation、proof/cache reuse、kernel acceptance、`.miz` fixture、expectation、`doc/spec`、traceability metadata は deferred/out of scope のまま。 |
 | 4. Obligation-seed intake | complete | `ba20db550cf92979bdb8809e9f64fbe5cd193c1b` | Spec/doc review: medium missing source-map documentation finding を修正し、final re-review は no blocking/high/medium findings。Test sufficiency review: medium origin-preservation coverage finding を修正し、final re-review は no blocking/high/medium findings。Full implementation review: follow-up 後 no blocking/high/medium findings。Source/doc consistency review: follow-up 後 no blocking/high/medium findings。 | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Rust source task。`ObligationSeedHandoff` 上の pre-`VcId` `SeedIntakeTable` を追加し、handoff order と origin を保持し、duplicate `(canonical_key, origin)` row と missing source-map entry を拒否し、skipped/deferred/error/missing-goal row を visible no-VC mapping として表す。concrete VC generation、generator normalization、final `VcId` assignment、discharge、dependency slice、ATP translation、proof/cache reuse、kernel acceptance、`.miz` fixture、expectation、`doc/spec`、traceability metadata は deferred/out of scope のまま。 |
 | 5. Spec: `generator.md` | complete | `e324beab799f972dcf78e897b163aebd9414725e` | Spec/doc review: high generated-core ownership、medium Pick non-emptiness、medium module-table findings を修正し、verification/staging 後の final re-review は no blocking/high/medium findings。Test sufficiency review: medium theorem-status、sethood/non-emptiness、call/return coverage findings を修正し、final re-review は no blocking/high/medium findings。Full implementation review: medium module-table finding を修正し、final re-review は no blocking/high/medium findings。Source/doc consistency review: medium module-table finding を修正し、final re-review は no blocking/high/medium findings。 | `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Spec-only。英語/日本語 `generator.md` を追加し、local-context construction、theorem/definition generation、generated core obligation、explicit registration-style correctness payload handling、Pick non-emptiness を含む algorithm VC families、controlled unfolding、task-8 normalization/classification handoff を記録する。Rust source、`.miz` fixture、expectation、`doc/spec`、traceability metadata、proof-verification runner activation、利用不能な dedicated registration/redefinition/reduction payload は deferred/out of scope のまま。 |
-| 6. Theorem, definition, generated core, and registration-style correctness VCs | ready to commit | pending self-hash; commit 後に `git log` で確認 | Spec/doc review: high registration-style boundary と medium theorem-status gap findings を修正し、staged-verification 記録更新後の final re-review は no blocking/high/medium findings。Test sufficiency review: medium definition-family、theorem-status、registration-negative、no-candidate、determinism findings を修正し、final re-review は no blocking/high/medium findings。Full implementation review: high stale/partial intake findings と medium unfold、context-sort、schema、terminal-goal、diagnostic-wording findings を修正し、final re-review は no findings。Source/doc consistency review: high/medium marker、schema、sort-key、unfold、lint-message、GEN-G005 wording findings を修正し、final re-review は no findings。 | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Rust source task。task 5 hash を backfill し、`src/generator.rs` を追加し、`pub mod generator` を expose し、task-6 seed family 向けの pre-normalized `CoreGenerationCandidateSet` を実装し、handoff に対する full seed-intake table equality を強制し、registration-style、theorem-status、terminal-proof、unfold behavior の explicit `CoreProvenance` marker を保持し、local context を canonicalize し、lint guard を拡張する。後続 algorithm VC、final `VcId` assignment、status transition、discharge、dependency slice、ATP/kernel/proof/cache/corpus integration、未提供の dedicated registration/redefinition/reduction payload field は external/deferred に保つ。 |
-| 7. Algorithm VCs | not started | pending | pending | pending | Rust source task。 |
+| 6. Theorem, definition, generated core, and registration-style correctness VCs | complete | `b5634eb878b39558b981bcbba972e8b36c3203c9` | Spec/doc review: high registration-style boundary と medium theorem-status gap findings を修正し、staged-verification 記録更新後の final re-review は no blocking/high/medium findings。Test sufficiency review: medium definition-family、theorem-status、registration-negative、no-candidate、determinism findings を修正し、final re-review は no blocking/high/medium findings。Full implementation review: high stale/partial intake findings と medium unfold、context-sort、schema、terminal-goal、diagnostic-wording findings を修正し、final re-review は no findings。Source/doc consistency review: high/medium marker、schema、sort-key、unfold、lint-message、GEN-G005 wording findings を修正し、final re-review は no findings。 | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Rust source task。task 5 hash を backfill し、`src/generator.rs` を追加し、`pub mod generator` を expose し、task-6 seed family 向けの pre-normalized `CoreGenerationCandidateSet` を実装し、handoff に対する full seed-intake table equality を強制し、registration-style、theorem-status、terminal-proof、unfold behavior の explicit `CoreProvenance` marker を保持し、local context を canonicalize し、lint guard を拡張する。後続 algorithm VC、final `VcId` assignment、status transition、discharge、dependency slice、ATP/kernel/proof/cache/corpus integration、未提供の dedicated registration/redefinition/reduction payload field は external/deferred に保つ。 |
+| 7. Algorithm VCs | ready to commit | pending self-hash; commit 後に `git log` で確認 | Spec/doc review: high seed-intake conflict と medium broad-scope wording findings を修正し、final re-review は no blocking/high/medium findings。Test sufficiency review: medium AlgorithmAssertion、partial/ghost、unavailable-family、metadata、determinism findings を修正し、final re-review は no blocking/high/medium findings。Full implementation review: medium flow/algorithm mismatch と site-membership findings を修正し、final re-review は no blocking/high/medium findings。Source/doc consistency review: medium eligible-intake、site-validation、planned-test drift findings を修正し、final re-review は no findings。 | `cargo fmt --check` passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Rust source task。task 6 hash を backfill する。requires、ensures、assertions、supported loop-invariant entry/preservation/break/continue site 向けの goal-bearing flow-derived algorithm candidate を追加する。eligible deferred `FlowDerived` `AlgorithmContract` row は seed status を保持したまま candidate-eligible になるよう seed intake を更新する。flow id、algorithm id、site table membership、goal、placement metadata を検証する。missing site/data、term-only termination、partial termination、ghost erasure、unavailable algorithm family、incomplete loop metadata は visible no-candidate/deferred record として記録する。`ControlFlowIr` fixture の `SymbolId` 構築だけのため test-only `mizar-resolve` dev-dependency を追加する。 |
 | 8. Normalization, classification, and `VcId` assignment | not started | pending | pending | pending | Rust source task。 |
 | 9. Status and policy model | not started | pending | pending | pending | Rust source task。 |
 | 10. Spec: `discharge.md` | not started | pending | pending | pending | Spec-only task。 |
@@ -221,21 +221,23 @@ worktree, confirm the task 6 commit exists in git log, and re-read
 doc/design/mizar-vc/en/generator.md, vc_ir.md, 00.crate_plan.md,
 task_ledger.md, todo.md, crates/mizar-vc/src/generator.rs, and
 crates/mizar-vc/src/vc_ir.rs. Implement task 7 only: algorithm VC generation
-for explicit mizar-core ControlFlowIr / obligation-seed payloads. Cover
-preconditions, postconditions, assertions, branch and match obligations, loop
-invariant entry/preservation, range/collection loop obligations, termination
-or partial-termination obligations, ghost erasure, and Pick non-emptiness when
-those payloads are explicit. Keep the task-6 CoreGenerationCandidateSet
-pre-normalized and do not implement normalization/final VcId assignment,
-status transitions, discharge, dependency slices, ATP translation, proof/cache
-reuse, kernel acceptance, corpus runner activation, or missing external
-ControlFlowIr payloads. Missing or unavailable algorithm payloads must be
-classified as external_dependency_gap/deferred with visible no-candidate rows;
-do not fabricate control-flow facts from labels or source text. Add focused
-Rust tests for call preconditions, return postconditions, assertions,
-branches, matches, while/for loop invariant entry/preservation, termination
-measures, partial termination, ghost/Pick behavior, deterministic sorting, and
-handoff/intake mismatch rejection. Run cargo fmt --check,
+for explicit goal-bearing flow-derived mizar-core ControlFlowIr /
+obligation-seed payloads. Generate candidates for requires, ensures,
+assertions, and supported loop-invariant entry/preservation/break/continue
+sites when `ControlFlowObligationSite`, `ControlFlowOutput`, and a goal
+formula are present. Keep unavailable call, branch, match, range-loop,
+collection-loop, term-only termination, partial-termination, Pick, and
+ghost-erasure payload families as external_dependency_gap/deferred visible
+no-candidate rows. Keep the task-6 CoreGenerationCandidateSet pre-normalized
+and do not implement normalization/final VcId assignment, status transitions,
+discharge, dependency slices, ATP translation, proof/cache reuse, kernel
+acceptance, corpus runner activation, or missing external ControlFlowIr
+payloads. Do not fabricate control-flow facts from labels or source text. Add
+focused Rust tests for goal-bearing preconditions, postconditions, assertions,
+loop invariant entry/preservation/break/continue classification, missing flow
+site/data no-candidate records, term-only termination, ghost/Pick deferred
+records, deterministic sorting, and handoff/intake mismatch rejection. Run
+cargo fmt --check,
 cargo test -p mizar-vc, cargo clippy -p mizar-vc --all-targets -- -D warnings,
 git diff --check, and git diff --cached --check after explicit path staging.
 Use review-only agents for the required AGENTS.md review phases.
@@ -245,3 +247,35 @@ Rationale: task 7 は generation の algorithm 側を追加し、task-6 の proo
 accounting boundary に依存する。control-flow VC generation は範囲が広く proof gap を
 静かに作り得るため `xhigh` を保つ。documentation-only typo fix だけなら lower
 reasoning でもよい。
+
+## Task 7 Handoff
+
+Recommended reasoning: `xhigh`。
+
+Prompt:
+
+```text
+Continue mizar-vc autonomous crate development from the completed task 7
+algorithm-candidate commit. Before starting task 8, verify a clean worktree,
+confirm the task 7 commit exists in git log, and re-read
+doc/design/mizar-vc/en/vc_ir.md, generator.md, 00.crate_plan.md,
+task_ledger.md, todo.md, crates/mizar-vc/src/vc_ir.rs, and
+crates/mizar-vc/src/generator.rs. Implement task 8 only: normalize task-6/7
+generation candidates, classify them into final canonical order, assign dense
+within-snapshot `VcId`s, build final `VcSet`/seed accounting, and reject
+duplicate candidate keys or incomplete seed ownership deterministically. Preserve
+the task-7 boundary: do not add new algorithm payload families, discharge,
+status transitions beyond the task-8 classification contract, dependency
+slices, ATP translation, proof/cache reuse, kernel acceptance, or corpus runner
+activation. Add Rust tests for deterministic `VcId` assignment across repeated
+runs, complete no-VC/one-VC/expanded seed mapping, deferred flow-derived status
+accounting, duplicate rejection, generated formula table references, stable
+debug rendering, and incomplete-anchor preservation. Run cargo fmt --check,
+cargo test -p mizar-vc, cargo clippy -p mizar-vc --all-targets -- -D warnings,
+git diff --check, and git diff --cached --check after explicit path staging.
+Use review-only agents for the required AGENTS.md review phases.
+```
+
+Rationale: task 8 は pre-normalized candidate を final `VcIr` に変換し、初めて `VcId`
+を割り当てる task である。seed accounting と proof-obligation completeness のため
+`xhigh` が適切である。typo-only documentation cleanup だけなら lower reasoning でもよい。

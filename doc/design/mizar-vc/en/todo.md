@@ -140,16 +140,20 @@ Keep `cargo test -p mizar-vc` green after each task (see
      explicit registration payloads recorded as deferred.
    - Deps: 4, 5. Spec: `generator.md` (theorem/definition section).
 
-7. **Algorithm VCs.** [ ]
-   - Generate VCs from `ControlFlowIr` following structured control flow:
-     contracts, invariants (entry/preservation), assertions, ghost rules,
-     and termination measures.
-   - Tests: per-construct VC fixtures (`while`, `if`, `match`); invariant
-     entry/preservation pairs; termination VCs reference measures. Include the
-     review-audit algorithm fixtures for old-state assignment, field-update
-     alias identity, `break` exits that do not gain `not C`,
-     `continue`/decreasing checks, `downto` and `step` range loops, and
-     ghost-only `Pick` erasure.
+7. **Algorithm VCs.** [x]
+   - Generate VCs from explicit flow-derived `ControlFlowIr` handoff rows for
+     goal-bearing contracts, assertions, and invariants. Keep unavailable
+     call-precondition, branch, match, range-loop, collection-loop, term-only
+     termination, partial-termination, Pick non-emptiness, and ghost-erasure
+     payload families visible as deferred/no-candidate records rather than
+     fabricated VCs.
+   - Tests: candidate fixtures for goal-bearing preconditions,
+     postconditions, assertions, invariant entry/preservation, and
+     break/continue classifications; no-candidate/deferred fixtures for
+     missing flow sites, missing flow data, term-only termination, partial
+     termination, ghost erasure, and unavailable audit families such as
+     old-state assignment, field-update alias identity, branch/match,
+     `downto`/`step` range loops, and ghost-only `Pick` erasure.
    - Deps: 6, `mizar-core` task 16. Spec: `generator.md` (algorithm
      section).
 

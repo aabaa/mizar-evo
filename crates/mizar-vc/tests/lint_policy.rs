@@ -81,15 +81,22 @@ fn vc_manifest_dependency_boundary_is_task_one_minimal() {
 
     assert_eq!(
         dependency_sections,
-        [(
-            "dependencies".to_owned(),
-            vec![
-                "mizar-core = { path = \"../mizar-core\" }",
-                "mizar-session = { path = \"../mizar-session\" }",
-            ],
-        )],
-        "{} must depend only on mizar-core and mizar-session, with no dev/build/target \
-         dependency escape hatch, until a task-scoped VC spec expands the crate boundary",
+        [
+            (
+                "dependencies".to_owned(),
+                vec![
+                    "mizar-core = { path = \"../mizar-core\" }",
+                    "mizar-session = { path = \"../mizar-session\" }",
+                ],
+            ),
+            (
+                "dev-dependencies".to_owned(),
+                vec!["mizar-resolve = { path = \"../mizar-resolve\" }"],
+            ),
+        ],
+        "{} must keep production dependencies limited to mizar-core and mizar-session; \
+         task 7 allows only mizar-resolve as a test fixture dependency for ControlFlowIr \
+         SymbolId construction",
         manifest_path.display()
     );
 }

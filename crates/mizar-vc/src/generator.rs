@@ -1,24 +1,30 @@
 //! Verification-condition generation candidates.
 //!
-//! This module implements the task-6 slice specified in
-//! [generator.md](../../../doc/design/mizar-vc/en/generator.md): theorem,
-//! definition, generated core, and registration-style correctness candidates
-//! over explicit core/checker obligation seeds.
+//! This module implements the task-6 and task-7 slices specified in
+//! [generator.md](../../../doc/design/mizar-vc/en/generator.md): core
+//! theorem/definition/generated candidates and the currently explicit
+//! goal-bearing algorithm candidates from flow-derived obligation seeds.
 
 use crate::vc_ir::{
     AnchorCompleteness, AnchorIngredient, AnchorLabel, AnchorLabelRole, AnchorOwner,
     AnchorUnavailableReason, CanonicalSortKey, ContextEntry, ContextEntryId, ContextEntryKind,
     DefinitionOpacityOverride, DefinitionUnfoldRequest, GenerationSchemaVersion, HashMarker,
-    LocalContext, PolicyKey, PolicyValue, PremiseRef, ProofHint, RegistrationCorrectnessKind,
-    SeedIntakeMapping, SeedIntakeTable, SeedNoVcReason, SeedOriginRef, VcFormulaRef, VcIrError,
-    VcKind, VcModuleRef, VcProvenance, VcProvenancePhase, VcSourceRef, VcStatus, VcText,
-    VerifierPolicyInput,
+    LocalContext, LoopInvariantPhase, PolicyKey, PolicyValue, PremiseRef, ProofHint,
+    RegistrationCorrectnessKind, SeedIntakeMapping, SeedIntakeTable, SeedNoVcReason, SeedOriginRef,
+    VcFormulaRef, VcIrError, VcKind, VcModuleRef, VcProvenance, VcProvenancePhase, VcSourceRef,
+    VcStatus, VcText, VerifierPolicyInput,
 };
 use mizar_core::{
-    control_flow::{ObligationHandoffId, ObligationSeedHandoff},
+    control_flow::{
+        AssertionPlacement, ContractSiteKind, ContractSitePlacement, ControlFlowExitKind,
+        ControlFlowId, ControlFlowIr, ControlFlowObligationSite, ControlFlowObligationSiteKind,
+        ControlFlowOutput, LoopInvariantPlacement, ObligationHandoffId, ObligationHandoffOrigin,
+        ObligationSeedHandoff,
+    },
     core_ir::{
-        CoreFormulaId, CoreNodeRef, CoreSourceAnchor, CoreSourceRef, LocalProofOrProgramPath,
-        NormalizedSemanticOrigin, ObligationSeed, ObligationSeedKind, ObligationSeedStatus,
+        CoreAlgorithmId, CoreFormulaId, CoreNodeRef, CoreSourceAnchor, CoreSourceRef,
+        LocalProofOrProgramPath, NormalizedSemanticOrigin, ObligationSeed, ObligationSeedKind,
+        ObligationSeedStatus,
     },
 };
 use mizar_session::SourceRange;
@@ -34,6 +40,7 @@ pub struct CoreGenerationInput<'a> {
     pub module: &'a VcModuleRef,
     pub intake: &'a SeedIntakeTable,
     pub handoff: &'a ObligationSeedHandoff,
+    pub flow_output: Option<&'a ControlFlowOutput>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -65,10 +72,13 @@ impl CoreGenerationCandidateSet {
                 },
             )?;
             let seed = &entry.seed;
+            let flow_id = flow_id_from_origin(&entry.origin);
+            let flow_algorithm = flow_algorithm_from_origin(&entry.origin);
+            let flow = flow_from_origin(input.flow_output, &entry.origin);
 
             match &row.mapping {
                 SeedIntakeMapping::EligibleOneVc { goal } => {
-                    if let Some(kind) = task_six_kind(seed) {
+                    if let Some(kind) = generation_kind(seed, entry.flow_site.as_ref(), flow) {
                         let candidate = build_candidate(BuildCandidateInput {
                             schema_version: input.schema_version,
                             module: input.module,
@@ -76,6 +86,9 @@ impl CoreGenerationCandidateSet {
                             origin: row.origin.clone(),
                             seed_status: row.seed_status,
                             seed,
+                            flow_id,
+                            flow_algorithm,
+                            flow_site: entry.flow_site.as_ref(),
                             source: row.source.clone(),
                             goal: *goal,
                             kind,
@@ -91,7 +104,13 @@ impl CoreGenerationCandidateSet {
                             row.handoff,
                             row.origin.clone(),
                             row.seed_status,
-                            deferred_task_six_kind(seed),
+                            no_candidate_reason_for_seed(
+                                seed,
+                                &entry.origin,
+                                entry.flow_site.as_ref(),
+                                input.flow_output,
+                                None,
+                            ),
                         ));
                     }
                 }
@@ -100,7 +119,13 @@ impl CoreGenerationCandidateSet {
                         row.handoff,
                         row.origin.clone(),
                         row.seed_status,
-                        reason.clone(),
+                        no_candidate_reason_for_seed(
+                            seed,
+                            &entry.origin,
+                            entry.flow_site.as_ref(),
+                            input.flow_output,
+                            Some(reason),
+                        ),
                     ));
                 }
             }
@@ -254,6 +279,9 @@ struct BuildCandidateInput<'a> {
     origin: SeedOriginRef,
     seed_status: ObligationSeedStatus,
     seed: &'a ObligationSeed,
+    flow_id: Option<ControlFlowId>,
+    flow_algorithm: Option<CoreAlgorithmId>,
+    flow_site: Option<&'a ControlFlowObligationSite>,
     source: CoreSourceRef,
     goal: CoreFormulaId,
     kind: VcKind,
@@ -269,11 +297,14 @@ fn build_candidate(
         origin,
         seed_status,
         seed,
+        flow_id,
+        flow_algorithm,
+        flow_site,
         source,
         goal,
         kind,
     } = input;
-    let local_context = local_context_from_seed(seed)?;
+    let local_context = local_context_from_seed(seed, flow_id, flow_site)?;
     let mut premises = local_context
         .entries()
         .iter()
@@ -285,8 +316,8 @@ fn build_candidate(
         });
     }
     let proof_hint = proof_hint_from_seed(seed);
-    let provenance = generator_provenance(seed);
-    let owner = owner_for_kind(&kind, seed);
+    let provenance = generator_provenance(seed, generator_stage_key(&kind));
+    let owner = owner_for_kind(&kind, seed, flow_algorithm);
     let label = seed.label.as_ref().map(|label| AnchorLabel {
         role: AnchorLabelRole::UserLabel,
         hint: Some(label.clone()),
@@ -339,6 +370,14 @@ fn no_candidate(
     }
 }
 
+fn generation_kind(
+    seed: &ObligationSeed,
+    flow_site: Option<&ControlFlowObligationSite>,
+    flow: Option<&ControlFlowIr>,
+) -> Option<VcKind> {
+    task_six_kind(seed).or_else(|| task_seven_algorithm_kind(seed, flow_site?, flow?))
+}
+
 fn task_six_kind(seed: &ObligationSeed) -> Option<VcKind> {
     match seed.kind {
         ObligationSeedKind::TheoremProof => Some(
@@ -362,6 +401,176 @@ fn task_six_kind(seed: &ObligationSeed) -> Option<VcKind> {
         ObligationSeedKind::AlgorithmContract
         | ObligationSeedKind::AlgorithmTermination
         | ObligationSeedKind::GhostErasure => None,
+        _ => None,
+    }
+}
+
+fn task_seven_algorithm_kind(
+    seed: &ObligationSeed,
+    site: &ControlFlowObligationSite,
+    flow: &ControlFlowIr,
+) -> Option<VcKind> {
+    if !matches!(seed.kind, ObligationSeedKind::AlgorithmContract) {
+        return None;
+    }
+
+    match site.kind {
+        ControlFlowObligationSiteKind::Requires => {
+            flow_requires_site(seed, site, flow).then_some(VcKind::AlgorithmPrecondition)
+        }
+        ControlFlowObligationSiteKind::Ensures => {
+            flow_ensures_site(seed, site, flow).then_some(VcKind::AlgorithmPostcondition)
+        }
+        ControlFlowObligationSiteKind::AlgorithmAssertion
+        | ControlFlowObligationSiteKind::StatementAssertion => {
+            flow_assertion_site(seed, site, flow).then_some(VcKind::AlgorithmAssertion)
+        }
+        ControlFlowObligationSiteKind::AlgorithmInvariant => flow_invariant_site(seed, site, flow)
+            .is_some_and(|phase| phase == LoopInvariantPhase::Entry)
+            .then_some(VcKind::LoopInvariant {
+                phase: LoopInvariantPhase::Entry,
+            }),
+        ControlFlowObligationSiteKind::LoopInvariant => Some(VcKind::LoopInvariant {
+            phase: flow_invariant_site(seed, site, flow)?,
+        }),
+        ControlFlowObligationSiteKind::TerminationMeasure
+        | ControlFlowObligationSiteKind::PartialTermination
+        | ControlFlowObligationSiteKind::GhostPick
+        | ControlFlowObligationSiteKind::GhostAssignment => None,
+        _ => None,
+    }
+}
+
+fn flow_requires_site(
+    seed: &ObligationSeed,
+    site: &ControlFlowObligationSite,
+    flow: &ControlFlowIr,
+) -> bool {
+    let Some(contract) = flow.contracts.requires.get(site.ordinal) else {
+        return false;
+    };
+    if contract.kind != ContractSiteKind::Requires || Some(contract.formula) != seed.goal {
+        return false;
+    }
+    match contract.placement {
+        ContractSitePlacement::Entry { block, .. } => {
+            site.block.is_none_or(|site_block| site_block == block)
+                && site.exit.is_none()
+                && site.statement.is_none()
+        }
+        ContractSitePlacement::Return { block, exit } => {
+            site.block.is_none_or(|site_block| site_block == block)
+                && site.exit.is_none_or(|site_exit| site_exit == exit)
+        }
+        _ => false,
+    }
+}
+
+fn flow_ensures_site(
+    seed: &ObligationSeed,
+    site: &ControlFlowObligationSite,
+    flow: &ControlFlowIr,
+) -> bool {
+    let Some(contract) = flow.contracts.ensures.get(site.ordinal) else {
+        return false;
+    };
+    if contract.kind != ContractSiteKind::Ensures || Some(contract.formula) != seed.goal {
+        return false;
+    }
+    match contract.placement {
+        ContractSitePlacement::Entry { block, .. } => {
+            site.block.is_none_or(|site_block| site_block == block)
+                && site.exit.is_none()
+                && site.statement.is_none()
+        }
+        ContractSitePlacement::Return { block, exit } => {
+            site.block.is_none_or(|site_block| site_block == block)
+                && site.exit.is_none_or(|site_exit| site_exit == exit)
+        }
+        _ => false,
+    }
+}
+
+fn flow_assertion_site(
+    seed: &ObligationSeed,
+    site: &ControlFlowObligationSite,
+    flow: &ControlFlowIr,
+) -> bool {
+    let Some(assertion) = flow.contracts.assertions.get(site.ordinal) else {
+        return false;
+    };
+    if Some(assertion.formula) != seed.goal {
+        return false;
+    }
+    match assertion.placement {
+        AssertionPlacement::AlgorithmContract { block, .. } => {
+            site.kind == ControlFlowObligationSiteKind::AlgorithmAssertion
+                && site.block.is_none_or(|site_block| site_block == block)
+                && site.statement.is_none()
+        }
+        AssertionPlacement::Statement {
+            statement, block, ..
+        } => {
+            site.kind == ControlFlowObligationSiteKind::StatementAssertion
+                && site
+                    .statement
+                    .is_none_or(|site_statement| site_statement == statement)
+                && site.block.is_none_or(|site_block| site_block == block)
+        }
+        _ => false,
+    }
+}
+
+fn flow_invariant_site(
+    seed: &ObligationSeed,
+    site: &ControlFlowObligationSite,
+    flow: &ControlFlowIr,
+) -> Option<LoopInvariantPhase> {
+    let invariant = flow.contracts.loop_invariants.get(site.ordinal)?;
+    if Some(invariant.formula) != seed.goal {
+        return None;
+    }
+    match invariant.placement {
+        LoopInvariantPlacement::AlgorithmContract { block, .. } => (site.kind
+            == ControlFlowObligationSiteKind::AlgorithmInvariant
+            && site.block.is_none_or(|site_block| site_block == block)
+            && site.loop_id.is_none()
+            && site.exit.is_none())
+        .then_some(LoopInvariantPhase::Entry),
+        LoopInvariantPlacement::Header { loop_id, block } => (site.kind
+            == ControlFlowObligationSiteKind::LoopInvariant
+            && site.loop_id == Some(loop_id)
+            && site.block == Some(block)
+            && site.exit.is_none())
+        .then_some(LoopInvariantPhase::Entry),
+        LoopInvariantPlacement::NormalBackedge { loop_id, from, .. } => (site.kind
+            == ControlFlowObligationSiteKind::LoopInvariant
+            && site.loop_id == Some(loop_id)
+            && site.block == Some(from)
+            && site.exit.is_none())
+        .then_some(LoopInvariantPhase::Preservation),
+        LoopInvariantPlacement::BreakExit { loop_id, exit } => {
+            let flow_exit = flow.exits.get(exit)?;
+            (site.kind == ControlFlowObligationSiteKind::LoopInvariant
+                && site.loop_id == Some(loop_id)
+                && site.exit == Some(exit)
+                && matches!(
+                    &flow_exit.kind,
+                    ControlFlowExitKind::Break { loop_id: exit_loop } if *exit_loop == loop_id
+                ))
+            .then_some(LoopInvariantPhase::Break)
+        }
+        LoopInvariantPlacement::ContinueExit { loop_id, exit } => {
+            let flow_exit = flow.exits.get(exit)?;
+            (site.kind == ControlFlowObligationSiteKind::LoopInvariant
+                && site.loop_id == Some(loop_id)
+                && site.exit == Some(exit)
+                && matches!(
+                    &flow_exit.kind,
+                    ControlFlowExitKind::Continue { loop_id: exit_loop } if *exit_loop == loop_id
+                ))
+            .then_some(LoopInvariantPhase::Continue)
+        }
         _ => None,
     }
 }
@@ -396,7 +605,103 @@ fn deferred_task_six_kind(seed: &ObligationSeed) -> SeedNoVcReason {
     )))
 }
 
-fn local_context_from_seed(seed: &ObligationSeed) -> Result<LocalContext, GeneratorError> {
+fn flow_id_from_origin(origin: &ObligationHandoffOrigin) -> Option<ControlFlowId> {
+    match origin {
+        ObligationHandoffOrigin::FlowDerived { flow, .. } => Some(*flow),
+        _ => None,
+    }
+}
+
+fn flow_algorithm_from_origin(origin: &ObligationHandoffOrigin) -> Option<CoreAlgorithmId> {
+    match origin {
+        ObligationHandoffOrigin::FlowDerived { algorithm, .. } => Some(*algorithm),
+        _ => None,
+    }
+}
+
+fn flow_from_origin<'a>(
+    flow_output: Option<&'a ControlFlowOutput>,
+    origin: &ObligationHandoffOrigin,
+) -> Option<&'a ControlFlowIr> {
+    let flow = flow_id_from_origin(origin)?;
+    let algorithm = flow_algorithm_from_origin(origin)?;
+    flow_output?
+        .flows
+        .get(flow)
+        .filter(|flow_ir| flow_ir.algorithm == algorithm)
+}
+
+fn no_candidate_reason_for_seed(
+    seed: &ObligationSeed,
+    origin: &ObligationHandoffOrigin,
+    flow_site: Option<&ControlFlowObligationSite>,
+    flow_output: Option<&ControlFlowOutput>,
+    intake_reason: Option<&SeedNoVcReason>,
+) -> SeedNoVcReason {
+    if matches!(
+        seed.status,
+        ObligationSeedStatus::Skipped | ObligationSeedStatus::Error
+    ) {
+        return intake_reason
+            .cloned()
+            .unwrap_or_else(|| deferred_task_six_kind(seed));
+    }
+
+    if matches!(
+        seed.kind,
+        ObligationSeedKind::AlgorithmContract
+            | ObligationSeedKind::AlgorithmTermination
+            | ObligationSeedKind::GhostErasure
+    ) {
+        return task_seven_no_candidate_reason(seed, origin, flow_site, flow_output);
+    }
+
+    intake_reason
+        .cloned()
+        .unwrap_or_else(|| deferred_task_six_kind(seed))
+}
+
+fn task_seven_no_candidate_reason(
+    seed: &ObligationSeed,
+    origin: &ObligationHandoffOrigin,
+    flow_site: Option<&ControlFlowObligationSite>,
+    flow_output: Option<&ControlFlowOutput>,
+) -> SeedNoVcReason {
+    let Some(flow) = flow_id_from_origin(origin) else {
+        return SeedNoVcReason::DeferredExternal(VcText::new(format!(
+            "task 7 requires FlowDerived origin for {:?} seed",
+            seed.kind
+        )));
+    };
+    let Some(site) = flow_site else {
+        return SeedNoVcReason::DeferredExternal(VcText::new(format!(
+            "task 7 requires explicit ControlFlowObligationSite for {:?} seed",
+            seed.kind
+        )));
+    };
+    if flow_from_origin(flow_output, origin).is_none() {
+        return SeedNoVcReason::DeferredExternal(VcText::new(format!(
+            "task 7 requires matching ControlFlowOutput for flow {}",
+            flow.index()
+        )));
+    }
+    if seed.goal.is_none() {
+        return SeedNoVcReason::DeferredExternal(VcText::new(format!(
+            "task 7 requires explicit goal formula for {:?} site {:?}",
+            seed.kind, site.kind
+        )));
+    }
+    SeedNoVcReason::DeferredExternal(VcText::new(format!(
+        "task 7 does not generate {:?} site {:?}",
+        seed.kind, site.kind
+    )))
+}
+
+fn local_context_from_seed(
+    seed: &ObligationSeed,
+    flow_id: Option<ControlFlowId>,
+    flow_site: Option<&ControlFlowObligationSite>,
+) -> Result<LocalContext, GeneratorError> {
     let mut formulas = seed.context.iter().copied().enumerate().collect::<Vec<_>>();
     formulas.sort_by_key(|(source_index, formula)| (formula.index(), *source_index));
 
@@ -416,8 +721,19 @@ fn local_context_from_seed(seed: &ObligationSeed) -> Result<LocalContext, Genera
         })
         .collect();
 
-    LocalContext::try_new(entries, theorem_status_policy_inputs(seed))
+    LocalContext::try_new(entries, policy_inputs_from_seed(seed, flow_id, flow_site))
         .map_err(GeneratorError::LocalContext)
+}
+
+fn policy_inputs_from_seed(
+    seed: &ObligationSeed,
+    flow_id: Option<ControlFlowId>,
+    flow_site: Option<&ControlFlowObligationSite>,
+) -> Vec<VerifierPolicyInput> {
+    let mut inputs = theorem_status_policy_inputs(seed);
+    inputs.extend(algorithm_site_policy_inputs(flow_id, flow_site));
+    inputs.sort_by(|left, right| left.sort_key.cmp(&right.sort_key));
+    inputs
 }
 
 fn context_kind_for_seed(seed: &ObligationSeed) -> ContextEntryKind {
@@ -469,7 +785,7 @@ fn proof_hint_from_seed(seed: &ObligationSeed) -> Option<ProofHint> {
         max_axioms: None,
         timeout: None,
         computation: None,
-        provenance: generator_provenance(seed),
+        provenance: generator_provenance(seed, "task-6-core-candidate"),
     })
 }
 
@@ -495,6 +811,49 @@ fn theorem_status_policy_inputs(seed: &ObligationSeed) -> Vec<VerifierPolicyInpu
         .collect()
 }
 
+fn algorithm_site_policy_inputs(
+    flow_id: Option<ControlFlowId>,
+    flow_site: Option<&ControlFlowObligationSite>,
+) -> Vec<VerifierPolicyInput> {
+    let Some(site) = flow_site else {
+        return Vec::new();
+    };
+    let mut values = Vec::new();
+    if let Some(flow) = flow_id {
+        values.push(("flow", flow.index().to_string()));
+    }
+    values.push(("site-kind", format!("{:?}", site.kind)));
+    values.push(("ordinal", site.ordinal.to_string()));
+    if let Some(statement) = site.statement {
+        values.push(("statement", statement.index().to_string()));
+    }
+    if let Some(block) = site.block {
+        values.push(("block", block.index().to_string()));
+    }
+    if let Some(loop_id) = site.loop_id {
+        values.push(("loop", loop_id.index().to_string()));
+    }
+    if let Some(exit) = site.exit {
+        values.push(("exit", exit.index().to_string()));
+    }
+    if let Some(local) = site.local {
+        values.push(("local", local.index().to_string()));
+    }
+    if let Some(effect) = site.assignment_effect {
+        values.push(("assignment-effect", effect.index().to_string()));
+    }
+
+    values
+        .into_iter()
+        .enumerate()
+        .map(|(index, (key, value))| VerifierPolicyInput {
+            sort_key: CanonicalSortKey::new(format!("{index:04}-algorithm-site-{key}")),
+            key: PolicyKey::new(format!("algorithm-site-{key}")),
+            value: PolicyValue::new(value),
+        })
+        .collect()
+}
+
 fn context_provenance(seed: &ObligationSeed, formula: CoreFormulaId) -> Vec<VcProvenance> {
     seed.provenance
         .iter()
@@ -507,7 +866,7 @@ fn context_provenance(seed: &ObligationSeed, formula: CoreFormulaId) -> Vec<VcPr
         .collect()
 }
 
-fn generator_provenance(seed: &ObligationSeed) -> Vec<VcProvenance> {
+fn generator_provenance(seed: &ObligationSeed, stage_key: &'static str) -> Vec<VcProvenance> {
     let mut provenance = seed
         .provenance
         .iter()
@@ -520,10 +879,30 @@ fn generator_provenance(seed: &ObligationSeed) -> Vec<VcProvenance> {
         .collect::<Vec<_>>();
     provenance.push(VcProvenance {
         phase: VcProvenancePhase::Generator,
-        key: VcText::new("task-6-core-candidate"),
+        key: VcText::new(stage_key),
         core: None,
     });
     provenance
+}
+
+fn generator_stage_key(kind: &VcKind) -> &'static str {
+    if matches!(
+        kind,
+        VcKind::AlgorithmPrecondition
+            | VcKind::AlgorithmPostcondition
+            | VcKind::CallPrecondition
+            | VcKind::AlgorithmAssertion
+            | VcKind::LoopInvariant { .. }
+            | VcKind::RangeLoop { .. }
+            | VcKind::CollectionLoop { .. }
+            | VcKind::Termination
+            | VcKind::PartialTermination
+            | VcKind::GhostErasureSafety
+    ) {
+        "task-7-algorithm-candidate"
+    } else {
+        "task-6-core-candidate"
+    }
 }
 
 fn anchor_for_seed(
@@ -595,11 +974,28 @@ fn related_sources(row_source: &CoreSourceRef, seed_source: &CoreSourceRef) -> V
     }
 }
 
-fn owner_for_kind(kind: &VcKind, seed: &ObligationSeed) -> AnchorOwner {
+fn owner_for_kind(
+    kind: &VcKind,
+    seed: &ObligationSeed,
+    flow_algorithm: Option<CoreAlgorithmId>,
+) -> AnchorOwner {
     match kind {
         VcKind::TheoremProofStep | VcKind::TerminalProofGoal => AnchorOwner::Theorem(seed.owner),
         VcKind::DefinitionCorrectness => AnchorOwner::Definition(seed.owner),
         VcKind::RegistrationStyleCorrectness { .. } => AnchorOwner::Registration(seed.owner),
+        VcKind::AlgorithmPrecondition
+        | VcKind::AlgorithmPostcondition
+        | VcKind::CallPrecondition
+        | VcKind::AlgorithmAssertion
+        | VcKind::LoopInvariant { .. }
+        | VcKind::RangeLoop { .. }
+        | VcKind::CollectionLoop { .. }
+        | VcKind::Termination
+        | VcKind::PartialTermination
+        | VcKind::GhostErasureSafety => flow_algorithm.map_or_else(
+            || AnchorOwner::CheckerOrigin(VcText::new(format!("{:?}", seed.kind))),
+            AnchorOwner::Algorithm,
+        ),
         VcKind::CheckerInitial => AnchorOwner::CheckerOrigin(VcText::new(format!(
             "{}:{:?}",
             seed.semantic_origin.as_str(),
@@ -636,13 +1032,23 @@ fn candidate_sort_key(
 mod tests {
     use super::*;
     use mizar_core::control_flow::{
-        ObligationHandoffEntry, ObligationHandoffOrigin, ObligationHandoffTable,
+        AssertionPlacement, AssertionSite, BasicBlockId, CallSiteTable, ContextFactTable,
+        ContractSite, ContractSiteKind, ContractSitePlacement, ControlFlowBlockTable,
+        ControlFlowContractSet, ControlFlowDiagnosticTable, ControlFlowExit, ControlFlowExitId,
+        ControlFlowExitKind, ControlFlowExitTable, ControlFlowGhostTable, ControlFlowId,
+        ControlFlowIr, ControlFlowLocalTable, ControlFlowLoop, ControlFlowLoopTable,
+        ControlFlowObligationSite, ControlFlowObligationSiteKind, ControlFlowOutput,
+        ControlFlowSourceMap, ControlFlowTable, LocalId, LoopId, LoopInvariantPlacement,
+        LoopInvariantSite, ObligationHandoffEntry, ObligationHandoffOrigin, ObligationHandoffTable,
+        ProgramContextId, ProgramContextTable,
     };
     use mizar_core::core_ir::{
-        CoreDefinitionId, CoreDiagnosticId, CoreItemId, CoreLabelRef, CoreProvenance,
-        CoreProvenanceKey, CoreProvenancePhase, GeneratedFrom, GeneratedOriginKey,
+        CoreAlgorithmId, CoreDefinitionId, CoreDiagnosticId, CoreItemId, CoreLabelRef,
+        CoreProvenance, CoreProvenanceKey, CoreProvenancePhase, GeneratedFrom, GeneratedOriginKey,
         GeneratedOriginKind, ObligationSeedId,
     };
+    use mizar_resolve::resolved_ast::{FullyQualifiedName, LocalSymbolId, ModuleId, SymbolId};
+    use mizar_session::snapshot::{ModulePath, PackageId};
     use mizar_session::{BuildSnapshotId, InMemorySessionIdAllocator, SessionIdAllocator};
 
     #[test]
@@ -1197,6 +1603,446 @@ mod tests {
     }
 
     #[test]
+    fn generates_goal_bearing_algorithm_candidates_from_flow_sites() {
+        let source = sample_source_id();
+        let flow_output = sample_flow_output(source);
+        let handoff = seed_handoff_with_sites(vec![
+            flow_seed(
+                source,
+                CoreFormulaId::new(10),
+                "program/0/contract/requires/0",
+                "flow:0:requires:0",
+                flow_site(ControlFlowObligationSiteKind::Requires, 0),
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(11),
+                "program/0/contract/ensures/0",
+                "flow:0:ensures:0",
+                flow_site(ControlFlowObligationSiteKind::Ensures, 0),
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(12),
+                "program/0/assertion/algorithm/0",
+                "flow:0:assertion:algorithm:0",
+                flow_site(ControlFlowObligationSiteKind::AlgorithmAssertion, 0).with_block(0),
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(13),
+                "program/0/assertion/0",
+                "flow:0:assertion:0",
+                flow_site(ControlFlowObligationSiteKind::StatementAssertion, 1)
+                    .with_statement(0)
+                    .with_block(1),
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(14),
+                "program/0/invariant/algorithm/0",
+                "flow:0:invariant:algorithm:0",
+                flow_site(ControlFlowObligationSiteKind::AlgorithmInvariant, 0).with_block(0),
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(15),
+                "program/0/invariant/header/0",
+                "flow:0:invariant:header:0",
+                flow_site(ControlFlowObligationSiteKind::LoopInvariant, 1)
+                    .with_loop(0)
+                    .with_block(0),
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(16),
+                "program/0/invariant/backedge/0",
+                "flow:0:invariant:backedge:0",
+                flow_site(ControlFlowObligationSiteKind::LoopInvariant, 2)
+                    .with_loop(0)
+                    .with_block(1),
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(17),
+                "program/0/invariant/break/0",
+                "flow:0:invariant:break:0",
+                flow_site(ControlFlowObligationSiteKind::LoopInvariant, 3)
+                    .with_loop(0)
+                    .with_exit(0),
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(18),
+                "program/0/invariant/continue/0",
+                "flow:0:invariant:continue:0",
+                flow_site(ControlFlowObligationSiteKind::LoopInvariant, 4)
+                    .with_loop(0)
+                    .with_exit(1),
+            ),
+        ]);
+
+        let set = generate_with_flows(&handoff, &flow_output);
+
+        assert_eq!(set.no_candidates(), []);
+        assert_eq!(
+            set.candidates()
+                .iter()
+                .map(|candidate| &candidate.kind)
+                .collect::<Vec<_>>(),
+            vec![
+                &VcKind::AlgorithmPrecondition,
+                &VcKind::AlgorithmPostcondition,
+                &VcKind::AlgorithmAssertion,
+                &VcKind::AlgorithmAssertion,
+                &VcKind::LoopInvariant {
+                    phase: LoopInvariantPhase::Entry
+                },
+                &VcKind::LoopInvariant {
+                    phase: LoopInvariantPhase::Entry
+                },
+                &VcKind::LoopInvariant {
+                    phase: LoopInvariantPhase::Preservation
+                },
+                &VcKind::LoopInvariant {
+                    phase: LoopInvariantPhase::Break
+                },
+                &VcKind::LoopInvariant {
+                    phase: LoopInvariantPhase::Continue
+                },
+            ]
+        );
+        let requires = &set.candidates()[0];
+        assert_eq!(requires.seed_status, ObligationSeedStatus::Deferred);
+        assert_eq!(requires.status, VcStatus::Open);
+        assert_eq!(
+            requires.owner,
+            AnchorOwner::Algorithm(CoreAlgorithmId::new(0))
+        );
+        assert!(requires.local_context.policy_inputs().iter().any(|input| {
+            input.key == PolicyKey::new("algorithm-site-site-kind")
+                && input.value == PolicyValue::new("Requires")
+        }));
+        let statement_assertion = &set.candidates()[3];
+        assert_policy_input(statement_assertion, "algorithm-site-statement", "0");
+        assert_policy_input(statement_assertion, "algorithm-site-block", "1");
+        let break_invariant = &set.candidates()[7];
+        assert_policy_input(break_invariant, "algorithm-site-loop", "0");
+        assert_policy_input(break_invariant, "algorithm-site-exit", "0");
+        assert!(requires.provenance.iter().any(|provenance| {
+            provenance.phase == VcProvenancePhase::Generator
+                && provenance.key == VcText::new("task-7-algorithm-candidate")
+        }));
+    }
+
+    #[test]
+    fn algorithm_candidate_debug_rendering_is_deterministic() {
+        let source = sample_source_id();
+        let flow_output = sample_flow_output(source);
+        let handoff = seed_handoff_with_sites(vec![
+            flow_seed(
+                source,
+                CoreFormulaId::new(13),
+                "program/0/assertion/0",
+                "flow:0:assertion:0",
+                flow_site(ControlFlowObligationSiteKind::StatementAssertion, 1)
+                    .with_statement(0)
+                    .with_block(1),
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(10),
+                "program/0/contract/requires/0",
+                "flow:0:requires:0",
+                flow_site(ControlFlowObligationSiteKind::Requires, 0),
+            ),
+        ]);
+
+        let first = generate_with_flows(&handoff, &flow_output);
+        let second = generate_with_flows(&handoff, &flow_output);
+
+        assert_eq!(first.debug_text(), second.debug_text());
+        assert!(first.debug_text().contains("AlgorithmPrecondition"));
+        assert!(first.debug_text().contains("AlgorithmAssertion"));
+    }
+
+    #[test]
+    fn records_no_candidates_for_unavailable_algorithm_payloads() {
+        let source = sample_source_id();
+        let flow_output = sample_flow_output(source);
+        let handoff = seed_handoff_with_sites(vec![
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::AlgorithmContract,
+                    Some(CoreFormulaId::new(0)),
+                    "program/0/contract/requires/missing-site",
+                    "flow:0:requires:missing-site",
+                )
+                .with_status(ObligationSeedStatus::Deferred)
+                .into(),
+                flow_origin(),
+                None,
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(10),
+                "program/0/contract/requires/valid",
+                "flow:0:requires:valid",
+                flow_site(ControlFlowObligationSiteKind::Requires, 0),
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(1),
+                "program/0/contract/requires/missing-flow",
+                "flow:0:requires:missing-flow",
+                flow_site(ControlFlowObligationSiteKind::Requires, 1),
+            ),
+            flow_seed(
+                source,
+                CoreFormulaId::new(3),
+                "program/0/invariant/incomplete-phase",
+                "flow:0:invariant:incomplete-phase",
+                flow_site(ControlFlowObligationSiteKind::LoopInvariant, 5).with_loop(0),
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::AlgorithmTermination,
+                    None,
+                    "program/0/termination/measure/0",
+                    "flow:0:termination:measure:0",
+                )
+                .with_status(ObligationSeedStatus::Deferred)
+                .into(),
+                flow_origin(),
+                Some(flow_site(ControlFlowObligationSiteKind::TerminationMeasure, 2).into()),
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::GhostErasure,
+                    None,
+                    "program/0/ghost/pick/0",
+                    "flow:0:ghost:pick:0",
+                )
+                .with_status(ObligationSeedStatus::Deferred)
+                .into(),
+                flow_origin(),
+                Some(
+                    flow_site(ControlFlowObligationSiteKind::GhostPick, 3)
+                        .with_local(0)
+                        .into(),
+                ),
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::AlgorithmTermination,
+                    None,
+                    "program/0/termination/partial/0",
+                    "flow:0:termination:partial:0",
+                )
+                .with_status(ObligationSeedStatus::Deferred)
+                .into(),
+                flow_origin(),
+                Some(flow_site(ControlFlowObligationSiteKind::PartialTermination, 4).into()),
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::GhostErasure,
+                    None,
+                    "program/0/ghost/assignment/0",
+                    "flow:0:ghost:assignment:0",
+                )
+                .with_status(ObligationSeedStatus::Deferred)
+                .into(),
+                flow_origin(),
+                Some(
+                    flow_site(ControlFlowObligationSiteKind::GhostAssignment, 5)
+                        .with_assignment_effect(0)
+                        .into(),
+                ),
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::AlgorithmContract,
+                    Some(CoreFormulaId::new(2)),
+                    "program/0/contract/requires/existing-core",
+                    "flow:0:requires:existing-core",
+                )
+                .into(),
+                ObligationHandoffOrigin::ExistingCore {
+                    seed: ObligationSeedId::new(9),
+                },
+                Some(flow_site(ControlFlowObligationSiteKind::Requires, 4).into()),
+            ),
+        ]);
+        let empty_flow_output = ControlFlowOutput {
+            flows: ControlFlowTable::new(),
+            flow_map: std::collections::BTreeMap::new(),
+        };
+
+        let missing_flow_set = generate_with_flows(&handoff, &empty_flow_output);
+        assert_eq!(missing_flow_set.candidates(), []);
+        assert!(missing_flow_set.no_candidates().iter().any(|no_candidate| {
+            matches!(
+                &no_candidate.reason,
+                SeedNoVcReason::DeferredExternal(reason)
+                    if reason.as_str().contains("matching ControlFlowOutput")
+            )
+        }));
+
+        let set = generate_with_flows(&handoff, &flow_output);
+        assert_eq!(set.candidates().len(), 1);
+        assert_eq!(set.candidates()[0].kind, VcKind::AlgorithmPrecondition);
+        assert!(set.no_candidates().iter().any(|no_candidate| {
+            matches!(
+                &no_candidate.reason,
+                SeedNoVcReason::DeferredExternal(reason)
+                    if reason.as_str().contains("ControlFlowObligationSite")
+            )
+        }));
+        assert!(set.no_candidates().iter().any(|no_candidate| {
+            matches!(
+                &no_candidate.reason,
+                SeedNoVcReason::DeferredExternal(reason)
+                    if reason.as_str().contains("explicit goal formula")
+                        && reason.as_str().contains("TerminationMeasure")
+            )
+        }));
+        assert!(set.no_candidates().iter().any(|no_candidate| {
+            matches!(
+                &no_candidate.reason,
+                SeedNoVcReason::DeferredExternal(reason)
+                    if reason.as_str().contains("explicit goal formula")
+                        && reason.as_str().contains("GhostPick")
+            )
+        }));
+        assert!(set.no_candidates().iter().any(|no_candidate| {
+            matches!(
+                &no_candidate.reason,
+                SeedNoVcReason::DeferredExternal(reason)
+                    if reason.as_str().contains("explicit goal formula")
+                        && reason.as_str().contains("PartialTermination")
+            )
+        }));
+        assert!(set.no_candidates().iter().any(|no_candidate| {
+            matches!(
+                &no_candidate.reason,
+                SeedNoVcReason::DeferredExternal(reason)
+                    if reason.as_str().contains("explicit goal formula")
+                        && reason.as_str().contains("GhostAssignment")
+            )
+        }));
+        assert!(set.no_candidates().iter().any(|no_candidate| {
+            matches!(
+                &no_candidate.reason,
+                SeedNoVcReason::DeferredExternal(reason)
+                    if reason.as_str().contains("LoopInvariant")
+            )
+        }));
+        assert!(set.no_candidates().iter().any(|no_candidate| {
+            matches!(
+                &no_candidate.reason,
+                SeedNoVcReason::DeferredExternal(reason)
+                    if reason.as_str().contains("FlowDerived origin")
+            )
+        }));
+    }
+
+    #[test]
+    fn seed_intake_marks_goal_bearing_deferred_flow_rows_eligible() {
+        let source = sample_source_id();
+        let handoff = seed_handoff_with_sites(vec![
+            flow_seed(
+                source,
+                CoreFormulaId::new(0),
+                "program/0/contract/requires/0",
+                "flow:0:requires:0",
+                flow_site(ControlFlowObligationSiteKind::Requires, 0),
+            ),
+            (
+                obligation_seed(
+                    source,
+                    ObligationSeedKind::AlgorithmTermination,
+                    None,
+                    "program/0/termination/measure/0",
+                    "flow:0:termination:measure:0",
+                )
+                .with_status(ObligationSeedStatus::Deferred)
+                .into(),
+                flow_origin(),
+                Some(flow_site(ControlFlowObligationSiteKind::TerminationMeasure, 1).into()),
+            ),
+        ]);
+
+        let intake = SeedIntakeTable::try_from_handoff(&handoff).expect("intake");
+
+        assert!(matches!(
+            intake.rows()[0].mapping,
+            SeedIntakeMapping::EligibleOneVc { goal }
+                if goal == CoreFormulaId::new(0)
+        ));
+        assert!(matches!(
+            intake.rows()[1].mapping,
+            SeedIntakeMapping::NoConcreteVc { .. }
+        ));
+    }
+
+    #[test]
+    fn rejects_flow_output_algorithm_mismatch() {
+        let source = sample_source_id();
+        let mismatched_flow_output =
+            sample_flow_output_for_algorithm(source, CoreAlgorithmId::new(1));
+        let handoff = seed_handoff_with_sites(vec![flow_seed(
+            source,
+            CoreFormulaId::new(10),
+            "program/0/contract/requires/0",
+            "flow:0:requires:0",
+            flow_site(ControlFlowObligationSiteKind::Requires, 0),
+        )]);
+
+        let set = generate_with_flows(&handoff, &mismatched_flow_output);
+
+        assert_eq!(set.candidates(), []);
+        assert!(matches!(
+            &set.no_candidates()[0].reason,
+            SeedNoVcReason::DeferredExternal(reason)
+                if reason.as_str().contains("matching ControlFlowOutput")
+        ));
+    }
+
+    #[test]
+    fn unavailable_algorithm_families_remain_documented_deferred() {
+        let generator_doc = include_str!("../../../doc/design/mizar-vc/en/generator.md");
+        let todo_doc = include_str!("../../../doc/design/mizar-vc/en/todo.md");
+
+        for family in [
+            "call-precondition",
+            "branch",
+            "match",
+            "range-loop",
+            "collection-loop",
+            "Pick non-emptiness",
+            "ghost-erasure",
+        ] {
+            assert!(
+                generator_doc.contains(family),
+                "generator.md must classify unavailable {family} payloads"
+            );
+            assert!(
+                todo_doc.contains(family),
+                "todo.md must keep unavailable {family} payloads deferred"
+            );
+        }
+        assert!(generator_doc.contains("visible no-candidate/deferred"));
+        assert!(todo_doc.contains("deferred/no-candidate"));
+    }
+
+    #[test]
     fn rejects_stale_intake_handoff_mismatch() {
         let source = sample_source_id();
         let original = seed_handoff(vec![(
@@ -1234,6 +2080,7 @@ mod tests {
                 module: &VcModuleRef::new("sample"),
                 intake: &intake,
                 handoff: &changed,
+                flow_output: None,
             }),
             Err(GeneratorError::IntakeHandoffMismatch { handoff })
                 if handoff == ObligationHandoffId::new(0)
@@ -1292,6 +2139,7 @@ mod tests {
                 module: &VcModuleRef::new("sample"),
                 intake: &stale_intake,
                 handoff: &expanded,
+                flow_output: None,
             }),
             Err(GeneratorError::IntakeHandoffMismatch { handoff })
                 if handoff == ObligationHandoffId::new(1)
@@ -1367,22 +2215,66 @@ mod tests {
             module: &VcModuleRef::new("sample"),
             intake: &intake,
             handoff,
+            flow_output: None,
         })
         .expect("generation candidates")
+    }
+
+    fn generate_with_flows(
+        handoff: &ObligationSeedHandoff,
+        flow_output: &ControlFlowOutput,
+    ) -> CoreGenerationCandidateSet {
+        let intake = SeedIntakeTable::try_from_handoff(handoff).expect("intake");
+        CoreGenerationCandidateSet::try_from_seed_intake(CoreGenerationInput {
+            schema_version: &GenerationSchemaVersion::new("generator-task-7-test"),
+            module: &VcModuleRef::new("sample"),
+            intake: &intake,
+            handoff,
+            flow_output: Some(flow_output),
+        })
+        .expect("generation candidates")
+    }
+
+    fn assert_policy_input(candidate: &CoreGenerationCandidate, key: &str, value: &str) {
+        assert!(
+            candidate
+                .local_context
+                .policy_inputs()
+                .iter()
+                .any(|input| input.key == PolicyKey::new(key)
+                    && input.value == PolicyValue::new(value)),
+            "missing policy input {key}={value} in {:?}",
+            candidate.local_context.policy_inputs()
+        );
     }
 
     fn seed_handoff(
         entries: Vec<(ObligationSeed, ObligationHandoffOrigin)>,
     ) -> ObligationSeedHandoff {
+        seed_handoff_with_sites(
+            entries
+                .into_iter()
+                .map(|(seed, origin)| (seed, origin, None))
+                .collect(),
+        )
+    }
+
+    fn seed_handoff_with_sites(
+        entries: Vec<(
+            ObligationSeed,
+            ObligationHandoffOrigin,
+            Option<ControlFlowObligationSite>,
+        )>,
+    ) -> ObligationSeedHandoff {
         let mut table = ObligationHandoffTable::new();
         let mut source_map = std::collections::BTreeMap::new();
 
-        for (seed, origin) in entries {
+        for (seed, origin, flow_site) in entries {
             let source = seed.source.clone();
             let id = table.insert(ObligationHandoffEntry {
                 seed,
                 origin,
-                flow_site: None,
+                flow_site,
             });
             source_map.insert(id, source);
         }
@@ -1391,6 +2283,258 @@ mod tests {
             entries: table,
             source_map,
         }
+    }
+
+    fn flow_seed(
+        source: mizar_session::SourceId,
+        goal: CoreFormulaId,
+        local_path: &str,
+        semantic_origin: &str,
+        site: impl Into<ControlFlowObligationSite>,
+    ) -> (
+        ObligationSeed,
+        ObligationHandoffOrigin,
+        Option<ControlFlowObligationSite>,
+    ) {
+        (
+            obligation_seed(
+                source,
+                ObligationSeedKind::AlgorithmContract,
+                Some(goal),
+                local_path,
+                semantic_origin,
+            )
+            .with_status(ObligationSeedStatus::Deferred)
+            .into(),
+            flow_origin(),
+            Some(site.into()),
+        )
+    }
+
+    fn flow_origin() -> ObligationHandoffOrigin {
+        ObligationHandoffOrigin::FlowDerived {
+            flow: ControlFlowId::new(0),
+            algorithm: CoreAlgorithmId::new(0),
+        }
+    }
+
+    fn flow_site(kind: ControlFlowObligationSiteKind, ordinal: usize) -> FlowSiteBuilder {
+        FlowSiteBuilder {
+            site: ControlFlowObligationSite {
+                kind,
+                ordinal,
+                statement: None,
+                block: None,
+                loop_id: None,
+                exit: None,
+                local: None,
+                assignment_effect: None,
+            },
+        }
+    }
+
+    struct FlowSiteBuilder {
+        site: ControlFlowObligationSite,
+    }
+
+    impl FlowSiteBuilder {
+        fn with_statement(mut self, statement: usize) -> Self {
+            self.site.statement = Some(mizar_core::core_ir::CoreAlgorithmStmtId::new(statement));
+            self
+        }
+
+        fn with_block(mut self, block: usize) -> Self {
+            self.site.block = Some(BasicBlockId::new(block));
+            self
+        }
+
+        fn with_loop(mut self, loop_id: usize) -> Self {
+            self.site.loop_id = Some(LoopId::new(loop_id));
+            self
+        }
+
+        fn with_exit(mut self, exit: usize) -> Self {
+            self.site.exit = Some(ControlFlowExitId::new(exit));
+            self
+        }
+
+        fn with_local(mut self, local: usize) -> Self {
+            self.site.local = Some(LocalId::new(local));
+            self
+        }
+
+        fn with_assignment_effect(mut self, effect: usize) -> Self {
+            self.site.assignment_effect =
+                Some(mizar_core::control_flow::AssignmentEffectId::new(effect));
+            self
+        }
+    }
+
+    impl From<FlowSiteBuilder> for ControlFlowObligationSite {
+        fn from(builder: FlowSiteBuilder) -> Self {
+            builder.site
+        }
+    }
+
+    fn sample_flow_output(source: mizar_session::SourceId) -> ControlFlowOutput {
+        sample_flow_output_for_algorithm(source, CoreAlgorithmId::new(0))
+    }
+
+    fn sample_flow_output_for_algorithm(
+        source: mizar_session::SourceId,
+        algorithm: CoreAlgorithmId,
+    ) -> ControlFlowOutput {
+        let mut loops = ControlFlowLoopTable::new();
+        let loop_id = loops.insert(ControlFlowLoop {
+            algorithm,
+            header: BasicBlockId::new(0),
+            body: BasicBlockId::new(1),
+            exit: BasicBlockId::new(2),
+            condition: CoreFormulaId::new(90),
+            invariants: vec![CoreFormulaId::new(91)],
+            decreasing: Vec::new(),
+            source: source_ref(source),
+        });
+        assert_eq!(loop_id, LoopId::new(0));
+
+        let mut exits = ControlFlowExitTable::new();
+        let break_exit = exits.insert(ControlFlowExit {
+            algorithm,
+            statement: None,
+            from: BasicBlockId::new(3),
+            target: Some(BasicBlockId::new(2)),
+            kind: ControlFlowExitKind::Break { loop_id },
+            source: source_ref(source),
+        });
+        let continue_exit = exits.insert(ControlFlowExit {
+            algorithm,
+            statement: None,
+            from: BasicBlockId::new(4),
+            target: Some(BasicBlockId::new(0)),
+            kind: ControlFlowExitKind::Continue { loop_id },
+            source: source_ref(source),
+        });
+        assert_eq!(break_exit, ControlFlowExitId::new(0));
+        assert_eq!(continue_exit, ControlFlowExitId::new(1));
+
+        let mut flows = ControlFlowTable::new();
+        let flow_id = flows.insert(ControlFlowIr {
+            algorithm,
+            item: CoreItemId::new(0),
+            symbol: sample_symbol("Algorithm"),
+            entry: BasicBlockId::new(0),
+            blocks: ControlFlowBlockTable::new(),
+            locals: ControlFlowLocalTable::new(),
+            contexts: ProgramContextTable::new(),
+            context_facts: ContextFactTable::new(),
+            assignment_effects: mizar_core::control_flow::AssignmentEffectTable::new(),
+            call_sites: CallSiteTable::new(),
+            contracts: ControlFlowContractSet {
+                requires: vec![ContractSite {
+                    kind: ContractSiteKind::Requires,
+                    formula: CoreFormulaId::new(10),
+                    placement: ContractSitePlacement::Entry {
+                        block: BasicBlockId::new(0),
+                        context: ProgramContextId::new(0),
+                    },
+                    source: source_ref(source),
+                }],
+                ensures: vec![ContractSite {
+                    kind: ContractSiteKind::Ensures,
+                    formula: CoreFormulaId::new(11),
+                    placement: ContractSitePlacement::Return {
+                        block: BasicBlockId::new(2),
+                        exit: ControlFlowExitId::new(0),
+                    },
+                    source: source_ref(source),
+                }],
+                calls: Vec::new(),
+                assertions: vec![
+                    AssertionSite {
+                        formula: CoreFormulaId::new(12),
+                        placement: AssertionPlacement::AlgorithmContract {
+                            block: BasicBlockId::new(0),
+                            context: ProgramContextId::new(0),
+                        },
+                        source: source_ref(source),
+                    },
+                    AssertionSite {
+                        formula: CoreFormulaId::new(13),
+                        placement: AssertionPlacement::Statement {
+                            statement: mizar_core::core_ir::CoreAlgorithmStmtId::new(0),
+                            block: BasicBlockId::new(1),
+                            successor_context: ProgramContextId::new(0),
+                        },
+                        source: source_ref(source),
+                    },
+                ],
+                loop_invariants: vec![
+                    LoopInvariantSite {
+                        formula: CoreFormulaId::new(14),
+                        placement: LoopInvariantPlacement::AlgorithmContract {
+                            block: BasicBlockId::new(0),
+                            context: ProgramContextId::new(0),
+                        },
+                        source: source_ref(source),
+                    },
+                    LoopInvariantSite {
+                        formula: CoreFormulaId::new(15),
+                        placement: LoopInvariantPlacement::Header {
+                            loop_id: LoopId::new(0),
+                            block: BasicBlockId::new(0),
+                        },
+                        source: source_ref(source),
+                    },
+                    LoopInvariantSite {
+                        formula: CoreFormulaId::new(16),
+                        placement: LoopInvariantPlacement::NormalBackedge {
+                            loop_id: LoopId::new(0),
+                            from: BasicBlockId::new(1),
+                            to: BasicBlockId::new(0),
+                        },
+                        source: source_ref(source),
+                    },
+                    LoopInvariantSite {
+                        formula: CoreFormulaId::new(17),
+                        placement: LoopInvariantPlacement::BreakExit {
+                            loop_id: LoopId::new(0),
+                            exit: ControlFlowExitId::new(0),
+                        },
+                        source: source_ref(source),
+                    },
+                    LoopInvariantSite {
+                        formula: CoreFormulaId::new(18),
+                        placement: LoopInvariantPlacement::ContinueExit {
+                            loop_id: LoopId::new(0),
+                            exit: ControlFlowExitId::new(1),
+                        },
+                        source: source_ref(source),
+                    },
+                ],
+                decreasing: Vec::new(),
+            },
+            loops,
+            exits,
+            ghost_effects: ControlFlowGhostTable::default(),
+            termination: mizar_core::control_flow::ControlFlowTerminationPlan::default(),
+            source_map: ControlFlowSourceMap::default(),
+            diagnostics: ControlFlowDiagnosticTable::new(),
+        });
+        assert_eq!(flow_id, ControlFlowId::new(0));
+
+        ControlFlowOutput {
+            flows,
+            flow_map: std::collections::BTreeMap::from([(algorithm, flow_id)]),
+        }
+    }
+
+    fn sample_symbol(name: &str) -> SymbolId {
+        let module = ModuleId::new(PackageId::new("pkg"), ModulePath::new("vc_fixture"));
+        SymbolId::new(
+            module,
+            LocalSymbolId::new(name),
+            FullyQualifiedName::new(format!("pkg::vc_fixture::{name}")),
+        )
     }
 
     fn obligation_seed(

@@ -134,15 +134,18 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
      利用不能な explicit registration payload は deferred として記録する。
    - 依存: 4、5。仕様: `generator.md`（定理/定義の節）。
 
-7. **アルゴリズムの VC。** [ ]
-   - 構造化制御フローに従って `ControlFlowIr` から VC を生成する: 契約、
-     不変条件（導入/保存）、assert、ghost 規則、停止性測度。
-   - テスト: 構文ごとの VC フィクスチャ（`while`、`if`、`match`）。
-     不変条件の導入/保存の組。停止性 VC が測度を参照する。レビュー監査由来の
-     algorithm fixture として、old-state assignment、field update の alias
-     identity、`not C` を獲得しない `break` exit、`continue`/decreasing
-     check、`downto` と `step` の range loop、ghost-only `Pick` erasure も
-     含める。
+7. **アルゴリズムの VC。** [x]
+   - explicit flow-derived `ControlFlowIr` handoff row から、goal-bearing な契約、
+     assertion、不変条件の VC を生成する。利用不能な call、branch、match、
+     range-loop、collection-loop、term-only termination、partial-termination、
+     Pick non-emptiness、ghost-erasure payload family は fabricated VC ではなく
+     deferred/no-candidate record として visible に保つ。
+   - テスト: goal-bearing precondition、postcondition、assertion、不変条件の
+     entry/preservation、break/continue classification の candidate fixture。missing
+     flow site、missing flow data、term-only termination、partial termination、
+     ghost erasure、old-state assignment、field-update alias identity、branch/match、
+     `downto`/`step` range loop、ghost-only `Pick` erasure など利用不能な audit family
+     の no-candidate/deferred fixture。
    - 依存: 6、`mizar-core` task 16。仕様: `generator.md`（アルゴリズムの
      節）。
 

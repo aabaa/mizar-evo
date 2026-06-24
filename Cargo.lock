@@ -443,6 +443,7 @@ name = "mizar-vc"
 version = "0.1.0"
 dependencies = [
  "mizar-core",
+ "mizar-resolve",
  "mizar-session",
 ]
 
