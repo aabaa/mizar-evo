@@ -5,6 +5,7 @@ members = [
     "crates/mizar-checker",
     "crates/mizar-core",
     "crates/mizar-frontend",
+    "crates/mizar-kernel",
     "crates/mizar-lexer",
     "crates/mizar-lsp",
     "crates/mizar-parser",

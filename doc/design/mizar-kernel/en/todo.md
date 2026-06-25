@@ -66,10 +66,12 @@ integration: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_i
   `mizar-kernel` to construct candidates, so the kernel never depends on
   evidence producers. Record the decision in `certificate_parser.md` and at
   the top level.
-- **Trusted-baseline crate policy: open, resolved by task 1.** Decide the
-  extra strictness for trusted code (e.g. `#![forbid(unsafe_code)]`, no
-  third-party runtime dependencies, mandatory trust statements per module)
-  and encode it in the lint-policy guard.
+- **Trusted-baseline crate policy: resolved by task 1.** Trusted kernel source
+  forbids unsafe code, uses workspace lint denial, keeps production
+  dependencies limited to `mizar-session` and `mizar-core` with no
+  dev/build/target dependency escape hatches, requires a crate-root trust
+  statement, blocks public semantic surface until paired module specs exist,
+  and guards against downstream ATP/proof/cache/artifact coupling.
 - **Discharge-evidence validation scope: open, owned by `mizar-proof`
   task 6.** Whether `mizar-vc` pre-ATP discharge evidence is
   kernel-replayed or accepted as policy-level built-in evidence; if
@@ -83,7 +85,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
 
 ### Clause and certificate foundation
 
-1. **Crate scaffold and trusted-baseline lint policy.** [ ]
+1. **Crate scaffold and trusted-baseline lint policy.** [x]
    - Add the `mizar-kernel` workspace member depending on `mizar-session`
      and `mizar-core` only; resolve the trusted-baseline decision and encode
      it in `tests/lint_policy.rs` (deny baseline plus the trusted-code

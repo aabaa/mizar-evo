@@ -380,6 +380,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "mizar-kernel"
+version = "0.1.0"
+dependencies = [
+ "mizar-core",
+ "mizar-session",
+]
+
+[[package]]
 name = "mizar-lexer"
 version = "0.1.0"
 dependencies = [
