@@ -140,10 +140,11 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
         declarations,
         [
             "12: pub mod certificate_parser;",
-            "13: pub mod clause;",
-            "14: pub mod rejection;",
-            "15: pub mod resolution_trace;",
-            "16: pub mod substitution_checker;",
+            "13: pub mod checker;",
+            "14: pub mod clause;",
+            "15: pub mod rejection;",
+            "16: pub mod resolution_trace;",
+            "17: pub mod substitution_checker;",
             "compact: pubmod",
         ],
         "{} must expose only current spec-backed kernel modules; found:\n{}",
@@ -154,6 +155,7 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
         source_files,
         [
             "src/certificate_parser.rs",
+            "src/checker.rs",
             "src/clause.rs",
             "src/lib.rs",
             "src/rejection.rs",
@@ -166,6 +168,8 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
     for spec in [
         workspace_root().join("doc/design/mizar-kernel/en/certificate_parser.md"),
         workspace_root().join("doc/design/mizar-kernel/ja/certificate_parser.md"),
+        workspace_root().join("doc/design/mizar-kernel/en/checker.md"),
+        workspace_root().join("doc/design/mizar-kernel/ja/checker.md"),
         workspace_root().join("doc/design/mizar-kernel/en/clause.md"),
         workspace_root().join("doc/design/mizar-kernel/ja/clause.md"),
         workspace_root().join("doc/design/mizar-kernel/en/rejection.md"),

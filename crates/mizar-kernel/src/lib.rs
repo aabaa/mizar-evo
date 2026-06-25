@@ -10,6 +10,7 @@
 //! insertion, fallback inference, or hidden global-state lookup.
 
 pub mod certificate_parser;
+pub mod checker;
 pub mod clause;
 pub mod rejection;
 pub mod resolution_trace;

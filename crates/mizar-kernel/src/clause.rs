@@ -259,6 +259,13 @@ impl Clause {
         Ok(bytes)
     }
 
+    pub(crate) fn canonical_hash_input_len_for_kernel(&self) -> Result<usize, ClauseError> {
+        checked_add_len(
+            CLAUSE_DOMAIN_SEPARATOR.len(),
+            frame_len(self.hash_payload_len()?)?,
+        )
+    }
+
     fn hash_payload_len(&self) -> Result<usize, ClauseError> {
         checked_literal_count(self.literals.len())?;
         let payload_len = checked_add_len(10, literal_encoding_len(&self.literals)?)?;

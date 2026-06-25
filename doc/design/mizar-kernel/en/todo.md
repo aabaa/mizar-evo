@@ -184,7 +184,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
       "Kernel Check Service".
 
-14. **Implement imported-fact checking.** [ ]
+14. **Implement imported-fact checking.** [x]
     - Validate that facts a certificate uses are exactly the declared
       imported facts (content-addressed references, no silent extras).
     - Tests: undeclared-fact use rejected; hash mismatches rejected.

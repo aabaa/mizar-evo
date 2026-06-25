@@ -74,6 +74,7 @@ KernelCheckInput
   imported_fact_context
   substitution_context
   cluster_trace_context
+  checker_policy
   checker_limits
 
 ImportedFactContext
@@ -95,12 +96,20 @@ ClusterTraceContext
   cluster_steps: sorted map cluster_trace_step_id -> ClusterStepEvidence
   reduction_steps: sorted map reduction_step_id -> ReductionStepEvidence
   provenance_fingerprint
+
+CheckerPolicy
+  imported_fact_policy: ImportedFactPolicy
+
+ImportedFactPolicy
+  allow_externally_attested_imports
 ```
 
 Concrete Rust types may use sorted vectors instead of maps, as long as
-constructors canonicalize input order or reject duplicate ids
+constructors reject over-budget context entry counts before sorting,
+canonicalize input order within that bound, or reject duplicate ids
 deterministically before replay. Context entries are validated at first use in
-certificate order; unused context entries are ignored.
+certificate order; unused context entries are ignored after the bounded
+constructor succeeds.
 
 `ImportedFactEvidence` is caller-supplied immutable evidence. It is not
 queried from a resolver, checker, ATP backend, cache, artifact, package index,
@@ -113,13 +122,17 @@ status than `RequiredProofStatus` requires is `unresolved_symbol`.
 resolution replay. It must validate against the parsed certificate's kernel
 profile, symbol manifest, variable manifest, and checker limits before it is
 passed into `resolution_trace`. The checker must recompute the canonical
-fingerprint of the normalized clause under the parsed certificate's hash and
-clause profile, require it to equal `normalized_clause_fingerprint`, and require
-both the recomputed fingerprint and the evidence `statement_fingerprint` to
-equal the parsed `ImportedFactRef.statement_fingerprint`. Clause shape or
-profile mismatch in the provided immutable evidence is `missing_provenance`;
-imported identity, clause-content fingerprint, or proof-status mismatch is
-`unresolved_symbol`.
+fingerprint of the normalized clause under the parsed certificate's clause
+profile. Task 14 supports only clause fingerprint algorithm id `1`, defined as
+the exact `Clause::canonical_hash_input()` bytes with no cryptographic digest
+step. Other normalized-clause fingerprint algorithm ids fail closed as
+`unresolved_symbol` for the imported fact until a documented digest registry is
+added. The recomputed fingerprint must equal `normalized_clause_fingerprint`,
+and both it and the evidence `statement_fingerprint` must equal the parsed
+`ImportedFactRef.statement_fingerprint`. Clause shape or profile mismatch in
+the provided immutable evidence is `missing_provenance`; unsupported
+fingerprint algorithm, imported identity, clause-content fingerprint, or
+proof-status mismatch is `unresolved_symbol`.
 
 There is no caller-supplied `imported_clause_context` in `KernelCheckInput`.
 The only imported-clause context passed to `resolution_trace` is the
@@ -290,9 +303,13 @@ An evidence status satisfies the requirement only when it is at least as
 strong as the parsed requirement and is allowed by the active kernel profile.
 Externally attested facts are not kernel-verified; they are accepted only when
 the parsed certificate explicitly permits that requirement and the immutable
-context records the policy-permitted status. Release policies that forbid
-external attestations are outside this module, but their decision must be
-reflected before constructing the immutable imported-fact context.
+context records the policy-permitted status. Task 14 receives an explicit
+profile-policy gate for externally attested imports; if that gate disallows
+external attestation, evidence with
+`externally_attested_policy_permitted` is rejected as `unresolved_symbol` even
+when the parsed requirement would otherwise allow it. Release policies that
+forbid external attestations remain outside this module, but their decision is
+represented by that immutable input gate rather than by a global lookup.
 
 Imported proof-status, identity, or fingerprint failure is `unresolved_symbol`
 with `imported_fact_id`. Missing context or missing context provenance is
@@ -359,6 +376,7 @@ CheckerLimits
   resolution replay limits
   substitution replay limits
   imported fact count
+  imported fact context entry count
   imported clause validation limits
   cluster trace step count
   reduction trace step count
