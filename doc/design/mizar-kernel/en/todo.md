@@ -231,13 +231,13 @@ Keep `cargo test -p mizar-kernel` green after each task (see
     - Deps: 16. Spec: [public_enum_policy.md](./public_enum_policy.md)
       and module specs referenced by its inventory.
 
-20. **Source/spec correspondence and prohibition audit.** [~]
+20. **Source/spec correspondence and prohibition audit.** [x]
     - Trace every public API and promised behavior to implementation and
       tests; verify every module spec restates the kernel prohibitions and
       its trust statement.
     - Deps: 19. Spec: all module specs and this TODO.
 
-21. **Bilingual documentation sync audit.** [ ]
+21. **Bilingual documentation sync audit.** [~]
     - Compare each English canonical document under
       `doc/design/mizar-kernel/en/` with its Japanese companion and
       synchronize content.
