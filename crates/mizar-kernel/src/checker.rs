@@ -125,6 +125,7 @@ impl ImportedFactContext {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum ImportedFactContextError {
     ImportedFactCountExceeded {
         max: usize,
@@ -149,12 +150,14 @@ pub struct ImportedFactEvidence {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[non_exhaustive]
 pub enum ImportedFactNamespace {
     ImportedAxiom,
     ImportedTheorem,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum AcceptedProofStatus {
     KernelVerified,
     DischargedBuiltin,
@@ -818,6 +821,7 @@ impl KernelCheckResult {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum KernelCheckStatus {
     Accepted,
     Rejected,
@@ -1335,6 +1339,7 @@ impl ClusterTraceContext {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum ClusterTraceContextError {
     TraceStepCountExceeded {
         max: usize,
@@ -1356,6 +1361,7 @@ pub enum ClusterTraceContextError {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum BaseFactNamespace {
     ImportedAxiom,
     ImportedTheorem,
@@ -1405,6 +1411,7 @@ pub struct GuardEvidence {
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
+#[non_exhaustive]
 pub enum CheckedFactRef {
     ImportedAxiom(u32),
     ImportedTheorem(u32),

@@ -336,6 +336,7 @@ fn unique_linear_lookup<T>(entries: &[T], id: u32, key: impl Fn(&T) -> u32) -> R
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum SubstitutionContextError {
     DuplicateSubstitutionPayload { substitution_id: u32 },
     DuplicateFreshnessWitness { witness_id: u32 },

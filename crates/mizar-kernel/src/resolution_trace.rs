@@ -101,6 +101,7 @@ impl ImportedClauseContext {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum ImportedClauseContextError {
     DuplicateImportedClause {
         namespace: ParsedClauseRefNamespace,

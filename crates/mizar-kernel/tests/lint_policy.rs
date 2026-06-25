@@ -188,6 +188,36 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
 }
 
 #[test]
+fn kernel_public_enums_are_forward_compatible_and_documented() {
+    let source_inventory = source_public_enum_inventory();
+    assert!(
+        !source_inventory.is_empty(),
+        "mizar-kernel must keep an explicit public enum inventory"
+    );
+
+    for policy_doc in [
+        workspace_root().join("doc/design/mizar-kernel/en/public_enum_policy.md"),
+        workspace_root().join("doc/design/mizar-kernel/ja/public_enum_policy.md"),
+    ] {
+        let documented_inventory = documented_public_enum_inventory(&policy_doc);
+        assert_eq!(
+            documented_inventory,
+            source_inventory,
+            "{} must list exactly the public enums present in crates/mizar-kernel/src",
+            policy_doc.display()
+        );
+    }
+
+    let missing_markers = public_enums_without_non_exhaustive();
+    assert!(
+        missing_markers.is_empty(),
+        "every mizar-kernel public enum must be immediately preceded by \
+         #[non_exhaustive] per doc/design/mizar-kernel/en/public_enum_policy.md:\n{}",
+        missing_markers.join("\n")
+    );
+}
+
+#[test]
 fn kernel_source_stays_off_producer_policy_cache_and_artifact_boundaries() {
     let forbidden = [
         "mizar_atp",
@@ -444,6 +474,81 @@ fn rust_source_files(root: &Path) -> Vec<PathBuf> {
     collect_rust_source_files(root, &mut files);
     files.sort();
     files
+}
+
+fn source_public_enum_inventory() -> Vec<String> {
+    let src_root = crate_root().join("src");
+    let mut inventory = Vec::new();
+    for path in rust_source_files(&src_root) {
+        let module = path
+            .file_stem()
+            .and_then(|name| name.to_str())
+            .expect("source file has utf-8 stem");
+        let source = read_to_string(&path);
+        for line in source.lines() {
+            if let Some(enum_name) = public_enum_name(line) {
+                inventory.push(format!("{module}::{enum_name}"));
+            }
+        }
+    }
+    inventory.sort();
+    inventory
+}
+
+fn documented_public_enum_inventory(path: &Path) -> Vec<String> {
+    const START: &str = "<!-- public-enum-inventory:start -->";
+    const END: &str = "<!-- public-enum-inventory:end -->";
+
+    let document = read_to_string(path);
+    let start = document
+        .find(START)
+        .unwrap_or_else(|| panic!("{} missing {START}", path.display()))
+        + START.len();
+    let rest = &document[start..];
+    let end = rest
+        .find(END)
+        .unwrap_or_else(|| panic!("{} missing {END}", path.display()));
+    rest[..end]
+        .lines()
+        .map(str::trim)
+        .filter(|line| !line.is_empty() && *line != "```text" && *line != "```")
+        .map(str::to_owned)
+        .collect()
+}
+
+fn public_enums_without_non_exhaustive() -> Vec<String> {
+    let src_root = crate_root().join("src");
+    let mut missing = Vec::new();
+    for path in rust_source_files(&src_root) {
+        let module = path
+            .file_stem()
+            .and_then(|name| name.to_str())
+            .expect("source file has utf-8 stem");
+        let source = read_to_string(&path);
+        let lines = source.lines().collect::<Vec<_>>();
+        for (index, line) in lines.iter().enumerate() {
+            let Some(enum_name) = public_enum_name(line) else {
+                continue;
+            };
+            if index == 0 || lines[index - 1].trim() != "#[non_exhaustive]" {
+                let display_path = path.strip_prefix(crate_root()).unwrap_or(&path);
+                missing.push(format!(
+                    "{}:{} {module}::{enum_name}",
+                    display_path.display(),
+                    index + 1
+                ));
+            }
+        }
+    }
+    missing.sort();
+    missing
+}
+
+fn public_enum_name(line: &str) -> Option<&str> {
+    let rest = line.trim().strip_prefix("pub enum ")?;
+    rest.split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
+        .next()
+        .filter(|name| !name.is_empty())
 }
 
 fn collect_rust_source_files(path: &Path, files: &mut Vec<PathBuf>) {

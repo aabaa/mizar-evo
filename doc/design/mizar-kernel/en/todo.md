@@ -218,17 +218,18 @@ Keep `cargo test -p mizar-kernel` green after each task (see
     - Deps: 16. Spec: [fail_soundness.md](../../mizar-test/en/fail_soundness.md),
       [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-18. **Determinism and replay-cost suite.** [~]
+18. **Determinism and replay-cost suite.** [x]
     - Property coverage that identical inputs produce identical results and
       rejection reasons, and that replay stays within the documented cost
       bounds.
     - Deps: 16. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-19. **Public-enum forward-compatibility policy.** [ ]
+19. **Public-enum forward-compatibility policy.** [~]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;
       rejection categories additionally follow the architecture 19
       compatibility policy.
-    - Deps: 16. Spec: all module specs.
+    - Deps: 16. Spec: [public_enum_policy.md](./public_enum_policy.md)
+      and module specs referenced by its inventory.
 
 20. **Source/spec correspondence and prohibition audit.** [ ]
     - Trace every public API and promised behavior to implementation and
