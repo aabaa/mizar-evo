@@ -26,7 +26,7 @@ no fallback inference.
 | rejection | `rejection.md` (task 6) | `src/rejection.rs` | [x] |
 | resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [x] |
 | substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [x] |
-| checker | `checker.md` (task 13) | `src/checker.rs` | [~] |
+| checker | `checker.md` (task 13) | `src/checker.rs` | [x] |
 
 `mizar-kernel` implements pipeline phase 14: proof certificates and kernel
 context in, trusted proof status out. It is the trusted core of the whole
@@ -224,14 +224,14 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       bounds.
     - Deps: 16. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-19. **Public-enum forward-compatibility policy.** [~]
+19. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;
       rejection categories additionally follow the architecture 19
       compatibility policy.
     - Deps: 16. Spec: [public_enum_policy.md](./public_enum_policy.md)
       and module specs referenced by its inventory.
 
-20. **Source/spec correspondence and prohibition audit.** [ ]
+20. **Source/spec correspondence and prohibition audit.** [~]
     - Trace every public API and promised behavior to implementation and
       tests; verify every module spec restates the kernel prohibitions and
       its trust statement.

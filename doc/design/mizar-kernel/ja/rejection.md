@@ -25,6 +25,14 @@ search、ATP search、implicit coercion insertion、fallback inference、importe
 lookup、cache lookup、artifact lookup、wall-clock / random-state read、unordered
 iteration、mutable compiler-global state の hidden read を行ってはならない。
 
+Task 20 の audit では、この trust boundary は no proof search, no SAT solving,
+no ATP search or backend invocation, no premise selection, no overload
+resolution, no cluster search, no implicit coercion insertion, no fallback
+inference, no acceptance from backend-reported success alone, no source
+loading, no cache lookup, no artifact lookup, no wall-clock or random-state
+reads, no unordered iteration dependence, no hidden reads of mutable
+compiler-global state を含むものとして検査する。
+
 ## Owned Behavior
 
 この module が所有するもの:

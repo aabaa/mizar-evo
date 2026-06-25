@@ -31,6 +31,14 @@ hidden reads of mutable compiler-global state. Backend-reported success,
 backend-reported used axioms, resolver output, cache hits, artifact metadata,
 or policy permission never replace kernel replay.
 
+Task 20 audits this trust boundary as including no proof search, no SAT
+solving, no ATP search or backend invocation, no premise selection, no overload
+resolution, no cluster search, no implicit coercion insertion, no fallback
+inference, no acceptance from backend-reported success alone, no source
+loading, no cache lookup, no artifact lookup, no wall-clock or random-state
+reads, no unordered iteration dependence, and no hidden reads of mutable
+compiler-global state.
+
 ## Owned Behavior
 
 The module owns:

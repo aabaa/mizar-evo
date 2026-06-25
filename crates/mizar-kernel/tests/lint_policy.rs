@@ -218,6 +218,163 @@ fn kernel_public_enums_are_forward_compatible_and_documented() {
 }
 
 #[test]
+fn source_spec_audit_covers_public_surface_and_prohibitions() {
+    let audit_paths = [
+        workspace_root().join("doc/design/mizar-kernel/en/source_spec_audit.md"),
+        workspace_root().join("doc/design/mizar-kernel/ja/source_spec_audit.md"),
+    ];
+    let lib_source = read_to_string(&crate_root().join("src/lib.rs"));
+    let modules = public_module_exports(&lib_source);
+
+    assert!(
+        !modules.is_empty(),
+        "mizar-kernel source/spec audit must track public module exports"
+    );
+
+    for audit_path in &audit_paths {
+        let audit = read_to_string(audit_path);
+        let documented_modules = documented_audit_modules(&audit);
+        assert_eq!(
+            documented_modules,
+            modules,
+            "{} must list exactly the current public module exports",
+            audit_path.display()
+        );
+
+        for module in &modules {
+            let section_heading = format!("### `{module}`");
+            let module_section = markdown_section(&audit, &section_heading)
+                .unwrap_or_else(|| panic!("{} missing {section_heading}", audit_path.display()));
+            let source_path = format!("src/{module}.rs");
+            let spec_path = format!("{module}.md");
+
+            for marker in [format!("`{module}`"), format!("`{source_path}`"), spec_path] {
+                assert!(
+                    module_section.contains(&marker),
+                    "{} section {section_heading} must mention {marker}",
+                    audit_path.display()
+                );
+            }
+
+            let source = read_to_string(&crate_root().join(&source_path));
+            let unsupported_forms = unsupported_top_level_public_forms(&source);
+            assert!(
+                unsupported_forms.is_empty(),
+                "{source_path} has public top-level API forms not yet represented \
+                 by the Task20 exact inventory scanner:\n{}",
+                unsupported_forms.join("\n")
+            );
+            let public_items = top_level_public_items(&source);
+            let documented_items = documented_public_items(module_section);
+            assert!(
+                !public_items.is_empty(),
+                "{source_path} must have an explicit public surface inventory"
+            );
+            assert_eq!(
+                documented_items,
+                public_items,
+                "{} section {section_heading} must list exactly the current \
+                 top-level public item inventory",
+                audit_path.display()
+            );
+        }
+
+        let gap_classification = markdown_section(&audit, "## Gap Classification")
+            .unwrap_or_else(|| panic!("{} missing ## Gap Classification", audit_path.display()));
+        for (marker, classes) in [
+            (
+                "Source-derived certificate",
+                &["`external_dependency_gap`", "`deferred`"][..],
+            ),
+            (
+                "ATP proof translation",
+                &["`external_dependency_gap`", "`deferred`"],
+            ),
+            (
+                "Cluster/reduction payload production",
+                &["`external_dependency_gap`", "`deferred`"],
+            ),
+            (
+                "Derived-fact payload schema",
+                &["`external_dependency_gap`", "`deferred`"],
+            ),
+            (
+                "Service-envelope normalization",
+                &["`external_dependency_gap`", "`deferred`"],
+            ),
+            (
+                "Downstream `mizar-proof`, `mizar-cache`, and `mizar-artifact`",
+                &["`external_dependency_gap`", "`deferred`"],
+            ),
+            ("Downstream wildcard-arm checks", &["`deferred`"]),
+            (
+                "`source_undocumented_behavior`",
+                &["`source_undocumented_behavior`"],
+            ),
+            ("`repo_metadata_conflict`", &["`repo_metadata_conflict`"]),
+        ] {
+            let row = gap_classification
+                .lines()
+                .find(|line| line.contains(marker))
+                .unwrap_or_else(|| {
+                    panic!(
+                        "{} Gap Classification must include `{marker}`",
+                        audit_path.display()
+                    )
+                });
+            for class in classes {
+                assert!(
+                    row.contains(class),
+                    "{} Gap Classification marker `{marker}` must include class {class}",
+                    audit_path.display()
+                );
+            }
+        }
+    }
+
+    for module in modules {
+        for language in ["en", "ja"] {
+            let spec_path = workspace_root()
+                .join("doc/design/mizar-kernel")
+                .join(language)
+                .join(format!("{module}.md"));
+            let spec = read_to_string(&spec_path);
+            let trust_statement = markdown_section(&spec, "## Trust Statement")
+                .unwrap_or_else(|| panic!("{} missing ## Trust Statement", spec_path.display()));
+            let trust_statement = trust_statement
+                .to_ascii_lowercase()
+                .split_whitespace()
+                .collect::<Vec<_>>()
+                .join(" ");
+            for marker in [
+                "trusted kernel code",
+                "no proof search",
+                "no sat solving",
+                "no atp search or backend invocation",
+                "no premise selection",
+                "no overload resolution",
+                "no cluster search",
+                "no implicit coercion insertion",
+                "no fallback inference",
+                "no acceptance from backend-reported success alone",
+                "no source loading",
+                "no cache lookup",
+                "no artifact lookup",
+                "no wall-clock or random-state reads",
+                "no unordered iteration dependence",
+                "no hidden reads of mutable compiler-global state",
+            ] {
+                assert!(
+                    trust_statement.contains(marker),
+                    "{} trust statement must contain trusted-boundary marker `{marker}`",
+                    spec_path.display()
+                );
+            }
+        }
+    }
+}
+
+#[test]
 fn kernel_source_stays_off_producer_policy_cache_and_artifact_boundaries() {
     let forbidden = [
         "mizar_atp",
@@ -346,6 +503,64 @@ fn public_surface_scanner_catches_common_shapes() {
     ] {
         assert!(public_semantic_declarations(sample).is_empty(), "{sample}");
     }
+}
+
+#[test]
+fn source_spec_public_inventory_scanner_is_exact() {
+    let source = "\
+pub struct DirectStruct;\n\
+pub enum DirectEnum { Value }\n\
+pub fn direct_fn() {}\n\
+pub const DIRECT_CONST: u8 = 1;\n\
+pub const fn direct_const_fn() -> u8 { 1 }\n\
+pub type DirectType = u8;\n\
+pub mod direct_mod {}\n\
+pub unsafe fn direct_unsafe_fn() {}\n\
+pub async fn direct_async_fn() {}\n\
+pub extern \"C\" fn direct_extern_fn() {}\n\
+pub\n\
+struct SplitStruct;\n\
+pub(crate) struct PrivateStruct;\n\
+impl DirectStruct {\n\
+    pub fn method_is_not_top_level() {}\n\
+}\n";
+
+    assert_eq!(
+        top_level_public_items(source),
+        [
+            "DIRECT_CONST",
+            "DirectEnum",
+            "DirectStruct",
+            "DirectType",
+            "SplitStruct",
+            "direct_async_fn",
+            "direct_const_fn",
+            "direct_extern_fn",
+            "direct_fn",
+            "direct_mod",
+            "direct_unsafe_fn",
+        ]
+    );
+    assert!(unsupported_top_level_public_forms(source).is_empty());
+
+    let unsupported = "\
+pub use crate::clause::Clause;\n\
+pub macro sample() {}\n\
+pub extern crate mizar_core;\n\
+#[macro_export]\n\
+macro_rules! kernel_macro { () => {}; }\n\
+impl DirectStruct {\n\
+    pub use is_not_valid_but_not_top_level;\n\
+}\n";
+    assert_eq!(
+        unsupported_top_level_public_forms(unsupported),
+        [
+            "1: pub use crate::clause::Clause;",
+            "2: pub macro sample() {}",
+            "3: pub extern crate mizar_core;",
+            "4: #[macro_export]",
+        ]
+    );
 }
 
 #[test]
@@ -549,6 +764,190 @@ fn public_enum_name(line: &str) -> Option<&str> {
     rest.split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
         .next()
         .filter(|name| !name.is_empty())
+}
+
+fn public_module_exports(source: &str) -> Vec<String> {
+    let mut modules = source
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("pub mod "))
+        .filter_map(|rest| rest.strip_suffix(';'))
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+    modules.sort();
+    modules
+}
+
+fn documented_audit_modules(audit: &str) -> Vec<String> {
+    let mut modules = audit
+        .lines()
+        .filter_map(|line| {
+            let rest = line.trim().strip_prefix("### `")?;
+            rest.strip_suffix('`')
+        })
+        .map(str::to_owned)
+        .collect::<Vec<_>>();
+    modules.sort();
+    modules
+}
+
+fn documented_public_items(module_section: &str) -> Vec<String> {
+    let marker = "Covered top-level public items:";
+    let start = module_section
+        .find(marker)
+        .unwrap_or_else(|| panic!("missing `{marker}` in audit module section"))
+        + marker.len();
+    let mut items = Vec::new();
+    let mut in_list = false;
+    for line in module_section[start..].lines() {
+        let trimmed = line.trim();
+        if let Some(item) = trimmed
+            .strip_prefix("- `")
+            .and_then(|item| item.strip_suffix('`'))
+        {
+            in_list = true;
+            items.push(item.to_owned());
+            continue;
+        }
+        if in_list && trimmed.is_empty() {
+            break;
+        }
+    }
+    items.sort();
+    items
+}
+
+fn top_level_public_items(source: &str) -> Vec<String> {
+    let mut items = Vec::new();
+    let mut brace_depth = 0usize;
+    let mut pending_public = false;
+    for line in source.lines() {
+        let trimmed = line.trim_start();
+        if brace_depth == 0 {
+            if pending_public {
+                if !trimmed.is_empty() && !trimmed.starts_with("#[") {
+                    let normalized = format!("pub {trimmed}");
+                    if let Some(item) = public_item_name(&normalized) {
+                        items.push(item.to_owned());
+                    }
+                    pending_public = false;
+                }
+            } else if trimmed == "pub" {
+                pending_public = true;
+            } else if externally_public_line(trimmed)
+                && let Some(item) = public_item_name(trimmed)
+            {
+                items.push(item.to_owned());
+            }
+        }
+
+        let open = line.chars().filter(|character| *character == '{').count();
+        let close = line.chars().filter(|character| *character == '}').count();
+        brace_depth = brace_depth.saturating_add(open).saturating_sub(close);
+        if line.trim_end().ends_with(';') && open == 0 && close == 0 {
+            continue;
+        }
+    }
+    items.sort();
+    items
+}
+
+fn unsupported_top_level_public_forms(source: &str) -> Vec<String> {
+    let mut unsupported = Vec::new();
+    let mut brace_depth = 0usize;
+    let mut pending_public = None;
+
+    for (index, line) in source.lines().enumerate() {
+        let trimmed = line.trim_start();
+        if brace_depth == 0 {
+            if let Some(public_line) = pending_public {
+                if !trimmed.is_empty() && !trimmed.starts_with("#[") {
+                    let normalized = format!("pub {trimmed}");
+                    if unsupported_public_form(&normalized) {
+                        unsupported.push(format!("{}: pub {}", public_line, trimmed));
+                    }
+                    pending_public = None;
+                }
+            } else if trimmed == "pub" {
+                pending_public = Some(index + 1);
+            } else if trimmed.starts_with("#[macro_export]") || unsupported_public_form(trimmed) {
+                unsupported.push(format!("{}: {trimmed}", index + 1));
+            }
+        }
+
+        let open = line.chars().filter(|character| *character == '{').count();
+        let close = line.chars().filter(|character| *character == '}').count();
+        brace_depth = brace_depth.saturating_add(open).saturating_sub(close);
+    }
+
+    unsupported
+}
+
+fn public_item_name(line: &str) -> Option<&str> {
+    let rest = line.strip_prefix("pub ")?;
+    let rest = rest
+        .strip_prefix("unsafe ")
+        .or_else(|| rest.strip_prefix("async "))
+        .unwrap_or(rest);
+    let rest = rest.strip_prefix("extern \"C\" ").unwrap_or(rest);
+
+    if let Some(rest) = rest.strip_prefix("const fn ") {
+        return rest
+            .split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
+            .next()
+            .filter(|name| !name.is_empty());
+    }
+
+    for prefix in [
+        "struct ", "enum ", "fn ", "const ", "static ", "type ", "trait ", "union ", "mod ",
+    ] {
+        if let Some(name) = rest.strip_prefix(prefix) {
+            return name
+                .split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
+                .next()
+                .filter(|name| !name.is_empty());
+        }
+    }
+
+    None
+}
+
+fn externally_public_line(line: &str) -> bool {
+    line.starts_with("pub ")
+        && !line.starts_with("pub(crate)")
+        && !line.starts_with("pub(super)")
+        && !line.starts_with("pub(in ")
+}
+
+fn unsupported_public_form(line: &str) -> bool {
+    line.starts_with("pub use ")
+        || line.starts_with("pub macro ")
+        || line.starts_with("pub extern crate ")
+}
+
+fn markdown_section<'a>(document: &'a str, heading: &str) -> Option<&'a str> {
+    let start = document.find(heading)?;
+    let start_level = heading
+        .chars()
+        .take_while(|character| *character == '#')
+        .count();
+    let body_start = start + heading.len();
+    let rest = &document[body_start..];
+    let end = rest
+        .match_indices('\n')
+        .filter_map(|(index, _)| {
+            let line = rest[index + 1..].lines().next().unwrap_or_default();
+            let level = line
+                .chars()
+                .take_while(|character| *character == '#')
+                .count();
+            (level > 0 && level <= start_level).then_some(index)
+        })
+        .next()
+        .unwrap_or(rest.len());
+
+    Some(&document[start..body_start + end])
 }
 
 fn collect_rust_source_files(path: &Path, files: &mut Vec<PathBuf>) {

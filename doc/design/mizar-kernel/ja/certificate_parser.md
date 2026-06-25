@@ -39,6 +39,14 @@ proof-policy projection、cache lookup、artifact lookup、wall-clock / random-s
 read、unordered iteration、mutable compiler-global state の hidden read を行っては
 ならない。
 
+Task 20 の audit では、この trust boundary は no proof search, no SAT solving,
+no ATP search or backend invocation, no premise selection, no overload
+resolution, no cluster search, no implicit coercion insertion, no fallback
+inference, no acceptance from backend-reported success alone, no source
+loading, no cache lookup, no artifact lookup, no wall-clock or random-state
+reads, no unordered iteration dependence, no hidden reads of mutable
+compiler-global state を含むものとして検査する。
+
 ## Owned Behavior
 
 この module が所有するもの:

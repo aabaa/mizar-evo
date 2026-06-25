@@ -17,7 +17,7 @@ explicit cluster/reduction trace replay、derived fact validation、final-goal a
 [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md) の
 「Kernel Check Service」を精緻化する。
 
-## Trust statement
+## Trust Statement
 
 この module は trusted kernel code である。必要な evidence がすべて explicit immutable
 input から replay または check された後でなければ、proof を受理してはならない。
@@ -28,6 +28,14 @@ fallback inference、source loading、cache lookup、artifact lookup、wall-cloc
 random-state read、unordered iteration、mutable compiler-global state の hidden read を
 行ってはならない。Backend-reported success、backend-reported used axioms、resolver
 output、cache hit、artifact metadata、policy permission は kernel replay の代替にならない。
+
+Task 20 の audit では、この trust boundary は no proof search, no SAT solving,
+no ATP search or backend invocation, no premise selection, no overload
+resolution, no cluster search, no implicit coercion insertion, no fallback
+inference, no acceptance from backend-reported success alone, no source
+loading, no cache lookup, no artifact lookup, no wall-clock or random-state
+reads, no unordered iteration dependence, no hidden reads of mutable
+compiler-global state を含むものとして検査する。
 
 ## Owned behavior
 
