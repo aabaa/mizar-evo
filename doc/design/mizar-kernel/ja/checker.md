@@ -129,10 +129,11 @@ fingerprint algorithm、imported identity、clause-content fingerprint、proof-s
 clause-validation checks を通過した imported facts から checker が構築したものだけである。
 これにより、unchecked clause が imported-fact validation を迂回することを防ぐ。
 
-`cluster_trace_context` は explicit evidence input のままである。Task 15 が
-cluster/reduction replay を実装するまでは、それを必要とする certificate evidence は開発計画上
-`external_dependency_gap` / `deferred` として扱い、runtime では placeholder によって受理せず、
-missing または invalid evidence として fail closed する。
+`cluster_trace_context` は explicit evidence input のままである。Task 15 は requested
+cluster/reduction trace ids を、explicit dependencies と normalized commitments の検査に
+よって bounded replay する。より豊かな active-rule payload の producer-side generation は
+`external_dependency_gap` / `deferred` のままである。Missing または unsupported payload
+evidence は placeholder によって受理せず reject する。
 
 Cluster / reduction evidence records は architecture 17 の replay fields を保持しなければ
 ならない:
@@ -145,6 +146,7 @@ ClusterStepEvidence
   generated_attribute
   generated_type
   dependency
+  generated_fact_fingerprint
 
 ReductionStepEvidence
   reduction_step_id
@@ -155,9 +157,12 @@ ReductionStepEvidence
   source_redex
   target_term
   substitution
+  required_guard_ids
   discharged_guards
   rule_view
   selection_key
+  strategy_audit_key
+  result_fingerprint
 
 GuardEvidence
   guard_id
@@ -166,9 +171,39 @@ GuardEvidence
 ```
 
 `enclosing_term_before`、`redex_path`、`rule_view`、`selection_key` のような
-strategy-audit fields は、recorded evidence として check する。Kernel は explicit
-active-rule data と recorded enclosing term に対して selected redex と rule を audit
-するだけであり、代替 redex または rule を search しない。
+strategy-audit fields は、bounded recorded evidence として check し、normalized
+commitments に bind する。Task 15 は代替 redex または rule を search せず、registration
+から missing active-rule data を推論しない。
+
+Task 15 は `generated_fact_fingerprint`、`strategy_audit_key`、
+`result_fingerprint` を normalized replay commitments として扱う。これらは backend assertion
+ではない。Kernel は recorded step fields から deterministic canonical bytes を再計算し、
+mismatch を `invalid_cluster_trace` として reject する。`strategy_audit_key` は
+`enclosing_term_before`、`redex_path`、`rule_view`、`selection_key` から再計算する。
+Unsupported upstream trace payload production は `external_dependency_gap` のままであり、
+runtime behavior は fail-closed でなければならない。
+
+Cluster step id と reduction step id は、1 つの global ordered trace namespace を共有する。
+`cluster_steps` と `reduction_steps` は type safety のため別々の sorted vector に保存してよいが、
+id は重複してはならない。Trace step は imported/generated base facts、または既に replay 済みの
+strictly smaller id を持つ trace step だけに依存してよい。Current-step / future-step dependency は
+`invalid_cluster_trace` である。
+
+Cluster trace context が必須なのは、certificate または checker service が 1 つ以上の
+cluster/reduction trace step id の replay を要求する場合だけである。Trace step が要求されない
+場合、context 欠如は accepted され、cluster evidence は check しない。Trace id が要求される
+場合、context と provenance は必須である。Kernel は requested ids と、その explicit transitive
+trace-step dependencies だけを global id order で replay する。Bounded constructor 後の
+unrequested context entries は無視し、replay-time の cluster/reduction step limits には数えない。
+
+Reduction rule authority は explicit evidence であり lookup ではない。Task 15 は authority
+fields（`applied_reduction`、`rule_fqn`、`rule_view`、`redex_path`、`source_redex`、
+`target_term`、`substitution`、`required_guard_ids`、`discharged_guards`）が存在し、
+bounded であり、normalized commitments に bind されることを要求する。Task 15 は
+`redex_path` が `enclosing_term_before` 内の `source_redex` を選ぶことや、recorded local
+`LHS -> RHS` instance がより豊かな active-rule payload から従うことを、まだ semantic に
+validate しない。その producer-side payload format は、documented されるまで
+`external_dependency_gap` のままである。
 
 ## Result shape
 
@@ -250,7 +285,8 @@ Checker は次の手順を deterministic order で実行する:
 5. `substitution_checker` で substitutions を replay し、その checked report だけを保持する。
 6. `resolution_trace` で MiniSAT-compatible resolution trace を replay し、その checked report
    だけを保持する。
-7. Task 15 evidence が存在する場合、explicit cluster/reduction traces を replay する。
+7. Certificate または checker service が nonempty cluster evidence を要求する場合、requested
+   explicit cluster/reduction trace step ids とその explicit trace-step dependencies を replay する。
 8. 各 `derived_facts` の source clause reference が checked generated / imported /
    resolution / substitution-derived / cluster-derived fact を指すことを payload schema に従って
    validate する。
@@ -305,6 +341,14 @@ Task 15 は explicit cluster/reduction trace replay を実装する。Checker sp
   よって裏付けられる;
 - trace が参照する dependency fact は、imported fact、generated fact、または earlier trace
   step として既に checked である;
+- replay は requested trace step ids によって駆動され、unused evidence は bounded construction
+  後に無視される;
+- cluster steps と reduction steps は 1 つの numeric trace order を共有する;
+- reduction rule authority fields（`applied_reduction`、`rule_fqn`、selected redex、
+  local rewrite instance、required guards）は explicit normalized evidence に表現される;
+- cluster generated-fact と reduction result commitments は acceptance 前に recorded fields から
+  deterministic に再計算される;
+- reduction required guards は discharged guard evidence と正確に一致しなければならない;
 - invalid cluster/reduction evidence は `invalid_cluster_trace` へ map する;
 - cluster trace context または provenance の欠如は `missing_provenance` へ map する。
 
@@ -353,6 +397,10 @@ CheckerLimits
   imported clause validation limits
   cluster trace step count
   reduction trace step count
+  cluster trace field byte count
+  reduction guard evidence count
+  reduction substitution binding count
+  normalized commitment byte count
   derived fact count
   final report record count
 ```
@@ -365,7 +413,7 @@ materialization の前に budget check を行う。
 
 | Failure | Detail | Location |
 |---|---|---|
-| Missing imported fact context, cluster trace context, substitution context, derived imported-clause context, or provenance | `missing_provenance` | field path plus imported fact, substitution, cluster, reduction, or final-goal id when known |
+| Missing imported fact context, requested cluster trace context/provenance, substitution context, derived imported-clause context, or provenance | `missing_provenance` | field path plus imported fact, substitution, cluster, reduction, or final-goal id when known |
 | Malformed service witness envelope before parsing or before normalized evidence can be selected | `malformed_witness_data` | service evidence field path |
 | Imported fact identity, statement fingerprint, unavailable theorem/axiom, or proof-status strength mismatch | `unresolved_symbol` | `imported_fact_id` |
 | Substitution replay failure | forwarded `invalid_substitution`, `missing_provenance`, or `resource_exhaustion` | forwarded substitution location |
@@ -430,9 +478,12 @@ Task 14 は以下の Rust tests を追加しなければならない:
 Task 15 は以下の Rust tests を追加しなければならない:
 
 - explicit cluster / reduction traces は recorded evidence からだけ accepted される;
-- hidden transitive expansion、invalid reduction substitution、missing guard evidence、
-  dependency mismatch、strategy-audit mismatch は `invalid_cluster_trace`;
-- cluster trace context / provenance 欠如は `missing_provenance`;
+- hidden transitive expansion、malformed または over-budget な reduction substitution
+  evidence、missing guard evidence、dependency mismatch、strategy-audit または
+  result-commitment mismatch は、failed check に応じて `invalid_cluster_trace` または
+  `resource_exhaustion`;
+- nonempty trace ids が要求された場合の cluster trace context / provenance 欠如は
+  `missing_provenance`;
 - upstream trace payload が未準備なら、fail-closed `external_dependency_gap` behavior を
   assert する。
 

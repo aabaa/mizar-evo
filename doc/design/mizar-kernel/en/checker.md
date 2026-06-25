@@ -140,11 +140,11 @@ checker-owned context constructed from imported facts that passed identity,
 fingerprint, proof-status, and clause-validation checks. This prevents
 unchecked clauses from bypassing imported-fact validation.
 
-`cluster_trace_context` remains an explicit evidence input. Until task 15
-implements cluster/reduction replay, any certificate evidence requiring it is
-classified as `external_dependency_gap`/`deferred` for development planning and
-must be rejected as missing or invalid evidence at runtime rather than
-accepted by a placeholder.
+`cluster_trace_context` remains an explicit evidence input. Task 15 implements
+bounded replay of requested cluster/reduction trace ids by checking explicit
+dependencies and normalized commitments. Producer-side generation of richer
+active-rule payloads remains `external_dependency_gap`/`deferred`; missing or
+unsupported payload evidence is rejected rather than accepted by a placeholder.
 
 Cluster and reduction evidence records must carry the replay fields from
 architecture 17:
@@ -157,6 +157,7 @@ ClusterStepEvidence
   generated_attribute
   generated_type
   dependency
+  generated_fact_fingerprint
 
 ReductionStepEvidence
   reduction_step_id
@@ -167,9 +168,12 @@ ReductionStepEvidence
   source_redex
   target_term
   substitution
+  required_guard_ids
   discharged_guards
   rule_view
   selection_key
+  strategy_audit_key
+  result_fingerprint
 
 GuardEvidence
   guard_id
@@ -178,10 +182,43 @@ GuardEvidence
 ```
 
 Strategy-audit fields such as `enclosing_term_before`, `redex_path`,
-`rule_view`, and `selection_key` are checked as recorded evidence. The kernel
-audits the selected redex and rule against explicit active-rule data and the
-recorded enclosing term only; it does not search for an alternate redex or
-rule.
+`rule_view`, and `selection_key` are checked as bounded recorded evidence and
+bound to normalized commitments. Task 15 does not search for an alternate redex
+or rule, and it does not infer missing active-rule data from registrations.
+
+Task 15 treats `generated_fact_fingerprint`, `strategy_audit_key`, and
+`result_fingerprint` as normalized replay commitments. They are not backend
+assertions: the kernel recomputes deterministic canonical bytes from the
+recorded step fields and rejects mismatches as `invalid_cluster_trace`.
+`strategy_audit_key` is recomputed from `enclosing_term_before`, `redex_path`,
+`rule_view`, and `selection_key`. Unsupported upstream trace payload production
+remains an `external_dependency_gap`; runtime behavior must stay fail-closed.
+
+Cluster and reduction step ids share one global ordered trace namespace.
+`cluster_steps` and `reduction_steps` may be stored in separate sorted vectors
+for type safety, but their ids must not overlap. A trace step may depend only
+on imported/generated base facts or on a trace step with a strictly smaller id
+that has already been replayed. Current-step and future-step dependencies are
+`invalid_cluster_trace`.
+
+Cluster trace context is required only when the certificate or checker service
+requests replay of one or more cluster/reduction trace step ids. If no trace
+step is requested, absent context is accepted and no cluster evidence is
+checked. When trace ids are requested, context and provenance are mandatory;
+the kernel replays the requested ids plus their explicit transitive trace-step
+dependencies in global id order. Bounded but unrequested context entries are
+ignored after constructor checks and are not counted against replay-time
+cluster/reduction step limits.
+
+Reduction rule authority is explicit evidence, not a lookup. Task 15 requires
+the authority fields (`applied_reduction`, `rule_fqn`, `rule_view`,
+`redex_path`, `source_redex`, `target_term`, `substitution`,
+`required_guard_ids`, and `discharged_guards`) to be present, bounded, and
+bound into normalized commitments. It does not yet semantically validate that
+`redex_path` selects `source_redex` inside `enclosing_term_before` or that the
+recorded local `LHS -> RHS` instance follows from a richer active-rule payload;
+that producer-side payload format remains `external_dependency_gap` until it
+is documented.
 
 ## Result Shape
 
@@ -266,7 +303,9 @@ The checker runs these steps in deterministic order:
    checked report.
 6. Replay the MiniSAT-compatible resolution trace through `resolution_trace`
    and keep only its checked report.
-7. Replay explicit cluster/reduction traces when task 15 evidence is present.
+7. Replay requested explicit cluster/reduction trace step ids, plus their
+   explicit trace-step dependencies, when the certificate or checker service
+   requests nonempty cluster evidence.
 8. Validate `derived_facts` by checking that each source clause reference is a
    checked generated, imported, resolution, substitution-derived, or
    cluster-derived fact as specified by its payload schema.
@@ -326,6 +365,15 @@ requires:
   by explicit trace evidence;
 - every dependency fact referenced by a trace to have already been checked as
   an imported fact, generated fact, or earlier trace step;
+- replay to be driven by requested trace step ids; unused evidence is ignored
+  after bounded construction;
+- cluster and reduction steps to share a single numeric trace order;
+- reduction rule authority fields (`applied_reduction`, `rule_fqn`, selected
+  redex, local rewrite instance, and required guards) to be represented in
+  explicit normalized evidence;
+- cluster generated-fact and reduction result commitments to be recomputed
+  deterministically from recorded fields before acceptance;
+- reduction required guards to be matched exactly by discharged guard evidence;
 - invalid cluster/reduction evidence to map to `invalid_cluster_trace`;
 - missing trace context or missing trace provenance to map to
   `missing_provenance`.
@@ -380,6 +428,10 @@ CheckerLimits
   imported clause validation limits
   cluster trace step count
   reduction trace step count
+  cluster trace field byte count
+  reduction guard evidence count
+  reduction substitution binding count
+  normalized commitment byte count
   derived fact count
   final report record count
 ```
@@ -392,7 +444,7 @@ entries, cloning imported clauses, or materializing reports.
 
 | Failure | Detail | Location |
 |---|---|---|
-| Missing imported fact context, cluster trace context, substitution context, derived imported-clause context, or provenance | `missing_provenance` | field path plus imported fact, substitution, cluster, reduction, or final-goal id when known |
+| Missing imported fact context, requested cluster trace context/provenance, substitution context, derived imported-clause context, or provenance | `missing_provenance` | field path plus imported fact, substitution, cluster, reduction, or final-goal id when known |
 | Malformed service witness envelope before parsing or before normalized evidence can be selected | `malformed_witness_data` | service evidence field path |
 | Imported fact identity, statement fingerprint, unavailable theorem/axiom, or proof-status strength mismatch | `unresolved_symbol` | `imported_fact_id` |
 | Substitution replay failure | forwarded `invalid_substitution`, `missing_provenance`, or `resource_exhaustion` | forwarded substitution location |
@@ -462,10 +514,12 @@ Task 14 must add Rust tests for:
 Task 15 must add Rust tests for:
 
 - explicit cluster and reduction traces accepted only from recorded evidence;
-- hidden transitive expansion, invalid reduction substitution, missing guard
-  evidence, dependency mismatch, and strategy-audit mismatch rejected as
-  `invalid_cluster_trace`;
-- missing cluster trace context/provenance rejected as `missing_provenance`;
+- hidden transitive expansion, malformed or over-budget reduction substitution
+  evidence, missing guard evidence, dependency mismatch, and strategy-audit or
+  result-commitment mismatch rejected as `invalid_cluster_trace` or
+  `resource_exhaustion` according to the failed check;
+- missing cluster trace context/provenance rejected as `missing_provenance`
+  when nonempty trace ids are requested;
 - fail-closed `external_dependency_gap` behavior if upstream trace payloads are
   not ready.
 

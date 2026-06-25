@@ -190,13 +190,14 @@ Keep `cargo test -p mizar-kernel` green after each task (see
     - Tests: undeclared-fact use rejected; hash mismatches rejected.
     - Deps: 13. Spec: `checker.md` (imported-facts section).
 
-15. **Implement cluster trace replay.** [ ]
+15. **Implement cluster trace replay.** [x]
     - Replay `ResolutionTrace` cluster/reduction steps in linear time,
       rejecting traces whose steps do not re-derive their claimed facts.
     - Tests: valid traces replay; mutated antecedents/derived facts
       rejected; replay cost bound enforced.
-    - Deps: 13, `mizar-checker` task 16. Spec: `checker.md` (cluster-replay
-      section), architecture 17.
+    - Deps: 13, 14. Spec: `checker.md` (cluster-replay section),
+      architecture 17. Upstream `mizar-checker` trace production remains an
+      `external_dependency_gap` unless a ready payload contract exists.
 
 16. **Kernel check service and deterministic batch ordering.** [ ]
     - Implement the service API: one certificate in, one trusted result out;
