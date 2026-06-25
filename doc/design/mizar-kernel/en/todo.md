@@ -25,7 +25,7 @@ no fallback inference.
 | certificate_parser | `certificate_parser.md` (task 4) | `src/certificate_parser.rs` | [x] |
 | rejection | `rejection.md` (task 6) | `src/rejection.rs` | [x] |
 | resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [x] |
-| substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [~] |
+| substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [x] |
 | checker | `checker.md` (task 13) | `src/checker.rs` | [ ] |
 
 `mizar-kernel` implements pipeline phase 14: proof certificates and kernel
@@ -164,9 +164,11 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       mismatched results rejected.
     - Deps: 7, 10. Spec: `substitution_checker.md`.
 
-12. **Implement alpha-conversion and free-variable checks.** [ ]
-    - Check alpha-equivalence claims and free-variable side conditions.
-    - Tests: equivalence fixtures; FV-condition violations rejected.
+12. **Implement alpha-conversion, freshness, and free-variable checks.** [x]
+    - Check alpha-equivalence claims, deterministic freshness witnesses, and
+      free-variable side conditions.
+    - Tests: equivalence fixtures; freshness-counter mismatches and
+      FV-condition violations rejected.
     - Deps: 11. Spec: `substitution_checker.md`.
 
 ### Orchestration and acceptance

@@ -21,6 +21,7 @@ const EDGE_KIND_APPLICATION_ARGUMENT: u8 = 1;
 const EDGE_KIND_BINDER_BODY: u8 = 2;
 const CONSTRAINT_KIND_MUST_REMAIN_FREE_AT_PATH: u8 = 1;
 const CONSTRAINT_KIND_MUST_BE_ABSENT_FROM_CAPTURE_SET: u8 = 2;
+const BINDER_ROLE_GENERATED_FRESH: u8 = 4;
 const BINDER_FRAME_ENCODED_BYTES: usize = 13;
 const BINDER_VARIABLE_ENCODED_BYTES: usize = 4;
 
@@ -192,7 +193,7 @@ impl FreeVariableConstraint {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq, Default)]
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Default)]
 pub struct TermPath {
     pub segments: Vec<TermPathSegment>,
 }
@@ -400,9 +401,19 @@ pub fn replay_substitutions<'a>(
         let context = substitution_context_for(input, entry)?;
         let payload = validate_payload(input, &replay_context, &binder_context, context, entry)?;
         validate_binder_context_usage(input, &binder_context, entry, payload)?;
-        validate_side_conditions(input, &replay_context, &binder_context, context, entry)?;
-        measure_direct_substitution(input, &binder_context, entry, payload)?;
-        let replayed = replay_direct_substitution(input, &binder_context, entry, payload)?;
+        let side_conditions =
+            validate_side_conditions(input, &replay_context, &binder_context, context, entry)?;
+        let alpha_plan = build_alpha_replay_plan(
+            input,
+            &replay_context,
+            &binder_context,
+            entry,
+            payload,
+            &side_conditions.freshness_witnesses,
+        )?;
+        measure_direct_substitution(input, &binder_context, entry, payload, &alpha_plan)?;
+        let replayed =
+            replay_direct_substitution(input, &binder_context, entry, payload, &alpha_plan)?;
         validate_term_for_entry(
             input,
             &replay_context,
@@ -417,6 +428,12 @@ pub fn replay_substitutions<'a>(
                 substitution_location(entry).with_field_path("target_term"),
             ));
         }
+        validate_free_variable_constraints(
+            input,
+            &binder_context,
+            entry,
+            &side_conditions.free_variable_constraints,
+        )?;
         checked_substitutions.push(CheckedSubstitution {
             substitution_id: entry.substitution_id,
             source_term: entry.source_term.clone(),
@@ -451,6 +468,7 @@ pub fn checked_substitutions_for_input<'a>(
 struct ReplayContext {
     term: ClauseValidationContext,
     canonical_variables: BTreeSet<VariableId>,
+    canonical_variable_order: Vec<VariableId>,
 }
 
 impl ReplayContext {
@@ -467,13 +485,16 @@ impl ReplayContext {
             term = term.with_known_symbol(symbol.symbol);
         }
         let mut canonical_variables = BTreeSet::new();
+        let mut canonical_variable_order = Vec::with_capacity(certificate.variable_manifest.len());
         for variable in &certificate.variable_manifest {
             term = term.with_canonical_variable(variable.variable_id);
             canonical_variables.insert(variable.variable_id);
+            canonical_variable_order.push(variable.variable_id);
         }
         Self {
             term,
             canonical_variables,
+            canonical_variable_order,
         }
     }
 }
@@ -856,14 +877,25 @@ fn validate_payload<'a>(
     Ok(payload)
 }
 
-fn validate_side_conditions(
+struct SideConditionEvidence<'a> {
+    freshness_witnesses: Vec<&'a FreshnessWitness>,
+    free_variable_constraints: Vec<&'a FreeVariableConstraint>,
+}
+
+fn validate_side_conditions<'a>(
     input: SubstitutionCheckInput<'_>,
     replay_context: &ReplayContext,
     _binder_context: &BinderContext,
-    context: &SubstitutionContext,
+    context: &'a SubstitutionContext,
     entry: &SubstitutionEntry,
-) -> SubstitutionCheckResult<()> {
+) -> SubstitutionCheckResult<SideConditionEvidence<'a>> {
     if entry.freshness_witness_refs.len() > input.limits.max_freshness_witnesses {
+        return Err(resource_rejection(
+            input.target_vc_fingerprint,
+            substitution_location(entry).with_field_path("freshness_witness_refs"),
+        ));
+    }
+    if entry.freshness_witness_refs.len() > input.limits.max_alpha_renames {
         return Err(resource_rejection(
             input.target_vc_fingerprint,
             substitution_location(entry).with_field_path("freshness_witness_refs"),
@@ -875,6 +907,7 @@ fn validate_side_conditions(
             substitution_location(entry).with_field_path("free_variable_constraint_refs"),
         ));
     }
+    let mut freshness_witnesses = Vec::with_capacity(entry.freshness_witness_refs.len());
     for witness_id in &entry.freshness_witness_refs {
         let witness = context.freshness_witness(*witness_id).map_err(|()| {
             missing_rejection(
@@ -883,7 +916,10 @@ fn validate_side_conditions(
             )
         })?;
         validate_freshness_witness(input, replay_context, entry, witness)?;
+        freshness_witnesses.push(witness);
     }
+    let mut free_variable_constraints =
+        Vec::with_capacity(entry.free_variable_constraint_refs.len());
     for constraint_id in &entry.free_variable_constraint_refs {
         let constraint = context
             .free_variable_constraint(*constraint_id)
@@ -894,8 +930,12 @@ fn validate_side_conditions(
                 )
             })?;
         validate_free_variable_constraint(input, replay_context, entry, constraint)?;
+        free_variable_constraints.push(constraint);
     }
-    Ok(())
+    Ok(SideConditionEvidence {
+        freshness_witnesses,
+        free_variable_constraints,
+    })
 }
 
 fn validate_binder_context_usage(
@@ -1034,21 +1074,246 @@ fn validate_free_variable_constraint(
     Ok(())
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct AlphaReplayPlan {
+    renames: Vec<AlphaRename>,
+}
+
+impl AlphaReplayPlan {
+    fn empty() -> Self {
+        Self {
+            renames: Vec::new(),
+        }
+    }
+
+    fn rename_for_path(&self, path: &[TermPathSegment]) -> Option<&AlphaRename> {
+        self.renames
+            .iter()
+            .find(|rename| rename.source_path.segments == path)
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct AlphaRename {
+    source_path: TermPath,
+    target_binder_id: u32,
+    generated_variable_id: VariableId,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct ActiveBinder {
+    source_variable_id: VariableId,
+    target_variable_id: VariableId,
+}
+
+fn build_alpha_replay_plan(
+    input: SubstitutionCheckInput<'_>,
+    replay_context: &ReplayContext,
+    binder_context: &BinderContext,
+    entry: &SubstitutionEntry,
+    payload: &SubstitutionPayload,
+    witnesses: &[&FreshnessWitness],
+) -> SubstitutionCheckResult<AlphaReplayPlan> {
+    if witnesses.is_empty() {
+        return Ok(AlphaReplayPlan::empty());
+    }
+    if witnesses.len() > input.limits.max_alpha_renames {
+        return Err(resource_rejection(
+            input.target_vc_fingerprint,
+            substitution_location(entry).with_field_path("freshness_witness_refs"),
+        ));
+    }
+
+    let mut seen_paths = BTreeSet::new();
+    let mut seen_generated = BTreeSet::new();
+    let mut renames = Vec::with_capacity(witnesses.len());
+    for witness in witnesses {
+        if !seen_paths.insert(witness.binder_path.clone())
+            || !seen_generated.insert(witness.generated_variable_id)
+        {
+            return Err(invalid_rejection(
+                input.target_vc_fingerprint,
+                substitution_location(entry).with_field_path("freshness_witness.binder_path"),
+            ));
+        }
+        let (source_binder_id, source_body) = binder_at_path(
+            input,
+            entry,
+            &entry.source_term,
+            &witness.binder_path,
+            "freshness_witness.binder_path",
+        )?;
+        let (target_binder_id, _) = binder_at_path(
+            input,
+            entry,
+            &entry.target_term,
+            &witness.binder_path,
+            "freshness_witness.binder_path",
+        )?;
+        let source_frame = binder_context
+            .frame_for_binder(source_binder_id)
+            .ok_or_else(|| {
+                invalid_rejection(
+                    input.target_vc_fingerprint,
+                    substitution_location(entry).with_field_path("binder_context"),
+                )
+            })?;
+        let target_frame = binder_context
+            .frame_for_binder(target_binder_id)
+            .ok_or_else(|| {
+                invalid_rejection(
+                    input.target_vc_fingerprint,
+                    substitution_location(entry).with_field_path("binder_context"),
+                )
+            })?;
+        if target_frame.binder_role != BINDER_ROLE_GENERATED_FRESH
+            || target_frame.variable_id != witness.generated_variable_id
+            || source_frame.variable_id == witness.generated_variable_id
+        {
+            return Err(invalid_rejection(
+                input.target_vc_fingerprint,
+                substitution_location(entry)
+                    .with_field_path("freshness_witness.generated_variable_id"),
+            ));
+        }
+        let expected_avoided = expected_avoided_variables(
+            input,
+            binder_context,
+            entry,
+            payload,
+            &witness.binder_path,
+            source_body,
+            source_frame.variable_id,
+        )?;
+        if witness.avoided_variables != expected_avoided {
+            return Err(invalid_rejection(
+                input.target_vc_fingerprint,
+                substitution_location(entry).with_field_path("freshness_witness.avoided_variables"),
+            ));
+        }
+        if expected_avoided.contains(&witness.generated_variable_id) {
+            return Err(invalid_rejection(
+                input.target_vc_fingerprint,
+                substitution_location(entry)
+                    .with_field_path("freshness_witness.generated_variable_id"),
+            ));
+        }
+        let expected_counter = deterministic_counter(
+            replay_context,
+            &expected_avoided,
+            witness.generated_variable_id,
+        )
+        .ok_or_else(|| {
+            invalid_rejection(
+                input.target_vc_fingerprint,
+                substitution_location(entry)
+                    .with_field_path("freshness_witness.generated_variable_id"),
+            )
+        })?;
+        if witness.deterministic_counter != expected_counter {
+            return Err(invalid_rejection(
+                input.target_vc_fingerprint,
+                substitution_location(entry)
+                    .with_field_path("freshness_witness.deterministic_counter"),
+            ));
+        }
+        renames.push(AlphaRename {
+            source_path: witness.binder_path.clone(),
+            target_binder_id,
+            generated_variable_id: witness.generated_variable_id,
+        });
+    }
+    renames.sort_by(|left, right| left.source_path.cmp(&right.source_path));
+    Ok(AlphaReplayPlan { renames })
+}
+
+fn expected_avoided_variables(
+    input: SubstitutionCheckInput<'_>,
+    binder_context: &BinderContext,
+    entry: &SubstitutionEntry,
+    payload: &SubstitutionPayload,
+    binder_path: &TermPath,
+    source_body: &Term,
+    original_variable_id: VariableId,
+) -> SubstitutionCheckResult<Vec<VariableId>> {
+    let mut avoided = BTreeSet::new();
+    let source_body_limit = input.limits.max_avoided_variables.saturating_add(1);
+    let free_walk = FreeVariableWalk {
+        input,
+        binder_context,
+        entry,
+        limit: source_body_limit,
+        field_path: "freshness_witness.avoided_variables",
+    };
+    collect_free_variables(free_walk, source_body, &mut Vec::new(), &mut avoided)?;
+    avoided.remove(&original_variable_id);
+    collect_inserted_actual_free_variables_below_binder(
+        input,
+        binder_context,
+        entry,
+        payload,
+        binder_path,
+        &mut avoided,
+    )?;
+    let avoided = avoided.into_iter().collect::<Vec<_>>();
+    if avoided.len() > input.limits.max_avoided_variables {
+        return Err(resource_rejection(
+            input.target_vc_fingerprint,
+            substitution_location(entry).with_field_path("freshness_witness.avoided_variables"),
+        ));
+    }
+    Ok(avoided)
+}
+
+fn deterministic_counter(
+    replay_context: &ReplayContext,
+    avoided_variables: &[VariableId],
+    generated_variable_id: VariableId,
+) -> Option<u32> {
+    let avoided = avoided_variables.iter().copied().collect::<BTreeSet<_>>();
+    let mut counter = 0u32;
+    for variable in &replay_context.canonical_variable_order {
+        if avoided.contains(variable) {
+            continue;
+        }
+        if *variable == generated_variable_id {
+            return Some(counter);
+        }
+        counter = counter.checked_add(1)?;
+    }
+    None
+}
+
 fn replay_direct_substitution(
     input: SubstitutionCheckInput<'_>,
     binder_context: &BinderContext,
     entry: &SubstitutionEntry,
     payload: &SubstitutionPayload,
+    alpha_plan: &AlphaReplayPlan,
 ) -> SubstitutionCheckResult<Term> {
-    apply_at_path(
+    let walk = ReplayWalk {
         input,
         binder_context,
         entry,
+        payload,
+        alpha_plan,
+    };
+    apply_at_path(
+        walk,
         &entry.source_term,
         &payload.rewrite_path.segments,
-        payload,
+        &mut Vec::new(),
         &mut Vec::new(),
     )
+}
+
+#[derive(Clone, Copy)]
+struct ReplayWalk<'input, 'walk> {
+    input: SubstitutionCheckInput<'input>,
+    binder_context: &'walk BinderContext,
+    entry: &'walk SubstitutionEntry,
+    payload: &'walk SubstitutionPayload,
+    alpha_plan: &'walk AlphaReplayPlan,
 }
 
 fn measure_direct_substitution(
@@ -1056,17 +1321,20 @@ fn measure_direct_substitution(
     binder_context: &BinderContext,
     entry: &SubstitutionEntry,
     payload: &SubstitutionPayload,
+    alpha_plan: &AlphaReplayPlan,
 ) -> SubstitutionCheckResult<usize> {
     let walk = MeasureReplay {
         input,
         binder_context,
         entry,
         payload,
+        alpha_plan,
     };
     measure_apply_at_path(
         walk,
         &entry.source_term,
         &payload.rewrite_path.segments,
+        &mut Vec::new(),
         &mut Vec::new(),
         0,
     )
@@ -1078,18 +1346,20 @@ struct MeasureReplay<'input, 'walk> {
     binder_context: &'walk BinderContext,
     entry: &'walk SubstitutionEntry,
     payload: &'walk SubstitutionPayload,
+    alpha_plan: &'walk AlphaReplayPlan,
 }
 
 fn measure_apply_at_path(
     walk: MeasureReplay<'_, '_>,
     term: &Term,
     path: &[TermPathSegment],
-    active_bound_variables: &mut Vec<VariableId>,
+    active_binders: &mut Vec<ActiveBinder>,
+    current_path: &mut Vec<TermPathSegment>,
     depth: usize,
 ) -> SubstitutionCheckResult<usize> {
     validate_replay_depth(walk.input, walk.entry, depth)?;
     if path.is_empty() {
-        return measure_substitute_subtree(walk, term, active_bound_variables, depth);
+        return measure_substitute_subtree(walk, term, active_binders, current_path, depth);
     }
     let (segment, rest) = path
         .split_first()
@@ -1112,13 +1382,23 @@ fn measure_apply_at_path(
             let mut argument_lens = Vec::with_capacity(arguments.len());
             for (argument_index, argument) in arguments.iter().enumerate() {
                 let argument_len = if argument_index == index {
-                    measure_apply_at_path(
+                    let child_index = u32::try_from(argument_index).map_err(|_| {
+                        resource_rejection(
+                            walk.input.target_vc_fingerprint,
+                            substitution_location(walk.entry).with_field_path("target_term"),
+                        )
+                    })?;
+                    current_path.push(TermPathSegment::application_argument(child_index));
+                    let measured = measure_apply_at_path(
                         walk,
                         argument,
                         rest,
-                        active_bound_variables,
+                        active_binders,
+                        current_path,
                         child_depth,
-                    )?
+                    );
+                    current_path.pop();
+                    measured?
                 } else {
                     measure_existing_term_at_depth(walk.input, walk.entry, argument, child_depth)?
                 };
@@ -1142,11 +1422,19 @@ fn measure_apply_at_path(
                         substitution_location(walk.entry).with_field_path("binder_context"),
                     )
                 })?;
-            active_bound_variables.push(frame.variable_id);
+            let rename = walk.alpha_plan.rename_for_path(current_path);
+            let active = ActiveBinder {
+                source_variable_id: frame.variable_id,
+                target_variable_id: rename
+                    .map_or(frame.variable_id, |rename| rename.generated_variable_id),
+            };
+            active_binders.push(active);
+            current_path.push(TermPathSegment::binder_body());
             let child_depth = checked_replay_child_depth(walk.input, walk.entry, depth)?;
             let body_len =
-                measure_apply_at_path(walk, body, rest, active_bound_variables, child_depth);
-            active_bound_variables.pop();
+                measure_apply_at_path(walk, body, rest, active_binders, current_path, child_depth);
+            current_path.pop();
+            active_binders.pop();
             checked_replay_len(
                 walk.input,
                 walk.entry,
@@ -1163,13 +1451,18 @@ fn measure_apply_at_path(
 fn measure_substitute_subtree(
     walk: MeasureReplay<'_, '_>,
     term: &Term,
-    active_bound_variables: &mut Vec<VariableId>,
+    active_binders: &mut Vec<ActiveBinder>,
+    current_path: &mut Vec<TermPathSegment>,
     depth: usize,
 ) -> SubstitutionCheckResult<usize> {
     validate_replay_depth(walk.input, walk.entry, depth)?;
     match term {
         Term::Variable(variable) => {
-            if active_bound_variables.contains(variable) {
+            if active_binders
+                .iter()
+                .rev()
+                .any(|active| active.source_variable_id == *variable)
+            {
                 return measure_existing_term_at_depth(walk.input, walk.entry, term, depth);
             }
             let Some(replacement) = walk
@@ -1185,17 +1478,14 @@ fn measure_substitute_subtree(
                 walk.binder_context,
                 walk.entry,
                 &replacement.actual_term,
-                active_bound_variables,
+                &active_binders
+                    .iter()
+                    .map(|active| active.target_variable_id)
+                    .collect::<Vec<_>>(),
             )? {
                 return Err(invalid_rejection(
                     walk.input.target_vc_fingerprint,
                     substitution_location(walk.entry).with_field_path("payload.actual_term"),
-                ));
-            }
-            if !active_bound_variables.is_empty() {
-                return Err(invalid_rejection(
-                    walk.input.target_vc_fingerprint,
-                    substitution_location(walk.entry).with_field_path("payload.rewrite_path"),
                 ));
             }
             measure_existing_term_at_depth(walk.input, walk.entry, &replacement.actual_term, depth)
@@ -1203,13 +1493,23 @@ fn measure_substitute_subtree(
         Term::Application { symbol, arguments } => {
             let child_depth = checked_replay_child_depth(walk.input, walk.entry, depth)?;
             let mut argument_lens = Vec::with_capacity(arguments.len());
-            for argument in arguments {
-                argument_lens.push(measure_substitute_subtree(
+            for (argument_index, argument) in arguments.iter().enumerate() {
+                let child_index = u32::try_from(argument_index).map_err(|_| {
+                    resource_rejection(
+                        walk.input.target_vc_fingerprint,
+                        substitution_location(walk.entry).with_field_path("target_term"),
+                    )
+                })?;
+                current_path.push(TermPathSegment::application_argument(child_index));
+                let argument_len = measure_substitute_subtree(
                     walk,
                     argument,
-                    active_bound_variables,
+                    active_binders,
+                    current_path,
                     child_depth,
-                )?);
+                );
+                current_path.pop();
+                argument_lens.push(argument_len?);
             }
             checked_replay_len(
                 walk.input,
@@ -1227,11 +1527,19 @@ fn measure_substitute_subtree(
                         substitution_location(walk.entry).with_field_path("binder_context"),
                     )
                 })?;
-            active_bound_variables.push(frame.variable_id);
+            let rename = walk.alpha_plan.rename_for_path(current_path);
+            let active = ActiveBinder {
+                source_variable_id: frame.variable_id,
+                target_variable_id: rename
+                    .map_or(frame.variable_id, |rename| rename.generated_variable_id),
+            };
+            active_binders.push(active);
+            current_path.push(TermPathSegment::binder_body());
             let child_depth = checked_replay_child_depth(walk.input, walk.entry, depth)?;
             let body_len =
-                measure_substitute_subtree(walk, body, active_bound_variables, child_depth);
-            active_bound_variables.pop();
+                measure_substitute_subtree(walk, body, active_binders, current_path, child_depth);
+            current_path.pop();
+            active_binders.pop();
             checked_replay_len(
                 walk.input,
                 walk.entry,
@@ -1325,23 +1633,14 @@ fn checked_replay_len(
 }
 
 fn apply_at_path(
-    input: SubstitutionCheckInput<'_>,
-    binder_context: &BinderContext,
-    entry: &SubstitutionEntry,
+    walk: ReplayWalk<'_, '_>,
     term: &Term,
     path: &[TermPathSegment],
-    payload: &SubstitutionPayload,
-    active_bound_variables: &mut Vec<VariableId>,
+    active_binders: &mut Vec<ActiveBinder>,
+    current_path: &mut Vec<TermPathSegment>,
 ) -> SubstitutionCheckResult<Term> {
     if path.is_empty() {
-        return substitute_subtree(
-            input,
-            binder_context,
-            entry,
-            term,
-            payload,
-            active_bound_variables,
-        );
+        return substitute_subtree(walk, term, active_binders, current_path);
     }
     let (segment, rest) = path
         .split_first()
@@ -1350,26 +1649,21 @@ fn apply_at_path(
         (EDGE_KIND_APPLICATION_ARGUMENT, Term::Application { symbol, arguments }) => {
             let index = usize::try_from(segment.child_index).map_err(|_| {
                 invalid_rejection(
-                    input.target_vc_fingerprint,
-                    substitution_location(entry).with_field_path("payload.rewrite_path"),
+                    walk.input.target_vc_fingerprint,
+                    substitution_location(walk.entry).with_field_path("payload.rewrite_path"),
                 )
             })?;
             let Some(argument) = arguments.get(index) else {
                 return Err(invalid_rejection(
-                    input.target_vc_fingerprint,
-                    substitution_location(entry).with_field_path("payload.rewrite_path"),
+                    walk.input.target_vc_fingerprint,
+                    substitution_location(walk.entry).with_field_path("payload.rewrite_path"),
                 ));
             };
             let mut replayed_arguments = arguments.clone();
-            replayed_arguments[index] = apply_at_path(
-                input,
-                binder_context,
-                entry,
-                argument,
-                rest,
-                payload,
-                active_bound_variables,
-            )?;
+            current_path.push(TermPathSegment::application_argument(segment.child_index));
+            let replayed = apply_at_path(walk, argument, rest, active_binders, current_path);
+            current_path.pop();
+            replayed_arguments[index] = replayed?;
             Ok(Term::Application {
                 symbol: *symbol,
                 arguments: replayed_arguments,
@@ -1378,49 +1672,55 @@ fn apply_at_path(
         (EDGE_KIND_BINDER_BODY, Term::BinderNormalized { binder_id, body })
             if segment.child_index == 0 =>
         {
-            let frame = binder_context.frame_for_binder(*binder_id).ok_or_else(|| {
-                invalid_rejection(
-                    input.target_vc_fingerprint,
-                    substitution_location(entry).with_field_path("binder_context"),
-                )
-            })?;
-            active_bound_variables.push(frame.variable_id);
-            let replayed = apply_at_path(
-                input,
-                binder_context,
-                entry,
-                body,
-                rest,
-                payload,
-                active_bound_variables,
-            );
-            active_bound_variables.pop();
+            let frame = walk
+                .binder_context
+                .frame_for_binder(*binder_id)
+                .ok_or_else(|| {
+                    invalid_rejection(
+                        walk.input.target_vc_fingerprint,
+                        substitution_location(walk.entry).with_field_path("binder_context"),
+                    )
+                })?;
+            let rename = walk.alpha_plan.rename_for_path(current_path);
+            let active = ActiveBinder {
+                source_variable_id: frame.variable_id,
+                target_variable_id: rename
+                    .map_or(frame.variable_id, |rename| rename.generated_variable_id),
+            };
+            active_binders.push(active);
+            current_path.push(TermPathSegment::binder_body());
+            let replayed = apply_at_path(walk, body, rest, active_binders, current_path);
+            current_path.pop();
+            active_binders.pop();
             Ok(Term::BinderNormalized {
-                binder_id: *binder_id,
+                binder_id: rename.map_or(*binder_id, |rename| rename.target_binder_id),
                 body: Box::new(replayed?),
             })
         }
         _ => Err(invalid_rejection(
-            input.target_vc_fingerprint,
-            substitution_location(entry).with_field_path("payload.rewrite_path"),
+            walk.input.target_vc_fingerprint,
+            substitution_location(walk.entry).with_field_path("payload.rewrite_path"),
         )),
     }
 }
 
 fn substitute_subtree(
-    input: SubstitutionCheckInput<'_>,
-    binder_context: &BinderContext,
-    entry: &SubstitutionEntry,
+    walk: ReplayWalk<'_, '_>,
     term: &Term,
-    payload: &SubstitutionPayload,
-    active_bound_variables: &mut Vec<VariableId>,
+    active_binders: &mut Vec<ActiveBinder>,
+    current_path: &mut Vec<TermPathSegment>,
 ) -> SubstitutionCheckResult<Term> {
     match term {
         Term::Variable(variable) => {
-            if active_bound_variables.contains(variable) {
-                return Ok(term.clone());
+            if let Some(active) = active_binders
+                .iter()
+                .rev()
+                .find(|active| active.source_variable_id == *variable)
+            {
+                return Ok(Term::Variable(active.target_variable_id));
             }
-            let Some(replacement) = payload
+            let Some(replacement) = walk
+                .payload
                 .replacements
                 .iter()
                 .find(|replacement| replacement.formal_variable_id == *variable)
@@ -1428,36 +1728,35 @@ fn substitute_subtree(
                 return Ok(term.clone());
             };
             if actual_term_contains_any_active_bound_variable(
-                input,
-                binder_context,
-                entry,
+                walk.input,
+                walk.binder_context,
+                walk.entry,
                 &replacement.actual_term,
-                active_bound_variables,
+                &active_binders
+                    .iter()
+                    .map(|active| active.target_variable_id)
+                    .collect::<Vec<_>>(),
             )? {
                 return Err(invalid_rejection(
-                    input.target_vc_fingerprint,
-                    substitution_location(entry).with_field_path("payload.actual_term"),
-                ));
-            }
-            if !active_bound_variables.is_empty() {
-                return Err(invalid_rejection(
-                    input.target_vc_fingerprint,
-                    substitution_location(entry).with_field_path("payload.rewrite_path"),
+                    walk.input.target_vc_fingerprint,
+                    substitution_location(walk.entry).with_field_path("payload.actual_term"),
                 ));
             }
             Ok(replacement.actual_term.clone())
         }
         Term::Application { symbol, arguments } => {
             let mut replayed_arguments = Vec::with_capacity(arguments.len());
-            for argument in arguments {
-                replayed_arguments.push(substitute_subtree(
-                    input,
-                    binder_context,
-                    entry,
-                    argument,
-                    payload,
-                    active_bound_variables,
-                )?);
+            for (argument_index, argument) in arguments.iter().enumerate() {
+                let child_index = u32::try_from(argument_index).map_err(|_| {
+                    resource_rejection(
+                        walk.input.target_vc_fingerprint,
+                        substitution_location(walk.entry).with_field_path("target_term"),
+                    )
+                })?;
+                current_path.push(TermPathSegment::application_argument(child_index));
+                let replayed = substitute_subtree(walk, argument, active_binders, current_path);
+                current_path.pop();
+                replayed_arguments.push(replayed?);
             }
             Ok(Term::Application {
                 symbol: *symbol,
@@ -1465,30 +1764,34 @@ fn substitute_subtree(
             })
         }
         Term::BinderNormalized { binder_id, body } => {
-            let frame = binder_context.frame_for_binder(*binder_id).ok_or_else(|| {
-                invalid_rejection(
-                    input.target_vc_fingerprint,
-                    substitution_location(entry).with_field_path("binder_context"),
-                )
-            })?;
-            active_bound_variables.push(frame.variable_id);
-            let replayed = substitute_subtree(
-                input,
-                binder_context,
-                entry,
-                body,
-                payload,
-                active_bound_variables,
-            );
-            active_bound_variables.pop();
+            let frame = walk
+                .binder_context
+                .frame_for_binder(*binder_id)
+                .ok_or_else(|| {
+                    invalid_rejection(
+                        walk.input.target_vc_fingerprint,
+                        substitution_location(walk.entry).with_field_path("binder_context"),
+                    )
+                })?;
+            let rename = walk.alpha_plan.rename_for_path(current_path);
+            let active = ActiveBinder {
+                source_variable_id: frame.variable_id,
+                target_variable_id: rename
+                    .map_or(frame.variable_id, |rename| rename.generated_variable_id),
+            };
+            active_binders.push(active);
+            current_path.push(TermPathSegment::binder_body());
+            let replayed = substitute_subtree(walk, body, active_binders, current_path);
+            current_path.pop();
+            active_binders.pop();
             Ok(Term::BinderNormalized {
-                binder_id: *binder_id,
+                binder_id: rename.map_or(*binder_id, |rename| rename.target_binder_id),
                 body: Box::new(replayed?),
             })
         }
         Term::Malformed => Err(invalid_rejection(
-            input.target_vc_fingerprint,
-            substitution_location(entry).with_field_path("source_term"),
+            walk.input.target_vc_fingerprint,
+            substitution_location(walk.entry).with_field_path("source_term"),
         )),
     }
 }
@@ -1630,6 +1933,74 @@ fn validate_term_path(
     Ok(())
 }
 
+fn term_at_path<'a>(
+    input: SubstitutionCheckInput<'_>,
+    entry: &SubstitutionEntry,
+    root: &'a Term,
+    path: &TermPath,
+    field_path: &'static str,
+) -> SubstitutionCheckResult<&'a Term> {
+    if path.segments.len() > input.limits.max_term_path_segments {
+        return Err(resource_rejection(
+            input.target_vc_fingerprint,
+            substitution_location(entry).with_field_path(field_path),
+        ));
+    }
+    let mut term = root;
+    for segment in &path.segments {
+        term = match (segment.edge_kind, term) {
+            (EDGE_KIND_APPLICATION_ARGUMENT, Term::Application { arguments, .. }) => {
+                let index = usize::try_from(segment.child_index).map_err(|_| {
+                    invalid_rejection(
+                        input.target_vc_fingerprint,
+                        substitution_location(entry).with_field_path(field_path),
+                    )
+                })?;
+                arguments.get(index).ok_or_else(|| {
+                    invalid_rejection(
+                        input.target_vc_fingerprint,
+                        substitution_location(entry).with_field_path(field_path),
+                    )
+                })?
+            }
+            (EDGE_KIND_BINDER_BODY, Term::BinderNormalized { body, .. })
+                if segment.child_index == 0 =>
+            {
+                body
+            }
+            (EDGE_KIND_BINDER_BODY | EDGE_KIND_APPLICATION_ARGUMENT, _) => {
+                return Err(invalid_rejection(
+                    input.target_vc_fingerprint,
+                    substitution_location(entry).with_field_path(field_path),
+                ));
+            }
+            _ => {
+                return Err(invalid_rejection(
+                    input.target_vc_fingerprint,
+                    substitution_location(entry).with_field_path(field_path),
+                ));
+            }
+        };
+    }
+    Ok(term)
+}
+
+fn binder_at_path<'a>(
+    input: SubstitutionCheckInput<'_>,
+    entry: &SubstitutionEntry,
+    root: &'a Term,
+    path: &TermPath,
+    field_path: &'static str,
+) -> SubstitutionCheckResult<(u32, &'a Term)> {
+    match term_at_path(input, entry, root, path, field_path)? {
+        Term::BinderNormalized { binder_id, body } => Ok((*binder_id, body)),
+        _ => Err(invalid_rejection(
+            input.target_vc_fingerprint,
+            substitution_location(entry).with_field_path(field_path),
+        )),
+    }
+}
+
 fn validate_manifest_variable(
     input: SubstitutionCheckInput<'_>,
     replay_context: &ReplayContext,
@@ -1679,6 +2050,361 @@ fn actual_term_contains_any_active_bound_variable(
         }
     }
     Ok(false)
+}
+
+fn validate_free_variable_constraints(
+    input: SubstitutionCheckInput<'_>,
+    binder_context: &BinderContext,
+    entry: &SubstitutionEntry,
+    constraints: &[&FreeVariableConstraint],
+) -> SubstitutionCheckResult<()> {
+    for constraint in constraints {
+        let (capture_set, target_subtree) =
+            target_capture_set_at_path(input, binder_context, entry, &constraint.term_path)?;
+        if constraint.capture_set != capture_set {
+            return Err(invalid_rejection(
+                input.target_vc_fingerprint,
+                substitution_location(entry)
+                    .with_field_path("free_variable_constraint.capture_set"),
+            ));
+        }
+        match constraint.constraint_kind {
+            CONSTRAINT_KIND_MUST_REMAIN_FREE_AT_PATH => {
+                let mut locally_bound = capture_set.clone();
+                if !term_contains_free_variable_with_bound(
+                    input,
+                    binder_context,
+                    entry,
+                    target_subtree,
+                    constraint.variable_id,
+                    &mut locally_bound,
+                )? {
+                    return Err(invalid_rejection(
+                        input.target_vc_fingerprint,
+                        substitution_location(entry)
+                            .with_field_path("free_variable_constraint.variable_id"),
+                    ));
+                }
+            }
+            CONSTRAINT_KIND_MUST_BE_ABSENT_FROM_CAPTURE_SET => {
+                if capture_set.contains(&constraint.variable_id) {
+                    return Err(invalid_rejection(
+                        input.target_vc_fingerprint,
+                        substitution_location(entry)
+                            .with_field_path("free_variable_constraint.capture_set"),
+                    ));
+                }
+            }
+            _ => {
+                return Err(invalid_rejection(
+                    input.target_vc_fingerprint,
+                    substitution_location(entry)
+                        .with_field_path("free_variable_constraint.constraint_kind"),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn target_capture_set_at_path<'a>(
+    input: SubstitutionCheckInput<'_>,
+    binder_context: &BinderContext,
+    entry: &'a SubstitutionEntry,
+    path: &TermPath,
+) -> SubstitutionCheckResult<(Vec<VariableId>, &'a Term)> {
+    let mut capture_set = Vec::new();
+    let mut term = &entry.target_term;
+    for segment in &path.segments {
+        term = match (segment.edge_kind, term) {
+            (EDGE_KIND_APPLICATION_ARGUMENT, Term::Application { arguments, .. }) => {
+                let index = usize::try_from(segment.child_index).map_err(|_| {
+                    invalid_rejection(
+                        input.target_vc_fingerprint,
+                        substitution_location(entry)
+                            .with_field_path("free_variable_constraint.term_path"),
+                    )
+                })?;
+                arguments.get(index).ok_or_else(|| {
+                    invalid_rejection(
+                        input.target_vc_fingerprint,
+                        substitution_location(entry)
+                            .with_field_path("free_variable_constraint.term_path"),
+                    )
+                })?
+            }
+            (EDGE_KIND_BINDER_BODY, Term::BinderNormalized { binder_id, body })
+                if segment.child_index == 0 =>
+            {
+                let frame = binder_context.frame_for_binder(*binder_id).ok_or_else(|| {
+                    invalid_rejection(
+                        input.target_vc_fingerprint,
+                        substitution_location(entry).with_field_path("binder_context"),
+                    )
+                })?;
+                capture_set.push(frame.variable_id);
+                if capture_set.len() > input.limits.max_capture_set_variables {
+                    return Err(resource_rejection(
+                        input.target_vc_fingerprint,
+                        substitution_location(entry)
+                            .with_field_path("free_variable_constraint.capture_set"),
+                    ));
+                }
+                body
+            }
+            _ => {
+                return Err(invalid_rejection(
+                    input.target_vc_fingerprint,
+                    substitution_location(entry)
+                        .with_field_path("free_variable_constraint.term_path"),
+                ));
+            }
+        };
+    }
+    capture_set.sort();
+    Ok((capture_set, term))
+}
+
+fn collect_inserted_actual_free_variables_below_binder(
+    input: SubstitutionCheckInput<'_>,
+    binder_context: &BinderContext,
+    entry: &SubstitutionEntry,
+    payload: &SubstitutionPayload,
+    binder_path: &TermPath,
+    avoided: &mut BTreeSet<VariableId>,
+) -> SubstitutionCheckResult<()> {
+    let subtree = term_at_path(
+        input,
+        entry,
+        &entry.source_term,
+        &payload.rewrite_path,
+        "payload.rewrite_path",
+    )?;
+    let mut current_path = payload.rewrite_path.segments.clone();
+    let mut active_bound_variables =
+        source_active_variables_at_path(input, binder_context, entry, &payload.rewrite_path)?;
+    let walk = InsertedActualWalk {
+        input,
+        binder_context,
+        entry,
+        payload,
+        binder_path,
+    };
+    collect_inserted_actual_free_variables_in_subtree(
+        walk,
+        subtree,
+        &mut current_path,
+        &mut active_bound_variables,
+        avoided,
+    )
+}
+
+#[derive(Clone, Copy)]
+struct InsertedActualWalk<'input, 'walk> {
+    input: SubstitutionCheckInput<'input>,
+    binder_context: &'walk BinderContext,
+    entry: &'walk SubstitutionEntry,
+    payload: &'walk SubstitutionPayload,
+    binder_path: &'walk TermPath,
+}
+
+fn collect_inserted_actual_free_variables_in_subtree(
+    walk: InsertedActualWalk<'_, '_>,
+    term: &Term,
+    current_path: &mut Vec<TermPathSegment>,
+    active_bound_variables: &mut Vec<VariableId>,
+    avoided: &mut BTreeSet<VariableId>,
+) -> SubstitutionCheckResult<()> {
+    match term {
+        Term::Variable(variable) => {
+            if active_bound_variables.contains(variable)
+                || !is_below_binder_body(walk.binder_path, current_path)
+            {
+                return Ok(());
+            }
+            if let Some(replacement) = walk
+                .payload
+                .replacements
+                .iter()
+                .find(|replacement| replacement.formal_variable_id == *variable)
+            {
+                let free_walk = FreeVariableWalk {
+                    input: walk.input,
+                    binder_context: walk.binder_context,
+                    entry: walk.entry,
+                    limit: walk.input.limits.max_avoided_variables,
+                    field_path: "freshness_witness.avoided_variables",
+                };
+                collect_free_variables(
+                    free_walk,
+                    &replacement.actual_term,
+                    &mut Vec::new(),
+                    avoided,
+                )?;
+            }
+            Ok(())
+        }
+        Term::Application { arguments, .. } => {
+            for (argument_index, argument) in arguments.iter().enumerate() {
+                let child_index = u32::try_from(argument_index).map_err(|_| {
+                    resource_rejection(
+                        walk.input.target_vc_fingerprint,
+                        substitution_location(walk.entry).with_field_path("target_term"),
+                    )
+                })?;
+                current_path.push(TermPathSegment::application_argument(child_index));
+                let result = collect_inserted_actual_free_variables_in_subtree(
+                    walk,
+                    argument,
+                    current_path,
+                    active_bound_variables,
+                    avoided,
+                );
+                current_path.pop();
+                result?;
+            }
+            Ok(())
+        }
+        Term::BinderNormalized { binder_id, body } => {
+            let frame = walk
+                .binder_context
+                .frame_for_binder(*binder_id)
+                .ok_or_else(|| {
+                    invalid_rejection(
+                        walk.input.target_vc_fingerprint,
+                        substitution_location(walk.entry).with_field_path("binder_context"),
+                    )
+                })?;
+            active_bound_variables.push(frame.variable_id);
+            current_path.push(TermPathSegment::binder_body());
+            let result = collect_inserted_actual_free_variables_in_subtree(
+                walk,
+                body,
+                current_path,
+                active_bound_variables,
+                avoided,
+            );
+            current_path.pop();
+            active_bound_variables.pop();
+            result
+        }
+        Term::Malformed => Ok(()),
+    }
+}
+
+fn source_active_variables_at_path(
+    input: SubstitutionCheckInput<'_>,
+    binder_context: &BinderContext,
+    entry: &SubstitutionEntry,
+    path: &TermPath,
+) -> SubstitutionCheckResult<Vec<VariableId>> {
+    let mut active = Vec::new();
+    let mut term = &entry.source_term;
+    for segment in &path.segments {
+        term = match (segment.edge_kind, term) {
+            (EDGE_KIND_APPLICATION_ARGUMENT, Term::Application { arguments, .. }) => {
+                let index = usize::try_from(segment.child_index).map_err(|_| {
+                    invalid_rejection(
+                        input.target_vc_fingerprint,
+                        substitution_location(entry).with_field_path("payload.rewrite_path"),
+                    )
+                })?;
+                arguments.get(index).ok_or_else(|| {
+                    invalid_rejection(
+                        input.target_vc_fingerprint,
+                        substitution_location(entry).with_field_path("payload.rewrite_path"),
+                    )
+                })?
+            }
+            (EDGE_KIND_BINDER_BODY, Term::BinderNormalized { binder_id, body })
+                if segment.child_index == 0 =>
+            {
+                let frame = binder_context.frame_for_binder(*binder_id).ok_or_else(|| {
+                    invalid_rejection(
+                        input.target_vc_fingerprint,
+                        substitution_location(entry).with_field_path("binder_context"),
+                    )
+                })?;
+                active.push(frame.variable_id);
+                body
+            }
+            _ => {
+                return Err(invalid_rejection(
+                    input.target_vc_fingerprint,
+                    substitution_location(entry).with_field_path("payload.rewrite_path"),
+                ));
+            }
+        };
+    }
+    Ok(active)
+}
+
+fn is_below_binder_body(binder_path: &TermPath, current_path: &[TermPathSegment]) -> bool {
+    let prefix_len = binder_path.segments.len();
+    current_path.len() > prefix_len
+        && current_path[..prefix_len] == binder_path.segments
+        && current_path[prefix_len] == TermPathSegment::binder_body()
+}
+
+#[derive(Clone, Copy)]
+struct FreeVariableWalk<'input, 'walk> {
+    input: SubstitutionCheckInput<'input>,
+    binder_context: &'walk BinderContext,
+    entry: &'walk SubstitutionEntry,
+    limit: usize,
+    field_path: &'static str,
+}
+
+fn collect_free_variables(
+    walk: FreeVariableWalk<'_, '_>,
+    term: &Term,
+    locally_bound: &mut Vec<VariableId>,
+    free_variables: &mut BTreeSet<VariableId>,
+) -> SubstitutionCheckResult<()> {
+    match term {
+        Term::Variable(variable) => {
+            if !locally_bound.contains(variable) {
+                insert_limited_variable(walk, free_variables, *variable)?;
+            }
+            Ok(())
+        }
+        Term::Application { arguments, .. } => {
+            for argument in arguments {
+                collect_free_variables(walk, argument, locally_bound, free_variables)?;
+            }
+            Ok(())
+        }
+        Term::BinderNormalized { binder_id, body } => {
+            let frame = walk
+                .binder_context
+                .frame_for_binder(*binder_id)
+                .ok_or_else(|| {
+                    invalid_rejection(
+                        walk.input.target_vc_fingerprint,
+                        substitution_location(walk.entry).with_field_path("binder_context"),
+                    )
+                })?;
+            locally_bound.push(frame.variable_id);
+            let result = collect_free_variables(walk, body, locally_bound, free_variables);
+            locally_bound.pop();
+            result
+        }
+        Term::Malformed => Ok(()),
+    }
+}
+
+fn insert_limited_variable(
+    walk: FreeVariableWalk<'_, '_>,
+    variables: &mut BTreeSet<VariableId>,
+    variable: VariableId,
+) -> SubstitutionCheckResult<()> {
+    if variables.insert(variable) && variables.len() > walk.limit {
+        return Err(resource_rejection(
+            walk.input.target_vc_fingerprint,
+            substitution_location(walk.entry).with_field_path(walk.field_path),
+        ));
+    }
+    Ok(())
 }
 
 fn term_contains_free_variable(
@@ -2142,18 +2868,520 @@ mod tests {
             TermPath::root(),
             vec![replacement(1, var(3), REPLACEMENT_ROLE_TERM_ARGUMENT)],
         )]);
-        let record = replay_substitutions(input(
+        replay_substitutions(input(
             &target,
             &forged_under_binder,
             Some(&non_capturing_context),
             limits(),
         ))
-        .expect_err("task 11 rejects under-binder substitution without semantic replay");
+        .expect("task 12 accepts non-capturing under-binder substitution");
+    }
+
+    #[test]
+    fn alpha_conversion_and_freshness_witnesses_are_replayed_semantically() {
+        let target = target();
+        let source = binder(10, pair(var(1), var(2)));
+        let target_term = binder(11, pair(var(2), var(3)));
+        let mut entry = substitution(1, source, target_term);
+        entry.freshness_witness_refs = vec![1];
+        let certificate = certificate_with_binder(
+            entry,
+            binder_context(
+                vec![(10, 0, 2, 1), (11, 1, 3, 4)],
+                all_variables(),
+                Vec::new(),
+            ),
+        );
+        let context = context_with_side(
+            vec![payload(
+                1,
+                TermPath::root(),
+                vec![replacement(1, var(2), REPLACEMENT_ROLE_TERM_ARGUMENT)],
+            )],
+            vec![freshness_full(
+                1,
+                1,
+                3,
+                TermPath::root(),
+                vec![VariableId(1), VariableId(2)],
+                0,
+            )],
+            Vec::new(),
+        );
+
+        replay_substitutions(input(&target, &certificate, Some(&context), limits()))
+            .expect("freshness witness justifies alpha-renamed capture avoidance and bound rename");
+
+        let alpha_only_certificate = certificate_with_binder(
+            {
+                let mut entry = substitution(
+                    1,
+                    binder(10, pair(var(1), var(2))),
+                    binder(11, pair(var(1), var(3))),
+                );
+                entry.freshness_witness_refs = vec![1];
+                entry
+            },
+            binder_context(
+                vec![(10, 0, 2, 1), (11, 1, 3, 4)],
+                all_variables(),
+                Vec::new(),
+            ),
+        );
+        let alpha_only_context = context_with_side(
+            vec![payload(1, TermPath::root(), Vec::new())],
+            vec![freshness_full(
+                1,
+                1,
+                3,
+                TermPath::root(),
+                vec![VariableId(1)],
+                1,
+            )],
+            Vec::new(),
+        );
+        replay_substitutions(input(
+            &target,
+            &alpha_only_certificate,
+            Some(&alpha_only_context),
+            SubstitutionReplayLimits {
+                max_avoided_variables: 1,
+                ..limits()
+            },
+        ))
+        .expect("source binder variable is excluded before final avoided limit");
+
+        let bad_target = certificate_with_binder(
+            {
+                let mut entry = substitution(
+                    1,
+                    binder(10, pair(var(1), var(2))),
+                    binder(11, pair(var(2), var(2))),
+                );
+                entry.freshness_witness_refs = vec![1];
+                entry
+            },
+            binder_context(
+                vec![(10, 0, 2, 1), (11, 1, 3, 4)],
+                all_variables(),
+                Vec::new(),
+            ),
+        );
+        let record = replay_substitutions(input(&target, &bad_target, Some(&context), limits()))
+            .expect_err("inconsistent alpha target");
         assert_rejection(
             &record,
             RejectionDetail::InvalidSubstitution,
             Some(1),
-            Some("payload.rewrite_path"),
+            Some("target_term"),
+        );
+
+        let unreferenced_witness = certificate_with_binder(
+            substitution(
+                1,
+                binder(10, pair(var(1), var(2))),
+                binder(11, pair(var(2), var(3))),
+            ),
+            binder_context(
+                vec![(10, 0, 2, 1), (11, 1, 3, 4)],
+                all_variables(),
+                Vec::new(),
+            ),
+        );
+        let record = replay_substitutions(input(
+            &target,
+            &unreferenced_witness,
+            Some(&context),
+            limits(),
+        ))
+        .expect_err("unreferenced freshness witness must not be consulted");
+        assert_rejection(
+            &record,
+            RejectionDetail::InvalidSubstitution,
+            Some(1),
+            Some("payload.actual_term"),
+        );
+
+        let bad_counter = context_with_side(
+            vec![payload(
+                1,
+                TermPath::root(),
+                vec![replacement(1, var(2), REPLACEMENT_ROLE_TERM_ARGUMENT)],
+            )],
+            vec![freshness_full(
+                1,
+                1,
+                3,
+                TermPath::root(),
+                vec![VariableId(1), VariableId(2)],
+                1,
+            )],
+            Vec::new(),
+        );
+        let record =
+            replay_substitutions(input(&target, &certificate, Some(&bad_counter), limits()))
+                .expect_err("freshness counter mismatch");
+        assert_rejection(
+            &record,
+            RejectionDetail::InvalidSubstitution,
+            Some(1),
+            Some("freshness_witness.deterministic_counter"),
+        );
+
+        let stale_avoided = context_with_side(
+            vec![payload(
+                1,
+                TermPath::root(),
+                vec![replacement(1, var(2), REPLACEMENT_ROLE_TERM_ARGUMENT)],
+            )],
+            vec![freshness_full(
+                1,
+                1,
+                3,
+                TermPath::root(),
+                vec![VariableId(1)],
+                0,
+            )],
+            Vec::new(),
+        );
+        let record =
+            replay_substitutions(input(&target, &certificate, Some(&stale_avoided), limits()))
+                .expect_err("stale sorted avoided set mismatch");
+        assert_rejection(
+            &record,
+            RejectionDetail::InvalidSubstitution,
+            Some(1),
+            Some("freshness_witness.avoided_variables"),
+        );
+
+        let record = replay_substitutions(input(
+            &target,
+            &certificate,
+            Some(&context),
+            SubstitutionReplayLimits {
+                max_avoided_variables: 1,
+                ..limits()
+            },
+        ))
+        .expect_err("recomputed avoided set respects resource limit");
+        assert_rejection(
+            &record,
+            RejectionDetail::ResourceExhaustion,
+            Some(1),
+            Some("freshness_witness.avoided_variables"),
+        );
+
+        let bad_role = certificate_with_binder(
+            {
+                let mut entry = substitution(
+                    1,
+                    binder(10, pair(var(1), var(2))),
+                    binder(11, pair(var(2), var(3))),
+                );
+                entry.freshness_witness_refs = vec![1];
+                entry
+            },
+            binder_context(
+                vec![(10, 0, 2, 1), (11, 1, 3, 1)],
+                all_variables(),
+                Vec::new(),
+            ),
+        );
+        let record = replay_substitutions(input(&target, &bad_role, Some(&context), limits()))
+            .expect_err("target binder must be generated fresh");
+        assert_rejection(
+            &record,
+            RejectionDetail::InvalidSubstitution,
+            Some(1),
+            Some("freshness_witness.generated_variable_id"),
+        );
+    }
+
+    #[test]
+    fn free_variable_constraints_recompute_capture_sets() {
+        let target = target();
+        let certificate = certificate_with_refs(Vec::new(), vec![1, 2]);
+        let context = context_with_side(
+            vec![payload(
+                1,
+                TermPath::root(),
+                vec![replacement(1, var(2), REPLACEMENT_ROLE_TERM_ARGUMENT)],
+            )],
+            Vec::new(),
+            vec![
+                free_constraint(
+                    1,
+                    1,
+                    CONSTRAINT_KIND_MUST_REMAIN_FREE_AT_PATH,
+                    2,
+                    TermPath::root(),
+                    Vec::new(),
+                ),
+                free_constraint(
+                    2,
+                    1,
+                    CONSTRAINT_KIND_MUST_BE_ABSENT_FROM_CAPTURE_SET,
+                    3,
+                    TermPath::root(),
+                    Vec::new(),
+                ),
+            ],
+        );
+        replay_substitutions(input(&target, &certificate, Some(&context), limits()))
+            .expect("free variable constraints are replayed");
+
+        let binder_certificate = certificate_with_binder(
+            {
+                let mut entry = substitution(1, binder(10, var(2)), binder(10, var(2)));
+                entry.free_variable_constraint_refs = vec![1];
+                entry
+            },
+            binder_context(vec![(10, 0, 2, 1)], all_variables(), Vec::new()),
+        );
+        let binder_context_ok = context_with_side(
+            vec![payload(1, TermPath::root(), Vec::new())],
+            Vec::new(),
+            vec![free_constraint(
+                1,
+                1,
+                CONSTRAINT_KIND_MUST_BE_ABSENT_FROM_CAPTURE_SET,
+                3,
+                path(vec![TermPathSegment::binder_body()]),
+                vec![VariableId(2)],
+            )],
+        );
+        replay_substitutions(input(
+            &target,
+            &binder_certificate,
+            Some(&binder_context_ok),
+            limits(),
+        ))
+        .expect("capture set is recomputed from active target binders");
+
+        let bad_capture_set = context_with_side(
+            vec![payload(1, TermPath::root(), Vec::new())],
+            Vec::new(),
+            vec![free_constraint(
+                1,
+                1,
+                CONSTRAINT_KIND_MUST_BE_ABSENT_FROM_CAPTURE_SET,
+                3,
+                path(vec![TermPathSegment::binder_body()]),
+                Vec::new(),
+            )],
+        );
+        let record = replay_substitutions(input(
+            &target,
+            &binder_certificate,
+            Some(&bad_capture_set),
+            limits(),
+        ))
+        .expect_err("recorded capture set must not be self-attesting");
+        assert_rejection(
+            &record,
+            RejectionDetail::InvalidSubstitution,
+            Some(1),
+            Some("free_variable_constraint.capture_set"),
+        );
+
+        let record = replay_substitutions(input(
+            &target,
+            &binder_certificate,
+            Some(&binder_context_ok),
+            SubstitutionReplayLimits {
+                max_capture_set_variables: 0,
+                ..limits()
+            },
+        ))
+        .expect_err("recomputed capture set respects resource limit");
+        assert_rejection(
+            &record,
+            RejectionDetail::ResourceExhaustion,
+            Some(1),
+            Some("free_variable_constraint.capture_set"),
+        );
+
+        let captured_variable_constraint = context_with_side(
+            vec![payload(1, TermPath::root(), Vec::new())],
+            Vec::new(),
+            vec![free_constraint(
+                1,
+                1,
+                CONSTRAINT_KIND_MUST_REMAIN_FREE_AT_PATH,
+                2,
+                path(vec![TermPathSegment::binder_body()]),
+                vec![VariableId(2)],
+            )],
+        );
+        let record = replay_substitutions(input(
+            &target,
+            &binder_certificate,
+            Some(&captured_variable_constraint),
+            limits(),
+        ))
+        .expect_err("syntactic occurrence captured by target binder is not free");
+        assert_rejection(
+            &record,
+            RejectionDetail::InvalidSubstitution,
+            Some(1),
+            Some("free_variable_constraint.variable_id"),
+        );
+
+        let missing_free_variable = context_with_side(
+            vec![payload(
+                1,
+                TermPath::root(),
+                vec![replacement(1, var(2), REPLACEMENT_ROLE_TERM_ARGUMENT)],
+            )],
+            Vec::new(),
+            vec![free_constraint(
+                1,
+                1,
+                CONSTRAINT_KIND_MUST_REMAIN_FREE_AT_PATH,
+                4,
+                TermPath::root(),
+                Vec::new(),
+            )],
+        );
+        let one_constraint = certificate_with_refs(Vec::new(), vec![1]);
+        let record = replay_substitutions(input(
+            &target,
+            &one_constraint,
+            Some(&missing_free_variable),
+            limits(),
+        ))
+        .expect_err("missing free variable at target path");
+        assert_rejection(
+            &record,
+            RejectionDetail::InvalidSubstitution,
+            Some(1),
+            Some("free_variable_constraint.variable_id"),
+        );
+    }
+
+    #[test]
+    fn alpha_rename_limits_and_shuffled_witness_contexts_are_deterministic() {
+        let target = target();
+        let mut first = substitution(1, binder(10, var(1)), binder(11, var(2)));
+        first.binder_context_encoding = binder_context(
+            vec![(10, 0, 2, 1), (11, 1, 5, 4)],
+            all_variables(),
+            Vec::new(),
+        );
+        first.freshness_witness_refs = vec![1];
+        let mut second = substitution(2, binder(20, var(3)), binder(21, var(4)));
+        second.binder_context_encoding = binder_context(
+            vec![(20, 0, 4, 1), (21, 1, 6, 4)],
+            all_variables(),
+            Vec::new(),
+        );
+        second.freshness_witness_refs = vec![2];
+        let parsed_certificate = certificate(vec![first.clone(), second]);
+        let context = context_with_side(
+            vec![
+                payload(
+                    2,
+                    TermPath::root(),
+                    vec![replacement(3, var(4), REPLACEMENT_ROLE_TERM_ARGUMENT)],
+                ),
+                payload(
+                    1,
+                    TermPath::root(),
+                    vec![replacement(1, var(2), REPLACEMENT_ROLE_TERM_ARGUMENT)],
+                ),
+            ],
+            vec![
+                freshness_full(
+                    2,
+                    2,
+                    6,
+                    TermPath::root(),
+                    vec![VariableId(3), VariableId(4)],
+                    3,
+                ),
+                freshness_full(
+                    1,
+                    1,
+                    5,
+                    TermPath::root(),
+                    vec![VariableId(1), VariableId(2)],
+                    2,
+                ),
+            ],
+            Vec::new(),
+        );
+        let report = replay_substitutions(input(
+            &target,
+            &parsed_certificate,
+            Some(&context),
+            limits(),
+        ))
+        .expect("shuffled context is canonicalized before witness replay");
+        assert_eq!(
+            report
+                .checked_substitutions()
+                .iter()
+                .map(|checked| checked.substitution_id)
+                .collect::<Vec<_>>(),
+            vec![1, 2]
+        );
+
+        let limited = replay_substitutions(input(
+            &target,
+            &certificate(vec![first]),
+            Some(&context),
+            SubstitutionReplayLimits {
+                max_alpha_renames: 0,
+                ..limits()
+            },
+        ))
+        .expect_err("alpha rename budget");
+        assert_rejection(
+            &limited,
+            RejectionDetail::ResourceExhaustion,
+            Some(1),
+            Some("freshness_witness_refs"),
+        );
+
+        let invalid_refs = certificate_with_refs(Vec::new(), vec![1, 2]);
+        let shuffled_invalid_context = context_with_side(
+            vec![payload(
+                1,
+                TermPath::root(),
+                vec![replacement(1, var(2), REPLACEMENT_ROLE_TERM_ARGUMENT)],
+            )],
+            Vec::new(),
+            vec![
+                free_constraint(
+                    2,
+                    1,
+                    CONSTRAINT_KIND_MUST_BE_ABSENT_FROM_CAPTURE_SET,
+                    3,
+                    TermPath::root(),
+                    vec![VariableId(2)],
+                ),
+                free_constraint(
+                    1,
+                    1,
+                    CONSTRAINT_KIND_MUST_REMAIN_FREE_AT_PATH,
+                    4,
+                    TermPath::root(),
+                    Vec::new(),
+                ),
+            ],
+        );
+        let record = replay_substitutions(input(
+            &target,
+            &invalid_refs,
+            Some(&shuffled_invalid_context),
+            limits(),
+        ))
+        .expect_err("first rejected constraint follows certificate ref order");
+        assert_rejection(
+            &record,
+            RejectionDetail::InvalidSubstitution,
+            Some(1),
+            Some("free_variable_constraint.variable_id"),
         );
     }
 
@@ -2878,15 +4106,32 @@ mod tests {
         replay_substitutions(input(&target, &certificate, Some(&context), limits()))
             .expect("unused malformed context entries are ignored");
 
-        let side_order_certificate = certificate_with_refs(vec![1, 2], vec![2, 3]);
+        let side_order_certificate = certificate_with_refs(Vec::new(), vec![2, 3]);
         let side_order_context = context_with_side(
             vec![payload(
                 1,
                 TermPath::root(),
                 vec![replacement(1, var(2), REPLACEMENT_ROLE_TERM_ARGUMENT)],
             )],
-            vec![freshness(2), freshness(1)],
-            vec![constraint(3), constraint(2)],
+            Vec::new(),
+            vec![
+                free_constraint(
+                    3,
+                    1,
+                    CONSTRAINT_KIND_MUST_BE_ABSENT_FROM_CAPTURE_SET,
+                    3,
+                    TermPath::root(),
+                    Vec::new(),
+                ),
+                free_constraint(
+                    2,
+                    1,
+                    CONSTRAINT_KIND_MUST_REMAIN_FREE_AT_PATH,
+                    2,
+                    TermPath::root(),
+                    Vec::new(),
+                ),
+            ],
         );
         replay_substitutions(input(
             &target,
@@ -2894,7 +4139,7 @@ mod tests {
             Some(&side_order_context),
             limits(),
         ))
-        .expect("constructor canonicalizes witness and constraint input order");
+        .expect("constructor canonicalizes referenced constraint input order");
 
         let duplicate_payload = SubstitutionContext::new(
             Some(vec![7]),
@@ -3165,7 +4410,7 @@ mod tests {
             max_free_variable_constraints: 4,
             max_term_encoding_bytes: 4096,
             max_term_recursion_depth: 16,
-            max_alpha_renames: 0,
+            max_alpha_renames: 4,
             max_payload_replacements: 8,
             max_term_path_segments: 8,
             max_avoided_variables: 8,
@@ -3187,7 +4432,7 @@ mod tests {
             kernel_profile: KernelProfileRecord::v1(1, ClauseTautologyPolicy::Reject),
             target_vc: Fingerprint::new(1, vec![42]),
             symbol_manifest: vec![SymbolManifestEntry { symbol: symbol() }],
-            variable_manifest: (1..=4)
+            variable_manifest: (1..=8)
                 .map(|id| VariableManifestEntry {
                     variable_id: VariableId(id),
                 })
@@ -3312,13 +4557,24 @@ mod tests {
         binder_path: TermPath,
         avoided_variables: Vec<VariableId>,
     ) -> FreshnessWitness {
+        freshness_full(witness_id, 1, 3, binder_path, avoided_variables, 0)
+    }
+
+    fn freshness_full(
+        witness_id: u32,
+        owner_substitution_id: u32,
+        generated_variable_id: u32,
+        binder_path: TermPath,
+        avoided_variables: Vec<VariableId>,
+        deterministic_counter: u32,
+    ) -> FreshnessWitness {
         FreshnessWitness::new(
             witness_id,
-            1,
-            VariableId(3),
+            owner_substitution_id,
+            VariableId(generated_variable_id),
             binder_path,
             avoided_variables,
-            0,
+            deterministic_counter,
         )
     }
 
@@ -3335,11 +4591,29 @@ mod tests {
         term_path: TermPath,
         capture_set: Vec<VariableId>,
     ) -> FreeVariableConstraint {
-        FreeVariableConstraint::new(
+        free_constraint(
             constraint_id,
             1,
             CONSTRAINT_KIND_MUST_REMAIN_FREE_AT_PATH,
-            VariableId(1),
+            1,
+            term_path,
+            capture_set,
+        )
+    }
+
+    fn free_constraint(
+        constraint_id: u32,
+        owner_substitution_id: u32,
+        constraint_kind: u8,
+        variable_id: u32,
+        term_path: TermPath,
+        capture_set: Vec<VariableId>,
+    ) -> FreeVariableConstraint {
+        FreeVariableConstraint::new(
+            constraint_id,
+            owner_substitution_id,
+            constraint_kind,
+            VariableId(variable_id),
             term_path,
             capture_set,
         )
@@ -3376,6 +4650,10 @@ mod tests {
 
     const fn symbol() -> SymbolKey {
         SymbolKey::new(SymbolKind::Predicate, 1)
+    }
+
+    fn all_variables() -> Vec<u32> {
+        (1..=8).collect()
     }
 
     fn binder_context(

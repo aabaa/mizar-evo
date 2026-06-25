@@ -248,6 +248,30 @@ Task 11 only checks that `deterministic_counter` is present in the record whose
 owner, path, and list bounds are otherwise valid. Task 12 owns verification that
 the counter value matches the architecture 16 freshness strategy.
 
+Task 12 uses the certificate-visible instantiation of the architecture 16
+strategy. A freshness witness is semantically valid only when all of the
+following hold:
+
+- `binder_path` selects a binder node in `source_term`;
+- the same normalized path selects a binder node in `target_term`;
+- the source binder frame supplies the original bound variable and role;
+- the target binder frame has role `generated fresh binder` and
+  `variable_id == generated_variable_id`;
+- `avoided_variables` exactly equals the recomputed sorted set containing the
+  free variables of the source binder body except the original bound variable,
+  plus the free variables of replacement actual terms inserted below that
+  binder;
+- `generated_variable_id` is absent from that recomputed avoided set;
+- `deterministic_counter` is the zero-based position of
+  `generated_variable_id` in the certificate variable manifest sorted by stable
+  id after filtering out the recomputed avoided set.
+
+The witness owner and binder path are part of the replay envelope for the
+source or certificate owner and role data required by architecture 16. This
+module must not consult producer state to fill in missing owner, role, or
+source identity. If the available normalized evidence is insufficient to
+recompute the candidate stream above, the witness is `invalid_substitution`.
+
 Malformed present witness or constraint records are `invalid_substitution`;
 absent referenced witness or constraint records are `missing_provenance`.
 
@@ -328,6 +352,11 @@ source names or rendered text. A claimed alpha-conversion is valid only when:
 
 - the two normalized terms differ only by a consistent renaming of bound
   variables within the decoded binder context;
+- every renamed binder is paired by identical normalized source and target
+  `binder_path` positions and by one referenced freshness witness;
+- the source binder's frame supplies the original variable id, and every bound
+  occurrence of that variable in the source binder scope is rewritten to the
+  target generated variable id while replacement actual terms remain unchanged;
 - the renaming is injective within each binder scope;
 - no free variable becomes bound and no bound variable escapes its scope;
 - every generated fresh id is justified by a referenced freshness witness;
@@ -350,7 +379,11 @@ Free-variable constraints are validated over normalized binder structure:
 - source display names never decide free-variable identity;
 - a variable required to remain free must remain free at the recorded term path
   after replay;
-- a variable required to be absent from a capture set must not occur in that set;
+- the checker recomputes the capture set at the recorded target path from the
+  active target binder stack, and the recorded `capture_set` must exactly match
+  the recomputed sorted set before any constraint predicate is accepted;
+- a variable required to be absent from a capture set must not occur in that
+  recomputed set;
 - free-variable sets and constraint ids are sorted deterministically before any
   comparison or report emission.
 
@@ -428,11 +461,13 @@ perform transitive proof search or scan unrelated context entries.
   but not the concrete `mizar-kernel` module contract, binder-context grammar,
   report shape, rejection locations, or task-11/task-12 split. This task closes
   that gap for the planned implementation tasks.
-- `test_gap`: task 11 still needs Rust tests for valid substitution replay,
-  explicit payload validation, target mismatch, capture violation, malformed
-  binder context, missing provenance, resource limits, and deterministic
-  reports. Task 12 still needs alpha-equivalence, freshness, and free-variable
-  fail tests.
+- `test_gap`: task 11 closed direct-substitution replay coverage for valid
+  replay, explicit payload validation, target mismatch, capture violation,
+  malformed binder context, missing provenance, resource limits, and
+  deterministic reports. Task 12 closes alpha-equivalence, deterministic
+  freshness, free-variable/capture-set, alpha-resource, and shuffled-context
+  coverage for this module. Source-derived corpus fixtures remain deferred to
+  later checker/source integration tasks.
 - `external_dependency_gap`: source-derived substitution certificates and
   downstream proof/cache/artifact consumers are not active integration points
   for this module. Inline certificate encoding of substitution payloads is also
@@ -511,7 +546,7 @@ Task 11 must add Rust tests for:
   template-argument inference, unordered iteration, wall-clock/random read, or
   global mutable-state read.
 
-Task 12 must add Rust tests for:
+Task 12 adds Rust tests for:
 
 - alpha-equivalent terms accepted by normalized binder structure, not display
   names;
