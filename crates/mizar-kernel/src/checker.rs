@@ -3234,6 +3234,244 @@ mod tests {
     }
 
     #[test]
+    fn kernel_service_soundness_fail_corpus_rejects_single_mutations() {
+        let (import_certificate, _) = resolution_service_fixture(vec![42]);
+        let import_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&import_certificate.target_vc);
+        let bad_import = imported_ref(
+            1,
+            b"bad-pkg",
+            b"mod",
+            b"axiom",
+            import_certificate.imported_axioms[0]
+                .statement_fingerprint
+                .clone(),
+            RequiredProofStatus::KernelVerified,
+        );
+        let bad_import_context = ImportedFactContext::new(
+            Some(vec![1]),
+            vec![evidence(
+                &bad_import,
+                AcceptedProofStatus::KernelVerified,
+                ordinary(vec![neg_p()]),
+            )],
+            Vec::new(),
+            context_limits(),
+        )
+        .expect("mutated imported context");
+        assert_service_rejection(
+            check_kernel_certificate(service_input(
+                &import_target,
+                &import_certificate,
+                &bad_import_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            )),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::UnresolvedSymbol,
+            RejectionLocation::new()
+                .with_imported_fact_id(1)
+                .with_field_path("package_id"),
+        );
+
+        let (mut substitution_certificate, substitution_context_base) =
+            resolution_service_fixture(vec![42]);
+        substitution_certificate.substitutions = vec![simple_substitution(1, var(1), var(1))];
+        let substitution_evidence = simple_substitution_context(1, var(2));
+        let substitution_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&substitution_certificate.target_vc);
+        assert_service_rejection(
+            check_kernel_certificate(service_input_with_substitutions(
+                &substitution_target,
+                &substitution_certificate,
+                &substitution_context_base,
+                Some(&substitution_evidence),
+                None,
+                &[],
+                service_limits(),
+            )),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::InvalidSubstitution,
+            RejectionLocation::new()
+                .with_substitution_id(1)
+                .with_field_path("target_term"),
+        );
+
+        let (mut resolution_certificate, resolution_context) = resolution_service_fixture(vec![42]);
+        resolution_certificate.resolution_trace[0].pivot_literal = pos_p();
+        let resolution_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&resolution_certificate.target_vc);
+        assert_service_rejection(
+            check_kernel_certificate(service_input(
+                &resolution_target,
+                &resolution_certificate,
+                &resolution_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            )),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::InvalidSatProof,
+            RejectionLocation::new()
+                .with_resolution_step_id(1)
+                .with_clause_ref(crate::rejection::ClauseRef::new(
+                    crate::rejection::ClauseRefNamespace::ImportedAxiom,
+                    1,
+                ))
+                .with_field_path("pivot_literal"),
+        );
+
+        let (cluster_certificate, cluster_context_base) = resolution_service_fixture(vec![42]);
+        let cluster_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&cluster_certificate.target_vc);
+        let mut mutated_cluster = cluster_step(1, CheckedFactRef::ImportedAxiom(1));
+        mutated_cluster.generated_fact_fingerprint = b"wrong".to_vec();
+        let bad_cluster_context = ClusterTraceContext::new(
+            Some(vec![7]),
+            vec![mutated_cluster],
+            Vec::new(),
+            cluster_limits(),
+        )
+        .expect("mutated cluster context");
+        assert_service_rejection(
+            check_kernel_certificate(service_input(
+                &cluster_target,
+                &cluster_certificate,
+                &cluster_context_base,
+                Some(&bad_cluster_context),
+                &[1],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            )),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::InvalidClusterTrace,
+            RejectionLocation::new()
+                .with_cluster_trace_step_id(1)
+                .with_field_path("generated_fact_fingerprint"),
+        );
+
+        let (reduction_certificate, reduction_context_base) = resolution_service_fixture(vec![42]);
+        let reduction_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&reduction_certificate.target_vc);
+        let mut mutated_reduction = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
+        mutated_reduction.strategy_audit_key = expected_strategy_audit_key(&mutated_reduction);
+        mutated_reduction.result_fingerprint = b"wrong".to_vec();
+        let bad_reduction_context = ClusterTraceContext::new(
+            Some(vec![7]),
+            Vec::new(),
+            vec![mutated_reduction],
+            cluster_limits(),
+        )
+        .expect("mutated reduction context");
+        assert_service_rejection(
+            check_kernel_certificate(service_input(
+                &reduction_target,
+                &reduction_certificate,
+                &reduction_context_base,
+                Some(&bad_reduction_context),
+                &[1],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            )),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::InvalidClusterTrace,
+            RejectionLocation::new()
+                .with_reduction_step_id(1)
+                .with_field_path("result_fingerprint"),
+        );
+
+        let (mut final_goal_certificate, final_goal_context) = resolution_service_fixture(vec![42]);
+        final_goal_certificate.final_goal = FinalGoalRef {
+            namespace: FinalGoalNamespace::GeneratedClause,
+            id: 2,
+        };
+        let final_goal_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&final_goal_certificate.target_vc);
+        assert_service_rejection(
+            check_kernel_certificate(service_input(
+                &final_goal_target,
+                &final_goal_certificate,
+                &final_goal_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            )),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::InvalidSatProof,
+            RejectionLocation::new().with_final_goal(),
+        );
+
+        let (mut derived_certificate, derived_context) = resolution_service_fixture(vec![42]);
+        derived_certificate.derived_facts.push(DerivedFact {
+            derived_fact_id: 1,
+            source: clause_ref(ClauseRefNamespace::ResolutionStep, 1),
+            payload: b"unsupported".to_vec(),
+        });
+        let derived_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&derived_certificate.target_vc);
+        assert_service_rejection(
+            check_kernel_certificate(service_input(
+                &derived_target,
+                &derived_certificate,
+                &derived_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            )),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::InvalidSatProof,
+            RejectionLocation::new()
+                .with_derived_fact_id(1)
+                .with_field_path("payload"),
+        );
+
+        let (timeout_certificate, timeout_context) = resolution_service_fixture(vec![42]);
+        let timeout_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&timeout_certificate.target_vc);
+        let mut timeout_limits = service_limits();
+        timeout_limits.max_pipeline_steps = 0;
+        assert_service_rejection(
+            check_kernel_certificate(service_input(
+                &timeout_target,
+                &timeout_certificate,
+                &timeout_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                timeout_limits,
+            )),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::Timeout,
+            RejectionLocation::new().with_field_path("target_vc"),
+        );
+
+        let (resource_certificate, resource_context) = resolution_service_fixture(vec![42]);
+        let resource_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&resource_certificate.target_vc);
+        let mut resource_limits = service_limits();
+        resource_limits.max_report_records = 0;
+        assert_service_rejection(
+            check_kernel_certificate(service_input(
+                &resource_target,
+                &resource_certificate,
+                &resource_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                resource_limits,
+            )),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::ResourceExhaustion,
+            RejectionLocation::new().with_field_path("checker_limits.max_report_records"),
+        );
+    }
+
+    #[test]
     fn kernel_service_orders_batches_by_target_then_input_order() {
         let (later_first, later_first_context) = resolution_service_fixture_with_final(
             vec![2],
@@ -4082,6 +4320,29 @@ mod tests {
             error.location().field_path,
             Some("imported_fact_context.imported_fact_count")
         );
+    }
+
+    fn assert_service_rejection(
+        result: KernelCheckResult,
+        category: RejectionCategory,
+        detail: RejectionDetail,
+        location: RejectionLocation,
+    ) {
+        assert_eq!(result.status(), KernelCheckStatus::Rejected);
+        assert!(result.checked_imports().is_empty());
+        assert!(result.checked_substitutions().is_empty());
+        assert!(result.checked_resolution_steps().is_empty());
+        assert!(result.checked_cluster_steps().is_empty());
+        assert!(result.checked_reduction_steps().is_empty());
+        assert!(result.checked_derived_facts().is_empty());
+        assert!(result.final_goal().is_none());
+        assert_eq!(result.rejections().len(), 1);
+        let record = &result.rejections()[0];
+        assert_eq!(record.category(), category);
+        assert_eq!(record.category().stable_key(), category.stable_key());
+        assert_eq!(record.detail(), detail);
+        assert_eq!(record.stable_detail_key(), detail.stable_key());
+        assert_eq!(record.location(), &location);
     }
 
     fn service_input<'a>(

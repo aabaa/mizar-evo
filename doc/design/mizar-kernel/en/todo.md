@@ -199,7 +199,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       architecture 17. Upstream `mizar-checker` trace production remains an
       `external_dependency_gap` unless a ready payload contract exists.
 
-16. **Kernel check service and deterministic batch ordering.** [~]
+16. **Kernel check service and deterministic batch ordering.** [x]
     - Implement the service API: one certificate in, one trusted result out;
       in-crate batch checking with deterministic result ordering by target VC
       fingerprint and caller input order for equal targets.
@@ -210,7 +210,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
 
 ### Hardening and cross-cutting follow-ups
 
-17. **Soundness fail-test corpus.** [ ]
+17. **Soundness fail-test corpus.** [~]
     - Build the mutation-based soundness suite: every checker gets
       systematically mutated certificates/traces that must be rejected
       (fail-heavy per the test strategy and
