@@ -495,6 +495,17 @@ impl Term {
         self.validate_with_depth(context, 0)
     }
 
+    pub(crate) fn validate_for_kernel(
+        &self,
+        context: &ClauseValidationContext,
+    ) -> Result<(), ClauseError> {
+        self.validate(context)
+    }
+
+    pub(crate) fn canonical_len_for_kernel(&self) -> Result<usize, ClauseError> {
+        self.canonical_len()
+    }
+
     fn validate_with_depth(
         &self,
         context: &ClauseValidationContext,
@@ -601,6 +612,21 @@ impl Term {
             Self::Malformed => frame_len(0),
         }
     }
+}
+
+pub(crate) fn application_term_len_for_kernel(
+    symbol: SymbolKey,
+    argument_lens: &[usize],
+) -> Result<usize, ClauseError> {
+    let arguments_len = argument_lens
+        .iter()
+        .try_fold(0usize, |total, len| checked_add_len(total, *len))?;
+    let payload_len = checked_add_len(symbol.canonical_len(), 4)?;
+    frame_len(checked_add_len(payload_len, arguments_len)?)
+}
+
+pub(crate) fn binder_term_len_for_kernel(body_len: usize) -> Result<usize, ClauseError> {
+    frame_len(checked_add_len(4, body_len)?)
 }
 
 impl Ord for Term {

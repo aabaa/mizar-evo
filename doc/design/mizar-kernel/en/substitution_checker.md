@@ -161,10 +161,12 @@ frames, and noncanonical ordering are `invalid_substitution` unless they exceed
 a deterministic resource limit first.
 
 Frames must be sorted by `canonical_index`, unique by `binder_id` and
-`variable_id`, and compatible with the normalized term encodings used by
-`source_term` and `target_term`. Free and schematic variable lists must be
-sorted and unique. Display names and source ranges are not encoded and never
-participate in semantic equality.
+`variable_id`, manifest-compatible, and compatible with the normalized term
+encodings used by `source_term`, `target_term`, and payload `actual_term`
+records. A normalized term may not reuse a `binder_id` for two binder nodes.
+Free and schematic variable lists must be manifest-compatible, sorted, and
+unique. Display names and source ranges are not encoded and never participate
+in semantic equality.
 
 The checker may consume stable data shapes and contracts from `mizar-core`, but
 it must independently re-check binder evidence inside `mizar-kernel`. Calling a
@@ -242,6 +244,10 @@ checked. `binder_path` and `term_path` must address existing normalized term
 nodes. `deterministic_counter` must match the freshness counter produced by the
 architecture 16 strategy for that path and role.
 
+Task 11 only checks that `deterministic_counter` is present in the record whose
+owner, path, and list bounds are otherwise valid. Task 12 owns verification that
+the counter value matches the architecture 16 freshness strategy.
+
 Malformed present witness or constraint records are `invalid_substitution`;
 absent referenced witness or constraint records are `missing_provenance`.
 
@@ -302,6 +308,10 @@ payload shape, owner, rewrite-path, replacement ordering, resource, and
 manifest validation. Task 11 validates referenced freshness and free-variable
 records only for presence, shape, owner, path bounds, and deterministic
 first-use behavior; semantic freshness and free-variable replay remain task 12.
+Task 11 also checks the replayed target size and depth before allocating the
+replayed term. A replacement of a variable occurrence beneath an active binder
+is rejected in task 11 unless it is first rejected as a direct capture violation;
+semantic acceptance of such under-binder substitutions is deferred to task 12.
 Task 12 extends the same module with alpha-conversion, freshness, and
 free-variable side-condition replay. Both tasks must use one coherent evidence
 model.
@@ -461,6 +471,8 @@ Task 11 must add Rust tests for:
   variable manifests rejected as `invalid_substitution`;
 - capture violation rejected without alpha repair when no recorded witness
   justifies the repair;
+- under-binder replacement that is not itself a direct capture violation
+  rejected in task 11 with semantic acceptance deferred to task 12;
 - malformed or noncanonical binder context rejected as `invalid_substitution`;
 - binder-context decoding cases for unknown schema version, unknown binder role,
   truncated field, length overflow, duplicate frame, noncanonical frame order,
@@ -480,6 +492,8 @@ Task 11 must add Rust tests for:
   cloning, sorting, walking, or allocating the used entries;
 - over-budget `Replacement.actual_term` size and depth rejected as
   `resource_exhaustion` before walking or allocating payload actual terms;
+- over-budget replayed target size and depth rejected as `resource_exhaustion`
+  before cloning or allocating the replayed term;
 - context construction canonicalizing input order and rejecting duplicate
   payload, witness, or constraint ids deterministically before replay, plus the
   replay fallback mapping for any unchecked ambiguous context shape;

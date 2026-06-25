@@ -143,6 +143,7 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
             "13: pub mod clause;",
             "14: pub mod rejection;",
             "15: pub mod resolution_trace;",
+            "16: pub mod substitution_checker;",
             "compact: pubmod",
         ],
         "{} must expose only current spec-backed kernel modules; found:\n{}",
@@ -157,6 +158,7 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
             "src/lib.rs",
             "src/rejection.rs",
             "src/resolution_trace.rs",
+            "src/substitution_checker.rs",
         ],
         "kernel source modules require their \
          paired English/Japanese specs first, found {source_files:?}"
@@ -170,6 +172,8 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
         workspace_root().join("doc/design/mizar-kernel/ja/rejection.md"),
         workspace_root().join("doc/design/mizar-kernel/en/resolution_trace.md"),
         workspace_root().join("doc/design/mizar-kernel/ja/resolution_trace.md"),
+        workspace_root().join("doc/design/mizar-kernel/en/substitution_checker.md"),
+        workspace_root().join("doc/design/mizar-kernel/ja/substitution_checker.md"),
     ] {
         assert!(
             spec.exists(),
@@ -208,6 +212,15 @@ fn kernel_source_stays_off_producer_policy_cache_and_artifact_boundaries() {
         "insert_coercion",
         "FallbackInference",
         "fallback_inference",
+        "HiddenBinderRepair",
+        "hidden_binder_repair",
+        "binder_repair",
+        "SourceNameLookup",
+        "source_name_lookup",
+        "DisplayNameLookup",
+        "display_name_lookup",
+        "OmittedTemplateArgument",
+        "omitted_template_argument",
         "SatSolver",
         "solve_sat",
         "OnceLock",

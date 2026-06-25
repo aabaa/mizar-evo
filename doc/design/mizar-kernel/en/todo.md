@@ -25,7 +25,7 @@ no fallback inference.
 | certificate_parser | `certificate_parser.md` (task 4) | `src/certificate_parser.rs` | [x] |
 | rejection | `rejection.md` (task 6) | `src/rejection.rs` | [x] |
 | resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [x] |
-| substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [ ] |
+| substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [~] |
 | checker | `checker.md` (task 13) | `src/checker.rs` | [ ] |
 
 `mizar-kernel` implements pipeline phase 14: proof certificates and kernel
@@ -157,7 +157,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       `mizar-core` binder library.
     - Deps: 4. Spec: architecture 15, 16.
 
-11. **Implement substitution checking.** [ ]
+11. **Implement substitution checking.** [x]
     - Validate substitution applications against the certificate's claimed
       results.
     - Tests: valid substitutions accepted; capture violations rejected;
