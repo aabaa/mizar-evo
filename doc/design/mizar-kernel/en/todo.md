@@ -23,7 +23,7 @@ no fallback inference.
 |---|---|---|---|
 | clause | `clause.md` (task 2) | `src/clause.rs` | [x] |
 | certificate_parser | `certificate_parser.md` (task 4) | `src/certificate_parser.rs` | [x] |
-| rejection | `rejection.md` (task 6) | `src/rejection.rs` | [ ] |
+| rejection | `rejection.md` (task 6) | `src/rejection.rs` | [x] |
 | resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [ ] |
 | substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [ ] |
 | checker | `checker.md` (task 13) | `src/checker.rs` | [ ] |
@@ -128,7 +128,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
    - Deps: 1. Spec: architecture 15, 
      [19.failure_semantics.md](../../architecture/en/19.failure_semantics.md).
 
-7. **Implement rejection records.** [ ]
+7. **Implement rejection records.** [x]
    - Implement the rejection categories/reasons used by every later checker;
      rejection is a proof error even when a backend reported success.
    - Tests: category stability; reasons carry certificate locations.

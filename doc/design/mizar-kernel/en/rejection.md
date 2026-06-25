@@ -190,9 +190,10 @@ When multiple rejections are reported in one batch, order them by:
 2. category order: `certificate_rejection`, then `kernel_rejection`;
 3. certificate byte offset when present;
 4. section tag, item index, and field path when present;
-5. stable evidence id: imported fact id, generated clause id, resolution step
-   id, substitution id, cluster trace step id, reduction step id, derived fact
-   id, final-goal marker;
+5. stable evidence id: imported fact id, imported axiom/theorem clause ref,
+   generated-clause ref, resolution step id, resolution-step clause ref,
+   substitution id, cluster trace step id, reduction step id, derived fact id,
+   final-goal marker;
 6. stable detail key.
 
 Parallel checking and worker completion order must not affect this order.

@@ -141,6 +141,7 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
         [
             "12: pub mod certificate_parser;",
             "13: pub mod clause;",
+            "14: pub mod rejection;",
             "compact: pubmod",
         ],
         "{} must expose only current spec-backed kernel modules; found:\n{}",
@@ -149,7 +150,12 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
     );
     assert_eq!(
         source_files,
-        ["src/certificate_parser.rs", "src/clause.rs", "src/lib.rs"],
+        [
+            "src/certificate_parser.rs",
+            "src/clause.rs",
+            "src/lib.rs",
+            "src/rejection.rs",
+        ],
         "kernel source modules require their \
          paired English/Japanese specs first, found {source_files:?}"
     );
@@ -158,6 +164,8 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
         workspace_root().join("doc/design/mizar-kernel/ja/certificate_parser.md"),
         workspace_root().join("doc/design/mizar-kernel/en/clause.md"),
         workspace_root().join("doc/design/mizar-kernel/ja/clause.md"),
+        workspace_root().join("doc/design/mizar-kernel/en/rejection.md"),
+        workspace_root().join("doc/design/mizar-kernel/ja/rejection.md"),
     ] {
         assert!(
             spec.exists(),
@@ -198,6 +206,26 @@ fn kernel_source_stays_off_producer_policy_cache_and_artifact_boundaries() {
         "fallback_inference",
         "SatSolver",
         "solve_sat",
+        "OnceLock",
+        "LazyLock",
+        "Mutex",
+        "RwLock",
+        "AtomicBool",
+        "AtomicI8",
+        "AtomicI16",
+        "AtomicI32",
+        "AtomicUsize",
+        "AtomicIsize",
+        "AtomicU8",
+        "AtomicU16",
+        "AtomicU32",
+        "AtomicU64",
+        "AtomicI64",
+        "AtomicU128",
+        "AtomicI128",
+        "AtomicPtr",
+        "thread_local!",
+        "static mut",
         "SystemTime",
         "Instant",
         "std::time",

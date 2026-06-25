@@ -186,8 +186,9 @@ coercion を insert したり、cluster を expand したり、backend が prove
 2. category order: `certificate_rejection`、次に `kernel_rejection`;
 3. 存在する場合は certificate byte offset;
 4. 存在する場合は section tag、item index、field path;
-5. stable evidence id: imported fact id、generated clause id、resolution step
-   id、substitution id、cluster trace step id、reduction step id、derived fact id、
+5. stable evidence id: imported fact id、imported axiom/theorem clause ref、
+   generated-clause ref、resolution step id、resolution-step clause ref、
+   substitution id、cluster trace step id、reduction step id、derived fact id、
    final-goal marker;
 6. stable detail key。
 
