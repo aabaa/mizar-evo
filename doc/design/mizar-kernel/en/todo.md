@@ -10,8 +10,8 @@
 
 ## Module Implementation
 
-Module specs do not exist yet; each is written by its own spec task (English
-and Japanese in the same change) before the implementation tasks that cite it.
+Module specs are written by their own spec tasks (English and Japanese in the
+same change) before the implementation tasks that cite them.
 Module names follow the minimum split of
 [internal 07](../../internal/en/07.crate_module_layout.md); the crate refines
 architecture 15, 16, and 19 and internal 04. Every module spec must restate
@@ -60,12 +60,13 @@ integration: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_i
 
 ## Resolved And Open Decisions
 
-- **Certificate schema ownership: open, resolved by task 4.** Architecture 15
-  defines the certificate format; the default candidate is that this crate
-  owns the schema types (parsing included) and `mizar-atp` depends on
-  `mizar-kernel` to construct candidates, so the kernel never depends on
-  evidence producers. Record the decision in `certificate_parser.md` and at
-  the top level.
+- **Certificate schema ownership: resolved by task 4.** Architecture 15
+  defines the certificate format, and `mizar-kernel` owns the normalized
+  certificate schema types, schema-version table, section tags, byte grammar,
+  and parser-owned failure locations. Future evidence producers such as
+  `mizar-atp` may construct this schema, but the kernel never depends on
+  evidence producers. Producer/consumer integration remains an
+  `external_dependency_gap` until those crates exist.
 - **Trusted-baseline crate policy: resolved by task 1.** Trusted kernel source
   forbids unsafe code, uses workspace lint denial, keeps production
   dependencies limited to `mizar-session` and `mizar-core` with no
@@ -94,20 +95,20 @@ Keep `cargo test -p mizar-kernel` green after each task (see
      one.
    - Deps: `mizar-core` task 5. Spec: internal 07 "Kernel and Proof".
 
-2. **Spec: `clause.md`.** [ ]
+2. **Spec: `clause.md`.** [x]
    - Write the clause-representation spec (English and Japanese, no code)
      per architecture 15 "Clause Representation": literals, canonical
      ordering, structural well-formedness, and the trust statement.
    - Deps: 1. Spec: architecture 15.
 
-3. **Implement clause representation.** [ ]
+3. **Implement clause representation.** [x]
    - Implement clauses with structural validation and deterministic
      rendering.
    - Tests: well-formed/malformed fixtures; canonical ordering; rendering
      stability.
    - Deps: 2. Spec: `clause.md`.
 
-4. **Spec: `certificate_parser.md`.** [ ]
+4. **Spec: `certificate_parser.md`.** [x]
    - Write the certificate spec (English and Japanese, no code): top-level
      schema per architecture 15, format tags, backend metadata, structural
      validation rules, and the schema-ownership decision.
