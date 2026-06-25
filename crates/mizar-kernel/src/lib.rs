@@ -9,4 +9,5 @@
 //! selection, overload resolution, cluster search, ATP search, implicit coercion
 //! insertion, fallback inference, or hidden global-state lookup.
 
+pub mod certificate_parser;
 pub mod clause;

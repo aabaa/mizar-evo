@@ -174,8 +174,9 @@ DirectoryEntry
 `section_tag` で sort され、offset は sort 済みで overlap してはならない。schema
 `1` では gap や trailing bytes のない contiguous section payload を要求する。parser
 は duplicate section、missing section、unknown section、out-of-order section、
-overlapping section、non-contiguous range、`u32` overflow、`payload_length >
-max_section_bytes` を allocate 前に拒否しなければならない。
+overlapping section、non-contiguous range、range arithmetic overflow または
+out-of-bounds range、`payload_length > max_section_bytes` を allocate 前に拒否
+しなければならない。
 
 ## Item Frames
 
@@ -433,8 +434,8 @@ Task 5 は Rust tests を追加しなければならない。
 - item count mismatch、item-tag mismatch、section-tag mismatch、malformed field、
   trailing item payload を deterministic item / field location とともに拒否;
 - `max_certificate_bytes`、`max_section_bytes`、per-section count limits、`u32`
-  length/offset overflow、term-recursion-depth resource exhaustion を大きな allocation
-  前に拒否;
+  length/offset range overflow または out-of-bounds range、
+  term-recursion-depth resource exhaustion を大きな allocation 前に拒否;
 - imported fact id ordering、duplicate-id rejection、duplicate-key rejection、
   malformed package/module/item fields、malformed fingerprint、malformed
   required-proof-status rejection;
@@ -451,7 +452,8 @@ Task 5 は Rust tests を追加しなければならない。
 - symbol manifests、variable manifests、imported axioms、imported theorems、
   generated clauses、substitutions、resolution steps、derived facts、canonical
   child-byte tie breakers の deterministic parsed-output ordering;
-- shuffled だが equivalent な source data に対する hash-input stability;
+- 同一 normalized certificate bytes に対する hash-input stability と、shuffled
+  または非 canonical な source data の拒否;
 - domain separator、schema version、encoding version、hash-input algorithm を含む
   full kernel profile、`target_vc`、section directory、canonical payload bytes の
   positive hash-input coverage;

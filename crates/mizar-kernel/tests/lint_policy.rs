@@ -138,18 +138,24 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
     }
     assert_eq!(
         declarations,
-        ["12: pub mod clause;", "compact: pubmod"],
+        [
+            "12: pub mod certificate_parser;",
+            "13: pub mod clause;",
+            "compact: pubmod",
+        ],
         "{} must expose only current spec-backed kernel modules; found:\n{}",
         lib_path.display(),
         declarations.join("\n")
     );
     assert_eq!(
         source_files,
-        ["src/clause.rs", "src/lib.rs"],
+        ["src/certificate_parser.rs", "src/clause.rs", "src/lib.rs"],
         "kernel source modules require their \
          paired English/Japanese specs first, found {source_files:?}"
     );
     for spec in [
+        workspace_root().join("doc/design/mizar-kernel/en/certificate_parser.md"),
+        workspace_root().join("doc/design/mizar-kernel/ja/certificate_parser.md"),
         workspace_root().join("doc/design/mizar-kernel/en/clause.md"),
         workspace_root().join("doc/design/mizar-kernel/ja/clause.md"),
     ] {
@@ -174,8 +180,27 @@ fn kernel_source_stays_off_producer_policy_cache_and_artifact_boundaries() {
         "ProofWitnessStore",
         "ArtifactService",
         "Cache",
+        "HashSet",
         "HashMap",
+        "mizar_checker",
+        "mizar_resolve",
+        "PremiseSelector",
+        "premise_selection",
+        "ProofSearch",
+        "proof_search",
+        "AtpSearch",
+        "atp_search",
+        "ClusterSearch",
+        "cluster_search",
+        "ImplicitCoercion",
+        "insert_coercion",
+        "FallbackInference",
+        "fallback_inference",
+        "SatSolver",
+        "solve_sat",
         "SystemTime",
+        "Instant",
+        "std::time",
         "thread_rng",
         "rand::",
     ];

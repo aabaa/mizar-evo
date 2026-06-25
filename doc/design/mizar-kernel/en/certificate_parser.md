@@ -177,7 +177,8 @@ must be sorted by `section_tag`, offsets must be sorted and non-overlapping,
 and schema `1` requires contiguous section payloads with no gaps or trailing
 bytes. The parser must reject duplicate sections, missing sections, unknown
 sections, out-of-order sections, overlapping sections, non-contiguous ranges,
-`u32` overflow, and any `payload_length > max_section_bytes` before allocating.
+range arithmetic overflow or out-of-bounds ranges, and any `payload_length >
+max_section_bytes` before allocating.
 
 ## Item Frames
 
@@ -441,8 +442,8 @@ Task 5 must add Rust tests for:
   field, and trailing item payload rejection with deterministic item and field
   locations;
 - `max_certificate_bytes`, `max_section_bytes`, per-section count limits,
-  `u32` length/offset overflow, and term-recursion-depth resource exhaustion
-  before large allocation;
+  `u32` length/offset range overflow or out-of-bounds ranges, and
+  term-recursion-depth resource exhaustion before large allocation;
 - imported fact id ordering, duplicate-id rejection, duplicate-key rejection,
   malformed package/module/item fields, malformed fingerprint, and malformed
   required-proof-status rejection;
@@ -460,7 +461,8 @@ Task 5 must add Rust tests for:
   manifests, imported axioms, imported theorems, generated clauses,
   substitutions, resolution steps, derived facts, and canonical child-byte tie
   breakers;
-- hash-input stability under shuffled but equivalent source data;
+- hash-input stability for identical normalized certificate bytes and
+  rejection of shuffled or otherwise noncanonical source data;
 - positive hash-input coverage for the domain separator, schema version,
   encoding version, full kernel profile including hash-input algorithm,
   `target_vc`, section directory, and canonical payload bytes;

@@ -22,7 +22,7 @@ no fallback inference.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | clause | `clause.md` (task 2) | `src/clause.rs` | [x] |
-| certificate_parser | `certificate_parser.md` (task 4) | `src/certificate_parser.rs` | [ ] |
+| certificate_parser | `certificate_parser.md` (task 4) | `src/certificate_parser.rs` | [x] |
 | rejection | `rejection.md` (task 6) | `src/rejection.rs` | [ ] |
 | resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [ ] |
 | substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [ ] |
@@ -114,7 +114,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
      validation rules, and the schema-ownership decision.
    - Deps: 2. Spec: architecture 15 "Certificate Top Level"/"Trust Scope".
 
-5. **Implement certificate parsing and structural validation.** [ ]
+5. **Implement certificate parsing and structural validation.** [x]
    - Parse certificates into schema types with structural validation only —
      no semantic trust is granted by parsing.
    - Tests: round-trips; malformed certificates rejected with positions;
