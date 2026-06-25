@@ -20,7 +20,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| clause | `clause.md`（task 2） | `src/clause.rs` | [ ] |
+| clause | `clause.md`（task 2） | `src/clause.rs` | [x] |
 | certificate_parser | `certificate_parser.md`（task 4） | `src/certificate_parser.rs` | [ ] |
 | rejection | `rejection.md`（task 6） | `src/rejection.rs` | [ ] |
 | resolution_trace | `resolution_trace.md`（task 8） | `src/resolution_trace.rs` | [ ] |

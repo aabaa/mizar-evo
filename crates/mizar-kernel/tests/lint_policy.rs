@@ -99,7 +99,7 @@ fn kernel_manifest_dependency_boundary_is_task_one_minimal() {
 }
 
 #[test]
-fn kernel_crate_root_is_trusted_module_free_shell() {
+fn kernel_lib_exposes_only_current_spec_backed_modules() {
     let lib_path = crate_root().join("src/lib.rs");
     let source = read_to_string(&lib_path);
     let source_files = rust_source_files(&crate_root().join("src"))
@@ -136,19 +136,29 @@ fn kernel_crate_root_is_trusted_module_free_shell() {
             lib_path.display()
         );
     }
-    assert!(
-        declarations.is_empty(),
-        "{} must not expose public semantic surface before paired module specs \
-         exist; found:\n{}",
+    assert_eq!(
+        declarations,
+        ["12: pub mod clause;", "compact: pubmod"],
+        "{} must expose only current spec-backed kernel modules; found:\n{}",
         lib_path.display(),
         declarations.join("\n")
     );
     assert_eq!(
         source_files,
-        ["src/lib.rs"],
-        "task 1 owns only the crate shell; later source modules require their \
+        ["src/clause.rs", "src/lib.rs"],
+        "kernel source modules require their \
          paired English/Japanese specs first, found {source_files:?}"
     );
+    for spec in [
+        workspace_root().join("doc/design/mizar-kernel/en/clause.md"),
+        workspace_root().join("doc/design/mizar-kernel/ja/clause.md"),
+    ] {
+        assert!(
+            spec.exists(),
+            "{} must exist before its matching source module is exposed",
+            spec.display()
+        );
+    }
 }
 
 #[test]

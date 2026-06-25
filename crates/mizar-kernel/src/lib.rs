@@ -8,3 +8,5 @@
 //! The kernel checks evidence only. It must not perform proof search, premise
 //! selection, overload resolution, cluster search, ATP search, implicit coercion
 //! insertion, fallback inference, or hidden global-state lookup.
+
+pub mod clause;
