@@ -243,7 +243,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       synchronize content.
     - Deps: 20. Spec: repository documentation policy.
 
-22. **Module-boundary refactor gate.** [~]
+22. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
