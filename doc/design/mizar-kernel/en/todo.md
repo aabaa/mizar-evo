@@ -237,13 +237,13 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       its trust statement.
     - Deps: 19. Spec: all module specs and this TODO.
 
-21. **Bilingual documentation sync audit.** [~]
+21. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-kernel/en/` with its Japanese companion and
       synchronize content.
     - Deps: 20. Spec: repository documentation policy.
 
-22. **Module-boundary refactor gate.** [ ]
+22. **Module-boundary refactor gate.** [~]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.

@@ -33,370 +33,45 @@ bookkeeping commit または closeout task で反映する。
 | 18. Determinism and replay-cost suite | complete | `3d1942e97ea245d2fae09dac4e26cefd67c02bd1` | Spec/doc review: medium batch-determinism ambiguity を distinct-target equality と equal-target caller-order tie preservation に分けて修正し、low Task 17 backfill と stable-rendering wording findings に対応した。final spec re-review は blocking/high/medium finding なし。Test sufficiency review: finding なし。Full implementation review: blocking/high/medium finding なし。Source/doc consistency review: finding なし。 | Focused Task 18 tests passed; `cargo fmt --check` passed; `cargo test -p mizar-kernel` passed; `cargo clippy -p mizar-kernel --all-targets -- -D warnings` passed; `cargo test -p mizar-core` passed; `cargo test -p mizar-checker` passed; `git diff --check` passed before explicit staging; `git diff --cached --check` passed after explicit path staging。 | Test hardening task。repeated single checks、shuffled imported/cluster context construction、shuffled requested trace ids、distinct-target batch permutations、equal-target tie preservation、public rendering surrogate としての stable rejection keys/locations の決定的 equality coverage を追加する。cluster/reduction trace counts と checker pipeline/report budgets の exact replay-cost assertions を追加する。Source-derived runner、benchmark、randomness、property-test dependency、external producer fixture、`.miz` fixture、expectation、`doc/spec`、SAT/ATP/proof search、premise selection、overload resolution、cluster search、implicit coercion insertion、fallback inference、global mutable state、downstream ATP/proof/cache/artifact coupling は scope 外のまま。 |
 | 19. Public-enum forward-compatibility policy | complete | `981fa7a05fe8de11168bd862d81cbd7d486347c0` | Spec/doc review: medium documentation/inventory guard finding を paired `public_enum_policy.md` を canonical exact enum inventory とし、lint-checked EN/JA source match を要求して修正した。low rejection compatibility wording と bookkeeping findings に対応した。final spec re-review は blocking/high/medium finding なし。Test sufficiency review: finding なし。Full implementation review: blocking/high/medium finding なし。Source/doc consistency review: blocking/high/medium finding なし。 | `cargo test -p mizar-kernel kernel_public_enums_are_forward_compatible_and_documented` passed; `cargo fmt --check` passed; `cargo test -p mizar-kernel` passed; `cargo clippy -p mizar-kernel --all-targets -- -D warnings` passed; `git diff --check` passed before explicit staging; `git diff --cached --check` passed after explicit path staging。`cargo test -p mizar-core` と `cargo test -p mizar-checker` は、この task が public API compatibility annotations と lint/docs だけを追加し、binder contracts や checker/trace replay semantics を変更しないため不要。 | Docs/test/source-annotation task。すべての public enum を exhaustive exception なしの forward-compatible と分類し、不足していた `#[non_exhaustive]` marker を追加し、immediate marker と exact source-to-policy inventory synchronization の両方を要求するよう lint coverage を広げる。Rejection category/detail の stable-key spelling、meaning、phase ownership、ordering、removal、rename、remapping は compatibility review 対象のまま。variant 変更、runtime behavior 変更、`doc/spec`、`.miz`、expectation、SAT/ATP/proof search、premise selection、overload resolution、cluster search、implicit coercion insertion、fallback inference、global mutable state、downstream ATP/proof/cache/artifact coupling は追加しない。 |
 | 20. Source/spec correspondence and prohibition audit | complete | `fb81213c33d5b2a31eb976a4fa6804bfc0ffe6c5` | Spec/doc review: medium test-traceability / stale-bookkeeping findings を修正し、final re-review は blocking/high/medium finding なし。Test sufficiency review: medium scanner blind spot、stale-doc allowance、weak Trust Statement wording、whole-doc gap check findings を修正し、final re-review は blocking/high/medium finding なし。Full implementation review: medium public-surface scanner finding を修正し、final re-review は finding なし。Source/doc consistency review: finding なし、final re-review は blocking/high/medium finding なし。 | `cargo test -p mizar-kernel source_spec` passed; `cargo fmt --check` passed; `cargo test -p mizar-kernel` passed; `cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings` passed; `git diff --check` passed before explicit staging; `git diff --cached --check` passed after explicit path staging。Task 20 は audit docs と lint guard だけを変更し、binder contract や checker/trace runtime behavior を変更しないため、`cargo test -p mizar-core` と `cargo test -p mizar-checker` は不要。 | Audit/lint task。public API、spec、test、deferred traceability を含む paired source/spec audit docs を追加し、module Trust Statement を task-20 prohibition wording で強化し、exact public module/item inventory、Trust Statement prohibition wording、row-local gap classification、scanner regression cases の lint coverage を広げる。Source-derived certificate/service envelopes、ATP proof translation、`mizar-checker` cluster/reduction payload production、derived-fact payload schema、service-envelope normalization/cancellation/worker scheduling、downstream proof/cache/artifact consumers、downstream wildcard-arm checks は `external_dependency_gap` / `deferred` のまま。runtime behavior change、`doc/spec`、`.miz`、expectation、SAT/ATP/proof search、premise selection、overload resolution、cluster search、implicit coercion insertion、fallback inference、global mutable state、downstream dependency coupling は追加しない。 |
-| 21. Bilingual documentation sync audit | ready to commit | pending self-hash | Spec/doc review: medium Task21 handoff、English-canonical conflict authority、stronger read-only validation findings を修正し、final re-review は blocking/high/medium finding なし。Test sufficiency review: blocking/high/medium finding なし。Full implementation review: medium self-inventory / crate-plan verification wording findings を修正し、final re-review は blocking/high/medium finding なし。Source/doc consistency review: blocking/high/medium finding なし。 | Deterministic file-pair and companion-link check passed; `cargo test -p mizar-kernel --test lint_policy` passed; `git diff --check` passed。この task は documentation だけを変更し Rust source や executable lint behavior を変更しないため、`cargo fmt`、full `cargo test -p mizar-kernel`、clippy は不要。`git diff --cached --check` は explicit staging 後に pending。 | Docs audit task。paired bilingual sync audit docs を追加し、Task20 hash/status を backfill し、English canonical authority を維持し、file/link/heading/table/inventory/status sync checks を記録し、Task21-to-Task22 handoff を更新し、external producer/consumer gaps は `external_dependency_gap` / `deferred` として残す。runtime behavior change、public API change、`doc/spec`、`.miz`、expectation、SAT/ATP/proof search、premise selection、overload resolution、cluster search、implicit coercion insertion、fallback inference、global mutable state、downstream dependency coupling は追加しない。 |
-| 22. Module-boundary refactor gate | not started | pending | pending | pending | task 21 commit が必要。Audit または move-only task。 |
+| 21. Bilingual documentation sync audit | complete | `73a919c16b48da82038fd7267e86e1a844cb4c6f` | Spec/doc review: medium Task21 handoff、English-canonical conflict authority、stronger read-only validation findings を修正し、final re-review は blocking/high/medium finding なし。Test sufficiency review: blocking/high/medium finding なし。Full implementation review: medium self-inventory / crate-plan verification wording findings を修正し、final re-review は blocking/high/medium finding なし。Source/doc consistency review: blocking/high/medium finding なし。 | Deterministic file-pair and companion-link check passed; `cargo test -p mizar-kernel --test lint_policy` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit path staging。この task は documentation だけを変更し Rust source や executable lint behavior を変更しないため、`cargo fmt`、full `cargo test -p mizar-kernel`、clippy は不要。 | Docs audit task。paired bilingual sync audit docs を追加し、Task20 hash/status を backfill し、English canonical authority を維持し、file/link/heading/table/inventory/status sync checks を記録し、Task21-to-Task22 handoff を更新し、external producer/consumer gaps は `external_dependency_gap` / `deferred` として残す。runtime behavior change、public API change、`doc/spec`、`.miz`、expectation、SAT/ATP/proof search、premise selection、overload resolution、cluster search、implicit coercion insertion、fallback inference、global mutable state、downstream dependency coupling は追加しない。 |
+| 22. Module-boundary refactor gate | ready to commit | pending self-hash | Spec/doc review: medium Task21 bookkeeping、source-spec test-traceability、formal drift-classification findings を修正し、low scope wording finding も修正した。final outcome は blocking/high/medium finding なし。Test sufficiency review: medium tracked-file/staging guard と source/spec traceability guard findings を Task22 lint guard で修正し、final focused re-review は blocking/high/medium finding なし。Full implementation review: blocking/high/medium finding なし。Source/doc consistency review: blocking/high/medium finding なし。lint/docs guard update 後の focused re-review も blocking/high/medium finding なし。 | `cargo fmt --check` passed; explicit path staging 後に `cargo test -p mizar-kernel --test lint_policy` passed; `cargo test -p mizar-kernel` passed; `cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings` passed; `git diff --check` passed; explicit path staging 後に `git diff --cached --check` passed。Task 22 は private test layout と lint/docs だけを変更し、binder contract や checker/trace runtime behavior を変更しないため、`cargo test -p mizar-core` と `cargo test -p mizar-checker` は不要。 | Move-only structural gate。oversized inline module tests を private parent-owned `tests.rs` modules に分割し、paired module-boundary audit docs を追加し、source/spec と bilingual audit docs を更新し、split files と test traceability の index-aware lint guard を追加し、public APIs/runtime behavior は変更しない。source-derived producers/downstream consumers は `external_dependency_gap` / `deferred` のまま。`doc/spec`、`.miz`、expectation、SAT/ATP/proof search、premise selection、overload resolution、cluster search、implicit coercion insertion、fallback inference、global mutable state、downstream dependency coupling は追加しない。 |
 | Closeout. Crate exit report and quality review | not started | pending | pending | pending | task 22 commit、全 hard gate pass、read-only quality review score >= 90/100 が必要。 |
 
-## Task 21 handoff
+## Task 22 handoff
 
 Recommended reasoning: `xhigh`.
 
 Prompt:
 
 ```text
-Continue mizar-kernel autonomous crate development from the completed task 21
-bilingual documentation sync audit commit. Before starting task 22, verify a
-clean worktree, confirm the task 21 commit exists in git log, and re-read
+Continue mizar-kernel autonomous crate development from the completed task 22
+module-boundary refactor gate commit. Before starting closeout, verify a clean
+worktree, confirm the task 22 commit exists in git log, and re-read
 doc/design/mizar-kernel/en/00.crate_plan.md,
 doc/design/mizar-kernel/en/task_ledger.md,
 doc/design/mizar-kernel/en/todo.md,
 doc/design/mizar-kernel/en/source_spec_audit.md,
-doc/design/mizar-kernel/en/bilingual_sync_audit.md, and the paired module
-specs. Implement task 22 only: perform the module-boundary refactor gate, add
-paired `module_boundary_audit.md` files, and split private implementation
-modules only if the audit finds an oversized or mixed-responsibility file that
-can be moved without behavior or public API changes. Do not change public APIs,
-diagnostics, deterministic renderings, artifact-facing schemas,
-consumer-visible behavior, certificate semantics, rejection semantics,
-`doc/spec`, `.miz` fixtures, expectations, SAT/ATP/proof search, premise
-selection, overload resolution, cluster search, implicit coercion insertion,
-fallback inference, global mutable state, or downstream ATP/proof/cache/artifact
-integration. If no move-only split is required, record the audit outcome and do
-not edit Rust source. Use review-only agents for the required AGENTS.md review
-phases. Run `git diff --check` and `git diff --cached --check`; if Rust source
-moves are made, additionally run `cargo fmt --check`,
-`cargo test -p mizar-kernel`, and
-`cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings`.
-Commit task 22 by itself with explicit path staging.
+doc/design/mizar-kernel/en/bilingual_sync_audit.md,
+doc/design/mizar-kernel/en/module_boundary_audit.md, and the paired module
+specs. Implement the closeout only: add paired
+`doc/design/mizar-kernel/en/crate_exit_report.md` and
+`doc/design/mizar-kernel/ja/crate_exit_report.md`, record all task commit hashes,
+review outcomes, verification commands, remaining `external_dependency_gap` /
+`deferred` rows, and a read-only quality review score of at least 90/100. Do
+not change Rust behavior, public APIs, certificate semantics, rejection
+semantics, `doc/spec`, `.miz` fixtures, expectations, SAT/ATP/proof search,
+premise selection, overload resolution, cluster search, implicit coercion
+insertion, fallback inference, global mutable state, or downstream
+ATP/proof/cache/artifact integration. Use review-only agents for closeout
+spec/doc, test sufficiency, full implementation, source/doc consistency, and
+quality-score review. Run final broad verification:
+`cargo fmt --check`,
+`cargo clippy --all-targets --all-features -- -D warnings`,
+`cargo test`, `git diff --check`, and `git diff --cached --check` after explicit
+path staging. Commit closeout by itself with explicit path staging.
 ```
 
-Rationale: task 22 は closeout 前の最後の structural gate である。Trusted
-kernel code の layout change は review boundary や behavior を誤って変える
-可能性があるため `xhigh` を維持する。move が不要な docs-only audit なら下げて
-よく、必要な split が hidden public API または behavioral coupling を露出する
-場合だけ上げる。
-
-## Task 11 handoff
-
-Recommended reasoning: `xhigh`.
-
-Prompt:
-
-```text
-Continue mizar-kernel autonomous crate development from the completed task 11
-substitution-checker implementation commit. Before starting task 12, verify a
-clean worktree, confirm the task 11 commit exists in git log, and re-read
-doc/design/mizar-kernel/en/00.crate_plan.md,
-doc/design/mizar-kernel/en/task_ledger.md,
-doc/design/mizar-kernel/en/todo.md,
-doc/design/mizar-kernel/en/substitution_checker.md,
-doc/design/mizar-kernel/en/certificate_parser.md,
-doc/design/mizar-kernel/en/rejection.md,
-doc/design/mizar-kernel/en/clause.md,
-crates/mizar-kernel/src/substitution_checker.rs,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/16.substitution_and_binding.md, and
-doc/design/architecture/en/19.failure_semantics.md. Implement task 12 only:
-extend `substitution_checker` with alpha-conversion, semantic freshness, and
-free-variable side-condition replay over the explicit context records already
-introduced by task 11. Verify architecture-16 deterministic freshness counters,
-bound-variable renaming consistency, free-variable preservation, capture-set
-constraints, and coherent report binding without proof search or repair
-heuristics. Do not implement proof search, ATP/SAT search, premise selection,
-overload resolution, cluster search, implicit coercion insertion, fallback
-inference, local-abbreviation closure replay beyond explicitly specified
-evidence, captured-free-variable closure replay unless the spec is updated
-first, global mutable state reads, checker orchestration, or downstream
-proof/cache/artifact integration. Add focused tests for alpha equivalence,
-freshness counters, FV constraints, malformed side-condition semantics,
-resource limits, deterministic rejection locations, and regression cases
-around task-11 under-binder deferral. Run cargo fmt --check,
-cargo test -p mizar-kernel, cargo clippy -p mizar-kernel --all-targets
---all-features -- -D warnings, cargo test -p mizar-core because the task
-continues binder-sensitive kernel rechecking, git diff --check, and
-git diff --cached --check after explicit path staging. Run
-cargo test -p mizar-checker only if checker/trace boundary semantics are
-touched; otherwise record why it was not run. Use review-only agents for the
-required AGENTS.md review phases and commit task 12 by itself.
-```
-
-Rationale: task 12 は soundness-critical な binder 側の substitution replay を
-完了し、明示的に正当化された alpha/freshness/FV evidence だけを受理する。
-`xhigh` を維持する。bookkeeping-only docs sync のみなら下げてよい。
-architecture 16 と実装済み task-11 context model が矛盾する場合だけ上げる。
-
-## Task 10 handoff
-
-Recommended reasoning: `xhigh`.
-
-Prompt:
-
-```text
-Continue mizar-kernel autonomous crate development from the completed task 10
-substitution-checker spec commit. Before starting task 11, verify a clean
-worktree, confirm the task 10 commit exists in git log, and re-read
-doc/design/mizar-kernel/en/00.crate_plan.md,
-doc/design/mizar-kernel/en/task_ledger.md,
-doc/design/mizar-kernel/en/todo.md,
-doc/design/mizar-kernel/en/substitution_checker.md,
-doc/design/mizar-kernel/en/certificate_parser.md,
-doc/design/mizar-kernel/en/rejection.md,
-doc/design/mizar-kernel/en/clause.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/16.substitution_and_binding.md, and
-doc/design/architecture/en/19.failure_semantics.md. Implement task 11 only:
-add `crates/mizar-kernel/src/substitution_checker.rs`, expose it from
-`src/lib.rs`, and implement direct substitution replay over explicit immutable
-`SubstitutionContext` payload evidence. Implement binder-context decoding,
-payload/replacement validation, direct capture-avoiding replay, deterministic
-report binding, stable rejection mapping, and shape/owner/path/resource
-validation for referenced freshness/free-variable records. Do not implement
-alpha-conversion, semantic freshness replay, semantic free-variable replay,
-local-abbreviation closure replay, captured-free-variable closure replay,
-proof search, ATP/SAT search, premise selection, overload resolution, cluster
-search, implicit coercion insertion, fallback inference, global mutable state
-reads, or downstream proof/cache/artifact integration. Reject missing payloads,
-deferred local-abbreviation payloads, and deferred captured-free-variable roles
-rather than inferring or accepting them. Add focused tests for all planned
-task-11 cases in `substitution_checker.md`, including no-diff-inference,
-rewrite-path specificity, manifest/resource limits for payload actual terms,
-first-use context behavior, private report binding, and prohibition lint
-coverage. Run cargo fmt --check, cargo test -p mizar-kernel,
-cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings,
-cargo test -p mizar-core because the task independently re-checks binder
-contracts, git diff --check, and git diff --cached --check after explicit path
-staging. Run cargo test -p mizar-checker only if the implementation touches
-checker/trace boundary semantics; otherwise record why it was not run. Use
-review-only agents for the required AGENTS.md review phases and commit task 11
-by itself.
-```
-
-Rationale: task 11 は binder-sensitive な trusted kernel source を開始し、
-explicit payload 上の deterministic evidence replay に留めなければならず、
-substitution search を推論してはならないため `xhigh` を維持する。typo-only
-docs sync だけなら下げてよい。既存 `mizar-core` binder API が explicit
-kernel-owned recheck boundary と矛盾する場合だけ上げる。
-
-## Task 9 handoff
-
-Recommended reasoning: `xhigh`.
-
-Prompt:
-
-```text
-Continue mizar-kernel autonomous crate development from the completed task 9
-resolution-trace checker commit. Before starting task 10, verify a clean
-worktree, confirm the task 9 commit exists in git log, and re-read
-doc/design/mizar-kernel/en/00.crate_plan.md,
-doc/design/mizar-kernel/en/task_ledger.md, doc/design/mizar-kernel/en/todo.md,
-doc/design/mizar-kernel/en/certificate_parser.md,
-doc/design/mizar-kernel/en/clause.md,
-doc/design/mizar-kernel/en/rejection.md,
-doc/design/mizar-kernel/en/resolution_trace.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/16.substitution_and_binding.md,
-doc/design/architecture/en/19.failure_semantics.md, and
-doc/design/internal/en/04.atp_portfolio_and_kernel_check_integration.md.
-Implement task 10 only: write paired English/Japanese substitution checker
-specs at doc/design/mizar-kernel/en/substitution_checker.md and
-doc/design/mizar-kernel/ja/substitution_checker.md. Specify substitution
-application validation, alpha-conversion checking, free-variable side
-conditions, binder-context evidence, stable rejection mapping, planned task-11
-and task-12 tests, and independent re-checking of the mizar-core binder
-contract without reusing resolver/checker mutable state. Do not add Rust source
-and do not implement substitution checking, alpha checking, free-variable
-checking, proof search, ATP search, premise selection, overload resolution,
-cluster search, implicit coercion insertion, fallback inference, global mutable
-state reads, or downstream proof/cache/artifact integration. Run git diff
---check and git diff --cached --check after explicit path staging. Use
-review-only agents for the required AGENTS.md review phases and commit task 10
-by itself.
-```
-
-Rationale: task 10 は、後続の Rust 実装 task が従う binder-sensitive checker を
-仕様化する。Substitution、alpha conversion、free-variable side condition は
-soundness-critical であり、inference ではなく explicit certificate replay に
-留める必要があるため `xhigh` を維持する。typo-only docs sync だけなら低い
-reasoning でよい。architecture 16 と現在の certificate schema が矛盾する場合だけ
+Rationale: closeout は trusted kernel crate の hard-gate summary である。
+`xhigh` を維持する。typo-only report correction だけなら下げてよく、quality
+review が soundness、boundary、verification contradiction を見つけた場合だけ
 上げる。
-
-## Task 8 handoff
-
-Recommended reasoning: `xhigh`.
-
-Prompt:
-
-```text
-Continue mizar-kernel autonomous crate development from the completed task 8
-resolution-trace spec commit. Before starting task 9, verify a clean worktree,
-confirm the task 8 commit exists in git log, and re-read
-doc/design/mizar-kernel/en/00.crate_plan.md,
-doc/design/mizar-kernel/en/task_ledger.md, doc/design/mizar-kernel/en/todo.md,
-doc/design/mizar-kernel/en/resolution_trace.md,
-doc/design/mizar-kernel/en/certificate_parser.md,
-doc/design/mizar-kernel/en/clause.md,
-doc/design/mizar-kernel/en/rejection.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/19.failure_semantics.md, and
-doc/design/internal/en/04.atp_portfolio_and_kernel_check_integration.md.
-Implement task 9 only: add the resolution trace replay checker, expose its
-module, and add focused tests for valid replay, pivot polarity, resolvent
-mismatch, imported-clause context/provenance, checked final-goal behavior,
-stable rejection records, deterministic output, and replay resource limits.
-Add only the small clause-owned non-allocating canonical length / bounded-writer
-and depth-bounded validation helper(s) needed by the spec, plus a crate-private
-certificate helper only if needed to derive the replay validation context from
-public parsed data. Do not implement SAT solving, ATP proof translation, proof
-search, imported-fact availability checking beyond explicit context validation,
-substitution checking, cluster replay, checker orchestration, proof/cache/
-artifact integration, fallback inference, implicit coercion insertion, or
-global mutable state reads. Run cargo fmt --check, cargo test -p mizar-kernel,
-cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings,
-git diff --check, and git diff --cached --check after explicit path staging.
-Use review-only agents for the required AGENTS.md review phases and commit
-task 9 by itself.
-```
-
-Rationale: task 9 は trusted kernel 内で最初の semantic replay checker を実装する。
-allocation bound、depth bound、parent orientation、stable rejection location は
-soundness-critical なので `xhigh` を維持する。comment-only follow-up だけなら下げて
-よい。既存 clause/parser API が指定 helper boundary を広い design update なしに
-実現できない場合だけ上げる。
-
-## Task 7 handoff
-
-Recommended reasoning: `xhigh`.
-
-Prompt:
-
-```text
-Continue mizar-kernel autonomous crate development from the completed task 7
-rejection-records commit. Before starting task 8, verify a clean worktree,
-confirm the task 7 commit exists in git log, and re-read
-doc/design/mizar-kernel/en/00.crate_plan.md,
-doc/design/mizar-kernel/en/task_ledger.md, doc/design/mizar-kernel/en/todo.md,
-doc/design/mizar-kernel/en/rejection.md,
-doc/design/mizar-kernel/en/certificate_parser.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/19.failure_semantics.md, and
-doc/design/internal/en/04.atp_portfolio_and_kernel_check_integration.md.
-Implement task 8 only: write paired English/Japanese resolution-trace specs
-doc/design/mizar-kernel/en/resolution_trace.md and
-doc/design/mizar-kernel/ja/resolution_trace.md. Specify deterministic
-MiniSAT-compatible resolution trace replay/checking over the normalized
-certificate schema, clause-reference ownership, antecedent/pivot validation,
-linear replay/resource bounds, stable rejection mapping through
-invalid_sat_proof/resource_exhaustion/missing_provenance, and explicit
-kernel prohibitions. Do not add Rust source and do not implement a SAT solver,
-ATP backend, proof search, premise selection, overload resolution, cluster
-search, implicit coercion insertion, fallback inference, or global mutable
-state. Run git diff --check and git diff --cached --check after explicit path
-staging. Use review-only agents for the required AGENTS.md review phases and
-commit task 8 by itself.
-```
-
-Rationale: task 8 は task 9 の trusted checker が実装する replay contract を
-定義する。trace replay は soundness boundary の一部であり、search や solver
-ではなく決定的な evidence checker に保つ必要があるため `xhigh` を維持する。
-typo-only docs sync だけなら低い reasoning でよい。architecture 15 または
-既存 certificate schema が planned trace model と矛盾する場合だけ上げる。
-
-## Task 6 handoff
-
-Recommended reasoning: `xhigh`.
-
-Prompt:
-
-```text
-Continue mizar-kernel autonomous crate development from the completed task 6
-rejection spec commit. Before starting task 7, verify a clean worktree, confirm
-the task 6 commit exists in git log, and re-read
-doc/design/mizar-kernel/en/00.crate_plan.md,
-doc/design/mizar-kernel/en/task_ledger.md, doc/design/mizar-kernel/en/todo.md,
-doc/design/mizar-kernel/en/rejection.md,
-doc/design/mizar-kernel/en/certificate_parser.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/19.failure_semantics.md, and
-doc/design/internal/en/04.atp_portfolio_and_kernel_check_integration.md.
-Implement task 7 only: add src/rejection.rs, expose it from src/lib.rs, and
-add focused tests for stable category/detail keys, parser conversion preserving
-target_vc_fingerprint and locations, deterministic ordering, allowed and
-disallowed category/detail mappings, #[non_exhaustive] public enums, and
-trusted-boundary lint coverage. Do not implement resolution, substitution,
-imported-fact, cluster, or checker-service replay logic beyond record types and
-test fixtures. Run cargo fmt --check, cargo test -p mizar-kernel,
-cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings,
-git diff --check, and git diff --cached --check after explicit path staging.
-Use review-only agents for the required AGENTS.md review phases and commit
-task 7 by itself.
-```
-
-Rationale: task 7 は、後続 checker が使う stable failure vocabulary を shared
-record surface にする。category/detail ownership、target-owned ordering、parser
-conversion は trusted soundness boundary の一部なので `xhigh` を維持する。
-typo-only docs sync だけなら低い reasoning でよい。parser API または
-architecture 19 が spec と矛盾する場合だけ上げる。
-
-## Task 5 handoff
-
-Recommended reasoning: `xhigh`.
-
-Prompt:
-
-```text
-Continue mizar-kernel autonomous crate development from the completed task 5
-certificate parser implementation commit. Before starting task 6, verify a clean
-worktree, confirm the task 5 commit exists in git log, and re-read
-doc/design/mizar-kernel/en/00.crate_plan.md,
-doc/design/mizar-kernel/en/task_ledger.md, doc/design/mizar-kernel/en/todo.md,
-doc/design/mizar-kernel/en/certificate_parser.md,
-doc/design/architecture/en/15.kernel_certificate_format.md, and
-doc/design/architecture/en/19.failure_semantics.md. Implement task 6 only:
-write paired English/Japanese rejection semantics specs
-doc/design/mizar-kernel/en/rejection.md and
-doc/design/mizar-kernel/ja/rejection.md. Define stable parser/checker rejection
-categories and structured details/locations without adding Rust source. Keep the
-kernel as an evidence checker: no proof search, ATP search, premise selection,
-overload resolution, cluster search, implicit coercion insertion, fallback
-inference, or global mutable compiler state. Run git diff --check and
-git diff --cached --check after explicit path staging. Use review-only agents
-for the required AGENTS.md review phases and commit task 6 by itself.
-```
-
-Rationale: task 6 は後続のすべての checker が使う安定した rejection vocabulary
-を仕様化する。rejection category は trusted boundary と architecture 19 の
-failure-semantics compatibility policy の一部なので `xhigh` を維持する。
-typo-only synchronization だけなら低い reasoning でよい。architecture documents
-が既存 parser rejection surface と矛盾する場合だけ上げる。
-
-## Task 0 handoff
-
-Recommended reasoning: `xhigh`.
-
-Prompt:
-
-```text
-Continue mizar-kernel autonomous crate development from the completed task 0
-crate-plan commit. Before starting task 1, verify a clean worktree, confirm the
-task 0 commit exists in git log, and re-read
-doc/design/mizar-kernel/en/00.crate_plan.md,
-doc/design/mizar-kernel/en/task_ledger.md, doc/design/mizar-kernel/en/todo.md,
-doc/design/internal/en/07.crate_module_layout.md,
-doc/design/architecture/en/08.reasoning_boundary.md,
-doc/design/architecture/en/15.kernel_certificate_format.md, and
-doc/design/architecture/en/19.failure_semantics.md. Implement task 1 only: add
-the mizar-kernel workspace member, minimal crate manifest, crate-root trust
-statement, and trusted-baseline lint-policy guard. Keep production dependencies
-limited to mizar-session and mizar-core, forbid unsafe code, and do not expose
-semantic modules until paired module specs exist. Run cargo fmt --check,
-cargo test -p mizar-kernel, cargo clippy -p mizar-kernel --all-targets
---all-features -- -D warnings, git diff --check, and git diff --cached --check
-after explicit path staging. Use review-only agents for the required AGENTS.md
-review phases.
-```
-
-Rationale: task 1 は、後続の kernel 作業が依存する trusted crate boundary と
-dependency guard を作る。dependency discipline、trusted lint policy、
-no-search/no-ATP boundary は soundness-critical なので `xhigh` を維持する。
-typo-only documentation cleanup だけなら低い reasoning でもよい。repository
-metadata や矛盾仕様が scaffold を block する場合だけ上げる。

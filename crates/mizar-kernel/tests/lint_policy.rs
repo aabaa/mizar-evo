@@ -1,6 +1,7 @@
 use std::{
     fs,
     path::{Path, PathBuf},
+    process::{Command, Stdio},
 };
 
 #[test]
@@ -154,16 +155,23 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
     assert_eq!(
         source_files,
         [
+            "src/certificate_parser/tests.rs",
             "src/certificate_parser.rs",
+            "src/checker/tests.rs",
             "src/checker.rs",
+            "src/clause/tests.rs",
             "src/clause.rs",
             "src/lib.rs",
+            "src/rejection/tests.rs",
             "src/rejection.rs",
+            "src/resolution_trace/tests.rs",
             "src/resolution_trace.rs",
+            "src/substitution_checker/tests.rs",
             "src/substitution_checker.rs",
         ],
         "kernel source modules require their \
-         paired English/Japanese specs first, found {source_files:?}"
+         paired English/Japanese specs first, and private task-22 test modules \
+         must stay under their spec-backed parent modules, found {source_files:?}"
     );
     for spec in [
         workspace_root().join("doc/design/mizar-kernel/en/certificate_parser.md"),
@@ -371,6 +379,56 @@ fn source_spec_audit_covers_public_surface_and_prohibitions() {
                 );
             }
         }
+    }
+}
+
+#[test]
+fn task_22_private_tests_are_tracked_and_source_spec_traceable() {
+    for path in [
+        "crates/mizar-kernel/src/certificate_parser/tests.rs",
+        "crates/mizar-kernel/src/checker/tests.rs",
+        "crates/mizar-kernel/src/clause/tests.rs",
+        "crates/mizar-kernel/src/rejection/tests.rs",
+        "crates/mizar-kernel/src/resolution_trace/tests.rs",
+        "crates/mizar-kernel/src/substitution_checker/tests.rs",
+        "doc/design/mizar-kernel/en/module_boundary_audit.md",
+        "doc/design/mizar-kernel/ja/module_boundary_audit.md",
+    ] {
+        assert!(
+            workspace_root().join(path).exists(),
+            "task-22 split path must exist before commit: {path}"
+        );
+        assert!(
+            git_tracks(path),
+            "task-22 split path must be explicitly staged/tracked before \
+             verification can pass: {path}"
+        );
+    }
+
+    let expected_traceability_paths = [
+        "crates/mizar-kernel/src/certificate_parser/tests.rs",
+        "crates/mizar-kernel/src/checker/tests.rs",
+        "crates/mizar-kernel/src/checker/tests.rs",
+        "crates/mizar-kernel/src/checker/tests.rs",
+        "crates/mizar-kernel/src/clause/tests.rs",
+        "crates/mizar-kernel/src/rejection/tests.rs",
+        "crates/mizar-kernel/src/resolution_trace/tests.rs",
+        "crates/mizar-kernel/src/substitution_checker/tests.rs",
+        "crates/mizar-kernel/tests/lint_policy.rs",
+    ];
+
+    for audit_path in [
+        workspace_root().join("doc/design/mizar-kernel/en/source_spec_audit.md"),
+        workspace_root().join("doc/design/mizar-kernel/ja/source_spec_audit.md"),
+    ] {
+        let audit = read_to_string(&audit_path);
+        let documented_paths = documented_test_traceability_paths(&audit);
+        assert_eq!(
+            documented_paths,
+            expected_traceability_paths,
+            "{} must keep exact task-22 test traceability paths",
+            audit_path.display()
+        );
     }
 }
 
@@ -818,6 +876,28 @@ fn documented_public_items(module_section: &str) -> Vec<String> {
     items
 }
 
+fn documented_test_traceability_paths(audit: &str) -> Vec<String> {
+    let section = markdown_section(audit, "## Test Traceability")
+        .expect("source/spec audit missing ## Test Traceability");
+    section
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            if !trimmed.starts_with('|')
+                || trimmed.starts_with("|---")
+                || trimmed.contains("Module / boundary")
+            {
+                return None;
+            }
+            let columns = trimmed.split('|').map(str::trim).collect::<Vec<_>>();
+            let path = columns.get(2)?;
+            path.strip_prefix('`')
+                .and_then(|path| path.strip_suffix('`'))
+                .map(str::to_owned)
+        })
+        .collect()
+}
+
 fn top_level_public_items(source: &str) -> Vec<String> {
     let mut items = Vec::new();
     let mut brace_depth = 0usize;
@@ -962,6 +1042,19 @@ fn collect_rust_source_files(path: &Path, files: &mut Vec<PathBuf>) {
         let entry = entry.unwrap_or_else(|error| panic!("{}: {error}", path.display()));
         collect_rust_source_files(&entry.path(), files);
     }
+}
+
+fn git_tracks(relative_path: &str) -> bool {
+    Command::new("git")
+        .arg("ls-files")
+        .arg("--error-unmatch")
+        .arg(relative_path)
+        .current_dir(workspace_root())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .unwrap_or_else(|error| panic!("git ls-files failed for {relative_path}: {error}"))
+        .success()
 }
 
 fn public_semantic_declarations(source: &str) -> Vec<String> {
