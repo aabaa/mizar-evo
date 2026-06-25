@@ -199,12 +199,12 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       architecture 17. Upstream `mizar-checker` trace production remains an
       `external_dependency_gap` unless a ready payload contract exists.
 
-16. **Kernel check service and deterministic batch ordering.** [ ]
+16. **Kernel check service and deterministic batch ordering.** [~]
     - Implement the service API: one certificate in, one trusted result out;
-      batch checking with deterministic result ordering independent of
-      completion order (internal 04 "Kernel Check Scheduling").
+      in-crate batch checking with deterministic result ordering by target VC
+      fingerprint and caller input order for equal targets.
     - Tests: service round-trips; batch order determinism under shuffled
-      completion.
+      caller input order and equal-target ties.
     - Deps: 9, 12, 14, 15. Spec: `checker.md`,
       [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md).
 

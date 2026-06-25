@@ -1,12 +1,23 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    certificate_parser::{Fingerprint, ImportedFactRef, ParsedCertificate, RequiredProofStatus},
+    certificate_parser::{
+        ClauseRef, ClauseRefNamespace, FinalGoalNamespace, Fingerprint, ImportedFactRef,
+        ParsedCertificate, RequiredProofStatus,
+    },
     clause::{Clause, ClauseError, ClauseProfile, ClauseValidationContext},
     rejection::{
         RejectionCategory, RejectionDetail, RejectionLocation, RejectionRecord, TargetVcFingerprint,
     },
-    resolution_trace::{ImportedClauseContext, ImportedClauseContextError, ImportedClauseEntry},
+    resolution_trace::{
+        CheckedResolutionStep, ImportedClauseContext, ImportedClauseContextError,
+        ImportedClauseEntry, ResolutionReplayLimits, ResolutionReplayReport, ResolutionTraceInput,
+        checked_resolution_final_goal, replay_resolution_trace,
+    },
+    substitution_checker::{
+        CheckedSubstitution, SubstitutionCheckInput, SubstitutionContext, SubstitutionReplayLimits,
+        checked_substitutions_for_input, replay_substitutions,
+    },
 };
 
 pub const SUPPORTED_NORMALIZED_CLAUSE_FINGERPRINT_ALGORITHM_ID: u8 = 1;
@@ -667,19 +678,539 @@ fn rejection(
     detail: RejectionDetail,
     location: RejectionLocation,
 ) -> Box<RejectionRecord> {
+    rejection_with_category(target, RejectionCategory::KernelRejection, detail, location)
+}
+
+fn rejection_with_category(
+    target: &TargetVcFingerprint,
+    category: RejectionCategory,
+    detail: RejectionDetail,
+    location: RejectionLocation,
+) -> Box<RejectionRecord> {
     Box::new(
-        RejectionRecord::new(
-            target.clone(),
-            RejectionCategory::KernelRejection,
-            detail,
-            location,
-        )
-        .expect("imported fact checker uses valid kernel rejection detail mappings"),
+        RejectionRecord::new(target.clone(), category, detail, location)
+            .expect("checker uses valid rejection detail mappings"),
     )
 }
 
 fn imported_location(imported_fact_id: u32) -> RejectionLocation {
     RejectionLocation::new().with_imported_fact_id(imported_fact_id)
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct KernelCheckInput<'a> {
+    pub target_vc_fingerprint: &'a TargetVcFingerprint,
+    pub certificate: &'a ParsedCertificate,
+    pub imported_fact_context: Option<&'a ImportedFactContext>,
+    pub substitution_context: Option<&'a SubstitutionContext>,
+    pub cluster_trace_context: Option<&'a ClusterTraceContext>,
+    pub requested_cluster_trace_steps: &'a [u32],
+    pub policy: KernelCheckPolicy,
+    pub limits: KernelCheckLimits,
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
+pub struct KernelCheckPolicy {
+    pub imported_fact_policy: ImportedFactPolicy,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct KernelCheckLimits {
+    pub imported_facts: ImportedFactCheckLimits,
+    pub substitutions: SubstitutionReplayLimits,
+    pub resolution: ResolutionReplayLimits,
+    pub cluster_trace: ClusterTraceReplayLimits,
+    pub max_pipeline_steps: usize,
+    pub max_derived_facts: usize,
+    pub max_report_records: usize,
+}
+
+impl Default for KernelCheckLimits {
+    fn default() -> Self {
+        Self {
+            imported_facts: ImportedFactCheckLimits::default(),
+            substitutions: SubstitutionReplayLimits::default(),
+            resolution: ResolutionReplayLimits::default(),
+            cluster_trace: ClusterTraceReplayLimits::default(),
+            max_pipeline_steps: usize::MAX,
+            max_derived_facts: usize::MAX,
+            max_report_records: usize::MAX,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct KernelCheckResult {
+    target_vc_fingerprint: TargetVcFingerprint,
+    status: KernelCheckStatus,
+    checked_imports: Vec<CheckedImportedFact>,
+    checked_substitutions: Vec<CheckedSubstitution>,
+    checked_resolution_steps: Vec<CheckedResolutionStep>,
+    checked_cluster_steps: Vec<CheckedClusterStep>,
+    checked_reduction_steps: Vec<CheckedReductionStep>,
+    checked_derived_facts: Vec<CheckedDerivedFact>,
+    final_goal: Option<CheckedFinalGoal>,
+    used_axioms: Vec<UsedAxiom>,
+    policy_taint: bool,
+    rejections: Vec<RejectionRecord>,
+}
+
+impl KernelCheckResult {
+    #[must_use]
+    pub const fn target_vc_fingerprint(&self) -> &TargetVcFingerprint {
+        &self.target_vc_fingerprint
+    }
+
+    #[must_use]
+    pub const fn status(&self) -> KernelCheckStatus {
+        self.status
+    }
+
+    #[must_use]
+    pub fn checked_imports(&self) -> &[CheckedImportedFact] {
+        &self.checked_imports
+    }
+
+    #[must_use]
+    pub fn checked_substitutions(&self) -> &[CheckedSubstitution] {
+        &self.checked_substitutions
+    }
+
+    #[must_use]
+    pub fn checked_resolution_steps(&self) -> &[CheckedResolutionStep] {
+        &self.checked_resolution_steps
+    }
+
+    #[must_use]
+    pub fn checked_cluster_steps(&self) -> &[CheckedClusterStep] {
+        &self.checked_cluster_steps
+    }
+
+    #[must_use]
+    pub fn checked_reduction_steps(&self) -> &[CheckedReductionStep] {
+        &self.checked_reduction_steps
+    }
+
+    #[must_use]
+    pub fn checked_derived_facts(&self) -> &[CheckedDerivedFact] {
+        &self.checked_derived_facts
+    }
+
+    #[must_use]
+    pub const fn final_goal(&self) -> Option<CheckedFinalGoal> {
+        self.final_goal
+    }
+
+    #[must_use]
+    pub fn used_axioms(&self) -> &[UsedAxiom] {
+        &self.used_axioms
+    }
+
+    #[must_use]
+    pub const fn policy_taint(&self) -> bool {
+        self.policy_taint
+    }
+
+    #[must_use]
+    pub fn rejections(&self) -> &[RejectionRecord] {
+        &self.rejections
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum KernelCheckStatus {
+    Accepted,
+    Rejected,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CheckedDerivedFact {
+    pub derived_fact_id: u32,
+    pub source_clause_ref: ClauseRef,
+    pub payload_fingerprint: Fingerprint,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct CheckedFinalGoal {
+    pub namespace: FinalGoalNamespace,
+    pub id: u32,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct UsedAxiom {
+    pub namespace: ImportedFactNamespace,
+    pub imported_fact_id: u32,
+    pub statement_fingerprint: Fingerprint,
+}
+
+pub type KernelCheckServiceResult<T> = Result<T, Box<RejectionRecord>>;
+
+pub fn check_kernel_certificate(input: KernelCheckInput<'_>) -> KernelCheckResult {
+    match check_kernel_certificate_inner(input) {
+        Ok(result) => result,
+        Err(rejection) => rejected_kernel_result(input.target_vc_fingerprint, *rejection),
+    }
+}
+
+pub fn check_kernel_batch(inputs: &[KernelCheckInput<'_>]) -> Vec<KernelCheckResult> {
+    let mut results: Vec<(usize, KernelCheckResult)> = inputs
+        .iter()
+        .copied()
+        .enumerate()
+        .map(|(input_order, input)| (input_order, check_kernel_certificate(input)))
+        .collect();
+    results.sort_by(|(left_order, left), (right_order, right)| {
+        left.target_vc_fingerprint
+            .cmp(&right.target_vc_fingerprint)
+            .then_with(|| left_order.cmp(right_order))
+    });
+    results.into_iter().map(|(_, result)| result).collect()
+}
+
+fn check_kernel_certificate_inner(
+    input: KernelCheckInput<'_>,
+) -> KernelCheckServiceResult<KernelCheckResult> {
+    let mut budget = KernelPipelineBudget::new(input.limits.max_pipeline_steps);
+    budget.step(input, "target_vc")?;
+    validate_target_binding(input)?;
+
+    budget.step(input, "imported_fact_context")?;
+    let imported_report = check_imported_facts(ImportedFactCheckInput {
+        target_vc_fingerprint: input.target_vc_fingerprint,
+        certificate: input.certificate,
+        imported_fact_context: input.imported_fact_context,
+        policy: input.policy.imported_fact_policy,
+        limits: input.limits.imported_facts,
+    })?;
+
+    budget.step(input, "substitution_context")?;
+    let substitution_input = SubstitutionCheckInput {
+        target_vc_fingerprint: input.target_vc_fingerprint,
+        certificate: input.certificate,
+        substitution_context: input.substitution_context,
+        limits: input.limits.substitutions,
+    };
+    let substitution_report = replay_substitutions(substitution_input)?;
+    let checked_substitutions =
+        checked_substitutions_for_input(substitution_input, &substitution_report)?;
+
+    budget.step(input, "resolution_trace")?;
+    let resolution_input = ResolutionTraceInput {
+        target_vc_fingerprint: input.target_vc_fingerprint,
+        certificate: input.certificate,
+        imported_clause_context: Some(imported_report.imported_clause_context()),
+        limits: input.limits.resolution,
+    };
+    let resolution_report = replay_resolution_trace(resolution_input)?;
+
+    budget.step(input, "cluster_trace_context")?;
+    let checked_fact_context =
+        checked_fact_context_for_cluster(input, &imported_report, &resolution_report)?;
+    let cluster_report = replay_cluster_trace(ClusterTraceReplayInput {
+        target_vc_fingerprint: input.target_vc_fingerprint,
+        checked_fact_context: &checked_fact_context,
+        cluster_trace_context: input.cluster_trace_context,
+        requested_trace_steps: input.requested_cluster_trace_steps,
+        limits: input.limits.cluster_trace,
+    })?;
+
+    budget.step(input, "derived_facts")?;
+    validate_derived_facts(input)?;
+
+    budget.step(input, "final_goal")?;
+    let final_goal = checked_final_goal(input, resolution_input, &resolution_report)?;
+
+    validate_report_record_count(
+        input,
+        ReportRecordCounts {
+            imports: imported_report.checked_imports().len(),
+            substitutions: checked_substitutions.len(),
+            resolution_steps: resolution_report.checked_steps().len(),
+            cluster_steps: cluster_report.checked_cluster_steps().len(),
+            reduction_steps: cluster_report.checked_reduction_steps().len(),
+            derived_facts: 0,
+            used_axioms: used_imported_fact_ids(input).len(),
+            final_goals: usize::from(final_goal.is_some()),
+        },
+    )?;
+    let used_axioms = used_axioms(input, imported_report.checked_imports());
+
+    Ok(KernelCheckResult {
+        target_vc_fingerprint: input.target_vc_fingerprint.clone(),
+        status: KernelCheckStatus::Accepted,
+        checked_imports: imported_report.checked_imports().to_vec(),
+        checked_substitutions: checked_substitutions.to_vec(),
+        checked_resolution_steps: resolution_report.checked_steps().to_vec(),
+        checked_cluster_steps: cluster_report.checked_cluster_steps().to_vec(),
+        checked_reduction_steps: cluster_report.checked_reduction_steps().to_vec(),
+        checked_derived_facts: Vec::new(),
+        final_goal,
+        used_axioms,
+        policy_taint: imported_report.policy_taint(),
+        rejections: Vec::new(),
+    })
+}
+
+fn validate_target_binding(input: KernelCheckInput<'_>) -> KernelCheckServiceResult<()> {
+    let certificate_target =
+        TargetVcFingerprint::from_certificate_fingerprint(&input.certificate.target_vc);
+    if &certificate_target == input.target_vc_fingerprint {
+        Ok(())
+    } else {
+        Err(rejection_with_category(
+            input.target_vc_fingerprint,
+            RejectionCategory::CertificateRejection,
+            RejectionDetail::ContextMismatch,
+            RejectionLocation::new().with_field_path("target_vc"),
+        ))
+    }
+}
+
+fn checked_fact_context_for_cluster(
+    input: KernelCheckInput<'_>,
+    imported_report: &ImportedFactCheckReport,
+    resolution_report: &ResolutionReplayReport<'_>,
+) -> KernelCheckServiceResult<CheckedFactContext> {
+    let imported_axioms = imported_report
+        .checked_imports()
+        .iter()
+        .filter(|import| import.namespace == ImportedFactNamespace::ImportedAxiom)
+        .map(|import| import.imported_fact_id)
+        .collect();
+    let imported_theorems = imported_report
+        .checked_imports()
+        .iter()
+        .filter(|import| import.namespace == ImportedFactNamespace::ImportedTheorem)
+        .map(|import| import.imported_fact_id)
+        .collect();
+    let generated_clauses = resolution_report
+        .checked_steps()
+        .iter()
+        .map(|step| step.generated_clause_id)
+        .collect::<BTreeSet<_>>()
+        .into_iter()
+        .collect();
+    CheckedFactContext::new(imported_axioms, imported_theorems, generated_clauses).map_err(|_| {
+        rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::InvalidSatProof,
+            RejectionLocation::new().with_field_path("checked_fact_context"),
+        )
+    })
+}
+
+fn validate_derived_facts(input: KernelCheckInput<'_>) -> KernelCheckServiceResult<()> {
+    if input.certificate.derived_facts.len() > input.limits.max_derived_facts {
+        return Err(rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::ResourceExhaustion,
+            RejectionLocation::new().with_field_path("derived_facts"),
+        ));
+    }
+    if let Some(derived) = input.certificate.derived_facts.first() {
+        return Err(rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::InvalidSatProof,
+            RejectionLocation::new()
+                .with_derived_fact_id(derived.derived_fact_id)
+                .with_field_path("payload"),
+        ));
+    }
+    Ok(())
+}
+
+fn checked_final_goal(
+    input: KernelCheckInput<'_>,
+    resolution_input: ResolutionTraceInput<'_>,
+    resolution_report: &ResolutionReplayReport<'_>,
+) -> KernelCheckServiceResult<Option<CheckedFinalGoal>> {
+    if input.certificate.final_goal.namespace == FinalGoalNamespace::DerivedFact {
+        checked_resolution_final_goal(resolution_input, resolution_report)?;
+        return Err(rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::InvalidSatProof,
+            RejectionLocation::new()
+                .with_final_goal()
+                .with_derived_fact_id(input.certificate.final_goal.id),
+        ));
+    }
+    checked_resolution_final_goal(resolution_input, resolution_report)?;
+    Ok(Some(CheckedFinalGoal {
+        namespace: input.certificate.final_goal.namespace,
+        id: input.certificate.final_goal.id,
+    }))
+}
+
+fn used_axioms(
+    input: KernelCheckInput<'_>,
+    checked_imports: &[CheckedImportedFact],
+) -> Vec<UsedAxiom> {
+    let used_ids = used_imported_fact_ids(input);
+    checked_imports
+        .iter()
+        .filter(|import| used_ids.contains(&(import.namespace, import.imported_fact_id)))
+        .map(|import| UsedAxiom {
+            namespace: import.namespace,
+            imported_fact_id: import.imported_fact_id,
+            statement_fingerprint: import.statement_fingerprint.clone(),
+        })
+        .collect()
+}
+
+fn used_imported_fact_ids(input: KernelCheckInput<'_>) -> BTreeSet<(ImportedFactNamespace, u32)> {
+    let mut used = BTreeSet::new();
+    for step in &input.certificate.resolution_trace {
+        push_used_imported_clause_ref(&mut used, step.parent_a);
+        push_used_imported_clause_ref(&mut used, step.parent_b);
+    }
+    if let Some(context) = input.cluster_trace_context {
+        push_used_cluster_imports(&mut used, context, input.requested_cluster_trace_steps);
+    }
+    used
+}
+
+fn push_used_imported_clause_ref(
+    used: &mut BTreeSet<(ImportedFactNamespace, u32)>,
+    clause_ref: ClauseRef,
+) {
+    match clause_ref.namespace {
+        ClauseRefNamespace::ImportedAxiom => {
+            used.insert((ImportedFactNamespace::ImportedAxiom, clause_ref.id));
+        }
+        ClauseRefNamespace::ImportedTheorem => {
+            used.insert((ImportedFactNamespace::ImportedTheorem, clause_ref.id));
+        }
+        ClauseRefNamespace::GeneratedClause | ClauseRefNamespace::ResolutionStep => {}
+    }
+}
+
+fn push_used_cluster_imports(
+    used: &mut BTreeSet<(ImportedFactNamespace, u32)>,
+    context: &ClusterTraceContext,
+    requested_cluster_trace_steps: &[u32],
+) {
+    let mut visited = BTreeSet::new();
+    let mut stack = requested_cluster_trace_steps.to_vec();
+    while let Some(step_id) = stack.pop() {
+        if !visited.insert(step_id) {
+            continue;
+        }
+        let Some(step) = lookup_trace_step(context, step_id) else {
+            continue;
+        };
+        match step {
+            TraceStepEvidenceRef::Cluster(cluster) => {
+                push_used_checked_fact_ref(used, &mut stack, cluster.dependency);
+            }
+            TraceStepEvidenceRef::Reduction(reduction) => {
+                for guard in &reduction.discharged_guards {
+                    push_used_checked_fact_ref(used, &mut stack, guard.source_fact_ref);
+                    push_used_checked_fact_ref(used, &mut stack, guard.checked_dependency_ref);
+                }
+            }
+        }
+    }
+}
+
+fn push_used_checked_fact_ref(
+    used: &mut BTreeSet<(ImportedFactNamespace, u32)>,
+    stack: &mut Vec<u32>,
+    fact_ref: CheckedFactRef,
+) {
+    match fact_ref {
+        CheckedFactRef::ImportedAxiom(imported_fact_id) => {
+            used.insert((ImportedFactNamespace::ImportedAxiom, imported_fact_id));
+        }
+        CheckedFactRef::ImportedTheorem(imported_fact_id) => {
+            used.insert((ImportedFactNamespace::ImportedTheorem, imported_fact_id));
+        }
+        CheckedFactRef::TraceStep(step_id) => stack.push(step_id),
+        CheckedFactRef::GeneratedClause(_) => {}
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct ReportRecordCounts {
+    imports: usize,
+    substitutions: usize,
+    resolution_steps: usize,
+    cluster_steps: usize,
+    reduction_steps: usize,
+    derived_facts: usize,
+    used_axioms: usize,
+    final_goals: usize,
+}
+
+fn validate_report_record_count(
+    input: KernelCheckInput<'_>,
+    counts: ReportRecordCounts,
+) -> KernelCheckServiceResult<()> {
+    let total = counts
+        .imports
+        .checked_add(counts.substitutions)
+        .and_then(|value| value.checked_add(counts.resolution_steps))
+        .and_then(|value| value.checked_add(counts.cluster_steps))
+        .and_then(|value| value.checked_add(counts.reduction_steps))
+        .and_then(|value| value.checked_add(counts.derived_facts))
+        .and_then(|value| value.checked_add(counts.used_axioms))
+        .and_then(|value| value.checked_add(counts.final_goals))
+        .unwrap_or(usize::MAX);
+    if total > input.limits.max_report_records {
+        return Err(rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::ResourceExhaustion,
+            RejectionLocation::new().with_field_path("checker_limits.max_report_records"),
+        ));
+    }
+    Ok(())
+}
+
+fn rejected_kernel_result(
+    target_vc_fingerprint: &TargetVcFingerprint,
+    rejection: RejectionRecord,
+) -> KernelCheckResult {
+    KernelCheckResult {
+        target_vc_fingerprint: target_vc_fingerprint.clone(),
+        status: KernelCheckStatus::Rejected,
+        checked_imports: Vec::new(),
+        checked_substitutions: Vec::new(),
+        checked_resolution_steps: Vec::new(),
+        checked_cluster_steps: Vec::new(),
+        checked_reduction_steps: Vec::new(),
+        checked_derived_facts: Vec::new(),
+        final_goal: None,
+        used_axioms: Vec::new(),
+        policy_taint: false,
+        rejections: vec![rejection],
+    }
+}
+
+struct KernelPipelineBudget {
+    remaining: usize,
+}
+
+impl KernelPipelineBudget {
+    const fn new(max_pipeline_steps: usize) -> Self {
+        Self {
+            remaining: max_pipeline_steps,
+        }
+    }
+
+    fn step(
+        &mut self,
+        input: KernelCheckInput<'_>,
+        field_path: &'static str,
+    ) -> KernelCheckServiceResult<()> {
+        if self.remaining == 0 {
+            return Err(rejection(
+                input.target_vc_fingerprint,
+                RejectionDetail::Timeout,
+                RejectionLocation::new().with_field_path(field_path),
+            ));
+        }
+        self.remaining -= 1;
+        Ok(())
+    }
 }
 
 const CLUSTER_FACT_DOMAIN_SEPARATOR: &[u8] = b"MIZAR_KERNEL_CLUSTER_FACT\0";
@@ -722,17 +1253,23 @@ pub struct ClusterTraceReplayInput<'a> {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CheckedFactContext {
-    imported_facts: Vec<u32>,
+    imported_axioms: Vec<u32>,
+    imported_theorems: Vec<u32>,
     generated_clauses: Vec<u32>,
 }
 
 impl CheckedFactContext {
     pub fn new(
-        imported_facts: Vec<u32>,
+        imported_axioms: Vec<u32>,
+        imported_theorems: Vec<u32>,
         generated_clauses: Vec<u32>,
     ) -> Result<Self, ClusterTraceContextError> {
         Ok(Self {
-            imported_facts: canonical_ids(BaseFactNamespace::ImportedFact, imported_facts)?,
+            imported_axioms: canonical_ids(BaseFactNamespace::ImportedAxiom, imported_axioms)?,
+            imported_theorems: canonical_ids(
+                BaseFactNamespace::ImportedTheorem,
+                imported_theorems,
+            )?,
             generated_clauses: canonical_ids(
                 BaseFactNamespace::GeneratedClause,
                 generated_clauses,
@@ -741,8 +1278,13 @@ impl CheckedFactContext {
     }
 
     #[must_use]
-    pub fn imported_facts(&self) -> &[u32] {
-        &self.imported_facts
+    pub fn imported_axioms(&self) -> &[u32] {
+        &self.imported_axioms
+    }
+
+    #[must_use]
+    pub fn imported_theorems(&self) -> &[u32] {
+        &self.imported_theorems
     }
 
     #[must_use]
@@ -815,7 +1357,8 @@ pub enum ClusterTraceContextError {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum BaseFactNamespace {
-    ImportedFact,
+    ImportedAxiom,
+    ImportedTheorem,
     GeneratedClause,
 }
 
@@ -863,7 +1406,8 @@ pub struct GuardEvidence {
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum CheckedFactRef {
-    ImportedFact(u32),
+    ImportedAxiom(u32),
+    ImportedTheorem(u32),
     GeneratedClause(u32),
     TraceStep(u32),
 }
@@ -1152,9 +1696,14 @@ fn require_checked_dependency(
     location: RejectionLocation,
 ) -> ClusterTraceReplayResult<()> {
     let checked = match dependency {
-        CheckedFactRef::ImportedFact(id) => input
+        CheckedFactRef::ImportedAxiom(id) => input
             .checked_fact_context
-            .imported_facts()
+            .imported_axioms()
+            .binary_search(&id)
+            .is_ok(),
+        CheckedFactRef::ImportedTheorem(id) => input
+            .checked_fact_context
+            .imported_theorems()
             .binary_search(&id)
             .is_ok(),
         CheckedFactRef::GeneratedClause(id) => input
@@ -1502,7 +2051,7 @@ fn push_bytes_field(bytes: &mut Vec<u8>, value: &[u8]) {
 
 fn push_dependency_ref(bytes: &mut Vec<u8>, dependency: CheckedFactRef) {
     match dependency {
-        CheckedFactRef::ImportedFact(id) => {
+        CheckedFactRef::ImportedAxiom(id) => {
             bytes.push(1);
             bytes.extend_from_slice(&id.to_be_bytes());
         }
@@ -1512,6 +2061,10 @@ fn push_dependency_ref(bytes: &mut Vec<u8>, dependency: CheckedFactRef) {
         }
         CheckedFactRef::TraceStep(id) => {
             bytes.push(3);
+            bytes.extend_from_slice(&id.to_be_bytes());
+        }
+        CheckedFactRef::ImportedTheorem(id) => {
+            bytes.push(4);
             bytes.extend_from_slice(&id.to_be_bytes());
         }
     }
@@ -1652,12 +2205,16 @@ mod tests {
     use super::*;
     use crate::{
         certificate_parser::{
-            ClauseTautologyPolicy, FinalGoalNamespace, FinalGoalRef, KernelProfileRecord,
-            ParsedCertificateTestParts, SymbolManifestEntry, VariableManifestEntry,
+            ClauseRefNamespace, ClauseTautologyPolicy, DerivedFact, FinalGoalNamespace,
+            FinalGoalRef, GeneratedClause, KernelProfileRecord, ParsedCertificateTestParts,
+            ResolutionStep, SubstitutionEntry, SymbolManifestEntry, VariableManifestEntry,
         },
         clause::{
             Atom, ClauseForm, Literal, Polarity, SymbolId, SymbolKey, SymbolKind, TautologyPolicy,
             Term, VariableId,
+        },
+        substitution_checker::{
+            Replacement, SubstitutionPayload, SubstitutionPayloadEntry, TermPath,
         },
     };
 
@@ -1665,7 +2222,7 @@ mod tests {
     fn valid_cluster_and_reduction_trace_replays_in_trace_order() {
         let target = TargetVcFingerprint::new(1, vec![42]);
         let facts = checked_fact_context();
-        let mut cluster = cluster_step(2, CheckedFactRef::ImportedFact(1));
+        let mut cluster = cluster_step(2, CheckedFactRef::ImportedAxiom(1));
         cluster.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&cluster);
         let mut reduction = reduction_step(4, CheckedFactRef::TraceStep(2));
         reduction.strategy_audit_key = expected_strategy_audit_key(&reduction);
@@ -1706,7 +2263,7 @@ mod tests {
         assert_eq!(missing.detail(), RejectionDetail::MissingProvenance);
         assert_eq!(missing.location().field_path, Some("cluster_trace_context"));
 
-        let mut cluster = cluster_step(1, CheckedFactRef::ImportedFact(1));
+        let mut cluster = cluster_step(1, CheckedFactRef::ImportedAxiom(1));
         cluster.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&cluster);
         let context = ClusterTraceContext::new(
             Some(Vec::new()),
@@ -1776,7 +2333,7 @@ mod tests {
             Some("dependency")
         );
 
-        let mut mutated_fact = cluster_step(2, CheckedFactRef::ImportedFact(1));
+        let mut mutated_fact = cluster_step(2, CheckedFactRef::ImportedAxiom(1));
         mutated_fact.generated_fact_fingerprint = b"wrong".to_vec();
         let context = ClusterTraceContext::new(
             Some(vec![1]),
@@ -1799,7 +2356,7 @@ mod tests {
         let target = TargetVcFingerprint::new(1, vec![42]);
         let facts = checked_fact_context();
 
-        let mut missing_guard = reduction_step(1, CheckedFactRef::ImportedFact(1));
+        let mut missing_guard = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
         missing_guard.required_guard_ids = vec![1, 2];
         missing_guard.strategy_audit_key = expected_strategy_audit_key(&missing_guard);
         missing_guard.result_fingerprint = expected_reduction_result_fingerprint(&missing_guard);
@@ -1815,7 +2372,7 @@ mod tests {
         assert_eq!(guard_error.detail(), RejectionDetail::InvalidClusterTrace);
         assert_eq!(guard_error.location().field_path, Some("discharged_guards"));
 
-        let mut bad_audit = reduction_step(1, CheckedFactRef::ImportedFact(1));
+        let mut bad_audit = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
         bad_audit.strategy_audit_key = b"bad-audit".to_vec();
         bad_audit.result_fingerprint = expected_reduction_result_fingerprint(&bad_audit);
         let context =
@@ -1828,7 +2385,7 @@ mod tests {
             Some("strategy_audit_key")
         );
 
-        let mut bad_result = reduction_step(1, CheckedFactRef::ImportedFact(1));
+        let mut bad_result = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
         bad_result.strategy_audit_key = expected_strategy_audit_key(&bad_result);
         bad_result.result_fingerprint = b"bad-result".to_vec();
         let context = ClusterTraceContext::new(
@@ -1848,7 +2405,7 @@ mod tests {
 
     #[test]
     fn cluster_trace_context_is_bounded_sorted_and_unique() {
-        let mut first = cluster_step(1, CheckedFactRef::ImportedFact(1));
+        let mut first = cluster_step(1, CheckedFactRef::ImportedAxiom(1));
         first.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&first);
         let mut second = cluster_step(3, CheckedFactRef::GeneratedClause(7));
         second.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&second);
@@ -1871,7 +2428,7 @@ mod tests {
         let duplicate = ClusterTraceContext::new(
             Some(vec![1]),
             vec![first],
-            vec![reduction_step(1, CheckedFactRef::ImportedFact(1))],
+            vec![reduction_step(1, CheckedFactRef::ImportedAxiom(1))],
             cluster_limits(),
         )
         .expect_err("cross namespace duplicate");
@@ -1900,9 +2457,9 @@ mod tests {
     fn cluster_trace_replays_only_requested_steps_and_dependencies() {
         let target = TargetVcFingerprint::new(1, vec![42]);
         let facts = checked_fact_context();
-        let mut requested = cluster_step(1, CheckedFactRef::ImportedFact(1));
+        let mut requested = cluster_step(1, CheckedFactRef::ImportedAxiom(1));
         requested.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&requested);
-        let mut unused_malformed = cluster_step(3, CheckedFactRef::ImportedFact(1));
+        let mut unused_malformed = cluster_step(3, CheckedFactRef::ImportedAxiom(1));
         unused_malformed.generated_fact_fingerprint = b"wrong".to_vec();
         let context = ClusterTraceContext::new(
             Some(vec![1]),
@@ -1928,7 +2485,7 @@ mod tests {
     fn cluster_trace_closes_requested_dependencies_in_global_order() {
         let target = TargetVcFingerprint::new(1, vec![42]);
         let facts = checked_fact_context();
-        let mut base_cluster = cluster_step(2, CheckedFactRef::ImportedFact(1));
+        let mut base_cluster = cluster_step(2, CheckedFactRef::ImportedAxiom(1));
         base_cluster.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&base_cluster);
         let mut reduction = reduction_step(4, CheckedFactRef::TraceStep(2));
         reduction.strategy_audit_key = expected_strategy_audit_key(&reduction);
@@ -1975,7 +2532,7 @@ mod tests {
         let target = TargetVcFingerprint::new(1, vec![42]);
         let facts = checked_fact_context();
 
-        let mut missing_import = cluster_step(1, CheckedFactRef::ImportedFact(99));
+        let mut missing_import = cluster_step(1, CheckedFactRef::ImportedAxiom(99));
         missing_import.generated_fact_fingerprint =
             expected_cluster_fact_fingerprint(&missing_import);
         let context = ClusterTraceContext::new(
@@ -2014,18 +2571,18 @@ mod tests {
         let target = TargetVcFingerprint::new(1, vec![42]);
         let facts = checked_fact_context();
 
-        let mut order_insensitive = reduction_step(1, CheckedFactRef::ImportedFact(1));
+        let mut order_insensitive = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
         order_insensitive.required_guard_ids = vec![2, 1];
         order_insensitive.discharged_guards = vec![
             GuardEvidence {
                 guard_id: 1,
-                source_fact_ref: CheckedFactRef::ImportedFact(1),
+                source_fact_ref: CheckedFactRef::ImportedAxiom(1),
                 checked_dependency_ref: CheckedFactRef::GeneratedClause(7),
             },
             GuardEvidence {
                 guard_id: 2,
                 source_fact_ref: CheckedFactRef::GeneratedClause(7),
-                checked_dependency_ref: CheckedFactRef::ImportedFact(1),
+                checked_dependency_ref: CheckedFactRef::ImportedAxiom(1),
             },
         ];
         order_insensitive.strategy_audit_key = expected_strategy_audit_key(&order_insensitive);
@@ -2041,11 +2598,11 @@ mod tests {
         replay_cluster_trace(cluster_input(&target, &facts, Some(&context)))
             .expect("guard ids match independent of evidence order");
 
-        let mut extra_guard = reduction_step(1, CheckedFactRef::ImportedFact(1));
+        let mut extra_guard = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
         extra_guard.discharged_guards.push(GuardEvidence {
             guard_id: 2,
-            source_fact_ref: CheckedFactRef::ImportedFact(1),
-            checked_dependency_ref: CheckedFactRef::ImportedFact(1),
+            source_fact_ref: CheckedFactRef::ImportedAxiom(1),
+            checked_dependency_ref: CheckedFactRef::ImportedAxiom(1),
         });
         extra_guard.strategy_audit_key = expected_strategy_audit_key(&extra_guard);
         extra_guard.result_fingerprint = expected_reduction_result_fingerprint(&extra_guard);
@@ -2060,12 +2617,12 @@ mod tests {
             .expect_err("extra guard id");
         assert_eq!(extra_error.location().field_path, Some("discharged_guards"));
 
-        let mut duplicate_guard = reduction_step(1, CheckedFactRef::ImportedFact(1));
+        let mut duplicate_guard = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
         duplicate_guard.required_guard_ids = vec![1, 1];
         duplicate_guard.discharged_guards.push(GuardEvidence {
             guard_id: 1,
-            source_fact_ref: CheckedFactRef::ImportedFact(1),
-            checked_dependency_ref: CheckedFactRef::ImportedFact(1),
+            source_fact_ref: CheckedFactRef::ImportedAxiom(1),
+            checked_dependency_ref: CheckedFactRef::ImportedAxiom(1),
         });
         duplicate_guard.strategy_audit_key = expected_strategy_audit_key(&duplicate_guard);
         duplicate_guard.result_fingerprint =
@@ -2084,7 +2641,7 @@ mod tests {
             Some("discharged_guards")
         );
 
-        let mut bad_source = reduction_step(1, CheckedFactRef::ImportedFact(99));
+        let mut bad_source = reduction_step(1, CheckedFactRef::ImportedAxiom(99));
         bad_source.strategy_audit_key = expected_strategy_audit_key(&bad_source);
         bad_source.result_fingerprint = expected_reduction_result_fingerprint(&bad_source);
         let context = ClusterTraceContext::new(
@@ -2101,7 +2658,7 @@ mod tests {
             Some("guard.source_fact_ref")
         );
 
-        let mut bad_checked = reduction_step(1, CheckedFactRef::ImportedFact(1));
+        let mut bad_checked = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
         bad_checked.discharged_guards[0].checked_dependency_ref =
             CheckedFactRef::GeneratedClause(99);
         bad_checked.strategy_audit_key = expected_strategy_audit_key(&bad_checked);
@@ -2125,9 +2682,9 @@ mod tests {
     fn unused_context_entries_are_ignored_after_bounded_construction() {
         let target = TargetVcFingerprint::new(1, vec![42]);
         let facts = checked_fact_context();
-        let mut requested = cluster_step(1, CheckedFactRef::ImportedFact(1));
+        let mut requested = cluster_step(1, CheckedFactRef::ImportedAxiom(1));
         requested.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&requested);
-        let unused_malformed_reduction = reduction_step(3, CheckedFactRef::ImportedFact(99));
+        let unused_malformed_reduction = reduction_step(3, CheckedFactRef::ImportedAxiom(99));
         let context = ClusterTraceContext::new(
             Some(vec![1]),
             vec![requested],
@@ -2149,7 +2706,7 @@ mod tests {
         let duplicate_cluster = ClusterTraceContext::new(
             Some(vec![1]),
             vec![
-                cluster_step(1, CheckedFactRef::ImportedFact(1)),
+                cluster_step(1, CheckedFactRef::ImportedAxiom(1)),
                 cluster_step(1, CheckedFactRef::GeneratedClause(7)),
             ],
             Vec::new(),
@@ -2165,7 +2722,7 @@ mod tests {
             Some(vec![1]),
             Vec::new(),
             vec![
-                reduction_step(1, CheckedFactRef::ImportedFact(1)),
+                reduction_step(1, CheckedFactRef::ImportedAxiom(1)),
                 reduction_step(1, CheckedFactRef::GeneratedClause(7)),
             ],
             cluster_limits(),
@@ -2176,20 +2733,20 @@ mod tests {
             ClusterTraceContextError::DuplicateReductionStep { step_id: 1 }
         );
 
-        let base_duplicate = CheckedFactContext::new(vec![1, 1], Vec::new())
+        let base_duplicate = CheckedFactContext::new(vec![1, 1], Vec::new(), Vec::new())
             .expect_err("duplicate imported base fact");
         assert_eq!(
             base_duplicate,
             ClusterTraceContextError::DuplicateBaseFact {
-                namespace: BaseFactNamespace::ImportedFact,
+                namespace: BaseFactNamespace::ImportedAxiom,
                 id: 1
             }
         );
 
-        let mut first = reduction_step(1, CheckedFactRef::ImportedFact(1));
+        let mut first = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
         first.strategy_audit_key = expected_strategy_audit_key(&first);
         first.result_fingerprint = expected_reduction_result_fingerprint(&first);
-        let mut second = reduction_step(3, CheckedFactRef::ImportedFact(1));
+        let mut second = reduction_step(3, CheckedFactRef::ImportedAxiom(1));
         second.strategy_audit_key = expected_strategy_audit_key(&second);
         second.result_fingerprint = expected_reduction_result_fingerprint(&second);
         let context = ClusterTraceContext::new(
@@ -2213,7 +2770,7 @@ mod tests {
     fn cluster_trace_runtime_limits_are_resource_exhaustion() {
         let target = TargetVcFingerprint::new(1, vec![42]);
         let facts = checked_fact_context();
-        let mut cluster = cluster_step(1, CheckedFactRef::ImportedFact(1));
+        let mut cluster = cluster_step(1, CheckedFactRef::ImportedAxiom(1));
         cluster.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&cluster);
         let context =
             ClusterTraceContext::new(Some(vec![1]), vec![cluster], Vec::new(), cluster_limits())
@@ -2225,7 +2782,7 @@ mod tests {
 
         assert_eq!(error.detail(), RejectionDetail::ResourceExhaustion);
 
-        let mut reduction = reduction_step(1, CheckedFactRef::ImportedFact(1));
+        let mut reduction = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
         reduction.required_guard_ids = vec![1];
         reduction.discharged_guards.clear();
         reduction.strategy_audit_key = expected_strategy_audit_key(&reduction);
@@ -2261,7 +2818,7 @@ mod tests {
             Some("requested_trace_steps")
         );
 
-        let mut dependency = cluster_step(1, CheckedFactRef::ImportedFact(1));
+        let mut dependency = cluster_step(1, CheckedFactRef::ImportedAxiom(1));
         dependency.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&dependency);
         let mut requested = cluster_step(2, CheckedFactRef::TraceStep(1));
         requested.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&requested);
@@ -2282,7 +2839,7 @@ mod tests {
             Some("requested_trace_steps")
         );
 
-        let mut reduction = reduction_step(1, CheckedFactRef::ImportedFact(1));
+        let mut reduction = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
         reduction.strategy_audit_key = expected_strategy_audit_key(&reduction);
         reduction.result_fingerprint = expected_reduction_result_fingerprint(&reduction);
         let context =
@@ -2298,7 +2855,7 @@ mod tests {
             Some("cluster_trace_context.reduction_steps")
         );
 
-        let mut reduction = reduction_step(1, CheckedFactRef::ImportedFact(1));
+        let mut reduction = reduction_step(1, CheckedFactRef::ImportedAxiom(1));
         reduction.strategy_audit_key = expected_strategy_audit_key(&reduction);
         reduction.result_fingerprint = expected_reduction_result_fingerprint(&reduction);
         let context =
@@ -2310,7 +2867,7 @@ mod tests {
         assert_eq!(binding_error.detail(), RejectionDetail::ResourceExhaustion);
         assert_eq!(binding_error.location().field_path, Some("substitution"));
 
-        let mut cluster = cluster_step(1, CheckedFactRef::ImportedFact(1));
+        let mut cluster = cluster_step(1, CheckedFactRef::ImportedAxiom(1));
         cluster.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&cluster);
         let context =
             ClusterTraceContext::new(Some(vec![1]), vec![cluster], Vec::new(), cluster_limits())
@@ -2326,6 +2883,524 @@ mod tests {
         assert_eq!(
             commitment_error.location().field_path,
             Some("generated_fact_fingerprint")
+        );
+    }
+
+    #[test]
+    fn kernel_service_accepts_checked_pipeline_and_optional_cluster_trace() {
+        let (certificate, context) = resolution_service_fixture(vec![42]);
+        let target = TargetVcFingerprint::from_certificate_fingerprint(&certificate.target_vc);
+        let mut cluster = cluster_step(1, CheckedFactRef::ImportedAxiom(1));
+        cluster.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&cluster);
+        let cluster_context =
+            ClusterTraceContext::new(Some(vec![7]), vec![cluster], Vec::new(), cluster_limits())
+                .expect("cluster context");
+
+        let result = check_kernel_certificate(service_input(
+            &target,
+            &certificate,
+            &context,
+            Some(&cluster_context),
+            &[1],
+            KernelCheckPolicy::default(),
+            service_limits(),
+        ));
+
+        assert_eq!(result.status(), KernelCheckStatus::Accepted);
+        assert_eq!(result.checked_imports().len(), 1);
+        assert!(result.checked_substitutions().is_empty());
+        assert_eq!(result.checked_resolution_steps().len(), 1);
+        assert_eq!(result.checked_cluster_steps().len(), 1);
+        assert!(result.checked_derived_facts().is_empty());
+        assert_eq!(
+            result.final_goal(),
+            Some(CheckedFinalGoal {
+                namespace: FinalGoalNamespace::GeneratedClause,
+                id: 3
+            })
+        );
+        assert_eq!(result.used_axioms().len(), 1);
+        assert!(!result.policy_taint());
+        assert!(result.rejections().is_empty());
+
+        let (mut extra_import, _) = resolution_service_fixture(vec![42]);
+        let unused_clause = ordinary(vec![neg_p()]);
+        let unused = imported_ref(
+            9,
+            b"pkg",
+            b"mod",
+            b"unused",
+            clause_fingerprint(&unused_clause),
+            RequiredProofStatus::KernelVerified,
+        );
+        extra_import.imported_theorems.push(unused.clone());
+        let extra_context = ImportedFactContext::new(
+            Some(vec![1]),
+            vec![evidence(
+                &extra_import.imported_axioms[0],
+                AcceptedProofStatus::KernelVerified,
+                ordinary(vec![neg_p()]),
+            )],
+            vec![evidence(
+                &unused,
+                AcceptedProofStatus::KernelVerified,
+                unused_clause,
+            )],
+            context_limits(),
+        )
+        .expect("extra context");
+        let target = TargetVcFingerprint::from_certificate_fingerprint(&extra_import.target_vc);
+        let extra_result = check_kernel_certificate(service_input(
+            &target,
+            &extra_import,
+            &extra_context,
+            None,
+            &[],
+            KernelCheckPolicy::default(),
+            service_limits(),
+        ));
+        assert_eq!(
+            extra_result
+                .used_axioms()
+                .iter()
+                .map(|axiom| axiom.imported_fact_id)
+                .collect::<Vec<_>>(),
+            [1]
+        );
+    }
+
+    #[test]
+    fn kernel_service_preserves_import_namespaces_and_checks_substitutions() {
+        let (mut certificate, _) = resolution_service_fixture(vec![42]);
+        certificate.substitutions = vec![simple_substitution(1, var(1), var(2))];
+        let theorem_clause = ordinary(vec![pos_p()]);
+        let theorem = imported_ref(
+            1,
+            b"pkg",
+            b"mod",
+            b"theorem",
+            clause_fingerprint(&theorem_clause),
+            RequiredProofStatus::KernelVerified,
+        );
+        certificate.imported_theorems.push(theorem.clone());
+        let context = ImportedFactContext::new(
+            Some(vec![1]),
+            vec![evidence(
+                &certificate.imported_axioms[0],
+                AcceptedProofStatus::KernelVerified,
+                ordinary(vec![neg_p()]),
+            )],
+            vec![evidence(
+                &theorem,
+                AcceptedProofStatus::KernelVerified,
+                theorem_clause,
+            )],
+            context_limits(),
+        )
+        .expect("same numeric ids are allowed across imported namespaces");
+        let substitution_context = simple_substitution_context(1, var(2));
+        let mut cluster = cluster_step(1, CheckedFactRef::ImportedTheorem(1));
+        cluster.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&cluster);
+        let cluster_context =
+            ClusterTraceContext::new(Some(vec![7]), vec![cluster], Vec::new(), cluster_limits())
+                .expect("cluster context");
+        let target = TargetVcFingerprint::from_certificate_fingerprint(&certificate.target_vc);
+
+        let result = check_kernel_certificate(service_input_with_substitutions(
+            &target,
+            &certificate,
+            &context,
+            Some(&substitution_context),
+            Some(&cluster_context),
+            &[1],
+            service_limits(),
+        ));
+
+        assert_eq!(result.status(), KernelCheckStatus::Accepted);
+        assert_eq!(result.checked_imports().len(), 2);
+        assert_eq!(result.checked_substitutions().len(), 1);
+        assert_eq!(result.checked_substitutions()[0].substitution_id, 1);
+        assert_eq!(result.checked_cluster_steps().len(), 1);
+        assert_eq!(
+            result
+                .used_axioms()
+                .iter()
+                .map(|axiom| (axiom.namespace, axiom.imported_fact_id))
+                .collect::<Vec<_>>(),
+            [
+                (ImportedFactNamespace::ImportedAxiom, 1),
+                (ImportedFactNamespace::ImportedTheorem, 1)
+            ]
+        );
+
+        let missing_substitution_context = check_kernel_certificate(service_input(
+            &target,
+            &certificate,
+            &context,
+            None,
+            &[],
+            KernelCheckPolicy::default(),
+            service_limits(),
+        ));
+        assert_eq!(
+            missing_substitution_context.rejections()[0].detail(),
+            RejectionDetail::MissingProvenance
+        );
+        assert_eq!(
+            missing_substitution_context.rejections()[0]
+                .location()
+                .field_path,
+            Some("substitution_context")
+        );
+        assert_eq!(missing_substitution_context.rejections().len(), 1);
+    }
+
+    #[test]
+    fn kernel_service_treats_checked_generated_clause_ids_as_a_base_set() {
+        let (mut certificate, context) = resolution_service_fixture(vec![42]);
+        certificate.resolution_trace.push(resolution_step(
+            2,
+            clause_ref(ClauseRefNamespace::ImportedAxiom, 1),
+            clause_ref(ClauseRefNamespace::GeneratedClause, 2),
+            neg_p(),
+            clause_ref(ClauseRefNamespace::GeneratedClause, 3),
+        ));
+        let mut cluster = cluster_step(1, CheckedFactRef::GeneratedClause(3));
+        cluster.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&cluster);
+        let cluster_context =
+            ClusterTraceContext::new(Some(vec![7]), vec![cluster], Vec::new(), cluster_limits())
+                .expect("cluster context");
+        let target = TargetVcFingerprint::from_certificate_fingerprint(&certificate.target_vc);
+
+        let result = check_kernel_certificate(service_input(
+            &target,
+            &certificate,
+            &context,
+            Some(&cluster_context),
+            &[1],
+            KernelCheckPolicy::default(),
+            service_limits(),
+        ));
+
+        assert_eq!(result.status(), KernelCheckStatus::Accepted);
+        assert_eq!(result.checked_resolution_steps().len(), 2);
+        assert_eq!(result.checked_cluster_steps().len(), 1);
+    }
+
+    #[test]
+    fn kernel_service_rejects_target_final_goal_and_derived_fact_gaps() {
+        let (certificate, context) = resolution_service_fixture(vec![42]);
+        let wrong_target = TargetVcFingerprint::new(1, vec![99]);
+        let target_error = check_kernel_certificate(service_input(
+            &wrong_target,
+            &certificate,
+            &context,
+            None,
+            &[],
+            KernelCheckPolicy::default(),
+            service_limits(),
+        ));
+        assert_eq!(target_error.status(), KernelCheckStatus::Rejected);
+        assert_eq!(
+            target_error.rejections()[0].detail(),
+            RejectionDetail::ContextMismatch
+        );
+        assert_eq!(
+            target_error.rejections()[0].category(),
+            RejectionCategory::CertificateRejection
+        );
+
+        let (mut unchecked_final, context) = resolution_service_fixture(vec![42]);
+        unchecked_final.final_goal = FinalGoalRef {
+            namespace: FinalGoalNamespace::GeneratedClause,
+            id: 99,
+        };
+        let target = TargetVcFingerprint::from_certificate_fingerprint(&unchecked_final.target_vc);
+        let final_error = check_kernel_certificate(service_input(
+            &target,
+            &unchecked_final,
+            &context,
+            None,
+            &[],
+            KernelCheckPolicy::default(),
+            service_limits(),
+        ));
+        assert_eq!(final_error.status(), KernelCheckStatus::Rejected);
+        assert_eq!(
+            final_error.rejections()[0].detail(),
+            RejectionDetail::InvalidSatProof
+        );
+        assert!(final_error.rejections()[0].location().final_goal);
+
+        let (mut unchecked_present_final, context) = resolution_service_fixture(vec![42]);
+        unchecked_present_final.final_goal = FinalGoalRef {
+            namespace: FinalGoalNamespace::GeneratedClause,
+            id: 2,
+        };
+        let target =
+            TargetVcFingerprint::from_certificate_fingerprint(&unchecked_present_final.target_vc);
+        let unchecked_present_error = check_kernel_certificate(service_input(
+            &target,
+            &unchecked_present_final,
+            &context,
+            None,
+            &[],
+            KernelCheckPolicy::default(),
+            service_limits(),
+        ));
+        assert_eq!(
+            unchecked_present_error.rejections()[0].detail(),
+            RejectionDetail::InvalidSatProof
+        );
+        assert!(
+            unchecked_present_error.rejections()[0]
+                .location()
+                .final_goal
+        );
+
+        let (mut derived, context) = resolution_service_fixture(vec![42]);
+        derived.derived_facts.push(DerivedFact {
+            derived_fact_id: 1,
+            source: clause_ref(ClauseRefNamespace::ResolutionStep, 1),
+            payload: b"unsupported".to_vec(),
+        });
+        let target = TargetVcFingerprint::from_certificate_fingerprint(&derived.target_vc);
+        let derived_error = check_kernel_certificate(service_input(
+            &target,
+            &derived,
+            &context,
+            None,
+            &[],
+            KernelCheckPolicy::default(),
+            service_limits(),
+        ));
+        assert_eq!(
+            derived_error.rejections()[0].detail(),
+            RejectionDetail::InvalidSatProof
+        );
+        assert_eq!(
+            derived_error.rejections()[0].location().derived_fact_id,
+            Some(1)
+        );
+
+        let (mut derived_goal, context) = resolution_service_fixture(vec![42]);
+        derived_goal.final_goal = FinalGoalRef {
+            namespace: FinalGoalNamespace::DerivedFact,
+            id: 7,
+        };
+        let target = TargetVcFingerprint::from_certificate_fingerprint(&derived_goal.target_vc);
+        let derived_goal_error = check_kernel_certificate(service_input(
+            &target,
+            &derived_goal,
+            &context,
+            None,
+            &[],
+            KernelCheckPolicy::default(),
+            service_limits(),
+        ));
+        assert_eq!(
+            derived_goal_error.rejections()[0].detail(),
+            RejectionDetail::InvalidSatProof
+        );
+        assert!(derived_goal_error.rejections()[0].location().final_goal);
+
+        let (mut over_derived_limit, context) = resolution_service_fixture(vec![42]);
+        over_derived_limit.derived_facts.push(DerivedFact {
+            derived_fact_id: 8,
+            source: clause_ref(ClauseRefNamespace::ResolutionStep, 1),
+            payload: b"unsupported".to_vec(),
+        });
+        let target =
+            TargetVcFingerprint::from_certificate_fingerprint(&over_derived_limit.target_vc);
+        let mut derived_limits = service_limits();
+        derived_limits.max_derived_facts = 0;
+        let derived_limit_error = check_kernel_certificate(service_input(
+            &target,
+            &over_derived_limit,
+            &context,
+            None,
+            &[],
+            KernelCheckPolicy::default(),
+            derived_limits,
+        ));
+        assert_eq!(
+            derived_limit_error.rejections()[0].detail(),
+            RejectionDetail::ResourceExhaustion
+        );
+        assert_eq!(
+            derived_limit_error.rejections()[0].location().field_path,
+            Some("derived_facts")
+        );
+    }
+
+    #[test]
+    fn kernel_service_orders_batches_by_target_then_input_order() {
+        let (later_first, later_first_context) = resolution_service_fixture_with_final(
+            vec![2],
+            FinalGoalRef {
+                namespace: FinalGoalNamespace::GeneratedClause,
+                id: 3,
+            },
+        );
+        let (earlier, earlier_context) = resolution_service_fixture(vec![1]);
+        let (later_second, later_second_context) = resolution_service_fixture_with_final(
+            vec![2],
+            FinalGoalRef {
+                namespace: FinalGoalNamespace::ResolutionStep,
+                id: 1,
+            },
+        );
+        let later_first_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&later_first.target_vc);
+        let earlier_target = TargetVcFingerprint::from_certificate_fingerprint(&earlier.target_vc);
+        let later_second_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&later_second.target_vc);
+        let inputs = vec![
+            service_input(
+                &later_first_target,
+                &later_first,
+                &later_first_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+            service_input(
+                &earlier_target,
+                &earlier,
+                &earlier_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+            service_input(
+                &later_second_target,
+                &later_second,
+                &later_second_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+        ];
+
+        let results = check_kernel_batch(&inputs);
+
+        assert_eq!(results[0].target_vc_fingerprint().digest, vec![1]);
+        assert_eq!(results[1].target_vc_fingerprint().digest, vec![2]);
+        assert_eq!(
+            results[1].final_goal(),
+            Some(CheckedFinalGoal {
+                namespace: FinalGoalNamespace::GeneratedClause,
+                id: 3
+            })
+        );
+        assert_eq!(results[2].target_vc_fingerprint().digest, vec![2]);
+        assert_eq!(
+            results[2].final_goal(),
+            Some(CheckedFinalGoal {
+                namespace: FinalGoalNamespace::ResolutionStep,
+                id: 1
+            })
+        );
+    }
+
+    #[test]
+    fn kernel_service_propagates_policy_taint_timeout_and_resource_limits() {
+        let (certificate, context) = resolution_service_fixture_with_status(
+            vec![42],
+            RequiredProofStatus::ExternallyAttestedPolicyPermitted,
+            AcceptedProofStatus::ExternallyAttestedPolicyPermitted,
+        );
+        let target = TargetVcFingerprint::from_certificate_fingerprint(&certificate.target_vc);
+        let result = check_kernel_certificate(service_input(
+            &target,
+            &certificate,
+            &context,
+            None,
+            &[],
+            KernelCheckPolicy {
+                imported_fact_policy: ImportedFactPolicy {
+                    allow_externally_attested: true,
+                },
+            },
+            service_limits(),
+        ));
+        assert_eq!(result.status(), KernelCheckStatus::Accepted);
+        assert!(result.policy_taint());
+        assert_eq!(
+            result.checked_imports()[0].accepted_proof_status,
+            AcceptedProofStatus::ExternallyAttestedPolicyPermitted
+        );
+
+        let mut timeout_limits = service_limits();
+        timeout_limits.max_pipeline_steps = 0;
+        let timeout = check_kernel_certificate(service_input(
+            &target,
+            &certificate,
+            &context,
+            None,
+            &[],
+            KernelCheckPolicy {
+                imported_fact_policy: ImportedFactPolicy {
+                    allow_externally_attested: true,
+                },
+            },
+            timeout_limits,
+        ));
+        assert_eq!(timeout.rejections()[0].detail(), RejectionDetail::Timeout);
+        assert_eq!(
+            timeout.rejections()[0].location().field_path,
+            Some("target_vc")
+        );
+
+        let mut later_timeout_limits = service_limits();
+        later_timeout_limits.max_pipeline_steps = 4;
+        let later_timeout = check_kernel_certificate(service_input(
+            &target,
+            &certificate,
+            &context,
+            None,
+            &[],
+            KernelCheckPolicy {
+                imported_fact_policy: ImportedFactPolicy {
+                    allow_externally_attested: true,
+                },
+            },
+            later_timeout_limits,
+        ));
+        assert_eq!(
+            later_timeout.rejections()[0].detail(),
+            RejectionDetail::Timeout
+        );
+        assert_eq!(
+            later_timeout.rejections()[0].location().field_path,
+            Some("cluster_trace_context")
+        );
+
+        let mut resource_limits = service_limits();
+        resource_limits.max_report_records = 0;
+        let resource = check_kernel_certificate(service_input(
+            &target,
+            &certificate,
+            &context,
+            None,
+            &[],
+            KernelCheckPolicy {
+                imported_fact_policy: ImportedFactPolicy {
+                    allow_externally_attested: true,
+                },
+            },
+            resource_limits,
+        ));
+        assert_eq!(
+            resource.rejections()[0].detail(),
+            RejectionDetail::ResourceExhaustion
+        );
+        assert_eq!(
+            resource.rejections()[0].location().field_path,
+            Some("checker_limits.max_report_records")
         );
     }
 
@@ -3009,6 +4084,263 @@ mod tests {
         );
     }
 
+    fn service_input<'a>(
+        target: &'a TargetVcFingerprint,
+        certificate: &'a ParsedCertificate,
+        context: &'a ImportedFactContext,
+        cluster_context: Option<&'a ClusterTraceContext>,
+        requested_cluster_trace_steps: &'a [u32],
+        policy: KernelCheckPolicy,
+        limits: KernelCheckLimits,
+    ) -> KernelCheckInput<'a> {
+        KernelCheckInput {
+            target_vc_fingerprint: target,
+            certificate,
+            imported_fact_context: Some(context),
+            substitution_context: None,
+            cluster_trace_context: cluster_context,
+            requested_cluster_trace_steps,
+            policy,
+            limits,
+        }
+    }
+
+    fn service_input_with_substitutions<'a>(
+        target: &'a TargetVcFingerprint,
+        certificate: &'a ParsedCertificate,
+        context: &'a ImportedFactContext,
+        substitution_context: Option<&'a SubstitutionContext>,
+        cluster_context: Option<&'a ClusterTraceContext>,
+        requested_cluster_trace_steps: &'a [u32],
+        limits: KernelCheckLimits,
+    ) -> KernelCheckInput<'a> {
+        KernelCheckInput {
+            target_vc_fingerprint: target,
+            certificate,
+            imported_fact_context: Some(context),
+            substitution_context,
+            cluster_trace_context: cluster_context,
+            requested_cluster_trace_steps,
+            policy: KernelCheckPolicy::default(),
+            limits,
+        }
+    }
+
+    fn service_limits() -> KernelCheckLimits {
+        KernelCheckLimits {
+            imported_facts: limits(),
+            substitutions: SubstitutionReplayLimits {
+                max_substitutions: 8,
+                max_binder_context_bytes: 128,
+                max_binder_frames: 8,
+                max_freshness_witnesses: 8,
+                max_free_variable_constraints: 8,
+                max_term_encoding_bytes: 4096,
+                max_term_recursion_depth: 16,
+                max_alpha_renames: 8,
+                max_payload_replacements: 8,
+                max_term_path_segments: 8,
+                max_avoided_variables: 8,
+                max_capture_set_variables: 8,
+            },
+            resolution: ResolutionReplayLimits {
+                max_checked_steps: 8,
+                max_parent_literals: 8,
+                max_resolvent_literals: 8,
+                max_resolvent_canonical_bytes: 4096,
+                max_term_encoding_bytes: 4096,
+                max_term_recursion_depth: 16,
+            },
+            cluster_trace: cluster_limits(),
+            max_pipeline_steps: 16,
+            max_derived_facts: 8,
+            max_report_records: 64,
+        }
+    }
+
+    fn resolution_service_fixture(
+        target_digest: Vec<u8>,
+    ) -> (ParsedCertificate, ImportedFactContext) {
+        resolution_service_fixture_with_final(
+            target_digest,
+            FinalGoalRef {
+                namespace: FinalGoalNamespace::GeneratedClause,
+                id: 3,
+            },
+        )
+    }
+
+    fn resolution_service_fixture_with_final(
+        target_digest: Vec<u8>,
+        final_goal: FinalGoalRef,
+    ) -> (ParsedCertificate, ImportedFactContext) {
+        resolution_service_fixture_with_status_and_final(
+            target_digest,
+            RequiredProofStatus::KernelVerified,
+            AcceptedProofStatus::KernelVerified,
+            final_goal,
+        )
+    }
+
+    fn resolution_service_fixture_with_status(
+        target_digest: Vec<u8>,
+        required_proof_status: RequiredProofStatus,
+        accepted_proof_status: AcceptedProofStatus,
+    ) -> (ParsedCertificate, ImportedFactContext) {
+        resolution_service_fixture_with_status_and_final(
+            target_digest,
+            required_proof_status,
+            accepted_proof_status,
+            FinalGoalRef {
+                namespace: FinalGoalNamespace::GeneratedClause,
+                id: 3,
+            },
+        )
+    }
+
+    fn resolution_service_fixture_with_status_and_final(
+        target_digest: Vec<u8>,
+        required_proof_status: RequiredProofStatus,
+        accepted_proof_status: AcceptedProofStatus,
+        final_goal: FinalGoalRef,
+    ) -> (ParsedCertificate, ImportedFactContext) {
+        let imported_clause = ordinary(vec![neg_p()]);
+        let imported = imported_ref(
+            1,
+            b"pkg",
+            b"mod",
+            b"axiom",
+            clause_fingerprint(&imported_clause),
+            required_proof_status,
+        );
+        let certificate = ParsedCertificate::new_for_kernel_tests(ParsedCertificateTestParts {
+            schema_version: 1,
+            encoding_version: 1,
+            kernel_profile: KernelProfileRecord::v1(1, ClauseTautologyPolicy::Reject),
+            target_vc: Fingerprint::new(1, target_digest.clone()),
+            symbol_manifest: vec![SymbolManifestEntry { symbol: p_symbol() }],
+            variable_manifest: vec![
+                VariableManifestEntry {
+                    variable_id: VariableId(1),
+                },
+                VariableManifestEntry {
+                    variable_id: VariableId(2),
+                },
+            ],
+            imported_axioms: vec![imported.clone()],
+            imported_theorems: Vec::new(),
+            generated_clauses: vec![
+                generated_clause(2, ordinary(vec![pos_p()])),
+                generated_clause(3, empty_clause()),
+            ],
+            substitutions: Vec::new(),
+            resolution_trace: vec![resolution_step(
+                1,
+                clause_ref(ClauseRefNamespace::ImportedAxiom, 1),
+                clause_ref(ClauseRefNamespace::GeneratedClause, 2),
+                neg_p(),
+                clause_ref(ClauseRefNamespace::GeneratedClause, 3),
+            )],
+            derived_facts: Vec::new(),
+            final_goal,
+            canonical_hash_input: {
+                let mut bytes = target_digest;
+                bytes.extend_from_slice(&final_goal.id.to_be_bytes());
+                bytes
+            },
+        });
+        let context = ImportedFactContext::new(
+            Some(vec![1]),
+            vec![evidence(&imported, accepted_proof_status, imported_clause)],
+            Vec::new(),
+            context_limits(),
+        )
+        .expect("imported fact context");
+        (certificate, context)
+    }
+
+    fn generated_clause(clause_id: u32, clause: Clause) -> GeneratedClause {
+        GeneratedClause { clause_id, clause }
+    }
+
+    fn resolution_step(
+        step_id: u32,
+        parent_a: ClauseRef,
+        parent_b: ClauseRef,
+        pivot_literal: Literal,
+        generated_clause: ClauseRef,
+    ) -> ResolutionStep {
+        ResolutionStep {
+            step_id,
+            parent_a,
+            parent_b,
+            pivot_literal,
+            generated_clause,
+        }
+    }
+
+    fn simple_substitution(
+        substitution_id: u32,
+        source_term: Term,
+        target_term: Term,
+    ) -> SubstitutionEntry {
+        SubstitutionEntry {
+            substitution_id,
+            source_term,
+            target_term,
+            binder_context_encoding: service_binder_context(Vec::new(), vec![1, 2], Vec::new()),
+            freshness_witness_refs: Vec::new(),
+            free_variable_constraint_refs: Vec::new(),
+        }
+    }
+
+    fn simple_substitution_context(substitution_id: u32, actual_term: Term) -> SubstitutionContext {
+        SubstitutionContext::new(
+            Some(vec![7]),
+            vec![SubstitutionPayloadEntry::new(
+                substitution_id,
+                SubstitutionPayload::new(
+                    substitution_id,
+                    1,
+                    TermPath::root(),
+                    vec![Replacement::new(VariableId(1), actual_term, 1)],
+                ),
+            )],
+            Vec::new(),
+            Vec::new(),
+        )
+        .expect("valid substitution context")
+    }
+
+    fn service_binder_context(
+        frames: Vec<(u32, u32, u32, u8)>,
+        free_variables: Vec<u32>,
+        schematic_variables: Vec<u32>,
+    ) -> Vec<u8> {
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&1u16.to_be_bytes());
+        bytes.extend_from_slice(&(frames.len() as u32).to_be_bytes());
+        for (binder_id, canonical_index, variable_id, binder_role) in frames {
+            bytes.extend_from_slice(&binder_id.to_be_bytes());
+            bytes.extend_from_slice(&canonical_index.to_be_bytes());
+            bytes.extend_from_slice(&variable_id.to_be_bytes());
+            bytes.push(binder_role);
+        }
+        bytes.extend_from_slice(&(free_variables.len() as u32).to_be_bytes());
+        for variable in free_variables {
+            bytes.extend_from_slice(&variable.to_be_bytes());
+        }
+        bytes.extend_from_slice(&(schematic_variables.len() as u32).to_be_bytes());
+        for variable in schematic_variables {
+            bytes.extend_from_slice(&variable.to_be_bytes());
+        }
+        bytes
+    }
+
+    const fn clause_ref(namespace: ClauseRefNamespace, id: u32) -> ClauseRef {
+        ClauseRef { namespace, id }
+    }
+
     fn cluster_input<'a>(
         target: &'a TargetVcFingerprint,
         facts: &'a CheckedFactContext,
@@ -3051,7 +4383,7 @@ mod tests {
     }
 
     fn checked_fact_context() -> CheckedFactContext {
-        CheckedFactContext::new(vec![1], vec![7]).expect("checked fact context")
+        CheckedFactContext::new(vec![1], Vec::new(), vec![7]).expect("checked fact context")
     }
 
     fn cluster_limits() -> ClusterTraceReplayLimits {
@@ -3098,7 +4430,7 @@ mod tests {
             discharged_guards: vec![GuardEvidence {
                 guard_id: 1,
                 source_fact_ref: guard_dependency,
-                checked_dependency_ref: CheckedFactRef::ImportedFact(1),
+                checked_dependency_ref: CheckedFactRef::ImportedAxiom(1),
             }],
             rule_view: b"fingerprint:R".to_vec(),
             selection_key: b"selection:R".to_vec(),
@@ -3227,6 +4559,15 @@ mod tests {
             .expect("ordinary clause")
     }
 
+    fn empty_clause() -> Clause {
+        Clause::from_canonical_parts(ClauseForm::Empty, Vec::new(), &base_context())
+            .expect("empty clause")
+    }
+
+    fn var(id: u32) -> Term {
+        Term::Variable(VariableId(id))
+    }
+
     fn wrong_profile_clause() -> Clause {
         let context =
             ClauseValidationContext::new(ClauseProfile::new(1, 2, TautologyPolicy::Reject))
@@ -3289,6 +4630,10 @@ mod tests {
 
     fn neg_p() -> Literal {
         Literal::new(Polarity::Negative, Atom::new(p_symbol(), Vec::new()))
+    }
+
+    fn pos_p() -> Literal {
+        Literal::new(Polarity::Positive, Atom::new(p_symbol(), Vec::new()))
     }
 
     fn pos_q() -> Literal {

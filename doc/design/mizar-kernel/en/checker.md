@@ -74,6 +74,7 @@ KernelCheckInput
   imported_fact_context
   substitution_context
   cluster_trace_context
+  requested_cluster_trace_steps
   checker_policy
   checker_limits
 
@@ -96,6 +97,17 @@ ClusterTraceContext
   cluster_steps: sorted map cluster_trace_step_id -> ClusterStepEvidence
   reduction_steps: sorted map reduction_step_id -> ReductionStepEvidence
   provenance_fingerprint
+
+CheckedFactContext
+  imported_axioms: sorted imported_fact_id set
+  imported_theorems: sorted imported_fact_id set
+  generated_clauses: sorted generated_clause_id set
+
+CheckedFactRef
+  imported_axiom(imported_fact_id)
+  imported_theorem(imported_fact_id)
+  generated_clause(generated_clause_id)
+  trace_step(cluster_or_reduction_step_id)
 
 CheckerPolicy
   imported_fact_policy: ImportedFactPolicy
@@ -232,9 +244,11 @@ KernelCheckResult
   checked_substitutions
   checked_resolution_steps
   checked_cluster_steps
+  checked_reduction_steps
   checked_derived_facts
   final_goal
   used_axioms
+  policy_taint
   rejections
 
 KernelCheckStatus
@@ -252,6 +266,10 @@ CheckedDerivedFact
   derived_fact_id
   source_clause_ref
   payload_fingerprint
+
+CheckedFinalGoal
+  namespace
+  id
 ```
 
 `accepted` means the normalized certificate's final goal was checked by this
@@ -263,7 +281,10 @@ is outside this crate.
 `used_axioms` is derived only from checked imported axiom/theorem references
 actually used by the accepted certificate. Backend-reported used-axiom lists
 are ignored unless the normalized certificate and imported-fact context make
-the same facts checkable.
+the same facts checkable. Imported axiom and imported theorem ids remain
+separate namespaces when deriving `used_axioms` and constructing
+`CheckedFactContext`; `imported_axiom(1)` and `imported_theorem(1)` are
+distinct checked facts.
 
 If any checked import has `accepted_proof_status =
 externally_attested_policy_permitted`, the accepted kernel result carries a
@@ -273,19 +294,25 @@ policy-controlled externally attested or mixed-status result. If the active
 release policy forbids that taint, the immutable imported-fact context must not
 present the external status as satisfying the requirement.
 
+Task 16 provides an in-crate batch helper that checks independent inputs and
+sorts results by target VC fingerprint, then by caller input order for equal
+targets. It does not spawn workers or read cancellation tokens; external
+scheduler integration remains outside this crate.
+
 Batch checking is a deterministic wrapper around single-certificate checks:
 
 ```text
 KernelCheckBatchInput
-  checks: sorted Vec<KernelCheckInput>
+  checks: Vec<KernelCheckInput> in caller order
 
 KernelCheckBatchResult
   results: sorted Vec<KernelCheckResult>
 ```
 
-Batch results are sorted by target VC fingerprint, evidence id when present,
-and canonical input order. Worker completion order, cancellation arrival order,
-or parallel scheduling must not affect result order.
+Batch results are sorted by target VC fingerprint, then by original caller
+input index for equal targets. Evidence ids, worker completion order,
+cancellation arrival order, or parallel scheduling must not affect result
+order inside this crate.
 
 ## Check Pipeline
 
@@ -306,14 +333,13 @@ The checker runs these steps in deterministic order:
 7. Replay requested explicit cluster/reduction trace step ids, plus their
    explicit trace-step dependencies, when the certificate or checker service
    requests nonempty cluster evidence.
-8. Validate `derived_facts` by checking that each source clause reference is a
-   checked generated, imported, resolution, substitution-derived, or
-   cluster-derived fact as specified by its payload schema.
+8. Reject `derived_facts` unless a documented payload schema is implemented.
+   Task 16 does not invent a derived-fact payload language.
 9. Validate `final_goal` by resolving the referenced generated clause,
-   resolution step, or derived fact and checking that it is the empty
-   obligation or canonical final fact required by the target VC.
+   resolution step, or supported derived fact and checking that it is the
+   empty obligation or canonical final fact required by the target VC.
 10. Emit one accepted result, or a deterministic rejected result containing the
-    earliest stable rejection records.
+    earliest stable rejection record for that failed check.
 
 The checker must never repair failed sub-checker reports or try alternate
 pipelines. If any sub-checker rejects evidence, the checker rejects the
@@ -365,6 +391,8 @@ requires:
   by explicit trace evidence;
 - every dependency fact referenced by a trace to have already been checked as
   an imported fact, generated fact, or earlier trace step;
+- imported dependencies to preserve their axiom/theorem namespace; a trace
+  cannot refer to an ambiguous imported fact id;
 - replay to be driven by requested trace step ids; unused evidence is ignored
   after bounded construction;
 - cluster and reduction steps to share a single numeric trace order;
@@ -385,9 +413,11 @@ and keep runtime behavior fail-closed.
 ## Derived Facts And Final Goal
 
 `ParsedCertificate.derived_facts` are certificate-owned assembly records. Task
-16 validates their payload schema after imported facts and cluster/reduction
-traces have concrete evidence contracts. Until then, unknown derived-fact
-payloads are not accepted.
+16 does not define a new derived-fact payload schema. Any nonempty
+`derived_facts` vector, or a `final_goal` that points to `DerivedFact`, is
+rejected fail-closed as `invalid_sat_proof` until a later paired spec and
+implementation define the payload grammar. External attempts to supplement
+derived-fact payloads through context maps are not accepted.
 
 There is no caller-supplied derived-fact payload map in `ClusterTraceContext`.
 The only payload authority is the parsed normalized certificate. Any checked
@@ -402,16 +432,21 @@ certificate-owned derived-fact payload.
 - `generated_clause` and `resolution_step` goals must resolve to checked
   clauses and must be the canonical empty clause unless a later spec adds a
   different final-fact schema;
-- `derived_fact` goals must resolve to a checked derived fact whose payload
-  schema explicitly states that it closes the target VC;
+- `derived_fact` goals are rejected by task 16 because no derived-fact payload
+  schema is implemented yet;
 - a `generated_clause` final goal is accepted only when that generated clause
-  is consumed by a successful checked replay path, such as a checked
-  resolution final-goal helper or a checked derived-fact payload; mere presence
-  in `ParsedCertificate.generated_clauses` is not proof acceptance;
+  is consumed by a successful checked replay path; in task 16 that path is the
+  checked resolution final-goal helper. Mere presence in
+  `ParsedCertificate.generated_clauses` is not proof acceptance;
 - missing, unchecked, forward, or mismatched final-goal references are
   `invalid_sat_proof` or `invalid_cluster_trace` according to the failed
   evidence family;
 - target mismatch is `context_mismatch`.
+
+Task 16 accepts final goals only through the resolution report binding helper:
+`GeneratedClause` and `ResolutionStep` final goals must be checked resolution
+outputs and must be the canonical empty clause. It does not trust
+caller-supplied sub-checker reports or unchecked generated clauses.
 
 ## Limits
 
@@ -432,6 +467,7 @@ CheckerLimits
   reduction guard evidence count
   reduction substitution binding count
   normalized commitment byte count
+  checker pipeline step budget
   derived fact count
   final report record count
 ```
@@ -445,17 +481,18 @@ entries, cloning imported clauses, or materializing reports.
 | Failure | Detail | Location |
 |---|---|---|
 | Missing imported fact context, requested cluster trace context/provenance, substitution context, derived imported-clause context, or provenance | `missing_provenance` | field path plus imported fact, substitution, cluster, reduction, or final-goal id when known |
-| Malformed service witness envelope before parsing or before normalized evidence can be selected | `malformed_witness_data` | service evidence field path |
+| Malformed external service witness envelope before parsing or before normalized evidence can be selected | `malformed_witness_data` | service evidence field path; external integration only, not produced by task 16 |
 | Imported fact identity, statement fingerprint, unavailable theorem/axiom, or proof-status strength mismatch | `unresolved_symbol` | `imported_fact_id` |
 | Substitution replay failure | forwarded `invalid_substitution`, `missing_provenance`, or `resource_exhaustion` | forwarded substitution location |
 | Resolution replay failure | forwarded `invalid_sat_proof`, `missing_provenance`, or `resource_exhaustion` | forwarded clause or resolution-step location |
 | Cluster/reduction trace replay failure | `invalid_cluster_trace` | cluster or reduction step id |
-| Derived fact payload mismatch or unchecked dependency | `invalid_sat_proof` or `invalid_cluster_trace` | `derived_fact_id` |
+| Nonempty derived facts, derived-fact final goals, or derived payload validation before a documented schema exists | `invalid_sat_proof` | `derived_fact_id`; richer payload/dependency validation is deferred to a later schema task |
 | Final goal mismatch or unchecked final reference | `invalid_sat_proof` | `final_goal` plus referenced id when known |
 | Target VC or context binding mismatch | `context_mismatch` | target/context field path |
 | Unsupported checker or certificate profile | `unsupported_certificate_format` | profile field path |
 | Checker-owned deterministic resource budget exhausted | `resource_exhaustion` | checker budget field path |
-| Cancellation or timeout budget exhausted after parsing | `timeout` | cancellation or timeout field path |
+| In-crate deterministic checker step budget exhausted | `timeout` | checker step field path |
+| External cancellation budget exhausted after parsing | `timeout` | cancellation field path; external integration only, not produced by task 16 |
 
 When multiple checks fail, deterministic ordering follows `rejection.md`.
 Human diagnostic text may add context, but stable detail keys and locations
@@ -473,11 +510,12 @@ context evidence within configured limits. The checker must not scan unrelated
 dependency artifacts or search for alternate facts, traces, substitutions, or
 proofs.
 
-Cancellation is cooperative and deterministic. The checker may stop only at
-defined step-boundaries counted by `CheckerLimits`; a stopped check returns
+Task 16 exposes a deterministic checker step budget. A stopped check returns
 `timeout`, never partial acceptance. Parser-owned malformed bytes remain
-`malformed_certificate`; service-envelope evidence that cannot be normalized
-into a certificate or explicit kernel evidence is `malformed_witness_data`.
+`malformed_certificate`. Service-envelope witness normalization and external
+cancellation-token plumbing are integration work outside this crate; until a
+documented envelope is provided, they remain `external_dependency_gap` and are
+not mocked by the kernel service.
 
 ## Gap Classification
 
@@ -490,11 +528,13 @@ into a certificate or explicit kernel evidence is `malformed_witness_data`.
   `external_dependency_gap`; task 16 needs end-to-end check-service and final
   goal tests.
 - `external_dependency_gap`: source-derived certificates, ATP proof
-  translation, cluster trace payload production by `mizar-checker`, and
-  proof/cache/artifact consumers are not active inputs to this crate. Missing
-  producer or consumer integration is not mocked here.
+  translation, cluster trace payload production by `mizar-checker`, derived
+  fact payload schemas, service-envelope witness normalization, cancellation
+  token plumbing, and proof/cache/artifact consumers are not active inputs to
+  this crate. Missing producer or consumer integration is not mocked here.
 - `deferred`: proof-policy projection, witness storage, cache reuse, artifact
-  emission, and backend-candidate selection remain outside `mizar-kernel`.
+  emission, backend-candidate selection, and external worker scheduling remain
+  outside `mizar-kernel`.
 
 ## Planned Tests
 
@@ -526,20 +566,21 @@ Task 15 must add Rust tests for:
 Task 16 must add Rust tests for:
 
 - full pipeline acceptance from checked imports, substitutions, resolution
-  trace, optional cluster trace, derived facts, and final goal;
+  trace, optional cluster trace, and final goal;
 - final-goal mismatch and unchecked final references rejected deterministically;
 - duplicate context ids, duplicate evidence ids, simultaneous imported/cluster
-  context failures, and multiple rejection records sorted with stable locations;
+  context failures resolved by the fail-fast pipeline, and single rejection
+  records with stable locations;
 - report/input binding preventing accidental reuse of sub-checker reports;
 - deterministic result ordering under shuffled context construction and
-  shuffled parallel batch completion;
+  shuffled caller input order, including equal-target tie preservation;
 - policy taint propagation for externally attested imported facts;
-- external attempts to replace or supplement certificate-owned derived-fact
-  payloads rejected before final-goal acceptance;
-- malformed witness envelopes rejected as `malformed_witness_data`,
-  deterministic timeout/cancellation budgets rejected as `timeout`, and
-  checker-owned deterministic resource limits rejected as
-  `resource_exhaustion`;
+- nonempty or final-goal-referenced derived facts rejected fail-closed until a
+  documented payload schema exists;
+- deterministic checker step budgets rejected as `timeout`, checker-owned
+  deterministic resource limits rejected as `resource_exhaustion`, and
+  service-envelope witness normalization/cancellation token plumbing recorded
+  as `external_dependency_gap` rather than mocked;
 - the trusted-boundary lint/test set mirrors the trust statement: no proof
   search, ATP search, SAT solving, premise selection, overload resolution,
   cluster search, registration activation, implicit coercion insertion,
