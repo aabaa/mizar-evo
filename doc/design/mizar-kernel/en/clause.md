@@ -138,7 +138,8 @@ A clause is well formed only when:
   tautology markers;
 - its ordinary literals are sorted by canonical order;
 - duplicate ordinary literals have been removed;
-- it respects configured literal-count and term-size bounds.
+- it respects configured literal-count, term-size, and term-recursion-depth
+  bounds.
 
 Task 3 uses a minimal clause-local validation context:
 
@@ -150,6 +151,7 @@ ClauseValidationContext
   canonical_variable_ids
   max_literals
   max_term_encoding_bytes
+  max_term_recursion_depth
 ```
 
 The context is explicit input to clause construction. It is not a global symbol
@@ -210,6 +212,17 @@ Hashes must not include file paths, source ranges, display names, timestamps,
 backend runtime logs, allocation addresses, map/set iteration order, or worker
 completion order.
 
+Trusted replay modules may need resource accounting before constructing large
+temporary byte vectors. The clause module owns any non-allocating canonical
+length or bounded-writer helpers used for this accounting. Callers must not
+duplicate the clause encoder to estimate canonical sizes.
+
+Trusted replay modules may also need to re-check already owned canonical clause
+parts under a smaller replay budget. The clause module owns any borrowed
+canonical-part validation helper used for that path so callers do not clone
+large literal or term trees before literal-count, term-size, or term-depth
+limits have been checked.
+
 ## Failure Classes
 
 This module can produce structural rejection details for:
@@ -222,7 +235,7 @@ This module can produce structural rejection details for:
   construction path;
 - ordinary-form empty payloads and non-empty `empty` or `tautology` payloads;
 - disallowed tautologies;
-- literal-count or term-size resource exhaustion.
+- literal-count, term-size, or term-recursion-depth resource exhaustion.
 
 Callers map these details to the stable rejection categories specified by
 `rejection.md` after that module exists. Until then, task 3 tests should assert
@@ -247,6 +260,13 @@ Task 3 must add Rust tests for:
 - explicit profile/form payload rules, including empty ordinary payload
   rejection and non-empty `empty` / `tautology` payload rejection;
 - literal-count and term-size resource exhaustion;
+- term-recursion-depth resource exhaustion through the depth limit in
+  `ClauseValidationContext`;
+- non-allocating canonical length or bounded-writer helpers returning the same
+  lengths as canonical byte encoders without requiring callers to duplicate the
+  encoder;
+- borrowed canonical-part validation rejecting over-budget canonical clauses
+  before callers clone their literal vectors;
 - duplicate-before-normalization rejection for any construction path that
   bypasses normalizing constructors;
 - rendering stability;

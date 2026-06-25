@@ -139,7 +139,7 @@ Clause が well formed である条件:
   を持ち、profile が tautology marker を許す場合に限られる;
 - ordinary literal が canonical order で sort されている;
 - duplicate ordinary literal が除去されている;
-- 設定された literal-count bound と term-size bound を守る。
+- 設定された literal-count、term-size、term-recursion-depth bound を守る。
 
 Task 3 は minimal clause-local validation context を使う:
 
@@ -151,6 +151,7 @@ ClauseValidationContext
   canonical_variable_ids
   max_literals
   max_term_encoding_bytes
+  max_term_recursion_depth
 ```
 
 この context は clause construction への explicit input である。Global symbol table
@@ -211,6 +212,16 @@ Hash は file path、source range、display name、timestamp、backend runtime l
 allocation address、map/set iteration order、worker completion order を含んでは
 ならない。
 
+Trusted replay module は、大きな temporary byte vector を構築する前に resource
+accounting を必要とする場合がある。この accounting に使う non-allocating canonical
+length または bounded-writer helper は clause module が所有する。Caller は canonical
+size を見積もるために clause encoder を重複実装してはならない。
+
+Trusted replay module は、すでに所有されている canonical clause parts をより小さい
+replay budget の下で再検査する必要もある。この経路で使う borrowed canonical-part
+validation helper は clause module が所有し、caller が literal-count、term-size、
+term-depth limits を検査する前に大きな literal / term tree を clone しなくて済むようにする。
+
 ## Failure classes
 
 この module は以下の structural rejection detail を生成できる:
@@ -223,7 +234,7 @@ allocation address、map/set iteration order、worker completion order を含ん
   literal;
 - ordinary form の empty payload、および non-empty `empty` / `tautology` payload;
 - disallowed tautology;
-- literal-count または term-size resource exhaustion。
+- literal-count、term-size、または term-recursion-depth resource exhaustion。
 
 Caller は、`rejection.md` が存在した後、その detail を stable rejection category へ
 map する。それまでは task 3 tests は artifact-facing diagnostic text ではなく、
@@ -247,6 +258,12 @@ Task 3 は以下の Rust tests を追加しなければならない:
 - empty ordinary payload rejection と non-empty `empty` / `tautology` payload rejection
   を含む explicit profile/form payload rule;
 - literal-count と term-size resource exhaustion;
+- `ClauseValidationContext` の depth limit による term-recursion-depth resource
+  exhaustion;
+- caller が encoder を重複実装しなくて済むように、canonical byte encoder と同じ長さを
+  返す non-allocating canonical length または bounded-writer helper;
+- caller が literal vector を clone する前に、budget 超過の canonical clause を拒否する
+  borrowed canonical-part validation;
 - normalizing constructor を bypass する construction path がある場合の
   duplicate-before-normalization rejection;
 - rendering stability;

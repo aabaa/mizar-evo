@@ -61,10 +61,15 @@ Task 9 should implement replay from explicit immutable inputs:
 
 ```text
 ResolutionTraceInput
+  target_vc_fingerprint
   parsed_certificate
   imported_clause_context
   replay_limits
 ```
+
+`target_vc_fingerprint` is caller-owned and is copied only into stable
+rejection records or private report binding checks. It is not derived from
+backend output, cache state, artifact state, or mutable compiler-global state.
 
 `parsed_certificate` is a `certificate_parser::ParsedCertificate`. The parser
 has already checked section order, stable id uniqueness, parent reference
@@ -85,6 +90,10 @@ The concrete Rust type may avoid map dependencies by using sorted vectors, as
 long as lookup and iteration are deterministic. The context is not populated
 from resolver state, ATP output, cache state, artifact state, or global
 compiler state. Missing imported-clause context is `missing_provenance`.
+The implementation must make imported context ordering deterministic by using a
+constructor or type invariant that stores each imported namespace as sorted
+unique ids. It may canonicalize input order, but duplicate ids are invalid
+context shape and must be rejected deterministically before replay.
 If the context exists but does not contain the parsed imported namespace/id
 needed by a parent reference, task 9 must also return `missing_provenance`
 because resolution replay lacks the immutable clause evidence required to
@@ -96,12 +105,13 @@ Supplied imported `Clause` values used by the parsed trace must already be
 normalized for the same profile, symbol manifest, and variable manifest as the
 replay-derived context. Task 9 validates imported clauses at first use in
 deterministic trace order, not by scanning and rejecting unused context entries.
-Compatibility validation may use unbounded count/size limits so it checks only
-profile, symbol, variable, and canonical-form agreement. A used imported clause
-that fails compatibility validation is `missing_provenance`, not an opportunity
-to repair or reinterpret the parent. Parent literal count, term-size,
-term-depth, and canonical-byte budget failures remain replay resource checks
-and map to `resource_exhaustion`.
+The implementation checks profile agreement cheaply, then validates the used
+imported clause through the same bounded parent `ClauseValidationContext` used
+for generated and previously checked step parents before cloning it for replay.
+Non-resource profile, symbol, variable, or canonical-form incompatibility is
+`missing_provenance`, not an opportunity to repair or reinterpret the parent.
+Parent literal count, term-size, term-depth, and canonical-byte budget failures
+remain replay resource checks and map to `resource_exhaustion`.
 
 `replay_limits` are deterministic:
 
@@ -204,6 +214,25 @@ The resolution checker may report the checked clause for every replayed step to
 the later `checker` module. It does not by itself produce trusted proof
 acceptance.
 
+Task 9's success report should expose deterministic checked-step data only:
+
+```text
+ResolutionReplayReport
+  checked_steps: sorted Vec<CheckedResolutionStep>
+
+CheckedResolutionStep
+  step_id
+  generated_clause_id
+  clause
+```
+
+The report is evidence-replay output for later checker orchestration. It must
+not contain an accepted proof status, used-axiom projection, policy outcome, or
+artifact-facing witness decision. The implementation may carry private replay
+binding data, such as the caller-owned target fingerprint and certificate hash
+input, solely to reject accidental pairing of a report with a different replay
+input. Accessors must still expose only checked-step data.
+
 When task 9 includes a helper that validates a final goal in the
 `generated_clause` or `resolution_step` namespace, that helper must require the
 referenced clause to be checked by successful replay. A `resolution_step`
@@ -290,6 +319,8 @@ Task 9 must add Rust tests for:
 - context-present but provenance-missing input rejected as `missing_provenance`;
 - imported parent namespace/id absent from the supplied context rejected as
   `missing_provenance`;
+- imported context construction canonicalizing sorted input order and rejecting
+  duplicate ids deterministically before replay;
 - used imported context clauses whose profile, symbols, variables, or canonical
   form do not validate against the replay-derived context rejected as
   `missing_provenance`;
@@ -322,6 +353,8 @@ Task 9 must add Rust tests for:
   collecting an unbounded raw literal vector;
 - deterministic checked-step output and rejection ordering under shuffled test
   fixture construction or simulated worker completion order;
+- success reports exposing checked step ids, generated clause ids, and clauses
+  without proof-acceptance or policy-status fields;
 - lint coverage showing no SAT solver, ATP/proof/cache/artifact coupling,
   proof search, premise selection, overload resolution, cluster search,
   implicit coercion insertion, fallback inference, unordered iteration,

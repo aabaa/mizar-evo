@@ -263,6 +263,44 @@ impl ParsedCertificate {
     pub fn canonical_hash_input(&self) -> &[u8] {
         &self.canonical_hash_input
     }
+
+    #[cfg(test)]
+    pub(crate) fn new_for_kernel_tests(parts: ParsedCertificateTestParts) -> Self {
+        Self {
+            schema_version: parts.schema_version,
+            encoding_version: parts.encoding_version,
+            kernel_profile: parts.kernel_profile,
+            target_vc: parts.target_vc,
+            symbol_manifest: parts.symbol_manifest,
+            variable_manifest: parts.variable_manifest,
+            imported_axioms: parts.imported_axioms,
+            imported_theorems: parts.imported_theorems,
+            generated_clauses: parts.generated_clauses,
+            substitutions: parts.substitutions,
+            resolution_trace: parts.resolution_trace,
+            derived_facts: parts.derived_facts,
+            final_goal: parts.final_goal,
+            canonical_hash_input: parts.canonical_hash_input,
+        }
+    }
+}
+
+#[cfg(test)]
+pub(crate) struct ParsedCertificateTestParts {
+    pub schema_version: u16,
+    pub encoding_version: u16,
+    pub kernel_profile: KernelProfileRecord,
+    pub target_vc: Fingerprint,
+    pub symbol_manifest: Vec<SymbolManifestEntry>,
+    pub variable_manifest: Vec<VariableManifestEntry>,
+    pub imported_axioms: Vec<ImportedFactRef>,
+    pub imported_theorems: Vec<ImportedFactRef>,
+    pub generated_clauses: Vec<GeneratedClause>,
+    pub substitutions: Vec<SubstitutionEntry>,
+    pub resolution_trace: Vec<ResolutionStep>,
+    pub derived_facts: Vec<DerivedFact>,
+    pub final_goal: FinalGoalRef,
+    pub canonical_hash_input: Vec<u8>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]

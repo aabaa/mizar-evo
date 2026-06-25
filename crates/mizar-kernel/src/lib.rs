@@ -12,3 +12,4 @@
 pub mod certificate_parser;
 pub mod clause;
 pub mod rejection;
+pub mod resolution_trace;

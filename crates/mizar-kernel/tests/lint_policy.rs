@@ -142,6 +142,7 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
             "12: pub mod certificate_parser;",
             "13: pub mod clause;",
             "14: pub mod rejection;",
+            "15: pub mod resolution_trace;",
             "compact: pubmod",
         ],
         "{} must expose only current spec-backed kernel modules; found:\n{}",
@@ -155,6 +156,7 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
             "src/clause.rs",
             "src/lib.rs",
             "src/rejection.rs",
+            "src/resolution_trace.rs",
         ],
         "kernel source modules require their \
          paired English/Japanese specs first, found {source_files:?}"
@@ -166,6 +168,8 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
         workspace_root().join("doc/design/mizar-kernel/ja/clause.md"),
         workspace_root().join("doc/design/mizar-kernel/en/rejection.md"),
         workspace_root().join("doc/design/mizar-kernel/ja/rejection.md"),
+        workspace_root().join("doc/design/mizar-kernel/en/resolution_trace.md"),
+        workspace_root().join("doc/design/mizar-kernel/ja/resolution_trace.md"),
     ] {
         assert!(
             spec.exists(),

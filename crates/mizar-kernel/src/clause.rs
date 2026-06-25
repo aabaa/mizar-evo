@@ -43,6 +43,7 @@ pub struct ClauseValidationContext {
     pub canonical_variable_ids: BTreeSet<VariableId>,
     pub max_literals: usize,
     pub max_term_encoding_bytes: usize,
+    pub max_term_recursion_depth: usize,
 }
 
 impl ClauseValidationContext {
@@ -55,6 +56,7 @@ impl ClauseValidationContext {
             canonical_variable_ids: BTreeSet::new(),
             max_literals: usize::MAX,
             max_term_encoding_bytes: usize::MAX,
+            max_term_recursion_depth: usize::MAX,
         }
     }
 
@@ -85,6 +87,12 @@ impl ClauseValidationContext {
     ) -> Self {
         self.max_literals = max_literals;
         self.max_term_encoding_bytes = max_term_encoding_bytes;
+        self
+    }
+
+    #[must_use]
+    pub const fn with_max_term_recursion_depth(mut self, max_term_recursion_depth: usize) -> Self {
+        self.max_term_recursion_depth = max_term_recursion_depth;
         self
     }
 }
@@ -142,6 +150,20 @@ impl Clause {
         literals: Vec<Literal>,
         context: &ClauseValidationContext,
     ) -> Result<Self, ClauseError> {
+        Self::validate_canonical_parts(form, &literals, context)?;
+
+        Ok(Self {
+            profile: context.profile.clone(),
+            form,
+            literals,
+        })
+    }
+
+    pub(crate) fn validate_canonical_parts(
+        form: ClauseForm,
+        literals: &[Literal],
+        context: &ClauseValidationContext,
+    ) -> Result<(), ClauseError> {
         match form {
             ClauseForm::Ordinary if literals.is_empty() => {
                 return Err(ClauseError::OrdinaryEmptyPayload);
@@ -158,24 +180,33 @@ impl Clause {
         }
 
         validate_literal_count(literals.len(), context)?;
-        for literal in &literals {
+        for literal in literals {
             literal.validate(context)?;
         }
-        if has_duplicate_literals(&literals)? {
+        if has_duplicate_literals(literals)? {
             return Err(ClauseError::DuplicateLiteral);
         }
         if !literals.windows(2).all(|window| window[0] < window[1]) {
             return Err(ClauseError::NonCanonicalLiteralOrder);
         }
-        if form == ClauseForm::Ordinary && contains_opposite_polarity_atom(&literals) {
+        if form == ClauseForm::Ordinary && contains_opposite_polarity_atom(literals) {
             return Err(ClauseError::DisallowedTautology);
         }
 
-        Ok(Self {
-            profile: context.profile.clone(),
+        Ok(())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn new_unchecked_for_kernel_tests(
+        profile: ClauseProfile,
+        form: ClauseForm,
+        literals: Vec<Literal>,
+    ) -> Self {
+        Self {
+            profile,
             form,
             literals,
-        })
+        }
     }
 
     #[must_use]
@@ -290,7 +321,7 @@ impl Literal {
         frame(LITERAL_SCHEMA_TAG, self.polarity.tag(), payload)
     }
 
-    fn canonical_len(&self) -> Result<usize, ClauseError> {
+    pub(crate) fn canonical_len(&self) -> Result<usize, ClauseError> {
         frame_len(checked_add_len(1, self.atom.canonical_len()?)?)
     }
 }
@@ -461,6 +492,20 @@ pub enum Term {
 
 impl Term {
     fn validate(&self, context: &ClauseValidationContext) -> Result<(), ClauseError> {
+        self.validate_with_depth(context, 0)
+    }
+
+    fn validate_with_depth(
+        &self,
+        context: &ClauseValidationContext,
+        depth: usize,
+    ) -> Result<(), ClauseError> {
+        if depth > context.max_term_recursion_depth {
+            return Err(ClauseError::TermRecursionDepthExceeded {
+                max: context.max_term_recursion_depth,
+                actual: depth,
+            });
+        }
         match self {
             Self::Variable(variable) => {
                 if !context.canonical_variable_ids.contains(variable) {
@@ -470,10 +515,12 @@ impl Term {
             Self::Application { symbol, arguments } => {
                 validate_symbol(*symbol, context)?;
                 for argument in arguments {
-                    argument.validate(context)?;
+                    argument.validate_with_depth(context, next_depth(depth)?)?;
                 }
             }
-            Self::BinderNormalized { body, .. } => body.validate(context)?,
+            Self::BinderNormalized { body, .. } => {
+                body.validate_with_depth(context, next_depth(depth)?)?
+            }
             Self::Malformed => return Err(ClauseError::MalformedTermEncoding),
         }
         let size = self.canonical_len()?;
@@ -656,6 +703,10 @@ pub enum ClauseError {
         max: usize,
         actual: usize,
     },
+    TermRecursionDepthExceeded {
+        max: usize,
+        actual: usize,
+    },
 }
 
 fn validate_literal_count(
@@ -730,6 +781,15 @@ fn checked_add_len(left: usize, right: usize) -> Result<usize, ClauseError> {
     left.checked_add(right)
         .ok_or(ClauseError::TermSizeExceeded {
             max: u32_max_usize(),
+            actual: usize::MAX,
+        })
+}
+
+fn next_depth(depth: usize) -> Result<usize, ClauseError> {
+    depth
+        .checked_add(1)
+        .ok_or(ClauseError::TermRecursionDepthExceeded {
+            max: usize::MAX,
             actual: usize::MAX,
         })
 }

@@ -24,7 +24,7 @@ no fallback inference.
 | clause | `clause.md` (task 2) | `src/clause.rs` | [x] |
 | certificate_parser | `certificate_parser.md` (task 4) | `src/certificate_parser.rs` | [x] |
 | rejection | `rejection.md` (task 6) | `src/rejection.rs` | [x] |
-| resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [ ] |
+| resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [x] |
 | substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [ ] |
 | checker | `checker.md` (task 13) | `src/checker.rs` | [ ] |
 
@@ -142,7 +142,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
      and linear replay bounds per architecture 15 "Resolution Trace".
    - Deps: 4. Spec: architecture 15.
 
-9. **Implement the resolution trace checker.** [ ]
+9. **Implement the resolution trace checker.** [x]
    - Check clause resolution traces step by step; reject any step that does
      not follow.
    - Tests: valid traces accepted; each single-step mutation rejected;
