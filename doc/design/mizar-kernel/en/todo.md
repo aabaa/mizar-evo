@@ -149,7 +149,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
      replay cost linear in trace size.
    - Deps: 7, 8. Spec: `resolution_trace.md`.
 
-10. **Spec: `substitution_checker.md`.** [ ]
+10. **Spec: `substitution_checker.md`.** [x]
     - Write the substitution-checking spec (English and Japanese, no code):
       substitution validation, alpha-conversion checking, and free-variable
       conditions per architecture 15 "Substitution Rule" and architecture
