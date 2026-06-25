@@ -397,7 +397,7 @@ CertificateParseLocation
 
 | Parser-owned case | Stable detail |
 |---|---|
-| unsupported schema, encoding, kernel profile, hash-input algorithm, or unknown section tag | `unsupported_certificate_format` |
+| unsupported domain separator, schema, encoding, kernel profile, hash-input algorithm, or unknown section tag | `unsupported_certificate_format` |
 | target VC mismatch | `context_mismatch` |
 | malformed envelope, directory, frame, field, id ordering, duplicate id, malformed reference, or noncanonical generated clause | `malformed_certificate` |
 | generated clause rejected by the clause module | `malformed_certificate` |
@@ -430,8 +430,8 @@ outcomes.
 Task 5 must add Rust tests for:
 
 - a minimal valid normalized certificate;
-- unsupported schema, encoding, profile, hash-input algorithm, and unknown
-  section rejection as `certificate_rejection` with
+- unsupported domain separator, schema, encoding, profile, hash-input algorithm,
+  and unknown section rejection as `certificate_rejection` with
   `unsupported_certificate_format`;
 - target VC mismatch rejection as `certificate_rejection` with
   `context_mismatch`;

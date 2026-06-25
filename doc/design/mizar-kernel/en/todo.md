@@ -121,7 +121,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
      unknown format tags rejected.
    - Deps: 4. Spec: `certificate_parser.md`.
 
-6. **Spec: `rejection.md`.** [ ]
+6. **Spec: `rejection.md`.** [x]
    - Write the rejection-semantics spec (English and Japanese, no code):
      stable rejection categories and structured reasons per architecture 15
      "Kernel Rejection Semantics" and architecture 19.
