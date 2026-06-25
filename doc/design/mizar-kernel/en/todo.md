@@ -136,7 +136,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
 
 ### Checkers
 
-8. **Spec: `resolution_trace.md`.** [ ]
+8. **Spec: `resolution_trace.md`.** [x]
    - Write the resolution-trace checking spec (English and Japanese, no
      code): MiniSAT-compatible trace steps, clause-resolution validation,
      and linear replay bounds per architecture 15 "Resolution Trace".
