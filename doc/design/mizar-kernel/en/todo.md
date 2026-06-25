@@ -26,7 +26,7 @@ no fallback inference.
 | rejection | `rejection.md` (task 6) | `src/rejection.rs` | [x] |
 | resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [x] |
 | substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [x] |
-| checker | `checker.md` (task 13) | `src/checker.rs` | [ ] |
+| checker | `checker.md` (task 13) | `src/checker.rs` | [~] |
 
 `mizar-kernel` implements pipeline phase 14: proof certificates and kernel
 context in, trusted proof status out. It is the trusted core of the whole
@@ -173,7 +173,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
 
 ### Orchestration and acceptance
 
-13. **Spec: `checker.md`.** [ ]
+13. **Spec: `checker.md`.** [x]
     - Write the kernel check-service spec (English and Japanese, no code):
       `KernelCheckInput`/`KernelCheckResult`, the check pipeline over the
       sub-checkers, imported-fact checking per architecture 15, cluster
