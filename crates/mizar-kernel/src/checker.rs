@@ -3472,6 +3472,486 @@ mod tests {
     }
 
     #[test]
+    fn kernel_service_results_are_deterministic_under_repetition_and_permutation() {
+        let (mut certificate, _) = resolution_service_fixture(vec![42]);
+        certificate.substitutions = vec![simple_substitution(1, var(1), var(2))];
+        let extra_clause = ordinary(vec![pos_p()]);
+        let extra_import = imported_ref(
+            2,
+            b"pkg",
+            b"mod",
+            b"extra",
+            clause_fingerprint(&extra_clause),
+            RequiredProofStatus::KernelVerified,
+        );
+        certificate.imported_axioms.push(extra_import.clone());
+
+        let primary_evidence = evidence(
+            &certificate.imported_axioms[0],
+            AcceptedProofStatus::KernelVerified,
+            ordinary(vec![neg_p()]),
+        );
+        let extra_evidence = evidence(
+            &extra_import,
+            AcceptedProofStatus::KernelVerified,
+            extra_clause,
+        );
+        let imported_context = ImportedFactContext::new(
+            Some(vec![1]),
+            vec![extra_evidence.clone(), primary_evidence.clone()],
+            Vec::new(),
+            context_limits(),
+        )
+        .expect("permuted imported context");
+        let imported_context_permuted = ImportedFactContext::new(
+            Some(vec![1]),
+            vec![primary_evidence, extra_evidence],
+            Vec::new(),
+            context_limits(),
+        )
+        .expect("canonical imported context");
+        let substitution_context = simple_substitution_context(1, var(2));
+
+        let mut cluster_two = cluster_step(2, CheckedFactRef::ImportedAxiom(1));
+        cluster_two.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&cluster_two);
+        let mut cluster_three = cluster_step(3, CheckedFactRef::GeneratedClause(3));
+        cluster_three.generated_fact_fingerprint =
+            expected_cluster_fact_fingerprint(&cluster_three);
+        let mut reduction_four = reduction_step(4, CheckedFactRef::TraceStep(2));
+        reduction_four.strategy_audit_key = expected_strategy_audit_key(&reduction_four);
+        reduction_four.result_fingerprint = expected_reduction_result_fingerprint(&reduction_four);
+        let cluster_context = ClusterTraceContext::new(
+            Some(vec![7]),
+            vec![cluster_three.clone(), cluster_two.clone()],
+            vec![reduction_four.clone()],
+            cluster_limits(),
+        )
+        .expect("permuted cluster context");
+        let cluster_context_permuted = ClusterTraceContext::new(
+            Some(vec![7]),
+            vec![cluster_two, cluster_three],
+            vec![reduction_four],
+            cluster_limits(),
+        )
+        .expect("canonical cluster context");
+        let requested = [4, 3, 2];
+        let requested_permuted = [2, 4, 3];
+        let target = TargetVcFingerprint::from_certificate_fingerprint(&certificate.target_vc);
+
+        let accepted = check_kernel_certificate(service_input_with_substitutions(
+            &target,
+            &certificate,
+            &imported_context,
+            Some(&substitution_context),
+            Some(&cluster_context),
+            &requested,
+            service_limits(),
+        ));
+        let repeated = check_kernel_certificate(service_input_with_substitutions(
+            &target,
+            &certificate,
+            &imported_context,
+            Some(&substitution_context),
+            Some(&cluster_context),
+            &requested,
+            service_limits(),
+        ));
+        let permuted = check_kernel_certificate(service_input_with_substitutions(
+            &target,
+            &certificate,
+            &imported_context_permuted,
+            Some(&substitution_context),
+            Some(&cluster_context_permuted),
+            &requested_permuted,
+            service_limits(),
+        ));
+
+        assert_eq!(accepted.status(), KernelCheckStatus::Accepted);
+        assert_eq!(accepted, repeated);
+        assert_eq!(accepted, permuted);
+        assert_eq!(
+            accepted
+                .checked_cluster_steps()
+                .iter()
+                .map(|step| step.cluster_trace_step_id)
+                .collect::<Vec<_>>(),
+            [2, 3]
+        );
+        assert_eq!(accepted.checked_reduction_steps()[0].reduction_step_id, 4);
+
+        let wrong_target = TargetVcFingerprint::new(1, vec![99]);
+        let rejected = check_kernel_certificate(service_input_with_substitutions(
+            &wrong_target,
+            &certificate,
+            &imported_context,
+            Some(&substitution_context),
+            Some(&cluster_context),
+            &requested,
+            service_limits(),
+        ));
+        let rejected_again = check_kernel_certificate(service_input_with_substitutions(
+            &wrong_target,
+            &certificate,
+            &imported_context,
+            Some(&substitution_context),
+            Some(&cluster_context),
+            &requested,
+            service_limits(),
+        ));
+        assert_eq!(rejected, rejected_again);
+        assert_service_rejection(
+            rejected,
+            RejectionCategory::CertificateRejection,
+            RejectionDetail::ContextMismatch,
+            RejectionLocation::new().with_field_path("target_vc"),
+        );
+    }
+
+    #[test]
+    fn kernel_service_batches_are_deterministic_for_distinct_targets_and_ties() {
+        let (first_certificate, first_context) = resolution_service_fixture(vec![1]);
+        let (second_certificate, second_context) = resolution_service_fixture(vec![2]);
+        let (third_certificate, third_context) = resolution_service_fixture(vec![3]);
+        let first_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&first_certificate.target_vc);
+        let second_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&second_certificate.target_vc);
+        let third_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&third_certificate.target_vc);
+        let first_permutation = vec![
+            service_input(
+                &third_target,
+                &third_certificate,
+                &third_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+            service_input(
+                &first_target,
+                &first_certificate,
+                &first_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+            service_input(
+                &second_target,
+                &second_certificate,
+                &second_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+        ];
+        let second_permutation = vec![
+            service_input(
+                &second_target,
+                &second_certificate,
+                &second_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+            service_input(
+                &third_target,
+                &third_certificate,
+                &third_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+            service_input(
+                &first_target,
+                &first_certificate,
+                &first_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+        ];
+
+        let first_results = check_kernel_batch(&first_permutation);
+        let second_results = check_kernel_batch(&second_permutation);
+
+        assert_eq!(first_results, second_results);
+        assert_eq!(
+            first_results
+                .iter()
+                .map(|result| result.target_vc_fingerprint().digest.as_slice())
+                .collect::<Vec<_>>(),
+            [&[1][..], &[2][..], &[3][..]]
+        );
+
+        let (tie_first, tie_first_context) = resolution_service_fixture_with_final(
+            vec![9],
+            FinalGoalRef {
+                namespace: FinalGoalNamespace::GeneratedClause,
+                id: 3,
+            },
+        );
+        let (tie_second, tie_second_context) = resolution_service_fixture_with_final(
+            vec![9],
+            FinalGoalRef {
+                namespace: FinalGoalNamespace::ResolutionStep,
+                id: 1,
+            },
+        );
+        let (before_ties, before_ties_context) = resolution_service_fixture(vec![8]);
+        let tie_first_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&tie_first.target_vc);
+        let tie_second_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&tie_second.target_vc);
+        let before_ties_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&before_ties.target_vc);
+        let tie_inputs = vec![
+            service_input(
+                &tie_first_target,
+                &tie_first,
+                &tie_first_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+            service_input(
+                &before_ties_target,
+                &before_ties,
+                &before_ties_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+            service_input(
+                &tie_second_target,
+                &tie_second,
+                &tie_second_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+        ];
+        let reversed_tie_inputs = vec![
+            service_input(
+                &tie_second_target,
+                &tie_second,
+                &tie_second_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+            service_input(
+                &before_ties_target,
+                &before_ties,
+                &before_ties_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+            service_input(
+                &tie_first_target,
+                &tie_first,
+                &tie_first_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                service_limits(),
+            ),
+        ];
+
+        let tie_results = check_kernel_batch(&tie_inputs);
+        let reversed_tie_results = check_kernel_batch(&reversed_tie_inputs);
+
+        assert_eq!(tie_results[0].target_vc_fingerprint().digest, vec![8]);
+        assert_eq!(
+            tie_results[1].final_goal(),
+            Some(CheckedFinalGoal {
+                namespace: FinalGoalNamespace::GeneratedClause,
+                id: 3
+            })
+        );
+        assert_eq!(
+            tie_results[2].final_goal(),
+            Some(CheckedFinalGoal {
+                namespace: FinalGoalNamespace::ResolutionStep,
+                id: 1
+            })
+        );
+        assert_eq!(
+            reversed_tie_results[1].final_goal(),
+            Some(CheckedFinalGoal {
+                namespace: FinalGoalNamespace::ResolutionStep,
+                id: 1
+            })
+        );
+        assert_eq!(
+            reversed_tie_results[2].final_goal(),
+            Some(CheckedFinalGoal {
+                namespace: FinalGoalNamespace::GeneratedClause,
+                id: 3
+            })
+        );
+        assert_ne!(tie_results, reversed_tie_results);
+    }
+
+    #[test]
+    fn kernel_service_replay_cost_budgets_are_exact_and_stable() {
+        let target = TargetVcFingerprint::new(1, vec![42]);
+        let facts = checked_fact_context();
+        let mut cluster = cluster_step(2, CheckedFactRef::ImportedAxiom(1));
+        cluster.generated_fact_fingerprint = expected_cluster_fact_fingerprint(&cluster);
+        let mut reduction = reduction_step(4, CheckedFactRef::TraceStep(2));
+        reduction.strategy_audit_key = expected_strategy_audit_key(&reduction);
+        reduction.result_fingerprint = expected_reduction_result_fingerprint(&reduction);
+        let context = ClusterTraceContext::new(
+            Some(vec![1]),
+            vec![cluster],
+            vec![reduction],
+            cluster_limits(),
+        )
+        .expect("cluster trace context");
+        let requested = [4];
+        let mut exact_trace_limits = cluster_limits();
+        exact_trace_limits.max_trace_steps = 2;
+        exact_trace_limits.max_cluster_steps = 1;
+        exact_trace_limits.max_reduction_steps = 1;
+        let exact_report = replay_cluster_trace(ClusterTraceReplayInput {
+            target_vc_fingerprint: &target,
+            checked_fact_context: &facts,
+            cluster_trace_context: Some(&context),
+            requested_trace_steps: &requested,
+            limits: exact_trace_limits,
+        })
+        .expect("exact trace budget passes");
+        assert_eq!(exact_report.checked_cluster_steps().len(), 1);
+        assert_eq!(exact_report.checked_reduction_steps().len(), 1);
+
+        let mut trace_limited = exact_trace_limits;
+        trace_limited.max_trace_steps = 1;
+        let trace_error = replay_cluster_trace(ClusterTraceReplayInput {
+            target_vc_fingerprint: &target,
+            checked_fact_context: &facts,
+            cluster_trace_context: Some(&context),
+            requested_trace_steps: &requested,
+            limits: trace_limited,
+        })
+        .expect_err("trace closure budget rejects");
+        assert_rejection_record(
+            &trace_error,
+            RejectionCategory::KernelRejection,
+            RejectionDetail::ResourceExhaustion,
+            RejectionLocation::new().with_field_path("requested_trace_steps"),
+        );
+
+        let mut cluster_limited = exact_trace_limits;
+        cluster_limited.max_cluster_steps = 0;
+        let cluster_error = replay_cluster_trace(ClusterTraceReplayInput {
+            target_vc_fingerprint: &target,
+            checked_fact_context: &facts,
+            cluster_trace_context: Some(&context),
+            requested_trace_steps: &requested,
+            limits: cluster_limited,
+        })
+        .expect_err("cluster count budget rejects");
+        assert_rejection_record(
+            &cluster_error,
+            RejectionCategory::KernelRejection,
+            RejectionDetail::ResourceExhaustion,
+            RejectionLocation::new().with_field_path("cluster_trace_context.cluster_steps"),
+        );
+
+        let mut reduction_limited = exact_trace_limits;
+        reduction_limited.max_reduction_steps = 0;
+        let reduction_error = replay_cluster_trace(ClusterTraceReplayInput {
+            target_vc_fingerprint: &target,
+            checked_fact_context: &facts,
+            cluster_trace_context: Some(&context),
+            requested_trace_steps: &requested,
+            limits: reduction_limited,
+        })
+        .expect_err("reduction count budget rejects");
+        assert_rejection_record(
+            &reduction_error,
+            RejectionCategory::KernelRejection,
+            RejectionDetail::ResourceExhaustion,
+            RejectionLocation::new().with_field_path("cluster_trace_context.reduction_steps"),
+        );
+
+        let (certificate, imported_context) = resolution_service_fixture(vec![11]);
+        let service_target =
+            TargetVcFingerprint::from_certificate_fingerprint(&certificate.target_vc);
+        let mut exact_pipeline_limits = service_limits();
+        exact_pipeline_limits.max_pipeline_steps = 7;
+        let exact_pipeline = check_kernel_certificate(service_input(
+            &service_target,
+            &certificate,
+            &imported_context,
+            None,
+            &[],
+            KernelCheckPolicy::default(),
+            exact_pipeline_limits,
+        ));
+        assert_eq!(exact_pipeline.status(), KernelCheckStatus::Accepted);
+
+        let mut short_pipeline_limits = exact_pipeline_limits;
+        short_pipeline_limits.max_pipeline_steps = 6;
+        assert_service_rejection(
+            check_kernel_certificate(service_input(
+                &service_target,
+                &certificate,
+                &imported_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                short_pipeline_limits,
+            )),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::Timeout,
+            RejectionLocation::new().with_field_path("final_goal"),
+        );
+
+        let mut exact_report_limits = service_limits();
+        exact_report_limits.max_report_records = 4;
+        let exact_report = check_kernel_certificate(service_input(
+            &service_target,
+            &certificate,
+            &imported_context,
+            None,
+            &[],
+            KernelCheckPolicy::default(),
+            exact_report_limits,
+        ));
+        assert_eq!(exact_report.status(), KernelCheckStatus::Accepted);
+
+        let mut short_report_limits = exact_report_limits;
+        short_report_limits.max_report_records = 3;
+        assert_service_rejection(
+            check_kernel_certificate(service_input(
+                &service_target,
+                &certificate,
+                &imported_context,
+                None,
+                &[],
+                KernelCheckPolicy::default(),
+                short_report_limits,
+            )),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::ResourceExhaustion,
+            RejectionLocation::new().with_field_path("checker_limits.max_report_records"),
+        );
+    }
+
+    #[test]
     fn kernel_service_orders_batches_by_target_then_input_order() {
         let (later_first, later_first_context) = resolution_service_fixture_with_final(
             vec![2],
@@ -4322,6 +4802,19 @@ mod tests {
         );
     }
 
+    fn assert_rejection_record(
+        record: &RejectionRecord,
+        category: RejectionCategory,
+        detail: RejectionDetail,
+        location: RejectionLocation,
+    ) {
+        assert_eq!(record.category(), category);
+        assert_eq!(record.category().stable_key(), category.stable_key());
+        assert_eq!(record.detail(), detail);
+        assert_eq!(record.stable_detail_key(), detail.stable_key());
+        assert_eq!(record.location(), &location);
+    }
+
     fn assert_service_rejection(
         result: KernelCheckResult,
         category: RejectionCategory,
@@ -4337,12 +4830,7 @@ mod tests {
         assert!(result.checked_derived_facts().is_empty());
         assert!(result.final_goal().is_none());
         assert_eq!(result.rejections().len(), 1);
-        let record = &result.rejections()[0];
-        assert_eq!(record.category(), category);
-        assert_eq!(record.category().stable_key(), category.stable_key());
-        assert_eq!(record.detail(), detail);
-        assert_eq!(record.stable_detail_key(), detail.stable_key());
-        assert_eq!(record.location(), &location);
+        assert_rejection_record(&result.rejections()[0], category, detail, location);
     }
 
     fn service_input<'a>(

@@ -210,7 +210,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
 
 ### Hardening and cross-cutting follow-ups
 
-17. **Soundness fail-test corpus.** [~]
+17. **Soundness fail-test corpus.** [x]
     - Build the mutation-based soundness suite: every checker gets
       systematically mutated certificates/traces that must be rejected
       (fail-heavy per the test strategy and
@@ -218,7 +218,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
     - Deps: 16. Spec: [fail_soundness.md](../../mizar-test/en/fail_soundness.md),
       [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-18. **Determinism and replay-cost suite.** [ ]
+18. **Determinism and replay-cost suite.** [~]
     - Property coverage that identical inputs produce identical results and
       rejection reasons, and that replay stays within the documented cost
       bounds.
