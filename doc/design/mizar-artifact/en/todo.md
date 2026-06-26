@@ -229,7 +229,9 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       the required real producer outputs and `mizar-proof` witness
       staging/publication crate are not present in this checkout. Phase-15
       emission must use the task-23 formula/substitution kernel evidence
-      witness schema; do not stub producer outputs here.
+      witness schema; do not stub producer outputs here. The task-17
+      reevaluation is recorded in
+      [phase15_emission_reevaluation.md](./phase15_emission_reevaluation.md).
 
 ### Hardening and cross-cutting follow-ups
 

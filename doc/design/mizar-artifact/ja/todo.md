@@ -228,7 +228,8 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       staging/publication crate がこの checkout に存在しないため `external_dependency_gap`
       として deferred。phase-15 emission は task 23 の formula/substitution kernel
       evidence witness schema を使わなければならない。この crate で producer output を
-      stub しない。
+      stub しない。task 17 の再評価は
+      [phase15_emission_reevaluation.md](./phase15_emission_reevaluation.md) に記録する。
 
 ### 強化と横断フォローアップ
 

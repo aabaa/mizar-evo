@@ -67,7 +67,7 @@ or explicitly deferred:
 | ART-G-014 | `external_dependency_gap` | Real resolver/checker/VC/proof/kernel projection inputs for full `VerifiedArtifact` emission remain upstream. |
 | ART-G-015 | `external_dependency_gap` | Development artifact payload hash recomputation remains blocked on producer-owned payload schemas. |
 | ART-G-016 | `external_dependency_gap` | Clean/incremental/parallel scheduler, cache-race, ATP completion order, and real-emission determinism remain upstream integration concerns. |
-| ART-G-017 | `external_dependency_gap` | Task 23 reevaluated phase 15 emission after the witness schema update. `mizar-proof` is not a workspace crate in this checkout and real producer publication output is absent, so task 17 remains deferred. |
+| ART-G-017 | `external_dependency_gap` | Task 17 reevaluation is recorded in [phase15_emission_reevaluation.md](./phase15_emission_reevaluation.md). `mizar-proof` is not a workspace crate in this checkout and real producer publication output is absent, so task 17 remains deferred. |
 
 ## Verification
 
