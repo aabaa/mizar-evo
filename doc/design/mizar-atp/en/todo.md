@@ -18,21 +18,22 @@ architecture 09, 10, 15, and 19 and internal 04.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | problem | `problem.md` (task 2) | `src/problem.rs` | [x] |
-| translator | `translator.md` (task 4) | `src/translator.rs` | [ ] |
+| translator | `translator.md` (task 4) | `src/translator.rs` | [~] spec complete; source deferred to tasks 5-6 |
 | property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [ ] |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [ ] |
 | smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [ ] |
 | backend | `backend.md` (task 13) | `src/backend.rs` | [ ] |
 | portfolio | `portfolio.md` (task 17) | `src/portfolio.rs` | [ ] |
 
-`mizar-atp` implements pipeline phase 13: open `VcIr` obligations in,
-backend-neutral `AtpProblem`s, concrete prover protocol emissions, external
-backend execution, and formula/substitution evidence candidates out. Everything this crate
-produces is untrusted evidence: `Proved` claims become trusted only after
-`mizar-kernel` checks the formula/substitution evidence, and winner/policy selection belongs to
-`mizar-proof`. Determinism rules apply to everything Mizar-side (premise
-order, encoding, problem ids); backend nondeterminism is recorded as
-metadata, never absorbed silently.
+`mizar-atp` implements pipeline phase 13: ATP-eligible `VcStatus::NeedsAtp`
+`VcIr` obligations in, backend-neutral `AtpProblem`s, concrete prover
+protocol emissions, external backend execution, and formula/substitution
+evidence candidates out. Everything this crate produces is untrusted evidence:
+`Proved` claims become trusted only after `mizar-kernel` checks the
+formula/substitution evidence, and winner/policy selection belongs to
+`mizar-proof`. Determinism rules apply to everything Mizar-side (premise order,
+encoding, problem ids); backend nondeterminism is recorded as metadata, never
+absorbed silently.
 
 Dependency order: `problem` data → `translator` / `property_encoding` →
 protocol encoders → `backend` runner → `portfolio`.
@@ -137,26 +138,47 @@ Keep `cargo test -p mizar-atp` green after each task (see
 
 ### Translation
 
-4. **Spec: `translator.md`.** [ ]
+4. **Spec: `translator.md`.** [x]
    - Write the `VcIr`→`AtpProblem` translation spec (English and Japanese,
      no code): premise materialization, deterministic premise ordering,
      soft-type fact preservation (sort encoding must not erase facts needed
      to justify the VC), and validity-checking polarity.
    - Deps: 2. Spec: architecture 09 "Encoding Strategy"/"Validity Checking
      Polarity".
+   - Status: complete as a docs-only task. `translator.md` defines the
+     deterministic `VcIr` / kernel-handoff to `AtpProblem` translation
+     boundary, target-binding checks, premise materialization limits,
+     structured projection inputs, duplicate-premise rejection, proof-hint
+     non-pruning, soft-type preservation, declaration/symbol-map
+     responsibilities, `Unsat` polarity, and prohibited trusted/backend
+     material. Rust translator source remains deferred to tasks 5 and 6.
 
 5. **Declaration and symbol-map translation.** [ ]
    - Translate `VcIr` local contexts and referenced symbols into
      `AtpDeclaration`s with a reversible-enough symbol map for diagnostics.
-   - Tests: declaration fixtures; symbol-map round-trips for diagnostics.
+   - Tests: reject non-`NeedsAtp` VCs and stale handoffs; fail closed on
+     missing/malformed structured declaration and soft-type projections;
+     produce deterministic declarations/symbol maps under shuffled equivalent
+     inputs; fail closed on duplicate/missing/kind/arity-mismatched
+     declarations; preserve explicit profile choice without silent profile
+     switching; keep prohibited backend/kernel/SAT/proof-acceptance material
+     out of the translator API/debug rendering.
    - Deps: 3, 4. Spec: `translator.md`.
 
 6. **Axiom and conjecture translation.** [ ]
    - Materialize cited premises into axioms in deterministic order, encode
      the goal as the conjecture, and attach provenance and
      `expected_result`.
-   - Tests: premise-order determinism; provenance completeness; polarity
-     fixtures.
+   - Tests: reject non-`NeedsAtp` VCs and mismatched target handoffs; fail
+     closed on missing/malformed structured formula projections; report
+     unsupported/open outcomes for unsupported formula/profile features or
+     alpha-repair/substitution-invention requirements; reject duplicate
+     premise refs/source identities; prove proof hints and `Only`/`Exclude`
+     restrictions do not add/drop/prune premises; fail closed on imported
+     facts missing required proof status, statement fingerprint, or formula
+     context; check premise-order determinism, provenance completeness,
+     soft-type preservation, fixed `ExpectedBackendResult::Unsat` polarity,
+     and absence of prohibited backend/kernel/SAT/proof-acceptance material.
    - Deps: 5. Spec: `translator.md`.
 
 7. **Spec: `property_encoding.md`.** [ ]

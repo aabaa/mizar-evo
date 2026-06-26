@@ -18,18 +18,19 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | problem | `problem.md`（task 2） | `src/problem.rs` | [x] |
-| translator | `translator.md`（task 4） | `src/translator.rs` | [ ] |
+| translator | `translator.md`（task 4） | `src/translator.rs` | [~] spec complete。source は task 5-6 に deferred |
 | property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [ ] |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [ ] |
 | smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [ ] |
 | backend | `backend.md`（task 13） | `src/backend.rs` | [ ] |
 | portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [ ] |
 
-`mizar-atp` はパイプライン phase 13 を実装する。入力は open な `VcIr`
-義務、出力はバックエンド中立の `AtpProblem`、具体的な prover プロトコルの
-出力、外部バックエンドの実行、そして evidence candidate である。この crate が生産
-するものはすべて untrusted な証拠である: `Proved` の主張は
-`mizar-kernel` が formula/substitution evidence を検査して初めて信頼され、勝者/ポリシーの選択は
+`mizar-atp` はパイプライン phase 13 を実装する。入力は ATP 対象の
+`VcStatus::NeedsAtp` `VcIr` 義務、出力はバックエンド中立の `AtpProblem`、
+具体的な prover プロトコルの出力、外部バックエンドの実行、そして
+formula/substitution evidence candidate である。この crate が生産するものはすべて
+untrusted な証拠である: `Proved` の主張は `mizar-kernel` が
+formula/substitution evidence を検査して初めて信頼され、勝者/ポリシーの選択は
 `mizar-proof` に属する。決定性規則は Mizar 側のすべて（premise 順、
 エンコーディング、problem id）に適用され、バックエンドの非決定性は
 メタデータとして記録され、黙って吸収されることはない。
@@ -132,25 +133,44 @@ workspace crate ではないため、policy と witness-publication integration 
 
 ### 翻訳
 
-4. **仕様: `translator.md`。** [ ]
+4. **仕様: `translator.md`。** [x]
    - `VcIr`→`AtpProblem` 翻訳の仕様を執筆する（英語と日本語、コード
      なし）: premise の具体化、決定的な premise 順、soft type 事実の保存
      （sort エンコーディングは VC の正当化に必要な事実を消してはなら
      ない）、validity 検査の極性。
    - 依存: 2。仕様: アーキテクチャ 09「Encoding Strategy」「Validity
      Checking Polarity」。
+   - 状態: docs-only task として完了。`translator.md` は deterministic な `VcIr` /
+     kernel-handoff から `AtpProblem` への translation boundary、target-binding check、
+     premise materialization limit、structured projection input、duplicate-premise
+     rejection、proof-hint non-pruning、soft-type preservation、declaration /
+     symbol-map responsibility、`Unsat` polarity、trusted/backend material として禁止される
+     ものを定義する。Rust translator source は task 5 と 6 に deferred のままである。
 
 5. **宣言とシンボルマップの翻訳。** [ ]
    - `VcIr` のローカルコンテキストと参照シンボルを、診断に十分なだけ
      逆引き可能なシンボルマップとともに `AtpDeclaration` へ翻訳する。
-   - テスト: 宣言のフィクスチャ。診断のためのシンボルマップの
-     ラウンドトリップ。
+   - テスト: non-`NeedsAtp` VC と stale handoff を reject する。missing/malformed の
+     structured declaration / soft-type projection で fail closed する。shuffled equivalent
+     input で deterministic declaration / symbol-map を生成する。duplicate/missing/kind/arity
+     mismatch declaration で fail closed する。explicit profile choice を profile の黙った
+     切り替えなしに保持する。translator API/debug rendering に prohibited
+     backend/kernel/SAT/proof-acceptance material が入らないことを確認する。
    - 依存: 3、4。仕様: `translator.md`。
 
 6. **公理と conjecture の翻訳。** [ ]
    - 引用された premise を決定的な順序で公理に具体化し、goal を
      conjecture としてエンコードし、来歴と `expected_result` を付ける。
-   - テスト: premise 順の決定性。来歴の完全性。極性のフィクスチャ。
+   - テスト: non-`NeedsAtp` VC と mismatched target handoff を reject する。
+     missing/malformed の structured formula projection で fail closed する。
+     unsupported formula/profile feature または alpha-repair / substitution-invention
+     requirement は unsupported/open outcome として報告する。duplicate premise ref/source
+     identity を reject する。proof hint と `Only` / `Exclude` restriction が premise を
+     add/drop/prune しないことを確認する。required proof status、statement fingerprint、
+     formula context が missing の imported fact で fail closed する。premise-order determinism、
+     provenance completeness、soft-type preservation、固定の
+     `ExpectedBackendResult::Unsat` polarity、prohibited backend/kernel/SAT/proof-acceptance
+     material がないことを確認する。
    - 依存: 5。仕様: `translator.md`。
 
 7. **仕様: `property_encoding.md`。** [ ]
