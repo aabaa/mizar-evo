@@ -10,7 +10,9 @@ Task 21 audited every paired document under `doc/design/mizar-kernel/en/` and
 module-boundary audit document and the cleaned task-ledger handoff section. The
 closeout task refreshes it again for the paired crate exit report and Task 22
 hash backfill. Tasks 23-24 refresh it for the formula/SAT correction specs and
-the SAT dependency audit. English remains canonical. Japanese companions are
+the SAT dependency audit. Tasks 25-26 refresh it for the formula-evidence
+parser and source-backed SAT encoding implementation. English remains
+canonical. Japanese companions are
 synchronized to the English document unless a task-local bookkeeping omission,
 such as a missing commit hash or task status, is obviously paired and can be
 fixed in both languages with the same rationale. Japanese-only semantic drift
@@ -31,7 +33,7 @@ with the same file name.
 | File | Companion links | Heading count | Table row count | Sync result |
 |---|---|---:|---:|---|
 | `00.crate_plan.md` | EN -> JA and JA -> EN | 8 / 8 | 64 / 64 | Synchronized after post-closeout task rows. |
-| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 34 / 34 | Synchronized after task-25 start bookkeeping. |
+| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 34 / 34 | Synchronized after task-26 SAT encoding implementation bookkeeping. |
 | `certificate_parser.md` | EN -> JA and JA -> EN | 15 / 15 | 29 / 29 | Synchronized. |
 | `checker.md` | EN -> JA and JA -> EN | 15 / 15 | 15 / 15 | Synchronized. |
 | `clause.md` | EN -> JA and JA -> EN | 12 / 12 | 5 / 5 | Synchronized. |
@@ -43,11 +45,11 @@ with the same file name.
 | `resolution_trace.md` | EN -> JA and JA -> EN | 12 / 12 | 15 / 15 | Synchronized. |
 | `sat_checker.md` | EN -> JA and JA -> EN | 6 / 6 | 0 / 0 | Added by task 23 and refreshed by task 24. |
 | `sat_dependency_audit.md` | EN -> JA and JA -> EN | 13 / 13 | 32 / 32 | Added by task 24 and synchronized. |
-| `sat_encoding.md` | EN -> JA and JA -> EN | 7 / 7 | 0 / 0 | Synchronized after task-25 final-goal premise separation. |
-| `source_spec_audit.md` | EN -> JA and JA -> EN | 16 / 16 | 25 / 25 | Synchronized after task-25 source-backed formula evidence module. |
+| `sat_encoding.md` | EN -> JA and JA -> EN | 8 / 8 | 0 / 0 | Synchronized after task-26 instantiation-scope specification. |
+| `source_spec_audit.md` | EN -> JA and JA -> EN | 17 / 17 | 27 / 27 | Synchronized after task-26 source-backed SAT encoding module. |
 | `substitution_checker.md` | EN -> JA and JA -> EN | 15 / 15 | 17 / 17 | Synchronized. |
-| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 29 / 29 | Synchronized after Task 24 hash backfill and Task 25 start row. |
-| `todo.md` | EN -> JA and JA -> EN | 13 / 13 | 11 / 11 | Synchronized after Task 25 start status update. |
+| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 30 / 30 | Synchronized after Task 25 hash backfill and Task 26 pending-commit row. |
+| `todo.md` | EN -> JA and JA -> EN | 13 / 13 | 11 / 11 | Synchronized after Task 26 completion status update. |
 
 The count checks are not used as a full translation proof. They are a drift
 screen that supports the semantic checks below.
@@ -57,7 +59,7 @@ screen that supports the semantic checks below.
 | Area | Result |
 |---|---|
 | Canonical/companion headers | Every English file points at its Japanese companion, and every Japanese file points back to the English canonical file. |
-| Task status and sequencing | Tasks 0-24 are complete consistently; task 24 commit `abc557d5f6f53b6530301a67c29570a23c67b874` is backfilled, and task 25 is in progress with paired formula-evidence implementation specs. |
+| Task status and sequencing | Tasks 0-25 are complete consistently; task 25 commit `35ef60ffba949254e71d86f9be2570b37e5f4a3c` is backfilled, and task 26 is complete pending its own commit hash with paired SAT encoding implementation specs. |
 | Task 21 bookkeeping | `73a919c16b48da82038fd7267e86e1a844cb4c6f` is the completed Task 21 commit and is backfilled in both ledgers. |
 | Task 22 bookkeeping | `814e47bb9aaaff75ebfe4cc1be10d2eb4618498b` is the completed Task 22 commit and is backfilled in both ledgers. |
 | Closeout report inventory | `crate_exit_report.md` is paired and records the same hard gates, task commits, residual gaps, quality score, verification plan, and next-crate handoff in English and Japanese. |
@@ -71,7 +73,7 @@ screen that supports the semantic checks below.
 
 ## Remaining Gaps
 
-Closeout does not close external producer or consumer gaps. The following remain
+Task 26 does not close external producer or consumer gaps. The following remain
 documented in the module specs and `source_spec_audit.md`:
 
 - source-derived formula/substitution evidence and service envelopes;
@@ -87,12 +89,12 @@ documented in the module specs and `source_spec_audit.md`:
 
 ## Verification Plan
 
-Closeout verification for this refreshed bilingual audit includes:
+Task 26 verification for this refreshed bilingual audit includes:
 
 - deterministic file-pair and companion-link checks over
   `doc/design/mizar-kernel/{en,ja}`;
 - `cargo fmt --check`;
-- `cargo clippy --all-targets --all-features -- -D warnings`;
-- `cargo test`;
+- `cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings`;
+- `cargo test -p mizar-kernel`;
 - `git diff --check`;
 - `git diff --cached --check` after explicit path staging.

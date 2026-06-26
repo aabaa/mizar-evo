@@ -15,4 +15,5 @@ pub mod clause;
 pub mod formula_evidence;
 pub mod rejection;
 pub mod resolution_trace;
+pub mod sat_encoding;
 pub mod substitution_checker;

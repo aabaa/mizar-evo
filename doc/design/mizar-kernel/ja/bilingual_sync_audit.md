@@ -10,7 +10,9 @@ paired document すべてを audit した。Task 22 は module-boundary audit do
 と整理済み task-ledger handoff section を含めるため、この audit を更新した。
 Closeout task は paired crate exit report と Task 22 hash backfill を含めるため、
 もう一度更新する。Tasks 23-24 は formula/SAT correction specs と SAT dependency
-audit を含めるため、この audit を更新する。英語は canonical のままである。日本語
+audit を含めるため、この audit を更新する。Tasks 25-26 は formula-evidence parser
+と source-backed SAT encoding implementation を含めるため、この audit を更新する。
+英語は canonical のままである。日本語
 companion は英語文書に同期する。ただし、commit hash や task status の欠落のように
 task-local bookkeeping omission が明らかに paired であり、同じ rationale で両言語を
 修正できる場合は例外とする。Japanese-only semantic drift を、別の classified finding
@@ -30,7 +32,7 @@ ATP/proof/cache/artifact integration は変更しない。
 | File | Companion links | Heading count | Table row count | Sync result |
 |---|---|---:|---:|---|
 | `00.crate_plan.md` | EN -> JA and JA -> EN | 8 / 8 | 64 / 64 | post-closeout task rows 追加後に synchronized. |
-| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 34 / 34 | task-25 start bookkeeping 後に synchronized. |
+| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 34 / 34 | task-26 SAT encoding implementation bookkeeping 後に synchronized. |
 | `certificate_parser.md` | EN -> JA and JA -> EN | 15 / 15 | 29 / 29 | Synchronized. |
 | `checker.md` | EN -> JA and JA -> EN | 15 / 15 | 15 / 15 | Synchronized. |
 | `clause.md` | EN -> JA and JA -> EN | 12 / 12 | 5 / 5 | Synchronized. |
@@ -42,11 +44,11 @@ ATP/proof/cache/artifact integration は変更しない。
 | `resolution_trace.md` | EN -> JA and JA -> EN | 12 / 12 | 15 / 15 | Synchronized. |
 | `sat_checker.md` | EN -> JA and JA -> EN | 6 / 6 | 0 / 0 | Task 23 で追加し task 24 で更新。 |
 | `sat_dependency_audit.md` | EN -> JA and JA -> EN | 13 / 13 | 32 / 32 | Task 24 で追加し synchronized. |
-| `sat_encoding.md` | EN -> JA and JA -> EN | 7 / 7 | 0 / 0 | task-25 final-goal premise separation 後に synchronized. |
-| `source_spec_audit.md` | EN -> JA and JA -> EN | 16 / 16 | 25 / 25 | task-25 source-backed formula evidence module 後に synchronized. |
+| `sat_encoding.md` | EN -> JA and JA -> EN | 8 / 8 | 0 / 0 | task-26 instantiation-scope specification 後に synchronized. |
+| `source_spec_audit.md` | EN -> JA and JA -> EN | 17 / 17 | 27 / 27 | task-26 source-backed SAT encoding module 後に synchronized. |
 | `substitution_checker.md` | EN -> JA and JA -> EN | 15 / 15 | 17 / 17 | Synchronized. |
-| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 29 / 29 | Task 24 hash backfill と Task 25 start row 後に synchronized. |
-| `todo.md` | EN -> JA and JA -> EN | 13 / 13 | 11 / 11 | Task 25 start status update 後に synchronized. |
+| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 30 / 30 | Task 25 hash backfill と Task 26 pending-commit row 後に synchronized. |
+| `todo.md` | EN -> JA and JA -> EN | 13 / 13 | 11 / 11 | Task 26 completion status update 後に synchronized. |
 
 Count check は完全な translation proof ではない。下の semantic check を補助する
 drift screen である。
@@ -56,7 +58,7 @@ drift screen である。
 | Area | Result |
 |---|---|
 | Canonical/companion headers | すべての English file は Japanese companion を指し、すべての Japanese file は English canonical file を指す。 |
-| Task status and sequencing | Tasks 0-24 は complete として一貫する。Task 24 commit `abc557d5f6f53b6530301a67c29570a23c67b874` は backfill 済みであり、task 25 は paired formula-evidence implementation specs とともに in progress である。 |
+| Task status and sequencing | Tasks 0-25 は complete として一貫する。Task 25 commit `35ef60ffba949254e71d86f9be2570b37e5f4a3c` は backfill 済みであり、task 26 は paired SAT encoding implementation specs とともに own commit hash pending の complete である。 |
 | Task 21 bookkeeping | `73a919c16b48da82038fd7267e86e1a844cb4c6f` は完了済み Task 21 commit であり、両 ledger に backfill される。 |
 | Task 22 bookkeeping | `814e47bb9aaaff75ebfe4cc1be10d2eb4618498b` は完了済み Task 22 commit であり、両 ledger に backfill される。 |
 | Closeout report inventory | `crate_exit_report.md` は paired であり、同じ hard gates、task commits、residual gaps、quality score、verification plan、next-crate handoff を英語/日本語で記録する。 |
@@ -70,7 +72,7 @@ drift screen である。
 
 ## Remaining Gaps
 
-Closeout は external producer / consumer gap を閉じない。以下は module spec と
+Task 26 は external producer / consumer gap を閉じない。以下は module spec と
 `source_spec_audit.md` に残る:
 
 - source-derived formula/substitution evidence and service envelopes;
@@ -86,12 +88,12 @@ Closeout は external producer / consumer gap を閉じない。以下は module
 
 ## Verification Plan
 
-Closeout の refreshed bilingual audit verification:
+Task 26 の refreshed bilingual audit verification:
 
 - `doc/design/mizar-kernel/{en,ja}` に対する deterministic file-pair and
   companion-link checks;
 - `cargo fmt --check`;
-- `cargo clippy --all-targets --all-features -- -D warnings`;
-- `cargo test`;
+- `cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings`;
+- `cargo test -p mizar-kernel`;
 - `git diff --check`;
 - explicit path staging 後の `git diff --cached --check`。

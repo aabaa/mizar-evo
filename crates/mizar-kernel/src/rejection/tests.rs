@@ -58,6 +58,11 @@ fn stable_keys_and_category_detail_pairs_are_explicit() {
             RejectionCategory::KernelRejection,
         ),
         (
+            RejectionDetail::InvalidSatRefutation,
+            "invalid_sat_refutation",
+            RejectionCategory::KernelRejection,
+        ),
+        (
             RejectionDetail::InvalidClusterTrace,
             "invalid_cluster_trace",
             RejectionCategory::KernelRejection,
@@ -119,6 +124,7 @@ fn invalid_category_detail_mappings_are_rejected() {
         RejectionDetail::MissingProvenance,
         RejectionDetail::InvalidSubstitution,
         RejectionDetail::InvalidSatProof,
+        RejectionDetail::InvalidSatRefutation,
         RejectionDetail::InvalidClusterTrace,
         RejectionDetail::UnresolvedSymbol,
         RejectionDetail::Timeout,
@@ -222,6 +228,15 @@ fn checker_owner_mappings_use_expected_details() {
             RejectionCategory::KernelRejection,
             RejectionDetail::InvalidSatProof,
             RejectionLocation::new().with_resolution_step_id(1),
+        )
+        .is_ok()
+    );
+    assert!(
+        RejectionRecord::new(
+            target(1),
+            RejectionCategory::KernelRejection,
+            RejectionDetail::InvalidSatRefutation,
+            RejectionLocation::new().with_field_path("sat_encoding"),
         )
         .is_ok()
     );

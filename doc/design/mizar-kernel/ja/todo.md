@@ -26,10 +26,10 @@ kernel が導出した SAT problem に対してだけであり、formula や sub
 |---|---|---|---|
 | clause | `clause.md`（task 2） | `src/clause.rs` | [x] |
 | certificate_parser | `certificate_parser.md`（task 4） | `src/certificate_parser.rs` | [x] |
-| formula_evidence | `formula_evidence.md`（task 23） | `src/formula_evidence.rs` | [ ] |
+| formula_evidence | `formula_evidence.md`（task 23） | `src/formula_evidence.rs` | [x] |
 | rejection | `rejection.md`（task 6） | `src/rejection.rs` | [x] |
 | resolution_trace | `resolution_trace.md`（task 8） | `src/resolution_trace.rs` | [x] |
-| sat_encoding | `sat_encoding.md`（task 23） | `src/sat_encoding.rs` | [ ] |
+| sat_encoding | `sat_encoding.md`（task 23） | `src/sat_encoding.rs` | [x] |
 | sat_checker | `sat_checker.md`（task 23） | `src/sat_checker.rs` | [ ] |
 | substitution_checker | `substitution_checker.md`（task 10） | `src/substitution_checker.rs` | [x] |
 | checker | `checker.md`（task 13） | `src/checker.rs` | [x] |
@@ -323,7 +323,7 @@ backend process execution を含まないものでなければならない。そ
       fail-closed。deterministic rendering / hashing。
     - 依存: 23、24。仕様: task 23 の `formula_evidence.md`。
 
-26. **Formula instantiation and deterministic SAT encoding。** [ ]
+26. **Formula instantiation and deterministic SAT encoding。** [x]
     - substitution side condition を検証し、evidence formula から instantiated
       formula を導出し、結果の formula set と negated/target goal を deterministic
       SAT problem へ encode する。instantiated formula と SAT clause は

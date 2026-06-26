@@ -82,6 +82,7 @@ pub enum RejectionDetail {
     ResourceExhaustion,
     InvalidSubstitution,
     InvalidSatProof,
+    InvalidSatRefutation,
     InvalidClusterTrace,
     UnresolvedSymbol,
     Timeout,
@@ -99,6 +100,7 @@ impl RejectionDetail {
             Self::ResourceExhaustion => "resource_exhaustion",
             Self::InvalidSubstitution => "invalid_substitution",
             Self::InvalidSatProof => "invalid_sat_proof",
+            Self::InvalidSatRefutation => "invalid_sat_refutation",
             Self::InvalidClusterTrace => "invalid_cluster_trace",
             Self::UnresolvedSymbol => "unresolved_symbol",
             Self::Timeout => "timeout",
@@ -117,6 +119,7 @@ impl RejectionDetail {
             Self::MissingProvenance
             | Self::InvalidSubstitution
             | Self::InvalidSatProof
+            | Self::InvalidSatRefutation
             | Self::InvalidClusterTrace
             | Self::UnresolvedSymbol
             | Self::Timeout => matches!(category, RejectionCategory::KernelRejection),
