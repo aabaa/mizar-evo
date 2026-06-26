@@ -22,7 +22,7 @@ architecture 07, 16, 18, and 19.
 | generator | `generator.md` (task 5) | `src/generator.rs` | [x] |
 | discharge | `discharge.md` (task 10) | `src/discharge.rs` | [x] |
 | dependency_slice | `dependency_slice.md` (task 13) | `src/dependency_slice.rs` | [x] |
-| kernel_evidence_handoff | `kernel_evidence_handoff.md` (task 24) | task 25 builder pending | [x] spec |
+| kernel_evidence_handoff | `kernel_evidence_handoff.md` (task 24) | `src/kernel_evidence_handoff.rs` | [x] |
 
 `mizar-vc` implements pipeline phases 11-12: `CoreIr` and `ControlFlowIr` in,
 prover-independent `VcIr` out, with deterministic pre-ATP discharge producing
@@ -66,12 +66,13 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
   accepted as deterministic built-in evidence per policy; this crate
   guarantees the evidence is replayable either way. Registered at the top
   level.
-- **Kernel formula/substitution handoff: task-24 spec complete; builder
-  pending.** `mizar-kernel` tasks 23-29 now provide the checker-side
+- **Kernel formula/substitution handoff: task-24 spec and task-25 builder
+  complete for explicit producer payloads.** `mizar-kernel` tasks 23-29 now provide the checker-side
   formula/substitution evidence path. `VcIr` remains prover-independent, and
-  task 25 must map local context, premises, generated formulas, substitutions,
-  and the goal into the kernel evidence schema without adding backend traces,
-  SAT clauses, resolution traces, or solver-specific proof methods.
+  the task-25 builder maps local context, premises, generated formulas,
+  substitutions, imported fact requirements, discharge diagnostics, and the
+  goal into the kernel evidence schema without adding backend traces, SAT
+  clauses, resolution traces, or solver-specific proof methods.
 - **Diagnostics record: follows the `mizar-resolve` decision** on
   `mizar-diagnostics` adoption timing. Registered at the top level.
 
@@ -362,13 +363,16 @@ Keep `cargo test -p mizar-vc` green after each task (see
       [15.kernel_certificate_format.md](../../architecture/en/15.kernel_certificate_format.md),
       [08.reasoning_boundary.md](../../architecture/en/08.reasoning_boundary.md).
 
-25. **Kernel evidence handoff builder.** [ ]
-    - Implement an immutable handoff builder that packages existing `VcIr`
-      data into kernel evidence inputs once the kernel schema is available.
-      Missing substitution/provenance payloads must be classified as
-      `external_dependency_gap` / `deferred`, not fabricated.
-    - Tests: deterministic handoff rendering; local-context and premise
-      provenance completeness; missing payloads remain fail-closed.
+25. **Kernel evidence handoff builder.** [x]
+    - Implemented an immutable handoff builder that packages existing `VcIr`
+      data plus explicit producer formula/substitution/provenance payloads
+      into kernel evidence inputs. Missing substitution/provenance payloads
+      remain fail-closed or classified `external_dependency_gap` / `deferred`,
+      not fabricated.
+    - Tests: deterministic handoff rendering; local-context, premise,
+      imported-fact, substitution, discharge-diagnostic, final-goal, and
+      prohibited-backend-material coverage; missing payloads remain
+      fail-closed.
     - Deps: 24, `mizar-kernel` task 29. Spec:
       [kernel_evidence_handoff.md](./kernel_evidence_handoff.md).
 

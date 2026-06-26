@@ -30,10 +30,10 @@ in-process Rust SAT checking reports the required UNSAT result.
 
 ## Boundary Rules
 
-`mizar-vc` must remain prover-independent. The handoff builder planned by task
-25 may inspect existing VC data, canonical formula payloads, context entries,
-premise references, discharge records, dependency slices, and provenance, but
-it must not:
+`mizar-vc` must remain prover-independent. The handoff builder added by task 25
+may inspect existing VC data, canonical formula payloads, context entries,
+premise references, discharge records, dependency slices, and provenance, but it
+must not:
 
 - run SAT solving or call `mizar-kernel`;
 - call ATP backends or parse backend logs;
@@ -51,10 +51,10 @@ kernel-derived acceptance material only.
 
 ## Conceptual Handoff Shape
 
-Task 25 should implement an immutable builder equivalent to this conceptual
-shape, using concrete Rust types chosen to match the existing `VcIr` and
-kernel parser APIs. The canonical evidence section must match the kernel v1
-envelope fields and section names:
+Task 25 implements an immutable builder equivalent to this conceptual shape,
+using concrete Rust types chosen to match the existing `VcIr` and kernel parser
+APIs. The canonical evidence section matches the kernel v1 envelope fields and
+section names:
 
 ```text
 VcKernelEvidenceHandoff
@@ -80,6 +80,10 @@ can be treated as accepted. `mizar-vc` may carry candidate source bindings and
 required proof-status requirements, but it does not certify imported facts as
 accepted. Missing or mismatched imported-fact context is a fail-closed builder
 error, kernel rejection, or `external_dependency_gap`.
+The builder rejects an empty context provenance fingerprint and returns imported
+axiom/theorem requirements in canonical sorted, duplicate-free order. Imported
+formula payloads must bind the same fingerprint as their imported statement
+requirement.
 
 `diagnostic_inputs` are optional producer-side details for explainability. They
 are excluded from the canonical kernel evidence bytes, hash inputs, and proof
@@ -88,6 +92,11 @@ Snapshot-local `VcId`, generated formula ids, context-entry ids, source ranges,
 and handoff row ids may appear in diagnostics, but canonical evidence must bind
 through stable formula fingerprints, target identifiers, source bindings, and
 provenance records.
+
+The task-25 target VC fingerprint is specific to the kernel handoff and excludes
+`ProofHint` data. Proof hints, premise restrictions, solver preferences, and
+diagnostic replay data can guide candidate production or explanations, but they
+do not block target binding and do not enter canonical evidence hash input.
 
 ## Input Mapping
 
@@ -104,7 +113,7 @@ producer-owned records already computed by prior VC phases:
 | `VcGeneratedFormula` table | Generated VC fact entries when the formula tree can be projected into the kernel-supported formula grammar and provenance binds the selected target. |
 | `VcIr.goal` | The standalone `final_goal` record. It is never a premise and never a source of `used_axioms`. |
 | `ProofHint` and premise restrictions | Diagnostic or candidate-production metadata only. They do not select premises, add premises, drop premises, or authorize acceptance. The builder may reference only exact premise refs already materialized in immutable `VcIr` inputs; restrictions that are not already reflected in those inputs stay diagnostic. |
-| `DischargeEvidenceRecord` | Candidate formula/substitution/provenance inputs only when the record contains replayable formula references already present in the handoff. A discharge rule name or evidence hash is not trusted acceptance material. |
+| `DischargeEvidenceRecord` | Task 25 carries replayable input references as diagnostics outside canonical evidence and canonical hash input. A discharge rule name or evidence hash is not trusted acceptance material. Promoting deterministic discharge data into canonical formula/substitution/provenance evidence requires a later spec-backed task. |
 | `DependencySlice` and proof-reuse candidate data | Identity and invalidation inputs for task 26. They do not prove the VC and do not replace kernel checking. |
 
 The builder must preserve deterministic ordering. Missing formula payloads,
@@ -125,6 +134,9 @@ debug renderings, backend encodings, trace names, local ids, or proof-method
 metadata. When `CoreFormulaId`, `VcFormulaRef`, or generated formula shape
 cannot be resolved to a stable kernel formula tree, the builder records an
 `external_dependency_gap` and returns no trusted handoff package for that VC.
+Formula and imported-statement fingerprints must use the kernel formula
+fingerprint algorithm for this handoff version; another algorithm id is a
+fail-closed builder error, not a cue to reinterpret bytes.
 
 ## Substitutions
 
@@ -142,6 +154,10 @@ inside the substitution record. The kernel applies checked substitutions and
 derives instantiated formulas during checking. Missing, stale, duplicate, or
 inconsistent substitution records are builder failures or kernel rejections,
 not repair opportunities.
+Freshness witnesses and free-variable constraints are opaque kernel-compatible
+encoded records at this boundary. Task 25 sorts them deterministically and
+rejects empty or duplicate side-condition records; a later kernel/proof task can
+replace the opaque producer-side payload with a richer typed schema if needed.
 
 ## Legacy And Prohibited Material
 
@@ -181,22 +197,23 @@ Remaining gaps:
 - `external_dependency_gap` `VC-HANDOFF-G003`: ATP candidate evidence
   production, proof witness policy, cache consumers, and artifact witness
   consumers remain downstream work.
-- `deferred` `VC-HANDOFF-G004`: task 25 owns the immutable Rust handoff builder,
-  canonical rendering, builder errors, and focused tests.
+- resolved `VC-HANDOFF-G004`: task 25 adds the immutable Rust handoff builder,
+  canonical rendering/hash input, builder errors, lint-policy registration, and
+  focused tests over explicit producer payloads.
 - `deferred` `VC-HANDOFF-G005`: task 26 owns dependency-slice and proof-reuse
   identity updates that include the kernel evidence hash.
 
 ## Planned Tests
 
-Task 25 must add Rust coverage for:
+Task 25 adds Rust coverage for:
 
 - deterministic handoff rendering and canonical byte/hash input stability;
 - local context, premise, generated formula, final goal, and provenance
   mapping;
 - imported fact payload completeness and fail-closed missing identities;
 - substitution payload inclusion without instantiated-formula fields;
-- discharge records contributing only replayable formula/substitution evidence,
-  not trusted rule names or evidence hashes;
+- discharge records contributing only replayable diagnostics, not trusted rule
+  names, evidence hashes, or canonical evidence fields;
 - public API absence of backend text, SAT clauses, resolution traces, backend
   proof methods, and legacy certificate acceptance fields;
 - missing formula/provenance/substitution payloads returning builder errors or
@@ -206,35 +223,56 @@ Task 26 must add invalidation tests showing that proof-reuse identity changes
 when the canonical kernel evidence hash changes and remains unavailable when
 downstream proof/cache/artifact schemas are absent.
 
-## Task 25 Handoff
+## Public Enum Policy
+
+Task 25 classifies every `kernel_evidence_handoff` public enum as a downstream
+forward-compatible API surface. Each enum must keep `#[non_exhaustive]` so
+later kernel profiles, imported-fact classes, proof-status requirements,
+formula source variants, goal polarities, builder errors, and role diagnostics
+can be added without breaking downstream exhaustive matches.
+
+| public enum | decision |
+|---|---|
+| `KernelClauseTautologyPolicy` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelCertificateHashInputAlgorithm` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelImportedFormulaClass` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelRequiredProofStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelFormulaSource` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelGoalPolarity` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelEvidenceHandoffError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelEvidenceRole` | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module. Internal
+`mizar-vc` matches that intentionally enumerate current variants may remain
+exhaustive.
+
+## Task 26 Handoff
 
 Recommended reasoning: `xhigh`.
 
 Prompt:
 
 ```text
-Continue mizar-vc autonomous correction from completed task 24. Before editing,
-verify a clean worktree, confirm the task 24 commit in git log, and re-read
+Continue mizar-vc autonomous correction from completed task 25. Before editing,
+verify a clean worktree, confirm the task 25 commit in git log, and re-read
 doc/design/mizar-vc/en/kernel_evidence_handoff.md,
-doc/design/mizar-kernel/en/formula_evidence.md,
-doc/design/mizar-kernel/en/checker.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/08.reasoning_boundary.md,
-crates/mizar-vc/src/vc_ir.rs, crates/mizar-vc/src/discharge.rs, and
-crates/mizar-vc/src/dependency_slice.rs. Implement task 25 only: add an
-immutable kernel evidence handoff builder over existing VcSet/VcIr data. Keep
-the builder prover-independent; do not run SAT solving, call mizar-kernel, call
-ATP backends, include backend proof methods, include resolution traces, or
-fabricate missing formula/substitution/provenance payloads. Add focused Rust
-tests for deterministic rendering, local context/premise/generated formula/goal
-mapping, missing payload fail-closed behavior, and absence of prohibited
-backend/legacy fields. Run cargo fmt --check, cargo test -p mizar-vc,
-cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings, git diff
---check, and git diff --cached --check after explicit path staging. Use
-review-only agents for the required AGENTS.md review phases.
+doc/design/mizar-vc/en/dependency_slice.md,
+doc/design/architecture/en/22.incremental_verification_contract.md,
+doc/design/architecture/en/18.dependency_fingerprint.md,
+crates/mizar-vc/src/kernel_evidence_handoff.rs, and
+crates/mizar-vc/src/dependency_slice.rs. Implement task 26 only: extend
+dependency-slice and proof-reuse identity to include the canonical kernel
+evidence hash produced by the task-25 builder. Keep downstream proof/cache/
+artifact schemas external; do not promote a handoff package to proof acceptance
+or add placeholder consumers. Add focused Rust tests for hash-driven
+invalidation and fail-closed unavailable reuse when kernel evidence or
+downstream consumers are absent. Run cargo fmt --check, cargo test -p mizar-vc,
+cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings,
+git diff --check, and git diff --cached --check after explicit path staging.
+Use review-only agents for the required AGENTS.md review phases.
 ```
 
-Rationale: task 25 is the first Rust implementation at the VC/kernel evidence
-boundary. Keep `xhigh` because a small API mistake can turn producer-owned
-candidate material into accidental trusted acceptance material. Lower reasoning
+Rationale: task 26 updates architecture-22 reuse identity at the kernel
+evidence boundary. Keep `xhigh` because the hash can invalidate cached/reused
+proof candidates but still must not become acceptance material. Lower reasoning
 is appropriate only for typo-only documentation synchronization.

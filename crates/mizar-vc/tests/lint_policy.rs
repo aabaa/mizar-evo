@@ -123,7 +123,8 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
             "7: pub mod dependency_slice;",
             "8: pub mod discharge;",
             "9: pub mod generator;",
-            "10: pub mod vc_ir;",
+            "10: pub mod kernel_evidence_handoff;",
+            "11: pub mod vc_ir;",
         ],
         "{} must expose only the current spec-backed modules until later module \
          specs exist; found:\n{}",
@@ -136,6 +137,7 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
             "src/dependency_slice.rs",
             "src/discharge.rs",
             "src/generator.rs",
+            "src/kernel_evidence_handoff.rs",
             "src/lib.rs",
             "src/vc_ir.rs",
         ],
@@ -149,6 +151,8 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
         workspace_root().join("doc/design/mizar-vc/ja/discharge.md"),
         workspace_root().join("doc/design/mizar-vc/en/generator.md"),
         workspace_root().join("doc/design/mizar-vc/ja/generator.md"),
+        workspace_root().join("doc/design/mizar-vc/en/kernel_evidence_handoff.md"),
+        workspace_root().join("doc/design/mizar-vc/ja/kernel_evidence_handoff.md"),
         workspace_root().join("doc/design/mizar-vc/en/vc_ir.md"),
         workspace_root().join("doc/design/mizar-vc/ja/vc_ir.md"),
     ] {
@@ -178,7 +182,13 @@ fn vc_lib_exposes_only_current_spec_backed_modules() {
 
 #[test]
 fn vc_public_enums_are_forward_compatible_and_documented() {
-    let modules = ["dependency_slice", "discharge", "generator", "vc_ir"];
+    let modules = [
+        "dependency_slice",
+        "discharge",
+        "generator",
+        "kernel_evidence_handoff",
+        "vc_ir",
+    ];
     let mut violations = Vec::new();
     let mut enums_by_module = BTreeMap::new();
 
@@ -272,6 +282,79 @@ fn vc_public_enums_are_forward_compatible_and_documented() {
 }
 
 #[test]
+fn vc_kernel_handoff_public_api_excludes_backend_and_legacy_material() {
+    let source_path = crate_root().join("src/kernel_evidence_handoff.rs");
+    let source = read_to_string(&source_path);
+    let forbidden = [
+        "backend",
+        "dimacs",
+        "instantiated",
+        "inverse_method",
+        "legacy",
+        "proof_method",
+        "resolution",
+        "sat",
+        "smt",
+        "tptp",
+        "used_axioms",
+    ];
+    let public_lines = public_handoff_api_lines(&source);
+    let mut violations = Vec::new();
+
+    for (line_number, line) in public_lines {
+        for word in forbidden {
+            if line.contains(word) {
+                violations.push(format!(
+                    "{}:{line_number}: public handoff API must not expose `{word}`: {line}",
+                    source_path.display()
+                ));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "kernel evidence handoff public API must stay free of backend/SAT/legacy trusted material:\n{}",
+        violations.join("\n")
+    );
+}
+
+fn public_handoff_api_lines(source: &str) -> Vec<(usize, String)> {
+    let mut lines = Vec::new();
+    let mut in_public_enum = false;
+    let mut enum_depth = 0;
+
+    for (line_index, line) in source.lines().enumerate() {
+        let trimmed = line.trim();
+        let line_number = line_index + 1;
+        if trimmed.starts_with("pub ") || trimmed.starts_with("pub const ") {
+            if trimmed.starts_with("pub enum ") {
+                in_public_enum = true;
+                enum_depth = brace_delta(trimmed);
+            }
+            lines.push((line_number, trimmed.to_ascii_lowercase()));
+            continue;
+        }
+        if in_public_enum {
+            enum_depth += brace_delta(trimmed);
+            if !trimmed.is_empty()
+                && !trimmed.starts_with('#')
+                && !trimmed.starts_with("//")
+                && trimmed != "}"
+            {
+                lines.push((line_number, trimmed.to_ascii_lowercase()));
+            }
+            if enum_depth <= 0 {
+                in_public_enum = false;
+                enum_depth = 0;
+            }
+        }
+    }
+
+    lines
+}
+
+#[test]
 fn vc_source_spec_audit_covers_public_modules_and_deferred_gaps() {
     for language in ["en", "ja"] {
         let audit_path = workspace_root()
@@ -285,10 +368,12 @@ fn vc_source_spec_audit_covers_public_modules_and_deferred_gaps() {
             "generator",
             "discharge",
             "dependency_slice",
+            "kernel_evidence_handoff",
             "crates/mizar-vc/src/vc_ir.rs",
             "crates/mizar-vc/src/generator.rs",
             "crates/mizar-vc/src/discharge.rs",
             "crates/mizar-vc/src/dependency_slice.rs",
+            "crates/mizar-vc/src/kernel_evidence_handoff.rs",
             "vc_public_enums_are_forward_compatible_and_documented",
             "identical_public_inputs_have_deterministic_pipeline_outputs",
             "proof_verification",

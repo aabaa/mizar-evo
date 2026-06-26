@@ -30,10 +30,10 @@ substitution から instantiated formula を再導出し、deterministic SAT pro
 
 ## Boundary Rules
 
-`mizar-vc` は prover-independent のままでなければならない。task 25 が予定する
-handoff builder は、既存の VC data、canonical formula payload、context entry、
-premise reference、discharge record、dependency slice、provenance を調べてよいが、
-次を行ってはならない:
+`mizar-vc` は prover-independent のままでなければならない。task 25 が追加する
+handoff builder は、既存の VC data、canonical formula payload、context entry、premise
+reference、discharge record、dependency slice、provenance を調べてよいが、次を行っては
+ならない:
 
 - SAT solving を実行する、または `mizar-kernel` を呼び出す;
 - ATP backend を呼び出す、または backend log を parse する;
@@ -53,7 +53,7 @@ acceptance material のみである。
 
 Task 25 は、既存 `VcIr` と kernel parser API に合う具体的な Rust type を選んで、
 次の conceptual shape に相当する immutable builder を実装する。canonical evidence
-section は kernel v1 envelope の field と section name に一致しなければならない:
+section は kernel v1 envelope の field と section name に一致する:
 
 ```text
 VcKernelEvidenceHandoff
@@ -78,6 +78,9 @@ imported axiom / theorem を accepted と扱う前に `mizar-kernel` へ
 `mizar-vc` は candidate source binding と required proof-status requirement を運んでよいが、
 imported fact が accepted であるとは認定しない。imported-fact context の不足または不一致は
 fail-closed builder error、kernel rejection、または `external_dependency_gap` である。
+builder は空の context provenance fingerprint を拒否し、imported axiom/theorem requirement
+を canonical な sorted / duplicate-free order で返す。imported formula payload は、その
+imported statement requirement と同じ fingerprint に bind しなければならない。
 
 `diagnostic_inputs` は explainability 用の任意 producer-side detail である。後続 spec が
 stable field として明示的に昇格しない限り、canonical kernel evidence bytes、hash
@@ -85,6 +88,11 @@ input、proof reuse identity から除外する。snapshot-local な `VcId`、ge
 id、context-entry id、source range、handoff row id は diagnostics に現れてよいが、
 canonical evidence は stable formula fingerprint、target identifier、source binding、
 provenance record で binding しなければならない。
+
+task-25 target VC fingerprint は kernel handoff 専用であり、`ProofHint` data を含めない。
+proof hint、premise restriction、solver preference、diagnostic replay data は candidate
+production または explanation を導けるが、target binding を block せず、canonical evidence
+hash input にも入らない。
 
 ## Input Mapping
 
@@ -101,7 +109,7 @@ builder input は validated `VcSet`、選択された `VcIr`、および prior V
 | `VcGeneratedFormula` table | formula tree を kernel-supported formula grammar に projection でき、provenance が選択 target に bind する場合、generated VC fact entry にする。 |
 | `VcIr.goal` | standalone `final_goal` record。premise ではなく、`used_axioms` の source にもならない。 |
 | `ProofHint` と premise restriction | diagnostic または candidate-production metadata のみ。premise を選択、追加、削除せず、acceptance を認可しない。builder は immutable `VcIr` input に既に materialized された exact premise ref だけを参照してよい。それらの input に既に反映されていない restriction は diagnostic のままにする。 |
-| `DischargeEvidenceRecord` | record が handoff 内に既に存在する replayable formula reference を含む場合だけ、candidate formula/substitution/provenance input になれる。discharge rule name や evidence hash は trusted acceptance material ではない。 |
+| `DischargeEvidenceRecord` | Task 25 は replayable input reference を canonical evidence と canonical hash input の外にある diagnostics として運ぶ。discharge rule name や evidence hash は trusted acceptance material ではない。deterministic discharge data を canonical formula/substitution/provenance evidence に昇格するには、後続の spec-backed task が必要である。 |
 | `DependencySlice` と proof-reuse candidate data | task 26 の identity / invalidation input。VC を証明せず、kernel checking を置き換えない。 |
 
 builder は deterministic ordering を保持する。formula payload 不足、imported-fact
@@ -120,6 +128,9 @@ formula payload が必要な normalized atom、symbol、variable、binder、prov
 local id、proof-method metadata から formula を再構築してはならない。`CoreFormulaId`、
 `VcFormulaRef`、generated formula shape を stable kernel formula tree へ解決できない場合、
 builder は `external_dependency_gap` を記録し、その VC の trusted handoff package を返さない。
+formula と imported-statement fingerprint は、この handoff version では kernel formula
+fingerprint algorithm を使わなければならない。別の algorithm id は bytes を再解釈する合図ではなく、
+fail-closed builder error である。
 
 ## Substitutions
 
@@ -136,6 +147,10 @@ handoff は substitution record 内に instantiated formula や target formula f
 ならない。kernel が checking 中に checked substitution を適用し、instantiated formula を
 導出する。missing、stale、duplicate、inconsistent な substitution record は builder failure
 または kernel rejection であり、repair の機会ではない。
+freshness witness と free-variable constraint は、この boundary では opaque な
+kernel-compatible encoded record である。Task 25 はこれらを deterministic に sort し、空または
+重複した side-condition record を拒否する。必要なら後続 kernel/proof task が、この opaque
+producer-side payload をより豊かな typed schema に置き換えられる。
 
 ## Legacy And Prohibited Material
 
@@ -173,21 +188,22 @@ producer-side のみである。
   すべての `PremiseRef::ImportedFact` でまだ一様には利用できない。
 - `external_dependency_gap` `VC-HANDOFF-G003`: ATP candidate evidence production、
   proof witness policy、cache consumer、artifact witness consumer は downstream work。
-- `deferred` `VC-HANDOFF-G004`: immutable Rust handoff builder、canonical rendering、
-  builder error、focused tests は task 25 が所有する。
+- resolved `VC-HANDOFF-G004`: task 25 は immutable Rust handoff builder、canonical
+  rendering/hash input、builder error、lint-policy registration、explicit producer
+  payload に対する focused tests を追加する。
 - `deferred` `VC-HANDOFF-G005`: kernel evidence hash を含む dependency-slice /
   proof-reuse identity update は task 26 が所有する。
 
 ## Planned Tests
 
-Task 25 は Rust coverage を追加し、次を確認しなければならない:
+Task 25 は Rust coverage を追加し、次を確認する:
 
 - deterministic handoff rendering と canonical byte/hash input stability;
 - local context、premise、generated formula、final goal、provenance mapping;
 - imported fact payload completeness と missing identity の fail-closed;
 - instantiated-formula field を含まない substitution payload inclusion;
-- discharge record が replayable formula/substitution evidence のみを供給し、
-  trusted rule name や evidence hash にならないこと;
+- discharge record が replayable diagnostics のみを供給し、trusted rule name、
+  evidence hash、canonical evidence field にならないこと;
 - public API に backend text、SAT clause、resolution trace、backend proof method、
   legacy certificate acceptance field がないこと;
 - formula/provenance/substitution payload 不足が builder error または classified
@@ -197,35 +213,55 @@ Task 26 は、canonical kernel evidence hash が変わると proof-reuse identit
 downstream proof/cache/artifact schema がない場合には reuse が利用不能なままであることを
 示す invalidation test を追加しなければならない。
 
-## Task 25 Handoff
+## Public Enum Policy
+
+Task 25 はすべての `kernel_evidence_handoff` public enum を downstream
+forward-compatible API surface として分類する。後続で kernel profile、imported-fact
+class、proof-status requirement、formula source variant、goal polarity、builder error、
+role diagnostic を追加しても downstream exhaustive match を壊さないよう、各 enum は
+`#[non_exhaustive]` を保持しなければならない。
+
+| public enum | decision |
+|---|---|
+| `KernelClauseTautologyPolicy` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelCertificateHashInputAlgorithm` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelImportedFormulaClass` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelRequiredProofStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelFormulaSource` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelGoalPolarity` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelEvidenceHandoffError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelEvidenceRole` | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+この module が所有する exhaustive public enum exception はない。現在の variant を意図的に
+列挙する internal `mizar-vc` match は exhaustive のままでよい。
+
+## Task 26 Handoff
 
 推奨 reasoning: `xhigh`。
 
 Prompt:
 
 ```text
-Continue mizar-vc autonomous correction from completed task 24. Before editing,
-verify a clean worktree, confirm the task 24 commit in git log, and re-read
+Continue mizar-vc autonomous correction from completed task 25. Before editing,
+verify a clean worktree, confirm the task 25 commit in git log, and re-read
 doc/design/mizar-vc/en/kernel_evidence_handoff.md,
-doc/design/mizar-kernel/en/formula_evidence.md,
-doc/design/mizar-kernel/en/checker.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/08.reasoning_boundary.md,
-crates/mizar-vc/src/vc_ir.rs, crates/mizar-vc/src/discharge.rs, and
-crates/mizar-vc/src/dependency_slice.rs. Implement task 25 only: add an
-immutable kernel evidence handoff builder over existing VcSet/VcIr data. Keep
-the builder prover-independent; do not run SAT solving, call mizar-kernel, call
-ATP backends, include backend proof methods, include resolution traces, or
-fabricate missing formula/substitution/provenance payloads. Add focused Rust
-tests for deterministic rendering, local context/premise/generated formula/goal
-mapping, missing payload fail-closed behavior, and absence of prohibited
-backend/legacy fields. Run cargo fmt --check, cargo test -p mizar-vc,
-cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings, git diff
---check, and git diff --cached --check after explicit path staging. Use
-review-only agents for the required AGENTS.md review phases.
+doc/design/mizar-vc/en/dependency_slice.md,
+doc/design/architecture/en/22.incremental_verification_contract.md,
+doc/design/architecture/en/18.dependency_fingerprint.md,
+crates/mizar-vc/src/kernel_evidence_handoff.rs, and
+crates/mizar-vc/src/dependency_slice.rs. Implement task 26 only: extend
+dependency-slice and proof-reuse identity to include the canonical kernel
+evidence hash produced by the task-25 builder. Keep downstream proof/cache/
+artifact schemas external; do not promote a handoff package to proof acceptance
+or add placeholder consumers. Add focused Rust tests for hash-driven
+invalidation and fail-closed unavailable reuse when kernel evidence or
+downstream consumers are absent. Run cargo fmt --check, cargo test -p mizar-vc,
+cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings,
+git diff --check, and git diff --cached --check after explicit path staging.
+Use review-only agents for the required AGENTS.md review phases.
 ```
 
-根拠: task 25 は VC/kernel evidence boundary での最初の Rust 実装である。小さな
-API mistake が producer-owned candidate material を accidental trusted acceptance
-material に変え得るため、`xhigh` を維持する。typo-only documentation synchronization の
+根拠: task 26 は kernel evidence boundary で architecture-22 reuse identity を更新する。
+hash は cached/reused proof candidate を invalidate できるが、acceptance material には
+なってはならないため、`xhigh` を維持する。typo-only documentation synchronization の
 場合だけ、より低い reasoning が適切である。

@@ -37,6 +37,7 @@ expectation、public API、language specification を変更しない。まだ利
 - `dependency_slice`
 - `discharge`
 - `generator`
+- `kernel_evidence_handoff`
 - `vc_ir`
 
 対応する source path:
@@ -44,6 +45,7 @@ expectation、public API、language specification を変更しない。まだ利
 - `crates/mizar-vc/src/dependency_slice.rs`
 - `crates/mizar-vc/src/discharge.rs`
 - `crates/mizar-vc/src/generator.rs`
+- `crates/mizar-vc/src/kernel_evidence_handoff.rs`
 - `crates/mizar-vc/src/vc_ir.rs`
 
 Evidence: `crates/mizar-vc/tests/lint_policy.rs` の
@@ -161,6 +163,41 @@ Correspondence:
 | Proof-reuse candidate key は complete anchor/slice、current matching slice computation、canonical VC/context fingerprint、compatible policy fingerprint、newly produced replayable deterministic discharge evidence を要求する。 | `DependencySliceSet::proof_reuse_key_for`、`ProofReuseCandidateKey`、`proof_reuse_key`。 | `cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs` と dependency-slice fail-closed tests。 | deterministic-discharge branch 向けに実装済み。proof-witness/cache/kernel consumer は external/deferred のまま。 |
 | Public enum は forward-compatible である。 | dependency-slice public enum は `#[non_exhaustive]`。 | `vc_public_enums_are_forward_compatible_and_documented`。 | task 17 で guard 済み。 |
 
+### `kernel_evidence_handoff`
+
+Source path: `crates/mizar-vc/src/kernel_evidence_handoff.rs`.
+
+literal top-level public item:
+
+- `KERNEL_EVIDENCE_SCHEMA_VERSION`, `KERNEL_EVIDENCE_ENCODING_VERSION`,
+  `VC_KERNEL_HANDOFF_SCHEMA`, `VC_TARGET_FINGERPRINT_ALGORITHM_ID`,
+  `KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID`
+- `KernelEvidenceHandoffInput`, `VcKernelEvidenceHandoff`,
+  `KernelEvidenceEnvelope`, `KernelEvidenceProfile`,
+  `KernelClauseTautologyPolicy`, `KernelCertificateHashInputAlgorithm`,
+  `KernelEvidenceFingerprint`, `KernelManifestEntry`,
+  `KernelFormulaPayload`, `KernelFormulaProjection`,
+  `KernelImportedFormulaPayload`, `KernelImportedFormulaClass`,
+  `KernelImportedFactRequirement`, `KernelRequiredProofStatus`,
+  `KernelFormulaContextRequirements`, `KernelSubstitutionPayload`,
+  `KernelFormulaEvidenceEntry`, `KernelFormulaSource`,
+  `KernelSubstitutionEvidence`, `KernelEvidenceProvenance`,
+  `KernelFinalGoalEvidence`, `KernelGoalPolarity`,
+  `KernelEvidenceDiagnosticInputs`, `KernelDischargeDiagnostic`,
+  `KernelEvidenceHandoffError`, `KernelEvidenceRole`,
+  `build_kernel_evidence_handoff`
+
+Correspondence:
+
+| spec promise | source evidence | test evidence | status |
+|---|---|---|---|
+| builder は producer-side formula、substitution、provenance、target-binding evidence だけを package し、kernel、SAT solving、ATP backend を呼び出さない。 | `build_kernel_evidence_handoff` は `VcSet`、explicit payload slice、imported context requirement、optional discharge output だけを消費する。 | deterministic handoff、proof-hint exclusion、target-binding、prohibited-backend-material、discharge-diagnostic tests。 | explicit payload 向けに実装済み。 |
+| canonical evidence は schema/encoding version、target VC、kernel profile、manifest、formula evidence、substitution、provenance、final goal を含む。imported context requirement と diagnostics は canonical hash input の外に残る。 | `KernelEvidenceEnvelope`、`target_fingerprint`、`VcKernelEvidenceHandoff::canonical_hash_input`、`canonical_hash_input`。 | deterministic hash/debug tests、proof-hint metadata target-binding test、imported-context tests。 | 実装済み。 |
+| imported context / payload data は、empty context provenance、imported statement/formula fingerprint mismatch、unsupported formula fingerprint algorithm、missing context/payload data で fail closed する。返される context requirement は canonical sorted/deduplicated である。 | `validate_import_requirement`、`imported_payload_map`、`canonical_context_requirements`。 | imported context missing/mismatch、empty context provenance、unsupported algorithm、fingerprint mismatch、duplicate-context tests。 | 現在の explicit imported payload 向けに実装済み。 |
+| formula、substitution source、provenance、manifest、side-condition、unsupported premise data の不足は fabrication ではなく fail closed する。 | `KernelEvidenceHandoffError` と validation helpers。 | missing payload、invalid projection、substitution missing-source/empty/side-condition、manifest tests。 | 現在の fail-closed case 向けに実装済み。upstream full formula/binder payload production は external のまま。 |
+| substitution record は instantiated formula と target formula field を含めない。side-condition record は opaque deterministic kernel-compatible encoding であり、sort され、empty または duplicate の場合は拒否される。 | `KernelSubstitutionPayload`、`KernelSubstitutionEvidence`、`canonical_side_conditions`。 | `substitutions_reference_source_formula_without_instantiated_fields`、substitution side-condition fail-closed tests、input-order canonicalization tests。 | 実装済み。 |
+| Public enum は forward-compatible である。 | handoff public enum は `#[non_exhaustive]`。 | `vc_public_enums_are_forward_compatible_and_documented`。 | task 25 で guard 済み。 |
+
 ## Cross-Module Evidence
 
 | contract | source/test correspondence |
@@ -168,6 +205,7 @@ Correspondence:
 | Crate scaffolding and dependency boundary | `Cargo.toml`、`src/lib.rs`、`tests/lint_policy.rs`; manifest、workspace、dependency、module-export、allow-rationale tests が guard する。 |
 | 同一 public input が同一 VC set、id、order、status、discharge evidence、slice を生成すること | `crates/mizar-vc/tests/determinism_suite.rs`; `identical_public_inputs_have_deterministic_pipeline_outputs`。 |
 | deterministic discharge candidate 向け architecture-22 cross-edit reuse identity | `crates/mizar-vc/tests/determinism_suite.rs`; shifted `VcId`、shifted generated-formula id、stale slice、policy/context/goal change、pre-existing evidence、incomplete anchor、unresolved-payload checks。 |
+| Kernel evidence handoff が producer-side かつ prover-independent に残ること | `crates/mizar-vc/src/kernel_evidence_handoff.rs`; deterministic handoff tests、fail-closed missing-payload tests、prohibited backend/legacy material tests。 |
 | Public enum forward compatibility | source attribute、EN/JA module policy table、`vc_public_enums_are_forward_compatible_and_documented`。 |
 | Active source-derived corpus coverage | active proof-verification corpus は未実装。Task 15 は fake `.miz` fixture ではなく deferred traceability row を記録する。 |
 
@@ -207,31 +245,46 @@ integration、proof policy、cache storage、artifact witness publication を追
 `VcSet` / `VcIr` data から formula、substitution、provenance、target-binding
 evidence を package してよいが、instantiated formula、SAT clause、backend proof
 method、resolution trace、backend log、legacy certificate は trusted evidence の外に
-残す。source implementation と tests は task 25 が所有する。
+残す。
+
+## Task 25 kernel evidence handoff builder follow-up
+
+Task 25 は `crates/mizar-vc/src/kernel_evidence_handoff.rs` を追加し、`src/lib.rs` に
+module を登録し、lint-policy guard を更新し、builder を focused Rust tests で cover
+する。この module は producer-side のままであり、explicit formula/substitution/provenance
+payload から immutable handoff package を構築し、imported fact context requirement を
+canonical envelope の外に運び、diagnostic discharge input を canonical hash input の外に
+記録し、payload または context requirement が不足する場合は fail closed する。
+
+この task は SAT solving、kernel call、ATP backend integration、backend proof method、
+resolution trace、legacy certificate acceptance、artifact witness publication、cache
+promotion、downstream proof policy を追加しない。
 
 ## Remaining Classified Follow-Ups
 
 Task 18 は新しい source/spec correspondence gap を追加しなかった。Task 21 は
 architecture-22 identity work 後にこの audit を再実行し、新しい未分類の source/spec gap を
 記録しない。Task 22 は module-boundary gate を再実行し、closeout 前に必須の split はないと
-記録する。Task 24 は downstream kernel classification を更新するが、残る
-producer/consumer gap は解決しない。既存の分類済み record は残る:
+記録する。Task 24 は downstream kernel classification を更新し、Task 25 は explicit
+payload 向け VC producer-side handoff builder を実装するが、残る upstream full payload
+gap と downstream consumer gap は解決しない。既存の分類済み record は残る:
 
 - `external_dependency_gap`: active `proof_verification` runner support と
   source-to-core / source-to-VC extraction seam は `mizar-test` に存在しない。
   Task 15 が concrete deferred corpus obligation を記録済み。
 - `external_dependency_gap` / `deferred`: `mizar-kernel` は現在 checker-side
-  formula/substitution evidence acceptance path を所有するが、`mizar-vc` handoff
-  builder、`mizar-atp` candidate evidence producer、`mizar-proof` / `mizar-cache`
-  consumer、artifact witness consumer はまだ incomplete である。ATP translation、
+  formula/substitution evidence acceptance path を所有し、`mizar-vc` は explicit payload
+  向け producer-side handoff builder を所有するが、`mizar-atp` candidate evidence
+  producer、`mizar-proof` / `mizar-cache` consumer、artifact witness consumer はまだ
+  incomplete である。ATP translation、
   proof policy、cache lookup/reuse、artifact persistence はこの crate の外に残る。
 - `external_dependency_gap`: registration/redefinition/reduction details、call-precondition、
   branch、match、range-loop、collection-loop、term-only termination、partial termination、
   Pick non-emptiness、ghost-erasure、complete trace family、source-derived core formula
   payload、definition payload、quantified binder payload、source-derived obligation payload
   family について、upstream explicit/stable payload はまだ不完全である。
-- `deferred`: proof-witness hash、ATP/kernel/proof/cache validation、artifact consumer、
-  VC kernel-evidence hash integration、source-derived runner integration は、
+- `deferred`: proof-witness hash、ATP/proof/cache validation、artifact consumer、
+  VC kernel-evidence hash reuse integration、source-derived runner integration は、
   architecture-22 reuse を deterministic discharge candidate key の外で受理する前に
   実装しなければならない。
 - `deferred`: 大きい `vc_ir`、`generator`、`dependency_slice` implementation file 内の

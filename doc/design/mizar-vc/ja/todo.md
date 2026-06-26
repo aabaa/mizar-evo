@@ -21,7 +21,7 @@
 | generator | `generator.md`（task 5） | `src/generator.rs` | [x] |
 | discharge | `discharge.md`（task 10） | `src/discharge.rs` | [x] |
 | dependency_slice | `dependency_slice.md`（task 13） | `src/dependency_slice.rs` | [x] |
-| kernel_evidence_handoff | `kernel_evidence_handoff.md`（task 24） | task 25 builder pending | [x] spec |
+| kernel_evidence_handoff | `kernel_evidence_handoff.md`（task 24） | `src/kernel_evidence_handoff.rs` | [x] |
 
 `mizar-vc` はパイプライン phase 11-12 を実装する。入力は `CoreIr` と
 `ControlFlowIr`、出力は prover 非依存の `VcIr` であり、外部 prover の実行に
@@ -63,12 +63,13 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
   task 12 の discharge 証拠を kernel が再生するか、ポリシーに従う
   決定的な built-in 証拠として受理するか。この crate はどちらの場合でも
   証拠が再生可能であることを保証する。トップレベルに登録済み。
-- **kernel formula/substitution handoff: task-24 spec complete、builder
-  pending。** `mizar-kernel` task 23-29 は checker-side formula/substitution evidence
-  path を提供済みである。`VcIr` は prover-independent のままにし、task 25 は local
-  context、premise、generated formula、substitution、goal を、backend trace、SAT
-  clause、resolution trace、solver-specific proof method を加えずに kernel evidence schema
-  へ写像しなければならない。
+- **kernel formula/substitution handoff: task-24 spec と task-25 builder は
+  explicit producer payload 向けに完了。** `mizar-kernel` task 23-29 は
+  checker-side formula/substitution evidence path を提供済みである。`VcIr` は
+  prover-independent のままであり、task-25 builder は local context、premise、
+  generated formula、substitution、imported fact requirement、discharge diagnostic、
+  goal を backend trace、SAT clause、resolution trace、solver-specific proof method
+  を追加せず kernel evidence schema へ写像する。
 - **diagnostics レコード: `mizar-resolve` の決定に従う**
   （`mizar-diagnostics` 採用時期）。トップレベルに登録済み。
 
@@ -345,13 +346,14 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       [15.kernel_certificate_format.md](../../architecture/ja/15.kernel_certificate_format.md),
       [08.reasoning_boundary.md](../../architecture/ja/08.reasoning_boundary.md)。
 
-25. **Kernel evidence handoff builder。** [ ]
-    - kernel schema が利用可能になった後、既存の `VcIr` data を kernel evidence
-      input へ package する immutable handoff builder を実装する。substitution /
-      provenance payload が不足する場合は fabrication せず、`external_dependency_gap` /
-      `deferred` として分類する。
-    - テスト: deterministic handoff rendering。local-context と premise provenance
-      の completeness。不足 payload は fail-closed のまま。
+25. **Kernel evidence handoff builder。** [x]
+    - 既存の `VcIr` data と explicit producer formula/substitution/provenance payload
+      を kernel evidence input へ package する immutable handoff builder を実装した。
+      substitution / provenance payload が不足する場合は fabrication せず、
+      fail-closed または `external_dependency_gap` / `deferred` として分類する。
+    - テスト: deterministic handoff rendering。local-context、premise、imported-fact、
+      substitution、discharge-diagnostic、final-goal、prohibited-backend-material coverage。
+      不足 payload は fail-closed のまま。
     - 依存: 24、`mizar-kernel` task 29。仕様:
       [kernel_evidence_handoff.md](./kernel_evidence_handoff.md)。
 

@@ -7,4 +7,5 @@
 pub mod dependency_slice;
 pub mod discharge;
 pub mod generator;
+pub mod kernel_evidence_handoff;
 pub mod vc_ir;

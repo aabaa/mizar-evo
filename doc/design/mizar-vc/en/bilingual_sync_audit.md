@@ -43,7 +43,7 @@ because a commit cannot embed its own hash.
 | `generator.md` | Explicit-payload generation scope, unavailable registration/algorithm payload boundaries, local context, controlled unfolding, normalization handoff, task slices, planned tests, and public enum policy. | Synchronized. |
 | `discharge.md` | Deterministic pre-ATP scope, supported classes, limits, evidence/explanation model, status interaction, no-erase ATP boundary, planned tests, and public enum policy. | Synchronized. |
 | `dependency_slice.md` | Conservative slice inputs/outputs, dependency entry classes, unknown coverage, reusable fingerprint contract, planned tests, and public enum policy. | Synchronized. |
-| `kernel_evidence_handoff.md` | Producer-side formula/substitution evidence handoff mapping, prohibited backend/legacy material, gap classification, and task-25 planned tests. | Synchronized by Task 24. |
+| `kernel_evidence_handoff.md` | Producer-side formula/substitution evidence handoff mapping, prohibited backend/legacy material, gap classification, task-25 builder public enum policy, and task-26 handoff. | Synchronized by Tasks 24-25. |
 | `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, and classified external/deferred follow-ups. | Synchronized. |
 | `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19/21/22/closeout sync edits. | Synchronized by this paired audit document. |
 | `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence, deterministic-discharge branch evidence, remaining external/deferred gaps, and no-drift classification. | Synchronized by Task 21. |
@@ -67,10 +67,11 @@ Existing classified records remain:
   source-to-core / source-to-VC extraction seams are absent from `mizar-test`;
   Task 15 records the deferred corpus obligation.
 - `external_dependency_gap` / `deferred`: `mizar-kernel` now owns the
-  checker-side formula/substitution evidence acceptance path, but the
-  `mizar-vc` handoff builder, ATP candidate producer, proof/cache consumers,
-  and artifact witness consumers remain incomplete. ATP translation, proof
-  policy, cache lookup/reuse, and artifact persistence remain downstream.
+  checker-side formula/substitution evidence acceptance path, and `mizar-vc`
+  now owns the explicit-payload producer-side handoff builder, but ATP
+  candidate production, proof/cache consumers, artifact witness consumers, and
+  kernel-evidence hash reuse integration remain incomplete. ATP translation,
+  proof policy, cache lookup/reuse, and artifact persistence remain downstream.
 - `external_dependency_gap`: upstream explicit/stable payloads remain
   incomplete for registration/redefinition/reduction details,
   call-precondition, branch, match, range-loop, collection-loop, term-only
@@ -78,9 +79,9 @@ Existing classified records remain:
   trace families, source-derived core formula payloads, definition payloads,
   quantified binder payloads, and source-derived obligation payload families.
 - `deferred`: proof-witness hashes, ATP/kernel/proof/cache validation,
-  artifact consumers, VC kernel-evidence hash integration, and source-derived
-  runner integration remain downstream before architecture-22 reuse can be
-  accepted outside deterministic-discharge candidate keys.
+  artifact consumers, VC kernel-evidence hash reuse integration, and
+  source-derived runner integration remain downstream before architecture-22
+  reuse can be accepted outside deterministic-discharge candidate keys.
 - `deferred`: optional private helper/test splits inside large `vc_ir`,
   `generator`, and `dependency_slice` implementation files remain future
   move-only maintenance tasks if pursued. Final quality review and crate-exit
@@ -128,3 +129,12 @@ pair inventory, updates the stale closeout-era kernel gap classification after
 records the task-25 handoff prompt in the paired ledgers. It keeps the English
 canonical document and Japanese companion semantically synchronized and changes
 no Rust source.
+
+## Task 25 Sync Edits
+
+Task 25 adds the paired source/spec, todo, plan, exit-report, ledger, and
+kernel evidence handoff updates for the new Rust builder. It records the
+`kernel_evidence_handoff` public enum policy in both languages, marks Task 25
+complete in the paired todos, backfills the Task 24 hash in the paired ledgers,
+and records the task-26 handoff prompt. The English canonical document and
+Japanese companion stay semantically synchronized.

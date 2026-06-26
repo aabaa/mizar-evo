@@ -39,6 +39,7 @@ external seams listed below.
 - `dependency_slice`
 - `discharge`
 - `generator`
+- `kernel_evidence_handoff`
 - `vc_ir`
 
 The corresponding source paths are:
@@ -46,6 +47,7 @@ The corresponding source paths are:
 - `crates/mizar-vc/src/dependency_slice.rs`
 - `crates/mizar-vc/src/discharge.rs`
 - `crates/mizar-vc/src/generator.rs`
+- `crates/mizar-vc/src/kernel_evidence_handoff.rs`
 - `crates/mizar-vc/src/vc_ir.rs`
 
 Evidence: `crates/mizar-vc/tests/lint_policy.rs` checks this list through
@@ -164,6 +166,41 @@ Correspondence:
 | Proof-reuse candidate keys require complete anchors/slices, current matching slice computation, canonical VC/context fingerprints, compatible policy fingerprint, and newly produced replayable deterministic discharge evidence. | `DependencySliceSet::proof_reuse_key_for`, `ProofReuseCandidateKey`, `proof_reuse_key`. | `cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs` and dependency-slice fail-closed tests. | Implemented for deterministic-discharge branch; proof-witness/cache/kernel consumers remain external/deferred. |
 | Public enums are forward-compatible. | dependency-slice public enums are `#[non_exhaustive]`. | `vc_public_enums_are_forward_compatible_and_documented`. | Guarded by task 17. |
 
+### `kernel_evidence_handoff`
+
+Source path: `crates/mizar-vc/src/kernel_evidence_handoff.rs`.
+
+Literal top-level public items:
+
+- `KERNEL_EVIDENCE_SCHEMA_VERSION`, `KERNEL_EVIDENCE_ENCODING_VERSION`,
+  `VC_KERNEL_HANDOFF_SCHEMA`, `VC_TARGET_FINGERPRINT_ALGORITHM_ID`,
+  `KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID`
+- `KernelEvidenceHandoffInput`, `VcKernelEvidenceHandoff`,
+  `KernelEvidenceEnvelope`, `KernelEvidenceProfile`,
+  `KernelClauseTautologyPolicy`, `KernelCertificateHashInputAlgorithm`,
+  `KernelEvidenceFingerprint`, `KernelManifestEntry`,
+  `KernelFormulaPayload`, `KernelFormulaProjection`,
+  `KernelImportedFormulaPayload`, `KernelImportedFormulaClass`,
+  `KernelImportedFactRequirement`, `KernelRequiredProofStatus`,
+  `KernelFormulaContextRequirements`, `KernelSubstitutionPayload`,
+  `KernelFormulaEvidenceEntry`, `KernelFormulaSource`,
+  `KernelSubstitutionEvidence`, `KernelEvidenceProvenance`,
+  `KernelFinalGoalEvidence`, `KernelGoalPolarity`,
+  `KernelEvidenceDiagnosticInputs`, `KernelDischargeDiagnostic`,
+  `KernelEvidenceHandoffError`, `KernelEvidenceRole`,
+  `build_kernel_evidence_handoff`
+
+Correspondence:
+
+| Spec promise | Source evidence | Test evidence | Status |
+|---|---|---|---|
+| The builder packages only producer-side formula, substitution, provenance, and target-binding evidence and never calls the kernel, SAT solving, or ATP backends. | `build_kernel_evidence_handoff` consumes `VcSet`, explicit payload slices, imported context requirements, and optional discharge output only. | deterministic handoff, proof-hint exclusion, target-binding, prohibited-backend-material, and discharge-diagnostic tests. | Implemented for explicit payloads. |
+| Canonical evidence contains schema/encoding versions, target VC, kernel profile, manifests, formula evidence, substitutions, provenance, and final goal; imported context requirements and diagnostics stay outside canonical hash input. | `KernelEvidenceEnvelope`, `target_fingerprint`, `VcKernelEvidenceHandoff::canonical_hash_input`, `canonical_hash_input`. | deterministic hash/debug tests, proof-hint metadata target-binding test, and imported-context tests. | Implemented. |
+| Imported context and payload data fail closed on empty context provenance, mismatched imported statement/formula fingerprints, unsupported formula fingerprint algorithms, and missing context/payload data; returned context requirements are canonical sorted/deduplicated. | `validate_import_requirement`, `imported_payload_map`, `canonical_context_requirements`. | imported context missing/mismatch, empty context provenance, unsupported algorithm, fingerprint mismatch, and duplicate-context tests. | Implemented for current explicit imported payloads. |
+| Missing formula, substitution source, provenance, manifest, side-condition, or unsupported premise data fails closed instead of being fabricated. | `KernelEvidenceHandoffError` and validation helpers. | missing payload, invalid projection, substitution missing-source/empty/side-condition, and manifest tests. | Implemented for current fail-closed cases; upstream full formula/binder payload production remains external. |
+| Substitution records omit instantiated formula and target formula fields; side-condition records are opaque deterministic kernel-compatible encodings that are sorted and rejected when empty or duplicated. | `KernelSubstitutionPayload`, `KernelSubstitutionEvidence`, `canonical_side_conditions`. | `substitutions_reference_source_formula_without_instantiated_fields`, substitution side-condition fail-closed tests, and input-order canonicalization tests. | Implemented. |
+| Public enums are forward-compatible. | handoff public enums are `#[non_exhaustive]`. | `vc_public_enums_are_forward_compatible_and_documented`. | Guarded by task 25. |
+
 ## Cross-Module Evidence
 
 | Contract | Source/test correspondence |
@@ -171,6 +208,7 @@ Correspondence:
 | Crate scaffolding and dependency boundary | `Cargo.toml`, `src/lib.rs`, and `tests/lint_policy.rs`; guarded by manifest, workspace, dependency, module-export, and allow-rationale tests. |
 | Identical public inputs produce identical VC sets, ids, order, statuses, discharge evidence, and slices | `crates/mizar-vc/tests/determinism_suite.rs`; `identical_public_inputs_have_deterministic_pipeline_outputs`. |
 | Architecture-22 cross-edit reuse identity for deterministic discharge candidates | `crates/mizar-vc/tests/determinism_suite.rs`; shifted `VcId`, shifted generated-formula id, stale slice, policy/context/goal changes, pre-existing evidence, incomplete anchor, and unresolved-payload checks. |
+| Kernel evidence handoff stays producer-side and prover-independent | `crates/mizar-vc/src/kernel_evidence_handoff.rs`; deterministic handoff tests, fail-closed missing-payload tests, and prohibited backend/legacy material tests. |
 | Public enum forward compatibility | Source attributes, EN/JA module policy tables, and `vc_public_enums_are_forward_compatible_and_documented`. |
 | Active source-derived corpus coverage | No active proof-verification corpus is implemented; Task 15 records deferred traceability rows instead of fake `.miz` fixtures. |
 
@@ -216,7 +254,21 @@ The new spec records the producer-side handoff contract: `mizar-vc` may package
 formula, substitution, provenance, and target-binding evidence from existing
 `VcSet` / `VcIr` data, but instantiated formulas, SAT clauses, backend proof
 methods, resolution traces, backend logs, and legacy certificates stay outside
-trusted evidence. Task 25 owns any source implementation and tests.
+trusted evidence.
+
+## Task 25 Kernel Evidence Handoff Builder Follow-Up
+
+Task 25 adds `crates/mizar-vc/src/kernel_evidence_handoff.rs`, registers the
+module in `src/lib.rs`, updates lint-policy guards, and covers the builder with
+focused Rust tests. The module remains producer-side: it constructs immutable
+handoff packages from explicit formula/substitution/provenance payloads, carries
+imported fact context requirements outside the canonical envelope, records
+diagnostic discharge inputs outside canonical hash input, and fails closed when
+payloads or context requirements are missing.
+
+The task does not add SAT solving, kernel calls, ATP backend integration,
+backend proof methods, resolution traces, legacy certificate acceptance,
+artifact witness publication, cache promotion, or downstream proof policy.
 
 ## Remaining Classified Follow-Ups
 
@@ -224,15 +276,18 @@ Task 18 introduced no new source/spec correspondence gap. Task 21 re-ran the
 audit after the architecture-22 identity work and likewise records no new
 unclassified source/spec gap. Task 22 re-ran the module-boundary gate and
 records no required split before closeout. Task 24 updates the downstream
-kernel classification without resolving the remaining producer/consumer gaps.
+kernel classification, and Task 25 implements the VC producer-side handoff
+builder for explicit payloads, without resolving the remaining upstream full
+payload and downstream consumer gaps.
 Existing classified records remain:
 
 - `external_dependency_gap`: active `proof_verification` runner support and
   source-to-core / source-to-VC extraction seams are absent from `mizar-test`;
   Task 15 records concrete deferred corpus obligations.
 - `external_dependency_gap` / `deferred`: `mizar-kernel` now owns the
-  checker-side formula/substitution evidence acceptance path, but the
-  `mizar-vc` handoff builder, `mizar-atp` candidate evidence producer,
+  checker-side formula/substitution evidence acceptance path, and `mizar-vc`
+  now owns the producer-side handoff builder for explicit payloads, but the
+  `mizar-atp` candidate evidence producer,
   `mizar-proof` / `mizar-cache` consumers, and artifact witness consumers are
   still incomplete. ATP translation, proof policy, cache lookup/reuse, and
   artifact persistence remain outside this crate.
@@ -242,8 +297,8 @@ Existing classified records remain:
   termination, partial termination, Pick non-emptiness, ghost-erasure, complete
   trace families, source-derived core formula payloads, definition payloads,
   quantified binder payloads, and source-derived obligation payload families.
-- `deferred`: proof-witness hashes, ATP/kernel/proof/cache validation,
-  artifact consumers, VC kernel-evidence hash integration, and source-derived
+- `deferred`: proof-witness hashes, ATP/proof/cache validation, artifact
+  consumers, VC kernel-evidence hash reuse integration, and source-derived
   runner integration must be implemented before architecture-22 reuse can be
   accepted outside the deterministic discharge candidate key.
 - `deferred`: optional private helper/test splits inside large `vc_ir`,
