@@ -121,14 +121,7 @@ fn sat_backed_kernel_evidence_checks_imported_formula_context() {
         goal_item(20, &premise),
     );
     let context = formula_evidence_context(
-        FormulaImportedFactEvidence {
-            imported_fact_id: 5,
-            package_id: b"pkg".to_vec(),
-            module_path: b"module".to_vec(),
-            exported_item_id: b"ITEM".to_vec(),
-            statement_fingerprint: formula_fingerprint(&premise),
-            accepted_proof_status: AcceptedProofStatus::KernelVerified,
-        },
+        formula_imported_fact(5, &premise, AcceptedProofStatus::KernelVerified),
         ImportedFactNamespace::ImportedAxiom,
     );
 
@@ -139,6 +132,19 @@ fn sat_backed_kernel_evidence_checks_imported_formula_context() {
     assert_eq!(accepted.used_axioms().len(), 1);
     assert_eq!(accepted.used_axioms()[0].imported_fact_id, 5);
 
+    let mut report_limited_input = evidence_input(&target_vc, &parsed, Some(&context));
+    report_limited_input.limits.max_report_records = 2;
+    let report_limited = check_kernel_evidence(report_limited_input);
+    assert_eq!(report_limited.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        report_limited.rejections()[0].detail(),
+        RejectionDetail::ResourceExhaustion
+    );
+    assert_eq!(
+        report_limited.rejections()[0].location().field_path,
+        Some("checker_limits.max_report_records")
+    );
+
     let missing_context = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
     assert_eq!(missing_context.status(), KernelCheckStatus::Rejected);
     assert_eq!(
@@ -146,15 +152,56 @@ fn sat_backed_kernel_evidence_checks_imported_formula_context() {
         RejectionDetail::MissingProvenance
     );
 
+    let wrong_identity_context = formula_evidence_context(
+        formula_imported_fact_with_identity(
+            5,
+            b"other-pkg",
+            b"module",
+            b"ITEM",
+            &premise,
+            AcceptedProofStatus::KernelVerified,
+        ),
+        ImportedFactNamespace::ImportedAxiom,
+    );
+    let wrong_identity = check_kernel_evidence(evidence_input(
+        &target_vc,
+        &parsed,
+        Some(&wrong_identity_context),
+    ));
+    assert_eq!(wrong_identity.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        wrong_identity.rejections()[0].detail(),
+        RejectionDetail::UnresolvedSymbol
+    );
+    assert_eq!(
+        wrong_identity.rejections()[0].location().field_path,
+        Some("formula.imported_source")
+    );
+
+    let ambiguous_context = formula_evidence_context_entries(
+        vec![
+            formula_imported_fact(5, &premise, AcceptedProofStatus::KernelVerified),
+            formula_imported_fact(6, &premise, AcceptedProofStatus::KernelVerified),
+        ],
+        Vec::new(),
+    );
+    let ambiguous = check_kernel_evidence(evidence_input(
+        &target_vc,
+        &parsed,
+        Some(&ambiguous_context),
+    ));
+    assert_eq!(ambiguous.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        ambiguous.rejections()[0].detail(),
+        RejectionDetail::UnresolvedSymbol
+    );
+    assert_eq!(
+        ambiguous.rejections()[0].location().imported_fact_id,
+        Some(5)
+    );
+
     let weak_context = formula_evidence_context(
-        FormulaImportedFactEvidence {
-            imported_fact_id: 5,
-            package_id: b"pkg".to_vec(),
-            module_path: b"module".to_vec(),
-            exported_item_id: b"ITEM".to_vec(),
-            statement_fingerprint: formula_fingerprint(&premise),
-            accepted_proof_status: AcceptedProofStatus::DischargedBuiltin,
-        },
+        formula_imported_fact(5, &premise, AcceptedProofStatus::DischargedBuiltin),
         ImportedFactNamespace::ImportedAxiom,
     );
     let weak = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&weak_context)));
@@ -163,6 +210,46 @@ fn sat_backed_kernel_evidence_checks_imported_formula_context() {
         weak.rejections()[0].detail(),
         RejectionDetail::UnresolvedSymbol
     );
+
+    let external_parsed = parsed_formula_evidence(
+        &target,
+        vec![imported_formula_item_with_required_status(
+            1,
+            10,
+            &premise,
+            RequiredProofStatus::ExternallyAttestedPolicyPermitted,
+        )],
+        goal_item(20, &premise),
+    );
+    let external_context = formula_evidence_context(
+        formula_imported_fact(
+            5,
+            &premise,
+            AcceptedProofStatus::ExternallyAttestedPolicyPermitted,
+        ),
+        ImportedFactNamespace::ImportedAxiom,
+    );
+    let denied_external = check_kernel_evidence(evidence_input(
+        &target_vc,
+        &external_parsed,
+        Some(&external_context),
+    ));
+    assert_eq!(denied_external.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        denied_external.rejections()[0].detail(),
+        RejectionDetail::UnresolvedSymbol
+    );
+
+    let mut allowed_external_input =
+        evidence_input(&target_vc, &external_parsed, Some(&external_context));
+    allowed_external_input
+        .policy
+        .imported_fact_policy
+        .allow_externally_attested = true;
+    let allowed_external = check_kernel_evidence(allowed_external_input);
+    assert_eq!(allowed_external.status(), KernelCheckStatus::Accepted);
+    assert!(allowed_external.policy_taint());
+    assert!(allowed_external.checked_imports()[0].policy_taint);
 }
 
 #[test]
@@ -854,7 +941,32 @@ fn cluster_trace_runtime_limits_are_resource_exhaustion() {
 }
 
 #[test]
-fn kernel_service_accepts_checked_pipeline_and_optional_cluster_trace() {
+fn kernel_service_rejects_legacy_certificate_without_migration_audit_policy() {
+    let (certificate, context) = resolution_service_fixture(vec![42]);
+    let target = TargetVcFingerprint::from_certificate_fingerprint(&certificate.target_vc);
+    let input = KernelCheckInput {
+        target_vc_fingerprint: &target,
+        certificate: &certificate,
+        imported_fact_context: Some(&context),
+        substitution_context: None,
+        cluster_trace_context: None,
+        requested_cluster_trace_steps: &[],
+        policy: KernelCheckPolicy::default(),
+        limits: service_limits(),
+    };
+
+    let result = check_kernel_certificate(input);
+
+    assert_service_rejection(
+        result,
+        RejectionCategory::CertificateRejection,
+        RejectionDetail::UnsupportedCertificateFormat,
+        RejectionLocation::new().with_field_path("policy.allow_legacy_certificate_audit"),
+    );
+}
+
+#[test]
+fn kernel_service_reports_legacy_audit_pipeline_without_acceptance() {
     let (certificate, context) = resolution_service_fixture(vec![42]);
     let target = TargetVcFingerprint::from_certificate_fingerprint(&certificate.target_vc);
     let mut cluster = cluster_step(1, CheckedFactRef::ImportedAxiom(1));
@@ -873,22 +985,16 @@ fn kernel_service_accepts_checked_pipeline_and_optional_cluster_trace() {
         service_limits(),
     ));
 
-    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+    assert_legacy_audit_result(
+        &result,
+        legacy_audit_location(FinalGoalNamespace::GeneratedClause, 3),
+    );
     assert_eq!(result.checked_imports().len(), 1);
     assert!(result.checked_substitutions().is_empty());
     assert_eq!(result.checked_resolution_steps().len(), 1);
     assert_eq!(result.checked_cluster_steps().len(), 1);
     assert!(result.checked_derived_facts().is_empty());
-    assert_eq!(
-        result.final_goal(),
-        Some(CheckedFinalGoal {
-            namespace: FinalGoalNamespace::GeneratedClause,
-            id: 3
-        })
-    );
-    assert_eq!(result.used_axioms().len(), 1);
     assert!(!result.policy_taint());
-    assert!(result.rejections().is_empty());
 
     let (mut extra_import, _) = resolution_service_fixture(vec![42]);
     let unused_clause = ordinary(vec![neg_p()]);
@@ -926,14 +1032,11 @@ fn kernel_service_accepts_checked_pipeline_and_optional_cluster_trace() {
         KernelCheckPolicy::default(),
         service_limits(),
     ));
-    assert_eq!(
-        extra_result
-            .used_axioms()
-            .iter()
-            .map(|axiom| axiom.imported_fact_id)
-            .collect::<Vec<_>>(),
-        [1]
+    assert_legacy_audit_result(
+        &extra_result,
+        legacy_audit_location(FinalGoalNamespace::GeneratedClause, 3),
     );
+    assert!(extra_result.used_axioms().is_empty());
 }
 
 #[test]
@@ -983,22 +1086,15 @@ fn kernel_service_preserves_import_namespaces_and_checks_substitutions() {
         service_limits(),
     ));
 
-    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+    assert_legacy_audit_result(
+        &result,
+        legacy_audit_location(FinalGoalNamespace::GeneratedClause, 3),
+    );
     assert_eq!(result.checked_imports().len(), 2);
     assert_eq!(result.checked_substitutions().len(), 1);
     assert_eq!(result.checked_substitutions()[0].substitution_id, 1);
     assert_eq!(result.checked_cluster_steps().len(), 1);
-    assert_eq!(
-        result
-            .used_axioms()
-            .iter()
-            .map(|axiom| (axiom.namespace, axiom.imported_fact_id))
-            .collect::<Vec<_>>(),
-        [
-            (ImportedFactNamespace::ImportedAxiom, 1),
-            (ImportedFactNamespace::ImportedTheorem, 1)
-        ]
-    );
+    assert!(result.used_axioms().is_empty());
 
     let missing_substitution_context = check_kernel_certificate(service_input(
         &target,
@@ -1049,7 +1145,10 @@ fn kernel_service_treats_checked_generated_clause_ids_as_a_base_set() {
         service_limits(),
     ));
 
-    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+    assert_legacy_audit_result(
+        &result,
+        legacy_audit_location(FinalGoalNamespace::GeneratedClause, 3),
+    );
     assert_eq!(result.checked_resolution_steps().len(), 2);
     assert_eq!(result.checked_cluster_steps().len(), 1);
 }
@@ -1531,7 +1630,10 @@ fn kernel_service_results_are_deterministic_under_repetition_and_permutation() {
         service_limits(),
     ));
 
-    assert_eq!(accepted.status(), KernelCheckStatus::Accepted);
+    assert_legacy_audit_result(
+        &accepted,
+        legacy_audit_location(FinalGoalNamespace::GeneratedClause, 3),
+    );
     assert_eq!(accepted, repeated);
     assert_eq!(accepted, permuted);
     assert_eq!(
@@ -1737,33 +1839,21 @@ fn kernel_service_batches_are_deterministic_for_distinct_targets_and_ties() {
     let reversed_tie_results = check_kernel_batch(&reversed_tie_inputs);
 
     assert_eq!(tie_results[0].target_vc_fingerprint().digest, vec![8]);
-    assert_eq!(
-        tie_results[1].final_goal(),
-        Some(CheckedFinalGoal {
-            namespace: FinalGoalNamespace::GeneratedClause,
-            id: 3
-        })
+    assert_legacy_audit_result(
+        &tie_results[1],
+        legacy_audit_location(FinalGoalNamespace::GeneratedClause, 3),
     );
-    assert_eq!(
-        tie_results[2].final_goal(),
-        Some(CheckedFinalGoal {
-            namespace: FinalGoalNamespace::ResolutionStep,
-            id: 1
-        })
+    assert_legacy_audit_result(
+        &tie_results[2],
+        legacy_audit_location(FinalGoalNamespace::ResolutionStep, 1),
     );
-    assert_eq!(
-        reversed_tie_results[1].final_goal(),
-        Some(CheckedFinalGoal {
-            namespace: FinalGoalNamespace::ResolutionStep,
-            id: 1
-        })
+    assert_legacy_audit_result(
+        &reversed_tie_results[1],
+        legacy_audit_location(FinalGoalNamespace::ResolutionStep, 1),
     );
-    assert_eq!(
-        reversed_tie_results[2].final_goal(),
-        Some(CheckedFinalGoal {
-            namespace: FinalGoalNamespace::GeneratedClause,
-            id: 3
-        })
+    assert_legacy_audit_result(
+        &reversed_tie_results[2],
+        legacy_audit_location(FinalGoalNamespace::GeneratedClause, 3),
     );
     assert_ne!(tie_results, reversed_tie_results);
 }
@@ -1864,7 +1954,10 @@ fn kernel_service_replay_cost_budgets_are_exact_and_stable() {
         KernelCheckPolicy::default(),
         exact_pipeline_limits,
     ));
-    assert_eq!(exact_pipeline.status(), KernelCheckStatus::Accepted);
+    assert_legacy_audit_result(
+        &exact_pipeline,
+        legacy_audit_location(FinalGoalNamespace::GeneratedClause, 3),
+    );
 
     let mut short_pipeline_limits = exact_pipeline_limits;
     short_pipeline_limits.max_pipeline_steps = 6;
@@ -1884,7 +1977,7 @@ fn kernel_service_replay_cost_budgets_are_exact_and_stable() {
     );
 
     let mut exact_report_limits = service_limits();
-    exact_report_limits.max_report_records = 4;
+    exact_report_limits.max_report_records = 3;
     let exact_report = check_kernel_certificate(service_input(
         &service_target,
         &certificate,
@@ -1894,10 +1987,13 @@ fn kernel_service_replay_cost_budgets_are_exact_and_stable() {
         KernelCheckPolicy::default(),
         exact_report_limits,
     ));
-    assert_eq!(exact_report.status(), KernelCheckStatus::Accepted);
+    assert_legacy_audit_result(
+        &exact_report,
+        legacy_audit_location(FinalGoalNamespace::GeneratedClause, 3),
+    );
 
     let mut short_report_limits = exact_report_limits;
-    short_report_limits.max_report_records = 3;
+    short_report_limits.max_report_records = 2;
     assert_service_rejection(
         check_kernel_certificate(service_input(
             &service_target,
@@ -1970,20 +2066,14 @@ fn kernel_service_orders_batches_by_target_then_input_order() {
 
     assert_eq!(results[0].target_vc_fingerprint().digest, vec![1]);
     assert_eq!(results[1].target_vc_fingerprint().digest, vec![2]);
-    assert_eq!(
-        results[1].final_goal(),
-        Some(CheckedFinalGoal {
-            namespace: FinalGoalNamespace::GeneratedClause,
-            id: 3
-        })
+    assert_legacy_audit_result(
+        &results[1],
+        legacy_audit_location(FinalGoalNamespace::GeneratedClause, 3),
     );
     assert_eq!(results[2].target_vc_fingerprint().digest, vec![2]);
-    assert_eq!(
-        results[2].final_goal(),
-        Some(CheckedFinalGoal {
-            namespace: FinalGoalNamespace::ResolutionStep,
-            id: 1
-        })
+    assert_legacy_audit_result(
+        &results[2],
+        legacy_audit_location(FinalGoalNamespace::ResolutionStep, 1),
     );
 }
 
@@ -2005,10 +2095,14 @@ fn kernel_service_propagates_policy_taint_timeout_and_resource_limits() {
             imported_fact_policy: ImportedFactPolicy {
                 allow_externally_attested: true,
             },
+            ..KernelCheckPolicy::default()
         },
         service_limits(),
     ));
-    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+    assert_legacy_audit_result(
+        &result,
+        legacy_audit_location(FinalGoalNamespace::GeneratedClause, 3),
+    );
     assert!(result.policy_taint());
     assert_eq!(
         result.checked_imports()[0].accepted_proof_status,
@@ -2027,6 +2121,7 @@ fn kernel_service_propagates_policy_taint_timeout_and_resource_limits() {
             imported_fact_policy: ImportedFactPolicy {
                 allow_externally_attested: true,
             },
+            ..KernelCheckPolicy::default()
         },
         timeout_limits,
     ));
@@ -2048,6 +2143,7 @@ fn kernel_service_propagates_policy_taint_timeout_and_resource_limits() {
             imported_fact_policy: ImportedFactPolicy {
                 allow_externally_attested: true,
             },
+            ..KernelCheckPolicy::default()
         },
         later_timeout_limits,
     ));
@@ -2072,6 +2168,7 @@ fn kernel_service_propagates_policy_taint_timeout_and_resource_limits() {
             imported_fact_policy: ImportedFactPolicy {
                 allow_externally_attested: true,
             },
+            ..KernelCheckPolicy::default()
         },
         resource_limits,
     ));
@@ -2788,8 +2885,41 @@ fn assert_service_rejection(
     assert!(result.checked_reduction_steps().is_empty());
     assert!(result.checked_derived_facts().is_empty());
     assert!(result.final_goal().is_none());
+    assert!(result.used_axioms().is_empty());
     assert_eq!(result.rejections().len(), 1);
     assert_rejection_record(&result.rejections()[0], category, detail, location);
+}
+
+fn assert_legacy_audit_result(result: &KernelCheckResult, location: RejectionLocation) {
+    assert_eq!(result.status(), KernelCheckStatus::Rejected);
+    assert!(result.final_goal().is_none());
+    assert!(result.used_axioms().is_empty());
+    assert_eq!(result.rejections().len(), 1);
+    assert_rejection_record(
+        &result.rejections()[0],
+        RejectionCategory::CertificateRejection,
+        RejectionDetail::UnsupportedCertificateFormat,
+        location,
+    );
+}
+
+fn legacy_audit_location(namespace: FinalGoalNamespace, id: u32) -> RejectionLocation {
+    let location = RejectionLocation::new().with_final_goal();
+    match namespace {
+        FinalGoalNamespace::GeneratedClause => {
+            location.with_clause_ref(crate::rejection::ClauseRef::new(
+                crate::rejection::ClauseRefNamespace::GeneratedClause,
+                id,
+            ))
+        }
+        FinalGoalNamespace::ResolutionStep => {
+            location.with_clause_ref(crate::rejection::ClauseRef::new(
+                crate::rejection::ClauseRefNamespace::ResolutionStep,
+                id,
+            ))
+        }
+        FinalGoalNamespace::DerivedFact => location.with_derived_fact_id(id),
+    }
 }
 
 fn service_input<'a>(
@@ -2808,7 +2938,7 @@ fn service_input<'a>(
         substitution_context: None,
         cluster_trace_context: cluster_context,
         requested_cluster_trace_steps,
-        policy,
+        policy: legacy_audit_policy(policy),
         limits,
     }
 }
@@ -2829,9 +2959,14 @@ fn service_input_with_substitutions<'a>(
         substitution_context,
         cluster_trace_context: cluster_context,
         requested_cluster_trace_steps,
-        policy: KernelCheckPolicy::default(),
+        policy: legacy_audit_policy(KernelCheckPolicy::default()),
         limits,
     }
+}
+
+fn legacy_audit_policy(mut policy: KernelCheckPolicy) -> KernelCheckPolicy {
+    policy.allow_legacy_certificate_audit = true;
+    policy
 }
 
 fn service_limits() -> KernelCheckLimits {
@@ -3471,6 +3606,13 @@ fn formula_evidence_context(
         ImportedFactNamespace::ImportedAxiom => (vec![imported], Vec::new()),
         ImportedFactNamespace::ImportedTheorem => (Vec::new(), vec![imported]),
     };
+    formula_evidence_context_entries(axioms, theorems)
+}
+
+fn formula_evidence_context_entries(
+    axioms: Vec<FormulaImportedFactEvidence>,
+    theorems: Vec<FormulaImportedFactEvidence>,
+) -> FormulaEvidenceContext {
     FormulaEvidenceContext::new(
         Some(vec![1]),
         axioms,
@@ -3478,6 +3620,39 @@ fn formula_evidence_context(
         ImportedFactContextLimits::default(),
     )
     .expect("formula evidence context")
+}
+
+fn formula_imported_fact(
+    imported_fact_id: u32,
+    formula: &Formula,
+    accepted_proof_status: AcceptedProofStatus,
+) -> FormulaImportedFactEvidence {
+    formula_imported_fact_with_identity(
+        imported_fact_id,
+        b"pkg",
+        b"module",
+        b"ITEM",
+        formula,
+        accepted_proof_status,
+    )
+}
+
+fn formula_imported_fact_with_identity(
+    imported_fact_id: u32,
+    package_id: &[u8],
+    module_path: &[u8],
+    exported_item_id: &[u8],
+    formula: &Formula,
+    accepted_proof_status: AcceptedProofStatus,
+) -> FormulaImportedFactEvidence {
+    FormulaImportedFactEvidence {
+        imported_fact_id,
+        package_id: package_id.to_vec(),
+        module_path: module_path.to_vec(),
+        exported_item_id: exported_item_id.to_vec(),
+        statement_fingerprint: formula_fingerprint(formula),
+        accepted_proof_status,
+    }
 }
 
 fn formula_evidence_bytes(target: &Fingerprint, formulas: Vec<Vec<u8>>, goal: Vec<u8>) -> Vec<u8> {
@@ -3596,6 +3771,20 @@ fn formula_item(formula_id: u32, provenance_id: u32, formula: &Formula) -> Vec<u
 }
 
 fn imported_formula_item(formula_id: u32, provenance_id: u32, formula: &Formula) -> Vec<u8> {
+    imported_formula_item_with_required_status(
+        formula_id,
+        provenance_id,
+        formula,
+        RequiredProofStatus::KernelVerified,
+    )
+}
+
+fn imported_formula_item_with_required_status(
+    formula_id: u32,
+    provenance_id: u32,
+    formula: &Formula,
+    required_status: RequiredProofStatus,
+) -> Vec<u8> {
     let fingerprint = formula_fingerprint(formula);
     let mut item = Vec::new();
     put_u32(formula_id, &mut item);
@@ -3606,7 +3795,7 @@ fn imported_formula_item(formula_id: u32, provenance_id: u32, formula: &Formula)
     put_bytes(b"module", &mut item);
     put_bytes(b"ITEM", &mut item);
     put_fingerprint(&fingerprint, &mut item);
-    item.push(required_status_tag(RequiredProofStatus::KernelVerified));
+    item.push(required_status_tag(required_status));
     put_formula(formula, &mut item);
     item
 }

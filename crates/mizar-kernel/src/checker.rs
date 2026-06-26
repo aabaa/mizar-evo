@@ -2,13 +2,15 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
     certificate_parser::{
-        ClauseRef, ClauseRefNamespace, FinalGoalNamespace, Fingerprint, ImportedFactRef,
-        ParsedCertificate, RequiredProofStatus,
+        ClauseRef, FinalGoalNamespace, Fingerprint, ImportedFactRef, ParsedCertificate,
+        RequiredProofStatus,
     },
     clause::{Clause, ClauseError, ClauseProfile, ClauseValidationContext},
     formula_evidence::{FormulaSource, ImportedFormulaSource, ParsedKernelEvidence},
     rejection::{
-        RejectionCategory, RejectionDetail, RejectionLocation, RejectionRecord, TargetVcFingerprint,
+        ClauseRef as RejectionClauseRef, ClauseRefNamespace as RejectionClauseRefNamespace,
+        RejectionCategory, RejectionDetail, RejectionLocation, RejectionRecord,
+        TargetVcFingerprint,
     },
     resolution_trace::{
         CheckedResolutionStep, ImportedClauseContext, ImportedClauseContextError,
@@ -806,6 +808,7 @@ pub struct KernelEvidenceCheckInput<'a> {
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct KernelCheckPolicy {
     pub imported_fact_policy: ImportedFactPolicy,
+    pub allow_legacy_certificate_audit: bool,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1059,6 +1062,7 @@ fn check_kernel_evidence_inner(
             derived_facts: 0,
             used_axioms: formula_report.used_axioms.len(),
             final_goals: 1,
+            rejections: 0,
         },
     )?;
 
@@ -1083,7 +1087,7 @@ fn validate_evidence_target_binding(
     input: KernelEvidenceCheckInput<'_>,
 ) -> KernelCheckServiceResult<()> {
     let evidence_target =
-        TargetVcFingerprint::from_certificate_fingerprint(&input.evidence.target_vc);
+        TargetVcFingerprint::from_certificate_fingerprint(input.evidence.target_vc());
     if &evidence_target == input.target_vc_fingerprint {
         Ok(())
     } else {
@@ -1114,7 +1118,7 @@ fn check_formula_imports(
     }
 
     let mut checked = BTreeMap::new();
-    for formula in &input.evidence.formulas {
+    for formula in input.evidence.formulas() {
         match &formula.source {
             FormulaSource::AcceptedImportedAxiom(source) => {
                 let import = check_formula_import_source(
@@ -1285,6 +1289,15 @@ fn validate_formula_import_status(
 fn check_kernel_certificate_inner(
     input: KernelCheckInput<'_>,
 ) -> KernelCheckServiceResult<KernelCheckResult> {
+    if !input.policy.allow_legacy_certificate_audit {
+        return Err(rejection_with_category(
+            input.target_vc_fingerprint,
+            RejectionCategory::CertificateRejection,
+            RejectionDetail::UnsupportedCertificateFormat,
+            RejectionLocation::new().with_field_path("policy.allow_legacy_certificate_audit"),
+        ));
+    }
+
     let mut budget = KernelPipelineBudget::new(input.limits.max_pipeline_steps);
     budget.step(input, "target_vc")?;
     validate_target_binding(input)?;
@@ -1344,15 +1357,24 @@ fn check_kernel_certificate_inner(
             cluster_steps: cluster_report.checked_cluster_steps().len(),
             reduction_steps: cluster_report.checked_reduction_steps().len(),
             derived_facts: 0,
-            used_axioms: used_imported_fact_ids(input).len(),
-            final_goals: usize::from(final_goal.is_some()),
+            used_axioms: 0,
+            final_goals: 0,
+            rejections: 1,
         },
     )?;
-    let used_axioms = used_axioms(input, imported_report.checked_imports());
+    let audit_rejection = *rejection_with_category(
+        input.target_vc_fingerprint,
+        RejectionCategory::CertificateRejection,
+        RejectionDetail::UnsupportedCertificateFormat,
+        final_goal.map_or_else(
+            || RejectionLocation::new().with_field_path("certificate.final_goal"),
+            legacy_final_goal_audit_location,
+        ),
+    );
 
     Ok(KernelCheckResult {
         target_vc_fingerprint: input.target_vc_fingerprint.clone(),
-        status: KernelCheckStatus::Accepted,
+        status: KernelCheckStatus::Rejected,
         checked_imports: imported_report.checked_imports().to_vec(),
         checked_substitutions: checked_substitutions.to_vec(),
         checked_resolution_steps: resolution_report.checked_steps().to_vec(),
@@ -1360,11 +1382,26 @@ fn check_kernel_certificate_inner(
         checked_reduction_steps: cluster_report.checked_reduction_steps().to_vec(),
         checked_derived_facts: Vec::new(),
         sat_check_report: None,
-        final_goal,
-        used_axioms,
+        final_goal: None,
+        used_axioms: Vec::new(),
         policy_taint: imported_report.policy_taint(),
-        rejections: Vec::new(),
+        rejections: vec![audit_rejection],
     })
+}
+
+fn legacy_final_goal_audit_location(final_goal: CheckedFinalGoal) -> RejectionLocation {
+    let location = RejectionLocation::new().with_final_goal();
+    match final_goal.namespace {
+        FinalGoalNamespace::GeneratedClause => location.with_clause_ref(RejectionClauseRef::new(
+            RejectionClauseRefNamespace::GeneratedClause,
+            final_goal.id,
+        )),
+        FinalGoalNamespace::ResolutionStep => location.with_clause_ref(RejectionClauseRef::new(
+            RejectionClauseRefNamespace::ResolutionStep,
+            final_goal.id,
+        )),
+        FinalGoalNamespace::DerivedFact => location.with_derived_fact_id(final_goal.id),
+    }
 }
 
 fn validate_target_binding(input: KernelCheckInput<'_>) -> KernelCheckServiceResult<()> {
@@ -1457,94 +1494,6 @@ fn checked_final_goal(
     }))
 }
 
-fn used_axioms(
-    input: KernelCheckInput<'_>,
-    checked_imports: &[CheckedImportedFact],
-) -> Vec<UsedAxiom> {
-    let used_ids = used_imported_fact_ids(input);
-    checked_imports
-        .iter()
-        .filter(|import| used_ids.contains(&(import.namespace, import.imported_fact_id)))
-        .map(|import| UsedAxiom {
-            namespace: import.namespace,
-            imported_fact_id: import.imported_fact_id,
-            statement_fingerprint: import.statement_fingerprint.clone(),
-        })
-        .collect()
-}
-
-fn used_imported_fact_ids(input: KernelCheckInput<'_>) -> BTreeSet<(ImportedFactNamespace, u32)> {
-    let mut used = BTreeSet::new();
-    for step in &input.certificate.resolution_trace {
-        push_used_imported_clause_ref(&mut used, step.parent_a);
-        push_used_imported_clause_ref(&mut used, step.parent_b);
-    }
-    if let Some(context) = input.cluster_trace_context {
-        push_used_cluster_imports(&mut used, context, input.requested_cluster_trace_steps);
-    }
-    used
-}
-
-fn push_used_imported_clause_ref(
-    used: &mut BTreeSet<(ImportedFactNamespace, u32)>,
-    clause_ref: ClauseRef,
-) {
-    match clause_ref.namespace {
-        ClauseRefNamespace::ImportedAxiom => {
-            used.insert((ImportedFactNamespace::ImportedAxiom, clause_ref.id));
-        }
-        ClauseRefNamespace::ImportedTheorem => {
-            used.insert((ImportedFactNamespace::ImportedTheorem, clause_ref.id));
-        }
-        ClauseRefNamespace::GeneratedClause | ClauseRefNamespace::ResolutionStep => {}
-    }
-}
-
-fn push_used_cluster_imports(
-    used: &mut BTreeSet<(ImportedFactNamespace, u32)>,
-    context: &ClusterTraceContext,
-    requested_cluster_trace_steps: &[u32],
-) {
-    let mut visited = BTreeSet::new();
-    let mut stack = requested_cluster_trace_steps.to_vec();
-    while let Some(step_id) = stack.pop() {
-        if !visited.insert(step_id) {
-            continue;
-        }
-        let Some(step) = lookup_trace_step(context, step_id) else {
-            continue;
-        };
-        match step {
-            TraceStepEvidenceRef::Cluster(cluster) => {
-                push_used_checked_fact_ref(used, &mut stack, cluster.dependency);
-            }
-            TraceStepEvidenceRef::Reduction(reduction) => {
-                for guard in &reduction.discharged_guards {
-                    push_used_checked_fact_ref(used, &mut stack, guard.source_fact_ref);
-                    push_used_checked_fact_ref(used, &mut stack, guard.checked_dependency_ref);
-                }
-            }
-        }
-    }
-}
-
-fn push_used_checked_fact_ref(
-    used: &mut BTreeSet<(ImportedFactNamespace, u32)>,
-    stack: &mut Vec<u32>,
-    fact_ref: CheckedFactRef,
-) {
-    match fact_ref {
-        CheckedFactRef::ImportedAxiom(imported_fact_id) => {
-            used.insert((ImportedFactNamespace::ImportedAxiom, imported_fact_id));
-        }
-        CheckedFactRef::ImportedTheorem(imported_fact_id) => {
-            used.insert((ImportedFactNamespace::ImportedTheorem, imported_fact_id));
-        }
-        CheckedFactRef::TraceStep(step_id) => stack.push(step_id),
-        CheckedFactRef::GeneratedClause(_) => {}
-    }
-}
-
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 struct ReportRecordCounts {
     imports: usize,
@@ -1555,6 +1504,7 @@ struct ReportRecordCounts {
     derived_facts: usize,
     used_axioms: usize,
     final_goals: usize,
+    rejections: usize,
 }
 
 fn validate_report_record_count(
@@ -1582,6 +1532,7 @@ fn validate_report_record_total(
         .and_then(|value| value.checked_add(counts.derived_facts))
         .and_then(|value| value.checked_add(counts.used_axioms))
         .and_then(|value| value.checked_add(counts.final_goals))
+        .and_then(|value| value.checked_add(counts.rejections))
         .unwrap_or(usize::MAX);
     if total > max_report_records {
         return Err(rejection(

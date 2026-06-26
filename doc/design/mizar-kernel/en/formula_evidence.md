@@ -73,6 +73,12 @@ kernel-derived entry hash input over the source class and provenance binding.
 Neither hash input includes source paths, backend logs, timestamps, worker
 order, display names after binding, or SAT clauses.
 
+`ParsedKernelEvidence` preserves parser-validated bindings through private
+fields and read-only accessors. Callers may inspect the target, profile,
+manifest, formula, substitution, provenance, final-goal, and canonical hash
+input records, but they must not be able to mutate or reconstruct a parsed
+object after validation and before kernel checking.
+
 ## Canonical V1 Envelope
 
 Task 25 implements a deterministic binary envelope owned by
@@ -215,9 +221,10 @@ promotion, or artifact `kernel_verified` status.
 
 ## Gap Classification
 
-- `design_drift` / `source_drift`: the task-22 source still accepts legacy
-  resolution-trace certificates through `checker`; tasks 25-29 replace or gate
-  that path.
+- `design_drift` / `source_drift`: the task-22 source kept legacy
+  resolution-trace certificates in `checker`; task 29 gates that path behind
+  explicit migration/audit policy so normal proof policy rejects it before
+  replay.
 - `test_gap`: task 25 must add round-trip, malformed evidence, provenance-gap,
   deterministic rendering, and hash-stability tests.
 - `external_dependency_gap`: full source-derived formula payloads from VC/ATP

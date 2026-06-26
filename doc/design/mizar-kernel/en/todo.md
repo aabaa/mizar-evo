@@ -375,7 +375,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
     - Deps: 25, 26, 27. Spec: `checker.md`,
       [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md).
 
-29. **Migration audit and quality re-review.** [ ]
+29. **Migration audit and quality re-review.** [x]
     - Retire, gate, or explicitly mark the legacy resolution-trace public
       surface so downstream crates cannot mistake it for the target
       acceptance path. Re-run source/spec, bilingual, prohibition, dependency,

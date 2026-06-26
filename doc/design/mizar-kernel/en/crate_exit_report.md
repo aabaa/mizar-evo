@@ -10,10 +10,10 @@ Quality score: 95/100.
 Score caps applied: none.
 
 Post-closeout correction: commit `c6d94fe51923aa0363ea7297bfe4e9f905aef076`
-supersedes the task-22 evidence target. This report remains the closeout record
-for the legacy resolution-trace milestone. Tasks 23-29 reopen the crate for the
+supersedes the task-22 evidence target. Tasks 23-29 complete the corrected
 formula/substitution evidence pipeline, trusted in-process SAT checking, and
-legacy path migration audit.
+legacy path migration audit. Task 29 is the post-correction closeout/migration
+audit point; its self-hash is recorded by the caller after commit.
 
 ## Scope
 
@@ -43,8 +43,11 @@ Post-correction scope:
   validated formula/substitution evidence.
 - Backend proof methods, resolution traces, SMT proof objects, and backend logs
   remain outside trusted acceptance material.
-- Legacy certificate/resolution-trace acceptance is `source_drift` until task 29
-  gates or retires it for normal proof policy.
+- Legacy certificate/resolution-trace checking is gated behind
+  `KernelCheckPolicy.allow_legacy_certificate_audit`; default normal proof
+  policy rejects it before replay. Explicit audit mode may replay it for
+  checked-record diagnostics, but still returns `Rejected` without trusted
+  `final_goal` or `used_axioms`, so it is migration/audit-only.
 
 Included:
 
@@ -97,6 +100,13 @@ Excluded:
 | 20 | `fb81213c33d5b2a31eb976a4fa6804bfc0ffe6c5` | `docs(kernel-task-20): audit source spec correspondence` |
 | 21 | `73a919c16b48da82038fd7267e86e1a844cb4c6f` | `docs(kernel-task-21): audit bilingual docs sync` |
 | 22 | `814e47bb9aaaff75ebfe4cc1be10d2eb4618498b` | `refactor(kernel-task-22): split module test boundaries` |
+| 23 | `a326afc7a69913c1d716133620c2c608b78b0ae1` | `docs(kernel-task-23): correct evidence format` |
+| 24 | `abc557d5f6f53b6530301a67c29570a23c67b874` | `docs(kernel-task-24): audit trusted SAT checker` |
+| 25 | `35ef60ffba949254e71d86f9be2570b37e5f4a3c` | `feat(kernel-task-25): parse formula evidence` |
+| 26 | `e48c4ffe78fa03c63f9ed60d4c3f81db95803af9` | `feat(kernel-task-26): encode formula evidence as SAT` |
+| 27 | `222bf8bc30e59dd95818d828dd71ff823ff84f83` | `feat(kernel-task-27): wrap trusted SAT checker` |
+| 28 | `43674a221dd5f43259c480846db7428f85ac9386` | `feat(kernel-task-28): check formula evidence with SAT` |
+| 29 | pending self-hash | `fix(kernel-task-29): gate legacy certificate audit` |
 
 ## Hard Gates
 
@@ -137,18 +147,18 @@ gate fails.
 
 | Review | Result |
 |---|---|
-| Implementation specification / documentation review | High invalid Task 15 ledger hash finding fixed by backfilling the full commit hash; final focused re-review found no blocking/high/medium findings. |
-| Test sufficiency review | Medium paired-document link/check recording finding fixed by running and recording the deterministic pair/link check; final focused re-review found no blocking/high/medium findings. |
-| Full implementation review | No blocking/high/medium findings. Low provisional verification and abbreviated Task 4 hash notes were fixed before commit. |
-| Source/documentation consistency review | Medium provisional status/verification drift finding fixed after closeout reviews and verification completed; final focused re-review found no blocking/high/medium findings. |
-| Read-only crate quality review | Hard gates pass with no blocking/high/medium findings. Valid quality score: 95/100, which is >= 90. |
+| Implementation specification / documentation review | Stale legacy-surface task ownership and closeout wording findings fixed by attributing the explicit audit gate to task 29 and keeping the corrected formula/substitution service as task 28. Final focused re-review found no blocking/high/medium findings. |
+| Test sufficiency review | Medium imported formula identity/ambiguity and report-limit gaps fixed; follow-up medium default-policy legacy rejection gap fixed with a direct `KernelCheckPolicy::default()` test. Final focused re-review found no blocking/high/medium findings. |
+| Full implementation review | High post-parse `ParsedKernelEvidence` mutation boundary fixed with private fields, read-only accessors, and lint-policy guard. Final focused re-review found no blocking/high/medium implementation findings. |
+| Source/documentation consistency review | Medium batch API-name/profile wording, task-ownership, formula-evidence legacy wording, audit-result shape, and closeout-review drift findings fixed in paired English/Japanese docs. Final focused re-review found no blocking/high/medium findings. |
+| Read-only crate quality review | Initial high finding that legacy audit replay still returned trusted acceptance-shaped `Accepted` / `used_axioms` material was fixed by returning rejected audit data without trusted `final_goal` or `used_axioms`. Final quality re-review hard gates pass with no blocking/high/medium findings. Valid quality score: 95/100, which is >= 90. |
 
 ## Deferred Items
 
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
 | KERNEL-CLOSEOUT-G001 | `external_dependency_gap` | No active source-to-kernel-evidence runner or `.miz` proof-verification corpus feeds formula/substitution evidence. | Add the owning staged-test/source-to-kernel-evidence runner before activating source-derived formula/substitution evidence corpus fixtures. |
-| KERNEL-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-atp` is not an active certificate/trace producer, and real MiniSAT-compatible backend traces are not available as a stable producer contract. | Build the ATP crate and trace extraction contract; kernel continues to replay normalized traces only. |
+| KERNEL-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-atp` is not an active formula/substitution evidence candidate producer. MiniSAT-compatible backend traces are legacy migration/audit material, not trusted output. | Build the ATP crate around candidate formula/substitution evidence production after the VC handoff contract exists; do not add trusted backend proof translation. |
 | KERNEL-CLOSEOUT-G003 | `external_dependency_gap` | `mizar-proof` is not an active policy consumer of `KernelCheckResult`; proof-status projection and externally authenticated evidence policy remain downstream. | Add proof-policy consumers in `mizar-proof` with their own crate plan and consumer contract. |
 | KERNEL-CLOSEOUT-G004 | `external_dependency_gap` | `mizar-cache` and `mizar-artifact` do not provide active proof-cache/proof-witness consumer contracts for kernel outputs. | Downstream cache/artifact phases define validation and publication contracts before any kernel coupling is added. |
 | KERNEL-CLOSEOUT-G005 | `external_dependency_gap` / `deferred` | Source-derived certificate/service envelopes, derived-fact payload schemas, service-envelope normalization, cancellation token plumbing, and external worker scheduling are integration concerns outside this crate. | Add producer/consumer tasks once upstream/downstream contracts exist; do not add placeholders here. |
@@ -186,12 +196,19 @@ above.
 
 | Command | Result |
 |---|---|
-| deterministic paired-document and companion-link check | passed |
 | `cargo fmt --check` | passed |
-| `cargo clippy --all-targets --all-features -- -D warnings` | passed |
-| `cargo test` | passed |
 | `git diff --check` | passed |
-| `git diff --cached --check` | passed after explicit closeout path staging |
+| `cargo test -p mizar-kernel --lib --offline` | passed |
+| `cargo test -p mizar-kernel --test lint_policy --offline` | passed |
+| `cargo test -p mizar-kernel --offline` | passed |
+| `cargo clippy -p mizar-kernel --all-targets --all-features --offline -- -D warnings` | passed |
+| `cargo test -p mizar-core --offline` | passed |
+| `cargo test -p mizar-vc --offline` | passed |
+| `cargo test -p mizar-artifact --offline` | passed |
+| `cargo test -p mizar-checker --offline` | passed |
+| `cargo clippy --all-targets --all-features --offline -- -D warnings` | passed |
+| `cargo test --offline` | passed |
+| `git diff --cached --check` | passed after explicit task-29 path staging |
 
 Unrun deferred commands:
 
@@ -204,29 +221,29 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Start the next verification pipeline crate after the completed mizar-kernel
-closeout. Before editing, verify a clean worktree, confirm the mizar-kernel
-closeout commit in git log, and read
+Start `mizar-vc` task 24 after the completed mizar-kernel task-29 migration
+audit. Before editing, verify a clean worktree, confirm the mizar-kernel task
+29 commit in git log, and read
 doc/design/mizar-kernel/en/crate_exit_report.md,
 doc/design/mizar-kernel/en/00.crate_plan.md,
-doc/design/mizar-atp/en/todo.md,
+doc/design/mizar-kernel/en/checker.md,
+doc/design/mizar-kernel/en/source_spec_audit.md,
+doc/design/mizar-vc/en/todo.md,
 doc/design/internal/en/04.atp_portfolio_and_kernel_check_integration.md,
 doc/design/internal/en/07.crate_module_layout.md,
-doc/design/architecture/en/09.atp_interface_protocol.md,
-doc/design/architecture/en/10.atp_backend_integration.md, and
-doc/design/architecture/en/15.kernel_certificate_format.md. Begin with
-preliminary task 0 for mizar-atp: create or update the paired English/Japanese
-crate plan, classify specification gaps, test gaps, source/design drift,
-external dependencies, and deferred items, and commit that plan as its own
-task. Preserve the one-task-one-commit rule; do not scaffold mizar-atp source
-until the task-0 plan commit exists.
+doc/design/architecture/en/08.reasoning_boundary.md,
+doc/design/architecture/en/15.kernel_certificate_format.md,
+doc/design/architecture/en/16.substitution_and_binding.md, and
+doc/design/architecture/en/19.failure_semantics.md. Begin with mizar-vc task
+24: specify the kernel evidence handoff so VC emits formula/substitution
+evidence handoff material and never encodes backend proof methods,
+resolution traces, instantiated formulas, or SAT clauses as trusted payload.
+Preserve the one-task-one-commit rule and keep mizar-vc prover-independent.
 ```
 
-Rationale: this task-22 handoff is superseded by the post-closeout correction
-tracked in tasks 23-29. `mizar-atp` must now emit candidate formula/substitution
-evidence, not trusted normalized certificates or MiniSAT-compatible traces.
-Keep `xhigh` because the work crosses external backend execution, evidence
-projection, kernel soundness, and downstream proof-policy boundaries.
+Rationale: `mizar-vc` is the next crate in the requested order and must hand
+kernel-owned formula/substitution evidence to `mizar-kernel` without becoming a
+prover or SAT checker. Keep `xhigh` because the work crosses VC identity,
+dependency slices, kernel target binding, and downstream witness boundaries.
 Lower reasoning is appropriate only for typo-only documentation sync; raise
-only if repository metadata or specification contradictions block the crate
-plan.
+only if repository metadata or specification contradictions block the handoff.

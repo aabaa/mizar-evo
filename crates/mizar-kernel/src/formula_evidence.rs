@@ -140,20 +140,70 @@ impl Default for FormulaEvidenceParseLimits {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ParsedKernelEvidence {
-    pub schema_version: u16,
-    pub encoding_version: u16,
-    pub kernel_profile: KernelProfileRecord,
-    pub target_vc: Fingerprint,
-    pub symbol_manifest: Vec<SymbolManifestEntry>,
-    pub variable_manifest: Vec<VariableManifestEntry>,
-    pub formulas: Vec<FormulaEvidenceEntry>,
-    pub substitutions: Vec<FormulaSubstitutionEvidence>,
-    pub provenance: Vec<FormulaProvenance>,
-    pub final_goal: FinalGoalEvidence,
+    schema_version: u16,
+    encoding_version: u16,
+    kernel_profile: KernelProfileRecord,
+    target_vc: Fingerprint,
+    symbol_manifest: Vec<SymbolManifestEntry>,
+    variable_manifest: Vec<VariableManifestEntry>,
+    formulas: Vec<FormulaEvidenceEntry>,
+    substitutions: Vec<FormulaSubstitutionEvidence>,
+    provenance: Vec<FormulaProvenance>,
+    final_goal: FinalGoalEvidence,
     canonical_hash_input: Vec<u8>,
 }
 
 impl ParsedKernelEvidence {
+    #[must_use]
+    pub const fn schema_version(&self) -> u16 {
+        self.schema_version
+    }
+
+    #[must_use]
+    pub const fn encoding_version(&self) -> u16 {
+        self.encoding_version
+    }
+
+    #[must_use]
+    pub const fn kernel_profile(&self) -> &KernelProfileRecord {
+        &self.kernel_profile
+    }
+
+    #[must_use]
+    pub const fn target_vc(&self) -> &Fingerprint {
+        &self.target_vc
+    }
+
+    #[must_use]
+    pub fn symbol_manifest(&self) -> &[SymbolManifestEntry] {
+        &self.symbol_manifest
+    }
+
+    #[must_use]
+    pub fn variable_manifest(&self) -> &[VariableManifestEntry] {
+        &self.variable_manifest
+    }
+
+    #[must_use]
+    pub fn formulas(&self) -> &[FormulaEvidenceEntry] {
+        &self.formulas
+    }
+
+    #[must_use]
+    pub fn substitutions(&self) -> &[FormulaSubstitutionEvidence] {
+        &self.substitutions
+    }
+
+    #[must_use]
+    pub fn provenance(&self) -> &[FormulaProvenance] {
+        &self.provenance
+    }
+
+    #[must_use]
+    pub const fn final_goal(&self) -> &FinalGoalEvidence {
+        &self.final_goal
+    }
+
     #[must_use]
     pub fn canonical_hash_input(&self) -> &[u8] {
         &self.canonical_hash_input

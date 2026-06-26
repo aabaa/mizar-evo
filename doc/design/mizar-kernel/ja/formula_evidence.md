@@ -71,6 +71,11 @@ tree として formula を model してよい。より豊かな Mizar/core formu
 別個の kernel-derived entry hash input を持つ。どちらの hash input も source path、backend log、
 timestamp、worker order、binding 後の display name、SAT clause を含んではならない。
 
+`ParsedKernelEvidence` は private field と read-only accessor によって parser-validated
+binding を保持する。Caller は target、profile、manifest、formula、substitution、
+provenance、final-goal、canonical hash input record を inspect してよいが、validation 後かつ
+kernel checking 前に parsed object を mutate または reconstruct できてはならない。
+
 ## Canonical V1 envelope
 
 Task 25 は `src/formula_evidence.rs` が所有する deterministic binary envelope を実装する。
@@ -196,8 +201,9 @@ cache promotion、artifact `kernel_verified` status を生成できない。
 
 ## Gap classification
 
-- `design_drift` / `source_drift`: task-22 source はまだ `checker` で legacy
-  resolution-trace certificate を受理する。Tasks 25-29 がその path を置換または gate する。
+- `design_drift` / `source_drift`: task-22 source は legacy resolution-trace certificate を
+  `checker` に保持していた。Task 29 はその path を explicit migration/audit policy の
+  背後に gate し、normal proof policy では replay 前に拒否する。
 - `test_gap`: task 25 は round-trip、malformed evidence、provenance-gap、
   deterministic rendering、hash-stability tests を追加する必要がある。
 - `external_dependency_gap`: VC/ATP producers からの full source-derived formula payload は

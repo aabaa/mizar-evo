@@ -10,8 +10,8 @@ corrected normal path composes formula/substitution evidence parsing,
 provenance validation, substitution checking, deterministic SAT encoding, and
 trusted in-process SAT checking into one policy-independent kernel result.
 Legacy normalized-certificate and resolution-replay orchestration is retained
-in this document only as task-22 migration/audit inventory until tasks 25-29
-replace, gate, or retire that surface.
+only as task-22 migration/audit inventory. Task 29 gates that surface behind an
+explicit audit policy so normal proof policy cannot accept it.
 
 The module refines
 [architecture 15](../../architecture/en/15.kernel_certificate_format.md)
@@ -25,9 +25,9 @@ The module refines
 The task-13 through task-22 checker is a legacy normalized-certificate
 orchestrator centered on resolution replay. Architecture 15 now supersedes
 that acceptance contract with formula/substitution evidence checked by a
-trusted in-process Rust SAT checker. Until tasks 23-29 in
-[todo.md](./todo.md) land, this module specification records both the legacy
-implemented surface and the required correction.
+trusted in-process Rust SAT checker. Tasks 23-29 in [todo.md](./todo.md)
+replace the normal acceptance path and gate the legacy implemented surface as
+migration/audit-only.
 
 The corrected checker accepts only caller-supplied evidence: formula refs or
 formulas, explicit substitutions, provenance bindings, and target/goal
@@ -40,8 +40,16 @@ evidence.
 Legacy `ParsedCertificate` and `resolution_trace` inputs are therefore
 migration/audit compatibility inputs only. Under normal proof policy they must
 return an unsupported-evidence rejection rather than `Accepted`; audit mode may
-report deterministic inspection data but cannot emit trusted `used_axioms`,
-proof witnesses, cache promotion, or artifact `kernel_verified` status.
+replay them for inspection, but it must still return `Rejected` with an
+`unsupported_certificate_format` audit record. The audit result may retain
+checked import/substitution/resolution/cluster records for debugging, but it
+must not populate trusted `final_goal`, trusted `used_axioms`, proof witnesses,
+cache promotion, or artifact `kernel_verified` status.
+In source, audit mode is explicit: `KernelCheckPolicy.allow_legacy_certificate_audit`
+must be `true` for `check_kernel_certificate` / `check_kernel_batch` to run
+the legacy checker. The default policy leaves this flag `false` and returns a
+deterministic `unsupported_certificate_format` rejection at
+`policy.allow_legacy_certificate_audit`.
 
 ## Trust Statement
 
@@ -77,7 +85,8 @@ The module owns:
 - extracting trusted `used_axioms` only from accepted formula evidence whose
   provenance binds to accepted imported axiom/theorem formulas;
 - retaining the task-22 `ParsedCertificate` / `resolution_trace` orchestration
-  only as legacy migration/audit surface until task 29 gates or retires it;
+  only as legacy migration/audit surface behind
+  `allow_legacy_certificate_audit`;
 - validating legacy certificate target, profile, imported facts, substitutions,
   cluster/reduction traces, derived facts, and final goal only when the checker
   explicitly runs in that migration/audit surface;
@@ -128,21 +137,27 @@ KernelEvidenceCheckLimits
   sat_checker
   max_pipeline_steps
   max_report_records
+
+KernelCheckPolicy
+  imported_fact_policy
+  allow_legacy_certificate_audit = false for normal proof policy
 ```
 
-`kernel_evidence` is the schema from `formula_evidence.md`. The checker
-validates target/profile/context binding, formula provenance, imported formula
-identity and proof status, explicit substitutions, deterministic SAT encoding,
-and trusted SAT checker UNSAT. `FormulaEvidenceContext` is immutable
-caller-supplied context; missing, ambiguous, identity-mismatched, or too-weak
-imported formula status rejects fail-closed before acceptance. Caller-supplied instantiated formulas, SAT
+`kernel_evidence` is the schema from `formula_evidence.md`. The parser
+validates the evidence profile before service handoff; the checker validates
+target/context binding, formula provenance, imported formula identity and
+proof status, explicit substitutions, deterministic SAT encoding, and trusted
+SAT checker UNSAT. `FormulaEvidenceContext` is immutable caller-supplied
+context; missing, ambiguous, identity-mismatched, or too-weak imported formula
+status rejects fail-closed before acceptance. Caller-supplied instantiated formulas, SAT
 clauses, backend proof methods, resolution traces, SMT proof objects, backend
 logs, and backend-reported used axioms are ignored or rejected as untrusted
 acceptance material.
 
-The legacy `KernelCheckInput` below remains a task-22 source inventory item
-until task 28 replaces the normal acceptance path and task 29 gates or retires
-the legacy surface.
+The legacy `KernelCheckInput` below remains a task-22 source inventory item.
+Task 29 gates it behind `KernelCheckPolicy.allow_legacy_certificate_audit`, so
+default policy rejects it before any legacy replay or imported-fact checking;
+task 29 re-audits that migration-only surface before crate closeout.
 
 ## Input And Context
 
@@ -158,6 +173,8 @@ KernelCheckInput
   cluster_trace_context
   requested_cluster_trace_steps
   checker_policy
+    imported_fact_policy
+    allow_legacy_certificate_audit
   checker_limits
 
 ImportedFactContext
@@ -386,17 +403,15 @@ the corrected normal path. Batch checking sorts results by target VC
 fingerprint, then by caller input order for equal targets. It does not spawn
 workers or read cancellation tokens; external scheduler integration remains
 outside this crate. Task 16's legacy certificate batch helper remains
-migration/audit inventory until task 29.
+migration/audit inventory behind the explicit audit gate; task 29 re-reviews
+that surface.
 
 Corrected batch checking is a deterministic wrapper around single evidence
 checks:
 
 ```text
-KernelEvidenceCheckBatchInput
-  checks: Vec<KernelEvidenceCheckInput> in caller order
-
-KernelCheckBatchResult
-  results: sorted Vec<KernelCheckResult>
+check_kernel_evidence_batch(inputs: &[KernelEvidenceCheckInput])
+  -> Vec<KernelCheckResult>
 ```
 
 Batch results are sorted by target VC fingerprint, then by original caller
@@ -432,11 +447,13 @@ tasks 25-29 replace or gate this path behind an explicit migration/audit mode.
 9. Validate `final_goal` by resolving the referenced generated clause,
    resolution step, or supported derived fact and checking that it is the
    empty obligation or canonical final fact required by the target VC.
-10. In legacy migration/audit mode, emit one deterministic audit result, or a
-    deterministic rejected result containing the earliest stable rejection
-    record for that failed check. Under normal proof policy, this legacy path
-    must not emit `kernel_verified`, trusted `used_axioms`, proof witnesses,
-    cache promotion, or artifact acceptance.
+10. In legacy migration/audit mode, replay successful legacy checks into
+    deterministic checked-record audit data, then still emit a `Rejected`
+    `KernelCheckResult` with one `unsupported_certificate_format` audit record.
+    Failed checks emit the earliest stable rejection record for that failed
+    check. The legacy audit result must not populate trusted `final_goal`,
+    trusted `used_axioms`, proof witnesses, cache promotion, artifact
+    acceptance, or `kernel_verified`.
 
 The checker must never repair failed sub-checker reports or try alternate
 pipelines. If any sub-checker rejects evidence, the checker rejects the legacy
@@ -666,8 +683,9 @@ work must keep those tests as migration/audit coverage only; normal acceptance
 tests move to tasks 25-28 for formula/substitution evidence, deterministic SAT
 encoding, and SAT-backed checking. The legacy task-16 coverage includes:
 
-- legacy full-pipeline audit acceptance from checked imports, substitutions,
-  resolution trace, optional cluster trace, and final goal;
+- legacy full-pipeline audit replay from checked imports, substitutions,
+  resolution trace, optional cluster trace, and final-goal validation, reported
+  as rejected audit data rather than accepted proof output;
 - final-goal mismatch and unchecked final references rejected deterministically;
 - duplicate context ids, duplicate evidence ids, simultaneous imported/cluster
   context failures resolved by the fail-fast pipeline, and single rejection

@@ -22,13 +22,16 @@ acceptance remains owned by the later `checker` module.
 This module is legacy compatibility surface after the formula/substitution
 evidence correction. Normal proof policy must not treat a replayed
 MiniSAT-compatible resolution trace as trusted acceptance material. Task 29
-must gate or retire public uses so downstream crates cannot mistake replay
-success for `kernel_verified`.
+gates public service use behind `KernelCheckPolicy.allow_legacy_certificate_audit`
+so downstream crates cannot mistake replay success for `kernel_verified` under
+normal proof policy.
 
-Migration/audit mode may inspect legacy traces and produce deterministic
-rejection or audit records, but it must not produce accepted kernel results,
-trusted `used_axioms`, proof witnesses, cache promotion, or artifact proof
-status. New ATP work must produce formula/substitution evidence candidates
+Migration/audit mode may inspect legacy traces and return deterministic checked
+records for debugging, but the service-level result remains `Rejected` with an
+`unsupported_certificate_format` audit record and no trusted `final_goal` or
+`used_axioms`. That audit data must not be projected to trusted proof
+witnesses, cache promotion, artifact proof status, or any `kernel_verified`
+acceptance. New ATP work must produce formula/substitution evidence candidates
 instead of this trace format.
 
 ## Trust Statement

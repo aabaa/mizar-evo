@@ -643,6 +643,54 @@ fn encoded_sat_problem_fields_stay_private() {
 }
 
 #[test]
+fn parsed_kernel_evidence_fields_stay_read_only() {
+    let source = read_to_string(&crate_root().join("src/formula_evidence.rs"));
+    let body = struct_body(&source, "ParsedKernelEvidence");
+    let field_violations = [
+        "schema_version",
+        "encoding_version",
+        "kernel_profile",
+        "target_vc",
+        "symbol_manifest",
+        "variable_manifest",
+        "formulas",
+        "substitutions",
+        "provenance",
+        "final_goal",
+        "canonical_hash_input",
+    ]
+    .iter()
+    .filter_map(|field| {
+        body.lines().find_map(|line| {
+            let trimmed = line.trim_start();
+            let marker = format!("{field}:");
+            (trimmed.starts_with("pub") && trimmed.contains(&marker)).then_some(trimmed.to_owned())
+        })
+    })
+    .collect::<Vec<_>>();
+    let public_api = public_api_fragments(impl_body(&source, "ParsedKernelEvidence")).join("\n");
+    let escape_violations = [
+        "&mut",
+        "_mut",
+        "into_parts",
+        "from_parts",
+        "Vec<",
+        "Box<[",
+        "self) -> (",
+    ]
+    .into_iter()
+    .filter(|token| public_api.contains(token))
+    .collect::<Vec<_>>();
+
+    assert!(
+        field_violations.is_empty() && escape_violations.is_empty(),
+        "ParsedKernelEvidence must preserve parser-validated invariants with \
+         read-only accessors, not public mutable fields or reconstructable public \
+         escape hatches: fields={field_violations:?}, public_api={escape_violations:?}"
+    );
+}
+
+#[test]
 fn public_surface_scanner_catches_common_shapes() {
     let public_samples = [
         "pub mod clause;",

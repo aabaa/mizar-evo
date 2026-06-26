@@ -360,7 +360,7 @@ backend process execution を含まないものでなければならない。そ
     - 依存: 25、26、27。仕様: `checker.md`,
       [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)。
 
-29. **Migration audit and quality re-review。** [ ]
+29. **Migration audit and quality re-review。** [x]
     - legacy resolution-trace public surface を retire、gate、または明示的に legacy
       と印付けし、downstream crate が target acceptance path と誤認しないように
       する。source/spec、bilingual、prohibition、dependency、quality audit を再実行し、

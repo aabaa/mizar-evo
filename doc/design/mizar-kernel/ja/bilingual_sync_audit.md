@@ -14,18 +14,19 @@ audit を含めるため、この audit を更新する。Tasks 25-26 は formul
 と source-backed SAT encoding implementation を含めるため、この audit を更新する。
 Task 27 は trusted SAT checker wrapper、exact dependency/lockfile policy、
 read-only encoded SAT problem boundary、public enum/source-spec inventory を含めるため、
-この audit を更新する。Task 28 は SAT-backed kernel evidence service path、checker API
-inventory、task-29 legacy-surface deferral を含めるため、この audit を更新する。英語は canonical のままである。日本語
+この audit を更新する。Task 28 は SAT-backed kernel evidence service path と checker
+API inventory のために refresh する。Task 29 は explicit legacy audit gate、
+post-correction closeout report、mizar-vc handoff のために refresh する。英語は canonical のままである。日本語
 companion は英語文書に同期する。ただし、commit hash や task status の欠落のように
 task-local bookkeeping omission が明らかに paired であり、同じ rationale で両言語を
 修正できる場合は例外とする。Japanese-only semantic drift を、別の classified finding
 なしに英語へ昇格してはならない。
 
-これは documentation audit である。Rust behavior、public API、certificate
-semantics、rejection semantics、`doc/spec`、`.miz` fixture、expectation、
-SAT/ATP/proof search、premise selection、overload resolution、cluster search、
-implicit coercion insertion、fallback inference、global mutable state、downstream
-ATP/proof/cache/artifact integration は変更しない。
+これは、legacy certificate checking を explicit migration/audit policy の背後に gate する
+task-29 source change のための documentation audit である。`doc/spec`、`.miz`
+fixture、expectation、SAT/ATP/proof search、premise selection、overload resolution、
+cluster search、implicit coercion insertion、fallback inference、global mutable state、
+downstream ATP/proof/cache/artifact integration は変更しない。
 
 ## Pair Inventory
 
@@ -35,12 +36,12 @@ ATP/proof/cache/artifact integration は変更しない。
 | File | Companion links | Heading count | Table row count | Sync result |
 |---|---|---:|---:|---|
 | `00.crate_plan.md` | EN -> JA and JA -> EN | 8 / 8 | 64 / 64 | post-closeout task rows 追加後に synchronized. |
-| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 35 / 35 | task-28 SAT-backed service bookkeeping 後に synchronized. |
+| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 35 / 35 | task-29 migration-audit bookkeeping 後に synchronized. |
 | `certificate_parser.md` | EN -> JA and JA -> EN | 15 / 15 | 29 / 29 | Synchronized. |
-| `checker.md` | EN -> JA and JA -> EN | 15 / 15 | 15 / 15 | task-28 `check_kernel_evidence` service path 向けに refreshed. |
+| `checker.md` | EN -> JA and JA -> EN | 15 / 15 | 15 / 15 | task-29 legacy audit policy gate 向けに refreshed. |
 | `clause.md` | EN -> JA and JA -> EN | 12 / 12 | 5 / 5 | Synchronized. |
-| `crate_exit_report.md` | EN -> JA and JA -> EN | 12 / 12 | 71 / 71 | Closeout で追加し synchronized. |
-| `formula_evidence.md` | EN -> JA and JA -> EN | 13 / 13 | 0 / 0 | task 25 implementation 向けに refined し synchronized. |
+| `crate_exit_report.md` | EN -> JA and JA -> EN | 12 / 12 | 78 / 78 | task-29 post-correction closeout と mizar-vc handoff 向けに refreshed. |
+| `formula_evidence.md` | EN -> JA and JA -> EN | 13 / 13 | 0 / 0 | task-29 parsed evidence read-only boundary 向けに refreshed. |
 | `module_boundary_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 13 / 13 | Synchronized. |
 | `public_enum_policy.md` | EN -> JA and JA -> EN | 5 / 5 | 0 / 0 | task-27 SAT checker result enum addition 後に synchronized. |
 | `rejection.md` | EN -> JA and JA -> EN | 14 / 14 | 32 / 32 | task-27 SAT wrapper failure mapping 向けに refreshed. |
@@ -48,10 +49,10 @@ ATP/proof/cache/artifact integration は変更しない。
 | `sat_checker.md` | EN -> JA and JA -> EN | 6 / 6 | 0 / 0 | task-27 wrapper API と unsupported step-budget policy 向けに refreshed. |
 | `sat_dependency_audit.md` | EN -> JA and JA -> EN | 13 / 13 | 32 / 32 | task-27 exact dependency と no-callback branch 向けに refreshed. |
 | `sat_encoding.md` | EN -> JA and JA -> EN | 8 / 8 | 0 / 0 | task-27 read-only encoded problem boundary 向けに refreshed. |
-| `source_spec_audit.md` | EN -> JA and JA -> EN | 18 / 18 | 29 / 29 | task-28 SAT-backed checker service module 後に synchronized. |
+| `source_spec_audit.md` | EN -> JA and JA -> EN | 18 / 18 | 29 / 29 | task-29 legacy audit gate 後に synchronized. |
 | `substitution_checker.md` | EN -> JA and JA -> EN | 15 / 15 | 17 / 17 | Synchronized. |
-| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 32 / 32 | Task 27 hash backfill と Task 28 completion row 後に synchronized. |
-| `todo.md` | EN -> JA and JA -> EN | 13 / 13 | 11 / 11 | Task 28 completion status update 後に synchronized. |
+| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 33 / 33 | Task 28 hash backfill と Task 29 completion row 後に synchronized. |
+| `todo.md` | EN -> JA and JA -> EN | 13 / 13 | 11 / 11 | Task 29 completion status update 後に synchronized. |
 
 Count check は完全な translation proof ではない。下の semantic check を補助する
 drift screen である。
@@ -61,7 +62,7 @@ drift screen である。
 | Area | Result |
 |---|---|
 | Canonical/companion headers | すべての English file は Japanese companion を指し、すべての Japanese file は English canonical file を指す。 |
-| Task status and sequencing | Tasks 0-28 は complete として一貫する。Task 27 commit `222bf8bc30e59dd95818d828dd71ff823ff84f83` は backfill 済みであり、task 28 は complete で、その commit は後続 backfill 待ちである。 |
+| Task status and sequencing | Tasks 0-29 は complete として一貫する。Task 28 commit `43674a221dd5f43259c480846db7428f85ac9386` は backfill 済みであり、task 29 は complete で、その commit は後続 backfill 待ちである。 |
 | Task 21 bookkeeping | `73a919c16b48da82038fd7267e86e1a844cb4c6f` は完了済み Task 21 commit であり、両 ledger に backfill される。 |
 | Task 22 bookkeeping | `814e47bb9aaaff75ebfe4cc1be10d2eb4618498b` は完了済み Task 22 commit であり、両 ledger に backfill される。 |
 | Closeout report inventory | `crate_exit_report.md` は paired であり、同じ hard gates、task commits、residual gaps、quality score、verification plan、next-crate handoff を英語/日本語で記録する。 |
@@ -75,15 +76,14 @@ drift screen である。
 
 ## Remaining Gaps
 
-Task 28 は external producer / consumer gap を閉じない。以下は module spec と
-`source_spec_audit.md` に残る:
+Task 29 は `check_kernel_certificate` を explicit audit policy の背後に gate し、legacy
+normal-policy acceptance gap を閉じる。External producer / consumer gap は閉じない。
+以下は module spec と `source_spec_audit.md` に残る:
 
 - source-derived formula/substitution evidence and service envelopes;
 - `mizar-atp` による formula/substitution candidate evidence production;
 - legacy migration/audit material としての ATP proof translation と
   MiniSAT-compatible backend trace extraction。trusted acceptance target では決してない;
-- legacy `check_kernel_certificate` の normal-policy gate または retirement は
-  task-29 migration/audit work のままである;
 - `mizar-checker` cluster/reduction payload production;
 - current checked input を超える derived-fact payload schema work;
 - service-envelope normalization、cancellation token plumbing、external worker
@@ -93,12 +93,15 @@ Task 28 は external producer / consumer gap を閉じない。以下は module 
 
 ## Verification Plan
 
-Task 28 の refreshed bilingual audit verification:
+Task 29 の refreshed bilingual audit verification:
 
 - `doc/design/mizar-kernel/{en,ja}` に対する deterministic file-pair and
   companion-link checks;
 - `cargo fmt --check`;
 - `cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings`;
 - `cargo test -p mizar-kernel`;
+- `mizar-core`、`mizar-vc`、`mizar-artifact`、`mizar-checker` の boundary tests;
+- 実用上可能なら broad `cargo clippy --all-targets --all-features -- -D warnings` と
+  `cargo test`;
 - `git diff --check`;
 - explicit path staging 後の `git diff --cached --check`。

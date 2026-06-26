@@ -153,9 +153,10 @@ Covered top-level public items:
   実装する。
 - `KernelCheckInput`、`KernelCheckPolicy`、`KernelCheckLimits`、
   `KernelCheckResult`、`KernelCheckStatus`、checked output record、service result
-  alias、`check_kernel_certificate`、`check_kernel_batch` は、task 29 が gate または
-  retire するまで legacy phase-14 orchestration と deterministic batch ordering inventory
-  を保持する。
+  alias、`check_kernel_certificate`、`check_kernel_batch` は、task-29
+  `allow_legacy_certificate_audit` gate の背後でのみ legacy phase-14 orchestration と
+  deterministic batch ordering inventory を保持する。Default normal proof policy は replay
+  前にこの surface を拒否する。
 - Cluster/reduction context、evidence、checked-reference、report、result、
   `replay_cluster_trace` は explicit trace だけを replay する。cluster / reduction
   search は行わない。
@@ -216,7 +217,9 @@ Covered top-level public items:
 
 - Parse context、limit、parsed evidence、formula/provenance/final-goal record、
   `parse_formula_evidence` は task-25 deterministic evidence envelope と structural
-  parser を実装する。
+  parser を実装する。Parsed evidence は read-only accessor を expose し、caller が
+  checker handoff 前に validated formula/provenance/target binding を mutate できない
+  ようにする。
 - `Formula`、source binding record、substitution evidence、formula fingerprint、
   entry hash input は、instantiated formula や SAT clause を trusted payload として
   受理せず formula/substitution evidence identity を実装する。
@@ -398,11 +401,12 @@ Task 24 は source change より先に dependency audit を追加する:
   unsafe-code audit、no-process/no-network audit、resource-limit gate、task 27 が
   符号化すべき dependency lint-policy revision を記録する。
 
-現在の source inventory は task-28 public surface であり、formula/substitution evidence
+現在の source inventory は task-29 public surface であり、formula/substitution evidence
 parser、SAT encoder、trusted SAT checker wrapper、SAT-backed `check_kernel_evidence`
-service path を追加する。一方で legacy `check_kernel_certificate` path は、task 29 が
-legacy resolution-trace acceptance を gate または retire するまで corrected evidence
-format に対する `source_drift` / `design_drift` として残る。
+service path、そして task-22 legacy `check_kernel_certificate` path に対する explicit
+`allow_legacy_certificate_audit` gate を追加する。Default normal proof policy は legacy
+resolution-trace certificate を replay 前に拒否する。Explicit audit mode は migration-only
+のままであり、成功 replay 後も rejected audit data を返し、trusted acceptance material ではない。
 
 ## Test Traceability
 
@@ -417,7 +421,7 @@ migration-only であり deferred のままである。
 | `certificate_parser` | `crates/mizar-kernel/src/certificate_parser/tests.rs` | Valid schema parsing、unsupported header/profile、directory と item canonicality、allocation 前の resource exhaustion、imported fact reference、manifest/generated-clause validation、substitution/resolution/derived/final reference、deterministic collection order、deterministic hash input、parser rejection classification。 |
 | `checker` imported facts | `crates/mizar-kernel/src/checker/tests.rs` | Imported axiom/theorem context validation、namespace preservation、proof-status check、policy taint、fingerprint binding、duplicate context rejection、unused malformed entry handling、deterministic context/report ordering、count/resource limit。 |
 | `checker` cluster/reduction replay | `crates/mizar-kernel/src/checker/tests.rs` | Valid trace replay、missing provenance、hidden/future dependency rejection、guard/result mismatch、bounded context construction、requested-step closure、unchecked base fact rejection、runtime limit、deterministic canonical order。 |
-| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection、imported formula context proof-status check、satisfiable-goal rejection、target mismatch rejection、deterministic evidence batch tie、legacy migration/audit service pipeline、substitution/report binding、generated-clause base set、final-goal / derived-fact fail-closed behavior、mutation fail corpus、deterministic repetition/permutation result、replay-cost budget、timeout/resource propagation、target/input-order batch sorting。 |
+| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection、imported formula context proof-status check、satisfiable-goal rejection、target mismatch rejection、deterministic evidence batch tie、normal-policy legacy certificate rejection、explicit legacy migration/audit service pipeline、substitution/report binding、generated-clause base set、final-goal / derived-fact fail-closed behavior、mutation fail corpus、deterministic repetition/permutation result、replay-cost budget、timeout/resource propagation、target/input-order batch sorting。 |
 | `clause` | `crates/mizar-kernel/src/clause/tests.rs` | Canonical literal/term ordering、duplicate literal removal、empty versus tautology form、tautology policy、malformed atom/term/symbol/variable rejection、profile/resource bound、canonical constructor check、stable rendering、display data を除外する hash input。 |
 | `formula_evidence` | `crates/mizar-kernel/src/formula_evidence/tests.rs` | Valid evidence envelope parsing、standalone final-goal separation、stable formula rendering/hash input、explicit substitution evidence payload parsing、unknown schema/domain rejection、duplicate id、malformed formula rejection、missing provenance fail-closed behavior、imported statement fingerprint mismatch rejection、provenance target-binding mismatch rejection。 |
 | `rejection` | `crates/mizar-kernel/src/rejection/tests.rs` | Stable key、category/detail ownership、parser conversion、checker location、owner mapping、deterministic ordering and tie-breaker、fixed-width target sort bytes、public enum compatibility。 |
@@ -425,7 +429,7 @@ migration-only であり deferred のままである。
 | `sat_checker` | `crates/mizar-kernel/src/sat_checker/tests.rs` | Unsatisfiable / satisfiable kernel-derived SAT problem に対する trusted wrapper outcome、deterministic repeated check、solver construction 前の input-limit rejection、solver-hook accounting なしの unsupported exact step-budget rejection、invalid clause/literal shape rejection、audited `batsat::SolverOpts` pinning。 |
 | `sat_encoding` | `crates/mizar-kernel/src/sat_encoding/tests.rs` | Stable deterministic CNF/Tseitin encoding、canonical atom bytes による atom-variable ordering、standalone goal polarity、formula-wide substitution-derived assertion、recomputed derived formula fingerprint、binder-context canonicality and actual-term compatibility checks、unbound-only nested-binder substitution、alpha repair なしの capture fail-closed behavior、SAT checking 前の resource-limit rejection。 |
 | `substitution_checker` | `crates/mizar-kernel/src/substitution_checker/tests.rs` | Direct substitution replay、payload role validation、missing/malformed/deferred evidence rejection、repair なしの target/manifest/capture check、alpha conversion、freshness witness、free-variable constraint、shuffled witness determinism、binder-context decoding、first-use side-condition rejection、resource limit、context canonicalization、report binding。 |
-| Public-surface and trust lint | `crates/mizar-kernel/tests/lint_policy.rs` | Workspace/crate dependency boundary、source module exposure、public enum policy、forbidden producer/cache/artifact/nondeterminism tokens、exact source/spec audit inventory、task-22 private-test traceability and tracked-file guard、Trust Statement prohibition wording、gap classification marker、scanner regression cases。 |
+| Public-surface and trust lint | `crates/mizar-kernel/tests/lint_policy.rs` | Workspace/crate dependency boundary、source module exposure、public enum policy、forbidden producer/cache/artifact/nondeterminism tokens、exact source/spec audit inventory、read-only parsed formula evidence と SAT problem invariant、task-22 private-test traceability and tracked-file guard、Trust Statement prohibition wording、gap classification marker、scanner regression cases。 |
 
 ## Gap Classification
 
@@ -443,11 +447,12 @@ migration-only であり deferred のままである。
 | KERNEL24-G001 | `deferred` | `batsat` は public exact conflict/propagation budget setter を持たない。 | Task 27 は unsupported step-budget request を solver construction 前に reject する。Exact solver-step budget は stable deterministic API を expose する dependency が出るまで deferred のままである。 |
 | KERNEL25-G001 | `deferred` | Task 25 は formula/substitution evidence を parse し structural validation するが、formula instantiation、SAT encoding、SAT checker 呼び出し、legacy service acceptance path の置換は行わない。 | Tasks 26-28 は instantiated formula を導出し、deterministic SAT problem を構築し、trusted SAT checker を実行し、backend method や legacy resolution trace を trusted material として扱わず SAT-backed service path を wire する。 |
 | KERNEL26-G001 | `deferred` | Task 26 は instantiated formula と deterministic SAT problem を導出し、task 27 は trusted SAT checker wrapper を追加し、task 28 は SAT-backed `check_kernel_evidence` service path を追加する。より豊かな formula-path / alpha-renaming substitution evidence はまだ producer-owned stable schema ではない。 | より豊かな substitution producer は、それらの shape を受理できるようになる前に formula/substitution evidence schema を拡張しなければならない。 |
-| KERNEL28-G001 | `deferred` | Legacy `check_kernel_certificate` surface は task-22 migration/audit inventory として残っている。 | Task 29 は downstream crate が corrected normal acceptance path と誤認しないよう legacy resolution-trace public surface を gate、retire、または明示的に legacy と印付けしなければならない。 |
+| KERNEL29-G001 | task 29 で閉じた `source_drift` / `design_drift` | Legacy `check_kernel_certificate` surface は task-22 migration/audit inventory として残っている。 | Task 29 はこれを `KernelCheckPolicy.allow_legacy_certificate_audit` の背後に gate する。Default normal proof policy は legacy resolution-trace certificate を replay 前に拒否し、explicit audit replay も trusted `final_goal` / `used_axioms` を持たない `Rejected` を返し、この migration-only surface を quality re-review で再監査する。 |
 
 ## Verification Plan
 
-Task 20 は audit/lint task であり runtime behavior change はない。必要な verification:
+Task 29 は、legacy certificate surface を explicit migration/audit policy の背後に
+gate しながら、この audit と quality review を refresh する。必要な verification:
 
 - `cargo test -p mizar-kernel source_spec_audit_covers_public_surface_and_prohibitions`;
 - `cargo fmt --check`;
@@ -456,5 +461,6 @@ Task 20 は audit/lint task であり runtime behavior change はない。必要
 - `git diff --check`;
 - explicit path staging 後の `git diff --cached --check`。
 
-この audit は binder contract や checker/trace behavior を変更しないため、
-`cargo test -p mizar-core` と `cargo test -p mizar-checker` は不要である。
+Task 29 は checker service behavior を変更するため、boundary confidence として
+`cargo test -p mizar-core`、`cargo test -p mizar-vc`、`cargo test -p mizar-artifact`、
+`cargo test -p mizar-checker` を実行するべきである。

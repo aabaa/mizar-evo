@@ -229,7 +229,7 @@ pub fn encode_formula_evidence(
     evidence: &ParsedKernelEvidence,
     context: &SatEncodingContext,
 ) -> SatEncodingResult<EncodedSatProblem> {
-    let target = TargetVcFingerprint::from_certificate_fingerprint(&evidence.target_vc);
+    let target = TargetVcFingerprint::from_certificate_fingerprint(evidence.target_vc());
     let validation_context = formula_validation_context(evidence, context);
 
     let mut assertions = premise_assertions(&target, evidence, context)?;
@@ -239,7 +239,7 @@ pub fn encode_formula_evidence(
         &validation_context,
         context,
     )?);
-    assertions.push(final_goal_assertion(&evidence.final_goal));
+    assertions.push(final_goal_assertion(evidence.final_goal()));
     if assertions.len() > context.limits.max_assertions {
         return Err(resource_rejection(
             &target,
@@ -276,7 +276,7 @@ pub fn encode_formula_evidence(
     let clauses = builder.finish();
 
     let canonical_bytes =
-        canonical_problem_bytes(&evidence.target_vc, &atom_variables, &assertions, &clauses)
+        canonical_problem_bytes(evidence.target_vc(), &atom_variables, &assertions, &clauses)
             .map_err(|detail| {
                 rejection(
                     &target,
@@ -295,7 +295,7 @@ pub fn encode_formula_evidence(
     Ok(EncodedSatProblem {
         schema_version: SAT_PROBLEM_SCHEMA_VERSION,
         encoding_version: SAT_PROBLEM_ENCODING_VERSION,
-        target_vc: evidence.target_vc.clone(),
+        target_vc: evidence.target_vc().clone(),
         atom_variables,
         assertions,
         clauses,
@@ -308,14 +308,14 @@ fn premise_assertions(
     evidence: &ParsedKernelEvidence,
     context: &SatEncodingContext,
 ) -> SatEncodingResult<Vec<EncodedFormulaAssertion>> {
-    if evidence.formulas.len() > context.limits.max_assertions {
+    if evidence.formulas().len() > context.limits.max_assertions {
         return Err(resource_rejection(
             target,
             RejectionLocation::new().with_field_path("formula_evidence"),
         ));
     }
     evidence
-        .formulas
+        .formulas()
         .iter()
         .map(|entry| {
             Ok(EncodedFormulaAssertion {
@@ -336,19 +336,19 @@ fn instantiate_substitutions(
     validation_context: &ClauseValidationContext,
     context: &SatEncodingContext,
 ) -> SatEncodingResult<Vec<EncodedFormulaAssertion>> {
-    if evidence.substitutions.len() > context.limits.max_substitution_instances {
+    if evidence.substitutions().len() > context.limits.max_substitution_instances {
         return Err(resource_rejection(
             target,
             RejectionLocation::new().with_field_path("substitutions"),
         ));
     }
     let formulas = evidence
-        .formulas
+        .formulas()
         .iter()
         .map(|entry| (entry.formula_id, entry))
         .collect::<BTreeMap<_, _>>();
-    let mut assertions = Vec::with_capacity(evidence.substitutions.len());
-    for substitution in &evidence.substitutions {
+    let mut assertions = Vec::with_capacity(evidence.substitutions().len());
+    for substitution in evidence.substitutions() {
         let Some(source) = formulas.get(&substitution.source_formula_id).copied() else {
             return Err(invalid_substitution(
                 target,
@@ -1408,9 +1408,9 @@ fn formula_validation_context(
     context: &SatEncodingContext,
 ) -> ClauseValidationContext {
     let clause_profile = ClauseProfile::new(
-        evidence.kernel_profile.clause_schema_version,
-        evidence.kernel_profile.clause_encoding_version,
-        match evidence.kernel_profile.clause_tautology_policy {
+        evidence.kernel_profile().clause_schema_version,
+        evidence.kernel_profile().clause_encoding_version,
+        match evidence.kernel_profile().clause_tautology_policy {
             ClauseTautologyPolicy::Reject => crate::clause::TautologyPolicy::Reject,
             ClauseTautologyPolicy::Marker => crate::clause::TautologyPolicy::Marker,
         },
@@ -1418,10 +1418,10 @@ fn formula_validation_context(
     let mut clause_context = ClauseValidationContext::new(clause_profile)
         .with_limits(usize::MAX, context.limits.max_term_encoding_bytes)
         .with_max_term_recursion_depth(context.limits.max_term_recursion_depth);
-    for symbol in &evidence.symbol_manifest {
+    for symbol in evidence.symbol_manifest() {
         clause_context = clause_context.with_known_symbol(symbol.symbol);
     }
-    for variable in &evidence.variable_manifest {
+    for variable in evidence.variable_manifest() {
         clause_context = clause_context.with_canonical_variable(variable.variable_id);
     }
     clause_context

@@ -9,8 +9,9 @@
 Corrected normal path は formula/substitution evidence parsing、provenance validation、
 substitution checking、deterministic SAT encoding、trusted in-process SAT checking を
 組み合わせ、policy-independent な kernel result を生成する。Legacy normalized-certificate
-と resolution-replay orchestration は、tasks 25-29 がその surface を replace、gate、または
-retire するまで、task-22 migration/audit inventory としてのみこの文書に残す。
+と resolution-replay orchestration は task-22 migration/audit inventory としてのみ残す。
+Task 29 は、その surface を explicit audit policy の背後に gate し、normal proof
+policy が受理できないようにする。
 
 この module は
 [architecture 15](../../architecture/ja/15.kernel_certificate_format.md) の
@@ -25,8 +26,8 @@ task 13 から task 22 までの checker は、resolution replay を中心にし
 normalized-certificate orchestrator である。アーキテクチャ 15 は現在、その
 acceptance contract を、trusted in-process Rust SAT checker で検査する
 formula/substitution evidence によって supersede している。[todo.md](./todo.md) の
-task 23-29 が着地するまで、この module specification は legacy の実装済み surface
-と必要な correction の両方を記録する。
+tasks 23-29 は normal acceptance path を置き換え、legacy implemented surface を
+migration/audit-only として gate する。
 
 修正後の checker は、呼び出し側が与えた evidence だけを受理対象にする:
 formula ref または formula、明示的 substitution、provenance binding、target/goal
@@ -39,8 +40,17 @@ fallback したりしてはならない。
 したがって legacy `ParsedCertificate` と `resolution_trace` input は migration/audit
 compatibility input に限られる。通常 proof policy では `Accepted` ではなく
 unsupported-evidence rejection を返さなければならない。Audit mode は deterministic
-inspection data を報告してよいが、trusted `used_axioms`、proof witness、cache promotion、
-artifact `kernel_verified` status を emit してはならない。
+inspection のためにそれらを replay してよいが、それでも
+`unsupported_certificate_format` audit record を持つ `Rejected` を返さなければならない。
+Audit result は debugging 用に checked import/substitution/resolution/cluster record を
+保持してよいが、trusted `final_goal`、trusted `used_axioms`、proof witness、cache
+promotion、artifact `kernel_verified` status を populate してはならない。
+Source では audit mode は explicit である。`check_kernel_certificate` /
+`check_kernel_batch` が legacy checker を実行するには
+`KernelCheckPolicy.allow_legacy_certificate_audit` が `true` でなければならない。
+Default policy ではこの flag は `false` のままであり、
+`policy.allow_legacy_certificate_audit` に対する deterministic
+`unsupported_certificate_format` rejection を返す。
 
 ## Trust Statement
 
@@ -74,8 +84,9 @@ mutable compiler-global state を含む。
   formula/substitution evidence を check すること;
 - accepted imported axiom/theorem formula に provenance が bind する accepted formula
   evidence からだけ trusted `used_axioms` を抽出すること;
-- task 29 が gate または retire するまで、task-22 `ParsedCertificate` /
-  `resolution_trace` orchestration を legacy migration/audit surface としてのみ残すこと;
+- task-22 `ParsedCertificate` / `resolution_trace` orchestration を
+  `allow_legacy_certificate_audit` の背後の legacy migration/audit surface としてのみ
+  残すこと;
 - checker が明示的に migration/audit surface として動作している場合に限り、
   legacy certificate target、profile、imported fact、substitution、cluster/reduction
   trace、derived fact、final goal を validate すること;
@@ -125,20 +136,26 @@ KernelEvidenceCheckLimits
   sat_checker
   max_pipeline_steps
   max_report_records
+
+KernelCheckPolicy
+  imported_fact_policy
+  allow_legacy_certificate_audit = false for normal proof policy
 ```
 
-`kernel_evidence` は `formula_evidence.md` の schema である。Checker は
-target/profile/context binding、formula provenance、imported formula identity と proof
-status、explicit substitution、deterministic SAT encoding、trusted SAT checker UNSAT を
-validate する。`FormulaEvidenceContext` は caller-supplied immutable context である。
+`kernel_evidence` は `formula_evidence.md` の schema である。Parser は service handoff
+前に evidence profile を validate する。Checker は target/context binding、formula
+provenance、imported formula identity と proof status、explicit substitution、
+deterministic SAT encoding、trusted SAT checker UNSAT を validate する。
+`FormulaEvidenceContext` は caller-supplied immutable context である。
 Imported formula status が missing、ambiguous、identity-mismatched、too-weak の場合は
 acceptance 前に fail-closed で reject する。Caller-supplied instantiated formula、SAT clause、backend proof method、
 resolution trace、SMT proof object、backend log、backend-reported used axiom は untrusted
 acceptance material として ignore または reject する。
 
-下の legacy `KernelCheckInput` は、task 28 が normal acceptance path を置き換え、
-task 29 が legacy surface を gate または retire するまで、task-22 source inventory item
-として残る。
+下の legacy `KernelCheckInput` は task-22 source inventory item として残る。Task 29 は
+それを `KernelCheckPolicy.allow_legacy_certificate_audit` の背後に gate するため、default
+policy は legacy replay や imported-fact checking の前に reject する。Task 29 は crate
+closeout 前にその migration-only surface を再監査する。
 
 ## Input and context
 
@@ -153,6 +170,8 @@ KernelCheckInput
   cluster_trace_context
   requested_cluster_trace_steps
   checker_policy
+    imported_fact_policy
+    allow_legacy_certificate_audit
   checker_limits
 
 ImportedFactContext
@@ -369,16 +388,14 @@ Task 28 は corrected normal path のために `check_kernel_evidence` と
 `check_kernel_evidence_batch` を提供する。Batch checking は target VC fingerprint、
 同一 target では caller input order の順で results を sort する。Worker spawn や
 cancellation token read は行わない。External scheduler integration はこの crate の外に残る。
-Task 16 の legacy certificate batch helper は task 29 まで migration/audit inventory として残る。
+Task 16 の legacy certificate batch helper は explicit audit gate の背後にある
+migration/audit inventory として残る。Task 29 はその surface を再レビューする。
 
 Corrected batch checking は single evidence checks の deterministic wrapper である:
 
 ```text
-KernelEvidenceCheckBatchInput
-  checks: Vec<KernelEvidenceCheckInput> in caller order
-
-KernelCheckBatchResult
-  results: sorted Vec<KernelCheckResult>
+check_kernel_evidence_batch(inputs: &[KernelEvidenceCheckInput])
+  -> Vec<KernelCheckResult>
 ```
 
 Batch results は target VC fingerprint、同一 target では original caller input index で sort
@@ -410,11 +427,12 @@ explicit migration/audit mode に gate しない限り、legacy `ParsedCertifica
    は derived-fact payload language を仮に作らない。
 9. `final_goal` が参照する generated clause、resolution step、または supported derived fact を解決し、
    target VC が要求する empty obligation または canonical final fact であることを check する。
-10. Legacy migration/audit mode では deterministic audit result を 1 つ emit するか、
-    failed check の earliest stable rejection record を 1 つ含む rejected result を
-    deterministic に emit する。通常 proof policy 下では、この legacy path は
-    `kernel_verified`、trusted `used_axioms`、proof witness、cache promotion、artifact
-    acceptance を emit してはならない。
+10. Legacy migration/audit mode では、成功した legacy check を deterministic checked-record
+    audit data として replay した後でも、`unsupported_certificate_format` audit record を
+    1 つ持つ `Rejected` `KernelCheckResult` を emit する。Failed check は、その failed check
+    の earliest stable rejection record を emit する。Legacy audit result は trusted
+    `final_goal`、trusted `used_axioms`、proof witness、cache promotion、artifact
+    acceptance、`kernel_verified` を populate してはならない。
 
 Checker は failed sub-checker report を repair したり、alternate pipeline を試してはならない。
 Sub-checker が evidence を reject した場合、checker は legacy audit input も reject する。
@@ -626,8 +644,9 @@ work は、それらの tests を migration/audit coverage としてのみ保持
 通常 acceptance tests は tasks 25-28 の formula/substitution evidence、deterministic SAT
 encoding、SAT-backed checking に移る。Legacy task-16 coverage は以下を含む:
 
-- checked imports、substitutions、resolution trace、optional cluster trace、final goal
-  からの legacy full-pipeline audit acceptance;
+- checked imports、substitutions、resolution trace、optional cluster trace、final-goal
+  validation からの legacy full-pipeline audit replay。これは accepted proof output ではなく
+  rejected audit data として報告される;
 - final-goal mismatch と unchecked final reference が deterministic に rejected される;
 - duplicate context id、duplicate evidence id、simultaneous imported/cluster context
   failures は fail-fast pipeline で解決され、single rejection record が stable location を持つ;
