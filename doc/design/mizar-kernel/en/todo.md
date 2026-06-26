@@ -364,7 +364,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       to callers.
     - Deps: 24, 26. Spec: `sat_checker.md` from task 23.
 
-28. **SAT-backed kernel check service.** [ ]
+28. **SAT-backed kernel check service.** [x]
     - Replace the trusted acceptance path so `checker` accepts only validated
       formula/substitution evidence whose kernel-derived SAT problem is
       refuted by the trusted SAT checker. Keep imported-fact, provenance,

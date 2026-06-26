@@ -101,6 +101,8 @@ Covered top-level public items:
 - `ImportedFactContext`
 - `ImportedFactContextError`
 - `ImportedFactEvidence`
+- `FormulaEvidenceContext`
+- `FormulaImportedFactEvidence`
 - `ImportedFactNamespace`
 - `AcceptedProofStatus`
 - `ImportedFactCheckReport`
@@ -108,14 +110,18 @@ Covered top-level public items:
 - `ImportedFactCheckResult`
 - `check_imported_facts`
 - `KernelCheckInput`
+- `KernelEvidenceCheckInput`
 - `KernelCheckPolicy`
 - `KernelCheckLimits`
+- `KernelEvidenceCheckLimits`
 - `KernelCheckResult`
 - `KernelCheckStatus`
 - `CheckedDerivedFact`
 - `CheckedFinalGoal`
 - `UsedAxiom`
 - `KernelCheckServiceResult`
+- `check_kernel_evidence`
+- `check_kernel_evidence_batch`
 - `check_kernel_certificate`
 - `check_kernel_batch`
 - `ClusterTraceReplayLimits`
@@ -139,10 +145,17 @@ Covered top-level public items:
 
 - Imported-fact context、policy、status、evidence、report、result、
   `check_imported_facts` は immutable imported-fact validation boundary を実装する。
+- `KernelEvidenceCheckInput`、`FormulaEvidenceContext`、
+  `FormulaImportedFactEvidence`、`KernelEvidenceCheckLimits`、
+  `check_kernel_evidence`、`check_kernel_evidence_batch` は、parsed
+  formula/substitution evidence、immutable imported formula context、deterministic
+  SAT encoding、trusted SAT checker 上の task-28 SAT-backed normal service path を
+  実装する。
 - `KernelCheckInput`、`KernelCheckPolicy`、`KernelCheckLimits`、
   `KernelCheckResult`、`KernelCheckStatus`、checked output record、service result
-  alias、`check_kernel_certificate`、`check_kernel_batch` は policy-independent な
-  phase-14 orchestration と deterministic batch ordering を実装する。
+  alias、`check_kernel_certificate`、`check_kernel_batch` は、task 29 が gate または
+  retire するまで legacy phase-14 orchestration と deterministic batch ordering inventory
+  を保持する。
 - Cluster/reduction context、evidence、checked-reference、report、result、
   `replay_cluster_trace` は explicit trace だけを replay する。cluster / reduction
   search は行わない。
@@ -385,12 +398,11 @@ Task 24 は source change より先に dependency audit を追加する:
   unsafe-code audit、no-process/no-network audit、resource-limit gate、task 27 が
   符号化すべき dependency lint-policy revision を記録する。
 
-現在の source inventory は task-27 public surface であり、formula/substitution evidence
-parser、SAT encoder、trusted SAT checker wrapper を追加する。一方で legacy
-`check_kernel_certificate` path は corrected evidence format に対する `source_drift` /
-`design_drift` として残る。Tasks 28-29 は、通常 proof policy が corrected pipeline に
-依存できるようになる前に、SAT-backed service path を追加し legacy resolution-trace
-acceptance を gate または retire しなければならない。
+現在の source inventory は task-28 public surface であり、formula/substitution evidence
+parser、SAT encoder、trusted SAT checker wrapper、SAT-backed `check_kernel_evidence`
+service path を追加する。一方で legacy `check_kernel_certificate` path は、task 29 が
+legacy resolution-trace acceptance を gate または retire するまで corrected evidence
+format に対する `source_drift` / `design_drift` として残る。
 
 ## Test Traceability
 
@@ -405,7 +417,7 @@ migration-only であり deferred のままである。
 | `certificate_parser` | `crates/mizar-kernel/src/certificate_parser/tests.rs` | Valid schema parsing、unsupported header/profile、directory と item canonicality、allocation 前の resource exhaustion、imported fact reference、manifest/generated-clause validation、substitution/resolution/derived/final reference、deterministic collection order、deterministic hash input、parser rejection classification。 |
 | `checker` imported facts | `crates/mizar-kernel/src/checker/tests.rs` | Imported axiom/theorem context validation、namespace preservation、proof-status check、policy taint、fingerprint binding、duplicate context rejection、unused malformed entry handling、deterministic context/report ordering、count/resource limit。 |
 | `checker` cluster/reduction replay | `crates/mizar-kernel/src/checker/tests.rs` | Valid trace replay、missing provenance、hidden/future dependency rejection、guard/result mismatch、bounded context construction、requested-step closure、unchecked base fact rejection、runtime limit、deterministic canonical order。 |
-| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | Accepted service pipeline、substitution/report binding、generated-clause base set、final-goal / derived-fact fail-closed behavior、mutation fail corpus、deterministic repetition/permutation result、deterministic batch tie、replay-cost budget、timeout/resource propagation、target/input-order batch sorting。 |
+| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection、imported formula context proof-status check、satisfiable-goal rejection、target mismatch rejection、deterministic evidence batch tie、legacy migration/audit service pipeline、substitution/report binding、generated-clause base set、final-goal / derived-fact fail-closed behavior、mutation fail corpus、deterministic repetition/permutation result、replay-cost budget、timeout/resource propagation、target/input-order batch sorting。 |
 | `clause` | `crates/mizar-kernel/src/clause/tests.rs` | Canonical literal/term ordering、duplicate literal removal、empty versus tautology form、tautology policy、malformed atom/term/symbol/variable rejection、profile/resource bound、canonical constructor check、stable rendering、display data を除外する hash input。 |
 | `formula_evidence` | `crates/mizar-kernel/src/formula_evidence/tests.rs` | Valid evidence envelope parsing、standalone final-goal separation、stable formula rendering/hash input、explicit substitution evidence payload parsing、unknown schema/domain rejection、duplicate id、malformed formula rejection、missing provenance fail-closed behavior、imported statement fingerprint mismatch rejection、provenance target-binding mismatch rejection。 |
 | `rejection` | `crates/mizar-kernel/src/rejection/tests.rs` | Stable key、category/detail ownership、parser conversion、checker location、owner mapping、deterministic ordering and tie-breaker、fixed-width target sort bytes、public enum compatibility。 |
@@ -429,8 +441,9 @@ migration-only であり deferred のままである。
 | KERNEL20-G008 | `source_undocumented_behavior` risk | Future public APIs or module exports could be added without audit updates. | `tests/lint_policy.rs` は、この audit が current public modules/items と module Trust Statement prohibitions を列挙しない限り fail する。 |
 | KERNEL20-G009 | `repo_metadata_conflict` | None observed in task 20. | 将来 metadata conflict が見つかった場合だけ報告する。unrelated metadata は auto-repair しない。 |
 | KERNEL24-G001 | `deferred` | `batsat` は public exact conflict/propagation budget setter を持たない。 | Task 27 は unsupported step-budget request を solver construction 前に reject する。Exact solver-step budget は stable deterministic API を expose する dependency が出るまで deferred のままである。 |
-| KERNEL25-G001 | `deferred` | Task 25 は formula/substitution evidence を parse し structural validation するが、formula instantiation、SAT encoding、SAT checker 呼び出し、legacy service acceptance path の置換は行わない。 | Tasks 26-28 は instantiated formula を導出し、deterministic SAT problem を構築し、trusted SAT checker を実行し、backend method や legacy resolution trace を trusted material として扱わず service acceptance path を wire しなければならない。 |
-| KERNEL26-G001 | `deferred` | Task 26 は instantiated formula と deterministic SAT problem を導出する。Task 27 は trusted SAT checker wrapper を追加するが、kernel service はまだ legacy acceptance path を SAT-backed formula/substitution evidence に置換していない。より豊かな formula-path / alpha-renaming substitution evidence も producer-owned stable schema ではない。 | Task 28 は SAT-backed service acceptance path を wire しなければならない。より豊かな substitution producer は、それらの shape を受理できるようになる前に formula/substitution evidence schema を拡張しなければならない。 |
+| KERNEL25-G001 | `deferred` | Task 25 は formula/substitution evidence を parse し structural validation するが、formula instantiation、SAT encoding、SAT checker 呼び出し、legacy service acceptance path の置換は行わない。 | Tasks 26-28 は instantiated formula を導出し、deterministic SAT problem を構築し、trusted SAT checker を実行し、backend method や legacy resolution trace を trusted material として扱わず SAT-backed service path を wire する。 |
+| KERNEL26-G001 | `deferred` | Task 26 は instantiated formula と deterministic SAT problem を導出し、task 27 は trusted SAT checker wrapper を追加し、task 28 は SAT-backed `check_kernel_evidence` service path を追加する。より豊かな formula-path / alpha-renaming substitution evidence はまだ producer-owned stable schema ではない。 | より豊かな substitution producer は、それらの shape を受理できるようになる前に formula/substitution evidence schema を拡張しなければならない。 |
+| KERNEL28-G001 | `deferred` | Legacy `check_kernel_certificate` surface は task-22 migration/audit inventory として残っている。 | Task 29 は downstream crate が corrected normal acceptance path と誤認しないよう legacy resolution-trace public surface を gate、retire、または明示的に legacy と印付けしなければならない。 |
 
 ## Verification Plan
 

@@ -104,16 +104,38 @@ The post-closeout normal input is:
 ```text
 KernelEvidenceCheckInput
   target_vc_fingerprint
-  kernel_evidence
-  immutable_formula_context
-  checker_policy
-  checker_limits
+  evidence: ParsedKernelEvidence
+  formula_context: FormulaEvidenceContext?
+  policy: KernelCheckPolicy
+  limits: KernelEvidenceCheckLimits
+
+FormulaEvidenceContext
+  provenance_fingerprint
+  imported_axioms: sorted FormulaImportedFactEvidence
+  imported_theorems: sorted FormulaImportedFactEvidence
+
+FormulaImportedFactEvidence
+  imported_fact_id
+  package_id
+  module_path
+  exported_item_id
+  statement_fingerprint
+  accepted_proof_status
+
+KernelEvidenceCheckLimits
+  formula_context
+  sat_encoding
+  sat_checker
+  max_pipeline_steps
+  max_report_records
 ```
 
 `kernel_evidence` is the schema from `formula_evidence.md`. The checker
-validates target/profile/context binding, formula provenance, imported fact
+validates target/profile/context binding, formula provenance, imported formula
 identity and proof status, explicit substitutions, deterministic SAT encoding,
-and trusted SAT checker UNSAT. Caller-supplied instantiated formulas, SAT
+and trusted SAT checker UNSAT. `FormulaEvidenceContext` is immutable
+caller-supplied context; missing, ambiguous, identity-mismatched, or too-weak
+imported formula status rejects fail-closed before acceptance. Caller-supplied instantiated formulas, SAT
 clauses, backend proof methods, resolution traces, SMT proof objects, backend
 logs, and backend-reported used axioms are ignored or rejected as untrusted
 acceptance material.
@@ -306,6 +328,7 @@ KernelCheckResult
   checked_cluster_steps
   checked_reduction_steps
   checked_derived_facts
+  sat_check_report
   final_goal
   used_axioms
   policy_taint
@@ -342,9 +365,9 @@ crate, and no policy layer may project a legacy ATP result as `kernel_verified`
 under the corrected normal policy.
 
 For the corrected path, `used_axioms` is derived only from checked imported
-axiom/theorem formula evidence actually used by accepted
-formula/substitution evidence. Backend-reported used-axiom lists are ignored
-unless the evidence and imported-fact context make the same facts checkable.
+axiom/theorem formula evidence asserted by the accepted formula/substitution
+evidence. Backend-reported used-axiom lists are ignored unless the evidence
+and imported-fact context make the same facts checkable.
 Imported axiom and imported theorem ids remain separate namespaces when
 deriving `used_axioms` and constructing
 `CheckedFactContext`; `imported_axiom(1)` and `imported_theorem(1)` are
@@ -358,16 +381,19 @@ policy-controlled externally attested or mixed-status result. If the active
 release policy forbids that taint, the immutable imported-fact context must not
 present the external status as satisfying the requirement.
 
-Task 16 provides an in-crate batch helper that checks independent inputs and
-sorts results by target VC fingerprint, then by caller input order for equal
-targets. It does not spawn workers or read cancellation tokens; external
-scheduler integration remains outside this crate.
+Task 28 provides `check_kernel_evidence` and `check_kernel_evidence_batch` for
+the corrected normal path. Batch checking sorts results by target VC
+fingerprint, then by caller input order for equal targets. It does not spawn
+workers or read cancellation tokens; external scheduler integration remains
+outside this crate. Task 16's legacy certificate batch helper remains
+migration/audit inventory until task 29.
 
-Batch checking is a deterministic wrapper around single-certificate checks:
+Corrected batch checking is a deterministic wrapper around single evidence
+checks:
 
 ```text
-KernelCheckBatchInput
-  checks: Vec<KernelCheckInput> in caller order
+KernelEvidenceCheckBatchInput
+  checks: Vec<KernelEvidenceCheckInput> in caller order
 
 KernelCheckBatchResult
   results: sorted Vec<KernelCheckResult>

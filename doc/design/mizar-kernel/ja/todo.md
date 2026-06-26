@@ -349,7 +349,7 @@ backend process execution を含まないものでなければならない。そ
       `batsat` heuristic options が pin され caller に expose されないことを証明する。
     - 依存: 24、26。仕様: task 23 の `sat_checker.md`。
 
-28. **SAT-backed kernel check service。** [ ]
+28. **SAT-backed kernel check service。** [x]
     - trusted acceptance path を置き換え、`checker` が、検証済み
       formula/substitution evidence から kernel が導出した SAT problem を trusted SAT
       checker が refute した場合だけ受理するようにする。imported-fact、

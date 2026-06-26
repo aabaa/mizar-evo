@@ -2,15 +2,193 @@ use super::*;
 use crate::{
     certificate_parser::{
         ClauseRefNamespace, ClauseTautologyPolicy, DerivedFact, FinalGoalNamespace, FinalGoalRef,
-        GeneratedClause, KernelProfileRecord, ParsedCertificateTestParts, ResolutionStep,
-        SubstitutionEntry, SymbolManifestEntry, VariableManifestEntry,
+        Fingerprint, GeneratedClause, KernelProfileRecord, ParsedCertificateTestParts,
+        RequiredProofStatus, ResolutionStep, SubstitutionEntry, SymbolManifestEntry,
+        VariableManifestEntry,
     },
     clause::{
         Atom, ClauseForm, Literal, Polarity, SymbolId, SymbolKey, SymbolKind, TautologyPolicy,
         Term, VariableId,
     },
+    formula_evidence::{
+        Formula, FormulaEvidenceParseContext, FormulaSourceClass, GoalPolarity,
+        SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID, parse_formula_evidence,
+    },
     substitution_checker::{Replacement, SubstitutionPayload, SubstitutionPayloadEntry, TermPath},
 };
+
+#[test]
+fn sat_backed_kernel_evidence_accepts_only_unsat_wrapper_result() {
+    let target = formula_target(7);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let premise = formula_atom(1);
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![formula_item(1, 10, &premise)],
+        goal_item(20, &premise),
+    );
+
+    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+
+    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+    assert!(result.sat_check_report().is_some());
+    assert!(result.checked_resolution_steps().is_empty());
+    assert!(result.used_axioms().is_empty());
+    assert!(result.rejections().is_empty());
+}
+
+#[test]
+fn sat_backed_kernel_evidence_instantiates_formula_substitution_before_sat_check() {
+    let target = formula_target(8);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let source = formula_atom_with_variable(1, 1);
+    let instantiated = formula_atom_with_variable(1, 2);
+    let parsed = parsed_formula_evidence_with_substitutions(
+        &target,
+        vec![variable_item(1), variable_item(2)],
+        vec![formula_item(1, 10, &source)],
+        vec![formula_substitution_item(2, 1, 11, 1, &var(2))],
+        goal_item(20, &instantiated),
+    );
+    let mut input = evidence_input(&target_vc, &parsed, None);
+    input.limits.max_report_records = 1;
+
+    let result = check_kernel_evidence(input);
+
+    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+    assert!(result.sat_check_report().is_some());
+    assert!(result.checked_substitutions().is_empty());
+    assert!(result.rejections().is_empty());
+}
+
+#[test]
+fn sat_backed_kernel_evidence_rejects_satisfiable_goal() {
+    let target = formula_target(7);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![formula_item(1, 10, &formula_atom(1))],
+        goal_item(20, &formula_atom(2)),
+    );
+
+    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+
+    assert_eq!(result.status(), KernelCheckStatus::Rejected);
+    assert_eq!(result.rejections().len(), 1);
+    assert_eq!(
+        result.rejections()[0].detail(),
+        RejectionDetail::InvalidSatRefutation
+    );
+    assert_eq!(
+        result.rejections()[0].location().field_path,
+        Some("sat_checker.satisfiable")
+    );
+    assert!(result.sat_check_report().is_none());
+}
+
+#[test]
+fn sat_backed_kernel_evidence_rejects_target_context_mismatch() {
+    let target = formula_target(7);
+    let other_target = TargetVcFingerprint::from_certificate_fingerprint(&formula_target(8));
+    let premise = formula_atom(1);
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![formula_item(1, 10, &premise)],
+        goal_item(20, &premise),
+    );
+
+    let result = check_kernel_evidence(evidence_input(&other_target, &parsed, None));
+
+    assert_eq!(result.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        result.rejections()[0].detail(),
+        RejectionDetail::ContextMismatch
+    );
+    assert_eq!(
+        result.rejections()[0].location().field_path,
+        Some("target_vc")
+    );
+}
+
+#[test]
+fn sat_backed_kernel_evidence_checks_imported_formula_context() {
+    let target = formula_target(7);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let premise = formula_atom(1);
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![imported_formula_item(1, 10, &premise)],
+        goal_item(20, &premise),
+    );
+    let context = formula_evidence_context(
+        FormulaImportedFactEvidence {
+            imported_fact_id: 5,
+            package_id: b"pkg".to_vec(),
+            module_path: b"module".to_vec(),
+            exported_item_id: b"ITEM".to_vec(),
+            statement_fingerprint: formula_fingerprint(&premise),
+            accepted_proof_status: AcceptedProofStatus::KernelVerified,
+        },
+        ImportedFactNamespace::ImportedAxiom,
+    );
+
+    let accepted = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
+
+    assert_eq!(accepted.status(), KernelCheckStatus::Accepted);
+    assert_eq!(accepted.checked_imports().len(), 1);
+    assert_eq!(accepted.used_axioms().len(), 1);
+    assert_eq!(accepted.used_axioms()[0].imported_fact_id, 5);
+
+    let missing_context = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+    assert_eq!(missing_context.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        missing_context.rejections()[0].detail(),
+        RejectionDetail::MissingProvenance
+    );
+
+    let weak_context = formula_evidence_context(
+        FormulaImportedFactEvidence {
+            imported_fact_id: 5,
+            package_id: b"pkg".to_vec(),
+            module_path: b"module".to_vec(),
+            exported_item_id: b"ITEM".to_vec(),
+            statement_fingerprint: formula_fingerprint(&premise),
+            accepted_proof_status: AcceptedProofStatus::DischargedBuiltin,
+        },
+        ImportedFactNamespace::ImportedAxiom,
+    );
+    let weak = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&weak_context)));
+    assert_eq!(weak.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        weak.rejections()[0].detail(),
+        RejectionDetail::UnresolvedSymbol
+    );
+}
+
+#[test]
+fn sat_backed_kernel_evidence_batch_preserves_equal_target_order() {
+    let target = formula_target(7);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let accepted_premise = formula_atom(1);
+    let accepted = parsed_formula_evidence(
+        &target,
+        vec![formula_item(1, 10, &accepted_premise)],
+        goal_item(20, &accepted_premise),
+    );
+    let rejected = parsed_formula_evidence(
+        &target,
+        vec![formula_item(1, 10, &formula_atom(1))],
+        goal_item(20, &formula_atom(2)),
+    );
+
+    let results = check_kernel_evidence_batch(&[
+        evidence_input(&target_vc, &rejected, None),
+        evidence_input(&target_vc, &accepted, None),
+    ]);
+
+    assert_eq!(results[0].status(), KernelCheckStatus::Rejected);
+    assert_eq!(results[1].status(), KernelCheckStatus::Accepted);
+}
 
 #[test]
 fn valid_cluster_and_reduction_trace_replays_in_trace_order() {
@@ -3176,5 +3354,487 @@ const fn q_symbol() -> SymbolKey {
     SymbolKey {
         kind: SymbolKind::Predicate,
         id: SymbolId(2),
+    }
+}
+
+const FORMULA_EVIDENCE_DOMAIN_SEPARATOR: &[u8] = b"MIZAR_KERNEL_EVIDENCE\0";
+
+#[derive(Clone, Copy)]
+enum FormulaEvidenceSectionTag {
+    SymbolManifest,
+    VariableManifest,
+    Formulas,
+    Substitutions,
+    Provenance,
+    FinalGoal,
+}
+
+impl FormulaEvidenceSectionTag {
+    const fn byte(self) -> u8 {
+        match self {
+            Self::SymbolManifest => 1,
+            Self::VariableManifest => 2,
+            Self::Formulas => 3,
+            Self::Substitutions => 4,
+            Self::Provenance => 5,
+            Self::FinalGoal => 6,
+        }
+    }
+}
+
+fn formula_target(tag: u8) -> Fingerprint {
+    Fingerprint::new(9, vec![tag])
+}
+
+fn formula_profile() -> KernelProfileRecord {
+    KernelProfileRecord::v1(7, ClauseTautologyPolicy::Reject)
+}
+
+fn formula_atom(symbol_id: u32) -> Formula {
+    Formula::Atom(Atom::with_arity(
+        SymbolKey {
+            kind: SymbolKind::Predicate,
+            id: SymbolId(symbol_id),
+        },
+        0,
+        Vec::new(),
+    ))
+}
+
+fn formula_atom_with_variable(symbol_id: u32, variable_id: u32) -> Formula {
+    Formula::Atom(Atom::with_arity(
+        SymbolKey {
+            kind: SymbolKind::Predicate,
+            id: SymbolId(symbol_id),
+        },
+        1,
+        vec![Term::Variable(VariableId(variable_id))],
+    ))
+}
+
+fn formula_fingerprint(formula: &Formula) -> Fingerprint {
+    Fingerprint::new(
+        SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID,
+        formula
+            .canonical_hash_input()
+            .expect("test formula has canonical bytes"),
+    )
+}
+
+fn parsed_formula_evidence_with_substitutions(
+    target: &Fingerprint,
+    variables: Vec<Vec<u8>>,
+    formulas: Vec<Vec<u8>>,
+    substitutions: Vec<Vec<u8>>,
+    goal: Vec<u8>,
+) -> ParsedKernelEvidence {
+    let bytes = formula_evidence_bytes_with_parts(target, variables, formulas, substitutions, goal);
+    parse_formula_evidence(
+        &bytes,
+        &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
+    )
+    .expect("formula evidence with substitutions parses")
+}
+
+fn parsed_formula_evidence(
+    target: &Fingerprint,
+    formulas: Vec<Vec<u8>>,
+    goal: Vec<u8>,
+) -> ParsedKernelEvidence {
+    let bytes = formula_evidence_bytes(target, formulas, goal);
+    parse_formula_evidence(
+        &bytes,
+        &FormulaEvidenceParseContext::v1(target.clone(), formula_profile()),
+    )
+    .expect("formula evidence parses")
+}
+
+fn evidence_input<'a>(
+    target: &'a TargetVcFingerprint,
+    evidence: &'a ParsedKernelEvidence,
+    formula_context: Option<&'a FormulaEvidenceContext>,
+) -> KernelEvidenceCheckInput<'a> {
+    KernelEvidenceCheckInput {
+        target_vc_fingerprint: target,
+        evidence,
+        formula_context,
+        policy: KernelCheckPolicy::default(),
+        limits: KernelEvidenceCheckLimits::default(),
+    }
+}
+
+fn formula_evidence_context(
+    imported: FormulaImportedFactEvidence,
+    namespace: ImportedFactNamespace,
+) -> FormulaEvidenceContext {
+    let (axioms, theorems) = match namespace {
+        ImportedFactNamespace::ImportedAxiom => (vec![imported], Vec::new()),
+        ImportedFactNamespace::ImportedTheorem => (Vec::new(), vec![imported]),
+    };
+    FormulaEvidenceContext::new(
+        Some(vec![1]),
+        axioms,
+        theorems,
+        ImportedFactContextLimits::default(),
+    )
+    .expect("formula evidence context")
+}
+
+fn formula_evidence_bytes(target: &Fingerprint, formulas: Vec<Vec<u8>>, goal: Vec<u8>) -> Vec<u8> {
+    formula_evidence_bytes_with_parts(target, Vec::new(), formulas, Vec::new(), goal)
+}
+
+fn formula_evidence_bytes_with_parts(
+    target: &Fingerprint,
+    variables: Vec<Vec<u8>>,
+    formulas: Vec<Vec<u8>>,
+    substitutions: Vec<Vec<u8>>,
+    goal: Vec<u8>,
+) -> Vec<u8> {
+    let mut provenance = Vec::new();
+    for formula in &formulas {
+        provenance.push(provenance_item(
+            target,
+            formula_provenance_id(formula),
+            &formula_fingerprint_from_item(formula),
+        ));
+    }
+    for substitution in &substitutions {
+        let source_formula_id = substitution_source_formula_id(substitution);
+        let source_formula = formulas
+            .iter()
+            .find(|formula| formula_id_from_item(formula) == source_formula_id)
+            .expect("substitution source formula fixture exists");
+        provenance.push(provenance_item(
+            target,
+            substitution_provenance_id(substitution),
+            &formula_fingerprint_from_item(source_formula),
+        ));
+    }
+    provenance.push(provenance_item(
+        target,
+        goal_provenance_id(&goal),
+        &goal_fingerprint_from_item(&goal),
+    ));
+    formula_envelope(
+        target,
+        vec![
+            (
+                FormulaEvidenceSectionTag::SymbolManifest,
+                formula_symbol_items(),
+            ),
+            (FormulaEvidenceSectionTag::VariableManifest, variables),
+            (FormulaEvidenceSectionTag::Formulas, formulas),
+            (FormulaEvidenceSectionTag::Substitutions, substitutions),
+            (FormulaEvidenceSectionTag::Provenance, provenance),
+            (FormulaEvidenceSectionTag::FinalGoal, vec![goal]),
+        ],
+    )
+}
+
+fn formula_envelope(
+    target: &Fingerprint,
+    sections: Vec<(FormulaEvidenceSectionTag, Vec<Vec<u8>>)>,
+) -> Vec<u8> {
+    let mut payloads = Vec::new();
+    let mut directory = Vec::new();
+    let mut offset = 0u32;
+    for (section, items) in &sections {
+        let mut section_payload = Vec::new();
+        for item in items {
+            section_payload.push(section.byte());
+            section_payload.push(1);
+            put_len(item.len(), &mut section_payload);
+            section_payload.extend_from_slice(item);
+        }
+        let length = u32::try_from(section_payload.len()).expect("section length fits");
+        directory.push((*section, items.len() as u32, offset, length));
+        offset = offset.checked_add(length).expect("payload offset fits");
+        payloads.push(section_payload);
+    }
+
+    let mut bytes = Vec::from(FORMULA_EVIDENCE_DOMAIN_SEPARATOR);
+    put_u16(1, &mut bytes);
+    put_u16(1, &mut bytes);
+    put_formula_profile(&mut bytes);
+    put_fingerprint(target, &mut bytes);
+    put_u32(sections.len() as u32, &mut bytes);
+    for (section, count, payload_offset, payload_length) in directory {
+        bytes.push(section.byte());
+        put_u32(count, &mut bytes);
+        put_u32(payload_offset, &mut bytes);
+        put_u32(payload_length, &mut bytes);
+    }
+    for payload in payloads {
+        bytes.extend(payload);
+    }
+    bytes
+}
+
+fn formula_symbol_items() -> Vec<Vec<u8>> {
+    [1u32, 2u32]
+        .into_iter()
+        .map(|id| {
+            let mut item = Vec::new();
+            item.push(symbol_kind_tag(SymbolKind::Predicate));
+            put_u32(id, &mut item);
+            item
+        })
+        .collect()
+}
+
+fn formula_item(formula_id: u32, provenance_id: u32, formula: &Formula) -> Vec<u8> {
+    let fingerprint = formula_fingerprint(formula);
+    let mut item = Vec::new();
+    put_u32(formula_id, &mut item);
+    item.push(FormulaSourceClass::LocalHypothesis.tag());
+    put_fingerprint(&fingerprint, &mut item);
+    put_u32(provenance_id, &mut item);
+    put_u32(1, &mut item);
+    put_formula(formula, &mut item);
+    item
+}
+
+fn imported_formula_item(formula_id: u32, provenance_id: u32, formula: &Formula) -> Vec<u8> {
+    let fingerprint = formula_fingerprint(formula);
+    let mut item = Vec::new();
+    put_u32(formula_id, &mut item);
+    item.push(FormulaSourceClass::AcceptedImportedAxiom.tag());
+    put_fingerprint(&fingerprint, &mut item);
+    put_u32(provenance_id, &mut item);
+    put_bytes(b"pkg", &mut item);
+    put_bytes(b"module", &mut item);
+    put_bytes(b"ITEM", &mut item);
+    put_fingerprint(&fingerprint, &mut item);
+    item.push(required_status_tag(RequiredProofStatus::KernelVerified));
+    put_formula(formula, &mut item);
+    item
+}
+
+fn variable_item(variable_id: u32) -> Vec<u8> {
+    let mut item = Vec::new();
+    put_u32(variable_id, &mut item);
+    item
+}
+
+fn formula_substitution_item(
+    substitution_id: u32,
+    source_formula_id: u32,
+    provenance_id: u32,
+    formal_variable_id: u32,
+    actual_term: &Term,
+) -> Vec<u8> {
+    let mut item = Vec::new();
+    put_u32(substitution_id, &mut item);
+    put_u32(source_formula_id, &mut item);
+    put_u32(provenance_id, &mut item);
+    put_bytes(&empty_binder_context(), &mut item);
+    put_u32(substitution_id, &mut item);
+    item.push(1);
+    put_term_path(&TermPath::root(), &mut item);
+    put_u32(1, &mut item);
+    put_u32(formal_variable_id, &mut item);
+    put_term(actual_term, &mut item);
+    item.push(1);
+    put_u32(0, &mut item);
+    put_u32(0, &mut item);
+    item
+}
+
+fn goal_item(provenance_id: u32, formula: &Formula) -> Vec<u8> {
+    let fingerprint = formula_fingerprint(formula);
+    let mut item = Vec::new();
+    item.push(GoalPolarity::AssertFalseForRefutation.tag());
+    put_fingerprint(&fingerprint, &mut item);
+    put_u32(provenance_id, &mut item);
+    put_formula(formula, &mut item);
+    item
+}
+
+fn provenance_item(target: &Fingerprint, provenance_id: u32, fingerprint: &Fingerprint) -> Vec<u8> {
+    let mut item = Vec::new();
+    put_u32(provenance_id, &mut item);
+    put_fingerprint(target, &mut item);
+    put_fingerprint(fingerprint, &mut item);
+    put_bytes(b"producer-payload", &mut item);
+    item
+}
+
+fn formula_provenance_id(item: &[u8]) -> u32 {
+    u32::from_be_bytes([
+        item[10 + fingerprint_len(item)],
+        item[11 + fingerprint_len(item)],
+        item[12 + fingerprint_len(item)],
+        item[13 + fingerprint_len(item)],
+    ])
+}
+
+fn formula_id_from_item(item: &[u8]) -> u32 {
+    u32::from_be_bytes([item[0], item[1], item[2], item[3]])
+}
+
+fn substitution_source_formula_id(item: &[u8]) -> u32 {
+    u32::from_be_bytes([item[4], item[5], item[6], item[7]])
+}
+
+fn substitution_provenance_id(item: &[u8]) -> u32 {
+    u32::from_be_bytes([item[8], item[9], item[10], item[11]])
+}
+
+fn goal_provenance_id(item: &[u8]) -> u32 {
+    let start = 1 + fingerprint_item_len(&item[1..]);
+    u32::from_be_bytes([
+        item[start],
+        item[start + 1],
+        item[start + 2],
+        item[start + 3],
+    ])
+}
+
+fn goal_fingerprint_from_item(item: &[u8]) -> Fingerprint {
+    fingerprint_from_slice(&item[1..])
+}
+
+fn formula_fingerprint_from_item(item: &[u8]) -> Fingerprint {
+    fingerprint_from_slice(&item[5..])
+}
+
+fn fingerprint_len(item: &[u8]) -> usize {
+    u32::from_be_bytes([item[6], item[7], item[8], item[9]]) as usize
+}
+
+fn fingerprint_from_slice(bytes: &[u8]) -> Fingerprint {
+    let algorithm_id = bytes[0];
+    let len = u32::from_be_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]) as usize;
+    Fingerprint::new(algorithm_id, bytes[5..5 + len].to_vec())
+}
+
+fn fingerprint_item_len(bytes: &[u8]) -> usize {
+    5 + u32::from_be_bytes([bytes[1], bytes[2], bytes[3], bytes[4]]) as usize
+}
+
+fn put_formula(formula: &Formula, bytes: &mut Vec<u8>) {
+    match formula {
+        Formula::Atom(atom) => {
+            bytes.push(1);
+            put_atom(atom, bytes);
+        }
+        Formula::Not(child) => {
+            bytes.push(2);
+            put_formula(child, bytes);
+        }
+        Formula::And(children) => {
+            bytes.push(3);
+            put_u32(children.len() as u32, bytes);
+            for child in children {
+                put_formula(child, bytes);
+            }
+        }
+        Formula::Or(children) => {
+            bytes.push(4);
+            put_u32(children.len() as u32, bytes);
+            for child in children {
+                put_formula(child, bytes);
+            }
+        }
+    }
+}
+
+fn put_atom(atom: &Atom, bytes: &mut Vec<u8>) {
+    bytes.push(symbol_kind_tag(atom.symbol.kind));
+    put_u32(atom.symbol.id.0, bytes);
+    put_u32(atom.arity, bytes);
+    put_u32(atom.arguments.len() as u32, bytes);
+    for argument in &atom.arguments {
+        put_term(argument, bytes);
+    }
+}
+
+fn put_term(term: &Term, bytes: &mut Vec<u8>) {
+    match term {
+        Term::Variable(variable) => {
+            bytes.push(1);
+            put_u32(variable.0, bytes);
+        }
+        Term::Application { symbol, arguments } => {
+            bytes.push(2);
+            bytes.push(symbol_kind_tag(symbol.kind));
+            put_u32(symbol.id.0, bytes);
+            put_u32(arguments.len() as u32, bytes);
+            for argument in arguments {
+                put_term(argument, bytes);
+            }
+        }
+        Term::BinderNormalized { binder_id, body } => {
+            bytes.push(3);
+            put_u32(*binder_id, bytes);
+            put_term(body, bytes);
+        }
+        Term::Malformed => panic!("malformed term fixture"),
+    }
+}
+
+fn empty_binder_context() -> Vec<u8> {
+    let mut bytes = Vec::new();
+    put_u16(1, &mut bytes);
+    put_u32(0, &mut bytes);
+    put_u32(0, &mut bytes);
+    put_u32(0, &mut bytes);
+    bytes
+}
+
+fn put_term_path(path: &TermPath, bytes: &mut Vec<u8>) {
+    put_u32(path.segments.len() as u32, bytes);
+    for segment in &path.segments {
+        bytes.push(segment.edge_kind);
+        put_u32(segment.child_index, bytes);
+    }
+}
+
+fn put_formula_profile(bytes: &mut Vec<u8>) {
+    let profile = formula_profile();
+    put_u16(profile.profile_id, bytes);
+    put_u16(profile.clause_schema_version, bytes);
+    put_u16(profile.clause_encoding_version, bytes);
+    bytes.push(profile.clause_tautology_policy.tag());
+    bytes.push(profile.certificate_hash_input_algorithm.tag());
+}
+
+fn put_fingerprint(fingerprint: &Fingerprint, bytes: &mut Vec<u8>) {
+    bytes.push(fingerprint.algorithm_id);
+    put_bytes(&fingerprint.digest, bytes);
+}
+
+fn put_bytes(payload: &[u8], bytes: &mut Vec<u8>) {
+    put_len(payload.len(), bytes);
+    bytes.extend_from_slice(payload);
+}
+
+fn put_len(len: usize, bytes: &mut Vec<u8>) {
+    put_u32(u32::try_from(len).expect("length fits"), bytes);
+}
+
+fn put_u16(value: u16, bytes: &mut Vec<u8>) {
+    bytes.extend_from_slice(&value.to_be_bytes());
+}
+
+fn put_u32(value: u32, bytes: &mut Vec<u8>) {
+    bytes.extend_from_slice(&value.to_be_bytes());
+}
+
+fn symbol_kind_tag(kind: SymbolKind) -> u8 {
+    match kind {
+        SymbolKind::Predicate => 1,
+        SymbolKind::FunctorPredicate => 2,
+        SymbolKind::Equality => 3,
+        SymbolKind::BuiltinRelation => 4,
+    }
+}
+
+fn required_status_tag(status: RequiredProofStatus) -> u8 {
+    match status {
+        RequiredProofStatus::KernelVerified => 1,
+        RequiredProofStatus::DischargedBuiltin => 2,
+        RequiredProofStatus::ExternallyAttestedPolicyPermitted => 3,
     }
 }

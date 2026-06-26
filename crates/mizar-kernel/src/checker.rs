@@ -6,6 +6,7 @@ use crate::{
         ParsedCertificate, RequiredProofStatus,
     },
     clause::{Clause, ClauseError, ClauseProfile, ClauseValidationContext},
+    formula_evidence::{FormulaSource, ImportedFormulaSource, ParsedKernelEvidence},
     rejection::{
         RejectionCategory, RejectionDetail, RejectionLocation, RejectionRecord, TargetVcFingerprint,
     },
@@ -14,6 +15,10 @@ use crate::{
         ImportedClauseEntry, ResolutionReplayLimits, ResolutionReplayReport, ResolutionTraceInput,
         checked_resolution_final_goal, replay_resolution_trace,
     },
+    sat_checker::{
+        SatCheckContext, SatCheckLimits, SatCheckReport, SatCheckResult, check_sat_problem,
+    },
+    sat_encoding::{SatEncodingContext, SatEncodingLimits, encode_formula_evidence},
     substitution_checker::{
         CheckedSubstitution, SubstitutionCheckInput, SubstitutionContext, SubstitutionReplayLimits,
         checked_substitutions_for_input, replay_substitutions,
@@ -125,6 +130,50 @@ impl ImportedFactContext {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FormulaEvidenceContext {
+    provenance_fingerprint: Option<Vec<u8>>,
+    imported_axioms: Vec<FormulaImportedFactEvidence>,
+    imported_theorems: Vec<FormulaImportedFactEvidence>,
+}
+
+impl FormulaEvidenceContext {
+    pub fn new(
+        provenance_fingerprint: Option<Vec<u8>>,
+        imported_axioms: Vec<FormulaImportedFactEvidence>,
+        imported_theorems: Vec<FormulaImportedFactEvidence>,
+        limits: ImportedFactContextLimits,
+    ) -> Result<Self, ImportedFactContextError> {
+        validate_context_entry_count(&imported_axioms, &imported_theorems, limits)?;
+        Ok(Self {
+            provenance_fingerprint,
+            imported_axioms: canonical_formula_imports(
+                ImportedFactNamespace::ImportedAxiom,
+                imported_axioms,
+            )?,
+            imported_theorems: canonical_formula_imports(
+                ImportedFactNamespace::ImportedTheorem,
+                imported_theorems,
+            )?,
+        })
+    }
+
+    #[must_use]
+    pub fn provenance_fingerprint(&self) -> Option<&[u8]> {
+        self.provenance_fingerprint.as_deref()
+    }
+
+    #[must_use]
+    pub fn imported_axioms(&self) -> &[FormulaImportedFactEvidence] {
+        &self.imported_axioms
+    }
+
+    #[must_use]
+    pub fn imported_theorems(&self) -> &[FormulaImportedFactEvidence] {
+        &self.imported_theorems
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 #[non_exhaustive]
 pub enum ImportedFactContextError {
     ImportedFactCountExceeded {
@@ -147,6 +196,16 @@ pub struct ImportedFactEvidence {
     pub accepted_proof_status: AcceptedProofStatus,
     pub normalized_clause_fingerprint: Fingerprint,
     pub clause: Clause,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct FormulaImportedFactEvidence {
+    pub imported_fact_id: u32,
+    pub package_id: Vec<u8>,
+    pub module_path: Vec<u8>,
+    pub exported_item_id: Vec<u8>,
+    pub statement_fingerprint: Fingerprint,
+    pub accepted_proof_status: AcceptedProofStatus,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -224,6 +283,13 @@ impl ImportedFactCheckReport {
     pub const fn policy_taint(&self) -> bool {
         self.policy_taint
     }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct FormulaImportCheckReport {
+    checked_imports: Vec<CheckedImportedFact>,
+    used_axioms: Vec<UsedAxiom>,
+    policy_taint: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -593,9 +659,25 @@ fn canonical_imported_evidence(
     Ok(evidence)
 }
 
-fn validate_context_entry_count(
-    imported_axioms: &[ImportedFactEvidence],
-    imported_theorems: &[ImportedFactEvidence],
+fn canonical_formula_imports(
+    namespace: ImportedFactNamespace,
+    mut evidence: Vec<FormulaImportedFactEvidence>,
+) -> Result<Vec<FormulaImportedFactEvidence>, ImportedFactContextError> {
+    evidence.sort_by_key(|entry| entry.imported_fact_id);
+    for window in evidence.windows(2) {
+        if window[0].imported_fact_id == window[1].imported_fact_id {
+            return Err(ImportedFactContextError::DuplicateImportedFact {
+                namespace,
+                imported_fact_id: window[0].imported_fact_id,
+            });
+        }
+    }
+    Ok(evidence)
+}
+
+fn validate_context_entry_count<T, U>(
+    imported_axioms: &[T],
+    imported_theorems: &[U],
     limits: ImportedFactContextLimits,
 ) -> Result<(), ImportedFactContextError> {
     let actual = imported_axioms
@@ -712,6 +794,15 @@ pub struct KernelCheckInput<'a> {
     pub limits: KernelCheckLimits,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct KernelEvidenceCheckInput<'a> {
+    pub target_vc_fingerprint: &'a TargetVcFingerprint,
+    pub evidence: &'a ParsedKernelEvidence,
+    pub formula_context: Option<&'a FormulaEvidenceContext>,
+    pub policy: KernelCheckPolicy,
+    pub limits: KernelEvidenceCheckLimits,
+}
+
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
 pub struct KernelCheckPolicy {
     pub imported_fact_policy: ImportedFactPolicy,
@@ -742,6 +833,27 @@ impl Default for KernelCheckLimits {
     }
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct KernelEvidenceCheckLimits {
+    pub formula_context: ImportedFactContextLimits,
+    pub sat_encoding: SatEncodingLimits,
+    pub sat_checker: SatCheckLimits,
+    pub max_pipeline_steps: usize,
+    pub max_report_records: usize,
+}
+
+impl Default for KernelEvidenceCheckLimits {
+    fn default() -> Self {
+        Self {
+            formula_context: ImportedFactContextLimits::default(),
+            sat_encoding: SatEncodingLimits::default(),
+            sat_checker: SatCheckLimits::default(),
+            max_pipeline_steps: usize::MAX,
+            max_report_records: usize::MAX,
+        }
+    }
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct KernelCheckResult {
     target_vc_fingerprint: TargetVcFingerprint,
@@ -752,6 +864,7 @@ pub struct KernelCheckResult {
     checked_cluster_steps: Vec<CheckedClusterStep>,
     checked_reduction_steps: Vec<CheckedReductionStep>,
     checked_derived_facts: Vec<CheckedDerivedFact>,
+    sat_check_report: Option<SatCheckReport>,
     final_goal: Option<CheckedFinalGoal>,
     used_axioms: Vec<UsedAxiom>,
     policy_taint: bool,
@@ -797,6 +910,11 @@ impl KernelCheckResult {
     #[must_use]
     pub fn checked_derived_facts(&self) -> &[CheckedDerivedFact] {
         &self.checked_derived_facts
+    }
+
+    #[must_use]
+    pub const fn sat_check_report(&self) -> Option<&SatCheckReport> {
+        self.sat_check_report.as_ref()
     }
 
     #[must_use]
@@ -869,6 +987,299 @@ pub fn check_kernel_batch(inputs: &[KernelCheckInput<'_>]) -> Vec<KernelCheckRes
             .then_with(|| left_order.cmp(right_order))
     });
     results.into_iter().map(|(_, result)| result).collect()
+}
+
+pub fn check_kernel_evidence(input: KernelEvidenceCheckInput<'_>) -> KernelCheckResult {
+    match check_kernel_evidence_inner(input) {
+        Ok(result) => result,
+        Err(rejection) => rejected_kernel_result(input.target_vc_fingerprint, *rejection),
+    }
+}
+
+pub fn check_kernel_evidence_batch(
+    inputs: &[KernelEvidenceCheckInput<'_>],
+) -> Vec<KernelCheckResult> {
+    let mut results: Vec<(usize, KernelCheckResult)> = inputs
+        .iter()
+        .copied()
+        .enumerate()
+        .map(|(input_order, input)| (input_order, check_kernel_evidence(input)))
+        .collect();
+    results.sort_by(|(left_order, left), (right_order, right)| {
+        left.target_vc_fingerprint
+            .cmp(&right.target_vc_fingerprint)
+            .then_with(|| left_order.cmp(right_order))
+    });
+    results.into_iter().map(|(_, result)| result).collect()
+}
+
+fn check_kernel_evidence_inner(
+    input: KernelEvidenceCheckInput<'_>,
+) -> KernelCheckServiceResult<KernelCheckResult> {
+    let mut budget = KernelPipelineBudget::new(input.limits.max_pipeline_steps);
+    budget.step_target(input.target_vc_fingerprint, "target_vc")?;
+    validate_evidence_target_binding(input)?;
+
+    budget.step_target(input.target_vc_fingerprint, "formula_context")?;
+    let formula_report = check_formula_imports(input)?;
+
+    budget.step_target(input.target_vc_fingerprint, "sat_encoding")?;
+    let encoded = encode_formula_evidence(
+        input.evidence,
+        &SatEncodingContext::v1().with_limits(input.limits.sat_encoding),
+    )?;
+
+    budget.step_target(input.target_vc_fingerprint, "sat_checker")?;
+    let sat_report = match check_sat_problem(
+        &encoded,
+        &SatCheckContext::v1().with_limits(input.limits.sat_checker),
+    ) {
+        SatCheckResult::Unsat(report) => report,
+        SatCheckResult::Sat(_) => {
+            return Err(rejection(
+                input.target_vc_fingerprint,
+                RejectionDetail::InvalidSatRefutation,
+                RejectionLocation::new().with_field_path("sat_checker.satisfiable"),
+            ));
+        }
+        SatCheckResult::Rejected(rejection) => return Err(Box::new(rejection)),
+    };
+
+    validate_report_record_total(
+        input.target_vc_fingerprint,
+        input.limits.max_report_records,
+        ReportRecordCounts {
+            imports: formula_report.checked_imports.len(),
+            // Formula substitutions are validated during SAT encoding; they are
+            // not materialized as legacy CheckedSubstitution report records.
+            substitutions: 0,
+            resolution_steps: 0,
+            cluster_steps: 0,
+            reduction_steps: 0,
+            derived_facts: 0,
+            used_axioms: formula_report.used_axioms.len(),
+            final_goals: 1,
+        },
+    )?;
+
+    Ok(KernelCheckResult {
+        target_vc_fingerprint: input.target_vc_fingerprint.clone(),
+        status: KernelCheckStatus::Accepted,
+        checked_imports: formula_report.checked_imports,
+        checked_substitutions: Vec::new(),
+        checked_resolution_steps: Vec::new(),
+        checked_cluster_steps: Vec::new(),
+        checked_reduction_steps: Vec::new(),
+        checked_derived_facts: Vec::new(),
+        sat_check_report: Some(sat_report),
+        final_goal: None,
+        used_axioms: formula_report.used_axioms,
+        policy_taint: formula_report.policy_taint,
+        rejections: Vec::new(),
+    })
+}
+
+fn validate_evidence_target_binding(
+    input: KernelEvidenceCheckInput<'_>,
+) -> KernelCheckServiceResult<()> {
+    let evidence_target =
+        TargetVcFingerprint::from_certificate_fingerprint(&input.evidence.target_vc);
+    if &evidence_target == input.target_vc_fingerprint {
+        Ok(())
+    } else {
+        Err(rejection_with_category(
+            input.target_vc_fingerprint,
+            RejectionCategory::CertificateRejection,
+            RejectionDetail::ContextMismatch,
+            RejectionLocation::new().with_field_path("target_vc"),
+        ))
+    }
+}
+
+fn check_formula_imports(
+    input: KernelEvidenceCheckInput<'_>,
+) -> KernelCheckServiceResult<FormulaImportCheckReport> {
+    if let Some(context) = input.formula_context {
+        let actual = context
+            .imported_axioms()
+            .len()
+            .saturating_add(context.imported_theorems().len());
+        if actual > input.limits.formula_context.max_imported_context_entries {
+            return Err(rejection(
+                input.target_vc_fingerprint,
+                RejectionDetail::ResourceExhaustion,
+                RejectionLocation::new().with_field_path("formula_context.imported_context_count"),
+            ));
+        }
+    }
+
+    let mut checked = BTreeMap::new();
+    for formula in &input.evidence.formulas {
+        match &formula.source {
+            FormulaSource::AcceptedImportedAxiom(source) => {
+                let import = check_formula_import_source(
+                    input,
+                    ImportedFactNamespace::ImportedAxiom,
+                    source,
+                )?;
+                checked
+                    .entry((
+                        ImportedFactNamespace::ImportedAxiom,
+                        import.imported_fact_id,
+                    ))
+                    .or_insert(import);
+            }
+            FormulaSource::AcceptedImportedTheorem(source) => {
+                let import = check_formula_import_source(
+                    input,
+                    ImportedFactNamespace::ImportedTheorem,
+                    source,
+                )?;
+                checked
+                    .entry((
+                        ImportedFactNamespace::ImportedTheorem,
+                        import.imported_fact_id,
+                    ))
+                    .or_insert(import);
+            }
+            FormulaSource::LocalHypothesis { .. }
+            | FormulaSource::CitedPremise { .. }
+            | FormulaSource::GeneratedVcFact { .. }
+            | FormulaSource::PolicyBoundedBuiltin { .. } => {}
+        }
+    }
+
+    let checked_imports = checked.into_values().collect::<Vec<_>>();
+    let used_axioms = checked_imports
+        .iter()
+        .map(|import| UsedAxiom {
+            namespace: import.namespace,
+            imported_fact_id: import.imported_fact_id,
+            statement_fingerprint: import.statement_fingerprint.clone(),
+        })
+        .collect::<Vec<_>>();
+    let policy_taint = checked_imports.iter().any(|import| import.policy_taint);
+
+    Ok(FormulaImportCheckReport {
+        checked_imports,
+        used_axioms,
+        policy_taint,
+    })
+}
+
+fn check_formula_import_source(
+    input: KernelEvidenceCheckInput<'_>,
+    namespace: ImportedFactNamespace,
+    source: &ImportedFormulaSource,
+) -> KernelCheckServiceResult<CheckedImportedFact> {
+    let context = checked_formula_context(input)?;
+    let evidence = lookup_formula_import(input.target_vc_fingerprint, context, namespace, source)?;
+    let location = imported_location(evidence.imported_fact_id);
+    validate_formula_import_status(input, source, evidence, location.clone())?;
+    Ok(CheckedImportedFact {
+        namespace,
+        imported_fact_id: evidence.imported_fact_id,
+        statement_fingerprint: evidence.statement_fingerprint.clone(),
+        accepted_proof_status: evidence.accepted_proof_status,
+        policy_taint: evidence.accepted_proof_status.policy_taint(),
+    })
+}
+
+fn checked_formula_context<'a>(
+    input: KernelEvidenceCheckInput<'a>,
+) -> KernelCheckServiceResult<&'a FormulaEvidenceContext> {
+    let location = RejectionLocation::new().with_field_path("formula_context");
+    let Some(context) = input.formula_context else {
+        return Err(rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::MissingProvenance,
+            location,
+        ));
+    };
+    if context
+        .provenance_fingerprint()
+        .is_none_or(|fingerprint| fingerprint.is_empty())
+    {
+        return Err(rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::MissingProvenance,
+            location,
+        ));
+    }
+    Ok(context)
+}
+
+fn lookup_formula_import<'a>(
+    target: &TargetVcFingerprint,
+    context: &'a FormulaEvidenceContext,
+    namespace: ImportedFactNamespace,
+    source: &ImportedFormulaSource,
+) -> KernelCheckServiceResult<&'a FormulaImportedFactEvidence> {
+    let entries = match namespace {
+        ImportedFactNamespace::ImportedAxiom => context.imported_axioms(),
+        ImportedFactNamespace::ImportedTheorem => context.imported_theorems(),
+    };
+    let mut matches = entries
+        .iter()
+        .filter(|entry| formula_import_identity_matches(entry, source));
+    let Some(first) = matches.next() else {
+        return Err(rejection(
+            target,
+            RejectionDetail::UnresolvedSymbol,
+            RejectionLocation::new().with_field_path("formula.imported_source"),
+        ));
+    };
+    if matches.next().is_some() {
+        return Err(rejection(
+            target,
+            RejectionDetail::UnresolvedSymbol,
+            RejectionLocation::new()
+                .with_imported_fact_id(first.imported_fact_id)
+                .with_field_path("formula.imported_source"),
+        ));
+    }
+    Ok(first)
+}
+
+fn formula_import_identity_matches(
+    evidence: &FormulaImportedFactEvidence,
+    source: &ImportedFormulaSource,
+) -> bool {
+    evidence.package_id == source.package_id
+        && evidence.module_path == source.module_path
+        && evidence.exported_item_id == source.exported_item_id
+        && evidence.statement_fingerprint == source.statement_fingerprint
+}
+
+fn validate_formula_import_status(
+    input: KernelEvidenceCheckInput<'_>,
+    source: &ImportedFormulaSource,
+    evidence: &FormulaImportedFactEvidence,
+    location: RejectionLocation,
+) -> KernelCheckServiceResult<()> {
+    if evidence.accepted_proof_status == AcceptedProofStatus::ExternallyAttestedPolicyPermitted {
+        if source.required_proof_status != RequiredProofStatus::ExternallyAttestedPolicyPermitted
+            || !input.policy.imported_fact_policy.allow_externally_attested
+        {
+            return Err(rejection(
+                input.target_vc_fingerprint,
+                RejectionDetail::UnresolvedSymbol,
+                location.with_field_path("formula.required_proof_status"),
+            ));
+        }
+        return Ok(());
+    }
+    if evidence
+        .accepted_proof_status
+        .satisfies(source.required_proof_status)
+    {
+        return Ok(());
+    }
+    Err(rejection(
+        input.target_vc_fingerprint,
+        RejectionDetail::UnresolvedSymbol,
+        location.with_field_path("formula.required_proof_status"),
+    ))
 }
 
 fn check_kernel_certificate_inner(
@@ -948,6 +1359,7 @@ fn check_kernel_certificate_inner(
         checked_cluster_steps: cluster_report.checked_cluster_steps().to_vec(),
         checked_reduction_steps: cluster_report.checked_reduction_steps().to_vec(),
         checked_derived_facts: Vec::new(),
+        sat_check_report: None,
         final_goal,
         used_axioms,
         policy_taint: imported_report.policy_taint(),
@@ -1149,6 +1561,18 @@ fn validate_report_record_count(
     input: KernelCheckInput<'_>,
     counts: ReportRecordCounts,
 ) -> KernelCheckServiceResult<()> {
+    validate_report_record_total(
+        input.target_vc_fingerprint,
+        input.limits.max_report_records,
+        counts,
+    )
+}
+
+fn validate_report_record_total(
+    target: &TargetVcFingerprint,
+    max_report_records: usize,
+    counts: ReportRecordCounts,
+) -> KernelCheckServiceResult<()> {
     let total = counts
         .imports
         .checked_add(counts.substitutions)
@@ -1159,9 +1583,9 @@ fn validate_report_record_count(
         .and_then(|value| value.checked_add(counts.used_axioms))
         .and_then(|value| value.checked_add(counts.final_goals))
         .unwrap_or(usize::MAX);
-    if total > input.limits.max_report_records {
+    if total > max_report_records {
         return Err(rejection(
-            input.target_vc_fingerprint,
+            target,
             RejectionDetail::ResourceExhaustion,
             RejectionLocation::new().with_field_path("checker_limits.max_report_records"),
         ));
@@ -1182,6 +1606,7 @@ fn rejected_kernel_result(
         checked_cluster_steps: Vec::new(),
         checked_reduction_steps: Vec::new(),
         checked_derived_facts: Vec::new(),
+        sat_check_report: None,
         final_goal: None,
         used_axioms: Vec::new(),
         policy_taint: false,
@@ -1205,9 +1630,17 @@ impl KernelPipelineBudget {
         input: KernelCheckInput<'_>,
         field_path: &'static str,
     ) -> KernelCheckServiceResult<()> {
+        self.step_target(input.target_vc_fingerprint, field_path)
+    }
+
+    fn step_target(
+        &mut self,
+        target: &TargetVcFingerprint,
+        field_path: &'static str,
+    ) -> KernelCheckServiceResult<()> {
         if self.remaining == 0 {
             return Err(rejection(
-                input.target_vc_fingerprint,
+                target,
                 RejectionDetail::Timeout,
                 RejectionLocation::new().with_field_path(field_path),
             ));

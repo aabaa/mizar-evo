@@ -101,16 +101,38 @@ Closeout 後の通常 input:
 ```text
 KernelEvidenceCheckInput
   target_vc_fingerprint
-  kernel_evidence
-  immutable_formula_context
-  checker_policy
-  checker_limits
+  evidence: ParsedKernelEvidence
+  formula_context: FormulaEvidenceContext?
+  policy: KernelCheckPolicy
+  limits: KernelEvidenceCheckLimits
+
+FormulaEvidenceContext
+  provenance_fingerprint
+  imported_axioms: sorted FormulaImportedFactEvidence
+  imported_theorems: sorted FormulaImportedFactEvidence
+
+FormulaImportedFactEvidence
+  imported_fact_id
+  package_id
+  module_path
+  exported_item_id
+  statement_fingerprint
+  accepted_proof_status
+
+KernelEvidenceCheckLimits
+  formula_context
+  sat_encoding
+  sat_checker
+  max_pipeline_steps
+  max_report_records
 ```
 
 `kernel_evidence` は `formula_evidence.md` の schema である。Checker は
-target/profile/context binding、formula provenance、imported fact identity と proof
+target/profile/context binding、formula provenance、imported formula identity と proof
 status、explicit substitution、deterministic SAT encoding、trusted SAT checker UNSAT を
-validate する。Caller-supplied instantiated formula、SAT clause、backend proof method、
+validate する。`FormulaEvidenceContext` は caller-supplied immutable context である。
+Imported formula status が missing、ambiguous、identity-mismatched、too-weak の場合は
+acceptance 前に fail-closed で reject する。Caller-supplied instantiated formula、SAT clause、backend proof method、
 resolution trace、SMT proof object、backend log、backend-reported used axiom は untrusted
 acceptance material として ignore または reject する。
 
@@ -293,6 +315,7 @@ KernelCheckResult
   checked_cluster_steps
   checked_reduction_steps
   checked_derived_facts
+  sat_check_report
   final_goal
   used_axioms
   policy_taint
@@ -327,8 +350,8 @@ translate または replace しない限り migration/audit-only である。Art
 status は引き続きこの crate の外にあり、corrected normal policy 下で policy layer が
 legacy ATP result を `kernel_verified` として project してはならない。
 
-Corrected path では、`used_axioms` は accepted formula/substitution evidence が実際に
-使用した checked imported axiom/theorem formula evidence だけから導出する。
+Corrected path では、`used_axioms` は accepted formula/substitution evidence が
+assert する checked imported axiom/theorem formula evidence だけから導出する。
 Backend-reported used-axiom list は、evidence と imported-fact context が同じ fact を
 check 可能にしない限り無視する。Imported axiom と imported theorem の id は、
 `used_axioms` の導出と `CheckedFactContext` の構築で別 namespace
@@ -342,16 +365,17 @@ aggregate result に policy taint を持つ。Policy layer はそのような re
 禁止する場合、immutable imported-fact context は external status を requirement を満たすもの
 として提示してはならない。
 
-Task 16 は in-crate batch helper を提供する。この helper は independent inputs を check し、
-target VC fingerprint、同一 target では caller input order の順で results を sort する。
-Worker spawn や cancellation token read は行わない。External scheduler integration はこの crate
-の外に残る。
+Task 28 は corrected normal path のために `check_kernel_evidence` と
+`check_kernel_evidence_batch` を提供する。Batch checking は target VC fingerprint、
+同一 target では caller input order の順で results を sort する。Worker spawn や
+cancellation token read は行わない。External scheduler integration はこの crate の外に残る。
+Task 16 の legacy certificate batch helper は task 29 まで migration/audit inventory として残る。
 
-Batch checking は single-certificate checks の deterministic wrapper である:
+Corrected batch checking は single evidence checks の deterministic wrapper である:
 
 ```text
-KernelCheckBatchInput
-  checks: Vec<KernelCheckInput> in caller order
+KernelEvidenceCheckBatchInput
+  checks: Vec<KernelEvidenceCheckInput> in caller order
 
 KernelCheckBatchResult
   results: sorted Vec<KernelCheckResult>
