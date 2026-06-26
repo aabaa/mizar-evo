@@ -111,9 +111,9 @@ fn atp_lib_exposes_only_spec_backed_problem_module() {
     let source = read_to_string(&lib_path);
     let expected_source = r#"//! ATP candidate-evidence production boundary.
 //!
-//! `mizar-atp` owns pipeline phase 13: translating open VC obligations into
-//! backend-neutral ATP problems, running untrusted backends, and collecting
-//! formula/substitution evidence candidates for `mizar-kernel`.
+//! `mizar-atp` owns pipeline phase 13: translating `NeedsAtp` VC obligations
+//! into backend-neutral ATP problems, running untrusted backends, and
+//! collecting formula/substitution evidence candidates for `mizar-kernel`.
 //!
 //! This crate does not accept proofs, select trusted winners, call the kernel
 //! as proof authority, or expose backend proof methods as trusted material.
@@ -121,6 +121,7 @@ fn atp_lib_exposes_only_spec_backed_problem_module() {
 #![forbid(unsafe_code)]
 
 pub mod problem;
+pub mod translator;
 "#;
     let source_files = rust_source_files(&crate_root().join("src"))
         .into_iter()
@@ -140,7 +141,7 @@ pub mod problem;
     );
     assert_eq!(
         source_files,
-        ["src/lib.rs", "src/problem.rs"],
+        ["src/lib.rs", "src/problem.rs", "src/translator.rs"],
         "semantic ATP modules require paired specs before source; found {source_files:?}"
     );
 }
@@ -159,12 +160,167 @@ fn atp_crate_tree_contains_only_current_spec_backed_files() {
             "Cargo.toml",
             "src/lib.rs",
             "src/problem.rs",
+            "src/translator.rs",
             "tests/lint_policy.rs"
         ],
         "mizar-atp crate files must stay limited to current spec-backed sources; \
          build scripts, examples, benches, extra tests, backend runners, \
          kernel/proof behavior, or other crate-root files require explicit spec \
          tasks; found {files:?}"
+    );
+}
+
+#[test]
+fn atp_translator_module_has_paired_specs_and_excludes_trusted_material() {
+    let en_spec = workspace_root().join("doc/design/mizar-atp/en/translator.md");
+    let ja_spec = workspace_root().join("doc/design/mizar-atp/ja/translator.md");
+    let source_path = crate_root().join("src/translator.rs");
+    let en = read_to_string(&en_spec);
+    let ja = read_to_string(&ja_spec);
+    let source = read_to_string(&source_path);
+
+    for marker in [
+        "structured formula, declaration, and soft-type projection tables",
+        "The source `VcIr` must be status `NeedsAtp`",
+        "Duplicate declarations",
+        "task 5 defines Rust projection input structs",
+    ] {
+        assert!(
+            en.contains(marker),
+            "{} must keep task-4 translator spec marker `{marker}`",
+            en_spec.display()
+        );
+    }
+    for marker in [
+        "structured formula / declaration / soft-type projection table",
+        "`NeedsAtp` status",
+        "duplicate declaration",
+        "task 5 は declaration / soft-type payload 用の Rust projection input",
+    ] {
+        assert!(
+            ja.contains(marker),
+            "{} must keep task-4 Japanese translator spec marker `{marker}`",
+            ja_spec.display()
+        );
+    }
+    for marker in [
+        "pub fn translate_declarations",
+        "VcStatus::NeedsAtp",
+        "targets_vc",
+        "AtpDeclarationProjection",
+        "AtpSymbolSourceProjection",
+        "AtpSoftTypeProjection",
+        "MissingSoftTypeGuard",
+    ] {
+        assert!(
+            source.contains(marker),
+            "{} must implement translator.md task-5 marker `{marker}`",
+            source_path.display()
+        );
+    }
+    for prohibited in [
+        "std::process::Command",
+        "mizar_kernel::",
+        "AtpProblem::try_new",
+        "ExpectedBackendResult",
+        "resolution_trace",
+        "MiniSAT",
+        "DIMACS",
+        "instantiated_formula",
+        "backend_used_axioms",
+        "kernel_verified",
+    ] {
+        assert!(
+            !source.contains(prohibited),
+            "{} must not expose prohibited trusted/backend material `{prohibited}`",
+            source_path.display()
+        );
+    }
+}
+
+#[test]
+fn atp_translator_public_api_surface_is_task_five_allowlist() {
+    let source_path = crate_root().join("src/translator.rs");
+    let source = read_to_string(&source_path);
+    let public_items = public_api_items(&source);
+    let public_fields = public_struct_fields(&source);
+    let public_functions = public_api_functions(&source);
+    let expected = [
+        "AtpDeclarationProjection",
+        "AtpDeclarationTranslation",
+        "AtpDeclarationTranslationInput",
+        "AtpProjectionKey",
+        "AtpProjectionProvenance",
+        "AtpSoftTypeProjection",
+        "AtpSoftTypeRepresentation",
+        "AtpSymbolSourceProjection",
+        "AtpTranslationError",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<Vec<_>>();
+
+    assert_eq!(
+        public_items,
+        expected,
+        "{} public API must stay limited to task-5 translator declaration and \
+         symbol-map translation shapes; backend runners, proof methods, SAT \
+         clauses, accepted statuses, witness types, and cache handles require \
+         explicit later specs",
+        source_path.display()
+    );
+
+    assert_eq!(
+        public_fields,
+        [
+            "AtpDeclarationProjection::arity",
+            "AtpDeclarationProjection::key",
+            "AtpDeclarationProjection::kind",
+            "AtpDeclarationProjection::provenance",
+            "AtpDeclarationProjection::symbol",
+            "AtpDeclarationProjection::symbol_source",
+            "AtpDeclarationTranslationInput::declaration_projections",
+            "AtpDeclarationTranslationInput::diagnostics",
+            "AtpDeclarationTranslationInput::kernel_handoff",
+            "AtpDeclarationTranslationInput::logic_profile",
+            "AtpDeclarationTranslationInput::soft_type_projections",
+            "AtpDeclarationTranslationInput::vc",
+            "AtpDeclarationTranslationInput::vc_set",
+            "AtpProjectionProvenance::payload",
+            "AtpProjectionProvenance::source",
+            "AtpSoftTypeProjection::key",
+            "AtpSoftTypeProjection::provenance",
+            "AtpSoftTypeProjection::representation",
+        ],
+        "{} public struct fields must stay limited to structured translator \
+         inputs; full problem construction, backend material, SAT material, \
+         accepted statuses, witnesses, and cache handles require explicit \
+         later specs",
+        source_path.display()
+    );
+
+    assert_eq!(
+        public_functions,
+        [
+            "AtpDeclarationTranslation::declarations",
+            "AtpDeclarationTranslation::diagnostics",
+            "AtpDeclarationTranslation::logic_profile",
+            "AtpDeclarationTranslation::provenance",
+            "AtpDeclarationTranslation::symbol_map",
+            "AtpDeclarationTranslation::target_binding",
+            "AtpDeclarationTranslation::type_context",
+            "AtpDeclarationTranslation::vc_id",
+            "AtpProjectionKey::as_str",
+            "AtpProjectionKey::is_empty",
+            "AtpProjectionKey::new",
+            "AtpProjectionProvenance::new",
+            "translate_declarations",
+        ],
+        "{} public functions and methods must stay limited to task-5 \
+         translator construction/accessors; backend runners, proof methods, \
+         SAT/kernel checks, final problem construction, witnesses, and cache \
+         APIs require explicit later specs",
+        source_path.display()
     );
 }
 
@@ -533,6 +689,47 @@ fn public_struct_fields(source: &str) -> Vec<String> {
 
     fields.sort();
     fields
+}
+
+fn public_api_functions(source: &str) -> Vec<String> {
+    let mut functions = Vec::new();
+    let mut current_impl = None;
+    let mut depth = 0usize;
+
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if current_impl.is_none()
+            && let Some(rest) = trimmed.strip_prefix("impl ")
+            && !rest.contains(" for ")
+            && trimmed.ends_with('{')
+        {
+            current_impl = Some((item_name(Some(rest)).expect("impl type").to_owned(), depth));
+        }
+
+        if let Some(name) = item_name(
+            trimmed
+                .strip_prefix("pub const fn ")
+                .or_else(|| trimmed.strip_prefix("pub fn ")),
+        ) {
+            if let Some((impl_type, _)) = &current_impl {
+                functions.push(format!("{impl_type}::{name}"));
+            } else {
+                functions.push(name.to_owned());
+            }
+        }
+
+        depth = depth
+            .saturating_add(line.chars().filter(|character| *character == '{').count())
+            .saturating_sub(line.chars().filter(|character| *character == '}').count());
+        if let Some((_, impl_start_depth)) = &current_impl
+            && depth == *impl_start_depth
+        {
+            current_impl = None;
+        }
+    }
+
+    functions.sort();
+    functions
 }
 
 fn item_name(rest: Option<&str>) -> Option<&str> {

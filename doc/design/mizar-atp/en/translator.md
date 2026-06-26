@@ -239,7 +239,9 @@ spelling, backend sort conventions, or kernel handoff bytes.
 Every declaration, axiom, conjecture, type guard, encoded property, and native
 property declaration that can affect candidate evidence must have provenance
 derived from VC/handoff inputs. Provenance records carry source bindings and
-payload fingerprints; they are not backend logs or trace explanations.
+stable projection payloads; later producer tasks may refine those payloads to
+fingerprints when their owner exposes a fingerprint field. They are not
+backend logs or trace explanations.
 
 Imported facts require package/module/item identity, statement fingerprint,
 required proof status, and formula context requirements. Missing or mismatched
@@ -263,10 +265,10 @@ not proof results.
 ## Gap Classification
 
 - resolved `deferred`: task 4 specifies translator ownership and boundaries.
-- `deferred`: task 5/6 define the Rust projection input structs that carry
-  structured formula, declaration, and soft-type payloads into the translator;
-  no task may reconstruct those payloads from opaque handoff bytes.
-- `deferred`: task 5 implements declaration and symbol-map translation.
+- resolved `source_drift`: task 5 defines Rust projection input structs for
+  declaration and soft-type payloads, implements target/status handoff gates,
+  deterministic declaration/symbol-map/type-context translation, and validates
+  type-guard signatures without constructing a final `AtpProblem`.
 - `deferred`: task 6 implements axiom/conjecture translation.
 - `deferred`: property encoding, concrete encoders, backend runner, portfolio,
   and candidate evidence extraction remain in their own module specs/tasks.
@@ -276,7 +278,7 @@ not proof results.
 
 ## Planned Tests
 
-Task 5/6 implementation must add Rust coverage for:
+Task 5/6 implementation together must add Rust coverage for:
 
 - rejecting non-`NeedsAtp` VCs and stale/mismatched target handoffs;
 - missing structured formula/declaration/soft-type projections fail closed;

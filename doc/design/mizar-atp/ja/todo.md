@@ -18,7 +18,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | problem | `problem.md`（task 2） | `src/problem.rs` | [x] |
-| translator | `translator.md`（task 4） | `src/translator.rs` | [~] spec complete。source は task 5-6 に deferred |
+| translator | `translator.md`（task 4） | `src/translator.rs` | [~] declaration/symbol-map source complete。axiom/conjecture source は task 6 に deferred |
 | property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [ ] |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [ ] |
 | smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [ ] |
@@ -145,11 +145,12 @@ workspace crate ではないため、policy と witness-publication integration 
      premise materialization limit、structured projection input、duplicate-premise
      rejection、proof-hint non-pruning、soft-type preservation、declaration /
      symbol-map responsibility、`Unsat` polarity、trusted/backend material として禁止される
-     ものを定義する。Rust translator source は task 5 と 6 に deferred のままである。
+     ものを定義する。declaration / symbol-map translator source は task 5 で実装済みであり、
+     axiom/conjecture source は task 6 に deferred のままである。
 
-5. **宣言とシンボルマップの翻訳。** [ ]
-   - `VcIr` のローカルコンテキストと参照シンボルを、診断に十分なだけ
-     逆引き可能なシンボルマップとともに `AtpDeclaration` へ翻訳する。
+5. **宣言とシンボルマップの翻訳。** [x]
+   - `VcIr` / handoff input 由来の structured declaration / soft-type projection を、
+     診断に十分なだけ逆引き可能なシンボルマップとともに `AtpDeclaration` へ翻訳する。
    - テスト: non-`NeedsAtp` VC と stale handoff を reject する。missing/malformed の
      structured declaration / soft-type projection で fail closed する。shuffled equivalent
      input で deterministic declaration / symbol-map を生成する。duplicate/missing/kind/arity
@@ -157,6 +158,11 @@ workspace crate ではないため、policy と witness-publication integration 
      切り替えなしに保持する。translator API/debug rendering に prohibited
      backend/kernel/SAT/proof-acceptance material が入らないことを確認する。
    - 依存: 3、4。仕様: `translator.md`。
+   - 状態: 完了。`src/translator.rs` は task-5 partial translation を公開する。
+     `NeedsAtp` status と target handoff を検査し、structured declaration / soft-type
+     projection を消費し、deterministic declaration、symbol-map row、type guard、provenance、
+     diagnostic、target binding を導出し、final `AtpProblem` を構築せずに type-guard
+     signature を検証する。
 
 6. **公理と conjecture の翻訳。** [ ]
    - 引用された premise を決定的な順序で公理に具体化し、goal を

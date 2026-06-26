@@ -18,7 +18,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | problem | `problem.md` (task 2) | `src/problem.rs` | [x] |
-| translator | `translator.md` (task 4) | `src/translator.rs` | [~] spec complete; source deferred to tasks 5-6 |
+| translator | `translator.md` (task 4) | `src/translator.rs` | [~] declaration/symbol-map source complete; axiom/conjecture source deferred to task 6 |
 | property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [ ] |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [ ] |
 | smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [ ] |
@@ -151,11 +151,13 @@ Keep `cargo test -p mizar-atp` green after each task (see
      structured projection inputs, duplicate-premise rejection, proof-hint
      non-pruning, soft-type preservation, declaration/symbol-map
      responsibilities, `Unsat` polarity, and prohibited trusted/backend
-     material. Rust translator source remains deferred to tasks 5 and 6.
+     material. Declaration/symbol-map translator source is implemented by
+     task 5; axiom/conjecture source remains deferred to task 6.
 
-5. **Declaration and symbol-map translation.** [ ]
-   - Translate `VcIr` local contexts and referenced symbols into
-     `AtpDeclaration`s with a reversible-enough symbol map for diagnostics.
+5. **Declaration and symbol-map translation.** [x]
+   - Translate structured declaration and soft-type projections derived from
+     `VcIr` / handoff inputs into `AtpDeclaration`s with a reversible-enough
+     symbol map for diagnostics.
    - Tests: reject non-`NeedsAtp` VCs and stale handoffs; fail closed on
      missing/malformed structured declaration and soft-type projections;
      produce deterministic declarations/symbol maps under shuffled equivalent
@@ -164,6 +166,12 @@ Keep `cargo test -p mizar-atp` green after each task (see
      switching; keep prohibited backend/kernel/SAT/proof-acceptance material
      out of the translator API/debug rendering.
    - Deps: 3, 4. Spec: `translator.md`.
+   - Status: complete. `src/translator.rs` exposes a task-5 partial
+     translation that checks `NeedsAtp` status and target handoff, consumes
+     structured declaration / soft-type projections, derives deterministic
+     declarations, symbol-map rows, type guards, provenance, diagnostics, and
+     target binding, and validates type-guard signatures without constructing
+     a final `AtpProblem`.
 
 6. **Axiom and conjecture translation.** [ ]
    - Materialize cited premises into axioms in deterministic order, encode
