@@ -21,7 +21,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 | translator | `translator.md` (task 4) | `src/translator.rs` | [x] declaration, symbol-map, axiom, and conjecture translation source complete |
 | property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [x] axiom-form property source complete; native declarations deferred |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [x] deterministic FOF source complete; typed/native/backend routes deferred |
-| smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [ ] |
+| smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [x] spec complete; source deferred to task 12 |
 | backend | `backend.md` (task 13) | `src/backend.rs` | [ ] |
 | portfolio | `portfolio.md` (task 17) | `src/portfolio.rs` | [ ] |
 
@@ -259,15 +259,28 @@ Keep `cargo test -p mizar-atp` green after each task (see
       resolution-trace acceptance is added.
     - Deps: 6, 9. Spec: `tptp_encoder.md`.
 
-11. **Spec: `smtlib_encoder.md`.** [ ]
+11. **Spec: `smtlib_encoder.md`.** [x]
     - Write the SMT-LIB emission spec (English and Japanese, no code): sort
       encoding, logic selection, and deterministic output rules.
+    - Completed by paired `smtlib_encoder.md` docs. Task-12 source is limited
+      to deterministic uninterpreted SMT-LIB emission using one fixed
+      `mizar_universe` sort plus explicit guard predicates/type-guard
+      assertions. Arithmetic theories, arrays, datatypes, bit-vectors,
+      sorted function/predicate signatures, `BackendSorts`, `SortsAndGuards`,
+      native property declarations, solver options, proof/unsat-core commands,
+      backend execution, and evidence extraction remain deferred.
     - Deps: 2. Spec: architecture 09 "Supported Formats".
 
 12. **SMT-LIB encoder.** [ ]
     - Emit SMT-LIB text from `AtpProblem` deterministically.
-    - Tests: golden-file fixtures; sort-encoding preserves required
-      soft-type facts.
+    - Tests: golden-file fixtures; `QF_UF` / `UF` logic selection; exact
+      formula rendering; premises plus negated conjecture polarity; fixed
+      `mizar_universe` sort plus explicit guard/type-guard preservation;
+      profile gates for unsupported sort strategies, sorted binders, equality,
+      quantifiers, and sort-dependent uses; unused sort declarations ignored
+      and absent from output; native-property rejection; scope/arity/source failures;
+      raw-name injection and SMT-LIB symbol collision rejection; provenance
+      side metadata; no proof/unsat-core/backend-material trust.
     - Deps: 6, 11. Spec: `smtlib_encoder.md`.
 
 ### Backend execution

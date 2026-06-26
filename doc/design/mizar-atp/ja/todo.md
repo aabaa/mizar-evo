@@ -21,7 +21,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 | translator | `translator.md`（task 4） | `src/translator.rs` | [x] declaration、symbol-map、axiom、conjecture translation source complete |
 | property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [x] axiom-form property source 完了。native declaration は deferred |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [x] deterministic FOF source 完了。typed/native/backend route は deferred |
-| smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [ ] |
+| smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [x] spec 完了。source は task 12 に deferred |
 | backend | `backend.md`（task 13） | `src/backend.rs` | [ ] |
 | portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [ ] |
 
@@ -245,15 +245,26 @@ workspace crate ではないため、policy と witness-publication integration 
       resolution-trace acceptance は追加しない。
     - 依存: 6、9。仕様: `tptp_encoder.md`。
 
-11. **仕様: `smtlib_encoder.md`。** [ ]
+11. **仕様: `smtlib_encoder.md`。** [x]
     - SMT-LIB 出力の仕様を執筆する（英語と日本語、コードなし）: sort
       エンコーディング、logic の選択、決定的出力規則。
+    - paired `smtlib_encoder.md` docs により完了。task-12 source は、1 つの fixed
+      `mizar_universe` sort と explicit guard predicate / type-guard assertion を使う
+      deterministic uninterpreted SMT-LIB emission に限定する。arithmetic theory、array、
+      datatype、bit-vector、sorted function/predicate signature、`BackendSorts`、
+      `SortsAndGuards`、native property declaration、solver option、proof/unsat-core
+      command、backend execution、evidence extraction は deferred のままである。
     - 依存: 2。仕様: アーキテクチャ 09「Supported Formats」。
 
 12. **SMT-LIB エンコーダ。** [ ]
     - `AtpProblem` から SMT-LIB テキストを決定的に出力する。
-    - テスト: golden ファイルのフィクスチャ。sort エンコーディングが
-      必要な soft type 事実を保存する。
+    - テスト: golden ファイルのフィクスチャ。`QF_UF` / `UF` logic selection。
+      exact formula rendering。premise plus negated conjecture polarity。fixed
+      `mizar_universe` sort と explicit guard/type-guard preservation。unsupported sort
+      strategy、sorted binder、equality、quantifier、sort-dependent use の profile gate。
+      未使用の sort declaration は無視され output に含まれないこと。native-property
+      rejection。scope/arity/source failure。raw-name injection と SMT-LIB symbol collision
+      rejection。provenance side metadata。proof/unsat-core/backend-material trust がないこと。
     - 依存: 6、11。仕様: `smtlib_encoder.md`。
 
 ### バックエンド実行
