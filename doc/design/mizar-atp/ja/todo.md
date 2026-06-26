@@ -21,7 +21,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 | translator | `translator.md`（task 4） | `src/translator.rs` | [x] declaration、symbol-map、axiom、conjecture translation source complete |
 | property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [x] axiom-form property source 完了。native declaration は deferred |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [x] deterministic FOF source 完了。typed/native/backend route は deferred |
-| smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [x] spec 完了。source は task 12 に deferred |
+| smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source 完了。theory/sorted/native/backend route は deferred |
 | backend | `backend.md`（task 13） | `src/backend.rs` | [ ] |
 | portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [ ] |
 
@@ -256,7 +256,7 @@ workspace crate ではないため、policy と witness-publication integration 
       command、backend execution、evidence extraction は deferred のままである。
     - 依存: 2。仕様: アーキテクチャ 09「Supported Formats」。
 
-12. **SMT-LIB エンコーダ。** [ ]
+12. **SMT-LIB エンコーダ。** [x]
     - `AtpProblem` から SMT-LIB テキストを決定的に出力する。
     - テスト: golden ファイルのフィクスチャ。`QF_UF` / `UF` logic selection。
       exact formula rendering。premise plus negated conjecture polarity。fixed
@@ -265,6 +265,14 @@ workspace crate ではないため、policy と witness-publication integration 
       未使用の sort declaration は無視され output に含まれないこと。native-property
       rejection。scope/arity/source failure。raw-name injection と SMT-LIB symbol collision
       rejection。provenance side metadata。proof/unsat-core/backend-material trust がないこと。
+    - Status: complete。`src/smtlib_encoder.rs` は validated `AtpProblem` から
+      deterministic uninterpreted SMT-LIB text だけを emit し、symbol と assertion-label の
+      side metadata を記録し、`Unsat` contract の下で premise/type guard/property と negated
+      conjecture を emit し、unsupported profile、sorted binder、native declaration、
+      scope failure、malformed private formula case、raw-name injection、name/label collision を
+      reject し、diagnostic と proof/unsat-core material を semantic text に入れない。backend
+      runner、kernel/SAT checking、proof acceptance、witness/cache integration、
+      theory/sorted/native shortcut、legacy certificate、resolution-trace acceptance は追加しない。
     - 依存: 6、11。仕様: `smtlib_encoder.md`。
 
 ### バックエンド実行

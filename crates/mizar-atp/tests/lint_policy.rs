@@ -122,6 +122,7 @@ fn atp_lib_exposes_only_spec_backed_modules() {
 
 pub mod problem;
 pub mod property_encoding;
+pub mod smtlib_encoder;
 pub mod tptp_encoder;
 pub mod translator;
 "#;
@@ -147,6 +148,7 @@ pub mod translator;
             "src/lib.rs",
             "src/problem.rs",
             "src/property_encoding.rs",
+            "src/smtlib_encoder.rs",
             "src/tptp_encoder.rs",
             "src/translator.rs"
         ],
@@ -169,6 +171,7 @@ fn atp_crate_tree_contains_only_current_spec_backed_files() {
             "src/lib.rs",
             "src/problem.rs",
             "src/property_encoding.rs",
+            "src/smtlib_encoder.rs",
             "src/tptp_encoder.rs",
             "src/translator.rs",
             "tests/lint_policy.rs"
@@ -626,6 +629,141 @@ fn atp_tptp_encoder_public_api_surface_is_task_ten_allowlist() {
         ],
         "{} public functions and methods must stay limited to deterministic \
          TPTP text and side-metadata accessors; backend runners, proof \
+         methods, SAT/kernel checks, witnesses, and cache APIs require \
+         explicit later specs",
+        source_path.display()
+    );
+}
+
+#[test]
+fn atp_smtlib_encoder_module_has_paired_specs_and_excludes_trusted_material() {
+    let en_spec = workspace_root().join("doc/design/mizar-atp/en/smtlib_encoder.md");
+    let ja_spec = workspace_root().join("doc/design/mizar-atp/ja/smtlib_encoder.md");
+    let source_path = crate_root().join("src/smtlib_encoder.rs");
+    let en = read_to_string(&en_spec);
+    let ja = read_to_string(&ja_spec);
+    let source = read_to_string(&source_path);
+
+    for marker in [
+        "Task 12 supports this fail-closed subset",
+        "The encoder emits commands in this deterministic order",
+        "The encoder must track active quantifier scope",
+        "unused `AtpDeclarationKind::Sort` rows are accepted",
+        "Task-12 Test Expectations",
+    ] {
+        assert!(
+            en.contains(marker),
+            "{} must keep task-11 SMT-LIB spec marker `{marker}`",
+            en_spec.display()
+        );
+    }
+    for marker in [
+        "Task 12 は次の fail-closed subset",
+        "encoder は次の deterministic order",
+        "encoder は active quantifier scope",
+        "未使用の `AtpDeclarationKind::Sort` row",
+        "Task 12 は次の focused Rust coverage",
+    ] {
+        assert!(
+            ja.contains(marker),
+            "{} must keep task-11 Japanese SMT-LIB spec marker `{marker}`",
+            ja_spec.display()
+        );
+    }
+    for marker in [
+        "pub fn encode_smtlib",
+        "SmtLibDialect::Uninterpreted",
+        "ConcreteFormat::SmtLib",
+        "LogicFragment::SmtLibUninterpreted",
+        "SoftTypeStrategy::GuardPredicates",
+        "PropertyEncoding::Axiom",
+        "NativePropertyDeclaration",
+        "FreeVariable",
+        "BinderShadowing",
+        "DuplicateSmtLibSymbol",
+        "NegatedConjecture",
+    ] {
+        assert!(
+            source.contains(marker),
+            "{} must implement smtlib_encoder.md task-12 marker `{marker}`",
+            source_path.display()
+        );
+    }
+    for prohibited in [
+        "std::process::Command",
+        "mizar_kernel::",
+        "resolution_trace",
+        "MiniSAT",
+        "DIMACS",
+        "instantiated_formula",
+        "backend_used_axioms",
+        "kernel_verified",
+        "get-proof",
+        "get-unsat-core",
+    ] {
+        assert!(
+            !source.contains(prohibited),
+            "{} must not expose prohibited trusted/backend material `{prohibited}`",
+            source_path.display()
+        );
+    }
+}
+
+#[test]
+fn atp_smtlib_encoder_public_api_surface_is_task_twelve_allowlist() {
+    let source_path = crate_root().join("src/smtlib_encoder.rs");
+    let source = read_to_string(&source_path);
+    let public_items = public_api_items(&source);
+    let public_fields = public_struct_fields(&source);
+    let public_functions = public_api_functions(&source);
+    let expected = [
+        "SmtLibAssertionItem",
+        "SmtLibAssertionLabel",
+        "SmtLibDialect",
+        "SmtLibEncodingError",
+        "SmtLibEncodingOutput",
+        "SmtLibSymbolBinding",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<Vec<_>>();
+
+    assert_eq!(
+        public_items,
+        expected,
+        "{} public API must stay limited to task-12 deterministic \
+         uninterpreted SMT-LIB emission, side metadata, and fail-closed error \
+         shapes; backend runners, proof methods, SAT clauses, accepted \
+         statuses, witness types, and cache handles require explicit later \
+         specs",
+        source_path.display()
+    );
+
+    assert!(
+        public_fields.is_empty(),
+        "{} must keep task-12 SMT-LIB structs opaque; public fields would \
+         expand the evidence handoff surface without a spec",
+        source_path.display()
+    );
+
+    assert_eq!(
+        public_functions,
+        [
+            "SmtLibAssertionLabel::is_negated",
+            "SmtLibAssertionLabel::item",
+            "SmtLibAssertionLabel::label",
+            "SmtLibAssertionLabel::provenance",
+            "SmtLibAssertionLabel::target_symbol",
+            "SmtLibEncodingOutput::assertion_labels",
+            "SmtLibEncodingOutput::symbol_bindings",
+            "SmtLibEncodingOutput::text",
+            "SmtLibSymbolBinding::atp_symbol",
+            "SmtLibSymbolBinding::smtlib_symbol",
+            "SmtLibSymbolBinding::source",
+            "encode_smtlib",
+        ],
+        "{} public functions and methods must stay limited to deterministic \
+         SMT-LIB text and side-metadata accessors; backend runners, proof \
          methods, SAT/kernel checks, witnesses, and cache APIs require \
          explicit later specs",
         source_path.display()

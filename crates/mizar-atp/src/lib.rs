@@ -11,5 +11,6 @@
 
 pub mod problem;
 pub mod property_encoding;
+pub mod smtlib_encoder;
 pub mod tptp_encoder;
 pub mod translator;

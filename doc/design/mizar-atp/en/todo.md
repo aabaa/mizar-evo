@@ -21,7 +21,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 | translator | `translator.md` (task 4) | `src/translator.rs` | [x] declaration, symbol-map, axiom, and conjecture translation source complete |
 | property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [x] axiom-form property source complete; native declarations deferred |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [x] deterministic FOF source complete; typed/native/backend routes deferred |
-| smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [x] spec complete; source deferred to task 12 |
+| smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source complete; theory/sorted/native/backend routes deferred |
 | backend | `backend.md` (task 13) | `src/backend.rs` | [ ] |
 | portfolio | `portfolio.md` (task 17) | `src/portfolio.rs` | [ ] |
 
@@ -271,7 +271,7 @@ Keep `cargo test -p mizar-atp` green after each task (see
       backend execution, and evidence extraction remain deferred.
     - Deps: 2. Spec: architecture 09 "Supported Formats".
 
-12. **SMT-LIB encoder.** [ ]
+12. **SMT-LIB encoder.** [x]
     - Emit SMT-LIB text from `AtpProblem` deterministically.
     - Tests: golden-file fixtures; `QF_UF` / `UF` logic selection; exact
       formula rendering; premises plus negated conjecture polarity; fixed
@@ -281,6 +281,16 @@ Keep `cargo test -p mizar-atp` green after each task (see
       and absent from output; native-property rejection; scope/arity/source failures;
       raw-name injection and SMT-LIB symbol collision rejection; provenance
       side metadata; no proof/unsat-core/backend-material trust.
+    - Status: complete. `src/smtlib_encoder.rs` emits only deterministic
+      uninterpreted SMT-LIB text from validated `AtpProblem` values, records
+      symbol and assertion-label side metadata, emits premises/type
+      guards/properties plus a negated conjecture under the `Unsat` contract,
+      rejects unsupported profiles, sorted binders, native declarations, scope
+      failures, malformed private formula cases, raw-name injection, and
+      name/label collisions, and keeps diagnostics and proof/unsat-core
+      material out of semantic text. No backend runner, kernel/SAT checking,
+      proof acceptance, witness/cache integration, theory/sorted/native
+      shortcut, legacy certificate, or resolution-trace acceptance is added.
     - Deps: 6, 11. Spec: `smtlib_encoder.md`.
 
 ### Backend execution
