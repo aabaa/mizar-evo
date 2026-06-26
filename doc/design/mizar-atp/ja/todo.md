@@ -18,7 +18,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | problem | `problem.md`（task 2） | `src/problem.rs` | [x] |
-| translator | `translator.md`（task 4） | `src/translator.rs` | [~] declaration/symbol-map source complete。axiom/conjecture source は task 6 に deferred |
+| translator | `translator.md`（task 4） | `src/translator.rs` | [x] declaration、symbol-map、axiom、conjecture translation source complete |
 | property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [ ] |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [ ] |
 | smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [ ] |
@@ -146,7 +146,7 @@ workspace crate ではないため、policy と witness-publication integration 
      rejection、proof-hint non-pruning、soft-type preservation、declaration /
      symbol-map responsibility、`Unsat` polarity、trusted/backend material として禁止される
      ものを定義する。declaration / symbol-map translator source は task 5 で実装済みであり、
-     axiom/conjecture source は task 6 に deferred のままである。
+     axiom/conjecture problem construction は task 6 で実装済みである。
 
 5. **宣言とシンボルマップの翻訳。** [x]
    - `VcIr` / handoff input 由来の structured declaration / soft-type projection を、
@@ -164,7 +164,7 @@ workspace crate ではないため、policy と witness-publication integration 
      diagnostic、target binding を導出し、final `AtpProblem` を構築せずに type-guard
      signature を検証する。
 
-6. **公理と conjecture の翻訳。** [ ]
+6. **公理と conjecture の翻訳。** [x]
    - 引用された premise を決定的な順序で公理に具体化し、goal を
      conjecture としてエンコードし、来歴と `expected_result` を付ける。
    - テスト: non-`NeedsAtp` VC と mismatched target handoff を reject する。
@@ -178,6 +178,19 @@ workspace crate ではないため、policy と witness-publication integration 
      `ExpectedBackendResult::Unsat` polarity、prohibited backend/kernel/SAT/proof-acceptance
      material がないことを確認する。
    - 依存: 5。仕様: `translator.md`。
+   - 状態: 完了。`src/translator.rs` は task-6 の `AtpTranslationInput`、
+     VC formula ref と imported fact 用の structured `AtpFormulaProjection` target、
+     `translate_problem` を公開する。translator は immutable な sorted `vc.premises`
+     list を axiom に materialize し、VC goal を conjecture として materialize し、
+     `ExpectedBackendResult::Unsat` を記録し、final-goal handoff polarity が
+     `AssertFalseForRefutation` であることを検査し、final-goal projection binding に
+     `goal:1` を要求し、duplicate premise ref、duplicate resolved formula/source identity、
+     repeated imported source tuple を reject し、projection fingerprint / provenance payload を
+     対応する VC kernel handoff と照合する。この照合では handoff formula byte を parse しない。
+     local-context、cited、generated、imported fact の materialization は coverage 済みである。
+     checker-owned と type-predicate premise materialization は、VC handoff が対応する explicit
+     source class/projection を公開するまで fail-closed のままであり、`mizar-atp` は placeholder
+     source class を発明しない。
 
 7. **仕様: `property_encoding.md`。** [ ]
    - プロパティエンコーディングの仕様を執筆する（英語と日本語、コード

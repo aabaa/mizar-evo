@@ -18,7 +18,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | problem | `problem.md` (task 2) | `src/problem.rs` | [x] |
-| translator | `translator.md` (task 4) | `src/translator.rs` | [~] declaration/symbol-map source complete; axiom/conjecture source deferred to task 6 |
+| translator | `translator.md` (task 4) | `src/translator.rs` | [x] declaration, symbol-map, axiom, and conjecture translation source complete |
 | property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [ ] |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [ ] |
 | smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [ ] |
@@ -152,7 +152,7 @@ Keep `cargo test -p mizar-atp` green after each task (see
      non-pruning, soft-type preservation, declaration/symbol-map
      responsibilities, `Unsat` polarity, and prohibited trusted/backend
      material. Declaration/symbol-map translator source is implemented by
-     task 5; axiom/conjecture source remains deferred to task 6.
+     task 5; axiom/conjecture problem construction is implemented by task 6.
 
 5. **Declaration and symbol-map translation.** [x]
    - Translate structured declaration and soft-type projections derived from
@@ -173,7 +173,7 @@ Keep `cargo test -p mizar-atp` green after each task (see
      target binding, and validates type-guard signatures without constructing
      a final `AtpProblem`.
 
-6. **Axiom and conjecture translation.** [ ]
+6. **Axiom and conjecture translation.** [x]
    - Materialize cited premises into axioms in deterministic order, encode
      the goal as the conjecture, and attach provenance and
      `expected_result`.
@@ -188,6 +188,21 @@ Keep `cargo test -p mizar-atp` green after each task (see
      soft-type preservation, fixed `ExpectedBackendResult::Unsat` polarity,
      and absence of prohibited backend/kernel/SAT/proof-acceptance material.
    - Deps: 5. Spec: `translator.md`.
+   - Status: complete. `src/translator.rs` now exposes task-6
+     `AtpTranslationInput`, structured `AtpFormulaProjection` targets for
+     VC formula refs and imported facts, and `translate_problem`. The
+     translator materializes the sorted immutable `vc.premises` list into
+     axioms, materializes the VC goal as the conjecture, records
+     `ExpectedBackendResult::Unsat`, checks final-goal handoff polarity for
+     `AssertFalseForRefutation`, requires final-goal projection binding
+     `goal:1`, rejects duplicate premise refs, duplicate resolved
+     formula/source identities, and repeated imported source tuples, and checks
+     projection fingerprints/provenance payloads against the matching VC kernel
+     handoff without parsing handoff formula bytes. Local-context, cited,
+     generated, and imported fact materialization is covered. Checker-owned and
+     type-predicate premise materialization remains fail-closed unless the VC
+     handoff exposes a matching explicit source class/projection; no placeholder
+     source class is invented in `mizar-atp`.
 
 7. **Spec: `property_encoding.md`.** [ ]
    - Write the property-encoding spec (English and Japanese, no code): how

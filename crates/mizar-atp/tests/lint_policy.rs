@@ -205,24 +205,26 @@ fn atp_translator_module_has_paired_specs_and_excludes_trusted_material() {
     }
     for marker in [
         "pub fn translate_declarations",
+        "pub fn translate_problem",
         "VcStatus::NeedsAtp",
         "targets_vc",
         "AtpDeclarationProjection",
+        "AtpFormulaProjection",
         "AtpSymbolSourceProjection",
         "AtpSoftTypeProjection",
         "MissingSoftTypeGuard",
+        "ExpectedBackendResult::Unsat",
+        "AtpProblem::try_new",
     ] {
         assert!(
             source.contains(marker),
-            "{} must implement translator.md task-5 marker `{marker}`",
+            "{} must implement translator.md task-5/task-6 marker `{marker}`",
             source_path.display()
         );
     }
     for prohibited in [
         "std::process::Command",
         "mizar_kernel::",
-        "AtpProblem::try_new",
-        "ExpectedBackendResult",
         "resolution_trace",
         "MiniSAT",
         "DIMACS",
@@ -239,7 +241,7 @@ fn atp_translator_module_has_paired_specs_and_excludes_trusted_material() {
 }
 
 #[test]
-fn atp_translator_public_api_surface_is_task_five_allowlist() {
+fn atp_translator_public_api_surface_is_task_six_allowlist() {
     let source_path = crate_root().join("src/translator.rs");
     let source = read_to_string(&source_path);
     let public_items = public_api_items(&source);
@@ -249,12 +251,15 @@ fn atp_translator_public_api_surface_is_task_five_allowlist() {
         "AtpDeclarationProjection",
         "AtpDeclarationTranslation",
         "AtpDeclarationTranslationInput",
+        "AtpFormulaProjection",
+        "AtpFormulaProjectionTarget",
         "AtpProjectionKey",
         "AtpProjectionProvenance",
         "AtpSoftTypeProjection",
         "AtpSoftTypeRepresentation",
         "AtpSymbolSourceProjection",
         "AtpTranslationError",
+        "AtpTranslationInput",
     ]
     .into_iter()
     .map(str::to_owned)
@@ -263,8 +268,9 @@ fn atp_translator_public_api_surface_is_task_five_allowlist() {
     assert_eq!(
         public_items,
         expected,
-        "{} public API must stay limited to task-5 translator declaration and \
-         symbol-map translation shapes; backend runners, proof methods, SAT \
+        "{} public API must stay limited to task-5/task-6 translator \
+         structured-projection and problem-construction shapes; backend \
+         runners, proof methods, SAT \
          clauses, accepted statuses, witness types, and cache handles require \
          explicit later specs",
         source_path.display()
@@ -286,16 +292,30 @@ fn atp_translator_public_api_surface_is_task_five_allowlist() {
             "AtpDeclarationTranslationInput::soft_type_projections",
             "AtpDeclarationTranslationInput::vc",
             "AtpDeclarationTranslationInput::vc_set",
+            "AtpFormulaProjection::formula",
+            "AtpFormulaProjection::handoff_formula_fingerprint",
+            "AtpFormulaProjection::handoff_provenance_payload",
+            "AtpFormulaProjection::provenance",
+            "AtpFormulaProjection::source_identity",
+            "AtpFormulaProjection::target",
             "AtpProjectionProvenance::payload",
             "AtpProjectionProvenance::source",
             "AtpSoftTypeProjection::key",
             "AtpSoftTypeProjection::provenance",
             "AtpSoftTypeProjection::representation",
+            "AtpTranslationInput::declaration_projections",
+            "AtpTranslationInput::diagnostics",
+            "AtpTranslationInput::formula_projections",
+            "AtpTranslationInput::kernel_handoff",
+            "AtpTranslationInput::logic_profile",
+            "AtpTranslationInput::soft_type_projections",
+            "AtpTranslationInput::vc",
+            "AtpTranslationInput::vc_set",
         ],
         "{} public struct fields must stay limited to structured translator \
-         inputs; full problem construction, backend material, SAT material, \
-         accepted statuses, witnesses, and cache handles require explicit \
-         later specs",
+         inputs and formula projection agreement material; backend material, \
+         SAT material, accepted statuses, witnesses, and cache handles require \
+         explicit later specs",
         source_path.display()
     );
 
@@ -310,16 +330,19 @@ fn atp_translator_public_api_surface_is_task_five_allowlist() {
             "AtpDeclarationTranslation::target_binding",
             "AtpDeclarationTranslation::type_context",
             "AtpDeclarationTranslation::vc_id",
+            "AtpFormulaProjectionTarget::imported",
+            "AtpFormulaProjectionTarget::vc_formula",
             "AtpProjectionKey::as_str",
             "AtpProjectionKey::is_empty",
             "AtpProjectionKey::new",
             "AtpProjectionProvenance::new",
             "translate_declarations",
+            "translate_problem",
         ],
-        "{} public functions and methods must stay limited to task-5 \
+        "{} public functions and methods must stay limited to task-5/task-6 \
          translator construction/accessors; backend runners, proof methods, \
-         SAT/kernel checks, final problem construction, witnesses, and cache \
-         APIs require explicit later specs",
+         SAT/kernel checks, witnesses, and cache APIs require explicit later \
+         specs",
         source_path.display()
     );
 }

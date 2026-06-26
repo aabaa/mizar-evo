@@ -75,7 +75,9 @@ binder/sort relationships, and soft-type guards. They must be produced from
 keyed by `VcFormulaRef`, context identity, declaration identity, or provenance
 identity. Kernel handoff formula fingerprints and payload bytes are agreement
 checks and provenance anchors; the translator must not parse them to recover
-ATP formula trees or declarations.
+ATP formula trees or declarations. For materialized formula rows, the
+`AtpProblem` provenance payload is a deterministic handoff-derived anchor, not
+the caller-supplied projection payload bytes.
 
 Missing structured projections are fail-closed producer input errors for the
 implemented translator tasks. The translator must not reconstruct formulas,
@@ -114,8 +116,8 @@ constructing `AtpProblem`:
   display spelling or traversal order;
 - premise formulas follow the canonical sorted `VcIr` premise order after
   validating source class and stable source binding; duplicate premise
-  references or duplicate source/formula identities fail closed before problem
-  construction;
+  references, duplicate source/formula identities, or repeated imported source
+  tuples fail closed before problem construction;
 - type guards and soft-type facts follow canonical context/source identity;
 - encoded properties follow stable property identity and target symbol;
 - symbol-map and provenance rows follow their canonical keys;
@@ -151,20 +153,26 @@ according to the failure class. It must not drop the formula, replace it with
 Each premise becomes an axiom only when the referenced formula payload and
 provenance are available and valid for the selected profile.
 
-The translator rejects duplicate premise references and duplicate
-source/formula identities instead of silently coalescing them. Duplicate
-premises would make provenance and later backend `used_axioms` identity
-ambiguous, so they are fail-closed producer input errors.
+The translator rejects duplicate premise references, duplicate source/formula
+identities, and repeated imported source tuples instead of silently coalescing
+them. Duplicate premises would make provenance and later backend `used_axioms`
+identity ambiguous, so they are fail-closed producer input errors.
 
 Allowed premise sources are:
 
 - `PremiseRef::LocalContext` entries with explicit formula payloads;
 - generated VC facts referenced by `PremiseRef::GeneratedFact`;
-- checker-owned facts, type predicates, and generated facts that already carry
-  explicit formula payload/provenance in the VC or handoff input;
 - imported facts only when the imported payload, statement fingerprint,
   required proof status, and formula context requirements are supplied by the
-  VC/handoff inputs.
+  VC/handoff inputs. The ATP projection symbol is not a substitute for the
+  imported source tuple; repeated package/module/item/status/statement tuples
+  are rejected even when they arrive under different imported symbols.
+
+Checker-owned facts and type predicates are future conditional premise
+families. Task-6 translator source keeps them fail-closed unless the VC handoff
+exposes matching explicit source classes/projections. A generic policy-builtin
+bucket is not enough for the ATP translator to claim checker-owned or
+type-predicate provenance.
 
 Unsupported premise references, conservative unknown markers, policy
 assumptions, trace-only records, cluster/reduction trace labels, definition
@@ -185,6 +193,12 @@ translation outcome, but it must not mutate the premise set.
 
 The VC goal is translated to the `AtpProblem.conjecture` formula. The
 translator records `ExpectedBackendResult::Unsat` for every task-5/6 problem.
+Task-6 source also requires the matching VC kernel handoff final-goal polarity
+to be `AssertFalseForRefutation`; any other handoff polarity fails closed
+before constructing the `AtpProblem`. The goal projection provenance binding
+and projection source identity must both use the final-goal source binding
+`goal:1`; premise-style generated, checker-owned, or local bindings cannot be
+used for the conjecture.
 Concrete encoders may later present the goal as a TPTP conjecture, a negated
 TPTP conjecture, or an SMT assertion of the negated goal, but the
 backend-neutral problem contract remains that a successful backend result must
@@ -244,8 +258,9 @@ fingerprints when their owner exposes a fingerprint field. They are not
 backend logs or trace explanations.
 
 Imported facts require package/module/item identity, statement fingerprint,
-required proof status, and formula context requirements. Missing or mismatched
-imported context fails closed.
+required proof status, and formula context requirements. For task-6 source the
+formula-context requirement is bound to the VC handoff formula-context
+fingerprint; missing or mismatched imported context fails closed.
 
 ## Failure Semantics
 
@@ -269,7 +284,16 @@ not proof results.
   declaration and soft-type payloads, implements target/status handoff gates,
   deterministic declaration/symbol-map/type-context translation, and validates
   type-guard signatures without constructing a final `AtpProblem`.
-- `deferred`: task 6 implements axiom/conjecture translation.
+- resolved `source_drift`: task 6 defines structured Rust formula projection
+  targets for VC formula refs and imported facts, implements deterministic
+  axiom/conjecture materialization, records `ExpectedBackendResult::Unsat`,
+  checks final-goal handoff polarity for `AssertFalseForRefutation`,
+  rejects duplicate premise refs and duplicate resolved formula/source
+  identities, and checks projection fingerprints/provenance payloads against
+  the matching VC kernel handoff without parsing handoff formula bytes.
+- `deferred`: checker-owned and type-predicate premise materialization remains
+  fail-closed unless the VC handoff exposes a matching explicit source
+  class/projection. `mizar-atp` must not invent a placeholder source class.
 - `deferred`: property encoding, concrete encoders, backend runner, portfolio,
   and candidate evidence extraction remain in their own module specs/tasks.
 - `external_dependency_gap`: proof-policy winner selection, witness
@@ -278,7 +302,7 @@ not proof results.
 
 ## Planned Tests
 
-Task 5/6 implementation together must add Rust coverage for:
+Task 5/6 implementation together adds Rust coverage for:
 
 - rejecting non-`NeedsAtp` VCs and stale/mismatched target handoffs;
 - missing structured formula/declaration/soft-type projections fail closed;
@@ -297,7 +321,8 @@ Task 5/6 implementation together must add Rust coverage for:
 - imported facts with missing required proof status, statement fingerprint, or
   formula-context requirements fail closed;
 - premise-order determinism and provenance completeness for local context,
-  generated, imported, checker-owned, and type facts;
+  generated, and imported facts; checker-owned and type facts stay
+  fail-closed until the VC handoff exposes matching explicit source classes;
 - soft-type facts remain represented as sorts only when lossless, otherwise as
   guards/axioms/type-context entries or unsupported profile results;
 - goal/conjecture polarity always records `ExpectedBackendResult::Unsat`;

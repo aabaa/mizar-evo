@@ -1,21 +1,28 @@
-//! Deterministic VC-to-ATP declaration translation.
+//! Deterministic VC-to-ATP problem translation.
 //!
-//! This module implements the task-5 slice specified in
-//! [translator.md](../../../doc/design/mizar-atp/en/translator.md). It builds
-//! only the declaration, symbol-map, soft-type, provenance, and target-binding
-//! handoff needed by later translator tasks; it does not materialize premise
-//! axioms or conjectures and it does not run proof search.
+//! This module implements the task-5/task-6 slices specified in
+//! [translator.md](../../../doc/design/mizar-atp/en/translator.md). It lowers
+//! structured VC projections into backend-neutral ATP problems and does not
+//! run proof search, backends, SAT solvers, or kernel acceptance checks.
 
 use crate::problem::{
     AtpDeclaration, AtpDeclarationId, AtpDeclarationKind, AtpDiagnostic, AtpFingerprint,
-    AtpFormulaTree, AtpPayload, AtpProblemError, AtpProvenance, AtpProvenanceId,
-    AtpRequiredProofStatus, AtpSourceBinding, AtpSourceRef, AtpSymbolMapEntry, AtpSymbolName,
-    AtpSymbolSource, AtpTargetBinding, AtpTerm, AtpTypeContext, AtpTypeGuard, AtpTypeGuardId,
-    EqualitySupport, LogicProfile, QuantifierPolicy, SoftTypeStrategy,
+    AtpFormula, AtpFormulaId, AtpFormulaTree, AtpPayload, AtpProblem, AtpProblemError,
+    AtpProblemParts, AtpProvenance, AtpProvenanceId, AtpRequiredProofStatus, AtpSourceBinding,
+    AtpSourceRef, AtpSymbolMapEntry, AtpSymbolName, AtpSymbolSource, AtpTargetBinding, AtpTerm,
+    AtpTypeContext, AtpTypeGuard, AtpTypeGuardId, EqualitySupport, ExpectedBackendResult,
+    LogicProfile, QuantifierPolicy, SoftTypeStrategy,
 };
 use mizar_vc::{
-    kernel_evidence_handoff::{KernelEvidenceHandoffError, VcKernelEvidenceHandoff},
-    vc_ir::{VcId, VcSet, VcStatus},
+    kernel_evidence_handoff::{
+        KernelEvidenceHandoffError, KernelFormulaEvidenceEntry, KernelFormulaSource,
+        KernelGoalPolarity, KernelImportedFactRequirement, KernelRequiredProofStatus,
+        VcKernelEvidenceHandoff,
+    },
+    vc_ir::{
+        ContextEntryId, ContextEntryKind, PremiseRef, VcFormulaRef, VcGeneratedFormulaId, VcId,
+        VcSet, VcStatus, VcText,
+    },
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -99,6 +106,33 @@ pub enum AtpSoftTypeRepresentation {
     GuardFormula(AtpFormulaTree),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum AtpFormulaProjectionTarget {
+    VcFormula(VcFormulaRef),
+    ImportedFact(VcText),
+}
+
+impl AtpFormulaProjectionTarget {
+    pub fn imported(symbol: impl Into<VcText>) -> Self {
+        Self::ImportedFact(symbol.into())
+    }
+
+    pub const fn vc_formula(formula: VcFormulaRef) -> Self {
+        Self::VcFormula(formula)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AtpFormulaProjection {
+    pub target: AtpFormulaProjectionTarget,
+    pub formula: AtpFormulaTree,
+    pub provenance: AtpProjectionProvenance,
+    pub source_identity: AtpProjectionKey,
+    pub handoff_formula_fingerprint: AtpFingerprint,
+    pub handoff_provenance_payload: Vec<u8>,
+}
+
 pub struct AtpDeclarationTranslationInput<'a> {
     pub vc_set: &'a VcSet,
     pub vc: VcId,
@@ -106,6 +140,17 @@ pub struct AtpDeclarationTranslationInput<'a> {
     pub logic_profile: LogicProfile,
     pub declaration_projections: Vec<AtpDeclarationProjection>,
     pub soft_type_projections: Vec<AtpSoftTypeProjection>,
+    pub diagnostics: Vec<AtpDiagnostic>,
+}
+
+pub struct AtpTranslationInput<'a> {
+    pub vc_set: &'a VcSet,
+    pub vc: VcId,
+    pub kernel_handoff: &'a VcKernelEvidenceHandoff,
+    pub logic_profile: LogicProfile,
+    pub declaration_projections: Vec<AtpDeclarationProjection>,
+    pub soft_type_projections: Vec<AtpSoftTypeProjection>,
+    pub formula_projections: Vec<AtpFormulaProjection>,
     pub diagnostics: Vec<AtpDiagnostic>,
 }
 
@@ -178,6 +223,43 @@ pub enum AtpTranslationError {
         section: &'static str,
         key: AtpProjectionKey,
     },
+    DuplicateFormulaProjection {
+        target: AtpFormulaProjectionTarget,
+    },
+    DuplicateFormulaProjectionIdentity {
+        identity: AtpProjectionKey,
+    },
+    MissingFormulaProjection {
+        target: AtpFormulaProjectionTarget,
+    },
+    MissingFormulaHandoffEvidence {
+        target: AtpFormulaProjectionTarget,
+    },
+    FormulaHandoffAgreement {
+        target: AtpFormulaProjectionTarget,
+    },
+    DuplicatePremiseRef {
+        premise: PremiseRef,
+    },
+    DuplicatePremiseIdentity {
+        identity: AtpProjectionKey,
+    },
+    DuplicatePremiseFormula {
+        formula: VcFormulaRef,
+    },
+    PremiseCopiesGoal {
+        formula: VcFormulaRef,
+    },
+    MissingLocalContextPremise {
+        context: ContextEntryId,
+    },
+    LocalContextPremiseWithoutFormula {
+        context: ContextEntryId,
+    },
+    UnsupportedPremiseRef {
+        premise: PremiseRef,
+        reason: &'static str,
+    },
     MissingTypeGuardProjection {
         key: AtpProjectionKey,
     },
@@ -217,6 +299,62 @@ impl fmt::Display for AtpTranslationError {
                     formatter,
                     "duplicate projection key {} in {section}",
                     key.as_str()
+                )
+            }
+            Self::DuplicateFormulaProjection { target } => {
+                write!(formatter, "duplicate formula projection for {target:?}")
+            }
+            Self::DuplicateFormulaProjectionIdentity { identity } => {
+                write!(
+                    formatter,
+                    "duplicate formula projection source identity {}",
+                    identity.as_str()
+                )
+            }
+            Self::MissingFormulaProjection { target } => {
+                write!(formatter, "missing formula projection for {target:?}")
+            }
+            Self::MissingFormulaHandoffEvidence { target } => {
+                write!(
+                    formatter,
+                    "missing kernel handoff formula evidence for {target:?}"
+                )
+            }
+            Self::FormulaHandoffAgreement { target } => {
+                write!(
+                    formatter,
+                    "formula projection does not agree with kernel handoff for {target:?}"
+                )
+            }
+            Self::DuplicatePremiseRef { premise } => {
+                write!(formatter, "duplicate premise reference {premise:?}")
+            }
+            Self::DuplicatePremiseIdentity { identity } => {
+                write!(
+                    formatter,
+                    "duplicate premise source/formula identity {}",
+                    identity.as_str()
+                )
+            }
+            Self::DuplicatePremiseFormula { formula } => {
+                write!(formatter, "duplicate premise formula reference {formula:?}")
+            }
+            Self::PremiseCopiesGoal { formula } => {
+                write!(formatter, "premise formula {formula:?} is also the VC goal")
+            }
+            Self::MissingLocalContextPremise { context } => {
+                write!(formatter, "missing local context premise {context:?}")
+            }
+            Self::LocalContextPremiseWithoutFormula { context } => {
+                write!(
+                    formatter,
+                    "local context premise {context:?} has no formula payload"
+                )
+            }
+            Self::UnsupportedPremiseRef { premise, reason } => {
+                write!(
+                    formatter,
+                    "unsupported premise reference {premise:?}: {reason}"
                 )
             }
             Self::MissingTypeGuardProjection { key } => {
@@ -304,6 +442,734 @@ pub fn translate_declarations(
     };
     validate_translation(&translation)?;
     Ok(translation)
+}
+
+pub fn translate_problem(
+    input: AtpTranslationInput<'_>,
+) -> Result<AtpProblem, AtpTranslationError> {
+    let vc_set = input.vc_set;
+    let vc_id = input.vc;
+    let kernel_handoff = input.kernel_handoff;
+    let formula_projections = input.formula_projections;
+    let declaration_translation = translate_declarations(AtpDeclarationTranslationInput {
+        vc_set,
+        vc: vc_id,
+        kernel_handoff,
+        logic_profile: input.logic_profile,
+        declaration_projections: input.declaration_projections,
+        soft_type_projections: input.soft_type_projections,
+        diagnostics: input.diagnostics,
+    })?;
+    let vc = vc_set
+        .vc(vc_id)
+        .ok_or(AtpTranslationError::UnknownVc { vc: vc_id })?;
+    let formula_projections = formula_projection_map(formula_projections)?;
+    let mut provenance = declaration_translation.provenance.clone();
+    let first_formula_provenance = next_provenance_id(provenance.len())?;
+    let (axioms, mut formula_provenance) = materialize_axioms(
+        vc,
+        &formula_projections,
+        kernel_handoff,
+        first_formula_provenance,
+    )?;
+    provenance.append(&mut formula_provenance);
+    let conjecture_provenance_id = next_provenance_id(provenance.len())?;
+    let (conjecture, conjecture_provenance) = materialize_conjecture(
+        vc.goal,
+        &formula_projections,
+        kernel_handoff,
+        AtpFormulaId::new(index_to_u32(axioms.len(), "formulas")?),
+        conjecture_provenance_id,
+    )?;
+    provenance.push(conjecture_provenance);
+
+    AtpProblem::try_new(AtpProblemParts {
+        vc_id,
+        target_binding: declaration_translation.target_binding,
+        logic_profile: declaration_translation.logic_profile,
+        expected_result: ExpectedBackendResult::Unsat,
+        declarations: declaration_translation.declarations,
+        axioms,
+        conjecture,
+        type_context: declaration_translation.type_context,
+        properties: Vec::new(),
+        symbol_map: declaration_translation.symbol_map,
+        provenance,
+        diagnostics: declaration_translation.diagnostics,
+    })
+    .map_err(Into::into)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum FormulaSourceExpectation {
+    LocalHypothesis { context: ContextEntryId },
+    CitedPremise { context: ContextEntryId },
+    GeneratedPremise { formula: VcGeneratedFormulaId },
+    ImportedFact,
+}
+
+fn formula_projection_map(
+    mut projections: Vec<AtpFormulaProjection>,
+) -> Result<BTreeMap<AtpFormulaProjectionTarget, AtpFormulaProjection>, AtpTranslationError> {
+    projections.sort_by(|left, right| {
+        left.target
+            .cmp(&right.target)
+            .then_with(|| left.source_identity.cmp(&right.source_identity))
+    });
+
+    let mut by_target = BTreeMap::new();
+    let mut by_identity = BTreeSet::new();
+    for projection in projections {
+        validate_formula_projection(&projection)?;
+        if !by_identity.insert(projection.source_identity.clone()) {
+            return Err(AtpTranslationError::DuplicateFormulaProjectionIdentity {
+                identity: projection.source_identity,
+            });
+        }
+        let target = projection.target.clone();
+        if by_target.insert(target.clone(), projection).is_some() {
+            return Err(AtpTranslationError::DuplicateFormulaProjection { target });
+        }
+    }
+    Ok(by_target)
+}
+
+fn validate_formula_projection(
+    projection: &AtpFormulaProjection,
+) -> Result<(), AtpTranslationError> {
+    if projection.source_identity.is_empty() {
+        return Err(AtpTranslationError::EmptyProjectionKey {
+            section: "formula projection source identities",
+        });
+    }
+    if let AtpFormulaProjectionTarget::ImportedFact(symbol) = &projection.target
+        && symbol.as_str().trim().is_empty()
+    {
+        return Err(AtpProblemError::EmptyField {
+            field: "formula_projection.imported_symbol",
+        }
+        .into());
+    }
+    if projection.handoff_provenance_payload.is_empty() {
+        return Err(AtpProblemError::EmptyField {
+            field: "formula_projection.handoff_provenance_payload",
+        }
+        .into());
+    }
+    validate_projection_provenance(&projection.provenance)
+}
+
+fn materialize_axioms(
+    vc: &mizar_vc::vc_ir::VcIr,
+    projections: &BTreeMap<AtpFormulaProjectionTarget, AtpFormulaProjection>,
+    handoff: &VcKernelEvidenceHandoff,
+    first_provenance_id: AtpProvenanceId,
+) -> Result<(Vec<AtpFormula>, Vec<AtpProvenance>), AtpTranslationError> {
+    let mut premise_refs = vc.premises.clone();
+    premise_refs.sort();
+    reject_duplicate_premise_refs(&premise_refs)?;
+
+    let mut axioms = Vec::new();
+    let mut provenance = Vec::new();
+    let mut source_identities = BTreeSet::new();
+    let mut formula_refs = BTreeSet::new();
+
+    for premise in premise_refs {
+        let (target, expectation, resolved_formula) = premise_projection_target(vc, &premise)?;
+        if let Some(formula) = resolved_formula
+            && !formula_refs.insert(formula)
+        {
+            return Err(AtpTranslationError::DuplicatePremiseFormula { formula });
+        }
+        if let Some(formula) = resolved_formula
+            && formula == vc.goal
+        {
+            return Err(AtpTranslationError::PremiseCopiesGoal { formula });
+        }
+        let projection = projections.get(&target).ok_or_else(|| {
+            AtpTranslationError::MissingFormulaProjection {
+                target: target.clone(),
+            }
+        })?;
+        validate_formula_source(
+            &projection.provenance.source,
+            expectation,
+            &projection.source_identity,
+            &target,
+        )?;
+        validate_formula_handoff(&target, projection, handoff, Some(expectation))?;
+        let premise_identity = premise_identity_key(&target, projection, handoff)?;
+        if !source_identities.insert(premise_identity.clone()) {
+            return Err(AtpTranslationError::DuplicatePremiseIdentity {
+                identity: premise_identity,
+            });
+        }
+
+        let provenance_id = offset_provenance_id(first_provenance_id, provenance.len())?;
+        provenance.push(AtpProvenance::new(
+            provenance_id,
+            projection.provenance.source.clone(),
+            handoff_anchor_payload(&projection.handoff_provenance_payload),
+        ));
+        axioms.push(AtpFormula::new(
+            AtpFormulaId::new(index_to_u32(axioms.len(), "formulas")?),
+            projection.formula.clone(),
+            provenance_id,
+        ));
+    }
+
+    Ok((axioms, provenance))
+}
+
+fn materialize_conjecture(
+    goal: VcFormulaRef,
+    projections: &BTreeMap<AtpFormulaProjectionTarget, AtpFormulaProjection>,
+    handoff: &VcKernelEvidenceHandoff,
+    formula_id: AtpFormulaId,
+    provenance_id: AtpProvenanceId,
+) -> Result<(AtpFormula, AtpProvenance), AtpTranslationError> {
+    let target = AtpFormulaProjectionTarget::VcFormula(goal);
+    let projection =
+        projections
+            .get(&target)
+            .ok_or_else(|| AtpTranslationError::MissingFormulaProjection {
+                target: target.clone(),
+            })?;
+    validate_goal_source(&projection.provenance.source, &projection.source_identity)?;
+    validate_formula_handoff(&target, projection, handoff, None)?;
+    Ok((
+        AtpFormula::new(formula_id, projection.formula.clone(), provenance_id),
+        AtpProvenance::new(
+            provenance_id,
+            projection.provenance.source.clone(),
+            handoff_anchor_payload(&projection.handoff_provenance_payload),
+        ),
+    ))
+}
+
+fn reject_duplicate_premise_refs(premises: &[PremiseRef]) -> Result<(), AtpTranslationError> {
+    let mut seen = BTreeSet::new();
+    for premise in premises {
+        if !seen.insert(premise.clone()) {
+            return Err(AtpTranslationError::DuplicatePremiseRef {
+                premise: premise.clone(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn premise_projection_target(
+    vc: &mizar_vc::vc_ir::VcIr,
+    premise: &PremiseRef,
+) -> Result<
+    (
+        AtpFormulaProjectionTarget,
+        FormulaSourceExpectation,
+        Option<VcFormulaRef>,
+    ),
+    AtpTranslationError,
+> {
+    match premise {
+        PremiseRef::LocalContext(context) => {
+            let entry = vc
+                .local_context
+                .entries()
+                .iter()
+                .find(|entry| entry.id == *context)
+                .ok_or(AtpTranslationError::MissingLocalContextPremise { context: *context })?;
+            let formula =
+                entry
+                    .formula
+                    .ok_or(AtpTranslationError::LocalContextPremiseWithoutFormula {
+                        context: *context,
+                    })?;
+            let expectation = if matches!(entry.kind, ContextEntryKind::CitedPremise) {
+                FormulaSourceExpectation::CitedPremise { context: *context }
+            } else {
+                FormulaSourceExpectation::LocalHypothesis { context: *context }
+            };
+            Ok((
+                AtpFormulaProjectionTarget::VcFormula(formula),
+                expectation,
+                Some(formula),
+            ))
+        }
+        PremiseRef::GeneratedFact { formula } => {
+            let VcFormulaRef::Generated(generated) = formula else {
+                return Err(AtpTranslationError::UnsupportedPremiseRef {
+                    premise: premise.clone(),
+                    reason: "generated fact premise is not a generated VC formula",
+                });
+            };
+            Ok((
+                AtpFormulaProjectionTarget::VcFormula(*formula),
+                FormulaSourceExpectation::GeneratedPremise {
+                    formula: *generated,
+                },
+                Some(*formula),
+            ))
+        }
+        PremiseRef::CheckerFact { .. } => Err(AtpTranslationError::UnsupportedPremiseRef {
+            premise: premise.clone(),
+            reason: "checker-owned premise requires an explicit handoff source class",
+        }),
+        PremiseRef::TypePredicate { .. } => Err(AtpTranslationError::UnsupportedPremiseRef {
+            premise: premise.clone(),
+            reason: "type-predicate premise requires an explicit handoff source class",
+        }),
+        PremiseRef::ImportedFact { symbol } => Ok((
+            AtpFormulaProjectionTarget::ImportedFact(symbol.clone()),
+            FormulaSourceExpectation::ImportedFact,
+            None,
+        )),
+        PremiseRef::ConservativeUnknown { .. } => Err(AtpTranslationError::UnsupportedPremiseRef {
+            premise: premise.clone(),
+            reason: "conservative unknown premise has no formula payload",
+        }),
+        _ => Err(AtpTranslationError::UnsupportedPremiseRef {
+            premise: premise.clone(),
+            reason: "premise has no explicit ATP formula projection binding",
+        }),
+    }
+}
+
+fn validate_formula_source(
+    source: &AtpSourceRef,
+    expectation: FormulaSourceExpectation,
+    source_identity: &AtpProjectionKey,
+    target: &AtpFormulaProjectionTarget,
+) -> Result<(), AtpTranslationError> {
+    let valid = match (expectation, source) {
+        (
+            FormulaSourceExpectation::LocalHypothesis { context },
+            AtpSourceRef::LocalHypothesis(binding),
+        ) => source_binding_matches(
+            binding,
+            source_identity,
+            &format!("local-context:{}", context.index() + 1),
+        ),
+        (
+            FormulaSourceExpectation::CitedPremise { context },
+            AtpSourceRef::CitedPremise(binding),
+        ) => source_binding_matches(
+            binding,
+            source_identity,
+            &format!("cited-premise:{}", context.index() + 1),
+        ),
+        (
+            FormulaSourceExpectation::GeneratedPremise { formula },
+            AtpSourceRef::GeneratedVcFact(binding),
+        ) => source_binding_matches(
+            binding,
+            source_identity,
+            &format!("generated:{}", formula.index() + 1),
+        ),
+        (
+            FormulaSourceExpectation::ImportedFact,
+            AtpSourceRef::ImportedAxiom { .. } | AtpSourceRef::ImportedTheorem { .. },
+        ) => {
+            let AtpFormulaProjectionTarget::ImportedFact(symbol) = target else {
+                return Err(AtpTranslationError::FormulaHandoffAgreement {
+                    target: target.clone(),
+                });
+            };
+            source_identity.as_str() == format!("imported:{}", symbol.as_str())
+        }
+        _ => false,
+    };
+    if valid {
+        Ok(())
+    } else {
+        Err(AtpProblemError::UnsupportedProfileFeature {
+            feature: "formula provenance source class",
+        }
+        .into())
+    }
+}
+
+fn validate_goal_source(
+    source: &AtpSourceRef,
+    source_identity: &AtpProjectionKey,
+) -> Result<(), AtpTranslationError> {
+    if matches!(
+        source,
+        AtpSourceRef::GeneratedVcFact(binding)
+            if source_binding_matches(binding, source_identity, "goal:1")
+    ) {
+        Ok(())
+    } else {
+        Err(AtpProblemError::UnsupportedProfileFeature {
+            feature: "conjecture provenance source class",
+        }
+        .into())
+    }
+}
+
+fn handoff_anchor_payload(payload: &[u8]) -> AtpPayload {
+    AtpPayload::new(format!("mizar-vc-handoff-provenance:{}", hex(payload)))
+}
+
+fn premise_identity_key(
+    target: &AtpFormulaProjectionTarget,
+    projection: &AtpFormulaProjection,
+    handoff: &VcKernelEvidenceHandoff,
+) -> Result<AtpProjectionKey, AtpTranslationError> {
+    if matches!(target, AtpFormulaProjectionTarget::ImportedFact(_)) {
+        Ok(imported_identity_key(&imported_projection_metadata(
+            projection, handoff,
+        )?))
+    } else {
+        Ok(projection.source_identity.clone())
+    }
+}
+
+fn source_binding_matches(
+    binding: &AtpSourceBinding,
+    source_identity: &AtpProjectionKey,
+    expected: &str,
+) -> bool {
+    binding.as_str() == expected && source_identity.as_str() == expected
+}
+
+fn validate_formula_handoff(
+    target: &AtpFormulaProjectionTarget,
+    projection: &AtpFormulaProjection,
+    handoff: &VcKernelEvidenceHandoff,
+    expectation: Option<FormulaSourceExpectation>,
+) -> Result<(), AtpTranslationError> {
+    match target {
+        AtpFormulaProjectionTarget::VcFormula(formula) => {
+            if expectation.is_none() {
+                let final_goal = handoff.canonical_evidence().final_goal();
+                if final_goal.producer_formula_ref != *formula
+                    || final_goal.polarity != KernelGoalPolarity::AssertFalseForRefutation
+                {
+                    return Err(AtpTranslationError::FormulaHandoffAgreement {
+                        target: target.clone(),
+                    });
+                }
+                validate_handoff_fingerprint_and_payload(
+                    target,
+                    projection,
+                    &final_goal.formula_fingerprint,
+                    final_goal.provenance_id,
+                    handoff,
+                )
+            } else {
+                let entry = handoff
+                    .canonical_evidence()
+                    .formula_evidence()
+                    .iter()
+                    .find(|entry| {
+                        entry.producer_formula_ref() == Some(*formula)
+                            && expectation.is_some_and(|expected| {
+                                kernel_source_matches(entry.source(), expected)
+                            })
+                    })
+                    .ok_or_else(|| AtpTranslationError::MissingFormulaHandoffEvidence {
+                        target: target.clone(),
+                    })?;
+                validate_entry_handoff_agreement(target, projection, entry, handoff)
+            }
+        }
+        AtpFormulaProjectionTarget::ImportedFact(_) => {
+            let imported = imported_projection_metadata(projection, handoff)?;
+            let imported_matches = handoff
+                .canonical_evidence()
+                .formula_evidence()
+                .iter()
+                .filter(|entry| {
+                    imported_source_matches(entry.source(), &imported)
+                        && formula_fingerprint_matches(
+                            &projection.handoff_formula_fingerprint,
+                            entry.formula_fingerprint(),
+                        )
+                        && handoff_provenance_payload(handoff, entry.provenance_id())
+                            == Some(projection.handoff_provenance_payload.as_slice())
+                })
+                .count();
+            match imported_matches {
+                1 => Ok(()),
+                0 => Err(AtpTranslationError::MissingFormulaHandoffEvidence {
+                    target: target.clone(),
+                }),
+                _ => Err(AtpTranslationError::FormulaHandoffAgreement {
+                    target: target.clone(),
+                }),
+            }
+        }
+    }
+}
+
+fn validate_entry_handoff_agreement(
+    target: &AtpFormulaProjectionTarget,
+    projection: &AtpFormulaProjection,
+    entry: &KernelFormulaEvidenceEntry,
+    handoff: &VcKernelEvidenceHandoff,
+) -> Result<(), AtpTranslationError> {
+    validate_handoff_fingerprint_and_payload(
+        target,
+        projection,
+        entry.formula_fingerprint(),
+        entry.provenance_id(),
+        handoff,
+    )
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+enum ImportedProjectionClass {
+    Axiom,
+    Theorem,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct ImportedProjectionMetadata {
+    class: ImportedProjectionClass,
+    requirement: KernelImportedFactRequirement,
+}
+
+struct ImportedProjectionFields<'a> {
+    package: &'a AtpSourceBinding,
+    module: &'a AtpSourceBinding,
+    item: &'a AtpSourceBinding,
+    statement_fingerprint: &'a AtpFingerprint,
+    required_status: &'a AtpRequiredProofStatus,
+    context_requirement: &'a AtpSourceBinding,
+}
+
+fn imported_projection_metadata(
+    projection: &AtpFormulaProjection,
+    handoff: &VcKernelEvidenceHandoff,
+) -> Result<ImportedProjectionMetadata, AtpTranslationError> {
+    match &projection.provenance.source {
+        AtpSourceRef::ImportedAxiom {
+            package,
+            module,
+            item,
+            statement_fingerprint,
+            required_status,
+            context_requirement,
+        } => imported_metadata(
+            ImportedProjectionClass::Axiom,
+            ImportedProjectionFields {
+                package,
+                module,
+                item,
+                statement_fingerprint,
+                required_status,
+                context_requirement,
+            },
+            handoff,
+        ),
+        AtpSourceRef::ImportedTheorem {
+            package,
+            module,
+            item,
+            statement_fingerprint,
+            required_status,
+            context_requirement,
+        } => imported_metadata(
+            ImportedProjectionClass::Theorem,
+            ImportedProjectionFields {
+                package,
+                module,
+                item,
+                statement_fingerprint,
+                required_status,
+                context_requirement,
+            },
+            handoff,
+        ),
+        _ => Err(AtpProblemError::UnsupportedProfileFeature {
+            feature: "imported formula provenance source class",
+        }
+        .into()),
+    }
+}
+
+fn imported_metadata(
+    class: ImportedProjectionClass,
+    fields: ImportedProjectionFields<'_>,
+    handoff: &VcKernelEvidenceHandoff,
+) -> Result<ImportedProjectionMetadata, AtpTranslationError> {
+    let context = handoff.formula_context_requirements().ok_or_else(|| {
+        AtpTranslationError::MissingFormulaHandoffEvidence {
+            target: AtpFormulaProjectionTarget::ImportedFact(VcText::new("<context>")),
+        }
+    })?;
+    let expected_context = formula_context_binding(context);
+    if fields.context_requirement.as_str() != expected_context {
+        return Err(AtpProblemError::UnsupportedProfileFeature {
+            feature: "imported formula context requirement",
+        }
+        .into());
+    }
+    Ok(ImportedProjectionMetadata {
+        class,
+        requirement: KernelImportedFactRequirement {
+            imported_fact_id: 0,
+            package_id: fields.package.as_str().as_bytes().to_vec(),
+            module_path: fields.module.as_str().as_bytes().to_vec(),
+            exported_item_id: fields.item.as_str().as_bytes().to_vec(),
+            statement_fingerprint: mizar_vc::kernel_evidence_handoff::KernelEvidenceFingerprint {
+                algorithm_id: fields.statement_fingerprint.algorithm_id(),
+                digest: fields.statement_fingerprint.digest().to_vec(),
+            },
+            required_proof_status: required_kernel_status(fields.required_status)?,
+        },
+    })
+}
+
+fn formula_context_binding(
+    context: &mizar_vc::kernel_evidence_handoff::KernelFormulaContextRequirements,
+) -> String {
+    format!(
+        "mizar-vc-kernel-formula-context:{}:{}",
+        context.provenance_fingerprint.algorithm_id,
+        hex(&context.provenance_fingerprint.digest)
+    )
+}
+
+fn required_kernel_status(
+    status: &AtpRequiredProofStatus,
+) -> Result<KernelRequiredProofStatus, AtpTranslationError> {
+    match status.as_str() {
+        "KernelVerified" => Ok(KernelRequiredProofStatus::KernelVerified),
+        "DischargedBuiltin" => Ok(KernelRequiredProofStatus::DischargedBuiltin),
+        "ExternallyAttestedPolicyPermitted" => {
+            Ok(KernelRequiredProofStatus::ExternallyAttestedPolicyPermitted)
+        }
+        _ => Err(AtpProblemError::UnsupportedProfileFeature {
+            feature: "imported required proof status",
+        }
+        .into()),
+    }
+}
+
+fn validate_handoff_fingerprint_and_payload(
+    target: &AtpFormulaProjectionTarget,
+    projection: &AtpFormulaProjection,
+    fingerprint: &mizar_vc::kernel_evidence_handoff::KernelEvidenceFingerprint,
+    provenance_id: u32,
+    handoff: &VcKernelEvidenceHandoff,
+) -> Result<(), AtpTranslationError> {
+    if !formula_fingerprint_matches(&projection.handoff_formula_fingerprint, fingerprint)
+        || handoff_provenance_payload(handoff, provenance_id)
+            != Some(projection.handoff_provenance_payload.as_slice())
+    {
+        return Err(AtpTranslationError::FormulaHandoffAgreement {
+            target: target.clone(),
+        });
+    }
+    Ok(())
+}
+
+fn kernel_source_matches(
+    source: &KernelFormulaSource,
+    expectation: FormulaSourceExpectation,
+) -> bool {
+    match expectation {
+        FormulaSourceExpectation::LocalHypothesis { context } => {
+            matches!(
+                source,
+                KernelFormulaSource::LocalHypothesis { local_context_id }
+                    if *local_context_id == (context.index() + 1) as u32
+            )
+        }
+        FormulaSourceExpectation::CitedPremise { context } => {
+            matches!(
+                source,
+                KernelFormulaSource::CitedPremise { local_context_id }
+                    if *local_context_id == (context.index() + 1) as u32
+            )
+        }
+        FormulaSourceExpectation::GeneratedPremise { formula } => {
+            matches!(
+                source,
+                KernelFormulaSource::GeneratedVcFact { vc_fact_id }
+                    if *vc_fact_id == (formula.index() + 1) as u32
+            )
+        }
+        FormulaSourceExpectation::ImportedFact => false,
+    }
+}
+
+fn imported_source_matches(
+    source: &KernelFormulaSource,
+    expected: &ImportedProjectionMetadata,
+) -> bool {
+    match (source, expected.class) {
+        (KernelFormulaSource::AcceptedImportedAxiom(actual), ImportedProjectionClass::Axiom)
+        | (
+            KernelFormulaSource::AcceptedImportedTheorem(actual),
+            ImportedProjectionClass::Theorem,
+        ) => imported_requirement_matches(actual, &expected.requirement),
+        _ => false,
+    }
+}
+
+fn imported_requirement_matches(
+    actual: &KernelImportedFactRequirement,
+    expected: &KernelImportedFactRequirement,
+) -> bool {
+    actual.package_id == expected.package_id
+        && actual.module_path == expected.module_path
+        && actual.exported_item_id == expected.exported_item_id
+        && actual.statement_fingerprint == expected.statement_fingerprint
+        && actual.required_proof_status == expected.required_proof_status
+}
+
+fn imported_identity_key(metadata: &ImportedProjectionMetadata) -> AtpProjectionKey {
+    let requirement = &metadata.requirement;
+    AtpProjectionKey::new(format!(
+        "imported-source:{}:pkg={}:module={}:item={}:statement={}:{}:status={}",
+        imported_class_label(metadata.class),
+        hex(&requirement.package_id),
+        hex(&requirement.module_path),
+        hex(&requirement.exported_item_id),
+        requirement.statement_fingerprint.algorithm_id,
+        hex(&requirement.statement_fingerprint.digest),
+        kernel_required_status_label(requirement.required_proof_status),
+    ))
+}
+
+fn imported_class_label(class: ImportedProjectionClass) -> &'static str {
+    match class {
+        ImportedProjectionClass::Axiom => "axiom",
+        ImportedProjectionClass::Theorem => "theorem",
+    }
+}
+
+fn kernel_required_status_label(status: KernelRequiredProofStatus) -> &'static str {
+    match status {
+        KernelRequiredProofStatus::KernelVerified => "KernelVerified",
+        KernelRequiredProofStatus::DischargedBuiltin => "DischargedBuiltin",
+        KernelRequiredProofStatus::ExternallyAttestedPolicyPermitted => {
+            "ExternallyAttestedPolicyPermitted"
+        }
+        _ => "Unknown",
+    }
+}
+
+fn formula_fingerprint_matches(
+    projection: &AtpFingerprint,
+    handoff: &mizar_vc::kernel_evidence_handoff::KernelEvidenceFingerprint,
+) -> bool {
+    projection.algorithm_id() == handoff.algorithm_id
+        && projection.digest() == handoff.digest.as_slice()
+}
+
+fn handoff_provenance_payload(
+    handoff: &VcKernelEvidenceHandoff,
+    provenance_id: u32,
+) -> Option<&[u8]> {
+    handoff
+        .canonical_evidence()
+        .provenance()
+        .iter()
+        .find(|provenance| provenance.provenance_id == provenance_id)
+        .map(|provenance| provenance.payload.as_slice())
 }
 
 fn sort_declaration_projections(
@@ -974,16 +1840,18 @@ mod tests {
         kernel_evidence_handoff::{
             KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, KernelClauseTautologyPolicy,
             KernelEvidenceFingerprint, KernelEvidenceHandoffInput, KernelEvidenceProfile,
-            KernelFormulaPayload, KernelFormulaProjection, build_kernel_evidence_handoff,
+            KernelFormulaContextRequirements, KernelFormulaPayload, KernelFormulaProjection,
+            KernelImportedFactRequirement, KernelImportedFormulaClass,
+            KernelImportedFormulaPayload, KernelRequiredProofStatus, build_kernel_evidence_handoff,
         },
         vc_ir::{
             AnchorCompleteness, AnchorIngredient, AnchorLabel, AnchorLabelRole, AnchorOwner,
             AnchorUnavailableReason, CanonicalSortKey, ContextEntry, ContextEntryId,
             ContextEntryKind, GenerationSchemaVersion, HashMarker, LocalContext, PremiseRef,
-            SeedAccounting, SeedOriginRef, SeedVcMapping, VcFormulaRef, VcGeneratedFormula,
-            VcGeneratedFormulaId, VcGeneratedFormulaKind, VcGeneratedFormulaShape, VcIr, VcKind,
-            VcModuleRef, VcProvenance, VcProvenancePhase, VcSchemaVersion, VcSet, VcSetParts,
-            VcSourceRef, VcText,
+            PremiseRestriction, ProofHint, SeedAccounting, SeedOriginRef, SeedVcMapping,
+            VcFormulaRef, VcGeneratedFormula, VcGeneratedFormulaId, VcGeneratedFormulaKind,
+            VcGeneratedFormulaShape, VcIr, VcKind, VcModuleRef, VcProvenance, VcProvenancePhase,
+            VcSchemaVersion, VcSet, VcSetParts, VcSourceRef, VcText,
         },
     };
     use std::collections::BTreeSet;
@@ -1500,6 +2368,824 @@ mod tests {
         ));
     }
 
+    #[test]
+    fn translates_axioms_and_conjecture_with_unsat_polarity() {
+        let set = fixture_set(VcStatus::NeedsAtp, "sample");
+        let hinted_handoff = handoff(&set);
+        let mut input = basic_problem_input(&set, &hinted_handoff);
+        input.formula_projections[0].provenance.payload =
+            AtpPayload::new("caller-selected-axiom-provenance");
+        input.formula_projections[1].provenance.payload =
+            AtpPayload::new("caller-selected-goal-provenance");
+        let problem = translate_problem(input).expect("problem");
+
+        assert_eq!(problem.vc_id(), VcId::new(0));
+        assert_eq!(problem.expected_result(), ExpectedBackendResult::Unsat);
+        assert_eq!(problem.axioms().len(), 1);
+        assert_eq!(
+            problem.axioms()[0].formula(),
+            Some(&AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new())))
+        );
+        assert_eq!(problem.conjecture().formula(), Some(&AtpFormulaTree::False));
+        assert_eq!(problem.properties(), []);
+        assert_eq!(
+            problem.provenance()[1].payload().as_str(),
+            "mizar-vc-handoff-provenance:70726f76656e616e63652d30"
+        );
+        assert_eq!(
+            problem.provenance()[2].payload().as_str(),
+            "mizar-vc-handoff-provenance:70726f76656e616e63652d31"
+        );
+        assert!(problem.debug_text().contains("expected-result: Unsat"));
+    }
+
+    #[test]
+    fn shuffled_formula_projection_inputs_have_identical_problem_output() {
+        let set = fixture_set(VcStatus::NeedsAtp, "sample");
+        let handoff = handoff(&set);
+        let first = basic_problem_input(&set, &handoff);
+        let mut second = basic_problem_input(&set, &handoff);
+        second.formula_projections.reverse();
+
+        assert_eq!(
+            translate_problem(first).expect("first").debug_text(),
+            translate_problem(second).expect("second").debug_text()
+        );
+    }
+
+    #[test]
+    fn translate_problem_rejects_non_needs_atp_and_mismatched_handoff() {
+        let open_set = fixture_set(VcStatus::Open, "sample");
+        let open_handoff = handoff(&open_set);
+        assert!(matches!(
+            translate_problem(basic_problem_input(&open_set, &open_handoff))
+                .expect_err("non-NeedsAtp"),
+            AtpTranslationError::NonNeedsAtpStatus {
+                status: VcStatus::Open,
+                ..
+            }
+        ));
+
+        let handoff_set = fixture_set(VcStatus::NeedsAtp, "left");
+        let input_set = fixture_set(VcStatus::NeedsAtp, "right");
+        let stale_handoff = handoff(&handoff_set);
+        assert!(matches!(
+            translate_problem(basic_problem_input(&input_set, &stale_handoff))
+                .expect_err("stale handoff"),
+            AtpTranslationError::MismatchedTargetHandoff { .. }
+        ));
+    }
+
+    #[test]
+    fn missing_malformed_and_duplicate_formula_projections_fail_closed() {
+        let set = fixture_set(VcStatus::NeedsAtp, "sample");
+        let handoff = handoff(&set);
+        let mut missing_goal = basic_problem_input(&set, &handoff);
+        missing_goal.formula_projections.pop();
+        assert!(matches!(
+            translate_problem(missing_goal).expect_err("missing goal projection"),
+            AtpTranslationError::MissingFormulaProjection { .. }
+        ));
+
+        let mut duplicate_target = basic_problem_input(&set, &handoff);
+        let mut duplicate_projection = local_formula_projection(AtpFormulaTree::True);
+        duplicate_projection.source_identity = AtpProjectionKey::new("local-context:duplicate");
+        duplicate_target
+            .formula_projections
+            .push(duplicate_projection);
+        assert!(matches!(
+            translate_problem(duplicate_target).expect_err("duplicate target"),
+            AtpTranslationError::DuplicateFormulaProjection { .. }
+        ));
+
+        let mut duplicate_identity = basic_problem_input(&set, &handoff);
+        duplicate_identity.formula_projections[1].source_identity = duplicate_identity
+            .formula_projections[0]
+            .source_identity
+            .clone();
+        assert!(matches!(
+            translate_problem(duplicate_identity).expect_err("duplicate source identity"),
+            AtpTranslationError::DuplicateFormulaProjectionIdentity { .. }
+        ));
+
+        let mut empty_handoff_payload = basic_problem_input(&set, &handoff);
+        empty_handoff_payload.formula_projections[0]
+            .handoff_provenance_payload
+            .clear();
+        assert!(matches!(
+            translate_problem(empty_handoff_payload).expect_err("empty handoff payload"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::EmptyField {
+                    field: "formula_projection.handoff_provenance_payload"
+                }
+            }
+        ));
+
+        let mut empty_identity = basic_problem_input(&set, &handoff);
+        empty_identity.formula_projections[0].source_identity = AtpProjectionKey::new("");
+        assert!(matches!(
+            translate_problem(empty_identity).expect_err("empty source identity"),
+            AtpTranslationError::EmptyProjectionKey {
+                section: "formula projection source identities"
+            }
+        ));
+
+        let mut empty_provenance_payload = basic_problem_input(&set, &handoff);
+        empty_provenance_payload.formula_projections[0]
+            .provenance
+            .payload = AtpPayload::new("");
+        assert!(matches!(
+            translate_problem(empty_provenance_payload)
+                .expect_err("empty formula provenance payload"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::EmptyField {
+                    field: "projection.provenance.payload"
+                }
+            }
+        ));
+
+        let mut empty_provenance_source = basic_problem_input(&set, &handoff);
+        empty_provenance_source.formula_projections[0]
+            .provenance
+            .source = AtpSourceRef::LocalHypothesis(AtpSourceBinding::new(""));
+        assert!(matches!(
+            translate_problem(empty_provenance_source)
+                .expect_err("empty formula provenance source"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::EmptyField {
+                    field: "projection.provenance.source"
+                }
+            }
+        ));
+
+        let imported_set = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "empty-imported-symbol",
+            vec![PremiseRef::ImportedFact {
+                symbol: VcText::new("Imported::A1"),
+            }],
+            None,
+        );
+        let imported_handoff = handoff_with_imported(&imported_set);
+        let mut empty_symbol = imported_problem_input(&imported_set, &imported_handoff);
+        empty_symbol.formula_projections[0].target =
+            AtpFormulaProjectionTarget::ImportedFact(VcText::new(""));
+        assert!(matches!(
+            translate_problem(empty_symbol).expect_err("empty imported symbol"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::EmptyField {
+                    field: "formula_projection.imported_symbol"
+                }
+            }
+        ));
+    }
+
+    #[test]
+    fn formula_handoff_fingerprint_mismatch_fails_closed() {
+        let set = fixture_set(VcStatus::NeedsAtp, "sample");
+        let base_handoff = handoff(&set);
+        let mut input = basic_problem_input(&set, &base_handoff);
+        input.formula_projections[0].handoff_formula_fingerprint =
+            AtpFingerprint::new(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"wrong".to_vec())
+                .expect("fingerprint");
+
+        assert!(matches!(
+            translate_problem(input).expect_err("handoff mismatch"),
+            AtpTranslationError::FormulaHandoffAgreement { .. }
+        ));
+
+        let mut payload_mismatch = basic_problem_input(&set, &base_handoff);
+        payload_mismatch.formula_projections[0].handoff_provenance_payload =
+            b"wrong-provenance".to_vec();
+        assert!(matches!(
+            translate_problem(payload_mismatch).expect_err("handoff payload mismatch"),
+            AtpTranslationError::FormulaHandoffAgreement { .. }
+        ));
+
+        let mut wrong_local_source = basic_problem_input(&set, &base_handoff);
+        wrong_local_source.formula_projections[0].provenance.source =
+            AtpSourceRef::LocalHypothesis(AtpSourceBinding::new("local-context:99"));
+        assert!(matches!(
+            translate_problem(wrong_local_source).expect_err("wrong local source binding"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::UnsupportedProfileFeature {
+                    feature: "formula provenance source class"
+                }
+            }
+        ));
+
+        let mut wrong_goal_source_class = basic_problem_input(&set, &base_handoff);
+        wrong_goal_source_class.formula_projections[1]
+            .provenance
+            .source = AtpSourceRef::LocalHypothesis(AtpSourceBinding::new("goal:1"));
+        assert!(matches!(
+            translate_problem(wrong_goal_source_class).expect_err("wrong goal source class"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::UnsupportedProfileFeature {
+                    feature: "conjecture provenance source class"
+                }
+            }
+        ));
+
+        let mut checker_goal_source = basic_problem_input(&set, &base_handoff);
+        checker_goal_source.formula_projections[1].provenance.source =
+            AtpSourceRef::CheckerOwnedFact(AtpSourceBinding::new("goal:1"));
+        assert!(matches!(
+            translate_problem(checker_goal_source).expect_err("checker-owned goal source"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::UnsupportedProfileFeature {
+                    feature: "conjecture provenance source class"
+                }
+            }
+        ));
+
+        let mut wrong_goal_binding = basic_problem_input(&set, &base_handoff);
+        wrong_goal_binding.formula_projections[1].provenance.source =
+            AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new("generated:2"));
+        wrong_goal_binding.formula_projections[1].source_identity =
+            AtpProjectionKey::new("generated:2");
+        assert!(matches!(
+            translate_problem(wrong_goal_binding).expect_err("wrong goal binding"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::UnsupportedProfileFeature {
+                    feature: "conjecture provenance source class"
+                }
+            }
+        ));
+
+        let mut wrong_goal_identity = basic_problem_input(&set, &base_handoff);
+        wrong_goal_identity.formula_projections[1].source_identity =
+            AtpProjectionKey::new("goal:spoof");
+        assert!(matches!(
+            translate_problem(wrong_goal_identity).expect_err("wrong goal source identity"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::UnsupportedProfileFeature {
+                    feature: "conjecture provenance source class"
+                }
+            }
+        ));
+
+        let mut wrong_goal_fingerprint = basic_problem_input(&set, &base_handoff);
+        wrong_goal_fingerprint.formula_projections[1].handoff_formula_fingerprint =
+            AtpFingerprint::new(
+                KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                b"wrong-goal".to_vec(),
+            )
+            .expect("fingerprint");
+        assert!(matches!(
+            translate_problem(wrong_goal_fingerprint).expect_err("wrong goal fingerprint"),
+            AtpTranslationError::FormulaHandoffAgreement { .. }
+        ));
+
+        let mut wrong_goal_payload = basic_problem_input(&set, &base_handoff);
+        wrong_goal_payload.formula_projections[1].handoff_provenance_payload =
+            b"wrong-goal-provenance".to_vec();
+        assert!(matches!(
+            translate_problem(wrong_goal_payload).expect_err("wrong goal payload"),
+            AtpTranslationError::FormulaHandoffAgreement { .. }
+        ));
+
+        let generated_set = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "generated-source-mismatch",
+            vec![
+                PremiseRef::LocalContext(ContextEntryId::new(0)),
+                PremiseRef::GeneratedFact {
+                    formula: VcFormulaRef::Generated(VcGeneratedFormulaId::new(2)),
+                },
+            ],
+            None,
+        );
+        let generated_handoff = handoff(&generated_set);
+        let mut wrong_generated_source =
+            two_premise_problem_input(&generated_set, &generated_handoff);
+        wrong_generated_source.formula_projections[2]
+            .provenance
+            .source = AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new("generated:99"));
+        wrong_generated_source.formula_projections[2].source_identity =
+            AtpProjectionKey::new("generated:99");
+        assert!(matches!(
+            translate_problem(wrong_generated_source).expect_err("wrong generated source"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::UnsupportedProfileFeature {
+                    feature: "formula provenance source class"
+                }
+            }
+        ));
+
+        let cited_set = fixture_set_with_local_entry_kind(
+            VcStatus::NeedsAtp,
+            "cited-source-mismatch",
+            vec![PremiseRef::LocalContext(ContextEntryId::new(0))],
+            None,
+            ContextEntryKind::CitedPremise,
+        );
+        let cited_handoff = handoff(&cited_set);
+        let mut cited_input = basic_problem_input(&cited_set, &cited_handoff);
+        cited_input.formula_projections[0] =
+            cited_formula_projection(AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new())));
+        translate_problem(cited_input).expect("cited premise source");
+
+        let mut wrong_cited_source = basic_problem_input(&cited_set, &cited_handoff);
+        wrong_cited_source.formula_projections[0] =
+            cited_formula_projection(AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new())));
+        wrong_cited_source.formula_projections[0].provenance.source =
+            AtpSourceRef::CitedPremise(AtpSourceBinding::new("cited-premise:99"));
+        wrong_cited_source.formula_projections[0].source_identity =
+            AtpProjectionKey::new("cited-premise:99");
+        assert!(matches!(
+            translate_problem(wrong_cited_source).expect_err("wrong cited source"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::UnsupportedProfileFeature {
+                    feature: "formula provenance source class"
+                }
+            }
+        ));
+    }
+
+    #[test]
+    fn unsupported_formula_profile_features_are_not_silently_reprofiled() {
+        let set = fixture_set(VcStatus::NeedsAtp, "sample");
+        let handoff = handoff(&set);
+        let mut input = basic_problem_input(&set, &handoff);
+        input.logic_profile = profile_without_equality();
+        input.declaration_projections = vec![declaration_projection(
+            "fn-a",
+            "a",
+            AtpDeclarationKind::Function,
+            0,
+        )];
+        input.formula_projections[0].formula = AtpFormulaTree::Equality {
+            left: AtpTerm::Function {
+                function: AtpSymbolName::new("a"),
+                arguments: Vec::new(),
+            },
+            right: AtpTerm::Function {
+                function: AtpSymbolName::new("a"),
+                arguments: Vec::new(),
+            },
+        };
+
+        assert!(matches!(
+            translate_problem(input).expect_err("unsupported equality"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::UnsupportedProfileFeature {
+                    feature: "equality"
+                }
+            }
+        ));
+    }
+
+    #[test]
+    fn duplicate_premise_refs_and_formula_identities_fail_closed() {
+        let duplicate_ref_set = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "dup-ref",
+            vec![
+                PremiseRef::LocalContext(ContextEntryId::new(0)),
+                PremiseRef::LocalContext(ContextEntryId::new(0)),
+            ],
+            None,
+        );
+        let duplicate_ref_handoff = handoff(&duplicate_ref_set);
+        assert!(matches!(
+            translate_problem(basic_problem_input(
+                &duplicate_ref_set,
+                &duplicate_ref_handoff
+            ))
+            .expect_err("duplicate premise ref"),
+            AtpTranslationError::DuplicatePremiseRef { .. }
+        ));
+
+        let duplicate_formula_set = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "dup-formula",
+            vec![
+                PremiseRef::LocalContext(ContextEntryId::new(0)),
+                PremiseRef::GeneratedFact {
+                    formula: VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+                },
+            ],
+            None,
+        );
+        let duplicate_formula_handoff = handoff(&duplicate_formula_set);
+        assert!(matches!(
+            translate_problem(basic_problem_input(
+                &duplicate_formula_set,
+                &duplicate_formula_handoff
+            ))
+            .expect_err("duplicate formula ref"),
+            AtpTranslationError::DuplicatePremiseFormula { .. }
+        ));
+    }
+
+    #[test]
+    fn premise_formula_must_not_copy_goal_into_axioms() {
+        let generated_goal_premise_set = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "goal-generated-premise",
+            vec![PremiseRef::GeneratedFact {
+                formula: VcFormulaRef::Generated(VcGeneratedFormulaId::new(1)),
+            }],
+            None,
+        );
+        let generated_goal_handoff = handoff(&generated_goal_premise_set);
+        assert!(matches!(
+            translate_problem(basic_problem_input(
+                &generated_goal_premise_set,
+                &generated_goal_handoff
+            ))
+            .expect_err("goal copied as generated premise"),
+            AtpTranslationError::PremiseCopiesGoal { .. }
+        ));
+
+        let local_goal_premise_set = fixture_set_with_local_formula(
+            VcStatus::NeedsAtp,
+            "goal-local-premise",
+            vec![PremiseRef::LocalContext(ContextEntryId::new(0))],
+            None,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(1)),
+        );
+        let local_goal_handoff = handoff(&local_goal_premise_set);
+        assert!(matches!(
+            translate_problem(basic_problem_input(
+                &local_goal_premise_set,
+                &local_goal_handoff
+            ))
+            .expect_err("goal copied as local premise"),
+            AtpTranslationError::PremiseCopiesGoal { .. }
+        ));
+    }
+
+    #[test]
+    fn unsupported_checker_owned_and_type_predicate_premises_fail_closed() {
+        for premise in [
+            PremiseRef::CheckerFact {
+                formula: mizar_core::core_ir::CoreFormulaId::new(0),
+            },
+            PremiseRef::TypePredicate {
+                formula: mizar_core::core_ir::CoreFormulaId::new(0),
+            },
+        ] {
+            let set = fixture_set(VcStatus::NeedsAtp, "unsupported");
+            let vc = set.vc(VcId::new(0)).expect("vc");
+            assert!(matches!(
+                premise_projection_target(vc, &premise).expect_err("unsupported premise family"),
+                AtpTranslationError::UnsupportedPremiseRef { .. }
+            ));
+        }
+
+        let unsupported_set = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "unsupported-public",
+            vec![PremiseRef::CheckerFact {
+                formula: mizar_core::core_ir::CoreFormulaId::new(0),
+            }],
+            None,
+        );
+        let valid_set = fixture_set(VcStatus::NeedsAtp, "unsupported-public");
+        let valid_handoff = handoff(&valid_set);
+        assert!(matches!(
+            translate_problem(basic_problem_input(&unsupported_set, &valid_handoff))
+                .expect_err("public translator boundary fails closed"),
+            AtpTranslationError::MismatchedTargetHandoff { .. }
+        ));
+    }
+
+    #[test]
+    fn generated_fact_premises_materialize_and_premise_order_is_canonical() {
+        let first = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "generated-order",
+            vec![
+                PremiseRef::GeneratedFact {
+                    formula: VcFormulaRef::Generated(VcGeneratedFormulaId::new(2)),
+                },
+                PremiseRef::LocalContext(ContextEntryId::new(0)),
+            ],
+            None,
+        );
+        let second = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "generated-order",
+            vec![
+                PremiseRef::LocalContext(ContextEntryId::new(0)),
+                PremiseRef::GeneratedFact {
+                    formula: VcFormulaRef::Generated(VcGeneratedFormulaId::new(2)),
+                },
+            ],
+            None,
+        );
+        let first_handoff = handoff(&first);
+        let second_handoff = handoff(&second);
+        let first_problem =
+            translate_problem(two_premise_problem_input(&first, &first_handoff)).expect("first");
+        let second_problem =
+            translate_problem(two_premise_problem_input(&second, &second_handoff)).expect("second");
+
+        assert_eq!(
+            first_problem
+                .axioms()
+                .iter()
+                .map(|axiom| axiom.formula().cloned())
+                .collect::<Vec<_>>(),
+            second_problem
+                .axioms()
+                .iter()
+                .map(|axiom| axiom.formula().cloned())
+                .collect::<Vec<_>>()
+        );
+        assert_eq!(first_problem.problem_id(), second_problem.problem_id());
+        assert_eq!(first_problem.debug_text(), second_problem.debug_text());
+        assert!(first_problem.provenance().iter().any(|provenance| {
+            matches!(
+                provenance.source(),
+                AtpSourceRef::GeneratedVcFact(binding) if binding.as_str() == "generated:3"
+            )
+        }));
+    }
+
+    #[test]
+    fn proof_hint_restrictions_do_not_prune_premises() {
+        let set = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "hinted",
+            vec![PremiseRef::LocalContext(ContextEntryId::new(0))],
+            Some(ProofHint {
+                citations: vec![],
+                unfold_requests: vec![],
+                premise_restrictions: vec![PremiseRestriction::Exclude(vec![
+                    PremiseRef::LocalContext(ContextEntryId::new(0)),
+                ])],
+                solver: None,
+                max_axioms: None,
+                timeout: None,
+                computation: None,
+                provenance: vec![vc_provenance("hint")],
+            }),
+        );
+        let hinted_handoff = handoff(&set);
+        let problem =
+            translate_problem(basic_problem_input(&set, &hinted_handoff)).expect("problem");
+
+        assert_eq!(problem.axioms().len(), 1);
+        assert_eq!(
+            problem.axioms()[0].formula(),
+            Some(&AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new())))
+        );
+
+        let only_set = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "hinted-only",
+            vec![PremiseRef::LocalContext(ContextEntryId::new(0))],
+            Some(ProofHint {
+                citations: vec![],
+                unfold_requests: vec![],
+                premise_restrictions: vec![PremiseRestriction::Only(Vec::new())],
+                solver: None,
+                max_axioms: None,
+                timeout: None,
+                computation: None,
+                provenance: vec![vc_provenance("hint-only")],
+            }),
+        );
+        let only_handoff = handoff(&only_set);
+        let only_problem =
+            translate_problem(basic_problem_input(&only_set, &only_handoff)).expect("problem");
+        assert_eq!(only_problem.axioms().len(), 1);
+    }
+
+    #[test]
+    fn imported_formula_projection_requires_imported_provenance_fields() {
+        let set = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "imported",
+            vec![PremiseRef::ImportedFact {
+                symbol: VcText::new("Imported::A1"),
+            }],
+            None,
+        );
+        let handoff = handoff_with_imported(&set);
+        let mut input = imported_problem_input(&set, &handoff);
+        if let AtpSourceRef::ImportedAxiom {
+            required_status, ..
+        } = &mut input.formula_projections[0].provenance.source
+        {
+            *required_status = AtpRequiredProofStatus::new("");
+        }
+
+        assert!(matches!(
+            translate_problem(input).expect_err("missing imported status"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::EmptyField {
+                    field: "imported.required_status"
+                }
+            }
+        ));
+
+        let mut wrong_package = imported_problem_input(&set, &handoff);
+        if let AtpSourceRef::ImportedAxiom { package, .. } =
+            &mut wrong_package.formula_projections[0].provenance.source
+        {
+            *package = AtpSourceBinding::new("other-pkg");
+        }
+        assert!(matches!(
+            translate_problem(wrong_package).expect_err("wrong imported package"),
+            AtpTranslationError::MissingFormulaHandoffEvidence { .. }
+        ));
+
+        let mut wrong_module = imported_problem_input(&set, &handoff);
+        if let AtpSourceRef::ImportedAxiom { module, .. } =
+            &mut wrong_module.formula_projections[0].provenance.source
+        {
+            *module = AtpSourceBinding::new("other-module");
+        }
+        assert!(matches!(
+            translate_problem(wrong_module).expect_err("wrong imported module"),
+            AtpTranslationError::MissingFormulaHandoffEvidence { .. }
+        ));
+
+        let mut wrong_item = imported_problem_input(&set, &handoff);
+        if let AtpSourceRef::ImportedAxiom { item, .. } =
+            &mut wrong_item.formula_projections[0].provenance.source
+        {
+            *item = AtpSourceBinding::new("other-item");
+        }
+        assert!(matches!(
+            translate_problem(wrong_item).expect_err("wrong imported item"),
+            AtpTranslationError::MissingFormulaHandoffEvidence { .. }
+        ));
+
+        let mut wrong_statement = imported_problem_input(&set, &handoff);
+        if let AtpSourceRef::ImportedAxiom {
+            statement_fingerprint,
+            ..
+        } = &mut wrong_statement.formula_projections[0].provenance.source
+        {
+            *statement_fingerprint =
+                AtpFingerprint::new(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"other".to_vec())
+                    .expect("fingerprint");
+        }
+        assert!(matches!(
+            translate_problem(wrong_statement).expect_err("wrong imported statement"),
+            AtpTranslationError::MissingFormulaHandoffEvidence { .. }
+        ));
+
+        let mut wrong_status = imported_problem_input(&set, &handoff);
+        if let AtpSourceRef::ImportedAxiom {
+            required_status, ..
+        } = &mut wrong_status.formula_projections[0].provenance.source
+        {
+            *required_status = AtpRequiredProofStatus::new("DischargedBuiltin");
+        }
+        assert!(matches!(
+            translate_problem(wrong_status).expect_err("wrong imported status"),
+            AtpTranslationError::MissingFormulaHandoffEvidence { .. }
+        ));
+
+        let mut wrong_class = imported_problem_input(&set, &handoff);
+        wrong_class.formula_projections[0].provenance.source = imported_theorem_source();
+        assert!(matches!(
+            translate_problem(wrong_class).expect_err("wrong imported class"),
+            AtpTranslationError::MissingFormulaHandoffEvidence { .. }
+        ));
+
+        let mut wrong_imported_fingerprint = imported_problem_input(&set, &handoff);
+        wrong_imported_fingerprint.formula_projections[0].handoff_formula_fingerprint =
+            AtpFingerprint::new(
+                KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                b"wrong-imported".to_vec(),
+            )
+            .expect("fingerprint");
+        assert!(matches!(
+            translate_problem(wrong_imported_fingerprint)
+                .expect_err("wrong imported handoff fingerprint"),
+            AtpTranslationError::MissingFormulaHandoffEvidence { .. }
+        ));
+
+        let mut wrong_imported_payload = imported_problem_input(&set, &handoff);
+        wrong_imported_payload.formula_projections[0].handoff_provenance_payload =
+            b"wrong-imported-provenance".to_vec();
+        assert!(matches!(
+            translate_problem(wrong_imported_payload).expect_err("wrong imported handoff payload"),
+            AtpTranslationError::MissingFormulaHandoffEvidence { .. }
+        ));
+
+        let mut missing_context = imported_problem_input(&set, &handoff);
+        if let AtpSourceRef::ImportedAxiom {
+            context_requirement,
+            ..
+        } = &mut missing_context.formula_projections[0].provenance.source
+        {
+            *context_requirement = AtpSourceBinding::new("");
+        }
+        assert!(matches!(
+            translate_problem(missing_context).expect_err("missing imported context"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::EmptyField {
+                    field: "imported.context_requirement"
+                }
+            }
+        ));
+
+        let mut wrong_context = imported_problem_input(&set, &handoff);
+        if let AtpSourceRef::ImportedAxiom {
+            context_requirement,
+            ..
+        } = &mut wrong_context.formula_projections[0].provenance.source
+        {
+            *context_requirement = AtpSourceBinding::new("wrong-context");
+        }
+        assert!(matches!(
+            translate_problem(wrong_context).expect_err("wrong imported context"),
+            AtpTranslationError::Problem {
+                source: AtpProblemError::UnsupportedProfileFeature {
+                    feature: "imported formula context requirement"
+                }
+            }
+        ));
+    }
+
+    #[test]
+    fn imported_duplicate_source_tuple_fails_closed_across_symbols() {
+        let set = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "imported-duplicate-source",
+            vec![
+                PremiseRef::ImportedFact {
+                    symbol: VcText::new("Imported::A1"),
+                },
+                PremiseRef::ImportedFact {
+                    symbol: VcText::new("Imported::A2"),
+                },
+            ],
+            None,
+        );
+        let handoff = handoff_with_imported_symbols(&set, &["Imported::A1", "Imported::A2"]);
+        let mut input = imported_problem_input(&set, &handoff);
+        let mut second = imported_formula_projection(
+            "Imported::A2",
+            AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new())),
+        );
+        second.handoff_provenance_payload =
+            imported_provenance_payload("Imported::A1").into_bytes();
+        input.formula_projections.push(second);
+
+        assert!(matches!(
+            translate_problem(input).expect_err("duplicate imported source tuple"),
+            AtpTranslationError::DuplicatePremiseIdentity { .. }
+        ));
+    }
+
+    #[test]
+    fn imported_formula_materializes_with_handoff_agreement() {
+        let set = fixture_set_with(
+            VcStatus::NeedsAtp,
+            "imported-ok",
+            vec![PremiseRef::ImportedFact {
+                symbol: VcText::new("Imported::A1"),
+            }],
+            None,
+        );
+        let handoff = handoff_with_imported(&set);
+        let problem = translate_problem(imported_problem_input(&set, &handoff)).expect("problem");
+
+        assert_eq!(problem.axioms().len(), 1);
+        assert!(matches!(
+            problem.provenance()[1].source(),
+            AtpSourceRef::ImportedAxiom { .. }
+        ));
+    }
+
+    #[test]
+    fn soft_type_guards_are_preserved_in_full_problem_translation() {
+        let set = fixture_set(VcStatus::NeedsAtp, "soft-type");
+        let handoff = handoff(&set);
+        let mut input = basic_problem_input(&set, &handoff);
+        input.logic_profile = profile(SoftTypeStrategy::GuardPredicates);
+        input
+            .declaration_projections
+            .push(AtpDeclarationProjection {
+                key: AtpProjectionKey::new("type-predicate"),
+                kind: AtpDeclarationKind::Predicate,
+                symbol: AtpSymbolName::new("type_guard"),
+                arity: 0,
+                provenance: declaration_provenance("type-predicate"),
+                symbol_source: AtpSymbolSourceProjection::TypeGuard(AtpProjectionKey::new("guard")),
+            });
+        input.soft_type_projections = vec![soft_guard(
+            "guard",
+            AtpFormulaTree::Atom(AtpAtom::new("type_guard", Vec::new())),
+        )];
+        let problem = translate_problem(input).expect("problem");
+
+        assert_eq!(problem.type_context().guards().len(), 1);
+        assert_eq!(
+            problem.type_context().guards()[0].formula(),
+            &AtpFormulaTree::Atom(AtpAtom::new("type_guard", Vec::new()))
+        );
+    }
+
     fn empty_input<'a>(
         set: &'a VcSet,
         handoff: &'a VcKernelEvidenceHandoff,
@@ -1513,6 +3199,75 @@ mod tests {
             soft_type_projections: Vec::new(),
             diagnostics: Vec::new(),
         }
+    }
+
+    fn basic_problem_input<'a>(
+        set: &'a VcSet,
+        handoff: &'a VcKernelEvidenceHandoff,
+    ) -> AtpTranslationInput<'a> {
+        AtpTranslationInput {
+            vc_set: set,
+            vc: VcId::new(0),
+            kernel_handoff: handoff,
+            logic_profile: profile(SoftTypeStrategy::BackendSorts),
+            declaration_projections: vec![declaration_projection(
+                "pred-p",
+                "p",
+                AtpDeclarationKind::Predicate,
+                0,
+            )],
+            soft_type_projections: Vec::new(),
+            formula_projections: vec![
+                local_formula_projection(AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new()))),
+                goal_formula_projection(AtpFormulaTree::False),
+            ],
+            diagnostics: Vec::new(),
+        }
+    }
+
+    fn imported_problem_input<'a>(
+        set: &'a VcSet,
+        handoff: &'a VcKernelEvidenceHandoff,
+    ) -> AtpTranslationInput<'a> {
+        AtpTranslationInput {
+            vc_set: set,
+            vc: VcId::new(0),
+            kernel_handoff: handoff,
+            logic_profile: profile(SoftTypeStrategy::BackendSorts),
+            declaration_projections: vec![declaration_projection(
+                "pred-p",
+                "p",
+                AtpDeclarationKind::Predicate,
+                0,
+            )],
+            soft_type_projections: Vec::new(),
+            formula_projections: vec![
+                imported_formula_projection(
+                    "Imported::A1",
+                    AtpFormulaTree::Atom(AtpAtom::new("p", Vec::new())),
+                ),
+                goal_formula_projection(AtpFormulaTree::False),
+            ],
+            diagnostics: Vec::new(),
+        }
+    }
+
+    fn two_premise_problem_input<'a>(
+        set: &'a VcSet,
+        handoff: &'a VcKernelEvidenceHandoff,
+    ) -> AtpTranslationInput<'a> {
+        let mut input = basic_problem_input(set, handoff);
+        input.formula_projections.push(generated_formula_projection(
+            2,
+            AtpFormulaTree::Atom(AtpAtom::new("q", Vec::new())),
+        ));
+        input.declaration_projections.push(declaration_projection(
+            "pred-q",
+            "q",
+            AtpDeclarationKind::Predicate,
+            0,
+        ));
+        input
     }
 
     fn declaration_projection(
@@ -1533,6 +3288,126 @@ mod tests {
                 }
                 _ => AtpSymbolSourceProjection::MizarSymbol(AtpSourceBinding::new(key)),
             },
+        }
+    }
+
+    fn local_formula_projection(formula: AtpFormulaTree) -> AtpFormulaProjection {
+        formula_projection(
+            AtpFormulaProjectionTarget::VcFormula(VcFormulaRef::Generated(
+                VcGeneratedFormulaId::new(0),
+            )),
+            formula,
+            AtpSourceRef::LocalHypothesis(AtpSourceBinding::new("local-context:1")),
+            "local-context:1",
+            "atp-provenance:local:0",
+            b"formula-0",
+            b"provenance-0",
+        )
+    }
+
+    fn cited_formula_projection(formula: AtpFormulaTree) -> AtpFormulaProjection {
+        formula_projection(
+            AtpFormulaProjectionTarget::VcFormula(VcFormulaRef::Generated(
+                VcGeneratedFormulaId::new(0),
+            )),
+            formula,
+            AtpSourceRef::CitedPremise(AtpSourceBinding::new("cited-premise:1")),
+            "cited-premise:1",
+            "atp-provenance:cited:0",
+            b"formula-0",
+            b"provenance-0",
+        )
+    }
+
+    fn goal_formula_projection(formula: AtpFormulaTree) -> AtpFormulaProjection {
+        formula_projection(
+            AtpFormulaProjectionTarget::VcFormula(VcFormulaRef::Generated(
+                VcGeneratedFormulaId::new(1),
+            )),
+            formula,
+            AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new("goal:1")),
+            "goal:1",
+            "atp-provenance:goal:1",
+            b"formula-1",
+            b"provenance-1",
+        )
+    }
+
+    fn generated_formula_projection(index: usize, formula: AtpFormulaTree) -> AtpFormulaProjection {
+        let source_index = index + 1;
+        formula_projection(
+            AtpFormulaProjectionTarget::VcFormula(VcFormulaRef::Generated(
+                VcGeneratedFormulaId::new(index),
+            )),
+            formula,
+            AtpSourceRef::GeneratedVcFact(AtpSourceBinding::new(format!(
+                "generated:{source_index}"
+            ))),
+            format!("generated:{source_index}"),
+            format!("atp-provenance:generated:{index}"),
+            format!("formula-{index}").as_bytes(),
+            format!("provenance-{index}").as_bytes(),
+        )
+    }
+
+    fn imported_formula_projection(symbol: &str, formula: AtpFormulaTree) -> AtpFormulaProjection {
+        formula_projection(
+            AtpFormulaProjectionTarget::ImportedFact(VcText::new(symbol)),
+            formula,
+            AtpSourceRef::ImportedAxiom {
+                package: AtpSourceBinding::new("pkg"),
+                module: AtpSourceBinding::new("module"),
+                item: AtpSourceBinding::new("item"),
+                statement_fingerprint: AtpFingerprint::new(
+                    KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                    b"statement".to_vec(),
+                )
+                .expect("statement fingerprint"),
+                required_status: AtpRequiredProofStatus::new("KernelVerified"),
+                context_requirement: AtpSourceBinding::new(fixture_formula_context_binding()),
+            },
+            format!("imported:{symbol}"),
+            format!("atp-provenance:imported:{symbol}"),
+            imported_fingerprint_digest(symbol).as_bytes(),
+            imported_provenance_payload(symbol).as_bytes(),
+        )
+    }
+
+    fn imported_theorem_source() -> AtpSourceRef {
+        AtpSourceRef::ImportedTheorem {
+            package: AtpSourceBinding::new("pkg"),
+            module: AtpSourceBinding::new("module"),
+            item: AtpSourceBinding::new("item"),
+            statement_fingerprint: AtpFingerprint::new(
+                KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                b"statement".to_vec(),
+            )
+            .expect("statement fingerprint"),
+            required_status: AtpRequiredProofStatus::new("KernelVerified"),
+            context_requirement: AtpSourceBinding::new(fixture_formula_context_binding()),
+        }
+    }
+
+    fn formula_projection(
+        target: AtpFormulaProjectionTarget,
+        formula: AtpFormulaTree,
+        source: AtpSourceRef,
+        source_identity: impl Into<AtpProjectionKey>,
+        provenance_payload: impl Into<AtpPayload>,
+        fingerprint_digest: &[u8],
+        handoff_provenance_payload: &[u8],
+    ) -> AtpFormulaProjection {
+        AtpFormulaProjection {
+            target,
+            formula,
+            provenance: AtpProjectionProvenance::new(source, provenance_payload),
+            source_identity: source_identity.into(),
+            handoff_formula_fingerprint: AtpFingerprint::new(
+                KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                fingerprint_digest.to_vec(),
+            )
+            .expect("formula fingerprint"),
+            handoff_provenance_payload: handoff_provenance_payload.to_vec(),
         }
     }
 
@@ -1571,6 +3446,19 @@ mod tests {
         .expect("logic profile")
     }
 
+    fn profile_without_equality() -> LogicProfile {
+        LogicProfile::try_new(
+            "fof-no-equality",
+            LogicFragment::Fof,
+            EqualitySupport::Unsupported,
+            QuantifierPolicy::FirstOrder,
+            SoftTypeStrategy::BackendSorts,
+            NativePropertySupport::Unsupported,
+            BTreeSet::from([ConcreteFormat::Tptp]),
+        )
+        .expect("logic profile")
+    }
+
     fn propositional_guard_profile() -> LogicProfile {
         LogicProfile::try_new(
             "propositional-guards",
@@ -1601,6 +3489,32 @@ mod tests {
         .expect("kernel handoff")
     }
 
+    fn handoff_with_imported(set: &VcSet) -> VcKernelEvidenceHandoff {
+        handoff_with_imported_symbols(set, &["Imported::A1"])
+    }
+
+    fn handoff_with_imported_symbols(set: &VcSet, symbols: &[&str]) -> VcKernelEvidenceHandoff {
+        let payloads = formula_payloads(set);
+        let imported_payloads = symbols
+            .iter()
+            .map(|symbol| imported_payload(&VcText::new(*symbol)))
+            .collect::<Vec<_>>();
+        let context = imported_context_for_payloads(&imported_payloads);
+        build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+            vc_set: set,
+            vc: VcId::new(0),
+            kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+            symbol_manifest: &[],
+            variable_manifest: &[],
+            formula_payloads: &payloads,
+            imported_formula_payloads: &imported_payloads,
+            substitutions: &[],
+            formula_context: Some(&context),
+            discharge_output: None,
+        })
+        .expect("kernel handoff")
+    }
+
     fn formula_payloads(set: &VcSet) -> Vec<KernelFormulaPayload> {
         set.generated_formulas()
             .iter()
@@ -1618,7 +3532,147 @@ mod tests {
             .collect()
     }
 
+    fn imported_payload(symbol: &VcText) -> KernelImportedFormulaPayload {
+        KernelImportedFormulaPayload {
+            symbol: symbol.clone(),
+            class: KernelImportedFormulaClass::Axiom,
+            requirement: imported_requirement(),
+            projection: KernelFormulaProjection {
+                formula_fingerprint: fingerprint(
+                    KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                    imported_fingerprint_digest(symbol.as_str()).as_bytes(),
+                ),
+                formula_bytes: format!("imported-formula-{}", symbol.as_str()).into_bytes(),
+                provenance_payload: imported_provenance_payload(symbol.as_str()).into_bytes(),
+            },
+        }
+    }
+
+    fn imported_context(
+        payload: &KernelImportedFormulaPayload,
+    ) -> KernelFormulaContextRequirements {
+        imported_context_for_payloads(std::slice::from_ref(payload))
+    }
+
+    fn imported_context_for_payloads(
+        payloads: &[KernelImportedFormulaPayload],
+    ) -> KernelFormulaContextRequirements {
+        let mut imported_axioms = Vec::new();
+        let mut imported_theorems = Vec::new();
+        for payload in payloads {
+            match payload.class {
+                KernelImportedFormulaClass::Axiom => {
+                    imported_axioms.push(payload.requirement.clone());
+                }
+                KernelImportedFormulaClass::Theorem => {
+                    imported_theorems.push(payload.requirement.clone());
+                }
+                _ => panic!("unsupported imported formula class in fixture"),
+            }
+        }
+        KernelFormulaContextRequirements {
+            provenance_fingerprint: fingerprint(
+                KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                b"imported-context",
+            ),
+            imported_axioms,
+            imported_theorems,
+        }
+    }
+
+    fn fixture_formula_context_binding() -> String {
+        let payload = imported_payload(&VcText::new("Imported::A1"));
+        formula_context_binding(&imported_context(&payload))
+    }
+
+    fn imported_requirement() -> KernelImportedFactRequirement {
+        KernelImportedFactRequirement {
+            imported_fact_id: 0,
+            package_id: b"pkg".to_vec(),
+            module_path: b"module".to_vec(),
+            exported_item_id: b"item".to_vec(),
+            statement_fingerprint: fingerprint(
+                KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                b"statement",
+            ),
+            required_proof_status: KernelRequiredProofStatus::KernelVerified,
+        }
+    }
+
+    fn imported_fingerprint_digest(_symbol: &str) -> String {
+        "statement".to_owned()
+    }
+
+    fn imported_provenance_payload(symbol: &str) -> String {
+        format!("imported-provenance-{symbol}")
+    }
+
     fn fixture_set(status: VcStatus, module: &str) -> VcSet {
+        fixture_set_with(
+            status,
+            module,
+            vec![PremiseRef::LocalContext(ContextEntryId::new(0))],
+            None,
+        )
+    }
+
+    fn fixture_set_with(
+        status: VcStatus,
+        module: &str,
+        premises: Vec<PremiseRef>,
+        proof_hint: Option<ProofHint>,
+    ) -> VcSet {
+        fixture_set_with_local_formula(
+            status,
+            module,
+            premises,
+            proof_hint,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+        )
+    }
+
+    fn fixture_set_with_local_formula(
+        status: VcStatus,
+        module: &str,
+        premises: Vec<PremiseRef>,
+        proof_hint: Option<ProofHint>,
+        local_formula: VcFormulaRef,
+    ) -> VcSet {
+        fixture_set_with_local_formula_and_kind(
+            status,
+            module,
+            premises,
+            proof_hint,
+            local_formula,
+            ContextEntryKind::ProofAssumption,
+        )
+    }
+
+    fn fixture_set_with_local_entry_kind(
+        status: VcStatus,
+        module: &str,
+        premises: Vec<PremiseRef>,
+        proof_hint: Option<ProofHint>,
+        local_kind: ContextEntryKind,
+    ) -> VcSet {
+        fixture_set_with_local_formula_and_kind(
+            status,
+            module,
+            premises,
+            proof_hint,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+            local_kind,
+        )
+    }
+
+    fn fixture_set_with_local_formula_and_kind(
+        status: VcStatus,
+        module: &str,
+        premises: Vec<PremiseRef>,
+        proof_hint: Option<ProofHint>,
+        local_formula: VcFormulaRef,
+        local_kind: ContextEntryKind,
+    ) -> VcSet {
         let snapshot = BuildSnapshotId::from_published_schema_str(
             "mizar-session-build-snapshot-v1:\
              3333333333333333333333333333333333333333333333333333333333333333",
@@ -1639,6 +3693,12 @@ mod tests {
                 kind: VcGeneratedFormulaKind::SplitGoal,
                 shape: VcGeneratedFormulaShape::False,
                 provenance: vec![vc_provenance("generated-1")],
+            },
+            VcGeneratedFormula {
+                id: VcGeneratedFormulaId::new(2),
+                kind: VcGeneratedFormulaKind::Conjunction,
+                shape: VcGeneratedFormulaShape::True,
+                provenance: vec![vc_provenance("generated-2")],
             },
         ];
         VcSet::try_new(VcSetParts {
@@ -1662,16 +3722,16 @@ mod tests {
                     vec![ContextEntry {
                         id: ContextEntryId::new(0),
                         sort_key: CanonicalSortKey::new("000-local"),
-                        kind: ContextEntryKind::ProofAssumption,
-                        formula: Some(VcFormulaRef::Generated(VcGeneratedFormulaId::new(0))),
+                        kind: local_kind,
+                        formula: Some(local_formula),
                         provenance: vec![vc_provenance("local")],
                     }],
                     Vec::new(),
                 )
                 .expect("context"),
-                premises: vec![PremiseRef::LocalContext(ContextEntryId::new(0))],
+                premises,
                 goal: VcFormulaRef::Generated(VcGeneratedFormulaId::new(1)),
-                proof_hint: None,
+                proof_hint,
                 status,
                 provenance: vec![vc_provenance("vc")],
             }],
