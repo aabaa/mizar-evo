@@ -19,7 +19,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 |---|---|---|---|
 | problem | `problem.md`（task 2） | `src/problem.rs` | [x] |
 | translator | `translator.md`（task 4） | `src/translator.rs` | [x] declaration、symbol-map、axiom、conjecture translation source complete |
-| property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [ ] |
+| property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [x] 仕様完了。source は task 8 に deferred |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [ ] |
 | smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [ ] |
 | backend | `backend.md`（task 13） | `src/backend.rs` | [ ] |
@@ -192,18 +192,26 @@ workspace crate ではないため、policy と witness-publication integration 
      source class/projection を公開するまで fail-closed のままであり、`mizar-atp` は placeholder
      source class を発明しない。
 
-7. **仕様: `property_encoding.md`。** [ ]
+7. **仕様: `property_encoding.md`。** [x]
    - プロパティエンコーディングの仕様を執筆する（英語と日本語、コード
      なし）: 定義のプロパティ（commutativity など）を公理として、または
      バックエンドネイティブのプロパティとしてエンコードする方法と、
      各戦略の適用条件。
    - 依存: 4。仕様: アーキテクチャ 09「Property Encoding」。
+   - 状態: 完了。`property_encoding.md` は supported property family、axiom-form
+     encoding、generated-binder declaration、native declaration gate、deterministic
+     identity、provenance requirement、connectedness disjunction handling、
+     fail-closed/deferred class、task-8 test expectation を仕様化する。この spec-only task
+     では Rust source を追加しない。
 
 8. **プロパティエンコーディング。** [ ]
    - エンコーディング決定を `EncodedProperty` に記録しつつプロパティ
-     エンコーディング規則を実装する。
-   - テスト: プロパティごとのフィクスチャ。バックエンド拡張の
-     エンコーディングはそれを記録するプロファイル下のみ。
+     エンコーディング規則を実装する。Task 8 は axiom-form property だけを emit し、
+     native declaration は concrete encoder spec が exact semantics を定義するまで deferred
+     のままにする。
+   - テスト: プロパティごとのフィクスチャ、generated-binder declaration/provenance
+     coverage、connectedness disjunction coverage、deterministic ordering、
+     native-declaration deferred/fail-closed coverage。
    - 依存: 6、7。仕様: `property_encoding.md`。
 
 ### プロトコルエンコーダ

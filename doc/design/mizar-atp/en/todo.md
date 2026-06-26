@@ -19,7 +19,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 |---|---|---|---|
 | problem | `problem.md` (task 2) | `src/problem.rs` | [x] |
 | translator | `translator.md` (task 4) | `src/translator.rs` | [x] declaration, symbol-map, axiom, and conjecture translation source complete |
-| property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [ ] |
+| property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [x] spec complete; source deferred to task 8 |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [ ] |
 | smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [ ] |
 | backend | `backend.md` (task 13) | `src/backend.rs` | [ ] |
@@ -204,17 +204,25 @@ Keep `cargo test -p mizar-atp` green after each task (see
      handoff exposes a matching explicit source class/projection; no placeholder
      source class is invented in `mizar-atp`.
 
-7. **Spec: `property_encoding.md`.** [ ]
+7. **Spec: `property_encoding.md`.** [x]
    - Write the property-encoding spec (English and Japanese, no code): how
      definitional properties (commutativity, …) are encoded as axioms or
      native backend properties, and when each strategy applies.
    - Deps: 4. Spec: architecture 09 "Property Encoding".
+   - Status: complete. `property_encoding.md` now specifies supported property
+     families, axiom-form encoding, generated-binder declarations, native
+     declaration gates, deterministic identity, provenance requirements,
+     connectedness disjunction handling, fail-closed/deferred classes, and
+     task-8 test expectations. No Rust source is added by this spec-only task.
 
 8. **Property encoding.** [ ]
    - Implement the property-encoding rules with recorded encoding decisions
-     in `EncodedProperty`.
-   - Tests: per-property fixtures; backend-extension encodings only under
-     profiles that record them.
+     in `EncodedProperty`. Task 8 emits only axiom-form properties; native
+     declarations remain deferred until concrete encoder specs define exact
+     semantics.
+   - Tests: per-property fixtures, generated-binder declaration/provenance
+     coverage, connectedness disjunction coverage, deterministic ordering, and
+     native-declaration deferred/fail-closed coverage.
    - Deps: 6, 7. Spec: `property_encoding.md`.
 
 ### Protocol encoders
