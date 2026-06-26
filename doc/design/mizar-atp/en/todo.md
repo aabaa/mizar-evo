@@ -10,13 +10,14 @@
 
 ## Module Implementation
 
-Module specs do not exist yet; each is written by its own spec task (English
-and Japanese in the same change) before the implementation tasks that cite it.
-The crate refines architecture 09, 10, 15, and 19 and internal 04.
+Module specs are added by their own spec tasks (English and Japanese in the
+same change) before the implementation tasks that cite them. Completed specs
+and source-deferred modules are marked in the table. The crate refines
+architecture 09, 10, 15, and 19 and internal 04.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| problem | `problem.md` (task 2) | `src/problem.rs` | [ ] |
+| problem | `problem.md` (task 2) | `src/problem.rs` | [~] spec complete; source deferred to task 3 |
 | translator | `translator.md` (task 4) | `src/translator.rs` | [ ] |
 | property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [ ] |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [ ] |
@@ -107,13 +108,18 @@ Keep `cargo test -p mizar-atp` green after each task (see
      `mizar-proof` integration and first-backend route as
      `external_dependency_gap`/`deferred`.
 
-2. **Spec: `problem.md`.** [ ]
+2. **Spec: `problem.md`.** [x]
    - Write the `AtpProblem` data-shape spec (English and Japanese, no code):
      logic profiles, declarations, axioms, conjecture, type context, encoded
      properties, symbol map, `AtpProvenance`, and `expected_result`
      polarity.
    - Deps: 1. Spec: architecture 09 "Backend-Neutral Problem Layer",
-     [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
+     [01.ir_layers.md](../../architecture/en/01.ir_layers.md), architecture 15,
+     architecture 19, and internal 04.
+   - Status: complete as a docs-only task. `problem.md` defines the
+     backend-neutral problem boundary, deterministic identity, provenance
+     requirements, `Unsat` polarity contract, and prohibited trusted material.
+     Rust data shapes remain deferred to task 3.
 
 3. **Implement `problem` data shapes.** [ ]
    - Implement `AtpProblem` and provenance tables per task 2, plus a
@@ -343,12 +349,13 @@ Check the task off here once tests pass.
   after kernel evidence checking, and acceptance policy lives in
   `mizar-proof`.
 - Encoding need not be reversible, but every backend-visible formula must be
-  traceable through `AtpProvenance`, and backend-reported used axioms do not
-  become artifact `used_axioms` until kernel checking validates them.
+  traceable through `AtpProvenance`. Backend-reported used axioms are not
+  trusted `used_axioms`; only kernel-checked formula/provenance evidence may
+  feed downstream witness material.
 - Backend nondeterminism is recorded (seeds, versions, timings), never
   silently absorbed; Mizar-side translation and encoding are bit-stable.
 - ATP unavailability must not break earlier phases; this crate degrades to
   `open` VC statuses, not to errors elsewhere in the pipeline.
-- Backend proof methods and logs are diagnostic/provenance material. The
-  kernel-facing handoff is formula/substitution evidence, not a resolution
-  trace certificate.
+- Backend proof methods and logs are diagnostic or extraction input only. They
+  are not `AtpProvenance`, kernel evidence, trusted handoff material, or a
+  resolution trace certificate.

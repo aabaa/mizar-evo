@@ -10,13 +10,14 @@
 
 ## モジュール実装
 
-モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより前に、
-専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。この crate は
-アーキテクチャ 09、10、15、19 と internal 04 を精緻化する。
+モジュール仕様は、それを引用する実装タスクより前に、専用の仕様タスクが
+（英語と日本語を同じ変更で）追加する。完了済みの仕様と source-deferred の
+module は表で示す。この crate はアーキテクチャ 09、10、15、19 と internal 04
+を精緻化する。
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| problem | `problem.md`（task 2） | `src/problem.rs` | [ ] |
+| problem | `problem.md`（task 2） | `src/problem.rs` | [~] spec complete。source は task 3 に deferred |
 | translator | `translator.md`（task 4） | `src/translator.rs` | [ ] |
 | property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [ ] |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [ ] |
@@ -104,13 +105,18 @@ workspace crate ではないため、policy と witness-publication integration 
      semantic module 実装を deferred に保ち、未存在の `mizar-proof` 連携と
      first-backend route を `external_dependency_gap` / `deferred` として記録する。
 
-2. **仕様: `problem.md`。** [ ]
+2. **仕様: `problem.md`。** [x]
    - `AtpProblem` のデータ形状仕様を執筆する（英語と日本語、コードなし）:
      logic profile、宣言、公理、conjecture、型コンテキスト、エンコード
      済みプロパティ、シンボルマップ、`AtpProvenance`、`expected_result` の
      極性。
    - 依存: 1。仕様: アーキテクチャ 09「Backend-Neutral Problem Layer」、
-     [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
+     [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)、architecture 15、
+     architecture 19、internal 04。
+   - 状態: docs-only task として完了。`problem.md` は backend-neutral problem
+     boundary、deterministic identity、provenance requirement、`Unsat` polarity
+     contract、trusted material として禁止されるものを定義する。Rust data shape は
+     task 3 に deferred のままである。
 
 3. **`problem` データ形状の実装。** [ ]
    - task 2 に従って `AtpProblem` と来歴テーブルを実装し、決定的 debug
@@ -334,14 +340,14 @@ cargo test -p mizar-proof
 - ここで生産されるものはすべて untrusted な証拠である。信頼された状態は
   kernel evidence checking 後にのみ存在し、受理ポリシーは `mizar-proof` にある。
 - エンコーディングは可逆である必要はないが、バックエンドに見えるすべての
-  論理式は `AtpProvenance` で追跡可能でなければならず、バックエンドが
-  報告した used axioms は kernel 検査が検証するまで artifact の
-  `used_axioms` にならない。
+  論理式は `AtpProvenance` で追跡可能でなければならない。backend-reported
+  used axiom は trusted `used_axioms` ではない。downstream witness material に
+  つながってよいのは kernel-checked formula/provenance evidence だけである。
 - バックエンドの非決定性は記録される（シード、バージョン、時間）。黙って
   吸収されることはない。Mizar 側の翻訳とエンコーディングはビット安定で
   ある。
 - ATP が利用不能でも前段の phase を壊してはならない。この crate は
   パイプラインの他所のエラーではなく、`open` の VC 状態へ退化する。
-- Backend proof method と log は diagnostic/provenance material である。
-  kernel-facing handoff は formula/substitution evidence であり、resolution trace
+- Backend proof method と log は diagnostic または extraction input のみである。
+  `AtpProvenance`、kernel evidence、trusted handoff material、resolution trace
   certificate ではない。
