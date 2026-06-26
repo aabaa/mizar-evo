@@ -6,8 +6,10 @@
 ## 目的
 
 `sat_checker` module は、task 24 が選んだ audited in-process Rust SAT checker の小さな
-trusted wrapper を所有する。これは kernel-derived SAT problem が unsatisfiable かどうかだけを
-判定する。
+trusted wrapper を所有する。Task 24 は direct
+`batsat = { version = "=0.6.0", default-features = false }` を選択した。完全な
+監査は [sat_dependency_audit.md](./sat_dependency_audit.md) にある。これは
+kernel-derived SAT problem が unsatisfiable かどうかだけを判定する。
 
 ## Trust Statement
 
@@ -41,10 +43,17 @@ dependency が support する場合の propagation/conflict steps、canonical in
 
 ## Dependency requirements
 
-Task 24 は選択した pure-Rust dependency、または dependency を追加しない明示的な audited
-decision を記録しなければならない。Audit は version pinning、license、determinism、unsafe
-code、transitive dependencies、process/network behavior の不在、resource limits、API surface、
-failure mapping を cover する。
+Task 24 は選択した pure-Rust dependency を記録する:
+
+```text
+batsat = { version = "=0.6.0", default-features = false }
+```
+
+Task 27 はこの dependency を正確に追加し、`batsat` と transitive dependency
+`bit-vec` の lockfile resolution を検証し、crate-local dependency lint guard を
+更新しなければならない。Audit は version pinning、license、determinism、unsafe
+code、transitive dependencies、process/network behavior の不在、resource limits、API
+surface、failure mapping を cover する。
 
 Solver error、unsupported clause、limit exhaustion、satisfiable result、internal inconsistency は
 non-acceptance outcome である。`Unsat` だけが caller に formula/substitution evidence の受理を
@@ -53,6 +62,11 @@ non-acceptance outcome である。`Unsat` だけが caller に formula/substitu
 ## Gap classification
 
 - `test_gap`: task 27 は satisfiable rejection、unsatisfiable acceptance、limit failure、
-  solver error、deterministic outcome、external process/network behavior の不在を cover する。
-- `repo_metadata_conflict`: task 24 で dependency metadata conflict が見つかった場合は、
-  user が明示的に repository metadata repair を許可しない限り report only とする。
+  solver error、deterministic outcome、external process/network behavior の不在を cover
+  する。exact dependency/lockfile lint guard と、wrapper-owned deterministic `batsat`
+  heuristic options の pinning / non-exposure も cover しなければならない。
+- `source_drift`: task 24 は docs-only であり、`Cargo.toml`、`Cargo.lock`、
+  `src/sat_checker.rs` は task 27 が wrapper を統合するまで変更しない。
+- `deferred`: `batsat` は public exact conflict/propagation budget setter を持たない。
+  task 27 は callback-based deterministic interruption を証明・test するか、unsupported
+  step-budget request を拒否しなければならない。

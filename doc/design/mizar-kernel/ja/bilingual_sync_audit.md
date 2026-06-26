@@ -9,10 +9,11 @@ Task 21 は `doc/design/mizar-kernel/en/` と `doc/design/mizar-kernel/ja/` の
 paired document すべてを audit した。Task 22 は module-boundary audit document
 と整理済み task-ledger handoff section を含めるため、この audit を更新した。
 Closeout task は paired crate exit report と Task 22 hash backfill を含めるため、
-もう一度更新する。英語は canonical のままである。日本語 companion は英語文書に
-同期する。ただし、commit hash や task status の欠落のように task-local
-bookkeeping omission が明らかに paired であり、同じ rationale で両言語を修正
-できる場合は例外とする。Japanese-only semantic drift を、別の classified finding
+もう一度更新する。Tasks 23-24 は formula/SAT correction specs と SAT dependency
+audit を含めるため、この audit を更新する。英語は canonical のままである。日本語
+companion は英語文書に同期する。ただし、commit hash や task status の欠落のように
+task-local bookkeeping omission が明らかに paired であり、同じ rationale で両言語を
+修正できる場合は例外とする。Japanese-only semantic drift を、別の classified finding
 なしに英語へ昇格してはならない。
 
 これは documentation audit である。Rust behavior、public API、certificate
@@ -28,20 +29,24 @@ ATP/proof/cache/artifact integration は変更しない。
 
 | File | Companion links | Heading count | Table row count | Sync result |
 |---|---|---:|---:|---|
-| `00.crate_plan.md` | EN -> JA and JA -> EN | 8 / 8 | 56 / 56 | Synchronized. |
-| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 30 / 30 | closeout audit rows 追加後に synchronized. |
+| `00.crate_plan.md` | EN -> JA and JA -> EN | 8 / 8 | 64 / 64 | post-closeout task rows 追加後に synchronized. |
+| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 34 / 34 | task-24 audit rows 追加後に synchronized. |
 | `certificate_parser.md` | EN -> JA and JA -> EN | 15 / 15 | 29 / 29 | Synchronized. |
 | `checker.md` | EN -> JA and JA -> EN | 15 / 15 | 15 / 15 | Synchronized. |
 | `clause.md` | EN -> JA and JA -> EN | 12 / 12 | 5 / 5 | Synchronized. |
 | `crate_exit_report.md` | EN -> JA and JA -> EN | 12 / 12 | 71 / 71 | Closeout で追加し synchronized. |
+| `formula_evidence.md` | EN -> JA and JA -> EN | 9 / 9 | 0 / 0 | Task 23 で追加し synchronized. |
 | `module_boundary_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 13 / 13 | Synchronized. |
 | `public_enum_policy.md` | EN -> JA and JA -> EN | 5 / 5 | 0 / 0 | Synchronized. |
 | `rejection.md` | EN -> JA and JA -> EN | 14 / 14 | 32 / 32 | Synchronized. |
 | `resolution_trace.md` | EN -> JA and JA -> EN | 12 / 12 | 15 / 15 | Synchronized. |
-| `source_spec_audit.md` | EN -> JA and JA -> EN | 14 / 14 | 22 / 22 | Synchronized. |
+| `sat_checker.md` | EN -> JA and JA -> EN | 6 / 6 | 0 / 0 | Task 23 で追加し task 24 で更新。 |
+| `sat_dependency_audit.md` | EN -> JA and JA -> EN | 13 / 13 | 32 / 32 | Task 24 で追加し synchronized. |
+| `sat_encoding.md` | EN -> JA and JA -> EN | 7 / 7 | 0 / 0 | Task 23 で追加し synchronized. |
+| `source_spec_audit.md` | EN -> JA and JA -> EN | 15 / 15 | 23 / 23 | task-24 addendum 後に synchronized. |
 | `substitution_checker.md` | EN -> JA and JA -> EN | 15 / 15 | 17 / 17 | Synchronized. |
-| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 26 / 26 | Task 21 hash backfill と stale handoff cleanup 後に synchronized. |
-| `todo.md` | EN -> JA and JA -> EN | 12 / 12 | 8 / 8 | Task 22 completion status update 後に synchronized. |
+| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 27 / 27 | Task 23 hash backfill 後に synchronized. |
+| `todo.md` | EN -> JA and JA -> EN | 13 / 13 | 11 / 11 | Task 24 dependency decision 後に synchronized. |
 
 Count check は完全な translation proof ではない。下の semantic check を補助する
 drift screen である。
@@ -51,7 +56,7 @@ drift screen である。
 | Area | Result |
 |---|---|
 | Canonical/companion headers | すべての English file は Japanese companion を指し、すべての Japanese file は English canonical file を指す。 |
-| Task status and sequencing | Tasks 0-22 は complete として一貫し、closeout report は complete で self-hash pending の ready to commit 状態である。 |
+| Task status and sequencing | Tasks 0-23 は complete として一貫する。Task 24 は ready to commit で self-hash pending であり、paired dependency audit を記録し、task 27 の source integration までは docs-only のままである。 |
 | Task 21 bookkeeping | `73a919c16b48da82038fd7267e86e1a844cb4c6f` は完了済み Task 21 commit であり、両 ledger に backfill される。 |
 | Task 22 bookkeeping | `814e47bb9aaaff75ebfe4cc1be10d2eb4618498b` は完了済み Task 22 commit であり、両 ledger に backfill される。 |
 | Closeout report inventory | `crate_exit_report.md` は paired であり、同じ hard gates、task commits、residual gaps、quality score、verification plan、next-crate handoff を英語/日本語で記録する。 |
@@ -68,8 +73,10 @@ drift screen である。
 Closeout は external producer / consumer gap を閉じない。以下は module spec と
 `source_spec_audit.md` に残る:
 
-- source-derived certificate and service envelopes;
-- ATP proof translation and MiniSAT-compatible backend trace extraction;
+- source-derived formula/substitution evidence and service envelopes;
+- `mizar-atp` による formula/substitution candidate evidence production;
+- legacy migration/audit material としての ATP proof translation と
+  MiniSAT-compatible backend trace extraction。trusted acceptance target では決してない;
 - `mizar-checker` cluster/reduction payload production;
 - current checked input を超える derived-fact payload schema work;
 - service-envelope normalization、cancellation token plumbing、external worker

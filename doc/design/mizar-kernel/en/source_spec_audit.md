@@ -279,8 +279,14 @@ Task 23 adds the corrected design surface before source changes:
 - `formula_evidence.md` defines the kernel-owned formula/substitution evidence
   schema and legacy unsupported handling;
 - `sat_encoding.md` defines kernel-derived deterministic SAT encoding;
-- `sat_checker.md` defines the trusted in-process Rust SAT checker wrapper and
-  task-24 audit requirements.
+- `sat_checker.md` defines the trusted in-process Rust SAT checker wrapper.
+
+Task 24 adds the dependency audit before source changes:
+
+- `sat_dependency_audit.md` records the task-24 selection of direct
+  `batsat = { version = "=0.6.0", default-features = false }`, rejected
+  candidates, unsafe-code audit, no-process/no-network audit, resource-limit
+  gates, and the dependency lint-policy revision that task 27 must encode.
 
 The current source inventory above remains the task-22 legacy public surface
 until tasks 25-29 add the new modules and gate or retire legacy
@@ -321,6 +327,7 @@ migration-only and remains deferred.
 | KERNEL20-G007 | `deferred` | Downstream wildcard-arm checks for public enums must be enforced by downstream consumers after task 19. | Kernel enum inventory is documented and lint-guarded; downstream checks remain outside this crate. |
 | KERNEL20-G008 | `source_undocumented_behavior` risk | Future public APIs or module exports could be added without audit updates. | `tests/lint_policy.rs` now fails unless this audit lists current public modules/items and module Trust Statement prohibitions. |
 | KERNEL20-G009 | `repo_metadata_conflict` | None observed in task 20. | Report only if future metadata conflicts appear; do not auto-repair unrelated metadata. |
+| KERNEL24-G001 | `source_drift` / `deferred` | Task 24 selects `batsat`, but no manifest/source change has occurred yet. `batsat` also lacks a public exact conflict/propagation budget setter. | Task 27 must add the exact dependency, update dependency lint guards, verify lockfile resolution, and either prove deterministic callback interruption or reject unsupported step-budget requests. |
 
 ## Verification Plan
 

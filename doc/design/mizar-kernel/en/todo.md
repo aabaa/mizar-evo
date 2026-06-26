@@ -61,13 +61,13 @@ committed autonomously without holding the rest of the crate in flight.
 ## Crate Prerequisites
 
 The crate depends on `mizar-session` and `mizar-core` (core formula
-representation and the binder contract it independently re-checks). The only
-planned production dependency addition is a reviewed pure-Rust
-MiniSAT-compatible SAT checker selected by the SAT dependency audit task; it
-must be deterministic, in-process, resource-bounded, and free of backend
-process execution. Any other dependency addition requires a recorded
-justification. `mizar-atp` and `mizar-proof` depend on this crate, never the
-reverse. Architecture:
+representation and the binder contract it independently re-checks). Task 24
+selects the only planned production dependency addition:
+`batsat = { version = "=0.6.0", default-features = false }`. Task 27 may add it
+only behind the audited `sat_checker` wrapper; it must remain deterministic,
+in-process, resource-bounded, and free of backend process execution. Any other
+dependency addition requires a recorded justification. `mizar-atp` and
+`mizar-proof` depend on this crate, never the reverse. Architecture:
 [15.kernel_certificate_format.md](../../architecture/en/15.kernel_certificate_format.md),
 [16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md),
 [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md),
@@ -83,11 +83,13 @@ integration: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_i
   formulas and the deterministic SAT problem. Backend proof methods are not
   trusted evidence. The current source is classified as `source_drift` until
   the post-closeout correction tasks land.
-- **Trusted SAT dependency: open, owned by task 24.** The kernel may trust a
-  reviewed pure-Rust MiniSAT-compatible SAT checker as part of the small
-  kernel, but it must not call external SAT/ATP processes or implement ATP
-  search. Dependency choice, version pinning, determinism, limits, unsafe
-  usage, and audit notes must be recorded before source integration.
+- **Trusted SAT dependency: resolved by task 24, source integration pending
+  task 27.** The kernel may trust direct
+  `batsat = { version = "=0.6.0", default-features = false }` as part of the
+  small kernel after task 27 integrates the wrapper. The audit records version
+  pinning, determinism, limits, unsafe usage, no-process/no-network
+  constraints, rejected candidates, and lockfile expectations. The kernel must
+  not call external SAT/ATP processes or implement ATP search.
 - **Legacy certificate schema ownership: resolved by task 4.** Architecture 15
   previously defined the normalized certificate format, and `mizar-kernel`
   owns those legacy certificate schema types, schema-version table, section
@@ -98,16 +100,16 @@ integration: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_i
   `external_dependency_gap` until those crates exist. This decision is legacy
   for the resolution-trace acceptance path and is superseded by the task-23
   formula/substitution evidence schema for normal proof acceptance.
-- **Trusted-baseline crate policy: resolved by task 1, pending task-24
-  revision.** Trusted kernel source
+- **Trusted-baseline crate policy: resolved by task 1 and revised by task 24,
+  source guard update pending task 27.** Trusted kernel source
   forbids unsafe code, uses workspace lint denial, keeps production
   dependencies limited to `mizar-session` and `mizar-core` with no
   dev/build/target dependency escape hatches, requires a crate-root trust
   statement, blocks public semantic surface until paired module specs exist,
   and guards against downstream ATP/proof/cache/artifact coupling. Task 24
-  must revise the lint/dependency policy to allow exactly one audited
-  pure-Rust SAT checker dependency in addition to `mizar-session` and
-  `mizar-core`, or else record why no dependency is added.
+  revises the policy to allow exactly one audited direct SAT checker dependency
+  in addition to `mizar-session` and `mizar-core`; task 27 must encode that
+  exact allow-list in `tests/lint_policy.rs` when it edits the manifest.
 - **Discharge-evidence validation scope: open, owned by `mizar-proof`
   task 6.** Whether `mizar-vc` pre-ATP discharge evidence is
   kernel-replayed or accepted as policy-level built-in evidence; if
@@ -313,12 +315,16 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       [08.reasoning_boundary.md](../../architecture/en/08.reasoning_boundary.md),
       [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md).
 
-24. **Spec and audit: trusted SAT checker dependency.** [ ]
+24. **Spec and audit: trusted SAT checker dependency.** [x]
     - Choose and justify the pure-Rust MiniSAT-compatible SAT checker to trust
       inside the kernel. Record version pinning, determinism requirements,
       resource limits, unsafe-code audit, no-process/no-network constraints,
       the lint/dependency policy revision from the task-1 baseline, and the
       wrapper API expected by `sat_checker.md`.
+      Result: task 24 selects
+      `batsat = { version = "=0.6.0", default-features = false }`, with
+      expected transitive lockfile resolution `bit-vec 0.5.1`; integration is
+      deferred to task 27.
     - Tests: docs-only verification plus dependency metadata audit once a
       candidate crate is selected.
     - Deps: 23. Spec: architecture 15 "Post-Closeout Correction".
@@ -350,7 +356,11 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       kernel-built SAT problem is unsatisfiable; enforce limits and convert
       solver errors to stable kernel rejections.
     - Tests: satisfiable evidence rejects; unsatisfiable evidence accepts;
-      limits, unsupported clauses, and solver errors reject deterministically.
+      limits, unsupported clauses, and solver errors reject deterministically;
+      dependency and lockfile guards enforce exact `batsat`/`bit-vec`
+      resolution and reject alternate SAT/process dependencies; wrapper tests
+      prove deterministic `batsat` heuristic options are pinned and not exposed
+      to callers.
     - Deps: 24, 26. Spec: `sat_checker.md` from task 23.
 
 28. **SAT-backed kernel check service.** [ ]

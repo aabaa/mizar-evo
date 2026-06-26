@@ -270,8 +270,14 @@ Task 23 は source change より先に corrected design surface を追加する:
 - `formula_evidence.md` は kernel-owned formula/substitution evidence schema と legacy
   unsupported handling を定義する;
 - `sat_encoding.md` は kernel-derived deterministic SAT encoding を定義する;
-- `sat_checker.md` は trusted in-process Rust SAT checker wrapper と task-24 audit
-  requirements を定義する。
+- `sat_checker.md` は trusted in-process Rust SAT checker wrapper を定義する。
+
+Task 24 は source change より先に dependency audit を追加する:
+
+- `sat_dependency_audit.md` は task 24 による direct
+  `batsat = { version = "=0.6.0", default-features = false }` の選択、却下した候補、
+  unsafe-code audit、no-process/no-network audit、resource-limit gate、task 27 が
+  符号化すべき dependency lint-policy revision を記録する。
 
 現在の source inventory は tasks 25-29 が新 module を追加し legacy resolution-trace
 acceptance を gate または retire するまで、task-22 legacy public surface のままである。
@@ -312,6 +318,7 @@ migration-only であり deferred のままである。
 | KERNEL20-G007 | `deferred` | Downstream wildcard-arm checks for public enums must be enforced by downstream consumers after task 19. | Kernel enum inventory は documented / lint-guarded。downstream check は crate 外に残る。 |
 | KERNEL20-G008 | `source_undocumented_behavior` risk | Future public APIs or module exports could be added without audit updates. | `tests/lint_policy.rs` は、この audit が current public modules/items と module Trust Statement prohibitions を列挙しない限り fail する。 |
 | KERNEL20-G009 | `repo_metadata_conflict` | None observed in task 20. | 将来 metadata conflict が見つかった場合だけ報告する。unrelated metadata は auto-repair しない。 |
+| KERNEL24-G001 | `source_drift` / `deferred` | Task 24 は `batsat` を選択するが、manifest/source change はまだない。`batsat` は public exact conflict/propagation budget setter も持たない。 | Task 27 は exact dependency を追加し、dependency lint guard を更新し、lockfile resolution を検証し、deterministic callback interruption を証明するか unsupported step-budget request を拒否しなければならない。 |
 
 ## Verification Plan
 

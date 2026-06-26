@@ -35,9 +35,10 @@ Milestone scope:
 
 Post-correction scope:
 
-- Kernel-derived SAT problem に対する SAT checking は、task 24 が dependency/wrapper を
-  audit し、tasks 25-28 が validated formula/substitution evidence から problem を導出した後に
-  限って trusted として許可される。
+- Kernel-derived SAT problem に対する SAT checking は、task 24 が選択した direct
+  `batsat = { version = "=0.6.0", default-features = false }` dependency を通じ、
+  task 27 が wrapper を統合し、tasks 25-28 が validated formula/substitution evidence
+  から problem を導出した後に限って trusted として許可される。
 - Backend proof method、resolution trace、SMT proof object、backend log は trusted
   acceptance material の外に残る。
 - Legacy certificate/resolution-trace acceptance は、task 29 が normal proof policy 向けに
@@ -103,7 +104,7 @@ Excluded:
 | Milestone-owned coverage | passed | Crate-local Rust test は canonical clause、certificate parsing、rejection record、resolution replay、substitution/alpha/FV replay、imported fact、cluster/reduction replay、checker orchestration、determinism、replay cost、public enum policy、soundness mutation failure を cover する。 |
 | Test expectation integrity | passed | 既存 `.miz` fixture または expectation sidecar は implementation behavior に合わせるため変更していない。Source-derived certificate corpus support は明示的に deferred のまま。 |
 | Design/source synchronization | passed | Paired source/spec、bilingual、public enum、soundness、determinism、module-boundary audit は source layout と public module table に同期している。 |
-| Boundary discipline | passed | `mizar-kernel` は evidence だけを check する。SAT solver、ATP backend、proof search、proof-policy projection、cache/artifact coupling、overload resolution、cluster search、implicit coercion insertion、fallback inference、global mutable state read は含まない。 |
+| Boundary discipline | passed | task-22 legacy milestone は evidence だけを check し、SAT solver を含まない。Post-correction tasks は、kernel-derived SAT problem に対する task-24 audit 済み in-process SAT checker だけを追加できる。ATP backend、proof search、proof-policy projection、cache/artifact coupling、overload resolution、cluster search、implicit coercion insertion、fallback inference、global mutable state read は含まない。 |
 | Verification | passed | Closeout broad command、paired-document link/count check、diff check は commit 前に pass した。 |
 | Residual risk | passed with classified items | 残る risk は下で `external_dependency_gap` または `deferred` として分類する。 |
 

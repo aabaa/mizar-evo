@@ -377,10 +377,11 @@ Task 9 must add Rust tests for:
   fixture construction or simulated worker completion order;
 - success reports exposing checked step ids, generated clause ids, and clauses
   without proof-acceptance or policy-status fields;
-- lint coverage showing no SAT solver, ATP/proof/cache/artifact coupling,
-  proof search, premise selection, overload resolution, cluster search,
-  implicit coercion insertion, fallback inference, unordered iteration,
-  wall-clock/random reads, or global mutable-state reads.
+- lint coverage showing the resolution-trace module has no SAT solver,
+  ATP/proof/cache/artifact coupling, proof search, premise selection, overload
+  resolution, cluster search, implicit coercion insertion, fallback inference,
+  unordered iteration, wall-clock/random reads, or global mutable-state reads.
+  The post-closeout audited SAT checker belongs only to `sat_checker`.
 
 No `.miz` fixture, expectation sidecar, `doc/spec`, or Rust source change is
 required for this module-spec task.

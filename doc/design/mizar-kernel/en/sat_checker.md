@@ -6,8 +6,10 @@
 ## Purpose
 
 The `sat_checker` module owns the small trusted wrapper around the audited
-in-process Rust SAT checker selected by task 24. It decides only whether the
-kernel-derived SAT problem is unsatisfiable.
+in-process Rust SAT checker selected by task 24. Task 24 selected direct
+`batsat = { version = "=0.6.0", default-features = false }`; the full audit is
+[sat_dependency_audit.md](./sat_dependency_audit.md). The module decides only
+whether the kernel-derived SAT problem is unsatisfiable.
 
 ## Trust Statement
 
@@ -43,8 +45,15 @@ dependency, and canonical input bytes.
 
 ## Dependency Requirements
 
-Task 24 must record the selected pure-Rust dependency or an explicit audited
-decision not to add one. The audit must cover version pinning, license,
+Task 24 records the selected pure-Rust dependency:
+
+```text
+batsat = { version = "=0.6.0", default-features = false }
+```
+
+Task 27 must add exactly this dependency, verify the lockfile resolution for
+`batsat` and its `bit-vec` transitive dependency, and update the crate-local
+dependency lint guard. The audit covers version pinning, license,
 determinism, unsafe code, transitive dependencies, no process/network behavior,
 resource limits, API surface, and failure mapping.
 
@@ -56,7 +65,11 @@ caller to accept formula/substitution evidence.
 
 - `test_gap`: task 27 must cover satisfiable rejection, unsatisfiable
   acceptance, limit failures, solver errors, deterministic outcomes, and no
-  external process/network behavior.
-- `repo_metadata_conflict`: any dependency metadata conflict found in task 24
-  must be reported only unless the user explicitly authorizes repository
-  metadata repair.
+  external process/network behavior. It must also cover the exact
+  dependency/lockfile lint guard and wrapper-owned pinning/non-exposure of
+  deterministic `batsat` heuristic options.
+- `source_drift`: task 24 is docs-only; `Cargo.toml`, `Cargo.lock`, and
+  `src/sat_checker.rs` remain unchanged until task 27 integrates the wrapper.
+- `deferred`: `batsat` has no public exact conflict/propagation budget setter;
+  task 27 must either prove/test callback-based deterministic interruption or
+  reject unsupported step-budget requests.

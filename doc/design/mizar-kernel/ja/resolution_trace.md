@@ -365,10 +365,11 @@ Task 9 は以下の Rust tests を追加しなければならない:
   checked-step output と rejection ordering が決定的であること;
 - success report が checked step id、generated clause id、clause だけを expose し、
   proof-acceptance または policy-status field を含まないこと;
-- SAT solver、ATP/proof/cache/artifact coupling、proof search、premise selection、
-  overload resolution、cluster search、implicit coercion insertion、fallback inference、
-  unordered iteration、wall-clock/random read、global mutable-state read がないことを
-  示す lint coverage。
+- resolution-trace module が SAT solver、ATP/proof/cache/artifact coupling、proof
+  search、premise selection、overload resolution、cluster search、implicit coercion
+  insertion、fallback inference、unordered iteration、wall-clock/random read、
+  global mutable-state read を持たないことを示す lint coverage。Closeout 後の
+  audit 済み SAT checker は `sat_checker` だけに属する。
 
 この module-spec task では `.miz` fixture、expectation sidecar、`doc/spec`、Rust source
 change は不要である。

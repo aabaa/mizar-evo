@@ -37,8 +37,10 @@ Milestone scope:
 Post-correction scope:
 
 - SAT checking over a kernel-derived SAT problem is now allowed and trusted only
-  after task 24 audits the dependency/wrapper and tasks 25-28 derive the problem
-  from validated formula/substitution evidence.
+  through the task-24 selected direct
+  `batsat = { version = "=0.6.0", default-features = false }` dependency,
+  after task 27 integrates the wrapper and tasks 25-28 derive the problem from
+  validated formula/substitution evidence.
 - Backend proof methods, resolution traces, SMT proof objects, and backend logs
   remain outside trusted acceptance material.
 - Legacy certificate/resolution-trace acceptance is `source_drift` until task 29
@@ -105,7 +107,7 @@ Excluded:
 | Milestone-owned coverage | passed | Crate-local Rust tests cover canonical clauses, certificate parsing, rejection records, resolution replay, substitution/alpha/FV replay, imported facts, cluster/reduction replay, checker orchestration, determinism, replay cost, public enum policy, and soundness mutation failures. |
 | Test expectation integrity | passed | No existing `.miz` fixture or expectation sidecar was changed to match implementation behavior. Source-derived certificate corpus support remains explicitly deferred. |
 | Design/source synchronization | passed | Paired source/spec, bilingual, public enum, soundness, determinism, and module-boundary audits are synchronized with the source layout and public module table. |
-| Boundary discipline | passed | `mizar-kernel` checks evidence only. It contains no SAT solver, ATP backend, proof search, proof-policy projection, cache/artifact coupling, overload resolution, cluster search, implicit coercion insertion, fallback inference, or global mutable state reads. |
+| Boundary discipline | passed | The task-22 legacy milestone checks evidence only and contains no SAT solver. Post-correction tasks may add only the task-24 audited in-process SAT checker over kernel-derived SAT problems, with no ATP backend, proof search, proof-policy projection, cache/artifact coupling, overload resolution, cluster search, implicit coercion insertion, fallback inference, or global mutable state reads. |
 | Verification | passed | Closeout broad commands, paired-document link/count checks, and diff checks passed before commit. |
 | Residual risk | passed with classified items | Remaining risks are listed below as `external_dependency_gap` or `deferred`. |
 
