@@ -62,6 +62,14 @@ formula、substitution、provenance、target binding を含む candidate evidenc
 である。instantiated formula と SAT problem は `mizar-kernel` が導出するものであり、
 trusted ATP payload として生成しない。
 
+現在の gate 状態: `mizar-kernel` task 23-28 と `mizar-vc` task 24-25 により、
+task 1 については満たされている。task 1 で追加してよいのは workspace crate
+shell、dependency boundary、crate plan、lint-policy guard のみである。semantic
+ATP module、backend integration、proof policy、witness publication、cache
+promotion は、それぞれ専用 task まで deferred のままである。`mizar-proof` は
+workspace crate ではないため、policy と witness-publication integration は
+`external_dependency_gap` であり、ここで placeholder を追加する理由にはならない。
+
 ## 解決済みおよび保留中の決定
 
 - **最初のバックエンドと evidence route: deferred。kernel redesign 後に
@@ -84,13 +92,17 @@ trusted ATP payload として生成しない。
 
 ### problem 層
 
-1. **crate の足場と lint 方針のガード。** [ ]
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session`、`mizar-core`、`mizar-vc`、`mizar-kernel` に依存する
      workspace メンバー `mizar-atp` を追加し、`mizar-frontend` のガードに
      倣った `tests/lint_policy.rs` を追加する。
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: `mizar-vc` task 24、`mizar-kernel` task 23-25。仕様:
      アーキテクチャ 09 と post-closeout evidence correction。
+   - 状態: scaffold のみの task として完了。crate plan は、task 前に crate が
+     存在しない状態を `source_drift` として分類し、paired spec が存在するまで
+     semantic module 実装を deferred に保ち、未存在の `mizar-proof` 連携と
+     first-backend route を `external_dependency_gap` / `deferred` として記録する。
 
 2. **仕様: `problem.md`。** [ ]
    - `AtpProblem` のデータ形状仕様を執筆する（英語と日本語、コードなし）:

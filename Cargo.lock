@@ -357,6 +357,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "mizar-atp"
+version = "0.1.0"
+dependencies = [
+ "mizar-core",
+ "mizar-kernel",
+ "mizar-session",
+ "mizar-vc",
+]
+
+[[package]]
 name = "mizar-build"
 version = "0.1.0"
 dependencies = [

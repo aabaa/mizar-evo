@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/mizar-artifact",
+    "crates/mizar-atp",
     "crates/mizar-build",
     "crates/mizar-checker",
     "crates/mizar-core",

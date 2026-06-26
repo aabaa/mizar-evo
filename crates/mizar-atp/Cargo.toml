@@ -1,0 +1,19 @@
+[package]
+name = "mizar-atp"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "mizar_atp"
+path = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+mizar-core = { path = "../mizar-core" }
+mizar-kernel = { path = "../mizar-kernel" }
+mizar-session = { path = "../mizar-session" }
+mizar-vc = { path = "../mizar-vc" }

@@ -63,6 +63,14 @@ and target binding for kernel SAT-backed checking. Instantiated formulas and
 SAT problems are derived by `mizar-kernel`, not produced as trusted ATP
 payload.
 
+Current gate status: satisfied for task 1 by `mizar-kernel` tasks 23-28 and
+`mizar-vc` tasks 24-25. Task 1 may add only the workspace crate shell,
+dependency boundary, crate plan, and lint-policy guard. Semantic ATP modules,
+backend integration, proof policy, witness publication, and cache promotion
+remain deferred to their own tasks. `mizar-proof` is not a workspace crate, so
+policy and witness-publication integration is an `external_dependency_gap`,
+not a reason to add placeholders here.
+
 ## Resolved And Open Decisions
 
 - **First backend and evidence route: deferred, resolved by task 15 after
@@ -86,13 +94,18 @@ Keep `cargo test -p mizar-atp` green after each task (see
 
 ### Problem layer
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-atp` workspace member depending on `mizar-session`,
      `mizar-core`, `mizar-vc`, and `mizar-kernel`; add
      `tests/lint_policy.rs` mirroring the `mizar-frontend` guard.
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: `mizar-vc` task 24, `mizar-kernel` tasks 23-25. Spec:
      architecture 09 and the post-closeout evidence correction.
+   - Status: complete as a scaffold-only task. The crate plan classifies the
+     pre-existing missing crate as `source_drift`, keeps all semantic module
+     implementation deferred until paired specs exist, and records the absent
+     `mizar-proof` integration and first-backend route as
+     `external_dependency_gap`/`deferred`.
 
 2. **Spec: `problem.md`.** [ ]
    - Write the `AtpProblem` data-shape spec (English and Japanese, no code):
