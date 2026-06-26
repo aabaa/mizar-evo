@@ -81,6 +81,7 @@ Detail key は安定した API value である。Diagnostic text はこれらの
 | `resource_exhaustion` | `certificate_rejection` or `kernel_rejection` | deterministic size、count、recursion、memory、trace-length、replay-cost limit を超えた。 |
 | `invalid_substitution` | `kernel_rejection` | capture avoidance、alpha-conversion、freshness、free-variable side-condition replay が失敗した。 |
 | `invalid_sat_proof` | `kernel_rejection` | clause または MiniSAT-compatible resolution replay が失敗した。pivot、parent、resolvent、final-goal derivation mismatch を含む。 |
+| `invalid_sat_refutation` | `kernel_rejection` | corrected formula/substitution evidence path の SAT-backed refutation check が失敗した。kernel-derived SAT problem が satisfiable、kernel derivation 後に malformed、target goal と不一致、または trusted SAT checker に reject された場合を含む。これは closeout 後の SAT-proof replay failure の successor である。 |
 | `invalid_cluster_trace` | `kernel_rejection` | explicit cluster または reduction trace replay が失敗した。hidden transitive expansion、invalid reduction substitution、strategy-audit mismatch を含む。 |
 | `unresolved_symbol` | `kernel_rejection` | referenced symbol、imported theorem、imported axiom、VC、content fingerprint、required imported proof status が利用不能、不一致、または current kernel profile が許すより弱い。 |
 | `timeout` | `kernel_rejection` | deterministic checker budget が replay を停止した。pure parser failure はこの detail を emit しない。 |
@@ -180,6 +181,8 @@ Task 7 は情報を失わずにそれを map しなければならない。
 | `checker` imported facts | missing imported theorem or axiom、fingerprint mismatch、unavailable VC or symbol、current kernel profile が許すより弱い status で accepted された imported theorem | `unresolved_symbol` |
 | `checker` service | missing candidate、premise、immutable context provenance | `missing_provenance` |
 | `checker` service | normalized certificate replay 前の malformed service-level witness data | `malformed_witness_data` |
+| `checker` service | normal proof policy 下で提出された legacy certificate、legacy resolution trace、backend proof method、SMT proof object、backend log | `unsupported_certificate_format` |
+| `sat_encoding` / `sat_checker` | satisfiable derived SAT problem、invalid refutation result、kernel derivation 後の unsupported SAT clause、SAT checker deterministic error | `invalid_sat_refutation` |
 | `checker` service | deterministic replay budget stop | budget が time-step 型なら `timeout`、size/memory/count 型なら `resource_exhaustion` |
 
 kernel は missing premise を synthesize したり、alternate parent を search したり、
@@ -221,6 +224,9 @@ Human diagnostic message は、stable category、detail、ordering、location se
 - `spec_gap`: architecture 15 は rejection reason を命名するが、shared
   `mizar-kernel` record shape、parser mapping、checker mapping、deterministic
   location rule は定義していない。この module spec は task 6 でその gap を閉じる。
+  Task 23 は corrected SAT-backed evidence path のために `invalid_sat_refutation`
+  を追加し、task 29 が public surface を gate または retire するまで
+  `invalid_sat_proof` を legacy resolution-replay detail として残す。
 - `test_gap`: task 7 では stable category/detail key、parser error conversion、
   deterministic ordering、`#[non_exhaustive]` public enum、pure parser failure が
   `timeout` にならない保証の Rust tests が必要である。

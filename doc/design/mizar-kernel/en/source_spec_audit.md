@@ -256,20 +256,45 @@ Correspondence summary:
 
 ## Trust Statement Audit
 
-Each module specification has a `## Trust Statement` section and is guarded to
-contain the trusted-kernel statement plus the full task-20 prohibition family:
-proof search, SAT solving, ATP search or backend invocation, premise selection,
-overload resolution, cluster search, implicit coercion insertion, fallback
-inference, backend-reported success alone, source loading, cache lookup,
-artifact lookup, wall-clock or random-state reads, unordered iteration
-dependence, and hidden reads of mutable compiler-global state.
+Each source-backed exported module specification has a `## Trust Statement`
+section and is guarded to contain the trusted-kernel statement plus the full
+task-20 prohibition family. Task 23 corrects the SAT wording: proof search, ATP
+search or backend invocation, premise selection, overload resolution, cluster
+search, implicit coercion insertion, fallback inference, backend-reported
+success alone, source loading, cache lookup, artifact lookup, wall-clock or
+random-state reads, unordered iteration dependence, and hidden reads of mutable
+compiler-global state remain forbidden. Trusted SAT checking is allowed only
+over SAT problems derived by the kernel from validated formula/substitution
+evidence.
+
+The new task-23 `formula_evidence`, `sat_encoding`, and `sat_checker` specs are
+planned/unimplemented design surfaces. They are intentionally not included in
+the executable source-backed guard until tasks 25-27 add the corresponding
+exported modules.
+
+## Post-Closeout Correction Addendum
+
+Task 23 adds the corrected design surface before source changes:
+
+- `formula_evidence.md` defines the kernel-owned formula/substitution evidence
+  schema and legacy unsupported handling;
+- `sat_encoding.md` defines kernel-derived deterministic SAT encoding;
+- `sat_checker.md` defines the trusted in-process Rust SAT checker wrapper and
+  task-24 audit requirements.
+
+The current source inventory above remains the task-22 legacy public surface
+until tasks 25-29 add the new modules and gate or retire legacy
+resolution-trace acceptance. The legacy `check_kernel_certificate` path is
+classified as `source_drift` / `design_drift` against the corrected evidence
+format and must not be treated as the target normal proof policy.
 
 ## Test Traceability
 
 The public surface above is exercised by module-local Rust tests and the
-cross-module lint guard. Task 20 does not create source-derived `.miz`
-certificate fixtures; that remains deferred until a source-to-certificate runner
-exists.
+cross-module lint guard. Task 20 does not create source-derived `.miz` evidence
+fixtures. After the task-23 correction, future corpus coverage must target
+source-derived formula/substitution evidence; legacy certificate-runner work is
+migration-only and remains deferred.
 
 | Module / boundary | Test path | Covered behavior |
 |---|---|---|
@@ -288,7 +313,7 @@ exists.
 | ID | Class | Evidence | Current action |
 |---|---|---|---|
 | KERNEL20-G001 | `external_dependency_gap` / `deferred` | Source-derived certificate and service envelopes are not produced by an active upstream crate or corpus runner. | Keep Rust fixture coverage and reject missing evidence; do not fabricate source-derived runner support. |
-| KERNEL20-G002 | `external_dependency_gap` / `deferred` | ATP proof translation and MiniSAT-compatible backend trace extraction are producer-owned and not available as a stable `mizar-atp` contract. | Kernel checks normalized traces only; no ATP backend invocation or proof translation is added. |
+| KERNEL20-G002 | `external_dependency_gap` / `deferred` | Formula/substitution evidence candidate production is producer-owned and not available as a stable `mizar-atp` contract. ATP proof translation and MiniSAT-compatible backend trace extraction are legacy migration material, not trusted output. | Kernel checks normalized formula/substitution evidence after tasks 25-28; no ATP backend invocation or trusted proof translation is added. |
 | KERNEL20-G003 | `external_dependency_gap` / `deferred` | Cluster/reduction payload production by `mizar-checker` is not a ready integration contract. | Kernel replays explicit cluster/reduction payloads only; no cluster search or payload synthesis is added. |
 | KERNEL20-G004 | `external_dependency_gap` / `deferred` | Derived-fact payload schema beyond current explicit checked inputs remains downstream/provenance-owned. | Derived facts remain fail-closed unless backed by checked evidence. |
 | KERNEL20-G005 | `external_dependency_gap` / `deferred` | Service-envelope normalization, cancellation token plumbing, and external worker scheduling are integration concerns outside the crate. | In-crate checks remain deterministic and synchronous over immutable inputs. |

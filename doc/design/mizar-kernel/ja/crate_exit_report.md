@@ -9,24 +9,39 @@ Status: complete。
 Quality score: 95/100。
 Score caps applied: none。
 
+Closeout 後 correction: commit `c6d94fe51923aa0363ea7297bfe4e9f905aef076`
+は task-22 evidence target を supersede する。この report は legacy resolution-trace
+milestone の closeout record として残る。Tasks 23-29 は formula/substitution evidence
+pipeline、trusted in-process SAT checking、legacy path migration audit のために crate を
+再開する。
+
 ## Scope
 
 Milestone scope:
 
 - `mizar-kernel` crate を preliminary task 0 から task 22 と closeout task まで
   構築する。
-- pipeline phase 14 を所有する: trusted proof-certificate checking、normalized
-  certificate parsing、canonical clause validation、MiniSAT-compatible
-  resolution trace replay、substitution/alpha/free-variable replay、imported
-  fact checking、explicit cluster/reduction trace replay、deterministic
-  check-service orchestration。
+- task-22 legacy phase-14 surface を所有する: normalized certificate parsing、
+  canonical clause validation、MiniSAT-compatible resolution trace replay、
+  substitution/alpha/free-variable replay、imported fact checking、explicit
+  cluster/reduction trace replay、deterministic check-service orchestration。
 - immutable normalized certificate と explicit kernel context を evidence として
   だけ消費する。構文解析や backend success は、それ自体では決して trust を
   与えない。
-- SAT solving、ATP backend execution、proof search、premise selection、overload
+- SAT solving を task-22 legacy milestone の外に保ち、ATP backend execution、proof search、premise selection、overload
   resolution、cluster search、implicit coercion insertion、fallback inference、
   global mutable compiler state、proof-policy projection、cache lookup、artifact
   publication、未完成 producer/consumer integration は crate 外に保つ。
+
+Post-correction scope:
+
+- Kernel-derived SAT problem に対する SAT checking は、task 24 が dependency/wrapper を
+  audit し、tasks 25-28 が validated formula/substitution evidence から problem を導出した後に
+  限って trusted として許可される。
+- Backend proof method、resolution trace、SMT proof object、backend log は trusted
+  acceptance material の外に残る。
+- Legacy certificate/resolution-trace acceptance は、task 29 が normal proof policy 向けに
+  gate または retire するまで `source_drift` である。
 
 Included:
 
@@ -39,10 +54,11 @@ Included:
 
 Excluded:
 
-- `doc/spec` への直接編集。
+- task-22 legacy milestone のための `doc/spec` への直接編集。
 - 既存 `.miz` fixture または expectation sidecar の rebaseline。
-- Source-derived certificate corpus fixture または source-to-certificate runner。
-- SAT solver または ATP backend implementation。
+- Source-derived formula/substitution evidence corpus fixture または
+  source-to-kernel-evidence runner。
+- task-22 legacy milestone のための SAT solver または ATP backend implementation。
 - Proof-policy projection、proof witness publication、cache hit acceptance、
   artifact validation。
 - 未完成の `mizar-atp`、`mizar-proof`、`mizar-cache`、`mizar-artifact` seam との
@@ -126,7 +142,7 @@ gate failure でもないため score cap はない。
 
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
-| KERNEL-CLOSEOUT-G001 | `external_dependency_gap` | normalized kernel certificate を feed する active source-to-certificate runner または `.miz` proof-verification corpus がない。 | Source-derived kernel corpus fixture を有効化する前に、owning staged-test/source-to-certificate runner を追加する。 |
+| KERNEL-CLOSEOUT-G001 | `external_dependency_gap` | formula/substitution evidence を feed する active source-to-kernel-evidence runner または `.miz` proof-verification corpus がない。 | Source-derived formula/substitution evidence corpus fixture を有効化する前に、owning staged-test/source-to-kernel-evidence runner を追加する。 |
 | KERNEL-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-atp` は active certificate/trace producer ではなく、real MiniSAT-compatible backend trace は stable producer contract として利用不能。 | ATP crate と trace extraction contract を構築する。kernel は normalized trace だけを replay し続ける。 |
 | KERNEL-CLOSEOUT-G003 | `external_dependency_gap` | `mizar-proof` は `KernelCheckResult` の active policy consumer ではない。proof-status projection と externally authenticated evidence policy は downstream のまま。 | `mizar-proof` に crate plan と consumer contract つきで proof-policy consumer を追加する。 |
 | KERNEL-CLOSEOUT-G004 | `external_dependency_gap` | `mizar-cache` と `mizar-artifact` は kernel output 用の active proof-cache/proof-witness consumer contract を提供しない。 | downstream cache/artifact phase が validation と publication contract を定義してから kernel coupling を追加する。 |
@@ -200,9 +216,10 @@ task. Preserve the one-task-one-commit rule; do not scaffold mizar-atp source
 until the task-0 plan commit exists.
 ```
 
-Rationale: `mizar-atp` は、この trusted kernel が check する normalized
-certificate と MiniSAT-compatible trace を emit しなければならない次の producer
-phase である。external backend execution、trace normalization、certificate
+Rationale: この task-22 handoff は tasks 23-29 で追跡する post-closeout correction に
+supersede される。`mizar-atp` は trusted normalized certificate や
+MiniSAT-compatible trace ではなく、candidate formula/substitution evidence を emit
+しなければならない。external backend execution、evidence projection、kernel
 soundness、downstream proof-policy boundary をまたぐため `xhigh` を維持する。
 typo-only documentation sync だけなら下げてよい。repository metadata や
 specification contradiction が crate plan を block する場合だけ上げる。

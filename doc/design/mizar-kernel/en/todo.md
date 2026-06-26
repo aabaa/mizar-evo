@@ -26,16 +26,16 @@ target/goal binding; selecting formulas or substitutions remains prohibited.
 |---|---|---|---|
 | clause | `clause.md` (task 2) | `src/clause.rs` | [x] |
 | certificate_parser | `certificate_parser.md` (task 4) | `src/certificate_parser.rs` | [x] |
-| formula_evidence | `formula_evidence.md` (task 25) | `src/formula_evidence.rs` | [ ] |
+| formula_evidence | `formula_evidence.md` (task 23) | `src/formula_evidence.rs` | [ ] |
 | rejection | `rejection.md` (task 6) | `src/rejection.rs` | [x] |
 | resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [x] |
-| sat_encoding | `sat_encoding.md` (task 26) | `src/sat_encoding.rs` | [ ] |
-| sat_checker | `sat_checker.md` (task 27) | `src/sat_checker.rs` | [ ] |
+| sat_encoding | `sat_encoding.md` (task 23) | `src/sat_encoding.rs` | [ ] |
+| sat_checker | `sat_checker.md` (task 23) | `src/sat_checker.rs` | [ ] |
 | substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [x] |
 | checker | `checker.md` (task 13) | `src/checker.rs` | [x] |
 
-`mizar-kernel` implements pipeline phase 14: proof certificates and kernel
-context in, trusted proof status out. It is the trusted core of the whole
+`mizar-kernel` implements pipeline phase 14: kernel evidence and immutable
+kernel context in, trusted proof status out. It is the trusted core of the whole
 verifier (Small Kernel Principle): it verifies evidence only. The
 post-closeout target is formula/substitution evidence in, trusted proof status
 out: parse and validate the evidence, check provenance, validate and apply
@@ -88,15 +88,16 @@ integration: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_i
   kernel, but it must not call external SAT/ATP processes or implement ATP
   search. Dependency choice, version pinning, determinism, limits, unsafe
   usage, and audit notes must be recorded before source integration.
-- **Certificate schema ownership: resolved by task 4.** Architecture 15
-  defines the certificate format, and `mizar-kernel` owns the normalized
-  certificate schema types, schema-version table, section tags, byte grammar,
-  and parser-owned failure locations. Future evidence producers such as
-  `mizar-atp` may construct this schema, but the kernel never depends on
-  evidence producers. Producer/consumer integration remains an
+- **Legacy certificate schema ownership: resolved by task 4.** Architecture 15
+  previously defined the normalized certificate format, and `mizar-kernel`
+  owns those legacy certificate schema types, schema-version table, section
+  tags, byte grammar, and parser-owned failure locations until the migration
+  gate retires or isolates them. Future evidence producers such as `mizar-atp`
+  must construct the formula/substitution evidence schema instead; the kernel
+  never depends on evidence producers. Producer/consumer integration remains an
   `external_dependency_gap` until those crates exist. This decision is legacy
-  for the resolution-trace acceptance path and must be migrated to the
-  formula/substitution evidence schema by tasks 23-29.
+  for the resolution-trace acceptance path and is superseded by the task-23
+  formula/substitution evidence schema for normal proof acceptance.
 - **Trusted-baseline crate policy: resolved by task 1, pending task-24
   revision.** Trusted kernel source
   forbids unsafe code, uses workspace lint denial, keeps production
@@ -294,13 +295,18 @@ Keep `cargo test -p mizar-kernel` green after each task (see
 
 ### Post-closeout SAT-backed evidence correction
 
-23. **Spec: kernel evidence format correction.** [ ]
+23. **Spec: kernel evidence format correction.** [x]
     - Update the paired module specs to supersede resolution-trace
       certificates with formula/substitution kernel evidence. Classify the
       legacy resolution-trace acceptance path as `design_drift` /
       `source_drift`, record external producer gaps, and restate that SAT
       checking over supplied evidence is allowed while proof search remains
       prohibited.
+      Task 23 adds paired `formula_evidence.md`, `sat_encoding.md`, and
+      `sat_checker.md`; updates the proof-related language spec text; updates
+      checker/rejection/resolution-trace docs; and records that legacy
+      certificate/trace inputs are normal-policy unsupported and
+      migration/audit-only.
     - Tests: docs-only verification.
     - Deps: 22. Spec:
       [15.kernel_certificate_format.md](../../architecture/en/15.kernel_certificate_format.md),
@@ -324,7 +330,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       only if it is clearly outside the new acceptance path.
     - Tests: structural round-trips; malformed evidence rejected; provenance
       gaps reject fail-closed; deterministic rendering and hashing.
-    - Deps: 23, 24. Spec: `formula_evidence.md`.
+    - Deps: 23, 24. Spec: `formula_evidence.md` from task 23.
 
 26. **Formula instantiation and deterministic SAT encoding.** [ ]
     - Validate substitution side conditions, derive instantiated formulas
@@ -345,7 +351,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       solver errors to stable kernel rejections.
     - Tests: satisfiable evidence rejects; unsatisfiable evidence accepts;
       limits, unsupported clauses, and solver errors reject deterministically.
-    - Deps: 24, 26. Spec: `sat_checker.md`.
+    - Deps: 24, 26. Spec: `sat_checker.md` from task 23.
 
 28. **SAT-backed kernel check service.** [ ]
     - Replace the trusted acceptance path so `checker` accepts only validated

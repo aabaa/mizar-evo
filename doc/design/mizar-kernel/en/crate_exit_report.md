@@ -9,24 +9,40 @@ Status: complete.
 Quality score: 95/100.
 Score caps applied: none.
 
+Post-closeout correction: commit `c6d94fe51923aa0363ea7297bfe4e9f905aef076`
+supersedes the task-22 evidence target. This report remains the closeout record
+for the legacy resolution-trace milestone. Tasks 23-29 reopen the crate for the
+formula/substitution evidence pipeline, trusted in-process SAT checking, and
+legacy path migration audit.
+
 ## Scope
 
 Milestone scope:
 
 - Build the `mizar-kernel` crate from preliminary task 0 through task 22 and
   the closeout task.
-- Own pipeline phase 14: trusted proof-certificate checking, normalized
-  certificate parsing, canonical clause validation, MiniSAT-compatible
-  resolution trace replay, substitution/alpha/free-variable replay, imported
-  fact checking, explicit cluster/reduction trace replay, and deterministic
-  check-service orchestration.
+- Own the task-22 legacy phase-14 surface: normalized certificate parsing,
+  canonical clause validation, MiniSAT-compatible resolution trace replay,
+  substitution/alpha/free-variable replay, imported fact checking, explicit
+  cluster/reduction trace replay, and deterministic check-service
+  orchestration.
 - Consume immutable normalized certificates and explicit kernel contexts as
   evidence only; parsing or backend success never grants trust by itself.
-- Keep SAT solving, ATP backend execution, proof search, premise selection,
+- Keep SAT solving outside the task-22 legacy milestone, and keep ATP backend execution, proof search, premise selection,
   overload resolution, cluster search, implicit coercion insertion, fallback
   inference, global mutable compiler state, proof-policy projection, cache
   lookup, artifact publication, and unfinished producer/consumer integration
   outside the crate.
+
+Post-correction scope:
+
+- SAT checking over a kernel-derived SAT problem is now allowed and trusted only
+  after task 24 audits the dependency/wrapper and tasks 25-28 derive the problem
+  from validated formula/substitution evidence.
+- Backend proof methods, resolution traces, SMT proof objects, and backend logs
+  remain outside trusted acceptance material.
+- Legacy certificate/resolution-trace acceptance is `source_drift` until task 29
+  gates or retires it for normal proof policy.
 
 Included:
 
@@ -39,10 +55,11 @@ Included:
 
 Excluded:
 
-- Direct edits to `doc/spec`.
+- Direct edits to `doc/spec` for the task-22 legacy milestone.
 - Rebaselining existing `.miz` fixtures or expectation sidecars.
-- Source-derived certificate corpus fixtures or a source-to-certificate runner.
-- SAT solver or ATP backend implementation.
+- Source-derived formula/substitution evidence corpus fixtures or a
+  source-to-kernel-evidence runner.
+- SAT solver or ATP backend implementation for the task-22 legacy milestone.
 - Proof-policy projection, proof witness publication, cache hit acceptance, or
   artifact validation.
 - Placeholder integration with unfinished `mizar-atp`, `mizar-proof`,
@@ -128,7 +145,7 @@ gate fails.
 
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
-| KERNEL-CLOSEOUT-G001 | `external_dependency_gap` | No active source-to-certificate runner or `.miz` proof-verification corpus feeds normalized kernel certificates. | Add the owning staged-test/source-to-certificate runner before activating source-derived kernel corpus fixtures. |
+| KERNEL-CLOSEOUT-G001 | `external_dependency_gap` | No active source-to-kernel-evidence runner or `.miz` proof-verification corpus feeds formula/substitution evidence. | Add the owning staged-test/source-to-kernel-evidence runner before activating source-derived formula/substitution evidence corpus fixtures. |
 | KERNEL-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-atp` is not an active certificate/trace producer, and real MiniSAT-compatible backend traces are not available as a stable producer contract. | Build the ATP crate and trace extraction contract; kernel continues to replay normalized traces only. |
 | KERNEL-CLOSEOUT-G003 | `external_dependency_gap` | `mizar-proof` is not an active policy consumer of `KernelCheckResult`; proof-status projection and externally authenticated evidence policy remain downstream. | Add proof-policy consumers in `mizar-proof` with their own crate plan and consumer contract. |
 | KERNEL-CLOSEOUT-G004 | `external_dependency_gap` | `mizar-cache` and `mizar-artifact` do not provide active proof-cache/proof-witness consumer contracts for kernel outputs. | Downstream cache/artifact phases define validation and publication contracts before any kernel coupling is added. |
@@ -203,10 +220,11 @@ task. Preserve the one-task-one-commit rule; do not scaffold mizar-atp source
 until the task-0 plan commit exists.
 ```
 
-Rationale: `mizar-atp` is the next producer phase that must emit normalized
-certificates and MiniSAT-compatible traces for this trusted kernel to check.
-Keep `xhigh` because the work crosses external backend execution, trace
-normalization, certificate soundness, and downstream proof-policy boundaries.
+Rationale: this task-22 handoff is superseded by the post-closeout correction
+tracked in tasks 23-29. `mizar-atp` must now emit candidate formula/substitution
+evidence, not trusted normalized certificates or MiniSAT-compatible traces.
+Keep `xhigh` because the work crosses external backend execution, evidence
+projection, kernel soundness, and downstream proof-policy boundaries.
 Lower reasoning is appropriate only for typo-only documentation sync; raise
 only if repository metadata or specification contradictions block the crate
 plan.

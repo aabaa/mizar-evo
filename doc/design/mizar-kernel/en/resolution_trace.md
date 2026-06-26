@@ -17,6 +17,20 @@ Resolution replay is evidence checking, not solving. A successful replay proves
 only that the listed steps follow from their listed parents; final proof
 acceptance remains owned by the later `checker` module.
 
+## Post-Closeout Correction
+
+This module is legacy compatibility surface after the formula/substitution
+evidence correction. Normal proof policy must not treat a replayed
+MiniSAT-compatible resolution trace as trusted acceptance material. Task 29
+must gate or retire public uses so downstream crates cannot mistake replay
+success for `kernel_verified`.
+
+Migration/audit mode may inspect legacy traces and produce deterministic
+rejection or audit records, but it must not produce accepted kernel results,
+trusted `used_axioms`, proof witnesses, cache promotion, or artifact proof
+status. New ATP work must produce formula/substitution evidence candidates
+instead of this trace format.
+
 ## Trust Statement
 
 This module is trusted kernel code. It must replay explicit resolution steps in

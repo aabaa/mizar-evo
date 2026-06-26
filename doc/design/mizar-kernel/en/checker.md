@@ -5,11 +5,13 @@
 
 ## Purpose
 
-The `checker` module owns phase-14 orchestration for a normalized kernel
-certificate. It composes the parser, imported-fact validation, substitution
-checking, resolution replay, explicit cluster/reduction trace replay, derived
-fact validation, and final-goal acceptance into one policy-independent kernel
-result.
+The `checker` module owns phase-14 orchestration for kernel evidence. The
+corrected normal path composes formula/substitution evidence parsing,
+provenance validation, substitution checking, deterministic SAT encoding, and
+trusted in-process SAT checking into one policy-independent kernel result.
+Legacy normalized-certificate and resolution-replay orchestration is retained
+in this document only as task-22 migration/audit inventory until tasks 25-29
+replace, gate, or retire that surface.
 
 The module refines
 [architecture 15](../../architecture/en/15.kernel_certificate_format.md)
@@ -35,6 +37,12 @@ search for formulas, invent substitutions, try alternate encodings, minimize
 premises, call ATP/SAT child processes, or fall back to inference outside the
 evidence.
 
+Legacy `ParsedCertificate` and `resolution_trace` inputs are therefore
+migration/audit compatibility inputs only. Under normal proof policy they must
+return an unsupported-evidence rejection rather than `Accepted`; audit mode may
+report deterministic inspection data but cannot emit trusted `used_axioms`,
+proof witnesses, cache promotion, or artifact `kernel_verified` status.
+
 ## Trust Statement
 
 This module is trusted kernel code. It may accept a proof only after all
@@ -53,31 +61,28 @@ or policy permission never replace kernel checking.
 Task 20 audited the legacy trust boundary as including no SAT solving. Tasks
 23-29 replace that with the stricter distinction between prohibited proof
 search and permitted trusted SAT checking over supplied evidence. The boundary
-continues to include no ATP search or backend invocation, no premise
-selection, no overload resolution, no cluster search, no implicit coercion
-insertion, no fallback inference, no acceptance from backend-reported success
-alone, no source loading, no cache lookup, no artifact lookup, no wall-clock
-or random-state reads, no unordered iteration dependence, and no hidden reads
-of mutable compiler-global state.
+continues to include no proof search, no ATP search or backend invocation, no
+premise selection, no overload resolution, no cluster search, no implicit
+coercion insertion, no fallback inference, no acceptance from backend-reported
+success alone, no source loading, no cache lookup, no artifact lookup, no
+wall-clock or random-state reads, no unordered iteration dependence, and no
+hidden reads of mutable compiler-global state.
 
 ## Owned Behavior
 
 The module owns:
 
-- constructing one deterministic check pipeline over an already parsed
-  `ParsedCertificate`;
-- validating the certificate target, profile, and immutable kernel context
-  binding;
-- validating imported axioms and theorems by stable identity, statement
-  fingerprint, and required proof status;
-- supplying imported-clause evidence to `resolution_trace`;
-- invoking `substitution_checker` and `resolution_trace` and verifying their
-  private report bindings before using checked outputs;
-- validating explicit cluster/reduction traces once their evidence schema is
-  implemented;
-- validating `derived_facts` and `final_goal`;
-- extracting trusted `used_axioms` from checked imported fact references only;
-- returning deterministic accepted/rejected `KernelCheckResult` values.
+- checking corrected formula/substitution evidence through `formula_evidence`,
+  `sat_encoding`, and `sat_checker`;
+- extracting trusted `used_axioms` only from accepted formula evidence whose
+  provenance binds to accepted imported axiom/theorem formulas;
+- retaining the task-22 `ParsedCertificate` / `resolution_trace` orchestration
+  only as legacy migration/audit surface until task 29 gates or retires it;
+- validating legacy certificate target, profile, imported facts, substitutions,
+  cluster/reduction traces, derived facts, and final goal only when the checker
+  explicitly runs in that migration/audit surface;
+- returning deterministic rejected results for unsupported legacy evidence
+  under normal proof policy.
 
 The module does not own:
 
@@ -90,6 +95,32 @@ The module does not own:
 - proof-policy projection, witness publication, cache reuse, or artifact
   emission;
 - choosing among multiple backend candidates.
+- ATP translation, backend proof-method parsing, or backend log trust.
+
+## Corrected Input And Context
+
+The post-closeout normal input is:
+
+```text
+KernelEvidenceCheckInput
+  target_vc_fingerprint
+  kernel_evidence
+  immutable_formula_context
+  checker_policy
+  checker_limits
+```
+
+`kernel_evidence` is the schema from `formula_evidence.md`. The checker
+validates target/profile/context binding, formula provenance, imported fact
+identity and proof status, explicit substitutions, deterministic SAT encoding,
+and trusted SAT checker UNSAT. Caller-supplied instantiated formulas, SAT
+clauses, backend proof methods, resolution traces, SMT proof objects, backend
+logs, and backend-reported used axioms are ignored or rejected as untrusted
+acceptance material.
+
+The legacy `KernelCheckInput` below remains a task-22 source inventory item
+until task 28 replaces the normal acceptance path and task 29 gates or retires
+the legacy surface.
 
 ## Input And Context
 
@@ -301,17 +332,21 @@ CheckedFinalGoal
   id
 ```
 
-`accepted` means the normalized certificate's final goal was checked by this
-crate. It does not encode artifact-facing proof status. `mizar-proof` or a
-later policy layer may project accepted ATP certificates as `kernel_verified`
-and accepted built-in certificates as `discharged_builtin`, but that projection
-is outside this crate.
+In the task-22 legacy inventory, `accepted` meant that this crate checked the
+normalized certificate's final goal. After the task-23 correction, that legacy
+status is not sufficient for normal proof-policy acceptance: legacy
+certificates and `resolution_trace` inputs are migration/audit-only unless
+tasks 25-29 translate or replace the path with formula/substitution evidence
+and SAT-backed checking. Artifact-facing proof status remains outside this
+crate, and no policy layer may project a legacy ATP result as `kernel_verified`
+under the corrected normal policy.
 
-`used_axioms` is derived only from checked imported axiom/theorem references
-actually used by the accepted certificate. Backend-reported used-axiom lists
-are ignored unless the normalized certificate and imported-fact context make
-the same facts checkable. Imported axiom and imported theorem ids remain
-separate namespaces when deriving `used_axioms` and constructing
+For the corrected path, `used_axioms` is derived only from checked imported
+axiom/theorem formula evidence actually used by accepted
+formula/substitution evidence. Backend-reported used-axiom lists are ignored
+unless the evidence and imported-fact context make the same facts checkable.
+Imported axiom and imported theorem ids remain separate namespaces when
+deriving `used_axioms` and constructing
 `CheckedFactContext`; `imported_axiom(1)` and `imported_theorem(1)` are
 distinct checked facts.
 
@@ -343,9 +378,13 @@ input index for equal targets. Evidence ids, worker completion order,
 cancellation arrival order, or parallel scheduling must not affect result
 order inside this crate.
 
-## Check Pipeline
+## Legacy Task-22 Check Pipeline
 
-The checker runs these steps in deterministic order:
+The task-22 checker inventory ran these steps in deterministic order for legacy
+normalized certificates. After the task-23 correction, this is not the normal
+proof-policy acceptance path. Normal proof policy must reject legacy
+`ParsedCertificate` / `resolution_trace` submissions as unsupported unless
+tasks 25-29 replace or gate this path behind an explicit migration/audit mode.
 
 1. Confirm the parsed certificate target and kernel profile match the caller's
    expected target and checker configuration.
@@ -367,12 +406,15 @@ The checker runs these steps in deterministic order:
 9. Validate `final_goal` by resolving the referenced generated clause,
    resolution step, or supported derived fact and checking that it is the
    empty obligation or canonical final fact required by the target VC.
-10. Emit one accepted result, or a deterministic rejected result containing the
-    earliest stable rejection record for that failed check.
+10. In legacy migration/audit mode, emit one deterministic audit result, or a
+    deterministic rejected result containing the earliest stable rejection
+    record for that failed check. Under normal proof policy, this legacy path
+    must not emit `kernel_verified`, trusted `used_axioms`, proof witnesses,
+    cache promotion, or artifact acceptance.
 
 The checker must never repair failed sub-checker reports or try alternate
-pipelines. If any sub-checker rejects evidence, the checker rejects the
-certificate.
+pipelines. If any sub-checker rejects evidence, the checker rejects the legacy
+audit input.
 
 ## Imported Fact Checking
 
@@ -518,7 +560,7 @@ entries, cloning imported clauses, or materializing reports.
 | Nonempty derived facts, derived-fact final goals, or derived payload validation before a documented schema exists | `invalid_sat_proof` | `derived_fact_id`; richer payload/dependency validation is deferred to a later schema task |
 | Final goal mismatch or unchecked final reference | `invalid_sat_proof` | `final_goal` plus referenced id when known |
 | Target VC or context binding mismatch | `context_mismatch` | target/context field path |
-| Unsupported checker or certificate profile | `unsupported_certificate_format` | profile field path |
+| Unsupported checker or evidence profile | `unsupported_certificate_format` | profile field path |
 | Checker-owned deterministic resource budget exhausted | `resource_exhaustion` | checker budget field path |
 | In-crate deterministic checker step budget exhausted | `timeout` | checker step field path |
 | External cancellation budget exhausted after parsing | `timeout` | cancellation field path; external integration only, not produced by task 16 |
@@ -556,11 +598,12 @@ not mocked by the kernel service.
   explicit cluster/reduction trace replay tests or a recorded
   `external_dependency_gap`; task 16 needs end-to-end check-service and final
   goal tests.
-- `external_dependency_gap`: source-derived certificates, ATP proof
-  translation, cluster trace payload production by `mizar-checker`, derived
-  fact payload schemas, service-envelope witness normalization, cancellation
-  token plumbing, and proof/cache/artifact consumers are not active inputs to
-  this crate. Missing producer or consumer integration is not mocked here.
+- `external_dependency_gap`: source-derived formula/substitution evidence,
+  legacy ATP proof translation for migration audits, cluster trace payload
+  production by `mizar-checker`, derived fact payload schemas, service-envelope
+  witness normalization, cancellation token plumbing, and proof/cache/artifact
+  consumers are not active inputs to this crate. Missing producer or consumer
+  integration is not mocked here.
 - `deferred`: proof-policy projection, witness storage, cache reuse, artifact
   emission, backend-candidate selection, and external worker scheduling remain
   outside `mizar-kernel`.
@@ -592,10 +635,13 @@ Task 15 must add Rust tests for:
 - fail-closed `external_dependency_gap` behavior if upstream trace payloads are
   not ready.
 
-Task 16 must add Rust tests for:
+Task 16 added legacy Rust tests for the task-22 pipeline inventory. Post-task-23
+work must keep those tests as migration/audit coverage only; normal acceptance
+tests move to tasks 25-28 for formula/substitution evidence, deterministic SAT
+encoding, and SAT-backed checking. The legacy task-16 coverage includes:
 
-- full pipeline acceptance from checked imports, substitutions, resolution
-  trace, optional cluster trace, and final goal;
+- legacy full-pipeline audit acceptance from checked imports, substitutions,
+  resolution trace, optional cluster trace, and final goal;
 - final-goal mismatch and unchecked final references rejected deterministically;
 - duplicate context ids, duplicate evidence ids, simultaneous imported/cluster
   context failures resolved by the fail-fast pipeline, and single rejection

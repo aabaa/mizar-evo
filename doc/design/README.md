@@ -111,8 +111,8 @@ their Rust crates are added to the workspace:
   logic, and control-flow preparation.
 - [mizar-vc](./mizar-vc/en/todo.md) - VC IR, VC generation, deterministic
   pre-ATP discharge, and dependency slices.
-- [mizar-kernel](./mizar-kernel/en/todo.md) - trusted certificate parsing and
-  checking.
+- [mizar-kernel](./mizar-kernel/en/todo.md) - trusted kernel evidence parsing,
+  SAT-backed checking, and legacy certificate migration/audit handling.
 - [mizar-atp](./mizar-atp/en/todo.md) - ATP encoding, backend execution, and
   portfolio candidates.
 - [mizar-artifact](./mizar-artifact/en/todo.md) - artifact schemas, store,

@@ -29,12 +29,12 @@
 | [07.vc_generation.md](./07.vc_generation.md) | 10-12 | アルゴリズム検証の準備と証明義務の生成 | Draft |
 | [08.reasoning_boundary.md](./08.reasoning_boundary.md) | 12-14 | Mizar・ATP バックエンド・カーネルの間での推論責務の分担 | Draft |
 | [09.atp_interface_protocol.md](./09.atp_interface_protocol.md) | 13 | ATP 問題の形式とエンコード戦略 | Draft |
-| [10.atp_backend_integration.md](./10.atp_backend_integration.md) | 13 | 外部 ATP プロセスの実行、タイムアウト処理、証明書の収集 | Draft |
+| [10.atp_backend_integration.md](./10.atp_backend_integration.md) | 13 | 外部 ATP プロセスの実行、タイムアウト処理、候補 evidence の収集 | Draft |
 | [11.artifact_and_incremental_build.md](./11.artifact_and_incremental_build.md) | 15 | アーティファクトのスキーマ、キャッシュ更新、再現性 | Draft |
 | [12.diagnostics_and_lsp.md](./12.diagnostics_and_lsp.md) | 全体, 15 | 診断、メタデータ、IDE 統合 | Draft |
 | [13.documentation_and_extraction.md](./13.documentation_and_extraction.md) | 16 | ドキュメント生成とコード抽出 | Draft |
 | [14.parallel_verification_and_scheduling.md](./14.parallel_verification_and_scheduling.md) | 0, 10-15 | 検証タスクグラフ、並列スケジューリング、キャンセル、決定的な結果順序 | Draft |
-| [15.kernel_certificate_format.md](./15.kernel_certificate_format.md) | 13-14 | 最終的な証明書スキーマ、節トレースの検査、カーネルによる棄却の意味論 | Draft |
+| [15.kernel_certificate_format.md](./15.kernel_certificate_format.md) | 13-14 | formula/substitution evidence schema、kernel-derived SAT checking、kernel による棄却の意味論 | Draft |
 | [16.substitution_and_binding.md](./16.substitution_and_binding.md) | 4, 6, 9, 14 | 束縛変数、α 同値、捕獲回避、束縛子の正規化 | Draft |
 | [17.cluster_trace_format.md](./17.cluster_trace_format.md) | 7, 11, 14-15 | 再生可能な cluster 展開とリダクション適用のトレース | Draft |
 | [18.dependency_fingerprint.md](./18.dependency_fingerprint.md) | 0, 4-7, 11, 15 | 依存スライス、フィンガープリント、増分再ビルドのトリガ | Draft |
