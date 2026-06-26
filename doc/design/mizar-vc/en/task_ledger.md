@@ -38,7 +38,8 @@ backfilled by a later committed bookkeeping point or the closeout task.
 | 22. Module-boundary refactor gate | complete | `76f286f9a3d1e6d6f096b84be7b5f38873e48d42` | Spec/doc review: medium stale source/spec, bilingual audit, and task-state findings fixed; final re-review no findings. Test sufficiency review: no findings. Full implementation review: medium ledger-status finding fixed; final re-review no findings. Source/doc consistency review: no findings. | `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Docs-only audit task. Adds paired `module_boundary_audit.md`, backfills the Task 21 hash, updates source/spec and bilingual sync audit reports, and marks Task 22 complete in paired todos. No Rust source, `.miz` fixtures, expectations, `doc/spec`, traceability metadata, runner support, downstream ATP/kernel/proof/cache integration, public APIs, diagnostics, deterministic renderings, or artifact-facing schemas are changed. No required move-only split was found; optional private helper/test splits inside large modules are deferred maintenance tasks if pursued. |
 | Closeout. Crate exit report and quality review | complete | `0996ad28c57298bd68024eb1f9a6638ef7e37108` | Spec/doc review: no findings. Test sufficiency review: no findings. Full implementation review: no findings. Source/doc consistency review: no findings. Read-only crate quality review: hard gates pass, score 94/100. | `cargo fmt --check` passed; `cargo clippy --all-targets --all-features -- -D warnings` passed; `cargo test` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit path staging. | Docs-only closeout task. Adds paired `crate_exit_report.md`, updates plan/todo/audit ledgers, backfills the Task 22 hash, records all task commits, records broad verification, classifies remaining `external_dependency_gap` / `deferred` items, and hands off to the next owner for proof-verification runner/extraction or downstream ATP/kernel/proof/cache work. Rust source, `.miz` fixtures, expectations, `doc/spec`, traceability metadata, runner support, ATP/kernel/proof/cache consumers, public APIs, diagnostics, deterministic renderings, and artifact-facing schemas are unchanged. |
 | 24. Spec: kernel evidence handoff | complete | `c33c583d107c8211c22efcbb89d88144f32d163c` | Spec/doc review: initial high premise-selection wording and medium imported-context finding fixed; final re-review no blocking/high/medium findings. Test sufficiency review: no findings. Full implementation review: initial medium envelope-shape and stale next-handoff findings fixed; final re-review no blocking/high/medium findings. Source/doc consistency review: no findings. | `git diff --check` passed; `cargo test -p mizar-vc --test lint_policy --offline` passed; `git diff --cached --check` passed after explicit path staging. | Docs-only post-closeout correction task. Adds paired `kernel_evidence_handoff.md`, updates plan/todo/audit/exit-report classifications after `mizar-kernel` tasks 23-29, and records the task-25 handoff. Rust source, `.miz` fixtures, expectations, `doc/spec`, traceability metadata, runner support, SAT solving, kernel calls, ATP backends, backend proof methods, resolution traces, legacy certificate acceptance, and fabricated formula/substitution/provenance payloads are unchanged. |
-| 25. Kernel evidence handoff builder | complete | pending self-hash | Spec/doc review: initial high ledger/task-state inconsistency plus medium discharge-record and fingerprint-algorithm findings fixed; final re-review no blocking/high/medium findings. Test sufficiency review: initial medium generated-premise/provenance and missing-payload coverage findings, follow-up medium proof-hint/discharge identity, generated/imported fail-closed, and context-canonicalization findings, plus low ordering/API-name guard findings fixed; final re-review no findings. Full implementation review: initial high imported-fingerprint mismatch, medium proof-hint target-binding, context canonicalization, substitution side-condition, status-evidence target, and premise-order findings, plus low role/diagnostic findings fixed; final re-review no findings. Source/doc consistency review: initial medium task-state and stale-handoff finding fixed; final re-review no findings. | `cargo fmt --check` passed; `cargo test -p mizar-vc kernel_evidence_handoff --offline` passed; `cargo test -p mizar-vc --test lint_policy --offline` passed; `cargo test -p mizar-vc --offline` passed; `cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings` passed; `cargo test -p mizar-core --offline` passed; `cargo test -p mizar-kernel --offline` passed; `cargo test -p mizar-artifact --offline` passed; `cargo test -p mizar-checker --offline` passed; `git diff --check` passed before explicit staging. | Rust source/docs task. Adds `src/kernel_evidence_handoff.rs`, exposes the module, registers lint-policy guards, and implements immutable producer-side handoff packages for explicit formula/substitution/provenance/target-binding payloads. No SAT solving, kernel calls, ATP backend calls, backend proof methods, resolution traces, legacy certificate acceptance, caller-supplied instantiated formulas, or fabricated payloads are added. Downstream ATP/proof/cache/artifact consumers and task-26 reuse-hash integration remain `external_dependency_gap` / `deferred`. |
+| 25. Kernel evidence handoff builder | complete | `0ed1bc23e2bc7f66d2f4f53a8e289721d47105b9` | Spec/doc review: initial high ledger/task-state inconsistency plus medium discharge-record and fingerprint-algorithm findings fixed; final re-review no blocking/high/medium findings. Test sufficiency review: initial medium generated-premise/provenance and missing-payload coverage findings, follow-up medium proof-hint/discharge identity, generated/imported fail-closed, and context-canonicalization findings, plus low ordering/API-name guard findings fixed; final re-review no findings. Full implementation review: initial high imported-fingerprint mismatch, medium proof-hint target-binding, context canonicalization, substitution side-condition, status-evidence target, and premise-order findings, plus low role/diagnostic findings fixed; final re-review no findings. Source/doc consistency review: initial medium task-state and stale-handoff finding fixed; final re-review no findings. | `cargo fmt --check` passed; `cargo test -p mizar-vc kernel_evidence_handoff --offline` passed; `cargo test -p mizar-vc --test lint_policy --offline` passed; `cargo test -p mizar-vc --offline` passed; `cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings` passed; `cargo test -p mizar-core --offline` passed; `cargo test -p mizar-kernel --offline` passed; `cargo test -p mizar-artifact --offline` passed; `cargo test -p mizar-checker --offline` passed; `git diff --check` passed before explicit staging. | Rust source/docs task. Adds `src/kernel_evidence_handoff.rs`, exposes the module, registers lint-policy guards, and implements immutable producer-side handoff packages for explicit formula/substitution/provenance/target-binding payloads. No SAT solving, kernel calls, ATP backend calls, backend proof methods, resolution traces, legacy certificate acceptance, caller-supplied instantiated formulas, or fabricated payloads are added. Downstream ATP/proof/cache/artifact consumers remain `external_dependency_gap` / `deferred`; task 26 owns reuse-hash integration. |
+| 26. Dependency-slice and proof-reuse identity update | complete | pending self-hash | Spec/doc review: initial medium task-ledger and stale-gap findings fixed; final re-review no blocking/high/medium findings. Test sufficiency review: initial high selected-VC target-binding coverage and medium lint-boundary findings fixed; final re-review no blocking/high/medium findings. Full implementation review: no blocking/high/medium findings. Source/doc consistency review: initial high premature completion state plus medium stale handoff and bilingual-inventory findings fixed; final re-review no blocking/high/medium findings. | `cargo fmt --check` passed; `cargo test -p mizar-vc dependency_slice --offline` passed; `cargo test -p mizar-vc --test determinism_suite --offline` passed; `cargo test -p mizar-vc --test lint_policy --offline` passed; `cargo test -p mizar-vc --offline` passed; `cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings` passed; `cargo test -p mizar-core --offline` passed; `cargo test -p mizar-kernel --offline` passed; `cargo test -p mizar-artifact --offline` passed; `cargo test -p mizar-checker --offline` passed. | Rust source/docs task. Adds kernel evidence handoff identity as a dependency-slice class and proof-reuse key input, introduces `KernelEvidenceDependencyInput` and `try_compute_dependency_slices_with_kernel_evidence`, adds selected-VC target-fingerprint validation through `VcKernelEvidenceHandoff::targets_vc`, and makes legacy `proof_reuse_key_for` fail closed without current kernel handoff identity. Duplicate, unknown-VC, selected-VC-mismatched, stale-slice, missing-handoff, incomplete-anchor, and non-newly-produced evidence paths fail closed. No kernel calls, SAT solving, ATP backend calls, proof/cache/artifact consumers, resolution traces, backend proof methods, legacy certificate acceptance, or trusted instantiated-formula payloads are added. Downstream ATP/proof/cache/artifact consumers remain `external_dependency_gap` / `deferred`. |
 
 ## Task 0 Handoff
 
@@ -382,45 +383,33 @@ because deterministic discharge must never silently erase ATP-bound obligations
 or trust unavailable traces; lower reasoning is acceptable only for
 documentation-only typo fixes.
 
-## Task 25 Handoff
+## Post-Task-26 Handoff Draft
 
 Recommended reasoning: `xhigh`.
 
 Prompt:
 
 ```text
-Continue mizar-vc autonomous correction from completed task 25. Before editing,
-verify a clean worktree, confirm the task 25 commit in git log, and re-read
+After the mizar-vc task 26 commit exists, continue the evidence-pipeline
+crate-suite correction with mizar-artifact task 23. Before editing, verify a
+clean worktree, confirm the task 26 commit in git log, and re-read
+doc/design/mizar-artifact/en/todo.md,
+doc/design/mizar-artifact/en/source_spec_audit.md,
+doc/design/mizar-artifact/en/crate_exit_report.md if present,
 doc/design/mizar-vc/en/kernel_evidence_handoff.md,
-doc/design/mizar-vc/en/dependency_slice.md,
-doc/design/mizar-vc/en/vc_ir.md,
-doc/design/mizar-vc/en/source_spec_audit.md,
-doc/design/mizar-vc/en/task_ledger.md,
-doc/design/mizar-vc/en/todo.md,
-doc/design/mizar-kernel/en/formula_evidence.md,
-doc/design/mizar-kernel/en/checker.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/08.reasoning_boundary.md,
-crates/mizar-vc/src/kernel_evidence_handoff.rs,
-crates/mizar-vc/src/vc_ir.rs, crates/mizar-vc/src/discharge.rs, and
-crates/mizar-vc/src/dependency_slice.rs. Implement task 26 only:
-dependency-slice and proof-reuse identity updates for the kernel evidence
-handoff. Bind reuse identity to producer-owned kernel handoff identity
-components such as target binding, formula fingerprints, substitution payload
-identity, provenance fingerprints, imported formula context requirements, and
-kernel profile/schema versions as documented. Do not run SAT solving, call
-mizar-kernel, call ATP backends, include backend proof methods, include
-resolution traces, include legacy certificate acceptance, or treat
-caller-supplied instantiated formulas as trusted input. Preserve
-prover-independent VC behavior and fail closed when required handoff identity
-material is absent. Add focused Rust tests for cross-edit reuse key changes and
-stability across allowed noncanonical ordering, proof-hint-only changes, and
-diagnostic-only discharge changes. Run cargo fmt --check,
-cargo test -p mizar-vc, cargo clippy -p mizar-vc --all-targets --all-features
--- -D warnings, git diff --check, and git diff --cached --check after explicit
-path staging. Use review-only agents for the required AGENTS.md review phases.
+doc/design/mizar-vc/en/dependency_slice.md, and
+doc/design/architecture/en/15.kernel_certificate_format.md. Update the kernel
+evidence proof-witness schema only: artifact records may project
+formula/substitution evidence handoff identity and kernel-check results, but
+artifact remains a witness schema/projection crate and not the checker. Do not
+add placeholder producers, proof/cache consumers, SAT solving, ATP backends,
+resolution traces, backend proof-method acceptance, or trusted instantiated
+formula payloads. Re-evaluate artifact task 17 only after task 23 is complete;
+if required producer/proof outputs are still missing, record
+`external_dependency_gap` / `deferred` instead of stubbing.
 ```
 
-Rationale: task 26 connects the new handoff identity to cache/proof-reuse
-boundaries, where stale reuse can silently skip required kernel evidence.
-Keep `xhigh` unless the change is a typo-only documentation synchronization.
+Rationale: artifact task 23 is the witness-schema boundary directly downstream
+of the corrected kernel/vc evidence handoff. Keep `xhigh` because the artifact
+must publish stable witness projections without becoming an acceptance oracle.
+Lower reasoning is appropriate only for typo-only documentation synchronization.

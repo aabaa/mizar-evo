@@ -42,15 +42,15 @@ because a commit cannot embed its own hash.
 | `vc_ir.md` | Snapshot-local `VcId`, seed accounting, generated formula ownership, local context, premises, statuses, anchors, rendering, planned tests, and public enum policy. | Synchronized. |
 | `generator.md` | Explicit-payload generation scope, unavailable registration/algorithm payload boundaries, local context, controlled unfolding, normalization handoff, task slices, planned tests, and public enum policy. | Synchronized. |
 | `discharge.md` | Deterministic pre-ATP scope, supported classes, limits, evidence/explanation model, status interaction, no-erase ATP boundary, planned tests, and public enum policy. | Synchronized. |
-| `dependency_slice.md` | Conservative slice inputs/outputs, dependency entry classes, unknown coverage, reusable fingerprint contract, planned tests, and public enum policy. | Synchronized. |
-| `kernel_evidence_handoff.md` | Producer-side formula/substitution evidence handoff mapping, prohibited backend/legacy material, gap classification, task-25 builder public enum policy, and task-26 handoff. | Synchronized by Tasks 24-25. |
+| `dependency_slice.md` | Conservative slice inputs/outputs, dependency entry classes, unknown coverage, reusable fingerprint contract, task-26 kernel-evidence identity integration, planned tests, and public enum policy. | Synchronized by Task 26 updates. |
+| `kernel_evidence_handoff.md` | Producer-side formula/substitution evidence handoff mapping, prohibited backend/legacy material, gap classification, task-25 builder public enum policy, resolved task-26 reuse-identity gap, and post-task-26 artifact handoff draft. | Synchronized by Tasks 24-26. |
 | `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, and classified external/deferred follow-ups. | Synchronized. |
-| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19/21/22/closeout sync edits. | Synchronized by this paired audit document. |
+| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19/21/22/closeout/24/25/26 sync edits. | Synchronized by this paired audit document. |
 | `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence, deterministic-discharge branch evidence, remaining external/deferred gaps, and no-drift classification. | Synchronized by Task 21. |
 | `module_boundary_audit.md` | Task 22 source-layout line counts, module-boundary review, no-required-split decision, and optional maintenance deferrals. | Synchronized by Task 22. |
-| `crate_exit_report.md` | Final status, quality score, hard gates, task commits, verification, review outcomes, remaining deferred/external items, and next-crate handoff. | Synchronized by closeout. |
-| `task_ledger.md` | Task status, commit hashes available through Task 22, review outcomes, verification summaries, deferred notes, and handoff prompts. | Synchronized after closeout backfills the Task 22 hash and records final quality evidence. |
-| `todo.md` | Ordered task list, completed tasks, closeout status, recommended verification, and notes. | Synchronized after closeout records crate completion. |
+| `crate_exit_report.md` | Final status, quality score, hard gates, task commits through task 25, pending task-26 self-hash row, verification, review outcomes, remaining deferred/external items, and next-crate handoff draft. | Synchronized by task 26 updates. |
+| `task_ledger.md` | Task status, commit hashes available through task 25, complete task-26 review/verification evidence, deferred notes, and post-task-26 handoff draft. | Synchronized by task 26 updates; task 26 self-hash is backfilled after its commit exists. |
+| `todo.md` | Ordered task list, completed tasks through task 26, closeout status, recommended verification, and notes. | Synchronized by task 26 updates. |
 
 ## Classification
 
@@ -68,10 +68,10 @@ Existing classified records remain:
   Task 15 records the deferred corpus obligation.
 - `external_dependency_gap` / `deferred`: `mizar-kernel` now owns the
   checker-side formula/substitution evidence acceptance path, and `mizar-vc`
-  now owns the explicit-payload producer-side handoff builder, but ATP
-  candidate production, proof/cache consumers, artifact witness consumers, and
-  kernel-evidence hash reuse integration remain incomplete. ATP translation,
-  proof policy, cache lookup/reuse, and artifact persistence remain downstream.
+  now owns the explicit-payload producer-side handoff builder and reuse
+  identity integration, but ATP candidate production, proof/cache consumers,
+  and artifact witness consumers remain incomplete. ATP translation, proof
+  policy, cache lookup/reuse, and artifact persistence remain downstream.
 - `external_dependency_gap`: upstream explicit/stable payloads remain
   incomplete for registration/redefinition/reduction details,
   call-precondition, branch, match, range-loop, collection-loop, term-only
@@ -79,9 +79,9 @@ Existing classified records remain:
   trace families, source-derived core formula payloads, definition payloads,
   quantified binder payloads, and source-derived obligation payload families.
 - `deferred`: proof-witness hashes, ATP/kernel/proof/cache validation,
-  artifact consumers, VC kernel-evidence hash reuse integration, and
-  source-derived runner integration remain downstream before architecture-22
-  reuse can be accepted outside deterministic-discharge candidate keys.
+  artifact consumers, and source-derived runner integration remain downstream
+  before architecture-22 reuse can be accepted outside deterministic-discharge
+  and current kernel-evidence handoff identity candidate keys.
 - `deferred`: optional private helper/test splits inside large `vc_ir`,
   `generator`, and `dependency_slice` implementation files remain future
   move-only maintenance tasks if pursued. Final quality review and crate-exit
@@ -138,3 +138,13 @@ kernel evidence handoff updates for the new Rust builder. It records the
 complete in the paired todos, backfills the Task 24 hash in the paired ledgers,
 and records the task-26 handoff prompt. The English canonical document and
 Japanese companion stay semantically synchronized.
+
+## Task 26 Sync Edits
+
+Task 26 updates the paired dependency-slice, kernel-evidence handoff, todo,
+plan, exit-report, ledger, and source/spec audit records for reuse identity
+integration. Both languages record that the current canonical kernel evidence
+handoff hash participates in dependency-slice fingerprints and proof-reuse
+candidate keys, that legacy reuse without a current handoff fails closed, and
+that downstream proof/cache/artifact consumers remain
+`external_dependency_gap` / `deferred`.

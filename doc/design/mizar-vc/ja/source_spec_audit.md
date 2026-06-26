@@ -149,8 +149,10 @@ literal top-level public item:
   `DependencySliceFingerprint`, `DependencySliceCompleteness`,
   `DependencyEntry`, `DependencyEntryClass`, `DependencyUnknown`,
   `DependencyUnknownFamily`, `ProofReuseCandidateKey`,
+  `KernelEvidenceDependencyInput`,
   `DependencySliceError`,
-  `try_compute_dependency_slices`
+  `try_compute_dependency_slices`,
+  `try_compute_dependency_slices_with_kernel_evidence`
 
 Correspondence:
 
@@ -160,7 +162,7 @@ Correspondence:
 | Dependency entry は local context、generated/core formula、definition、import、trace、policy、anchor、discharge evidence、seed mapping data を収集する。 | `VcSet` と optional `DischargeOutput` を読む slice collector helpers。 | `collects_dependency_classes_from_vc_ir_inputs`、discharge-evidence、pre-existing evidence、unused-context tests。 | 現在の explicit payload 向けに実装済み。 |
 | Unknown coverage は fail closed で、uncacheable slice になる。 | `DependencyUnknown`、completeness/cache-miss helpers。 | conservative unknown、incomplete anchor、binder/context cycle、unavailable evidence tests。 | 実装済み。 |
 | Reusable fingerprint は snapshot-local id を除外し、snapshot-local discharge evidence hash を正規化する。 | diagnostic local key ではなく stable payload を hash する fingerprint payload helpers。 | `reusable_fingerprint_excludes_snapshot_local_vc_id`、`reusable_fingerprint_normalizes_snapshot_local_discharge_hashes`、generated-formula-id shift と unresolved-payload tests。 | 現在の deterministic-discharge reuse candidate 向けに実装済み。 |
-| Proof-reuse candidate key は complete anchor/slice、current matching slice computation、canonical VC/context fingerprint、compatible policy fingerprint、newly produced replayable deterministic discharge evidence を要求する。 | `DependencySliceSet::proof_reuse_key_for`、`ProofReuseCandidateKey`、`proof_reuse_key`。 | `cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs` と dependency-slice fail-closed tests。 | deterministic-discharge branch 向けに実装済み。proof-witness/cache/kernel consumer は external/deferred のまま。 |
+| Proof-reuse candidate key は complete anchor/slice、current matching slice computation、canonical VC/context fingerprint、compatible policy fingerprint、newly produced replayable deterministic discharge evidence、current kernel evidence handoff identity を要求する。 | `DependencySliceSet::proof_reuse_key_for_kernel_handoff`、fail-closed fallback の `DependencySliceSet::proof_reuse_key_for`、`KernelEvidenceDependencyInput`、`ProofReuseCandidateKey`、`proof_reuse_key`。 | `kernel_evidence_reuse_key_requires_handoff_and_tracks_kernel_hash`、`kernel_evidence_identity_participates_in_slice_and_reuse_key`、dependency-slice fail-closed tests。 | kernel-evidence invalidation と deterministic-discharge branch 向けに実装済み。proof-witness/cache/kernel acceptance consumer は external/deferred のまま。 |
 | Public enum は forward-compatible である。 | dependency-slice public enum は `#[non_exhaustive]`。 | `vc_public_enums_are_forward_compatible_and_documented`。 | task 17 で guard 済み。 |
 
 ### `kernel_evidence_handoff`
@@ -266,15 +268,17 @@ Task 18 は新しい source/spec correspondence gap を追加しなかった。T
 architecture-22 identity work 後にこの audit を再実行し、新しい未分類の source/spec gap を
 記録しない。Task 22 は module-boundary gate を再実行し、closeout 前に必須の split はないと
 記録する。Task 24 は downstream kernel classification を更新し、Task 25 は explicit
-payload 向け VC producer-side handoff builder を実装するが、残る upstream full payload
-gap と downstream consumer gap は解決しない。既存の分類済み record は残る:
+payload 向け VC producer-side handoff builder を実装し、Task 26 は canonical handoff hash を
+dependency-slice / proof-reuse identity に接続するが、残る upstream full payload gap と
+downstream consumer gap は解決しない。既存の分類済み record は残る:
 
 - `external_dependency_gap`: active `proof_verification` runner support と
   source-to-core / source-to-VC extraction seam は `mizar-test` に存在しない。
   Task 15 が concrete deferred corpus obligation を記録済み。
 - `external_dependency_gap` / `deferred`: `mizar-kernel` は現在 checker-side
   formula/substitution evidence acceptance path を所有し、`mizar-vc` は explicit payload
-  向け producer-side handoff builder を所有するが、`mizar-atp` candidate evidence
+  向け producer-side handoff builder と reuse identity integration を所有するが、
+  `mizar-atp` candidate evidence
   producer、`mizar-proof` / `mizar-cache` consumer、artifact witness consumer はまだ
   incomplete である。ATP translation、
   proof policy、cache lookup/reuse、artifact persistence はこの crate の外に残る。
@@ -284,8 +288,8 @@ gap と downstream consumer gap は解決しない。既存の分類済み recor
   payload、definition payload、quantified binder payload、source-derived obligation payload
   family について、upstream explicit/stable payload はまだ不完全である。
 - `deferred`: proof-witness hash、ATP/proof/cache validation、artifact consumer、
-  VC kernel-evidence hash reuse integration、source-derived runner integration は、
-  architecture-22 reuse を deterministic discharge candidate key の外で受理する前に
+  source-derived runner integration は、architecture-22 reuse を deterministic discharge と
+  current kernel-evidence handoff identity candidate key の外で受理する前に
   実装しなければならない。
 - `deferred`: 大きい `vc_ir`、`generator`、`dependency_slice` implementation file 内の
   private helper / test split は、将来の任意の move-only maintenance task として実施してよいが、

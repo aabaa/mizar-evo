@@ -13,9 +13,18 @@ use mizar_session::{
     BuildSnapshotId, InMemorySessionIdAllocator, SessionIdAllocator, SourceId, SourceRange,
 };
 use mizar_vc::{
-    dependency_slice::{DependencySliceInput, DependencySliceSet, try_compute_dependency_slices},
+    dependency_slice::{
+        DependencySliceInput, DependencySliceSet, KernelEvidenceDependencyInput,
+        try_compute_dependency_slices, try_compute_dependency_slices_with_kernel_evidence,
+    },
     discharge::{DischargeInput, DischargeOutput, DischargePolicy, DischargeRule, try_discharge},
     generator::{CoreGenerationCandidateSet, CoreGenerationInput, VcNormalizationInput},
+    kernel_evidence_handoff::{
+        KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, KernelClauseTautologyPolicy,
+        KernelEvidenceFingerprint, KernelEvidenceHandoffInput, KernelEvidenceProfile,
+        KernelFormulaPayload, KernelFormulaProjection, VcKernelEvidenceHandoff,
+        build_kernel_evidence_handoff,
+    },
     vc_ir::{
         AnchorCompleteness, AnchorIngredient, AnchorUnavailableReason, CanonicalSortKey,
         ContextEntry, ContextEntryId, ContextEntryKind, DischargeEvidenceRef,
@@ -115,7 +124,7 @@ fn identical_public_inputs_have_deterministic_pipeline_outputs() {
 }
 
 #[test]
-fn cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs() {
+fn kernel_evidence_reuse_key_requires_handoff_and_tracks_kernel_hash() {
     let base = run_reuse_pipeline(false, VcId::new(0));
     let edited = run_reuse_pipeline(true, VcId::new(1));
 
@@ -124,43 +133,62 @@ fn cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs() {
     assert_eq!(base.discharge.evidence_records()[0].vc, VcId::new(0));
     assert_eq!(edited.discharge.evidence_records()[0].vc, VcId::new(1));
 
-    let base_key = base
-        .slices
-        .proof_reuse_key_for(&base.discharge, VcId::new(0))
-        .expect("base target has a reuse key");
-    let edited_key = edited
-        .slices
-        .proof_reuse_key_for(&edited.discharge, VcId::new(1))
-        .expect("edited target has a reuse key despite shifted VcId");
+    assert!(
+        base.slices
+            .proof_reuse_key_for(&base.discharge, VcId::new(0))
+            .is_none(),
+        "kernel evidence handoff identity is required before proof reuse"
+    );
+    let base_key = kernel_reuse_key(&base, VcId::new(0));
+    let edited_key = kernel_reuse_key(&edited, VcId::new(1));
 
-    assert_eq!(base_key, edited_key);
+    assert_ne!(
+        base_key, edited_key,
+        "changed canonical kernel handoff identity conservatively invalidates reuse"
+    );
 
     let generated_id_shifted = run_generated_formula_id_shift_reuse_pipeline();
-    let generated_id_shifted_key = generated_id_shifted
-        .slices
-        .proof_reuse_key_for(&generated_id_shifted.discharge, VcId::new(0))
-        .expect("generated formula id shifts do not change the reuse key");
-    assert_eq!(base_key, generated_id_shifted_key);
+    let generated_id_shifted_key = kernel_reuse_key(&generated_id_shifted, VcId::new(0));
+    assert_ne!(
+        base_key, generated_id_shifted_key,
+        "changed canonical kernel handoff identity conservatively invalidates reuse"
+    );
+
+    let base_handoff = kernel_handoff_for(&base, VcId::new(0));
+    let shifted_handoff = kernel_handoff_for(&generated_id_shifted, VcId::new(0));
+    assert_ne!(
+        base_handoff.canonical_hash(),
+        shifted_handoff.canonical_hash()
+    );
+    let base_kernel_slices = slices_with_kernel_handoff(&base, VcId::new(0), &base_handoff);
+    assert_ne!(
+        slice_fingerprints(&base.slices),
+        slice_fingerprints(&base_kernel_slices),
+        "kernel evidence identity must participate in dependency-slice fingerprints"
+    );
 
     let policy_changed = run_policy_changed_reuse_pipeline();
-    let policy_changed_key = policy_changed
-        .slices
-        .proof_reuse_key_for(&policy_changed.discharge, VcId::new(0))
-        .expect("policy-changed target still has a key");
+    let policy_changed_key = kernel_reuse_key(&policy_changed, VcId::new(0));
     assert_ne!(base_key, policy_changed_key);
     assert!(
         base.slices
-            .proof_reuse_key_for(&policy_changed.discharge, VcId::new(0))
+            .proof_reuse_key_for_kernel_handoff(
+                &policy_changed.discharge,
+                VcId::new(0),
+                &kernel_handoff_for(&policy_changed, VcId::new(0))
+            )
             .is_none(),
         "stale slice fingerprints must not authorize reuse"
     );
 
     let context_changed = run_context_changed_reuse_pipeline();
-    let context_changed_key = context_changed
-        .slices
-        .proof_reuse_key_for(&context_changed.discharge, VcId::new(0))
-        .expect("context-changed target still has a key");
+    let context_changed_key = kernel_reuse_key(&context_changed, VcId::new(0));
     assert_ne!(base_key, context_changed_key);
+    assert_ne!(
+        base_handoff.canonical_hash(),
+        kernel_handoff_for(&context_changed, VcId::new(0)).canonical_hash(),
+        "canonical kernel evidence hash changes must invalidate reuse identity"
+    );
     assert_ne!(
         base.discharge.evidence_records()[0]
             .status_evidence
@@ -180,7 +208,11 @@ fn cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs() {
     assert!(
         changed_goal
             .slices
-            .proof_reuse_key_for(&changed_goal.discharge, VcId::new(0))
+            .proof_reuse_key_for_kernel_handoff(
+                &changed_goal.discharge,
+                VcId::new(0),
+                &kernel_handoff_for(&changed_goal, VcId::new(0))
+            )
             .is_none(),
         "changed generated goal without complete evidence must fail closed"
     );
@@ -189,7 +221,11 @@ fn cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs() {
     assert!(
         pre_existing
             .slices
-            .proof_reuse_key_for(&pre_existing.discharge, VcId::new(0))
+            .proof_reuse_key_for_kernel_handoff(
+                &pre_existing.discharge,
+                VcId::new(0),
+                &kernel_handoff_for(&pre_existing, VcId::new(0))
+            )
             .is_none(),
         "pre-existing discharged status is preserved evidence, not a newly produced reuse key"
     );
@@ -198,7 +234,11 @@ fn cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs() {
     assert!(
         incomplete_anchor
             .slices
-            .proof_reuse_key_for(&incomplete_anchor.discharge, VcId::new(0))
+            .proof_reuse_key_for_kernel_handoff(
+                &incomplete_anchor.discharge,
+                VcId::new(0),
+                &kernel_handoff_for(&incomplete_anchor, VcId::new(0))
+            )
             .is_none(),
         "incomplete anchors must fail closed"
     );
@@ -331,6 +371,68 @@ fn run_reuse_pipeline_from_normalized(discharge_input: VcSet) -> PipelineOutput 
         discharge,
         slices,
     }
+}
+
+fn kernel_reuse_key(
+    output: &PipelineOutput,
+    vc: VcId,
+) -> mizar_vc::dependency_slice::ProofReuseCandidateKey {
+    let handoff = kernel_handoff_for(output, vc);
+    let slices = slices_with_kernel_handoff(output, vc, &handoff);
+    slices
+        .proof_reuse_key_for_kernel_handoff(&output.discharge, vc, &handoff)
+        .expect("kernel evidence handoff enables proof reuse key")
+}
+
+fn slices_with_kernel_handoff(
+    output: &PipelineOutput,
+    vc: VcId,
+    handoff: &VcKernelEvidenceHandoff,
+) -> DependencySliceSet {
+    try_compute_dependency_slices_with_kernel_evidence(
+        DependencySliceInput {
+            vc_set: output.discharge.vc_set(),
+            discharge_output: Some(&output.discharge),
+        },
+        &[KernelEvidenceDependencyInput { vc, handoff }],
+    )
+    .expect("kernel-evidence-aware slices")
+}
+
+fn kernel_handoff_for(output: &PipelineOutput, vc: VcId) -> VcKernelEvidenceHandoff {
+    let vc_set = output.discharge.vc_set();
+    let payloads = vc_set
+        .generated_formulas()
+        .iter()
+        .map(|formula| KernelFormulaPayload {
+            formula_ref: VcFormulaRef::Generated(formula.id),
+            projection: KernelFormulaProjection {
+                formula_fingerprint: kernel_fingerprint(
+                    format!("formula-{}", formula.id.index()).as_bytes(),
+                ),
+                formula_bytes: format!("kernel-formula-{}", formula.id.index()).into_bytes(),
+                provenance_payload: format!("provenance-{}", formula.id.index()).into_bytes(),
+            },
+        })
+        .collect::<Vec<_>>();
+    build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+        vc_set,
+        vc,
+        kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+        symbol_manifest: &[],
+        variable_manifest: &[],
+        formula_payloads: &payloads,
+        imported_formula_payloads: &[],
+        substitutions: &[],
+        formula_context: None,
+        discharge_output: Some(&output.discharge),
+    })
+    .expect("kernel evidence handoff")
+}
+
+fn kernel_fingerprint(digest: &[u8]) -> KernelEvidenceFingerprint {
+    KernelEvidenceFingerprint::new(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, digest.to_vec())
+        .expect("kernel fingerprint")
 }
 
 fn normalize_public_handoff() -> VcSet {

@@ -319,6 +319,49 @@ fn vc_kernel_handoff_public_api_excludes_backend_and_legacy_material() {
     );
 }
 
+#[test]
+fn vc_dependency_slice_kernel_boundary_excludes_backend_and_legacy_material() {
+    let source_path = crate_root().join("src/dependency_slice.rs");
+    let source = read_to_string(&source_path);
+    let forbidden = [
+        "backend",
+        "dimacs",
+        "instantiated",
+        "inverse_method",
+        "legacy",
+        "proof_method",
+        "resolution",
+        "sat",
+        "smt",
+        "tptp",
+        "used_axioms",
+    ];
+    let public_lines = public_handoff_api_lines(&source);
+    let import_lines = source.lines().enumerate().filter_map(|(line_index, line)| {
+        let trimmed = line.trim();
+        (trimmed.starts_with("use ") || trimmed.starts_with("kernel_evidence_handoff::"))
+            .then(|| (line_index + 1, trimmed.to_ascii_lowercase()))
+    });
+    let mut violations = Vec::new();
+
+    for (line_number, line) in public_lines.into_iter().chain(import_lines) {
+        for word in forbidden {
+            if line.contains(word) {
+                violations.push(format!(
+                    "{}:{line_number}: dependency-slice kernel boundary must not expose `{word}`: {line}",
+                    source_path.display()
+                ));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "dependency-slice kernel evidence boundary must stay free of backend/SAT/legacy trusted material:\n{}",
+        violations.join("\n")
+    );
+}
+
 fn public_handoff_api_lines(source: &str) -> Vec<(usize, String)> {
     let mut lines = Vec::new();
     let mut in_public_enum = false;

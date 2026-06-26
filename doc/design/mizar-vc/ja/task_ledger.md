@@ -37,7 +37,8 @@ commit が履歴に存在し、最終 review outcome、verification result、def
 | 22. Module-boundary refactor gate | complete | `76f286f9a3d1e6d6f096b84be7b5f38873e48d42` | Spec/doc review: medium stale source/spec、bilingual audit、task-state findings を修正し、final re-review は no findings。Test sufficiency review: no findings。Full implementation review: medium ledger-status finding を修正し、final re-review は no findings。Source/doc consistency review: no findings。 | `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Docs-only audit task。paired `module_boundary_audit.md` を追加し、Task 21 hash を backfill し、source/spec audit と bilingual sync audit report を更新し、paired todo で Task 22 を完了にする。Rust source、`.miz` fixture、expectation、`doc/spec`、traceability metadata、runner support、downstream ATP/kernel/proof/cache integration、public API、diagnostic、deterministic rendering、artifact-facing schema は変更しない。必須の move-only split は見つからず、大きい module 内の任意の private helper / test split は実施する場合の deferred maintenance task として残す。 |
 | Closeout. Crate exit report and quality review | complete | `0996ad28c57298bd68024eb1f9a6638ef7e37108` | Spec/doc review: no findings。Test sufficiency review: no findings。Full implementation review: no findings。Source/doc consistency review: no findings。Read-only crate quality review: hard gates pass、score 94/100。 | `cargo fmt --check` passed; `cargo clippy --all-targets --all-features -- -D warnings` passed; `cargo test` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Docs-only closeout task。paired `crate_exit_report.md` を追加し、plan/todo/audit ledger を更新し、Task 22 hash を backfill し、すべての task commit、broad verification、残る `external_dependency_gap` / `deferred` item を記録し、proof-verification runner/extraction または downstream ATP/kernel/proof/cache work の次 owner へ handoff する。Rust source、`.miz` fixture、expectation、`doc/spec`、traceability metadata、runner support、ATP/kernel/proof/cache consumer、public API、diagnostic、deterministic rendering、artifact-facing schema は変更しない。 |
 | 24. Spec: kernel evidence handoff | complete | `c33c583d107c8211c22efcbb89d88144f32d163c` | Spec/doc review: initial high premise-selection wording と medium imported-context finding を修正し、final re-review は blocking/high/medium finding なし。Test sufficiency review: findings なし。Full implementation review: initial medium envelope-shape と stale next-handoff finding を修正し、final re-review は blocking/high/medium finding なし。Source/doc consistency review: findings なし。 | `git diff --check` passed; `cargo test -p mizar-vc --test lint_policy --offline` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Docs-only post-closeout correction task。paired `kernel_evidence_handoff.md` を追加し、`mizar-kernel` task 23-29 後の状態に合わせて plan/todo/audit/exit-report classification を更新し、task-25 handoff を記録する。Rust source、`.miz` fixture、expectation、`doc/spec`、traceability metadata、runner support、SAT solving、kernel call、ATP backend、backend proof method、resolution trace、legacy certificate acceptance、捏造した formula/substitution/provenance payload は変更しない。 |
-| 25. Kernel evidence handoff builder | complete | pending self-hash | Spec/doc review: initial high ledger/task-state inconsistency と medium discharge-record / fingerprint-algorithm findings を修正し、final re-review は blocking/high/medium finding なし。Test sufficiency review: initial medium generated-premise/provenance と missing-payload coverage findings、follow-up medium proof-hint/discharge identity、generated/imported fail-closed、context-canonicalization findings、および low ordering/API-name guard findings を修正し、final re-review は findings なし。Full implementation review: initial high imported-fingerprint mismatch、medium proof-hint target-binding、context canonicalization、substitution side-condition、status-evidence target、premise-order findings、および low role/diagnostic findings を修正し、final re-review は findings なし。Source/doc consistency review: initial medium task-state と stale-handoff finding を修正し、final re-review は findings なし。 | `cargo fmt --check` passed; `cargo test -p mizar-vc kernel_evidence_handoff --offline` passed; `cargo test -p mizar-vc --test lint_policy --offline` passed; `cargo test -p mizar-vc --offline` passed; `cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings` passed; `cargo test -p mizar-core --offline` passed; `cargo test -p mizar-kernel --offline` passed; `cargo test -p mizar-artifact --offline` passed; `cargo test -p mizar-checker --offline` passed; explicit staging 前の `git diff --check` passed。 | Rust source/docs task。`src/kernel_evidence_handoff.rs` を追加し、module を expose し、lint-policy guard を登録し、explicit formula/substitution/provenance/target-binding payload 向けの immutable producer-side handoff package を実装する。SAT solving、kernel call、ATP backend call、backend proof method、resolution trace、legacy certificate acceptance、caller-supplied instantiated formula、捏造 payload は追加しない。Downstream ATP/proof/cache/artifact consumer と task-26 reuse-hash integration は `external_dependency_gap` / `deferred` のまま。 |
+| 25. Kernel evidence handoff builder | complete | `0ed1bc23e2bc7f66d2f4f53a8e289721d47105b9` | Spec/doc review: initial high ledger/task-state inconsistency と medium discharge-record / fingerprint-algorithm findings を修正し、final re-review は blocking/high/medium finding なし。Test sufficiency review: initial medium generated-premise/provenance と missing-payload coverage findings、follow-up medium proof-hint/discharge identity、generated/imported fail-closed、context-canonicalization findings、および low ordering/API-name guard findings を修正し、final re-review は findings なし。Full implementation review: initial high imported-fingerprint mismatch、medium proof-hint target-binding、context canonicalization、substitution side-condition、status-evidence target、premise-order findings、および low role/diagnostic findings を修正し、final re-review は findings なし。Source/doc consistency review: initial medium task-state と stale-handoff finding を修正し、final re-review は findings なし。 | `cargo fmt --check` passed; `cargo test -p mizar-vc kernel_evidence_handoff --offline` passed; `cargo test -p mizar-vc --test lint_policy --offline` passed; `cargo test -p mizar-vc --offline` passed; `cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings` passed; `cargo test -p mizar-core --offline` passed; `cargo test -p mizar-kernel --offline` passed; `cargo test -p mizar-artifact --offline` passed; `cargo test -p mizar-checker --offline` passed; explicit staging 前の `git diff --check` passed。 | Rust source/docs task。`src/kernel_evidence_handoff.rs` を追加し、module を expose し、lint-policy guard を登録し、explicit formula/substitution/provenance/target-binding payload 向けの immutable producer-side handoff package を実装する。SAT solving、kernel call、ATP backend call、backend proof method、resolution trace、legacy certificate acceptance、caller-supplied instantiated formula、捏造 payload は追加しない。Downstream ATP/proof/cache/artifact consumer は `external_dependency_gap` / `deferred` のまま。task 26 が reuse-hash integration を所有する。 |
+| 26. Dependency-slice and proof-reuse identity update | complete | pending self-hash | Spec/doc review: initial medium task-ledger と stale-gap findings を修正し、final re-review は blocking/high/medium finding なし。Test sufficiency review: initial high selected-VC target-binding coverage と medium lint-boundary findings を修正し、final re-review は blocking/high/medium finding なし。Full implementation review: blocking/high/medium finding なし。Source/doc consistency review: initial high premature completion state と medium stale handoff / bilingual-inventory findings を修正し、final re-review は blocking/high/medium finding なし。 | `cargo fmt --check` passed; `cargo test -p mizar-vc dependency_slice --offline` passed; `cargo test -p mizar-vc --test determinism_suite --offline` passed; `cargo test -p mizar-vc --test lint_policy --offline` passed; `cargo test -p mizar-vc --offline` passed; `cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings` passed; `cargo test -p mizar-core --offline` passed; `cargo test -p mizar-kernel --offline` passed; `cargo test -p mizar-artifact --offline` passed; `cargo test -p mizar-checker --offline` passed。 | Rust source/docs task。kernel evidence handoff identity を dependency-slice class と proof-reuse key input として追加し、`KernelEvidenceDependencyInput` と `try_compute_dependency_slices_with_kernel_evidence` を導入し、`VcKernelEvidenceHandoff::targets_vc` による selected-VC target-fingerprint validation を追加し、current kernel handoff identity がない legacy `proof_reuse_key_for` は fail closed にする。Duplicate、unknown-VC、selected-VC mismatch、stale-slice、missing-handoff、incomplete-anchor、newly produced でない evidence path は fail closed。kernel call、SAT solving、ATP backend call、proof/cache/artifact consumer、resolution trace、backend proof method、legacy certificate acceptance、trusted instantiated-formula payload は追加しない。Downstream ATP/proof/cache/artifact consumer は `external_dependency_gap` / `deferred` のまま。 |
 
 ## Task 0 Handoff
 
@@ -375,45 +376,33 @@ Rationale: task 11 は最初の phase-12 source implementation である。deter
 discharge は ATP-bound obligation を黙って消したり unavailable trace を信頼したりしては
 ならないため `xhigh` を保つ。documentation-only typo fix だけなら lower reasoning でもよい。
 
-## Task 25 Handoff
+## Post-Task-26 Handoff Draft
 
 Recommended reasoning: `xhigh`。
 
 Prompt:
 
 ```text
-Continue mizar-vc autonomous correction from completed task 25. Before editing,
-verify a clean worktree, confirm the task 25 commit in git log, and re-read
+After the mizar-vc task 26 commit exists, continue the evidence-pipeline
+crate-suite correction with mizar-artifact task 23. Before editing, verify a
+clean worktree, confirm the task 26 commit in git log, and re-read
+doc/design/mizar-artifact/en/todo.md,
+doc/design/mizar-artifact/en/source_spec_audit.md,
+doc/design/mizar-artifact/en/crate_exit_report.md if present,
 doc/design/mizar-vc/en/kernel_evidence_handoff.md,
-doc/design/mizar-vc/en/dependency_slice.md,
-doc/design/mizar-vc/en/vc_ir.md,
-doc/design/mizar-vc/en/source_spec_audit.md,
-doc/design/mizar-vc/en/task_ledger.md,
-doc/design/mizar-vc/en/todo.md,
-doc/design/mizar-kernel/en/formula_evidence.md,
-doc/design/mizar-kernel/en/checker.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/08.reasoning_boundary.md,
-crates/mizar-vc/src/kernel_evidence_handoff.rs,
-crates/mizar-vc/src/vc_ir.rs, crates/mizar-vc/src/discharge.rs, and
-crates/mizar-vc/src/dependency_slice.rs. Implement task 26 only:
-dependency-slice and proof-reuse identity updates for the kernel evidence
-handoff. Bind reuse identity to producer-owned kernel handoff identity
-components such as target binding, formula fingerprints, substitution payload
-identity, provenance fingerprints, imported formula context requirements, and
-kernel profile/schema versions as documented. Do not run SAT solving, call
-mizar-kernel, call ATP backends, include backend proof methods, include
-resolution traces, include legacy certificate acceptance, or treat
-caller-supplied instantiated formulas as trusted input. Preserve
-prover-independent VC behavior and fail closed when required handoff identity
-material is absent. Add focused Rust tests for cross-edit reuse key changes and
-stability across allowed noncanonical ordering, proof-hint-only changes, and
-diagnostic-only discharge changes. Run cargo fmt --check,
-cargo test -p mizar-vc, cargo clippy -p mizar-vc --all-targets --all-features
--- -D warnings, git diff --check, and git diff --cached --check after explicit
-path staging. Use review-only agents for the required AGENTS.md review phases.
+doc/design/mizar-vc/en/dependency_slice.md, and
+doc/design/architecture/en/15.kernel_certificate_format.md. Update the kernel
+evidence proof-witness schema only: artifact records may project
+formula/substitution evidence handoff identity and kernel-check results, but
+artifact remains a witness schema/projection crate and not the checker. Do not
+add placeholder producers, proof/cache consumers, SAT solving, ATP backends,
+resolution traces, backend proof-method acceptance, or trusted instantiated
+formula payloads. Re-evaluate artifact task 17 only after task 23 is complete;
+if required producer/proof outputs are still missing, record
+`external_dependency_gap` / `deferred` instead of stubbing.
 ```
 
-Rationale: task 26 は新しい handoff identity を cache/proof-reuse boundary に接続する。
-stale reuse は必要な kernel evidence を黙って skip し得るため `xhigh` を保つ。
-typo-only documentation synchronization だけなら lower reasoning が適切である。
+Rationale: artifact task 23 は corrected kernel/vc evidence handoff の直下にある
+witness-schema boundary である。artifact は stable witness projection を公開しつつ
+acceptance oracle になってはならないため `xhigh` を保つ。typo-only documentation
+synchronization だけなら lower reasoning が適切である。

@@ -40,15 +40,15 @@ Closeout の自己 hash は commit 自身に埋め込めないため final user 
 | `vc_ir.md` | snapshot-local `VcId`、seed accounting、generated formula ownership、local context、premise、status、anchor、rendering、planned tests、public enum policy。 | 同期済み。 |
 | `generator.md` | explicit-payload generation scope、利用不能な registration / algorithm payload boundary、local context、controlled unfolding、normalization handoff、task slice、planned tests、public enum policy。 | 同期済み。 |
 | `discharge.md` | deterministic pre-ATP scope、supported classes、limit、evidence/explanation model、status interaction、no-erase ATP boundary、planned tests、public enum policy。 | 同期済み。 |
-| `dependency_slice.md` | conservative slice inputs/outputs、dependency entry classes、unknown coverage、reusable fingerprint contract、planned tests、public enum policy。 | 同期済み。 |
-| `kernel_evidence_handoff.md` | producer-side formula/substitution evidence handoff mapping、禁止される backend/legacy material、gap classification、task-25 builder public enum policy、task-26 handoff。 | Tasks 24-25 により同期済み。 |
+| `dependency_slice.md` | conservative slice inputs/outputs、dependency entry classes、unknown coverage、reusable fingerprint contract、task-26 kernel-evidence identity integration、planned tests、public enum policy。 | Task 26 update により同期済み。 |
+| `kernel_evidence_handoff.md` | producer-side formula/substitution evidence handoff mapping、禁止される backend/legacy material、gap classification、task-25 builder public enum policy、resolved task-26 reuse-identity gap、post-task-26 artifact handoff draft。 | Tasks 24-26 により同期済み。 |
 | `source_spec_audit.md` | public module exports、public surface inventory、cross-module evidence、classified external/deferred follow-ups。 | 同期済み。 |
-| `bilingual_sync_audit.md` | audit scope、method、pair inventory、classification、Task 19/21/22/closeout sync edits。 | この paired audit document により同期済み。 |
+| `bilingual_sync_audit.md` | audit scope、method、pair inventory、classification、Task 19/21/22/closeout/24/25/26 sync edits。 | この paired audit document により同期済み。 |
 | `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence、deterministic-discharge branch evidence、remaining external/deferred gaps、no-drift classification。 | Task 21 により同期済み。 |
 | `module_boundary_audit.md` | Task 22 source-layout line count、module-boundary review、必須 split なしの判断、任意 maintenance deferral。 | Task 22 により同期済み。 |
-| `crate_exit_report.md` | final status、quality score、hard gates、task commits、verification、review outcome、remaining deferred/external items、next-crate handoff。 | closeout により同期済み。 |
-| `task_ledger.md` | Task status、Task 22 までに利用可能な commit hash、review outcome、verification summary、deferred notes、handoff prompt。 | closeout で Task 22 hash を backfill し final quality evidence を記録した後に同期済み。 |
-| `todo.md` | ordered task list、完了 task、closeout status、recommended verification、notes。 | closeout で crate completion を記録した後に同期済み。 |
+| `crate_exit_report.md` | final status、quality score、hard gates、task 25 までの task commit、pending task-26 self-hash row、verification、review outcome、remaining deferred/external items、next-crate handoff draft。 | task 26 update により同期済み。 |
+| `task_ledger.md` | Task status、task 25 までに利用可能な commit hash、complete task-26 review/verification evidence、deferred notes、post-task-26 handoff draft。 | task 26 update により同期済み。task 26 self-hash は commit が存在した後に backfill する。 |
+| `todo.md` | ordered task list、task 26 までの完了 task、closeout status、recommended verification、notes。 | task 26 update により同期済み。 |
 
 ## 分類
 
@@ -65,20 +65,18 @@ inventory に追加しつつ、この分類を維持する。closeout は paired
   Task 15 が deferred corpus obligation を記録済み。
 - `external_dependency_gap` / `deferred`: `mizar-kernel` は現在 checker-side
   formula/substitution evidence acceptance path を所有し、`mizar-vc` は explicit-payload
-  producer-side handoff builder を所有するが、ATP candidate production、proof/cache
-  consumer、artifact witness consumer、kernel-evidence hash reuse integration は
-  incomplete のままである。ATP translation、proof policy、cache lookup/reuse、
-  artifact persistence は downstream に残る。
+  producer-side handoff builder と reuse identity integration を所有するが、ATP candidate
+  production、proof/cache consumer、artifact witness consumer は incomplete のままである。
+  ATP translation、proof policy、cache lookup/reuse、artifact persistence は downstream に残る。
 - `external_dependency_gap`: registration/redefinition/reduction details、
   call-precondition、branch、match、range-loop、collection-loop、term-only
   termination、partial termination、Pick non-emptiness、ghost-erasure、
   complete trace family、source-derived core formula payload、definition payload、
   quantified binder payload、source-derived obligation payload family について、
   upstream explicit/stable payload はまだ不完全である。
-- `deferred`: proof-witness hash、ATP/kernel/proof/cache validation、
-  artifact consumer、VC kernel-evidence hash reuse integration、source-derived runner
-  integration は、architecture-22 reuse を deterministic-discharge candidate key の外で
-  受理する前に downstream に残る。
+- `deferred`: proof-witness hash、ATP/kernel/proof/cache validation、artifact consumer、
+  source-derived runner integration は、architecture-22 reuse を deterministic-discharge と
+  current kernel-evidence handoff identity candidate key の外で受理する前に downstream に残る。
 - `deferred`: 大きい `vc_ir`、`generator`、`dependency_slice` implementation file 内の
   optional private helper / test split は、実施する場合には将来の move-only maintenance task
   として残る。final quality review と crate-exit status は
@@ -130,3 +128,12 @@ ledger、kernel evidence handoff document を更新する。両言語で
 `kernel_evidence_handoff` public enum policy を記録し、paired todo で Task 25 を完了にし、
 paired ledger で Task 24 hash を backfill し、task-26 handoff prompt を記録する。英語正本
 document と日本語 companion は意味的に同期済みである。
+
+## Task 26 の同期編集
+
+Task 26 は reuse identity integration に合わせ、paired dependency-slice、
+kernel-evidence handoff、todo、plan、exit-report、ledger、source/spec audit record を
+更新する。両言語とも、現在の canonical kernel evidence handoff hash が dependency-slice
+fingerprint と proof-reuse candidate key に参加すること、current handoff がない legacy reuse は
+fail closed すること、downstream proof/cache/artifact consumer は
+`external_dependency_gap` / `deferred` のままであることを記録する。

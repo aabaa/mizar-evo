@@ -152,8 +152,10 @@ Literal top-level public items:
   `DependencySliceFingerprint`, `DependencySliceCompleteness`,
   `DependencyEntry`, `DependencyEntryClass`, `DependencyUnknown`,
   `DependencyUnknownFamily`, `ProofReuseCandidateKey`,
+  `KernelEvidenceDependencyInput`,
   `DependencySliceError`,
-  `try_compute_dependency_slices`
+  `try_compute_dependency_slices`,
+  `try_compute_dependency_slices_with_kernel_evidence`
 
 Correspondence:
 
@@ -163,7 +165,7 @@ Correspondence:
 | Dependency entries collect local context, generated/core formulas, definitions, imports, traces, policy, anchors, discharge evidence, and seed mapping data. | slice collector helpers over `VcSet` and optional `DischargeOutput`. | `collects_dependency_classes_from_vc_ir_inputs`, discharge-evidence, pre-existing evidence, unused-context tests. | Implemented for current explicit payloads. |
 | Unknown coverage is fail-closed and causes uncacheable slices. | `DependencyUnknown`, completeness and cache-miss helpers. | conservative unknown, incomplete anchor, binder/context cycle, unavailable evidence tests. | Implemented. |
 | Reusable fingerprints exclude snapshot-local ids and normalize snapshot-local discharge evidence hashes. | fingerprint payload helpers that hash stable payloads rather than diagnostic local keys. | `reusable_fingerprint_excludes_snapshot_local_vc_id`, `reusable_fingerprint_normalizes_snapshot_local_discharge_hashes`, generated-formula-id shift and unresolved-payload tests. | Implemented for current deterministic-discharge reuse candidates. |
-| Proof-reuse candidate keys require complete anchors/slices, current matching slice computation, canonical VC/context fingerprints, compatible policy fingerprint, and newly produced replayable deterministic discharge evidence. | `DependencySliceSet::proof_reuse_key_for`, `ProofReuseCandidateKey`, `proof_reuse_key`. | `cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs` and dependency-slice fail-closed tests. | Implemented for deterministic-discharge branch; proof-witness/cache/kernel consumers remain external/deferred. |
+| Proof-reuse candidate keys require complete anchors/slices, current matching slice computation, canonical VC/context fingerprints, compatible policy fingerprint, newly produced replayable deterministic discharge evidence, and current kernel evidence handoff identity. | `DependencySliceSet::proof_reuse_key_for_kernel_handoff`, `DependencySliceSet::proof_reuse_key_for` fail-closed fallback, `KernelEvidenceDependencyInput`, `ProofReuseCandidateKey`, `proof_reuse_key`. | `kernel_evidence_reuse_key_requires_handoff_and_tracks_kernel_hash`, `kernel_evidence_identity_participates_in_slice_and_reuse_key`, and dependency-slice fail-closed tests. | Implemented for kernel-evidence invalidation and deterministic-discharge branch; proof-witness/cache/kernel acceptance consumers remain external/deferred. |
 | Public enums are forward-compatible. | dependency-slice public enums are `#[non_exhaustive]`. | `vc_public_enums_are_forward_compatible_and_documented`. | Guarded by task 17. |
 
 ### `kernel_evidence_handoff`
@@ -276,9 +278,10 @@ Task 18 introduced no new source/spec correspondence gap. Task 21 re-ran the
 audit after the architecture-22 identity work and likewise records no new
 unclassified source/spec gap. Task 22 re-ran the module-boundary gate and
 records no required split before closeout. Task 24 updates the downstream
-kernel classification, and Task 25 implements the VC producer-side handoff
-builder for explicit payloads, without resolving the remaining upstream full
-payload and downstream consumer gaps.
+kernel classification, Task 25 implements the VC producer-side handoff builder
+for explicit payloads, and Task 26 connects its canonical handoff hash to
+dependency-slice / proof-reuse identity, without resolving the remaining
+upstream full payload and downstream consumer gaps.
 Existing classified records remain:
 
 - `external_dependency_gap`: active `proof_verification` runner support and
@@ -286,8 +289,8 @@ Existing classified records remain:
   Task 15 records concrete deferred corpus obligations.
 - `external_dependency_gap` / `deferred`: `mizar-kernel` now owns the
   checker-side formula/substitution evidence acceptance path, and `mizar-vc`
-  now owns the producer-side handoff builder for explicit payloads, but the
-  `mizar-atp` candidate evidence producer,
+  now owns the producer-side handoff builder and reuse identity integration for
+  explicit payloads, but the `mizar-atp` candidate evidence producer,
   `mizar-proof` / `mizar-cache` consumers, and artifact witness consumers are
   still incomplete. ATP translation, proof policy, cache lookup/reuse, and
   artifact persistence remain outside this crate.
@@ -298,9 +301,9 @@ Existing classified records remain:
   trace families, source-derived core formula payloads, definition payloads,
   quantified binder payloads, and source-derived obligation payload families.
 - `deferred`: proof-witness hashes, ATP/proof/cache validation, artifact
-  consumers, VC kernel-evidence hash reuse integration, and source-derived
-  runner integration must be implemented before architecture-22 reuse can be
-  accepted outside the deterministic discharge candidate key.
+  consumers, and source-derived runner integration must be implemented before
+  architecture-22 reuse can be accepted outside the deterministic discharge
+  and current kernel-evidence handoff identity candidate key.
 - `deferred`: optional private helper/test splits inside large `vc_ir`,
   `generator`, and `dependency_slice` implementation files may be pursued as
   later move-only maintenance tasks, but they are not required for crate exit.

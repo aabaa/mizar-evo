@@ -357,13 +357,15 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
     - 依存: 24、`mizar-kernel` task 29。仕様:
       [kernel_evidence_handoff.md](./kernel_evidence_handoff.md)。
 
-26. **Dependency-slice and proof-reuse identity update。** [ ]
-    - handoff builder が存在した後、dependency slice と architecture-22 proof-reuse
-      identity を kernel evidence hash を含むよう拡張する。proof-witness reuse は
-      `mizar-proof`、`mizar-cache`、`mizar-artifact` が対応 schema を定義するまで
-      external のままにする。
-    - テスト: fingerprint stability と invalidation fixture。利用できない downstream
-      consumer は `external_dependency_gap` / `deferred` のまま。
+26. **Dependency-slice and proof-reuse identity update。** [x]
+    - dependency slice と architecture-22 proof-reuse identity を、現在の task-25
+      canonical kernel evidence handoff hash を含むよう拡張した。current handoff がない
+      legacy reuse は fail closed する。proof-witness reuse は `mizar-proof`、
+      `mizar-cache`、`mizar-artifact` が対応 schema を定義するまで external のままにする。
+    - テスト: kernel-evidence hash が slice fingerprint と reuse key に参加すること。
+      missing handoff、stale slice、duplicate handoff、unknown VC、selected-VC mismatch は
+      fail closed。利用できない downstream consumer は `external_dependency_gap` /
+      `deferred` のまま。
     - 依存: 25。仕様:
       [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md),
       `dependency_slice.md`。

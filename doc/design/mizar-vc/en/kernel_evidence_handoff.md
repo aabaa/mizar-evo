@@ -200,8 +200,11 @@ Remaining gaps:
 - resolved `VC-HANDOFF-G004`: task 25 adds the immutable Rust handoff builder,
   canonical rendering/hash input, builder errors, lint-policy registration, and
   focused tests over explicit producer payloads.
-- `deferred` `VC-HANDOFF-G005`: task 26 owns dependency-slice and proof-reuse
-  identity updates that include the kernel evidence hash.
+- resolved `VC-HANDOFF-G005`: task 26 updates dependency-slice and
+  proof-reuse identity so the current canonical kernel evidence hash
+  participates in reuse invalidation without becoming proof acceptance
+  material. Missing, duplicate, unknown-VC, or selected-VC-mismatched handoff
+  inputs fail closed.
 
 ## Planned Tests
 
@@ -219,9 +222,11 @@ Task 25 adds Rust coverage for:
 - missing formula/provenance/substitution payloads returning builder errors or
   classified deferred records.
 
-Task 26 must add invalidation tests showing that proof-reuse identity changes
-when the canonical kernel evidence hash changes and remains unavailable when
-downstream proof/cache/artifact schemas are absent.
+Task 26 adds invalidation tests showing that proof-reuse identity changes when
+the canonical kernel evidence hash changes, remains unavailable when no current
+kernel evidence handoff is supplied, and rejects duplicate, unknown, or
+selected-VC-mismatched kernel evidence handoff inputs. Downstream
+proof/cache/artifact schemas remain external/deferred.
 
 ## Public Enum Policy
 
@@ -246,33 +251,33 @@ No exhaustive public enum exceptions are owned by this module. Internal
 `mizar-vc` matches that intentionally enumerate current variants may remain
 exhaustive.
 
-## Task 26 Handoff
+## Post-Task-26 Handoff Draft
 
 Recommended reasoning: `xhigh`.
 
 Prompt:
 
 ```text
-Continue mizar-vc autonomous correction from completed task 25. Before editing,
-verify a clean worktree, confirm the task 25 commit in git log, and re-read
+After the mizar-vc task 26 commit exists, continue the evidence-pipeline
+crate-suite correction with mizar-artifact task 23. Before editing, verify a
+clean worktree, confirm the task 26 commit in git log, and re-read
+doc/design/mizar-artifact/en/todo.md,
+doc/design/mizar-artifact/en/source_spec_audit.md,
+doc/design/mizar-artifact/en/crate_exit_report.md if present,
 doc/design/mizar-vc/en/kernel_evidence_handoff.md,
-doc/design/mizar-vc/en/dependency_slice.md,
-doc/design/architecture/en/22.incremental_verification_contract.md,
-doc/design/architecture/en/18.dependency_fingerprint.md,
-crates/mizar-vc/src/kernel_evidence_handoff.rs, and
-crates/mizar-vc/src/dependency_slice.rs. Implement task 26 only: extend
-dependency-slice and proof-reuse identity to include the canonical kernel
-evidence hash produced by the task-25 builder. Keep downstream proof/cache/
-artifact schemas external; do not promote a handoff package to proof acceptance
-or add placeholder consumers. Add focused Rust tests for hash-driven
-invalidation and fail-closed unavailable reuse when kernel evidence or
-downstream consumers are absent. Run cargo fmt --check, cargo test -p mizar-vc,
-cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings,
-git diff --check, and git diff --cached --check after explicit path staging.
-Use review-only agents for the required AGENTS.md review phases.
+doc/design/mizar-vc/en/dependency_slice.md, and
+doc/design/architecture/en/15.kernel_certificate_format.md. Update the kernel
+evidence proof-witness schema only: artifact records may project
+formula/substitution evidence handoff identity and kernel-check results, but
+artifact remains a witness schema/projection crate and not the checker. Do not
+add placeholder producers, proof/cache consumers, SAT solving, ATP backends,
+resolution traces, backend proof-method acceptance, or trusted instantiated
+formula payloads. Re-evaluate artifact task 17 only after task 23 is complete;
+if required producer/proof outputs are still missing, record
+`external_dependency_gap` / `deferred` instead of stubbing.
 ```
 
-Rationale: task 26 updates architecture-22 reuse identity at the kernel
-evidence boundary. Keep `xhigh` because the hash can invalidate cached/reused
-proof candidates but still must not become acceptance material. Lower reasoning
-is appropriate only for typo-only documentation synchronization.
+Rationale: artifact task 23 is the witness-schema boundary directly downstream
+of the corrected kernel/vc evidence handoff. Keep `xhigh` because the artifact
+must publish stable witness projections without becoming an acceptance oracle.
+Lower reasoning is appropriate only for typo-only documentation synchronization.

@@ -62,10 +62,11 @@ Task 24 adds the paired
 [kernel_evidence_handoff.md](./kernel_evidence_handoff.md) spec and updates
 the stale downstream classification: `mizar-kernel` now exists as the trusted
 checker for corrected evidence, while ATP candidate production, proof/cache
-consumers, artifact witness consumers, and kernel-evidence hash reuse
-integration remain later tasks or external gaps. This task is docs-only and
-adds no Rust source, kernel calls, SAT solving, backend encodings, legacy
-certificates, or fabricated formula/substitution/provenance payloads.
+consumers, artifact witness consumers, and at that point the VC reuse-identity
+work were still later tasks or external gaps. Task 26 below resolves the VC
+reuse-identity portion only. This task is docs-only and adds no Rust source,
+kernel calls, SAT solving, backend encodings, legacy certificates, or
+fabricated formula/substitution/provenance payloads.
 
 Task 25 adds the producer-side `kernel_evidence_handoff` Rust module for
 explicit payloads. It constructs immutable formula/substitution/provenance
@@ -74,6 +75,13 @@ and discharge diagnostics outside the canonical envelope, and fails closed on
 missing payloads. It still does not call the kernel, run SAT solving, accept
 legacy certificates, encode backend proof methods, or publish artifact/cache
 proof status.
+
+Task 26 adds the dependency-slice and proof-reuse identity integration for that
+producer-side handoff. The current canonical handoff hash participates in slice
+fingerprints and reuse candidate keys, and legacy reuse without a current
+handoff fails closed. This remains an identity/invalidation boundary only: it
+does not make VC output trusted proof material, call the kernel, run SAT
+checking, or add proof/cache/artifact consumers.
 
 ## Task Commits
 
@@ -103,6 +111,8 @@ proof status.
 | 21 | `a8243c3498249fe75d3619fbbe4f5a2dc94b86a2` | `docs(vc-task-21): add architecture 22 follow-up audit` |
 | 22 | `76f286f9a3d1e6d6f096b84be7b5f38873e48d42` | `docs(vc-task-22): add module boundary audit` |
 | 24 | `c33c583d107c8211c22efcbb89d88144f32d163c` | `docs(vc-task-24): specify kernel evidence handoff` |
+| 25 | `0ed1bc23e2bc7f66d2f4f53a8e289721d47105b9` | `feat(vc-task-25): add kernel evidence handoff builder` |
+| 26 | pending self-hash | `feat(vc-task-26): include kernel evidence in reuse identity` |
 
 ## Hard Gates
 
@@ -152,7 +162,7 @@ milestone does not own those seams and no hard gate fails.
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
 | VC-CLOSEOUT-G001 | `external_dependency_gap` | `mizar-test` still lacks an active `proof_verification` runner/tag gate and source-to-core/source-to-VC extraction seams for real `.miz` corpus inputs. | Add runner and extraction support in the owning staged-test and upstream extraction tasks before activating source-derived VC fixtures. |
-| VC-CLOSEOUT-G002 | `external_dependency_gap` / `deferred` | The original closeout treated `mizar-kernel` as unavailable. `mizar-kernel` tasks 23-29 now provide formula/substitution evidence parsing, deterministic instantiation/SAT encoding, trusted SAT checker wrapping, SAT-backed check service, and legacy-certificate audit gating. Task 25 adds the VC producer-side handoff builder for explicit payloads. ATP candidate production, proof/cache consumers, artifact witness consumers, and kernel-evidence hash reuse integration remain incomplete. | Task 24 specifies the VC/kernel handoff; task 25 implements the producer-side builder; task 26 must include canonical kernel evidence hashes in reuse identity. Downstream ATP/proof/cache/artifact work must use their own specs instead of placeholders. |
+| VC-CLOSEOUT-G002 | `external_dependency_gap` / `deferred` | The original closeout treated `mizar-kernel` as unavailable. `mizar-kernel` tasks 23-29 now provide formula/substitution evidence parsing, deterministic instantiation/SAT encoding, trusted SAT checker wrapping, SAT-backed check service, and legacy-certificate audit gating. Task 25 adds the VC producer-side handoff builder for explicit payloads, and task 26 includes canonical kernel evidence hashes in dependency-slice and proof-reuse identity. ATP candidate production, proof/cache consumers, and artifact witness consumers remain incomplete. | Task 24 specifies the VC/kernel handoff; task 25 implements the producer-side builder; task 26 implements reuse-hash invalidation. Downstream ATP/proof/cache/artifact work must use their own specs instead of placeholders. |
 | VC-CLOSEOUT-G003 | `external_dependency_gap` | Upstream explicit/stable payloads remain incomplete for registration/redefinition/reduction details, call preconditions, branch/match/range/collection loop obligations, term-only and partial termination, Pick non-emptiness, ghost erasure, complete trace families, source-derived core formula payloads, definition payloads, quantified binder payloads, and source-derived obligation payload families. | Upstream checker/core/control-flow tasks expose stable explicit payloads; `mizar-vc` can then add spec-backed generation/discharge/slice tasks. |
 | VC-CLOSEOUT-G004 | `deferred` | Proof-witness hashes, ATP/kernel/proof/cache validation, artifact consumers, and source-derived runner integration must exist before architecture-22 reuse is accepted outside deterministic-discharge candidate keys. | Downstream proof/cache/artifact phases validate the untrusted reusable inputs produced here. |
 | VC-CLOSEOUT-G005 | `deferred` | Large `vc_ir`, `generator`, and `dependency_slice` files may benefit from private helper/test splits, but Task 22 found no required move-only split before crate exit. | Run future move-only maintenance tasks only if reviewability becomes a bottleneck; do not mix behavior or API changes. |
@@ -198,35 +208,37 @@ Unrun deferred commands:
 - Dedicated `mizar-atp` checks were not run for the same reason: that crate is
   still an external gap for this report. `mizar-kernel` now exists and is
   verified by its own task-23 through task-29 correction commits; Task 24 is
-  docs-only, and Task 25 does not call into kernel code.
+  docs-only, and Tasks 25-26 do not call into kernel code or SAT solvers.
 
-## Next-Task Handoff
+## Draft Next-Crate Handoff
 
 Recommended reasoning: `xhigh`.
 
 Prompt:
 
 ```text
-Continue mizar-vc autonomous correction from completed task 25. Before editing,
-verify a clean worktree, confirm the task 25 commit in git log, and re-read
+After the mizar-vc task 26 commit exists, continue the evidence-pipeline
+crate-suite correction with mizar-artifact task 23. Before editing, verify a
+clean worktree, confirm the task 26 commit in git log, and re-read
+doc/design/mizar-artifact/en/todo.md,
+doc/design/mizar-artifact/en/source_spec_audit.md,
+doc/design/mizar-artifact/en/crate_exit_report.md if present,
 doc/design/mizar-vc/en/kernel_evidence_handoff.md,
-doc/design/mizar-vc/en/dependency_slice.md,
-doc/design/architecture/en/22.incremental_verification_contract.md,
-doc/design/architecture/en/18.dependency_fingerprint.md,
-crates/mizar-vc/src/kernel_evidence_handoff.rs, and
-crates/mizar-vc/src/dependency_slice.rs. Implement task 26 only: extend
-dependency-slice and proof-reuse identity to include the canonical kernel
-evidence hash produced by the task-25 builder. Keep downstream proof/cache/
-artifact schemas external; do not promote a handoff package to proof acceptance
-or add placeholder consumers. Add focused Rust tests for hash-driven
-invalidation and fail-closed unavailable reuse when kernel evidence or
-downstream consumers are absent. Run cargo fmt --check, cargo test -p mizar-vc,
-cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings, git diff
---check, and git diff --cached --check after explicit path staging. Use
+doc/design/mizar-vc/en/dependency_slice.md, and
+doc/design/architecture/en/15.kernel_certificate_format.md. Start
+mizar-artifact task 23 only: update the kernel evidence proof-witness schema
+so artifact records project formula/substitution evidence handoff identity and
+kernel-check results without becoming the checker. Do not implement placeholder
+producers, proof/cache consumers, SAT solving, ATP backends, resolution traces,
+or trusted backend proof-method acceptance. Re-evaluate artifact task 17 only
+after task 23 is complete; if required producer/proof outputs are still
+missing, record `external_dependency_gap` / `deferred` instead of stubbing.
+Run the artifact crate's task-appropriate docs/source verification and use
 review-only agents for the required AGENTS.md review phases.
 ```
 
-Rationale: task 26 updates architecture-22 reuse identity at the kernel
-evidence boundary. Keep `xhigh` because the hash can invalidate cached/reused
-proof candidates but still must not become acceptance material. Lower reasoning
-is appropriate only for typo-only documentation synchronization.
+Rationale: artifact task 23 is a witness-schema boundary directly downstream
+of the corrected kernel/vc evidence handoff. Keep `xhigh` because the artifact
+must publish stable witness projections without becoming an acceptance oracle.
+Lower reasoning is appropriate only for typo-only documentation
+synchronization.

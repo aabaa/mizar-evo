@@ -376,13 +376,16 @@ Keep `cargo test -p mizar-vc` green after each task (see
     - Deps: 24, `mizar-kernel` task 29. Spec:
       [kernel_evidence_handoff.md](./kernel_evidence_handoff.md).
 
-26. **Dependency-slice and proof-reuse identity update.** [ ]
-    - Extend dependency slices and architecture-22 proof-reuse identity to
-      include kernel evidence hashes after the handoff builder exists. Keep
-      proof-witness reuse external until `mizar-proof`, `mizar-cache`, and
+26. **Dependency-slice and proof-reuse identity update.** [x]
+    - Extended dependency slices and architecture-22 proof-reuse identity to
+      include the current task-25 canonical kernel evidence handoff hash.
+      Legacy reuse without a current handoff now fails closed. Proof-witness
+      reuse remains external until `mizar-proof`, `mizar-cache`, and
       `mizar-artifact` define their corresponding schemas.
-    - Tests: fingerprint stability and invalidation fixtures; unavailable
-      downstream consumers remain `external_dependency_gap` / `deferred`.
+    - Tests: kernel-evidence hash participation in slice fingerprints and
+      reuse keys; missing handoff, stale slice, duplicate handoff, unknown VC,
+      and selected-VC mismatch fail closed; unavailable downstream consumers
+      remain `external_dependency_gap` / `deferred`.
     - Deps: 25. Spec:
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
       `dependency_slice.md`.

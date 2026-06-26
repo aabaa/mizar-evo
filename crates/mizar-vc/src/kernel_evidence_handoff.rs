@@ -69,6 +69,10 @@ impl VcKernelEvidenceHandoff {
         self.canonical_hash
     }
 
+    pub fn targets_vc(&self, vc_set: &VcSet, vc: VcId) -> Result<bool, KernelEvidenceHandoffError> {
+        Ok(self.canonical_evidence.target_vc() == &target_fingerprint(vc_set, vc)?)
+    }
+
     pub fn debug_text(&self) -> String {
         let mut output = String::from("vc-kernel-evidence-handoff-debug-v1\n");
         writeln!(

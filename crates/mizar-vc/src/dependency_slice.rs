@@ -9,6 +9,7 @@ use crate::{
     discharge::{
         DischargeEvidenceRecord, DischargeEvidenceReplay, DischargeEvidenceSource, DischargeOutput,
     },
+    kernel_evidence_handoff::VcKernelEvidenceHandoff,
     vc_ir::{
         AnchorCompleteness, AnchorIngredient, ComputationHint, ContextEntry, ContextEntryId,
         DefinitionUnfoldRequest, DischargeEvidenceRef, HashMarker, ObligationAnchor, PolicyKey,
@@ -31,6 +32,12 @@ pub const DEPENDENCY_SLICE_SCHEMA_VERSION: &str = "mizar-vc-dependency-slice-v1"
 pub struct DependencySliceInput<'a> {
     pub vc_set: &'a VcSet,
     pub discharge_output: Option<&'a DischargeOutput>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct KernelEvidenceDependencyInput<'a> {
+    pub vc: VcId,
+    pub handoff: &'a VcKernelEvidenceHandoff,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -57,10 +64,26 @@ impl DependencySliceSet {
         discharge_output: &DischargeOutput,
         vc: VcId,
     ) -> Option<ProofReuseCandidateKey> {
-        let current_slices = try_compute_dependency_slices(DependencySliceInput {
-            vc_set: discharge_output.vc_set(),
-            discharge_output: Some(discharge_output),
-        })
+        let _ = (discharge_output, vc);
+        None
+    }
+
+    pub fn proof_reuse_key_for_kernel_handoff(
+        &self,
+        discharge_output: &DischargeOutput,
+        vc: VcId,
+        kernel_handoff: &VcKernelEvidenceHandoff,
+    ) -> Option<ProofReuseCandidateKey> {
+        let current_slices = try_compute_dependency_slices_with_kernel_evidence(
+            DependencySliceInput {
+                vc_set: discharge_output.vc_set(),
+                discharge_output: Some(discharge_output),
+            },
+            &[KernelEvidenceDependencyInput {
+                vc,
+                handoff: kernel_handoff,
+            }],
+        )
         .ok()?;
         let provided_slice = self.slice_for(vc)?;
         let current_slice = current_slices.slice_for(vc)?;
@@ -72,7 +95,7 @@ impl DependencySliceSet {
             return None;
         }
         let current_vc = discharge_output.vc_set().vc(vc)?;
-        proof_reuse_key(current_vc, current_slice, discharge_output)
+        proof_reuse_key(current_vc, current_slice, discharge_output, kernel_handoff)
     }
 
     pub fn debug_text(&self) -> String {
@@ -221,6 +244,7 @@ pub enum DependencyEntryClass {
     Policy,
     Anchor,
     DischargeEvidence,
+    KernelEvidence,
     Seed,
 }
 
@@ -262,6 +286,9 @@ pub enum DependencyUnknownFamily {
 #[non_exhaustive]
 pub enum DependencySliceError {
     MismatchedDischargeOutput,
+    DuplicateKernelEvidence { vc: VcId },
+    MismatchedKernelEvidence { vc: VcId },
+    UnknownKernelEvidenceVc { vc: VcId },
 }
 
 impl fmt::Display for DependencySliceError {
@@ -269,6 +296,18 @@ impl fmt::Display for DependencySliceError {
         match self {
             Self::MismatchedDischargeOutput => {
                 formatter.write_str("discharge output does not match dependency-slice input VcSet")
+            }
+            Self::DuplicateKernelEvidence { vc } => {
+                write!(formatter, "duplicate kernel evidence handoff for {vc:?}")
+            }
+            Self::MismatchedKernelEvidence { vc } => {
+                write!(formatter, "kernel evidence handoff does not match {vc:?}")
+            }
+            Self::UnknownKernelEvidenceVc { vc } => {
+                write!(
+                    formatter,
+                    "kernel evidence handoff references unknown {vc:?}"
+                )
             }
         }
     }
@@ -279,6 +318,13 @@ impl Error for DependencySliceError {}
 pub fn try_compute_dependency_slices(
     input: DependencySliceInput<'_>,
 ) -> Result<DependencySliceSet, DependencySliceError> {
+    try_compute_dependency_slices_with_kernel_evidence(input, &[])
+}
+
+pub fn try_compute_dependency_slices_with_kernel_evidence(
+    input: DependencySliceInput<'_>,
+    kernel_evidence: &[KernelEvidenceDependencyInput<'_>],
+) -> Result<DependencySliceSet, DependencySliceError> {
     let discharge_output = input.discharge_output;
     if let Some(output) = discharge_output
         && output.vc_set() != input.vc_set
@@ -288,6 +334,7 @@ pub fn try_compute_dependency_slices(
 
     let evidence_by_vc = discharge_output.map_or_else(BTreeMap::new, evidence_by_vc);
     let explanations_by_vc = discharge_output.map_or_else(BTreeMap::new, explanations_by_vc);
+    let kernel_evidence_by_vc = kernel_evidence_by_vc(input.vc_set, kernel_evidence)?;
 
     let slices = input
         .vc_set
@@ -300,7 +347,13 @@ pub fn try_compute_dependency_slices(
             let explanations = explanations_by_vc
                 .get(&vc.id)
                 .map_or([].as_slice(), Vec::as_slice);
-            compute_slice(input.vc_set, vc, records, explanations)
+            compute_slice(
+                input.vc_set,
+                vc,
+                records,
+                explanations,
+                kernel_evidence_by_vc.get(&vc.id).copied(),
+            )
         })
         .collect();
 
@@ -308,6 +361,32 @@ pub fn try_compute_dependency_slices(
         schema_version: DEPENDENCY_SLICE_SCHEMA_VERSION,
         slices,
     })
+}
+
+fn kernel_evidence_by_vc<'a>(
+    vc_set: &VcSet,
+    inputs: &'a [KernelEvidenceDependencyInput<'a>],
+) -> Result<BTreeMap<VcId, &'a VcKernelEvidenceHandoff>, DependencySliceError> {
+    let mut by_vc = BTreeMap::new();
+    for input in inputs {
+        let Some(vc) = vc_set.vc(input.vc) else {
+            return Err(DependencySliceError::UnknownKernelEvidenceVc { vc: input.vc });
+        };
+        let handoff = input.handoff;
+        if !handoff.targets_vc(vc_set, input.vc).unwrap_or(false)
+            || handoff
+                .canonical_evidence()
+                .final_goal()
+                .producer_formula_ref
+                != vc.goal
+        {
+            return Err(DependencySliceError::MismatchedKernelEvidence { vc: input.vc });
+        }
+        if by_vc.insert(input.vc, handoff).is_some() {
+            return Err(DependencySliceError::DuplicateKernelEvidence { vc: input.vc });
+        }
+    }
+    Ok(by_vc)
 }
 
 fn evidence_by_vc(output: &DischargeOutput) -> BTreeMap<VcId, Vec<&DischargeEvidenceRecord>> {
@@ -336,6 +415,7 @@ fn compute_slice(
     vc: &VcIr,
     evidence_records: &[&DischargeEvidenceRecord],
     explanations: &[&crate::discharge::DischargeExplanation],
+    kernel_evidence: Option<&VcKernelEvidenceHandoff>,
 ) -> DependencySlice {
     let mut builder = SliceBuilder::new(vc_set, vc);
     builder.collect_status(&vc.status, evidence_records.is_empty());
@@ -372,6 +452,10 @@ fn compute_slice(
                 explanation.category, explanation.rule, explanation.detail
             ),
         );
+    }
+
+    if let Some(handoff) = kernel_evidence {
+        builder.collect_kernel_evidence(handoff);
     }
 
     builder.finish()
@@ -975,6 +1059,28 @@ impl<'a> SliceBuilder<'a> {
         }
     }
 
+    fn collect_kernel_evidence(&mut self, handoff: &VcKernelEvidenceHandoff) {
+        let context_requirements = handoff
+            .formula_context_requirements()
+            .map_or_else(|| "<none>".to_owned(), |context| format!("{context:?}"));
+        let envelope = handoff.canonical_evidence();
+        let payload = format!(
+            "schema={}; encoding={}; target={:?}; profile={:?}; canonical-hash={}; formula-context={}",
+            envelope.schema_version(),
+            envelope.encoding_version(),
+            envelope.target_vc(),
+            envelope.kernel_profile(),
+            hex(handoff.canonical_hash().as_bytes()),
+            context_requirements
+        );
+        self.add_entry_with_fingerprint_payload(
+            DependencyEntryClass::KernelEvidence,
+            "kernel-evidence:canonical-handoff",
+            payload.clone(),
+            payload,
+        );
+    }
+
     fn collect_discharge_evidence_ref(&mut self, role: &str, evidence: &DischargeEvidenceRef) {
         self.add_entry_with_fingerprint_payload(
             DependencyEntryClass::DischargeEvidence,
@@ -1243,6 +1349,7 @@ fn proof_reuse_key(
     vc: &VcIr,
     slice: &DependencySlice,
     discharge_output: &DischargeOutput,
+    kernel_handoff: &VcKernelEvidenceHandoff,
 ) -> Option<ProofReuseCandidateKey> {
     if vc.id != slice.vc || vc.kind != slice.kind || vc.status != slice.status {
         return None;
@@ -1279,6 +1386,13 @@ fn proof_reuse_key(
     )
     .expect("write string");
     writeln!(&mut payload, "verifier-policy: {policy:?}").expect("write string");
+    writeln!(
+        &mut payload,
+        "kernel-evidence: canonical-hash={:?}; formula-context={:?}",
+        kernel_handoff.canonical_hash(),
+        kernel_handoff.formula_context_requirements()
+    )
+    .expect("write string");
     writeln!(
         &mut payload,
         "deterministic-evidence: rule={:?}; hash={evidence_hash:?}",
@@ -1420,6 +1534,12 @@ mod tests {
     use super::*;
     use crate::{
         discharge::{DischargeInput, DischargePolicy, try_discharge},
+        kernel_evidence_handoff::{
+            KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, KernelClauseTautologyPolicy,
+            KernelEvidenceFingerprint, KernelEvidenceHandoffInput, KernelEvidenceProfile,
+            KernelFormulaPayload, KernelFormulaProjection, VcKernelEvidenceHandoff,
+            build_kernel_evidence_handoff,
+        },
         vc_ir::{
             AnchorLabel, AnchorLabelRole, AnchorOwner, AnchorUnavailableReason, CanonicalSortKey,
             ContextEntryKind, DefinitionOpacityOverride, GenerationSchemaVersion, LocalContext,
@@ -1737,6 +1857,155 @@ mod tests {
             unknown.family() == DependencyUnknownFamily::DischargeEvidence
                 && unknown.local_key().contains("missing-replay")
         }));
+    }
+
+    #[test]
+    fn kernel_evidence_identity_participates_in_slice_and_reuse_key() {
+        let original = fixture_set(fixture_parts(
+            VcStatus::Open,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+            vec![generated_formula(0, VcGeneratedFormulaShape::True)],
+            complete_anchor_fixture(),
+        ));
+        let discharge = try_discharge(DischargeInput {
+            vc_set: &original,
+            policy: &DischargePolicy::default(),
+        })
+        .expect("discharge");
+        let handoff = kernel_handoff_for(&discharge, VcId::new(0));
+        let plain = try_compute_dependency_slices(DependencySliceInput {
+            vc_set: discharge.vc_set(),
+            discharge_output: Some(&discharge),
+        })
+        .expect("plain slices");
+        let with_kernel = try_compute_dependency_slices_with_kernel_evidence(
+            DependencySliceInput {
+                vc_set: discharge.vc_set(),
+                discharge_output: Some(&discharge),
+            },
+            &[KernelEvidenceDependencyInput {
+                vc: VcId::new(0),
+                handoff: &handoff,
+            }],
+        )
+        .expect("kernel slices");
+        let plain_slice = only_slice(&plain);
+        let kernel_slice = only_slice(&with_kernel);
+
+        assert_ne!(plain_slice.fingerprint(), kernel_slice.fingerprint());
+        assert!(has_entry(
+            kernel_slice,
+            DependencyEntryClass::KernelEvidence,
+            "kernel-evidence:canonical-handoff"
+        ));
+        assert!(
+            plain
+                .proof_reuse_key_for(&discharge, VcId::new(0))
+                .is_none()
+        );
+        assert!(
+            with_kernel
+                .proof_reuse_key_for_kernel_handoff(&discharge, VcId::new(0), &handoff)
+                .is_some()
+        );
+
+        assert_eq!(
+            try_compute_dependency_slices_with_kernel_evidence(
+                DependencySliceInput {
+                    vc_set: discharge.vc_set(),
+                    discharge_output: Some(&discharge),
+                },
+                &[
+                    KernelEvidenceDependencyInput {
+                        vc: VcId::new(0),
+                        handoff: &handoff,
+                    },
+                    KernelEvidenceDependencyInput {
+                        vc: VcId::new(0),
+                        handoff: &handoff,
+                    },
+                ],
+            ),
+            Err(DependencySliceError::DuplicateKernelEvidence { vc: VcId::new(0) })
+        );
+        assert_eq!(
+            try_compute_dependency_slices_with_kernel_evidence(
+                DependencySliceInput {
+                    vc_set: discharge.vc_set(),
+                    discharge_output: Some(&discharge),
+                },
+                &[KernelEvidenceDependencyInput {
+                    vc: VcId::new(1),
+                    handoff: &handoff,
+                }],
+            ),
+            Err(DependencySliceError::UnknownKernelEvidenceVc { vc: VcId::new(1) })
+        );
+        assert_eq!(
+            try_compute_dependency_slices_with_kernel_evidence(
+                DependencySliceInput {
+                    vc_set: &fixture_set(fixture_parts(
+                        VcStatus::Open,
+                        VcFormulaRef::Core(CoreFormulaId::new(42)),
+                        vec![generated_formula(0, VcGeneratedFormulaShape::True)],
+                        complete_anchor_fixture(),
+                    )),
+                    discharge_output: None,
+                },
+                &[KernelEvidenceDependencyInput {
+                    vc: VcId::new(0),
+                    handoff: &handoff,
+                }],
+            ),
+            Err(DependencySliceError::MismatchedKernelEvidence { vc: VcId::new(0) })
+        );
+
+        let two_vc = two_vc_same_goal_fixture();
+        let two_vc_discharge = try_discharge(DischargeInput {
+            vc_set: &two_vc,
+            policy: &DischargePolicy::default(),
+        })
+        .expect("two-vc discharge");
+        let handoff_for_vc0 = kernel_handoff_for(&two_vc_discharge, VcId::new(0));
+        let handoff_for_vc1 = kernel_handoff_for(&two_vc_discharge, VcId::new(1));
+        assert_eq!(
+            two_vc_discharge.vc_set().vcs()[0].goal,
+            two_vc_discharge.vc_set().vcs()[1].goal
+        );
+        assert_eq!(
+            try_compute_dependency_slices_with_kernel_evidence(
+                DependencySliceInput {
+                    vc_set: two_vc_discharge.vc_set(),
+                    discharge_output: Some(&two_vc_discharge),
+                },
+                &[KernelEvidenceDependencyInput {
+                    vc: VcId::new(1),
+                    handoff: &handoff_for_vc0,
+                }],
+            ),
+            Err(DependencySliceError::MismatchedKernelEvidence { vc: VcId::new(1) })
+        );
+        let vc1_slices = try_compute_dependency_slices_with_kernel_evidence(
+            DependencySliceInput {
+                vc_set: two_vc_discharge.vc_set(),
+                discharge_output: Some(&two_vc_discharge),
+            },
+            &[KernelEvidenceDependencyInput {
+                vc: VcId::new(1),
+                handoff: &handoff_for_vc1,
+            }],
+        )
+        .expect("vc1 kernel slices");
+        assert!(
+            vc1_slices
+                .proof_reuse_key_for_kernel_handoff(
+                    &two_vc_discharge,
+                    VcId::new(1),
+                    &handoff_for_vc0,
+                )
+                .is_none(),
+            "handoff target binding must match the selected VC before reuse"
+        );
     }
 
     #[test]
@@ -2293,6 +2562,30 @@ mod tests {
         VcSet::try_new(parts).expect("valid dependency-slice fixture")
     }
 
+    fn two_vc_same_goal_fixture() -> VcSet {
+        let mut parts = fixture_parts(
+            VcStatus::Open,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+            vec![generated_formula(0, VcGeneratedFormulaShape::True)],
+            complete_anchor_fixture(),
+        );
+        let mut second_vc = parts.vcs[0].clone();
+        second_vc.id = VcId::new(1);
+        second_vc.seed.handoff = ObligationHandoffId::new(1);
+        second_vc.anchor = complete_anchor_fixture().with_source(parts.source);
+        second_vc.provenance = vec![provenance("vc-second")];
+        parts.vcs.push(second_vc);
+        parts.seed_accounting.push(SeedAccounting {
+            handoff: ObligationHandoffId::new(1),
+            origin: SeedOriginRef::ExistingCore {
+                seed: ObligationSeedId::new(1),
+            },
+            seed_status: ObligationSeedStatus::Active,
+            mapping: SeedVcMapping::One { vc: VcId::new(1) },
+        });
+        fixture_set(parts)
+    }
+
     fn fixture_parts(
         status: VcStatus,
         goal: VcFormulaRef,
@@ -2507,6 +2800,39 @@ mod tests {
             });
             self
         }
+    }
+
+    fn kernel_handoff_for(discharge: &DischargeOutput, vc: VcId) -> VcKernelEvidenceHandoff {
+        let vc_set = discharge.vc_set();
+        let payloads = vc_set
+            .generated_formulas()
+            .iter()
+            .map(|formula| KernelFormulaPayload {
+                formula_ref: VcFormulaRef::Generated(formula.id),
+                projection: KernelFormulaProjection {
+                    formula_fingerprint: KernelEvidenceFingerprint::new(
+                        KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                        format!("formula-{}", formula.id.index()).into_bytes(),
+                    )
+                    .expect("formula fingerprint"),
+                    formula_bytes: format!("kernel-formula-{}", formula.id.index()).into_bytes(),
+                    provenance_payload: format!("provenance-{}", formula.id.index()).into_bytes(),
+                },
+            })
+            .collect::<Vec<_>>();
+        build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+            vc_set,
+            vc,
+            kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+            symbol_manifest: &[],
+            variable_manifest: &[],
+            formula_payloads: &payloads,
+            imported_formula_payloads: &[],
+            substitutions: &[],
+            formula_context: None,
+            discharge_output: Some(discharge),
+        })
+        .expect("kernel evidence handoff")
     }
 
     fn only_slice(output: &DependencySliceSet) -> &DependencySlice {
