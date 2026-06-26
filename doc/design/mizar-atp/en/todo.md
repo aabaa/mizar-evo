@@ -22,7 +22,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 | property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [x] axiom-form property source complete; native declarations deferred |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [x] deterministic FOF source complete; typed/native/backend routes deferred |
 | smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source complete; theory/sorted/native/backend routes deferred |
-| backend | `backend.md` (task 13) | `src/backend.rs` | [ ] |
+| backend | `backend.md` (task 13) | `src/backend.rs` | [x] spec complete; source deferred to task 14 |
 | portfolio | `portfolio.md` (task 17) | `src/portfolio.rs` | [ ] |
 
 `mizar-atp` implements pipeline phase 13: ATP-eligible `VcStatus::NeedsAtp`
@@ -295,12 +295,19 @@ Keep `cargo test -p mizar-atp` green after each task (see
 
 ### Backend execution
 
-13. **Spec: `backend.md`.** [ ]
+13. **Spec: `backend.md`.** [x]
     - Write the backend spec (English and Japanese, no code): backend trait,
       process model (spawn, resource limits, termination), configuration
       and version recording, crash handling, and result classification
       including the rule that `Proved` requires matching `expected_result`
       plus evidence.
+    - Status: complete by paired `backend.md` docs. Task-14 source is limited
+      to the generic child-process runner, mock backend fixtures,
+      deterministic run metadata, resource/timeout/cancellation/crash
+      handling, and invariant-preserving mock classification. Real backend
+      adapters, backend-specific output parsing, candidate evidence
+      extraction, portfolio execution, proof policy, witness/cache
+      publication, and kernel checking remain deferred.
     - Deps: 2. Spec: architecture 10 "Process Model"/"Result
       Classification", [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
       "Backend Runner".
@@ -308,8 +315,27 @@ Keep `cargo test -p mizar-atp` green after each task (see
 14. **Backend runner.** [ ]
     - Implement process execution with resource limits, timeouts,
       cancellation, and graceful crash handling; mock backend for tests.
-    - Tests: timeout/crash/kill fixtures via mock processes; no zombie
-      processes; recorded resource metadata.
+    - Tests: stdin and private problem-file modes; direct executable/argument
+      spawning without shell interpretation; deterministic command
+      fingerprints; version-probe success/failure metadata; timeout,
+      cancellation, kill-grace, crash, non-zero exit, missing executable, and
+      spawn-permission fixtures; byte-exact input delivery in both stdin and
+      private-file modes without rewriting, normalization, appended proof
+      commands, unsat-core requests, shell interpretation, or inferred polarity
+      changes; deterministic fingerprints that exclude pids, temp paths,
+      timestamps, raw completion order, and machine-local absolute
+      executable/working-directory paths while recording sorted allowlisted
+      environment variables; stdout/stderr hashes and truncation diagnostics;
+      private temp cleanup; no child process left after
+      timeout/cancellation/crash; resource-limit records and unsupported-limit
+      diagnostics; `Proved` rejection for polarity mismatch, missing
+      formula/substitution evidence, candidate metadata mismatches, or
+      otherwise matching evidence after timeout/cancellation/crash/parsing
+      corruption; mock `Proved` only with matching `ExpectedBackendResult::Unsat`
+      and candidate metadata; no kernel/SAT checking, proof policy,
+      witness/cache publication, backend proof-method trust, resolution-trace
+      trust, unsat-core trust, SMT proof-object trust, or trusted backend
+      `used_axioms`.
     - Deps: 13. Spec: `backend.md`.
 
 15. **First concrete backend integration.** [ ]

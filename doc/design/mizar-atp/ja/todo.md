@@ -22,7 +22,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 | property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [x] axiom-form property source 完了。native declaration は deferred |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [x] deterministic FOF source 完了。typed/native/backend route は deferred |
 | smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source 完了。theory/sorted/native/backend route は deferred |
-| backend | `backend.md`（task 13） | `src/backend.rs` | [ ] |
+| backend | `backend.md`（task 13） | `src/backend.rs` | [x] spec 完了。source は task 14 へ deferred |
 | portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [ ] |
 
 `mizar-atp` はパイプライン phase 13 を実装する。入力は ATP 対象の
@@ -277,11 +277,17 @@ workspace crate ではないため、policy と witness-publication integration 
 
 ### バックエンド実行
 
-13. **仕様: `backend.md`。** [ ]
+13. **仕様: `backend.md`。** [x]
     - バックエンドの仕様を執筆する（英語と日本語、コードなし）:
       バックエンド trait、プロセスモデル（spawn、リソース制限、終了）、
       設定とバージョン記録、クラッシュ処理、そして「`Proved` は
       `expected_result` の一致と証拠の存在を要する」規則を含む結果分類。
+    - Status: paired `backend.md` docs により完了。task-14 source は generic
+      child-process runner、mock backend fixture、deterministic run metadata、
+      resource / timeout / cancellation / crash handling、invariant-preserving mock
+      classification に限定する。real backend adapter、backend-specific output parsing、
+      candidate evidence extraction、portfolio execution、proof policy、witness/cache
+      publication、kernel checking は deferred のままである。
     - 依存: 2。仕様: アーキテクチャ 10「Process Model」「Result
       Classification」、[internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
       「Backend Runner」。
@@ -289,8 +295,24 @@ workspace crate ではないため、policy と witness-publication integration 
 14. **バックエンド runner。** [ ]
     - リソース制限、タイムアウト、キャンセル、graceful なクラッシュ処理を
       備えたプロセス実行を実装する。テスト用モックバックエンドを用意する。
-    - テスト: モックプロセスによるタイムアウト/クラッシュ/kill の
-      フィクスチャ。ゾンビプロセスなし。リソースメタデータの記録。
+    - テスト: stdin と private problem-file mode。shell interpretation を使わない
+      direct executable / argument spawning。deterministic command fingerprint。
+      version-probe success/failure metadata。timeout、cancellation、kill-grace、
+      crash、non-zero exit、missing executable、spawn-permission fixture。
+      stdin と private-file mode の両方で byte-exact input delivery を行い、rewriting、
+      normalization、appended proof command、unsat-core request、shell interpretation、
+      inferred polarity change がないこと。process id、temp path、timestamp、
+      raw completion order、machine-local absolute executable / working-directory path を
+      fingerprint から除外し、allowlist された environment variable を sort 済みで
+      記録すること。stdout/stderr hash と truncation diagnostic。private temporary cleanup。
+      timeout/cancellation/crash 後に child process が残らないこと。resource-limit record と
+      unsupported-limit diagnostic。polarity mismatch、formula/substitution evidence 不在、
+      candidate metadata mismatch、または timeout/cancellation/crash/parsing corruption 後の
+      otherwise matching evidence での `Proved` rejection。observed result が
+      `ExpectedBackendResult::Unsat` と一致し candidate metadata が一致する場合だけ mock
+      `Proved` になること。kernel/SAT checking、proof policy、witness/cache publication、
+      backend proof-method trust、resolution-trace trust、unsat-core trust、
+      SMT proof-object trust、trusted backend `used_axioms` がないこと。
     - 依存: 13。仕様: `backend.md`。
 
 15. **最初の具体バックエンド統合。** [ ]
