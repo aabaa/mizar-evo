@@ -314,7 +314,7 @@ backend process execution を含まないものでなければならない。そ
       metadata audit も実行する。
     - 依存: 23。仕様: アーキテクチャ 15 "Post-Closeout Correction"。
 
-25. **Formula/substitution evidence schema and parser。** [ ]
+25. **Formula/substitution evidence schema and parser。** [x]
     - formula ref または formula、substitution record、provenance binding、
       target/goal binding、stable hash の kernel-owned evidence schema を実装する。
       legacy certificate parsing は、新しい acceptance path の外側であることが

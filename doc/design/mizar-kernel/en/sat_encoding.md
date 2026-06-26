@@ -43,9 +43,10 @@ profile. Variables are assigned in sorted canonical atom-byte order, with any
 auxiliary Tseitin variables allocated in deterministic traversal order after
 all atom variables.
 
-The encoded problem contains all evidence formulas asserted true and the target
-goal asserted false for refutation. Equivalent caller order must produce
-identical canonical SAT bytes.
+The encoded problem contains all premise evidence formulas asserted true and
+the standalone target goal asserted false for refutation. The final-goal formula
+is not also asserted as a premise merely because it appears in the evidence
+envelope. Equivalent caller order must produce identical canonical SAT bytes.
 
 Instantiated formulas and SAT clauses are kernel-derived artifacts. They may be
 recorded as diagnostic check traces, but they are never trusted input fields.

@@ -29,6 +29,8 @@ or mutable compiler-global state access.
   [certificate_parser.md](./certificate_parser.md).
 - `checker` -> source `src/checker.rs`, spec [checker.md](./checker.md).
 - `clause` -> source `src/clause.rs`, spec [clause.md](./clause.md).
+- `formula_evidence` -> source `src/formula_evidence.rs`, spec
+  [formula_evidence.md](./formula_evidence.md).
 - `rejection` -> source `src/rejection.rs`, spec [rejection.md](./rejection.md).
 - `resolution_trace` -> source `src/resolution_trace.rs`, spec
   [resolution_trace.md](./resolution_trace.md).
@@ -174,6 +176,42 @@ Correspondence summary:
 - `ClauseError` covers structural well-formedness and resource failures owned
   by this module.
 
+### `formula_evidence`
+
+Source: `src/formula_evidence.rs`. Spec: [formula_evidence.md](./formula_evidence.md).
+
+Covered top-level public items:
+
+- `SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID`
+- `FormulaEvidenceParseContext`
+- `FormulaEvidenceParseLimits`
+- `ParsedKernelEvidence`
+- `FormulaEvidenceEntry`
+- `FormulaSourceClass`
+- `FormulaSource`
+- `ImportedFormulaSource`
+- `Formula`
+- `FormulaSubstitutionEvidence`
+- `FormulaProvenance`
+- `FinalGoalEvidence`
+- `GoalPolarity`
+- `FormulaEvidenceError`
+- `FormulaEvidenceCheckResult`
+- `parse_formula_evidence`
+
+Correspondence summary:
+
+- Parse context, limits, parsed evidence, formula/provenance/final-goal
+  records, and `parse_formula_evidence` implement the task-25 deterministic
+  evidence envelope and structural parser.
+- `Formula`, source binding records, substitution evidence, formula
+  fingerprints, and entry hash inputs implement formula/substitution evidence
+  identity without accepting instantiated formulas or SAT clauses as trusted
+  payload.
+- Rejection mapping separates envelope/byte-shape certificate rejections from
+  provenance/target-binding kernel rejections and does not perform proof search
+  or SAT solving.
+
 ### `rejection`
 
 Source: `src/rejection.rs`. Spec: [rejection.md](./rejection.md).
@@ -267,9 +305,10 @@ compiler-global state remain forbidden. Trusted SAT checking is allowed only
 over SAT problems derived by the kernel from validated formula/substitution
 evidence.
 
-The new task-23 `formula_evidence`, `sat_encoding`, and `sat_checker` specs are
-planned/unimplemented design surfaces. They are intentionally not included in
-the executable source-backed guard until tasks 25-27 add the corresponding
+Task 25 promotes `formula_evidence` from planned design surface to
+source-backed exported module. `sat_encoding` and `sat_checker` remain
+planned/unimplemented design surfaces and are intentionally not included in the
+executable source-backed guard until tasks 26-27 add the corresponding
 exported modules.
 
 ## Post-Closeout Correction Addendum
@@ -288,11 +327,12 @@ Task 24 adds the dependency audit before source changes:
   candidates, unsafe-code audit, no-process/no-network audit, resource-limit
   gates, and the dependency lint-policy revision that task 27 must encode.
 
-The current source inventory above remains the task-22 legacy public surface
-until tasks 25-29 add the new modules and gate or retire legacy
-resolution-trace acceptance. The legacy `check_kernel_certificate` path is
-classified as `source_drift` / `design_drift` against the corrected evidence
-format and must not be treated as the target normal proof policy.
+The current source inventory above is now the task-25 public surface: it adds
+the formula/substitution evidence parser while the legacy
+`check_kernel_certificate` path remains classified as `source_drift` /
+`design_drift` against the corrected evidence format. Tasks 26-29 must add the
+SAT encoding/check/service path and gate or retire legacy resolution-trace
+acceptance before normal proof policy can rely on the corrected pipeline.
 
 ## Test Traceability
 
@@ -309,6 +349,7 @@ migration-only and remains deferred.
 | `checker` cluster/reduction replay | `crates/mizar-kernel/src/checker/tests.rs` | Valid trace replay, missing provenance, hidden/future dependency rejection, guard/result mismatches, bounded context construction, requested-step closure, unchecked base fact rejection, runtime limits, and deterministic canonical order. |
 | `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | Accepted service pipeline, substitution/report binding, generated-clause base sets, final-goal and derived-fact fail-closed behavior, mutation fail corpus, deterministic repetition/permutation results, deterministic batch ties, replay-cost budgets, timeout/resource propagation, and target/input-order batch sorting. |
 | `clause` | `crates/mizar-kernel/src/clause/tests.rs` | Canonical literal/term ordering, duplicate literal removal, empty versus tautology forms, tautology policy, malformed atom/term/symbol/variable rejection, profile/resource bounds, canonical constructor checks, stable rendering, and hash input exclusion of display data. |
+| `formula_evidence` | `crates/mizar-kernel/src/formula_evidence/tests.rs` | Valid evidence envelope parsing, standalone final-goal separation, stable formula rendering/hash input, explicit substitution evidence payload parsing, unknown schema/domain rejection, duplicate ids, malformed formula rejection, missing provenance fail-closed behavior, imported statement fingerprint mismatch rejection, and provenance target-binding mismatch rejection. |
 | `rejection` | `crates/mizar-kernel/src/rejection/tests.rs` | Stable keys, category/detail ownership, parser conversion, checker locations, owner mappings, deterministic ordering and tie-breakers, fixed-width target sort bytes, and public enum compatibility. |
 | `resolution_trace` | `crates/mizar-kernel/src/resolution_trace/tests.rs` | Valid replay over generated/imported/previous-step parents, pivot and resolvent rejection, imported context sorting/provenance, first-use compatibility/depth checks, resource limits, tautology policy, defensive invariant rejection, final-goal checkedness, deterministic reports, deterministic rejection locations, and clause-owned depth/length helpers. |
 | `substitution_checker` | `crates/mizar-kernel/src/substitution_checker/tests.rs` | Direct substitution replay, payload role validation, missing/malformed/deferred evidence rejection, target/manifest/capture checks without repair, alpha conversion, freshness witnesses, free-variable constraints, shuffled witness determinism, binder-context decoding, first-use side-condition rejection, resource limits, context canonicalization, and report binding. |
@@ -328,6 +369,7 @@ migration-only and remains deferred.
 | KERNEL20-G008 | `source_undocumented_behavior` risk | Future public APIs or module exports could be added without audit updates. | `tests/lint_policy.rs` now fails unless this audit lists current public modules/items and module Trust Statement prohibitions. |
 | KERNEL20-G009 | `repo_metadata_conflict` | None observed in task 20. | Report only if future metadata conflicts appear; do not auto-repair unrelated metadata. |
 | KERNEL24-G001 | `source_drift` / `deferred` | Task 24 selects `batsat`, but no manifest/source change has occurred yet. `batsat` also lacks a public exact conflict/propagation budget setter. | Task 27 must add the exact dependency, update dependency lint guards, verify lockfile resolution, and either prove deterministic callback interruption or reject unsupported step-budget requests. |
+| KERNEL25-G001 | `deferred` | Task 25 parses and structurally validates formula/substitution evidence but does not instantiate formulas, encode SAT, call the SAT checker, or replace the legacy service acceptance path. | Tasks 26-28 must derive instantiated formulas, build deterministic SAT problems, run the trusted SAT checker, and wire the service acceptance path without treating backend methods or legacy resolution traces as trusted material. |
 
 ## Verification Plan
 

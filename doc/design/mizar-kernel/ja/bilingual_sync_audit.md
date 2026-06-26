@@ -30,23 +30,23 @@ ATP/proof/cache/artifact integration は変更しない。
 | File | Companion links | Heading count | Table row count | Sync result |
 |---|---|---:|---:|---|
 | `00.crate_plan.md` | EN -> JA and JA -> EN | 8 / 8 | 64 / 64 | post-closeout task rows 追加後に synchronized. |
-| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 34 / 34 | task-24 audit rows 追加後に synchronized. |
+| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 34 / 34 | task-25 start bookkeeping 後に synchronized. |
 | `certificate_parser.md` | EN -> JA and JA -> EN | 15 / 15 | 29 / 29 | Synchronized. |
 | `checker.md` | EN -> JA and JA -> EN | 15 / 15 | 15 / 15 | Synchronized. |
 | `clause.md` | EN -> JA and JA -> EN | 12 / 12 | 5 / 5 | Synchronized. |
 | `crate_exit_report.md` | EN -> JA and JA -> EN | 12 / 12 | 71 / 71 | Closeout で追加し synchronized. |
-| `formula_evidence.md` | EN -> JA and JA -> EN | 9 / 9 | 0 / 0 | Task 23 で追加し synchronized. |
+| `formula_evidence.md` | EN -> JA and JA -> EN | 13 / 13 | 0 / 0 | task 25 implementation 向けに refined し synchronized. |
 | `module_boundary_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 13 / 13 | Synchronized. |
-| `public_enum_policy.md` | EN -> JA and JA -> EN | 5 / 5 | 0 / 0 | Synchronized. |
+| `public_enum_policy.md` | EN -> JA and JA -> EN | 5 / 5 | 0 / 0 | task-25 formula evidence enum additions 後に synchronized. |
 | `rejection.md` | EN -> JA and JA -> EN | 14 / 14 | 32 / 32 | Synchronized. |
 | `resolution_trace.md` | EN -> JA and JA -> EN | 12 / 12 | 15 / 15 | Synchronized. |
 | `sat_checker.md` | EN -> JA and JA -> EN | 6 / 6 | 0 / 0 | Task 23 で追加し task 24 で更新。 |
 | `sat_dependency_audit.md` | EN -> JA and JA -> EN | 13 / 13 | 32 / 32 | Task 24 で追加し synchronized. |
-| `sat_encoding.md` | EN -> JA and JA -> EN | 7 / 7 | 0 / 0 | Task 23 で追加し synchronized. |
-| `source_spec_audit.md` | EN -> JA and JA -> EN | 15 / 15 | 23 / 23 | task-24 addendum 後に synchronized. |
+| `sat_encoding.md` | EN -> JA and JA -> EN | 7 / 7 | 0 / 0 | task-25 final-goal premise separation 後に synchronized. |
+| `source_spec_audit.md` | EN -> JA and JA -> EN | 16 / 16 | 25 / 25 | task-25 source-backed formula evidence module 後に synchronized. |
 | `substitution_checker.md` | EN -> JA and JA -> EN | 15 / 15 | 17 / 17 | Synchronized. |
-| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 27 / 27 | Task 23 hash backfill 後に synchronized. |
-| `todo.md` | EN -> JA and JA -> EN | 13 / 13 | 11 / 11 | Task 24 dependency decision 後に synchronized. |
+| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 29 / 29 | Task 24 hash backfill と Task 25 start row 後に synchronized. |
+| `todo.md` | EN -> JA and JA -> EN | 13 / 13 | 11 / 11 | Task 25 start status update 後に synchronized. |
 
 Count check は完全な translation proof ではない。下の semantic check を補助する
 drift screen である。
@@ -56,13 +56,13 @@ drift screen である。
 | Area | Result |
 |---|---|
 | Canonical/companion headers | すべての English file は Japanese companion を指し、すべての Japanese file は English canonical file を指す。 |
-| Task status and sequencing | Tasks 0-23 は complete として一貫する。Task 24 は ready to commit で self-hash pending であり、paired dependency audit を記録し、task 27 の source integration までは docs-only のままである。 |
+| Task status and sequencing | Tasks 0-24 は complete として一貫する。Task 24 commit `abc557d5f6f53b6530301a67c29570a23c67b874` は backfill 済みであり、task 25 は paired formula-evidence implementation specs とともに in progress である。 |
 | Task 21 bookkeeping | `73a919c16b48da82038fd7267e86e1a844cb4c6f` は完了済み Task 21 commit であり、両 ledger に backfill される。 |
 | Task 22 bookkeeping | `814e47bb9aaaff75ebfe4cc1be10d2eb4618498b` は完了済み Task 22 commit であり、両 ledger に backfill される。 |
 | Closeout report inventory | `crate_exit_report.md` は paired であり、同じ hard gates、task commits、residual gaps、quality score、verification plan、next-crate handoff を英語/日本語で記録する。 |
 | Closeout handoff | 両 ledger は closeout to next-crate handoff だけを保持する。 |
 | Public enum inventory | `public_enum_policy.md` は英語/日本語で同じ `public-enum-inventory` block を使う。正確な inventory validation の source は `crates/mizar-kernel/tests/lint_policy.rs` の executable guard のままである。 |
-| Source/spec audit inventory | `source_spec_audit.md` は英語/日本語で module、public item、test-traceability、gap、verification sections が対応している。 |
+| Source/spec audit inventory | `source_spec_audit.md` は英語/日本語で module、public item、formula-evidence traceability、gap、verification sections が対応している。 |
 | Module-boundary audit inventory | `module_boundary_audit.md` は paired であり、同じ move-only test-module split、drift classification、verification plan を英語/日本語で記録する。 |
 | Trust Statement wording | 各 module は task-20 trusted-kernel prohibition wording を持つ paired `## Trust Statement` sections を維持している。 |
 | Gap/deferred classification | 残る external integration は `external_dependency_gap` または `deferred` として分類されたままであり、この task は placeholder integration を追加しない。 |

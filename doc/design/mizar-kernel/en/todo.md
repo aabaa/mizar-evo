@@ -329,7 +329,7 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       candidate crate is selected.
     - Deps: 23. Spec: architecture 15 "Post-Closeout Correction".
 
-25. **Formula/substitution evidence schema and parser.** [ ]
+25. **Formula/substitution evidence schema and parser.** [x]
     - Implement the kernel-owned evidence schema for formula refs or formulas,
       substitution records, provenance bindings, target/goal binding, and
       stable hashes. Legacy certificate parsing may remain for compatibility

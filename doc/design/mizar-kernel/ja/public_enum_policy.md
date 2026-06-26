@@ -64,6 +64,11 @@ clause::Polarity
 clause::SymbolKind
 clause::TautologyPolicy
 clause::Term
+formula_evidence::Formula
+formula_evidence::FormulaEvidenceError
+formula_evidence::FormulaSource
+formula_evidence::FormulaSourceClass
+formula_evidence::GoalPolarity
 rejection::ClauseRefNamespace
 rejection::RejectionCategory
 rejection::RejectionDetail

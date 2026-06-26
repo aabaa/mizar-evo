@@ -12,6 +12,7 @@
 pub mod certificate_parser;
 pub mod checker;
 pub mod clause;
+pub mod formula_evidence;
 pub mod rejection;
 pub mod resolution_trace;
 pub mod substitution_checker;
