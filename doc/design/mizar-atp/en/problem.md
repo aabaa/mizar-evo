@@ -37,8 +37,8 @@ trusted acceptance material through `AtpProblem`.
 
 ## Conceptual Shape
 
-Task 3 will choose concrete Rust names and visibility, but the module must be
-able to represent this conceptual shape:
+Task 3 exposes concrete Rust names for the backend-neutral data model, and the
+module represents this conceptual shape:
 
 ```text
 AtpProblem
@@ -65,12 +65,12 @@ rendering explicitly labels them non-semantic.
 
 | Field | Requirement |
 |---|---|
-| `problem_id` | Deterministic identity for the problem content and selected backend-neutral profile. It is not a proof-reuse identity across source edits and is not kernel evidence. |
-| `vc_id` | Snapshot-local VC ordering and collation id. It must not be used as a stable target binding by itself. |
-| `target_binding` | Stable target fingerprint and producer binding derived from validated `VcIr` / VC handoff inputs. Missing or mismatched target binding fails closed. |
+| `problem_id` | Deterministic identity for the problem content, selected backend-neutral profile, and snapshot-local `vc_id` collation component. It is not a proof-reuse identity across source edits and is not kernel evidence. |
+| `vc_id` | Snapshot-local VC ordering and collation id. Task-3 semantic identity includes it to distinguish same-content problems within a snapshot, but it must not be used as a stable target binding by itself. |
+| `target_binding` | Stable target fingerprint and producer binding derived from validated `VcIr` / VC handoff inputs. Task 3 rejects missing or structurally invalid target bindings; mismatch comparison against a VC handoff input belongs to the translator/handoff task that has both sides of the binding. |
 | `logic_profile` | Backend-neutral capability profile: first-order fragment, equality support, quantifier policy, sort/type strategy, property-native capability, and concrete-format eligibility. It must not record backend proof methods. |
 | `expected_result` | Validity-checking polarity. The current trusted success contract is `Unsat`: premises plus the negated goal are unsatisfiable under the chosen encoding. `Sat`, `Unknown`, timeout, crash, or backend error does not prove the VC. |
-| `declarations` | Symbol, sort, function, predicate, and generated-binder declarations needed by the formula layer. Each backend-visible declaration must have provenance. `symbol_map` bindings support encoding and diagnostics, but they are not a provenance substitute. |
+| `declarations` | Symbol, sort, function, predicate, and generated-binder declarations needed by the formula layer. Each backend-visible declaration must have provenance, a unique symbol, and the kind/arity required by every formula, property, or type-guard reference that can affect candidate evidence. Each such reference must resolve through both a declaration and a `symbol_map` row. `symbol_map` bindings support encoding and diagnostics, but they are not a provenance substitute. |
 | `axioms` | Deterministically ordered premise formulas already materialized by prior VC phases. Axioms are candidate-search input, not trusted `used_axioms`. |
 | `conjecture` | The target goal formula. It is not an axiom and never becomes a `used_axioms` source. |
 | `type_context` | Soft-type and sort context needed for sound backend encoding. Sort encoding must not erase required mode, attribute, subtype, coercion, guard, or intersection-like facts. |
@@ -105,6 +105,14 @@ same problem to TPTP or SMT-LIB without changing the source problem identity.
 Declarations are ordered by deterministic keys derived from canonical source
 identity and generated-binder identity, never by map iteration, pointer address,
 source range alone, display spelling alone, or backend output order.
+
+The Rust data model uses caller-supplied dense identifiers for declarations,
+formulas, properties, provenance rows, and type guards. These dense ids are
+already-canonical keys: producers and later translator tasks must derive them
+deterministically from the canonical source identity, generated-binder identity,
+or stable generated-fact identity for the item. The problem layer validates
+uniqueness and sorts by these ids, but it does not bless traversal-order,
+backend-order, map-iteration, or display-spelling ids as canonical.
 
 Formulas that cannot be represented in the selected profile are classified as
 unsupported for that profile. The translator may try another explicit profile
@@ -141,12 +149,14 @@ goal, but the recorded contract remains that backend success must correspond to
 unsatisfiability of premises plus the negated goal.
 
 Construction fails closed when required target binding, formula payload,
-provenance, symbol mapping, type context, or the `logic_profile` field itself is
-missing or invalid. Formula features that are valid Mizar-side inputs but not
-supported by the selected profile are classified as unsupported/open-status
-outcomes for that profile. ATP unavailability, unsupported profiles, timeout,
-unknown, crash, and backend error leave the VC open or produce diagnostics; they
-do not create accepted proof status.
+provenance, symbol mapping, declaration, type context, or the `logic_profile`
+field itself is missing or invalid. Target-binding mismatch against VC handoff
+input is deferred to the translator/handoff task because the problem data shape
+does not carry a second expected binding to compare. Formula features that are
+valid Mizar-side inputs but not supported by the selected profile are classified
+as unsupported/open-status outcomes for that profile. ATP unavailability,
+unsupported profiles, timeout, unknown, crash, and backend error leave the VC
+open or produce diagnostics; they do not create accepted proof status.
 
 ## Determinism
 
@@ -174,25 +184,26 @@ SAT problems are derived only by the kernel during checking.
 
 ## Gap Classification
 
-- `deferred`: task 3 implements the Rust data shapes, deterministic debug
-  rendering, and construction tests for this spec.
+- resolved `source_drift`: task 3 implements the Rust data shapes,
+  deterministic debug rendering, fail-closed validation, and construction tests
+  for this spec.
 - `deferred`: translator, property encoding, concrete encoders, backend runner,
   and portfolio behavior require their own module specs.
 - `external_dependency_gap`: full imported-fact context and downstream
   proof/cache/artifact policy remain outside this crate until their owner
   crates exist and define stable contracts.
 
-## Planned Tests
+## Task-3 Test Coverage
 
-Task 3 must add Rust coverage for:
+Task 3 adds Rust coverage for:
 
 - construction of minimal and populated `AtpProblem` values;
 - deterministic debug rendering and stable ordering under shuffled inputs;
 - provenance completeness for every declaration, axiom, property, type guard,
   and conjecture;
 - fail-closed construction rejection for missing target binding, missing formula
-  payloads, missing provenance, missing symbol-map rows, missing type-context
-  bindings, and duplicate ids;
+  payloads, missing provenance, missing symbol-map rows, missing declarations,
+  missing type-context bindings, and duplicate ids;
 - unsupported classification for profile limitations without silently
   approximating or dropping required facts;
 - `ExpectedBackendResult::Unsat` as the only task-3 polarity, including

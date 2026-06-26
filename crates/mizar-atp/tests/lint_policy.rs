@@ -106,7 +106,7 @@ fn atp_manifest_dependency_boundary_is_task_one_minimal() {
 }
 
 #[test]
-fn atp_lib_is_task_one_shell_without_semantic_modules() {
+fn atp_lib_exposes_only_spec_backed_problem_module() {
     let lib_path = crate_root().join("src/lib.rs");
     let source = read_to_string(&lib_path);
     let expected_source = r#"//! ATP candidate-evidence production boundary.
@@ -117,10 +117,10 @@ fn atp_lib_is_task_one_shell_without_semantic_modules() {
 //!
 //! This crate does not accept proofs, select trusted winners, call the kernel
 //! as proof authority, or expose backend proof methods as trusted material.
-//! Current task 1 intentionally publishes no semantic modules until their
-//! English/Japanese module specs are added by later tasks.
 
 #![forbid(unsafe_code)]
+
+pub mod problem;
 "#;
     let source_files = rust_source_files(&crate_root().join("src"))
         .into_iter()
@@ -135,22 +135,18 @@ fn atp_lib_is_task_one_shell_without_semantic_modules() {
     assert_eq!(
         source,
         expected_source,
-        "{} must remain exactly the task-1 source-surface allowlist; semantic \
-         ATP modules, backend runners, kernel calls, proof acceptance, \
-         certificate helpers, and trusted backend proof material require later \
-         spec tasks",
+        "{} must expose only spec-backed mizar-atp modules",
         lib_path.display()
     );
     assert_eq!(
         source_files,
-        ["src/lib.rs"],
-        "task 1 must not add semantic ATP modules before their specs; found \
-         {source_files:?}"
+        ["src/lib.rs", "src/problem.rs"],
+        "semantic ATP modules require paired specs before source; found {source_files:?}"
     );
 }
 
 #[test]
-fn atp_crate_tree_is_task_one_allowlist() {
+fn atp_crate_tree_contains_only_current_spec_backed_files() {
     let mut files = crate_files()
         .into_iter()
         .filter(|file| file != "Cargo.lock")
@@ -159,10 +155,182 @@ fn atp_crate_tree_is_task_one_allowlist() {
 
     assert_eq!(
         files,
-        ["Cargo.toml", "src/lib.rs", "tests/lint_policy.rs"],
-        "task 1 must not add build scripts, examples, benches, extra tests, \
-         semantic modules, backend runners, kernel/proof behavior, or other \
-         crate-root files before their explicit spec tasks; found {files:?}"
+        [
+            "Cargo.toml",
+            "src/lib.rs",
+            "src/problem.rs",
+            "tests/lint_policy.rs"
+        ],
+        "mizar-atp crate files must stay limited to current spec-backed sources; \
+         build scripts, examples, benches, extra tests, backend runners, \
+         kernel/proof behavior, or other crate-root files require explicit spec \
+         tasks; found {files:?}"
+    );
+}
+
+#[test]
+fn atp_problem_module_has_paired_specs_and_excludes_trusted_backend_material() {
+    let en_spec = workspace_root().join("doc/design/mizar-atp/en/problem.md");
+    let ja_spec = workspace_root().join("doc/design/mizar-atp/ja/problem.md");
+    let source_path = crate_root().join("src/problem.rs");
+    let en = read_to_string(&en_spec);
+    let ja = read_to_string(&ja_spec);
+    let source = read_to_string(&source_path);
+
+    for marker in [
+        "backend-neutral ATP problem data model",
+        "not kernel evidence",
+        "not a SAT problem",
+        "ExpectedBackendResult::Unsat",
+        "not a provenance substitute",
+    ] {
+        assert!(
+            en.contains(marker),
+            "{} must keep task-2 problem spec marker `{marker}`",
+            en_spec.display()
+        );
+    }
+    for marker in [
+        "backend-neutral ATP problem data model",
+        "kernel evidence",
+        "SAT problem",
+        "ExpectedBackendResult::Unsat",
+        "provenance の代替ではない",
+    ] {
+        assert!(
+            ja.contains(marker),
+            "{} must keep task-2 Japanese problem spec marker `{marker}`",
+            ja_spec.display()
+        );
+    }
+    for marker in [
+        "pub struct AtpProblem",
+        "ExpectedBackendResult::Unsat",
+        "MissingSymbolMap",
+        "MissingTypeContextBinding",
+        "UnsupportedProfileFeature",
+    ] {
+        assert!(
+            source.contains(marker),
+            "{} must implement problem.md marker `{marker}`",
+            source_path.display()
+        );
+    }
+    for prohibited in [
+        "std::process::Command",
+        "mizar_kernel::",
+        "resolution_trace",
+        "MiniSAT",
+        "DIMACS",
+        "instantiated_formula",
+        "backend_used_axioms",
+        "kernel_verified",
+    ] {
+        assert!(
+            !source.contains(prohibited),
+            "{} must not expose prohibited trusted/backend material `{prohibited}`",
+            source_path.display()
+        );
+    }
+}
+
+#[test]
+fn atp_problem_public_api_surface_is_spec_backed_allowlist() {
+    let source_path = crate_root().join("src/problem.rs");
+    let source = read_to_string(&source_path);
+    let public_items = public_api_items(&source);
+    let public_fields = public_struct_fields(&source);
+    let expected = [
+        "AtpAtom",
+        "AtpBinder",
+        "AtpDeclaration",
+        "AtpDeclarationId",
+        "AtpDeclarationKind",
+        "AtpDiagnostic",
+        "AtpDiagnosticKey",
+        "AtpDiagnosticMessage",
+        "AtpFingerprint",
+        "AtpFormula",
+        "AtpFormulaId",
+        "AtpFormulaTree",
+        "AtpPayload",
+        "AtpProblem",
+        "AtpProblemError",
+        "AtpProblemId",
+        "AtpProblemParts",
+        "AtpProfileName",
+        "AtpPropertyId",
+        "AtpProvenance",
+        "AtpProvenanceId",
+        "AtpRequiredProofStatus",
+        "AtpSourceBinding",
+        "AtpSourceRef",
+        "AtpSymbolMapEntry",
+        "AtpSymbolName",
+        "AtpSymbolSource",
+        "AtpTargetBinding",
+        "AtpTerm",
+        "AtpTypeContext",
+        "AtpTypeGuard",
+        "AtpTypeGuardId",
+        "ConcreteFormat",
+        "EncodedProperty",
+        "EqualitySupport",
+        "ExpectedBackendResult",
+        "LogicFragment",
+        "LogicProfile",
+        "NativePropertySupport",
+        "PropertyEncoding",
+        "QuantifierPolicy",
+        "SoftTypeStrategy",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<Vec<_>>();
+
+    assert_eq!(
+        public_items,
+        expected,
+        "{} public API must stay limited to problem.md data shapes; backend \
+         logs, proof methods, SAT clauses, legacy certificates, accepted \
+         statuses, used-axiom material, kernel checks, cache handles, and \
+         witness types require explicit later specs",
+        source_path.display()
+    );
+
+    assert_eq!(
+        public_fields,
+        [
+            "AtpProblemParts::axioms",
+            "AtpProblemParts::conjecture",
+            "AtpProblemParts::declarations",
+            "AtpProblemParts::diagnostics",
+            "AtpProblemParts::expected_result",
+            "AtpProblemParts::logic_profile",
+            "AtpProblemParts::properties",
+            "AtpProblemParts::provenance",
+            "AtpProblemParts::symbol_map",
+            "AtpProblemParts::target_binding",
+            "AtpProblemParts::type_context",
+            "AtpProblemParts::vc_id",
+        ],
+        "{} public struct fields must stay limited to problem.md construction \
+         inputs; backend logs, proof methods, SAT clauses, legacy \
+         certificates, accepted statuses, used-axiom material, kernel checks, \
+         cache handles, and witness payloads require explicit later specs",
+        source_path.display()
+    );
+
+    assert!(
+        source.contains(
+            "#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]\n\
+             #[non_exhaustive]\n\
+             pub enum ExpectedBackendResult {\n\
+             \x20   Unsat,\n\
+             }\n"
+        ),
+        "{} must keep `Unsat` as the only task-3 expected-result variant",
+        source_path.display()
     );
 }
 
@@ -318,6 +486,66 @@ fn assignment_is(line: &str, key: &str, value: &str) -> bool {
         return false;
     };
     lhs.trim() == key && rhs.trim().trim_matches('"') == value
+}
+
+fn public_api_items(source: &str) -> Vec<String> {
+    let mut items = Vec::new();
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if let Some(name) = item_name(trimmed.strip_prefix("pub struct ")) {
+            items.push(name.to_owned());
+        } else if let Some(name) = item_name(trimmed.strip_prefix("pub enum ")) {
+            items.push(name.to_owned());
+        } else if let Some(name) = macro_item_name(trimmed, "dense_id!(") {
+            items.push(name.to_owned());
+        } else if let Some(name) = macro_item_name(trimmed, "string_key!(") {
+            items.push(name.to_owned());
+        }
+    }
+    items.sort();
+    items
+}
+
+fn public_struct_fields(source: &str) -> Vec<String> {
+    let mut fields = Vec::new();
+    let mut current_struct = None;
+
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if let Some(name) = item_name(trimmed.strip_prefix("pub struct ")) {
+            if trimmed.ends_with('{') {
+                current_struct = Some(name.to_owned());
+            }
+            continue;
+        }
+
+        if trimmed == "}" {
+            current_struct = None;
+            continue;
+        }
+
+        if let Some(struct_name) = &current_struct
+            && let Some(field) = item_name(trimmed.strip_prefix("pub "))
+        {
+            fields.push(format!("{struct_name}::{field}"));
+        }
+    }
+
+    fields.sort();
+    fields
+}
+
+fn item_name(rest: Option<&str>) -> Option<&str> {
+    let rest = rest?;
+    let end = rest
+        .find(|character: char| !(character == '_' || character.is_ascii_alphanumeric()))
+        .unwrap_or(rest.len());
+    (end > 0).then_some(&rest[..end])
+}
+
+fn macro_item_name<'a>(line: &'a str, prefix: &str) -> Option<&'a str> {
+    let rest = line.strip_prefix(prefix)?;
+    rest.strip_suffix(");")
 }
 
 fn rust_source_files(root: &std::path::Path) -> Vec<PathBuf> {

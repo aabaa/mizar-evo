@@ -17,7 +17,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| problem | `problem.md`（task 2） | `src/problem.rs` | [~] spec complete。source は task 3 に deferred |
+| problem | `problem.md`（task 2） | `src/problem.rs` | [x] |
 | translator | `translator.md`（task 4） | `src/translator.rs` | [ ] |
 | property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [ ] |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [ ] |
@@ -116,14 +116,19 @@ workspace crate ではないため、policy と witness-publication integration 
    - 状態: docs-only task として完了。`problem.md` は backend-neutral problem
      boundary、deterministic identity、provenance requirement、`Unsat` polarity
      contract、trusted material として禁止されるものを定義する。Rust data shape は
-     task 3 に deferred のままである。
+     task 2 closeout 時点では task 3 に deferred され、task 3 で実装済みである。
 
-3. **`problem` データ形状の実装。** [ ]
+3. **`problem` データ形状の実装。** [x]
    - task 2 に従って `AtpProblem` と来歴テーブルを実装し、決定的 debug
      レンダリングを加える。
    - テスト: 構築のラウンドトリップ。すべての論理式が来歴で追跡可能。
      レンダリングの安定性。
    - 依存: 2。仕様: `problem.md`。
+   - 状態: 完了。module は validated problem construction、deterministic
+     identity/rendering、provenance と symbol-map check、missing required input の
+     fail-closed、unsupported profile-feature classification、固定された `Unsat`
+     expected-result contract を実装する。backend runner、kernel checking、proof
+     policy、witness、cache、trusted backend proof material は導入しない。
 
 ### 翻訳
 

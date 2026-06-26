@@ -17,7 +17,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| problem | `problem.md` (task 2) | `src/problem.rs` | [~] spec complete; source deferred to task 3 |
+| problem | `problem.md` (task 2) | `src/problem.rs` | [x] |
 | translator | `translator.md` (task 4) | `src/translator.rs` | [ ] |
 | property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [ ] |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [ ] |
@@ -119,14 +119,21 @@ Keep `cargo test -p mizar-atp` green after each task (see
    - Status: complete as a docs-only task. `problem.md` defines the
      backend-neutral problem boundary, deterministic identity, provenance
      requirements, `Unsat` polarity contract, and prohibited trusted material.
-     Rust data shapes remain deferred to task 3.
+     Rust data shapes were deferred at task-2 closeout and are implemented by
+     task 3.
 
-3. **Implement `problem` data shapes.** [ ]
+3. **Implement `problem` data shapes.** [x]
    - Implement `AtpProblem` and provenance tables per task 2, plus a
      deterministic debug rendering.
    - Tests: construction round-trips; every formula traceable through
      provenance; rendering stability.
    - Deps: 2. Spec: `problem.md`.
+   - Status: complete. The module implements validated problem construction,
+     deterministic identity/rendering, provenance and symbol-map checks,
+     fail-closed missing required inputs, unsupported profile-feature
+     classification, and the fixed `Unsat` expected-result contract. No
+     backend runner, kernel checking, proof policy, witness, cache, or trusted
+     backend proof material is introduced.
 
 ### Translation
 

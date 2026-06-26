@@ -6,7 +6,7 @@
 //!
 //! This crate does not accept proofs, select trusted winners, call the kernel
 //! as proof authority, or expose backend proof methods as trusted material.
-//! Current task 1 intentionally publishes no semantic modules until their
-//! English/Japanese module specs are added by later tasks.
 
 #![forbid(unsafe_code)]
+
+pub mod problem;
