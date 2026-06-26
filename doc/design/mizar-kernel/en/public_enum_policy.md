@@ -75,6 +75,7 @@ rejection::RejectionCategory
 rejection::RejectionDetail
 rejection::RejectionRecordError
 resolution_trace::ImportedClauseContextError
+sat_checker::SatCheckResult
 substitution_checker::SubstitutionContextError
 ```
 <!-- public-enum-inventory:end -->

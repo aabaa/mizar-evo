@@ -88,14 +88,36 @@ fn kernel_manifest_dependency_boundary_is_task_one_minimal() {
         [(
             "dependencies".to_owned(),
             vec![
+                "batsat = { version = \"=0.6.0\", default-features = false }",
                 "mizar-core = { path = \"../mizar-core\" }",
                 "mizar-session = { path = \"../mizar-session\" }",
             ],
         )],
         "{} must keep the task-1 trusted-kernel dependency boundary exact: \
-         production dependencies are mizar-core and mizar-session only, and \
+         production dependencies are the task-27 audited SAT checker plus \
+         mizar-core and mizar-session only, and \
          dev/build/target dependency sections require a later explicit task",
         manifest_path.display()
+    );
+    let lockfile = read_to_string(&workspace_root().join("Cargo.lock"));
+    assert_lock_package(
+        &lockfile,
+        "batsat",
+        "0.6.0",
+        "ec82b6bbce8ea42f5003417b699267860a9f4dd869fc9ba8faceac761d5afed1",
+        &["bit-vec"],
+    );
+    assert_lock_package(
+        &lockfile,
+        "bit-vec",
+        "0.5.1",
+        "f59bbe95d4e52a6398ec21238d31577f2b28a9d86807f06ca59d191d8440d0bb",
+        &[],
+    );
+    let kernel_lock = lock_package(&lockfile, "mizar-kernel").expect("mizar-kernel lock package");
+    assert!(
+        kernel_lock.contains("\"batsat\""),
+        "mizar-kernel lockfile package must depend on audited batsat"
     );
 }
 
@@ -146,8 +168,9 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
             "15: pub mod formula_evidence;",
             "16: pub mod rejection;",
             "17: pub mod resolution_trace;",
-            "18: pub mod sat_encoding;",
-            "19: pub mod substitution_checker;",
+            "18: pub mod sat_checker;",
+            "19: pub mod sat_encoding;",
+            "20: pub mod substitution_checker;",
             "compact: pubmod",
         ],
         "{} must expose only current spec-backed kernel modules; found:\n{}",
@@ -170,6 +193,8 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
             "src/rejection.rs",
             "src/resolution_trace/tests.rs",
             "src/resolution_trace.rs",
+            "src/sat_checker/tests.rs",
+            "src/sat_checker.rs",
             "src/sat_encoding/tests.rs",
             "src/sat_encoding.rs",
             "src/substitution_checker/tests.rs",
@@ -192,6 +217,8 @@ fn kernel_lib_exposes_only_current_spec_backed_modules() {
         workspace_root().join("doc/design/mizar-kernel/ja/rejection.md"),
         workspace_root().join("doc/design/mizar-kernel/en/resolution_trace.md"),
         workspace_root().join("doc/design/mizar-kernel/ja/resolution_trace.md"),
+        workspace_root().join("doc/design/mizar-kernel/en/sat_checker.md"),
+        workspace_root().join("doc/design/mizar-kernel/ja/sat_checker.md"),
         workspace_root().join("doc/design/mizar-kernel/en/sat_encoding.md"),
         workspace_root().join("doc/design/mizar-kernel/ja/sat_encoding.md"),
         workspace_root().join("doc/design/mizar-kernel/en/substitution_checker.md"),
@@ -401,6 +428,7 @@ fn task_22_private_tests_are_tracked_and_source_spec_traceable() {
         "crates/mizar-kernel/src/formula_evidence/tests.rs",
         "crates/mizar-kernel/src/rejection/tests.rs",
         "crates/mizar-kernel/src/resolution_trace/tests.rs",
+        "crates/mizar-kernel/src/sat_checker/tests.rs",
         "crates/mizar-kernel/src/sat_encoding/tests.rs",
         "crates/mizar-kernel/src/substitution_checker/tests.rs",
         "doc/design/mizar-kernel/en/module_boundary_audit.md",
@@ -426,6 +454,7 @@ fn task_22_private_tests_are_tracked_and_source_spec_traceable() {
         "crates/mizar-kernel/src/formula_evidence/tests.rs",
         "crates/mizar-kernel/src/rejection/tests.rs",
         "crates/mizar-kernel/src/resolution_trace/tests.rs",
+        "crates/mizar-kernel/src/sat_checker/tests.rs",
         "crates/mizar-kernel/src/sat_encoding/tests.rs",
         "crates/mizar-kernel/src/substitution_checker/tests.rs",
         "crates/mizar-kernel/tests/lint_policy.rs",
@@ -461,6 +490,12 @@ fn kernel_source_stays_off_producer_policy_cache_and_artifact_boundaries() {
         "Cache",
         "HashSet",
         "HashMap",
+        "std::process",
+        "std::net",
+        "std::fs",
+        "Command",
+        "TcpStream",
+        "UdpSocket",
         "mizar_checker",
         "mizar_resolve",
         "PremiseSelector",
@@ -511,6 +546,14 @@ fn kernel_source_stays_off_producer_policy_cache_and_artifact_boundaries() {
         "std::time",
         "thread_rng",
         "rand::",
+        "batsat::dimacs",
+        "batsat::drat",
+        "callback",
+        "Callback",
+        "BasicCallbacks",
+        "print_stats",
+        "get_model",
+        "unsat_core",
     ];
     let mut violations = Vec::new();
 
@@ -529,6 +572,73 @@ fn kernel_source_stays_off_producer_policy_cache_and_artifact_boundaries() {
         "mizar-kernel task-1 source must not couple to ATP/proof/cache/artifact \
          producers or nondeterministic helper surfaces:\n{}",
         violations.join("\n")
+    );
+}
+
+#[test]
+fn sat_checker_public_api_hides_dependency_types() {
+    let source = read_to_string(&crate_root().join("src/sat_checker.rs"));
+    let public_api = public_api_fragments(&source).join("\n");
+    let dependency_symbols = imported_batsat_symbols(&source);
+    assert!(
+        !dependency_symbols.is_empty(),
+        "sat_checker must keep audited batsat imports explicit for public API scanning"
+    );
+    let mut violations = dependency_symbols
+        .into_iter()
+        .filter(|symbol| contains_rust_identifier(&public_api, symbol))
+        .collect::<Vec<_>>();
+    if public_api.contains("batsat::") {
+        violations.push("batsat::".to_owned());
+    }
+
+    assert!(
+        violations.is_empty(),
+        "sat_checker public API must not expose dependency-owned SAT types: {violations:?}"
+    );
+}
+
+#[test]
+fn encoded_sat_problem_fields_stay_private() {
+    let source = read_to_string(&crate_root().join("src/sat_encoding.rs"));
+    let body = struct_body(&source, "EncodedSatProblem");
+    let field_violations = [
+        "schema_version",
+        "encoding_version",
+        "target_vc",
+        "atom_variables",
+        "assertions",
+        "clauses",
+        "canonical_bytes",
+    ]
+    .iter()
+    .filter_map(|field| {
+        body.lines().find_map(|line| {
+            let trimmed = line.trim_start();
+            let marker = format!("{field}:");
+            (trimmed.starts_with("pub") && trimmed.contains(&marker)).then_some(trimmed.to_owned())
+        })
+    })
+    .collect::<Vec<_>>();
+    let public_api = public_api_fragments(impl_body(&source, "EncodedSatProblem")).join("\n");
+    let escape_violations = [
+        "&mut",
+        "_mut",
+        "into_parts",
+        "from_parts",
+        "Vec<",
+        "Box<[",
+        "self) -> (",
+    ]
+    .into_iter()
+    .filter(|token| public_api.contains(token))
+    .collect::<Vec<_>>();
+
+    assert!(
+        field_violations.is_empty() && escape_violations.is_empty(),
+        "EncodedSatProblem must expose read-only accessors, not public mutable \
+         fields or mutable/reconstructable public escape hatches: fields={field_violations:?}, \
+         public_api={escape_violations:?}"
     );
 }
 
@@ -746,6 +856,39 @@ fn dependency_section(section: &str) -> bool {
     section
         .split('.')
         .any(|segment| DEPENDENCY_TABLES.contains(&segment))
+}
+
+fn assert_lock_package(
+    lockfile: &str,
+    name: &str,
+    version: &str,
+    checksum: &str,
+    dependencies: &[&str],
+) {
+    let package = lock_package(lockfile, name)
+        .unwrap_or_else(|| panic!("Cargo.lock must contain package {name}"));
+    assert!(
+        package.contains(&format!("version = \"{version}\"")),
+        "Cargo.lock package {name} must pin version {version}:\n{package}"
+    );
+    assert!(
+        package.contains(&format!("checksum = \"{checksum}\"")),
+        "Cargo.lock package {name} must pin audited checksum {checksum}:\n{package}"
+    );
+    for dependency in dependencies {
+        assert!(
+            package.contains(&format!("\"{dependency}\"")),
+            "Cargo.lock package {name} must depend on {dependency}:\n{package}"
+        );
+    }
+}
+
+fn lock_package<'a>(lockfile: &'a str, name: &str) -> Option<&'a str> {
+    lockfile.split("\n[[package]]").find(|package| {
+        package
+            .lines()
+            .any(|line| line.trim() == format!("name = \"{name}\""))
+    })
 }
 
 fn assignment_is(line: &str, key: &str, expected: &str) -> bool {
@@ -1018,6 +1161,184 @@ fn unsupported_public_form(line: &str) -> bool {
     line.starts_with("pub use ")
         || line.starts_with("pub macro ")
         || line.starts_with("pub extern crate ")
+}
+
+fn public_api_fragments(source: &str) -> Vec<String> {
+    let mut fragments = Vec::new();
+    let lines = source.lines().collect::<Vec<_>>();
+    let mut index = 0usize;
+
+    while index < lines.len() {
+        let trimmed = lines[index].trim_start();
+        if externally_public_signature_line(trimmed) {
+            let (fragment, next_index) = collect_public_signature(&lines, index);
+            fragments.push(fragment);
+            index = next_index;
+        } else if externally_public_block_line(trimmed) {
+            let (fragment, next_index) = collect_public_block(&lines, index);
+            fragments.push(fragment);
+            index = next_index;
+        } else {
+            index += 1;
+        }
+    }
+
+    fragments
+}
+
+fn externally_public_signature_line(line: &str) -> bool {
+    externally_public_line(line)
+        && (line.starts_with("pub fn ")
+            || line.starts_with("pub const fn ")
+            || line.starts_with("pub async fn ")
+            || line.starts_with("pub unsafe fn ")
+            || line.starts_with("pub type ")
+            || line.starts_with("pub const ")
+            || line.starts_with("pub static "))
+}
+
+fn externally_public_block_line(line: &str) -> bool {
+    externally_public_line(line)
+        && (line.starts_with("pub struct ")
+            || line.starts_with("pub enum ")
+            || line.starts_with("pub trait ")
+            || line.starts_with("pub union "))
+}
+
+fn collect_public_signature(lines: &[&str], start: usize) -> (String, usize) {
+    let mut fragment = String::new();
+    let mut index = start;
+
+    while index < lines.len() {
+        let line = lines[index];
+        if let Some((signature, _)) = line.split_once('{') {
+            fragment.push_str(signature);
+            fragment.push('\n');
+            return (fragment, index + 1);
+        }
+
+        fragment.push_str(line);
+        fragment.push('\n');
+        if line.contains(';') {
+            return (fragment, index + 1);
+        }
+        index += 1;
+    }
+
+    (fragment, index)
+}
+
+fn collect_public_block(lines: &[&str], start: usize) -> (String, usize) {
+    let mut fragment = String::new();
+    let mut brace_depth = 0usize;
+    let mut saw_brace = false;
+    let mut index = start;
+
+    while index < lines.len() {
+        let line = lines[index];
+        fragment.push_str(line);
+        fragment.push('\n');
+
+        let open = line.chars().filter(|character| *character == '{').count();
+        let close = line.chars().filter(|character| *character == '}').count();
+        saw_brace |= open > 0;
+        brace_depth = brace_depth.saturating_add(open).saturating_sub(close);
+
+        index += 1;
+        if (saw_brace && brace_depth == 0) || (!saw_brace && line.contains(';')) {
+            break;
+        }
+    }
+
+    (fragment, index)
+}
+
+fn imported_batsat_symbols(source: &str) -> Vec<String> {
+    let uncommented = source
+        .lines()
+        .map(|line| line.split_once("//").map_or(line, |(code, _)| code))
+        .collect::<Vec<_>>()
+        .join("\n");
+    let mut symbols = Vec::new();
+    let mut rest = uncommented.as_str();
+
+    while let Some(start) = rest.find("use batsat::") {
+        let import = &rest[start + "use batsat::".len()..];
+        let Some(end) = import.find(';') else {
+            break;
+        };
+        let statement = import[..end].trim();
+        if let Some(group) = statement
+            .strip_prefix('{')
+            .and_then(|statement| statement.strip_suffix('}'))
+        {
+            for item in group.split(',') {
+                if let Some(symbol) = imported_symbol_name(item) {
+                    symbols.push(symbol);
+                }
+            }
+        } else if let Some(symbol) = imported_symbol_name(statement) {
+            symbols.push(symbol);
+        }
+        rest = &import[end + 1..];
+    }
+
+    symbols.sort();
+    symbols.dedup();
+    symbols
+}
+
+fn imported_symbol_name(item: &str) -> Option<String> {
+    let item = item.trim();
+    if item.is_empty() {
+        return None;
+    }
+    let name = item
+        .rsplit_once(" as ")
+        .map(|(_, alias)| alias)
+        .unwrap_or_else(|| item.rsplit("::").next().unwrap_or(item))
+        .trim();
+    (!name.is_empty()).then(|| name.to_owned())
+}
+
+fn contains_rust_identifier(source: &str, identifier: &str) -> bool {
+    source
+        .split(|character: char| !(character.is_ascii_alphanumeric() || character == '_'))
+        .any(|token| token == identifier)
+}
+
+fn struct_body<'a>(source: &'a str, name: &str) -> &'a str {
+    let marker = format!("pub struct {name} {{");
+    braced_body_after_marker(source, &marker)
+        .unwrap_or_else(|| panic!("missing or unterminated public struct {name}"))
+}
+
+fn impl_body<'a>(source: &'a str, name: &str) -> &'a str {
+    let marker = format!("impl {name} {{");
+    braced_body_after_marker(source, &marker)
+        .unwrap_or_else(|| panic!("missing or unterminated impl {name}"))
+}
+
+fn braced_body_after_marker<'a>(source: &'a str, marker: &str) -> Option<&'a str> {
+    let start = source.find(marker)?;
+    let body_start = start + marker.len();
+    let rest = &source[body_start..];
+    let mut depth = 1usize;
+
+    for (index, character) in rest.char_indices() {
+        match character {
+            '{' => depth += 1,
+            '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    return Some(&rest[..index]);
+                }
+            }
+            _ => {}
+        }
+    }
+
+    None
 }
 
 fn markdown_section<'a>(document: &'a str, heading: &str) -> Option<&'a str> {

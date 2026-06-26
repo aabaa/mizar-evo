@@ -99,8 +99,7 @@ Task 27 must keep the wrapper narrow:
 
 - do not expose `batsat` types in the public `mizar-kernel` API;
 - do not call `batsat` DRAT/proof, theory, statistics-printing, logging, model
-  enumeration, or callback surfaces except the minimal callback needed for
-  deterministic interruption;
+  enumeration, or callback surfaces;
 - do not call `batsat` DIMACS parsing/printing, model printing,
   `print_stats`, or any file/string parser path; the wrapper constructs the
   solver directly from the kernel-derived `sat_encoding` data structure;
@@ -144,18 +143,26 @@ limits are deterministic count/size limits only.
 ## Determinism And Wrapper API
 
 Task 27 should use the direct `batsat` API behind the `sat_checker` wrapper.
-The public kernel-facing shape remains the one specified in
+The public kernel-facing shape is refined by task 27 in
 [sat_checker.md](./sat_checker.md):
 
 ```text
-SatCheckInput
-  problem
-  limits
+SatCheckContext
+  limits: SatCheckLimits
+
+SatCheckLimits
+  max_variables
+  max_clauses
+  max_literals
+  max_literals_per_clause
+  max_canonical_bytes
+  max_conflicts = unsupported unless None
+  max_propagations = unsupported unless None
 
 SatCheckResult
-  Unsat
-  Sat
-  Rejected(reason)
+  Unsat(SatCheckReport)
+  Sat(SatCheckReport)
+  Rejected(RejectionRecord)
 ```
 
 Acceptance mapping:
@@ -193,13 +200,9 @@ input limits are exceeded:
 
 `batsat` exposes conflict/propagation counters and callback-based interruption,
 but it does not expose a stable public setter for exact conflict or propagation
-budgets. Task 27 must either:
-
-- implement and test a deterministic callback-based step limit, mapping
-  interruption to `timeout` or `resource_exhaustion`; or
-- classify exact solver-step limits as unsupported by the dependency, expose
-  only the supported deterministic input limits, and reject any caller request
-  that requires an unsupported step budget.
+budgets. Task 27 selects the unsupported-step-budget branch of this audit:
+it exposes only deterministic input limits and rejects any non-`None`
+conflict or propagation budget before constructing the solver.
 
 No path may fall back to wall-clock timeouts. Limit exhaustion is always
 non-acceptance.
@@ -240,31 +243,32 @@ checker crate, RustSAT adapter, external solver wrapper, ATP crate,
 proof/cache/artifact crate, or process-spawning dependency is added to
 `mizar-kernel`.
 
-Task 27 must update source/spec audit records when the `sat_checker` source
-module becomes public. Until then, this audit is the authoritative dependency
-decision and no dependency source has been integrated.
+Task 27 integrates the public `sat_checker` source module and this audit must
+remain aligned with the exact dependency shape exposed by that wrapper. No
+caller-facing API may expose `batsat` or `bit-vec` types.
 
 ## Failure Mapping
 
-The wrapper maps all non-UNSAT outcomes to stable kernel rejection details:
+The wrapper separates solver evidence outcomes from rejection conditions:
 
 | Wrapper condition | Kernel detail |
 |---|---|
-| derived SAT problem is satisfiable | `invalid_sat_refutation` |
+| derived SAT problem is satisfiable | `SatCheckResult::Sat(SatCheckReport)`; non-acceptance wrapper evidence |
 | dependency returns `UNDEF` without an accepted UNSAT result | `invalid_sat_refutation` or deterministic budget detail, depending on the recorded cause |
 | input count/size limit exceeded before solving | `resource_exhaustion` |
-| deterministic callback interruption / step-budget stop | `timeout` or `resource_exhaustion`, matching [rejection.md](./rejection.md) |
+| unsupported conflict/propagation step-budget request | `resource_exhaustion` before solver construction |
 | unsupported clause/literal shape after kernel derivation | `invalid_sat_refutation` |
 | dependency panic caught by the wrapper, internal inconsistency, or unexpected API result | `invalid_sat_refutation`; never acceptance |
 
-Only `SatCheckResult::Unsat` permits the caller to accept the
-formula/substitution evidence.
+Task 27 returns wrapper evidence only. `SatCheckResult::Unsat` is necessary
+for later acceptance, but task 28 owns wiring it into the kernel check service
+and normal proof-policy acceptance.
 
 ## Gap Classification
 
 | ID | Class | Evidence | Action |
 |---|---|---|---|
-| KERNEL24-G001 | `deferred` | `batsat` has no public exact conflict/propagation budget setter. | Task 27 must prove/test callback interruption or expose only supported input limits and reject unsupported step-budget requests. |
-| KERNEL24-G002 | `source_drift` | `sat_checker` source is not integrated yet, and the manifest still has the task-1 dependency set. | Task 27 integrates `batsat`, updates lint policy, and adds wrapper tests. |
+| KERNEL24-G001 | `deferred` | `batsat` has no public exact conflict/propagation budget setter. | Task 27 exposes only supported input limits and rejects unsupported step-budget requests before solver construction. |
+| KERNEL24-G002 | `source_drift` resolved by task 27 | Task 27 integrates `sat_checker` source, the exact `batsat` manifest dependency, lockfile guards, and wrapper tests. | Keep the dependency and lockfile lint guards exact; future upgrades require a fresh audit. |
 | KERNEL24-G003 | `external_dependency_gap` | No active ATP producer yet emits formula/substitution evidence candidates for the new pipeline. | Keep kernel tests synthetic and do not add producer placeholders. |
-| KERNEL24-G004 | `deferred` | `batsat` exposes deterministic pseudo-random heuristic options even though it does not read host random state. | Task 27 must pin/disable those options in wrapper-owned solver construction and must not expose them to callers. |
+| KERNEL24-G004 | `deferred` | `batsat` exposes deterministic pseudo-random heuristic options even though it does not read host random state. | Task 27 pins all `SolverOpts` fields to audited defaults and does not expose heuristic knobs to callers. |

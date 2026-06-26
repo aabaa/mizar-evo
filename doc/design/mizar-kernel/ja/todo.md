@@ -30,7 +30,7 @@ kernel が導出した SAT problem に対してだけであり、formula や sub
 | rejection | `rejection.md`（task 6） | `src/rejection.rs` | [x] |
 | resolution_trace | `resolution_trace.md`（task 8） | `src/resolution_trace.rs` | [x] |
 | sat_encoding | `sat_encoding.md`（task 23） | `src/sat_encoding.rs` | [x] |
-| sat_checker | `sat_checker.md`（task 23） | `src/sat_checker.rs` | [ ] |
+| sat_checker | `sat_checker.md`（task 23） | `src/sat_checker.rs` | [x] |
 | substitution_checker | `substitution_checker.md`（task 10） | `src/substitution_checker.rs` | [x] |
 | checker | `checker.md`（task 13） | `src/checker.rs` | [x] |
 
@@ -336,13 +336,14 @@ backend process execution を含まないものでなければならない。そ
     - 依存: 25。仕様: `formula_evidence.md`, `sat_encoding.md`,
       [16.substitution_and_binding.md](../../architecture/ja/16.substitution_and_binding.md)。
 
-27. **Trusted SAT checker wrapper。** [ ]
+27. **Trusted SAT checker wrapper。** [x]
     - audit 済み Rust SAT checker を小さな deterministic wrapper の背後に統合する。
       kernel が構築した SAT problem が unsatisfiable かどうかを判定するために
       必要な操作だけを公開し、limit を強制し、solver error を安定した kernel
       rejection へ変換する。
-    - テスト: satisfiable evidence は拒否される。unsatisfiable evidence は受理
-      される。limit、unsupported clause、solver error は決定的に拒否される。
+    - テスト: satisfiable kernel-derived SAT problem は non-acceptance wrapper
+      evidence を返す。unsatisfiable problem は UNSAT wrapper evidence を返す。
+      limit、unsupported clause、solver error は決定的に拒否される。
       dependency / lockfile guard は exact `batsat` / `bit-vec` resolution を強制し、
       alternate SAT/process dependency を拒否する。wrapper test は deterministic
       `batsat` heuristic options が pin され caller に expose されないことを証明する。

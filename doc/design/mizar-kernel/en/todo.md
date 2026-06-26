@@ -30,7 +30,7 @@ target/goal binding; selecting formulas or substitutions remains prohibited.
 | rejection | `rejection.md` (task 6) | `src/rejection.rs` | [x] |
 | resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [x] |
 | sat_encoding | `sat_encoding.md` (task 23) | `src/sat_encoding.rs` | [x] |
-| sat_checker | `sat_checker.md` (task 23) | `src/sat_checker.rs` | [ ] |
+| sat_checker | `sat_checker.md` (task 23) | `src/sat_checker.rs` | [x] |
 | substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [x] |
 | checker | `checker.md` (task 13) | `src/checker.rs` | [x] |
 
@@ -350,12 +350,13 @@ Keep `cargo test -p mizar-kernel` green after each task (see
     - Deps: 25. Spec: `formula_evidence.md`, `sat_encoding.md`,
       [16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md).
 
-27. **Trusted SAT checker wrapper.** [ ]
+27. **Trusted SAT checker wrapper.** [x]
     - Integrate the audited Rust SAT checker behind a small deterministic
       wrapper. Expose only the operations needed to decide whether the
       kernel-built SAT problem is unsatisfiable; enforce limits and convert
       solver errors to stable kernel rejections.
-    - Tests: satisfiable evidence rejects; unsatisfiable evidence accepts;
+    - Tests: satisfiable kernel-derived SAT problems return non-acceptance
+      wrapper evidence; unsatisfiable problems return UNSAT wrapper evidence;
       limits, unsupported clauses, and solver errors reject deterministically;
       dependency and lockfile guards enforce exact `batsat`/`bit-vec`
       resolution and reject alternate SAT/process dependencies; wrapper tests

@@ -84,7 +84,7 @@ these keys.
 | `resource_exhaustion` | `certificate_rejection` or `kernel_rejection` | A deterministic size, count, recursion, memory, trace-length, or replay-cost limit is exceeded. |
 | `invalid_substitution` | `kernel_rejection` | Capture avoidance, alpha-conversion, freshness, or free-variable side-condition replay fails. |
 | `invalid_sat_proof` | `kernel_rejection` | Clause or MiniSAT-compatible resolution replay fails, including a pivot, parent, resolvent, or final-goal derivation mismatch. |
-| `invalid_sat_refutation` | `kernel_rejection` | The corrected formula/substitution evidence path fails SAT-backed refutation checking: the derived SAT problem is satisfiable, malformed after kernel derivation, inconsistent with the target goal, or rejected by the trusted SAT checker. This is the post-closeout successor to SAT-proof replay failures. |
+| `invalid_sat_refutation` | `kernel_rejection` | The corrected formula/substitution evidence path fails SAT-backed refutation checking because kernel-derived SAT material is malformed after derivation, inconsistent with the target goal, or rejected by the trusted SAT checker. A satisfiable wrapper result is represented first as `SatCheckResult::Sat` non-acceptance evidence and is not itself trusted acceptance material. This is the post-closeout successor to SAT-proof replay failures. |
 | `invalid_cluster_trace` | `kernel_rejection` | Explicit cluster or reduction trace replay fails, including hidden transitive expansion, invalid reduction substitution, or strategy-audit mismatch. |
 | `unresolved_symbol` | `kernel_rejection` | A referenced symbol, imported theorem, imported axiom, VC, content fingerprint, or required imported proof status is unavailable, mismatched, or weaker than the current kernel profile permits. |
 | `timeout` | `kernel_rejection` | A deterministic checker budget stops replay. Pure parser failures never emit this detail. |
@@ -186,7 +186,7 @@ Later checker modules map failures as follows:
 | `checker` service | missing candidate, premise, or immutable context provenance | `missing_provenance` |
 | `checker` service | malformed service-level witness data before normalized certificate replay | `malformed_witness_data` |
 | `checker` service | legacy certificate, legacy resolution trace, backend proof method, SMT proof object, or backend log submitted under normal proof policy | `unsupported_certificate_format` |
-| `sat_encoding` / `sat_checker` | satisfiable derived SAT problem, invalid refutation result, unsupported SAT clauses after kernel derivation, or SAT checker deterministic error | `invalid_sat_refutation` |
+| `sat_encoding` / `sat_checker` | invalid refutation result, unsupported SAT clauses after kernel derivation, SAT checker deterministic error, or service-layer attempted acceptance without an UNSAT wrapper result | `invalid_sat_refutation`; satisfiable wrapper checks return `SatCheckResult::Sat` as non-acceptance evidence before task-28 service mapping |
 | `checker` service | deterministic replay budget stop | `timeout` or `resource_exhaustion`, depending on whether the budget is time-step style or size/memory/count style |
 
 The kernel must never synthesize missing premises, search for alternate

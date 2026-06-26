@@ -32,7 +32,8 @@ trusted payload として受理してはならない。
 - canonical atom bytes によって SAT variable を deterministic に割り当てること;
 - formulas と `final_goal` に記録された polarity で assert される target goal から
   deterministic CNF/Tseitin problem を生成すること;
-- diagnostics と replay check のために canonical bytes を expose すること。
+- diagnostics と replay check のために read-only encoded-problem accessor と canonical
+  bytes を expose すること。
 
 この module は SAT solving、ATP encoding、premise selection、formula selection、backend
 proof extraction、substitution invention、source formula projection を所有しない。
@@ -111,8 +112,11 @@ unit clause を追加する。`And(children)` では output `o` と child litera
 substitution id、formula fingerprint、canonical formula bytes で sort されるため、
 equivalent caller order は同一 bytes を生成する。
 
-Instantiated formulas と SAT clauses は kernel-derived artifacts である。Diagnostic check
-trace として記録できるが、trusted input field ではない。
+Instantiated formulas と SAT clauses は kernel-derived artifacts である。
+`EncodedSatProblem` fields は encoding module の外では private であり、read-only accessor
+だけで expose されるため、downstream caller は SAT checking 前に target binding、
+assertions、atom manifest、clauses、canonical bytes を mutate できない。これらは
+diagnostic check trace として記録できるが、trusted input field ではない。
 
 ## Rejections
 

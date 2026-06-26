@@ -33,7 +33,8 @@ The module owns:
 - assigning SAT variables deterministically by canonical atom bytes;
 - producing a deterministic CNF/Tseitin problem from formulas plus the
   target goal asserted with the polarity recorded in `final_goal`;
-- exposing canonical bytes for diagnostics and replay checks.
+- exposing read-only encoded-problem accessors and canonical bytes for
+  diagnostics and replay checks.
 
 The module does not own SAT solving, ATP encoding, premise selection, formula
 selection, substitution invention, source formula projection, or backend proof
@@ -118,8 +119,12 @@ its atom variable. Assertion records are sorted by assertion kind, asserted
 polarity, source formula id, substitution id, formula fingerprint, and
 canonical formula bytes, so equivalent caller order yields identical bytes.
 
-Instantiated formulas and SAT clauses are kernel-derived artifacts. They may be
-recorded as diagnostic check traces, but they are never trusted input fields.
+Instantiated formulas and SAT clauses are kernel-derived artifacts. The
+`EncodedSatProblem` fields are private outside the encoding module and exposed
+only through read-only accessors, so downstream callers cannot mutate the
+target binding, assertions, atom manifest, clauses, or canonical bytes before
+SAT checking. These artifacts may be recorded as diagnostic check traces, but
+they are never trusted input fields.
 
 ## Rejections
 

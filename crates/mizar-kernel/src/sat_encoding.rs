@@ -159,19 +159,67 @@ pub struct EncodedFormulaAssertion {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct EncodedSatProblem {
-    pub schema_version: u16,
-    pub encoding_version: u16,
-    pub target_vc: Fingerprint,
-    pub atom_variables: Vec<SatAtomVariable>,
-    pub assertions: Vec<EncodedFormulaAssertion>,
-    pub clauses: Vec<SatClause>,
+    schema_version: u16,
+    encoding_version: u16,
+    target_vc: Fingerprint,
+    atom_variables: Vec<SatAtomVariable>,
+    assertions: Vec<EncodedFormulaAssertion>,
+    clauses: Vec<SatClause>,
     canonical_bytes: Vec<u8>,
 }
 
 impl EncodedSatProblem {
     #[must_use]
+    pub const fn schema_version(&self) -> u16 {
+        self.schema_version
+    }
+
+    #[must_use]
+    pub const fn encoding_version(&self) -> u16 {
+        self.encoding_version
+    }
+
+    #[must_use]
+    pub const fn target_vc(&self) -> &Fingerprint {
+        &self.target_vc
+    }
+
+    #[must_use]
+    pub fn atom_variables(&self) -> &[SatAtomVariable] {
+        &self.atom_variables
+    }
+
+    #[must_use]
+    pub fn assertions(&self) -> &[EncodedFormulaAssertion] {
+        &self.assertions
+    }
+
+    #[must_use]
+    pub fn clauses(&self) -> &[SatClause] {
+        &self.clauses
+    }
+
+    #[must_use]
     pub fn canonical_bytes(&self) -> &[u8] {
         &self.canonical_bytes
+    }
+
+    #[cfg(test)]
+    pub(crate) fn from_test_parts(
+        target_vc: Fingerprint,
+        atom_variables: Vec<SatAtomVariable>,
+        clauses: Vec<SatClause>,
+        canonical_bytes: Vec<u8>,
+    ) -> Self {
+        Self {
+            schema_version: SAT_PROBLEM_SCHEMA_VERSION,
+            encoding_version: SAT_PROBLEM_ENCODING_VERSION,
+            target_vc,
+            atom_variables,
+            assertions: Vec::new(),
+            clauses,
+            canonical_bytes,
+        }
     }
 }
 
