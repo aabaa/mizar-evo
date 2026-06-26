@@ -9,6 +9,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod backend;
 pub mod problem;
 pub mod property_encoding;
 pub mod smtlib_encoder;

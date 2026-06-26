@@ -22,7 +22,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 | property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [x] axiom-form property source complete; native declarations deferred |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [x] deterministic FOF source complete; typed/native/backend routes deferred |
 | smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source complete; theory/sorted/native/backend routes deferred |
-| backend | `backend.md` (task 13) | `src/backend.rs` | [x] spec complete; source deferred to task 14 |
+| backend | `backend.md` (task 13) | `src/backend.rs` | [x] generic runner and mock classification complete; real adapters/extraction deferred |
 | portfolio | `portfolio.md` (task 17) | `src/portfolio.rs` | [ ] |
 
 `mizar-atp` implements pipeline phase 13: ATP-eligible `VcStatus::NeedsAtp`
@@ -312,7 +312,7 @@ Keep `cargo test -p mizar-atp` green after each task (see
       Classification", [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
       "Backend Runner".
 
-14. **Backend runner.** [ ]
+14. **Backend runner.** [x]
     - Implement process execution with resource limits, timeouts,
       cancellation, and graceful crash handling; mock backend for tests.
     - Tests: stdin and private problem-file modes; direct executable/argument
@@ -322,20 +322,38 @@ Keep `cargo test -p mizar-atp` green after each task (see
       spawn-permission fixtures; byte-exact input delivery in both stdin and
       private-file modes without rewriting, normalization, appended proof
       commands, unsat-core requests, shell interpretation, or inferred polarity
-      changes; deterministic fingerprints that exclude pids, temp paths,
-      timestamps, raw completion order, and machine-local absolute
-      executable/working-directory paths while recording sorted allowlisted
-      environment variables; stdout/stderr hashes and truncation diagnostics;
-      private temp cleanup; no child process left after
+      changes; stdin delivery through a private spool connected to fd 0 without
+      backend path exposure or verifier-side writer-thread deadlock;
+      deterministic fingerprints that exclude pids, temp paths, timestamps,
+      raw completion order, and machine-local absolute executable/working-directory
+      paths while recording sorted allowlisted environment variables;
+      stdout/stderr hashes and truncation
+      diagnostics; drain-after-retained-limit behavior so stream hashes cover
+      complete observed streams; private temp creation with exclusive/private-path
+      semantics and cleanup; no child process left after
       timeout/cancellation/crash; resource-limit records and unsupported-limit
-      diagnostics; `Proved` rejection for polarity mismatch, missing
-      formula/substitution evidence, candidate metadata mismatches, or
-      otherwise matching evidence after timeout/cancellation/crash/parsing
-      corruption; mock `Proved` only with matching `ExpectedBackendResult::Unsat`
-      and candidate metadata; no kernel/SAT checking, proof policy,
+      diagnostics, including unsupported required limits becoming `Error`;
+      `Proved` rejection for polarity mismatch, missing formula/substitution
+      evidence payload/ref, candidate metadata mismatches, unsupported required
+      limits, incomplete streams, or otherwise matching evidence after
+      timeout/cancellation/crash/parsing corruption; mock `Proved` only with
+      matching `ExpectedBackendResult::Unsat`, supported payload/ref, and
+      candidate metadata; no kernel/SAT checking, proof policy,
       witness/cache publication, backend proof-method trust, resolution-trace
       trust, unsat-core trust, SMT proof-object trust, or trusted backend
       `used_axioms`.
+    - Status: complete. `src/backend.rs` implements the generic direct-spawn
+      child-process runner, deterministic input/command/stream metadata
+      hashing, stdin and private problem-file modes, version probes,
+      timeout/cancellation/crash/missing-executable handling, drain-safe
+      stdout/stderr capture, unsupported required-limit fail-closed behavior,
+      private temp cleanup, and mock observation classification. `Proved`
+      remains candidate-evidence-only and requires matching `Unsat`, supported
+      formula/substitution payload/ref, and matching target/input/label/symbol/
+      provenance metadata. Real backend adapters, backend-specific parsers,
+      formula/substitution candidate extraction from real output, portfolio,
+      proof policy, witness/cache publication, and kernel checking remain
+      deferred.
     - Deps: 13. Spec: `backend.md`.
 
 15. **First concrete backend integration.** [ ]

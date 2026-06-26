@@ -97,6 +97,27 @@ The backend runner records `input_hash` and metadata hashes; it must not
 rewrite the input, normalize backend text, add proof commands, request unsat
 cores as trusted data, or infer a different expected result.
 
+## Stable Hashes And Fingerprints
+
+Task-14 source must implement a private deterministic hash helper for backend
+metadata. It must not use `std::hash`, `DefaultHasher`, raw `Debug` rendering,
+process ids, temporary paths, wall-clock timestamps, or completion order as
+semantic hash input.
+
+The helper uses length-prefixed canonical fields and explicit domain tags:
+
+| Hash | Domain | Required fields |
+|---|---|---|
+| `input_hash` | `mizar-atp/backend-input/v1` | `concrete_format`, logic-profile name/fragment, exact `input_text` bytes |
+| `command_fingerprint` | `mizar-atp/backend-command/v1` | backend kind, profile id, concrete format, semantic executable id, ordered args, sorted allowlisted environment, working-directory policy kind, input-delivery mode, random seed, resource-limit records |
+| `stdout_hash` / `stderr_hash` | `mizar-atp/backend-stream/v1` | stream kind and the complete byte stream observed on that pipe |
+| `metadata_hash` fields | `mizar-atp/backend-metadata/v1` | sorted labels, symbol bindings, provenance bytes, and target-binding fingerprint bytes as appropriate |
+
+The semantic executable id may include a configured stable backend name or an
+executable basename, but not a machine-local absolute path. Explicit working
+directories are represented by policy kind in the command fingerprint; the
+local directory path may appear in diagnostics but not in semantic hashes.
+
 ## Backend Profile And Command
 
 `BackendProfile` is a deterministic configuration record:
@@ -142,6 +163,9 @@ Required behavior:
 
 - provide input through stdin or a private temporary problem file according to
   `io_mode`;
+- for stdin mode, stage the byte-exact input in a private spool and connect a
+  read handle as fd 0 without passing a path to the backend, so input delivery
+  does not depend on a blocking writer thread;
 - capture stdout and stderr up to configured byte limits;
 - hash complete captured stdout/stderr or record that a capture limit truncated
   the stream;
@@ -161,6 +185,31 @@ enforced on the current platform, the runner records an unsupported-limit
 diagnostic. A policy may later decide that unsupported enforcement is an error,
 but the backend runner itself must not fabricate proof status because a limit
 was unavailable.
+
+Task-14 source must represent unsupported limits as either `best_effort` or
+`required`. Unsupported best-effort limits are diagnostics. Unsupported
+required limits classify the run as `Error` before any `Proved` result can be
+constructed.
+
+In private problem-file mode, the runner creates a per-run private directory
+with race-resistant creation (`create_new`/exclusive creation semantics), writes
+the problem file without reusing a preexisting path, applies best-effort
+restrictive permissions on platforms that support them, and cleans the file and
+directory after normal exit, timeout, cancellation, crash, or spawn failure.
+If privacy or cleanup cannot be enforced, the run records diagnostics; privacy
+failure is an `Error` for file-mode execution.
+
+Stdout and stderr readers must avoid pipe backpressure deadlocks. After the
+configured retained-byte limit is reached, readers keep draining the pipe until
+EOF while retaining only the prefix and recording a truncation flag. Stream
+hashes are computed over the complete observed stream, not merely the retained
+prefix. If a stream cannot be completely drained because the process is killed
+or the pipe fails, the result records an incomplete-stream diagnostic and must
+not classify as `Proved`.
+
+Stdin mode must not introduce a verifier-side writer thread that can be left
+blocked by a backend descendant holding fd 0 open. If private stdin staging
+cannot be created or opened, the run is `Error` before process spawn.
 
 ## Backend Identity And Reproducibility
 
@@ -247,11 +296,15 @@ BackendCandidateEvidence
 ```
 
 The payload must be formula/substitution evidence compatible with the
-kernel-owned schema. Backend proof objects and logs may be diagnostic inputs to
-an extractor, but the candidate payload handed to later kernel checking must
-not be a backend proof method, SMT proof object, unsat core, resolution trace,
-or legacy certificate. Kernel acceptance, trusted `used_axioms`, proof witness
-drafts, artifact status, and cache promotion belong to downstream tasks/crates.
+kernel-owned schema, and task-14 mock classification must require explicit
+payload bytes or an explicit payload reference. Label/symbol/provenance
+metadata alone is not candidate evidence. Backend proof objects and logs may be
+diagnostic inputs to a future extractor, but the candidate payload handed to
+later kernel checking must not be a backend proof method, SMT proof object,
+unsat core, TSTP trace, resolution trace, backend log, backend-reported
+`used_axioms`, or legacy certificate. Kernel acceptance, trusted `used_axioms`,
+proof witness drafts, artifact status, and cache promotion belong to
+downstream tasks/crates.
 
 ## Failure Semantics
 

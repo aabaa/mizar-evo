@@ -120,6 +120,7 @@ fn atp_lib_exposes_only_spec_backed_modules() {
 
 #![forbid(unsafe_code)]
 
+pub mod backend;
 pub mod problem;
 pub mod property_encoding;
 pub mod smtlib_encoder;
@@ -145,6 +146,7 @@ pub mod translator;
     assert_eq!(
         source_files,
         [
+            "src/backend.rs",
             "src/lib.rs",
             "src/problem.rs",
             "src/property_encoding.rs",
@@ -168,6 +170,7 @@ fn atp_crate_tree_contains_only_current_spec_backed_files() {
         files,
         [
             "Cargo.toml",
+            "src/backend.rs",
             "src/lib.rs",
             "src/problem.rs",
             "src/property_encoding.rs",
@@ -177,9 +180,273 @@ fn atp_crate_tree_contains_only_current_spec_backed_files() {
             "tests/lint_policy.rs"
         ],
         "mizar-atp crate files must stay limited to current spec-backed sources; \
-         build scripts, examples, benches, extra tests, backend runners, \
+         build scripts, examples, benches, extra tests beyond lint policy, \
          kernel/proof behavior, or other crate-root files require explicit spec \
          tasks; found {files:?}"
+    );
+}
+
+#[test]
+fn atp_backend_module_has_paired_specs_and_excludes_trusted_acceptance() {
+    let en_spec = workspace_root().join("doc/design/mizar-atp/en/backend.md");
+    let ja_spec = workspace_root().join("doc/design/mizar-atp/ja/backend.md");
+    let source_path = crate_root().join("src/backend.rs");
+    let en = read_to_string(&en_spec);
+    let ja = read_to_string(&ja_spec);
+    let source = read_to_string(&source_path);
+
+    for marker in [
+        "Stable Hashes And Fingerprints",
+        "Task-14 source must represent unsupported limits as either",
+        "payload bytes or an explicit payload reference",
+        "Task-14 Test Expectations",
+    ] {
+        assert!(
+            en.contains(marker),
+            "{} must keep task-13/task-14 backend spec marker `{marker}`",
+            en_spec.display()
+        );
+    }
+    for marker in [
+        "stable hash と fingerprint",
+        "unsupported limit を `best_effort` または `required`",
+        "payload bytes または明示的な payload reference",
+        "Task-14 Test Expectations",
+    ] {
+        assert!(
+            ja.contains(marker),
+            "{} must keep task-13/task-14 Japanese backend spec marker `{marker}`",
+            ja_spec.display()
+        );
+    }
+    for marker in [
+        "pub fn run_backend",
+        "pub fn classify_backend_observation",
+        "process::{Command, ExitStatus, Stdio}",
+        "BackendCandidatePayload::FormulaSubstitutionBytes",
+        "required_resource_limit_unsupported",
+        "mizar-atp/backend-command/v1",
+        "PrivateProblemFile::create",
+        "proved_rejected_process_status",
+    ] {
+        assert!(
+            source.contains(marker),
+            "{} must implement backend.md task-14 marker `{marker}`",
+            source_path.display()
+        );
+    }
+    for prohibited in [
+        "mizar_kernel::",
+        "kernel_verified",
+        "ProofWitness",
+        "ProofPolicy",
+        "pub mod proof_policy",
+        "cache_promotion",
+        "trusted_used_axioms",
+        "accepted_proof_status",
+    ] {
+        assert!(
+            !source.contains(prohibited),
+            "{} must not expose prohibited trusted/downstream material `{prohibited}`",
+            source_path.display()
+        );
+    }
+}
+
+#[test]
+fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
+    let source_path = crate_root().join("src/backend.rs");
+    let source = read_to_string(&source_path);
+    let public_items = public_api_items(&source);
+    let public_fields = public_struct_fields(&source);
+    let public_functions = public_api_functions(&source);
+    let expected = [
+        "BackendCancellationToken",
+        "BackendCandidateEvidence",
+        "BackendCandidatePayload",
+        "BackendCommand",
+        "BackendConfigError",
+        "BackendCounterexample",
+        "BackendDiagnostic",
+        "BackendEnvironmentPolicy",
+        "BackendExitStatus",
+        "BackendIoMode",
+        "BackendKind",
+        "BackendLimitRequirement",
+        "BackendObservation",
+        "BackendObservedResult",
+        "BackendProfile",
+        "BackendProfileId",
+        "BackendResourceLimits",
+        "BackendRunId",
+        "BackendRunInput",
+        "BackendRunResult",
+        "BackendRunStatus",
+        "BackendStreamCapture",
+        "BackendTermination",
+        "BackendVersionProbe",
+        "BackendVersionRecord",
+        "BackendWorkingDirectoryPolicy",
+        "EncodedBackendProblem",
+        "EncodedBackendProblemParts",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<Vec<_>>();
+
+    assert_eq!(
+        public_items,
+        expected,
+        "{} public API must stay limited to task-14 generic backend runner, \
+         mock classification, deterministic run metadata, and fail-closed \
+         error/status shapes; real backend adapters, proof parsers, kernel \
+         checks, witnesses, proof policy, and cache handles require later specs",
+        source_path.display()
+    );
+
+    assert_eq!(
+        public_fields,
+        [
+            "EncodedBackendProblemParts::concrete_format",
+            "EncodedBackendProblemParts::expected_result",
+            "EncodedBackendProblemParts::formula_labels",
+            "EncodedBackendProblemParts::input_text",
+            "EncodedBackendProblemParts::logic_fragment",
+            "EncodedBackendProblemParts::logic_profile_name",
+            "EncodedBackendProblemParts::problem_id",
+            "EncodedBackendProblemParts::provenance_hash",
+            "EncodedBackendProblemParts::symbol_bindings",
+            "EncodedBackendProblemParts::target_binding",
+        ],
+        "{} public struct fields must stay limited to the task-14 encoded \
+         problem construction parts; run results, candidates, statuses, and \
+         process metadata must remain opaque",
+        source_path.display()
+    );
+
+    assert_eq!(
+        public_functions,
+        [
+            "BackendCancellationToken::cancel",
+            "BackendCancellationToken::is_cancelled",
+            "BackendCancellationToken::new",
+            "BackendCandidateEvidence::candidate_id",
+            "BackendCandidateEvidence::encoded_problem_hash",
+            "BackendCandidateEvidence::formula_label_refs",
+            "BackendCandidateEvidence::new",
+            "BackendCandidateEvidence::payload",
+            "BackendCandidateEvidence::provenance_hash",
+            "BackendCandidateEvidence::symbol_binding_refs",
+            "BackendCandidateEvidence::target_binding",
+            "BackendCandidatePayload::is_formula_substitution_candidate",
+            "BackendCommand::args",
+            "BackendCommand::environment",
+            "BackendCommand::executable",
+            "BackendCommand::new",
+            "BackendCommand::semantic_executable_id",
+            "BackendCommand::with_environment",
+            "BackendCommand::with_semantic_executable_id",
+            "BackendCommand::with_working_directory",
+            "BackendCommand::working_directory",
+            "BackendCounterexample::new",
+            "BackendCounterexample::payload",
+            "BackendCounterexample::provenance_mapped",
+            "BackendDiagnostic::key",
+            "BackendDiagnostic::message",
+            "BackendDiagnostic::new",
+            "BackendEnvironmentPolicy::new",
+            "BackendEnvironmentPolicy::vars",
+            "BackendExitStatus::code",
+            "BackendExitStatus::success",
+            "BackendKind::as_str",
+            "BackendKind::new",
+            "BackendObservation::new",
+            "BackendObservation::with_candidate_evidence",
+            "BackendObservation::with_counterexample",
+            "BackendObservation::without_complete_output_requirement",
+            "BackendProfile::backend_kind",
+            "BackendProfile::concrete_format",
+            "BackendProfile::deterministic_priority",
+            "BackendProfile::new",
+            "BackendProfile::profile_id",
+            "BackendProfile::requires_candidate_evidence",
+            "BackendProfile::version_probe",
+            "BackendProfile::with_deterministic_priority",
+            "BackendProfile::with_version_probe",
+            "BackendProfileId::as_str",
+            "BackendProfileId::new",
+            "BackendResourceLimits::kill_grace",
+            "BackendResourceLimits::new",
+            "BackendResourceLimits::platform_limits",
+            "BackendResourceLimits::stderr_bytes",
+            "BackendResourceLimits::stdout_bytes",
+            "BackendResourceLimits::wall_timeout",
+            "BackendResourceLimits::with_kill_grace",
+            "BackendResourceLimits::with_stderr_limit",
+            "BackendResourceLimits::with_stdout_limit",
+            "BackendResourceLimits::with_unsupported_platform_limit",
+            "BackendResourceLimits::with_wall_timeout",
+            "BackendRunId::as_str",
+            "BackendRunId::new",
+            "BackendRunInput::command",
+            "BackendRunInput::encoded_problem",
+            "BackendRunInput::io_mode",
+            "BackendRunInput::new",
+            "BackendRunInput::profile",
+            "BackendRunInput::resource_limits",
+            "BackendRunInput::run_id",
+            "BackendRunInput::with_random_seed",
+            "BackendRunResult::backend_kind",
+            "BackendRunResult::candidate_evidence",
+            "BackendRunResult::child_reaped",
+            "BackendRunResult::command_fingerprint",
+            "BackendRunResult::counterexample",
+            "BackendRunResult::diagnostics",
+            "BackendRunResult::elapsed",
+            "BackendRunResult::encoded_problem",
+            "BackendRunResult::exit_status",
+            "BackendRunResult::observed_result",
+            "BackendRunResult::profile_id",
+            "BackendRunResult::run_id",
+            "BackendRunResult::status",
+            "BackendRunResult::stderr",
+            "BackendRunResult::stdout",
+            "BackendRunResult::termination",
+            "BackendRunResult::version_record",
+            "BackendStreamCapture::hash",
+            "BackendStreamCapture::incomplete",
+            "BackendStreamCapture::retained_bytes",
+            "BackendStreamCapture::total_bytes",
+            "BackendStreamCapture::truncated",
+            "BackendVersionProbe::args",
+            "BackendVersionProbe::executable",
+            "BackendVersionProbe::new",
+            "BackendVersionProbe::timeout",
+            "BackendVersionRecord::diagnostics",
+            "BackendVersionRecord::exit_status",
+            "BackendVersionRecord::parsed_version",
+            "BackendVersionRecord::stderr",
+            "BackendVersionRecord::stdout",
+            "BackendVersionRecord::success",
+            "EncodedBackendProblem::concrete_format",
+            "EncodedBackendProblem::expected_result",
+            "EncodedBackendProblem::formula_labels",
+            "EncodedBackendProblem::input_hash",
+            "EncodedBackendProblem::input_text",
+            "EncodedBackendProblem::logic_fragment",
+            "EncodedBackendProblem::logic_profile_name",
+            "EncodedBackendProblem::metadata_hash",
+            "EncodedBackendProblem::new",
+            "EncodedBackendProblem::problem_id",
+            "EncodedBackendProblem::provenance_hash",
+            "EncodedBackendProblem::symbol_bindings",
+            "EncodedBackendProblem::target_binding",
+            "classify_backend_observation",
+            "run_backend",
+        ],
+        "{} public functions and methods must stay limited to task-14 generic \
+         runner and mock-classification construction/accessors",
+        source_path.display()
     );
 }
 

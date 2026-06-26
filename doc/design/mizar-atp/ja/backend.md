@@ -92,6 +92,26 @@ backend runner は `input_hash` と metadata hash を記録する。input を書
 normalize したり、proof command を追加したり、unsat core を trusted data として要求したり、別の
 expected result を推論してはならない。
 
+## stable hash と fingerprint
+
+Task-14 source は backend metadata 用の private deterministic hash helper を実装しなければならない。
+`std::hash`、`DefaultHasher`、raw `Debug` rendering、process id、temporary path、
+wall-clock timestamp、completion order を semantic hash input にしてはならない。
+
+helper は length-prefixed canonical field と明示的 domain tag を使う:
+
+| Hash | Domain | 必須 field |
+|---|---|---|
+| `input_hash` | `mizar-atp/backend-input/v1` | `concrete_format`、logic-profile name/fragment、exact `input_text` bytes |
+| `command_fingerprint` | `mizar-atp/backend-command/v1` | backend kind、profile id、concrete format、semantic executable id、ordered args、sorted allowlisted environment、working-directory policy kind、input-delivery mode、random seed、resource-limit record |
+| `stdout_hash` / `stderr_hash` | `mizar-atp/backend-stream/v1` | stream kind とその pipe で観測された complete byte stream |
+| `metadata_hash` field | `mizar-atp/backend-metadata/v1` | 必要に応じた sorted label、symbol binding、provenance bytes、target-binding fingerprint bytes |
+
+semantic executable id は configured stable backend name または executable basename を含んでよいが、
+machine-local absolute path を含めてはならない。explicit working directory は command fingerprint
+内では policy kind で表現する。local directory path は diagnostic には現れてよいが semantic hash には
+入らない。
+
 ## backend profile と command
 
 `BackendProfile` は deterministic configuration record である:
@@ -134,6 +154,9 @@ runner は `BackendRunInput` ごとに 1 つの child process を起動する。
 必要な挙動:
 
 - `io_mode` に従って stdin または private temporary problem file で input を渡す。
+- stdin mode では byte-exact input を private spool に stage し、path を backend に渡さず
+  read handle を fd 0 として接続する。これにより input delivery は blocking writer
+  thread に依存しない。
 - stdout と stderr を configured byte limit まで capture する。
 - 完全に capture した stdout/stderr を hash するか、capture limit により stream が truncated されたことを記録する。
 - 利用可能なら exit code または platform signal / termination detail を記録する。
@@ -147,6 +170,26 @@ resource-limit mechanism は platform-dependent である。現在 platform で 
 場合、runner は unsupported-limit diagnostic を記録する。後続 policy は unsupported enforcement を
 error にしてよいが、backend runner 自身は limit が利用できなかったことを理由に proof status を
 fabricate してはならない。
+
+Task-14 source は unsupported limit を `best_effort` または `required` として表現しなければならない。
+unsupported best-effort limit は diagnostic である。unsupported required limit は、`Proved` result を
+構築可能にする前に run を `Error` として分類する。
+
+private problem-file mode では、runner は run ごとの private directory を race-resistant に作成し
+（`create_new` / exclusive creation semantics）、preexisting path を再利用せずに problem file を書き、
+platform が対応する場合は best-effort restrictive permission を適用し、normal exit、timeout、
+cancellation、crash、spawn failure の後に file と directory を削除する。privacy または cleanup を
+enforce できない場合は diagnostic を記録する。privacy failure は file-mode execution では `Error` である。
+
+stdout/stderr reader は pipe backpressure deadlock を避けなければならない。configured retained-byte
+limit に達した後も reader は EOF まで pipe を drain し続け、prefix だけを保持し truncation flag を
+記録する。stream hash は retained prefix だけでなく complete observed stream に対して計算する。process
+kill または pipe failure により stream を完全に drain できない場合、result は incomplete-stream diagnostic
+を記録し、`Proved` に分類してはならない。
+
+stdin mode は、backend descendant が fd 0 を open のまま保持することで verifier 側 writer thread が
+blocked のまま残る構造を導入してはならない。private stdin staging を作成または読み取り用に open
+できない場合、run は process spawn 前に `Error` となる。
 
 ## backend identity と reproducibility
 
@@ -219,11 +262,13 @@ BackendCandidateEvidence
   extraction_diagnostics
 ```
 
-payload は kernel-owned schema と互換な formula/substitution evidence でなければならない。backend proof
-object と log は extractor の diagnostic input になってよいが、後続 kernel checking に渡す candidate
-payload は backend proof method、SMT proof object、unsat core、resolution trace、legacy certificate
-であってはならない。kernel acceptance、trusted `used_axioms`、proof witness draft、artifact status、
-cache promotion は downstream task/crate に属する。
+payload は kernel-owned schema と互換な formula/substitution evidence でなければならず、task-14 mock
+classification は明示的な payload bytes または明示的な payload reference を要求しなければならない。
+label / symbol / provenance metadata だけでは candidate evidence ではない。backend proof object と log は
+将来の extractor の diagnostic input になってよいが、後続 kernel checking に渡す candidate payload は
+backend proof method、SMT proof object、unsat core、TSTP trace、resolution trace、backend log、
+backend-reported `used_axioms`、legacy certificate であってはならない。kernel acceptance、trusted
+`used_axioms`、proof witness draft、artifact status、cache promotion は downstream task/crate に属する。
 
 ## failure semantics
 

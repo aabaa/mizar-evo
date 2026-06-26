@@ -22,7 +22,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 | property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [x] axiom-form property source 完了。native declaration は deferred |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [x] deterministic FOF source 完了。typed/native/backend route は deferred |
 | smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source 完了。theory/sorted/native/backend route は deferred |
-| backend | `backend.md`（task 13） | `src/backend.rs` | [x] spec 完了。source は task 14 へ deferred |
+| backend | `backend.md`（task 13） | `src/backend.rs` | [x] generic runner と mock classification 完了。real adapter / extraction は deferred |
 | portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [ ] |
 
 `mizar-atp` はパイプライン phase 13 を実装する。入力は ATP 対象の
@@ -292,7 +292,7 @@ workspace crate ではないため、policy と witness-publication integration 
       Classification」、[internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
       「Backend Runner」。
 
-14. **バックエンド runner。** [ ]
+14. **バックエンド runner。** [x]
     - リソース制限、タイムアウト、キャンセル、graceful なクラッシュ処理を
       備えたプロセス実行を実装する。テスト用モックバックエンドを用意する。
     - テスト: stdin と private problem-file mode。shell interpretation を使わない
@@ -301,18 +301,33 @@ workspace crate ではないため、policy と witness-publication integration 
       crash、non-zero exit、missing executable、spawn-permission fixture。
       stdin と private-file mode の両方で byte-exact input delivery を行い、rewriting、
       normalization、appended proof command、unsat-core request、shell interpretation、
-      inferred polarity change がないこと。process id、temp path、timestamp、
-      raw completion order、machine-local absolute executable / working-directory path を
-      fingerprint から除外し、allowlist された environment variable を sort 済みで
-      記録すること。stdout/stderr hash と truncation diagnostic。private temporary cleanup。
+      inferred polarity change がないこと。stdin delivery は path を backend に露出せず
+      fd 0 に接続した private spool を通じて行い、verifier 側 writer-thread deadlock を
+      作らないこと。process id、temp path、timestamp、raw completion order、
+      machine-local absolute executable / working-directory path を fingerprint から除外し、
+      allowlist された environment variable を sort 済みで記録すること。stdout/stderr hash と
+      truncation diagnostic。private temporary cleanup。
+      retained limit 後も drain を続け、stream hash が complete observed stream を cover すること。
+      exclusive / private-path semantics による private temporary creation と cleanup。
       timeout/cancellation/crash 後に child process が残らないこと。resource-limit record と
-      unsupported-limit diagnostic。polarity mismatch、formula/substitution evidence 不在、
-      candidate metadata mismatch、または timeout/cancellation/crash/parsing corruption 後の
-      otherwise matching evidence での `Proved` rejection。observed result が
-      `ExpectedBackendResult::Unsat` と一致し candidate metadata が一致する場合だけ mock
-      `Proved` になること。kernel/SAT checking、proof policy、witness/cache publication、
+      unsupported-limit diagnostic。unsupported required limit が `Error` になること。polarity
+      mismatch、formula/substitution evidence payload/ref 不在、candidate metadata mismatch、
+      unsupported required limit、incomplete stream、または timeout/cancellation/crash/parsing
+      corruption 後の otherwise matching evidence での `Proved` rejection。observed result が
+      `ExpectedBackendResult::Unsat` と一致し、supported payload/ref と candidate metadata が一致する場合だけ
+      mock `Proved` になること。kernel/SAT checking、proof policy、witness/cache publication、
       backend proof-method trust、resolution-trace trust、unsat-core trust、
       SMT proof-object trust、trusted backend `used_axioms` がないこと。
+    - Status: 完了。`src/backend.rs` は generic direct-spawn child-process runner、
+      deterministic input / command / stream metadata hashing、stdin と private problem-file
+      mode、version probe、timeout / cancellation / crash / missing-executable handling、
+      drain-safe stdout/stderr capture、unsupported required-limit の fail-closed behavior、
+      private temp cleanup、mock observation classification を実装する。`Proved` は
+      candidate-evidence-only のままであり、matching `Unsat`、supported
+      formula/substitution payload/ref、matching target / input / label / symbol / provenance
+      metadata を要求する。real backend adapter、backend-specific parser、real output からの
+      formula/substitution candidate extraction、portfolio、proof policy、witness/cache
+      publication、kernel checking は deferred のままである。
     - 依存: 13。仕様: `backend.md`。
 
 15. **最初の具体バックエンド統合。** [ ]
