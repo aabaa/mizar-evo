@@ -122,6 +122,7 @@ fn atp_lib_exposes_only_spec_backed_modules() {
 
 pub mod problem;
 pub mod property_encoding;
+pub mod tptp_encoder;
 pub mod translator;
 "#;
     let source_files = rust_source_files(&crate_root().join("src"))
@@ -146,6 +147,7 @@ pub mod translator;
             "src/lib.rs",
             "src/problem.rs",
             "src/property_encoding.rs",
+            "src/tptp_encoder.rs",
             "src/translator.rs"
         ],
         "semantic ATP modules require paired specs before source; found {source_files:?}"
@@ -167,6 +169,7 @@ fn atp_crate_tree_contains_only_current_spec_backed_files() {
             "src/lib.rs",
             "src/problem.rs",
             "src/property_encoding.rs",
+            "src/tptp_encoder.rs",
             "src/translator.rs",
             "tests/lint_policy.rs"
         ],
@@ -495,6 +498,136 @@ fn atp_translator_public_api_surface_is_task_six_allowlist() {
          translator construction/accessors; backend runners, proof methods, \
          SAT/kernel checks, witnesses, and cache APIs require explicit later \
          specs",
+        source_path.display()
+    );
+}
+
+#[test]
+fn atp_tptp_encoder_module_has_paired_specs_and_excludes_trusted_material() {
+    let en_spec = workspace_root().join("doc/design/mizar-atp/en/tptp_encoder.md");
+    let ja_spec = workspace_root().join("doc/design/mizar-atp/ja/tptp_encoder.md");
+    let source_path = crate_root().join("src/tptp_encoder.rs");
+    let en = read_to_string(&en_spec);
+    let ja = read_to_string(&ja_spec);
+    let source = read_to_string(&source_path);
+
+    for marker in [
+        "Task 10 supports this fail-closed subset",
+        "The encoder emits entries in this deterministic order",
+        "The encoder must track active quantifier scope",
+        "raw-name",
+        "Task-10 Test Expectations",
+    ] {
+        assert!(
+            en.contains(marker),
+            "{} must keep task-9 TPTP spec marker `{marker}`",
+            en_spec.display()
+        );
+    }
+    for marker in [
+        "Task 10 は次の fail-closed subset",
+        "encoder は次の deterministic order",
+        "encoder は active quantifier scope",
+        "raw-name",
+        "Task 10 は focused Rust coverage",
+    ] {
+        assert!(
+            ja.contains(marker),
+            "{} must keep task-9 Japanese TPTP spec marker `{marker}`",
+            ja_spec.display()
+        );
+    }
+    for marker in [
+        "pub fn encode_tptp",
+        "TptpDialect::Fof",
+        "ConcreteFormat::Tptp",
+        "LogicFragment::Fof",
+        "SoftTypeStrategy::GuardPredicates",
+        "PropertyEncoding::Axiom",
+        "NativePropertyDeclaration",
+        "FreeVariable",
+        "BinderShadowing",
+        "DuplicateTptpName",
+    ] {
+        assert!(
+            source.contains(marker),
+            "{} must implement tptp_encoder.md task-10 marker `{marker}`",
+            source_path.display()
+        );
+    }
+    for prohibited in [
+        "std::process::Command",
+        "mizar_kernel::",
+        "resolution_trace",
+        "MiniSAT",
+        "DIMACS",
+        "instantiated_formula",
+        "backend_used_axioms",
+        "kernel_verified",
+    ] {
+        assert!(
+            !source.contains(prohibited),
+            "{} must not expose prohibited trusted/backend material `{prohibited}`",
+            source_path.display()
+        );
+    }
+}
+
+#[test]
+fn atp_tptp_encoder_public_api_surface_is_task_ten_allowlist() {
+    let source_path = crate_root().join("src/tptp_encoder.rs");
+    let source = read_to_string(&source_path);
+    let public_items = public_api_items(&source);
+    let public_fields = public_struct_fields(&source);
+    let public_functions = public_api_functions(&source);
+    let expected = [
+        "TptpDialect",
+        "TptpEncodingError",
+        "TptpEncodingOutput",
+        "TptpFormulaItem",
+        "TptpFormulaLabel",
+        "TptpSymbolBinding",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<Vec<_>>();
+
+    assert_eq!(
+        public_items,
+        expected,
+        "{} public API must stay limited to task-10 deterministic TPTP FOF \
+         emission, side metadata, and fail-closed error shapes; backend \
+         runners, proof methods, SAT clauses, accepted statuses, witness \
+         types, and cache handles require explicit later specs",
+        source_path.display()
+    );
+
+    assert!(
+        public_fields.is_empty(),
+        "{} must keep task-10 TPTP structs opaque; public fields would expand \
+         the evidence handoff surface without a spec",
+        source_path.display()
+    );
+
+    assert_eq!(
+        public_functions,
+        [
+            "TptpEncodingOutput::formula_labels",
+            "TptpEncodingOutput::symbol_bindings",
+            "TptpEncodingOutput::text",
+            "TptpFormulaLabel::item",
+            "TptpFormulaLabel::label",
+            "TptpFormulaLabel::provenance",
+            "TptpFormulaLabel::target_symbol",
+            "TptpSymbolBinding::atp_symbol",
+            "TptpSymbolBinding::source",
+            "TptpSymbolBinding::tptp_name",
+            "encode_tptp",
+        ],
+        "{} public functions and methods must stay limited to deterministic \
+         TPTP text and side-metadata accessors; backend runners, proof \
+         methods, SAT/kernel checks, witnesses, and cache APIs require \
+         explicit later specs",
         source_path.display()
     );
 }

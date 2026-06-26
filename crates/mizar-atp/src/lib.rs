@@ -11,4 +11,5 @@
 
 pub mod problem;
 pub mod property_encoding;
+pub mod tptp_encoder;
 pub mod translator;
