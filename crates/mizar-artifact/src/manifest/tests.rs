@@ -13,6 +13,7 @@ use crate::{
     },
     proof_witness::{
         EvidenceKind, KernelAcceptanceMetadata, ProofStatus as WitnessProofStatus, ProofWitnessRef,
+        current_schema_version as proof_witness_schema_version,
     },
     registration_summary::{
         ActivatedRegistrationSummary, DependencyRegistrationRef, RegistrationAcceptedStatus,
@@ -960,6 +961,7 @@ fn sample_verified_artifact(
     with_witness: bool,
 ) -> VerifiedArtifact {
     let schema_version = verified_schema_version();
+    let witness_schema_version = proof_witness_schema_version();
     let mut obligations = Vec::new();
     let mut proof_witnesses = Vec::new();
     let verifier_policy = hash_ref(ArtifactHashClass::Interface, "mizar-proof/policy", 21);
@@ -992,15 +994,15 @@ fn sample_verified_artifact(
             diagnostic_ref: None,
         });
         proof_witnesses.push(ProofWitnessRef {
-            schema_version,
+            schema_version: witness_schema_version,
             obligation_id: "obl-1".to_owned(),
             obligation_fingerprint,
             proof_status: WitnessProofStatus::KernelVerified,
-            evidence_kind: EvidenceKind::AtpCertificate,
+            evidence_kind: EvidenceKind::FormulaSubstitutionKernelEvidence,
             witness_path: "proof-witnesses/a/obl-1.json".to_owned(),
             witness_artifact_hash: hash_ref(
                 ArtifactHashClass::Artifact,
-                "mizar-proof/witness-file",
+                "mizar-kernel/formula-evidence-witness",
                 31,
             ),
             kernel_acceptance: KernelAcceptanceMetadata {
@@ -1011,13 +1013,33 @@ fn sample_verified_artifact(
                 ),
                 verifier_policy_fingerprint: verifier_policy.clone(),
                 checker_schema_version: schema_version,
-                certificate_format: Some("atp-cert-v1".to_owned()),
+                evidence_schema_version: schema_version,
+                target_binding_hash: hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-vc/kernel-target-binding",
+                    33,
+                ),
+                formula_evidence_hash: hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/formula-evidence",
+                    34,
+                ),
+                substitution_evidence_hash: hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/substitution-evidence",
+                    35,
+                ),
+                provenance_hash: hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/evidence-provenance",
+                    36,
+                ),
+                formula_context_hash: None,
                 accepted_result_hash: hash_ref(
                     ArtifactHashClass::Interface,
                     "mizar-kernel/accepted-result",
-                    33,
+                    37,
                 ),
-                used_axioms_hash: None,
             },
         });
     }
@@ -1376,7 +1398,7 @@ fn manifest_witness(obligation_id: &str, seed: u8) -> ManifestProofWitnessEntry 
         witness_path: format!("proof-witnesses/a/{obligation_id}.json"),
         witness_artifact_hash: hash_ref(
             ArtifactHashClass::Artifact,
-            "mizar-proof/witness-file",
+            "mizar-kernel/formula-evidence-witness",
             seed + 10,
         ),
     }

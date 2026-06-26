@@ -70,10 +70,10 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 - **ハッシュの分離: internal 07 の制約により解決済み。** 意味論ハッシュと
   診断/開発ハッシュは分離され、ローカルに変動するフィールド（`verified_at`
   など）は正準ハッシュから除外される（task 2 が両方を符号化する）。
-- **kernel evidence witness format: 未解決。`mizar-kernel` task 23-29 に依存する。**
-  既存の proof-witness schema は correction 前の certificate/witness model を
-  説明している。artifact schema update は中間的な certificate projection を
-  発明せず、formula/substitution kernel evidence format を待たなければならない。
+- **kernel evidence witness format: artifact projection については task 23 で解決済み。**
+  `ProofWitnessRef` schema version `2.0` は formula/substitution/provenance/target-binding
+  evidence hash を記録し、通常の trusted reader では legacy certificate material を拒否する。
+  real witness publication と phase-15 producer emission は外部依存として残る。
 
 ## 順序付きタスク一覧
 
@@ -224,10 +224,10 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
     - 依存: 14、15、この crate の task 23、`mizar-kernel` task 28、
       `mizar-proof` task 11（witness の stage/公開）。仕様:
       `verified_artifact.md`、`manifest.md`。
-    - 状態: task 16 後も、必要な producer output が存在しないため
-      `external_dependency_gap` として deferred。さらに phase-15 emission は legacy
-      certificate witness shape ではなく formula/substitution kernel evidence witness
-      schema を使わなければならないため、task 23 にも block される。この crate で
+    - 状態: task 23 後も、必要な real producer output と `mizar-proof` witness
+      staging/publication crate がこの checkout に存在しないため `external_dependency_gap`
+      として deferred。phase-15 emission は task 23 の formula/substitution kernel
+      evidence witness schema を使わなければならない。この crate で producer output を
       stub しない。
 
 ### 強化と横断フォローアップ
@@ -286,7 +286,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       API path は変わらず、production root は module/spec boundary に合わせて
       意図的に維持する。
 
-23. **Kernel evidence proof-witness schema update。** [ ]
+23. **Kernel evidence proof-witness schema update。** [x]
     - kernel schema が存在した後、formula/substitution kernel evidence witness ref
       と hash を保存するよう `proof_witness.md`、`verified_artifact.md`、schema code を
       更新する。backend proof method と log は diagnostic/provenance attachment として
@@ -297,6 +297,13 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       publication tasks。仕様:
       [15.kernel_certificate_format.md](../../architecture/ja/15.kernel_certificate_format.md),
       `proof_witness.md`, `verified_artifact.md`。
+    - 状態: task 23 は `ProofWitnessRef` を schema version `2.0` に更新し、
+      `formula_substitution_kernel_evidence`、formula/substitution/provenance と
+      target-binding の hash、optional な formula-context hash、accepted result hash
+      を記録する。通常の trusted reader は legacy certificate field と schema-version
+      `1.0` certificate reference を trusted acceptance material として扱わず拒否する。
+      concrete producer publication と phase 15 emission は、real proof/producer output
+      が存在するまで `external_dependency_gap` として残る。
 
 ## 推奨検証
 
@@ -328,6 +335,6 @@ cargo test -p mizar-checker
   早く着地させる。
 - キャッシュレコード、キャッシュキー、proof 再利用の検証は `mizar-cache`
   にあり、ここにはない。共有される正準ハッシュ規則は task 2 のものである。
-- Formula/substitution kernel evidence witness ref は kernel と producer handoff
-  schema が存在するまで deferred とする。resolution-trace certificate 用の
-  placeholder witness field を追加してはならない。
+- Formula/substitution kernel evidence witness ref は task 23 で定義された。
+  real witness publication は producer output が存在するまで deferred とする。
+  resolution-trace certificate 用の placeholder field を追加してはならない。

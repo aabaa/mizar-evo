@@ -57,7 +57,7 @@ fn supplied_witness_artifact_hash_mismatch_is_rejected() {
 
     let wrong_hash = hash_ref(
         ArtifactHashClass::Artifact,
-        "mizar-artifact/proof-witness-payload",
+        "mizar-kernel/formula-evidence-witness",
         88,
     );
     assert!(matches!(
@@ -76,7 +76,7 @@ fn supplied_witness_artifact_hash_mismatch_is_rejected() {
 fn incompatible_version_reads_fail_cleanly() {
     let reference = sample_reference();
     let mut json = proof_witness_ref_json(&reference).expect("canonical JSON");
-    replace_object_field(&mut json, "schema_version", CanonicalJson::string("2.0"));
+    replace_object_field(&mut json, "schema_version", CanonicalJson::string("3.0"));
 
     assert!(matches!(
         read_proof_witness_ref(
@@ -113,11 +113,36 @@ fn incompatible_version_reads_fail_cleanly() {
         ))
     ));
 
+    let mut legacy_v1 = proof_witness_ref_json(&reference).expect("canonical JSON");
+    replace_object_field(
+        &mut legacy_v1,
+        "schema_version",
+        CanonicalJson::string("1.0"),
+    );
+    replace_nested_object_field(
+        &mut legacy_v1,
+        "kernel_acceptance",
+        "certificate_format",
+        CanonicalJson::string("tptp-tstp/v1"),
+    );
+    replace_nested_object_field(
+        &mut legacy_v1,
+        "kernel_acceptance",
+        "used_axioms_hash",
+        hash_ref_json(ArtifactHashClass::Diagnostic, "mizar-proof/used-axioms", 55),
+    );
+    assert!(matches!(
+        read_proof_witness_ref(&legacy_v1, ProofWitnessReadOptions::default()),
+        Err(ProofWitnessError::SchemaVersion(
+            SchemaVersionError::MajorMismatch { .. }
+        ))
+    ));
+
     let mut newer_minor = proof_witness_ref_json(&reference).expect("canonical JSON");
     replace_object_field(
         &mut newer_minor,
         "schema_version",
-        CanonicalJson::string("1.1"),
+        CanonicalJson::string("2.1"),
     );
     assert!(matches!(
         read_proof_witness_ref(&newer_minor, ProofWitnessReadOptions::default()),
@@ -175,7 +200,7 @@ fn reader_rejects_wrong_hash_classes_on_each_hash_field() {
         "witness_artifact_hash",
         hash_ref_json(
             ArtifactHashClass::Interface,
-            "mizar-artifact/proof-witness-payload",
+            "mizar-kernel/formula-evidence-witness",
             91,
         ),
     );
@@ -188,126 +213,186 @@ fn reader_rejects_wrong_hash_classes_on_each_hash_field() {
             if path == "$.witness_artifact_hash"
     ));
 
-    let mut wrong_accepted_result_class = json.clone();
-    replace_nested_object_field(
-        &mut wrong_accepted_result_class,
-        "kernel_acceptance",
-        "accepted_result_hash",
-        hash_ref_json(ArtifactHashClass::Artifact, "mizar-kernel/result", 92),
-    );
-    assert!(matches!(
-        read_proof_witness_ref(
-            &wrong_accepted_result_class,
-            ProofWitnessReadOptions::default()
+    for (field, family, seed) in [
+        ("kernel_profile_fingerprint", "mizar-kernel/profile", 92),
+        (
+            "verifier_policy_fingerprint",
+            "mizar-proof/verifier-policy",
+            93,
         ),
-        Err(ProofWitnessError::InvalidHash { path, .. })
-            if path == "$.kernel_acceptance.accepted_result_hash"
-    ));
-
-    let mut wrong_used_axioms_class = json;
-    replace_nested_object_field(
-        &mut wrong_used_axioms_class,
-        "kernel_acceptance",
-        "used_axioms_hash",
-        hash_ref_json(ArtifactHashClass::Interface, "mizar-proof/used-axioms", 93),
-    );
-    assert!(matches!(
-        read_proof_witness_ref(&wrong_used_axioms_class, ProofWitnessReadOptions::default()),
-        Err(ProofWitnessError::InvalidHash { path, .. })
-            if path == "$.kernel_acceptance.used_axioms_hash"
-    ));
+        ("target_binding_hash", "mizar-vc/kernel-target-binding", 94),
+        ("formula_evidence_hash", "mizar-kernel/formula-evidence", 95),
+        (
+            "substitution_evidence_hash",
+            "mizar-kernel/substitution-evidence",
+            96,
+        ),
+        ("provenance_hash", "mizar-kernel/evidence-provenance", 97),
+        ("formula_context_hash", "mizar-kernel/formula-context", 98),
+        ("accepted_result_hash", "mizar-kernel/accepted-result", 99),
+    ] {
+        let mut wrong_class = json.clone();
+        replace_nested_object_field(
+            &mut wrong_class,
+            "kernel_acceptance",
+            field,
+            hash_ref_json(ArtifactHashClass::Artifact, family, seed),
+        );
+        let expected_path = format!("$.kernel_acceptance.{field}");
+        assert!(
+            matches!(
+                read_proof_witness_ref(&wrong_class, ProofWitnessReadOptions::default()),
+                Err(ProofWitnessError::InvalidHash { path, .. }) if path == expected_path
+            ),
+            "{field}"
+        );
+    }
 }
 
 #[test]
-fn status_evidence_and_certificate_format_matrix_is_validated() {
-    let mut valid_builtin = sample_reference();
-    valid_builtin.proof_status = ProofStatus::DischargedBuiltin;
-    valid_builtin.evidence_kind = EvidenceKind::BuiltinCertificate;
-    valid_builtin.kernel_acceptance.certificate_format = Some("mizar-builtin-cert/v1".to_owned());
-    valid_builtin.kernel_acceptance.accepted_result_hash =
-        hash_ref(ArtifactHashClass::Interface, "mizar-kernel/result", 51);
-    let valid_builtin_json =
-        proof_witness_ref_json(&valid_builtin).expect("valid builtin witness ref");
-    assert!(
-        read_proof_witness_ref(&valid_builtin_json, ProofWitnessReadOptions::default()).is_ok()
-    );
+fn formula_substitution_evidence_matrix_and_legacy_certificates_are_validated() {
+    let valid_json = proof_witness_ref_json(&sample_reference()).expect("valid witness ref");
+    assert!(read_proof_witness_ref(&valid_json, ProofWitnessReadOptions::default()).is_ok());
 
-    let mut valid_primitive = sample_reference();
-    valid_primitive.proof_status = ProofStatus::DischargedBuiltin;
-    valid_primitive.evidence_kind = EvidenceKind::KernelPrimitive;
-    valid_primitive.kernel_acceptance.certificate_format = None;
-    valid_primitive.kernel_acceptance.accepted_result_hash =
-        hash_ref(ArtifactHashClass::Interface, "mizar-kernel/result", 52);
-    let valid_primitive_json =
-        proof_witness_ref_json(&valid_primitive).expect("valid primitive witness ref");
-    assert!(
-        read_proof_witness_ref(&valid_primitive_json, ProofWitnessReadOptions::default()).is_ok()
-    );
-
-    let mut invalid_status = sample_reference();
-    invalid_status.proof_status = ProofStatus::KernelVerified;
-    invalid_status.evidence_kind = EvidenceKind::BuiltinCertificate;
-    assert!(matches!(
-        proof_witness_ref_json(&invalid_status),
-        Err(ProofWitnessError::InvalidStatusEvidence { .. })
-    ));
     let mut invalid_status_json =
         proof_witness_ref_json(&sample_reference()).expect("canonical JSON");
     replace_object_field(
         &mut invalid_status_json,
         "evidence_kind",
-        CanonicalJson::string("builtin_certificate"),
+        CanonicalJson::string("atp_certificate"),
     );
     assert!(matches!(
         read_proof_witness_ref(&invalid_status_json, ProofWitnessReadOptions::default()),
         Err(ProofWitnessError::InvalidStatusEvidence { .. })
     ));
 
-    let mut missing_certificate_format = sample_reference();
-    missing_certificate_format
-        .kernel_acceptance
-        .certificate_format = None;
-    assert!(matches!(
-        proof_witness_ref_json(&missing_certificate_format),
-        Err(ProofWitnessError::InvalidField { path, .. })
-            if path == "$.kernel_acceptance.certificate_format"
-    ));
-    let mut missing_certificate_format_json =
+    for (field, value) in [
+        ("proof_status", "discharged_builtin"),
+        ("evidence_kind", "builtin_certificate"),
+        ("evidence_kind", "kernel_primitive"),
+    ] {
+        let mut legacy_enum_json =
+            proof_witness_ref_json(&sample_reference()).expect("canonical JSON");
+        replace_object_field(&mut legacy_enum_json, field, CanonicalJson::string(value));
+        assert!(
+            matches!(
+                read_proof_witness_ref(&legacy_enum_json, ProofWitnessReadOptions::default()),
+                Err(ProofWitnessError::InvalidStatusEvidence { .. })
+            ),
+            "{field}={value}"
+        );
+    }
+
+    let legacy_mutations: [fn(&mut ProofWitnessRef); 3] = [
+        |reference: &mut ProofWitnessRef| reference.evidence_kind = EvidenceKind::AtpCertificate,
+        |reference: &mut ProofWitnessRef| {
+            reference.proof_status = ProofStatus::DischargedBuiltin;
+            reference.evidence_kind = EvidenceKind::BuiltinCertificate;
+        },
+        |reference: &mut ProofWitnessRef| {
+            reference.proof_status = ProofStatus::DischargedBuiltin;
+            reference.evidence_kind = EvidenceKind::KernelPrimitive;
+        },
+    ];
+    for mutate in legacy_mutations {
+        let mut legacy_reference = sample_reference();
+        mutate(&mut legacy_reference);
+        assert!(matches!(
+            proof_witness_ref_json(&legacy_reference),
+            Err(ProofWitnessError::InvalidStatusEvidence { .. })
+        ));
+    }
+
+    for field in [
+        "status",
+        "evidence",
+        "backend_method",
+        "resolution_trace",
+        "smt_proof_object",
+        "instantiated_formulas",
+        "sat_problem",
+    ] {
+        let mut legacy_payload_json =
+            proof_witness_ref_json(&sample_reference()).expect("canonical JSON");
+        replace_object_field(
+            &mut legacy_payload_json,
+            field,
+            CanonicalJson::string("not trusted witness content"),
+        );
+        assert!(
+            matches!(
+                read_proof_witness_ref(&legacy_payload_json, ProofWitnessReadOptions::default()),
+                Err(ProofWitnessError::UnknownField { path, field: unknown })
+                    if path == "$" && unknown == field
+            ),
+            "{field}"
+        );
+    }
+
+    let mut legacy_certificate_format_json =
         proof_witness_ref_json(&sample_reference()).expect("canonical JSON");
     replace_nested_object_field(
-        &mut missing_certificate_format_json,
+        &mut legacy_certificate_format_json,
         "kernel_acceptance",
         "certificate_format",
-        CanonicalJson::null(),
+        CanonicalJson::string("tptp-tstp/v1"),
     );
     assert!(matches!(
         read_proof_witness_ref(
-            &missing_certificate_format_json,
+            &legacy_certificate_format_json,
             ProofWitnessReadOptions::default()
         ),
-        Err(ProofWitnessError::InvalidField { path, .. })
-            if path == "$.kernel_acceptance.certificate_format"
+        Err(ProofWitnessError::UnknownField { path, field })
+            if path == "$.kernel_acceptance" && field == "certificate_format"
     ));
 
-    let mut primitive_with_format = valid_primitive;
-    primitive_with_format.kernel_acceptance.certificate_format =
-        Some("kernel-primitive/v1".to_owned());
-    assert!(matches!(
-        proof_witness_ref_json(&primitive_with_format),
-        Err(ProofWitnessError::InvalidField { path, .. })
-            if path == "$.kernel_acceptance.certificate_format"
-    ));
-    let mut primitive_with_format_json = valid_primitive_json;
+    let mut legacy_backend_log_json =
+        proof_witness_ref_json(&sample_reference()).expect("canonical JSON");
     replace_nested_object_field(
-        &mut primitive_with_format_json,
+        &mut legacy_backend_log_json,
         "kernel_acceptance",
-        "certificate_format",
-        CanonicalJson::string("kernel-primitive/v1"),
+        "backend_log_hash",
+        hash_ref_json(ArtifactHashClass::Diagnostic, "mizar-atp/backend-log", 51),
     );
     assert!(matches!(
-        read_proof_witness_ref(&primitive_with_format_json, ProofWitnessReadOptions::default()),
-        Err(ProofWitnessError::InvalidField { path, .. })
-            if path == "$.kernel_acceptance.certificate_format"
+        read_proof_witness_ref(&legacy_backend_log_json, ProofWitnessReadOptions::default()),
+        Err(ProofWitnessError::UnknownField { path, field })
+            if path == "$.kernel_acceptance" && field == "backend_log_hash"
+    ));
+
+    let mut legacy_used_axioms_json =
+        proof_witness_ref_json(&sample_reference()).expect("canonical JSON");
+    replace_nested_object_field(
+        &mut legacy_used_axioms_json,
+        "kernel_acceptance",
+        "used_axioms_hash",
+        hash_ref_json(ArtifactHashClass::Diagnostic, "mizar-proof/used-axioms", 52),
+    );
+    assert!(matches!(
+        read_proof_witness_ref(&legacy_used_axioms_json, ProofWitnessReadOptions::default()),
+        Err(ProofWitnessError::UnknownField { path, field })
+            if path == "$.kernel_acceptance" && field == "used_axioms_hash"
+    ));
+
+    let mut legacy_resolution_trace_json =
+        proof_witness_ref_json(&sample_reference()).expect("canonical JSON");
+    replace_nested_object_field(
+        &mut legacy_resolution_trace_json,
+        "kernel_acceptance",
+        "resolution_trace_hash",
+        hash_ref_json(
+            ArtifactHashClass::Diagnostic,
+            "mizar-atp/resolution-trace",
+            53,
+        ),
+    );
+    assert!(matches!(
+        read_proof_witness_ref(
+            &legacy_resolution_trace_json,
+            ProofWitnessReadOptions::default()
+        ),
+        Err(ProofWitnessError::UnknownField { path, field })
+            if path == "$.kernel_acceptance" && field == "resolution_trace_hash"
     ));
 }
 
@@ -382,31 +467,34 @@ fn reader_rejects_missing_unknown_and_empty_fields() {
             if path == "$.kernel_acceptance.accepted_result_hash"
     ));
 
-    let mut missing_certificate_format = json.clone();
+    let mut missing_target_binding_hash = json.clone();
     remove_nested_object_field(
-        &mut missing_certificate_format,
+        &mut missing_target_binding_hash,
         "kernel_acceptance",
-        "certificate_format",
+        "target_binding_hash",
     );
     assert!(matches!(
         read_proof_witness_ref(
-            &missing_certificate_format,
+            &missing_target_binding_hash,
             ProofWitnessReadOptions::default()
         ),
         Err(ProofWitnessError::MissingField { path })
-            if path == "$.kernel_acceptance.certificate_format"
+            if path == "$.kernel_acceptance.target_binding_hash"
     ));
 
-    let mut missing_used_axioms_hash = json.clone();
+    let mut missing_formula_context_hash = json.clone();
     remove_nested_object_field(
-        &mut missing_used_axioms_hash,
+        &mut missing_formula_context_hash,
         "kernel_acceptance",
-        "used_axioms_hash",
+        "formula_context_hash",
     );
     assert!(matches!(
-        read_proof_witness_ref(&missing_used_axioms_hash, ProofWitnessReadOptions::default()),
+        read_proof_witness_ref(
+            &missing_formula_context_hash,
+            ProofWitnessReadOptions::default()
+        ),
         Err(ProofWitnessError::MissingField { path })
-            if path == "$.kernel_acceptance.used_axioms_hash"
+            if path == "$.kernel_acceptance.formula_context_hash"
     ));
 
     let mut unknown_nested = json.clone();
@@ -436,11 +524,11 @@ fn sample_reference() -> ProofWitnessRef {
         obligation_id: "obligation:hidden:1".to_owned(),
         obligation_fingerprint: hash_ref(ArtifactHashClass::Interface, "mizar-proof/obligation", 1),
         proof_status: ProofStatus::KernelVerified,
-        evidence_kind: EvidenceKind::AtpCertificate,
+        evidence_kind: EvidenceKind::FormulaSubstitutionKernelEvidence,
         witness_path: "proof-witnesses/hidden/obligation-1.json".to_owned(),
         witness_artifact_hash: hash_ref(
             ArtifactHashClass::Artifact,
-            "mizar-artifact/proof-witness-payload",
+            "mizar-kernel/formula-evidence-witness",
             2,
         ),
         kernel_acceptance: KernelAcceptanceMetadata {
@@ -455,13 +543,37 @@ fn sample_reference() -> ProofWitnessRef {
                 4,
             ),
             checker_schema_version: SchemaVersion::new(1, 0),
-            certificate_format: Some("tptp-tstp/v1".to_owned()),
-            accepted_result_hash: hash_ref(ArtifactHashClass::Interface, "mizar-kernel/result", 5),
-            used_axioms_hash: Some(hash_ref(
-                ArtifactHashClass::Diagnostic,
-                "mizar-proof/used-axioms",
+            evidence_schema_version: SchemaVersion::new(1, 0),
+            target_binding_hash: hash_ref(
+                ArtifactHashClass::Interface,
+                "mizar-vc/kernel-target-binding",
+                5,
+            ),
+            formula_evidence_hash: hash_ref(
+                ArtifactHashClass::Interface,
+                "mizar-kernel/formula-evidence",
                 6,
+            ),
+            substitution_evidence_hash: hash_ref(
+                ArtifactHashClass::Interface,
+                "mizar-kernel/substitution-evidence",
+                7,
+            ),
+            provenance_hash: hash_ref(
+                ArtifactHashClass::Interface,
+                "mizar-kernel/evidence-provenance",
+                8,
+            ),
+            formula_context_hash: Some(hash_ref(
+                ArtifactHashClass::Interface,
+                "mizar-kernel/formula-context",
+                9,
             )),
+            accepted_result_hash: hash_ref(
+                ArtifactHashClass::Interface,
+                "mizar-kernel/accepted-result",
+                10,
+            ),
         },
     }
 }

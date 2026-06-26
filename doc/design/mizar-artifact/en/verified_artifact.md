@@ -173,7 +173,8 @@ cross-edit proof-reuse identity.
 
 `obligations` records verification obligations projected from VC/proof phases.
 It preserves source navigation, display, and publication status without
-embedding VC IR, ATP problems, or proof certificates.
+embedding VC IR, ATP problems, proof certificates, backend logs, or kernel
+state.
 
 Task 11 uses this canonical JSON field shape:
 
@@ -204,18 +205,20 @@ trusted by the kernel.
 
 `obligation_fingerprint` is the producer-owned composite proof-reuse input
 fingerprint. It commits to the VC semantic fingerprint, local proof context
-fingerprint, dependency-slice fingerprint, verifier-policy fingerprint, and any
-producer-owned evidence requirement that affects whether an existing witness may
-be reused. `VerifiedArtifact` validates the field's hash class and spelling and
+fingerprint, dependency-slice fingerprint, verifier-policy fingerprint, and the
+kernel evidence handoff identity that affects whether an existing witness may be
+reused. `VerifiedArtifact` validates the field's hash class and spelling and
 uses it for witness consistency; the VC/proof producer remains responsible for
 constructing the composite value until real producer integration lands.
 
 Every obligation with `status = "accepted"` must set
 `accepted_witness_obligation_id` to the same string as its own `obligation_id`.
 That id must resolve to exactly one `ProofWitnessRef.obligation_id` in
-`proof_witnesses`. This covers both ATP certificate witnesses and accepted
-built-in or kernel-primitive discharges, because task 9 represents those
-accepted evidence classes as `ProofWitnessRef` values.
+`proof_witnesses`. Under task 23, an accepted trusted witness represents
+formula/substitution/provenance/target-binding evidence that the kernel has
+already accepted. Legacy backend certificates, resolution traces, built-in
+certificate discharges, and kernel-primitive placeholders are not trusted
+`ProofWitnessRef` values.
 
 Task 11 validates the accepted-witness consistency tuple:
 
@@ -230,13 +233,16 @@ Task 11 validates the accepted-witness consistency tuple:
   as interface fingerprints in the obligation metadata and participate in the
   composite `obligation_fingerprint` contract and in `implementation_hash`
   participation;
-- the witness `kernel_acceptance.accepted_result_hash` is an interface hash
-  supplied by the proof/kernel producer and is included through the referenced
-  `ProofWitnessRef`.
+- the witness `kernel_acceptance.target_binding_hash`,
+  `formula_evidence_hash`, `substitution_evidence_hash`, `provenance_hash`, the
+  optional `formula_context_hash`, and `accepted_result_hash` are interface
+  hashes supplied by the producer/kernel boundary and included through the
+  referenced `ProofWitnessRef`.
 
 `VerifiedArtifact` verifies only reference consistency among projected fields.
 It does not replay the witness, recompute kernel acceptance, or decide proof
-authority.
+authority. It also does not trust backend proof methods, backend logs, or
+caller-supplied instantiated formulas or SAT problems.
 
 `status = "not_required"` is the only trusted no-witness case. It is used for
 items that have no proof obligation under the active language and verifier
@@ -497,7 +503,10 @@ and emit the current schema version. Readers:
   not-required obligations;
 - keep `verified_at` and any future local-only fields hash-excluded;
 - never read raw IR, internal cache records, ATP logs, witness payloads, or
-  kernel state while validating the artifact schema.
+  kernel state while validating the artifact schema;
+- never treat backend proof methods, resolution traces, SMT proof objects,
+  backend logs, or schema-version `1.0` certificate references as trusted
+  acceptance material.
 
 Reader failures are artifact diagnostics. They do not establish proof authority,
 do not silently fall back to internal cache records, and do not upgrade

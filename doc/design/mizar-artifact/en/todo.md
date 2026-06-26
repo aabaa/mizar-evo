@@ -72,11 +72,11 @@ internal: [02](../../internal/en/02.artifact_store_cache_key_and_manifest.md),
   and diagnostic/development hashes are separate; locally variable fields
   (such as `verified_at`) are excluded from canonical hashes (task 2
   encodes both).
-- **Kernel evidence witness format: open, depends on `mizar-kernel` tasks
-  23-29.** Existing proof-witness schemas describe the pre-correction
-  certificate/witness model. Artifact schema updates must wait for the
-  formula/substitution kernel evidence format rather than inventing an
-  intermediate certificate projection.
+- **Kernel evidence witness format: resolved for artifact projection by task
+  23.** `ProofWitnessRef` schema version `2.0` records
+  formula/substitution/provenance/target-binding evidence hashes and rejects
+  legacy certificate material in the normal trusted reader. Real witness
+  publication and phase-15 producer emission remain external dependencies.
 
 ## Ordered Task List
 
@@ -225,11 +225,11 @@ Keep `cargo test -p mizar-artifact` green after each task (see
     - Deps: 14, 15, this crate's task 23, `mizar-kernel` task 28,
       `mizar-proof` task 11 (witness staging/publication). Spec:
       `verified_artifact.md`, `manifest.md`.
-    - Status: deferred as `external_dependency_gap` after task 16 because the
-      required producer outputs are not present; additionally blocked by task
-      23 because phase-15 emission must use the formula/substitution kernel
-      evidence witness schema rather than the legacy certificate witness
-      shape. Do not stub them here.
+    - Status: still deferred as `external_dependency_gap` after task 23 because
+      the required real producer outputs and `mizar-proof` witness
+      staging/publication crate are not present in this checkout. Phase-15
+      emission must use the task-23 formula/substitution kernel evidence
+      witness schema; do not stub producer outputs here.
 
 ### Hardening and cross-cutting follow-ups
 
@@ -290,7 +290,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       deterministic renderings, and API paths stayed unchanged; production
       roots remain intentionally aligned with the module/spec boundaries.
 
-23. **Kernel evidence proof-witness schema update.** [ ]
+23. **Kernel evidence proof-witness schema update.** [x]
     - Update `proof_witness.md`, `verified_artifact.md`, and the schema code
       to store formula/substitution kernel evidence witness refs and hashes
       once the kernel schema exists. Keep backend proof methods and logs as
@@ -302,6 +302,14 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       `mizar-proof` witness publication tasks. Spec:
       [15.kernel_certificate_format.md](../../architecture/en/15.kernel_certificate_format.md),
       `proof_witness.md`, `verified_artifact.md`.
+    - Status: task 23 updates `ProofWitnessRef` to schema version `2.0` with
+      `formula_substitution_kernel_evidence`, formula/substitution/provenance
+      and target-binding hashes, optional formula-context hash, and accepted
+      result hash. The normal trusted reader rejects legacy certificate fields
+      and schema-version `1.0` certificate references instead of treating them
+      as trusted acceptance material. Concrete producer publication and phase 15
+      emission remain `external_dependency_gap`s until real proof/producer
+      outputs exist.
 
 ## Recommended Verification
 
@@ -332,6 +340,6 @@ Check the task off here once tests pass.
   and land it early.
 - Cache records, cache keys, and proof-reuse validation live in
   `mizar-cache`, not here; the shared canonical-hash rules are task 2's.
-- Formula/substitution kernel evidence witness refs are deferred until the
-  kernel and producer handoff schemas exist; do not add placeholder witness
-  fields for resolution-trace certificates.
+- Formula/substitution kernel evidence witness refs are defined by task 23.
+  Real witness publication remains deferred until producer outputs exist; do
+  not add placeholder fields for resolution-trace certificates.

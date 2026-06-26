@@ -46,21 +46,31 @@ pub struct KernelAcceptanceMetadata {
     pub verifier_policy_fingerprint: ArtifactHashRef,
     /// Checker schema version visible to the kernel/proof producer.
     pub checker_schema_version: SchemaVersion,
-    /// Producer-owned certificate format when one exists.
-    pub certificate_format: Option<String>,
+    /// Formula/substitution evidence schema version checked by the kernel.
+    pub evidence_schema_version: SchemaVersion,
+    /// Producer-owned target binding hash for the checked VC.
+    pub target_binding_hash: ArtifactHashRef,
+    /// Producer-owned formula evidence hash.
+    pub formula_evidence_hash: ArtifactHashRef,
+    /// Producer-owned substitution evidence hash.
+    pub substitution_evidence_hash: ArtifactHashRef,
+    /// Producer-owned provenance evidence hash.
+    pub provenance_hash: ArtifactHashRef,
+    /// Optional producer-owned imported formula context hash.
+    pub formula_context_hash: Option<ArtifactHashRef>,
     /// Producer-owned accepted result hash.
     pub accepted_result_hash: ArtifactHashRef,
-    /// Optional diagnostic hash for used axiom citations.
-    pub used_axioms_hash: Option<ArtifactHashRef>,
 }
 
 /// Accepted proof status represented in a proof witness reference.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum ProofStatus {
-    /// An ATP certificate was accepted by the minimum kernel.
+    /// Formula/substitution evidence was accepted by the kernel.
     KernelVerified,
-    /// A built-in certificate or allowed primitive discharged the obligation.
+    /// Legacy schema-1.x built-in discharge status retained for source compatibility.
+    ///
+    /// Current trusted readers and writers reject this status.
     DischargedBuiltin,
 }
 
@@ -68,11 +78,19 @@ pub enum ProofStatus {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum EvidenceKind {
-    /// ATP certificate payload.
+    /// Formula/substitution/provenance/target-binding evidence payload.
+    FormulaSubstitutionKernelEvidence,
+    /// Legacy ATP certificate evidence retained for source compatibility.
+    ///
+    /// Current trusted readers and writers reject this evidence kind.
     AtpCertificate,
-    /// Built-in certificate payload.
+    /// Legacy built-in certificate evidence retained for source compatibility.
+    ///
+    /// Current trusted readers and writers reject this evidence kind.
     BuiltinCertificate,
-    /// Allowed kernel primitive without a certificate payload format.
+    /// Legacy kernel primitive evidence retained for source compatibility.
+    ///
+    /// Current trusted readers and writers reject this evidence kind.
     KernelPrimitive,
 }
 
@@ -117,7 +135,7 @@ pub enum ProofWitnessError {
 
 /// Returns the current proof witness reference schema version.
 pub const fn current_schema_version() -> SchemaVersion {
-    SchemaVersion::new(1, 0)
+    SchemaVersion::new(2, 0)
 }
 
 /// Returns the supported proof witness reference schema-version range.
@@ -222,6 +240,7 @@ impl ProofStatus {
 impl EvidenceKind {
     fn as_str(self) -> &'static str {
         match self {
+            Self::FormulaSubstitutionKernelEvidence => "formula_substitution_kernel_evidence",
             Self::AtpCertificate => "atp_certificate",
             Self::BuiltinCertificate => "builtin_certificate",
             Self::KernelPrimitive => "kernel_primitive",
@@ -230,6 +249,7 @@ impl EvidenceKind {
 
     fn from_str(value: &str) -> Option<Self> {
         match value {
+            "formula_substitution_kernel_evidence" => Some(Self::FormulaSubstitutionKernelEvidence),
             "atp_certificate" => Some(Self::AtpCertificate),
             "builtin_certificate" => Some(Self::BuiltinCertificate),
             "kernel_primitive" => Some(Self::KernelPrimitive),
@@ -310,7 +330,6 @@ fn validate_reference(reference: &ProofWitnessRef) -> Result<(), ProofWitnessErr
     validate_witness_path(&reference.witness_path, "$.witness_path")?;
     validate_kernel_acceptance(&reference.kernel_acceptance, "$.kernel_acceptance")?;
     validate_status_evidence(reference.proof_status, reference.evidence_kind)?;
-    validate_certificate_format(reference)?;
     Ok(())
 }
 
@@ -328,22 +347,38 @@ fn validate_kernel_acceptance(
         &field_path(path, "verifier_policy_fingerprint"),
         ArtifactHashClass::Interface,
     )?;
-    validate_optional_non_empty(
-        metadata.certificate_format.as_deref(),
-        &field_path(path, "certificate_format"),
+    validate_artifact_hash_ref(
+        &metadata.target_binding_hash,
+        &field_path(path, "target_binding_hash"),
+        ArtifactHashClass::Interface,
     )?;
+    validate_artifact_hash_ref(
+        &metadata.formula_evidence_hash,
+        &field_path(path, "formula_evidence_hash"),
+        ArtifactHashClass::Interface,
+    )?;
+    validate_artifact_hash_ref(
+        &metadata.substitution_evidence_hash,
+        &field_path(path, "substitution_evidence_hash"),
+        ArtifactHashClass::Interface,
+    )?;
+    validate_artifact_hash_ref(
+        &metadata.provenance_hash,
+        &field_path(path, "provenance_hash"),
+        ArtifactHashClass::Interface,
+    )?;
+    if let Some(formula_context_hash) = &metadata.formula_context_hash {
+        validate_artifact_hash_ref(
+            formula_context_hash,
+            &field_path(path, "formula_context_hash"),
+            ArtifactHashClass::Interface,
+        )?;
+    }
     validate_artifact_hash_ref(
         &metadata.accepted_result_hash,
         &field_path(path, "accepted_result_hash"),
         ArtifactHashClass::Interface,
     )?;
-    if let Some(used_axioms_hash) = &metadata.used_axioms_hash {
-        validate_artifact_hash_ref(
-            used_axioms_hash,
-            &field_path(path, "used_axioms_hash"),
-            ArtifactHashClass::Diagnostic,
-        )?;
-    }
     Ok(())
 }
 
@@ -353,15 +388,10 @@ fn validate_status_evidence(
 ) -> Result<(), ProofWitnessError> {
     let valid = matches!(
         (proof_status, evidence_kind),
-        (ProofStatus::KernelVerified, EvidenceKind::AtpCertificate)
-            | (
-                ProofStatus::DischargedBuiltin,
-                EvidenceKind::BuiltinCertificate
-            )
-            | (
-                ProofStatus::DischargedBuiltin,
-                EvidenceKind::KernelPrimitive
-            )
+        (
+            ProofStatus::KernelVerified,
+            EvidenceKind::FormulaSubstitutionKernelEvidence
+        )
     );
     if !valid {
         return Err(ProofWitnessError::InvalidStatusEvidence {
@@ -370,26 +400,6 @@ fn validate_status_evidence(
         });
     }
     Ok(())
-}
-
-fn validate_certificate_format(reference: &ProofWitnessRef) -> Result<(), ProofWitnessError> {
-    match (
-        reference.evidence_kind,
-        reference.kernel_acceptance.certificate_format.as_deref(),
-    ) {
-        (EvidenceKind::AtpCertificate | EvidenceKind::BuiltinCertificate, Some(_)) => Ok(()),
-        (EvidenceKind::KernelPrimitive, None) => Ok(()),
-        (EvidenceKind::AtpCertificate | EvidenceKind::BuiltinCertificate, None) => {
-            Err(ProofWitnessError::InvalidField {
-                path: "$.kernel_acceptance.certificate_format".to_owned(),
-                reason: "certificate evidence requires a non-empty certificate format".to_owned(),
-            })
-        }
-        (EvidenceKind::KernelPrimitive, Some(_)) => Err(ProofWitnessError::InvalidField {
-            path: "$.kernel_acceptance.certificate_format".to_owned(),
-            reason: "kernel primitive evidence must use null certificate format".to_owned(),
-        }),
-    }
 }
 
 fn validate_witness_path(value: &str, path: &str) -> Result<(), ProofWitnessError> {
@@ -489,16 +499,34 @@ fn kernel_acceptance_json(
             CanonicalJson::string(metadata.checker_schema_version.to_string()),
         ),
         (
-            "certificate_format",
-            optional_string_json(metadata.certificate_format.as_deref()),
+            "evidence_schema_version",
+            CanonicalJson::string(metadata.evidence_schema_version.to_string()),
+        ),
+        (
+            "target_binding_hash",
+            CanonicalJson::string(artifact_hash_ref_string(&metadata.target_binding_hash)),
+        ),
+        (
+            "formula_evidence_hash",
+            CanonicalJson::string(artifact_hash_ref_string(&metadata.formula_evidence_hash)),
+        ),
+        (
+            "substitution_evidence_hash",
+            CanonicalJson::string(artifact_hash_ref_string(
+                &metadata.substitution_evidence_hash,
+            )),
+        ),
+        (
+            "provenance_hash",
+            CanonicalJson::string(artifact_hash_ref_string(&metadata.provenance_hash)),
+        ),
+        (
+            "formula_context_hash",
+            optional_artifact_hash_json(metadata.formula_context_hash.as_ref()),
         ),
         (
             "accepted_result_hash",
             CanonicalJson::string(artifact_hash_ref_string(&metadata.accepted_result_hash)),
-        ),
-        (
-            "used_axioms_hash",
-            optional_artifact_hash_json(metadata.used_axioms_hash.as_ref()),
         ),
     ])
 }
@@ -507,10 +535,6 @@ fn json_object(
     fields: impl IntoIterator<Item = (&'static str, CanonicalJson)>,
 ) -> Result<CanonicalJson, ProofWitnessError> {
     CanonicalJson::object(fields).map_err(Into::into)
-}
-
-fn optional_string_json(value: Option<&str>) -> CanonicalJson {
-    value.map_or_else(CanonicalJson::null, CanonicalJson::string)
 }
 
 fn optional_artifact_hash_json(value: Option<&ArtifactHashRef>) -> CanonicalJson {
@@ -553,9 +577,13 @@ fn read_kernel_acceptance(
             "kernel_profile_fingerprint",
             "verifier_policy_fingerprint",
             "checker_schema_version",
-            "certificate_format",
+            "evidence_schema_version",
+            "target_binding_hash",
+            "formula_evidence_hash",
+            "substitution_evidence_hash",
+            "provenance_hash",
+            "formula_context_hash",
             "accepted_result_hash",
-            "used_axioms_hash",
         ],
         path,
     )?;
@@ -577,18 +605,46 @@ fn read_kernel_acceptance(
             "checker_schema_version",
             path,
         )?,
-        certificate_format: read_optional_string(fields, "certificate_format", path)?,
+        evidence_schema_version: read_required_schema_version(
+            fields,
+            "evidence_schema_version",
+            path,
+        )?,
+        target_binding_hash: read_required_artifact_hash_ref(
+            fields,
+            "target_binding_hash",
+            path,
+            ArtifactHashClass::Interface,
+        )?,
+        formula_evidence_hash: read_required_artifact_hash_ref(
+            fields,
+            "formula_evidence_hash",
+            path,
+            ArtifactHashClass::Interface,
+        )?,
+        substitution_evidence_hash: read_required_artifact_hash_ref(
+            fields,
+            "substitution_evidence_hash",
+            path,
+            ArtifactHashClass::Interface,
+        )?,
+        provenance_hash: read_required_artifact_hash_ref(
+            fields,
+            "provenance_hash",
+            path,
+            ArtifactHashClass::Interface,
+        )?,
+        formula_context_hash: read_optional_artifact_hash_ref(
+            fields,
+            "formula_context_hash",
+            path,
+            ArtifactHashClass::Interface,
+        )?,
         accepted_result_hash: read_required_artifact_hash_ref(
             fields,
             "accepted_result_hash",
             path,
             ArtifactHashClass::Interface,
-        )?,
-        used_axioms_hash: read_optional_artifact_hash_ref(
-            fields,
-            "used_axioms_hash",
-            path,
-            ArtifactHashClass::Diagnostic,
         )?,
     };
     validate_kernel_acceptance(&metadata, path)?;
@@ -788,45 +844,11 @@ fn read_required_string(
     Ok(value.clone())
 }
 
-fn read_optional_string(
-    fields: &BTreeMap<String, CanonicalJson>,
-    field: &str,
-    path: &str,
-) -> Result<Option<String>, ProofWitnessError> {
-    let path = field_path(path, field);
-    let value = required_field(
-        fields,
-        field,
-        path.rsplit_once('.').map_or("$", |(base, _)| base),
-    )?;
-    match value {
-        CanonicalJson::Null => Ok(None),
-        CanonicalJson::String(value) => {
-            validate_non_empty(value, &path)?;
-            Ok(Some(value.clone()))
-        }
-        _ => Err(ProofWitnessError::UnexpectedType {
-            path,
-            expected: "a string or null",
-        }),
-    }
-}
-
 fn validate_non_empty(value: &str, path: &str) -> Result<(), ProofWitnessError> {
     if value.is_empty() {
         return Err(ProofWitnessError::InvalidField {
             path: path.to_owned(),
             reason: "must not be empty".to_owned(),
-        });
-    }
-    Ok(())
-}
-
-fn validate_optional_non_empty(value: Option<&str>, path: &str) -> Result<(), ProofWitnessError> {
-    if matches!(value, Some("")) {
-        return Err(ProofWitnessError::InvalidField {
-            path: path.to_owned(),
-            reason: "must be null or a non-empty string".to_owned(),
         });
     }
     Ok(())

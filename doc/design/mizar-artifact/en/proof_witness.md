@@ -7,9 +7,10 @@
 lets published verified artifacts name a witness by path and hash without
 embedding the witness payload in the main artifact.
 
-This document defines the `ProofWitnessRef` schema. Task 9 implements the
-schema, canonical value writer, validating reader, and tests at the
-`CanonicalJson` boundary.
+This document defines the `ProofWitnessRef` schema. Task 9 introduced the
+reference schema, canonical value writer, validating reader, and tests at the
+`CanonicalJson` boundary. Task 23 revises the trusted witness projection from
+legacy certificate acceptance to formula/substitution kernel evidence.
 
 ## Ownership
 
@@ -31,19 +32,21 @@ It does not own:
 - manifest transactions or artifact-store file I/O.
 
 The schema family for references is `mizar-artifact/proof-witness-ref`.
-Version `1.0` is the first supported version.
+Version `1.0` was the initial certificate-reference version. Version `2.0` is
+the current supported version and is the first version for formula/substitution
+kernel evidence references.
 
 ## Conceptual Shape
 
-Task 9 uses this canonical JSON field shape:
+Task 23 uses this canonical JSON field shape:
 
 ```text
 proof_witness_ref = {
-  "schema_version": "1.0",
+  "schema_version": "2.0",
   "obligation_id": string,
   "obligation_fingerprint": interface_hash_string,
-  "proof_status": "kernel_verified" | "discharged_builtin",
-  "evidence_kind": "atp_certificate" | "builtin_certificate" | "kernel_primitive",
+  "proof_status": "kernel_verified",
+  "evidence_kind": "formula_substitution_kernel_evidence",
   "witness_path": string,
   "witness_artifact_hash": artifact_hash_string,
   "kernel_acceptance": kernel_acceptance_metadata
@@ -53,32 +56,42 @@ kernel_acceptance_metadata = {
   "kernel_profile_fingerprint": interface_hash_string,
   "verifier_policy_fingerprint": interface_hash_string,
   "checker_schema_version": schema_version,
-  "certificate_format": string | null,
-  "accepted_result_hash": interface_hash_string,
-  "used_axioms_hash": diagnostic_hash_string | null
+  "evidence_schema_version": schema_version,
+  "target_binding_hash": interface_hash_string,
+  "formula_evidence_hash": interface_hash_string,
+  "substitution_evidence_hash": interface_hash_string,
+  "provenance_hash": interface_hash_string,
+  "formula_context_hash": interface_hash_string | null,
+  "accepted_result_hash": interface_hash_string
 }
 ```
 
 `proof_status` records the accepted status already produced by the proof and
-kernel phases. It does not cause acceptance. `kernel_verified` requires an ATP
-certificate accepted by the minimum kernel. `discharged_builtin` requires an
-accepted built-in certificate or allowed kernel primitive. Externally attested,
-open, pending, or rejected obligations do not produce trusted
-`ProofWitnessRef` values; future development-only evidence references must use a
-separate diagnostic or development schema.
+kernel phases. It does not cause acceptance. In schema version `2.0`, the only
+trusted accepted status is `kernel_verified`, meaning that the kernel checked
+formula/substitution evidence against its own deterministic instantiation and
+SAT encoding. Externally attested, open, pending, rejected, legacy certificate,
+or backend-only obligations do not produce trusted `ProofWitnessRef` values;
+development-only evidence references must use a separate diagnostic or
+development schema.
 
-`evidence_kind` records the accepted evidence class. `atp_certificate` is valid
-only with `proof_status = "kernel_verified"`. `builtin_certificate` and
-`kernel_primitive` are valid only with `proof_status = "discharged_builtin"`.
-Readers reject other combinations.
+`evidence_kind` records the accepted evidence class. In schema version `2.0`,
+the only trusted value is `formula_substitution_kernel_evidence`. Readers reject
+legacy `atp_certificate`, `builtin_certificate`, `kernel_primitive`, resolution
+trace, SMT proof-object, backend log, backend method, or status/evidence
+combinations not listed above.
 
-`certificate_format` is present as a non-empty string when the witness payload is
-format-specific, for example an ATP certificate format. It is JSON `null` for
-allowed kernel primitives that do not have a certificate file format. The exact
-format vocabulary is owned by the proof and kernel crates, not by
-`mizar-artifact`. Task 9 readers require a non-empty `certificate_format` for
-`atp_certificate` and `builtin_certificate`, and require JSON `null` for
-`kernel_primitive`.
+`kernel_acceptance` is a stable projection of the kernel evidence handoff and
+accepted result. It records only formula/substitution/provenance/target-binding
+hashes, the optional imported formula-context hash, schema versions, and policy
+fingerprints. Instantiated formulas and SAT problems are not caller-supplied
+trusted payloads and are not stored here. The kernel derives them from the
+formula evidence and substitution evidence when it checks acceptance.
+
+Backend proof methods, portfolio names, solver logs, resolution traces, and SMT
+proof objects are not trusted witness content. If preserved, they must live in a
+diagnostic or provenance attachment outside `kernel_acceptance` and outside the
+accepted witness identity.
 
 ## Hash String Domains
 
@@ -94,18 +107,20 @@ they are non-empty, colon-free, slash-separated identifiers whose segments use
 only ASCII letters, ASCII digits, hyphen, underscore, or dot.
 
 `witness_artifact_hash` uses class `artifact` and the witness payload schema
-family and version. The task 8 reference spec does not define the witness payload
-schema family; that is an `external_dependency_gap` for the proof/kernel witness
-producer work.
+family and version. The task 23 fixture family is
+`mizar-kernel/formula-evidence-witness`; concrete producer publication remains
+owned by the future proof/producer integration.
 
 `obligation_fingerprint`, `kernel_profile_fingerprint`,
-`verifier_policy_fingerprint`, and `accepted_result_hash` use class
-`interface`. They preserve the producer-owned schema family and version instead
-of being rewritten into the `mizar-artifact/proof-witness-ref` domain.
+`verifier_policy_fingerprint`, `target_binding_hash`,
+`formula_evidence_hash`, `substitution_evidence_hash`, `provenance_hash`,
+`formula_context_hash`, and `accepted_result_hash` use class `interface`. They
+preserve the producer-owned schema family and version instead of being rewritten
+into the `mizar-artifact/proof-witness-ref` domain.
 
-`used_axioms_hash` uses class `diagnostic` because it supports citation
-refinement and diagnostics. It is not proof authority and does not replace
-kernel acceptance metadata.
+No trusted hash field records a backend proof method, resolution trace,
+certificate format, solver log, or used-axiom diagnostic. Those materials are
+not proof authority for this artifact schema.
 
 ## Witness Paths And Publication
 
@@ -124,10 +139,9 @@ committed manifest entry references both the main artifact and the witness file.
 If publication policy requires a witness, a missing file or hash mismatch rejects
 publication for the affected artifact.
 
-Task 9 implements the reference and validation contract at the canonical-value
+The reference and validation contract is implemented at the canonical-value
 boundary. Atomic writes, manifest visibility, byte-level corruption diagnostics,
-and filesystem escape checks remain deferred to the artifact store and manifest
-tasks.
+and filesystem escape checks belong to the artifact store and manifest layers.
 
 ## Resident-Set Discipline
 
@@ -136,11 +150,12 @@ inline witness payloads. Downstream builds, LSP features, documentation tools,
 and cache validators may inspect resident references, hashes, proof status, and
 kernel-acceptance metadata without loading proof bodies.
 
-Consumers load the external witness file only when they explicitly replay,
-audit, diagnose, or validate a proof witness. A cache hit, manifest entry, or
-reference hash is never proof authority by itself. Trust comes only from the
-proof/kernel phases that produced the accepted status and from later validation
-that the referenced bytes still match the recorded hash.
+Consumers load the external witness file only when they explicitly audit,
+diagnose, or validate a proof witness. A cache hit, manifest entry, or reference
+hash is never proof authority by itself. `mizar-artifact` records that the
+kernel accepted the referenced evidence and later validates that referenced
+bytes still match the recorded hash; it does not recompute kernel acceptance or
+run a prover.
 
 ## Canonical Ordering
 
@@ -161,8 +176,8 @@ and filesystem order must not affect serialized bytes.
 
 ## Reader And Writer Requirements
 
-Task 9 writers use the canonical UTF-8 JSON rules from `store.md` and emit the
-current schema version. Task 9 readers operate over `CanonicalJson` values
+Writers use the canonical UTF-8 JSON rules from `store.md` and emit the current
+schema version. Readers operate over `CanonicalJson` values
 produced at the store boundary; file parsing and duplicate object-key detection
 belong to artifact-store I/O. Readers:
 
@@ -170,12 +185,15 @@ belong to artifact-store I/O. Readers:
   `null`;
 - reject unknown fields at every schema object;
 - check schema-version compatibility before interpreting fields;
-- reject empty strings in ids, paths, certificate formats, and hash strings;
+- reject empty strings in ids, paths, and hash strings;
 - reject non-publication-safe witness paths;
 - validate artifact-framed hash construction labels, classes, schema-family
   grammar, schema-version grammar, and digest spelling;
 - reject unsupported `proof_status`, `evidence_kind`, or status/evidence
   combinations;
+- reject legacy certificate fields such as `certificate_format`, resolution
+  traces, backend logs, and any caller-supplied instantiated-formula or SAT
+  problem payload;
 - verify `witness_artifact_hash` against a supplied witness file hash when the
   caller supplies witness bytes or a manifest hash;
 - never replay proof payloads, accept proofs, run ATP, or fall back to internal
@@ -195,22 +213,29 @@ This is an API compatibility decision, not a reader leniency rule. Artifact
 schema readers still reject unknown serialized enum values unless a later schema
 revision and version policy explicitly document how to accept them.
 
+Task 23 retains legacy public enum variants from schema version `1.0` for
+source compatibility, but treats them as unsupported in the current trusted
+schema. `DischargedBuiltin`, `AtpCertificate`, `BuiltinCertificate`, and
+`KernelPrimitive` may still appear in downstream source matches, but current
+writers/readers reject them through status/evidence validation.
+
 | Enum | Forward-compatibility decision |
 |---|---|
-| `ProofStatus` | Non-exhaustive so accepted proof-status categories can grow under documented proof/kernel producer policy. |
-| `EvidenceKind` | Non-exhaustive so accepted evidence classes can grow under documented proof/kernel producer policy. |
+| `ProofStatus` | Non-exhaustive so accepted proof-status categories can grow under documented proof/kernel producer policy. Current trusted schema accepts only `KernelVerified`; legacy `DischargedBuiltin` is source-compatible but unsupported. |
+| `EvidenceKind` | Non-exhaustive so accepted evidence classes can grow under documented proof/kernel producer policy. Current trusted schema accepts only `FormulaSubstitutionKernelEvidence`; legacy certificate/primitive variants are source-compatible but unsupported. |
 | `ProofWitnessError` | Non-exhaustive so proof-witness reference validation diagnostics can grow. |
 
 This module has no exhaustive public enum exceptions.
 
 ## Implementation Boundary
 
-Task 9 implements the `ProofWitnessRef` schema, canonical value writer,
-validating `CanonicalJson` reader, and tests for round-trips and hash mismatch
-detection.
+Task 23 implements schema version `2.0`, the canonical value writer, validating
+`CanonicalJson` reader, and tests for round-trips, deterministic writer output,
+version mismatch rejection, hash-domain validation, legacy certificate-field
+rejection, and witness hash mismatch detection.
 
-Concrete witness payload schemas, proof producer integration, accepted kernel
-result construction, and built-in certificate/primitive encodings remain
-`external_dependency_gap` items until the proof and kernel crates expose stable
-producer outputs. Manifest/file I/O remains deferred to the artifact-store and
-manifest tasks.
+Concrete witness payload publication, proof producer integration, and full phase
+15 emission remain `external_dependency_gap` items until real producer outputs
+exist. Compatibility with schema version `1.0` legacy certificate references is
+not retained in the normal trusted reader; any migration reader must be
+explicitly audit-only and outside trusted proof acceptance.

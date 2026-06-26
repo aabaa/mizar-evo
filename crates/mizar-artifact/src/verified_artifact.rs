@@ -3252,6 +3252,7 @@ fn witness_proof_status_string(status: WitnessProofStatus) -> &'static str {
 
 fn witness_evidence_kind_string(kind: EvidenceKind) -> &'static str {
     match kind {
+        EvidenceKind::FormulaSubstitutionKernelEvidence => "formula_substitution_kernel_evidence",
         EvidenceKind::AtpCertificate => "atp_certificate",
         EvidenceKind::BuiltinCertificate => "builtin_certificate",
         EvidenceKind::KernelPrimitive => "kernel_primitive",

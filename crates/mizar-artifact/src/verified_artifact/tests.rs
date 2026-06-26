@@ -15,6 +15,7 @@ use crate::{
     module_summary::{ModuleSummaryIdentity, SourceRangeSummary},
     proof_witness::{
         EvidenceKind, KernelAcceptanceMetadata, ProofStatus as WitnessProofStatus, ProofWitnessRef,
+        current_schema_version as proof_witness_schema_version,
     },
     registration_summary::{ArtifactHashClass, ArtifactHashRef},
     store::{
@@ -443,6 +444,89 @@ fn implementation_hash_participates_in_stable_obligation_witness_diagnostic_and_
         read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
         Err(VerifiedArtifactError::ImplementationHashMismatch { .. })
     ));
+
+    for (field, value) in [
+        ("evidence_schema_version", CanonicalJson::string("1.1")),
+        (
+            "target_binding_hash",
+            CanonicalJson::string(
+                hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-vc/kernel-target-binding",
+                    96,
+                )
+                .to_artifact_hash_string(),
+            ),
+        ),
+        (
+            "formula_evidence_hash",
+            CanonicalJson::string(
+                hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/formula-evidence",
+                    97,
+                )
+                .to_artifact_hash_string(),
+            ),
+        ),
+        (
+            "substitution_evidence_hash",
+            CanonicalJson::string(
+                hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/substitution-evidence",
+                    98,
+                )
+                .to_artifact_hash_string(),
+            ),
+        ),
+        (
+            "provenance_hash",
+            CanonicalJson::string(
+                hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/evidence-provenance",
+                    99,
+                )
+                .to_artifact_hash_string(),
+            ),
+        ),
+        (
+            "formula_context_hash",
+            CanonicalJson::string(
+                hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/formula-context",
+                    100,
+                )
+                .to_artifact_hash_string(),
+            ),
+        ),
+        (
+            "accepted_result_hash",
+            CanonicalJson::string(
+                hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/accepted-result",
+                    101,
+                )
+                .to_artifact_hash_string(),
+            ),
+        ),
+    ] {
+        let mut json = sample_json();
+        let witness = array_field_mut(&mut json, "proof_witnesses")
+            .first_mut()
+            .unwrap();
+        set_object_field(object_field_mut(witness, "kernel_acceptance"), field, value);
+        assert!(
+            matches!(
+                read_verified_artifact(&json, VerifiedArtifactReadOptions::default()),
+                Err(VerifiedArtifactError::ImplementationHashMismatch { .. })
+            ),
+            "{field}"
+        );
+    }
 
     let mut json = sample_json();
     let diagnostic = array_field_mut(&mut json, "diagnostics")
@@ -963,6 +1047,7 @@ fn sample_json() -> CanonicalJson {
 
 fn sample_artifact() -> VerifiedArtifact {
     let schema_version = current_schema_version();
+    let witness_schema_version = proof_witness_schema_version();
     let module = identity("pkg", "articles/hidden", "2026");
     let dependency_module = identity("dep", "articles/base", "2026");
     let obligation_fingerprint =
@@ -1109,15 +1194,15 @@ fn sample_artifact() -> VerifiedArtifact {
             },
         ],
         proof_witnesses: vec![ProofWitnessRef {
-            schema_version,
+            schema_version: witness_schema_version,
             obligation_id: "obl-1".to_owned(),
             obligation_fingerprint,
             proof_status: WitnessProofStatus::KernelVerified,
-            evidence_kind: EvidenceKind::AtpCertificate,
+            evidence_kind: EvidenceKind::FormulaSubstitutionKernelEvidence,
             witness_path: "proof-witnesses/hidden/obl-1.json".to_owned(),
             witness_artifact_hash: hash_ref(
                 ArtifactHashClass::Artifact,
-                "mizar-proof/witness-file",
+                "mizar-kernel/formula-evidence-witness",
                 31,
             ),
             kernel_acceptance: KernelAcceptanceMetadata {
@@ -1128,17 +1213,37 @@ fn sample_artifact() -> VerifiedArtifact {
                 ),
                 verifier_policy_fingerprint: verifier_policy,
                 checker_schema_version: schema_version,
-                certificate_format: Some("atp-cert-v1".to_owned()),
+                evidence_schema_version: schema_version,
+                target_binding_hash: hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-vc/kernel-target-binding",
+                    33,
+                ),
+                formula_evidence_hash: hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/formula-evidence",
+                    34,
+                ),
+                substitution_evidence_hash: hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/substitution-evidence",
+                    35,
+                ),
+                provenance_hash: hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/evidence-provenance",
+                    36,
+                ),
+                formula_context_hash: Some(hash_ref(
+                    ArtifactHashClass::Interface,
+                    "mizar-kernel/formula-context",
+                    37,
+                )),
                 accepted_result_hash: hash_ref(
                     ArtifactHashClass::Interface,
                     "mizar-kernel/accepted-result",
-                    33,
+                    38,
                 ),
-                used_axioms_hash: Some(hash_ref(
-                    ArtifactHashClass::Diagnostic,
-                    "mizar-kernel/used-axioms",
-                    34,
-                )),
             },
         }],
         diagnostics: vec![
@@ -1225,8 +1330,11 @@ fn sample_artifact_with_extra_ordering_items() -> VerifiedArtifact {
     extra_witness.obligation_id = "obl-0".to_owned();
     extra_witness.obligation_fingerprint = extra_obligation.obligation_fingerprint.clone();
     extra_witness.witness_path = "proof-witnesses/hidden/obl-0.json".to_owned();
-    extra_witness.witness_artifact_hash =
-        hash_ref(ArtifactHashClass::Artifact, "mizar-proof/witness-file", 111);
+    extra_witness.witness_artifact_hash = hash_ref(
+        ArtifactHashClass::Artifact,
+        "mizar-kernel/formula-evidence-witness",
+        111,
+    );
 
     artifact.obligations.push(extra_obligation);
     artifact.proof_witnesses.push(extra_witness);
