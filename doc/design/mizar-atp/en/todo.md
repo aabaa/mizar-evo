@@ -26,9 +26,9 @@ The crate refines architecture 09, 10, 15, and 19 and internal 04.
 
 `mizar-atp` implements pipeline phase 13: open `VcIr` obligations in,
 backend-neutral `AtpProblem`s, concrete prover protocol emissions, external
-backend execution, and certificate candidates out. Everything this crate
+backend execution, and formula/substitution evidence candidates out. Everything this crate
 produces is untrusted evidence: `Proved` claims become trusted only after
-`mizar-kernel` checks the certificate, and winner/policy selection belongs to
+`mizar-kernel` checks the formula/substitution evidence, and winner/policy selection belongs to
 `mizar-proof`. Determinism rules apply to everything Mizar-side (premise
 order, encoding, problem ids); backend nondeterminism is recorded as
 metadata, never absorbed silently.
@@ -43,24 +43,38 @@ committed autonomously without holding the rest of the crate in flight.
 ## Crate Prerequisites
 
 The crate depends on `mizar-session`, `mizar-core` (core formulas),
-`mizar-vc` (`VcIr` with `NeedsAtp` status), and `mizar-kernel` (certificate
-schema types, per the kernel task-4 ownership decision). Backend binaries are
-external processes configured via `PATH` or explicit configuration; crate
-tests use mock backends. Architecture:
+`mizar-vc` (`VcIr` with `NeedsAtp` status), and `mizar-kernel`
+(formula/substitution evidence schema types after the kernel post-closeout
+correction). Backend binaries are external processes configured via `PATH` or
+explicit configuration; crate tests use mock backends. Architecture:
 [09.atp_interface_protocol.md](../../architecture/en/09.atp_interface_protocol.md),
 [10.atp_backend_integration.md](../../architecture/en/10.atp_backend_integration.md);
 integration: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md).
 
+## Postponement Gate
+
+Autonomous development of `mizar-atp` is deferred until `mizar-kernel` records
+and implements the formula/substitution evidence schema and `mizar-vc` records
+the corresponding handoff contract. New ATP work must not target
+MiniSAT-compatible resolution traces as the trusted output. ATP backends may
+use any proof-search method internally, but this crate's trusted handoff is a
+candidate evidence package containing formulas, substitutions, provenance,
+and target binding for kernel SAT-backed checking. Instantiated formulas and
+SAT problems are derived by `mizar-kernel`, not produced as trusted ATP
+payload.
+
 ## Resolved And Open Decisions
 
-- **First backend and certificate route: open, resolved by task 15.** Choose
-  the first concrete backend from the architecture-10 supported set. Default
-  candidate: the route whose proofs map onto MiniSAT-compatible resolution
-  traces, because it exercises the kernel acceptance path earliest. Record
-  the decision and the version-pinning policy in `backend.md`.
-- **Certificate schema ownership: follows `mizar-kernel` task 4.** This
-  crate constructs certificate candidates against kernel-owned schema types;
-  the kernel never depends on this crate.
+- **First backend and evidence route: deferred, resolved by task 15 after
+  kernel redesign.** Choose the first concrete backend from the
+  architecture-10 supported set only after the kernel formula/substitution
+  evidence schema is available. The default route is no longer
+  MiniSAT-compatible resolution traces; it is the backend route that can most
+  simply produce formula/substitution evidence candidates with complete
+  provenance.
+- **Evidence schema ownership: follows `mizar-kernel` tasks 23-25.** This
+  crate constructs candidate evidence against kernel-owned schema types; the
+  kernel never depends on this crate.
 - **Externally attested evidence: out of scope here.** Labeling is produced
   by this crate, but the acceptance policy is owned by `mizar-proof`
   (architecture 10 constraints; its task 4).
@@ -77,7 +91,8 @@ Keep `cargo test -p mizar-atp` green after each task (see
      `mizar-core`, `mizar-vc`, and `mizar-kernel`; add
      `tests/lint_policy.rs` mirroring the `mizar-frontend` guard.
    - Tests: lint-policy guard passes; workspace builds.
-   - Deps: `mizar-vc` task 1, `mizar-kernel` task 1. Spec: architecture 09.
+   - Deps: `mizar-vc` task 24, `mizar-kernel` tasks 23-25. Spec:
+     architecture 09 and the post-closeout evidence correction.
 
 2. **Spec: `problem.md`.** [ ]
    - Write the `AtpProblem` data-shape spec (English and Japanese, no code):
@@ -176,18 +191,19 @@ Keep `cargo test -p mizar-atp` green after each task (see
 
 15. **First concrete backend integration.** [ ]
     - Resolve the first-backend decision; integrate one real backend
-      end-to-end: emit problem, run, parse output into certificate
-      candidates against the kernel schema.
+      end-to-end: emit problem, run, and extract formula/substitution
+      evidence candidates against the kernel schema.
     - Tests: integration tests behind a backend-available guard; candidate
-      certificates parse under `mizar-kernel`'s structural validation.
-    - Deps: 10 or 12 (per chosen backend), 14, `mizar-kernel` task 5. Spec:
-      `backend.md`.
+      evidence parses under `mizar-kernel`'s structural validation and
+      remains untrusted until kernel checking.
+    - Deps: 10 or 12 (per chosen backend), 14, `mizar-kernel` tasks 25-28.
+      Spec: `backend.md`.
 
 16. **Result classification and polarity validation.** [ ]
     - Classify backend outcomes (proved, counterexample, timeout, unknown,
       error); emit `Proved` only when the observed result matches
-      `expected_result` and proof evidence is present; counterexamples feed
-      diagnostics only.
+      `expected_result` and candidate formula/substitution evidence is
+      present; counterexamples feed diagnostics only.
     - Tests: classification fixtures per outcome; polarity-mismatch cases
       never classify as proved.
     - Deps: 15. Spec: `backend.md` (classification section).
@@ -254,7 +270,7 @@ Keep `cargo test -p mizar-atp` green after each task (see
       the selected class; raw completion time must never become proof identity.
     - Tests: a later kernel-verifiable candidate beats an earlier externally
       attested result under release policy; ties use deterministic backend
-      priority/certificate-strength/problem-hash keys; cancelled or killed
+      priority/evidence-strength/problem-hash keys; cancelled or killed
       losing backends leave no partial accepted state.
     - Deps: 18, 21, `mizar-proof` tasks 7, 9, 12, and 13. Spec:
       [10.atp_backend_integration.md](../../architecture/en/10.atp_backend_integration.md),
@@ -311,7 +327,7 @@ Check the task off here once tests pass.
 ## Notes
 
 - Everything produced here is untrusted evidence; trusted status exists only
-  after kernel certificate checking, and acceptance policy lives in
+  after kernel evidence checking, and acceptance policy lives in
   `mizar-proof`.
 - Encoding need not be reversible, but every backend-visible formula must be
   traceable through `AtpProvenance`, and backend-reported used axioms do not
@@ -320,3 +336,6 @@ Check the task off here once tests pass.
   silently absorbed; Mizar-side translation and encoding are bit-stable.
 - ATP unavailability must not break earlier phases; this crate degrades to
   `open` VC statuses, not to errors elsewhere in the pipeline.
+- Backend proof methods and logs are diagnostic/provenance material. The
+  kernel-facing handoff is formula/substitution evidence, not a resolution
+  trace certificate.

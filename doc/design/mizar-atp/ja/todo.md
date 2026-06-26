@@ -26,9 +26,9 @@
 
 `mizar-atp` はパイプライン phase 13 を実装する。入力は open な `VcIr`
 義務、出力はバックエンド中立の `AtpProblem`、具体的な prover プロトコルの
-出力、外部バックエンドの実行、そして証明書候補である。この crate が生産
+出力、外部バックエンドの実行、そして evidence candidate である。この crate が生産
 するものはすべて untrusted な証拠である: `Proved` の主張は
-`mizar-kernel` が証明書を検査して初めて信頼され、勝者/ポリシーの選択は
+`mizar-kernel` が formula/substitution evidence を検査して初めて信頼され、勝者/ポリシーの選択は
 `mizar-proof` に属する。決定性規則は Mizar 側のすべて（premise 順、
 エンコーディング、problem id）に適用され、バックエンドの非決定性は
 メタデータとして記録され、黙って吸収されることはない。
@@ -43,23 +43,35 @@
 ## crate の前提条件
 
 この crate は `mizar-session`、`mizar-core`（core 論理式）、`mizar-vc`
-（`NeedsAtp` 状態の `VcIr`）、`mizar-kernel`（kernel task 4 の所有権決定に
-よる証明書スキーマ型）に依存する。バックエンドのバイナリは `PATH` または
-明示的設定で構成される外部プロセスであり、crate のテストはモック
-バックエンドを使う。アーキテクチャ:
+（`NeedsAtp` 状態の `VcIr`）、`mizar-kernel`（kernel post-closeout correction
+後の formula/substitution evidence schema type）に依存する。バックエンドの
+バイナリは `PATH` または明示的設定で構成される外部プロセスであり、crate の
+テストはモックバックエンドを使う。アーキテクチャ:
 [09.atp_interface_protocol.md](../../architecture/ja/09.atp_interface_protocol.md)、
 [10.atp_backend_integration.md](../../architecture/ja/10.atp_backend_integration.md)。
 統合: [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)。
 
+## Postponement gate
+
+`mizar-atp` の自律開発は、`mizar-kernel` が formula/substitution evidence schema を
+記録・実装し、`mizar-vc` が対応 handoff contract を記録するまで deferred とする。
+新しい ATP 作業は trusted output として MiniSAT-compatible resolution trace を
+target にしてはならない。ATP backend は内部では任意の proof-search method を使って
+よいが、この crate の trusted handoff は kernel の SAT-backed checking 向けの
+formula、substitution、provenance、target binding を含む candidate evidence package
+である。instantiated formula と SAT problem は `mizar-kernel` が導出するものであり、
+trusted ATP payload として生成しない。
+
 ## 解決済みおよび保留中の決定
 
-- **最初のバックエンドと証明書ルート: 未解決。task 15 で解決する。**
-  アーキテクチャ 10 のサポート集合から最初の具体バックエンドを選ぶ。
-  既定候補は、証明が MiniSAT 互換 resolution trace に写像されるルート
-  （kernel 受理経路を最も早く検証できるため）。決定とバージョン固定
-  ポリシーを `backend.md` に記録する。
-- **証明書スキーマの所有権: `mizar-kernel` task 4 に従う。** この crate は
-  kernel 所有のスキーマ型に対して証明書候補を構築する。kernel がこの
+- **最初のバックエンドと evidence route: deferred。kernel redesign 後に
+  task 15 で解決する。** アーキテクチャ 10 のサポート集合から最初の具体
+  バックエンドを選ぶのは、kernel formula/substitution evidence schema が
+  利用可能になった後だけである。既定ルートはもはや MiniSAT 互換 resolution
+  trace ではなく、完全な provenance 付き formula/substitution evidence candidate
+  を最も単純に生成できる backend route である。
+- **evidence schema ownership: `mizar-kernel` task 23-25 に従う。** この crate は
+  kernel 所有のスキーマ型に対して candidate evidence を構築する。kernel がこの
   crate に依存することは決してない。
 - **外部認証された証拠: ここでは範囲外。** ラベル付けはこの crate が
   生産するが、受理ポリシーは `mizar-proof` が所有する（アーキテクチャ 10
@@ -77,8 +89,8 @@
      workspace メンバー `mizar-atp` を追加し、`mizar-frontend` のガードに
      倣った `tests/lint_policy.rs` を追加する。
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
-   - 依存: `mizar-vc` task 1、`mizar-kernel` task 1。仕様: アーキテクチャ
-     09。
+   - 依存: `mizar-vc` task 24、`mizar-kernel` task 23-25。仕様:
+     アーキテクチャ 09 と post-closeout evidence correction。
 
 2. **仕様: `problem.md`。** [ ]
    - `AtpProblem` のデータ形状仕様を執筆する（英語と日本語、コードなし）:
@@ -177,16 +189,17 @@
 15. **最初の具体バックエンド統合。** [ ]
     - 最初のバックエンドの決定を解決し、実バックエンド 1 つをエンド
       ツーエンドで統合する: problem 出力、実行、出力を kernel スキーマに
-      対する証明書候補へ構文解析。
-    - テスト: バックエンド存在ガード付きの統合テスト。候補証明書が
-      `mizar-kernel` の構造検証を通る。
+      対する formula/substitution evidence candidate として extract する。
+    - テスト: バックエンド存在ガード付きの統合テスト。candidate evidence が
+      `mizar-kernel` の構造検証を通り、kernel checking まで untrusted のままである。
     - 依存: 10 または 12（選んだバックエンドに応じて）、14、
-      `mizar-kernel` task 5。仕様: `backend.md`。
+      `mizar-kernel` task 25-28。仕様: `backend.md`。
 
 16. **結果分類と極性検証。** [ ]
     - バックエンドの結果を分類する（proved、反例、タイムアウト、
-      unknown、エラー）。観測結果が `expected_result` に一致し証明証拠が
-      存在するときのみ `Proved` を発行する。反例は診断のみに供給する。
+      unknown、エラー）。観測結果が `expected_result` に一致し candidate
+      formula/substitution evidence が存在するときのみ `Proved` を発行する。
+      反例は診断のみに供給する。
     - テスト: 結果ごとの分類フィクスチャ。極性不一致ケースが proved に
       分類されない。
     - 依存: 15。仕様: `backend.md`（分類の節）。
@@ -252,7 +265,7 @@
       場合だけである。生の完了時刻を proof identity にしてはならない。
     - テスト: release policy の下では、後から返った kernel-verifiable candidate
       が先に返った externally attested result より優先される。tie は
-      deterministic backend priority / certificate strength / problem hash key
+      deterministic backend priority / evidence strength / problem hash key
       で解く。cancel または kill された敗者 backend が部分的な accepted state を
       残さない。
     - 依存: 18、21、`mizar-proof` task 7、9、12、13。仕様:
@@ -307,7 +320,7 @@ cargo test -p mizar-proof
 ## 備考
 
 - ここで生産されるものはすべて untrusted な証拠である。信頼された状態は
-  kernel の証明書検査後にのみ存在し、受理ポリシーは `mizar-proof` にある。
+  kernel evidence checking 後にのみ存在し、受理ポリシーは `mizar-proof` にある。
 - エンコーディングは可逆である必要はないが、バックエンドに見えるすべての
   論理式は `AtpProvenance` で追跡可能でなければならず、バックエンドが
   報告した used axioms は kernel 検査が検証するまで artifact の
@@ -317,3 +330,6 @@ cargo test -p mizar-proof
   ある。
 - ATP が利用不能でも前段の phase を壊してはならない。この crate は
   パイプラインの他所のエラーではなく、`open` の VC 状態へ退化する。
+- Backend proof method と log は diagnostic/provenance material である。
+  kernel-facing handoff は formula/substitution evidence であり、resolution trace
+  certificate ではない。

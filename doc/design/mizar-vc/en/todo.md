@@ -65,6 +65,11 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
   accepted as deterministic built-in evidence per policy; this crate
   guarantees the evidence is replayable either way. Registered at the top
   level.
+- **Kernel formula/substitution handoff: open, depends on `mizar-kernel`
+  tasks 23-29.** `VcIr` remains prover-independent, but future handoff records
+  must map local context, premises, generated formulas, substitutions, and
+  the goal into the kernel evidence schema without adding backend traces or
+  solver-specific proof methods.
 - **Diagnostics record: follows the `mizar-resolve` decision** on
   `mizar-diagnostics` adoption timing. Registered at the top level.
 
@@ -337,6 +342,39 @@ Keep `cargo test -p mizar-vc` green after each task (see
       [autonomous_crate_development.md](../../autonomous_crate_development.md),
       this TODO, and the crate exit criteria.
 
+### Kernel evidence handoff follow-ups
+
+24. **Spec: kernel evidence handoff.** [ ]
+    - Define how `VcIr`, local context, premise refs, generated formulas,
+      discharge records, and goals map into the formula/substitution kernel
+      evidence format. Preserve prover independence: no TPTP/SMT-LIB text,
+      SAT clauses, backend logs, resolution traces, or solver proof methods
+      may enter `VcIr`.
+    - Tests: docs-only verification.
+    - Deps: 23, `mizar-kernel` task 23. Spec:
+      [15.kernel_certificate_format.md](../../architecture/en/15.kernel_certificate_format.md),
+      [08.reasoning_boundary.md](../../architecture/en/08.reasoning_boundary.md).
+
+25. **Kernel evidence handoff builder.** [ ]
+    - Implement an immutable handoff builder that packages existing `VcIr`
+      data into kernel evidence inputs once the kernel schema is available.
+      Missing substitution/provenance payloads must be classified as
+      `external_dependency_gap` / `deferred`, not fabricated.
+    - Tests: deterministic handoff rendering; local-context and premise
+      provenance completeness; missing payloads remain fail-closed.
+    - Deps: 24, `mizar-kernel` task 25. Spec: the handoff spec from task 24.
+
+26. **Dependency-slice and proof-reuse identity update.** [ ]
+    - Extend dependency slices and architecture-22 proof-reuse identity to
+      include kernel evidence hashes after the handoff builder exists. Keep
+      proof-witness reuse external until `mizar-proof`, `mizar-cache`, and
+      `mizar-artifact` define their corresponding schemas.
+    - Tests: fingerprint stability and invalidation fixtures; unavailable
+      downstream consumers remain `external_dependency_gap` / `deferred`.
+    - Deps: 25. Spec:
+      [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
+      `dependency_slice.md`.
+
 ## Recommended Verification
 
 Run after each task:
@@ -379,3 +417,6 @@ Check the task off here once tests pass.
   encoding.
 - Discharge evidence is untrusted production: trusted acceptance happens in
   `mizar-kernel`/`mizar-proof` per policy.
+- Kernel evidence handoff records may package formula/substitution evidence
+  for checking, but `mizar-vc` must not run SAT solving or encode
+  backend-specific proof methods.

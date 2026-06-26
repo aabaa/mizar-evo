@@ -17,29 +17,42 @@ Module names follow the minimum split of
 architecture 15, 16, and 19 and internal 04. Every module spec must restate
 the kernel prohibitions: no proof search, no heuristic selection, no overload
 resolution, no cluster search, no ATP search, no implicit coercion insertion,
-no fallback inference.
+no fallback inference. The post-closeout SAT-backed correction refines this:
+trusted SAT checking is allowed only over the SAT problem that the kernel
+derives from caller-supplied formulas, substitutions, provenance, and
+target/goal binding; selecting formulas or substitutions remains prohibited.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | clause | `clause.md` (task 2) | `src/clause.rs` | [x] |
 | certificate_parser | `certificate_parser.md` (task 4) | `src/certificate_parser.rs` | [x] |
+| formula_evidence | `formula_evidence.md` (task 25) | `src/formula_evidence.rs` | [ ] |
 | rejection | `rejection.md` (task 6) | `src/rejection.rs` | [x] |
 | resolution_trace | `resolution_trace.md` (task 8) | `src/resolution_trace.rs` | [x] |
+| sat_encoding | `sat_encoding.md` (task 26) | `src/sat_encoding.rs` | [ ] |
+| sat_checker | `sat_checker.md` (task 27) | `src/sat_checker.rs` | [ ] |
 | substitution_checker | `substitution_checker.md` (task 10) | `src/substitution_checker.rs` | [x] |
 | checker | `checker.md` (task 13) | `src/checker.rs` | [x] |
 
 `mizar-kernel` implements pipeline phase 14: proof certificates and kernel
 context in, trusted proof status out. It is the trusted core of the whole
-verifier (Small Kernel Principle): it verifies evidence only — certificate
-parsing and structural validation, MiniSAT-compatible resolution trace
-checking, substitution/alpha/free-variable checking, cluster trace replay,
-and imported-fact checking. A certificate is evidence, not acceptance; only
-this crate's positive result is trusted, and policy projection on top of it
-belongs to `mizar-proof`, not here.
+verifier (Small Kernel Principle): it verifies evidence only. The
+post-closeout target is formula/substitution evidence in, trusted proof status
+out: parse and validate the evidence, check provenance, validate and apply
+substitutions, derive instantiated formulas, deterministically encode them as
+SAT, and accept only when the trusted in-process Rust SAT checker reports
+refutation.
+The task-22 implementation remains a MiniSAT-compatible resolution-trace
+checker and is classified as `source_drift` / `design_drift` until tasks
+23-29 replace the acceptance path. A certificate or evidence record is not
+acceptance; only this crate's positive result is trusted, and policy
+projection on top of it belongs to `mizar-proof`, not here.
 
 Dependency order: `clause` → `certificate_parser` / `rejection` →
-`resolution_trace` / `substitution_checker` → `checker` (orchestration,
-imported facts, cluster replay).
+`resolution_trace` / `substitution_checker` → legacy `checker`; post-closeout
+correction order: `formula_evidence` → `substitution_checker` →
+`sat_encoding` / `sat_checker` → `checker` (orchestration, imported facts,
+SAT-backed acceptance, cluster replay where explicit evidence exists).
 
 Each task below is deliberately small — one module spec, or one behavior slice
 of one module — so that a single task can be implemented, tested, and
@@ -48,10 +61,13 @@ committed autonomously without holding the rest of the crate in flight.
 ## Crate Prerequisites
 
 The crate depends on `mizar-session` and `mizar-core` (core formula
-representation and the binder contract it independently re-checks) and on
-nothing else — the dependency set is deliberately minimal and additions
-require a recorded justification. `mizar-atp` and `mizar-proof` depend on
-this crate, never the reverse. Architecture:
+representation and the binder contract it independently re-checks). The only
+planned production dependency addition is a reviewed pure-Rust
+MiniSAT-compatible SAT checker selected by the SAT dependency audit task; it
+must be deterministic, in-process, resource-bounded, and free of backend
+process execution. Any other dependency addition requires a recorded
+justification. `mizar-atp` and `mizar-proof` depend on this crate, never the
+reverse. Architecture:
 [15.kernel_certificate_format.md](../../architecture/en/15.kernel_certificate_format.md),
 [16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md),
 [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md),
@@ -60,19 +76,37 @@ integration: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_i
 
 ## Resolved And Open Decisions
 
+- **Formula/substitution evidence correction: open, owned by tasks 23-29.**
+  Architecture 15 now supersedes the resolution-trace certificate acceptance
+  path for ATP-bound VCs. Kernel evidence stores formulas, substitutions,
+  provenance, and target/goal binding; the kernel derives instantiated
+  formulas and the deterministic SAT problem. Backend proof methods are not
+  trusted evidence. The current source is classified as `source_drift` until
+  the post-closeout correction tasks land.
+- **Trusted SAT dependency: open, owned by task 24.** The kernel may trust a
+  reviewed pure-Rust MiniSAT-compatible SAT checker as part of the small
+  kernel, but it must not call external SAT/ATP processes or implement ATP
+  search. Dependency choice, version pinning, determinism, limits, unsafe
+  usage, and audit notes must be recorded before source integration.
 - **Certificate schema ownership: resolved by task 4.** Architecture 15
   defines the certificate format, and `mizar-kernel` owns the normalized
   certificate schema types, schema-version table, section tags, byte grammar,
   and parser-owned failure locations. Future evidence producers such as
   `mizar-atp` may construct this schema, but the kernel never depends on
   evidence producers. Producer/consumer integration remains an
-  `external_dependency_gap` until those crates exist.
-- **Trusted-baseline crate policy: resolved by task 1.** Trusted kernel source
+  `external_dependency_gap` until those crates exist. This decision is legacy
+  for the resolution-trace acceptance path and must be migrated to the
+  formula/substitution evidence schema by tasks 23-29.
+- **Trusted-baseline crate policy: resolved by task 1, pending task-24
+  revision.** Trusted kernel source
   forbids unsafe code, uses workspace lint denial, keeps production
   dependencies limited to `mizar-session` and `mizar-core` with no
   dev/build/target dependency escape hatches, requires a crate-root trust
   statement, blocks public semantic surface until paired module specs exist,
-  and guards against downstream ATP/proof/cache/artifact coupling.
+  and guards against downstream ATP/proof/cache/artifact coupling. Task 24
+  must revise the lint/dependency policy to allow exactly one audited
+  pure-Rust SAT checker dependency in addition to `mizar-session` and
+  `mizar-core`, or else record why no dependency is added.
 - **Discharge-evidence validation scope: open, owned by `mizar-proof`
   task 6.** Whether `mizar-vc` pre-ATP discharge evidence is
   kernel-replayed or accepted as policy-level built-in evidence; if
@@ -258,6 +292,84 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
 
+### Post-closeout SAT-backed evidence correction
+
+23. **Spec: kernel evidence format correction.** [ ]
+    - Update the paired module specs to supersede resolution-trace
+      certificates with formula/substitution kernel evidence. Classify the
+      legacy resolution-trace acceptance path as `design_drift` /
+      `source_drift`, record external producer gaps, and restate that SAT
+      checking over supplied evidence is allowed while proof search remains
+      prohibited.
+    - Tests: docs-only verification.
+    - Deps: 22. Spec:
+      [15.kernel_certificate_format.md](../../architecture/en/15.kernel_certificate_format.md),
+      [08.reasoning_boundary.md](../../architecture/en/08.reasoning_boundary.md),
+      [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md).
+
+24. **Spec and audit: trusted SAT checker dependency.** [ ]
+    - Choose and justify the pure-Rust MiniSAT-compatible SAT checker to trust
+      inside the kernel. Record version pinning, determinism requirements,
+      resource limits, unsafe-code audit, no-process/no-network constraints,
+      the lint/dependency policy revision from the task-1 baseline, and the
+      wrapper API expected by `sat_checker.md`.
+    - Tests: docs-only verification plus dependency metadata audit once a
+      candidate crate is selected.
+    - Deps: 23. Spec: architecture 15 "Post-Closeout Correction".
+
+25. **Formula/substitution evidence schema and parser.** [ ]
+    - Implement the kernel-owned evidence schema for formula refs or formulas,
+      substitution records, provenance bindings, target/goal binding, and
+      stable hashes. Legacy certificate parsing may remain for compatibility
+      only if it is clearly outside the new acceptance path.
+    - Tests: structural round-trips; malformed evidence rejected; provenance
+      gaps reject fail-closed; deterministic rendering and hashing.
+    - Deps: 23, 24. Spec: `formula_evidence.md`.
+
+26. **Formula instantiation and deterministic SAT encoding.** [ ]
+    - Validate substitution side conditions, derive instantiated formulas
+      from the evidence formulas, and encode the resulting formula set plus
+      negated/target goal as a deterministic SAT problem. Instantiated
+      formulas and SAT clauses are kernel-derived check artifacts, not
+      trusted input. Encoding must not choose premises, invent substitutions,
+      or hide backend-method proof traces in the trusted input.
+    - Tests: valid instantiations encode stably; capture and provenance
+      mutations reject; equivalent caller order produces identical SAT bytes.
+    - Deps: 25. Spec: `formula_evidence.md`, `sat_encoding.md`,
+      [16.substitution_and_binding.md](../../architecture/en/16.substitution_and_binding.md).
+
+27. **Trusted SAT checker wrapper.** [ ]
+    - Integrate the audited Rust SAT checker behind a small deterministic
+      wrapper. Expose only the operations needed to decide whether the
+      kernel-built SAT problem is unsatisfiable; enforce limits and convert
+      solver errors to stable kernel rejections.
+    - Tests: satisfiable evidence rejects; unsatisfiable evidence accepts;
+      limits, unsupported clauses, and solver errors reject deterministically.
+    - Deps: 24, 26. Spec: `sat_checker.md`.
+
+28. **SAT-backed kernel check service.** [ ]
+    - Replace the trusted acceptance path so `checker` accepts only validated
+      formula/substitution evidence whose kernel-derived SAT problem is
+      refuted by the trusted SAT checker. Keep imported-fact, provenance,
+      cluster-trace, and used-axiom extraction fail-closed.
+    - Tests: end-to-end accepted/rejected evidence fixtures; mutated
+      substitutions, missing premises, satisfiable goals, and context
+      mismatches reject; batch ordering remains deterministic.
+    - Deps: 25, 26, 27. Spec: `checker.md`,
+      [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md).
+
+29. **Migration audit and quality re-review.** [ ]
+    - Retire, gate, or explicitly mark the legacy resolution-trace public
+      surface so downstream crates cannot mistake it for the target
+      acceptance path. Re-run source/spec, bilingual, prohibition, dependency,
+      and quality audits; record remaining `external_dependency_gap` items
+      for `mizar-vc`, `mizar-atp`, `mizar-proof`, `mizar-cache`, and
+      `mizar-artifact`.
+    - Tests: full `mizar-kernel` verification, workspace verification when
+      practical, docs diff checks, and a quality review score of at least
+      90/100 before any new closeout claim.
+    - Deps: 28. Spec: this TODO and autonomous crate exit criteria.
+
 ## Recommended Verification
 
 Run after each task:
@@ -281,7 +393,11 @@ Check the task off here once tests pass.
 - The kernel verifies evidence only. It must never perform proof search,
   heuristic selection, overload resolution, cluster search, ATP search,
   implicit coercion insertion, or fallback inference.
-- Certificate validation failure is a proof error even if the backend
+- Trusted SAT checking over already supplied formula/substitution evidence is
+  an evidence check, not proof search. The kernel still must not choose
+  premises, invent substitutions, call ATP backends, or perform fallback
+  inference.
+- Kernel evidence validation failure is a proof error even if the backend
   reported success; externally attested evidence is `mizar-proof` policy,
   never a kernel result.
 - Keep the dependency set minimal and audited; soundness-relevant code

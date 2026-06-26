@@ -17,25 +17,45 @@ explicit cluster/reduction trace replay、derived fact validation、final-goal a
 [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md) の
 「Kernel Check Service」を精緻化する。
 
+## Closeout 後の修正
+
+task 13 から task 22 までの checker は、resolution replay を中心にした legacy
+normalized-certificate orchestrator である。アーキテクチャ 15 は現在、その
+acceptance contract を、trusted in-process Rust SAT checker で検査する
+formula/substitution evidence によって supersede している。[todo.md](./todo.md) の
+task 23-29 が着地するまで、この module specification は legacy の実装済み surface
+と必要な correction の両方を記録する。
+
+修正後の checker は、呼び出し側が与えた evidence だけを受理対象にする:
+formula ref または formula、明示的 substitution、provenance binding、target/goal
+binding。checker は instantiated formula と SAT problem を内部で導出し、その
+deterministic problem に対して trusted SAT checker を実行する。ただし formula を探索
+したり、substitution を発明したり、alternate encoding を試したり、premise を
+minimize したり、ATP/SAT child process を呼び出したり、evidence 外の inference に
+fallback したりしてはならない。
+
 ## Trust Statement
 
 この module は trusted kernel code である。必要な evidence がすべて explicit immutable
 input から replay または check された後でなければ、proof を受理してはならない。
 
-この module は proof search、ATP search、SAT solving、premise selection、overload
-resolution、cluster search、registration activation、implicit coercion insertion、
-fallback inference、source loading、cache lookup、artifact lookup、wall-clock /
-random-state read、unordered iteration、mutable compiler-global state の hidden read を
-行ってはならない。Backend-reported success、backend-reported used axioms、resolver
-output、cache hit、artifact metadata、policy permission は kernel replay の代替にならない。
+この module は proof search、ATP search、premise selection、overload resolution、
+cluster search、registration activation、implicit coercion insertion、fallback
+inference、source loading、cache lookup、artifact lookup、wall-clock / random-state
+read、unordered iteration、mutable compiler-global state の hidden read を行っては
+ならない。SAT activity は、dependency audit が選んだ trusted in-process SAT checker
+による、kernel-built problem の deterministic checking に限られる。Backend-reported
+success、backend-reported used axioms、resolver output、cache hit、artifact metadata、
+policy permission は kernel checking の代替にならない。
 
-Task 20 の audit では、この trust boundary は no proof search, no SAT solving,
-no ATP search or backend invocation, no premise selection, no overload
-resolution, no cluster search, no implicit coercion insertion, no fallback
-inference, no acceptance from backend-reported success alone, no source
-loading, no cache lookup, no artifact lookup, no wall-clock or random-state
-reads, no unordered iteration dependence, no hidden reads of mutable
-compiler-global state を含むものとして検査する。
+Task 20 は legacy trust boundary を no SAT solving として audit した。task 23-29 は
+これを、禁止される proof search と、与えられた evidence に対して許可される
+trusted SAT checking のより厳密な区別へ置き換える。この boundary は引き続き
+no ATP search or backend invocation, no premise selection, no overload resolution,
+no cluster search, no implicit coercion insertion, no fallback inference, no
+acceptance from backend-reported success alone, no source loading, no cache
+lookup, no artifact lookup, no wall-clock or random-state reads, no unordered
+iteration dependence, no hidden reads of mutable compiler-global state を含む。
 
 ## Owned behavior
 
@@ -548,7 +568,9 @@ Task 16 は以下の Rust tests を追加しなければならない:
   limits は `resource_exhaustion` として rejected され、service-envelope witness normalization /
   cancellation token plumbing は mock せず `external_dependency_gap` として記録される;
 - trusted-boundary lint/test set が trust statement を mirror すること: proof search、
-  ATP search、SAT solving、premise selection、overload resolution、cluster search、
-  registration activation、implicit coercion insertion、fallback inference、source loading、
-  hidden dependency-artifact reads、ATP/proof/cache/artifact coupling、unordered iteration、
-  wall-clock/random read、global mutable-state read がないこと。
+  ATP search、external SAT/ATP process invocation、premise selection、overload
+  resolution、cluster search、registration activation、implicit coercion insertion、
+  fallback inference、source loading、hidden dependency-artifact reads、
+  ATP/proof/cache/artifact coupling、unordered iteration、wall-clock/random read、
+  global mutable-state read がないこと。kernel-built evidence problem に対する trusted
+  in-process SAT checking は closeout 後 task 23-29 で扱う。

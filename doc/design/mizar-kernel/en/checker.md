@@ -18,26 +18,47 @@ The module refines
 [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
 "Kernel Check Service".
 
+## Post-Closeout Correction
+
+The task-13 through task-22 checker is a legacy normalized-certificate
+orchestrator centered on resolution replay. Architecture 15 now supersedes
+that acceptance contract with formula/substitution evidence checked by a
+trusted in-process Rust SAT checker. Until tasks 23-29 in
+[todo.md](./todo.md) land, this module specification records both the legacy
+implemented surface and the required correction.
+
+The corrected checker accepts only caller-supplied evidence: formula refs or
+formulas, explicit substitutions, provenance bindings, and target/goal
+binding. It derives instantiated formulas and the SAT problem internally, then
+runs the trusted SAT checker over that deterministic problem. It must not
+search for formulas, invent substitutions, try alternate encodings, minimize
+premises, call ATP/SAT child processes, or fall back to inference outside the
+evidence.
+
 ## Trust Statement
 
 This module is trusted kernel code. It may accept a proof only after all
 required evidence has been replayed or checked from explicit immutable inputs.
 
-The module must not perform proof search, ATP search, SAT solving, premise
-selection, overload resolution, cluster search, registration activation,
-implicit coercion insertion, fallback inference, source loading, cache lookup,
-artifact lookup, wall-clock or random-state reads, unordered iteration, or
-hidden reads of mutable compiler-global state. Backend-reported success,
+The module must not perform proof search, ATP search, premise selection,
+overload resolution, cluster search, registration activation, implicit
+coercion insertion, fallback inference, source loading, cache lookup, artifact
+lookup, wall-clock or random-state reads, unordered iteration, or hidden reads
+of mutable compiler-global state. SAT activity is limited to deterministic
+checking of the kernel-built problem through the trusted in-process SAT
+checker selected by the dependency audit. Backend-reported success,
 backend-reported used axioms, resolver output, cache hits, artifact metadata,
-or policy permission never replace kernel replay.
+or policy permission never replace kernel checking.
 
-Task 20 audits this trust boundary as including no proof search, no SAT
-solving, no ATP search or backend invocation, no premise selection, no overload
-resolution, no cluster search, no implicit coercion insertion, no fallback
-inference, no acceptance from backend-reported success alone, no source
-loading, no cache lookup, no artifact lookup, no wall-clock or random-state
-reads, no unordered iteration dependence, and no hidden reads of mutable
-compiler-global state.
+Task 20 audited the legacy trust boundary as including no SAT solving. Tasks
+23-29 replace that with the stricter distinction between prohibited proof
+search and permitted trusted SAT checking over supplied evidence. The boundary
+continues to include no ATP search or backend invocation, no premise
+selection, no overload resolution, no cluster search, no implicit coercion
+insertion, no fallback inference, no acceptance from backend-reported success
+alone, no source loading, no cache lookup, no artifact lookup, no wall-clock
+or random-state reads, no unordered iteration dependence, and no hidden reads
+of mutable compiler-global state.
 
 ## Owned Behavior
 
@@ -590,8 +611,10 @@ Task 16 must add Rust tests for:
   service-envelope witness normalization/cancellation token plumbing recorded
   as `external_dependency_gap` rather than mocked;
 - the trusted-boundary lint/test set mirrors the trust statement: no proof
-  search, ATP search, SAT solving, premise selection, overload resolution,
-  cluster search, registration activation, implicit coercion insertion,
-  fallback inference, source loading, hidden dependency-artifact reads,
-  ATP/proof/cache/artifact coupling, unordered iteration, wall-clock/random
-  read, or global mutable-state read.
+  search, ATP search, external SAT/ATP process invocation, premise selection,
+  overload resolution, cluster search, registration activation, implicit
+  coercion insertion, fallback inference, source loading, hidden
+  dependency-artifact reads, ATP/proof/cache/artifact coupling, unordered
+  iteration, wall-clock/random read, or global mutable-state read; trusted
+  in-process SAT checking over the kernel-built evidence problem is covered by
+  post-closeout tasks 23-29.

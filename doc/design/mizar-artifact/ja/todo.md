@@ -70,6 +70,10 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 - **ハッシュの分離: internal 07 の制約により解決済み。** 意味論ハッシュと
   診断/開発ハッシュは分離され、ローカルに変動するフィールド（`verified_at`
   など）は正準ハッシュから除外される（task 2 が両方を符号化する）。
+- **kernel evidence witness format: 未解決。`mizar-kernel` task 23-29 に依存する。**
+  既存の proof-witness schema は correction 前の certificate/witness model を
+  説明している。artifact schema update は中間的な certificate projection を
+  発明せず、formula/substitution kernel evidence format を待たなければならない。
 
 ## 順序付きタスク一覧
 
@@ -217,11 +221,14 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       manifest トランザクションのみを通す。
     - テスト: 小さな検証済みモジュール上のエンドツーエンド emission
       フィクスチャ。再 emission がバイト同一である。
-    - 依存: 14、15、`mizar-kernel` task 16、`mizar-proof` task 11
-      （witness の stage/公開）。仕様: `verified_artifact.md`、
-      `manifest.md`。
+    - 依存: 14、15、この crate の task 23、`mizar-kernel` task 28、
+      `mizar-proof` task 11（witness の stage/公開）。仕様:
+      `verified_artifact.md`、`manifest.md`。
     - 状態: task 16 後も、必要な producer output が存在しないため
-      `external_dependency_gap` として deferred。この crate で stub しない。
+      `external_dependency_gap` として deferred。さらに phase-15 emission は legacy
+      certificate witness shape ではなく formula/substitution kernel evidence witness
+      schema を使わなければならないため、task 23 にも block される。この crate で
+      stub しない。
 
 ### 強化と横断フォローアップ
 
@@ -279,6 +286,18 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       API path は変わらず、production root は module/spec boundary に合わせて
       意図的に維持する。
 
+23. **Kernel evidence proof-witness schema update。** [ ]
+    - kernel schema が存在した後、formula/substitution kernel evidence witness ref
+      と hash を保存するよう `proof_witness.md`、`verified_artifact.md`、schema code を
+      更新する。backend proof method と log は diagnostic/provenance attachment として
+      扱い、trusted witness content にはしない。
+    - テスト: schema round-trip、canonical hash stability、version mismatch rejection。
+      互換性を残す場合は legacy certificate reference の migration fixture。
+    - 依存: 22、`mizar-kernel` task 28、`mizar-vc` task 25、`mizar-proof` witness
+      publication tasks。仕様:
+      [15.kernel_certificate_format.md](../../architecture/ja/15.kernel_certificate_format.md),
+      `proof_witness.md`, `verified_artifact.md`。
+
 ## 推奨検証
 
 各タスクの後で実行する:
@@ -309,3 +328,6 @@ cargo test -p mizar-checker
   早く着地させる。
 - キャッシュレコード、キャッシュキー、proof 再利用の検証は `mizar-cache`
   にあり、ここにはない。共有される正準ハッシュ規則は task 2 のものである。
+- Formula/substitution kernel evidence witness ref は kernel と producer handoff
+  schema が存在するまで deferred とする。resolution-trace certificate 用の
+  placeholder witness field を追加してはならない。
