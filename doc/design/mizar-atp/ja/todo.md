@@ -19,7 +19,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 |---|---|---|---|
 | problem | `problem.md`（task 2） | `src/problem.rs` | [x] |
 | translator | `translator.md`（task 4） | `src/translator.rs` | [x] declaration、symbol-map、axiom、conjecture translation source complete |
-| property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [x] 仕様完了。source は task 8 に deferred |
+| property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [x] axiom-form property source 完了。native declaration は deferred |
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [ ] |
 | smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [ ] |
 | backend | `backend.md`（task 13） | `src/backend.rs` | [ ] |
@@ -204,7 +204,7 @@ workspace crate ではないため、policy と witness-publication integration 
      fail-closed/deferred class、task-8 test expectation を仕様化する。この spec-only task
      では Rust source を追加しない。
 
-8. **プロパティエンコーディング。** [ ]
+8. **プロパティエンコーディング。** [x]
    - エンコーディング決定を `EncodedProperty` に記録しつつプロパティ
      エンコーディング規則を実装する。Task 8 は axiom-form property だけを emit し、
      native declaration は concrete encoder spec が exact semantics を定義するまで deferred
@@ -213,6 +213,11 @@ workspace crate ではないため、policy と witness-publication integration 
      coverage、connectedness disjunction coverage、deterministic ordering、
      native-declaration deferred/fail-closed coverage。
    - 依存: 6、7。仕様: `property_encoding.md`。
+   - 状態: 完了。`src/property_encoding.rs` は structured explicit property projection を受け取り、
+     target declaration / symbol-map row と profile capability を検証し、deterministic な binder
+     declaration、symbol-map row、provenance を生成し、`EncodedProperty::axiom` row だけを emit
+     する。duplicate と unsupported/deferred family は fail closed し、native declaration は
+     deferred のままにする。
 
 ### プロトコルエンコーダ
 

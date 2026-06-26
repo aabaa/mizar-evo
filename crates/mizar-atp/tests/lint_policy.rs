@@ -106,7 +106,7 @@ fn atp_manifest_dependency_boundary_is_task_one_minimal() {
 }
 
 #[test]
-fn atp_lib_exposes_only_spec_backed_problem_module() {
+fn atp_lib_exposes_only_spec_backed_modules() {
     let lib_path = crate_root().join("src/lib.rs");
     let source = read_to_string(&lib_path);
     let expected_source = r#"//! ATP candidate-evidence production boundary.
@@ -121,6 +121,7 @@ fn atp_lib_exposes_only_spec_backed_problem_module() {
 #![forbid(unsafe_code)]
 
 pub mod problem;
+pub mod property_encoding;
 pub mod translator;
 "#;
     let source_files = rust_source_files(&crate_root().join("src"))
@@ -141,7 +142,12 @@ pub mod translator;
     );
     assert_eq!(
         source_files,
-        ["src/lib.rs", "src/problem.rs", "src/translator.rs"],
+        [
+            "src/lib.rs",
+            "src/problem.rs",
+            "src/property_encoding.rs",
+            "src/translator.rs"
+        ],
         "semantic ATP modules require paired specs before source; found {source_files:?}"
     );
 }
@@ -160,6 +166,7 @@ fn atp_crate_tree_contains_only_current_spec_backed_files() {
             "Cargo.toml",
             "src/lib.rs",
             "src/problem.rs",
+            "src/property_encoding.rs",
             "src/translator.rs",
             "tests/lint_policy.rs"
         ],
@@ -167,6 +174,151 @@ fn atp_crate_tree_contains_only_current_spec_backed_files() {
          build scripts, examples, benches, extra tests, backend runners, \
          kernel/proof behavior, or other crate-root files require explicit spec \
          tasks; found {files:?}"
+    );
+}
+
+#[test]
+fn atp_property_encoding_module_has_paired_specs_and_excludes_trusted_material() {
+    let en_spec = workspace_root().join("doc/design/mizar-atp/en/property_encoding.md");
+    let ja_spec = workspace_root().join("doc/design/mizar-atp/ja/property_encoding.md");
+    let source_path = crate_root().join("src/property_encoding.rs");
+    let en = read_to_string(&en_spec);
+    let ja = read_to_string(&ja_spec);
+    let source = read_to_string(&source_path);
+
+    for marker in [
+        "Generated Binders",
+        "Task 8 must not emit native declarations yet",
+        "`connectedness` is permitted to use `AtpFormulaTree::Or`",
+        "Task-8 Test Expectations",
+    ] {
+        assert!(
+            en.contains(marker),
+            "{} must keep task-7 property spec marker `{marker}`",
+            en_spec.display()
+        );
+    }
+    for marker in [
+        "Generated binder",
+        "Task 8 はまだ native declaration を emit してはならない",
+        "`AtpFormulaTree::Or` を使ってよい",
+        "Task 8 test expectations",
+    ] {
+        assert!(
+            ja.contains(marker),
+            "{} must keep task-7 Japanese property spec marker `{marker}`",
+            ja_spec.display()
+        );
+    }
+    for marker in [
+        "pub fn encode_properties",
+        "AtpPropertyEncodingStrategy::NativeDeclaration",
+        "AtpPropertyEncodingError::NativeDeclarationDeferred",
+        "AtpDeclarationKind::GeneratedBinder",
+        "AtpSymbolSource::GeneratedBinder",
+        "AtpSourceRef::EncodedProperty",
+        "AtpFormulaTree::Or",
+        "EncodedProperty::axiom",
+    ] {
+        assert!(
+            source.contains(marker),
+            "{} must implement property_encoding.md task-8 marker `{marker}`",
+            source_path.display()
+        );
+    }
+    for prohibited in [
+        "std::process::Command",
+        "mizar_kernel::",
+        "resolution_trace",
+        "MiniSAT",
+        "DIMACS",
+        "instantiated_formula",
+        "backend_used_axioms",
+        "kernel_verified",
+    ] {
+        assert!(
+            !source.contains(prohibited),
+            "{} must not expose prohibited trusted/backend material `{prohibited}`",
+            source_path.display()
+        );
+    }
+}
+
+#[test]
+fn atp_property_encoding_public_api_surface_is_task_eight_allowlist() {
+    let source_path = crate_root().join("src/property_encoding.rs");
+    let source = read_to_string(&source_path);
+    let public_items = public_api_items(&source);
+    let public_fields = public_struct_fields(&source);
+    let public_functions = public_api_functions(&source);
+    let expected = [
+        "AtpPropertyBinderSort",
+        "AtpPropertyEncodingBundle",
+        "AtpPropertyEncodingError",
+        "AtpPropertyEncodingInput",
+        "AtpPropertyEncodingStrategy",
+        "AtpPropertyFamily",
+        "AtpPropertyProjection",
+        "AtpPropertyTargetKind",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<Vec<_>>();
+
+    assert_eq!(
+        public_items,
+        expected,
+        "{} public API must stay limited to task-8 property projection, \
+         axiom encoding, generated-binder bundle, and fail-closed error \
+         shapes; concrete encoders, backend runners, proof policy, accepted \
+         statuses, witnesses, and cache handles require explicit later specs",
+        source_path.display()
+    );
+
+    assert_eq!(
+        public_fields,
+        [
+            "AtpPropertyBinderSort::source",
+            "AtpPropertyBinderSort::symbol",
+            "AtpPropertyEncodingInput::existing_declarations",
+            "AtpPropertyEncodingInput::existing_provenance",
+            "AtpPropertyEncodingInput::existing_symbol_map",
+            "AtpPropertyEncodingInput::logic_profile",
+            "AtpPropertyEncodingInput::next_declaration_id",
+            "AtpPropertyEncodingInput::next_property_id",
+            "AtpPropertyEncodingInput::next_provenance_id",
+            "AtpPropertyEncodingInput::property_projections",
+            "AtpPropertyProjection::binder_sort",
+            "AtpPropertyProjection::encoding_strategy",
+            "AtpPropertyProjection::family",
+            "AtpPropertyProjection::provenance_payload",
+            "AtpPropertyProjection::source_property",
+            "AtpPropertyProjection::target_arity",
+            "AtpPropertyProjection::target_kind",
+            "AtpPropertyProjection::target_source",
+            "AtpPropertyProjection::target_symbol",
+        ],
+        "{} public struct fields must stay limited to structured property \
+         inputs and id ranges; backend material, accepted statuses, witnesses, \
+         and cache handles require explicit later specs",
+        source_path.display()
+    );
+
+    assert_eq!(
+        public_functions,
+        [
+            "AtpPropertyEncodingBundle::declarations",
+            "AtpPropertyEncodingBundle::properties",
+            "AtpPropertyEncodingBundle::provenance",
+            "AtpPropertyEncodingBundle::symbol_map",
+            "AtpPropertyFamily::as_str",
+            "AtpPropertyFamily::is_empty",
+            "AtpPropertyFamily::new",
+            "encode_properties",
+        ],
+        "{} public functions and methods must stay limited to task-8 property \
+         encoding construction/accessors",
+        source_path.display()
     );
 }
 

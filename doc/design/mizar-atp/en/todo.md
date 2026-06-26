@@ -19,7 +19,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 |---|---|---|---|
 | problem | `problem.md` (task 2) | `src/problem.rs` | [x] |
 | translator | `translator.md` (task 4) | `src/translator.rs` | [x] declaration, symbol-map, axiom, and conjecture translation source complete |
-| property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [x] spec complete; source deferred to task 8 |
+| property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [x] axiom-form property source complete; native declarations deferred |
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [ ] |
 | smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [ ] |
 | backend | `backend.md` (task 13) | `src/backend.rs` | [ ] |
@@ -215,7 +215,7 @@ Keep `cargo test -p mizar-atp` green after each task (see
      connectedness disjunction handling, fail-closed/deferred classes, and
      task-8 test expectations. No Rust source is added by this spec-only task.
 
-8. **Property encoding.** [ ]
+8. **Property encoding.** [x]
    - Implement the property-encoding rules with recorded encoding decisions
      in `EncodedProperty`. Task 8 emits only axiom-form properties; native
      declarations remain deferred until concrete encoder specs define exact
@@ -224,6 +224,12 @@ Keep `cargo test -p mizar-atp` green after each task (see
      coverage, connectedness disjunction coverage, deterministic ordering, and
      native-declaration deferred/fail-closed coverage.
    - Deps: 6, 7. Spec: `property_encoding.md`.
+   - Status: complete. `src/property_encoding.rs` accepts structured explicit
+     property projections, validates target declarations/symbol-map rows and
+     profile capabilities, generates deterministic binder declarations,
+     symbol-map rows, and provenance, emits only `EncodedProperty::axiom`
+     rows, rejects duplicates and unsupported/deferred families fail-closed,
+     and keeps native declarations deferred.
 
 ### Protocol encoders
 
