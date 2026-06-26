@@ -20,7 +20,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 | problem | `problem.md` (task 2) | `src/problem.rs` | [x] |
 | translator | `translator.md` (task 4) | `src/translator.rs` | [x] declaration, symbol-map, axiom, and conjecture translation source complete |
 | property_encoding | `property_encoding.md` (task 7) | `src/property_encoding.rs` | [x] axiom-form property source complete; native declarations deferred |
-| tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [ ] |
+| tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [x] spec complete; FOF source deferred to task 10 |
 | smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [ ] |
 | backend | `backend.md` (task 13) | `src/backend.rs` | [ ] |
 | portfolio | `portfolio.md` (task 17) | `src/portfolio.rs` | [ ] |
@@ -233,15 +233,22 @@ Keep `cargo test -p mizar-atp` green after each task (see
 
 ### Protocol encoders
 
-9. **Spec: `tptp_encoder.md`.** [ ]
+9. **Spec: `tptp_encoder.md`.** [x]
    - Write the TPTP emission spec (English and Japanese, no code): dialect
      coverage, name mangling, and deterministic output rules.
+   - Completed by paired `tptp_encoder.md` docs. Task-10 source is limited to
+     deterministic FOF emission; TFF-like typed output, CNF, include files,
+     native property declarations, backend pragmas, backend execution, and
+     evidence extraction remain deferred.
    - Deps: 2. Spec: architecture 09 "Supported Formats".
 
 10. **TPTP encoder.** [ ]
     - Emit TPTP text from `AtpProblem` deterministically.
-    - Tests: golden-file fixtures; byte-identical output across runs;
-      mangling collisions rejected.
+    - Tests: golden-file fixtures; byte-identical output across runs; exact
+      separators, parenthesization, labels, and final newline; profile gates;
+      native-property rejection; free-variable, duplicate-binder, and
+      shadowing rejection; raw-name injection and mangling-collision
+      rejection; provenance side metadata; lint/API boundary guards.
     - Deps: 6, 9. Spec: `tptp_encoder.md`.
 
 11. **Spec: `smtlib_encoder.md`.** [ ]

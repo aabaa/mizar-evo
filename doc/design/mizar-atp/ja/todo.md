@@ -20,7 +20,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 | problem | `problem.md`（task 2） | `src/problem.rs` | [x] |
 | translator | `translator.md`（task 4） | `src/translator.rs` | [x] declaration、symbol-map、axiom、conjecture translation source complete |
 | property_encoding | `property_encoding.md`（task 7） | `src/property_encoding.rs` | [x] axiom-form property source 完了。native declaration は deferred |
-| tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [ ] |
+| tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [x] spec 完了。FOF source は task 10 に deferred |
 | smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [ ] |
 | backend | `backend.md`（task 13） | `src/backend.rs` | [ ] |
 | portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [ ] |
@@ -221,15 +221,21 @@ workspace crate ではないため、policy と witness-publication integration 
 
 ### プロトコルエンコーダ
 
-9. **仕様: `tptp_encoder.md`。** [ ]
+9. **仕様: `tptp_encoder.md`。** [x]
    - TPTP 出力の仕様を執筆する（英語と日本語、コードなし）: 方言の
      カバレッジ、名前マングリング、決定的出力規則。
+   - paired `tptp_encoder.md` docs で完了。task-10 source は deterministic FOF emission に
+     限る。TFF-like typed output、CNF、include file、native property declaration、
+     backend pragma、backend execution、evidence extraction は deferred のままである。
    - 依存: 2。仕様: アーキテクチャ 09「Supported Formats」。
 
 10. **TPTP エンコーダ。** [ ]
     - `AtpProblem` から TPTP テキストを決定的に出力する。
-    - テスト: golden ファイルのフィクスチャ。実行をまたぐバイト同一の
-      出力。マングリング衝突の拒否。
+    - テスト: golden ファイルのフィクスチャ。実行をまたぐ byte-identical output。
+      exact separator、parenthesization、label、final newline。profile gate。
+      native-property rejection。free-variable、duplicate-binder、shadowing rejection。
+      raw-name injection と mangling-collision rejection。provenance side metadata。
+      lint/API boundary guard。
     - 依存: 6、9。仕様: `tptp_encoder.md`。
 
 11. **仕様: `smtlib_encoder.md`。** [ ]
