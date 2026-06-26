@@ -23,6 +23,7 @@ Module specifications audited:
 - [generator.md](./generator.md)
 - [discharge.md](./discharge.md)
 - [dependency_slice.md](./dependency_slice.md)
+- [kernel_evidence_handoff.md](./kernel_evidence_handoff.md)
 - [todo.md](./todo.md)
 
 Result: no unclassified `source_drift`, `design_drift`,
@@ -200,20 +201,41 @@ Rust source, public APIs, `.miz` fixtures, expectations, `doc/spec`,
 traceability metadata, runner behavior, or downstream consumers, and it records
 no new source/spec drift.
 
+## Task 24 Kernel Evidence Handoff Follow-Up
+
+Task 24 adds the paired
+[kernel_evidence_handoff.md](./kernel_evidence_handoff.md) documents after
+`mizar-kernel` tasks 23-29 introduced the checker-side formula/substitution
+evidence path, trusted SAT checker wrapper, SAT-backed check service, and
+legacy-certificate audit gate. This task is specification-only for `mizar-vc`;
+it does not add Rust APIs, source modules, `.miz` fixtures, expectations,
+`doc/spec` edits, SAT solving, kernel calls, ATP backend integration, proof
+policy, cache storage, or artifact witness publication.
+
+The new spec records the producer-side handoff contract: `mizar-vc` may package
+formula, substitution, provenance, and target-binding evidence from existing
+`VcSet` / `VcIr` data, but instantiated formulas, SAT clauses, backend proof
+methods, resolution traces, backend logs, and legacy certificates stay outside
+trusted evidence. Task 25 owns any source implementation and tests.
+
 ## Remaining Classified Follow-Ups
 
 Task 18 introduced no new source/spec correspondence gap. Task 21 re-ran the
 audit after the architecture-22 identity work and likewise records no new
 unclassified source/spec gap. Task 22 re-ran the module-boundary gate and
-records no required split before closeout. Existing classified records remain:
+records no required split before closeout. Task 24 updates the downstream
+kernel classification without resolving the remaining producer/consumer gaps.
+Existing classified records remain:
 
 - `external_dependency_gap`: active `proof_verification` runner support and
   source-to-core / source-to-VC extraction seams are absent from `mizar-test`;
   Task 15 records concrete deferred corpus obligations.
-- `external_dependency_gap`: `mizar-atp`, `mizar-kernel`, `mizar-proof`, and
-  `mizar-cache` are not active workspace consumers, so ATP translation,
-  certificate acceptance, proof policy, cache lookup/reuse, and artifact
-  persistence remain outside this crate.
+- `external_dependency_gap` / `deferred`: `mizar-kernel` now owns the
+  checker-side formula/substitution evidence acceptance path, but the
+  `mizar-vc` handoff builder, `mizar-atp` candidate evidence producer,
+  `mizar-proof` / `mizar-cache` consumers, and artifact witness consumers are
+  still incomplete. ATP translation, proof policy, cache lookup/reuse, and
+  artifact persistence remain outside this crate.
 - `external_dependency_gap`: upstream explicit/stable payloads are still
   incomplete for registration/redefinition/reduction details,
   call-precondition, branch, match, range-loop, collection-loop, term-only
@@ -221,9 +243,9 @@ records no required split before closeout. Existing classified records remain:
   trace families, source-derived core formula payloads, definition payloads,
   quantified binder payloads, and source-derived obligation payload families.
 - `deferred`: proof-witness hashes, ATP/kernel/proof/cache validation,
-  artifact consumers, and source-derived runner integration must be implemented
-  before architecture-22 reuse can be accepted outside the deterministic
-  discharge candidate key.
+  artifact consumers, VC kernel-evidence hash integration, and source-derived
+  runner integration must be implemented before architecture-22 reuse can be
+  accepted outside the deterministic discharge candidate key.
 - `deferred`: optional private helper/test splits inside large `vc_ir`,
   `generator`, and `dependency_slice` implementation files may be pursued as
   later move-only maintenance tasks, but they are not required for crate exit.

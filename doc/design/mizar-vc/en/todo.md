@@ -22,6 +22,7 @@ architecture 07, 16, 18, and 19.
 | generator | `generator.md` (task 5) | `src/generator.rs` | [x] |
 | discharge | `discharge.md` (task 10) | `src/discharge.rs` | [x] |
 | dependency_slice | `dependency_slice.md` (task 13) | `src/dependency_slice.rs` | [x] |
+| kernel_evidence_handoff | `kernel_evidence_handoff.md` (task 24) | task 25 builder pending | [x] spec |
 
 `mizar-vc` implements pipeline phases 11-12: `CoreIr` and `ControlFlowIr` in,
 prover-independent `VcIr` out, with deterministic pre-ATP discharge producing
@@ -65,11 +66,12 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
   accepted as deterministic built-in evidence per policy; this crate
   guarantees the evidence is replayable either way. Registered at the top
   level.
-- **Kernel formula/substitution handoff: open, depends on `mizar-kernel`
-  tasks 23-29.** `VcIr` remains prover-independent, but future handoff records
-  must map local context, premises, generated formulas, substitutions, and
-  the goal into the kernel evidence schema without adding backend traces or
-  solver-specific proof methods.
+- **Kernel formula/substitution handoff: task-24 spec complete; builder
+  pending.** `mizar-kernel` tasks 23-29 now provide the checker-side
+  formula/substitution evidence path. `VcIr` remains prover-independent, and
+  task 25 must map local context, premises, generated formulas, substitutions,
+  and the goal into the kernel evidence schema without adding backend traces,
+  SAT clauses, resolution traces, or solver-specific proof methods.
 - **Diagnostics record: follows the `mizar-resolve` decision** on
   `mizar-diagnostics` adoption timing. Registered at the top level.
 
@@ -344,14 +346,19 @@ Keep `cargo test -p mizar-vc` green after each task (see
 
 ### Kernel evidence handoff follow-ups
 
-24. **Spec: kernel evidence handoff.** [ ]
+24. **Spec: kernel evidence handoff.** [x]
     - Define how `VcIr`, local context, premise refs, generated formulas,
       discharge records, and goals map into the formula/substitution kernel
       evidence format. Preserve prover independence: no TPTP/SMT-LIB text,
       SAT clauses, backend logs, resolution traces, or solver proof methods
-      may enter `VcIr`.
-    - Tests: docs-only verification.
-    - Deps: 23, `mizar-kernel` task 23. Spec:
+      may enter `VcIr`. Task 24 adds the paired
+      `kernel_evidence_handoff.md` spec and records that `mizar-kernel` tasks
+      23-29 now provide the checker-side formula/substitution evidence path;
+      the VC builder and downstream consumers remain later work.
+    - Tests: docs-only verification (`git diff --check`,
+      staged `git diff --cached --check`, plus the docs sync review record).
+    - Deps: 23, `mizar-kernel` tasks 23-29. Spec:
+      [kernel_evidence_handoff.md](./kernel_evidence_handoff.md),
       [15.kernel_certificate_format.md](../../architecture/en/15.kernel_certificate_format.md),
       [08.reasoning_boundary.md](../../architecture/en/08.reasoning_boundary.md).
 
@@ -362,7 +369,8 @@ Keep `cargo test -p mizar-vc` green after each task (see
       `external_dependency_gap` / `deferred`, not fabricated.
     - Tests: deterministic handoff rendering; local-context and premise
       provenance completeness; missing payloads remain fail-closed.
-    - Deps: 24, `mizar-kernel` task 25. Spec: the handoff spec from task 24.
+    - Deps: 24, `mizar-kernel` task 29. Spec:
+      [kernel_evidence_handoff.md](./kernel_evidence_handoff.md).
 
 26. **Dependency-slice and proof-reuse identity update.** [ ]
     - Extend dependency slices and architecture-22 proof-reuse identity to

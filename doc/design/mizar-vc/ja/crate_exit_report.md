@@ -40,11 +40,27 @@ Excluded:
 - active source-derived `proof_verification` fixture または snapshot。
 - ATP problem encoding、backend process execution、certificate validation、
   trusted proof acceptance、cache hit acceptance、artifact publication。
-- 利用不能な `mizar-atp`、`mizar-kernel`、`mizar-proof`、`mizar-cache` seam の
-  placeholder crate または placeholder consumer。
+- 利用不能な `mizar-atp`、`mizar-proof`、`mizar-cache` seam、または未完成の
+  VC handoff builder と artifact/proof/cache consumer の placeholder crate /
+  placeholder consumer。
 - registration/redefinition/reduction、branch、match、loop、termination、
   ghost-erasure、trace、source-derived core formula、definition、quantified
   binder、source-derived obligation payload の仮造。
+
+## Post-Closeout Evidence Correction
+
+Task 24 は、`mizar-kernel` task 23-29 が legacy resolution-trace acceptance から
+formula/substitution evidence と trusted in-process Rust SAT checking への checker-side
+correction を完了した後、evidence-pipeline handoff documentation だけを再開する。
+original mizar-vc closeout は phase 11-12、deterministic discharge、dependency slice、
+proof-reuse candidate key について引き続き有効である。
+
+Task 24 は paired [kernel_evidence_handoff.md](./kernel_evidence_handoff.md) spec を追加し、
+古い downstream classification を更新する。`mizar-kernel` は修正後 evidence の trusted
+checker として存在する一方、VC handoff builder、ATP candidate producer、proof/cache
+consumer、artifact witness consumer は後続 task または external gap のままである。この task は
+docs-only であり、Rust source、kernel call、SAT solving、backend encoding、legacy certificate、
+捏造した formula/substitution/provenance payload を追加しない。
 
 ## Task Commits
 
@@ -122,7 +138,7 @@ score cap はない。
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
 | VC-CLOSEOUT-G001 | `external_dependency_gap` | `mizar-test` には active `proof_verification` runner/tag gate と real `.miz` corpus input 用 source-to-core/source-to-VC extraction seam がまだない。 | Active source-derived VC fixture を有効化する前に、owning staged-test / upstream extraction task で runner と extraction support を追加する。 |
-| VC-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-atp`、`mizar-kernel`、`mizar-proof`、`mizar-cache` は workspace crate / active consumer ではないため、ATP translation、certificate acceptance、proof policy、cache hit acceptance、proof-reuse validation は downstream。 | Owning downstream crate を crate plan と consumer contract つきで作成または接続する。 |
+| VC-CLOSEOUT-G002 | `external_dependency_gap` / `deferred` | original closeout は `mizar-kernel` を unavailable と扱っていた。`mizar-kernel` task 23-29 は formula/substitution evidence parsing、deterministic instantiation / SAT encoding、trusted SAT checker wrapping、SAT-backed check service、legacy-certificate audit gating を提供済みである。VC handoff builder、ATP candidate producer、proof/cache consumer、artifact witness consumer はまだ incomplete。 | Task 24 は VC/kernel handoff を仕様化する。task 25 は producer-side builder を実装し、task 26 は canonical kernel evidence hash を reuse identity に含めなければならない。downstream ATP/proof/cache/artifact work は placeholder ではなくそれぞれの spec を使う。 |
 | VC-CLOSEOUT-G003 | `external_dependency_gap` | registration/redefinition/reduction details、call precondition、branch/match/range/collection loop obligation、term-only / partial termination、Pick non-emptiness、ghost erasure、complete trace family、source-derived core formula payload、definition payload、quantified binder payload、source-derived obligation payload family の upstream explicit/stable payload は不完全。 | Upstream checker/core/control-flow task が stable explicit payload を expose した後、`mizar-vc` に spec-backed generation/discharge/slice task を追加する。 |
 | VC-CLOSEOUT-G004 | `deferred` | Proof-witness hash、ATP/kernel/proof/cache validation、artifact consumer、source-derived runner integration は、architecture-22 reuse を deterministic-discharge candidate key の外で受理する前に必要。 | Downstream proof/cache/artifact phase が、ここで生成する untrusted reusable input を validate する。 |
 | VC-CLOSEOUT-G005 | `deferred` | 大きい `vc_ir`、`generator`、`dependency_slice` file は private helper/test split が有益になる可能性があるが、Task 22 は crate exit 前に必須の move-only split はないと判断した。 | reviewability bottleneck が生じた場合だけ、behavior や API change を混ぜず future move-only maintenance task を実施する。 |
@@ -164,8 +180,10 @@ Unrun deferred commands:
 - `cargo test -p mizar-cache` と `cargo test -p mizar-proof` は、それらの crate が
   workspace に存在しないため dedicated consumer check としては実行していない。現在の workspace
   は broad `cargo test` で cover する。
-- Dedicated `mizar-atp` と `mizar-kernel` check も同じ理由で未実行。それらは current
-  workspace member ではなく external gap である。
+- Dedicated `mizar-atp` check は同じ理由で未実行である。その crate はこの report
+  ではまだ external gap である。`mizar-kernel` は現在存在し、task 23 から task 29 の
+  correction commit で独自に verified 済みである。Task 24 は docs-only なので kernel
+  source verification の再実行は要求しない。
 
 ## Next-Task Handoff
 
@@ -174,23 +192,28 @@ Recommended reasoning: `xhigh`。
 Prompt:
 
 ```text
-Start the next verification pipeline crate after the completed mizar-vc closeout.
-Before editing, verify a clean worktree, confirm the mizar-vc closeout commit in
-git log, and read doc/design/mizar-vc/en/crate_exit_report.md,
-doc/design/mizar-vc/en/00.crate_plan.md, doc/design/mizar-atp/en/todo.md,
-doc/design/internal/en/04.atp_portfolio_and_kernel_check_integration.md,
-doc/design/internal/en/07.crate_module_layout.md,
-doc/design/architecture/en/09.atp_interface_protocol.md, and
-doc/design/architecture/en/10.atp_backend_integration.md. Begin with preliminary
-task 0 for mizar-atp: create or update the paired English/Japanese crate plan,
-classify specification gaps, test gaps, source/design drift, external
-dependencies, and deferred items, and commit that plan as its own task. Preserve
-the one-task-one-commit rule; do not scaffold mizar-atp source until the task-0
-plan commit exists.
+Continue mizar-vc autonomous correction from completed task 24. Before editing,
+verify a clean worktree, confirm the task 24 commit in git log, and re-read
+doc/design/mizar-vc/en/kernel_evidence_handoff.md,
+doc/design/mizar-kernel/en/formula_evidence.md,
+doc/design/mizar-kernel/en/checker.md,
+doc/design/architecture/en/15.kernel_certificate_format.md,
+doc/design/architecture/en/08.reasoning_boundary.md,
+crates/mizar-vc/src/vc_ir.rs, crates/mizar-vc/src/discharge.rs, and
+crates/mizar-vc/src/dependency_slice.rs. Implement task 25 only: add an
+immutable kernel evidence handoff builder over existing VcSet/VcIr data. Keep
+the builder prover-independent; do not run SAT solving, call mizar-kernel, call
+ATP backends, include backend proof methods, include resolution traces, or
+fabricate missing formula/substitution/provenance payloads. Add focused Rust
+tests for deterministic rendering, local context/premise/generated formula/goal
+mapping, missing payload fail-closed behavior, and absence of prohibited
+backend/legacy fields. Run cargo fmt --check, cargo test -p mizar-vc,
+cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings, git diff
+--check, and git diff --cached --check after explicit path staging. Use
+review-only agents for the required AGENTS.md review phases.
 ```
 
-Rationale: `mizar-atp` は `mizar-vc` の次の pipeline phase であり、phase-13 ATP
-translation / backend execution を所有する。proof evidence、external process、
-certificate、downstream policy boundary をまたぐため `xhigh` を維持する。typo-only
-documentation sync だけなら下げてよい。repository metadata や specification
-contradiction が crate plan を block する場合だけ上げる。
+Rationale: task 25 は VC/kernel evidence boundary での最初の Rust implementation
+である。小さな API mistake が producer-owned candidate material を accidental trusted
+acceptance material に変え得るため `xhigh` を保つ。typo-only documentation synchronization
+だけなら lower reasoning が適切である。

@@ -21,6 +21,7 @@
 | generator | `generator.md`（task 5） | `src/generator.rs` | [x] |
 | discharge | `discharge.md`（task 10） | `src/discharge.rs` | [x] |
 | dependency_slice | `dependency_slice.md`（task 13） | `src/dependency_slice.rs` | [x] |
+| kernel_evidence_handoff | `kernel_evidence_handoff.md`（task 24） | task 25 builder pending | [x] spec |
 
 `mizar-vc` はパイプライン phase 11-12 を実装する。入力は `CoreIr` と
 `ControlFlowIr`、出力は prover 非依存の `VcIr` であり、外部 prover の実行に
@@ -62,10 +63,11 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
   task 12 の discharge 証拠を kernel が再生するか、ポリシーに従う
   決定的な built-in 証拠として受理するか。この crate はどちらの場合でも
   証拠が再生可能であることを保証する。トップレベルに登録済み。
-- **kernel formula/substitution handoff: 未解決。`mizar-kernel` task 23-29 に
-  依存する。** `VcIr` は prover-independent のままにするが、将来の handoff
-  record は local context、premise、generated formula、substitution、goal を、
-  backend trace や solver-specific proof method を加えずに kernel evidence schema
+- **kernel formula/substitution handoff: task-24 spec complete、builder
+  pending。** `mizar-kernel` task 23-29 は checker-side formula/substitution evidence
+  path を提供済みである。`VcIr` は prover-independent のままにし、task 25 は local
+  context、premise、generated formula、substitution、goal を、backend trace、SAT
+  clause、resolution trace、solver-specific proof method を加えずに kernel evidence schema
   へ写像しなければならない。
 - **diagnostics レコード: `mizar-resolve` の決定に従う**
   （`mizar-diagnostics` 採用時期）。トップレベルに登録済み。
@@ -328,13 +330,18 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 ### Kernel evidence handoff follow-ups
 
-24. **仕様: kernel evidence handoff。** [ ]
+24. **仕様: kernel evidence handoff。** [x]
     - `VcIr`、local context、premise ref、generated formula、discharge record、goal
       を formula/substitution kernel evidence format へ写像する方法を定義する。
       prover independence を維持する: TPTP/SMT-LIB text、SAT clause、backend log、
-      resolution trace、solver proof method を `VcIr` に入れてはならない。
-    - テスト: docs-only verification。
-    - 依存: 23、`mizar-kernel` task 23。仕様:
+      resolution trace、solver proof method を `VcIr` に入れてはならない。Task 24 は
+      paired `kernel_evidence_handoff.md` spec を追加し、`mizar-kernel` task 23-29 が
+      checker-side formula/substitution evidence path を提供済みであることを記録する。
+      VC builder と downstream consumer は後続 work のまま。
+    - テスト: docs-only verification (`git diff --check`、staged
+      `git diff --cached --check`、docs sync review record)。
+    - 依存: 23、`mizar-kernel` task 23-29。仕様:
+      [kernel_evidence_handoff.md](./kernel_evidence_handoff.md),
       [15.kernel_certificate_format.md](../../architecture/ja/15.kernel_certificate_format.md),
       [08.reasoning_boundary.md](../../architecture/ja/08.reasoning_boundary.md)。
 
@@ -345,7 +352,8 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       `deferred` として分類する。
     - テスト: deterministic handoff rendering。local-context と premise provenance
       の completeness。不足 payload は fail-closed のまま。
-    - 依存: 24、`mizar-kernel` task 25。仕様: task 24 の handoff spec。
+    - 依存: 24、`mizar-kernel` task 29。仕様:
+      [kernel_evidence_handoff.md](./kernel_evidence_handoff.md)。
 
 26. **Dependency-slice and proof-reuse identity update。** [ ]
     - handoff builder が存在した後、dependency slice と architecture-22 proof-reuse

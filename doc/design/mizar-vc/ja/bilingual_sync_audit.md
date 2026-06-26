@@ -41,6 +41,7 @@ Closeout の自己 hash は commit 自身に埋め込めないため final user 
 | `generator.md` | explicit-payload generation scope、利用不能な registration / algorithm payload boundary、local context、controlled unfolding、normalization handoff、task slice、planned tests、public enum policy。 | 同期済み。 |
 | `discharge.md` | deterministic pre-ATP scope、supported classes、limit、evidence/explanation model、status interaction、no-erase ATP boundary、planned tests、public enum policy。 | 同期済み。 |
 | `dependency_slice.md` | conservative slice inputs/outputs、dependency entry classes、unknown coverage、reusable fingerprint contract、planned tests、public enum policy。 | 同期済み。 |
+| `kernel_evidence_handoff.md` | producer-side formula/substitution evidence handoff mapping、禁止される backend/legacy material、gap classification、task-25 planned tests。 | Task 24 により同期済み。 |
 | `source_spec_audit.md` | public module exports、public surface inventory、cross-module evidence、classified external/deferred follow-ups。 | 同期済み。 |
 | `bilingual_sync_audit.md` | audit scope、method、pair inventory、classification、Task 19/21/22/closeout sync edits。 | この paired audit document により同期済み。 |
 | `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence、deterministic-discharge branch evidence、remaining external/deferred gaps、no-drift classification。 | Task 21 により同期済み。 |
@@ -62,10 +63,11 @@ inventory に追加しつつ、この分類を維持する。closeout は paired
 - `external_dependency_gap`: active `proof_verification` runner support と
   source-to-core / source-to-VC extraction seam は `mizar-test` に存在しない。
   Task 15 が deferred corpus obligation を記録済み。
-- `external_dependency_gap`: `mizar-atp`、`mizar-kernel`、`mizar-proof`、
-  `mizar-cache` は active workspace consumer ではない。そのため ATP
-  translation、certificate acceptance、proof policy、cache lookup/reuse、
-  artifact persistence は downstream に残る。
+- `external_dependency_gap` / `deferred`: `mizar-kernel` は現在 checker-side
+  formula/substitution evidence acceptance path を所有するが、`mizar-vc`
+  handoff builder、ATP candidate producer、proof/cache consumer、artifact witness
+  consumer は incomplete のままである。ATP translation、proof policy、cache
+  lookup/reuse、artifact persistence は downstream に残る。
 - `external_dependency_gap`: registration/redefinition/reduction details、
   call-precondition、branch、match、range-loop、collection-loop、term-only
   termination、partial termination、Pick non-emptiness、ghost-erasure、
@@ -73,8 +75,9 @@ inventory に追加しつつ、この分類を維持する。closeout は paired
   quantified binder payload、source-derived obligation payload family について、
   upstream explicit/stable payload はまだ不完全である。
 - `deferred`: proof-witness hash、ATP/kernel/proof/cache validation、
-  artifact consumer、source-derived runner integration は、architecture-22 reuse を
-  deterministic-discharge candidate key の外で受理する前に downstream に残る。
+  artifact consumer、VC kernel-evidence hash integration、source-derived runner
+  integration は、architecture-22 reuse を deterministic-discharge candidate key の外で
+  受理する前に downstream に残る。
 - `deferred`: 大きい `vc_ir`、`generator`、`dependency_slice` implementation file 内の
   optional private helper / test split は、実施する場合には将来の move-only maintenance task
   として残る。final quality review と crate-exit status は
@@ -110,3 +113,11 @@ closeout は paired crate exit report を追加し、paired ledger で Task 22 c
 backfill し、final quality review score 94/100 と passing broad workspace verification を
 記録し、paired todo に closeout status を追加する。英語正本 report と日本語 companion は
 実質的に同期済みである。
+
+## Task 24 の同期編集
+
+Task 24 は paired kernel evidence handoff specification を追加し、pair inventory に
+追加し、`mizar-kernel` task 23-29 後の状態に合わせて closeout 時点の古い kernel gap
+classification を更新し、paired todo で Task 24 を完了にし、paired ledger に task-25
+handoff prompt を記録する。英語正本 document と日本語 companion は意味的に同期済みで、
+Rust source は変更しない。

@@ -35,7 +35,8 @@ commit が履歴に存在し、最終 review outcome、verification result、def
 | 20. Obligation anchors and cross-edit reuse identity | complete | `2f3eb323be8080bf231e1b69dfc9e9e729bb45f9` | Spec/doc review: high proof-evidence、raw-id fingerprint、`VcId` 由来 discharge-hash findings、および medium generated-formula / bookkeeping findings を修正し、final re-review は no findings。Test sufficiency review: medium independent input と unresolved-payload coverage findings を修正し、final re-review は no findings。Full implementation review: high raw row-id と dense owner-id reuse findings を修正し、final re-review は no findings。Source/doc consistency review: medium quantified-binder finding を修正し、final re-review は no findings。 | `cargo fmt --check` passed; `cargo test -p mizar-vc cross_edit_reuse_key_survives_vc_id_shift_only_with_required_inputs` passed; generator focused tests passed; unresolved-payload focused tests passed; `cargo test -p mizar-vc` passed; `cargo clippy -p mizar-vc --all-targets -- -D warnings` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Rust source/docs task。source-shape `ObligationAnchor` hash、fail-closed な canonical goal/context hash marker、`CanonicalVcFingerprint`、`LocalContextFingerprint`、cross-edit stable deterministic discharge evidence hash、diagnostic row id を除外する reuse 可能な dependency-slice seed fingerprint payload、complete anchor / current matching slice / policy fingerprint / newly produced replayable deterministic discharge evidence を必須にする proof-reuse candidate key を接続する。obligation 前挿入 reuse coverage と、generated-formula-id-shift、stale-slice、policy-change、local-context-change、generated-goal-change、unresolved-payload、pre-existing-evidence、incomplete-anchor check を追加する。Proof-witness hash、ATP/kernel/proof/cache validation、artifact consumer、source-derived runner support、upstream missing payload family は `external_dependency_gap` / `deferred` のまま。 |
 | 21. Architecture-22 follow-up audit | complete | `a8243c3498249fe75d3619fbbe4f5a2dc94b86a2` | Spec/doc review: high audit-artifact mismatch と medium remaining-gap、bookkeeping、stale pair-inventory findings を修正し、final re-review は no findings。Test sufficiency review: no findings。Full implementation review: medium stale bilingual/ledger finding を修正し、final re-review は no findings。Source/doc consistency review: low public-surface bucket finding を修正し、final re-review は no findings。 | `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Docs-only audit task。paired `architecture_22_audit.md` を追加し、Task 20 後の source/spec audit と bilingual sync audit report を更新し、Task 20 hash を backfill し、paired todo で Task 21 を完了にする。Rust source、`.miz` fixture、expectation、`doc/spec`、traceability metadata、runner support、ATP/kernel/proof/cache validation、artifact consumer、source-derived payload integration は変更しない。残る architecture-22 gap は `external_dependency_gap` / `deferred` として明示的に分類する。 |
 | 22. Module-boundary refactor gate | complete | `76f286f9a3d1e6d6f096b84be7b5f38873e48d42` | Spec/doc review: medium stale source/spec、bilingual audit、task-state findings を修正し、final re-review は no findings。Test sufficiency review: no findings。Full implementation review: medium ledger-status finding を修正し、final re-review は no findings。Source/doc consistency review: no findings。 | `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Docs-only audit task。paired `module_boundary_audit.md` を追加し、Task 21 hash を backfill し、source/spec audit と bilingual sync audit report を更新し、paired todo で Task 22 を完了にする。Rust source、`.miz` fixture、expectation、`doc/spec`、traceability metadata、runner support、downstream ATP/kernel/proof/cache integration、public API、diagnostic、deterministic rendering、artifact-facing schema は変更しない。必須の move-only split は見つからず、大きい module 内の任意の private helper / test split は実施する場合の deferred maintenance task として残す。 |
-| Closeout. Crate exit report and quality review | ready to commit | pending self-hash | Spec/doc review: no findings。Test sufficiency review: no findings。Full implementation review: no findings。Source/doc consistency review: no findings。Read-only crate quality review: hard gates pass、score 94/100。 | `cargo fmt --check` passed; `cargo clippy --all-targets --all-features -- -D warnings` passed; `cargo test` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Docs-only closeout task。paired `crate_exit_report.md` を追加し、plan/todo/audit ledger を更新し、Task 22 hash を backfill し、すべての task commit、broad verification、残る `external_dependency_gap` / `deferred` item を記録し、proof-verification runner/extraction または downstream ATP/kernel/proof/cache work の次 owner へ handoff する。Rust source、`.miz` fixture、expectation、`doc/spec`、traceability metadata、runner support、ATP/kernel/proof/cache consumer、public API、diagnostic、deterministic rendering、artifact-facing schema は変更しない。 |
+| Closeout. Crate exit report and quality review | complete | `0996ad28c57298bd68024eb1f9a6638ef7e37108` | Spec/doc review: no findings。Test sufficiency review: no findings。Full implementation review: no findings。Source/doc consistency review: no findings。Read-only crate quality review: hard gates pass、score 94/100。 | `cargo fmt --check` passed; `cargo clippy --all-targets --all-features -- -D warnings` passed; `cargo test` passed; `git diff --check` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Docs-only closeout task。paired `crate_exit_report.md` を追加し、plan/todo/audit ledger を更新し、Task 22 hash を backfill し、すべての task commit、broad verification、残る `external_dependency_gap` / `deferred` item を記録し、proof-verification runner/extraction または downstream ATP/kernel/proof/cache work の次 owner へ handoff する。Rust source、`.miz` fixture、expectation、`doc/spec`、traceability metadata、runner support、ATP/kernel/proof/cache consumer、public API、diagnostic、deterministic rendering、artifact-facing schema は変更しない。 |
+| 24. Spec: kernel evidence handoff | ready to commit | pending self-hash | Spec/doc review: initial high premise-selection wording と medium imported-context finding を修正し、final re-review は blocking/high/medium finding なし。Test sufficiency review: findings なし。Full implementation review: initial medium envelope-shape と stale next-handoff finding を修正し、final re-review は blocking/high/medium finding なし。Source/doc consistency review: findings なし。 | `git diff --check` passed; `cargo test -p mizar-vc --test lint_policy --offline` passed; 明示 path staging 後の `git diff --cached --check` passed。 | Docs-only post-closeout correction task。paired `kernel_evidence_handoff.md` を追加し、`mizar-kernel` task 23-29 後の状態に合わせて plan/todo/audit/exit-report classification を更新し、task-25 handoff を記録する。Rust source、`.miz` fixture、expectation、`doc/spec`、traceability metadata、runner support、SAT solving、kernel call、ATP backend、backend proof method、resolution trace、legacy certificate acceptance、捏造した formula/substitution/provenance payload は変更しない。 |
 
 ## Task 0 Handoff
 
@@ -372,3 +373,36 @@ for the required AGENTS.md review phases.
 Rationale: task 11 は最初の phase-12 source implementation である。deterministic
 discharge は ATP-bound obligation を黙って消したり unavailable trace を信頼したりしては
 ならないため `xhigh` を保つ。documentation-only typo fix だけなら lower reasoning でもよい。
+
+## Task 24 Handoff
+
+Recommended reasoning: `xhigh`。
+
+Prompt:
+
+```text
+Continue mizar-vc autonomous correction from completed task 24. Before editing,
+verify a clean worktree, confirm the task 24 commit in git log, and re-read
+doc/design/mizar-vc/en/kernel_evidence_handoff.md,
+doc/design/mizar-kernel/en/formula_evidence.md,
+doc/design/mizar-kernel/en/checker.md,
+doc/design/architecture/en/15.kernel_certificate_format.md,
+doc/design/architecture/en/08.reasoning_boundary.md,
+crates/mizar-vc/src/vc_ir.rs, crates/mizar-vc/src/discharge.rs, and
+crates/mizar-vc/src/dependency_slice.rs. Implement task 25 only: add an
+immutable kernel evidence handoff builder over existing VcSet/VcIr data. Keep
+the builder prover-independent; do not run SAT solving, call mizar-kernel, call
+ATP backends, include backend proof methods, include resolution traces, or
+fabricate missing formula/substitution/provenance payloads. Add focused Rust
+tests for deterministic rendering, local context/premise/generated formula/goal
+mapping, missing payload fail-closed behavior, and absence of prohibited
+backend/legacy fields. Run cargo fmt --check, cargo test -p mizar-vc,
+cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings, git diff
+--check, and git diff --cached --check after explicit path staging. Use
+review-only agents for the required AGENTS.md review phases.
+```
+
+Rationale: task 25 は VC/kernel evidence boundary での最初の Rust implementation
+である。小さな API mistake が producer-owned candidate material を accidental trusted
+acceptance material に変え得るため `xhigh` を保つ。typo-only documentation synchronization
+だけなら lower reasoning が適切である。

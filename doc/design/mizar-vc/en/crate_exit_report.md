@@ -43,10 +43,29 @@ Excluded:
 - ATP problem encoding, backend process execution, certificate validation,
   trusted proof acceptance, cache hit acceptance, or artifact publication.
 - Placeholder crates or placeholder consumers for unavailable `mizar-atp`,
-  `mizar-kernel`, `mizar-proof`, or `mizar-cache` seams.
+  `mizar-proof`, or `mizar-cache` seams, or for the still-pending VC handoff
+  builder and artifact/proof/cache consumers.
 - Fabricated registration/redefinition/reduction, branch, match, loop,
   termination, ghost-erasure, trace, source-derived core formula, definition,
   quantified binder, or source-derived obligation payloads.
+
+## Post-Closeout Evidence Correction
+
+Task 24 reopens only the evidence-pipeline handoff documentation after
+`mizar-kernel` tasks 23-29 completed the checker-side correction from legacy
+resolution-trace acceptance to formula/substitution evidence plus trusted
+in-process Rust SAT checking. The original mizar-vc closeout remains valid for
+phases 11-12, deterministic discharge, dependency slices, and proof-reuse
+candidate keys.
+
+Task 24 adds the paired
+[kernel_evidence_handoff.md](./kernel_evidence_handoff.md) spec and updates
+the stale downstream classification: `mizar-kernel` now exists as the trusted
+checker for corrected evidence, while the VC handoff builder, ATP candidate
+producer, proof/cache consumers, and artifact witness consumers remain later
+tasks or external gaps. This task is docs-only and adds no Rust source, kernel
+calls, SAT solving, backend encodings, legacy certificates, or fabricated
+formula/substitution/provenance payloads.
 
 ## Task Commits
 
@@ -124,7 +143,7 @@ milestone does not own those seams and no hard gate fails.
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
 | VC-CLOSEOUT-G001 | `external_dependency_gap` | `mizar-test` still lacks an active `proof_verification` runner/tag gate and source-to-core/source-to-VC extraction seams for real `.miz` corpus inputs. | Add runner and extraction support in the owning staged-test and upstream extraction tasks before activating source-derived VC fixtures. |
-| VC-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-atp`, `mizar-kernel`, `mizar-proof`, and `mizar-cache` are not workspace crates or active consumers, so ATP translation, certificate acceptance, proof policy, cache hit acceptance, and proof-reuse validation remain downstream. | Create or wire the owning downstream crates with their own crate plans and consumer contracts. |
+| VC-CLOSEOUT-G002 | `external_dependency_gap` / `deferred` | The original closeout treated `mizar-kernel` as unavailable. `mizar-kernel` tasks 23-29 now provide formula/substitution evidence parsing, deterministic instantiation/SAT encoding, trusted SAT checker wrapping, SAT-backed check service, and legacy-certificate audit gating. The VC handoff builder, ATP candidate producer, proof/cache consumers, and artifact witness consumers remain incomplete. | Task 24 specifies the VC/kernel handoff; task 25 must implement the producer-side builder; task 26 must include canonical kernel evidence hashes in reuse identity. Downstream ATP/proof/cache/artifact work must use their own specs instead of placeholders. |
 | VC-CLOSEOUT-G003 | `external_dependency_gap` | Upstream explicit/stable payloads remain incomplete for registration/redefinition/reduction details, call preconditions, branch/match/range/collection loop obligations, term-only and partial termination, Pick non-emptiness, ghost erasure, complete trace families, source-derived core formula payloads, definition payloads, quantified binder payloads, and source-derived obligation payload families. | Upstream checker/core/control-flow tasks expose stable explicit payloads; `mizar-vc` can then add spec-backed generation/discharge/slice tasks. |
 | VC-CLOSEOUT-G004 | `deferred` | Proof-witness hashes, ATP/kernel/proof/cache validation, artifact consumers, and source-derived runner integration must exist before architecture-22 reuse is accepted outside deterministic-discharge candidate keys. | Downstream proof/cache/artifact phases validate the untrusted reusable inputs produced here. |
 | VC-CLOSEOUT-G005 | `deferred` | Large `vc_ir`, `generator`, and `dependency_slice` files may benefit from private helper/test splits, but Task 22 found no required move-only split before crate exit. | Run future move-only maintenance tasks only if reviewability becomes a bottleneck; do not mix behavior or API changes. |
@@ -167,8 +186,10 @@ Unrun deferred commands:
 - `cargo test -p mizar-cache` and `cargo test -p mizar-proof` were not run as
   dedicated consumer checks because those crates do not exist in the workspace.
   The broad `cargo test` command covers the current workspace.
-- Dedicated `mizar-atp` and `mizar-kernel` checks were not run for the same
-  reason: those crates are external gaps, not current workspace members.
+- Dedicated `mizar-atp` checks were not run for the same reason: that crate is
+  still an external gap for this report. `mizar-kernel` now exists and is
+  verified by its own task-23 through task-29 correction commits; Task 24 is
+  docs-only and does not require rerunning kernel source verification.
 
 ## Next-Task Handoff
 
@@ -177,24 +198,28 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Start the next verification pipeline crate after the completed mizar-vc closeout.
-Before editing, verify a clean worktree, confirm the mizar-vc closeout commit in
-git log, and read doc/design/mizar-vc/en/crate_exit_report.md,
-doc/design/mizar-vc/en/00.crate_plan.md, doc/design/mizar-atp/en/todo.md,
-doc/design/internal/en/04.atp_portfolio_and_kernel_check_integration.md,
-doc/design/internal/en/07.crate_module_layout.md,
-doc/design/architecture/en/09.atp_interface_protocol.md, and
-doc/design/architecture/en/10.atp_backend_integration.md. Begin with preliminary
-task 0 for mizar-atp: create or update the paired English/Japanese crate plan,
-classify specification gaps, test gaps, source/design drift, external
-dependencies, and deferred items, and commit that plan as its own task. Preserve
-the one-task-one-commit rule; do not scaffold mizar-atp source until the task-0
-plan commit exists.
+Continue mizar-vc autonomous correction from completed task 24. Before editing,
+verify a clean worktree, confirm the task 24 commit in git log, and re-read
+doc/design/mizar-vc/en/kernel_evidence_handoff.md,
+doc/design/mizar-kernel/en/formula_evidence.md,
+doc/design/mizar-kernel/en/checker.md,
+doc/design/architecture/en/15.kernel_certificate_format.md,
+doc/design/architecture/en/08.reasoning_boundary.md,
+crates/mizar-vc/src/vc_ir.rs, crates/mizar-vc/src/discharge.rs, and
+crates/mizar-vc/src/dependency_slice.rs. Implement task 25 only: add an
+immutable kernel evidence handoff builder over existing VcSet/VcIr data. Keep
+the builder prover-independent; do not run SAT solving, call mizar-kernel, call
+ATP backends, include backend proof methods, include resolution traces, or
+fabricate missing formula/substitution/provenance payloads. Add focused Rust
+tests for deterministic rendering, local context/premise/generated formula/goal
+mapping, missing payload fail-closed behavior, and absence of prohibited
+backend/legacy fields. Run cargo fmt --check, cargo test -p mizar-vc,
+cargo clippy -p mizar-vc --all-targets --all-features -- -D warnings, git diff
+--check, and git diff --cached --check after explicit path staging. Use
+review-only agents for the required AGENTS.md review phases.
 ```
 
-Rationale: `mizar-atp` is the next phase after `mizar-vc` in the pipeline and
-owns phase-13 ATP translation/backend execution. Keep `xhigh` because the work
-crosses proof evidence, external process, certificate, and downstream policy
-boundaries. Lower reasoning is appropriate only for typo-only documentation
-sync; raise only if repository metadata or specification contradictions block
-the crate plan.
+Rationale: task 25 is the first Rust implementation at the VC/kernel evidence
+boundary. Keep `xhigh` because a small API mistake can turn producer-owned
+candidate material into accidental trusted acceptance material. Lower reasoning
+is appropriate only for typo-only documentation synchronization.
