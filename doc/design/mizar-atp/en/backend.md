@@ -26,12 +26,14 @@ processes, integrate a real backend, parse backend proof languages, extract
 formula/substitution candidates from a real backend, call the kernel, publish
 artifact witnesses, run a portfolio, or implement proof policy.
 
-Task-14 source may implement the generic process runner and mock backend
-fixtures described here. Real backend adapters, backend-specific output
-parsers, candidate evidence extraction, and backend-available integration
-tests remain task-15 work. Broad classification fixtures and polarity
-validation remain task-16 work, although task 14 may expose constructors and
-invariants that make invalid `Proved` results unrepresentable.
+Task-14 source implements the generic process runner and mock backend fixtures
+described here. Task 15 re-evaluated the first real-backend route and recorded
+it as `external_dependency_gap` / `deferred`: `mizar-atp` still needs a paired
+evidence-extraction spec before it can parse real backend output into
+kernel-owned formula/substitution candidate payloads. Broad classification
+fixtures and polarity validation remain task-16 work, although task 14 may
+expose constructors and invariants that make invalid `Proved` results
+unrepresentable.
 
 ## Inputs And Output
 
@@ -275,8 +277,9 @@ with a missing-evidence diagnostic, never `Proved`. If the backend reports
 failure, unsupported observed status, and polarity mismatch are never `Proved`.
 
 Task 14 may expose these invariant checks and mock classifications. Task 15
-adds the first real backend extractor. Task 16 adds full outcome and polarity
-classification fixtures for real backend-style outputs.
+records the first real backend extractor as deferred until a paired extraction
+spec and guarded backend route exist. Task 16 adds full outcome and polarity
+classification fixtures for real backend-style outputs once that route exists.
 
 ## Candidate Evidence Boundary
 
@@ -349,10 +352,14 @@ canonical candidate ordering or proof status.
 
 - resolved `deferred` spec gap: task 13 defines the backend runner and result
   classification contract before source exists.
-- `deferred`: task 14 generic process runner source, mock backend fixtures,
-  platform-specific resource enforcement, and no-zombie tests.
-- `deferred`: task 15 first concrete backend adapter and formula/substitution
-  candidate extraction.
+- resolved `source_drift`: task 14 implements the generic process runner, mock
+  classification seam, deterministic run metadata, private input handling,
+  drain-safe capture, and fail-closed process statuses.
+- `external_dependency_gap` / `deferred`: task 15 cannot add the first concrete
+  backend adapter yet because no paired `mizar-atp` evidence-extraction spec or
+  source module defines how real backend output becomes kernel-parseable
+  formula/substitution candidate bytes/refs, and the supported architecture-10
+  backend executables were not available in the verification environment.
 - `deferred`: task 16 full real-output result classification and polarity
   fixtures.
 - `external_dependency_gap`: proof policy, winner selection, proof witness

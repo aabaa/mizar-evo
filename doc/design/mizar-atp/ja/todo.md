@@ -65,21 +65,24 @@ formula、substitution、provenance、target binding を含む candidate evidenc
 trusted ATP payload として生成しない。
 
 現在の gate 状態: `mizar-kernel` task 23-28 と `mizar-vc` task 24-25 により、
-task 1 については満たされている。task 1 で追加してよいのは workspace crate
-shell、dependency boundary、crate plan、lint-policy guard のみである。semantic
-ATP module、backend integration、proof policy、witness publication、cache
-promotion は、それぞれ専用 task まで deferred のままである。`mizar-proof` は
-workspace crate ではないため、policy と witness-publication integration は
-`external_dependency_gap` であり、ここで placeholder を追加する理由にはならない。
+generic runner path については満たされている。task 1-14 は spec-backed な
+problem、translation、encoding、generic backend-runner slice だけを構築してよい。
+task 15 は first real backend adapter と evidence extractor を、paired extraction spec と
+guarded supported backend route が存在するまで `external_dependency_gap` / `deferred` として
+記録する。proof policy、witness publication、cache promotion はそれぞれ専用 crate/task まで
+deferred のままである。`mizar-proof` は workspace crate ではないため、policy と
+witness-publication integration は `external_dependency_gap` であり、ここで placeholder を
+追加する理由にはならない。
 
 ## 解決済みおよび保留中の決定
 
-- **最初のバックエンドと evidence route: deferred。kernel redesign 後に
-  task 15 で解決する。** アーキテクチャ 10 のサポート集合から最初の具体
-  バックエンドを選ぶのは、kernel formula/substitution evidence schema が
-  利用可能になった後だけである。既定ルートはもはや MiniSAT 互換 resolution
-  trace ではなく、完全な provenance 付き formula/substitution evidence candidate
-  を最も単純に生成できる backend route である。
+- **最初のバックエンドと evidence route: task-15 gate 後も deferred。**
+  kernel formula/substitution evidence schema と VC handoff は利用可能になったが、
+  concrete backend output を kernel が parse できる formula/substitution candidate
+  bytes または ref に変換する paired `evidence.md` extractor spec と source module が
+  この crate にはまだない。task-15 verification environment では architecture-10 supported
+  backend binary も利用できなかった。この extraction route が仕様化されるまで、
+  real adapter、backend-output parser、placeholder candidate schema を追加しない。
 - **evidence schema ownership: `mizar-kernel` task 23-25 に従う。** この crate は
   kernel 所有のスキーマ型に対して candidate evidence を構築する。kernel がこの
   crate に依存することは決してない。
@@ -330,7 +333,7 @@ workspace crate ではないため、policy と witness-publication integration 
       publication、kernel checking は deferred のままである。
     - 依存: 13。仕様: `backend.md`。
 
-15. **最初の具体バックエンド統合。** [ ]
+15. **最初の具体バックエンド統合。** [x] deferred / external_dependency_gap
     - 最初のバックエンドの決定を解決し、実バックエンド 1 つをエンド
       ツーエンドで統合する: problem 出力、実行、出力を kernel スキーマに
       対する formula/substitution evidence candidate として extract する。
@@ -338,6 +341,17 @@ workspace crate ではないため、policy と witness-publication integration 
       `mizar-kernel` の構造検証を通り、kernel checking まで untrusted のままである。
     - 依存: 10 または 12（選んだバックエンドに応じて）、14、
       `mizar-kernel` task 25-28。仕様: `backend.md`。
+    - Gate result: deferred。`mizar-kernel` task 25-28 と `mizar-vc` handoff は
+      存在するが、real backend output を kernel-owned formula/substitution candidate
+      payload に変換する paired evidence-extraction spec / source module が
+      `mizar-atp` に存在しない。supported architecture-10 backend executable
+      (`vampire`, `eprover`, `cvc5`, `z3`) は task-15 environment で見つからず、
+      backend-available integration fixture は skip され、adapter を検証できない。
+      real adapter、backend-specific parser、fake candidate schema、kernel call、
+      proof-policy hook、witness/cache output、trusted backend proof material は追加しない。
+      English/Japanese `evidence.md` spec（または同等の backend-specific extraction spec）が
+      candidate payload/ref contract を定義し、supported backend route を guarded integration
+      test で利用できるようになった後にだけ、この task を再開する。
 
 16. **結果分類と極性検証。** [ ]
     - バックエンドの結果を分類する（proved、反例、タイムアウト、
@@ -346,7 +360,9 @@ workspace crate ではないため、policy と witness-publication integration 
       反例は診断のみに供給する。
     - テスト: 結果ごとの分類フィクスチャ。極性不一致ケースが proved に
       分類されない。
-    - 依存: 15。仕様: `backend.md`（分類の節）。
+    - 依存: 15 に加え task-15 reopen condition、すなわち paired evidence-extraction
+      spec と guarded supported backend route が存在すること。real-output classification は
+      その後に実装する。仕様: `backend.md`（分類の節）。
 
 ### portfolio
 

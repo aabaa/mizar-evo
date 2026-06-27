@@ -65,23 +65,26 @@ and target binding for kernel SAT-backed checking. Instantiated formulas and
 SAT problems are derived by `mizar-kernel`, not produced as trusted ATP
 payload.
 
-Current gate status: satisfied for task 1 by `mizar-kernel` tasks 23-28 and
-`mizar-vc` tasks 24-25. Task 1 may add only the workspace crate shell,
-dependency boundary, crate plan, and lint-policy guard. Semantic ATP modules,
-backend integration, proof policy, witness publication, and cache promotion
-remain deferred to their own tasks. `mizar-proof` is not a workspace crate, so
-policy and witness-publication integration is an `external_dependency_gap`,
-not a reason to add placeholders here.
+Current gate status: satisfied for the generic runner path by `mizar-kernel`
+tasks 23-28 and `mizar-vc` tasks 24-25. Tasks 1-14 may build only the
+spec-backed problem, translation, encoding, and generic backend-runner slices.
+Task 15 records the first real backend adapter and evidence extractor as
+`external_dependency_gap` / `deferred` until a paired extraction spec and a
+guarded supported backend route exist. Proof policy, witness publication, and
+cache promotion remain deferred to their own crates/tasks. `mizar-proof` is
+not a workspace crate, so policy and witness-publication integration is an
+`external_dependency_gap`, not a reason to add placeholders here.
 
 ## Resolved And Open Decisions
 
-- **First backend and evidence route: deferred, resolved by task 15 after
-  kernel redesign.** Choose the first concrete backend from the
-  architecture-10 supported set only after the kernel formula/substitution
-  evidence schema is available. The default route is no longer
-  MiniSAT-compatible resolution traces; it is the backend route that can most
-  simply produce formula/substitution evidence candidates with complete
-  provenance.
+- **First backend and evidence route: still deferred after the task-15 gate.**
+  The kernel formula/substitution evidence schema and VC handoff are available,
+  but this crate still lacks a paired `evidence.md` extractor spec and source
+  module defining how a concrete backend output becomes kernel-parseable
+  formula/substitution candidate bytes or refs. The architecture-10 supported
+  backend binaries were not available in the task-15 verification environment.
+  Do not add a real adapter, backend-output parser, or placeholder candidate
+  schema until that extraction route is specified.
 - **Evidence schema ownership: follows `mizar-kernel` tasks 23-25.** This
   crate constructs candidate evidence against kernel-owned schema types; the
   kernel never depends on this crate.
@@ -356,7 +359,7 @@ Keep `cargo test -p mizar-atp` green after each task (see
       deferred.
     - Deps: 13. Spec: `backend.md`.
 
-15. **First concrete backend integration.** [ ]
+15. **First concrete backend integration.** [x] deferred / external_dependency_gap
     - Resolve the first-backend decision; integrate one real backend
       end-to-end: emit problem, run, and extract formula/substitution
       evidence candidates against the kernel schema.
@@ -365,6 +368,19 @@ Keep `cargo test -p mizar-atp` green after each task (see
       remains untrusted until kernel checking.
     - Deps: 10 or 12 (per chosen backend), 14, `mizar-kernel` tasks 25-28.
       Spec: `backend.md`.
+    - Gate result: deferred. `mizar-kernel` tasks 25-28 and the `mizar-vc`
+      handoff are present, but `mizar-atp` has no paired evidence-extraction
+      spec/source module for translating real backend output into
+      kernel-owned formula/substitution candidate payloads. The supported
+      architecture-10 backend executables (`vampire`, `eprover`, `cvc5`, `z3`)
+      were not found in the task-15 environment, so a backend-available
+      integration fixture would be skipped and could not validate an adapter.
+      No real adapter, backend-specific parser, fake candidate schema, kernel
+      call, proof-policy hook, witness/cache output, or trusted backend proof
+      material is added. Reopen this task only after an English/Japanese
+      `evidence.md` spec (or equivalent backend-specific extraction spec)
+      defines the candidate payload/ref contract and a supported backend route
+      is available for guarded integration tests.
 
 16. **Result classification and polarity validation.** [ ]
     - Classify backend outcomes (proved, counterexample, timeout, unknown,
@@ -373,7 +389,10 @@ Keep `cargo test -p mizar-atp` green after each task (see
       present; counterexamples feed diagnostics only.
     - Tests: classification fixtures per outcome; polarity-mismatch cases
       never classify as proved.
-    - Deps: 15. Spec: `backend.md` (classification section).
+    - Deps: 15 plus the task-15 reopen condition: a paired
+      evidence-extraction spec and a guarded supported backend route must exist
+      before real-output classification is implemented. Spec: `backend.md`
+      (classification section).
 
 ### Portfolio
 
