@@ -4,11 +4,13 @@
 > [../ja/source_spec_audit.md](../ja/source_spec_audit.md).
 
 Task 23 audits the current `mizar-atp` public surface and promised behavior
-after the public-enum policy gate. It changes no source behavior, public API,
-`.miz` fixture, expectation, language specification, backend route, kernel
-check, proof policy, artifact witness, or cache behavior. Remaining unavailable
-behavior is recorded as explicit `external_dependency_gap` or `deferred` work
-instead of being fabricated or treated as normative.
+after the public-enum policy gate. Task 26 re-runs this audit for the task-25
+Architecture-22 portfolio completion-order contract. These audits change no
+source behavior, public API, `.miz` fixture, expectation, language
+specification, backend route, kernel check, proof policy, artifact witness, or
+cache behavior. Remaining unavailable behavior is recorded as explicit
+`external_dependency_gap` or `deferred` work instead of being fabricated or
+treated as normative.
 
 ## Scope And Method
 
@@ -246,6 +248,35 @@ Public entry functions:
 | Identical public `VcIr` inputs produce deterministic ATP problems, concrete encodings, mock backend classification, and portfolio candidate order | `crates/mizar-atp/tests/determinism_suite.rs`; `identical_vcir_inputs_produce_identical_problem_encodings_and_candidate_order`. |
 | Metadata-only advanced-semantics corpus anchor does not fake active source-derived extraction | `crates/mizar-atp/tests/mock_backend_corpus.rs` and `tests/property/atp_mock_backend_integration_001.*`; active `.miz` runner remains deferred. |
 | Public enum forward compatibility | Source attributes, EN/JA module inventories, and `atp_public_enums_are_non_exhaustive_and_documented`. |
+
+## Task 26 Architecture-22 Follow-Up Audit
+
+Task 26 re-ran the source/spec audit for the task-25 portfolio ordering and
+early-stop contract.
+
+Architecture 22 requires portfolio winner selection to be deterministic under
+the active proof policy. "First backend to finish" must not become the
+semantic winner rule, and runtime duration may be recorded as provenance but
+must not participate in canonical proof identity.
+
+Source/spec result:
+
+- `src/portfolio.rs` remains a no-early-stop candidate handoff producer over
+  prebuilt backend run/result inputs.
+- The public source still exposes no proof-policy winner selector,
+  early-stop oracle, kernel check result, accepted proof state, witness/cache
+  writer, or trusted backend proof material.
+- Task-18 and task-21 coverage continues to guard deterministic candidate
+  ordering under shuffled backend completion order for the no-early-stop path.
+- `atp_task_twenty_five_policy_gap_is_documented_and_guarded` and
+  `atp_task_twenty_six_architecture_follow_up_audit_is_documented` guard the
+  task-25/task-26 documentation markers and unchanged gap classification.
+
+Audit result: no new `source_drift`, `design_drift`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, `repo_metadata_conflict`, or additional `ATP-AUDIT-*`
+follow-up was found. The remaining completion-order / policy-boundary gap is
+exactly ATP-AUDIT-G005.
 
 ## Remaining Classified Follow-Ups
 

@@ -1900,6 +1900,133 @@ fn atp_task_twenty_five_policy_gap_is_documented_and_guarded() {
 }
 
 #[test]
+fn atp_task_twenty_six_architecture_follow_up_audit_is_documented() {
+    let expectations = [
+        (
+            "en",
+            vec![
+                (
+                    "todo.md",
+                    vec![
+                        "26. **Architecture-22 follow-up audit.** [x]",
+                        "Status: complete as an audit-only follow-up",
+                        "`ATP-AUDIT-G005` remains the single policy-boundary",
+                    ],
+                ),
+                (
+                    "00.crate_plan.md",
+                    vec![
+                        "ATP-G-026",
+                        "Task 26: Architecture-22 Follow-Up Audit",
+                        "No new follow-up id is required",
+                    ],
+                ),
+                (
+                    "source_spec_audit.md",
+                    vec![
+                        "Task 26 Architecture-22 Follow-Up Audit",
+                        "\"First backend to finish\" must not become the",
+                        "semantic winner rule",
+                        "exactly ATP-AUDIT-G005",
+                    ],
+                ),
+                (
+                    "bilingual_sync_audit.md",
+                    vec![
+                        "Task 26 Sync Edits",
+                        "semantic proof identity",
+                        "ATP-AUDIT-G005 remains the single policy-boundary",
+                    ],
+                ),
+            ],
+        ),
+        (
+            "ja",
+            vec![
+                (
+                    "todo.md",
+                    vec![
+                        "26. **architecture-22 フォローアップ監査。** [x]",
+                        "Status: audit-only follow-up として完了",
+                        "`ATP-AUDIT-G005` は",
+                    ],
+                ),
+                (
+                    "00.crate_plan.md",
+                    vec![
+                        "ATP-G-026",
+                        "Task 26: architecture-22 follow-up audit",
+                        "新しい follow-up id は不要",
+                    ],
+                ),
+                (
+                    "source_spec_audit.md",
+                    vec![
+                        "Task 26 Architecture-22 Follow-Up Audit",
+                        "\"first backend to finish\" は semantic winner rule",
+                        "ATP-AUDIT-G005 だけ",
+                    ],
+                ),
+                (
+                    "bilingual_sync_audit.md",
+                    vec![
+                        "Task 26 Sync Edits",
+                        "semantic proof identity",
+                        "ATP-AUDIT-G005 は単一の policy-boundary",
+                    ],
+                ),
+            ],
+        ),
+    ];
+
+    let mut violations = Vec::new();
+    for (language, files) in expectations {
+        let doc_dir = workspace_root().join("doc/design/mizar-atp").join(language);
+        for (file_name, markers) in files {
+            let path = doc_dir.join(file_name);
+            let document = read_to_string(&path);
+            for marker in markers {
+                if !document.contains(marker) {
+                    violations.push(format!(
+                        "{} must document task-26 marker `{marker}`",
+                        path.display()
+                    ));
+                }
+            }
+        }
+    }
+
+    for language in ["en", "ja"] {
+        let audit_path = workspace_root()
+            .join("doc/design/mizar-atp")
+            .join(language)
+            .join("source_spec_audit.md");
+        let audit = read_to_string(&audit_path);
+        let audit_gaps = audit_gap_classes(&audit);
+        if audit_gaps.keys().cloned().collect::<Vec<_>>()
+            != [
+                "ATP-AUDIT-G001".to_owned(),
+                "ATP-AUDIT-G002".to_owned(),
+                "ATP-AUDIT-G003".to_owned(),
+                "ATP-AUDIT-G004".to_owned(),
+                "ATP-AUDIT-G005".to_owned(),
+            ]
+        {
+            violations.push(format!(
+                "{} must keep task-26 follow-up audit on the existing ATP-AUDIT gap set; found {audit_gaps:?}",
+                audit_path.display()
+            ));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "mizar-atp task-26 architecture follow-up audit drift:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn workspace_lint_baseline_denies_rustc_warnings_and_clippy_all() {
     let manifest_path = workspace_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);

@@ -5,10 +5,11 @@
 
 Task 24 audits the `mizar-atp` design documentation pairs after the
 source/spec correspondence audit. Task 25 updates this audit record for the
-portfolio completion-order independence gate deferral. These audit edits
-change no Rust production source, public API, `.miz` fixture, expectation,
-language specification, backend route, kernel check, proof policy, artifact
-witness, cache behavior, or downstream integration.
+portfolio completion-order independence gate deferral. Task 26 re-runs the
+sync audit for the Architecture-22 follow-up. These audit edits change no Rust
+production source, public API, `.miz` fixture, expectation, language
+specification, backend route, kernel check, proof policy, artifact witness,
+cache behavior, or downstream integration.
 
 ## Scope And Method
 
@@ -43,7 +44,7 @@ behavior is the classified external/deferred work already recorded in
 
 | Document | Synchronized content checked | Result |
 |---|---|---|
-| `00.crate_plan.md` | Crate responsibility, authority order, design/source inventory, known gaps, task decomposition through task 25, hard gates, and verification expectations. | Synchronized. |
+| `00.crate_plan.md` | Crate responsibility, authority order, design/source inventory, known gaps, task decomposition through task 26, hard gates, and verification expectations. | Synchronized. |
 | `problem.md` | Backend-neutral `AtpProblem` data shape, logic profiles, formula/provenance/type-guard ownership, deterministic identity, prohibited trusted material, planned tests, and public enum inventory. | Synchronized. |
 | `translator.md` | Explicit `VcIr` / kernel-handoff projection inputs, declaration/formula materialization, fail-closed unsupported premise classes, proof-hint non-pruning, deterministic ordering, planned tests, and public enum inventory. | Synchronized. |
 | `property_encoding.md` | Axiom-form property projection, generated binder rows, provenance and symbol-map requirements, native-declaration deferral, planned tests, and public enum inventory. | Synchronized. |
@@ -51,13 +52,13 @@ behavior is the classified external/deferred work already recorded in
 | `smtlib_encoder.md` | Deterministic uninterpreted SMT-LIB emission, fixed universe sort, assertion metadata, unsupported theory/native/backend routes, planned tests, and public enum inventory. | Synchronized. |
 | `backend.md` | Generic backend runner, command fingerprints, resource limits, run metadata, candidate-evidence-only `Proved`, prohibited trusted backend material, failure semantics, and public enum inventory. | Synchronized. |
 | `portfolio.md` | Policy-neutral planning, no-early-stop collection, candidate/evidence-set ordering, fail-closed result matching, downstream proof-policy boundary, determinism suite, task-25 deferred completion-order gate, and public enum inventory. | Synchronized. |
-| `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, ATP-AUDIT gap register including task-25 G005, `ProofWitnessRef` / `VerifiedArtifact` artifact-surface acknowledgement, and no source/spec drift classification. | Synchronized. |
-| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, task-24 and task-25 sync edits, and remaining external/deferred work. | Synchronized by this paired audit document. |
-| `todo.md` | Ordered task list, completed tasks through task 25, deferred task 15/16 status, public enum task status, source/spec audit status, task-25 dependency-gap status, next task 26 audit wording, and verification expectations. | Synchronized. |
+| `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, ATP-AUDIT gap register including task-25 G005, task-26 Architecture-22 follow-up result, `ProofWitnessRef` / `VerifiedArtifact` artifact-surface acknowledgement, and no source/spec drift classification. | Synchronized. |
+| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, task-24/task-25/task-26 sync edits, and remaining external/deferred work. | Synchronized by this paired audit document. |
+| `todo.md` | Ordered task list, completed tasks through task 26, deferred task 15/16 status, public enum task status, source/spec audit status, task-25 dependency-gap status, task-26 follow-up-audit status, next task 27 audit wording, and verification expectations. | Synchronized. |
 
 ## Classification
 
-Task 24 records no new `spec_gap`, `test_gap`, `design_drift`,
+Task 24 and its task-26 re-run record no new `spec_gap`, `test_gap`, `design_drift`,
 `source_drift`, `source_undocumented_behavior`, `test_expectation_drift`,
 `boundary_violation`, `repo_metadata_conflict`, or bilingual drift. Existing
 classified records remain:
@@ -103,3 +104,13 @@ release-policy winner/early-stop gate requires a real `mizar-proof` policy
 owner. The edits deliberately do not add a mock proof-policy oracle,
 placeholder proof-policy adapter, accepted proof state, kernel call,
 witness/cache output, or trusted backend proof material.
+
+## Task 26 Sync Edits
+
+Task 26 re-runs the bilingual sync audit for the Architecture-22 follow-up.
+The paired TODO, crate plan, source/spec audit, and this bilingual audit now
+state that Architecture 22 forbids backend completion order and runtime
+duration from becoming semantic proof identity. The re-run found no bilingual
+drift, stale task status, `repo_metadata_conflict`, or new follow-up gap.
+ATP-AUDIT-G005 remains the single policy-boundary / completion-order follow-up
+until a real `mizar-proof` policy owner exists.

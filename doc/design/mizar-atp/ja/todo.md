@@ -519,12 +519,20 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       kernel call、witness/cache output、trusted backend proof material を追加しない
       ことを lint-policy guard で固定する。
 
-26. **architecture-22 フォローアップ監査。** [ ]
+26. **architecture-22 フォローアップ監査。** [x]
     - task 25 の portfolio ordering と early-stop 契約について、ソース/仕様
       対応監査と二言語ドキュメント同期監査を再実行する。残る policy-boundary
       または completion-order gap をフォローアップタスクとして記録する。
     - 依存: 25。仕様: 全モジュール仕様、本 TODO、リポジトリの
       ドキュメント方針。
+    - Status: audit-only follow-up として完了。source/spec audit と bilingual
+      sync audit は、backend completion order と runtime duration を semantic
+      proof identity にしてはならないという Architecture 22 の規則に、task-25
+      completion-order deferral を明示的に結び付けた。新しい source/spec drift、
+      bilingual drift、repo metadata conflict、追加 follow-up gap は見つからなかった。
+      `ATP-AUDIT-G005` は、`mizar-proof` が存在し release policy finality、winner
+      selection、tie-breaking、candidate displacement を所有するまで、単一の
+      policy-boundary / completion-order follow-up として残る。
 
 27. **module 境界リファクタリング gate。** [ ]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、

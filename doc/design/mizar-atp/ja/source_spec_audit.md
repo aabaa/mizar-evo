@@ -4,11 +4,12 @@
 > [../en/source_spec_audit.md](../en/source_spec_audit.md)。
 
 Task 23 は public-enum policy gate 後の現在の `mizar-atp` public surface と
-仕様が約束する挙動を監査する。この task は source behavior、public API、`.miz`
-fixture、expectation、language specification、backend route、kernel check、proof
-policy、artifact witness、cache behavior を変更しない。まだ利用できない挙動は、捏造
-したり現在の実装都合を normative にしたりせず、明示的な `external_dependency_gap`
-または `deferred` work として記録する。
+仕様が約束する挙動を監査する。Task 26 は task-25 Architecture-22 portfolio
+completion-order contract について、この audit を再実行する。これらの audit は source
+behavior、public API、`.miz` fixture、expectation、language specification、backend
+route、kernel check、proof policy、artifact witness、cache behavior を変更しない。まだ利用
+できない挙動は、捏造したり現在の実装都合を normative にしたりせず、明示的な
+`external_dependency_gap` または `deferred` work として記録する。
 
 ## Scope And Method
 
@@ -243,6 +244,33 @@ Public entry functions:
 | 同一 public `VcIr` input は deterministic ATP problem、concrete encoding、mock backend classification、portfolio candidate order を生成する | `crates/mizar-atp/tests/determinism_suite.rs`; `identical_vcir_inputs_produce_identical_problem_encodings_and_candidate_order`。 |
 | Metadata-only advanced-semantics corpus anchor は active source-derived extraction を捏造しない | `crates/mizar-atp/tests/mock_backend_corpus.rs` と `tests/property/atp_mock_backend_integration_001.*`; active `.miz` runner は deferred のまま。 |
 | Public enum forward compatibility | source attribute、EN/JA module inventory、`atp_public_enums_are_non_exhaustive_and_documented`。 |
+
+## Task 26 Architecture-22 Follow-Up Audit
+
+Task 26 は task-25 portfolio ordering / early-stop contract について source/spec audit
+を再実行した。
+
+Architecture 22 は、portfolio winner selection が active proof policy の下で deterministic
+であることを要求する。"first backend to finish" は semantic winner rule になってはならず、
+runtime duration は provenance として記録してよいが canonical proof identity に参加してはならない。
+
+source/spec result:
+
+- `src/portfolio.rs` は prebuilt backend run/result input に対する no-early-stop
+  candidate handoff producer のままである。
+- public source は proof-policy winner selector、early-stop oracle、kernel check
+  result、accepted proof state、witness/cache writer、trusted backend proof material を
+  まだ公開しない。
+- task-18 と task-21 coverage は、no-early-stop path について shuffled backend
+  completion order 下の deterministic candidate ordering を引き続き guard する。
+- `atp_task_twenty_five_policy_gap_is_documented_and_guarded` と
+  `atp_task_twenty_six_architecture_follow_up_audit_is_documented` は
+  task-25/task-26 documentation marker と不変の gap classification を guard する。
+
+Audit result: 新しい `source_drift`、`design_drift`、
+`source_undocumented_behavior`、`test_expectation_drift`、`boundary_violation`、
+`repo_metadata_conflict`、追加 `ATP-AUDIT-*` follow-up は見つからなかった。残る
+completion-order / policy-boundary gap は ATP-AUDIT-G005 だけである。
 
 ## Remaining Classified Follow-Ups
 

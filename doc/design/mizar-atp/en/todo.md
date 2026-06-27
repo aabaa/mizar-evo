@@ -564,13 +564,22 @@ Keep `cargo test -p mizar-atp` green after each task (see
       adapter, accepted proof state, kernel call, witness/cache output, or
       trusted backend proof material is introduced.
 
-26. **Architecture-22 follow-up audit.** [ ]
+26. **Architecture-22 follow-up audit.** [x]
     - Re-run the source/spec correspondence and bilingual documentation sync
       audits for the task-25 portfolio ordering and early-stop contract;
       record any remaining policy-boundary or completion-order gaps as
       follow-up tasks.
     - Deps: 25. Spec: all module specs, this TODO, and repository
       documentation policy.
+    - Status: complete as an audit-only follow-up. The source/spec audit and
+      bilingual sync audit now explicitly tie task-25 completion-order
+      deferral to Architecture 22's rule that backend completion order and
+      runtime duration cannot be semantic proof identity. No new source/spec
+      drift, bilingual drift, repo metadata conflict, or additional follow-up
+      gap was found. `ATP-AUDIT-G005` remains the single policy-boundary /
+      completion-order follow-up until `mizar-proof` exists and owns release
+      policy finality, winner selection, tie-breaking, and candidate
+      displacement.
 
 27. **Module-boundary refactor gate.** [ ]
     - Before treating the crate as ready for downstream consumers, audit the
