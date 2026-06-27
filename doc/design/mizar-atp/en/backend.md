@@ -233,6 +233,27 @@ paths unless a later config spec explicitly opts into path-sensitive
 reproducibility. Diagnostic renderings may include local paths when useful, but
 semantic hashes and proof-reuse identities must not depend on them.
 
+Task 19 adds a stable run-metadata projection for artifacts and reproducibility
+notes. The projection records:
+
+- run id, problem id, backend kind, profile id, concrete format, encoded input
+  hash, encoded metadata hash, and command fingerprint;
+- semantic executable id, normalized arguments, sorted allowlisted environment,
+  working-directory policy kind, input-delivery mode, random seed, timeout
+  settings, capture limits, and platform resource-limit records;
+- version-probe success, parsed version, version stdout/stderr hashes, and
+  version diagnostics when a probe was configured;
+- terminal status, observed result, termination class, exit status,
+  child-reaping flag, elapsed time, stdout/stderr hashes, total stream byte
+  counts, truncation/incomplete flags, and backend diagnostics.
+
+The projection is reproducibility metadata only. It is not candidate evidence,
+kernel evidence, proof policy, artifact winner selection, witness publication,
+or cache promotion. Runtime observations such as elapsed time, backend version
+output, retained stdout/stderr bytes, and diagnostics are diagnostic-only and
+must remain outside downstream candidate hashes, trusted-acceptance hashes, and
+proof-acceptance material.
+
 ## Result Classification
 
 The backend runner distinguishes process status, observed backend result, and

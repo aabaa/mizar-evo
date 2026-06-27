@@ -439,12 +439,26 @@ Keep `cargo test -p mizar-atp` green after each task (see
       witness/cache/artifact state, implement early-stop policy finality, add a
       real backend extractor, or trust backend proof material.
 
-19. **ATP run metadata recording.** [ ]
+19. **ATP run metadata recording.** [x]
     - Record seeds, timeout settings, backend identities/versions, and
-      resource usage for artifacts and reproducibility notes.
+      resource usage for artifacts and reproducibility notes as a read-only
+      backend run-metadata projection.
+    - Include stream/resource usage and diagnostics, but keep runtime
+      observations outside trusted acceptance material and downstream candidate
+      hashes.
     - Tests: metadata completeness fixtures; metadata excluded from
       semantic hashes.
-    - Deps: 16. Spec: architecture 00 "Incrementality and Reproducibility".
+    - Deps: 16. Spec: architecture 00 "Incrementality and Reproducibility";
+      `backend.md`.
+    - Boundary: no artifact writing, proof policy, kernel checking,
+      witness/cache publication, real backend extraction, or trusted backend
+      proof material.
+    - Status: complete within the backend-runner metadata boundary.
+      `BackendRunMetadata` projects seeds, timeout settings, backend
+      identity/version records, command fingerprints, stream/resource usage,
+      elapsed time, and diagnostics from `BackendRunResult` without changing
+      command identity, candidate evidence, kernel checks, proof policy, or
+      artifact/cache/witness publication.
 
 ### Hardening and cross-cutting follow-ups
 

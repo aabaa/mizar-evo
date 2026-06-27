@@ -283,6 +283,7 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
         "BackendResourceLimits",
         "BackendRunId",
         "BackendRunInput",
+        "BackendRunMetadata",
         "BackendRunResult",
         "BackendRunStatus",
         "BackendStreamCapture",
@@ -301,9 +302,10 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
         public_items,
         expected,
         "{} public API must stay limited to task-14 generic backend runner, \
-         mock classification, deterministic run metadata, and fail-closed \
-         error/status shapes; real backend adapters, proof parsers, kernel \
-         checks, witnesses, proof policy, and cache handles require later specs",
+         task-19 run metadata projection, mock classification, deterministic \
+         run metadata, and fail-closed error/status shapes; real backend \
+         adapters, proof parsers, kernel checks, witnesses, proof policy, and \
+         cache handles require later specs",
         source_path.display()
     );
 
@@ -399,6 +401,31 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
             "BackendRunInput::resource_limits",
             "BackendRunInput::run_id",
             "BackendRunInput::with_random_seed",
+            "BackendRunMetadata::args",
+            "BackendRunMetadata::backend_kind",
+            "BackendRunMetadata::child_reaped",
+            "BackendRunMetadata::command_fingerprint",
+            "BackendRunMetadata::concrete_format",
+            "BackendRunMetadata::diagnostics",
+            "BackendRunMetadata::elapsed",
+            "BackendRunMetadata::encoded_input_hash",
+            "BackendRunMetadata::encoded_metadata_hash",
+            "BackendRunMetadata::environment",
+            "BackendRunMetadata::exit_status",
+            "BackendRunMetadata::io_mode",
+            "BackendRunMetadata::observed_result",
+            "BackendRunMetadata::problem_id",
+            "BackendRunMetadata::profile_id",
+            "BackendRunMetadata::random_seed",
+            "BackendRunMetadata::resource_limits",
+            "BackendRunMetadata::run_id",
+            "BackendRunMetadata::semantic_executable_id",
+            "BackendRunMetadata::status",
+            "BackendRunMetadata::stderr",
+            "BackendRunMetadata::stdout",
+            "BackendRunMetadata::termination",
+            "BackendRunMetadata::version_record",
+            "BackendRunMetadata::working_directory_policy_kind",
             "BackendRunResult::backend_kind",
             "BackendRunResult::candidate_evidence",
             "BackendRunResult::child_reaped",
@@ -408,6 +435,7 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
             "BackendRunResult::elapsed",
             "BackendRunResult::encoded_problem",
             "BackendRunResult::exit_status",
+            "BackendRunResult::metadata",
             "BackendRunResult::observed_result",
             "BackendRunResult::profile_id",
             "BackendRunResult::run_id",
@@ -448,7 +476,8 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
             "run_backend",
         ],
         "{} public functions and methods must stay limited to task-14 generic \
-         runner and mock-classification construction/accessors",
+         runner, task-19 run metadata projection, and mock-classification \
+         construction/accessors",
         source_path.display()
     );
 }

@@ -402,13 +402,23 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       witness/cache/artifact state、early-stop policy finality、real backend extractor、trusted
       backend proof material は実装しない。
 
-19. **ATP 実行メタデータの記録。** [ ]
+19. **ATP 実行メタデータの記録。** [x]
     - artifact と再現性記録のために、シード、タイムアウト設定、
-      バックエンドの識別/バージョン、リソース使用を記録する。
+      バックエンドの識別/バージョン、リソース使用を read-only backend
+      run-metadata projection として記録する。
+    - stream/resource usage と diagnostic を含めるが、runtime observation は
+      trusted acceptance material と downstream candidate hash の外に保つ。
     - テスト: メタデータ完全性のフィクスチャ。メタデータが意味論ハッシュ
       から除外される。
     - 依存: 16。仕様: アーキテクチャ 00「Incrementality and
-      Reproducibility」。
+      Reproducibility」、`backend.md`。
+    - 境界: artifact writing、proof policy、kernel checking、witness/cache
+      publication、real backend extraction、trusted backend proof material は追加しない。
+    - 状態: backend-runner metadata boundary 内で完了。`BackendRunMetadata` は
+      `BackendRunResult` から seed、timeout setting、backend identity / version record、
+      command fingerprint、stream/resource usage、elapsed time、diagnostic を project し、
+      command identity、candidate evidence、kernel check、proof policy、artifact/cache/witness
+      publication は変更しない。
 
 ### 強化と横断フォローアップ
 

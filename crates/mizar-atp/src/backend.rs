@@ -639,12 +639,24 @@ impl BackendRunInput {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+struct BackendRunMetadataConfig {
+    semantic_executable_id: String,
+    args: Vec<String>,
+    environment: Vec<(String, String)>,
+    working_directory_policy_kind: &'static str,
+    io_mode: BackendIoMode,
+    random_seed: Option<u64>,
+    resource_limits: BackendResourceLimits,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BackendRunResult {
     run_id: BackendRunId,
     encoded_problem: EncodedBackendProblem,
     backend_kind: BackendKind,
     profile_id: BackendProfileId,
     command_fingerprint: Hash,
+    metadata_config: BackendRunMetadataConfig,
     version_record: Option<BackendVersionRecord>,
     status: BackendRunStatus,
     observed_result: Option<BackendObservedResult>,
@@ -728,8 +740,169 @@ impl BackendRunResult {
         &self.diagnostics
     }
 
+    pub fn metadata(&self) -> BackendRunMetadata {
+        BackendRunMetadata {
+            run_id: self.run_id.clone(),
+            problem_id: self.encoded_problem.problem_id(),
+            backend_kind: self.backend_kind.clone(),
+            profile_id: self.profile_id.clone(),
+            concrete_format: self.encoded_problem.concrete_format(),
+            encoded_input_hash: self.encoded_problem.input_hash(),
+            encoded_metadata_hash: self.encoded_problem.metadata_hash(),
+            command_fingerprint: self.command_fingerprint,
+            semantic_executable_id: self.metadata_config.semantic_executable_id.clone(),
+            args: self.metadata_config.args.clone(),
+            environment: self.metadata_config.environment.clone(),
+            working_directory_policy_kind: self.metadata_config.working_directory_policy_kind,
+            io_mode: self.metadata_config.io_mode,
+            random_seed: self.metadata_config.random_seed,
+            resource_limits: self.metadata_config.resource_limits.clone(),
+            version_record: self.version_record.clone(),
+            status: self.status,
+            observed_result: self.observed_result,
+            termination: self.termination,
+            exit_status: self.exit_status,
+            child_reaped: self.child_reaped,
+            elapsed: self.elapsed,
+            stdout: self.stdout.clone(),
+            stderr: self.stderr.clone(),
+            diagnostics: self.diagnostics.clone(),
+        }
+    }
+
     fn with_diagnostic(&mut self, key: &'static str, message: impl Into<String>) {
         self.diagnostics.push(BackendDiagnostic::new(key, message));
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BackendRunMetadata {
+    run_id: BackendRunId,
+    problem_id: AtpProblemId,
+    backend_kind: BackendKind,
+    profile_id: BackendProfileId,
+    concrete_format: ConcreteFormat,
+    encoded_input_hash: Hash,
+    encoded_metadata_hash: Hash,
+    command_fingerprint: Hash,
+    semantic_executable_id: String,
+    args: Vec<String>,
+    environment: Vec<(String, String)>,
+    working_directory_policy_kind: &'static str,
+    io_mode: BackendIoMode,
+    random_seed: Option<u64>,
+    resource_limits: BackendResourceLimits,
+    version_record: Option<BackendVersionRecord>,
+    status: BackendRunStatus,
+    observed_result: Option<BackendObservedResult>,
+    termination: BackendTermination,
+    exit_status: Option<BackendExitStatus>,
+    child_reaped: bool,
+    elapsed: Duration,
+    stdout: BackendStreamCapture,
+    stderr: BackendStreamCapture,
+    diagnostics: Vec<BackendDiagnostic>,
+}
+
+impl BackendRunMetadata {
+    pub const fn run_id(&self) -> &BackendRunId {
+        &self.run_id
+    }
+
+    pub const fn problem_id(&self) -> AtpProblemId {
+        self.problem_id
+    }
+
+    pub const fn backend_kind(&self) -> &BackendKind {
+        &self.backend_kind
+    }
+
+    pub const fn profile_id(&self) -> &BackendProfileId {
+        &self.profile_id
+    }
+
+    pub const fn concrete_format(&self) -> ConcreteFormat {
+        self.concrete_format
+    }
+
+    pub const fn encoded_input_hash(&self) -> Hash {
+        self.encoded_input_hash
+    }
+
+    pub const fn encoded_metadata_hash(&self) -> Hash {
+        self.encoded_metadata_hash
+    }
+
+    pub const fn command_fingerprint(&self) -> Hash {
+        self.command_fingerprint
+    }
+
+    pub fn semantic_executable_id(&self) -> &str {
+        &self.semantic_executable_id
+    }
+
+    pub fn args(&self) -> &[String] {
+        &self.args
+    }
+
+    pub fn environment(&self) -> &[(String, String)] {
+        &self.environment
+    }
+
+    pub const fn working_directory_policy_kind(&self) -> &'static str {
+        self.working_directory_policy_kind
+    }
+
+    pub const fn io_mode(&self) -> BackendIoMode {
+        self.io_mode
+    }
+
+    pub const fn random_seed(&self) -> Option<u64> {
+        self.random_seed
+    }
+
+    pub const fn resource_limits(&self) -> &BackendResourceLimits {
+        &self.resource_limits
+    }
+
+    pub const fn version_record(&self) -> Option<&BackendVersionRecord> {
+        self.version_record.as_ref()
+    }
+
+    pub const fn status(&self) -> BackendRunStatus {
+        self.status
+    }
+
+    pub const fn observed_result(&self) -> Option<BackendObservedResult> {
+        self.observed_result
+    }
+
+    pub const fn termination(&self) -> BackendTermination {
+        self.termination
+    }
+
+    pub const fn exit_status(&self) -> Option<BackendExitStatus> {
+        self.exit_status
+    }
+
+    pub const fn child_reaped(&self) -> bool {
+        self.child_reaped
+    }
+
+    pub const fn elapsed(&self) -> Duration {
+        self.elapsed
+    }
+
+    pub const fn stdout(&self) -> &BackendStreamCapture {
+        &self.stdout
+    }
+
+    pub const fn stderr(&self) -> &BackendStreamCapture {
+        &self.stderr
+    }
+
+    pub fn diagnostics(&self) -> &[BackendDiagnostic] {
+        &self.diagnostics
     }
 }
 
@@ -1415,6 +1588,7 @@ fn base_result(input: &BackendRunInput, parts: BaseResultParts) -> BackendRunRes
         backend_kind: input.profile.backend_kind.clone(),
         profile_id: input.profile.profile_id.clone(),
         command_fingerprint: parts.command_fingerprint,
+        metadata_config: metadata_config(input),
         version_record: parts.version_record,
         status: parts.status,
         observed_result: None,
@@ -1427,6 +1601,18 @@ fn base_result(input: &BackendRunInput, parts: BaseResultParts) -> BackendRunRes
         elapsed: parts.elapsed,
         child_reaped: parts.child_reaped,
         diagnostics: parts.diagnostics,
+    }
+}
+
+fn metadata_config(input: &BackendRunInput) -> BackendRunMetadataConfig {
+    BackendRunMetadataConfig {
+        semantic_executable_id: input.command.semantic_executable_id(),
+        args: input.command.args.clone(),
+        environment: input.command.environment.vars.clone(),
+        working_directory_policy_kind: input.command.working_directory.hash_kind(),
+        io_mode: input.io_mode,
+        random_seed: input.random_seed,
+        resource_limits: input.resource_limits.clone(),
     }
 }
 
@@ -2353,6 +2539,54 @@ mod tests {
     }
 
     #[test]
+    fn command_fingerprint_records_reproducibility_configuration() {
+        let dir = TestDir::new();
+        let script = dir.executable("backend", "#!/bin/sh\n/bin/cat\n", true);
+        let command = BackendCommand::new(script, vec!["--mode".to_owned()])
+            .expect("command")
+            .with_semantic_executable_id("stable-backend")
+            .expect("semantic id");
+        let base = run_input_from_command(
+            command.clone(),
+            BackendIoMode::Stdin,
+            b"p".to_vec(),
+            BackendResourceLimits::new(),
+        );
+        let seeded = run_input_from_command(
+            command.clone(),
+            BackendIoMode::Stdin,
+            b"p".to_vec(),
+            BackendResourceLimits::new(),
+        )
+        .with_random_seed(7);
+        let timed = run_input_from_command(
+            command.clone(),
+            BackendIoMode::Stdin,
+            b"p".to_vec(),
+            BackendResourceLimits::new().with_wall_timeout(Duration::from_secs(9)),
+        );
+        let captured = run_input_from_command(
+            command.clone(),
+            BackendIoMode::Stdin,
+            b"p".to_vec(),
+            BackendResourceLimits::new().with_stdout_limit(3),
+        );
+        let limited = run_input_from_command(
+            command,
+            BackendIoMode::Stdin,
+            b"p".to_vec(),
+            BackendResourceLimits::new()
+                .with_unsupported_platform_limit("memory", BackendLimitRequirement::BestEffort)
+                .expect("limit"),
+        );
+
+        assert_ne!(command_fingerprint(&base), command_fingerprint(&seeded));
+        assert_ne!(command_fingerprint(&base), command_fingerprint(&timed));
+        assert_ne!(command_fingerprint(&base), command_fingerprint(&captured));
+        assert_ne!(command_fingerprint(&base), command_fingerprint(&limited));
+    }
+
+    #[test]
     fn version_probe_records_success_and_failure_without_running_proof_policy() {
         let _guard = private_temp_guard();
         let dir = TestDir::new();
@@ -2400,6 +2634,202 @@ mod tests {
         assert_eq!(result.status(), BackendRunStatus::Error);
         assert_eq!(result.termination(), BackendTermination::NotStarted);
         assert!(has_diag(&result, "version_probe_failed"));
+    }
+
+    #[test]
+    fn run_metadata_projection_records_reproducibility_inputs_and_observations() {
+        let _guard = private_temp_guard();
+        let dir = TestDir::new();
+        let backend = dir.executable(
+            "metadata-backend",
+            "#!/bin/sh\nprintf 'stdout-payload'\nprintf 'stderr-payload' >&2\n",
+            true,
+        );
+        let version = dir.executable(
+            "metadata-version",
+            "#!/bin/sh\nprintf 'MockBackend 9.0'\nprintf 'version-warn' >&2\n",
+            true,
+        );
+        let environment = BackendEnvironmentPolicy::new(vec![
+            ("B".to_owned(), "2".to_owned()),
+            ("A".to_owned(), "1".to_owned()),
+        ])
+        .expect("environment");
+        let command = BackendCommand::new(backend, vec!["--mode=proof".to_owned()])
+            .expect("command")
+            .with_semantic_executable_id("stable-backend")
+            .expect("semantic id")
+            .with_environment(environment)
+            .with_working_directory(BackendWorkingDirectoryPolicy::Directory(
+                dir.path().to_path_buf(),
+            ));
+        let profile = profile().with_version_probe(
+            BackendVersionProbe::new(version, Vec::new(), Duration::from_secs(1))
+                .expect("version probe"),
+        );
+        let limits = BackendResourceLimits::new()
+            .with_wall_timeout(Duration::from_secs(2))
+            .with_kill_grace(Duration::from_millis(33))
+            .with_stdout_limit(64)
+            .with_stderr_limit(64)
+            .with_unsupported_platform_limit("memory", BackendLimitRequirement::BestEffort)
+            .expect("limit");
+        let result = run_backend(
+            BackendRunInput::new(
+                BackendRunId::new("run-metadata").expect("run id"),
+                encoded_problem(b"p".to_vec()),
+                profile,
+                command,
+                limits,
+                BackendIoMode::Stdin,
+                BackendCancellationToken::new(),
+            )
+            .with_random_seed(42),
+        );
+
+        let metadata = result.metadata();
+
+        assert_eq!(metadata.run_id().as_str(), "run-metadata");
+        assert_eq!(metadata.problem_id(), result.encoded_problem().problem_id());
+        assert_eq!(metadata.backend_kind().as_str(), "mock-backend");
+        assert_eq!(metadata.profile_id().as_str(), "mock-profile");
+        assert_eq!(metadata.concrete_format(), ConcreteFormat::Tptp);
+        assert_eq!(
+            metadata.encoded_input_hash(),
+            result.encoded_problem().input_hash()
+        );
+        assert_eq!(
+            metadata.encoded_metadata_hash(),
+            result.encoded_problem().metadata_hash()
+        );
+        assert_eq!(metadata.command_fingerprint(), result.command_fingerprint());
+        assert_eq!(metadata.semantic_executable_id(), "stable-backend");
+        assert_eq!(metadata.args(), &["--mode=proof".to_owned()]);
+        assert_eq!(
+            metadata.environment(),
+            &[
+                ("A".to_owned(), "1".to_owned()),
+                ("B".to_owned(), "2".to_owned())
+            ]
+        );
+        assert_eq!(
+            metadata.working_directory_policy_kind(),
+            "explicit-directory"
+        );
+        assert_eq!(metadata.io_mode(), BackendIoMode::Stdin);
+        assert_eq!(metadata.random_seed(), Some(42));
+        assert_eq!(
+            metadata.resource_limits().wall_timeout(),
+            Duration::from_secs(2)
+        );
+        assert_eq!(
+            metadata.resource_limits().kill_grace(),
+            Duration::from_millis(33)
+        );
+        assert_eq!(metadata.resource_limits().stdout_bytes(), 64);
+        assert_eq!(metadata.resource_limits().stderr_bytes(), 64);
+        assert_eq!(
+            metadata.resource_limits().platform_limits(),
+            &[("memory".to_owned(), BackendLimitRequirement::BestEffort)]
+        );
+        let version = metadata.version_record().expect("version record");
+        let result_version = result.version_record().expect("result version record");
+        assert!(version.success());
+        assert_eq!(version.parsed_version(), Some("MockBackend 9.0"));
+        assert_eq!(version.stdout().retained_bytes(), b"MockBackend 9.0");
+        assert_eq!(
+            version.stdout().total_bytes(),
+            b"MockBackend 9.0".len() as u64
+        );
+        assert_eq!(version.stdout().hash(), result_version.stdout().hash());
+        assert!(!version.stdout().truncated());
+        assert!(!version.stdout().incomplete());
+        assert_eq!(version.stderr().retained_bytes(), b"version-warn");
+        assert_eq!(version.stderr().total_bytes(), b"version-warn".len() as u64);
+        assert_eq!(version.stderr().hash(), result_version.stderr().hash());
+        assert!(!version.stderr().truncated());
+        assert!(!version.stderr().incomplete());
+        assert!(
+            version
+                .exit_status()
+                .expect("version exit status")
+                .success()
+        );
+        assert!(version.diagnostics().is_empty());
+        assert_eq!(metadata.status(), BackendRunStatus::Unknown);
+        assert_eq!(metadata.observed_result(), None);
+        assert_eq!(metadata.termination(), BackendTermination::Exited);
+        assert!(metadata.exit_status().expect("exit status").success());
+        assert!(metadata.child_reaped());
+        assert_eq!(metadata.elapsed(), result.elapsed());
+        assert_eq!(metadata.stdout().retained_bytes(), b"stdout-payload");
+        assert_eq!(metadata.stderr().retained_bytes(), b"stderr-payload");
+        assert_eq!(metadata.stdout().hash(), result.stdout().hash());
+        assert_eq!(metadata.stderr().hash(), result.stderr().hash());
+        assert_eq!(
+            metadata.stdout().total_bytes(),
+            b"stdout-payload".len() as u64
+        );
+        assert_eq!(
+            metadata.stderr().total_bytes(),
+            b"stderr-payload".len() as u64
+        );
+        assert!(!metadata.stdout().truncated());
+        assert!(!metadata.stdout().incomplete());
+        assert!(!metadata.stderr().truncated());
+        assert!(!metadata.stderr().incomplete());
+        assert_eq!(metadata, result.metadata());
+        assert!(
+            metadata
+                .diagnostics()
+                .iter()
+                .any(|diagnostic| diagnostic.key() == "unsupported_resource_limit")
+        );
+    }
+
+    #[test]
+    fn runtime_observations_do_not_change_command_identity() {
+        let _guard = private_temp_guard();
+        let dir = TestDir::new();
+        let backend_a = dir.executable("runtime-a", "#!/bin/sh\nprintf 'first'\n", true);
+        let backend_b = dir.executable("runtime-b", "#!/bin/sh\nprintf 'second'\n", true);
+        let command_a = BackendCommand::new(backend_a, Vec::new())
+            .expect("command")
+            .with_semantic_executable_id("stable-runtime-backend")
+            .expect("semantic id");
+        let command_b = BackendCommand::new(backend_b, Vec::new())
+            .expect("command")
+            .with_semantic_executable_id("stable-runtime-backend")
+            .expect("semantic id");
+
+        let result_a = run_backend(run_input_from_command(
+            command_a,
+            BackendIoMode::Stdin,
+            b"p".to_vec(),
+            BackendResourceLimits::new(),
+        ));
+        let result_b = run_backend(run_input_from_command(
+            command_b,
+            BackendIoMode::Stdin,
+            b"p".to_vec(),
+            BackendResourceLimits::new(),
+        ));
+        let metadata_a = result_a.metadata();
+        let metadata_b = result_b.metadata();
+
+        assert_eq!(
+            metadata_a.command_fingerprint(),
+            metadata_b.command_fingerprint()
+        );
+        assert_ne!(metadata_a.stdout().hash(), metadata_b.stdout().hash());
+        assert_eq!(
+            metadata_a.semantic_executable_id(),
+            "stable-runtime-backend"
+        );
+        assert_eq!(
+            metadata_b.semantic_executable_id(),
+            "stable-runtime-backend"
+        );
     }
 
     #[test]

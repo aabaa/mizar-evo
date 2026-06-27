@@ -301,6 +301,26 @@ determinism は次を含む:
 raw completion order、process id、temporary path、wall-clock timestamp、backend scheduling race、
 host-specific absolute path は canonical candidate ordering や proof status を決定しない。
 
+task 19 は artifact と reproducibility note のための stable run-metadata projection を追加する。
+この projection は次を記録する:
+
+- run id、problem id、backend kind、profile id、concrete format、encoded input hash、
+  encoded metadata hash、command fingerprint。
+- semantic executable id、正規化済み argument、sort 済み allowlisted environment、
+  working-directory policy kind、input-delivery mode、random seed、timeout setting、
+  capture limit、platform resource-limit record。
+- version probe が設定されている場合の version-probe success、parsed version、version
+  stdout/stderr hash、version diagnostic。
+- terminal status、observed result、termination class、exit status、child-reaping flag、
+  elapsed time、stdout/stderr hash、stream total byte count、truncation / incomplete flag、
+  backend diagnostic。
+
+この projection は reproducibility metadata だけである。candidate evidence、kernel
+evidence、proof policy、artifact winner selection、witness publication、cache promotion ではない。
+elapsed time、backend version output、stdout/stderr byte、diagnostic などの runtime observation は、
+diagnostic-only であり、downstream candidate hash、trusted-acceptance hash、proof-acceptance
+material の外に残さなければならない。
+
 ## gap classification
 
 - resolved `deferred` spec gap: task 13 は source が存在する前に backend runner と result
