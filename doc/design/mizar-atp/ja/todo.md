@@ -353,7 +353,7 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       candidate payload/ref contract を定義し、supported backend route を guarded integration
       test で利用できるようになった後にだけ、この task を再開する。
 
-16. **結果分類と極性検証。** [ ]
+16. **結果分類と極性検証。** [x] deferred / external_dependency_gap
     - バックエンドの結果を分類する（proved、反例、タイムアウト、
       unknown、エラー）。観測結果が `expected_result` に一致し candidate
       formula/substitution evidence が存在するときのみ `Proved` を発行する。
@@ -363,6 +363,13 @@ witness-publication integration は `external_dependency_gap` であり、ここ
     - 依存: 15 に加え task-15 reopen condition、すなわち paired evidence-extraction
       spec と guarded supported backend route が存在すること。real-output classification は
       その後に実装する。仕様: `backend.md`（分類の節）。
+    - Gate result: deferred。task 14 は process-status と mock candidate classification
+      invariant を既に cover している。real-output parsing と polarity fixture は task-15 の
+      extraction route を必要とするが、その route は paired evidence-extraction spec / source
+      module と guarded supported backend がないため blocked のままである。backend-specific
+      parser、fake observed output schema、adapter-specific classification table、kernel call、
+      trusted backend proof material は追加しない。extraction route と supported backend fixture が
+      存在した後に task 15 と共に再開する。
 
 ### portfolio
 

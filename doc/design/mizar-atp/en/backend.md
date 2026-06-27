@@ -278,8 +278,9 @@ failure, unsupported observed status, and polarity mismatch are never `Proved`.
 
 Task 14 may expose these invariant checks and mock classifications. Task 15
 records the first real backend extractor as deferred until a paired extraction
-spec and guarded backend route exist. Task 16 adds full outcome and polarity
-classification fixtures for real backend-style outputs once that route exists.
+spec and guarded backend route exist. Task 16 likewise remains deferred until
+that route exists; it may then add full outcome and polarity classification
+fixtures for real backend-style outputs.
 
 ## Candidate Evidence Boundary
 
@@ -360,8 +361,10 @@ canonical candidate ordering or proof status.
   source module defines how real backend output becomes kernel-parseable
   formula/substitution candidate bytes/refs, and the supported architecture-10
   backend executables were not available in the verification environment.
-- `deferred`: task 16 full real-output result classification and polarity
-  fixtures.
+- `external_dependency_gap` / `deferred`: task 16 full real-output result
+  classification and polarity fixtures depend on the task-15 extraction route;
+  task 14's mock classification invariants remain the only implemented
+  classifier surface until that route exists.
 - `external_dependency_gap`: proof policy, winner selection, proof witness
   publication, cache promotion, artifact projection, and backend availability
   are outside task 13.

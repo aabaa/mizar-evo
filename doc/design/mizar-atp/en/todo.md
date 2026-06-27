@@ -382,7 +382,7 @@ Keep `cargo test -p mizar-atp` green after each task (see
       defines the candidate payload/ref contract and a supported backend route
       is available for guarded integration tests.
 
-16. **Result classification and polarity validation.** [ ]
+16. **Result classification and polarity validation.** [x] deferred / external_dependency_gap
     - Classify backend outcomes (proved, counterexample, timeout, unknown,
       error); emit `Proved` only when the observed result matches
       `expected_result` and candidate formula/substitution evidence is
@@ -393,6 +393,14 @@ Keep `cargo test -p mizar-atp` green after each task (see
       evidence-extraction spec and a guarded supported backend route must exist
       before real-output classification is implemented. Spec: `backend.md`
       (classification section).
+    - Gate result: deferred. Task 14 already covers process-status and mock
+      candidate classification invariants. Real-output parsing and polarity
+      fixtures require the task-15 extraction route, which remains blocked by
+      the missing paired evidence-extraction spec/source module and missing
+      guarded supported backend. No backend-specific parser, fake observed
+      output schema, adapter-specific classification table, kernel call, or
+      trusted backend proof material is added. Reopen with task 15 after the
+      extraction route and supported backend fixture exist.
 
 ### Portfolio
 
