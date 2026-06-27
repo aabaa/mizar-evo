@@ -121,6 +121,7 @@ fn atp_lib_exposes_only_spec_backed_modules() {
 #![forbid(unsafe_code)]
 
 pub mod backend;
+pub mod portfolio;
 pub mod problem;
 pub mod property_encoding;
 pub mod smtlib_encoder;
@@ -148,6 +149,7 @@ pub mod translator;
         [
             "src/backend.rs",
             "src/lib.rs",
+            "src/portfolio.rs",
             "src/problem.rs",
             "src/property_encoding.rs",
             "src/smtlib_encoder.rs",
@@ -172,6 +174,7 @@ fn atp_crate_tree_contains_only_current_spec_backed_files() {
             "Cargo.toml",
             "src/backend.rs",
             "src/lib.rs",
+            "src/portfolio.rs",
             "src/problem.rs",
             "src/property_encoding.rs",
             "src/smtlib_encoder.rs",
@@ -446,6 +449,193 @@ fn atp_backend_public_api_surface_is_task_fourteen_allowlist() {
         ],
         "{} public functions and methods must stay limited to task-14 generic \
          runner and mock-classification construction/accessors",
+        source_path.display()
+    );
+}
+
+#[test]
+fn atp_portfolio_module_has_paired_specs_and_excludes_trusted_material() {
+    let en_spec = workspace_root().join("doc/design/mizar-atp/en/portfolio.md");
+    let ja_spec = workspace_root().join("doc/design/mizar-atp/ja/portfolio.md");
+    let source_path = crate_root().join("src/portfolio.rs");
+    let en = read_to_string(&en_spec);
+    let ja = read_to_string(&ja_spec);
+    let source = read_to_string(&source_path);
+
+    for marker in [
+        "Task 18 implements only the already-built run slice",
+        "## Result Matching",
+        "Task-18 Test Coverage",
+    ] {
+        assert!(
+            en.contains(marker),
+            "{} must keep task-17/task-18 portfolio spec marker `{marker}`",
+            en_spec.display()
+        );
+    }
+    for marker in [
+        "task 18 は planning のうち、already-built run slice だけを実装する",
+        "## result matching",
+        "task-18 test coverage",
+    ] {
+        assert!(
+            ja.contains(marker),
+            "{} must keep task-17/task-18 Japanese portfolio spec marker `{marker}`",
+            ja_spec.display()
+        );
+    }
+    for marker in [
+        "pub fn plan_portfolio",
+        "pub fn collect_portfolio_results",
+        "PortfolioStopReason::Cancelled",
+        "BackendRunInput",
+        "BackendRunResult",
+        "mizar-atp/portfolio-plan/v1",
+        "portfolio_source_excludes_trusted_or_downstream_boundary_strings",
+    ] {
+        assert!(
+            source.contains(marker),
+            "{} must implement portfolio.md task-18 marker `{marker}`",
+            source_path.display()
+        );
+    }
+    for prohibited in [
+        "mizar_kernel::",
+        "kernel_verified",
+        "KernelCheckResult",
+        "ProofWitness",
+        "ProofWitnessDraft",
+        "ProofPolicyEvaluator",
+        "proof_cache",
+        "cache_promotion",
+        "accepted_proof_status",
+        "caller_supplied",
+        "instantiated_formulas",
+        "SatProblem",
+        "DIMACS",
+        "real_output_extraction",
+        "MiniSAT",
+    ] {
+        assert!(
+            !source.contains(prohibited),
+            "{} must not expose prohibited trusted/downstream material `{prohibited}`",
+            source_path.display()
+        );
+    }
+}
+
+#[test]
+fn atp_portfolio_public_api_surface_is_task_eighteen_allowlist() {
+    let source_path = crate_root().join("src/portfolio.rs");
+    let source = read_to_string(&source_path);
+    let public_items = public_api_items(&source);
+    let public_fields = public_struct_fields(&source);
+    let public_functions = public_api_functions(&source);
+    let expected = [
+        "PortfolioBudget",
+        "PortfolioCandidate",
+        "PortfolioCandidateId",
+        "PortfolioCandidateKind",
+        "PortfolioDiagnostic",
+        "PortfolioError",
+        "PortfolioEvidenceFormat",
+        "PortfolioEvidenceSet",
+        "PortfolioId",
+        "PortfolioInput",
+        "PortfolioInputParts",
+        "PortfolioPlan",
+        "PortfolioPolicyConstraints",
+        "PortfolioStopReason",
+        "PortfolioStopSummary",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<Vec<_>>();
+
+    assert_eq!(
+        public_items,
+        expected,
+        "{} public API must stay limited to task-18 portfolio planning, \
+         candidate collection, deterministic evidence-set metadata, and \
+         fail-closed error/status shapes; kernel checks, proof policy, \
+         witnesses, cache handles, and real backend extractors require later \
+         owner specs",
+        source_path.display()
+    );
+
+    assert_eq!(
+        public_fields,
+        [
+            "PortfolioInputParts::atp_problem",
+            "PortfolioInputParts::backend_runs",
+            "PortfolioInputParts::cancellation",
+            "PortfolioInputParts::obligation_budget",
+            "PortfolioInputParts::policy_constraints",
+            "PortfolioInputParts::portfolio_id",
+            "PortfolioInputParts::scheduler_budget",
+            "PortfolioInputParts::vc_hash",
+        ],
+        "{} public struct fields must stay limited to explicit task-18 \
+         portfolio construction inputs",
+        source_path.display()
+    );
+
+    assert_eq!(
+        public_functions,
+        [
+            "PortfolioBudget::max_scheduled_runs",
+            "PortfolioBudget::unbounded",
+            "PortfolioBudget::with_max_scheduled_runs",
+            "PortfolioCandidate::backend_profile_id",
+            "PortfolioCandidate::candidate_hash",
+            "PortfolioCandidate::candidate_id",
+            "PortfolioCandidate::candidate_kind",
+            "PortfolioCandidate::diagnostics",
+            "PortfolioCandidate::encoded_problem_hash",
+            "PortfolioCandidate::evidence_format",
+            "PortfolioCandidate::evidence_payload_hash",
+            "PortfolioCandidate::observed_result",
+            "PortfolioCandidate::provenance_hash",
+            "PortfolioCandidate::source_run_id",
+            "PortfolioCandidate::target_binding",
+            "PortfolioCandidateId::as_str",
+            "PortfolioDiagnostic::key",
+            "PortfolioDiagnostic::message",
+            "PortfolioDiagnostic::new",
+            "PortfolioEvidenceSet::atp_problem_id",
+            "PortfolioEvidenceSet::backend_results",
+            "PortfolioEvidenceSet::candidates",
+            "PortfolioEvidenceSet::diagnostics",
+            "PortfolioEvidenceSet::evidence_set_hash",
+            "PortfolioEvidenceSet::plan_hash",
+            "PortfolioEvidenceSet::portfolio_id",
+            "PortfolioEvidenceSet::stop_summary",
+            "PortfolioEvidenceSet::vc_hash",
+            "PortfolioEvidenceSet::vc_id",
+            "PortfolioId::as_str",
+            "PortfolioId::new",
+            "PortfolioInput::new",
+            "PortfolioPlan::atp_problem_id",
+            "PortfolioPlan::diagnostics",
+            "PortfolioPlan::plan_hash",
+            "PortfolioPlan::policy_constraints",
+            "PortfolioPlan::portfolio_id",
+            "PortfolioPlan::scheduled_runs",
+            "PortfolioPlan::stop_summary",
+            "PortfolioPlan::target_binding",
+            "PortfolioPlan::vc_hash",
+            "PortfolioPlan::vc_id",
+            "PortfolioPolicyConstraints::new",
+            "PortfolioPolicyConstraints::record_externally_attested",
+            "PortfolioPolicyConstraints::with_externally_attested_records",
+            "PortfolioStopSummary::message",
+            "PortfolioStopSummary::new",
+            "PortfolioStopSummary::reason",
+            "collect_portfolio_results",
+            "plan_portfolio",
+        ],
+        "{} public functions and methods must stay limited to task-18 \
+         portfolio construction/accessors",
         source_path.display()
     );
 }

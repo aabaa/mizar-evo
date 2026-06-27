@@ -1430,6 +1430,57 @@ fn base_result(input: &BackendRunInput, parts: BaseResultParts) -> BackendRunRes
     }
 }
 
+pub(crate) fn backend_run_command_fingerprint(input: &BackendRunInput) -> Hash {
+    command_fingerprint(input)
+}
+
+#[cfg(test)]
+pub(crate) fn synthetic_backend_result(
+    input: &BackendRunInput,
+    status: BackendRunStatus,
+) -> BackendRunResult {
+    synthetic_backend_result_with_diagnostics(input, status, Vec::new())
+}
+
+#[cfg(test)]
+pub(crate) fn synthetic_backend_result_with_diagnostics(
+    input: &BackendRunInput,
+    status: BackendRunStatus,
+    diagnostics: Vec<BackendDiagnostic>,
+) -> BackendRunResult {
+    let (termination, exit_status, child_reaped) = match status {
+        BackendRunStatus::Proved | BackendRunStatus::Counterexample | BackendRunStatus::Unknown => {
+            (
+                BackendTermination::Exited,
+                Some(BackendExitStatus {
+                    code: Some(0),
+                    success: true,
+                }),
+                true,
+            )
+        }
+        BackendRunStatus::Timeout => (BackendTermination::Timeout, None, true),
+        BackendRunStatus::Error => (BackendTermination::ProcessError, None, true),
+        BackendRunStatus::Cancelled => (BackendTermination::Cancelled, None, true),
+    };
+
+    base_result(
+        input,
+        BaseResultParts {
+            command_fingerprint: command_fingerprint(input),
+            version_record: None,
+            status,
+            termination,
+            exit_status,
+            stdout: empty_capture("stdout"),
+            stderr: empty_capture("stderr"),
+            elapsed: Duration::ZERO,
+            child_reaped,
+            diagnostics,
+        },
+    )
+}
+
 fn process_status(execution: &ProcessExecution) -> BackendRunStatus {
     match execution.termination {
         BackendTermination::Timeout => BackendRunStatus::Timeout,

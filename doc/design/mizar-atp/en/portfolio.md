@@ -33,6 +33,17 @@ must not implement `mizar-proof` policy locally. Because `mizar-proof` is not
 currently a workspace crate, policy evaluation, witness publication, and proof
 cache promotion remain `external_dependency_gap` items.
 
+Task-18 source is limited to deterministic plan construction from prebuilt
+`BackendRunInput` values, validation that every run belongs to the same
+`AtpProblem`, portfolio and candidate hashes, and collection of terminal
+`BackendRunResult` values without early stop. Full backend-profile selection,
+encoding orchestration, and scheduler integration remain conceptual/future
+scope. Task 18 may honor cooperative cancellation by returning a cancelled
+evidence set with no candidates. It does not execute backend processes
+directly, add backend adapters, parse real output, build kernel evidence, call
+the kernel, infer proof-policy finality, or publish witness/cache/artifact
+state.
+
 ## Inputs And Outputs
 
 The conceptual portfolio API consumes:
@@ -128,6 +139,12 @@ attested or diagnostic output may be scheduled only when the policy constraints
 allow such evidence to be recorded; it still cannot become kernel-verified
 inside `mizar-atp`.
 
+Task 18 implements only the already-built run slice of planning: callers supply
+the `BackendRunInput` records, and the portfolio validates same-problem
+membership, deterministic order, and budget/cancellation gates. Selecting
+profiles from availability, constructing encodings, and dispatching scheduler
+work remain outside task 18.
+
 If no profile is schedulable, the portfolio returns an open evidence set with a
 stable diagnostic reason. It must not fabricate a backend result or proof
 candidate.
@@ -177,14 +194,13 @@ fields and explicit domain tags:
 |---|---|---|
 | `plan_hash` | `mizar-atp/portfolio-plan/v1` | `vc_hash`, `AtpProblem.problem_id`, selected profile ids, concrete input hashes, policy-constraint fingerprint, and budget records |
 | `candidate_hash` | `mizar-atp/portfolio-candidate/v1` | candidate kind, evidence format, candidate payload/ref hash, target binding, provenance hash, encoded problem hash, backend profile id, and observed result |
-| `evidence_set_hash` | `mizar-atp/portfolio-evidence-set/v1` | `plan_hash`, sorted backend-result metadata hashes, sorted candidate hashes, stop summary, and non-semantic diagnostic hashes |
+| `evidence_set_hash` | `mizar-atp/portfolio-evidence-set/v1` | `plan_hash`, sorted backend-result metadata hashes, sorted candidate hashes, and stop summary |
 
 Candidate ordering is independent of raw completion order. The canonical order
 is:
 
 1. candidate kind tag (`FormulaSubstitution`, `ExternallyAttested`,
-   `Counterexample`, `Unknown`, `Error`) as a handoff grouping, without
-   evaluating proof policy;
+   `Counterexample`) as a handoff grouping, without evaluating proof policy;
 2. backend profile deterministic priority;
 3. evidence format priority;
 4. encoded problem hash;
@@ -213,6 +229,25 @@ candidate that has not yet been checked by the kernel.
 Cancellation is cooperative for in-process portfolio work. Child backend
 processes are terminated through the backend runner. Cancelled runs leave
 diagnostic metadata but never partial accepted proof state.
+
+## Result Matching
+
+For the no-early-stop task-18 path, backend results must match the planned run
+set bijectively before candidates are handed onward:
+
+- planned run ids must be unique;
+- every non-cancelled planned run must have exactly one terminal result;
+- unknown result run ids, duplicate results, missing results, and mismatched
+  result metadata fail closed as `PortfolioError` before any
+  `PortfolioEvidenceSet` is emitted;
+- result metadata must match the planned run's run id, problem id, input hash,
+  metadata hash, command fingerprint, backend kind, and profile id;
+- candidate metadata mismatches fail closed before that candidate is included.
+
+When cancellation is observed, task 18 may collect any already-returned
+matching results for diagnostics, but it must emit no candidates and must record
+a cancelled stop summary. This is cancellation handling, not early-stop policy
+finality.
 
 ## Resource Budgets
 
@@ -252,7 +287,7 @@ Each backend failure is local to its run:
 | timeout or budget exhaustion | terminal run status plus diagnostic; other useful runs may continue |
 | process crash or spawn failure | backend error diagnostic; no verifier crash |
 | malformed backend output | unknown or error; no `FormulaSubstitution` candidate unless extraction succeeds |
-| candidate metadata mismatch | reject the candidate for handoff and keep diagnostics |
+| candidate metadata mismatch | fail closed with `PortfolioError` before emitting a `PortfolioEvidenceSet` |
 | kernel rejection reported later | candidate-specific proof error; portfolio evidence set remains reproducible |
 | policy rejection reported later | policy error distinct from backend and kernel rejection |
 
@@ -263,6 +298,10 @@ An all-failed portfolio is an open proof obligation, not an accepted proof.
 - resolved `deferred` spec gap: task 17 specifies portfolio planning,
   candidate collection, deterministic ordering, early-stop constraints, budgets,
   and handoff boundaries before `src/portfolio.rs` exists.
+- task-18 source scope: no-early-stop deterministic planning and candidate
+  collection over prebuilt backend runs/results, plus cancellation and
+  fail-closed validation. It does not implement proof policy, kernel checks,
+  real-output evidence extraction, witness publication, or cache promotion.
 - `external_dependency_gap`: `mizar-proof` is not a workspace crate, so proof
   policy finality, artifact-facing winner selection, and witness publication
   cannot be implemented here.
@@ -273,21 +312,20 @@ An all-failed portfolio is an open proof obligation, not an accepted proof.
 - `external_dependency_gap`: proof witness storage, artifact projection, and
   proof-cache promotion remain outside `mizar-atp`.
 
-## Task-17 Test Coverage
+## Task-18 Test Coverage
 
-Task 17 is documentation-only and adds no Rust tests. Task 18 should add source
-coverage for:
+Task 18 adds Rust coverage for:
 
 - deterministic portfolio planning under shuffled backend availability and
   profile input order;
 - identical candidate ordering under shuffled backend completion order;
 - no-early-stop collection when no external policy finality decision exists;
 - honoring explicit cancellation without leaving partial accepted proof state;
-- if a stable external policy finality contract exists, honoring that finality
-  decision without leaving partial accepted proof state; otherwise proving that
-  the implementation does not fabricate an early-stop oracle;
-- timeout, crash, malformed output, metadata mismatch, and unsupported-limit
-  propagation from backend results;
+- proving that the implementation does not fabricate an early-stop oracle while
+  the stable external policy finality contract is absent;
+- timeout, crash, malformed output, unsupported-limit propagation,
+  same-problem validation, stopped-plan result matching, and result/candidate
+  metadata mismatch from backend results;
 - absence of kernel calls, proof policy evaluation, witness/cache publication,
   accepted proof status, trusted backend proof material, caller-supplied
   instantiated formulas, and SAT problems from the portfolio API.

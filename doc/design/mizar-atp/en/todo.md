@@ -23,7 +23,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [x] deterministic FOF source complete; typed/native/backend routes deferred |
 | smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source complete; theory/sorted/native/backend routes deferred |
 | backend | `backend.md` (task 13) | `src/backend.rs` | [x] generic runner and mock classification complete; real adapters/extraction deferred |
-| portfolio | `portfolio.md` (task 17) | `src/portfolio.rs` | [x] spec complete; source deferred to task 18 and external policy gaps |
+| portfolio | `portfolio.md` (task 17) | `src/portfolio.rs` | [x] task-18 no-early-stop source complete; proof policy, real extraction, kernel checks, witness/cache/artifact handoff deferred |
 
 `mizar-atp` implements pipeline phase 13: ATP-eligible `VcStatus::NeedsAtp`
 `VcIr` obligations in, backend-neutral `AtpProblem`s, concrete prover
@@ -422,12 +422,22 @@ Keep `cargo test -p mizar-atp` green after each task (see
       backend evidence extractor, fake real-output schema, or trusted backend
       proof material is added.
 
-18. **Portfolio execution.** [ ]
+18. **Portfolio execution.** [x]
     - Implement portfolio construction and candidate collection with
       deterministic candidate ordering and cooperative cancellation.
     - Tests: shuffled completion produces identical candidate sets and
-      orders; early stop leaves no partial state.
+      orders; cancellation leaves no partial candidates, and no early-stop
+      oracle is fabricated.
     - Deps: 14, 16, 17. Spec: `portfolio.md`.
+    - Status: complete within the task-17 no-early-stop boundary.
+      `src/portfolio.rs` builds deterministic plans from prebuilt
+      `BackendRunInput` values, validates same-problem membership, collects
+      terminal `BackendRunResult` values into a policy-neutral
+      `PortfolioEvidenceSet`, orders formula/substitution candidates
+      independently of completion order, and cancels without emitting partial
+      candidates. It does not call the kernel, evaluate proof policy, create
+      witness/cache/artifact state, implement early-stop policy finality, add a
+      real backend extractor, or trust backend proof material.
 
 19. **ATP run metadata recording.** [ ]
     - Record seeds, timeout settings, backend identities/versions, and

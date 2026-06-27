@@ -23,7 +23,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [x] deterministic FOF source 完了。typed/native/backend route は deferred |
 | smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source 完了。theory/sorted/native/backend route は deferred |
 | backend | `backend.md`（task 13） | `src/backend.rs` | [x] generic runner と mock classification 完了。real adapter / extraction は deferred |
-| portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [x] spec 完了。source は task 18 と外部 policy gap へ deferred |
+| portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [x] task-18 no-early-stop source 完了。proof policy、real extraction、kernel check、witness/cache/artifact handoff は deferred |
 
 `mizar-atp` はパイプライン phase 13 を実装する。入力は ATP 対象の
 `VcStatus::NeedsAtp` `VcIr` 義務、出力はバックエンド中立の `AtpProblem`、
@@ -388,12 +388,19 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       Rust source、proof policy evaluator、kernel call、witness/cache publication、real backend
       evidence extractor、fake real-output schema、trusted backend proof material は追加しない。
 
-18. **portfolio 実行。** [ ]
+18. **portfolio 実行。** [x]
     - 決定的な候補順と協調的キャンセルを備えた portfolio 構築と候補収集を
       実装する。
-    - テスト: 完了順をシャッフルしても同一の候補集合と順序。early stop が
-      部分状態を残さない。
+    - テスト: 完了順をシャッフルしても同一の候補集合と順序。cancellation は
+      partial candidate を残さず、early-stop oracle を fabricate しない。
     - 依存: 14、16、17。仕様: `portfolio.md`。
+    - 状態: task-17 no-early-stop boundary 内で完了。`src/portfolio.rs` は prebuilt
+      `BackendRunInput` value から deterministic plan を構築し、same-problem membership を
+      検証し、terminal `BackendRunResult` value を policy-neutral な `PortfolioEvidenceSet` に
+      収集し、completion order から独立して formula/substitution candidate を順序付け、partial
+      candidate を出さずに cancellation する。kernel call、proof policy evaluation、
+      witness/cache/artifact state、early-stop policy finality、real backend extractor、trusted
+      backend proof material は実装しない。
 
 19. **ATP 実行メタデータの記録。** [ ]
     - artifact と再現性記録のために、シード、タイムアウト設定、
