@@ -23,7 +23,7 @@ module は表で示す。この crate はアーキテクチャ 09、10、15、19
 | tptp_encoder | `tptp_encoder.md`（task 9） | `src/tptp_encoder.rs` | [x] deterministic FOF source 完了。typed/native/backend route は deferred |
 | smtlib_encoder | `smtlib_encoder.md`（task 11） | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source 完了。theory/sorted/native/backend route は deferred |
 | backend | `backend.md`（task 13） | `src/backend.rs` | [x] generic runner と mock classification 完了。real adapter / extraction は deferred |
-| portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [ ] |
+| portfolio | `portfolio.md`（task 17） | `src/portfolio.rs` | [x] spec 完了。source は task 18 と外部 policy gap へ deferred |
 
 `mizar-atp` はパイプライン phase 13 を実装する。入力は ATP 対象の
 `VcStatus::NeedsAtp` `VcIr` 義務、出力はバックエンド中立の `AtpProblem`、
@@ -373,7 +373,7 @@ witness-publication integration は `external_dependency_gap` であり、ここ
 
 ### portfolio
 
-17. **仕様: `portfolio.md`。** [ ]
+17. **仕様: `portfolio.md`。** [x]
     - portfolio の仕様を執筆する（英語と日本語、コードなし）: VC ごとの
       portfolio タスク、候補証拠の収集、early stop、リソース予算、そして
       「勝者選択は `mizar-proof` のポリシーであり、完了順が結果を決める
@@ -382,6 +382,11 @@ witness-publication integration は `external_dependency_gap` であり、ここ
     - 依存: 13。仕様: アーキテクチャ 10「Portfolio Execution」、
       [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
       「ATP Portfolio Service」。
+    - 状態: docs-only task として完了。`portfolio.md` は policy-neutral な portfolio
+      planning、candidate collection、deterministic candidate ordering、resource budget、
+      cancellation / early-stop constraint、kernel / proof-policy handoff boundary を定義する。
+      Rust source、proof policy evaluator、kernel call、witness/cache publication、real backend
+      evidence extractor、fake real-output schema、trusted backend proof material は追加しない。
 
 18. **portfolio 実行。** [ ]
     - 決定的な候補順と協調的キャンセルを備えた portfolio 構築と候補収集を

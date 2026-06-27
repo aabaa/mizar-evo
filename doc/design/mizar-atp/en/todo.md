@@ -23,7 +23,7 @@ architecture 09, 10, 15, and 19 and internal 04.
 | tptp_encoder | `tptp_encoder.md` (task 9) | `src/tptp_encoder.rs` | [x] deterministic FOF source complete; typed/native/backend routes deferred |
 | smtlib_encoder | `smtlib_encoder.md` (task 11) | `src/smtlib_encoder.rs` | [x] deterministic uninterpreted SMT-LIB source complete; theory/sorted/native/backend routes deferred |
 | backend | `backend.md` (task 13) | `src/backend.rs` | [x] generic runner and mock classification complete; real adapters/extraction deferred |
-| portfolio | `portfolio.md` (task 17) | `src/portfolio.rs` | [ ] |
+| portfolio | `portfolio.md` (task 17) | `src/portfolio.rs` | [x] spec complete; source deferred to task 18 and external policy gaps |
 
 `mizar-atp` implements pipeline phase 13: ATP-eligible `VcStatus::NeedsAtp`
 `VcIr` obligations in, backend-neutral `AtpProblem`s, concrete prover
@@ -404,7 +404,7 @@ Keep `cargo test -p mizar-atp` green after each task (see
 
 ### Portfolio
 
-17. **Spec: `portfolio.md`.** [ ]
+17. **Spec: `portfolio.md`.** [x]
     - Write the portfolio spec (English and Japanese, no code): per-VC
       portfolio tasks, candidate evidence collection, early stop, resource
       budgets, and the boundary that winner selection is `mizar-proof`
@@ -414,6 +414,13 @@ Keep `cargo test -p mizar-atp` green after each task (see
     - Deps: 13. Spec: architecture 10 "Portfolio Execution",
       [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
       "ATP Portfolio Service".
+    - Status: complete as a docs-only task. `portfolio.md` defines
+      policy-neutral portfolio planning, candidate collection, deterministic
+      candidate ordering, resource budgets, cancellation and early-stop
+      constraints, and kernel/proof-policy handoff boundaries. No Rust source,
+      proof policy evaluator, kernel call, witness/cache publication, real
+      backend evidence extractor, fake real-output schema, or trusted backend
+      proof material is added.
 
 18. **Portfolio execution.** [ ]
     - Implement portfolio construction and candidate collection with

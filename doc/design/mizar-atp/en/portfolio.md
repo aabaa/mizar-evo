@@ -1,0 +1,293 @@
+# Module: portfolio
+
+> Canonical language: English. Japanese companion:
+> [../ja/portfolio.md](../ja/portfolio.md).
+
+## Purpose
+
+The `portfolio` module specifies phase-13 ATP portfolio planning and candidate
+collection for one VC that already reached `VcStatus::NeedsAtp`.
+
+The module is an evidence producer and handoff boundary. It may plan backend
+runs, collect backend results, normalize candidate ordering, record
+reproducibility metadata, and hand candidate evidence to the later kernel and
+proof-policy stages. It does not accept a proof, select an artifact-facing
+winner, call `mizar-kernel`, publish witnesses, update caches, or turn backend
+proof methods, logs, unsat cores, SMT proof objects, TSTP traces, resolution
+traces, completion order, or instantiated formulas into trusted acceptance
+material.
+
+## Scope
+
+Task 17 is specification-only. It authorizes a future `src/portfolio.rs` module
+to implement policy-neutral portfolio planning and candidate collection after
+this specification exists. It does not add Rust source, spawn new backend
+adapters, parse real backend output, invent formula/substitution evidence, call
+the kernel, evaluate proof policy, publish artifact witnesses, or implement
+proof-cache promotion.
+
+Task 18 may implement the no-early-stop collection path. Early-stop mechanics
+may be implemented only after a stable external proof-policy finality contract
+exists; until then, no early stop is the only source-implementation path. It
+must not implement `mizar-proof` policy locally. Because `mizar-proof` is not
+currently a workspace crate, policy evaluation, witness publication, and proof
+cache promotion remain `external_dependency_gap` items.
+
+## Inputs And Outputs
+
+The conceptual portfolio API consumes:
+
+```text
+PortfolioInput
+  portfolio_id
+  vc_id
+  vc_hash
+  atp_problem
+  backend_profiles
+  encoded_problem_set
+  obligation_budget
+  scheduler_budget
+  proof_hint?
+  build_snapshot
+  policy_constraints
+  cancellation
+```
+
+and produces:
+
+```text
+PortfolioEvidenceSet
+  portfolio_id
+  vc_id
+  vc_hash
+  plan_hash
+  backend_results
+  candidates
+  pending_capabilities
+  stop_summary
+  diagnostics
+  metadata
+```
+
+`PortfolioEvidenceSet` is not an accepted proof result. It is a deterministic
+evidence set for later kernel checking and proof-policy selection.
+
+## Boundary Rules
+
+The portfolio layer may:
+
+- select configured backend profiles that are allowed by policy constraints,
+  source hints, backend availability, logic profile, concrete encoders, and the
+  obligation budget;
+- request or consume concrete TPTP / SMT-LIB encodings that were already built
+  from the same `AtpProblem`;
+- dispatch `BackendRunInput` records to the backend runner;
+- collect `BackendRunResult` values, candidate evidence refs or payload bytes,
+  counterexample diagnostics, stdout/stderr hashes, timing summaries, resource
+  observations, and cancellation records;
+- build deterministic candidate ids and candidate ordering keys;
+- stop remaining backend runs only when cancellation is requested or an
+  external proof-policy finality decision says no pending candidate can displace
+  the selected policy class.
+
+It must not:
+
+- evaluate proof policy, choose the canonical proof winner, or project artifact
+  proof status;
+- call `mizar-kernel`, run SAT checking, or derive instantiated formulas;
+- select additional premises, invent substitutions, repair binders, resolve
+  overloads, search clusters, insert implicit coercions, or perform fallback
+  inference;
+- classify externally attested backend output as equivalent to kernel-verified
+  proof status;
+- trust backend-reported `used_axioms`, backend proof methods, proof logs,
+  unsat cores, SMT proof objects, TSTP traces, MiniSAT-compatible resolution
+  traces, or legacy certificates;
+- make raw completion order, wall-clock timing, process id, temporary path, or
+  backend output order part of semantic candidate identity;
+- publish proof witnesses, cache entries, or artifact proof status.
+
+## Portfolio Planning
+
+Planning is deterministic for equivalent inputs. The plan contains one
+`BackendRunInput` per selected backend profile and concrete encoding. Selection
+uses only stable inputs:
+
+- `AtpProblem.problem_id`, `vc_id`, `vc_hash`, target binding, logic profile,
+  and expected result;
+- profile id, backend kind, concrete format, supported observed results,
+  evidence formats, deterministic priority, and required resource limits;
+- proof hints and policy constraints that are already materialized before the
+  portfolio starts;
+- backend availability records and configured executable identities;
+- explicit obligation and scheduler budgets.
+
+The plan must reject or skip profiles that cannot consume the selected logic
+profile or concrete encoding. A profile that can only produce externally
+attested or diagnostic output may be scheduled only when the policy constraints
+allow such evidence to be recorded; it still cannot become kernel-verified
+inside `mizar-atp`.
+
+If no profile is schedulable, the portfolio returns an open evidence set with a
+stable diagnostic reason. It must not fabricate a backend result or proof
+candidate.
+
+## Candidate Model
+
+A portfolio candidate is a normalized record derived from one backend result:
+
+```text
+PortfolioCandidate
+  candidate_id
+  source_run_id
+  backend_profile_id
+  encoded_problem_hash
+  target_binding
+  candidate_kind
+  evidence_format
+  evidence_payload_or_ref?
+  counterexample_ref?
+  observed_result?
+  provenance_hash
+  candidate_hash
+  diagnostics
+```
+
+Candidate kinds are policy-neutral:
+
+- `FormulaSubstitution`: formula/substitution evidence candidate compatible
+  with the kernel-owned schema, once the evidence-extraction route exists;
+- `ExternallyAttested`: backend evidence that policy may record but that is not
+  kernel acceptance;
+- `Counterexample`: diagnostic model or counterexample evidence;
+- `Unknown` / `Error`: no proof candidate, only diagnostics.
+
+`FormulaSubstitution` candidates are still untrusted until `mizar-kernel`
+checks them. `ExternallyAttested` candidates are never silently upgraded to
+kernel-verified status. Backend proof logs may be retained as diagnostics or as
+inputs to a future extractor, but the candidate evidence handed onward must be
+formula/substitution evidence bytes or refs plus target binding and provenance.
+
+## Deterministic Ordering And Identity
+
+The portfolio builds stable hashes with private, length-prefixed canonical
+fields and explicit domain tags:
+
+| Hash | Domain | Required fields |
+|---|---|---|
+| `plan_hash` | `mizar-atp/portfolio-plan/v1` | `vc_hash`, `AtpProblem.problem_id`, selected profile ids, concrete input hashes, policy-constraint fingerprint, and budget records |
+| `candidate_hash` | `mizar-atp/portfolio-candidate/v1` | candidate kind, evidence format, candidate payload/ref hash, target binding, provenance hash, encoded problem hash, backend profile id, and observed result |
+| `evidence_set_hash` | `mizar-atp/portfolio-evidence-set/v1` | `plan_hash`, sorted backend-result metadata hashes, sorted candidate hashes, stop summary, and non-semantic diagnostic hashes |
+
+Candidate ordering is independent of raw completion order. The canonical order
+is:
+
+1. candidate kind tag (`FormulaSubstitution`, `ExternallyAttested`,
+   `Counterexample`, `Unknown`, `Error`) as a handoff grouping, without
+   evaluating proof policy;
+2. backend profile deterministic priority;
+3. evidence format priority;
+4. encoded problem hash;
+5. candidate hash;
+6. backend profile id;
+7. source run id.
+
+This order is for reproducible candidate handoff only. It is not the
+artifact-facing winner order, and it must not override `mizar-proof` policy.
+
+## Early Stop And Cancellation
+
+The portfolio may stop remaining backend processes only in these cases:
+
+- caller cancellation supersedes the build snapshot;
+- the obligation or scheduler budget is exhausted;
+- an external proof-policy finality decision states that no pending candidate
+  can displace the selected policy class under the active policy.
+
+Without an external finality decision, the safe default is to collect every
+scheduled backend result until it reaches a terminal status or cancellation is
+requested. `mizar-atp` must not infer policy finality from backend completion
+order, backend priority alone, externally attested success, or the presence of a
+candidate that has not yet been checked by the kernel.
+
+Cancellation is cooperative for in-process portfolio work. Child backend
+processes are terminated through the backend runner. Cancelled runs leave
+diagnostic metadata but never partial accepted proof state.
+
+## Resource Budgets
+
+The portfolio records both the obligation-level budget and the per-backend
+budget assigned to each run. Budget assignment is deterministic and based on
+stable profile configuration and explicit input budgets. Timeout, memory,
+process-count, stdout/stderr, and temporary-file limits are forwarded to the
+backend runner as required or best-effort limits.
+
+Unsupported required limits make the affected run an error before a `Proved`
+candidate can be constructed. Budget exhaustion leaves the obligation open or
+diagnostic; it does not create trusted proof status.
+
+## Kernel And Policy Handoff
+
+The portfolio hands off:
+
+- formula/substitution candidates to the kernel check scheduler, when such
+  candidates exist and the external policy says kernel-checked evidence can be
+  useful;
+- externally attested or diagnostic records to proof policy and diagnostics
+  without treating them as accepted proof material;
+- reproducibility metadata, hashes, and stdout/stderr refs for artifact and
+  cache layers to consume after their owning crates define stable contracts.
+
+The portfolio does not construct `KernelCheckResult`, `ProofWitnessDraft`,
+trusted `used_axioms`, artifact proof selections, or proof-cache entries.
+Backend-reported used axioms remain advisory until validated by the kernel.
+
+## Failure Semantics
+
+Each backend failure is local to its run:
+
+| Condition | Portfolio handling |
+|---|---|
+| no schedulable profile | open evidence set with deterministic diagnostic |
+| timeout or budget exhaustion | terminal run status plus diagnostic; other useful runs may continue |
+| process crash or spawn failure | backend error diagnostic; no verifier crash |
+| malformed backend output | unknown or error; no `FormulaSubstitution` candidate unless extraction succeeds |
+| candidate metadata mismatch | reject the candidate for handoff and keep diagnostics |
+| kernel rejection reported later | candidate-specific proof error; portfolio evidence set remains reproducible |
+| policy rejection reported later | policy error distinct from backend and kernel rejection |
+
+An all-failed portfolio is an open proof obligation, not an accepted proof.
+
+## Gap Classification
+
+- resolved `deferred` spec gap: task 17 specifies portfolio planning,
+  candidate collection, deterministic ordering, early-stop constraints, budgets,
+  and handoff boundaries before `src/portfolio.rs` exists.
+- `external_dependency_gap`: `mizar-proof` is not a workspace crate, so proof
+  policy finality, artifact-facing winner selection, and witness publication
+  cannot be implemented here.
+- `external_dependency_gap` / `deferred`: first real-backend formula/substitution
+  extraction remains blocked by ATP-G-015. Task 18 must use existing mock
+  candidates or already-specified candidate inputs; it must not invent a fake
+  real-output schema.
+- `external_dependency_gap`: proof witness storage, artifact projection, and
+  proof-cache promotion remain outside `mizar-atp`.
+
+## Task-17 Test Coverage
+
+Task 17 is documentation-only and adds no Rust tests. Task 18 should add source
+coverage for:
+
+- deterministic portfolio planning under shuffled backend availability and
+  profile input order;
+- identical candidate ordering under shuffled backend completion order;
+- no-early-stop collection when no external policy finality decision exists;
+- honoring explicit cancellation without leaving partial accepted proof state;
+- if a stable external policy finality contract exists, honoring that finality
+  decision without leaving partial accepted proof state; otherwise proving that
+  the implementation does not fabricate an early-stop oracle;
+- timeout, crash, malformed output, metadata mismatch, and unsupported-limit
+  propagation from backend results;
+- absence of kernel calls, proof policy evaluation, witness/cache publication,
+  accepted proof status, trusted backend proof material, caller-supplied
+  instantiated formulas, and SAT problems from the portfolio API.
