@@ -537,7 +537,7 @@ Keep `cargo test -p mizar-atp` green after each task (see
       behavior, public API, backend route, kernel call, proof policy, witness,
       cache, or placeholder downstream integration is added.
 
-25. **Portfolio completion-order independence gate.** [ ]
+25. **Portfolio completion-order independence gate.** [x]
     - Add a portfolio-specific regression gate that runs mock backends with
       adversarial completion orders. Candidate collection may finish early only
       when `mizar-proof` policy reports that no pending candidate can displace
@@ -550,6 +550,19 @@ Keep `cargo test -p mizar-atp` green after each task (see
       [10.atp_backend_integration.md](../../architecture/en/10.atp_backend_integration.md),
       [14.parallel_verification_and_scheduling.md](../../architecture/en/14.parallel_verification_and_scheduling.md),
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md).
+    - Status: deferred/external_dependency_gap completion. Task 25
+      re-evaluated the release-policy completion-order gate after tasks 18,
+      21, 23, and 24. Because `mizar-proof` is not a workspace crate and
+      proof-policy tasks 7, 9, 12, and 13 are unavailable here, the later
+      kernel-verifiable-vs-earlier-externally-attested winner test, tie policy,
+      and early-stop finality oracle cannot be implemented inside `mizar-atp`
+      without crossing the proof-policy boundary. Existing task-18/task-21
+      coverage already guards the crate-local no-early-stop deterministic
+      candidate handoff under shuffled completion order. This task records the
+      external_dependency_gap, updates paired docs, and adds a lint-policy
+      guard that no mock proof-policy oracle, placeholder `mizar-proof`
+      adapter, accepted proof state, kernel call, witness/cache output, or
+      trusted backend proof material is introduced.
 
 26. **Architecture-22 follow-up audit.** [ ]
     - Re-run the source/spec correspondence and bilingual documentation sync

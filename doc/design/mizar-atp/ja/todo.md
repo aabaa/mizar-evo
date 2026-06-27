@@ -491,7 +491,7 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       backend route、kernel call、proof policy、witness、cache、placeholder downstream
       integration は追加しない。
 
-25. **portfolio 完了順独立性 gate。** [ ]
+25. **portfolio 完了順独立性 gate。** [x]
     - adversarial な完了順を持つ mock backend で portfolio-specific regression
       gate を追加する。candidate collection が早期終了できるのは、保留中の
       candidate が選択済み class を覆せないと `mizar-proof` policy が報告する
@@ -505,6 +505,19 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       [10.atp_backend_integration.md](../../architecture/ja/10.atp_backend_integration.md),
       [14.parallel_verification_and_scheduling.md](../../architecture/ja/14.parallel_verification_and_scheduling.md),
       [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md)。
+    - Status: deferred/external_dependency_gap completion。Task 25 は
+      task 18、21、23、24 の後に release-policy completion-order gate を
+      再評価した。`mizar-proof` は workspace crate ではなく、proof-policy
+      task 7、9、12、13 はここで利用できないため、後から返った
+      kernel-verifiable candidate と先に返った externally attested result の
+      winner test、tie policy、early-stop finality oracle は、proof-policy
+      境界を越えずに `mizar-atp` 内へ実装できない。既存の task-18/task-21
+      coverage は、shuffled completion order 下の crate-local no-early-stop
+      deterministic candidate handoff を既に guard している。この task は
+      external_dependency_gap を記録し、paired docs を更新し、mock
+      proof-policy oracle、placeholder `mizar-proof` adapter、accepted proof state、
+      kernel call、witness/cache output、trusted backend proof material を追加しない
+      ことを lint-policy guard で固定する。
 
 26. **architecture-22 フォローアップ監査。** [ ]
     - task 25 の portfolio ordering と early-stop 契約について、ソース/仕様

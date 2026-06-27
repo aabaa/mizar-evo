@@ -1732,6 +1732,174 @@ fn atp_bilingual_sync_audit_covers_design_doc_pairs() {
 }
 
 #[test]
+fn atp_task_twenty_five_policy_gap_is_documented_and_guarded() {
+    let expectations = [
+        (
+            "en",
+            vec![
+                (
+                    "todo.md",
+                    vec![
+                        "25. **Portfolio completion-order independence gate.** [x]",
+                        "Status: deferred/external_dependency_gap completion",
+                    ],
+                ),
+                (
+                    "00.crate_plan.md",
+                    vec![
+                        "ATP-G-025",
+                        "Task 25: Portfolio Completion-Order Independence Gate",
+                        "complete as a deferred/external_dependency_gap gate",
+                        "mock proof-policy oracle",
+                    ],
+                ),
+                (
+                    "portfolio.md",
+                    vec![
+                        "Task 25 re-evaluates the portfolio completion-order independence gate",
+                        "Task 25 Re-evaluation",
+                        "Task-25 Deferred Gate",
+                    ],
+                ),
+                (
+                    "source_spec_audit.md",
+                    vec![
+                        "ATP-AUDIT-G005",
+                        "Task 25 re-evaluates the portfolio completion-order independence gate",
+                        "task-18/task-21 cover only no-early-stop deterministic handoff",
+                    ],
+                ),
+                (
+                    "bilingual_sync_audit.md",
+                    vec![
+                        "Task 25 Sync Edits",
+                        "portfolio completion-order independence gate",
+                        "winner/early-stop gate",
+                    ],
+                ),
+            ],
+        ),
+        (
+            "ja",
+            vec![
+                (
+                    "todo.md",
+                    vec![
+                        "25. **portfolio 完了順独立性 gate。** [x]",
+                        "Status: deferred/external_dependency_gap completion",
+                    ],
+                ),
+                (
+                    "00.crate_plan.md",
+                    vec![
+                        "ATP-G-025",
+                        "Task 25: portfolio completion-order independence gate",
+                        "deferred/external_dependency_gap gate として完了",
+                        "mock proof-policy oracle",
+                    ],
+                ),
+                (
+                    "portfolio.md",
+                    vec![
+                        "task 25 は portfolio completion-order independence gate を再評価する",
+                        "Task 25 Re-evaluation",
+                        "Task-25 Deferred Gate",
+                    ],
+                ),
+                (
+                    "source_spec_audit.md",
+                    vec![
+                        "ATP-AUDIT-G005",
+                        "task 25 は portfolio completion-order independence gate を再評価する",
+                        "no-early-stop deterministic handoff だけを cover",
+                    ],
+                ),
+                (
+                    "bilingual_sync_audit.md",
+                    vec![
+                        "Task 25 Sync Edits",
+                        "portfolio completion-order independence gate",
+                        "winner/early-stop gate",
+                    ],
+                ),
+            ],
+        ),
+    ];
+
+    let mut violations = Vec::new();
+    for (language, files) in expectations {
+        let doc_dir = workspace_root().join("doc/design/mizar-atp").join(language);
+        for (file_name, markers) in files {
+            let path = doc_dir.join(file_name);
+            let document = read_to_string(&path);
+            for marker in markers {
+                if !document.contains(marker) {
+                    violations.push(format!(
+                        "{} must document task-25 marker `{marker}`",
+                        path.display()
+                    ));
+                }
+            }
+        }
+    }
+
+    let source_path = crate_root().join("src/portfolio.rs");
+    let source = read_to_string(&source_path);
+    for prohibited in [
+        "ProofPolicyAdapter",
+        "ProofPolicyDecision",
+        "ProofPolicyEvaluator",
+        "ProofPolicyFinality",
+        "ProofPolicyOracle",
+        "ProofPolicySelector",
+        "ProofPolicyWinner",
+        "EarlyStopOracle",
+        "PolicyOracle",
+        "WinnerSelection",
+        "candidate_displacement",
+        "early_stop_finality",
+        "early_stop_oracle",
+        "kernel_check",
+        "mizar_proof",
+        "mock_proof_policy",
+        "policy_adapter",
+        "policy_oracle",
+        "policy_selector",
+        "proof_policy",
+        "proof_policy_select",
+        "selected_class",
+        "winner_selection",
+        "accepted_state",
+        "accepted_status",
+        "accepted_proof_state",
+        "ProofWitness",
+        "publish_witness",
+        "witness_output",
+        "witness_writer",
+        "proof_cache",
+        "cache_promotion",
+        "cache_output",
+        "KernelCheckResult",
+        "trusted_backend_proof",
+        "backend_proof_material",
+        "trusted_proof_material",
+    ] {
+        if source.contains(prohibited) {
+            violations.push(format!(
+                "{} must not add task-25 placeholder policy material `{prohibited}`",
+                source_path.display()
+            ));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "mizar-atp task-25 policy gap drift:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn workspace_lint_baseline_denies_rustc_warnings_and_clippy_all() {
     let manifest_path = workspace_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
