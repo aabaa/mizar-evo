@@ -512,10 +512,17 @@ Keep `cargo test -p mizar-atp` green after each task (see
       unless an intentional fallback is documented. No trusted acceptance,
       backend, kernel, witness, proof-policy, or cache behavior is added.
 
-23. **Source/spec correspondence audit.** [ ]
+23. **Source/spec correspondence audit.** [x]
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 22. Spec: all module specs and this TODO.
+    - Status: complete as an audit-only task. Paired
+      `source_spec_audit.md` documents inventory the current public modules,
+      public top-level items, public entry functions, cross-module evidence,
+      and ATP-AUDIT follow-up register; `lint_policy.rs` checks the audit
+      against current source and EN/JA gap ids/classes. No source behavior,
+      public API, backend route, kernel call, proof policy, witness, cache, or
+      placeholder downstream integration is added.
 
 24. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under

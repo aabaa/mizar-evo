@@ -468,10 +468,16 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       限り explicit/fail-closed のままである。trusted acceptance、backend、
       kernel、witness、proof-policy、cache behavior は追加しない。
 
-23. **ソース/仕様対応監査。** [ ]
+23. **ソース/仕様対応監査。** [x]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
       トレースし、ギャップをフォローアップタスクとして記録する。
     - 依存: 22。仕様: 全モジュール仕様と本 TODO。
+    - Status: audit-only task として完了。paired `source_spec_audit.md` document は
+      現在の public module、public top-level item、public entry function、
+      cross-module evidence、ATP-AUDIT follow-up register を inventory し、
+      `lint_policy.rs` は audit を現在の source と EN/JA gap id/class に照合する。
+      source behavior、public API、backend route、kernel call、proof policy、witness、
+      cache、placeholder downstream integration は追加しない。
 
 24. **二言語ドキュメント同期監査。** [ ]
     - `doc/design/mizar-atp/en/` の各英語正本と日本語版を比較し、内容を

@@ -1,4 +1,8 @@
-use std::{fs, path::PathBuf};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fs,
+    path::PathBuf,
+};
 
 #[test]
 fn atp_manifest_opts_into_workspace_lints() {
@@ -1477,6 +1481,155 @@ fn atp_public_enums_are_non_exhaustive_and_documented() {
 }
 
 #[test]
+fn atp_source_spec_audit_covers_public_modules_and_deferred_gaps() {
+    let modules = [
+        "backend",
+        "portfolio",
+        "problem",
+        "property_encoding",
+        "smtlib_encoder",
+        "tptp_encoder",
+        "translator",
+    ];
+    let expected_modules = modules.iter().copied().collect::<BTreeSet<_>>();
+    let expected_gaps = [
+        (
+            "ATP-AUDIT-G001".to_owned(),
+            "external_dependency_gap".to_owned(),
+        ),
+        (
+            "ATP-AUDIT-G002".to_owned(),
+            "external_dependency_gap".to_owned(),
+        ),
+        ("ATP-AUDIT-G003".to_owned(), "deferred".to_owned()),
+        ("ATP-AUDIT-G004".to_owned(), "deferred".to_owned()),
+        (
+            "ATP-AUDIT-G005".to_owned(),
+            "external_dependency_gap".to_owned(),
+        ),
+    ]
+    .into_iter()
+    .collect::<BTreeMap<_, _>>();
+    let mut gaps_by_language = BTreeMap::new();
+    let mut violations = Vec::new();
+
+    for language in ["en", "ja"] {
+        let audit_path = workspace_root()
+            .join("doc/design/mizar-atp")
+            .join(language)
+            .join("source_spec_audit.md");
+        let audit = read_to_string(&audit_path);
+        let audit_modules = audit_public_module_sections(&audit);
+        if audit_modules != expected_modules {
+            violations.push(format!(
+                "{}: source/spec audit module sections must exactly match public modules; source={expected_modules:?}, audit={audit_modules:?}",
+                audit_path.display()
+            ));
+        }
+
+        let audit_gaps = audit_gap_classes(&audit);
+        if audit_gaps != expected_gaps {
+            violations.push(format!(
+                "{}: source/spec audit gap ids/classes must exactly match expected follow-up register; expected={expected_gaps:?}, audit={audit_gaps:?}",
+                audit_path.display()
+            ));
+        }
+        gaps_by_language.insert(language, audit_gaps);
+
+        for module in modules {
+            let module_source_path = crate_root().join("src").join(format!("{module}.rs"));
+            let source = read_to_string(&module_source_path);
+            let module_section = audit_module_section(&audit, module).unwrap_or_else(|| {
+                violations.push(format!(
+                    "{}: source/spec audit must include a section for `{module}`",
+                    audit_path.display()
+                ));
+                ""
+            });
+
+            for marker in [
+                format!("`{module}`"),
+                format!("crates/mizar-atp/src/{module}.rs"),
+                format!("{module}.md"),
+            ] {
+                if !audit.contains(&marker) {
+                    violations.push(format!(
+                        "{}: source/spec audit must mention {marker}",
+                        audit_path.display()
+                    ));
+                }
+            }
+
+            for public_item in public_api_items(&source) {
+                let marker = format!("`{public_item}`");
+                if !module_section.contains(&marker) {
+                    violations.push(format!(
+                        "{}: section `{module}` must mention public item {marker} from {}",
+                        audit_path.display(),
+                        module_source_path.display()
+                    ));
+                }
+            }
+
+            for public_function in public_top_level_functions(&source) {
+                let marker = format!("`{public_function}`");
+                if !module_section.contains(&marker) {
+                    violations.push(format!(
+                        "{}: section `{module}` must mention public entry function {marker} from {}",
+                        audit_path.display(),
+                        module_source_path.display()
+                    ));
+                }
+            }
+        }
+
+        for gap_detail in audit_gap_detail_violations(&audit) {
+            violations.push(format!("{}: {gap_detail}", audit_path.display()));
+        }
+
+        for marker in [
+            "No source/spec drift",
+            "source_undocumented_behavior",
+            "repo_metadata_conflict",
+            "real-output extraction",
+            "advanced_semantics",
+            "source-derived ATP extraction",
+            "mizar-kernel",
+            "mizar-artifact",
+            "ProofWitnessRef",
+            "VerifiedArtifact",
+            "mizar-proof",
+            "mizar-cache",
+            "resolution trace",
+            "backend proof method",
+            "SMT proof object",
+            "SAT problem payload",
+        ] {
+            if !audit.contains(marker) {
+                violations.push(format!(
+                    "{}: source/spec audit must record marker `{marker}`",
+                    audit_path.display()
+                ));
+            }
+        }
+    }
+
+    if gaps_by_language.get("en") != gaps_by_language.get("ja") {
+        violations.push(format!(
+            "EN/JA source/spec audit gap ids/classes must stay synchronized; en={:?}, ja={:?}",
+            gaps_by_language.get("en"),
+            gaps_by_language.get("ja")
+        ));
+    }
+
+    assert!(
+        violations.is_empty(),
+        "mizar-atp source/spec audit drift:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn workspace_lint_baseline_denies_rustc_warnings_and_clippy_all() {
     let manifest_path = workspace_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
@@ -1704,6 +1857,107 @@ fn backtick_items(line: &str) -> Vec<String> {
     items
 }
 
+fn audit_public_module_sections(document: &str) -> BTreeSet<&str> {
+    document
+        .lines()
+        .filter_map(|line| {
+            let module = line.trim().strip_prefix("### `")?.split('`').next()?;
+            (!module.is_empty()).then_some(module)
+        })
+        .collect()
+}
+
+fn audit_module_section<'a>(document: &'a str, module: &str) -> Option<&'a str> {
+    let header = format!("### `{module}`");
+    let start = document.find(&header)?;
+    let rest = &document[start..];
+    let end = rest
+        .find("\n### `")
+        .or_else(|| rest.find("\n## "))
+        .map_or(document.len(), |offset| start + offset);
+    Some(&document[start..end])
+}
+
+fn audit_gap_classes(document: &str) -> BTreeMap<String, String> {
+    let mut classes = BTreeMap::new();
+    for (id, cells) in audit_gap_rows(document) {
+        if let Some(class) = cells.get(1) {
+            classes.insert(id, class.trim_matches('`').to_owned());
+        }
+    }
+    classes
+}
+
+fn audit_gap_detail_violations(document: &str) -> Vec<String> {
+    let rows = audit_gap_rows(document);
+    let mut counts = BTreeMap::<String, usize>::new();
+    for (id, _) in &rows {
+        *counts.entry(id.clone()).or_insert(0) += 1;
+    }
+
+    let mut violations = counts
+        .into_iter()
+        .filter_map(|(id, count)| {
+            (count != 1)
+                .then(|| format!("follow-up row {id} must appear exactly once, found {count}"))
+        })
+        .collect::<Vec<_>>();
+
+    violations.extend(
+        rows.into_iter()
+        .flat_map(|(id, cells)| {
+            let mut violations = Vec::new();
+            if cells.len() != 6 {
+                violations.push(format!(
+                    "follow-up row {id} must have exactly ID, Class, Evidence, Owner, Unblock condition, and Target follow-up / downstream phase cells"
+                ));
+                return violations;
+            }
+            for (index, label) in [
+                "Evidence",
+                "Owner",
+                "Unblock condition",
+                "Target follow-up / downstream phase",
+            ]
+            .iter()
+            .enumerate()
+            {
+                let cell = cells[index + 2].trim();
+                if cell.is_empty() || cell == "-" {
+                    violations.push(format!(
+                        "follow-up row {id} must have a non-empty {label} cell"
+                    ));
+                }
+            }
+            violations
+        }),
+    );
+
+    violations
+}
+
+fn audit_gap_rows(document: &str) -> Vec<(String, Vec<String>)> {
+    document
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            if !trimmed.starts_with("| ATP-AUDIT-") {
+                return None;
+            }
+            let cells = trimmed
+                .trim_matches('|')
+                .split('|')
+                .map(str::trim)
+                .collect::<Vec<_>>();
+            let id = cells.first()?;
+            Some((
+                (*id).to_owned(),
+                cells.into_iter().map(str::to_owned).collect(),
+            ))
+        })
+        .collect()
+}
+
 fn public_struct_fields(source: &str) -> Vec<String> {
     let mut fields = Vec::new();
     let mut current_struct = None;
@@ -1768,6 +2022,31 @@ fn public_api_functions(source: &str) -> Vec<String> {
         {
             current_impl = None;
         }
+    }
+
+    functions.sort();
+    functions
+}
+
+fn public_top_level_functions(source: &str) -> Vec<String> {
+    let mut functions = Vec::new();
+    let mut depth = 0usize;
+
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if depth == 0
+            && let Some(name) = item_name(
+                trimmed
+                    .strip_prefix("pub const fn ")
+                    .or_else(|| trimmed.strip_prefix("pub fn ")),
+            )
+        {
+            functions.push(name.to_owned());
+        }
+
+        depth = depth
+            .saturating_add(line.chars().filter(|character| *character == '{').count())
+            .saturating_sub(line.chars().filter(|character| *character == '}').count());
     }
 
     functions.sort();
