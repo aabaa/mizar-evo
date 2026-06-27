@@ -560,6 +560,25 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       audit、bilingual sync audit、本 TODO、crate plan、lint-policy guard が private
       test module split を記録する。新しい ATP-AUDIT gap は不要だった。
 
+28. **crate exit report と quality review。** [x]
+    - autonomous crate exit report を作成し、task commit、hard gate、残る
+      deferred/external gap、verification、90/100 以上の read-only quality score を
+      記録する。
+    - `mizar-atp` が candidate evidence producer に留まることを再確認する:
+      kernel checking、proof policy、witness/cache publication、trusted backend proof
+      material、placeholder `mizar-proof` / `mizar-cache` crate は導入しない。
+    - Tests: docs/lint verification、crate-local verification、可能な broad workspace
+      verification、read-only quality review。
+    - 依存: 27。仕様:
+      [autonomous_crate_development.md](../../autonomous_crate_development.md)、
+      本 TODO、すべての audit docs、repository documentation policy。
+    - Status: complete。paired `crate_exit_report.md` は、現在の
+      candidate-evidence producer milestone について status complete、quality score
+      94/100、score cap なし、全 hard gate passed、残る `ATP-CLOSEOUT-*`
+      deferred/external gap、next-phase handoff を記録する。`mizar-proof` と
+      `mizar-cache` は design-only で workspace crate ではないため、未実行 verification
+      と未実装連携は placeholder ではなく external_dependency_gap / deferred に残る。
+
 ## 推奨検証
 
 各タスクの後で実行する:

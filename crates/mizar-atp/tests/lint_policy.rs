@@ -1667,6 +1667,7 @@ fn atp_bilingual_sync_audit_covers_design_doc_pairs() {
         "00.crate_plan.md",
         "backend.md",
         "bilingual_sync_audit.md",
+        "crate_exit_report.md",
         "module_boundary_audit.md",
         "portfolio.md",
         "problem.md",
@@ -2252,6 +2253,311 @@ fn atp_task_twenty_seven_module_boundary_layout_is_documented() {
         "mizar-atp task-27 module-boundary layout drift:\n{}",
         violations.join("\n")
     );
+}
+
+#[test]
+fn atp_task_twenty_eight_crate_exit_report_is_documented() {
+    let expectations = [
+        (
+            "en",
+            vec![
+                (
+                    "todo.md",
+                    vec![
+                        "28. **Crate exit report and quality review.** [x]",
+                        "94/100",
+                        "external_dependency_gap / deferred",
+                    ],
+                ),
+                (
+                    "00.crate_plan.md",
+                    vec![
+                        "ATP-G-028",
+                        "Task 28: Crate Exit Report And Quality Review",
+                        "quality score 94/100",
+                    ],
+                ),
+                (
+                    "bilingual_sync_audit.md",
+                    vec![
+                        "Task 28 Sync Edits",
+                        "crate_exit_report.md",
+                        "quality score 94/100",
+                    ],
+                ),
+                (
+                    "crate_exit_report.md",
+                    vec![
+                        "Status: complete for the current candidate-evidence producer milestone.",
+                        "Quality score: 94/100.",
+                        "ATP-CLOSEOUT-G001",
+                        "ATP-CLOSEOUT-G002",
+                        "ATP-CLOSEOUT-G003",
+                        "`cargo test -p mizar-proof` and `cargo test -p mizar-cache` were not run",
+                        "Placeholder `mizar-proof`",
+                    ],
+                ),
+            ],
+        ),
+        (
+            "ja",
+            vec![
+                (
+                    "todo.md",
+                    vec![
+                        "28. **crate exit report と quality review。** [x]",
+                        "94/100",
+                        "external_dependency_gap / deferred",
+                    ],
+                ),
+                (
+                    "00.crate_plan.md",
+                    vec![
+                        "ATP-G-028",
+                        "Task 28: crate exit report and quality review",
+                        "quality score 94/100",
+                    ],
+                ),
+                (
+                    "bilingual_sync_audit.md",
+                    vec![
+                        "Task 28 Sync Edits",
+                        "crate_exit_report.md",
+                        "quality score 94/100",
+                    ],
+                ),
+                (
+                    "crate_exit_report.md",
+                    vec![
+                        "Status: 現在の candidate-evidence producer milestone として完了。",
+                        "Quality score: 94/100",
+                        "ATP-CLOSEOUT-G001",
+                        "ATP-CLOSEOUT-G002",
+                        "ATP-CLOSEOUT-G003",
+                        "`cargo test -p mizar-proof` と `cargo test -p mizar-cache`",
+                        "placeholder `mizar-proof` または `mizar-cache` crate",
+                    ],
+                ),
+            ],
+        ),
+    ];
+
+    let mut violations = Vec::new();
+    for (language, files) in expectations {
+        let doc_dir = workspace_root().join("doc/design/mizar-atp").join(language);
+        for (file_name, markers) in files {
+            let path = doc_dir.join(file_name);
+            let document = read_to_string(&path);
+            for marker in markers {
+                if !document.contains(marker) {
+                    violations.push(format!(
+                        "{} must document task-28 closeout marker `{marker}`",
+                        path.display()
+                    ));
+                }
+            }
+        }
+    }
+
+    for language in ["en", "ja"] {
+        let report_path = workspace_root()
+            .join("doc/design/mizar-atp")
+            .join(language)
+            .join("crate_exit_report.md");
+        let report = read_to_string(&report_path);
+        let closeout_gaps = closeout_gap_rows(&report)
+            .into_iter()
+            .map(|(id, cells)| {
+                let class = cells
+                    .get(1)
+                    .map(|class| class.replace('`', ""))
+                    .unwrap_or_default();
+                (id, (class, cells))
+            })
+            .collect::<BTreeMap<_, _>>();
+        let expected_classes = [
+            ("ATP-CLOSEOUT-G001", "external_dependency_gap"),
+            ("ATP-CLOSEOUT-G002", "external_dependency_gap"),
+            ("ATP-CLOSEOUT-G003", "external_dependency_gap"),
+            ("ATP-CLOSEOUT-G004", "external_dependency_gap / deferred"),
+            ("ATP-CLOSEOUT-G005", "deferred"),
+            ("ATP-CLOSEOUT-G006", "deferred"),
+        ]
+        .into_iter()
+        .map(|(id, class)| (id.to_owned(), class.to_owned()))
+        .collect::<BTreeMap<_, _>>();
+        let actual_classes = closeout_gaps
+            .iter()
+            .map(|(id, (class, _))| (id.clone(), class.clone()))
+            .collect::<BTreeMap<_, _>>();
+        if actual_classes != expected_classes {
+            violations.push(format!(
+                "{} must keep the task-28 closeout gap classes synchronized; expected {expected_classes:?}, found {actual_classes:?}",
+                report_path.display()
+            ));
+        }
+
+        let required_gap_markers = if language == "en" {
+            [
+                (
+                    "ATP-CLOSEOUT-G001",
+                    [
+                        "real-output extraction",
+                        "backend-specific EN/JA extraction specs",
+                    ],
+                ),
+                (
+                    "ATP-CLOSEOUT-G002",
+                    ["`mizar-proof` is design-only", "do not add proof policy"],
+                ),
+                (
+                    "ATP-CLOSEOUT-G003",
+                    [
+                        "`mizar-cache` is design-only",
+                        "cache reuse must never upgrade evidence",
+                    ],
+                ),
+                (
+                    "ATP-CLOSEOUT-G004",
+                    [
+                        "`mizar-artifact` owns witness schema/projection",
+                        "Downstream proof/cache/artifact owners",
+                    ],
+                ),
+                (
+                    "ATP-CLOSEOUT-G005",
+                    ["metadata-only corpus anchors", "staged runner"],
+                ),
+                (
+                    "ATP-CLOSEOUT-G006",
+                    ["Typed TPTP/CNF/include routes", "paired specs and tests"],
+                ),
+            ]
+        } else {
+            [
+                (
+                    "ATP-CLOSEOUT-G001",
+                    [
+                        "real-output extraction spec/source module",
+                        "backend-specific EN/JA extraction spec",
+                    ],
+                ),
+                (
+                    "ATP-CLOSEOUT-G002",
+                    [
+                        "`mizar-proof` は design-only",
+                        "proof policy を `mizar-atp` に追加しない",
+                    ],
+                ),
+                (
+                    "ATP-CLOSEOUT-G003",
+                    [
+                        "`mizar-cache` は design-only",
+                        "cache reuse は evidence を upgrade してはならない",
+                    ],
+                ),
+                (
+                    "ATP-CLOSEOUT-G004",
+                    [
+                        "`mizar-artifact` は witness schema/projection を所有",
+                        "downstream proof/cache/artifact owner",
+                    ],
+                ),
+                (
+                    "ATP-CLOSEOUT-G005",
+                    ["metadata-only corpus anchor", "staged runner"],
+                ),
+                (
+                    "ATP-CLOSEOUT-G006",
+                    ["Typed TPTP/CNF/include route", "paired spec と test"],
+                ),
+            ]
+        };
+        for (gap_id, markers) in required_gap_markers {
+            let Some((_, cells)) = closeout_gaps.get(gap_id) else {
+                violations.push(format!(
+                    "{} must include closeout gap row `{gap_id}`",
+                    report_path.display()
+                ));
+                continue;
+            };
+            let row = cells.join(" | ");
+            for marker in markers {
+                if !row.contains(marker) {
+                    violations.push(format!(
+                        "{} closeout gap row `{gap_id}` must include marker `{marker}`",
+                        report_path.display()
+                    ));
+                }
+            }
+        }
+
+        for marker in [
+            "cargo clippy --all-targets --all-features --offline -- -D warnings",
+            "cargo test --offline",
+            "git diff --cached --check",
+        ] {
+            if !report.contains(marker) {
+                violations.push(format!(
+                    "{} must keep closeout verification marker `{marker}`",
+                    report_path.display()
+                ));
+            }
+        }
+    }
+
+    let workspace_manifest = read_to_string(&workspace_root().join("Cargo.toml"));
+    let members = workspace_members(&workspace_manifest);
+    let atp_manifest = read_to_string(&crate_root().join("Cargo.toml"));
+    for crate_name in ["mizar-proof", "mizar-cache"] {
+        let member = format!("crates/{crate_name}");
+        if members
+            .iter()
+            .any(|workspace_member| workspace_member == &member)
+        {
+            violations.push(format!(
+                "{} must not add placeholder workspace member `{member}` in task 28",
+                workspace_root().join("Cargo.toml").display()
+            ));
+        }
+        if workspace_root().join("crates").join(crate_name).exists() {
+            violations.push(format!(
+                "task 28 must not add placeholder crate directory `{member}`"
+            ));
+        }
+        if atp_manifest.contains(crate_name) {
+            violations.push(format!(
+                "{} must not depend on placeholder `{crate_name}` in task 28",
+                crate_root().join("Cargo.toml").display()
+            ));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "mizar-atp task-28 crate exit report drift:\n{}",
+        violations.join("\n")
+    );
+}
+
+fn closeout_gap_rows(document: &str) -> Vec<(String, Vec<String>)> {
+    document
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            if !trimmed.starts_with("| ATP-CLOSEOUT-") {
+                return None;
+            }
+            let cells = trimmed
+                .trim_matches('|')
+                .split('|')
+                .map(str::trim)
+                .map(str::to_owned)
+                .collect::<Vec<_>>();
+            let id = cells.first()?.clone();
+            Some((id, cells))
+        })
+        .collect()
 }
 
 #[test]

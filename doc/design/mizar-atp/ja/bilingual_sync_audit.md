@@ -7,9 +7,10 @@ Task 24 は source/spec correspondence audit 後の `mizar-atp` design documenta
 pair を監査する。Task 25 は portfolio completion-order independence gate deferral
 について、この audit record を更新する。Task 26 は Architecture-22 follow-up について
 sync audit を再実行する。Task 27 は module-boundary private test module split について
-これを再実行する。これらの audit edit は Rust production source behavior、public API、
-`.miz` fixture、expectation、language specification、backend route、kernel check、
-proof policy、artifact witness、cache behavior、downstream integration を変更しない。
+これを再実行する。Task 28 は crate exit report についてこれを再実行する。これらの
+audit edit は Rust production source behavior、public API、`.miz` fixture、expectation、
+language specification、backend route、kernel check、proof policy、artifact witness、
+cache behavior、downstream integration を変更しない。
 
 ## Scope And Method
 
@@ -41,7 +42,8 @@ task name は英語のままでもよい。同期規則は semantic なもので
 
 | Document | 確認した同期内容 | 結果 |
 |---|---|---|
-| `00.crate_plan.md` | Crate responsibility、authority order、design/source inventory、known gap、task 27 までの task decomposition、hard gate、verification expectation。 | 同期済み。 |
+| `00.crate_plan.md` | Crate responsibility、authority order、design/source inventory、known gap、task 28 までの task decomposition、hard gate、verification expectation。 | 同期済み。 |
+| `crate_exit_report.md` | task ledger、hard gate、quality score 94/100、score breakdown、review result、ATP-CLOSEOUT gap、verification、未実行 proof/cache command の理由、next-phase handoff。 | 同期済み。 |
 | `problem.md` | Backend-neutral `AtpProblem` data shape、logic profile、formula/provenance/type-guard ownership、deterministic identity、禁止される trusted material、planned tests、public enum inventory。 | 同期済み。 |
 | `translator.md` | explicit `VcIr` / kernel-handoff projection input、declaration/formula materialization、unsupported premise class の fail-closed handling、proof-hint non-pruning、deterministic ordering、planned tests、public enum inventory。 | 同期済み。 |
 | `property_encoding.md` | axiom-form property projection、generated binder row、provenance / symbol-map requirement、native-declaration deferral、planned tests、public enum inventory。 | 同期済み。 |
@@ -51,13 +53,13 @@ task name は英語のままでもよい。同期規則は semantic なもので
 | `portfolio.md` | policy-neutral planning、no-early-stop collection、candidate / evidence-set ordering、fail-closed result matching、downstream proof-policy boundary、determinism suite、task-25 deferred completion-order gate、public enum inventory。 | 同期済み。 |
 | `module_boundary_audit.md` | task-27 private test module split、layout inventory、public API change なし、production behavior change なし、No new ATP-AUDIT gap、不変の external/deferred follow-up。 | 同期済み。 |
 | `source_spec_audit.md` | public module export、public surface inventory、cross-module evidence、task-25 G005 を含む ATP-AUDIT gap register、task-26 Architecture-22 follow-up result、task-27 private test module split、`ProofWitnessRef` / `VerifiedArtifact` artifact-surface acknowledgement、source/spec drift なしの分類。 | 同期済み。 |
-| `bilingual_sync_audit.md` | audit scope、method、pair inventory、classification、task-24 / task-25 / task-26 / task-27 sync edits、remaining external/deferred work。 | この paired audit document により同期済み。 |
-| `todo.md` | ordered task list、task 27 までの完了 task、deferred task 15/16 status、public enum task status、source/spec audit status、task-25 dependency-gap status、task-26 follow-up-audit status、task-27 layout-refactor status、verification expectation。 | 同期済み。 |
+| `bilingual_sync_audit.md` | audit scope、method、pair inventory、classification、task-24 / task-25 / task-26 / task-27 / task-28 sync edits、remaining external/deferred work。 | この paired audit document により同期済み。 |
+| `todo.md` | ordered task list、task 28 までの完了 task、deferred task 15/16 status、public enum task status、source/spec audit status、task-25 dependency-gap status、task-26 follow-up-audit status、task-27 layout-refactor status、task-28 closeout status、verification expectation。 | 同期済み。 |
 
 ## Classification
 
-Task 24 と task-26/task-27 re-run は新しい `spec_gap`、`test_gap`、`design_drift`、
-`source_drift`、`source_undocumented_behavior`、`test_expectation_drift`、
+Task 24 と task-26/task-27/task-28 re-run は新しい `spec_gap`、`test_gap`、
+`design_drift`、`source_drift`、`source_undocumented_behavior`、`test_expectation_drift`、
 `boundary_violation`、`repo_metadata_conflict`、bilingual drift を記録しない。既存の分類済み
 record は残る:
 
@@ -127,3 +129,16 @@ source/spec behavior drift、新しい ATP-AUDIT gap は見つからなかった
 public API、production behavior、diagnostic、deterministic rendering change、artifact
 schema change、kernel check、proof policy、witness/cache output、trusted backend material、
 placeholder downstream integration を追加しない。
+
+## Task 28 Sync Edits
+
+Task 28 は crate exit report について bilingual sync audit を再実行する。paired TODO、
+crate plan、この bilingual audit、paired `crate_exit_report.md` は、現在の
+candidate-evidence producer milestone について status complete、quality score 94/100、
+score cap なし、全 hard gate passed、`ATP-CLOSEOUT-*` deferred/external gap register、
+broad verification、next-phase handoff を記録する。
+
+この re-run では bilingual drift、古い task status、`repo_metadata_conflict`、
+source/spec behavior drift、新しい ATP-AUDIT gap は見つからなかった。`mizar-proof` と
+`mizar-cache` は design-only で workspace crate ではない。未実行 verification と未実装
+連携は placeholder crate ではなく external_dependency_gap / deferred として記録する。

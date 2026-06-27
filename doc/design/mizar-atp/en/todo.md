@@ -611,6 +611,27 @@ Keep `cargo test -p mizar-atp` green after each task (see
       audit, this TODO, the crate plan, and the lint-policy guard record the
       private test module split. No new ATP-AUDIT gap was required.
 
+28. **Crate exit report and quality review.** [x]
+    - Produce the autonomous crate exit report, record task commits, hard
+      gates, remaining deferred/external gaps, verification, and a read-only
+      quality score of at least 90/100.
+    - Reconfirm that `mizar-atp` remains a candidate evidence producer only:
+      no kernel checking, proof policy, witness/cache publication, trusted
+      backend proof material, or placeholder `mizar-proof` / `mizar-cache`
+      crate is introduced.
+    - Tests: docs/lint verification, crate-local verification, broad
+      workspace verification when practical, and read-only quality review.
+    - Deps: 27. Spec:
+      [autonomous_crate_development.md](../../autonomous_crate_development.md),
+      this TODO, all audit docs, and repository documentation policy.
+    - Status: complete. Paired `crate_exit_report.md` files record status
+      complete for the current candidate-evidence producer milestone, quality
+      score 94/100, no score caps, all hard gates passed, remaining
+      `ATP-CLOSEOUT-*` deferred/external gaps, and the next-phase handoff.
+      `mizar-proof` and `mizar-cache` are design-only and not workspace crates,
+      so their missing verification and implementation remain
+      external_dependency_gap / deferred rather than placeholders.
+
 ## Recommended Verification
 
 Run after each task:
