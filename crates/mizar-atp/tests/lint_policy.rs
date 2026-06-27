@@ -1430,6 +1430,53 @@ fn atp_problem_public_api_surface_is_spec_backed_allowlist() {
 }
 
 #[test]
+fn atp_public_enums_are_non_exhaustive_and_documented() {
+    for (source_file, spec_file) in [
+        ("problem.rs", "problem.md"),
+        ("translator.rs", "translator.md"),
+        ("property_encoding.rs", "property_encoding.md"),
+        ("tptp_encoder.rs", "tptp_encoder.md"),
+        ("smtlib_encoder.rs", "smtlib_encoder.md"),
+        ("backend.rs", "backend.md"),
+        ("portfolio.rs", "portfolio.md"),
+    ] {
+        let source_path = crate_root().join("src").join(source_file);
+        let source = read_to_string(&source_path);
+        let public_enums = public_enums(&source);
+
+        assert!(
+            !public_enums.is_empty(),
+            "{} must expose the enum inventory guarded by task 22",
+            source_path.display()
+        );
+        assert_public_enums_are_non_exhaustive(&source_path, &source);
+
+        for spec_path in [
+            workspace_root()
+                .join("doc/design/mizar-atp/en")
+                .join(spec_file),
+            workspace_root()
+                .join("doc/design/mizar-atp/ja")
+                .join(spec_file),
+        ] {
+            let spec = read_to_string(&spec_path);
+            assert!(
+                spec.contains("Public enum inventory:"),
+                "{} must record task-22 public enum inventory",
+                spec_path.display()
+            );
+            assert_eq!(
+                documented_enum_inventory(&spec),
+                public_enums,
+                "{} must keep its task-22 enum inventory synchronized with {}",
+                spec_path.display(),
+                source_path.display()
+            );
+        }
+    }
+}
+
+#[test]
 fn workspace_lint_baseline_denies_rustc_warnings_and_clippy_all() {
     let manifest_path = workspace_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
@@ -1598,6 +1645,62 @@ fn public_api_items(source: &str) -> Vec<String> {
         }
     }
     items.sort();
+    items
+}
+
+fn public_enums(source: &str) -> Vec<String> {
+    source
+        .lines()
+        .filter_map(|line| item_name(line.trim().strip_prefix("pub enum ")))
+        .map(str::to_owned)
+        .collect()
+}
+
+fn assert_public_enums_are_non_exhaustive(source_path: &std::path::Path, source: &str) {
+    let mut attributes = Vec::new();
+
+    for line in source.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with("#[") {
+            attributes.push(trimmed.to_owned());
+            continue;
+        }
+
+        if let Some(name) = item_name(trimmed.strip_prefix("pub enum ")) {
+            assert!(
+                attributes
+                    .iter()
+                    .any(|attribute| attribute == "#[non_exhaustive]"),
+                "{} public enum `{name}` must be #[non_exhaustive] for task 22",
+                source_path.display()
+            );
+        }
+
+        attributes.clear();
+    }
+}
+
+fn documented_enum_inventory(spec: &str) -> Vec<String> {
+    let line = spec
+        .lines()
+        .find(|line| line.trim_start().starts_with("Public enum inventory:"))
+        .expect("task-22 public enum inventory marker");
+    backtick_items(line)
+}
+
+fn backtick_items(line: &str) -> Vec<String> {
+    let mut items = Vec::new();
+    let mut rest = line;
+
+    while let Some(start) = rest.find('`') {
+        let after_start = &rest[start + 1..];
+        let Some(end) = after_start.find('`') else {
+            break;
+        };
+        items.push(after_start[..end].to_owned());
+        rest = &after_start[end + 1..];
+    }
+
     items
 }
 

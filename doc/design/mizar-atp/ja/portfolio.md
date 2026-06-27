@@ -205,6 +205,20 @@ candidate ordering は raw completion order から独立している。canonical
 この順序は reproducible candidate handoff のためだけのものである。artifact-facing winner order
 ではなく、`mizar-proof` policy を上書きしてはならない。
 
+## public enum forward compatibility
+
+task 22 は frontend task 25 の方針を `portfolio` module に適用する。この module が所有する
+public enum は downstream crate 向けに `#[non_exhaustive]` とする:
+`PortfolioCandidateKind`、`PortfolioEvidenceFormat`、`PortfolioStopReason`、`PortfolioError`。
+
+Public enum inventory: `PortfolioCandidateKind`, `PortfolioEvidenceFormat`, `PortfolioStopReason`, `PortfolioError`.
+
+将来の candidate kind、evidence format、stop reason、error variant は、source が使う前に
+仕様化しなければならない。`mizar-atp` 内部では、candidate ordering、evidence-set identity、
+cancellation、result matching、proof status に影響する match は、paired spec が意図的 fallback を
+記録しない限り、明示的に保ち fail closed しなければならない。新しい candidate または evidence
+class は、所有する kernel/proof-policy contract が存在するまで untrusted のままである。
+
 ## early stop and cancellation
 
 portfolio が残りの backend process を停止してよいのは次の場合だけである:

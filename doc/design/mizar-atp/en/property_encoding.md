@@ -172,6 +172,21 @@ before constructing an `AtpProblem`.
 Diagnostics may mention unsupported property families or profiles, but
 diagnostics do not participate in proof acceptance.
 
+## Public Enum Forward Compatibility
+
+Task 22 applies the frontend task-25 policy to the `property_encoding` module.
+Public enums owned here are `#[non_exhaustive]` for downstream crates:
+`AtpPropertyTargetKind`, `AtpPropertyEncodingStrategy`, and
+`AtpPropertyEncodingError`.
+
+Public enum inventory: `AtpPropertyTargetKind`, `AtpPropertyEncodingStrategy`, `AtpPropertyEncodingError`.
+
+Future property families, strategies, or error variants must be specified
+before source uses them. Inside `mizar-atp`, matches that affect generated
+formulas, target declarations, provenance, backend-visible syntax, or proof
+status must be explicit and fail closed unless a paired spec documents an
+intentional fallback.
+
 ## Failure Semantics
 
 - `source_drift`: if source later encodes a property family not specified here,

@@ -277,6 +277,20 @@ not proof results.
   are recorded for later backend/portfolio tasks and do not construct accepted
   proof status.
 
+## Public Enum Forward Compatibility
+
+Task 22 applies the frontend task-25 policy to the `translator` module. Public
+enums owned here are `#[non_exhaustive]` for downstream crates:
+`AtpSymbolSourceProjection`, `AtpSoftTypeRepresentation`,
+`AtpFormulaProjectionTarget`, and `AtpTranslationError`.
+
+Public enum inventory: `AtpSymbolSourceProjection`, `AtpSoftTypeRepresentation`, `AtpFormulaProjectionTarget`, `AtpTranslationError`.
+
+Future variants must be specified before source relies on them. Inside
+`mizar-atp`, matches that affect premise selection, formula provenance,
+handoff agreement, backend-visible formulas, or proof status must be explicit
+and fail closed unless a paired spec documents an intentional fallback.
+
 ## Gap Classification
 
 - resolved `deferred`: task 4 specifies translator ownership and boundaries.

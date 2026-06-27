@@ -224,6 +224,19 @@ The encoder must not mutate the `AtpProblem` or recompute its semantic
 identity. Formatting differences are observable API behavior and need golden
 tests.
 
+## Public Enum Forward Compatibility
+
+Task 22 applies the frontend task-25 policy to the `tptp_encoder` module.
+Public enums owned here are `#[non_exhaustive]` for downstream crates:
+`TptpDialect`, `TptpFormulaItem`, and `TptpEncodingError`.
+
+Public enum inventory: `TptpDialect`, `TptpFormulaItem`, `TptpEncodingError`.
+
+Future dialects, emitted item classes, or error variants must be specified
+before source uses them. Inside `mizar-atp`, matches that alter TPTP text, side
+metadata, unsupported-profile classification, or proof status must be explicit
+and fail closed unless a paired spec documents an intentional fallback.
+
 ## Failure Semantics
 
 Task-10 FOF encoding fails closed for malformed producer input and returns an

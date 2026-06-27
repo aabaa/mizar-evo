@@ -370,6 +370,24 @@ Raw completion order, process ids, temporary paths, wall-clock timestamps,
 backend scheduling races, and host-specific absolute paths do not decide
 canonical candidate ordering or proof status.
 
+## Public Enum Forward Compatibility
+
+Task 22 applies the frontend task-25 policy to the `backend` module. Public
+enums owned here are `#[non_exhaustive]` for downstream crates:
+`BackendWorkingDirectoryPolicy`, `BackendIoMode`, `BackendLimitRequirement`,
+`BackendRunStatus`, `BackendObservedResult`, `BackendTermination`,
+`BackendCandidatePayload`, and `BackendConfigError`.
+
+Public enum inventory: `BackendWorkingDirectoryPolicy`, `BackendIoMode`, `BackendLimitRequirement`, `BackendRunStatus`, `BackendObservedResult`, `BackendTermination`, `BackendCandidatePayload`, `BackendConfigError`.
+
+Future runner policies, statuses, observed results, payload classes, or error
+variants must be specified before source uses them. Inside `mizar-atp`, matches
+that affect process execution, candidate evidence classification, result
+metadata, or proof status must be explicit and fail closed unless a paired spec
+documents an intentional fallback. New payload classes are diagnostic or
+untrusted until a paired extraction spec maps them to formula/substitution
+evidence.
+
 ## Gap Classification
 
 - resolved `deferred` spec gap: task 13 defines the backend runner and result

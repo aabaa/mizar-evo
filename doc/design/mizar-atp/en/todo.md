@@ -499,10 +499,18 @@ Keep `cargo test -p mizar-atp` green after each task (see
       promotion, and active `.miz` advanced-semantics execution remain
       deferred/external.
 
-22. **Public-enum forward-compatibility policy.** [ ]
+22. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;
       record decisions in the owning module specs.
     - Deps: 18. Spec: all module specs.
+    - Status: complete within the public API compatibility boundary. All public
+      enums in `problem`, `translator`, `property_encoding`, `tptp_encoder`,
+      `smtlib_encoder`, `backend`, and `portfolio` are downstream
+      `#[non_exhaustive]`; owning English/Japanese specs record exact source
+      inventories; `lint_policy.rs` checks source attributes and EN/JA
+      inventories; behavior-sensitive matches remain explicit/fail-closed
+      unless an intentional fallback is documented. No trusted acceptance,
+      backend, kernel, witness, proof-policy, or cache behavior is added.
 
 23. **Source/spec correspondence audit.** [ ]
     - Trace every public API and promised behavior in the module specs to

@@ -251,6 +251,20 @@ translator failure は producer-side open-status または fail-closed diagnosti
 - profile unavailable、disabled ATP policy、backend configuration absence は後続 backend / portfolio task
   のために記録され、accepted proof status を構築しない。
 
+## public enum forward compatibility
+
+task 22 は frontend task 25 の方針を `translator` module に適用する。この module が所有する
+public enum は downstream crate 向けに `#[non_exhaustive]` とする:
+`AtpSymbolSourceProjection`、`AtpSoftTypeRepresentation`、`AtpFormulaProjectionTarget`、
+`AtpTranslationError`。
+
+Public enum inventory: `AtpSymbolSourceProjection`, `AtpSoftTypeRepresentation`, `AtpFormulaProjectionTarget`, `AtpTranslationError`.
+
+将来 variant は、source が依存する前に仕様化しなければならない。`mizar-atp` 内部では、
+premise selection、formula provenance、handoff agreement、backend-visible formula、proof
+status に影響する match は、paired spec が意図的 fallback を記録しない限り、明示的に保ち
+fail closed しなければならない。
+
 ## gap 分類
 
 - resolved `deferred`: task 4 が translator ownership と boundary を仕様化する。

@@ -230,6 +230,22 @@ is:
 This order is for reproducible candidate handoff only. It is not the
 artifact-facing winner order, and it must not override `mizar-proof` policy.
 
+## Public Enum Forward Compatibility
+
+Task 22 applies the frontend task-25 policy to the `portfolio` module. Public
+enums owned here are `#[non_exhaustive]` for downstream crates:
+`PortfolioCandidateKind`, `PortfolioEvidenceFormat`, `PortfolioStopReason`,
+and `PortfolioError`.
+
+Public enum inventory: `PortfolioCandidateKind`, `PortfolioEvidenceFormat`, `PortfolioStopReason`, `PortfolioError`.
+
+Future candidate kinds, evidence formats, stop reasons, or error variants must
+be specified before source uses them. Inside `mizar-atp`, matches that affect
+candidate ordering, evidence-set identity, cancellation, result matching, or
+proof status must be explicit and fail closed unless a paired spec documents an
+intentional fallback. New candidate or evidence classes stay untrusted until
+their owning kernel/proof-policy contract exists.
+
 ## Early Stop And Cancellation
 
 The portfolio may stop remaining backend processes only in these cases:

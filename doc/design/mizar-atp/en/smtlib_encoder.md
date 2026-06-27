@@ -264,6 +264,19 @@ covers:
 The encoder must not mutate `AtpProblem` or recompute its semantic identity.
 Formatting differences are observable API behavior and require golden tests.
 
+## Public Enum Forward Compatibility
+
+Task 22 applies the frontend task-25 policy to the `smtlib_encoder` module.
+Public enums owned here are `#[non_exhaustive]` for downstream crates:
+`SmtLibDialect`, `SmtLibAssertionItem`, and `SmtLibEncodingError`.
+
+Public enum inventory: `SmtLibDialect`, `SmtLibAssertionItem`, `SmtLibEncodingError`.
+
+Future dialects, assertion item classes, or error variants must be specified
+before source uses them. Inside `mizar-atp`, matches that alter SMT-LIB text,
+side metadata, unsupported-profile classification, or proof status must be
+explicit and fail closed unless a paired spec documents an intentional fallback.
+
 ## Failure Semantics
 
 Task-12 SMT-LIB encoding fails closed for malformed producer input and returns

@@ -238,6 +238,19 @@ byte-identical な side metadata を生成しなければならない。determin
 encoder は `AtpProblem` を mutate したり、その semantic identity を再計算してはならない。
 formatting difference は observable API behavior であり、golden test が必要である。
 
+## public enum forward compatibility
+
+task 22 は frontend task 25 の方針を `smtlib_encoder` module に適用する。この module が所有する
+public enum は downstream crate 向けに `#[non_exhaustive]` とする: `SmtLibDialect`、
+`SmtLibAssertionItem`、`SmtLibEncodingError`。
+
+Public enum inventory: `SmtLibDialect`, `SmtLibAssertionItem`, `SmtLibEncodingError`.
+
+将来の dialect、assertion item class、error variant は、source が使う前に仕様化しなければ
+ならない。`mizar-atp` 内部では、SMT-LIB text、side metadata、unsupported-profile
+classification、proof status に影響する match は、paired spec が意図的 fallback を記録しない限り、
+明示的に保ち fail closed しなければならない。
+
 ## failure semantics
 
 Task-12 SMT-LIB encoding は malformed producer input では fail closed し、supported

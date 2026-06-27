@@ -208,6 +208,19 @@ byte-identical な side metadata を生成しなければならない。determin
 encoder は `AtpProblem` を mutate したり、その semantic identity を再計算してはならない。
 formatting difference は observable API behavior であり、golden test が必要である。
 
+## public enum forward compatibility
+
+task 22 は frontend task 25 の方針を `tptp_encoder` module に適用する。この module が所有する
+public enum は downstream crate 向けに `#[non_exhaustive]` とする: `TptpDialect`、
+`TptpFormulaItem`、`TptpEncodingError`。
+
+Public enum inventory: `TptpDialect`, `TptpFormulaItem`, `TptpEncodingError`.
+
+将来の dialect、emitted item class、error variant は、source が使う前に仕様化しなければならない。
+`mizar-atp` 内部では、TPTP text、side metadata、unsupported-profile classification、proof status
+に影響する match は、paired spec が意図的 fallback を記録しない限り、明示的に保ち fail closed
+しなければならない。
+
 ## failure semantics
 
 Task-10 FOF encoding は malformed producer input では fail closed し、supported FOF dialect の外に

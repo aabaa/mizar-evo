@@ -174,6 +174,25 @@ rendering and stable problem identities. Deterministic ordering applies to:
 Backend completion order, wall-clock time, random state, process ids, stdout,
 stderr, and backend-reported proof order are excluded from semantic identity.
 
+## Public Enum Forward Compatibility
+
+Task 22 applies the frontend task-25 policy to the `problem` module. All public
+enums owned here are `#[non_exhaustive]` for downstream crates:
+`LogicFragment`, `EqualitySupport`, `QuantifierPolicy`, `SoftTypeStrategy`,
+`NativePropertySupport`, `ConcreteFormat`, `ExpectedBackendResult`,
+`AtpDeclarationKind`, `AtpFormulaTree`, `AtpTerm`, `PropertyEncoding`,
+`AtpSymbolSource`, `AtpSourceRef`, and `AtpProblemError`.
+
+Public enum inventory: `LogicFragment`, `EqualitySupport`, `QuantifierPolicy`, `SoftTypeStrategy`, `NativePropertySupport`, `ConcreteFormat`, `ExpectedBackendResult`, `AtpDeclarationKind`, `AtpFormulaTree`, `AtpTerm`, `PropertyEncoding`, `AtpSymbolSource`, `AtpSourceRef`, `AtpProblemError`.
+
+Future variants must be specified before source uses them. Inside `mizar-atp`,
+matches that affect problem identity, evidence provenance, backend-visible
+syntax, or proof status must be explicit and fail closed unless a paired spec
+documents an intentional fallback. `ExpectedBackendResult` remains externally
+non-exhaustive even though `Unsat` is the only task-3 success contract; any
+future success contract needs a paired spec, tests, and acceptance-boundary
+review.
+
 ## Relation To Kernel Evidence
 
 `AtpProblem` can help later ATP tasks produce formula/substitution evidence

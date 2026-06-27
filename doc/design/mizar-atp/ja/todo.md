@@ -455,10 +455,18 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       artifact witness、proof-cache promotion、active `.miz` advanced-semantics execution は
       deferred/external のまま残る。
 
-22. **公開 enum の前方互換性ポリシー。** [ ]
+22. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用し、所有
       モジュール仕様に決定を記録する。
     - 依存: 18。仕様: 全モジュール仕様。
+    - Status: public API compatibility boundary 内で完了。`problem`、
+      `translator`、`property_encoding`、`tptp_encoder`、`smtlib_encoder`、
+      `backend`、`portfolio` のすべての public enum は downstream 向け
+      `#[non_exhaustive]` であり、所有する英語/日本語 spec は source の exact
+      inventory を記録し、`lint_policy.rs` は source attribute と EN/JA inventory を
+      検査する。behavior-sensitive match は意図的 fallback を document していない
+      限り explicit/fail-closed のままである。trusted acceptance、backend、
+      kernel、witness、proof-policy、cache behavior は追加しない。
 
 23. **ソース/仕様対応監査。** [ ]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
