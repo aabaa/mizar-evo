@@ -1630,6 +1630,108 @@ fn atp_source_spec_audit_covers_public_modules_and_deferred_gaps() {
 }
 
 #[test]
+fn atp_bilingual_sync_audit_covers_design_doc_pairs() {
+    let expected_docs = [
+        "00.crate_plan.md",
+        "backend.md",
+        "bilingual_sync_audit.md",
+        "portfolio.md",
+        "problem.md",
+        "property_encoding.md",
+        "smtlib_encoder.md",
+        "source_spec_audit.md",
+        "todo.md",
+        "tptp_encoder.md",
+        "translator.md",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect::<BTreeSet<_>>();
+    let mut docs_by_language = BTreeMap::new();
+    let mut violations = Vec::new();
+
+    for language in ["en", "ja"] {
+        let doc_dir = workspace_root().join("doc/design/mizar-atp").join(language);
+        let docs = markdown_doc_names(&doc_dir);
+        if docs != expected_docs {
+            violations.push(format!(
+                "{} must contain exactly the bilingual-sync-audited design docs; expected={expected_docs:?}, found={docs:?}",
+                doc_dir.display()
+            ));
+        }
+        docs_by_language.insert(language, docs);
+
+        let audit_path = doc_dir.join("bilingual_sync_audit.md");
+        let audit = read_to_string(&audit_path);
+        let inventory_docs = bilingual_pair_inventory_docs(&audit);
+        if inventory_docs.iter().cloned().collect::<BTreeSet<_>>() != expected_docs {
+            violations.push(format!(
+                "{} pair inventory must list exactly current design docs; expected={expected_docs:?}, found={:?}",
+                audit_path.display(),
+                inventory_docs.iter().cloned().collect::<BTreeSet<_>>()
+            ));
+        }
+        let mut inventory_counts = BTreeMap::<String, usize>::new();
+        for document in &inventory_docs {
+            *inventory_counts.entry(document.clone()).or_insert(0) += 1;
+        }
+        for (document, count) in inventory_counts {
+            if count != 1 {
+                violations.push(format!(
+                    "{} pair inventory must list `{document}` exactly once, found {count}",
+                    audit_path.display()
+                ));
+            }
+        }
+        if inventory_docs.len() != expected_docs.len() {
+            violations.push(format!(
+                "{} pair inventory must have exactly {} rows, found {}",
+                audit_path.display(),
+                expected_docs.len(),
+                inventory_docs.len()
+            ));
+        }
+        for marker in [
+            "bilingual drift",
+            "repo_metadata_conflict",
+            "external_dependency_gap",
+            "deferred",
+            "ProofWitnessRef",
+            "VerifiedArtifact",
+            "real-output extraction",
+            "advanced-semantics",
+            "source-derived ATP extraction",
+            "resolution trace",
+            "SMT proof object",
+            "SAT problem payload",
+            "mizar-proof",
+            "mizar-cache",
+        ] {
+            if !audit.contains(marker) {
+                violations.push(format!(
+                    "{} must record bilingual sync marker `{marker}`",
+                    audit_path.display()
+                ));
+            }
+        }
+    }
+
+    if docs_by_language.get("en") != docs_by_language.get("ja") {
+        violations.push(format!(
+            "EN/JA mizar-atp design doc filenames must stay synchronized; en={:?}, ja={:?}",
+            docs_by_language.get("en"),
+            docs_by_language.get("ja")
+        ));
+    }
+
+    assert!(
+        violations.is_empty(),
+        "mizar-atp bilingual sync audit drift:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
 fn workspace_lint_baseline_denies_rustc_warnings_and_clippy_all() {
     let manifest_path = workspace_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
@@ -1956,6 +2058,49 @@ fn audit_gap_rows(document: &str) -> Vec<(String, Vec<String>)> {
             ))
         })
         .collect()
+}
+
+fn markdown_doc_names(root: &std::path::Path) -> BTreeSet<String> {
+    fs::read_dir(root)
+        .unwrap_or_else(|error| panic!("{}: {error}", root.display()))
+        .map(|entry| entry.expect("directory entry").path())
+        .filter(|path| path.extension().is_some_and(|extension| extension == "md"))
+        .map(|path| {
+            path.file_name()
+                .expect("markdown file has file name")
+                .to_string_lossy()
+                .into_owned()
+        })
+        .collect()
+}
+
+fn bilingual_pair_inventory_docs(document: &str) -> Vec<String> {
+    let section = audit_section(document, "Pair Inventory")
+        .expect("bilingual sync audit must have Pair Inventory section");
+    let mut docs = section
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim();
+            if !trimmed.starts_with("| `") {
+                return None;
+            }
+            let document = trimmed.trim_matches('|').split('|').next()?.trim();
+            document
+                .strip_prefix('`')?
+                .strip_suffix('`')
+                .map(str::to_owned)
+        })
+        .collect::<Vec<_>>();
+    docs.sort();
+    docs
+}
+
+fn audit_section<'a>(document: &'a str, title: &str) -> Option<&'a str> {
+    let header = format!("## {title}");
+    let start = document.find(&header)?;
+    let rest = &document[start + header.len()..];
+    let end = rest.find("\n## ").unwrap_or(rest.len());
+    Some(&rest[..end])
 }
 
 fn public_struct_fields(source: &str) -> Vec<String> {

@@ -479,10 +479,17 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       source behavior、public API、backend route、kernel call、proof policy、witness、
       cache、placeholder downstream integration は追加しない。
 
-24. **二言語ドキュメント同期監査。** [ ]
+24. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-atp/en/` の各英語正本と日本語版を比較し、内容を
       同期する。
     - 依存: 23。仕様: リポジトリのドキュメント方針。
+    - Status: audit-only task として完了。paired `bilingual_sync_audit.md`
+      document は現在の EN/JA design doc pair をすべて inventory し、bilingual drift
+      または `repo_metadata_conflict` がないことを記録し、分類済み
+      external/deferred gap を保持する。`lint_policy.rs` は EN/JA Markdown filename の
+      完全一致と必要な sync-audit marker を検査する。source behavior、public API、
+      backend route、kernel call、proof policy、witness、cache、placeholder downstream
+      integration は追加しない。
 
 25. **portfolio 完了順独立性 gate。** [ ]
     - adversarial な完了順を持つ mock backend で portfolio-specific regression

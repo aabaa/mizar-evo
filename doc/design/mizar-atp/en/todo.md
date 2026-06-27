@@ -524,11 +524,18 @@ Keep `cargo test -p mizar-atp` green after each task (see
       public API, backend route, kernel call, proof policy, witness, cache, or
       placeholder downstream integration is added.
 
-24. **Bilingual documentation sync audit.** [ ]
+24. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-atp/en/` with its Japanese companion and
       synchronize content.
     - Deps: 23. Spec: repository documentation policy.
+    - Status: complete as an audit-only task. Paired
+      `bilingual_sync_audit.md` documents inventory every current EN/JA design
+      doc pair, record no bilingual drift or `repo_metadata_conflict`, and
+      preserve classified external/deferred gaps. `lint_policy.rs` checks exact
+      EN/JA Markdown filename parity and required sync-audit markers. No source
+      behavior, public API, backend route, kernel call, proof policy, witness,
+      cache, or placeholder downstream integration is added.
 
 25. **Portfolio completion-order independence gate.** [ ]
     - Add a portfolio-specific regression gate that runs mock backends with
