@@ -1430,3 +1430,15 @@ required = true
 coverage = "fail"
 deferred_reason = "Task 29 records this review-audit negative suite as deferred rather than adding fake active fixtures: mizar-test has no active advanced_semantics runner/tag gate, statement/proof assumption payload extraction and proof-owned acceptance inputs are missing, source-derived sethood evidence is unavailable, and overload source qua evidence is not extracted. Add fail coverage for witness leakage from now/proof blocks, unmet deffunc/defpred guards, missing sethood for comprehension, and invalid qua narrowing after MC-G019/MC-G020/MC-G021/MC-G027 and runner support exist."
 tests = []
+
+[[requirement]]
+id = "spec.en.mizar_atp.advanced_semantics.mock_backend_integration"
+source = "doc/design/mizar-atp/en/00.crate_plan.md"
+section = "Task 20; Corpus And Mock-Backend Integration Suite"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "property"
+tests = [
+  "tests/property/atp_mock_backend_integration_001.expect.toml",
+]

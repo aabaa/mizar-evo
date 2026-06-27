@@ -180,11 +180,13 @@ fn atp_crate_tree_contains_only_current_spec_backed_files() {
             "src/smtlib_encoder.rs",
             "src/tptp_encoder.rs",
             "src/translator.rs",
-            "tests/lint_policy.rs"
+            "tests/lint_policy.rs",
+            "tests/mock_backend_corpus.rs"
         ],
         "mizar-atp crate files must stay limited to current spec-backed sources; \
-         build scripts, examples, benches, extra tests beyond lint policy, \
-         kernel/proof behavior, or other crate-root files require explicit spec \
+         build scripts, examples, benches, extra tests beyond the task-20 mock \
+         backend corpus suite, kernel/proof behavior, or other crate-root files \
+         require explicit spec \
          tasks; found {files:?}"
     );
 }
@@ -493,6 +495,7 @@ fn atp_portfolio_module_has_paired_specs_and_excludes_trusted_material() {
 
     for marker in [
         "Task 18 implements only the already-built run slice",
+        "Task-20 Corpus And Mock-Backend Coverage",
         "## Result Matching",
         "Task-18 Test Coverage",
     ] {
@@ -504,6 +507,7 @@ fn atp_portfolio_module_has_paired_specs_and_excludes_trusted_material() {
     }
     for marker in [
         "task 18 は planning のうち、already-built run slice だけを実装する",
+        "task-20 corpus and mock-backend coverage",
         "## result matching",
         "task-18 test coverage",
     ] {

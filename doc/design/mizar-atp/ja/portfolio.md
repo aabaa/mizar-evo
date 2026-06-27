@@ -39,6 +39,14 @@ backend process を直接実行する、backend adapter を追加する、real o
 evidence を構築する、kernel を呼ぶ、proof-policy finality を推論する、witness/cache/artifact state
 を publish することは行わない。
 
+task 20 は、`tests/property/` 配下に `advanced_semantics` の metadata-only corpus fixture
+を追加し、その fixture を crate-local integration test が読み取って、既存の mock backend、
+backend classification、portfolio collection API に流してよい。`mizar-test` にはまだ active
+`advanced_semantics` runner または tag gate がないため、corpus sidecar は `metadata_only` のままにし、
+active tag を使ってはならない。integration test が使ってよいのは実装済みの mock classification
+seam だけであり、`.miz` semantic execution、real backend output extraction、kernel call、
+proof-policy decision、witness/cache/artifact publication、一時的な evidence schema を追加してはならない。
+
 ## 入力と出力
 
 概念上の portfolio API は次を消費する:
@@ -281,6 +289,9 @@ backend failure は各 run に局所化される:
   candidate input を使わなければならず、fake real-output schema を発明してはならない。
 - `external_dependency_gap`: proof witness storage、artifact projection、proof-cache promotion は
   `mizar-atp` の外に残る。
+- `external_dependency_gap`: active `advanced_semantics` corpus execution は `mizar-test` でまだ
+  利用できない。そのため task 20 は metadata-only sidecar で corpus intent を記録し、
+  crate-local mock backend integration test で ATP path を検査する。
 
 ## task-18 test coverage
 
@@ -297,3 +308,19 @@ task 18 は次の Rust coverage を追加する:
   backend result から伝播すること;
 - portfolio API から kernel call、proof policy evaluation、witness/cache publication、accepted proof
   status、trusted backend proof material、caller-supplied instantiated formula、SAT problem が排除されること。
+
+## task-20 corpus and mock-backend coverage
+
+task 20 は、`advanced_semantics` corpus manifest と mock backend integration path を結び付ける
+coverage を追加する:
+
+- committed fixture は metadata-only で、`stage = "advanced_semantics"` を使い、
+  `tests/coverage/spec_trace.toml` から link される。
+- crate-local integration test は fixture を読み、fixture case から deterministic な prebuilt
+  backend run を構築し、mock backend runner を実行し、mock observed-result classification を適用し、
+  portfolio evidence を収集する。
+- fixture case は、formula/substitution candidate、counterexample、unknown/open result を cover し、
+  backend observation を trusted acceptance material へ変換しない。
+- suite は deterministic candidate handoff と metadata-only corpus boundary を assert する。
+  active `.miz` advanced-semantic execution、real-output extraction、kernel checking、proof policy、
+  artifact witness、cache promotion はそれぞれの所有 task へ deferred のままにする。

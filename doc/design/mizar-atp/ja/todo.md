@@ -422,10 +422,25 @@ witness-publication integration は `external_dependency_gap` であり、ここ
 
 ### 強化と横断フォローアップ
 
-20. **コーパスとモックバックエンド統合スイート。** [ ]
+20. **コーパスとモックバックエンド統合スイート。** [x]
     - モックバックエンドで駆動する stage `advanced_semantics` のコーパス
       ケースを `spec_trace.toml` 項目付きで追加する。
-    - 依存: 18。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md)。
+    - `mizar-test` にはまだ active `advanced_semantics` runner / tag gate がないため、
+      metadata-only の `tests/property` fixture を使う。crate-local integration test は
+      それらの fixture を読み、既存の mock backend runner、mock observed-result classification、
+      portfolio collection API に流してよい。
+    - formula/substitution candidate handoff、counterexample recording、unknown/open result を
+      cover する。ただし kernel checking、proof policy、real-output extraction、
+      witness/cache/artifact publication、placeholder evidence schema は追加しない。
+    - 依存: 18。仕様: [staged_model.md](../../mizar-test/ja/staged_model.md);
+      `portfolio.md`。
+    - 状態: metadata-only corpus と crate-local mock backend boundary 内で完了。
+      `tests/property/atp_mock_backend_integration_001.*` は inert な
+      `advanced_semantics` corpus anchor を記録し、`tests/mock_backend_corpus.rs` は
+      formula/substitution、counterexample、unknown/open case を既存の mock backend
+      classification と portfolio collection に通す。active `.miz` advanced-semantics
+      execution、real-output extraction、kernel checking、proof policy、witness/cache/artifact
+      publication、placeholder evidence schema は deferred/external のまま残る。
 
 21. **決定性スイート。** [ ]
     - 同一の `VcIr` 入力がモックバックエンドの下で同一の problem、

@@ -1,0 +1,15 @@
+[phase]
+name = "mizar-atp-task-20-mock-backend-integration"
+description = "Metadata-only advanced_semantics corpus anchor. Crate-local Rust tests map these case names to existing mock backend APIs; this fixture does not define candidate evidence payloads or trusted acceptance material."
+
+[[case]]
+name = "formula-substitution-candidate"
+description = "Rust integration builds a formula/substitution candidate through existing mizar-atp APIs and leaves kernel acceptance to mizar-kernel."
+
+[[case]]
+name = "counterexample-record"
+description = "Rust integration records a mock counterexample as diagnostic candidate material, not proof acceptance."
+
+[[case]]
+name = "unknown-open-result"
+description = "Rust integration keeps unknown backend output as an open result with no proof candidate."

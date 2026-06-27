@@ -1,0 +1,12 @@
+schema_version = 1
+id = "atp_mock_backend_integration_001"
+kind = "property_seed"
+stage = "advanced_semantics"
+domain = "mizar_atp.mock_backend"
+source = "atp_mock_backend_integration_001.fixture.toml"
+expected_outcome = "metadata_only"
+diagnostic_codes = []
+notes = "Metadata-only task-20 corpus anchor for mizar-atp mock backend integration tests. The fixture is inert until an active advanced_semantics runner exists."
+spec_refs = [
+  "spec.en.mizar_atp.advanced_semantics.mock_backend_integration",
+]

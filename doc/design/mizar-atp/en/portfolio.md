@@ -44,6 +44,16 @@ directly, add backend adapters, parse real output, build kernel evidence, call
 the kernel, infer proof-policy finality, or publish witness/cache/artifact
 state.
 
+Task 20 may add an `advanced_semantics` metadata-only corpus fixture under
+`tests/property/` and a crate-local integration test that reads that fixture and
+drives the existing mock backend, backend classification, and portfolio
+collection APIs. Because `mizar-test` has no active `advanced_semantics` runner
+or tag gate yet, the corpus sidecar must remain `metadata_only` and must not use
+an active tag. The integration test may use only the already implemented mock
+classification seam; it must not add `.miz` semantic execution, real backend
+output extraction, kernel calls, proof-policy decisions, witness/cache/artifact
+publication, or a temporary evidence schema.
+
 ## Inputs And Outputs
 
 The conceptual portfolio API consumes:
@@ -311,6 +321,10 @@ An all-failed portfolio is an open proof obligation, not an accepted proof.
   real-output schema.
 - `external_dependency_gap`: proof witness storage, artifact projection, and
   proof-cache promotion remain outside `mizar-atp`.
+- `external_dependency_gap`: active `advanced_semantics` corpus execution is not
+  available in `mizar-test`; task 20 therefore records corpus intent with
+  metadata-only sidecars and exercises the ATP path through crate-local mock
+  backend integration tests.
 
 ## Task-18 Test Coverage
 
@@ -329,3 +343,21 @@ Task 18 adds Rust coverage for:
 - absence of kernel calls, proof policy evaluation, witness/cache publication,
   accepted proof status, trusted backend proof material, caller-supplied
   instantiated formulas, and SAT problems from the portfolio API.
+
+## Task-20 Corpus And Mock-Backend Coverage
+
+Task 20 adds coverage that binds the `advanced_semantics` corpus manifest to the
+mock backend integration path:
+
+- the committed fixture is metadata-only, uses `stage = "advanced_semantics"`,
+  and is linked from `tests/coverage/spec_trace.toml`;
+- the crate-local integration test reads the fixture, builds deterministic
+  prebuilt backend runs for its cases, executes the mock backend runner, applies
+  mock observed-result classification, and collects portfolio evidence;
+- fixture cases cover a formula/substitution candidate, a counterexample, and an
+  unknown/open result without turning any backend observation into trusted
+  acceptance material;
+- the suite asserts deterministic candidate handoff and metadata-only corpus
+  boundaries, while leaving active `.miz` advanced-semantic execution,
+  real-output extraction, kernel checking, proof policy, artifact witnesses, and
+  cache promotion deferred to their owning tasks.

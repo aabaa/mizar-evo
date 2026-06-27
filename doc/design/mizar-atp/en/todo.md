@@ -462,10 +462,28 @@ Keep `cargo test -p mizar-atp` green after each task (see
 
 ### Hardening and cross-cutting follow-ups
 
-20. **Corpus and mock-backend integration suite.** [ ]
+20. **Corpus and mock-backend integration suite.** [x]
     - Add `advanced_semantics`-stage corpus cases driven through mock
       backends, plus `spec_trace.toml` entries.
-    - Deps: 18. Spec: [staged_model.md](../../mizar-test/en/staged_model.md).
+    - Use metadata-only `tests/property` fixtures because `mizar-test` has no
+      active `advanced_semantics` runner/tag gate yet. Crate-local integration
+      tests may read those fixtures and drive the existing mock backend runner,
+      mock observed-result classification, and portfolio collection APIs.
+    - Cover formula/substitution candidate handoff, counterexample recording, and
+      unknown/open results without kernel checking, proof policy, real-output
+      extraction, witness/cache/artifact publication, or a placeholder evidence
+      schema.
+    - Deps: 18. Spec: [staged_model.md](../../mizar-test/en/staged_model.md);
+      `portfolio.md`.
+    - Status: complete within the metadata-only corpus and crate-local mock
+      backend boundary. `tests/property/atp_mock_backend_integration_001.*`
+      records the inert `advanced_semantics` corpus anchor, and
+      `tests/mock_backend_corpus.rs` drives formula/substitution,
+      counterexample, and unknown/open cases through existing mock backend
+      classification plus portfolio collection. Active `.miz`
+      advanced-semantics execution, real-output extraction, kernel checking,
+      proof policy, witness/cache/artifact publication, and placeholder evidence
+      schemas remain deferred/external.
 
 21. **Determinism suite.** [ ]
     - Property coverage that identical `VcIr` inputs produce identical
