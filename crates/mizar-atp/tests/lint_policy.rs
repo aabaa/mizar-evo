@@ -151,16 +151,25 @@ pub mod translator;
     assert_eq!(
         source_files,
         [
+            "src/backend/tests.rs",
             "src/backend.rs",
             "src/lib.rs",
+            "src/portfolio/tests.rs",
             "src/portfolio.rs",
+            "src/problem/tests.rs",
             "src/problem.rs",
+            "src/property_encoding/tests.rs",
             "src/property_encoding.rs",
+            "src/smtlib_encoder/tests.rs",
             "src/smtlib_encoder.rs",
+            "src/tptp_encoder/tests.rs",
             "src/tptp_encoder.rs",
+            "src/translator/tests.rs",
             "src/translator.rs"
         ],
-        "semantic ATP modules require paired specs before source; found {source_files:?}"
+        "ATP production modules require paired specs before source, and task-27 \
+         private test modules must stay cfg(test) children of those modules; \
+         found {source_files:?}"
     );
 }
 
@@ -177,13 +186,20 @@ fn atp_crate_tree_contains_only_current_spec_backed_files() {
         [
             "Cargo.toml",
             "src/backend.rs",
+            "src/backend/tests.rs",
             "src/lib.rs",
             "src/portfolio.rs",
+            "src/portfolio/tests.rs",
             "src/problem.rs",
+            "src/problem/tests.rs",
             "src/property_encoding.rs",
+            "src/property_encoding/tests.rs",
             "src/smtlib_encoder.rs",
+            "src/smtlib_encoder/tests.rs",
             "src/tptp_encoder.rs",
+            "src/tptp_encoder/tests.rs",
             "src/translator.rs",
+            "src/translator/tests.rs",
             "tests/determinism_suite.rs",
             "tests/lint_policy.rs",
             "tests/mock_backend_corpus.rs"
@@ -204,6 +220,7 @@ fn atp_backend_module_has_paired_specs_and_excludes_trusted_acceptance() {
     let en = read_to_string(&en_spec);
     let ja = read_to_string(&ja_spec);
     let source = read_to_string(&source_path);
+    let tests = read_to_string(&crate_root().join("src/backend/tests.rs"));
 
     for marker in [
         "Stable Hashes And Fingerprints",
@@ -233,7 +250,7 @@ fn atp_backend_module_has_paired_specs_and_excludes_trusted_acceptance() {
         "pub fn run_backend",
         "pub fn classify_backend_observation",
         "process::{Command, ExitStatus, Stdio}",
-        "BackendCandidatePayload::FormulaSubstitutionBytes",
+        "FormulaSubstitutionBytes",
         "required_resource_limit_unsupported",
         "mizar-atp/backend-command/v1",
         "PrivateProblemFile::create",
@@ -243,6 +260,16 @@ fn atp_backend_module_has_paired_specs_and_excludes_trusted_acceptance() {
             source.contains(marker),
             "{} must implement backend.md task-14 marker `{marker}`",
             source_path.display()
+        );
+    }
+    for marker in [
+        "BackendCandidatePayload::FormulaSubstitutionBytes",
+        "proved_rejected_process_status",
+    ] {
+        assert!(
+            tests.contains(marker),
+            "{} must keep task-14 backend unit-test marker `{marker}`",
+            crate_root().join("src/backend/tests.rs").display()
         );
     }
     for prohibited in [
@@ -497,6 +524,7 @@ fn atp_portfolio_module_has_paired_specs_and_excludes_trusted_material() {
     let en = read_to_string(&en_spec);
     let ja = read_to_string(&ja_spec);
     let source = read_to_string(&source_path);
+    let tests = read_to_string(&crate_root().join("src/portfolio/tests.rs"));
 
     for marker in [
         "Task 18 implements only the already-built run slice",
@@ -531,7 +559,6 @@ fn atp_portfolio_module_has_paired_specs_and_excludes_trusted_material() {
         "BackendRunInput",
         "BackendRunResult",
         "mizar-atp/portfolio-plan/v1",
-        "portfolio_source_excludes_trusted_or_downstream_boundary_strings",
     ] {
         assert!(
             source.contains(marker),
@@ -539,6 +566,11 @@ fn atp_portfolio_module_has_paired_specs_and_excludes_trusted_material() {
             source_path.display()
         );
     }
+    assert!(
+        tests.contains("portfolio_source_excludes_trusted_or_downstream_boundary_strings"),
+        "{} must keep the task-18 prohibited-boundary unit-test marker",
+        crate_root().join("src/portfolio/tests.rs").display()
+    );
     for prohibited in [
         "mizar_kernel::",
         "kernel_verified",
@@ -1635,6 +1667,7 @@ fn atp_bilingual_sync_audit_covers_design_doc_pairs() {
         "00.crate_plan.md",
         "backend.md",
         "bilingual_sync_audit.md",
+        "module_boundary_audit.md",
         "portfolio.md",
         "problem.md",
         "property_encoding.md",
@@ -2022,6 +2055,201 @@ fn atp_task_twenty_six_architecture_follow_up_audit_is_documented() {
     assert!(
         violations.is_empty(),
         "mizar-atp task-26 architecture follow-up audit drift:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn atp_task_twenty_seven_module_boundary_layout_is_documented() {
+    let expectations = [
+        (
+            "en",
+            vec![
+                (
+                    "todo.md",
+                    vec![
+                        "27. **Module-boundary refactor gate.** [x]",
+                        "Status: complete as a behavior-preserving layout refactor",
+                        "moved the existing unit suites into private",
+                        "`cfg(test)` child modules",
+                    ],
+                ),
+                (
+                    "00.crate_plan.md",
+                    vec![
+                        "ATP-G-027",
+                        "Task 27: Module-Boundary Refactor Gate",
+                        "private test module split",
+                        "No public API, production behavior, diagnostics, deterministic rendering, artifact schema, or trust-boundary behavior changes",
+                    ],
+                ),
+                (
+                    "module_boundary_audit.md",
+                    vec![
+                        "Task 27 Module-Boundary Refactor Gate",
+                        "private test module split",
+                        "src/backend/tests.rs",
+                        "src/portfolio/tests.rs",
+                        "src/problem/tests.rs",
+                        "src/property_encoding/tests.rs",
+                        "src/smtlib_encoder/tests.rs",
+                        "src/tptp_encoder/tests.rs",
+                        "src/translator/tests.rs",
+                        "No public API change",
+                        "No new ATP-AUDIT gap",
+                    ],
+                ),
+                (
+                    "source_spec_audit.md",
+                    vec![
+                        "Task 27 Module-Boundary Layout Audit",
+                        "src/backend/tests.rs",
+                        "src/portfolio/tests.rs",
+                        "src/problem/tests.rs",
+                        "src/property_encoding/tests.rs",
+                        "src/smtlib_encoder/tests.rs",
+                        "src/tptp_encoder/tests.rs",
+                        "src/translator/tests.rs",
+                        "ATP-AUDIT gap is required",
+                    ],
+                ),
+                (
+                    "bilingual_sync_audit.md",
+                    vec![
+                        "Task 27 Sync Edits",
+                        "module_boundary_audit.md",
+                        "private test module split",
+                    ],
+                ),
+            ],
+        ),
+        (
+            "ja",
+            vec![
+                (
+                    "todo.md",
+                    vec![
+                        "27. **module 境界リファクタリング gate。** [x]",
+                        "Status: behavior-preserving layout refactor として完了",
+                        "private `cfg(test)` child module",
+                    ],
+                ),
+                (
+                    "00.crate_plan.md",
+                    vec![
+                        "ATP-G-027",
+                        "Task 27: module-boundary refactor gate",
+                        "private test module split",
+                        "public API、production behavior、diagnostic、deterministic rendering、artifact schema、trust-boundary behavior は変更しない",
+                    ],
+                ),
+                (
+                    "module_boundary_audit.md",
+                    vec![
+                        "Task 27 Module-Boundary Refactor Gate",
+                        "private test module split",
+                        "src/backend/tests.rs",
+                        "src/portfolio/tests.rs",
+                        "src/problem/tests.rs",
+                        "src/property_encoding/tests.rs",
+                        "src/smtlib_encoder/tests.rs",
+                        "src/tptp_encoder/tests.rs",
+                        "src/translator/tests.rs",
+                        "public API change はない",
+                        "No new ATP-AUDIT gap",
+                    ],
+                ),
+                (
+                    "source_spec_audit.md",
+                    vec![
+                        "Task 27 Module-Boundary Layout Audit",
+                        "src/backend/tests.rs",
+                        "src/portfolio/tests.rs",
+                        "src/problem/tests.rs",
+                        "src/property_encoding/tests.rs",
+                        "src/smtlib_encoder/tests.rs",
+                        "src/tptp_encoder/tests.rs",
+                        "src/translator/tests.rs",
+                        "ATP-AUDIT gap is required",
+                    ],
+                ),
+                (
+                    "bilingual_sync_audit.md",
+                    vec![
+                        "Task 27 Sync Edits",
+                        "module_boundary_audit.md",
+                        "private test module split",
+                    ],
+                ),
+            ],
+        ),
+    ];
+
+    let mut violations = Vec::new();
+    for (language, files) in expectations {
+        let doc_dir = workspace_root().join("doc/design/mizar-atp").join(language);
+        for (file_name, markers) in files {
+            let path = doc_dir.join(file_name);
+            let document = read_to_string(&path);
+            for marker in markers {
+                if !document.contains(marker) {
+                    violations.push(format!(
+                        "{} must document task-27 marker `{marker}`",
+                        path.display()
+                    ));
+                }
+            }
+        }
+    }
+
+    for module in [
+        "backend",
+        "portfolio",
+        "problem",
+        "property_encoding",
+        "smtlib_encoder",
+        "tptp_encoder",
+        "translator",
+    ] {
+        let source_path = crate_root().join("src").join(format!("{module}.rs"));
+        let source = read_to_string(&source_path);
+        let child_module_marker = if module == "backend" {
+            "#[cfg(all(test, unix))]\nmod tests;"
+        } else {
+            "#[cfg(test)]\nmod tests;"
+        };
+        if !source.contains(child_module_marker) {
+            violations.push(format!(
+                "{} must keep the task-27 private test child module marker",
+                source_path.display()
+            ));
+        }
+
+        let test_path = crate_root().join("src").join(module).join("tests.rs");
+        let tests = read_to_string(&test_path);
+        for prohibited in [
+            "pub struct ",
+            "pub enum ",
+            "pub fn ",
+            "pub const fn ",
+            "pub mod ",
+        ] {
+            if tests
+                .lines()
+                .map(str::trim_start)
+                .any(|line| line.starts_with(prohibited))
+            {
+                violations.push(format!(
+                    "{} must remain a private unit-test child and not expose `{prohibited}`",
+                    test_path.display()
+                ));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "mizar-atp task-27 module-boundary layout drift:\n{}",
         violations.join("\n")
     );
 }

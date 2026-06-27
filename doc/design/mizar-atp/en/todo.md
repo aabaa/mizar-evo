@@ -581,7 +581,7 @@ Keep `cargo test -p mizar-atp` green after each task (see
       policy finality, winner selection, tie-breaking, and candidate
       displacement.
 
-27. **Module-boundary refactor gate.** [ ]
+27. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
@@ -595,6 +595,21 @@ Keep `cargo test -p mizar-atp` green after each task (see
     - Deps: 26. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+    - Status: complete as a behavior-preserving layout refactor. Task 27
+      classified the oversized file issue as inline unit-test review
+      bottleneck layout, then moved the existing unit suites into private
+      `cfg(test)` child modules:
+      `src/backend/tests.rs`, `src/portfolio/tests.rs`,
+      `src/problem/tests.rs`, `src/property_encoding/tests.rs`,
+      `src/smtlib_encoder/tests.rs`, `src/tptp_encoder/tests.rs`, and
+      `src/translator/tests.rs`. The production modules remain one-to-one
+      with their existing specs and public exports. No public API, production
+      behavior, diagnostics, deterministic rendering, artifact schema,
+      candidate-evidence shape, trust-boundary behavior, kernel check, proof
+      policy, witness/cache output, or trusted backend material was added.
+      `module_boundary_audit.md`, the source/spec audit, the bilingual sync
+      audit, this TODO, the crate plan, and the lint-policy guard record the
+      private test module split. No new ATP-AUDIT gap was required.
 
 ## Recommended Verification
 

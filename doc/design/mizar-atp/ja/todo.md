@@ -534,7 +534,7 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       selection、tie-breaking、candidate displacement を所有するまで、単一の
       policy-boundary / completion-order follow-up として残る。
 
-27. **module 境界リファクタリング gate。** [ ]
+27. **module 境界リファクタリング gate。** [x]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、
       oversized file、混在した責務、module table と module spec 境界に沿って
       分割すべき private helper を洗い出す。review bottleneck になった実装
@@ -546,6 +546,19 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       spec task を要求する。
     - 依存: 26。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
+    - Status: behavior-preserving layout refactor として完了。Task 27 は oversized
+      file issue を inline unit-test review bottleneck layout として分類し、既存の
+      unit suite を private `cfg(test)` child module へ移した:
+      `src/backend/tests.rs`、`src/portfolio/tests.rs`、
+      `src/problem/tests.rs`、`src/property_encoding/tests.rs`、
+      `src/smtlib_encoder/tests.rs`、`src/tptp_encoder/tests.rs`、
+      `src/translator/tests.rs`。Production module は既存 spec と public export に
+      対して一対一のままである。public API、production behavior、diagnostic、
+      deterministic rendering、artifact schema、candidate-evidence shape、
+      trust-boundary behavior、kernel check、proof policy、witness/cache output、
+      trusted backend material は追加しない。`module_boundary_audit.md`、source/spec
+      audit、bilingual sync audit、本 TODO、crate plan、lint-policy guard が private
+      test module split を記録する。新しい ATP-AUDIT gap は不要だった。
 
 ## 推奨検証
 

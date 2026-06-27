@@ -6,8 +6,9 @@
 Task 24 audits the `mizar-atp` design documentation pairs after the
 source/spec correspondence audit. Task 25 updates this audit record for the
 portfolio completion-order independence gate deferral. Task 26 re-runs the
-sync audit for the Architecture-22 follow-up. These audit edits change no Rust
-production source, public API, `.miz` fixture, expectation, language
+sync audit for the Architecture-22 follow-up. Task 27 re-runs it for the
+module-boundary private test module split. These audit edits change no Rust
+production source behavior, public API, `.miz` fixture, expectation, language
 specification, backend route, kernel check, proof policy, artifact witness,
 cache behavior, or downstream integration.
 
@@ -44,7 +45,7 @@ behavior is the classified external/deferred work already recorded in
 
 | Document | Synchronized content checked | Result |
 |---|---|---|
-| `00.crate_plan.md` | Crate responsibility, authority order, design/source inventory, known gaps, task decomposition through task 26, hard gates, and verification expectations. | Synchronized. |
+| `00.crate_plan.md` | Crate responsibility, authority order, design/source inventory, known gaps, task decomposition through task 27, hard gates, and verification expectations. | Synchronized. |
 | `problem.md` | Backend-neutral `AtpProblem` data shape, logic profiles, formula/provenance/type-guard ownership, deterministic identity, prohibited trusted material, planned tests, and public enum inventory. | Synchronized. |
 | `translator.md` | Explicit `VcIr` / kernel-handoff projection inputs, declaration/formula materialization, fail-closed unsupported premise classes, proof-hint non-pruning, deterministic ordering, planned tests, and public enum inventory. | Synchronized. |
 | `property_encoding.md` | Axiom-form property projection, generated binder rows, provenance and symbol-map requirements, native-declaration deferral, planned tests, and public enum inventory. | Synchronized. |
@@ -52,16 +53,17 @@ behavior is the classified external/deferred work already recorded in
 | `smtlib_encoder.md` | Deterministic uninterpreted SMT-LIB emission, fixed universe sort, assertion metadata, unsupported theory/native/backend routes, planned tests, and public enum inventory. | Synchronized. |
 | `backend.md` | Generic backend runner, command fingerprints, resource limits, run metadata, candidate-evidence-only `Proved`, prohibited trusted backend material, failure semantics, and public enum inventory. | Synchronized. |
 | `portfolio.md` | Policy-neutral planning, no-early-stop collection, candidate/evidence-set ordering, fail-closed result matching, downstream proof-policy boundary, determinism suite, task-25 deferred completion-order gate, and public enum inventory. | Synchronized. |
-| `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, ATP-AUDIT gap register including task-25 G005, task-26 Architecture-22 follow-up result, `ProofWitnessRef` / `VerifiedArtifact` artifact-surface acknowledgement, and no source/spec drift classification. | Synchronized. |
-| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, task-24/task-25/task-26 sync edits, and remaining external/deferred work. | Synchronized by this paired audit document. |
-| `todo.md` | Ordered task list, completed tasks through task 26, deferred task 15/16 status, public enum task status, source/spec audit status, task-25 dependency-gap status, task-26 follow-up-audit status, next task 27 audit wording, and verification expectations. | Synchronized. |
+| `module_boundary_audit.md` | Task-27 private test module split, layout inventory, no public API change, no production behavior change, no new ATP-AUDIT gap, and unchanged external/deferred follow-ups. | Synchronized. |
+| `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, ATP-AUDIT gap register including task-25 G005, task-26 Architecture-22 follow-up result, task-27 private test module split, `ProofWitnessRef` / `VerifiedArtifact` artifact-surface acknowledgement, and no source/spec drift classification. | Synchronized. |
+| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, task-24/task-25/task-26/task-27 sync edits, and remaining external/deferred work. | Synchronized by this paired audit document. |
+| `todo.md` | Ordered task list, completed tasks through task 27, deferred task 15/16 status, public enum task status, source/spec audit status, task-25 dependency-gap status, task-26 follow-up-audit status, task-27 layout-refactor status, and verification expectations. | Synchronized. |
 
 ## Classification
 
-Task 24 and its task-26 re-run record no new `spec_gap`, `test_gap`, `design_drift`,
-`source_drift`, `source_undocumented_behavior`, `test_expectation_drift`,
-`boundary_violation`, `repo_metadata_conflict`, or bilingual drift. Existing
-classified records remain:
+Task 24 and its task-26/task-27 re-runs record no new `spec_gap`, `test_gap`,
+`design_drift`, `source_drift`, `source_undocumented_behavior`,
+`test_expectation_drift`, `boundary_violation`, `repo_metadata_conflict`, or
+bilingual drift. Existing classified records remain:
 
 - `external_dependency_gap`: no paired real-output extraction spec/source
   module maps concrete backend output to kernel-parseable formula/substitution
@@ -114,3 +116,25 @@ duration from becoming semantic proof identity. The re-run found no bilingual
 drift, stale task status, `repo_metadata_conflict`, or new follow-up gap.
 ATP-AUDIT-G005 remains the single policy-boundary / completion-order follow-up
 until a real `mizar-proof` policy owner exists.
+
+## Task 27 Sync Edits
+
+Task 27 re-runs the bilingual sync audit for the module-boundary refactor gate.
+The paired TODO, crate plan, source/spec audit, this bilingual audit, and
+paired `module_boundary_audit.md` documents now record the private test module
+split:
+
+- `src/backend/tests.rs`
+- `src/portfolio/tests.rs`
+- `src/problem/tests.rs`
+- `src/property_encoding/tests.rs`
+- `src/smtlib_encoder/tests.rs`
+- `src/tptp_encoder/tests.rs`
+- `src/translator/tests.rs`
+
+The re-run found no bilingual drift, stale task status,
+`repo_metadata_conflict`, source/spec behavior drift, or new ATP-AUDIT gap.
+The edits deliberately do not add public API, production behavior, diagnostics,
+deterministic rendering changes, artifact schema changes, kernel checks, proof
+policy, witness/cache outputs, trusted backend material, or placeholder
+downstream integration.

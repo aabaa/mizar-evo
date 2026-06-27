@@ -5,9 +5,10 @@
 
 Task 23 は public-enum policy gate 後の現在の `mizar-atp` public surface と
 仕様が約束する挙動を監査する。Task 26 は task-25 Architecture-22 portfolio
-completion-order contract について、この audit を再実行する。これらの audit は source
-behavior、public API、`.miz` fixture、expectation、language specification、backend
-route、kernel check、proof policy、artifact witness、cache behavior を変更しない。まだ利用
+completion-order contract について、この audit を再実行する。Task 27 は private test
+module split について layout portion を再実行する。これらの audit は source behavior、
+public API、`.miz` fixture、expectation、language specification、backend route、
+kernel check、proof policy、artifact witness、cache behavior を変更しない。まだ利用
 できない挙動は、捏造したり現在の実装都合を normative にしたりせず、明示的な
 `external_dependency_gap` または `deferred` work として記録する。
 
@@ -56,6 +57,16 @@ module の top-level public item、public entry function、paired module specifi
 - `crates/mizar-atp/src/smtlib_encoder.rs`
 - `crates/mizar-atp/src/tptp_encoder.rs`
 - `crates/mizar-atp/src/translator.rs`
+
+task 27 後の対応する private test module path は次のとおり:
+
+- `crates/mizar-atp/src/backend/tests.rs`
+- `crates/mizar-atp/src/portfolio/tests.rs`
+- `crates/mizar-atp/src/problem/tests.rs`
+- `crates/mizar-atp/src/property_encoding/tests.rs`
+- `crates/mizar-atp/src/smtlib_encoder/tests.rs`
+- `crates/mizar-atp/src/tptp_encoder/tests.rs`
+- `crates/mizar-atp/src/translator/tests.rs`
 
 Evidence: `crates/mizar-atp/tests/lint_policy.rs` の
 `atp_lib_exposes_only_spec_backed_modules` がこの list を確認し、対応する EN/JA module
@@ -271,6 +282,36 @@ Audit result: 新しい `source_drift`、`design_drift`、
 `source_undocumented_behavior`、`test_expectation_drift`、`boundary_violation`、
 `repo_metadata_conflict`、追加 `ATP-AUDIT-*` follow-up は見つからなかった。残る
 completion-order / policy-boundary gap は ATP-AUDIT-G005 だけである。
+
+## Task 27 Module-Boundary Layout Audit
+
+Task 27 は module-boundary refactor gate について source/spec audit を再実行した。
+この refactor は private test module split だけである:
+
+- `src/backend.rs` は `cfg(all(test, unix))` の下で `src/backend/tests.rs` を指す。
+- `src/portfolio.rs` は `cfg(test)` の下で `src/portfolio/tests.rs` を指す。
+- `src/problem.rs` は `cfg(test)` の下で `src/problem/tests.rs` を指す。
+- `src/property_encoding.rs` は `cfg(test)` の下で
+  `src/property_encoding/tests.rs` を指す。
+- `src/smtlib_encoder.rs` は `cfg(test)` の下で `src/smtlib_encoder/tests.rs` を指す。
+- `src/tptp_encoder.rs` は `cfg(test)` の下で `src/tptp_encoder/tests.rs` を指す。
+- `src/translator.rs` は `cfg(test)` の下で `src/translator/tests.rs` を指す。
+
+source/spec result:
+
+- public module export set と public API inventory は変更されていない。
+- private test module は public API を定義せず、`src/lib.rs` から export されない。
+- production code path、diagnostic、deterministic rendering、artifact-facing schema、
+  candidate-evidence shape、kernel check、proof policy、witness/cache output、
+  trusted backend material、trust-boundary behavior は変更されていない。
+- `module_boundary_audit.md` は method と layout inventory を記録し、
+  `atp_task_twenty_seven_module_boundary_layout_is_documented` は source tree と paired
+  documentation marker を guard する。
+
+Audit result: 新しい `source_drift`、`design_drift`、
+`source_undocumented_behavior`、`test_expectation_drift`、`boundary_violation`、
+`repo_metadata_conflict`、追加 `ATP-AUDIT-*` follow-up は見つからなかった。No new
+ATP-AUDIT gap is required.
 
 ## Remaining Classified Follow-Ups
 

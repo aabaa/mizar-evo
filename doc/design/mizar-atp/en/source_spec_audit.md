@@ -5,7 +5,8 @@
 
 Task 23 audits the current `mizar-atp` public surface and promised behavior
 after the public-enum policy gate. Task 26 re-runs this audit for the task-25
-Architecture-22 portfolio completion-order contract. These audits change no
+Architecture-22 portfolio completion-order contract. Task 27 re-runs the
+layout portion for the private test module split. These audits change no
 source behavior, public API, `.miz` fixture, expectation, language
 specification, backend route, kernel check, proof policy, artifact witness, or
 cache behavior. Remaining unavailable behavior is recorded as explicit
@@ -59,6 +60,16 @@ The corresponding source paths are:
 - `crates/mizar-atp/src/smtlib_encoder.rs`
 - `crates/mizar-atp/src/tptp_encoder.rs`
 - `crates/mizar-atp/src/translator.rs`
+
+The corresponding private test module paths after task 27 are:
+
+- `crates/mizar-atp/src/backend/tests.rs`
+- `crates/mizar-atp/src/portfolio/tests.rs`
+- `crates/mizar-atp/src/problem/tests.rs`
+- `crates/mizar-atp/src/property_encoding/tests.rs`
+- `crates/mizar-atp/src/smtlib_encoder/tests.rs`
+- `crates/mizar-atp/src/tptp_encoder/tests.rs`
+- `crates/mizar-atp/src/translator/tests.rs`
 
 Evidence: `crates/mizar-atp/tests/lint_policy.rs` checks this list through
 `atp_lib_exposes_only_spec_backed_modules`, requires matching EN/JA module
@@ -277,6 +288,42 @@ Audit result: no new `source_drift`, `design_drift`,
 `boundary_violation`, `repo_metadata_conflict`, or additional `ATP-AUDIT-*`
 follow-up was found. The remaining completion-order / policy-boundary gap is
 exactly ATP-AUDIT-G005.
+
+## Task 27 Module-Boundary Layout Audit
+
+Task 27 re-ran the source/spec audit for the module-boundary refactor gate.
+The refactor is a private test module split only:
+
+- `src/backend.rs` now points to `src/backend/tests.rs` under
+  `cfg(all(test, unix))`.
+- `src/portfolio.rs` now points to `src/portfolio/tests.rs` under `cfg(test)`.
+- `src/problem.rs` now points to `src/problem/tests.rs` under `cfg(test)`.
+- `src/property_encoding.rs` now points to
+  `src/property_encoding/tests.rs` under `cfg(test)`.
+- `src/smtlib_encoder.rs` now points to `src/smtlib_encoder/tests.rs` under
+  `cfg(test)`.
+- `src/tptp_encoder.rs` now points to `src/tptp_encoder/tests.rs` under
+  `cfg(test)`.
+- `src/translator.rs` now points to `src/translator/tests.rs` under
+  `cfg(test)`.
+
+Source/spec result:
+
+- The public module export set and public API inventories are unchanged.
+- The private test modules define no public API and are not exported from
+  `src/lib.rs`.
+- No production code path, diagnostic, deterministic rendering,
+  artifact-facing schema, candidate-evidence shape, kernel check, proof
+  policy, witness/cache output, trusted backend material, or trust-boundary
+  behavior changed.
+- `module_boundary_audit.md` records the method and layout inventory, and
+  `atp_task_twenty_seven_module_boundary_layout_is_documented` guards the
+  source tree and paired documentation markers.
+
+Audit result: no new `source_drift`, `design_drift`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, `repo_metadata_conflict`, or additional `ATP-AUDIT-*`
+follow-up was found. No new ATP-AUDIT gap is required.
 
 ## Remaining Classified Follow-Ups
 
