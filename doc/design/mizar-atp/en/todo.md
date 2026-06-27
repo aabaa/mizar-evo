@@ -485,10 +485,19 @@ Keep `cargo test -p mizar-atp` green after each task (see
       proof policy, witness/cache/artifact publication, and placeholder evidence
       schemas remain deferred/external.
 
-21. **Determinism suite.** [ ]
+21. **Determinism suite.** [x]
     - Property coverage that identical `VcIr` inputs produce identical
       problems, encodings, and candidate orderings with mock backends.
     - Deps: 18. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+    - Status: complete within the mock-backend candidate-production boundary.
+      `tests/determinism_suite.rs` constructs identical public `VcIr` fixtures,
+      rebuilds the VC kernel handoff, translates both TPTP FOF and SMT-LIB
+      uninterpreted profiles, checks byte-identical encoder text and side
+      metadata, and verifies deterministic portfolio candidate handoff under
+      reversed planned-run and backend completion order. Real backend
+      extraction, kernel checking, proof policy, artifact witnesses, proof-cache
+      promotion, and active `.miz` advanced-semantics execution remain
+      deferred/external.
 
 22. **Public-enum forward-compatibility policy.** [ ]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;

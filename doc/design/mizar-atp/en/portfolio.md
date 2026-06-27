@@ -54,6 +54,15 @@ classification seam; it must not add `.miz` semantic execution, real backend
 output extraction, kernel calls, proof-policy decisions, witness/cache/artifact
 publication, or a temporary evidence schema.
 
+Task 21 may add a crate-local determinism integration test that starts from
+identical public `VcIr` inputs, rebuilds the public VC kernel handoff, translates
+the obligation into `AtpProblem`, encodes it through each implemented concrete
+encoder profile, classifies mock formula/substitution candidates, and verifies
+portfolio candidate ordering under shuffled backend completion order. The test
+is regression coverage only. It must not add a scheduler, real backend output
+extraction, kernel calls, proof-policy decisions, artifact witnesses, cache
+publication, or any trusted use of backend proof material.
+
 ## Inputs And Outputs
 
 The conceptual portfolio API consumes:
@@ -361,3 +370,26 @@ mock backend integration path:
   boundaries, while leaving active `.miz` advanced-semantic execution,
   real-output extraction, kernel checking, proof policy, artifact witnesses, and
   cache promotion deferred to their owning tasks.
+
+## Task-21 Determinism Suite
+
+Task 21 adds cross-module determinism coverage for the already implemented
+candidate-production path:
+
+- identical `VcSet` / `VcIr` fixtures constructed through public `mizar-vc`
+  APIs produce identical kernel handoffs, `AtpProblem` ids, and debug
+  renderings for each concrete encoder profile;
+- both implemented encoders are exercised explicitly: TPTP FOF for the FOF
+  profile and SMT-LIB uninterpreted for the SMT profile;
+- emitted encoder text, formula labels, and symbol-binding side metadata are
+  byte-identical for identical inputs;
+- mock formula/substitution candidates with matching target binding,
+  encoded-problem hash, provenance hash, formula labels, and symbol bindings
+  are classified and collected without becoming trusted acceptance material;
+- portfolio plan hashes, candidate ids, candidate hashes, evidence-set hashes,
+  and candidate ordering remain identical when planned run input order and
+  backend completion order are reversed.
+
+The suite intentionally leaves real backend extraction, kernel checking,
+proof-policy winner selection, artifact witnesses, proof-cache promotion, and
+active `.miz` advanced-semantics execution deferred to their owning tasks.

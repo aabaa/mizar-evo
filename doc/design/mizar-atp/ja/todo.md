@@ -442,10 +442,18 @@ witness-publication integration は `external_dependency_gap` であり、ここ
       execution、real-output extraction、kernel checking、proof policy、witness/cache/artifact
       publication、placeholder evidence schema は deferred/external のまま残る。
 
-21. **決定性スイート。** [ ]
+21. **決定性スイート。** [x]
     - 同一の `VcIr` 入力がモックバックエンドの下で同一の problem、
       エンコーディング、候補順を生むことのプロパティ的検証。
     - 依存: 18。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
+    - 状態: mock-backend candidate-production boundary 内で完了。
+      `tests/determinism_suite.rs` は同一の public `VcIr` fixture を構築し、VC kernel
+      handoff を再構築し、TPTP FOF と SMT-LIB uninterpreted の両 profile を translate し、
+      byte-identical な encoder text と side metadata を確認し、planned-run order と
+      backend completion order を反転しても portfolio candidate handoff が deterministic
+      であることを検証する。real backend extraction、kernel checking、proof policy、
+      artifact witness、proof-cache promotion、active `.miz` advanced-semantics execution は
+      deferred/external のまま残る。
 
 22. **公開 enum の前方互換性ポリシー。** [ ]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用し、所有
