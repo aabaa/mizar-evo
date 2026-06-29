@@ -22,3 +22,6 @@ pub mod dependency_fingerprint;
 
 /// Internal cache record storage and validation.
 pub mod cache_store;
+
+/// Cache-side proof-reuse validation.
+pub mod proof_reuse;

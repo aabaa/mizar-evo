@@ -23,7 +23,7 @@ internal 02 and 06.
 | cache_key | `cache_key.md` (task 2) | `src/cache_key.rs` | [x] |
 | dependency_fingerprint | `dependency_fingerprint.md` (task 4) | `src/dependency_fingerprint.rs` | [x] |
 | cache_store | `cache_store.md` (task 7) | `src/cache_store.rs` | [x] |
-| proof_reuse | `proof_reuse.md` (task 10) | `src/proof_reuse.rs` | [ ] |
+| proof_reuse | `proof_reuse.md` (task 10) | `src/proof_reuse.rs` | [x] |
 | cluster_db | `cluster_db.md` (task 12) | `src/cluster_db.rs` | [ ] |
 
 `mizar-cache` owns the internal build cache: canonical `CacheKey`
@@ -44,12 +44,13 @@ committed autonomously without holding the rest of the crate in flight.
 
 ## Crate Prerequisites
 
-The crate depends on `mizar-session`, `mizar-artifact`, and, starting in task 5,
-`mizar-vc` for public per-VC dependency-slice fingerprints. `mizar-artifact`
-provides canonical-hash rules, interface/implementation hash inputs from its
-task 16, and witness references. Consumers integrate through seams: the
-`mizar-build` scheduler (its task 18), the `mizar-ir` cache adapter (its task
-10). Architecture:
+The crate depends on `mizar-session`, `mizar-artifact`, `mizar-vc`, and,
+starting in task 11, `mizar-proof` for proof-reuse metadata exported by status
+projection. `mizar-vc` supplies public per-VC dependency-slice fingerprints.
+`mizar-artifact` provides canonical-hash rules, interface/implementation hash
+inputs from its task 16, and witness references. Consumers integrate through
+seams: the `mizar-build` scheduler (its task 18), the `mizar-ir` cache adapter
+(its task 10). Architecture:
 [11.artifact_and_incremental_build.md](../../architecture/en/11.artifact_and_incremental_build.md),
 [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md),
 [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md);
@@ -177,9 +178,10 @@ Keep `cargo test -p mizar-cache` green after each task (see
       [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
       "Proof Witness and Artifact Flow".
 
-11. **Proof-reuse validation.** [ ]
-    - Implement reuse validation over `ProofReuseEvidence`; failures
-      degrade to recomputation, never to acceptance.
+11. **Proof-reuse validation.** [x]
+    - Implement reuse validation over proof-reuse metadata snapshots derived
+      from `mizar-proof` `StatusReuseMetadata`; failures degrade to
+      recomputation, never to acceptance.
     - Tests: matching `KernelVerified` and `DischargedBuiltin` evidence
       reuses; each missing or mismatched required component (`ObligationAnchor`, obligation
       fingerprint, canonical VC fingerprint, local-context fingerprint,

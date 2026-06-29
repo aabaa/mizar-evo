@@ -95,6 +95,7 @@ fn cache_manifest_dependency_boundary_matches_cache_key_builder() {
                 vec![
                     "blake3 = \"1.8.5\"",
                     "mizar-artifact = { path = \"../mizar-artifact\" }",
+                    "mizar-proof = { path = \"../mizar-proof\" }",
                     "mizar-session = { path = \"../mizar-session\" }",
                     "mizar-vc = { path = \"../mizar-vc\" }",
                 ],
@@ -106,8 +107,8 @@ fn cache_manifest_dependency_boundary_matches_cache_key_builder() {
         ],
         "{} must keep production dependencies limited to the cache-key and \
          dependency-fingerprint hash implementation plus mizar-session, \
-         mizar-artifact, and mizar-vc, with mizar-core allowed only as a \
-         task-5 dev dependency for VC projection fixtures; build/target \
+         mizar-artifact, mizar-proof, and mizar-vc, with mizar-core allowed \
+         only as a task-5 dev dependency for VC projection fixtures; build/target \
          dependency sections require a later explicit task",
         manifest_path.display()
     );
@@ -138,9 +139,10 @@ fn cache_lib_states_boundary_and_cache_key_module() {
         [
             "pub mod cache_key;",
             "pub mod dependency_fingerprint;",
-            "pub mod cache_store;"
+            "pub mod cache_store;",
+            "pub mod proof_reuse;"
         ],
-        "{} must expose only the task-9 cache_key, dependency_fingerprint, and cache_store APIs",
+        "{} must expose only the task-11 cache_key, dependency_fingerprint, cache_store, and proof_reuse APIs",
         lib_path.display()
     );
 }
@@ -312,7 +314,79 @@ fn cache_store_implementation_keeps_boundary_terms_out_of_reuse_logic() {
 }
 
 #[test]
-fn cache_crate_tree_contains_only_task_nine_files() {
+fn proof_reuse_api_does_not_expose_authority_results_or_publication_tokens() {
+    let proof_reuse_path = crate_root().join("src/proof_reuse.rs");
+    let source = read_to_string(&proof_reuse_path);
+    let public_surface = public_api_surface_lines(&source);
+
+    for forbidden in [
+        "KernelCheckResult",
+        "ProofStatusProjection",
+        "TrustedUsedAxiomsRef",
+        "ArtifactStatusPublication",
+        "CommittedWitnessPublication",
+        "ProofWitnessPublishedRef",
+        "ProofWitnessPublication",
+        "ProofWitnessRef",
+        "PublicationToken",
+        "Scheduler",
+        "IrCacheAdapter",
+        "witness_store",
+    ] {
+        assert!(
+            public_surface
+                .iter()
+                .all(|declaration| !declaration.contains(forbidden)),
+            "{} must not expose proof authority, publication, scheduler, or IR \
+             adapter APIs through proof_reuse; found `{forbidden}` in \
+             {public_surface:?}",
+            proof_reuse_path.display()
+        );
+    }
+}
+
+#[test]
+fn proof_reuse_implementation_has_no_downstream_stub_or_timing_inputs() {
+    let proof_reuse_path = crate_root().join("src/proof_reuse.rs");
+    let source = read_to_string(&proof_reuse_path);
+    let implementation = source
+        .split("#[cfg(test)]")
+        .next()
+        .expect("implementation prefix exists");
+
+    for forbidden in [
+        "std::fs",
+        "std::time",
+        "SystemTime",
+        "Instant",
+        "thread::current",
+        "process::id",
+        "mizar_build",
+        "mizar_ir",
+        "schedule_task",
+        "publish_ref",
+        "KernelCheckResult",
+        "project_status",
+        "CommittedWitnessPublication",
+        "ProofWitnessPublishedRef",
+        "ProofWitnessPublication",
+        "ProofWitnessRef",
+        "ArtifactStatusPublication",
+        "PublicationToken",
+        "witness_store",
+    ] {
+        assert!(
+            !implementation.contains(forbidden),
+            "{} proof_reuse implementation must remain local validation only \
+             and must not add downstream stubs, publication shortcuts, proof \
+             authority calls, or timing input `{forbidden}`",
+            proof_reuse_path.display()
+        );
+    }
+}
+
+#[test]
+fn cache_crate_tree_contains_only_task_eleven_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -324,12 +398,13 @@ fn cache_crate_tree_contains_only_task_nine_files() {
             "src/cache_store.rs",
             "src/dependency_fingerprint.rs",
             "src/lib.rs",
+            "src/proof_reuse.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-cache task 9 may contain only the crate manifest, root module, \
+        "mizar-cache task 11 may contain only the crate manifest, root module, \
          cache_key implementation, dependency_fingerprint implementation, \
-         cache_store implementation, and \
-         lint guard; other behavior modules, \
+         cache_store implementation, proof_reuse implementation, and lint \
+         guard; other behavior modules, \
          build scripts, examples, benches, or extra tests require later \
          explicit tasks; found {files:?}"
     );

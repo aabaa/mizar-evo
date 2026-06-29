@@ -3,7 +3,7 @@
 > Canonical language: English. Japanese companion:
 > [../ja/proof_reuse.md](../ja/proof_reuse.md).
 
-Status: specified by task 10. Implementation begins in task 11.
+Status: specified by task 10 and implemented by task 11.
 
 ## Purpose
 
@@ -38,7 +38,8 @@ cache key plus proof metadata exported by `mizar-proof`:
 - canonical local-context fingerprint;
 - dependency-slice fingerprints;
 - active verifier policy fingerprint;
-- cache, proof-reuse, VC, artifact, witness, and checker schema versions;
+- cache-side proof-reuse schema versions and dependency/proof-reuse schema
+  compatibility exported by `mizar-proof`;
 - selected proof class and proof-evidence identity exported by `mizar-proof`;
 - selected proof witness hash for `KernelVerified` selections when available;
 - deterministic discharge hash for `DischargedBuiltin` selections;
@@ -75,6 +76,13 @@ status-owner recomputation and must be treated as misses for proof-reuse hit
 purposes. `proof_reuse` must preserve the exported class unchanged, must not
 reinterpret a non-trusted class as accepted, must not choose a different winner,
 and must not decide whether a policy permits publication.
+
+Broader VC, artifact, witness, and checker schema compatibility remains part of
+the exact `CacheKey`/record-store lookup and the `mizar-proof` validation hash
+until the owning producers expose structured cache-adapter fields. Task 11
+therefore compares the structured schema fields currently exported by
+`mizar-proof` plus the cache-side proof-reuse schema guard, and does not invent
+placeholder producer-adapter schema APIs.
 
 ## Validation Predicate
 

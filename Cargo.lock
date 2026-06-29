@@ -382,6 +382,7 @@ dependencies = [
  "blake3",
  "mizar-artifact",
  "mizar-core",
+ "mizar-proof",
  "mizar-session",
  "mizar-vc",
 ]

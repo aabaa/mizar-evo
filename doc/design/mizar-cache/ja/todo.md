@@ -22,7 +22,7 @@ internal 02 のレコード/blob ストアを加えたものに従う。この c
 | cache_key | `cache_key.md`（task 2） | `src/cache_key.rs` | [x] |
 | dependency_fingerprint | `dependency_fingerprint.md`（task 4） | `src/dependency_fingerprint.rs` | [x] |
 | cache_store | `cache_store.md`（task 7） | `src/cache_store.rs` | [x] |
-| proof_reuse | `proof_reuse.md`（task 10） | `src/proof_reuse.rs` | [ ] |
+| proof_reuse | `proof_reuse.md`（task 10） | `src/proof_reuse.rs` | [x] |
 | cluster_db | `cluster_db.md`（task 12） | `src/cluster_db.rs` | [ ] |
 
 `mizar-cache` は内部ビルドキャッシュを所有する: 正準 `CacheKey` の構築、
@@ -43,12 +43,12 @@ internal 02 のレコード/blob ストアを加えたものに従う。この c
 
 ## crate の前提条件
 
-この crate は `mizar-session`、`mizar-artifact`、そして task 5 以降は
-公開された VC ごとの dependency-slice fingerprint を消費するために
-`mizar-vc` に依存する。`mizar-artifact` は正準ハッシュ規則、同 task 16 の
-interface/implementation ハッシュ入力、witness 参照を提供する。消費者は seam
-を通じて統合する: `mizar-build` スケジューラ（同 task 18）、`mizar-ir` の
-cache adapter（同 task 10）。アーキテクチャ:
+この crate は `mizar-session`、`mizar-artifact`、`mizar-vc`、そして task 11 以降は
+status projection が export する proof-reuse metadata を消費するために `mizar-proof` に
+依存する。`mizar-vc` は公開された VC ごとの dependency-slice fingerprint を供給する。
+`mizar-artifact` は正準ハッシュ規則、同 task 16 の interface/implementation ハッシュ入力、
+witness 参照を提供する。消費者は seam を通じて統合する: `mizar-build` スケジューラ
+（同 task 18）、`mizar-ir` の cache adapter（同 task 10）。アーキテクチャ:
 [11.artifact_and_incremental_build.md](../../architecture/ja/11.artifact_and_incremental_build.md)、
 [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)、
 [17.cluster_trace_format.md](../../architecture/ja/17.cluster_trace_format.md)。
@@ -173,9 +173,9 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
       「Proof Witness and Artifact Flow」。
 
-11. **proof 再利用の検証。** [ ]
-    - `ProofReuseEvidence` 上の再利用検証を実装する。失敗は再計算へ
-      退化し、受理へは決して退化しない。
+11. **proof 再利用の検証。** [x]
+    - `mizar-proof` の `StatusReuseMetadata` から導いた proof-reuse metadata snapshot
+      上の再利用検証を実装する。失敗は再計算へ退化し、受理へは決して退化しない。
     - テスト: 一致する `KernelVerified` と `DischargedBuiltin` evidence の再利用。
       必要な各構成要素（`ObligationAnchor`、obligation fingerprint、canonical VC
       fingerprint、local-context fingerprint、dependency-slice fingerprint、選択された
