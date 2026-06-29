@@ -10,19 +10,20 @@
 
 ## Module Implementation
 
-Module specs do not exist yet; each is written by its own spec task (English
-and Japanese in the same change) before the implementation tasks that cite it.
-Module names follow the minimum split of
+Module specs were written by their own spec tasks (English and Japanese in the
+same change) before the implementation tasks that cite them. Module names
+follow the minimum split of
 [internal 07](../../internal/en/07.crate_module_layout.md) (`policy`,
 `witness_store`) plus the selection/status projections of internal 04; the
-crate refines architecture 08, 15, and 19 and internal 04.
+task-19 layout keeps those public module boundaries and moves crate-private
+unit tests into child modules.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| policy | `policy.md` (task 2) | `src/policy.rs` | [~] |
-| selection | `selection.md` (task 5) | `src/selection.rs` | [~] |
-| status | `status.md` (task 8) | `src/status.rs` | [~] |
-| witness_store | `witness_store.md` (task 10) | `src/witness_store.rs` | [~] |
+| policy | `policy.md` (task 2) | `src/policy.rs`; private tests in `src/policy/tests.rs` | [x] |
+| selection | `selection.md` (task 5) | `src/selection.rs`; private tests in `src/selection/tests.rs` | [x] |
+| status | `status.md` (task 8) | `src/status.rs`; private tests in `src/status/tests.rs` | [x] |
+| witness_store | `witness_store.md` (task 10) | `src/witness_store.rs`; private tests in `src/witness_store/tests.rs` | [x] |
 
 `mizar-proof` owns the policy layer between untrusted evidence production
 (`mizar-atp`, `mizar-vc` discharge) and trusted validation (`mizar-kernel`):
@@ -348,7 +349,7 @@ Keep `cargo test -p mizar-proof` green after each task (see
       coverage gaps; and reports the `mizar-atp` closeout guard mismatch as a
       `repo_metadata_conflict` without repairing it in this task.
 
-19. **Module-boundary refactor gate.** [ ]
+19. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
@@ -362,6 +363,17 @@ Keep `cargo test -p mizar-proof` green after each task (see
     - Deps: 18. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+    - Status: added paired
+      [`module_boundary_audit.md`](./module_boundary_audit.md) docs and
+      performed a move-only split of large inline unit-test modules into
+      private child modules: `src/policy/tests.rs`,
+      `src/selection/tests.rs`, `src/status/tests.rs`, and
+      `src/witness_store/tests.rs`. Parent production modules now declare
+      `#[cfg(test)] mod tests;`, public APIs and deterministic behavior are
+      unchanged, and the lint-policy source-tree guard allows only these
+      private test submodules as the task-19 layout change. Further production
+      helper splits remain deferred unless task 20 or downstream consumers
+      identify a concrete review bottleneck.
 
 ## Recommended Verification
 

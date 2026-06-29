@@ -10,18 +10,19 @@
 
 ## モジュール実装
 
-モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより前に、
-専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。モジュール名は
+モジュール仕様は、それを引用する実装タスクより前に、専用の仕様タスクが
+（英語と日本語を同じ変更で）執筆した。モジュール名は
 [internal 07](../../internal/ja/07.crate_module_layout.md) の最小分割
 （`policy`、`witness_store`）に、internal 04 の選択/状態射影を加えたものに
-従う。この crate はアーキテクチャ 08、15、19 と internal 04 を精緻化する。
+従う。task-19 layout はこれら public module boundary を保ち、crate-private
+unit test を child module へ移動する。
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| policy | `policy.md`（task 2） | `src/policy.rs` | [~] |
-| selection | `selection.md`（task 5） | `src/selection.rs` | [~] |
-| status | `status.md`（task 8） | `src/status.rs` | [~] |
-| witness_store | `witness_store.md`（task 10） | `src/witness_store.rs` | [~] |
+| policy | `policy.md`（task 2） | `src/policy.rs`; private tests in `src/policy/tests.rs` | [x] |
+| selection | `selection.md`（task 5） | `src/selection.rs`; private tests in `src/selection/tests.rs` | [x] |
+| status | `status.md`（task 8） | `src/status.rs`; private tests in `src/status/tests.rs` | [x] |
+| witness_store | `witness_store.md`（task 10） | `src/witness_store.rs`; private tests in `src/witness_store/tests.rs` | [x] |
 
 `mizar-proof` は untrusted な証拠生産（`mizar-atp`、`mizar-vc` の
 discharge）と信頼された検証（`mizar-kernel`）の間のポリシー層を所有する:
@@ -337,7 +338,7 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
       gap を記録し、`mizar-atp` closeout guard mismatch を本 task では修復せず
       `repo_metadata_conflict` として報告する。
 
-19. **module 境界リファクタリング gate。** [ ]
+19. **module 境界リファクタリング gate。** [x]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、
       oversized file、混在した責務、module table と module spec 境界に沿って
       分割すべき private helper を洗い出す。review bottleneck になった実装
@@ -349,6 +350,17 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
       spec task を要求する。
     - 依存: 18。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
+    - 状態: paired
+      [`module_boundary_audit.md`](./module_boundary_audit.md) docs を追加し、
+      large inline unit-test module を `src/policy/tests.rs`、
+      `src/selection/tests.rs`、`src/status/tests.rs`、
+      `src/witness_store/tests.rs` の private child module へ move-only split
+      した。parent production module は `#[cfg(test)] mod tests;` を宣言し、
+      public API と deterministic behavior は変えていない。lint-policy の
+      source-tree guard は task-19 layout change としてこれら private test
+      submodule だけを許可する。追加の production helper split は、task 20 または
+      downstream consumer が concrete review bottleneck を見つけるまで deferred
+      のままである。
 
 ## 推奨検証
 
