@@ -124,11 +124,12 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - 依存: 3、4、`mizar-artifact` task 16、`mizar-vc` task 14。仕様:
      `dependency_fingerprint.md`。
 
-6. **再ビルドトリガーの評価。** [ ]
+6. **再ビルドトリガーの評価。** [x]
    - トリガー規則を実装する: どの fingerprint 変化がどのキャッシュ済み
      phase を無効化するか。スライスが粗い場合は保守的に。
    - テスト: 変更種別（ソース、import、registration、cluster/reduction、
-     policy、toolchain、schema、proof-body、diagnostic-only）ごとの
+     policy、toolchain、schema、proof-body、diagnostic-only、incomplete footprint、
+     unknown schema/toolchain、uncacheable marker、missing proof-reuse validation）ごとの
      トリガーフィクスチャ。保守モードでの偽陰性なし。
    - 依存: 5。仕様: `dependency_fingerprint.md`（トリガーの節）。
 

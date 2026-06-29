@@ -194,7 +194,8 @@ All collections are canonicalized before hashing:
   artifact_path, domain)`;
 - compatibility fields by `(family, field_name)`;
 - unknown markers by `(family, reason, owner)`;
-- rebuild-trigger rows by `(change_kind, target_kind, dependent_phase)`.
+- rebuild-trigger rows by `(change_kind, target_kind, dependent_phase,
+  slice_precision)`.
 
 Identical duplicate identity keys with identical payloads are coalesced.
 Duplicate identity keys with different payloads are structurally invalid and
@@ -256,6 +257,19 @@ metadata also become
 
 The trigger result answers "what must rerun before a cache hit is accepted?"
 It is not proof acceptance and not semver classification.
+
+Task 6 evaluates explicit trigger rows with `(change_kind, target_kind,
+dependent_phase, slice_precision)`. `slice_precision` is either exact or
+conservative-coarse. Coarse slices may rebuild more dependents, but they must
+not return `ReuseAllowed` for a semantic change that an exact slice would
+rebuild. When multiple rows are combined by a caller, precedence is:
+`UncacheableMiss > RebuildDependents > RebuildPhase > ReuseAllowed`.
+
+Known, supported policy/toolchain/schema/lockfile/manifest changes map to
+`RebuildPhase` for the affected phase in task 6. `UncacheableMiss` is reserved
+for unknown, incomplete, unsupported, uncacheable, or missing validation
+inputs. The evaluator emits only pure classifications; it does not schedule
+work, read or write cluster-db indexes, or integrate with cache records.
 
 | Change | Trigger |
 |---|---|
@@ -329,7 +343,8 @@ Task 5 must add coverage for:
 - per-VC dependency-slice changes flipping only the dependent VC/proof
   fingerprints at the chosen granularity;
 - missing producer hashes, unknown schema/toolchain, incomplete dependency
-  slices, unknown coverage, and uncacheable markers forcing miss outcomes;
+  slices, unknown coverage, uncacheable markers, and incomplete footprints
+  forcing miss outcomes;
 - mismatched proof/VC reuse inputs, externally attested-only evidence,
   unsupported proof evidence kinds, and missing proof-reuse validation inputs
   forcing miss outcomes;
@@ -337,8 +352,10 @@ Task 5 must add coverage for:
   never becoming proof authority.
 
 Task 6 must add rebuild-trigger fixtures for source, import, registration,
-cluster/reduction, policy, toolchain, schema, proof-body, and diagnostic-only
-changes, including no false negatives in conservative coarse-slice mode.
+cluster/reduction, policy, toolchain, schema, proof-body, diagnostic-only,
+incomplete footprint, unknown schema/toolchain, uncacheable marker, and missing
+proof-reuse validation changes, including no false negatives in conservative
+coarse-slice mode.
 
 ## Deferred And External Dependency Gaps
 

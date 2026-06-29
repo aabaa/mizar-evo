@@ -297,6 +297,146 @@ pub enum RebuildTrigger {
     UncacheableMiss,
 }
 
+/// Fingerprint change class consumed by rebuild-trigger evaluation.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum FingerprintChangeKind {
+    /// Comment-only source text changed outside semantic fingerprints.
+    CommentOnly,
+    /// Diagnostic wording or explanation text changed outside semantic output.
+    DiagnosticWordingOnly,
+    /// Backend runtime, task order, or cache timing changed.
+    RuntimeObservationOnly,
+    /// Source content changed token or AST shape.
+    SourceTokenAst,
+    /// Published module `interface_hash` changed.
+    ModuleInterface,
+    /// Local implementation or artifact hash changed without interface change.
+    ModuleImplementationOnly,
+    /// Published registration interface changed.
+    RegistrationInterface,
+    /// Accepted registration, cluster, reduction, or visible trace origin changed.
+    ClusterReductionVisibleOrigin,
+    /// Local proof body changed without theorem-statement or accepted-status change.
+    ProofBodyOnly,
+    /// Exported theorem, definition, mode, attribute, notation, cluster, or algorithm contract changed.
+    ExportedSemantic,
+    /// Verifier or proof policy changed.
+    Policy,
+    /// Toolchain compatibility changed.
+    Toolchain,
+    /// Schema version changed.
+    SchemaVersion,
+    /// Lockfile identity changed.
+    Lockfile,
+    /// Manifest identity changed.
+    Manifest,
+    /// Dependency footprint is incomplete.
+    IncompleteFootprint,
+    /// Schema compatibility is unknown.
+    UnknownSchema,
+    /// Toolchain compatibility is unknown.
+    UnknownToolchain,
+    /// The footprint carries an explicit uncacheable marker.
+    UncacheableMarker,
+    /// Proof-reuse validation data is missing.
+    MissingProofReuseValidation,
+}
+
+/// Dependency-slice precision available to the trigger evaluator.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum DependencySlicePrecision {
+    /// Producer slices are precise enough to identify the dependent footprint.
+    Exact,
+    /// Producer slices are conservative and may over-trigger.
+    ConservativeCoarse,
+}
+
+/// Input row for rebuild-trigger evaluation.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct RebuildTriggerInput {
+    /// Change classification.
+    pub change_kind: FingerprintChangeKind,
+    /// Fingerprint target that changed.
+    pub target: FingerprintTargetKind,
+    /// Dependent phase being evaluated.
+    pub dependent_phase: PipelinePhase,
+    /// Slice precision for this dependency edge.
+    pub slice_precision: DependencySlicePrecision,
+}
+
+/// Rebuild-trigger decision.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct RebuildTriggerDecision {
+    /// Trigger result.
+    pub trigger: RebuildTrigger,
+    /// Dependent phase evaluated by this decision.
+    pub dependent_phase: PipelinePhase,
+    /// Whether the decision intentionally over-triggers because slices are coarse.
+    pub conservative: bool,
+    /// Stable diagnostic reason.
+    pub reason: &'static str,
+}
+
+/// Combined rebuild-trigger result for a set of rows.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct RebuildTriggerSummary {
+    /// Strongest trigger after precedence is applied.
+    pub trigger: RebuildTrigger,
+    /// Whether any strongest row intentionally over-triggers because slices are coarse.
+    pub conservative: bool,
+    /// Number of rows considered.
+    pub row_count: usize,
+}
+
+/// Pure rebuild-trigger evaluator.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+pub struct RebuildTriggerEvaluator;
+
+impl RebuildTriggerEvaluator {
+    /// Evaluates the trigger for one fingerprint change and dependent phase.
+    pub fn evaluate(input: RebuildTriggerInput) -> RebuildTriggerDecision {
+        let trigger = trigger_for_change(&input.change_kind);
+        let conservative = input.slice_precision == DependencySlicePrecision::ConservativeCoarse
+            && trigger == RebuildTrigger::RebuildDependents;
+        RebuildTriggerDecision {
+            reason: reason_for_change(&input.change_kind),
+            dependent_phase: input.dependent_phase,
+            trigger,
+            conservative,
+        }
+    }
+
+    /// Evaluates rows for one cache-dependency decision and applies trigger precedence.
+    pub fn evaluate_all(
+        inputs: impl IntoIterator<Item = RebuildTriggerInput>,
+    ) -> RebuildTriggerSummary {
+        let mut strongest = RebuildTrigger::ReuseAllowed;
+        let mut conservative = false;
+        let mut row_count = 0;
+
+        for input in inputs {
+            row_count += 1;
+            let decision = Self::evaluate(input);
+            let precedence = trigger_precedence(decision.trigger);
+            let strongest_precedence = trigger_precedence(strongest);
+            if precedence > strongest_precedence {
+                strongest = decision.trigger;
+                conservative = decision.conservative;
+            } else if precedence == strongest_precedence {
+                conservative |= decision.conservative;
+            }
+        }
+
+        RebuildTriggerSummary {
+            trigger: strongest,
+            conservative,
+            row_count,
+        }
+    }
+}
+
 impl FootprintOwner {
     /// Builds a module-level owner from an artifact module identity.
     pub fn from_module_identity(module: &ModuleSummaryIdentity) -> Self {
@@ -529,6 +669,77 @@ impl fmt::Display for DependencyFootprintBuildRejection {
 }
 
 impl Error for DependencyFootprintBuildRejection {}
+
+fn trigger_precedence(trigger: RebuildTrigger) -> u8 {
+    match trigger {
+        RebuildTrigger::ReuseAllowed => 0,
+        RebuildTrigger::RebuildPhase => 1,
+        RebuildTrigger::RebuildDependents => 2,
+        RebuildTrigger::UncacheableMiss => 3,
+    }
+}
+
+fn trigger_for_change(change: &FingerprintChangeKind) -> RebuildTrigger {
+    match change {
+        FingerprintChangeKind::CommentOnly
+        | FingerprintChangeKind::DiagnosticWordingOnly
+        | FingerprintChangeKind::RuntimeObservationOnly => RebuildTrigger::ReuseAllowed,
+        FingerprintChangeKind::SourceTokenAst
+        | FingerprintChangeKind::ModuleInterface
+        | FingerprintChangeKind::RegistrationInterface
+        | FingerprintChangeKind::ClusterReductionVisibleOrigin
+        | FingerprintChangeKind::ExportedSemantic => RebuildTrigger::RebuildDependents,
+        FingerprintChangeKind::ModuleImplementationOnly
+        | FingerprintChangeKind::ProofBodyOnly
+        | FingerprintChangeKind::Policy
+        | FingerprintChangeKind::Toolchain
+        | FingerprintChangeKind::SchemaVersion
+        | FingerprintChangeKind::Lockfile
+        | FingerprintChangeKind::Manifest => RebuildTrigger::RebuildPhase,
+        FingerprintChangeKind::IncompleteFootprint
+        | FingerprintChangeKind::UnknownSchema
+        | FingerprintChangeKind::UnknownToolchain
+        | FingerprintChangeKind::UncacheableMarker
+        | FingerprintChangeKind::MissingProofReuseValidation => RebuildTrigger::UncacheableMiss,
+    }
+}
+
+fn reason_for_change(change: &FingerprintChangeKind) -> &'static str {
+    match change {
+        FingerprintChangeKind::CommentOnly => "comment-only change excluded from fingerprints",
+        FingerprintChangeKind::DiagnosticWordingOnly => {
+            "diagnostic wording change excluded from semantic output"
+        }
+        FingerprintChangeKind::RuntimeObservationOnly => {
+            "runtime, task-order, or cache timing observation changed"
+        }
+        FingerprintChangeKind::SourceTokenAst => "source token or AST shape changed",
+        FingerprintChangeKind::ModuleInterface => "module interface hash changed",
+        FingerprintChangeKind::ModuleImplementationOnly => {
+            "local implementation changed without interface change"
+        }
+        FingerprintChangeKind::RegistrationInterface => "registration interface changed",
+        FingerprintChangeKind::ClusterReductionVisibleOrigin => {
+            "accepted registration, cluster, reduction, or trace origin changed"
+        }
+        FingerprintChangeKind::ProofBodyOnly => {
+            "local proof body changed without exported proof boundary change"
+        }
+        FingerprintChangeKind::ExportedSemantic => "exported semantic dependency changed",
+        FingerprintChangeKind::Policy => "verifier or proof policy changed",
+        FingerprintChangeKind::Toolchain => "toolchain compatibility changed",
+        FingerprintChangeKind::SchemaVersion => "schema version changed",
+        FingerprintChangeKind::Lockfile => "lockfile identity changed",
+        FingerprintChangeKind::Manifest => "manifest identity changed",
+        FingerprintChangeKind::IncompleteFootprint => "dependency footprint is incomplete",
+        FingerprintChangeKind::UnknownSchema => "schema compatibility is unknown",
+        FingerprintChangeKind::UnknownToolchain => "toolchain compatibility is unknown",
+        FingerprintChangeKind::UncacheableMarker => "uncacheable marker is present",
+        FingerprintChangeKind::MissingProofReuseValidation => {
+            "proof-reuse validation input is missing"
+        }
+    }
+}
 
 fn validate_request(
     request: &DependencyFootprintRequest,
@@ -1646,6 +1857,220 @@ mod tests {
     }
 
     #[test]
+    fn trigger_evaluator_reuses_for_non_semantic_changes() {
+        for change_kind in [
+            FingerprintChangeKind::CommentOnly,
+            FingerprintChangeKind::DiagnosticWordingOnly,
+            FingerprintChangeKind::RuntimeObservationOnly,
+        ] {
+            let decision = trigger(change_kind, FingerprintTargetKind::Source);
+            assert_eq!(decision.trigger, RebuildTrigger::ReuseAllowed);
+            assert!(!decision.conservative);
+        }
+    }
+
+    #[test]
+    fn trigger_evaluator_rebuilds_dependents_for_visible_semantic_changes() {
+        for (change_kind, target) in [
+            (
+                FingerprintChangeKind::SourceTokenAst,
+                FingerprintTargetKind::Source,
+            ),
+            (
+                FingerprintChangeKind::ModuleInterface,
+                FingerprintTargetKind::ModuleInterface,
+            ),
+            (
+                FingerprintChangeKind::RegistrationInterface,
+                FingerprintTargetKind::RegistrationInterface,
+            ),
+            (
+                FingerprintChangeKind::ClusterReductionVisibleOrigin,
+                FingerprintTargetKind::ClusterTrace,
+            ),
+            (
+                FingerprintChangeKind::ExportedSemantic,
+                FingerprintTargetKind::TheoremStatement,
+            ),
+        ] {
+            let decision = trigger(change_kind, target);
+            assert_eq!(decision.trigger, RebuildTrigger::RebuildDependents);
+            assert!(!decision.conservative);
+        }
+    }
+
+    #[test]
+    fn trigger_evaluator_refreshes_local_or_affected_phase_for_local_and_config_changes() {
+        for (change_kind, target) in [
+            (
+                FingerprintChangeKind::ModuleImplementationOnly,
+                FingerprintTargetKind::ModuleImplementation,
+            ),
+            (
+                FingerprintChangeKind::ProofBodyOnly,
+                FingerprintTargetKind::ProofBody,
+            ),
+            (
+                FingerprintChangeKind::Policy,
+                FingerprintTargetKind::PolicyToolchain,
+            ),
+            (
+                FingerprintChangeKind::Toolchain,
+                FingerprintTargetKind::PolicyToolchain,
+            ),
+            (
+                FingerprintChangeKind::SchemaVersion,
+                FingerprintTargetKind::PolicyToolchain,
+            ),
+            (
+                FingerprintChangeKind::Lockfile,
+                FingerprintTargetKind::LockfileManifest,
+            ),
+            (
+                FingerprintChangeKind::Manifest,
+                FingerprintTargetKind::LockfileManifest,
+            ),
+        ] {
+            let decision = trigger(change_kind, target);
+            assert_eq!(decision.trigger, RebuildTrigger::RebuildPhase);
+            assert!(!decision.conservative);
+        }
+    }
+
+    #[test]
+    fn trigger_evaluator_misses_for_incomplete_unknown_or_uncacheable_inputs() {
+        for change_kind in [
+            FingerprintChangeKind::IncompleteFootprint,
+            FingerprintChangeKind::UnknownSchema,
+            FingerprintChangeKind::UnknownToolchain,
+            FingerprintChangeKind::UncacheableMarker,
+            FingerprintChangeKind::MissingProofReuseValidation,
+        ] {
+            let decision = trigger(change_kind, FingerprintTargetKind::ProofReuseIdentity);
+            assert_eq!(decision.trigger, RebuildTrigger::UncacheableMiss);
+            assert!(!decision.conservative);
+        }
+    }
+
+    #[test]
+    fn conservative_coarse_slices_overtrigger_without_false_negative_reuse() {
+        let semantic = RebuildTriggerEvaluator::evaluate(RebuildTriggerInput {
+            change_kind: FingerprintChangeKind::ExportedSemantic,
+            target: FingerprintTargetKind::Definition,
+            dependent_phase: PipelinePhase::new("proof"),
+            slice_precision: DependencySlicePrecision::ConservativeCoarse,
+        });
+
+        assert_eq!(semantic.trigger, RebuildTrigger::RebuildDependents);
+        assert!(semantic.conservative);
+
+        let diagnostic = RebuildTriggerEvaluator::evaluate(RebuildTriggerInput {
+            change_kind: FingerprintChangeKind::DiagnosticWordingOnly,
+            target: FingerprintTargetKind::VcSlice,
+            dependent_phase: PipelinePhase::new("proof"),
+            slice_precision: DependencySlicePrecision::ConservativeCoarse,
+        });
+
+        assert_eq!(diagnostic.trigger, RebuildTrigger::ReuseAllowed);
+        assert!(!diagnostic.conservative);
+    }
+
+    #[test]
+    fn trigger_evaluator_combines_rows_by_documented_precedence() {
+        let rows = vec![
+            trigger_input(
+                FingerprintChangeKind::CommentOnly,
+                FingerprintTargetKind::Source,
+                DependencySlicePrecision::Exact,
+            ),
+            trigger_input(
+                FingerprintChangeKind::ModuleImplementationOnly,
+                FingerprintTargetKind::ModuleImplementation,
+                DependencySlicePrecision::Exact,
+            ),
+            trigger_input(
+                FingerprintChangeKind::ModuleInterface,
+                FingerprintTargetKind::ModuleInterface,
+                DependencySlicePrecision::Exact,
+            ),
+            trigger_input(
+                FingerprintChangeKind::UnknownSchema,
+                FingerprintTargetKind::PolicyToolchain,
+                DependencySlicePrecision::Exact,
+            ),
+        ];
+        let mut reversed = rows.clone();
+        reversed.reverse();
+
+        let first = RebuildTriggerEvaluator::evaluate_all(rows);
+        let second = RebuildTriggerEvaluator::evaluate_all(reversed);
+
+        assert_eq!(first, second);
+        assert_eq!(first.trigger, RebuildTrigger::UncacheableMiss);
+        assert!(!first.conservative);
+        assert_eq!(first.row_count, 4);
+    }
+
+    #[test]
+    fn trigger_evaluator_combined_conservative_flag_tracks_strongest_coarse_rows() {
+        let summary = RebuildTriggerEvaluator::evaluate_all([
+            trigger_input(
+                FingerprintChangeKind::ModuleInterface,
+                FingerprintTargetKind::ModuleInterface,
+                DependencySlicePrecision::ConservativeCoarse,
+            ),
+            trigger_input(
+                FingerprintChangeKind::ProofBodyOnly,
+                FingerprintTargetKind::ProofBody,
+                DependencySlicePrecision::ConservativeCoarse,
+            ),
+        ]);
+
+        assert_eq!(summary.trigger, RebuildTrigger::RebuildDependents);
+        assert!(summary.conservative);
+        assert_eq!(summary.row_count, 2);
+    }
+
+    #[test]
+    fn trigger_evaluator_combined_conservative_flag_ignores_lower_precedence_rows() {
+        let mixed_equal_precedence = RebuildTriggerEvaluator::evaluate_all([
+            trigger_input(
+                FingerprintChangeKind::ModuleInterface,
+                FingerprintTargetKind::ModuleInterface,
+                DependencySlicePrecision::Exact,
+            ),
+            trigger_input(
+                FingerprintChangeKind::ExportedSemantic,
+                FingerprintTargetKind::TheoremStatement,
+                DependencySlicePrecision::ConservativeCoarse,
+            ),
+        ]);
+        assert_eq!(
+            mixed_equal_precedence.trigger,
+            RebuildTrigger::RebuildDependents
+        );
+        assert!(mixed_equal_precedence.conservative);
+
+        let stronger_uncacheable = RebuildTriggerEvaluator::evaluate_all([
+            trigger_input(
+                FingerprintChangeKind::ExportedSemantic,
+                FingerprintTargetKind::TheoremStatement,
+                DependencySlicePrecision::ConservativeCoarse,
+            ),
+            trigger_input(
+                FingerprintChangeKind::UncacheableMarker,
+                FingerprintTargetKind::PolicyToolchain,
+                DependencySlicePrecision::Exact,
+            ),
+        ]);
+        assert_eq!(
+            stronger_uncacheable.trigger,
+            RebuildTrigger::UncacheableMiss
+        );
+        assert!(!stronger_uncacheable.conservative);
+    }
+
+    #[test]
     fn summary_constructors_project_producer_hashes() {
         let module_summary = module_summary(hash(11));
         let module_fingerprint = DependencyFingerprint::from_module_summary(&module_summary);
@@ -1743,6 +2168,30 @@ mod tests {
             "expected unknown marker family {family}, got {:?}",
             footprint.unknown_markers
         );
+    }
+
+    fn trigger(
+        change_kind: FingerprintChangeKind,
+        target: FingerprintTargetKind,
+    ) -> RebuildTriggerDecision {
+        RebuildTriggerEvaluator::evaluate(trigger_input(
+            change_kind,
+            target,
+            DependencySlicePrecision::Exact,
+        ))
+    }
+
+    fn trigger_input(
+        change_kind: FingerprintChangeKind,
+        target: FingerprintTargetKind,
+        slice_precision: DependencySlicePrecision,
+    ) -> RebuildTriggerInput {
+        RebuildTriggerInput {
+            change_kind,
+            target,
+            dependent_phase: PipelinePhase::new("proof"),
+            slice_precision,
+        }
     }
 
     fn mutate(mut f: impl FnMut(&mut DependencyFootprintRequest)) -> DependencyFootprintRequest {

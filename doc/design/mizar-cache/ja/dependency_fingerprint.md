@@ -192,7 +192,8 @@ fingerprint から除外するもの:
   artifact_path, domain)`;
 - compatibility field: `(family, field_name)`;
 - unknown marker: `(family, reason, owner)`;
-- rebuild-trigger row: `(change_kind, target_kind, dependent_phase)`。
+- rebuild-trigger row: `(change_kind, target_kind, dependent_phase,
+  slice_precision)`。
 
 同一 identity key かつ同一 payload の重複は coalesce する。同一 identity key で
 payload が異なる重複は structurally invalid であり、diagnostic footprint をまだ
@@ -254,6 +255,19 @@ footprint に VC ごとの slice fingerprint または proof-reuse validation me
 
 trigger result は「cache hit を受け入れる前に何を rerun する必要があるか」を
 答える。proof acceptance でも semver classification でもない。
+
+task 6 は `(change_kind, target_kind, dependent_phase, slice_precision)` からなる
+明示的な trigger row を評価する。`slice_precision` は exact または
+conservative-coarse である。coarse slice は必要以上の dependent を rebuild して
+よいが、exact slice なら rebuild する semantic change に `ReuseAllowed` を返しては
+ならない。caller が複数 row をまとめる場合の優先順位は
+`UncacheableMiss > RebuildDependents > RebuildPhase > ReuseAllowed` とする。
+
+既知かつ対応済みの policy/toolchain/schema/lockfile/manifest change は、task 6 では
+affected phase の `RebuildPhase` に写す。`UncacheableMiss` は unknown、incomplete、
+unsupported、uncacheable、または missing validation input に限る。evaluator は
+純粋な分類だけを返し、work scheduling、cluster-db index の読み書き、cache record
+integration は行わない。
 
 | Change | Trigger |
 |---|---|
@@ -325,7 +339,8 @@ task 5 は以下を cover する:
 - 選択した粒度で、per-VC dependency-slice change が依存する VC/proof fingerprint
   だけを変えること;
 - missing producer hash、unknown schema/toolchain、incomplete dependency slice、
-  unknown coverage、uncacheable marker が miss outcome を強制すること;
+  unknown coverage、uncacheable marker、incomplete footprint が miss outcome を
+  強制すること;
 - mismatched proof/VC reuse input、external attestation のみの evidence、
   unsupported proof evidence kind、missing proof-reuse validation input が miss
   outcome を強制すること;
@@ -333,8 +348,9 @@ task 5 は以下を cover する:
   authority にならないこと。
 
 task 6 は source、import、registration、cluster/reduction、policy、toolchain、
-schema、proof-body、diagnostic-only change の rebuild-trigger fixture を追加し、
-conservative coarse-slice mode で偽陰性がないことを cover する。
+schema、proof-body、diagnostic-only、incomplete footprint、unknown schema/toolchain、
+uncacheable marker、missing proof-reuse validation change の rebuild-trigger fixture を
+追加し、conservative coarse-slice mode で偽陰性がないことを cover する。
 
 ## Deferred And External Dependency Gaps
 

@@ -125,12 +125,14 @@ Keep `cargo test -p mizar-cache` green after each task (see
    - Deps: 3, 4, `mizar-artifact` task 16, `mizar-vc` task 14. Spec:
      `dependency_fingerprint.md`.
 
-6. **Rebuild-trigger evaluation.** [ ]
+6. **Rebuild-trigger evaluation.** [x]
    - Implement the trigger rules: which fingerprint changes invalidate
      which cached phases, conservatively when slices are coarse.
    - Tests: trigger fixtures per change kind (source, import, registration,
      cluster/reduction, policy, toolchain, schema, proof-body,
-     diagnostic-only); no false negatives in the conservative mode.
+     diagnostic-only, incomplete footprint, unknown schema/toolchain,
+     uncacheable marker, missing proof-reuse validation); no false negatives
+     in the conservative mode.
    - Deps: 5. Spec: `dependency_fingerprint.md` (triggers section).
 
 ### Store
