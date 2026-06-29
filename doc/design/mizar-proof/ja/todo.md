@@ -208,7 +208,7 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
      deferred な `DischargedBuiltin` artifact-witness support を覆う paired
      `witness_store.md` spec を追加した。
 
-11. **witness ストアの実装。** [ ]
+11. **witness ストアの実装。** [x]
     - `mizar-artifact` の witness 参照スキーマに対する
       `ProofWitnessDraft` の stage と公開を実装する。
     - テスト: stage/publish のラウンドトリップ。committed manifest-reachability
@@ -216,6 +216,12 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
       trusted witness を publish できないこと。artifact schema support が存在するまで
       `DischargedBuiltin` が unsupported/external-dependency gap のままであること。
     - 依存: 9、10、`mizar-artifact` task 9。仕様: `witness_store.md`。
+   - 状態: `src/witness_store.rs` に status projection と opaque な kernel-derived witness
+     metadata からの `ProofWitnessDraft` construction、`ProofWitnessStagedRef`、
+     `KernelVerified` 用の unpublished `ProofWitnessRef` candidate、opaque な
+     `CommittedWitnessPublicationProof` publication token、`publish_ref` reachability
+     validation、stable witness payload artifact hashing、provenance/status consistency
+     check、invalid schema/path rejection、`DischargedBuiltin` unsupported-witness gap を実装した。
 
 12. **portfolio early-stop のポリシーフック。** [ ]
     - ATP portfolio が early stop に使うポリシークエリ（これ以上良い

@@ -129,16 +129,16 @@ fn proof_lib_states_boundary_and_exposes_modules_after_specs() {
     let declarations = public_module_declarations(&source);
     assert_eq!(
         declarations,
-        ["policy", "selection", "status"],
+        ["policy", "selection", "status", "witness_store"],
         "{} may expose only the task-3 policy module, task-6 selection module, \
-         and task-9 status module; witness modules require later paired specs; found \
+         task-9 status module, and task-11 witness_store module; found \
          {declarations:?}",
         lib_path.display()
     );
 }
 
 #[test]
-fn proof_crate_tree_contains_only_task_nine_files() {
+fn proof_crate_tree_contains_only_task_eleven_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -150,10 +150,11 @@ fn proof_crate_tree_contains_only_task_nine_files() {
             "src/policy.rs",
             "src/selection.rs",
             "src/status.rs",
+            "src/witness_store.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-proof task 9 may contain only the policy, selection, and status \
-         modules plus the lint guard; witness-store, build scripts, examples, \
+        "mizar-proof task 11 may contain only the policy, selection, status, and \
+         witness_store modules plus the lint guard; build scripts, examples, \
          benches, or extra tests require later explicit tasks; found {files:?}"
     );
 }

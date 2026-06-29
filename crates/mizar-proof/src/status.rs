@@ -165,7 +165,7 @@ impl TrustedUsedAxiomsRef {
     }
 
     #[cfg(test)]
-    const fn for_test(
+    pub(crate) const fn for_test(
         accepted_evidence_hash: Hash,
         used_axioms_hash: Hash,
         used_axiom_count: usize,

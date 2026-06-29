@@ -15,3 +15,4 @@
 pub mod policy;
 pub mod selection;
 pub mod status;
+pub mod witness_store;

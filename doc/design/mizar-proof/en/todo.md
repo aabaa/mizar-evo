@@ -212,7 +212,7 @@ Keep `cargo test -p mizar-proof` green after each task (see
      provenance metadata, cache/reuse boundaries, and deferred
      `DischargedBuiltin` artifact-witness support.
 
-11. **Witness store implementation.** [ ]
+11. **Witness store implementation.** [x]
     - Implement staging and publication of `ProofWitnessDraft`s against the
       `mizar-artifact` witness-reference schema.
     - Tests: stage/publish round-trips; publication before committed
@@ -221,6 +221,14 @@ Keep `cargo test -p mizar-proof` green after each task (see
       `DischargedBuiltin` remains an unsupported/external-dependency gap until
       artifact schema support exists.
     - Deps: 9, 10, `mizar-artifact` task 9. Spec: `witness_store.md`.
+   - Status: implemented `src/witness_store.rs` with `ProofWitnessDraft`
+     construction from status projection plus opaque kernel-derived witness
+     metadata, `ProofWitnessStagedRef`, unpublished `ProofWitnessRef`
+     candidates for `KernelVerified`, opaque `CommittedWitnessPublicationProof`
+     publication tokens, `publish_ref` reachability validation, stable witness
+     payload artifact hashing, provenance/status consistency checks, invalid
+     schema/path rejection, and the `DischargedBuiltin` unsupported-witness
+     gap.
 
 12. **Portfolio early-stop policy hooks.** [ ]
     - Provide the policy queries the ATP portfolio uses for early stop

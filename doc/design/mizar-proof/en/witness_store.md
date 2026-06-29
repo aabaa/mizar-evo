@@ -16,7 +16,8 @@ the witness is manifest-reachable.
 
 ## Inputs
 
-The store consumes `ProofWitnessDraft` values only for trusted selections:
+The store consumes `ProofWitnessDraft` values only for trusted selections that
+also match the deterministic status projection for the same obligation:
 
 - `KernelVerified` formula/substitution kernel evidence with a matching
   accepted kernel result;
@@ -26,7 +27,8 @@ The store consumes `ProofWitnessDraft` values only for trusted selections:
 The draft carries:
 
 - `obligation_id`, `ObligationAnchor`, and `obligation_fingerprint`;
-- selected winner class and selected evidence hash;
+- selected winner class and selected evidence hash copied from the status
+  projection and kernel metadata token;
 - witness payload schema family and schema version;
 - canonical witness payload bytes;
 - kernel-acceptance metadata required by `ProofWitnessRef` version `2.0`;
@@ -45,8 +47,11 @@ lists do not produce trusted witness drafts.
 
 Witness handling has three states:
 
-1. `ProofWitnessDraft`: producer-owned bytes plus trusted kernel metadata. It is
-   not stored, not published, and not cache-validating by itself.
+1. `ProofWitnessDraft`: producer-owned bytes plus trusted kernel metadata and
+   the matching status projection. The kernel metadata token has no public
+   constructor until the kernel/artifact integration supplies copied
+   acceptance metadata. The draft is not stored, not published, and not
+   cache-validating by itself.
 2. `ProofWitnessStagedRef`: returned by `stage`. It records a stable witness
    path candidate, payload hash, payload schema, obligation identity, selected
    class, provenance metadata, and, for publishable `KernelVerified` evidence,
@@ -67,8 +72,10 @@ tuple is not enough. The artifact-owned `CommittedWitnessPublicationProof`
 input must bind the witness entry to the committed module artifact entry or
 equivalent committed `VerifiedArtifact` reference set, and must show that the
 manifest `proof_witnesses` array exactly covers the artifact
-`proof_witnesses` collection. Calling `publish_ref` before that publication
-proof exists is an error.
+`proof_witnesses` collection. Until that artifact-owned token exists, the
+source API keeps the proof token opaque with no public constructor; callers
+must not synthesize matching tuples. Calling `publish_ref` before that
+publication proof exists is an error.
 
 `publish_ref` does not invent a new artifact reference after commit. It
 validates that the unpublished reference candidate emitted by `stage` is the
@@ -138,9 +145,14 @@ reuse validation:
 - accepted result hash and trusted used-axiom reference hash when available;
 - diagnostics-owned references for advisory backend data.
 
-Provenance metadata does not expand the trust boundary. Backend logs,
-externally attested citations, cache records, and diagnostic hints remain
-diagnostic or reuse-validation material only.
+Provenance metadata must agree with the selected status projection, kernel
+acceptance metadata, and trusted used-axiom token when those trusted values are
+present. The dependency artifact fingerprint is preserved as producer-owned
+reuse metadata in task 11; authoritative binding to committed dependency
+artifacts is deferred to artifact/cache integration. Provenance metadata does
+not expand the trust boundary. Backend logs, externally attested citations,
+cache records, and diagnostic hints remain diagnostic or reuse-validation
+material only.
 
 ## Failure Semantics
 
@@ -148,9 +160,14 @@ The store rejects or reports a gap for:
 
 - unsupported witness class or evidence kind;
 - missing or mismatched accepted evidence hash;
-- draft selected class that does not match status projection;
+- draft selected class, selected evidence hash, obligation identity, policy
+  fingerprint, selected candidate id, kernel evidence origin, schema version,
+  or trusted `used_axioms` reference that does not match status projection and
+  kernel acceptance metadata;
 - malformed payload schema identity;
-- non-canonical payload bytes when the payload schema requires canonical bytes;
+- empty payload bytes when the payload schema requires canonical bytes; byte-
+  level canonicality validation is deferred to concrete producer-owned schema
+  validators;
 - witness path escaping `proof-witnesses/`;
 - hash mismatch between staged bytes and manifest reference;
 - duplicate manifest reference for one obligation;
@@ -169,9 +186,11 @@ trusted proof status and never synthesize trusted `used_axioms`.
 For publishable `KernelVerified` witnesses, staged and published witness hashes
 participate in proof-reuse validation, but they are not proof authority. A
 cache record may reuse a proof only when the witness hash, selected evidence
-hash, obligation fingerprint, dependency artifact hashes, policy fingerprint,
-schema versions, and accepted kernel metadata all match the current validation
-predicate. A staged hash becomes an artifact-facing
+hash, obligation fingerprint, policy fingerprint, schema versions, and accepted
+kernel metadata all match the current validation predicate. Dependency artifact
+fingerprints are part of that predicate only after downstream artifact/cache
+owners supply an authoritative binding; task 11 preserves them as
+producer-owned reuse metadata. A staged hash becomes an artifact-facing
 `selected_proof_witness_hash` only through successful publication, and that
 hash is the witness payload artifact hash (`witness_artifact_hash`), not a hash
 of the `ProofWitnessRef` metadata object. Until artifact support exists,
@@ -187,6 +206,10 @@ statuses, or create trusted `used_axioms`.
 | `WITNESS10-G001` | `external_dependency_gap` | `mizar-artifact` `ProofWitnessRef` version `2.0` currently accepts only `kernel_verified` formula/substitution evidence. `DischargedBuiltin` witness publication remains unsupported and must not be collapsed. |
 | `WITNESS10-G002` | `deferred` | Artifact manifest commit integration supplies the committed witness publication proof needed by `publish_ref`, including binding to the committed main artifact and exact coverage of `VerifiedArtifact.proof_witnesses`. This spec defines the token/validation contract; it does not write manifests. |
 | `WITNESS10-G003` | `deferred` | Concrete payload schemas beyond formula/substitution witness bytes remain producer-owned. The store hashes schema identity and bytes but does not interpret backend proof payloads. |
+| `WITNESS11-G001` | `external_dependency_gap` | Task 11 keeps `CommittedWitnessPublicationProof` opaque and externally unconstructible until `mizar-artifact` exposes an artifact-owned committed publication proof token. Internal tests may construct the token; production callers must wait for artifact integration. |
+| `WITNESS11-G002` | `external_dependency_gap` | Task 11 keeps `TrustedKernelWitnessMetadata` opaque and externally unconstructible until the kernel/artifact boundary exposes copied `KernelAcceptanceMetadata`. `mizar-proof` must not accept caller-synthesized kernel acceptance metadata as trusted witness material. |
+| `WITNESS11-G003` | `deferred` | Task 11 records whether a payload schema requires canonical bytes and rejects empty payloads under that attestation, but byte-level canonicality remains producer-owned until concrete payload schemas expose validators. The witness hash still covers exact bytes and schema identity. |
+| `WITNESS11-G004` | `deferred` | Task 11 preserves `dependency_artifact_fingerprint` as producer-owned provenance. Binding it to committed dependency artifacts and cache validation remains deferred to artifact/cache integration; it must not promote witness status by itself. |
 
 ## Non-Goals
 

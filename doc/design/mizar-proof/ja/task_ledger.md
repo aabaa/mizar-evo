@@ -20,7 +20,8 @@ task commit は自分自身の hash を含められないため、self-hash は 
 | 7. Artifact proof selection merge | complete | `6e9a5a0400aae2c4c8b5b8098594ecc0bd3d2949` | 初回 review は source/class compatibility validation の欠落、same-class merge tie-break、policy-assumed/rejected preservation、duplicate built-in discharge input の test gap を指摘した。修正後の focused spec、test-sufficiency、full、source-doc re-review は no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; task-7 path の明示 staging 後に `git diff --cached --check` passed。 | portfolio selection と built-in discharge selection を `VcId` ごとに artifact-facing merge し、invalid source/class pair と duplicate same-source input を reject し、status projection や artifact publication なしで trusted / non-trusted class を保つ。 |
 | 8. Spec: `status.md` | complete | `76f112237c55dab875cd3e26cbfa11d45439fe5e` | 初回 review は `DischargedBuiltin` artifact field overreach、architecture 22 proof-reuse metadata 不足、`KernelCheckResult::Accepted` wording drift、`ProofWitnessRef` schema-version wording の曖昧さ、task-17 TODO reuse-metadata drift を指摘した。修正後の focused spec、test-sufficiency、full、source-doc re-review は no findings。 | `git diff --check` passed; task-8 path の明示 staging 後に `git diff --cached --check` passed。 | artifact/diagnostic status、trusted `used_axioms` propagation、explanation reference、proof-reuse validation metadata、downstream gap を定義する paired status-projection spec を追加する。 |
 | 9. Proof status projection | complete | `ccd0e05820f61c02614ac523bf444556c5b29fa5` | 初回 review は public trusted-used-axiom constructor path、non-trusted trusted-axiom rejection coverage、reuse metadata coverage、`NoSelectableEvidence` の `RecordDiagnostic` publication semantics の test/design gap を指摘した。修正後の focused spec、test-sufficiency、full、source-doc re-review は no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; task-9 path の明示 staging 後に `git diff --cached --check` passed。 | `src/status.rs`、status module exposure、lint guard update を実装し、projected proof status、現在の artifact publication availability、trusted used-axiom boundary check、explanation reference、architecture-22 reuse metadata を提供する。 |
-| 10. Spec: `witness_store.md` | complete | pending self-hash | 初回 review は曖昧な `DischargedBuiltin` reuse hash semantics、artifact reachability proof の仕様不足、task-11 trust-boundary test obligation の欠落、`selected_proof_witness_hash` domain drift、循環した `publish_ref` lifecycle wording を指摘した。修正後、focused spec、test-sufficiency、full、source-doc re-review は no findings。 | `git diff --check` passed; task-10 path の明示 staging 後に `git diff --cached --check` passed。 | draft staging、unpublished `ProofWitnessRef` candidate、stable witness payload artifact hashing、committed artifact-manifest reachability と exact `VerifiedArtifact.proof_witnesses` coverage 後のみの publication、provenance metadata、cache/reuse boundary、deferred な `DischargedBuiltin` witness publication support を覆う paired witness-store spec と selection/status wording 同期を追加する。 |
+| 10. Spec: `witness_store.md` | complete | `d77163f8bd1f2c254a7935164e2135567ba9b3a0` | 初回 review は曖昧な `DischargedBuiltin` reuse hash semantics、artifact reachability proof の仕様不足、task-11 trust-boundary test obligation の欠落、`selected_proof_witness_hash` domain drift、循環した `publish_ref` lifecycle wording を指摘した。修正後、focused spec、test-sufficiency、full、source-doc re-review は no findings。 | `git diff --check` passed; task-10 path の明示 staging 後に `git diff --cached --check` passed。 | draft staging、unpublished `ProofWitnessRef` candidate、stable witness payload artifact hashing、committed artifact-manifest reachability と exact `VerifiedArtifact.proof_witnesses` coverage 後のみの publication、provenance metadata、cache/reuse boundary、deferred な `DischargedBuiltin` witness publication support を覆う paired witness-store spec と selection/status wording 同期を追加する。 |
+| 11. Witness store implementation | complete | pending self-hash | 初回 review は forgeable public publication/metadata token、status-projection binding 欠落、provenance/used-axiom consistency gap、selected-witness-hash と dependency-artifact binding drift、canonical-payload wording drift、TODO/ledger state drift、test gap を指摘した。修正後の spec/docs、test-sufficiency、full-implementation、source-doc re-review は no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; 明示 staging 後の final cached diff check は pending。 | `src/witness_store.rs` を実装し、module exposure、lint guard、witness-store test 用の status test helper を更新する。draft construction は status projection と opaque kernel witness metadata を要求し、stable witness payload hash と unpublished `KernelVerified` `ProofWitnessRef` candidate を stage し、projection 済みの `selected_proof_witness_hash` を検証し、artifact integration が committed token を供給するまで `CommittedWitnessPublicationProof` を opaque に保ち、exact witness coverage/stale snapshot/path/hash class/provenance consistency を検証し、committed publication token、copy 済み kernel metadata、byte-level payload canonicality、dependency-artifact binding、`DischargedBuiltin` witness publication の deferred gap を記録する。 |
 
 ## Current Handoff
 
@@ -29,21 +30,18 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Continue mizar-proof autonomous crate development with task 11 after the
-task-10 commit exists. First verify a clean worktree and confirm the task-10
-commit in HEAD history. Then implement task 11: `ProofWitnessDraft` staging and
-`publish_ref` against the `mizar-artifact` witness-reference schema. Keep
-publication impossible before committed witness publication proof with exact
-`VerifiedArtifact.proof_witnesses` coverage, preserve the current
-`DischargedBuiltin` witness `external_dependency_gap`, and do not add artifact
-manifest writes, cache lookup, ATP execution, kernel checking, SAT solving,
-proof search, premise selection, substitution invention, or placeholder
-downstream integration.
+Continue mizar-proof autonomous crate development with task 12 after the
+task-11 commit exists. First verify a clean worktree and confirm the task-11
+commit in HEAD history. Then implement policy-driven ATP portfolio early-stop
+hooks: expose no-better-class-possible queries that let ATP stop without using
+arrival order, completion time, or runtime duration as proof identity. Keep the
+decision policy/selection driven, preserve the deterministic winner that would
+be selected after running to completion, and do not run ATP backends, perform
+proof search, select premises, invent substitutions, query caches, or add
+placeholder downstream integration.
 ```
 
-Rationale: task 11 は witness publication boundary を source API と test に移すが、
-proof authority は広げない。path/hash canonicalization、manifest reachability、
-trusted/non-trusted witness class は staged または unsupported material を誤って
-promote しうるため `xhigh` を維持する。test が存在した後の mechanical refactor だけなら
-lower reasoning でよい。artifact schema が新しい blocking dependency gap を露出する場合だけ
-上げる。
+Rationale: task 12 は policy information を ATP scheduling へ戻すが、deterministic selection
+semantics は保つ。early-stop logic は runtime arrival order を proof identity に漏らしうるため
+`xhigh` を維持する。API が固定された後の mechanical test addition だけなら lower reasoning で
+よい。`mizar-atp` が新しい blocking integration gap を露出する場合だけ上げる。
