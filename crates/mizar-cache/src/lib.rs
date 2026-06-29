@@ -13,3 +13,6 @@
 //! [`00.crate_plan.md`]: ../../../doc/design/mizar-cache/en/00.crate_plan.md
 
 #![forbid(unsafe_code)]
+
+/// Canonical internal cache key construction.
+pub mod cache_key;

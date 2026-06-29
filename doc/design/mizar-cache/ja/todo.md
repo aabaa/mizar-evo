@@ -19,7 +19,7 @@ internal 02 のレコード/blob ストアを加えたものに従う。この c
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| cache_key | `cache_key.md`（task 2） | `src/cache_key.rs` | [ ] |
+| cache_key | `cache_key.md`（task 2） | `src/cache_key.rs` | [x] |
 | dependency_fingerprint | `dependency_fingerprint.md`（task 4） | `src/dependency_fingerprint.rs` | [ ] |
 | cache_store | `cache_store.md`（task 7） | `src/cache_store.rs` | [ ] |
 | proof_reuse | `proof_reuse.md`（task 10） | `src/proof_reuse.rs` | [ ] |
@@ -92,7 +92,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - 依存: 1。仕様: [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)
      「Cache Key」。
 
-3. **キャッシュキービルダー。** [ ]
+3. **キャッシュキービルダー。** [x]
    - `CacheKeyBuilder` を、識別・ハッシュ・schema version・ポリシーから
      の純粋な射影として実装する — 可変なタスク状態は読まない。
    - テスト: キーの決定性。フィールド順への非依存（正準ソート）。

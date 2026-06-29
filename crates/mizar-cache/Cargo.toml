@@ -13,5 +13,6 @@ path = "src/lib.rs"
 workspace = true
 
 [dependencies]
+blake3 = "1.8.5"
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-session = { path = "../mizar-session" }

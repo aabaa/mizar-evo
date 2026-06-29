@@ -134,7 +134,29 @@ marks the key or record uncacheable and forces a miss.
 
 ## Canonical Ordering
 
-Every vector in `CacheKey` is sorted before hashing:
+Every vector in `CacheKey` is coalesced and sorted before hashing. The
+duplicate identity key detects conflicting multiple values for the same
+logical input. The canonical sort key then orders the coalesced entries using
+the full semantic tuple.
+
+Duplicate identity keys are:
+
+- `input_hashes` by `(name, domain)`;
+- `dependency_hashes` by `(dependency_kind, package_id, module_path, name,
+  domain)`;
+- `dependency_slices` by `(slice_kind, owner, name, domain)`;
+- `schema_versions` by `(schema_family, name)`;
+- dependency artifact availability by `(package_id, module_path,
+  artifact_kind, artifact_path, domain)`;
+- dependency-slice validation fingerprints by `(slice_kind, owner, name,
+  domain)`;
+- policy and toolchain compatibility fields by `(family, field_name)`;
+- proof-reuse schema versions by `(schema_family, name)`;
+- proof-reuse evidence identities by `(obligation_anchor_fingerprint,
+  evidence_kind, witness_or_discharge_domain)`;
+- diagnostic-only refs by `(diagnostic_ref_kind, diagnostic_ref_hash)`.
+
+Canonical sort keys are:
 
 - `input_hashes` by `(name, domain, digest)`;
 - `dependency_hashes` by `(dependency_kind, package_id, module_path, name,
@@ -159,9 +181,11 @@ Validation-input collection ordering is:
 - diagnostic-only refs, when present only for miss explanations, by
   `(diagnostic_ref_kind, diagnostic_ref_hash)`.
 
-Duplicate canonical keys with identical payloads are coalesced. Duplicate
-canonical keys with different payloads are invalid key requests and must be
-rejected before a `CacheKey` is produced.
+Duplicate identity keys with identical payloads are coalesced. Duplicate
+identity keys with different payloads are invalid key requests and must be
+rejected before a `CacheKey` is produced. This means a single logical input
+name cannot silently carry two different digests or versions; it is a
+fail-closed `NoKey` request rather than an order-dependent choice.
 
 Ordering must not depend on `HashMap` iteration, worker completion order,
 cache record arrival order, record write order, diagnostics order, ATP runtime,
@@ -178,7 +202,9 @@ mizar-cache/cache-key/v1
 
 The canonical encoding is length-prefixed and typed. Each field includes its
 field tag, field value, and schema/version tag where applicable. Hash values
-are encoded with their domain and digest bytes, not only display strings.
+are encoded with their domain and digest bytes, not only display strings. For
+bare hashes such as `config_hash`, `policy_fingerprint`, and VC/context
+fingerprints, the field-specific cache-key tag is the hash domain.
 
 The `phase` and `work_unit` fields are always included in the hash, so two
 phases cannot collide semantically even when all direct input hashes match.
@@ -213,9 +239,11 @@ Key construction and later cache reuse must fail closed:
 - proof witness hash mismatch means miss;
 - deterministic discharge hash mismatch means miss;
 - proof-reuse metadata schema mismatch means miss.
+- unknown proof-reuse evidence kind means miss.
 
 `CacheKeyBuilder` may produce `CacheKeyBuildOutcome::Uncacheable` for
-uncacheable work units only when it also sets the uncacheable validation input.
+uncacheable work units or missing required validation inputs only when it also
+sets the uncacheable validation input.
 Such a key must not produce a reusable hit. Structurally invalid requests,
 unsupported cache-key schemas, or conflicting duplicates produce
 `CacheKeyBuildOutcome::NoKey`.

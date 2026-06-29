@@ -20,7 +20,7 @@ internal 02 and 06.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| cache_key | `cache_key.md` (task 2) | `src/cache_key.rs` | [ ] |
+| cache_key | `cache_key.md` (task 2) | `src/cache_key.rs` | [x] |
 | dependency_fingerprint | `dependency_fingerprint.md` (task 4) | `src/dependency_fingerprint.rs` | [ ] |
 | cache_store | `cache_store.md` (task 7) | `src/cache_store.rs` | [ ] |
 | proof_reuse | `proof_reuse.md` (task 10) | `src/proof_reuse.rs` | [ ] |
@@ -93,7 +93,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
    - Deps: 1. Spec: [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md)
      "Cache Key".
 
-3. **Cache-key builder.** [ ]
+3. **Cache-key builder.** [x]
    - Implement `CacheKeyBuilder` as a pure projection from identities,
      hashes, schema versions, and policy — no mutable task state.
    - Tests: key determinism; field-order independence (canonical sort);

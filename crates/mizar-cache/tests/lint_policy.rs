@@ -82,7 +82,7 @@ fn cache_manifest_keeps_task_one_package_metadata() {
 }
 
 #[test]
-fn cache_manifest_dependency_boundary_is_task_one_minimal() {
+fn cache_manifest_dependency_boundary_matches_cache_key_builder() {
     let manifest_path = crate_root().join("Cargo.toml");
     let manifest = read_to_string(&manifest_path);
     let dependency_sections = dependency_sections(&manifest);
@@ -92,19 +92,20 @@ fn cache_manifest_dependency_boundary_is_task_one_minimal() {
         [(
             "dependencies".to_owned(),
             vec![
+                "blake3 = \"1.8.5\"",
                 "mizar-artifact = { path = \"../mizar-artifact\" }",
                 "mizar-session = { path = \"../mizar-session\" }",
             ],
         )],
-        "{} must keep task-1 production dependencies limited to mizar-session \
-         and mizar-artifact; dev/build/target dependency sections require a \
-         later explicit task",
+        "{} must keep production dependencies limited to the cache-key builder \
+         hash implementation plus mizar-session and mizar-artifact; \
+         dev/build/target dependency sections require a later explicit task",
         manifest_path.display()
     );
 }
 
 #[test]
-fn cache_lib_states_boundary_before_modules_land() {
+fn cache_lib_states_boundary_and_cache_key_module() {
     let lib_path = crate_root().join("src/lib.rs");
     let source = read_to_string(&lib_path);
 
@@ -123,26 +124,86 @@ fn cache_lib_states_boundary_before_modules_land() {
         );
     }
 
-    let declarations = public_api_declarations(&source);
-    assert!(
-        declarations.is_empty(),
-        "{} must not expose public cache APIs before their owning specs land; \
-         found {declarations:?}",
+    assert_eq!(
+        public_api_declarations(&source),
+        ["pub mod cache_key;"],
+        "{} must expose only the cache_key API until later module specs land",
         lib_path.display()
     );
 }
 
 #[test]
-fn cache_crate_tree_contains_only_task_one_files() {
+fn cache_key_api_does_not_expose_proof_authority_terms() {
+    let cache_key_path = crate_root().join("src/cache_key.rs");
+    let source = read_to_string(&cache_key_path);
+    let public_surface = public_api_surface_lines(&source);
+
+    for forbidden in [
+        "KernelCheckResult",
+        "ProofStatus",
+        "used_axioms",
+        "TrustedAcceptance",
+        "Authority",
+        "Accept",
+    ] {
+        assert!(
+            public_surface
+                .iter()
+                .all(|declaration| !declaration.contains(forbidden)),
+            "{} must not expose proof-authority projection terms through the \
+             cache_key public API; found `{forbidden}` in {public_surface:?}",
+            cache_key_path.display()
+        );
+    }
+}
+
+#[test]
+fn cache_key_implementation_excludes_mutable_runtime_inputs() {
+    let cache_key_path = crate_root().join("src/cache_key.rs");
+    let source = read_to_string(&cache_key_path);
+    let implementation = source
+        .split("#[cfg(test)]")
+        .next()
+        .expect("implementation prefix exists");
+
+    for forbidden in [
+        "std::fs",
+        "std::time",
+        "SystemTime",
+        "Instant",
+        "read_dir",
+        "cache_dir",
+        "scheduler",
+        "thread::current",
+        "process::id",
+        "temp_dir",
+    ] {
+        assert!(
+            !implementation.contains(forbidden),
+            "{} cache_key implementation must remain a pure projection and \
+             exclude mutable runtime input `{forbidden}`",
+            cache_key_path.display()
+        );
+    }
+}
+
+#[test]
+fn cache_crate_tree_contains_only_task_three_files() {
     let mut files = crate_files();
     files.sort();
 
     assert_eq!(
         files,
-        ["Cargo.toml", "src/lib.rs", "tests/lint_policy.rs"],
-        "mizar-cache task 1 may contain only the crate manifest, root module, \
-         and lint guard; behavior modules, build scripts, examples, benches, \
-         or extra tests require later explicit tasks; found {files:?}"
+        [
+            "Cargo.toml",
+            "src/cache_key.rs",
+            "src/lib.rs",
+            "tests/lint_policy.rs"
+        ],
+        "mizar-cache task 3 may contain only the crate manifest, root module, \
+         cache_key implementation, and lint guard; other behavior modules, \
+         build scripts, examples, benches, or extra tests require later \
+         explicit tasks; found {files:?}"
     );
 }
 
@@ -309,6 +370,48 @@ fn public_api_declarations(source: &str) -> Vec<String> {
                 .map(|_| line.to_owned())
         })
         .collect()
+}
+
+fn public_api_surface_lines(source: &str) -> Vec<String> {
+    let mut lines = Vec::new();
+    let mut in_public_type = false;
+    let mut depth = 0usize;
+
+    for raw_line in source
+        .split("#[cfg(test)]")
+        .next()
+        .expect("implementation prefix exists")
+        .lines()
+    {
+        let line = raw_line.trim_start();
+        if line.starts_with("//") || line.starts_with("#[") || line.is_empty() {
+            continue;
+        }
+
+        if line.starts_with("pub ") {
+            lines.push(line.to_owned());
+            in_public_type = starts_public_type(line);
+        } else if in_public_type {
+            lines.push(line.to_owned());
+        }
+
+        if in_public_type {
+            depth = depth
+                .saturating_add(line.matches('{').count())
+                .saturating_sub(line.matches('}').count());
+            if depth == 0 {
+                in_public_type = false;
+            }
+        }
+    }
+
+    lines
+}
+
+fn starts_public_type(line: &str) -> bool {
+    line.starts_with("pub struct ")
+        || line.starts_with("pub enum ")
+        || line.starts_with("pub trait ")
 }
 
 fn crate_files() -> Vec<String> {
