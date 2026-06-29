@@ -14,6 +14,12 @@ scaffolded and completed as a workspace crate, this report was corrected to
 stop classifying it as a placeholder. The ATP milestone still does not depend
 on `mizar-proof` or implement proof policy locally.
 
+Post-cache-scaffold metadata correction: after `mizar-cache` task 1 formally
+scaffolded the downstream workspace cache crate, this report was corrected to
+stop classifying it as a placeholder. The ATP milestone still does not depend
+on `mizar-cache`, run cache lookup, validate proof reuse, or promote cache
+records.
+
 ## Scope
 
 Milestone scope:
@@ -57,9 +63,11 @@ Excluded:
   substitution invention, overload resolution, cluster search, implicit
   coercion insertion, fallback inference, proof-policy winner selection,
   artifact witness publication, or proof-cache promotion.
-- Placeholder `mizar-cache` crates or local proof-policy adapters. `mizar-proof`
-  is now a formal downstream workspace crate, but this ATP milestone still does
-  not depend on it or move proof policy into `mizar-atp`.
+- Local proof-policy adapters or placeholder cache integrations. `mizar-proof`
+  is now a formal downstream workspace crate, and `mizar-cache` is now a
+  formal downstream workspace cache crate, but this ATP milestone still does
+  not depend on either crate or move proof policy/cache validation into
+  `mizar-atp`.
 
 ## Task Commits
 
@@ -142,7 +150,7 @@ are outside this crate's current milestone and are explicitly classified.
 |---|---|---|---|
 | ATP-CLOSEOUT-G001 | `external_dependency_gap` | No paired real-output extraction spec/source module maps concrete backend output to kernel-parseable formula/substitution candidate payloads, and no supported real backend executable route is verified in this environment. | Add backend-specific EN/JA extraction specs, guarded fixtures, and candidate mapping that excludes backend proof material before reopening tasks 15-16. |
 | ATP-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-proof` is now the workspace proof-policy owner, but this ATP milestone still has no integration that calls its release-policy finality, deterministic winner selection, proof-status projection, or witness-selection APIs. | Wire `mizar-atp` to formal `mizar-proof` APIs only in a separate integration task; do not add proof policy to `mizar-atp`. |
-| ATP-CLOSEOUT-G003 | `external_dependency_gap` | `mizar-cache` is design-only and not a workspace crate, so proof-reuse validation, cache lookup, and policy-compatible reuse are unavailable. | Scaffold and complete `mizar-cache` under its own TODO only after explicit authorization; cache reuse must never upgrade evidence. |
+| ATP-CLOSEOUT-G003 | `external_dependency_gap` | `mizar-cache` is now the workspace cache owner, but this ATP milestone still has no integration that calls its proof-reuse validation, cache lookup, or policy-compatible reuse APIs. | Wire `mizar-atp` to formal `mizar-cache` APIs only in a separate integration task; cache reuse must never upgrade evidence. |
 | ATP-CLOSEOUT-G004 | `external_dependency_gap` / `deferred` | Real artifact witness publication and proof/cache consumer integration remain incomplete. `mizar-artifact` owns witness schema/projection, not ATP acceptance. | Downstream proof/cache/artifact owners connect checked kernel evidence to published witness refs with their own specs. |
 | ATP-CLOSEOUT-G005 | `deferred` | Active `.miz` advanced-semantics execution and source-derived ATP extraction are unavailable; task 20 uses metadata-only corpus anchors. | Add the staged runner and source extraction contracts before replacing metadata-only coverage with active corpus coverage. |
 | ATP-CLOSEOUT-G006 | `deferred` | Typed TPTP/CNF/include routes, SMT arithmetic/sorted signatures/options/proof commands, native declarations, and backend-native shortcuts remain unsupported by current specs. | Add paired specs and tests for each concrete extension before implementation. |
@@ -151,6 +159,12 @@ The stale task-28 statement that `mizar-proof` was a design-only non-workspace
 placeholder was a `repo_metadata_conflict` after the proof crate milestone. It
 is resolved by this metadata correction; no unresolved repo metadata conflict
 remains.
+
+The stale task-28 guard that rejected any formal `mizar-cache` workspace member
+or crate directory became a metadata drift after the mizar-cache task-1
+scaffold. This report now records `mizar-cache` as the formal downstream cache
+owner while preserving the ATP boundary: no cache dependency, lookup, proof
+reuse validation, or cache-record promotion exists in `mizar-atp`.
 
 ## Human Review Surface
 
@@ -202,9 +216,10 @@ Post-closeout metadata correction verification:
 
 Unrun deferred commands:
 
-- `cargo test -p mizar-cache` was not run because `mizar-cache` is not a
-  workspace member. `mizar-proof` is now a workspace member and is covered by
-  its own crate milestone and by current full-workspace verification.
+- Historical task-28 closeout did not run `cargo test -p mizar-cache` because
+  `mizar-cache` was not yet a workspace member. After the formal mizar-cache
+  scaffold, cache verification belongs to the mizar-cache task ledger and
+  current full-workspace verification.
 
 ## Next-Phase Handoff
 
@@ -216,11 +231,11 @@ Prompt:
 Continue the evidence-pipeline correction after the mizar-atp task 28 closeout
 commit exists. First verify `git status --short` is clean and that
 `f896d48f3ea4f915084343a4f88007b77f9941cb` plus
-`be55e0e80f8b6e5a0079b40554c4fa56c9d2fda7` are in HEAD history. Do not create a
-placeholder `mizar-cache` crate, and do not move proof policy into `mizar-atp`.
-Use the formal `mizar-proof` APIs only in a separate ATP/proof integration
-task. Treat proof-cache validation, real backend output extraction, real
+`be55e0e80f8b6e5a0079b40554c4fa56c9d2fda7` are in HEAD history. Use formal
+`mizar-cache` and `mizar-proof` APIs only in separate owner-approved
+integration tasks, and do not move proof policy or cache validation into
+`mizar-atp`. Treat proof-cache validation, real backend output extraction, real
 artifact witness publication, and active source-derived ATP corpus execution as
-external_dependency_gap / deferred until their owner specs and workspace crates
-exist.
+external_dependency_gap / deferred until their owner specs and integration
+tasks are ready.
 ```

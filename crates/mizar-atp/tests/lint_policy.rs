@@ -2291,11 +2291,11 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
                         "Status: complete for the current candidate-evidence producer milestone.",
                         "Quality score: 94/100.",
                         "Post-closeout metadata correction",
+                        "Post-cache-scaffold metadata correction",
                         "ATP-CLOSEOUT-G001",
                         "ATP-CLOSEOUT-G002",
                         "ATP-CLOSEOUT-G003",
-                        "`cargo test -p mizar-cache` was not run",
-                        "formal downstream workspace crate",
+                        "formal downstream workspace cache crate",
                     ],
                 ),
             ],
@@ -2333,11 +2333,12 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
                         "Status: 現在の candidate-evidence producer milestone として完了。",
                         "Quality score: 94/100",
                         "Post-closeout metadata correction",
+                        "Post-cache-scaffold metadata correction",
                         "ATP-CLOSEOUT-G001",
                         "ATP-CLOSEOUT-G002",
                         "ATP-CLOSEOUT-G003",
-                        "`cargo test -p mizar-cache` は",
                         "現在正式な downstream workspace crate",
+                        "現在正式な downstream workspace cache crate",
                     ],
                 ),
             ],
@@ -2449,7 +2450,7 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
                 (
                     "ATP-CLOSEOUT-G003",
                     [
-                        "`mizar-cache` is design-only",
+                        "`mizar-cache` is now the workspace cache owner",
                         "cache reuse must never upgrade evidence",
                     ],
                 ),
@@ -2488,7 +2489,7 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
                 (
                     "ATP-CLOSEOUT-G003",
                     [
-                        "`mizar-cache` は design-only",
+                        "`mizar-cache` は現在 workspace cache owner",
                         "cache reuse は evidence を upgrade してはならない",
                     ],
                 ),
@@ -2542,27 +2543,7 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
         }
     }
 
-    let workspace_manifest = read_to_string(&workspace_root().join("Cargo.toml"));
-    let members = workspace_members(&workspace_manifest);
     let atp_manifest = read_to_string(&crate_root().join("Cargo.toml"));
-    {
-        let crate_name = "mizar-cache";
-        let member = format!("crates/{crate_name}");
-        if members
-            .iter()
-            .any(|workspace_member| workspace_member == &member)
-        {
-            violations.push(format!(
-                "{} must not add placeholder workspace member `{member}` in task 28",
-                workspace_root().join("Cargo.toml").display()
-            ));
-        }
-        if workspace_root().join("crates").join(crate_name).exists() {
-            violations.push(format!(
-                "task 28 must not add placeholder crate directory `{member}`"
-            ));
-        }
-    }
     for crate_name in ["mizar-proof", "mizar-cache"] {
         if atp_manifest.contains(crate_name) {
             violations.push(format!(

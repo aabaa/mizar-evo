@@ -14,6 +14,11 @@ workspace crate として完了した後、この report はそれを placeholde
 しないよう補正された。ATP milestone は引き続き `mizar-proof` に依存せず、
 proof policy を `mizar-atp` 内に実装しない。
 
+Post-cache-scaffold metadata correction: `mizar-cache` task 1 が downstream
+workspace cache crate を正式に scaffold した後、この report はそれを placeholder
+として分類しないよう補正された。ATP milestone は引き続き `mizar-cache` に
+依存せず、cache lookup、proof reuse validation、cache record promotion を行わない。
+
 ## Scope
 
 Milestone scope:
@@ -55,9 +60,9 @@ Excluded:
   substitution invention、overload resolution、cluster search、implicit
   coercion insertion、fallback inference、proof-policy winner selection、
   artifact witness publication、proof-cache promotion。
-- placeholder `mizar-cache` crate または local proof-policy adapter。`mizar-proof`
-  は現在正式な downstream workspace crate だが、この ATP milestone はそれに
-  依存せず、proof policy を `mizar-atp` に移さない。
+- local proof-policy adapter または placeholder cache integration。`mizar-proof`
+  は現在正式な downstream workspace crate であり、`mizar-cache` も現在正式な downstream workspace cache crate であるが、この ATP milestone はどちらにも
+  依存せず、proof policy / cache validation を `mizar-atp` に移さない。
 
 ## Task Commits
 
@@ -140,7 +145,7 @@ cap は適用しない。
 |---|---|---|---|
 | ATP-CLOSEOUT-G001 | `external_dependency_gap` | concrete backend output を kernel-parseable formula/substitution candidate payload に map する paired real-output extraction spec/source module がなく、この環境で検証済みの supported real backend executable route もない。 | task 15-16 を再開する前に、backend-specific EN/JA extraction spec、guarded fixture、backend proof material を除外する candidate mapping を追加する。 |
 | ATP-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-proof` は現在 workspace proof-policy owner だが、この ATP milestone は release-policy finality、deterministic winner selection、proof-status projection、witness selection API をまだ呼び出さない。 | 別の integration task でのみ正式な `mizar-proof` API に接続する。proof policy を `mizar-atp` に追加しない。 |
-| ATP-CLOSEOUT-G003 | `external_dependency_gap` | `mizar-cache` は design-only で workspace crate ではないため、proof-reuse validation、cache lookup、policy-compatible reuse は利用できない。 | 明示的に許可された後でのみ `mizar-cache` を自身の TODO に従って scaffold / complete する。cache reuse は evidence を upgrade してはならない。 |
+| ATP-CLOSEOUT-G003 | `external_dependency_gap` | `mizar-cache` は現在 workspace cache owner だが、この ATP milestone は proof-reuse validation、cache lookup、policy-compatible reuse API をまだ呼び出さない。 | 別の integration task でのみ正式な `mizar-cache` API に接続する。cache reuse は evidence を upgrade してはならない。 |
 | ATP-CLOSEOUT-G004 | `external_dependency_gap` / `deferred` | real artifact witness publication と proof/cache consumer integration は未完成である。`mizar-artifact` は witness schema/projection を所有し、ATP acceptance は所有しない。 | downstream proof/cache/artifact owner が、それぞれの spec で checked kernel evidence と published witness ref を接続する。 |
 | ATP-CLOSEOUT-G005 | `deferred` | active `.miz` advanced-semantics execution と source-derived ATP extraction は利用できない。task 20 は metadata-only corpus anchor を使う。 | staged runner と source extraction contract を追加してから、metadata-only coverage を active corpus coverage に置き換える。 |
 | ATP-CLOSEOUT-G006 | `deferred` | Typed TPTP/CNF/include route、SMT arithmetic/sorted signature/option/proof command、native declaration、backend-native shortcut は現在の spec で未対応である。 | 各 concrete extension に paired spec と test を追加してから実装する。 |
@@ -148,6 +153,12 @@ cap は適用しない。
 `mizar-proof` を design-only non-workspace placeholder とした task-28 の古い記述は、
 proof crate milestone 後には `repo_metadata_conflict` だった。この metadata correction
 で解消済みであり、未解決の repo metadata conflict は残っていない。
+
+formal `mizar-cache` workspace member または crate directory を拒否していた
+task-28 guard は、mizar-cache task-1 scaffold 後には metadata drift になった。この
+report は現在 `mizar-cache` を正式な downstream cache owner として記録する。ただし
+ATP 境界は保持する: `mizar-atp` には cache dependency、lookup、proof reuse validation、
+cache-record promotion は存在しない。
 
 ## Human Review Surface
 
@@ -197,9 +208,10 @@ Post-closeout metadata correction verification:
 
 Unrun deferred commands:
 
-- `cargo test -p mizar-cache` は、`mizar-cache` が workspace member ではないため
-  実行していない。`mizar-proof` は現在 workspace member であり、自身の crate
-  milestone と現在の full-workspace verification で cover される。
+- historical task-28 closeout では、`mizar-cache` がまだ workspace member では
+  なかったため `cargo test -p mizar-cache` を実行していない。formal mizar-cache
+  scaffold 後は、cache verification は mizar-cache task ledger と現在の
+  full-workspace verification が所有する。
 
 ## Next-Phase Handoff
 
@@ -212,10 +224,10 @@ mizar-atp task 28 closeout commit が存在する状態から evidence-pipeline 
 継続してください。まず `git status --short` が clean であること、および
 `f896d48f3ea4f915084343a4f88007b77f9941cb` と
 `be55e0e80f8b6e5a0079b40554c4fa56c9d2fda7` が HEAD 履歴に存在することを
-確認してください。placeholder `mizar-cache` crate は作らず、proof policy を
-`mizar-atp` へ移さないでください。正式な `mizar-proof` API は別の
-ATP/proof integration task でのみ使ってください。proof-cache validation、real
-backend output extraction、real artifact witness publication、active source-derived ATP
-corpus execution は、owner spec と workspace crate が存在するまで
-external_dependency_gap / deferred として扱ってください。
+確認してください。正式な `mizar-cache` と `mizar-proof` API は owner-approved
+integration task でのみ使い、proof policy や cache validation を `mizar-atp` へ
+移さないでください。proof-cache validation、real backend output extraction、
+real artifact witness publication、active source-derived ATP corpus execution は、
+owner spec と integration task が ready になるまで external_dependency_gap /
+deferred として扱ってください。
 ```

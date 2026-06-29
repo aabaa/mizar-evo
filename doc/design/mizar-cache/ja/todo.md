@@ -74,7 +74,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### キーと fingerprint
 
-1. **crate の足場と lint 方針のガード。** [ ]
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session` と `mizar-artifact` に依存する workspace メンバー
      `mizar-cache` を追加し、`mizar-frontend` のガードに倣った
      `tests/lint_policy.rs` を追加する。
@@ -292,6 +292,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 ```text
 cargo test -p mizar-cache
 cargo clippy -p mizar-cache --all-targets -- -D warnings
+cargo fmt --check
 ```
 
 統合タスクでは追加で実行する:
@@ -310,7 +311,16 @@ cargo test -p mizar-vc
 cargo test -p mizar-proof
 ```
 
-テストが通ったらここでタスクにチェックを付ける。
+Rust source 変更では、未実行理由を明示しない限り、finalize 前に
+AGENTS.md の broad verification も適用する:
+
+```text
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test
+```
+
+task に応じた verification と必要な broad verification が通ったら、ここで
+task にチェックを付ける。
 
 ## 備考
 

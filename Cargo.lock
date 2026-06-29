@@ -376,6 +376,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "mizar-cache"
+version = "0.1.0"
+dependencies = [
+ "mizar-artifact",
+ "mizar-session",
+]
+
+[[package]]
 name = "mizar-checker"
 version = "0.1.0"
 dependencies = [

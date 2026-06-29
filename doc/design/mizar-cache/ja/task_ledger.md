@@ -8,8 +8,8 @@ task を完了する commit の中で更新する。
 
 | Task | Status | Commit | Reviews | Verification | Notes |
 |---:|---|---|---|---|---|
-| 0 | done | pending self-hash | Spec/test/full/source-doc review: fix 後に blocking/high/medium finding なし。 | `git diff --check`, `git diff --cached --check` | Crate plan と ledger。 |
-| 1 | pending | pending | pending | pending | Crate scaffold と lint-policy guard。 |
+| 0 | done | `8f1d2ab443bc52a50db98f419b527aaa95737d17` | Spec/test/full/source-doc review: fix 後に blocking/high/medium finding なし。 | `git diff --check`, `git diff --cached --check` | Crate plan と ledger。 |
+| 1 | done | pending self-hash | Spec/test/full/source-doc review: fix 後に blocking/high/medium finding なし。 | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check`; `git diff --cached --check` | Crate scaffold と lint-policy guard。正式 mizar-cache scaffold に合わせて ATP closeout metadata drift を補正した。 |
 | 2 | pending | pending | pending | pending | Spec: `cache_key.md`。 |
 | 3 | pending | pending | pending | pending | Cache-key builder。 |
 | 4 | pending | pending | pending | pending | Spec: `dependency_fingerprint.md`。 |

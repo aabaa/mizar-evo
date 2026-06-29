@@ -75,7 +75,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
 
 ### Keys and fingerprints
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-cache` workspace member depending on `mizar-session`
      and `mizar-artifact`; add `tests/lint_policy.rs` mirroring the
      `mizar-frontend` guard.
@@ -297,6 +297,7 @@ Run after each task:
 ```text
 cargo test -p mizar-cache
 cargo clippy -p mizar-cache --all-targets -- -D warnings
+cargo fmt --check
 ```
 
 For integration tasks, also run:
@@ -315,7 +316,16 @@ cargo test -p mizar-vc
 cargo test -p mizar-proof
 ```
 
-Check the task off here once tests pass.
+For Rust source changes, AGENTS.md broad verification also applies before
+finalizing unless a command is explicitly justified as unrun:
+
+```text
+cargo clippy --all-targets --all-features -- -D warnings
+cargo test
+```
+
+Check the task off here once the task-appropriate verification and any required
+broad verification pass.
 
 ## Notes
 
