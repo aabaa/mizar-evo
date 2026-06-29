@@ -19,7 +19,7 @@ crate refines architecture 08, 15, and 19 and internal 04.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| policy | `policy.md` (task 2) | `src/policy.rs` | [ ] |
+| policy | `policy.md` (task 2) | `src/policy.rs` | [~] |
 | selection | `selection.md` (task 5) | `src/selection.rs` | [ ] |
 | status | `status.md` (task 8) | `src/status.rs` | [ ] |
 | witness_store | `witness_store.md` (task 10) | `src/witness_store.rs` | [ ] |
@@ -61,9 +61,9 @@ internal: [04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.m
   Whether `mizar-vc` pre-ATP discharge evidence is kernel-replayed or
   accepted as deterministic built-in evidence per policy. Decided here with
   `mizar-kernel` (registered at the top level and in both crates' todos).
-- **Policy fingerprint surface: open, resolved by task 3.** Which policy
-  settings enter the `PolicyFingerprint` used by cache keys and proof
-  reuse; coordinate with `mizar-cache` task 2.
+- **Policy fingerprint surface: resolved by task 2, implemented by task 3.**
+  `policy.md` defines the settings that enter `PolicyFingerprint`; coordinate
+  future cache integration with `mizar-cache` task 2.
 
 ## Ordered Task List
 
@@ -91,7 +91,7 @@ Keep `cargo test -p mizar-proof` green after each task (see
      status, and witness-store modules remain unavailable until their paired
      specs land in later tasks.
 
-2. **Spec: `policy.md`.** [ ]
+2. **Spec: `policy.md`.** [x]
    - Write the policy spec (English and Japanese, no code): verifier policy
      settings, `CandidatePolicyClass`, externally-attested admission rules,
      `require_kernel_certificates`, open-obligation allowances per build
@@ -99,11 +99,13 @@ Keep `cargo test -p mizar-proof` green after each task (see
      status.
    - Deps: 1. Spec: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
      "Proof Policy Evaluator", architecture 08.
+   - Status: paired specs added; implementation begins in task 3.
 
 3. **Policy evaluator.** [ ]
    - Implement `ProofPolicyEvaluator`: candidate classification,
-     `can_schedule_kernel_check`, and the policy-fingerprint projection
-     (resolving that decision with `mizar-cache`).
+     `can_schedule_kernel_check`, and the policy-fingerprint projection defined
+     by `policy.md`; future cache integration remains coordinated with
+     `mizar-cache` task 2.
    - Tests: classification fixtures per evidence kind; fingerprint changes
      iff a policy-relevant setting changes.
    - Deps: 2. Spec: `policy.md`.

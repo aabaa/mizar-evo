@@ -18,7 +18,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| policy | `policy.md`（task 2） | `src/policy.rs` | [ ] |
+| policy | `policy.md`（task 2） | `src/policy.rs` | [~] |
 | selection | `selection.md`（task 5） | `src/selection.rs` | [ ] |
 | status | `status.md`（task 8） | `src/status.rs` | [ ] |
 | witness_store | `witness_store.md`（task 10） | `src/witness_store.rs` | [ ] |
@@ -60,9 +60,9 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
   の pre-ATP discharge 証拠を kernel が再生するか、ポリシーに従う
   決定的な built-in 証拠として受理するか。`mizar-kernel` とともにここで
   決める（トップレベルと両 crate の todo に登録済み）。
-- **ポリシー fingerprint の表面: 未解決。task 3 で解決する。** キャッシュ
-  キーと proof 再利用が使う `PolicyFingerprint` にどのポリシー設定が
-  入るか。`mizar-cache` task 2 と調整する。
+- **ポリシー fingerprint の表面: task 2 で解決済み。task 3 で実装する。**
+  `policy.md` は `PolicyFingerprint` に入る設定を定義する。将来の cache
+  integration は `mizar-cache` task 2 と調整する。
 
 ## 順序付きタスク一覧
 
@@ -91,18 +91,19 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
      status、witness-store module は、後続 task で paired spec が追加されるまで
      unavailable のままである。
 
-2. **仕様: `policy.md`。** [ ]
+2. **仕様: `policy.md`。** [x]
    - ポリシーの仕様を執筆する（英語と日本語、コードなし）: verifier
      ポリシー設定、`CandidatePolicyClass`、外部認証の許可規則、
      `require_kernel_certificates`、ビルドモードごとの open 義務の許容、
      「ポリシーの結果は信頼された状態と区別される」規則。
    - 依存: 1。仕様: [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
      「Proof Policy Evaluator」、アーキテクチャ 08。
+   - 状態: paired spec を追加した。実装は task 3 で開始する。
 
 3. **ポリシー評価器。** [ ]
    - `ProofPolicyEvaluator` を実装する: 候補分類、
-     `can_schedule_kernel_check`、ポリシー fingerprint の射影
-     （`mizar-cache` とともにその決定を解決する）。
+     `can_schedule_kernel_check`、`policy.md` が定義する policy fingerprint の射影。
+     将来の cache integration は `mizar-cache` task 2 と調整したままにする。
    - テスト: 証拠種別ごとの分類フィクスチャ。fingerprint はポリシーに
      関係する設定が変わったときだけ変わる。
    - 依存: 2。仕様: `policy.md`。
