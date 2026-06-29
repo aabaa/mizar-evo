@@ -91,6 +91,33 @@ Forward-compatible implementations may add classes only under a new schema
 version and must preserve the rule that non-kernel material cannot become
 trusted acceptance.
 
+## Public Enum Policy
+
+Task 14 applies the public-enum forward-compatibility procedure to this
+module. All public policy enums are downstream-facing API surfaces and must
+remain `#[non_exhaustive]`; downstream consumers must keep wildcard match arms
+and must treat new variants as requiring policy/spec review rather than
+silently promoting evidence.
+
+| Enum | Compatibility decision |
+|---|---|
+| `BuildMode` | forward-compatible |
+| `ExternalEvidenceMode` | forward-compatible |
+| `OpenObligationMode` | forward-compatible |
+| `PolicyAssumptionMode` | forward-compatible |
+| `KernelEvidenceFormat` | forward-compatible |
+| `CandidatePolicyClass` | forward-compatible |
+| `PortfolioEarlyStopClass` | forward-compatible |
+| `PortfolioEarlyStopReason` | forward-compatible |
+| `KernelEvidenceOrigin` | forward-compatible |
+| `PolicyCandidate` | forward-compatible |
+| `BackendProofPayloadKind` | forward-compatible |
+| `ExternalEvidencePublicationStatus` | forward-compatible |
+| `PolicyDiagnosticCategory` | forward-compatible |
+| `PolicyReasonCode` | forward-compatible |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Kernel Scheduling Policy
 
 `can_schedule_kernel_check` returns true only for evidence that is intended for

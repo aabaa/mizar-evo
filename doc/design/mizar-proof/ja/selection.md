@@ -203,6 +203,25 @@ write、ATP、kernel check、cache record の trust を行わない。`KernelVer
 policy-assumed、open、rejected、no-selectable outcome を status projection のための
 non-trusted class として保持する。
 
+## Public Enum Policy
+
+task 14 は public-enum forward-compatibility procedure をこの module に適用する。
+すべての public selection enum は downstream-facing API surface であり、
+`#[non_exhaustive]` を維持しなければならない。downstream consumer は wildcard match
+arm を保つ。variant の追加または削除には paired spec/test review が必要である。
+これらの enum は deterministic winner identity、diagnostics、artifact merge
+compatibility、proof-reuse metadata に影響するためである。
+
+| Enum | Compatibility decision |
+|---|---|
+| `SelectionInputError` | forward-compatible |
+| `ProofWinnerClass` | forward-compatible |
+| `ProofWitnessPublication` | forward-compatible |
+| `ProofSelectionSource` | forward-compatible |
+| `ArtifactProofSelectionError` | forward-compatible |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Deferred Integrations
 
 - `DischargedBuiltin` の artifact witness publication は、`mizar-artifact` がその witness

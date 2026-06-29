@@ -162,6 +162,26 @@ and cannot synthesize trusted `used_axioms`.
 | `STATUS8-G002` | `external_dependency_gap` | Current `ProofWitnessRef` trusted reader rejects `DischargedBuiltin` witness publication. Projection may record the trusted status and deterministic discharge hash, but witness publication stays deferred. |
 | `STATUS8-G003` | `deferred` | Diagnostics, artifact emission, manifest commit, cache lookup, and ATP early-stop integration consume this projection in later tasks. This spec defines stable metadata only. |
 
+## Public Enum Policy
+
+Task 14 applies the public-enum forward-compatibility procedure to this
+module. All public status-projection enums are downstream-facing API surfaces
+and must remain `#[non_exhaustive]`; downstream consumers must keep wildcard
+match arms. Artifact-facing status enums additionally require artifact schema
+compatibility review before new variants are published or mapped to current
+artifact fields.
+
+| Enum | Compatibility decision |
+|---|---|
+| `TrustedUsedAxiomsError` | forward-compatible |
+| `ProjectedProofStatus` | forward-compatible |
+| `CurrentArtifactObligationStatus` | forward-compatible with artifact compatibility review |
+| `ArtifactPublicationGap` | forward-compatible with artifact compatibility review |
+| `ArtifactStatusPublication` | forward-compatible with artifact compatibility review |
+| `StatusProjectionError` | forward-compatible |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Non-Goals
 
 Status projection does not run ATP backends, perform SAT solving, call the

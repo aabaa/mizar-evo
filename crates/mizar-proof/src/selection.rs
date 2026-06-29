@@ -80,6 +80,7 @@ impl PartialOrd for DiagnosticRef {
 
 /// Selection input error.
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum SelectionInputError {
     EmptyCandidateSourceId,
 }
@@ -589,6 +590,7 @@ impl ArtifactProofSelection {
 
 /// Artifact proof-selection merge error.
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum ArtifactProofSelectionError {
     DuplicateSelection {
         vc: VcId,

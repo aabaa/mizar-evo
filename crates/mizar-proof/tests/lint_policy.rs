@@ -200,6 +200,63 @@ fn early_stop_public_api_rejects_external_when_kernel_certificates_required() {
     assert_eq!(decision.blocking_pending_class(), None);
 }
 
+#[test]
+fn public_enums_are_forward_compatible_and_documented() {
+    let enum_policy = public_enum_policy();
+    let mut expected = enum_policy
+        .iter()
+        .map(|entry| format!("{}::{}", entry.relative_path, entry.enum_name))
+        .collect::<Vec<_>>();
+    expected.sort();
+
+    let mut discovered = Vec::new();
+    for relative_path in rust_source_files() {
+        let source = read_to_string(&crate_root().join(&relative_path));
+        for enum_name in public_enum_names(&source) {
+            discovered.push(format!("{relative_path}::{enum_name}"));
+        }
+    }
+    discovered.sort();
+
+    assert_eq!(
+        discovered, expected,
+        "each public mizar-proof enum must be classified by the forward-compatibility policy"
+    );
+
+    let mut violations = Vec::new();
+    for entry in enum_policy {
+        let source = read_to_string(&crate_root().join(entry.relative_path));
+        if !enum_has_attribute(&source, entry.enum_name, "non_exhaustive") {
+            violations.push(format!(
+                "{}: pub enum {} must be #[non_exhaustive]",
+                entry.relative_path, entry.enum_name
+            ));
+        }
+        for spec_path in [entry.en_spec, entry.ja_spec] {
+            let spec = read_to_string(&workspace_root().join(spec_path));
+            let row = format!("| `{}` |", entry.enum_name);
+            if !spec.contains(&row) {
+                violations.push(format!(
+                    "{}: missing public enum policy row for {}",
+                    spec_path, entry.enum_name
+                ));
+            }
+            if !spec.contains("No exhaustive public enum exceptions") {
+                violations.push(format!(
+                    "{}: must state there are no exhaustive public enum exceptions",
+                    spec_path
+                ));
+            }
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "public enum forward-compatibility policy drift:\n{}",
+        violations.join("\n")
+    );
+}
+
 fn crate_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
@@ -335,6 +392,15 @@ fn crate_files() -> Vec<String> {
     files
 }
 
+fn rust_source_files() -> Vec<String> {
+    let mut files = crate_files()
+        .into_iter()
+        .filter(|path| path.starts_with("src/") && path.ends_with(".rs"))
+        .collect::<Vec<_>>();
+    files.sort();
+    files
+}
+
 fn collect_files(root: &std::path::Path, dir: &std::path::Path, files: &mut Vec<String>) {
     for entry in fs::read_dir(dir).unwrap_or_else(|error| panic!("{}: {error}", dir.display())) {
         let entry = entry.expect("directory entry");
@@ -350,4 +416,235 @@ fn collect_files(root: &std::path::Path, dir: &std::path::Path, files: &mut Vec<
             );
         }
     }
+}
+
+struct PublicEnumPolicy {
+    relative_path: &'static str,
+    enum_name: &'static str,
+    en_spec: &'static str,
+    ja_spec: &'static str,
+}
+
+const PUBLIC_ENUM_POLICY: &[PublicEnumPolicy] = &[
+    policy_enum("BuildMode"),
+    policy_enum("ExternalEvidenceMode"),
+    policy_enum("OpenObligationMode"),
+    policy_enum("PolicyAssumptionMode"),
+    policy_enum("KernelEvidenceFormat"),
+    policy_enum("CandidatePolicyClass"),
+    policy_enum("PortfolioEarlyStopClass"),
+    policy_enum("PortfolioEarlyStopReason"),
+    policy_enum("KernelEvidenceOrigin"),
+    policy_enum("PolicyCandidate"),
+    policy_enum("BackendProofPayloadKind"),
+    policy_enum("ExternalEvidencePublicationStatus"),
+    policy_enum("PolicyDiagnosticCategory"),
+    policy_enum("PolicyReasonCode"),
+    selection_enum("SelectionInputError"),
+    selection_enum("ProofWinnerClass"),
+    selection_enum("ProofWitnessPublication"),
+    selection_enum("ProofSelectionSource"),
+    selection_enum("ArtifactProofSelectionError"),
+    status_enum("TrustedUsedAxiomsError"),
+    status_enum("ProjectedProofStatus"),
+    status_enum("CurrentArtifactObligationStatus"),
+    status_enum("ArtifactPublicationGap"),
+    status_enum("ArtifactStatusPublication"),
+    status_enum("StatusProjectionError"),
+    witness_store_enum("ProofWitnessStoreError"),
+];
+
+fn public_enum_policy() -> &'static [PublicEnumPolicy] {
+    PUBLIC_ENUM_POLICY
+}
+
+const fn policy_enum(enum_name: &'static str) -> PublicEnumPolicy {
+    PublicEnumPolicy {
+        relative_path: "src/policy.rs",
+        enum_name,
+        en_spec: "doc/design/mizar-proof/en/policy.md",
+        ja_spec: "doc/design/mizar-proof/ja/policy.md",
+    }
+}
+
+const fn selection_enum(enum_name: &'static str) -> PublicEnumPolicy {
+    PublicEnumPolicy {
+        relative_path: "src/selection.rs",
+        enum_name,
+        en_spec: "doc/design/mizar-proof/en/selection.md",
+        ja_spec: "doc/design/mizar-proof/ja/selection.md",
+    }
+}
+
+const fn status_enum(enum_name: &'static str) -> PublicEnumPolicy {
+    PublicEnumPolicy {
+        relative_path: "src/status.rs",
+        enum_name,
+        en_spec: "doc/design/mizar-proof/en/status.md",
+        ja_spec: "doc/design/mizar-proof/ja/status.md",
+    }
+}
+
+const fn witness_store_enum(enum_name: &'static str) -> PublicEnumPolicy {
+    PublicEnumPolicy {
+        relative_path: "src/witness_store.rs",
+        enum_name,
+        en_spec: "doc/design/mizar-proof/en/witness_store.md",
+        ja_spec: "doc/design/mizar-proof/ja/witness_store.md",
+    }
+}
+
+fn public_enum_names(source: &str) -> Vec<String> {
+    public_enum_declarations(source)
+        .into_iter()
+        .map(|declaration| declaration.name)
+        .collect()
+}
+
+fn enum_has_attribute(source: &str, enum_name: &str, attribute: &str) -> bool {
+    let lines = source.lines().collect::<Vec<_>>();
+    let Some(index) = public_enum_declarations(source)
+        .into_iter()
+        .find(|declaration| declaration.name == enum_name)
+        .map(|declaration| declaration.line_index)
+    else {
+        return false;
+    };
+    let marker = format!("#[{attribute}]");
+    lines[..index]
+        .iter()
+        .rev()
+        .take_while(|line| {
+            let trimmed = line.trim();
+            !trimmed.is_empty() && (trimmed.starts_with("#[") || trimmed.starts_with("///"))
+        })
+        .any(|line| line.trim() == marker)
+}
+
+#[derive(Debug, Eq, PartialEq)]
+struct PublicEnumDeclaration {
+    name: String,
+    line_index: usize,
+}
+
+fn public_enum_declarations(source: &str) -> Vec<PublicEnumDeclaration> {
+    let tokens = rust_tokens(source);
+    let mut declarations = Vec::new();
+
+    for index in 0..tokens.len().saturating_sub(2) {
+        if tokens[index].text == "pub"
+            && tokens[index + 1].text == "enum"
+            && is_identifier(&tokens[index + 2].text)
+        {
+            declarations.push(PublicEnumDeclaration {
+                name: tokens[index + 2].text.clone(),
+                line_index: tokens[index].line_index,
+            });
+        }
+    }
+
+    declarations
+}
+
+#[derive(Debug, Eq, PartialEq)]
+struct RustToken {
+    text: String,
+    line_index: usize,
+}
+
+fn rust_tokens(source: &str) -> Vec<RustToken> {
+    let chars = source.chars().collect::<Vec<_>>();
+    let mut tokens = Vec::new();
+    let mut index = 0;
+    let mut line_index = 0;
+
+    while index < chars.len() {
+        let ch = chars[index];
+        if ch == '\n' {
+            line_index += 1;
+            index += 1;
+            continue;
+        }
+        if ch.is_whitespace() {
+            index += 1;
+            continue;
+        }
+        if ch == '/' && chars.get(index + 1) == Some(&'/') {
+            index += 2;
+            while index < chars.len() && chars[index] != '\n' {
+                index += 1;
+            }
+            continue;
+        }
+        if ch == '/' && chars.get(index + 1) == Some(&'*') {
+            index += 2;
+            while index < chars.len() {
+                if chars[index] == '\n' {
+                    line_index += 1;
+                }
+                if chars[index] == '*' && chars.get(index + 1) == Some(&'/') {
+                    index += 2;
+                    break;
+                }
+                index += 1;
+            }
+            continue;
+        }
+        if ch == '"' {
+            index += 1;
+            let mut escaped = false;
+            while index < chars.len() {
+                let literal_ch = chars[index];
+                if literal_ch == '\n' {
+                    line_index += 1;
+                }
+                if escaped {
+                    escaped = false;
+                } else if literal_ch == '\\' {
+                    escaped = true;
+                } else if literal_ch == '"' {
+                    index += 1;
+                    break;
+                }
+                index += 1;
+            }
+            continue;
+        }
+        if is_identifier_start(ch) {
+            let start = index;
+            index += 1;
+            while index < chars.len() && is_identifier_continue(chars[index]) {
+                index += 1;
+            }
+            tokens.push(RustToken {
+                text: chars[start..index].iter().collect(),
+                line_index,
+            });
+            continue;
+        }
+
+        tokens.push(RustToken {
+            text: ch.to_string(),
+            line_index,
+        });
+        index += 1;
+    }
+
+    tokens
+}
+
+fn is_identifier(text: &str) -> bool {
+    let mut chars = text.chars();
+    let Some(first) = chars.next() else {
+        return false;
+    };
+    is_identifier_start(first) && chars.all(is_identifier_continue)
+}
+
+fn is_identifier_start(ch: char) -> bool {
+    ch == '_' || ch.is_ascii_alphabetic()
+}
+
+fn is_identifier_continue(ch: char) -> bool {
+    ch == '_' || ch.is_ascii_alphanumeric()
 }

@@ -152,6 +152,25 @@ no-selectable outcome を trusted status に昇格させられず、trusted `use
 | `STATUS8-G002` | `external_dependency_gap` | 現在の `ProofWitnessRef` trusted reader は `DischargedBuiltin` witness publication を reject する。projection は trusted status と deterministic discharge hash を記録してよいが、witness publication は deferred のままである。 |
 | `STATUS8-G003` | `deferred` | diagnostics、artifact emission、manifest commit、cache lookup、ATP early-stop integration は後続 task がこの projection を消費する。この spec は stable metadata だけを定義する。 |
 
+## Public Enum Policy
+
+task 14 は public-enum forward-compatibility procedure をこの module に適用する。
+すべての public status-projection enum は downstream-facing API surface であり、
+`#[non_exhaustive]` を維持しなければならない。downstream consumer は wildcard match
+arm を保つ。artifact-facing status enum はさらに、新しい variant を publish したり
+現在の artifact field に map したりする前に artifact schema compatibility review を必要とする。
+
+| Enum | Compatibility decision |
+|---|---|
+| `TrustedUsedAxiomsError` | forward-compatible |
+| `ProjectedProofStatus` | forward-compatible |
+| `CurrentArtifactObligationStatus` | forward-compatible with artifact compatibility review |
+| `ArtifactPublicationGap` | forward-compatible with artifact compatibility review |
+| `ArtifactStatusPublication` | forward-compatible with artifact compatibility review |
+| `StatusProjectionError` | forward-compatible |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Non-Goals
 
 status projection は ATP backend 実行、SAT solving、kernel 呼び出し、substitution

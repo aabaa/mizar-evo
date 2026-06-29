@@ -88,6 +88,33 @@ class の意味的な順序は selection task が定めるが、policy classific
 forward-compatible 実装は、新しい schema version の下でのみ class を追加してよい。
 non-kernel material が trusted acceptance になれない規則は維持しなければならない。
 
+## Public Enum Policy
+
+task 14 は public-enum forward-compatibility procedure をこの module に適用する。
+すべての public policy enum は downstream-facing API surface であり、
+`#[non_exhaustive]` を維持しなければならない。downstream consumer は wildcard
+match arm を保ち、新しい variant を evidence 昇格として silent に扱わず、
+policy/spec review を要求するものとして扱う。
+
+| Enum | Compatibility decision |
+|---|---|
+| `BuildMode` | forward-compatible |
+| `ExternalEvidenceMode` | forward-compatible |
+| `OpenObligationMode` | forward-compatible |
+| `PolicyAssumptionMode` | forward-compatible |
+| `KernelEvidenceFormat` | forward-compatible |
+| `CandidatePolicyClass` | forward-compatible |
+| `PortfolioEarlyStopClass` | forward-compatible |
+| `PortfolioEarlyStopReason` | forward-compatible |
+| `KernelEvidenceOrigin` | forward-compatible |
+| `PolicyCandidate` | forward-compatible |
+| `BackendProofPayloadKind` | forward-compatible |
+| `ExternalEvidencePublicationStatus` | forward-compatible |
+| `PolicyDiagnosticCategory` | forward-compatible |
+| `PolicyReasonCode` | forward-compatible |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Kernel Scheduling Policy
 
 `can_schedule_kernel_check` は、kernel evidence boundary 向けの evidence に対してだけ true を返す:

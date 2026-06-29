@@ -256,10 +256,17 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
      fixture を使って staged/published witness reference determinism を検証し、
      artifact boundary の opacity を維持した。
 
-14. **公開 enum の前方互換性ポリシー。** [ ]
+14. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。状態
       enum はさらに artifact 互換性ポリシーに従う。
     - 依存: 11。仕様: 全モジュール仕様。
+   - 状態: `policy`、`selection`、`status`、`witness_store` が所有する
+     26 個の public enum をすべて監査した。exhaustive な public enum 例外は
+     認めない。`SelectionInputError` と `ArtifactProofSelectionError` に欠けていた
+     `#[non_exhaustive]` marker を追加し、各 enum を paired module spec に記録し、
+     status-facing enum には artifact compatibility review requirement を明記した。
+     さらに、すべての `src/**/*.rs` file と EN/JA spec の enum-policy drift を検出する
+     lint guard を追加した。
 
 15. **ソース/仕様対応監査。** [ ]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ

@@ -264,10 +264,17 @@ Keep `cargo test -p mizar-proof` green after each task (see
      reference determinism using the existing crate-private publication-token
      fixture, preserving the artifact-boundary opacity.
 
-14. **Public-enum forward-compatibility policy.** [ ]
+14. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;
       status enums additionally follow the artifact compatibility policy.
     - Deps: 11. Spec: all module specs.
+   - Status: audited all 26 public enums owned by `policy`, `selection`,
+     `status`, and `witness_store`; no exhaustive public enum exceptions are
+     permitted. Added the missing `#[non_exhaustive]` markers for
+     `SelectionInputError` and `ArtifactProofSelectionError`, documented each
+     enum in the paired module specs, recorded artifact-compatibility review
+     requirements for status-facing enums, and added a lint guard that scans
+     every `src/**/*.rs` file and both EN/JA specs for enum-policy drift.
 
 15. **Source/spec correspondence audit.** [ ]
     - Trace every public API and promised behavior in the module specs to

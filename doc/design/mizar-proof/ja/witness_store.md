@@ -196,6 +196,20 @@ trusted `used_axioms` も作れない。
 | `WITNESS11-G003` | `deferred` | task 11 は payload schema が canonical bytes を要求するかを記録し、その attestation 下では empty payload を reject するが、byte-level canonicality は concrete payload schema が validator を公開するまで producer-owned のままである。witness hash は引き続き exact bytes と schema identity を覆う。 |
 | `WITNESS11-G004` | `deferred` | task 11 は `dependency_artifact_fingerprint` を producer-owned provenance として保持する。committed dependency artifact と cache validation への binding は artifact/cache integration まで deferred であり、それ単体で witness status を昇格してはならない。 |
 
+## Public Enum Policy
+
+task 14 は public-enum forward-compatibility procedure をこの module に適用する。
+public witness-store error enum は downstream-facing API surface であり、
+`#[non_exhaustive]` を維持しなければならない。downstream consumer は wildcard match
+arm を保つ。新しい error variant には paired spec/test review が必要であり、opaque な
+publication-token boundary や trusted-metadata boundary を弱めてはならない。
+
+| Enum | Compatibility decision |
+|---|---|
+| `ProofWitnessStoreError` | forward-compatible |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Non-Goals
 
 witness store は proof search、premise selection、substitution invention、ATP/SAT backend 呼び出し、

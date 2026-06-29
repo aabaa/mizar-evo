@@ -211,6 +211,25 @@ preserves `KernelVerified` and `DischargedBuiltin` as distinct trusted classes
 and preserves policy-permitted external, policy-assumed, open, rejected, and
 no-selectable outcomes as non-trusted classes for status projection.
 
+## Public Enum Policy
+
+Task 14 applies the public-enum forward-compatibility procedure to this
+module. All public selection enums are downstream-facing API surfaces and must
+remain `#[non_exhaustive]`; downstream consumers must keep wildcard match arms.
+Adding or removing variants requires paired spec/test review because these
+enums affect deterministic winner identity, diagnostics, artifact merge
+compatibility, and proof-reuse metadata.
+
+| Enum | Compatibility decision |
+|---|---|
+| `SelectionInputError` | forward-compatible |
+| `ProofWinnerClass` | forward-compatible |
+| `ProofWitnessPublication` | forward-compatible |
+| `ProofSelectionSource` | forward-compatible |
+| `ArtifactProofSelectionError` | forward-compatible |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Deferred Integrations
 
 - Artifact witness publication for `DischargedBuiltin` remains

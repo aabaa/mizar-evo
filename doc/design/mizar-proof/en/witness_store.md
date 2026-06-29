@@ -211,6 +211,20 @@ statuses, or create trusted `used_axioms`.
 | `WITNESS11-G003` | `deferred` | Task 11 records whether a payload schema requires canonical bytes and rejects empty payloads under that attestation, but byte-level canonicality remains producer-owned until concrete payload schemas expose validators. The witness hash still covers exact bytes and schema identity. |
 | `WITNESS11-G004` | `deferred` | Task 11 preserves `dependency_artifact_fingerprint` as producer-owned provenance. Binding it to committed dependency artifacts and cache validation remains deferred to artifact/cache integration; it must not promote witness status by itself. |
 
+## Public Enum Policy
+
+Task 14 applies the public-enum forward-compatibility procedure to this
+module. The public witness-store error enum is a downstream-facing API surface
+and must remain `#[non_exhaustive]`; downstream consumers must keep wildcard
+match arms. New error variants require paired spec/test review and must not
+weaken the opaque publication-token or trusted-metadata boundaries.
+
+| Enum | Compatibility decision |
+|---|---|
+| `ProofWitnessStoreError` | forward-compatible |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Non-Goals
 
 The witness store does not run proof search, perform premise selection, invent
