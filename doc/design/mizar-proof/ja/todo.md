@@ -80,13 +80,16 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
 
 ### ポリシー
 
-1. **crate の足場と lint 方針のガード。** [ ]
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session`、`mizar-kernel`、`mizar-vc`、`mizar-atp`、
      `mizar-artifact` に依存する workspace メンバー `mizar-proof` を追加
      し、`mizar-frontend` のガードに倣った `tests/lint_policy.rs` を追加
      する。
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: `mizar-kernel` task 1、`mizar-atp` task 1。仕様: internal 04。
+   - 状態: scaffold crate と lint-policy guard を追加した。policy、selection、
+     status、witness-store module は、後続 task で paired spec が追加されるまで
+     unavailable のままである。
 
 2. **仕様: `policy.md`。** [ ]
    - ポリシーの仕様を執筆する（英語と日本語、コードなし）: verifier

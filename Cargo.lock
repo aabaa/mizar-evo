@@ -438,6 +438,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "mizar-proof"
+version = "0.1.0"
+dependencies = [
+ "mizar-artifact",
+ "mizar-atp",
+ "mizar-kernel",
+ "mizar-session",
+ "mizar-vc",
+]
+
+[[package]]
 name = "mizar-resolve"
 version = "0.1.0"
 dependencies = [

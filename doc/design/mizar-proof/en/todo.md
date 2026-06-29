@@ -81,12 +81,15 @@ Keep `cargo test -p mizar-proof` green after each task (see
 
 ### Policy
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-proof` workspace member depending on `mizar-session`,
      `mizar-kernel`, `mizar-vc`, `mizar-atp`, and `mizar-artifact`; add
      `tests/lint_policy.rs` mirroring the `mizar-frontend` guard.
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: `mizar-kernel` task 1, `mizar-atp` task 1. Spec: internal 04.
+   - Status: scaffold crate and lint-policy guard added. Policy, selection,
+     status, and witness-store modules remain unavailable until their paired
+     specs land in later tasks.
 
 2. **Spec: `policy.md`.** [ ]
    - Write the policy spec (English and Japanese, no code): verifier policy
