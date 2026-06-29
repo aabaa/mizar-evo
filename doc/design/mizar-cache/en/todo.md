@@ -319,11 +319,15 @@ Keep `cargo test -p mizar-cache` green after each task (see
       external-dependency gaps. No new unclassified source/spec drift or gap ID
       was found.
 
-19. **Bilingual documentation sync audit.** [ ]
+19. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-cache/en/` with its Japanese companion and
       synchronize content.
     - Deps: 18. Spec: repository documentation policy.
+    - Completed by task 19: paired `bilingual_sync_audit.md` documents were
+      added. Every current English design document has a Japanese companion
+      with synchronized semantic content; no unresolved sync placeholder or
+      bilingual drift was found.
 
 20. **Incremental verification fail-closed cache contract.** [ ]
     - Implement and test the architecture-22 cache contract across

@@ -303,10 +303,14 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       behavior、test、既存の deferred / external-dependency gap を trace する。
       新しい未分類 source/spec drift または gap ID は見つからない。
 
-19. **二言語ドキュメント同期監査。** [ ]
+19. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-cache/en/` の各英語正本と日本語版を比較し、内容を
       同期する。
     - 依存: 18。仕様: リポジトリのドキュメント方針。
+    - task 19 で完了: paired `bilingual_sync_audit.md` document を追加した。
+      現在の各 English design document には semantic content が同期した
+      Japanese companion があり、未解決 sync placeholder または bilingual drift は
+      見つからない。
 
 20. **増分検証の fail-closed cache 契約。** [ ]
     - architecture 22 の cache contract を `cache_key`、
