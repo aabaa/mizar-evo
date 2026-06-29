@@ -66,9 +66,11 @@ internal: [02](../../internal/en/02.artifact_store_cache_key_and_manifest.md),
   semantic target taxonomy, while task 5 may begin with conservative
   published-summary plus per-VC slice granularity until finer producer slices
   land.
-- **Record encoding: open, resolved by task 7.** Decide the cache record
-  binary encoding and its `cache_schema_version` evolution rules; cache
-  records are internal and may embed raw IR encodings, unlike artifacts.
+- **Record encoding: resolved by task 7.** `cache_store.md` uses a binary
+  record envelope with a canonical UTF-8 JSON header and inline or blob-backed
+  payload bytes. Cache records are internal, but `mizar-ir` adapter and raw-IR
+  integration remain external dependency gaps; do not add placeholder IR
+  storage APIs before the owning task lands.
 
 ## Ordered Task List
 
@@ -137,7 +139,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
 
 ### Store
 
-7. **Spec: `cache_store.md`.** [ ]
+7. **Spec: `cache_store.md`.** [x]
    - Write the store spec (English and Japanese, no code): the
      `.mizar-cache/` layout (records by phase and key, content-addressed
      blobs), `CacheRecordHeader`, compatibility checks, the record-encoding
@@ -345,5 +347,6 @@ broad verification pass.
   kernel-verified status; proof reuse is tied to accepted witness hashes.
 - Keys are pure projections; trust decisions live in compatibility checks
   and proof-reuse validation, not in key construction.
-- Cache records are internal and may embed raw IR encodings; published
-  artifacts may not (that boundary is `mizar-artifact`/`mizar-ir`'s).
+- Cache records are internal and may store opaque payload bytes; raw-IR
+  encoding and adapter integration remain `mizar-ir` external dependency gaps,
+  so this crate must not invent placeholder IR storage APIs.

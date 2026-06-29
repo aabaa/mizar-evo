@@ -14,8 +14,8 @@ task を完了する commit の中で更新する。
 | 3 | done | `27dc5d6a851204cf17003f40a28bb564d602ab54` | Spec/test/full/source-doc review: fix 後に blocking/high/medium finding なし。 | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check`; `git diff --cached --check` | Cache-key builder。 |
 | 4 | done | `cf66ac9d3d74da75b998b4c7f299301a181e9e24` | Spec/test/full/source-doc review: fix 後に blocking/high/medium finding なし。 | `git diff --check`; `git diff --cached --check` | Spec: `dependency_fingerprint.md`。 |
 | 5 | done | `a49dcd8e27f9681726b8c6cb6b28b2834276fe95` | Spec/test/full/source-doc review: fix 後に finding なし。 | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Dependency-slice と fingerprint computation。 |
-| 6 | done | pending self-hash | Spec/test/full/source-doc review: fix 後に finding なし。 | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Rebuild-trigger evaluation。 |
-| 7 | pending | pending | pending | pending | Spec: `cache_store.md`。 |
+| 6 | done | `da62b43ff4d5bccfe3220b8257569a43a6e0be96` | Spec/test/full/source-doc review: fix 後に finding なし。 | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Rebuild-trigger evaluation。 |
+| 7 | done | pending self-hash | Spec/test/full/source-doc review: fix 後に finding なし。 | `git diff --check`; `git diff --cached --check` | Spec: `cache_store.md`。 |
 | 8 | pending | pending | pending | pending | Record store。 |
 | 9 | pending | pending | pending | pending | Blob store。 |
 | 10 | pending | pending | pending | pending | Spec: `proof_reuse.md`。 |
@@ -45,3 +45,7 @@ task を完了する commit の中で更新する。
 | DEPFPR-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication token integration が存在する。それまでは availability/hash input だけを記録する。 |
 | DEPFPR-G004 | `deferred` | `mizar-cache` / producer | より細かい theorem/definition/cluster/notation/mode/attribute producer slice が landing する。task 5 は conservative な published-summary と per-VC 粒度から開始する。 |
 | DEPFPR-G005 | `external_dependency_gap` | proof/cache/artifact consumer | proof-reuse metadata の downstream consumer は owner gate 待ち。cache は validation identity だけを記録する。 |
+| CACHESTORE-G001 | `external_dependency_gap` | `mizar-build` | placeholder scheduling なしで cache lookup/insert semantics が scheduler に接続できる。 |
+| CACHESTORE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache adapter が placeholder API なしで record payload integration を公開する。 |
+| CACHESTORE-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication-token integration が存在する。それまでは owner-provided な published artifact hash にだけ依存する。 |
+| CACHESTORE-G004 | `deferred` | `mizar-cache` | 後続の cluster-db index storage task が landing する。record store spec は unaccepted registration を publish しない。 |

@@ -14,8 +14,8 @@ the task commit that completes that task.
 | 3 | done | `27dc5d6a851204cf17003f40a28bb564d602ab54` | Spec/test/full/source-doc reviews: no blocking/high/medium findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check`; `git diff --cached --check` | Cache-key builder. |
 | 4 | done | `cf66ac9d3d74da75b998b4c7f299301a181e9e24` | Spec/test/full/source-doc reviews: no blocking/high/medium findings after fixes. | `git diff --check`; `git diff --cached --check` | Spec: `dependency_fingerprint.md`. |
 | 5 | done | `a49dcd8e27f9681726b8c6cb6b28b2834276fe95` | Spec/test/full/source-doc reviews: no findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Dependency-slice and fingerprint computation. |
-| 6 | done | pending self-hash | Spec/test/full/source-doc reviews: no findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Rebuild-trigger evaluation. |
-| 7 | pending | pending | pending | pending | Spec: `cache_store.md`. |
+| 6 | done | `da62b43ff4d5bccfe3220b8257569a43a6e0be96` | Spec/test/full/source-doc reviews: no findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Rebuild-trigger evaluation. |
+| 7 | done | pending self-hash | Spec/test/full/source-doc reviews: no findings after fixes. | `git diff --check`; `git diff --cached --check` | Spec: `cache_store.md`. |
 | 8 | pending | pending | pending | pending | Record store. |
 | 9 | pending | pending | pending | pending | Blob store. |
 | 10 | pending | pending | pending | pending | Spec: `proof_reuse.md`. |
@@ -45,3 +45,7 @@ the task commit that completes that task.
 | DEPFPR-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication token integration exists; until then cache records only availability/hash inputs. |
 | DEPFPR-G004 | `deferred` | `mizar-cache` / producers | Finer theorem/definition/cluster/notation/mode/attribute producer slices land; task 5 starts from conservative published-summary plus per-VC granularity. |
 | DEPFPR-G005 | `external_dependency_gap` | proof/cache/artifact consumers | Downstream consumers of proof-reuse metadata are owner-gated; cache records validation identities only. |
+| CACHESTORE-G001 | `external_dependency_gap` | `mizar-build` | Cache lookup/insert semantics can plug into the scheduler without placeholder scheduling. |
+| CACHESTORE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache adapter exposes record payload integration without placeholder APIs. |
+| CACHESTORE-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication-token integration exists; until then cache records depend only on published artifact hashes when owner-provided. |
+| CACHESTORE-G004 | `deferred` | `mizar-cache` | Later cluster-db index storage task lands; record store spec does not publish unaccepted registrations. |

@@ -64,10 +64,11 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
   theorem、definition、cluster、notation、mode、attribute を semantic target
   taxonomy として維持する。一方で、より細かい producer slice が landing するまで、
   task 5 は conservative な published-summary と per-VC slice 粒度から開始してよい。
-- **レコードエンコーディング: 未解決。task 7 で解決する。** キャッシュ
-  レコードのバイナリエンコーディングと `cache_schema_version` の進化
-  規則を決める。キャッシュレコードは内部用であり、artifact と違って
-  生 IR エンコーディングを含んでよい。
+- **レコードエンコーディング: task 7 で解決済み。** `cache_store.md` は
+  canonical UTF-8 JSON header と inline または blob-backed payload bytes を持つ
+  binary record envelope を使う。cache record は内部用だが、`mizar-ir` adapter と
+  raw-IR integration は external dependency gap のままであり、owner task が landing
+  する前に placeholder IR storage API を追加しない。
 
 ## 順序付きタスク一覧
 
@@ -135,7 +136,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### ストア
 
-7. **仕様: `cache_store.md`。** [ ]
+7. **仕様: `cache_store.md`。** [x]
    - ストアの仕様を執筆する（英語と日本語、コードなし）:
      `.mizar-cache/` のレイアウト（phase とキーごとのレコード、
      content-addressed blob）、`CacheRecordHeader`、互換性チェック、
@@ -339,6 +340,6 @@ task にチェックを付ける。
   結び付く。
 - キーは純粋な射影である。信頼の決定はキー構築ではなく、互換性チェックと
   proof 再利用検証にある。
-- キャッシュレコードは内部用であり、生 IR エンコーディングを含んでよい。
-  公開 artifact は含んではならない（その境界は
-  `mizar-artifact`/`mizar-ir` のもの）。
+- キャッシュレコードは内部用であり、opaque payload bytes を保存してよい。
+  raw-IR encoding と adapter integration は `mizar-ir` の external dependency gap の
+  ままであり、この crate は placeholder IR storage API を invent してはならない。
