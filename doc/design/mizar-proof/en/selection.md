@@ -182,6 +182,35 @@ as `KernelVerified` or `DischargedBuiltin`. The trusted marker used by
 selection must be bound to the accepted kernel evidence hash and must match the
 selected candidate's evidence hash.
 
+## Artifact Proof Selection Merge
+
+Artifact merge consumes portfolio selections and phase-12 built-in discharge
+selections keyed by `VcId`. It emits one `ArtifactProofSelection` per `VcId` in
+canonical `VcId` order.
+
+Source/class compatibility is part of merge validation. Portfolio input may
+publish `KernelVerified`, policy-permitted external, policy-assumed,
+policy-open, rejected, and `NoSelectableEvidence` outcomes, but it must not
+publish `DischargedBuiltin`. Built-in discharge input may publish
+`DischargedBuiltin` or diagnostic outcomes (`Rejected` and
+`NoSelectableEvidence`) for failed or absent built-in discharge evidence, but it
+must not publish `KernelVerified`, policy-permitted external, policy-assumed, or
+policy-open outcomes. Invalid source/class pairs are rejected before artifact
+status projection.
+
+Merge ordering uses the same winner-class rank as ordinary selection:
+`KernelVerified`, `DischargedBuiltin`, policy-permitted external, policy
+assumption, policy-open, rejected, then `NoSelectableEvidence`. Within the same
+class, merge compares the selected result's `tie_break_key_hash` and then a
+stable source rank (`Portfolio` before `BuiltinDischarge`). Duplicate inputs
+from the same source for one `VcId` are invalid merge input.
+
+The merge layer does not project final artifact status, stage witnesses, write
+artifact manifests, run ATP, run kernel checks, or trust cache records. It
+preserves `KernelVerified` and `DischargedBuiltin` as distinct trusted classes
+and preserves policy-permitted external, policy-assumed, open, rejected, and
+no-selectable outcomes as non-trusted classes for status projection.
+
 ## Deferred Integrations
 
 - Artifact witness publication for `DischargedBuiltin` remains

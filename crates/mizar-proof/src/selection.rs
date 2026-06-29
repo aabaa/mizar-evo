@@ -8,6 +8,7 @@ use std::{collections::BTreeMap, error::Error, fmt};
 
 use mizar_kernel::checker::KernelCheckStatus;
 use mizar_session::Hash;
+use mizar_vc::vc_ir::VcId;
 
 use crate::policy::{
     CandidatePolicyClass, ExternalEvidenceMode, ExternalEvidencePublicationStatus,
@@ -503,6 +504,123 @@ pub struct ProofSelection {
     diagnostic_result_id: Option<Hash>,
 }
 
+/// Proof-selection input associated with one VC.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct VcProofSelection {
+    vc: VcId,
+    selection: ProofSelection,
+}
+
+impl VcProofSelection {
+    #[must_use]
+    pub const fn new(vc: VcId, selection: ProofSelection) -> Self {
+        Self { vc, selection }
+    }
+
+    #[must_use]
+    pub const fn vc(&self) -> VcId {
+        self.vc
+    }
+
+    #[must_use]
+    pub const fn selection(&self) -> &ProofSelection {
+        &self.selection
+    }
+}
+
+/// Source of a merged artifact-facing proof selection.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, std::hash::Hash)]
+#[non_exhaustive]
+pub enum ProofSelectionSource {
+    Portfolio,
+    BuiltinDischarge,
+}
+
+impl ProofSelectionSource {
+    const fn rank(self) -> u8 {
+        match self {
+            Self::Portfolio => 0,
+            Self::BuiltinDischarge => 1,
+        }
+    }
+
+    const fn allows_class(self, class: ProofWinnerClass) -> bool {
+        match self {
+            Self::Portfolio => !matches!(class, ProofWinnerClass::DischargedBuiltin),
+            Self::BuiltinDischarge => matches!(
+                class,
+                ProofWinnerClass::DischargedBuiltin
+                    | ProofWinnerClass::Rejected
+                    | ProofWinnerClass::NoSelectableEvidence
+            ),
+        }
+    }
+}
+
+/// Artifact-facing selected proof outcome before status projection.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ArtifactProofSelection {
+    vc: VcId,
+    source: ProofSelectionSource,
+    selection: ProofSelection,
+}
+
+impl ArtifactProofSelection {
+    #[must_use]
+    pub const fn vc(&self) -> VcId {
+        self.vc
+    }
+
+    #[must_use]
+    pub const fn source(&self) -> ProofSelectionSource {
+        self.source
+    }
+
+    #[must_use]
+    pub const fn selection(&self) -> &ProofSelection {
+        &self.selection
+    }
+
+    #[must_use]
+    pub const fn selected_class(&self) -> ProofWinnerClass {
+        self.selection.selected_class()
+    }
+}
+
+/// Artifact proof-selection merge error.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ArtifactProofSelectionError {
+    DuplicateSelection {
+        vc: VcId,
+        source: ProofSelectionSource,
+    },
+    InvalidSourceClass {
+        vc: VcId,
+        source: ProofSelectionSource,
+        selected_class: ProofWinnerClass,
+    },
+}
+
+impl fmt::Display for ArtifactProofSelectionError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::DuplicateSelection { vc, source } => {
+                write!(f, "duplicate {source:?} proof selection for VC {vc:?}")
+            }
+            Self::InvalidSourceClass {
+                vc,
+                source,
+                selected_class,
+            } => write!(
+                f,
+                "invalid {source:?} proof selection class {selected_class:?} for VC {vc:?}"
+            ),
+        }
+    }
+}
+
+impl Error for ArtifactProofSelectionError {}
+
 impl ProofSelection {
     #[must_use]
     pub fn selected_candidate_id(&self) -> Option<&CandidateSourceId> {
@@ -604,6 +722,89 @@ pub fn select_winner(evidence_set: &ProofEvidenceSet) -> ProofSelection {
     }
 
     no_selectable_evidence(evidence_set, &generated_diagnostic_refs)
+}
+
+pub fn merge_artifact_proof_selections(
+    portfolio: impl IntoIterator<Item = VcProofSelection>,
+    builtin_discharge: impl IntoIterator<Item = VcProofSelection>,
+) -> Result<Vec<ArtifactProofSelection>, ArtifactProofSelectionError> {
+    let mut by_vc = BTreeMap::<VcId, Vec<ArtifactMergeCandidate>>::new();
+
+    for selection in portfolio {
+        push_artifact_selection(&mut by_vc, selection, ProofSelectionSource::Portfolio)?;
+    }
+    for selection in builtin_discharge {
+        push_artifact_selection(
+            &mut by_vc,
+            selection,
+            ProofSelectionSource::BuiltinDischarge,
+        )?;
+    }
+
+    Ok(by_vc
+        .into_iter()
+        .filter_map(|(vc, mut candidates)| {
+            candidates.sort_by_key(ArtifactMergeCandidate::key);
+            candidates
+                .into_iter()
+                .next()
+                .map(|candidate| ArtifactProofSelection {
+                    vc,
+                    source: candidate.source,
+                    selection: candidate.selection,
+                })
+        })
+        .collect())
+}
+
+fn push_artifact_selection(
+    by_vc: &mut BTreeMap<VcId, Vec<ArtifactMergeCandidate>>,
+    selection: VcProofSelection,
+    source: ProofSelectionSource,
+) -> Result<(), ArtifactProofSelectionError> {
+    if !source.allows_class(selection.selection().selected_class()) {
+        return Err(ArtifactProofSelectionError::InvalidSourceClass {
+            vc: selection.vc(),
+            source,
+            selected_class: selection.selection().selected_class(),
+        });
+    }
+
+    let entries = by_vc.entry(selection.vc()).or_default();
+    if entries.iter().any(|candidate| candidate.source == source) {
+        return Err(ArtifactProofSelectionError::DuplicateSelection {
+            vc: selection.vc(),
+            source,
+        });
+    }
+    entries.push(ArtifactMergeCandidate {
+        source,
+        selection: selection.selection,
+    });
+    Ok(())
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+struct ArtifactMergeCandidate {
+    source: ProofSelectionSource,
+    selection: ProofSelection,
+}
+
+impl ArtifactMergeCandidate {
+    fn key(&self) -> ArtifactMergeKey {
+        ArtifactMergeKey {
+            class_rank: self.selection.selected_class().rank(),
+            tie_break_key_hash: HashKey::from(self.selection.reuse_metadata().tie_break_key_hash()),
+            source_rank: self.source.rank(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+struct ArtifactMergeKey {
+    class_rank: u8,
+    tie_break_key_hash: HashKey,
+    source_rank: u8,
 }
 
 fn selectable_class(
@@ -2042,8 +2243,304 @@ mod tests {
         assert!(selection.selected_candidate_id().is_none());
     }
 
+    #[test]
+    fn artifact_merge_emits_canonical_vc_order() {
+        let merged = merge_artifact_proof_selections(
+            [
+                VcProofSelection::new(VcId::new(2), selection_for_open("vc2")),
+                VcProofSelection::new(VcId::new(0), selection_for_open("vc0")),
+            ],
+            [VcProofSelection::new(
+                VcId::new(1),
+                selection_for_builtin("vc1"),
+            )],
+        )
+        .expect("merge succeeds");
+
+        assert_eq!(
+            merged
+                .iter()
+                .map(ArtifactProofSelection::vc)
+                .collect::<Vec<_>>(),
+            vec![VcId::new(0), VcId::new(1), VcId::new(2)]
+        );
+    }
+
+    #[test]
+    fn artifact_merge_preserves_trusted_class_precedence() {
+        let builtin_over_external = merge_artifact_proof_selections(
+            [VcProofSelection::new(
+                VcId::new(0),
+                selection_for_external("external"),
+            )],
+            [VcProofSelection::new(
+                VcId::new(0),
+                selection_for_builtin("builtin"),
+            )],
+        )
+        .expect("merge succeeds");
+        assert_eq!(
+            builtin_over_external[0].source(),
+            ProofSelectionSource::BuiltinDischarge
+        );
+        assert_eq!(
+            builtin_over_external[0].selected_class(),
+            ProofWinnerClass::DischargedBuiltin
+        );
+
+        let kernel_over_builtin = merge_artifact_proof_selections(
+            [VcProofSelection::new(
+                VcId::new(0),
+                selection_for_kernel("kernel"),
+            )],
+            [VcProofSelection::new(
+                VcId::new(0),
+                selection_for_builtin("builtin"),
+            )],
+        )
+        .expect("merge succeeds");
+        assert_eq!(
+            kernel_over_builtin[0].source(),
+            ProofSelectionSource::Portfolio
+        );
+        assert_eq!(
+            kernel_over_builtin[0].selected_class(),
+            ProofWinnerClass::KernelVerified
+        );
+    }
+
+    #[test]
+    fn artifact_merge_uses_tie_break_hash_before_source_rank() {
+        let first = selection_for_rejected("same-class-a");
+        let second = selection_for_rejected("same-class-b");
+        assert_ne!(tie_hash_bytes(&first), tie_hash_bytes(&second));
+
+        let (lower_hash, higher_hash) = if tie_hash_bytes(&first) < tie_hash_bytes(&second) {
+            (first, second)
+        } else {
+            (second, first)
+        };
+        let expected_candidate_id = lower_hash.selected_candidate_id().cloned();
+
+        let merged = merge_artifact_proof_selections(
+            [VcProofSelection::new(VcId::new(0), higher_hash)],
+            [VcProofSelection::new(VcId::new(0), lower_hash)],
+        )
+        .expect("merge succeeds");
+
+        assert_eq!(merged[0].source(), ProofSelectionSource::BuiltinDischarge);
+        assert_eq!(merged[0].selected_class(), ProofWinnerClass::Rejected);
+        assert_eq!(
+            merged[0].selection().selected_candidate_id(),
+            expected_candidate_id.as_ref()
+        );
+    }
+
+    #[test]
+    fn artifact_merge_uses_source_rank_for_equal_tie_break_hash() {
+        let shared = selection_for_rejected("same-class-shared");
+
+        let merged = merge_artifact_proof_selections(
+            [VcProofSelection::new(VcId::new(0), shared.clone())],
+            [VcProofSelection::new(VcId::new(0), shared)],
+        )
+        .expect("merge succeeds");
+
+        assert_eq!(merged[0].source(), ProofSelectionSource::Portfolio);
+        assert_eq!(merged[0].selected_class(), ProofWinnerClass::Rejected);
+    }
+
+    #[test]
+    fn artifact_merge_preserves_non_trusted_outcomes() {
+        let merged = merge_artifact_proof_selections(
+            [
+                VcProofSelection::new(VcId::new(0), selection_for_external("external")),
+                VcProofSelection::new(VcId::new(1), selection_for_assumed("assumed")),
+                VcProofSelection::new(VcId::new(2), selection_for_open("open")),
+                VcProofSelection::new(VcId::new(3), selection_for_rejected("rejected")),
+                VcProofSelection::new(VcId::new(4), selection_for_no_selectable()),
+            ],
+            [],
+        )
+        .expect("merge succeeds");
+
+        assert_eq!(
+            merged
+                .iter()
+                .map(ArtifactProofSelection::selected_class)
+                .collect::<Vec<_>>(),
+            vec![
+                ProofWinnerClass::PolicyPermittedExternal,
+                ProofWinnerClass::PolicyAssumed,
+                ProofWinnerClass::PolicyOpen,
+                ProofWinnerClass::Rejected,
+                ProofWinnerClass::NoSelectableEvidence,
+            ]
+        );
+        assert!(
+            merged
+                .iter()
+                .all(|selection| !selection.selection().trusted_used_axioms_available())
+        );
+    }
+
+    #[test]
+    fn artifact_merge_rejects_duplicate_source_for_one_vc() {
+        let portfolio_error = merge_artifact_proof_selections(
+            [
+                VcProofSelection::new(VcId::new(0), selection_for_open("left")),
+                VcProofSelection::new(VcId::new(0), selection_for_open("right")),
+            ],
+            [],
+        )
+        .expect_err("duplicate portfolio selection is rejected");
+
+        assert_eq!(
+            portfolio_error,
+            ArtifactProofSelectionError::DuplicateSelection {
+                vc: VcId::new(0),
+                source: ProofSelectionSource::Portfolio,
+            }
+        );
+
+        let builtin_error = merge_artifact_proof_selections(
+            [],
+            [
+                VcProofSelection::new(VcId::new(0), selection_for_builtin("left")),
+                VcProofSelection::new(VcId::new(0), selection_for_builtin("right")),
+            ],
+        )
+        .expect_err("duplicate built-in discharge selection is rejected");
+
+        assert_eq!(
+            builtin_error,
+            ArtifactProofSelectionError::DuplicateSelection {
+                vc: VcId::new(0),
+                source: ProofSelectionSource::BuiltinDischarge,
+            }
+        );
+    }
+
+    #[test]
+    fn artifact_merge_rejects_invalid_source_class_pairs() {
+        let portfolio_error = merge_artifact_proof_selections(
+            [VcProofSelection::new(
+                VcId::new(0),
+                selection_for_builtin("builtin"),
+            )],
+            [],
+        )
+        .expect_err("portfolio cannot publish built-in discharge selections");
+
+        assert_eq!(
+            portfolio_error,
+            ArtifactProofSelectionError::InvalidSourceClass {
+                vc: VcId::new(0),
+                source: ProofSelectionSource::Portfolio,
+                selected_class: ProofWinnerClass::DischargedBuiltin,
+            }
+        );
+
+        let builtin_error = merge_artifact_proof_selections(
+            [],
+            [VcProofSelection::new(
+                VcId::new(0),
+                selection_for_external("external"),
+            )],
+        )
+        .expect_err("built-in discharge source cannot publish external selections");
+
+        assert_eq!(
+            builtin_error,
+            ArtifactProofSelectionError::InvalidSourceClass {
+                vc: VcId::new(0),
+                source: ProofSelectionSource::BuiltinDischarge,
+                selected_class: ProofWinnerClass::PolicyPermittedExternal,
+            }
+        );
+    }
+
     fn base_set(policy: VerifierPolicy) -> ProofEvidenceSet {
         ProofEvidenceSet::new(b"obligation".to_vec(), hash(100), policy)
+    }
+
+    fn selection_for_kernel(id: &str) -> ProofSelection {
+        select_winner(
+            &base_set(VerifierPolicy::release()).with_candidates([trusted_candidate(
+                id,
+                CandidatePolicyClass::KernelVerified,
+                KernelEvidenceOrigin::AtpFormulaSubstitution,
+                hash(120),
+            )]),
+        )
+    }
+
+    fn selection_for_builtin(id: &str) -> ProofSelection {
+        select_winner(
+            &base_set(VerifierPolicy::release()).with_candidates([trusted_candidate(
+                id,
+                CandidatePolicyClass::DischargedBuiltin,
+                KernelEvidenceOrigin::BuiltinDischarge,
+                hash(121),
+            )
+            .with_deterministic_discharge_hash(hash(122))]),
+        )
+    }
+
+    fn selection_for_external(id: &str) -> ProofSelection {
+        let policy = VerifierPolicy::interactive()
+            .with_external_evidence(ExternalEvidenceMode::PermitNonTrustedWinner);
+        let evaluator = ProofPolicyEvaluator::new(policy.clone());
+        select_winner(
+            &base_set(policy).with_candidates([candidate(
+                id,
+                evaluator.evaluate_candidate(&PolicyCandidate::ExternallyAttested),
+            )
+            .with_evidence_hash(hash(123))]),
+        )
+    }
+
+    fn selection_for_assumed(id: &str) -> ProofSelection {
+        let policy = VerifierPolicy::development()
+            .with_external_evidence(ExternalEvidenceMode::Reject)
+            .with_policy_assumption(PolicyAssumptionMode::Record);
+        let evaluator = ProofPolicyEvaluator::new(policy.clone());
+        select_winner(
+            &base_set(policy).with_candidates([candidate(
+                id,
+                evaluator.evaluate_candidate(&PolicyCandidate::PolicyAssumption),
+            )
+            .with_evidence_hash(hash(125))]),
+        )
+    }
+
+    fn selection_for_open(id: &str) -> ProofSelection {
+        let policy = VerifierPolicy::interactive()
+            .with_external_evidence(ExternalEvidenceMode::Reject)
+            .with_policy_assumption(PolicyAssumptionMode::Reject);
+        let evaluator = ProofPolicyEvaluator::new(policy.clone());
+        select_winner(
+            &base_set(policy).with_candidates([candidate(
+                id,
+                evaluator.evaluate_candidate(&PolicyCandidate::OpenObligation),
+            )
+            .with_evidence_hash(hash(124))]),
+        )
+    }
+
+    fn selection_for_rejected(id: &str) -> ProofSelection {
+        select_winner(
+            &base_set(VerifierPolicy::release())
+                .with_candidates([candidate(id, rejected_policy_decision())]),
+        )
+    }
+
+    fn selection_for_no_selectable() -> ProofSelection {
+        select_winner(&base_set(VerifierPolicy::development()))
+    }
+
+    fn tie_hash_bytes(selection: &ProofSelection) -> [u8; Hash::BYTE_LEN] {
+        *selection.reuse_metadata().tie_break_key_hash().as_bytes()
     }
 
     fn candidate(id: &str, decision: PolicyDecision) -> ProofEvidenceCandidate {

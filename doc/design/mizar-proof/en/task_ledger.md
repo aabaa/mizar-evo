@@ -16,7 +16,8 @@ extra unnumbered bookkeeping commit is permitted.
 | 3. Policy evaluator | complete | `f3ac274d9cf7266f5ebdc4de94fe963f72ba67d5` | Initial reviews found synthesized accepted-kernel input risk, incomplete evidence-kind test coverage, negative scheduling test gaps, kernel/policy rejection layering drift, and task-4 external-admission overreach. After fixes, focused spec, test-sufficiency, full, and source-doc reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-3 path staging. | Implements the policy evaluator, normalized kernel-origin wrapper, candidate classes, schedulability checks, kernel rejection separation, and deterministic policy fingerprint; updates the lint guard for the policy module. |
 | 4. Externally attested evidence handling | complete | `986f62a184fa8d0a7fa0c98ef8f6c9669d85d844` | Initial reviews found missing concrete publication-status mapping, unclear `PolicyDecision.class` and diagnostic ownership, public `trusted_used_axioms_allowed` invariant risk, module-status drift, matrix coverage gaps, and policy-tainted origin coverage gaps. After fixes, focused spec, test-sufficiency, full, and source-doc reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-4 path staging. | Implements external evidence admission labels, stable policy diagnostics, non-trusted admission matrix, and policy-tainted kernel-result routing without trusted `used_axioms`. |
 | 5. Spec: `selection.md` | complete | `6802bbec9f75d33f6c28b06391d60101726b2d51` | Initial reviews found underspecified rejected/all-diagnostic outcomes, non-total tie-break inputs, `DischargedBuiltin` trust wording, missing policy-assumption handling, TODO ordering drift, and external recordable/selectable wording drift. After fixes, focused spec, test-sufficiency, full, and source-doc reviews reported no findings. | `git diff --check` passed; `git diff --cached --check` passed after explicit task-5 path staging. | Adds paired winner-selection specs and clarifies policy wording for deterministic winner classes, total tie-break identity, rejected/no-selectable diagnostics, reuse metadata, trusted/non-trusted boundaries, completion-time prohibition, and deferred downstream integrations. |
-| 6. Winner selection | complete | pending self-hash | Initial reviews found trusted-marker spoofing, non-trusted winners with pending kernel-checkable inputs, duplicate-id diagnostics not surfaced, rejected-category ordering gaps, missing witness publication gap, underspecified tests, and accepted-evidence hash identity weakness. After fixes, focused spec, test-sufficiency, full, and source-doc reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-6 path staging. | Implements deterministic winner selection, trusted-kernel evidence markers bound to kernel-derived evidence hashes, total tie-break/rejection ordering, pending-kernel gating, duplicate-id diagnostics, no-selectable diagnostics, reuse metadata, `discharged_builtin` witness-publication gap marking, and selection module lint guard updates. |
+| 6. Winner selection | complete | `9230c36464a58a4f35a43ae1f7dc9fcde6e5e94d` | Initial reviews found trusted-marker spoofing, non-trusted winners with pending kernel-checkable inputs, duplicate-id diagnostics not surfaced, rejected-category ordering gaps, missing witness publication gap, underspecified tests, and accepted-evidence hash identity weakness. After fixes, focused spec, test-sufficiency, full, and source-doc reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-6 path staging. | Implements deterministic winner selection, trusted-kernel evidence markers bound to kernel-derived evidence hashes, total tie-break/rejection ordering, pending-kernel gating, duplicate-id diagnostics, no-selectable diagnostics, reuse metadata, `discharged_builtin` witness-publication gap marking, and selection module lint guard updates. |
+| 7. Artifact proof selection merge | complete | pending self-hash | Initial reviews found missing source/class compatibility validation and test gaps for same-class merge tie-breaks, policy-assumed/rejected preservation, and duplicate built-in discharge input. After fixes, focused spec, test-sufficiency, full, and source-doc re-reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-7 path staging. | Implements artifact-facing merge of portfolio and built-in discharge selections per `VcId`, rejects invalid source/class pairs and duplicate same-source inputs, preserves trusted and non-trusted classes, and avoids status projection or artifact publication. |
 
 ## Current Handoff
 
@@ -25,20 +26,19 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Continue mizar-proof autonomous crate development with task 7 after the task-6
-commit exists. First verify a clean worktree and confirm the task-6 commit in
-HEAD history. Then implement artifact proof selection merge per
-`doc/design/mizar-proof/en/selection.md` and internal 04: merge portfolio
-selection results with phase-12 built-in discharge results per `VcId`, keep
-`kernel_verified` and `discharged_builtin` distinct, and preserve external,
-assumed, open, rejected, and no-selectable statuses as non-trusted outcomes.
-Do not implement status projection, witness staging, cache lookup, artifact
-commit, ATP execution, SAT solving, proof search, premise selection,
-substitution invention, or placeholder downstream integration.
+Continue mizar-proof autonomous crate development with task 8 after the task-7
+commit exists. First verify a clean worktree and confirm the task-7 commit in
+HEAD history. Then write the paired `status.md` specs (English and Japanese,
+no code): artifact- and diagnostics-facing proof status projection, trusted
+`used_axioms` propagation only from kernel-accepted selections, and explanation
+references for open/rejected/no-selectable obligations. Do not implement status
+projection code, witness staging, cache lookup, artifact commit, ATP execution,
+SAT solving, proof search, premise selection, substitution invention, or
+placeholder downstream integration.
 ```
 
-Rationale: task 7 crosses the portfolio/built-in-discharge merge boundary and
-must preserve trusted/non-trusted status distinctions for later status
-projection. Keep `xhigh`; lower reasoning is appropriate only for typo-only
-cleanup, and raise only if downstream artifact or VC APIs expose a new
+Rationale: task 8 defines the status projection contract that will consume
+policy and merge results. Keep `xhigh` because a status wording error can
+silently promote non-trusted evidence; lower reasoning is appropriate only for
+typo-only cleanup, and raise only if artifact status schemas expose a new
 external dependency gap.

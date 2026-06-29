@@ -156,7 +156,7 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
      evidence marker、deterministic winner/rejection ordering、no-selectable
      diagnostic outcome、reuse metadata、focused test を実装した。
 
-7. **artifact proof selection のマージ。** [ ]
+7. **artifact proof selection のマージ。** [x]
    - portfolio の結果と phase 12 の built-in discharge の結果を `VcId`
      ごとにマージし、`kernel_verified` / `discharged_builtin` の選択に
      する。external と open の状態は区別可能なまま保つ。
@@ -165,6 +165,10 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
    - 依存: 6、`mizar-vc` task 12。仕様: `selection.md`（マージの節）、
      [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
      「Artifact Proof Selection」。
+   - 状態: `merge_artifact_proof_selections` に canonical `VcId` ordering、
+     duplicate-source rejection、trusted class precedence、source/class compatibility
+     validation、後続 status projection のための non-trusted outcome preservation
+     を実装した。
 
 8. **仕様: `status.md`。** [ ]
    - 状態射影の仕様を執筆する（英語と日本語、コードなし）: artifact と

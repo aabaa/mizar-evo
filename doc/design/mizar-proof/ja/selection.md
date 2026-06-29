@@ -175,6 +175,34 @@ selected result は trusted `used_axioms` を合成してはならない。`Kern
 trusted `used_axioms` を保持してよい。selection が使う trusted marker は accepted
 kernel evidence hash に bind され、selected candidate の evidence hash と一致しなければならない。
 
+## Artifact Proof Selection Merge
+
+artifact merge は、`VcId` を key にした portfolio selection と phase-12 built-in
+discharge selection を消費する。canonical `VcId` order で `VcId` ごとに 1 つの
+`ArtifactProofSelection` を emit する。
+
+source/class compatibility は merge validation の一部である。Portfolio input は
+`KernelVerified`、policy-permitted external、policy-assumed、policy-open、rejected、
+`NoSelectableEvidence` outcome を publish してよいが、`DischargedBuiltin` を publish
+してはならない。Built-in discharge input は `DischargedBuiltin`、または built-in
+discharge evidence の失敗・不在を表す diagnostic outcome（`Rejected` と
+`NoSelectableEvidence`）を publish してよいが、`KernelVerified`、policy-permitted
+external、policy-assumed、policy-open outcome を publish してはならない。invalid
+source/class pair は artifact status projection の前に reject される。
+
+merge ordering は通常の selection と同じ winner-class rank を使う:
+`KernelVerified`、`DischargedBuiltin`、policy-permitted external、policy
+assumption、policy-open、rejected、`NoSelectableEvidence` の順である。同じ class
+内では、selected result の `tie_break_key_hash`、次に安定した source rank
+（`Portfolio` が `BuiltinDischarge` より前）を比較する。同じ source から同じ
+`VcId` へ duplicate input がある場合は invalid merge input である。
+
+merge layer は final artifact status projection、witness staging、artifact manifest
+write、ATP、kernel check、cache record の trust を行わない。`KernelVerified` と
+`DischargedBuiltin` を distinct な trusted class として保ち、policy-permitted external、
+policy-assumed、open、rejected、no-selectable outcome を status projection のための
+non-trusted class として保持する。
+
 ## Deferred Integrations
 
 - `DischargedBuiltin` の artifact witness publication は、`mizar-artifact` がその witness

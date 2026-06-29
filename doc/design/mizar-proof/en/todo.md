@@ -159,7 +159,7 @@ Keep `cargo test -p mizar-proof` green after each task (see
      trusted-kernel evidence markers, deterministic winner/rejection ordering,
      no-selectable diagnostic outcomes, reuse metadata, and focused tests.
 
-7. **Artifact proof selection merge.** [ ]
+7. **Artifact proof selection merge.** [x]
    - Merge portfolio results with phase-12 built-in discharge results per
      `VcId` into `kernel_verified` / `discharged_builtin` selections, with
      external and open statuses kept distinguishable.
@@ -168,6 +168,10 @@ Keep `cargo test -p mizar-proof` green after each task (see
    - Deps: 6, `mizar-vc` task 12. Spec: `selection.md` (merge section),
      [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
      "Artifact Proof Selection".
+   - Status: implemented `merge_artifact_proof_selections` with canonical
+     `VcId` ordering, duplicate-source rejection, trusted class precedence,
+     source/class compatibility validation, and preservation of non-trusted
+     outcomes for later status projection.
 
 8. **Spec: `status.md`.** [ ]
    - Write the status-projection spec (English and Japanese, no code): the
