@@ -54,6 +54,21 @@ Lookup must return a miss for incompatible, unknown, incomplete, uncacheable,
 or corrupt records by default. Explicit cache-audit modes may turn corruption
 into diagnostics, but they still must not turn the record into a hit.
 
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module. Every public
+enum is `#[non_exhaustive]`; downstream matches must include a wildcard arm,
+and new variants must fail closed unless a later specification task defines a
+compatible cache-store meaning.
+
+| Public enum | Forward-compatibility decision |
+|---|---|
+| `CacheOutputDescriptor` | `#[non_exhaustive]`; unknown output descriptors are corrupt or unsupported misses until specified. |
+| `CacheLookupOutcome` | `#[non_exhaustive]`; unknown lookup outcomes must not be treated as hits. |
+| `CacheInsertOutcome` | `#[non_exhaustive]`; unknown insert outcomes must not imply a published or trusted record. |
+| `CacheMiss` | `#[non_exhaustive]`; new miss reasons are diagnostic-only and remain fail-closed. |
+| `CacheStoreError` | `#[non_exhaustive]`; new errors are insertion failures and must not publish divergent records. |
+
 ## Store Layout
 
 The default root is the configured `cache_dir`, normally `.mizar-cache/`:

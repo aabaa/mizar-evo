@@ -53,6 +53,21 @@ lookup は incompatible、unknown、incomplete、uncacheable、corrupt な recor
 既定では miss として返さなければならない。明示的な cache-audit mode は corruption を
 diagnostic にしてよいが、その record を hit にしてはならない。
 
+## 公開 enum policy
+
+この module が所有する exhaustive public enum exception はない。すべての public
+enum は `#[non_exhaustive]` とする。downstream match は wildcard arm を持たなければならず、
+新しい variant は後続の仕様 task が compatible な cache-store meaning を定義しない限り
+fail closed しなければならない。
+
+| Public enum | 前方互換性の決定 |
+|---|---|
+| `CacheOutputDescriptor` | `#[non_exhaustive]`; unknown output descriptor は指定されるまで corrupt または unsupported miss である。 |
+| `CacheLookupOutcome` | `#[non_exhaustive]`; unknown lookup outcome を hit として扱ってはならない。 |
+| `CacheInsertOutcome` | `#[non_exhaustive]`; unknown insert outcome は published/trusted record を意味してはならない。 |
+| `CacheMiss` | `#[non_exhaustive]`; 新しい miss reason は diagnostic-only であり fail-closed のままである。 |
+| `CacheStoreError` | `#[non_exhaustive]`; 新しい error は insertion failure であり divergent record を公開してはならない。 |
+
 ## Store Layout
 
 default root は設定された `cache_dir`、通常は `.mizar-cache/` である:

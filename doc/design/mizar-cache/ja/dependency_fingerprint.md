@@ -67,11 +67,11 @@ pub struct DependencyFootprint {
     pub phase: PipelinePhase,
     pub fingerprints: Vec<DependencyFingerprint>,
     pub slices: Vec<DependencySliceFingerprint>,
-    pub completeness: FootprintCompleteness,
+    pub completeness: DependencyFootprintCompleteness,
     pub uncacheable: bool,
 }
 
-pub enum FootprintCompleteness {
+pub enum DependencyFootprintCompleteness {
     Complete,
     ConservativeComplete,
     IncompleteUncacheable,
@@ -97,6 +97,24 @@ rebuild は許される。`IncompleteUncacheable` は、少なくとも 1 つの
 dependency family が欠落、不安定、未対応、または opaque local id でしか
 利用できないことを意味する。これは `uncacheable = true` を設定し、cache miss
 を強制しなければならない。
+
+## 公開 enum policy
+
+この module が所有する exhaustive public enum exception はない。すべての public
+enum は `#[non_exhaustive]` とする。downstream match は wildcard arm を持たなければならず、
+新しい variant は後続の仕様 task が reuse semantics を定義するまで conservative cache miss
+または rebuild として扱わなければならない。
+
+| Public enum | 前方互換性の決定 |
+|---|---|
+| `FingerprintTargetKind` | `#[non_exhaustive]`; unknown target は unchanged importer-visible dependency とみなしてはならない。 |
+| `ProofReuseValidationState` | `#[non_exhaustive]`; unknown proof-reuse validation state は miss を強制しなければならない。 |
+| `DependencyFootprintCompleteness` | `#[non_exhaustive]`; unknown completeness state は指定されるまで uncacheable または unsupported である。 |
+| `DependencyFootprintBuildOutcome` | `#[non_exhaustive]`; unknown build outcome は reuse を許可してはならない。 |
+| `DependencyFootprintBuildRejection` | `#[non_exhaustive]`; 新しい rejection reason は diagnostic-only で fail closed する。 |
+| `RebuildTrigger` | `#[non_exhaustive]`; unknown trigger は reuse ではなく rebuild/miss behavior を選ぶ。 |
+| `FingerprintChangeKind` | `#[non_exhaustive]`; unknown change を reuse のために無視してはならない。 |
+| `DependencySlicePrecision` | `#[non_exhaustive]`; unknown precision は conservative であり dependency を隠してはならない。 |
 
 ## 初期 slice 粒度
 

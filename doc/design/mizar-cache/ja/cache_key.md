@@ -74,6 +74,18 @@ fail closed できる:
   deterministic miss accounting すら不可能にする required identity 欠落など、request が
   structurally invalid または unsupported である。
 
+## 公開 enum policy
+
+この module が所有する exhaustive public enum exception はない。すべての public
+enum は `#[non_exhaustive]` とする。downstream match は wildcard arm を持たなければならず、
+新しい variant は後続の仕様 task が behavior を定義するまで fail closed しなければならない。
+
+| Public enum | 前方互換性の決定 |
+|---|---|
+| `FootprintCompleteness` | `#[non_exhaustive]`; 新しい completeness state は明示的に support されるまで reusable ではない。 |
+| `CacheKeyBuildOutcome` | `#[non_exhaustive]`; 新しい outcome は downstream cache user で miss または no-key result として扱わなければならない。 |
+| `CacheKeyBuildRejection` | `#[non_exhaustive]`; 新しい rejection reason は diagnostic-only であり、cache hit にしてはならない。 |
+
 ## Data Structures
 
 ### CacheKey

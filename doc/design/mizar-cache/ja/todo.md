@@ -288,9 +288,12 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       non-reusable として拒否することを覆う。scheduler-level の
       clean/incremental equivalence 全体は task 20 へ deferred のままである。
 
-17. **公開 enum の前方互換性ポリシー。** [ ]
+17. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。
     - 依存: 14。仕様: 全モジュール仕様。
+    - task 17 で完了: 現在の public enum はすべて paired module spec で
+      `#[non_exhaustive]` として文書化され、`tests/lint_policy.rs` で guard
+      される。`mizar-cache` が所有する exhaustive public enum exception はない。
 
 18. **ソース/仕様対応監査。** [ ]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ

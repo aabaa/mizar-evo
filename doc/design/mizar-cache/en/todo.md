@@ -302,9 +302,13 @@ Keep `cargo test -p mizar-cache` green after each task (see
       scheduler-level clean/incremental equivalence remains deferred to
       task 20.
 
-17. **Public-enum forward-compatibility policy.** [ ]
+17. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
     - Deps: 14. Spec: all module specs.
+    - Completed by task 17: all current public enums are documented as
+      `#[non_exhaustive]` in the paired module specs and guarded by
+      `tests/lint_policy.rs`. `mizar-cache` owns no exhaustive public enum
+      exceptions.
 
 18. **Source/spec correspondence audit.** [ ]
     - Trace every public API and promised behavior in the module specs to

@@ -76,6 +76,19 @@ impossible placeholder keys:
   unknown cache-key schema, a conflicting duplicate canonical key, or a missing
   required identity that prevents even deterministic miss accounting.
 
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module. Every public
+enum is `#[non_exhaustive]`; downstream matches must include a wildcard arm,
+and new variants must fail closed until a later specification task defines
+their behavior.
+
+| Public enum | Forward-compatibility decision |
+|---|---|
+| `FootprintCompleteness` | `#[non_exhaustive]`; new completeness states are not reusable until explicitly supported. |
+| `CacheKeyBuildOutcome` | `#[non_exhaustive]`; new outcomes must be treated as misses or no-key results by downstream cache users. |
+| `CacheKeyBuildRejection` | `#[non_exhaustive]`; new rejection reasons are diagnostic-only and must not become cache hits. |
+
 ## Data Structures
 
 ### CacheKey

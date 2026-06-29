@@ -109,6 +109,23 @@ toolchain compatibility, and filters the aggregate indexes by visible origin
 set. It does not add scheduler hooks, durable view files, `mizar-ir` adapters,
 proof status projection, lookup-outcome policy, or trace construction.
 
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module. Every public
+enum is `#[non_exhaustive]`; downstream matches must include a wildcard arm,
+and new variants must fail closed rather than making unaccepted or hidden
+contributions visible.
+
+| Public enum | Forward-compatibility decision |
+|---|---|
+| `ClusterContributionVisibility` | `#[non_exhaustive]`; unknown visibility is not importer-visible. |
+| `ClusterContributionStatus` | `#[non_exhaustive]`; unknown status is not accepted. |
+| `ClusterContributionKind` | `#[non_exhaustive]`; unknown contribution kinds must not enter visible indexes. |
+| `ClusterOriginFootprintCompleteness` | `#[non_exhaustive]`; unknown completeness states reject origin insertion or view reuse. |
+| `ClusterIndexEntryKind` | `#[non_exhaustive]`; unknown index rows are not visible to importers. |
+| `ClusterDbViewMiss` | `#[non_exhaustive]`; new miss reasons are diagnostic-only and fail closed. |
+| `ClusterDbWriteRejection` | `#[non_exhaustive]`; new rejection reasons must not mutate visible indexes. |
+
 ## Store Layout
 
 The default root is the configured `cache_dir`, normally `.mizar-cache/`:

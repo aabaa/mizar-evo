@@ -56,6 +56,18 @@ The validation request may reference a `CacheRecord`, but the record is not a
 proof authority. The record contributes bytes and metadata to compare against
 the request; it does not define trusted status.
 
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module. Every public
+enum is `#[non_exhaustive]`; downstream matches must include a wildcard arm,
+and new variants must remain misses or diagnostics until the proof owner and
+cache spec define their reuse behavior.
+
+| Public enum | Forward-compatibility decision |
+|---|---|
+| `ProofReuseValidationOutcome` | `#[non_exhaustive]`; unknown outcomes must not be treated as proof-reuse hits. |
+| `ProofReuseMissReason` | `#[non_exhaustive]`; new miss reasons are diagnostic-only and never proof authority. |
+
 ## Reusable Classes
 
 The validation predicate is class-aware:

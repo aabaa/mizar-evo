@@ -68,11 +68,11 @@ pub struct DependencyFootprint {
     pub phase: PipelinePhase,
     pub fingerprints: Vec<DependencyFingerprint>,
     pub slices: Vec<DependencySliceFingerprint>,
-    pub completeness: FootprintCompleteness,
+    pub completeness: DependencyFootprintCompleteness,
     pub uncacheable: bool,
 }
 
-pub enum FootprintCompleteness {
+pub enum DependencyFootprintCompleteness {
     Complete,
     ConservativeComplete,
     IncompleteUncacheable,
@@ -98,6 +98,24 @@ false-positive rebuilds are allowed. `IncompleteUncacheable` means at least
 one required dependency family is missing, unstable, unsupported, or available
 only through an opaque local id. It must set `uncacheable = true` and force a
 cache miss.
+
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module. Every public
+enum is `#[non_exhaustive]`; downstream matches must include a wildcard arm,
+and new variants must be conservative cache misses or rebuilds until a later
+specification task defines their reuse semantics.
+
+| Public enum | Forward-compatibility decision |
+|---|---|
+| `FingerprintTargetKind` | `#[non_exhaustive]`; unknown targets cannot be considered unchanged importer-visible dependencies. |
+| `ProofReuseValidationState` | `#[non_exhaustive]`; unknown proof-reuse validation states must force misses. |
+| `DependencyFootprintCompleteness` | `#[non_exhaustive]`; unknown completeness states are uncacheable or unsupported until specified. |
+| `DependencyFootprintBuildOutcome` | `#[non_exhaustive]`; unknown build outcomes must not allow reuse. |
+| `DependencyFootprintBuildRejection` | `#[non_exhaustive]`; new rejection reasons are diagnostic-only and fail closed. |
+| `RebuildTrigger` | `#[non_exhaustive]`; unknown triggers must choose rebuild/miss behavior over reuse. |
+| `FingerprintChangeKind` | `#[non_exhaustive]`; unknown changes must not be ignored for reuse. |
+| `DependencySlicePrecision` | `#[non_exhaustive]`; unknown precision is conservative and must not hide dependencies. |
 
 ## Initial Slice Granularity
 
