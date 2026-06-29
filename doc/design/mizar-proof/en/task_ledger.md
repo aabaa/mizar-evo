@@ -19,7 +19,8 @@ extra unnumbered bookkeeping commit is permitted.
 | 6. Winner selection | complete | `9230c36464a58a4f35a43ae1f7dc9fcde6e5e94d` | Initial reviews found trusted-marker spoofing, non-trusted winners with pending kernel-checkable inputs, duplicate-id diagnostics not surfaced, rejected-category ordering gaps, missing witness publication gap, underspecified tests, and accepted-evidence hash identity weakness. After fixes, focused spec, test-sufficiency, full, and source-doc reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-6 path staging. | Implements deterministic winner selection, trusted-kernel evidence markers bound to kernel-derived evidence hashes, total tie-break/rejection ordering, pending-kernel gating, duplicate-id diagnostics, no-selectable diagnostics, reuse metadata, `discharged_builtin` witness-publication gap marking, and selection module lint guard updates. |
 | 7. Artifact proof selection merge | complete | `6e9a5a0400aae2c4c8b5b8098594ecc0bd3d2949` | Initial reviews found missing source/class compatibility validation and test gaps for same-class merge tie-breaks, policy-assumed/rejected preservation, and duplicate built-in discharge input. After fixes, focused spec, test-sufficiency, full, and source-doc re-reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-7 path staging. | Implements artifact-facing merge of portfolio and built-in discharge selections per `VcId`, rejects invalid source/class pairs and duplicate same-source inputs, preserves trusted and non-trusted classes, and avoids status projection or artifact publication. |
 | 8. Spec: `status.md` | complete | `76f112237c55dab875cd3e26cbfa11d45439fe5e` | Initial reviews found `DischargedBuiltin` artifact-field overreach, incomplete architecture-22 proof-reuse metadata, `KernelCheckResult::Accepted` wording drift, imprecise `ProofWitnessRef` schema-version wording, and task-17 TODO reuse-metadata drift. After fixes, focused spec, test-sufficiency, full, and source-doc re-reviews reported no findings. | `git diff --check` passed; `git diff --cached --check` passed after explicit task-8 path staging. | Adds paired status-projection specs for artifact/diagnostic status, trusted `used_axioms` propagation, explanation references, proof-reuse validation metadata, and downstream gaps. |
-| 9. Proof status projection | complete | pending self-hash | Initial reviews found test gaps for the public trusted-used-axiom constructor path, non-trusted trusted-axiom rejection coverage, reuse metadata coverage, and `NoSelectableEvidence` `RecordDiagnostic` publication semantics. After fixes, focused spec, test-sufficiency, full, and source-doc re-reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-9 path staging. | Implements `src/status.rs`, status module exposure, and lint guard updates for projected proof status, current artifact publication availability, trusted used-axiom boundary checks, explanation references, and architecture-22 reuse metadata. |
+| 9. Proof status projection | complete | `ccd0e05820f61c02614ac523bf444556c5b29fa5` | Initial reviews found test gaps for the public trusted-used-axiom constructor path, non-trusted trusted-axiom rejection coverage, reuse metadata coverage, and `NoSelectableEvidence` `RecordDiagnostic` publication semantics. After fixes, focused spec, test-sufficiency, full, and source-doc re-reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-9 path staging. | Implements `src/status.rs`, status module exposure, and lint guard updates for projected proof status, current artifact publication availability, trusted used-axiom boundary checks, explanation references, and architecture-22 reuse metadata. |
+| 10. Spec: `witness_store.md` | complete | pending self-hash | Initial reviews found ambiguous `DischargedBuiltin` reuse hash semantics, under-specified artifact reachability proof, missing task-11 trust-boundary test obligations, `selected_proof_witness_hash` domain drift, and circular `publish_ref` lifecycle wording. After fixes, focused spec, test-sufficiency, full, and source-doc re-reviews reported no findings. | `git diff --check` passed; `git diff --cached --check` passed after explicit task-10 path staging. | Adds paired witness-store specs and synchronized selection/status wording for draft staging, unpublished `ProofWitnessRef` candidates, stable witness payload artifact hashing, publication only after committed artifact-manifest reachability and exact `VerifiedArtifact.proof_witnesses` coverage, provenance metadata, cache/reuse boundaries, and deferred `DischargedBuiltin` witness publication support. |
 
 ## Current Handoff
 
@@ -28,21 +29,21 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Continue mizar-proof autonomous crate development with task 10 after the task-9
-commit exists. First verify a clean worktree and confirm the task-9 commit in
-HEAD history. Then write paired `witness_store.md` specs (English and
-Japanese, no code): proof witness draft staging, stable content hashing used as
-proof witness hashes, publication references only after artifact manifest
-reference/commit, provenance metadata, and current `DischargedBuiltin`
-artifact witness `external_dependency_gap`. Do not implement witness store
-code, artifact manifest writes, cache lookup, ATP execution, kernel checking,
-SAT solving, proof search, premise selection, substitution invention, or
-placeholder downstream integration.
+Continue mizar-proof autonomous crate development with task 11 after the
+task-10 commit exists. First verify a clean worktree and
+confirm the task-10 commit in HEAD history. Then implement task 11:
+`ProofWitnessDraft` staging and `publish_ref` against the `mizar-artifact`
+witness-reference schema. Keep publication impossible before committed witness
+publication proof with exact `VerifiedArtifact.proof_witnesses` coverage,
+preserve the current `DischargedBuiltin` witness `external_dependency_gap`, and
+do not add artifact manifest writes, cache lookup, ATP execution, kernel
+checking, SAT solving, proof search, premise selection, substitution invention,
+or placeholder downstream integration.
 ```
 
-Rationale: task 10 defines the witness publication boundary consumed by later
-implementation and artifact integration. Keep `xhigh` because witness wording
-can accidentally turn staged or unsupported evidence into published trusted
-material; lower reasoning is appropriate only for typo-only docs cleanup, and
-raise only if artifact manifest constraints expose a new dependency-gap
-decision.
+Rationale: task 11 turns the witness publication boundary into source API and
+tests without expanding proof authority. Keep `xhigh` because path/hash
+canonicalization, manifest reachability, and trusted/non-trusted witness
+classes can accidentally promote staged or unsupported material; lower
+reasoning is appropriate only for mechanical refactors after tests exist, and
+raise only if the artifact schema exposes a new blocking dependency gap.

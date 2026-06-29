@@ -21,8 +21,8 @@ crate refines architecture 08, 15, and 19 and internal 04.
 |---|---|---|---|
 | policy | `policy.md` (task 2) | `src/policy.rs` | [~] |
 | selection | `selection.md` (task 5) | `src/selection.rs` | [~] |
-| status | `status.md` (task 8) | `src/status.rs` | [ ] |
-| witness_store | `witness_store.md` (task 10) | `src/witness_store.rs` | [ ] |
+| status | `status.md` (task 8) | `src/status.rs` | [~] |
+| witness_store | `witness_store.md` (task 10) | `src/witness_store.rs` | [~] |
 
 `mizar-proof` owns the policy layer between untrusted evidence production
 (`mizar-atp`, `mizar-vc` discharge) and trusted validation (`mizar-kernel`):
@@ -199,19 +199,27 @@ Keep `cargo test -p mizar-proof` green after each task (see
 
 ### Witness store
 
-10. **Spec: `witness_store.md`.** [ ]
-    - Write the witness-store spec (English and Japanese, no code): the
-      stage/publish flow (`stage` before commit, `publish_ref` only after
-      the artifact manifest references the witness), stable content hashing
-      used as proof witness hashes, and provenance metadata.
-    - Deps: 2. Spec: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
-      "Proof Witness Store".
+10. **Spec: `witness_store.md`.** [x]
+   - Write the witness-store spec (English and Japanese, no code): the
+     stage/publish flow (`stage` before commit, `publish_ref` only after
+     the artifact manifest references the witness), stable content hashing
+     used as proof witness hashes, and provenance metadata.
+   - Deps: 2. Spec: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
+     "Proof Witness Store".
+   - Status: added paired `witness_store.md` specs covering proof witness
+     draft inputs, stage/publish state transitions, stable artifact-framed
+     hashing, publication references after committed manifest reachability,
+     provenance metadata, cache/reuse boundaries, and deferred
+     `DischargedBuiltin` artifact-witness support.
 
 11. **Witness store implementation.** [ ]
     - Implement staging and publication of `ProofWitnessDraft`s against the
       `mizar-artifact` witness-reference schema.
-    - Tests: stage/publish round-trips; publication before manifest
-      reference fails; hashes recorded before commit.
+    - Tests: stage/publish round-trips; publication before committed
+      manifest-reachability proof fails; hashes recorded before commit;
+      non-trusted evidence cannot publish trusted witnesses;
+      `DischargedBuiltin` remains an unsupported/external-dependency gap until
+      artifact schema support exists.
     - Deps: 9, 10, `mizar-artifact` task 9. Spec: `witness_store.md`.
 
 12. **Portfolio early-stop policy hooks.** [ ]

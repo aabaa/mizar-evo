@@ -20,8 +20,8 @@
 |---|---|---|---|
 | policy | `policy.md`（task 2） | `src/policy.rs` | [~] |
 | selection | `selection.md`（task 5） | `src/selection.rs` | [~] |
-| status | `status.md`（task 8） | `src/status.rs` | [ ] |
-| witness_store | `witness_store.md`（task 10） | `src/witness_store.rs` | [ ] |
+| status | `status.md`（task 8） | `src/status.rs` | [~] |
+| witness_store | `witness_store.md`（task 10） | `src/witness_store.rs` | [~] |
 
 `mizar-proof` は untrusted な証拠生産（`mizar-atp`、`mizar-vc` の
 discharge）と信頼された検証（`mizar-kernel`）の間のポリシー層を所有する:
@@ -195,19 +195,26 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
 
 ### witness ストア
 
-10. **仕様: `witness_store.md`。** [ ]
+10. **仕様: `witness_store.md`。** [x]
     - witness ストアの仕様を執筆する（英語と日本語、コードなし）:
       stage/publish のフロー（コミット前に `stage`、artifact manifest が
       witness を参照した後にのみ `publish_ref`）、proof witness hash として
       使う安定した内容ハッシュ、来歴メタデータ。
     - 依存: 2。仕様: [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
       「Proof Witness Store」。
+   - 状態: proof witness draft input、stage/publish state transition、
+     stable artifact-framed hashing、committed manifest reachability 後の
+     publication reference、provenance metadata、cache/reuse boundary、
+     deferred な `DischargedBuiltin` artifact-witness support を覆う paired
+     `witness_store.md` spec を追加した。
 
 11. **witness ストアの実装。** [ ]
     - `mizar-artifact` の witness 参照スキーマに対する
       `ProofWitnessDraft` の stage と公開を実装する。
-    - テスト: stage/publish のラウンドトリップ。manifest 参照前の公開の
-      失敗。コミット前のハッシュ記録。
+    - テスト: stage/publish のラウンドトリップ。committed manifest-reachability
+      proof 前の公開失敗。コミット前のハッシュ記録。non-trusted evidence が
+      trusted witness を publish できないこと。artifact schema support が存在するまで
+      `DischargedBuiltin` が unsupported/external-dependency gap のままであること。
     - 依存: 9、10、`mizar-artifact` task 9。仕様: `witness_store.md`。
 
 12. **portfolio early-stop のポリシーフック。** [ ]

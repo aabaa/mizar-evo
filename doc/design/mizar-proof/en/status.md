@@ -139,7 +139,8 @@ Status projection exports validation metadata for proof reuse:
 - dependency-slice fingerprint;
 - policy fingerprint;
 - selected evidence hash;
-- selected proof witness hash, when publishable;
+- selected proof witness payload artifact hash (`witness_artifact_hash`), when
+  publishable;
 - deterministic discharge hash, when present;
 - trusted used-axiom reference hash, when present;
 - external admission status, when present;

@@ -145,7 +145,7 @@ publication:
 | `policy_fingerprint` | Active `PolicyFingerprint`. |
 | `encoded_problem_hash` | Stable hash of the encoded obligation. |
 | `selected_evidence_hash` | Kernel evidence payload hash, external evidence hash, policy-assumption source hash, or open explanation hash, depending on class. |
-| `selected_proof_witness_hash` | Hash of the proof witness ref only when artifact witness publication is available. |
+| `selected_proof_witness_hash` | Witness payload artifact hash (`witness_artifact_hash`) only when artifact witness publication is available; it is not a hash of the `ProofWitnessRef` metadata object. |
 | `deterministic_discharge_hash` | Deterministic built-in discharge hash for `DischargedBuiltin`. |
 | `external_admission_status` | External publication status for `PolicyPermittedExternal`. |
 | `proof_witness_publication` | `available`, `external_dependency_gap`, or `not_applicable` for the selected class. |

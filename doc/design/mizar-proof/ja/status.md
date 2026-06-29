@@ -129,7 +129,8 @@ status projection は proof reuse の validation metadata を export する:
 - dependency-slice fingerprint;
 - policy fingerprint;
 - selected evidence hash;
-- publish 可能な場合の selected proof witness hash;
+- publish 可能な場合の selected proof witness payload artifact hash
+  （`witness_artifact_hash`）;
 - 存在する場合の deterministic discharge hash;
 - 存在する場合の trusted used-axiom reference hash;
 - 存在する場合の external admission status;

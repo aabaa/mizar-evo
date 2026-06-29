@@ -141,7 +141,7 @@ selection は、proof reuse と後段の witness publication が使う安定 met
 | `policy_fingerprint` | active `PolicyFingerprint`。 |
 | `encoded_problem_hash` | encoded obligation の安定 hash。 |
 | `selected_evidence_hash` | class に応じた kernel evidence payload hash、external evidence hash、policy-assumption source hash、または open explanation hash。 |
-| `selected_proof_witness_hash` | artifact witness publication が利用可能な場合だけの proof witness ref hash。 |
+| `selected_proof_witness_hash` | artifact witness publication が利用可能な場合だけの witness payload artifact hash（`witness_artifact_hash`）。`ProofWitnessRef` metadata object の hash ではない。 |
 | `deterministic_discharge_hash` | `DischargedBuiltin` の deterministic built-in discharge hash。 |
 | `external_admission_status` | `PolicyPermittedExternal` の external publication status。 |
 | `proof_witness_publication` | selected class に対する `available`、`external_dependency_gap`、または `not_applicable`。 |
