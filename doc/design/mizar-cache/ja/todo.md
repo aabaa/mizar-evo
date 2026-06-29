@@ -10,8 +10,8 @@
 
 ## モジュール実装
 
-モジュール仕様はまだ存在しない。各仕様は、それを引用する実装タスクより前に、
-専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。モジュール名は
+モジュール仕様は専用の仕様タスクが（英語と日本語を同じ変更で）、それを
+引用する実装タスクより前に執筆する。モジュール名は
 [internal 07](../../internal/ja/07.crate_module_layout.md) の最小分割
 （`cache_key`、`dependency_fingerprint`、`proof_reuse`、`cluster_db`）に、
 internal 02 のレコード/blob ストアを加えたものに従う。この crate は
@@ -69,6 +69,11 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
   binary record envelope を使う。cache record は内部用だが、`mizar-ir` adapter と
   raw-IR integration は external dependency gap のままであり、owner task が landing
   する前に placeholder IR storage API を追加しない。
+- **cluster-db visibility: task 12 で解決済み。** `cluster_db.md` は
+  `origins/` を invalidation の source of truth とし、spec 23.7.7 の aggregate
+  index を accepted origin record だけから導出し、import スコープ view を削除可能な
+  cache data として materialize する。unaccepted、recovered、externally attested
+  material は cache record 経由で importer-visible にならない。
 
 ## 順序付きタスク一覧
 
@@ -195,11 +200,15 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       gate に残す。
     - 依存: 8、10。仕様: `proof_reuse.md`。
 
-12. **仕様: `cluster_db.md`。** [ ]
+12. **仕様: `cluster_db.md`。** [x]
     - cluster-db の仕様を執筆する（英語と日本語、コードなし）: 索引
       レイアウト、寄与ごとの origin メタデータ、import スコープの
       ビュー、可視 origin 変化による無効化、未受理の registration 証明が
       importer 可視の索引に決して入らない規則。
+    - task 12 で完了: `cluster_db.md` は logical `.mizar-cache/cluster-db/`
+      layout、origin metadata、accepted-only visibility rule、aggregate index
+      ordering、import-scoped view key、visible-origin invalidation、ResolutionTrace
+      boundary、task 13/14 planned test を、source implementation なしで定義する。
     - 依存: 7。仕様: [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)
       「Cluster and Registration Cache Update」、
       [17.cluster_trace_format.md](../../architecture/ja/17.cluster_trace_format.md)。

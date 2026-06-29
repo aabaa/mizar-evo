@@ -19,8 +19,8 @@ the task commit that completes that task.
 | 8 | done | `3ce9076b271c923d6106e43e7e56b9cb97029eda` | Spec/test/full/source-doc reviews: no findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Record store. |
 | 9 | done | `33ae5456409f8083cde9540d6cead8c56b932902` | Spec/test/full/source-doc reviews: no findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Blob store. |
 | 10 | done | `4a304392831b7f5c8d75d3519835aa8715cf874c` | Spec/test/full/source-doc reviews: no findings after fixes. | `git diff --check`; `git diff --cached --check` | Spec: `proof_reuse.md`. |
-| 11 | done | pending self-hash | Spec/test/full/source-doc reviews: no findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Proof-reuse validation. |
-| 12 | pending | pending | pending | pending | Spec: `cluster_db.md`. |
+| 11 | done | `e3cc79af51be48bdce4183b4ceba009432c5fb9a` | Spec/test/full/source-doc reviews: no findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Proof-reuse validation. |
+| 12 | done | pending self-hash | Spec/test/full/source-doc reviews: no findings after fixes. | `git diff --check`; `git diff --cached --check` | Spec: `cluster_db.md`. |
 | 13 | pending | pending | pending | pending | Cluster-db writes and origin tracking. |
 | 14 | pending | pending | pending | pending | Import-scoped views and invalidation. |
 | 15 | pending | pending | pending | pending | Scheduler and IR-adapter integration readiness/defer check. |
@@ -54,3 +54,8 @@ the task commit that completes that task.
 | PROOFREUSE-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact-owned committed witness publication token exists; until then cache compares selected witness hashes only. |
 | PROOFREUSE-G004 | `external_dependency_gap` | `mizar-artifact` | Artifact witness schema supports a distinct trusted `DischargedBuiltin` class. |
 | PROOFREUSE-G005 | `deferred` | `mizar-cache` | Full clean/incremental equivalence remains the task-20 gate. |
+| CLUSTERDB-G001 | `external_dependency_gap` | checker/artifact producers | Concrete accepted-contribution producer fields exist; otherwise task 13 records missing fields and defers rather than fabricating accepted status. |
+| CLUSTERDB-G002 | `deferred` | `mizar-cache` | Task 13 implements origin record writes, stale-origin removal, and aggregate index rebuilds. |
+| CLUSTERDB-G003 | `deferred` | `mizar-cache` | Task 14 implements import-scoped view materialization and invalidation tests. |
+| CLUSTERDB-G004 | `external_dependency_gap` | `mizar-build` | Scheduler integration remains owner-gated; no placeholder scheduler API. |
+| CLUSTERDB-G005 | `external_dependency_gap` | `mizar-ir` | IR cache adapter integration remains owner-gated; no placeholder `mizar-ir` API. |

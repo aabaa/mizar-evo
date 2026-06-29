@@ -10,9 +10,9 @@
 
 ## Module Implementation
 
-Module specs do not exist yet; each is written by its own spec task (English
-and Japanese in the same change) before the implementation tasks that cite it.
-Module names follow the minimum split of
+Module specs are written by their own spec tasks (English and Japanese in the
+same change) before the implementation tasks that cite them. Module names
+follow the minimum split of
 [internal 07](../../internal/en/07.crate_module_layout.md) (`cache_key`,
 `dependency_fingerprint`, `proof_reuse`, `cluster_db`) plus the record/blob
 store of internal 02; the crate refines architecture 11, 17, and 18 and
@@ -72,6 +72,11 @@ internal: [02](../../internal/en/02.artifact_store_cache_key_and_manifest.md),
   payload bytes. Cache records are internal, but `mizar-ir` adapter and raw-IR
   integration remain external dependency gaps; do not add placeholder IR
   storage APIs before the owning task lands.
+- **Cluster-db visibility: resolved by task 12.** `cluster_db.md` keeps
+  `origins/` as the invalidation source of truth, derives spec-23.7.7 aggregate
+  indexes from accepted origin records only, and materializes import-scoped
+  views as deletable cache data. Unaccepted, recovered, or externally attested
+  material never becomes importer-visible through cache records.
 
 ## Ordered Task List
 
@@ -203,11 +208,16 @@ Keep `cargo test -p mizar-cache` green after each task (see
       gate.
     - Deps: 8, 10. Spec: `proof_reuse.md`.
 
-12. **Spec: `cluster_db.md`.** [ ]
+12. **Spec: `cluster_db.md`.** [x]
     - Write the cluster-db spec (English and Japanese, no code): index
       layout, origin metadata per contribution, import-scoped views,
       invalidation by visible-origin changes, and the rule that unaccepted
       registration proofs never enter importer-visible indexes.
+    - Completed by task 12: `cluster_db.md` defines the logical
+      `.mizar-cache/cluster-db/` layout, origin metadata, accepted-only
+      visibility rule, aggregate index ordering, import-scoped view keys,
+      visible-origin invalidation, ResolutionTrace boundary, and task-13/14
+      planned tests without adding source implementation.
     - Deps: 7. Spec: [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md)
       "Cluster and Registration Cache Update",
       [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md).

@@ -19,8 +19,8 @@ task を完了する commit の中で更新する。
 | 8 | done | `3ce9076b271c923d6106e43e7e56b9cb97029eda` | Spec/test/full/source-doc review: fix 後に finding なし。 | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Record store。 |
 | 9 | done | `33ae5456409f8083cde9540d6cead8c56b932902` | Spec/test/full/source-doc review: fix 後に finding なし。 | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Blob store。 |
 | 10 | done | `4a304392831b7f5c8d75d3519835aa8715cf874c` | Spec/test/full/source-doc review: fix 後に finding なし。 | `git diff --check`; `git diff --cached --check` | Spec: `proof_reuse.md`。 |
-| 11 | done | pending self-hash | Spec/test/full/source-doc review: fix 後に finding なし。 | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Proof-reuse validation。 |
-| 12 | pending | pending | pending | pending | Spec: `cluster_db.md`。 |
+| 11 | done | `e3cc79af51be48bdce4183b4ceba009432c5fb9a` | Spec/test/full/source-doc review: fix 後に finding なし。 | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Proof-reuse validation。 |
+| 12 | done | pending self-hash | Spec/test/full/source-doc review: fix 後に finding なし。 | `git diff --check`; `git diff --cached --check` | Spec: `cluster_db.md`。 |
 | 13 | pending | pending | pending | pending | Cluster-db writes と origin tracking。 |
 | 14 | pending | pending | pending | pending | Import-scoped view と invalidation。 |
 | 15 | pending | pending | pending | pending | Scheduler と IR-adapter integration readiness/defer check。 |
@@ -54,3 +54,8 @@ task を完了する commit の中で更新する。
 | PROOFREUSE-G003 | `external_dependency_gap` | `mizar-artifact` | artifact-owned committed witness publication token が存在する。それまでは cache は selected witness hash だけを比較する。 |
 | PROOFREUSE-G004 | `external_dependency_gap` | `mizar-artifact` | artifact witness schema が distinct trusted `DischargedBuiltin` class を support する。 |
 | PROOFREUSE-G005 | `deferred` | `mizar-cache` | full clean/incremental equivalence は task-20 gate に残る。 |
+| CLUSTERDB-G001 | `external_dependency_gap` | checker/artifact producer | concrete accepted-contribution producer field が存在する。なければ task 13 は欠けている field を記録して defer し、accepted status を fabricate しない。 |
+| CLUSTERDB-G002 | `deferred` | `mizar-cache` | task 13 が origin record write、stale-origin removal、aggregate index rebuild を実装する。 |
+| CLUSTERDB-G003 | `deferred` | `mizar-cache` | task 14 が import-scoped view materialization と invalidation test を実装する。 |
+| CLUSTERDB-G004 | `external_dependency_gap` | `mizar-build` | scheduler integration は owner gate に残る。placeholder scheduler API は作らない。 |
+| CLUSTERDB-G005 | `external_dependency_gap` | `mizar-ir` | IR cache adapter integration は owner gate に残る。placeholder `mizar-ir` API は作らない。 |
