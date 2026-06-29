@@ -16,3 +16,6 @@
 
 /// Canonical internal cache key construction.
 pub mod cache_key;
+
+/// Cache-side dependency footprint and fingerprint projection.
+pub mod dependency_fingerprint;

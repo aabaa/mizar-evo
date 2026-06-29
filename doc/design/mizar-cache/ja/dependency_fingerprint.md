@@ -85,6 +85,11 @@ pub enum RebuildTrigger {
 }
 ```
 
+task 5 は fingerprint API に必要な場合に `RebuildTrigger` のような共有 data
+shape を定義してよいが、trigger evaluation は実装しない。fingerprint delta
+を phase invalidation へ写す処理と、source/import/registration/policy/toolchain
+の trigger fixture は task 6 の範囲である。
+
 `Complete` は、その phase に必要な dependency が現在の粒度ですべて分かって
 いることを意味する。`ConservativeComplete` は理想より粗い可能性はあるが、
 sound reuse に必要な dependency family をすべて含むことを意味する。偽陽性の
@@ -191,7 +196,8 @@ fingerprint から除外するもの:
 
 同一 identity key かつ同一 payload の重複は coalesce する。同一 identity key で
 payload が異なる重複は structurally invalid であり、diagnostic footprint をまだ
-作れるかどうかに応じて `IncompleteUncacheable` または `NoKey` にしなければ
+作れる場合は `IncompleteUncacheable`、schema または identity data が壊れていて
+canonical footprint を作れない場合は no-footprint/no-key rejection にしなければ
 ならない。
 
 hashing は length-prefixed、field-tagged、domain-separated とし、domain は以下を
@@ -238,6 +244,11 @@ completeness 要件:
   の確立に必要である。
 
 欠落 data を空 dependency set と解釈してはならない。
+したがって task 5 は、compatibility field の欠落、空の compatibility field
+value、または `unknown`、`unsupported`、`incompatible`、`missing`、`opaque`
+のような value を fail-closed unknown marker として扱う。VC/proof phase の
+footprint に VC ごとの slice fingerprint または proof-reuse validation metadata
+がない場合も `IncompleteUncacheable` になる。
 
 ## Rebuild Trigger
 

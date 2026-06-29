@@ -86,6 +86,11 @@ pub enum RebuildTrigger {
 }
 ```
 
+Task 5 may define shared trigger data shapes such as `RebuildTrigger` when they
+are needed by the fingerprint API, but it does not implement trigger
+evaluation. Mapping fingerprint deltas to phase invalidation and the
+source/import/registration/policy/toolchain trigger fixtures are task 6.
+
 `Complete` means all required dependencies for the phase are known at the
 current granularity. `ConservativeComplete` means the footprint may be coarser
 than ideal but contains every dependency family required for sound reuse;
@@ -193,8 +198,9 @@ All collections are canonicalized before hashing:
 
 Identical duplicate identity keys with identical payloads are coalesced.
 Duplicate identity keys with different payloads are structurally invalid and
-must yield `IncompleteUncacheable` or `NoKey` depending on whether a diagnostic
-footprint can still be produced.
+must yield `IncompleteUncacheable` when a diagnostic footprint can still be
+produced, or a no-footprint/no-key rejection when schema or identity data is too
+malformed to build a canonical footprint.
 
 Hashing is length-prefixed, field-tagged, and domain-separated with:
 
@@ -239,6 +245,12 @@ Use `IncompleteUncacheable` and set `uncacheable = true` when:
   establish clean-build equivalence.
 
 Missing data must never be interpreted as an empty dependency set.
+Task 5 therefore treats missing compatibility fields and empty compatibility
+field values, or values such as `unknown`, `unsupported`, `incompatible`,
+`missing`, or `opaque`, as fail-closed unknown markers. VC/proof-phase
+footprints with no per-VC slice fingerprint or no proof-reuse validation
+metadata also become
+`IncompleteUncacheable`.
 
 ## Rebuild Triggers
 

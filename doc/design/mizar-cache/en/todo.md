@@ -21,7 +21,7 @@ internal 02 and 06.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | cache_key | `cache_key.md` (task 2) | `src/cache_key.rs` | [x] |
-| dependency_fingerprint | `dependency_fingerprint.md` (task 4) | `src/dependency_fingerprint.rs` | [ ] |
+| dependency_fingerprint | `dependency_fingerprint.md` (task 4) | `src/dependency_fingerprint.rs` | [x] |
 | cache_store | `cache_store.md` (task 7) | `src/cache_store.rs` | [ ] |
 | proof_reuse | `proof_reuse.md` (task 10) | `src/proof_reuse.rs` | [ ] |
 | cluster_db | `cluster_db.md` (task 12) | `src/cluster_db.rs` | [ ] |
@@ -44,10 +44,12 @@ committed autonomously without holding the rest of the crate in flight.
 
 ## Crate Prerequisites
 
-The crate depends on `mizar-session` and `mizar-artifact` (canonical-hash
-rules, interface/implementation hash inputs from its task 16, witness
-references). Consumers integrate through seams: the `mizar-build` scheduler
-(its task 18), the `mizar-ir` cache adapter (its task 10). Architecture:
+The crate depends on `mizar-session`, `mizar-artifact`, and, starting in task 5,
+`mizar-vc` for public per-VC dependency-slice fingerprints. `mizar-artifact`
+provides canonical-hash rules, interface/implementation hash inputs from its
+task 16, and witness references. Consumers integrate through seams: the
+`mizar-build` scheduler (its task 18), the `mizar-ir` cache adapter (its task
+10). Architecture:
 [11.artifact_and_incremental_build.md](../../architecture/en/11.artifact_and_incremental_build.md),
 [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md),
 [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md);
@@ -110,7 +112,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
    - Deps: 2. Spec:
      [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
 
-5. **Dependency-slice and fingerprint computation.** [ ]
+5. **Dependency-slice and fingerprint computation.** [x]
    - Compute fingerprints over interface/implementation hash inputs
      (`mizar-artifact` task 16) and per-VC dependency slices
      (`mizar-vc` task 14) at the decided granularity.
@@ -120,7 +122,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
      comments, formatting, diagnostics, runtime/order, temporary/local paths,
      and snapshot-local ids; missing/unknown/uncacheable miss behavior; and
      proof-reuse validation data staying untrusted.
-   - Deps: 3, 4, `mizar-artifact` task 16. Spec:
+   - Deps: 3, 4, `mizar-artifact` task 16, `mizar-vc` task 14. Spec:
      `dependency_fingerprint.md`.
 
 6. **Rebuild-trigger evaluation.** [ ]

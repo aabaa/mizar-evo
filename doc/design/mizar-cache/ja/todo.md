@@ -20,7 +20,7 @@ internal 02 のレコード/blob ストアを加えたものに従う。この c
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | cache_key | `cache_key.md`（task 2） | `src/cache_key.rs` | [x] |
-| dependency_fingerprint | `dependency_fingerprint.md`（task 4） | `src/dependency_fingerprint.rs` | [ ] |
+| dependency_fingerprint | `dependency_fingerprint.md`（task 4） | `src/dependency_fingerprint.rs` | [x] |
 | cache_store | `cache_store.md`（task 7） | `src/cache_store.rs` | [ ] |
 | proof_reuse | `proof_reuse.md`（task 10） | `src/proof_reuse.rs` | [ ] |
 | cluster_db | `cluster_db.md`（task 12） | `src/cluster_db.rs` | [ ] |
@@ -43,10 +43,12 @@ internal 02 のレコード/blob ストアを加えたものに従う。この c
 
 ## crate の前提条件
 
-この crate は `mizar-session` と `mizar-artifact`（正準ハッシュ規則、
-同 task 16 の interface/implementation ハッシュ入力、witness 参照）に
-依存する。消費者は seam を通じて統合する: `mizar-build` スケジューラ
-（同 task 18）、`mizar-ir` の cache adapter（同 task 10）。アーキテクチャ:
+この crate は `mizar-session`、`mizar-artifact`、そして task 5 以降は
+公開された VC ごとの dependency-slice fingerprint を消費するために
+`mizar-vc` に依存する。`mizar-artifact` は正準ハッシュ規則、同 task 16 の
+interface/implementation ハッシュ入力、witness 参照を提供する。消費者は seam
+を通じて統合する: `mizar-build` スケジューラ（同 task 18）、`mizar-ir` の
+cache adapter（同 task 10）。アーキテクチャ:
 [11.artifact_and_incremental_build.md](../../architecture/ja/11.artifact_and_incremental_build.md)、
 [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)、
 [17.cluster_trace_format.md](../../architecture/ja/17.cluster_trace_format.md)。
@@ -109,7 +111,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - 依存: 2。仕様:
      [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
 
-5. **依存スライスと fingerprint の計算。** [ ]
+5. **依存スライスと fingerprint の計算。** [x]
    - interface/implementation ハッシュ入力（`mizar-artifact` task 16）と
      VC ごとの依存スライス（`mizar-vc` task 14）の上で、決定した粒度の
      fingerprint を計算する。
@@ -119,7 +121,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      comment/formatting/diagnostic/runtime/order/temporary/local path/
      snapshot-local id の安定除外、missing/unknown/uncacheable miss behavior、
      proof-reuse validation data が untrusted のままであることも cover する。
-   - 依存: 3、4、`mizar-artifact` task 16。仕様:
+   - 依存: 3、4、`mizar-artifact` task 16、`mizar-vc` task 14。仕様:
      `dependency_fingerprint.md`。
 
 6. **再ビルドトリガーの評価。** [ ]

@@ -16,3 +16,7 @@ workspace = true
 blake3 = "1.8.5"
 mizar-artifact = { path = "../mizar-artifact" }
 mizar-session = { path = "../mizar-session" }
+mizar-vc = { path = "../mizar-vc" }
+
+[dev-dependencies]
+mizar-core = { path = "../mizar-core" }

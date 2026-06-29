@@ -89,17 +89,26 @@ fn cache_manifest_dependency_boundary_matches_cache_key_builder() {
 
     assert_eq!(
         dependency_sections,
-        [(
-            "dependencies".to_owned(),
-            vec![
-                "blake3 = \"1.8.5\"",
-                "mizar-artifact = { path = \"../mizar-artifact\" }",
-                "mizar-session = { path = \"../mizar-session\" }",
-            ],
-        )],
-        "{} must keep production dependencies limited to the cache-key builder \
-         hash implementation plus mizar-session and mizar-artifact; \
-         dev/build/target dependency sections require a later explicit task",
+        [
+            (
+                "dependencies".to_owned(),
+                vec![
+                    "blake3 = \"1.8.5\"",
+                    "mizar-artifact = { path = \"../mizar-artifact\" }",
+                    "mizar-session = { path = \"../mizar-session\" }",
+                    "mizar-vc = { path = \"../mizar-vc\" }",
+                ],
+            ),
+            (
+                "dev-dependencies".to_owned(),
+                vec!["mizar-core = { path = \"../mizar-core\" }"],
+            ),
+        ],
+        "{} must keep production dependencies limited to the cache-key and \
+         dependency-fingerprint hash implementation plus mizar-session, \
+         mizar-artifact, and mizar-vc, with mizar-core allowed only as a \
+         task-5 dev dependency for VC projection fixtures; build/target \
+         dependency sections require a later explicit task",
         manifest_path.display()
     );
 }
@@ -126,8 +135,8 @@ fn cache_lib_states_boundary_and_cache_key_module() {
 
     assert_eq!(
         public_api_declarations(&source),
-        ["pub mod cache_key;"],
-        "{} must expose only the cache_key API until later module specs land",
+        ["pub mod cache_key;", "pub mod dependency_fingerprint;"],
+        "{} must expose only the task-5 cache_key and dependency_fingerprint APIs",
         lib_path.display()
     );
 }
@@ -188,7 +197,65 @@ fn cache_key_implementation_excludes_mutable_runtime_inputs() {
 }
 
 #[test]
-fn cache_crate_tree_contains_only_task_three_files() {
+fn dependency_fingerprint_api_does_not_expose_proof_authority_terms() {
+    let dependency_fingerprint_path = crate_root().join("src/dependency_fingerprint.rs");
+    let source = read_to_string(&dependency_fingerprint_path);
+    let public_surface = public_api_surface_lines(&source);
+
+    for forbidden in [
+        "KernelCheckResult",
+        "ProofStatus",
+        "used_axioms",
+        "TrustedAcceptance",
+        "Authority",
+    ] {
+        assert!(
+            public_surface
+                .iter()
+                .all(|declaration| !declaration.contains(forbidden)),
+            "{} must not expose proof-authority projection terms through the \
+             dependency_fingerprint public API; found `{forbidden}` in \
+             {public_surface:?}",
+            dependency_fingerprint_path.display()
+        );
+    }
+}
+
+#[test]
+fn dependency_fingerprint_implementation_excludes_mutable_runtime_inputs() {
+    let dependency_fingerprint_path = crate_root().join("src/dependency_fingerprint.rs");
+    let source = read_to_string(&dependency_fingerprint_path);
+    let implementation = source
+        .split("#[cfg(test)]")
+        .next()
+        .expect("implementation prefix exists");
+
+    for forbidden in [
+        "std::fs",
+        "std::time",
+        "SystemTime",
+        "Instant",
+        "read_dir",
+        "cache_dir",
+        "scheduler",
+        "thread::current",
+        "process::id",
+        "temp_dir",
+        "KernelCheckResult",
+        "used_axioms",
+    ] {
+        assert!(
+            !implementation.contains(forbidden),
+            "{} dependency_fingerprint implementation must remain a pure \
+             projection and exclude mutable runtime or proof-authority input \
+             `{forbidden}`",
+            dependency_fingerprint_path.display()
+        );
+    }
+}
+
+#[test]
+fn cache_crate_tree_contains_only_task_five_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -197,11 +264,13 @@ fn cache_crate_tree_contains_only_task_three_files() {
         [
             "Cargo.toml",
             "src/cache_key.rs",
+            "src/dependency_fingerprint.rs",
             "src/lib.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-cache task 3 may contain only the crate manifest, root module, \
-         cache_key implementation, and lint guard; other behavior modules, \
+        "mizar-cache task 5 may contain only the crate manifest, root module, \
+         cache_key implementation, dependency_fingerprint implementation, and \
+         lint guard; other behavior modules, \
          build scripts, examples, benches, or extra tests require later \
          explicit tasks; found {files:?}"
     );
