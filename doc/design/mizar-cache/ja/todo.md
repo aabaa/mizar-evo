@@ -23,7 +23,7 @@ internal 02 のレコード/blob ストアを加えたものに従う。この c
 | dependency_fingerprint | `dependency_fingerprint.md`（task 4） | `src/dependency_fingerprint.rs` | [x] |
 | cache_store | `cache_store.md`（task 7） | `src/cache_store.rs` | [x] |
 | proof_reuse | `proof_reuse.md`（task 10） | `src/proof_reuse.rs` | [x] |
-| cluster_db | `cluster_db.md`（task 12） | `src/cluster_db.rs` | [ ] |
+| cluster_db | `cluster_db.md`（task 12） | `src/cluster_db.rs` | [x] |
 
 `mizar-cache` は内部ビルドキャッシュを所有する: 正準 `CacheKey` の構築、
 依存スライスと fingerprint およびその再ビルドトリガー、`cache_dir` 配下の
@@ -213,11 +213,25 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       「Cluster and Registration Cache Update」、
       [17.cluster_trace_format.md](../../architecture/ja/17.cluster_trace_format.md)。
 
-13. **cluster-db の書き込みと origin 追跡。** [ ]
+13. **cluster-db の書き込みと origin 追跡。** [x]
     - origin メタデータ付きの寄与書き込み、古い origin の除去、origin
       ごとの索引再構築を実装する。
-    - テスト: 改名/削除が古い origin を掃除する。再構築は影響を受けた
-      origin のみに触れる。未受理の寄与の拒否。
+    - テスト: accepted contribution insertion。accepted だが private/local-only、
+      rejected、pending、recovered、uncacheable、externally attested な contribution が
+      visible index から reject されること。incomplete origin metadata、incomplete
+      footprint、missing dependency-interface hash、missing trace replay hash、proof-backed
+      accepted contribution の missing proof witness/discharge identity が reject されること。
+      unknown schema/toolchain compatibility が reject されること。
+      改名/削除が古い origin を掃除する。再構築は影響を受けた origin のみに触れる。
+      deterministic same-index ordering。conflict する重複 origin と cross-module
+      origin-key collision の rejection。
+    - 実装: task 13 は producer-owned `ClusterContributionRecord` snapshot 上の
+      in-memory cache-side data layer を追加する。raw source の parse、proof/checker
+      authority の主張、scheduler hook、`mizar-ir` API、import-scoped view materialization
+      は行わない。
+    - task 13 で完了: `src/cluster_db.rs` は `ClusterDbIndex::apply_module_update`、
+      fail-closed origin validation、stale-origin cleanup、aggregate index snapshot、
+      rebuild report、downstream/proof-authority stub に対する lint guard を公開する。
     - 依存: 12、`mizar-checker` task 16。仕様: `cluster_db.md`。
 
 14. **import スコープのビューと無効化。** [ ]

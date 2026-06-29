@@ -24,7 +24,7 @@ internal 02 and 06.
 | dependency_fingerprint | `dependency_fingerprint.md` (task 4) | `src/dependency_fingerprint.rs` | [x] |
 | cache_store | `cache_store.md` (task 7) | `src/cache_store.rs` | [x] |
 | proof_reuse | `proof_reuse.md` (task 10) | `src/proof_reuse.rs` | [x] |
-| cluster_db | `cluster_db.md` (task 12) | `src/cluster_db.rs` | [ ] |
+| cluster_db | `cluster_db.md` (task 12) | `src/cluster_db.rs` | [x] |
 
 `mizar-cache` owns the internal build cache: canonical `CacheKey`
 construction, dependency slices and fingerprints with their rebuild
@@ -222,11 +222,27 @@ Keep `cargo test -p mizar-cache` green after each task (see
       "Cluster and Registration Cache Update",
       [17.cluster_trace_format.md](../../architecture/en/17.cluster_trace_format.md).
 
-13. **Cluster-db writes and origin tracking.** [ ]
+13. **Cluster-db writes and origin tracking.** [x]
     - Implement contribution writes with origin metadata, stale-origin
       removal, and per-origin index rebuilds.
-    - Tests: rename/removal cleans stale origins; rebuilds touch only
-      affected origins; unaccepted contributions rejected.
+    - Tests: accepted contribution insertion; accepted but private/local-only,
+      rejected, pending, recovered, uncacheable, and externally attested
+      contributions rejected from visible indexes; incomplete origin metadata,
+      incomplete footprints, missing dependency-interface hashes, missing
+      trace replay hashes, and missing proof witness/discharge identity for
+      proof-backed accepted contributions rejected; unknown schema/toolchain
+      compatibility rejected; rename/removal cleans stale origins; rebuilds
+      touch only affected origins; deterministic same-index ordering;
+      duplicate-conflicting origin and cross-module origin-key collision
+      rejection.
+    - Implementation: task 13 adds an in-memory cache-side data layer over
+      producer-owned `ClusterContributionRecord` snapshots. It does not parse
+      raw source, claim proof/checker authority, write scheduler hooks, create
+      `mizar-ir` APIs, or materialize import-scoped views.
+    - Completed by task 13: `src/cluster_db.rs` exposes
+      `ClusterDbIndex::apply_module_update`, fail-closed origin validation,
+      stale-origin cleanup, aggregate index snapshots, rebuild reports, and
+      lint guards for downstream/proof-authority stubs.
     - Deps: 12, `mizar-checker` task 16. Spec: `cluster_db.md`.
 
 14. **Import-scoped views and invalidation.** [ ]

@@ -140,9 +140,11 @@ fn cache_lib_states_boundary_and_cache_key_module() {
             "pub mod cache_key;",
             "pub mod dependency_fingerprint;",
             "pub mod cache_store;",
-            "pub mod proof_reuse;"
+            "pub mod proof_reuse;",
+            "pub mod cluster_db;"
         ],
-        "{} must expose only the task-11 cache_key, dependency_fingerprint, cache_store, and proof_reuse APIs",
+        "{} must expose only the task-13 cache_key, dependency_fingerprint, \
+         cache_store, proof_reuse, and cluster_db APIs",
         lib_path.display()
     );
 }
@@ -331,6 +333,11 @@ fn proof_reuse_api_does_not_expose_authority_results_or_publication_tokens() {
         "PublicationToken",
         "Scheduler",
         "IrCacheAdapter",
+        "scheduler_hook",
+        "artifact_publication",
+        "proof_authority",
+        "ir_cache_adapter",
+        "mizar_ir",
         "witness_store",
     ] {
         assert!(
@@ -364,7 +371,11 @@ fn proof_reuse_implementation_has_no_downstream_stub_or_timing_inputs() {
         "mizar_build",
         "mizar_ir",
         "schedule_task",
+        "scheduler_hook",
         "publish_ref",
+        "artifact_publication",
+        "proof_authority",
+        "ir_cache_adapter",
         "KernelCheckResult",
         "project_status",
         "CommittedWitnessPublication",
@@ -386,7 +397,88 @@ fn proof_reuse_implementation_has_no_downstream_stub_or_timing_inputs() {
 }
 
 #[test]
-fn cache_crate_tree_contains_only_task_eleven_files() {
+fn cluster_db_api_does_not_expose_proof_authority_or_downstream_stubs() {
+    let cluster_db_path = crate_root().join("src/cluster_db.rs");
+    let source = read_to_string(&cluster_db_path);
+    let public_surface = public_api_surface_lines(&source);
+
+    for forbidden in [
+        "KernelCheckResult",
+        "ProofStatusProjection",
+        "TrustedUsedAxiomsRef",
+        "ArtifactStatusPublication",
+        "CommittedWitnessPublication",
+        "ProofWitnessPublishedRef",
+        "ProofWitnessPublication",
+        "ProofWitnessRef",
+        "PublicationToken",
+        "Scheduler",
+        "IrCacheAdapter",
+        "scheduler_hook",
+        "artifact_publication",
+        "proof_authority",
+        "ir_cache_adapter",
+        "mizar_ir",
+        "witness_store",
+    ] {
+        assert!(
+            public_surface
+                .iter()
+                .all(|declaration| !declaration.contains(forbidden)),
+            "{} must not expose proof authority, publication, scheduler, or IR \
+             adapter APIs through cluster_db; found `{forbidden}` in \
+             {public_surface:?}",
+            cluster_db_path.display()
+        );
+    }
+}
+
+#[test]
+fn cluster_db_implementation_has_no_downstream_stub_or_timing_inputs() {
+    let cluster_db_path = crate_root().join("src/cluster_db.rs");
+    let source = read_to_string(&cluster_db_path);
+    let implementation = source
+        .split("#[cfg(test)]")
+        .next()
+        .expect("implementation prefix exists");
+
+    for forbidden in [
+        "std::fs",
+        "std::time",
+        "SystemTime",
+        "Instant",
+        "thread::current",
+        "process::id",
+        "mizar_build",
+        "mizar_ir",
+        "schedule_task",
+        "scheduler_hook",
+        "publish_ref",
+        "artifact_publication",
+        "proof_authority",
+        "ir_cache_adapter",
+        "KernelCheckResult",
+        "project_status",
+        "CommittedWitnessPublication",
+        "ProofWitnessPublishedRef",
+        "ProofWitnessPublication",
+        "ProofWitnessRef",
+        "ArtifactStatusPublication",
+        "PublicationToken",
+        "witness_store",
+    ] {
+        assert!(
+            !implementation.contains(forbidden),
+            "{} cluster_db implementation must remain accepted-origin indexing \
+             only and must not add downstream stubs, publication shortcuts, \
+             proof authority calls, or timing input `{forbidden}`",
+            cluster_db_path.display()
+        );
+    }
+}
+
+#[test]
+fn cache_crate_tree_contains_only_task_thirteen_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -396,15 +488,16 @@ fn cache_crate_tree_contains_only_task_eleven_files() {
             "Cargo.toml",
             "src/cache_key.rs",
             "src/cache_store.rs",
+            "src/cluster_db.rs",
             "src/dependency_fingerprint.rs",
             "src/lib.rs",
             "src/proof_reuse.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-cache task 11 may contain only the crate manifest, root module, \
+        "mizar-cache task 13 may contain only the crate manifest, root module, \
          cache_key implementation, dependency_fingerprint implementation, \
-         cache_store implementation, proof_reuse implementation, and lint \
-         guard; other behavior modules, \
+         cache_store implementation, proof_reuse implementation, cluster_db \
+         implementation, and lint guard; other behavior modules, \
          build scripts, examples, benches, or extra tests require later \
          explicit tasks; found {files:?}"
     );

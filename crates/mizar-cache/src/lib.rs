@@ -25,3 +25,6 @@ pub mod cache_store;
 
 /// Cache-side proof-reuse validation.
 pub mod proof_reuse;
+
+/// Cache-side cluster-db origin and aggregate-index storage.
+pub mod cluster_db;

@@ -3,7 +3,9 @@
 > Canonical language: English. Japanese companion:
 > [../ja/cluster_db.md](../ja/cluster_db.md).
 
-Status: specified by task 12. Source implementation begins in task 13.
+Status: specified by task 12. Task 13 implements origin writes, stale-origin
+removal, and aggregate index rebuilds. Import-scoped view materialization
+begins in task 14.
 
 ## Purpose
 
@@ -51,29 +53,43 @@ proof witness bytes, ATP evidence, or cache records.
 
 ## Conceptual Surface
 
-Task 13 may refine exact Rust names, but the semantic surface is:
+Task 13 exposes the source-level write/origin-tracking data layer:
 
 ```rust
 pub const CLUSTER_DB_SCHEMA_VERSION: &str;
 pub const CLUSTER_DB_HASH_DOMAIN: &str;
 
-pub struct ClusterDbRoot { ... }
 pub struct ClusterContributionOrigin { ... }
 pub struct ClusterContributionRecord { ... }
+pub struct ClusterIndexEntry { ... }
+pub struct ClusterAggregateRow { ... }
+pub struct ClusterAggregateIndexes { ... }
 pub struct ClusterIndexSnapshot { ... }
-pub struct ImportScopedViewKey { ... }
-pub struct ImportScopedView { ... }
+pub struct ClusterDbIndex { ... }
+pub struct ClusterDbUpdateReport { ... }
 
-pub enum ClusterDbLookupOutcome {
-    Hit(ImportScopedView),
-    Miss(ClusterDbMiss),
+pub enum ClusterDbWriteRejection {
+    UnsupportedSchema { ... },
+    MissingRequiredIdentity { ... },
+    UnacceptedContribution { ... },
+    NotImporterVisible { ... },
+    IncompleteOrigin { ... },
+    Uncacheable { ... },
+    ConflictingDuplicateOrigin { ... },
+    OriginKeyCollision { ... },
+    UnknownCompatibility { ... },
 }
 ```
 
-Lookups must fail closed. Unknown schema versions, unknown toolchain
-compatibility, incomplete origin footprints, missing origin records, stale
-origin records, uncacheable markers, incompatible verifier policy, or any
-unaccepted contribution force a miss/rebuild rather than a visible hit.
+Writes and rebuilds must fail closed. Unknown schema versions, unknown
+schema/toolchain compatibility, incomplete origin footprints, missing origin
+records, stale origin records, uncacheable markers, incompatible verifier
+policy, or any unaccepted contribution force rejection or rebuild rather than
+a visible row.
+
+Task 14 may add import-scoped view names such as `ImportScopedViewKey`,
+`ImportScopedView`, and `ClusterDbLookupOutcome`. Task 13 must not expose those
+view materialization APIs.
 
 ## Store Layout
 
@@ -139,13 +155,19 @@ rename or deletion:
 | `guard_hash` | Canonical guard and side-condition summary. |
 | `declared_contribution_hash` | Canonical generated attribute, existence fact, result fact, reduction rule, inheritance edge, or DAG edge payload. |
 | `accepted_visibility` | Export/import visibility projected by the owner. Private or local-only contributions are not visible to importers. |
+| `accepted_status` | Owner-projected contribution status. Only `Accepted` may enter visible indexes. |
 | `accepted_status_projection_hash` | Hash of the owner-projected accepted registration status used for visibility. It is not proof authority. |
 | `accepted_witness_or_discharge_hash` | Owner-exported accepted witness or deterministic discharge identity for proof-backed accepted contributions. Missing identity makes that origin incomplete/uncacheable. It is validation metadata only. |
+| `proof_backed` | Whether visibility depends on proof or deterministic discharge validation. If true, witness/discharge identity is mandatory. |
 | `verifier_policy_fingerprint` | Policy under which the contribution became visible. Incompatible policies miss. |
+| `policy_compatibility` | Verifier-policy compatibility fields. Missing, unknown, or unsupported compatibility fails closed. |
+| `schema_compatibility` | Producer schema compatibility fields. Missing, unknown, or unsupported compatibility fails closed. |
+| `toolchain_compatibility` | Producer toolchain compatibility fields. Missing, unknown, or unsupported compatibility fails closed. |
 | `producer_schema_versions` | Schema families needed to interpret the contribution. Unknown required schemas miss. |
 | `trace_replay_hashes` | ResolutionTrace replay hashes required to audit or replay the contribution. |
 | `dependency_interface_hashes` | Dependency-facing module/registration interface hashes consumed by the contribution. |
 | `origin_footprint_hash` | Complete footprint hash for stale-origin detection and view invalidation. |
+| `footprint_completeness` | Completeness state of the origin dependency footprint. `IncompleteUncacheable` forces rejection. |
 | `uncacheable` | Explicit marker that prevents insertion and reuse. |
 
 The cache may store diagnostic references beside an origin record, but
@@ -293,7 +315,7 @@ selection, proof acceptance, or artifact order.
 | Gap | Classification | Handling |
 |---|---|---|
 | `CLUSTERDB-G001` | `external_dependency_gap` | Task 13 may consume concrete checker/artifact accepted-contribution producers if present. If the producer seam is insufficient, record the missing fields and defer rather than parsing raw source or fabricating accepted status. |
-| `CLUSTERDB-G002` | `deferred` | Task 13 owns origin record writes, stale-origin removal, and aggregate index rebuilds. This task specifies the contract only. |
+| `CLUSTERDB-G002` | `deferred` | Task 13 implements the in-memory origin-write and aggregate-index data layer. Durable `cluster-db/` file materialization remains deferred until a persistent cluster-db storage task is scheduled. |
 | `CLUSTERDB-G003` | `deferred` | Task 14 owns import-scoped view materialization and invalidation tests. This task specifies view identity and invalidation rules only. |
 | `CLUSTERDB-G004` | `external_dependency_gap` | Build scheduler integration remains owner-gated by task 15. `cluster_db` must not add placeholder scheduler APIs. |
 | `CLUSTERDB-G005` | `external_dependency_gap` | IR cache adapter integration remains owner-gated by task 15. `cluster_db` must not add placeholder `mizar-ir` APIs. |
@@ -307,12 +329,16 @@ Task 13 must cover:
   rejected, pending, recovered, uncacheable, or externally attested
   contributions being excluded from visible indexes;
 - incomplete origin metadata, incomplete origin footprints, missing dependency
-  interface hashes, and missing trace replay hashes forcing misses instead of
-  visible rows;
+  interface hashes, missing trace replay hashes, missing proof
+  witness/discharge identity for proof-backed accepted origins, and unknown or
+  unsupported schema/toolchain compatibility forcing misses instead of visible
+  rows;
 - rename and deletion removing stale origins before reuse;
-- duplicate conflicting origins forcing misses;
+- duplicate conflicting origins and cross-module origin-key collisions forcing
+  misses without mutation;
 - aggregate rebuilds touching only affected origins;
-- deterministic aggregate ordering independent of write order.
+- deterministic aggregate ordering independent of write order, including
+  same-index buckets.
 
 Task 14 must cover:
 
@@ -326,7 +352,7 @@ Task 14 must cover:
 
 ## Non-Goals
 
-Task 12 does not implement source code, public Rust APIs, scheduler
-integration, `mizar-ir` adapter integration, artifact publication-token
-integration, proof status projection, proof winner selection, kernel checking,
-or `ResolutionTrace` construction.
+Tasks 12 and 13 do not implement scheduler integration, `mizar-ir` adapter
+integration, artifact publication-token integration, proof status projection,
+proof winner selection, kernel checking, or `ResolutionTrace` construction.
+Task 13 also does not materialize import-scoped views; that remains task 14.
