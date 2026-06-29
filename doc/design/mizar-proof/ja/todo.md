@@ -170,13 +170,17 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
      validation、後続 status projection のための non-trusted outcome preservation
      を実装した。
 
-8. **仕様: `status.md`。** [ ]
+8. **仕様: `status.md`。** [x]
    - 状態射影の仕様を執筆する（英語と日本語、コードなし）: artifact と
      診断に向けた証明状態モデル、信頼された `used_axioms` の伝播
      （kernel が受理した証拠からのみ）、open/拒否された義務の
      explanation 参照。
    - 依存: 5。仕様: [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
-     「Proof Witness and Artifact Flow」、アーキテクチャ 19。
+     「Proof Witness and Artifact Flow」、アーキテクチャ 19、アーキテクチャ 22。
+   - 状態: paired `status.md` spec を追加し、projection input、selection から status
+     への mapping、trusted `used_axioms` boundary、diagnostic/explanation reference、
+     artifact projection limit、proof reuse metadata、deferred/external dependency gap
+     を定義した。
 
 9. **証明状態の射影。** [ ]
    - artifact と診断のための状態射影を実装する。信頼された
@@ -237,10 +241,12 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
 
 17. **proof-reuse metadata export 契約。** [ ]
     - `mizar-cache` が消費する proof-reuse metadata を公開する:
-      compatible verifier-policy fingerprint、選択された proof witness hash
-      または deterministic discharge hash、evidence class、selected-candidate
-      provenance、selection reason。この metadata は reuse の validation
-      predicate であり、trusted proof status ではない。
+      compatible verifier-policy fingerprint、`ObligationAnchor`、canonical VC、
+      local-context、dependency-slice fingerprint、選択された proof witness hash
+      または deterministic discharge hash、matching proof-evidence identity、
+      dependency artifact/schema compatibility、evidence class、selected-candidate
+      provenance、selection reason。この metadata は `status.md` と architecture 22
+      に従う reuse validation predicate であり、trusted proof status ではない。
     - テスト: export された reuse component のいずれかが変わると reuse
       predicate が変化または無効化される。candidate arrival をシャッフルしても
       同じ metadata が export される。外部認証された証拠は外部認証された

@@ -173,13 +173,17 @@ Keep `cargo test -p mizar-proof` green after each task (see
      source/class compatibility validation, and preservation of non-trusted
      outcomes for later status projection.
 
-8. **Spec: `status.md`.** [ ]
+8. **Spec: `status.md`.** [x]
    - Write the status-projection spec (English and Japanese, no code): the
      artifact- and diagnostics-facing proof status model, trusted
      `used_axioms` propagation (only from kernel-accepted evidence), and
      explanation references for open/rejected obligations.
    - Deps: 5. Spec: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
-     "Proof Witness and Artifact Flow", architecture 19.
+     "Proof Witness and Artifact Flow", architecture 19, architecture 22.
+   - Status: added paired `status.md` specs covering projection inputs,
+     selection-to-status mapping, trusted `used_axioms` boundaries,
+     diagnostic/explanation references, artifact projection limits, proof
+     reuse metadata, and deferred/external dependency gaps.
 
 9. **Proof status projection.** [ ]
    - Implement status projection for artifacts and diagnostics, including
@@ -242,10 +246,13 @@ Keep `cargo test -p mizar-proof` green after each task (see
 
 17. **Proof-reuse metadata export contract.** [ ]
     - Expose the proof-reuse metadata consumed by `mizar-cache`: compatible
-      verifier-policy fingerprint, selected proof witness hash or deterministic
-      discharge hash, evidence class, selected-candidate provenance, and the
-      selection reason. This metadata is a validation predicate for reuse, not
-      trusted proof status.
+      verifier-policy fingerprint, `ObligationAnchor`, canonical VC,
+      local-context, and dependency-slice fingerprints, selected proof witness
+      hash or deterministic discharge hash, matching proof-evidence identity,
+      dependency artifact/schema compatibility, evidence class,
+      selected-candidate provenance, and the selection reason. This metadata
+      follows `status.md` and architecture 22; it is a validation predicate for
+      reuse, not trusted proof status.
     - Tests: changing any exported reuse component changes or invalidates the
       reuse predicate; shuffled candidate arrival preserves the same exported
       metadata; externally attested evidence remains externally attested and is
