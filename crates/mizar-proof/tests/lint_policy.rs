@@ -107,7 +107,7 @@ fn proof_manifest_dependency_boundary_is_task_one_minimal() {
 }
 
 #[test]
-fn proof_lib_states_boundary_and_exposes_no_modules_before_specs() {
+fn proof_lib_states_boundary_and_exposes_policy_module_after_spec() {
     let lib_path = crate_root().join("src/lib.rs");
     let source = read_to_string(&lib_path);
 
@@ -127,10 +127,11 @@ fn proof_lib_states_boundary_and_exposes_no_modules_before_specs() {
     }
 
     let declarations = public_module_declarations(&source);
-    assert!(
-        declarations.is_empty(),
-        "{} must not expose policy, selection, status, or witness modules before \
-         their paired module specs land; found {declarations:?}",
+    assert_eq!(
+        declarations,
+        ["policy"],
+        "{} may expose only the task-3 policy module; selection, status, and \
+         witness modules require later paired specs; found {declarations:?}",
         lib_path.display()
     );
 }
@@ -142,10 +143,15 @@ fn proof_crate_tree_contains_only_task_one_files() {
 
     assert_eq!(
         files,
-        ["Cargo.toml", "src/lib.rs", "tests/lint_policy.rs"],
-        "mizar-proof task 1 must stay a scaffold-only crate; policy, selection, \
-         status, witness-store, build scripts, examples, benches, or extra \
-         tests require later explicit tasks; found {files:?}"
+        [
+            "Cargo.toml",
+            "src/lib.rs",
+            "src/policy.rs",
+            "tests/lint_policy.rs"
+        ],
+        "mizar-proof task 3 may contain only the policy module plus the lint \
+         guard; selection, status, witness-store, build scripts, examples, \
+         benches, or extra tests require later explicit tasks; found {files:?}"
     );
 }
 
@@ -269,9 +275,11 @@ fn dependency_section(section_name: &str) -> bool {
 fn public_module_declarations(source: &str) -> Vec<String> {
     source
         .lines()
-        .enumerate()
-        .filter(|(_, line)| line.trim_start().starts_with("pub mod "))
-        .map(|(index, line)| format!("{}: {}", index + 1, line.trim()))
+        .filter_map(|line| {
+            line.trim_start()
+                .strip_prefix("pub mod ")
+                .map(|module| module.trim_end_matches(';').to_owned())
+        })
         .collect()
 }
 

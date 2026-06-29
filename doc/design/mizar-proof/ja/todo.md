@@ -100,13 +100,21 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
      「Proof Policy Evaluator」、アーキテクチャ 08。
    - 状態: paired spec を追加した。実装は task 3 で開始する。
 
-3. **ポリシー評価器。** [ ]
+3. **ポリシー評価器。** [x]
    - `ProofPolicyEvaluator` を実装する: 候補分類、
      `can_schedule_kernel_check`、`policy.md` が定義する policy fingerprint の射影。
      将来の cache integration は `mizar-cache` task 2 と調整したままにする。
+   - kernel result と明示的な evidence origin を対にする、この crate ローカルの
+     normalized policy input wrapper を定義する。`KernelCheckResult` だけから
+     origin を推測してはならない。
+   - この task の external evidence support は base classifier shape のみにする。
+     完全な admission matrix と安定した rejection diagnostic は task 4 に残す。
    - テスト: 証拠種別ごとの分類フィクスチャ。fingerprint はポリシーに
      関係する設定が変わったときだけ変わる。
    - 依存: 2。仕様: `policy.md`。
+   - 状態: `src/policy.rs` に normalized kernel-origin input、base external
+     classifier shape、schedulability check、deterministic policy fingerprint、
+     focused test を実装した。
 
 4. **外部認証された証拠の扱い。** [ ]
    - 外部認証された証拠の許可とラベル付けを実装する: プロファイルが

@@ -19,7 +19,8 @@ status is `Accepted`.
 
 The policy evaluator consumes normalized, immutable records from other crates:
 
-- accepted or rejected `mizar-kernel` results;
+- accepted or rejected `mizar-kernel` results paired with a normalized
+  evidence-origin wrapper owned by this crate;
 - untrusted `mizar-atp` portfolio candidates and backend diagnostics;
 - deterministic `mizar-vc` built-in discharge records and discharge hashes;
 - externally attested evidence records;
@@ -29,6 +30,14 @@ The policy evaluator consumes normalized, immutable records from other crates:
 
 It may observe cache metadata only as a validation input supplied by the cache
 owner. Cache hits are not proof authority and do not change a candidate class.
+
+`KernelCheckResult` does not by itself identify whether the checked evidence
+came from ATP formula/substitution evidence, built-in discharge evidence, or a
+kernel primitive. The policy module must receive that kernel-checkable origin
+as explicit normalized input and must not infer it from arrival order, backend
+identity, checked import contents, diagnostics, or used-axiom lists.
+Externally attested evidence remains a separate policy input, not a
+kernel-result origin.
 
 ## Verifier Policy Settings
 

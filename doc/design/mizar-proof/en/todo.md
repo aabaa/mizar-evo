@@ -101,14 +101,22 @@ Keep `cargo test -p mizar-proof` green after each task (see
      "Proof Policy Evaluator", architecture 08.
    - Status: paired specs added; implementation begins in task 3.
 
-3. **Policy evaluator.** [ ]
+3. **Policy evaluator.** [x]
    - Implement `ProofPolicyEvaluator`: candidate classification,
      `can_schedule_kernel_check`, and the policy-fingerprint projection defined
      by `policy.md`; future cache integration remains coordinated with
      `mizar-cache` task 2.
+   - Define the local normalized policy input wrapper that pairs kernel
+     results with explicit evidence origin. Do not infer origin from
+     `KernelCheckResult` alone.
+   - External evidence support in this task is the base classifier shape only;
+     the full admission matrix and stable rejection diagnostics remain task 4.
    - Tests: classification fixtures per evidence kind; fingerprint changes
      iff a policy-relevant setting changes.
    - Deps: 2. Spec: `policy.md`.
+   - Status: implemented `src/policy.rs` with normalized kernel-origin inputs,
+     base external classifier shape, schedulability checks, deterministic
+     policy fingerprinting, and focused tests.
 
 4. **Externally attested evidence handling.** [ ]
    - Implement admission and labeling of externally attested evidence:
