@@ -295,11 +295,17 @@ Keep `cargo test -p mizar-proof` green after each task (see
       tokens, copied kernel metadata, payload canonicality validators, and
       downstream ATP early-stop integration.
 
-16. **Bilingual documentation sync audit.** [ ]
+16. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-proof/en/` with its Japanese companion and
       synchronize content.
     - Deps: 15. Spec: repository documentation policy.
+    - Status: added paired
+      [`bilingual_sync_audit.md`](./bilingual_sync_audit.md) docs. The audit
+      confirms that all English canonical files have Japanese companions, no
+      Japanese placeholder remains, trust-boundary and deferred-gap wording is
+      synchronized, and the only required sync edits were task-local metadata
+      updates for the crate plan, TODO, and task ledger.
 
 17. **Proof-reuse metadata export contract.** [ ]
     - Expose the proof-reuse metadata consumed by `mizar-cache`: compatible

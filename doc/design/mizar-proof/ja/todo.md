@@ -286,10 +286,16 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
       validator、downstream ATP early-stop integration の deferred または
       `external_dependency_gap` として分類した。
 
-16. **二言語ドキュメント同期監査。** [ ]
+16. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-proof/en/` の各英語正本と日本語版を比較し、内容を
       同期する。
     - 依存: 15。仕様: リポジトリのドキュメント方針。
+    - 状態: paired
+      [`bilingual_sync_audit.md`](./bilingual_sync_audit.md) docs を追加した。
+      audit は、すべての English canonical file に Japanese companion があり、
+      Japanese placeholder が残っておらず、trust-boundary と deferred-gap wording が
+      synchronized していることを確認した。必要な sync edit は crate plan、TODO、
+      task ledger の task-local metadata update だけだった。
 
 17. **proof-reuse metadata export 契約。** [ ]
     - `mizar-cache` が消費する proof-reuse metadata を公開する:
