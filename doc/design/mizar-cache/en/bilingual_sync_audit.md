@@ -38,7 +38,8 @@ document and backfills Task 18's commit hash in the paired ledgers.
 
 | Document | Synchronized content checked | Result |
 |---|---|---|
-| `00.crate_plan.md` | Crate responsibility, authority boundaries, specification references, known gaps/drift, task decomposition through task 23, task 20 result, and task 21 plan. | Synchronized. |
+| `00.crate_plan.md` | Crate responsibility, authority boundaries, specification references, known gaps/drift, relevant tests/source inventory through task 20, task decomposition through task 23, task 20 result, and task 21 result. | Synchronized. |
+| `architecture_22_audit.md` | Task 21 architecture-22 follow-up audit, crate-owned contract checks, bilingual/source-spec result, residual gap classification, and no-blocking-finding conclusion. | Synchronized by task 21 updates. |
 | `cache_key.md` | Cache-key purpose, public API, validation inputs, canonical ordering/hashing, fail-closed rules, proof-reuse boundary, tests, public enum policy, deferred gaps, and non-goals. | Synchronized. |
 | `dependency_fingerprint.md` | Fingerprint responsibility, public conceptual API, target taxonomy, stable inputs/exclusions, completeness states, rebuild triggers, API compatibility diff, trust boundary, planned tests, public enum policy, deferred gaps, and non-goals. | Synchronized. |
 | `cache_store.md` | Record/blob store API, on-disk layout, record identity, header and encoding rules, lookup/insert fail-closed behavior, miss reasons, deletability, trust boundary, tests, public enum policy, deferred gaps, and non-goals. | Synchronized. |
@@ -47,8 +48,8 @@ document and backfills Task 18's commit hash in the paired ledgers.
 | `integration_readiness.md` | Task 15 readiness scope, current cache surface, `mizar-build`/`mizar-ir`/publication-token external dependency gaps, deferred work, and docs-only verification. | Synchronized. |
 | `source_spec_audit.md` | Task 18 public module exports, public API and method inventory, trust boundary, task-20 cross-module evidence, guarded test references, full gap table parity with ledgers, and no-drift conclusion. | Synchronized. |
 | `bilingual_sync_audit.md` | Task 19 scope, method, pair inventory, classification, and sync edits. | Synchronized by this paired audit document. |
-| `task_ledger.md` | Task status and commit hashes through task 19, pending task 20 self-hash, review/verification rows, and complete deferred/external dependency gap register. | Synchronized by task 20 updates; task 20 self-hash is backfilled by the next task after its commit exists. |
-| `todo.md` | Ordered tasks, completed tasks through task 20, remaining task 21-23 work, recommended verification, and notes. | Synchronized by task 20 updates. |
+| `task_ledger.md` | Task status and commit hashes through task 20, pending task 21 self-hash, review/verification rows, and complete deferred/external dependency gap register. | Synchronized by task 21 updates; task 21 self-hash is backfilled by the next task after its commit exists. |
+| `todo.md` | Ordered tasks, completed tasks through task 21, remaining task 22-23 work, recommended verification, and notes. | Synchronized by task 21 updates. |
 
 ## Classification
 

@@ -37,7 +37,8 @@ meaning-changing bilingual drift、missing companion、stale sync placeholder、
 
 | Document | Synchronized content checked | Result |
 |---|---|---|
-| `00.crate_plan.md` | crate responsibility、authority boundary、specification reference、known gap/drift、task 23 までの task decomposition、task 20 result、task 21 plan。 | Synchronized. |
+| `00.crate_plan.md` | crate responsibility、authority boundary、specification reference、known gap/drift、task 20 までの relevant test / source inventory、task 23 までの task decomposition、task 20 result、task 21 result。 | Synchronized. |
+| `architecture_22_audit.md` | task 21 architecture-22 follow-up audit、crate-owned contract check、bilingual/source-spec result、residual gap classification、no-blocking-finding conclusion。 | task 21 update により synchronized。 |
 | `cache_key.md` | cache-key purpose、public API、validation input、canonical ordering/hashing、fail-closed rule、proof-reuse boundary、test、public enum policy、deferred gap、non-goal。 | Synchronized. |
 | `dependency_fingerprint.md` | fingerprint responsibility、public conceptual API、target taxonomy、stable input/exclusion、completeness state、rebuild trigger、API compatibility diff、trust boundary、planned test、public enum policy、deferred gap、non-goal。 | Synchronized. |
 | `cache_store.md` | record/blob store API、on-disk layout、record identity、header / encoding rule、lookup/insert fail-closed behavior、miss reason、deletability、trust boundary、test、public enum policy、deferred gap、non-goal。 | Synchronized. |
@@ -46,8 +47,8 @@ meaning-changing bilingual drift、missing companion、stale sync placeholder、
 | `integration_readiness.md` | task 15 readiness scope、current cache surface、`mizar-build` / `mizar-ir` / publication-token external dependency gap、deferred work、docs-only verification。 | Synchronized. |
 | `source_spec_audit.md` | task 18 public module export、public API / method inventory、trust boundary、task-20 cross-module evidence、guarded test reference、ledger と parity する full gap table、no-drift conclusion。 | Synchronized. |
 | `bilingual_sync_audit.md` | task 19 scope、method、pair inventory、classification、sync edits。 | この paired audit document により synchronized。 |
-| `task_ledger.md` | task 19 までの task status と commit hash、pending task 20 self-hash、review/verification row、complete deferred/external dependency gap register。 | task 20 update により synchronized。task 20 self-hash は commit 作成後の次 task で backfill する。 |
-| `todo.md` | ordered task、task 20 までの完了 task、残る task 21-23 work、recommended verification、notes。 | task 20 update により synchronized。 |
+| `task_ledger.md` | task 20 までの task status と commit hash、pending task 21 self-hash、review/verification row、complete deferred/external dependency gap register。 | task 21 update により synchronized。task 21 self-hash は commit 作成後の次 task で backfill する。 |
+| `todo.md` | ordered task、task 21 までの完了 task、残る task 22-23 work、recommended verification、notes。 | task 21 update により synchronized。 |
 
 ## Classification
 

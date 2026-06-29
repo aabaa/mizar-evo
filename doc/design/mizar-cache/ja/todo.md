@@ -340,13 +340,21 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       cross-crate clean/incremental equivalence は scheduler と artifact
       publication owner に依存するため `external_dependency_gap` のまま。
 
-21. **architecture-22 フォローアップ監査。** [ ]
+21. **architecture-22 フォローアップ監査。** [x]
     - task 20 の cache-key、dependency-footprint、store、proof-reuse 契約に
       ついて、ソース/仕様対応監査と二言語ドキュメント同期監査を再実行する。
       残る fail-closed または trust-boundary gap をフォローアップタスクとして
       記録する。
     - 依存: 20。仕様: 全モジュール仕様、本 TODO、リポジトリの
       ドキュメント方針。
+    - task 21 で完了: paired `architecture_22_audit.md` は crate-owned
+      architecture-22 cache contract について unresolved blocking/high
+      fail-closed または trust-boundary finding が残っていないことを記録する。
+      残る scheduler、dependency-fingerprint consumer、`mizar-ir`、
+      artifact publication、accepted-contribution producer、
+      proof/cache/artifact consumer、fine-grained producer-slice、durable
+      cluster-db/view work は既存の `external_dependency_gap` または
+      `deferred` work のままである。
 
 22. **module 境界リファクタリング gate。** [ ]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、

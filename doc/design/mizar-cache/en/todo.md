@@ -357,13 +357,20 @@ Keep `cargo test -p mizar-cache` green after each task (see
       clean/incremental equivalence depends on scheduler and artifact
       publication owners and remains `external_dependency_gap`.
 
-21. **Architecture-22 follow-up audit.** [ ]
+21. **Architecture-22 follow-up audit.** [x]
     - Re-run the source/spec correspondence and bilingual documentation sync
       audits for the task-20 cache-key, dependency-footprint, store, and
       proof-reuse contract; record any remaining fail-closed or trust-boundary
       gaps as follow-up tasks.
     - Deps: 20. Spec: all module specs, this TODO, and repository
       documentation policy.
+    - Completed by task 21: paired `architecture_22_audit.md` records no
+      unresolved blocking/high fail-closed or trust-boundary finding for the
+      crate-owned architecture-22 cache contract. Remaining scheduler,
+      dependency-fingerprint consumer, `mizar-ir`, artifact publication,
+      accepted-contribution producer, proof/cache/artifact consumer,
+      fine-grained producer-slice, and durable cluster-db/view work stays
+      classified as existing `external_dependency_gap` or `deferred` work.
 
 22. **Module-boundary refactor gate.** [ ]
     - Before treating the crate as ready for downstream consumers, audit the
