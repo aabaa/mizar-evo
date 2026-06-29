@@ -170,19 +170,21 @@ failure は deterministic diagnostic または typed store error である。tru
 
 ## Cache And Reuse Boundary
 
-publish 可能な `KernelVerified` witness について、staged/published witness hash は
-proof-reuse validation に参加するが、proof authority ではない。cache record は、witness
-hash、selected evidence hash、obligation fingerprint、policy fingerprint、schema version、
-accepted kernel metadata が現在の validation predicate とすべて一致する場合だけ proof を
-reuse してよい。dependency artifact fingerprint は、downstream artifact/cache owner が
-authoritative binding を供給した後にだけその predicate の一部になる。task 11 では
-producer-owned reuse metadata として保持する。staged hash は successful publication を通じてだけ
-artifact-facing な `selected_proof_witness_hash` になる。その hash は witness payload artifact
-hash（`witness_artifact_hash`）であり、`ProofWitnessRef` metadata object の hash ではない。
-artifact support が存在するまで、`DischargedBuiltin` reuse は
-`deterministic_discharge_hash` を使い続ける。internal staged hash は selected proof witness
-hash ではない。cache hit は witness を publish できず、non-trusted status を昇格させられず、
-trusted `used_axioms` も作れない。
+publish 可能な `KernelVerified` witness について、selected witness hash と published
+witness ref は proof-reuse validation に参加するが、proof authority ではない。cache record
+は、witness hash、selected evidence hash、obligation fingerprint、policy fingerprint、
+schema version、accepted kernel metadata が現在の validation predicate とすべて一致する
+場合だけ proof を reuse してよい。dependency artifact fingerprint は、downstream
+artifact/cache owner が authoritative binding を供給した後にだけその predicate の一部になる。
+task 11 では producer-owned reuse metadata として保持する。selected candidate は、現在の
+artifact witness schema が参照できる witness payload artifact hash
+（`witness_artifact_hash`）を持つ場合、`selected_proof_witness_hash` を保持してよい。
+その hash は `ProofWitnessRef` metadata object の hash ではなく、committed publication proof
+でもない。committed `ProofWitnessPublishedRef` は、artifact boundary が matching committed
+witness publication proof を供給した後に `publish_ref` からだけ得られる。artifact support
+が存在するまで、`DischargedBuiltin` reuse は `deterministic_discharge_hash` を使い続ける。
+internal staged hash は selected proof witness hash ではない。cache hit は witness を
+publish できず、non-trusted status を昇格させられず、trusted `used_axioms` も作れない。
 
 ## Deferred And External Dependency Gaps
 

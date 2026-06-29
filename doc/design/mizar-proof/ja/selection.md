@@ -141,7 +141,7 @@ selection は、proof reuse と後段の witness publication が使う安定 met
 | `policy_fingerprint` | active `PolicyFingerprint`。 |
 | `encoded_problem_hash` | encoded obligation の安定 hash。 |
 | `selected_evidence_hash` | class に応じた kernel evidence payload hash、external evidence hash、policy-assumption source hash、または open explanation hash。 |
-| `selected_proof_witness_hash` | artifact witness publication が利用可能な場合だけの witness payload artifact hash（`witness_artifact_hash`）。`ProofWitnessRef` metadata object の hash ではない。 |
+| `selected_proof_witness_hash` | selected `KernelVerified` candidate が現在の artifact schema で参照できる witness metadata を持つ場合の witness payload artifact hash（`witness_artifact_hash`）。`ProofWitnessRef` metadata object の hash ではなく、committed manifest reachability を証明しない。 |
 | `deterministic_discharge_hash` | `DischargedBuiltin` の deterministic built-in discharge hash。 |
 | `external_admission_status` | `PolicyPermittedExternal` の external publication status。 |
 | `proof_witness_publication` | selected class に対する `available`、`external_dependency_gap`、または `not_applicable`。 |
@@ -161,7 +161,9 @@ validation identity も変わらなければならない。
 現在の artifact witness reference は `discharged_builtin` publication をまだ support しない。
 artifact schema gap が閉じるまで、selection は deterministic discharge hash を export してよいが、
 その class では selected proof witness hash を export してはならない。proof-witness
-publication は `external_dependency_gap` として mark しなければならない。
+publication は `external_dependency_gap` として mark しなければならない。committed witness
+publication は、artifact-manifest reachability が証明された後の
+`witness_store::publish_ref` が扱う別 boundary である。
 
 ## Result Shape
 

@@ -375,6 +375,21 @@ Keep `cargo test -p mizar-proof` green after each task (see
       helper splits remain deferred unless task 20 or downstream consumers
       identify a concrete review bottleneck.
 
+20. **Crate exit report and quality review.** [x]
+    - Record hard gates, quality score, verification results, all task
+      commits, deferred items, `repo_metadata_conflict` status, and the
+      next-phase handoff.
+    - Deps: 19. Spec: this TODO,
+      [autonomous crate development](../../autonomous_crate_development.md),
+      all module specs and audits.
+    - Status: added paired
+      [`crate_exit_report.md`](./crate_exit_report.md) docs. The closeout
+      records `mizar-proof` as complete for the proof-policy milestone with
+      quality score 94/100. The stale `mizar-atp` task-28
+      `repo_metadata_conflict` discovered during closeout was resolved by
+      focused metadata correction commit `36d1a9c`; full-workspace verification
+      is clean after that correction.
+
 ## Recommended Verification
 
 Run after each task:

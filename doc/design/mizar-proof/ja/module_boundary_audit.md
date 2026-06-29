@@ -76,7 +76,7 @@ enum name、gap id などの stable identifier を English のまま保持する
 | ID | Class | Evidence | Handling |
 |---|---|---|---|
 | `PROOF19-G001` | `deferred` | production module はまだ 1,100 lines を超えるが、各 module は established module spec に従っており、review risk を増やさず complexity を下げる小さな private helper boundary はまだ特定されていない。 | task 20 quality review が concrete bottleneck を見つける場合、または後続 consumer が move-only split を要求する場合だけ再検討する。 |
-| `PROOF19-G002` | `repo_metadata_conflict` | `mizar-atp` task-28 closeout guard は、現在は正式な `crates/mizar-proof` crate をまだ forbidden placeholder と見なす。 | ここでは report のみ。`mizar-proof` module-boundary task では `mizar-atp` を修復しない。 |
+| `PROOF19-G002` | resolved `repo_metadata_conflict` | task 19 中、`mizar-atp` task-28 closeout guard は、現在は正式な `crates/mizar-proof` crate をまだ forbidden placeholder と見なしていた。 | task 19 では report のみ。task-20 closeout 前に focused metadata correction commit `36d1a9c` で解消済み。 |
 
 ## 結論
 

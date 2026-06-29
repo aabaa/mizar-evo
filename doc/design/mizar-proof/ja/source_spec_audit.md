@@ -92,7 +92,9 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 | `PROOF15-G005` | `deferred` | Concrete witness payload producers | witness store は schema identity と exact bytes を hash し、canonical-byte payload の empty bytes を reject するが、byte-level canonicality validation は producer-owned のまま。 |
 | `PROOF15-G006` | `external_dependency_gap` | Downstream ATP portfolio integration | Early-stop API は stable かつ policy-owned。live backend cancellation/adoption wiring は `mizar-atp` 側に残り、ここでは stub しない。 |
 
-`repo_metadata_conflict` は観測されなかった。
+task-15 source/spec audit 中に `repo_metadata_conflict` は観測されなかった。
+後続の ATP closeout metadata conflict は tasks 18-20 で記録され、focused correction
+commit `36d1a9c` で解消済みである。
 
 ## Conclusion
 

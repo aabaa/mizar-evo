@@ -90,7 +90,9 @@ task 16 は新しい implementation gap を導入しない。module spec と sou
 | byte-level witness payload canonicality validators | `deferred` | concrete payload producers |
 | live ATP early-stop adoption/cancellation wiring | `external_dependency_gap` | `mizar-atp` |
 
-`repo_metadata_conflict` は観測されなかった。
+task-16 bilingual sync audit 中に `repo_metadata_conflict` は観測されなかった。
+後続の ATP closeout metadata conflict は tasks 18-20 で記録され、focused correction
+commit `36d1a9c` で解消済みである。
 
 ## Conclusion
 

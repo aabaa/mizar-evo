@@ -40,7 +40,7 @@ internal projection result は selection winner class と projected obligation s
 
 | Winner class | Projected obligation status | Trusted | Notes |
 |---|---|---:|---|
-| `KernelVerified` | `accepted` | yes | 対応する accepted kernel result が必要である。final artifact publication で accepted として publish するには、publish 可能な kernel witness reference も必要である。 |
+| `KernelVerified` | `accepted` | yes | 対応する accepted kernel result が必要である。accepted artifact status を publishable として project するには matching selected kernel-witness metadata も必要である。committed witness ref は `witness_store::publish_ref` が別に publish する。 |
 | `DischargedBuiltin` | `accepted` | yes | 対応する accepted kernel result が必要である。artifact schema support が存在するまで final artifact witness publication は `external_dependency_gap` のままである。 |
 | `PolicyPermittedExternal` | `externally_attested` | no | policy-controlled evidence のみ。trusted `used_axioms` を持たない。 |
 | `PolicyAssumed` | `policy_assumed` internal status | no | accepted status や externally attested status と区別したままにする。現在の artifact schema にはこの public obligation status がないため、後続 schema が追加するまでは artifact publication は `external_dependency_gap` である。 |
@@ -113,8 +113,9 @@ projection は stable projection data からだけ artifact obligation field を
 だけを受理する。
 そのため:
 
-- `KernelVerified` は対応する witness reference が利用可能な場合だけ accepted
-  artifact status を publish できる;
+- `KernelVerified` は matching selected witness metadata が利用可能な場合だけ accepted
+  artifact status を publishable として project できる。status projection 自体は committed
+  witness ref を publish しない;
 - `DischargedBuiltin` は accepted internal projection のままだが、まだ trusted
   artifact witness ref を publish できない; その deterministic discharge hash は
   現行 artifact schema では internal projection および proof-reuse metadata に留まり、
@@ -137,8 +138,8 @@ status projection は proof reuse の validation metadata を export する:
 - dependency-slice fingerprint;
 - policy fingerprint;
 - selected evidence hash;
-- publish 可能な場合の selected proof witness payload artifact hash
-  （`witness_artifact_hash`）;
+- `KernelVerified` candidate で利用可能な場合の selected proof witness payload artifact hash
+  （`witness_artifact_hash`）。これは committed `ProofWitnessPublishedRef` ではない;
 - 存在する場合の deterministic discharge hash;
 - 存在する場合の trusted used-axiom reference hash;
 - 存在する場合の external admission status;

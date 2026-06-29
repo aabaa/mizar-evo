@@ -81,7 +81,7 @@ stable identifiers.
 | ID | Class | Evidence | Handling |
 |---|---|---|---|
 | `PROOF19-G001` | `deferred` | Remaining production modules are still over 1,100 lines, but each follows an established module spec and no smaller private helper boundary was identified that would reduce complexity without adding review risk. | Reconsider only if task 20 quality review finds a concrete bottleneck or if a later consumer requires a move-only split. |
-| `PROOF19-G002` | `repo_metadata_conflict` | The `mizar-atp` task-28 closeout guard still treats the now-formal `crates/mizar-proof` crate as a forbidden placeholder. | Report-only here; do not repair `mizar-atp` during the `mizar-proof` module-boundary task. |
+| `PROOF19-G002` | resolved `repo_metadata_conflict` | During task 19, the `mizar-atp` task-28 closeout guard still treated the now-formal `crates/mizar-proof` crate as a forbidden placeholder. | Report-only in task 19; resolved later by focused metadata correction commit `36d1a9c` before task-20 closeout. |
 
 ## Conclusion
 

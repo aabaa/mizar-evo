@@ -25,11 +25,12 @@ No blocking `spec_gap`, `test_gap`, `design_drift`, `source_drift`,
 `boundary_violation` remains in `mizar-proof` for the task-17 reuse metadata
 contract.
 
-One out-of-scope `repo_metadata_conflict` was observed in `mizar-atp`: its
-task-28 closeout guard still treats `crates/mizar-proof` as a forbidden
-placeholder crate even though the current `mizar-proof` workflow explicitly
-authorized and completed the formal scaffold. This audit records that conflict
-only and does not repair `mizar-atp`.
+One out-of-scope `repo_metadata_conflict` was observed in `mizar-atp` during
+task 18: its task-28 closeout guard still treated `crates/mizar-proof` as a
+forbidden placeholder crate even though the current `mizar-proof` workflow
+explicitly authorized and completed the formal scaffold. This audit recorded
+that conflict only. The conflict was later resolved by focused metadata
+correction commit `36d1a9c` before task-20 closeout.
 
 ## Architecture-22 Trace
 
@@ -77,7 +78,7 @@ strings, command names, and gap identifiers in English. That is not drift.
 
 | ID | Classification | Evidence | Handling |
 |---|---|---|---|
-| `PROOF18-RM001` | `repo_metadata_conflict` | `cargo test -p mizar-atp` fails in `atp_task_twenty_eight_crate_exit_report_is_documented` because the `mizar-atp` closeout guard still rejects workspace member `crates/mizar-proof` and the `crates/mizar-proof` directory as task-28 placeholders. | Report only. Do not edit `mizar-atp` in this `mizar-proof` audit. |
+| `PROOF18-RM001` | resolved `repo_metadata_conflict` | During task 18, `cargo test -p mizar-atp` failed in `atp_task_twenty_eight_crate_exit_report_is_documented` because the `mizar-atp` closeout guard rejected workspace member `crates/mizar-proof` and the `crates/mizar-proof` directory as task-28 placeholders. | Report-only in task 18. Resolved later by focused metadata correction commit `36d1a9c`; proof policy ownership was not moved to `mizar-atp`. |
 
 ## Conclusion
 

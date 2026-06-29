@@ -93,7 +93,9 @@ integration:
 | `PROOF15-G005` | `deferred` | Concrete witness payload producers | The witness store hashes schema identity and exact bytes and rejects empty canonical-byte payloads, but byte-level canonicality validation remains producer-owned. |
 | `PROOF15-G006` | `external_dependency_gap` | Downstream ATP portfolio integration | Early-stop API is stable and policy-owned; live backend cancellation/adoption wiring remains in `mizar-atp` and is not stubbed here. |
 
-No `repo_metadata_conflict` was observed.
+No `repo_metadata_conflict` was observed during the task-15 source/spec audit.
+The later ATP closeout metadata conflict was recorded by tasks 18-20 and
+resolved by focused correction commit `36d1a9c`.
 
 ## Conclusion
 

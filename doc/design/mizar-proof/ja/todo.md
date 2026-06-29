@@ -362,6 +362,19 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
       downstream consumer が concrete review bottleneck を見つけるまで deferred
       のままである。
 
+20. **crate exit report と quality review。** [x]
+    - hard gate、quality score、verification result、全 task commit、deferred
+      item、`repo_metadata_conflict` status、next-phase handoff を記録する。
+    - 依存: 19。仕様: 本 TODO、
+      [autonomous crate development](../../autonomous_crate_development.md)、
+      全 module spec と audit。
+    - 状態: paired
+      [`crate_exit_report.md`](./crate_exit_report.md) docs を追加した。closeout は
+      `mizar-proof` を proof-policy milestone として complete、quality score 94/100
+      と記録する。Closeout 中に見つかった stale `mizar-atp` task-28
+      `repo_metadata_conflict` は focused metadata correction commit `36d1a9c` で
+      解消済みであり、その後の full-workspace verification は clean である。
+
 ## 推奨検証
 
 各タスクの後で実行する:

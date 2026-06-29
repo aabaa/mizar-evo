@@ -29,7 +29,8 @@ task commit は自分自身の hash を含められないため、self-hash は 
 | 16. Bilingual documentation sync audit | complete | `f58c9a6203179da1b360024fbc3a071263271c3b` | Spec/docs review は no findings。Test-sufficiency review は docs-only verification で no findings。Full implementation review は no findings。Source-doc consistency review は no findings。 | `git diff --check` passed; task path を明示 staging し、cached diff check は passed。 | paired `bilingual_sync_audit.md` docs を追加し、すべての English canonical `mizar-proof` design file に synchronized Japanese companion があること、placeholder や blocking bilingual drift が残っていないことを確認し、trust-boundary/deferred-gap wording を保ち、source behavior change なしで task metadata を更新する。 |
 | 17. Proof-reuse metadata export contract | complete | `f53d6e2e9adc4db740c94f480f49a064662bd190` | 初回 spec/docs review は no findings。Test-sufficiency review は dependency/schema compatibility coverage が bundled である点を指摘した。artifact fingerprint、dependency schema、proof-reuse schema を独立に mutate する test を追加し、focused re-review は no findings。Full implementation review は `cache_reuse_predicate_complete` が external evidence を complete と扱う点を指摘した。class-aware completeness、EN/JA docs、test を追加し、focused re-review は no findings。Source-doc consistency review と focused re-review は no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed。隣接 boundary check: `cargo test -p mizar-kernel`、`cargo test -p mizar-vc`、`cargo test -p mizar-artifact`、`cargo test -p mizar-checker` は passed。`cargo test -p mizar-atp` は、現在は正式 crate である `crates/mizar-proof` を forbidden placeholder と見なす task-28 closeout guard の `repo_metadata_conflict` で failed し、本 task では修復していない。task path を明示 staging し、cached diff check は passed。 | selection/status reuse metadata に selected-candidate provenance、stable selection reason、proof-evidence identity、dependency artifact/schema compatibility、proof-reuse validation hash、class-aware completeness を追加する。Kernel reuse は selected witness hash、built-in discharge reuse は deterministic discharge hash を要求し、non-trusted class は metadata のままにする。cache lookup、cache authority、trusted-status promotion、external-evidence upgrade は追加しない。 |
 | 18. Architecture-22 follow-up audit | complete | `aaf14d6f83357691d01ea2ce60b8fda99e89ac9c` | Spec/docs review は bilingual sync table が task-18 crate-plan update を漏らしている点を指摘した。table を修正し、focused re-review は no findings。Test-sufficiency review は docs-only verification で no findings。Full implementation review は no findings。Source-doc review は source-range/diagnostic-anchor input と embedded non-accepted reason に関する status spec overclaim を指摘した。paired status docs を現在の metadata/ref API に合わせて修正し、focused re-review は no findings。 | `git diff --check` passed; task path を明示 staging し、cached diff check は passed。 | paired `architecture_22_audit.md` docs を追加し、task-17 reuse metadata contract を architecture 22、architecture 11、internal 04、selection/status specs、source API に trace する。source behavior を変えずに、残る downstream cache/artifact/ATP gap と `mizar-atp` closeout guard の `repo_metadata_conflict` を記録し、paired status docs を現在の projection metadata/ref API に合わせて修正する。 |
-| 19. Module-boundary refactor gate | complete | pending self-hash | 初回 spec/docs review は final review / cached-check wording の先取りと stale TODO kickoff text を指摘した。修正後の focused re-review は no findings。Test-sufficiency review は no findings。Full implementation review は no findings で、移動した test body が formatting 後の `HEAD` と一致することを確認した。Source-doc consistency review は pre-fix ledger state を見たため、focused re-review を行い no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; task path を明示 staging し、cached diff check は passed。 | paired `module_boundary_audit.md` docs を追加し、inline unit tests を `src/{policy,selection,status,witness_store}/tests.rs` の private child module へ split する。source-tree lint guard、crate plan、TODO を更新し、production API、diagnostic、deterministic behavior、artifact-facing schema、cache authority、proof trust boundary を保つ。追加の production-helper split は closeout または downstream consumer が concrete bottleneck を見つけるまで deferred。 |
+| 19. Module-boundary refactor gate | complete | `fe0735bc527935532a9ce6038f5597c7a03ecf57` | 初回 spec/docs review は final review / cached-check wording の先取りと stale TODO kickoff text を指摘した。修正後の focused re-review は no findings。Test-sufficiency review は no findings。Full implementation review は no findings で、移動した test body が formatting 後の `HEAD` と一致することを確認した。Source-doc consistency review は pre-fix ledger state を見たため、focused re-review を行い no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; task path を明示 staging し、cached diff check は passed。 | paired `module_boundary_audit.md` docs を追加し、inline unit tests を `src/{policy,selection,status,witness_store}/tests.rs` の private child module へ split する。source-tree lint guard、crate plan、TODO を更新し、production API、diagnostic、deterministic behavior、artifact-facing schema、cache authority、proof trust boundary を保つ。追加の production-helper split は closeout または downstream consumer が concrete bottleneck を見つけるまで deferred。 |
+| 20. Crate exit report and quality review | complete | pending self-hash | Task-20 reviews は correction commit `36d1a9c` 後の stale ATP metadata-conflict wording、witness metadata/canonicality gap の closeout carry-forward 欠落、witness metadata wording drift を最初に指摘した。focused update 後、final spec/docs、test-sufficiency、full/source-doc、quality re-review は no findings。 | `cargo fmt --check` passed; `cargo clippy --all-targets --all-features -- -D warnings` passed; `cargo test -p mizar-proof`、`mizar-kernel`、`mizar-vc`、`mizar-atp`、`mizar-artifact`、`mizar-checker` は passed。full `cargo test` passed。`git diff --check` passed。explicit task-20 path staging を使い、cached diff check は passed。 | paired `crate_exit_report.md` docs を追加し、全 task commit と final surface を記録し、valid quality score 94/100 を付け、deferred/external gap を分類し、`mizar-atp` metadata conflict が `36d1a9c` で解消されたことを記録し、witness metadata/publication wording を同期し、次の evidence-pipeline handoff を準備する。 |
 
 ## Current Handoff
 
@@ -38,20 +39,18 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Continue mizar-proof autonomous crate development with task 20 after the
-task-19 commit exists. First verify a clean worktree and confirm the task-19
-commit in HEAD history. Then prepare the paired crate exit report and final
-quality review: record all task commit hashes, hard-gate status, review
-results, verification results, deferred/external-dependency gaps, the
-`mizar-atp` closeout guard `repo_metadata_conflict`, and the final shapes of
-proof policy, deterministic selection, status projection, witness store,
-ATP early-stop metadata, and proof-reuse metadata. Run full workspace
-verification where possible. Do not repair unrelated crate metadata conflicts
-or add downstream cache/artifact/ATP stubs in the closeout task.
+Start the next evidence-pipeline integration phase after the mizar-proof task
+20 closeout commit exists and `36d1a9c` is in HEAD history. Keep `mizar-proof`
+as proof-policy/winner/status/witness/reuse owner. A good next task is either
+`mizar-cache` formal scaffold for proof-reuse validation or a focused
+`mizar-atp` integration task that consumes existing early-stop policy APIs
+without moving policy or winner selection into ATP. Placeholder cache behavior、
+artifact witness publication、kernel acceptance、SAT solving、backend proof trust、
+proof search は追加しない。AGENTS.md review phases と full workspace verification
+を実行してから commit する。
 ```
 
-Rationale: task 20 は cross-crate verification、quality scoring、既知の repository
-metadata conflict handling を含む hard-gate closeout である。`xhigh` を維持する。
-full workspace verification が clean に通り外部 conflict が残らない場合だけ lower で
-よい。quality review が blocking な source/spec または trust-boundary issue を
-見つけた場合だけ上げる。
+Rationale: downstream integration は proof/cache/artifact/ATP ownership boundary を
+またぎ、trusted acceptance が kernel result だけに由来する規則を保つ必要がある。
+`xhigh` を維持する。integration contract を変えない docs-only typo synchronization
+だけなら lower でよい。

@@ -44,7 +44,7 @@ projected obligation status separate:
 
 | Winner class | Projected obligation status | Trusted | Notes |
 |---|---|---:|---|
-| `KernelVerified` | `accepted` | yes | Requires a matching accepted kernel result. Final artifact publication as accepted also requires a publishable kernel witness reference. |
+| `KernelVerified` | `accepted` | yes | Requires a matching accepted kernel result. Projecting the accepted artifact status as publishable also requires matching selected kernel-witness metadata; committed witness refs are published separately by `witness_store::publish_ref`. |
 | `DischargedBuiltin` | `accepted` | yes | Requires a matching accepted kernel result. Final artifact witness publication remains an `external_dependency_gap` until artifact schema support exists. |
 | `PolicyPermittedExternal` | `externally_attested` | no | Policy-controlled evidence only. It carries no trusted `used_axioms`. |
 | `PolicyAssumed` | `policy_assumed` internal status | no | Must remain distinct from accepted and externally attested status. Current artifact schema lacks this public obligation status, so artifact publication is `external_dependency_gap` unless a later schema adds it. |
@@ -123,8 +123,9 @@ Current `mizar-artifact` `ProofWitnessRef` schema version `2.0` accepts
 trusted `ProofWitnessRef` values for `kernel_verified` formula/substitution
 evidence only. Therefore:
 
-- `KernelVerified` can publish an accepted artifact status only when the
-  matching witness reference is available;
+- `KernelVerified` can project an accepted artifact status as publishable only
+  when matching selected witness metadata is available; status projection does
+  not itself publish a committed witness ref;
 - `DischargedBuiltin` remains an accepted internal projection but cannot publish
   a trusted artifact witness ref yet; its deterministic discharge hash remains
   internal projection and proof-reuse metadata under the current artifact schema
@@ -148,8 +149,9 @@ Status projection exports validation metadata for proof reuse:
 - dependency-slice fingerprint;
 - policy fingerprint;
 - selected evidence hash;
-- selected proof witness payload artifact hash (`witness_artifact_hash`), when
-  publishable;
+- selected proof witness payload artifact hash (`witness_artifact_hash`) when
+  available for a `KernelVerified` candidate; this is not a committed
+  `ProofWitnessPublishedRef`;
 - deterministic discharge hash, when present;
 - trusted used-axiom reference hash, when present;
 - external admission status, when present;

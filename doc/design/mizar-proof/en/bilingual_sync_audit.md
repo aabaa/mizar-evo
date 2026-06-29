@@ -93,7 +93,9 @@ source/spec audit:
 | byte-level witness payload canonicality validators | `deferred` | concrete payload producers |
 | live ATP early-stop adoption/cancellation wiring | `external_dependency_gap` | `mizar-atp` |
 
-No `repo_metadata_conflict` was observed.
+No `repo_metadata_conflict` was observed during the task-16 bilingual sync
+audit. The later ATP closeout metadata conflict was recorded by tasks 18-20
+and resolved by focused correction commit `36d1a9c`.
 
 ## Conclusion
 

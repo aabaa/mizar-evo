@@ -183,21 +183,24 @@ trusted proof status and never synthesize trusted `used_axioms`.
 
 ## Cache And Reuse Boundary
 
-For publishable `KernelVerified` witnesses, staged and published witness hashes
-participate in proof-reuse validation, but they are not proof authority. A
-cache record may reuse a proof only when the witness hash, selected evidence
-hash, obligation fingerprint, policy fingerprint, schema versions, and accepted
-kernel metadata all match the current validation predicate. Dependency artifact
-fingerprints are part of that predicate only after downstream artifact/cache
-owners supply an authoritative binding; task 11 preserves them as
-producer-owned reuse metadata. A staged hash becomes an artifact-facing
-`selected_proof_witness_hash` only through successful publication, and that
-hash is the witness payload artifact hash (`witness_artifact_hash`), not a hash
-of the `ProofWitnessRef` metadata object. Until artifact support exists,
-`DischargedBuiltin` reuse continues to use
-`deterministic_discharge_hash`; any internal staged hash is not a selected proof
-witness hash. Cache hits cannot publish witnesses, upgrade non-trusted
-statuses, or create trusted `used_axioms`.
+For publishable `KernelVerified` witnesses, selected witness hashes and
+published witness refs participate in proof-reuse validation, but they are not
+proof authority. A cache record may reuse a proof only when the witness hash,
+selected evidence hash, obligation fingerprint, policy fingerprint, schema
+versions, and accepted kernel metadata all match the current validation
+predicate. Dependency artifact fingerprints are part of that predicate only
+after downstream artifact/cache owners supply an authoritative binding; task 11
+preserves them as producer-owned reuse metadata. A selected candidate may carry
+`selected_proof_witness_hash` when it has a witness payload artifact hash
+(`witness_artifact_hash`) that the current artifact witness schema can
+reference. That hash is not a hash of the `ProofWitnessRef` metadata object and
+is not a committed publication proof. A committed `ProofWitnessPublishedRef`
+still comes only from `publish_ref` after the artifact boundary supplies a
+matching committed witness publication proof. Until artifact support exists,
+`DischargedBuiltin` reuse continues to use `deterministic_discharge_hash`; any
+internal staged hash is not a selected proof witness hash. Cache hits cannot
+publish witnesses, upgrade non-trusted statuses, or create trusted
+`used_axioms`.
 
 ## Deferred And External Dependency Gaps
 
