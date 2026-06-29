@@ -149,6 +149,8 @@ publication:
 | `deterministic_discharge_hash` | Deterministic built-in discharge hash for `DischargedBuiltin`. |
 | `external_admission_status` | External publication status for `PolicyPermittedExternal`. |
 | `proof_witness_publication` | `available`, `external_dependency_gap`, or `not_applicable` for the selected class. |
+| `selected_candidate_provenance_hash` | Producer-owned provenance hash from the selected candidate, when present. This is part of reuse identity, not proof authority. |
+| `selection_reason` | Stable reason code describing whether the result came from class ordering, a primary rejected diagnostic candidate, or `NoSelectableEvidence`. |
 | `tie_break_key_hash` | Stable hash of the actual tie-break tuple. |
 
 For `KernelVerified`, proof reuse may depend on the accepted kernel result and
@@ -156,6 +158,9 @@ its trusted `used_axioms`. For `DischargedBuiltin`, reuse depends on the
 deterministic discharge hash and the accepted built-in/kernel evidence path.
 For `PolicyPermittedExternal`, `PolicyAssumed`, and `PolicyOpen`, reuse
 metadata is a validation predicate only and does not become trusted acceptance.
+Changing the selected provenance hash, selection reason, tie-break key hash, or
+any selected witness/discharge/evidence hash must change downstream
+proof-reuse validation identity.
 
 Current artifact witness references do not yet support `discharged_builtin`
 publication. Until the artifact schema gap is closed, selection may export a

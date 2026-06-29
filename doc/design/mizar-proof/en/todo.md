@@ -307,7 +307,7 @@ Keep `cargo test -p mizar-proof` green after each task (see
       synchronized, and the only required sync edits were task-local metadata
       updates for the crate plan, TODO, and task ledger.
 
-17. **Proof-reuse metadata export contract.** [ ]
+17. **Proof-reuse metadata export contract.** [x]
     - Expose the proof-reuse metadata consumed by `mizar-cache`: compatible
       verifier-policy fingerprint, `ObligationAnchor`, canonical VC,
       local-context, and dependency-slice fingerprints, selected proof witness
@@ -324,6 +324,14 @@ Keep `cargo test -p mizar-proof` green after each task (see
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
       [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md),
       [11.artifact_and_incremental_build.md](../../architecture/en/11.artifact_and_incremental_build.md).
+    - Status: extended selection/status metadata with selected-candidate
+      provenance, stable selection reason, proof-evidence identity, dependency
+      artifact/schema compatibility, and a proof-reuse validation hash.
+      `cache_reuse_predicate_complete` is class-aware: `KernelVerified`
+      requires a selected witness hash, `DischargedBuiltin` requires a
+      deterministic discharge hash, and non-trusted classes remain metadata
+      only. No cache lookup, cache authority, trusted-status promotion, or
+      external-evidence upgrade was added.
 
 18. **Architecture-22 follow-up audit.** [ ]
     - Re-run the source/spec correspondence and bilingual documentation sync

@@ -297,7 +297,7 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
       synchronized していることを確認した。必要な sync edit は crate plan、TODO、
       task ledger の task-local metadata update だけだった。
 
-17. **proof-reuse metadata export 契約。** [ ]
+17. **proof-reuse metadata export 契約。** [x]
     - `mizar-cache` が消費する proof-reuse metadata を公開する:
       compatible verifier-policy fingerprint、`ObligationAnchor`、canonical VC、
       local-context、dependency-slice fingerprint、選択された proof witness hash
@@ -313,6 +313,14 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
       [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md),
       [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md),
       [11.artifact_and_incremental_build.md](../../architecture/ja/11.artifact_and_incremental_build.md)。
+    - 状態: selection/status metadata に selected-candidate provenance、
+      stable selection reason、proof-evidence identity、dependency artifact/schema
+      compatibility、proof-reuse validation hash を追加した。
+      `cache_reuse_predicate_complete` は class-aware であり、`KernelVerified`
+      は selected witness hash、`DischargedBuiltin` は deterministic discharge hash
+      を要求し、non-trusted class は metadata のままである。cache lookup、
+      cache authority、trusted-status promotion、external-evidence upgrade は
+      追加していない。
 
 18. **architecture-22 フォローアップ監査。** [ ]
     - task 17 の reuse-metadata export 契約について、ソース/仕様対応監査と

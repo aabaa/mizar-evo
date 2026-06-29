@@ -134,6 +134,10 @@ status projection は proof reuse の validation metadata を export する:
 - 存在する場合の deterministic discharge hash;
 - 存在する場合の trusted used-axiom reference hash;
 - 存在する場合の external admission status;
+- selected candidate id、selected-candidate provenance hash、selection reason、
+  tie-break key hash を含む matching proof-evidence identity;
+- artifact/cache boundary が供給する場合の dependency artifact fingerprint と
+  compatible な dependency/proof-reuse schema version;
 - diagnostic または explanation reference hash。
 
 この metadata は cache validation predicate である。proof authority ではない。
@@ -143,6 +147,20 @@ policy、matching proof evidence、compatible referenced dependency artifact と
 必要である。cache record は externally attested、assumed、open、rejected、
 no-selectable outcome を trusted status に昇格させられず、trusted `used_axioms` も
 合成できない。
+
+status projection は上記すべての field に対する安定した proof-reuse validation hash も
+export する。将来の `mizar-cache` は、その hash と structured field を reuse
+predicate として比較してよいが、一致は cache validation 後に再計算を省けることを
+示すだけである。dependency artifact/schema compatibility の欠落、policy
+incompatibility、witness hash mismatch、deterministic discharge mismatch、
+proof-evidence identity mismatch は miss である。一致しても `ExternallyAttested`、
+`PolicyAssumed`、`Open`、`Rejected`、`NoSelectableEvidence` が `Accepted` に
+昇格することはなく、trusted `used_axioms` も作られない。
+
+complete な proof-reuse predicate は class-aware である。`KernelVerified` には
+selected proof witness hash が必要であり、`DischargedBuiltin` には deterministic
+discharge hash が必要である。non-trusted class は exported metadata のままで、
+complete proof-reuse hit にはならない。
 
 ## Deferred And External Dependency Gaps
 

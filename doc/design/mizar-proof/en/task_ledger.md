@@ -26,7 +26,8 @@ extra unnumbered bookkeeping commit is permitted.
 | 13. Determinism suite | complete | `ba8c696e7b154a6fd9389222334d6ea8f3b5d6d7` | Initial spec review found the published-witness portion should not be implemented through public integration tests because publication tokens are intentionally opaque. The implemented split covers public policy/selection/status determinism in an integration suite and staged/published witness-reference determinism inside `witness_store.rs` unit tests using crate-private fixtures. Spec/docs, test-sufficiency, and full-implementation reviews reported no findings after implementation. Source-doc consistency review reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; explicit task-path staging was used and cached diff checks passed. | Adds `tests/determinism_suite.rs` for shuffled candidate-order coverage of policy classification, early-stop normalization, deterministic selection, status projection, and reuse metadata through public APIs. Adds witness-store unit coverage proving staged and published witness references are stable across shuffled trusted-candidate order while keeping `CommittedWitnessPublicationProof` opaque and test-only. Updates the lint guard and paired TODO status without adding ATP/backend/cache stubs or semantic changes. |
 | 14. Public-enum forward-compatibility policy | complete | `c3cd67512a460afde3319101504ef45524ccb302` | Spec/docs review reported no findings. Initial test-sufficiency review found that the lint guard scanned only hard-coded source files and used line-prefix enum parsing; after deriving the scan from all `src/**/*.rs` files and switching to tokenized public-enum detection, test-sufficiency re-review reported no findings. Full implementation review reported no findings. Source-doc consistency review reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; explicit task-path staging was used and cached diff checks passed. | Audits all 26 public enums, documents the enum policy in paired module specs, confirms no exhaustive public enum exceptions, adds missing `#[non_exhaustive]` markers to `SelectionInputError` and `ArtifactProofSelectionError`, records artifact-compatibility review requirements for status-facing enums, and adds an all-`src`/EN/JA lint guard without changing proof semantics or trust boundaries. |
 | 15. Source/spec correspondence audit | complete | `7fdfe4945ba885f8d4f6990d023a6ee0aa35744d` | Initial spec/docs review found missing ledger/handoff finalization and TODO indentation drift; after fixes, spec/docs re-review reported no findings. Initial test-sufficiency review found overclaimed coverage for empty candidate source ids, empty obligation identity fields, and required canonical witness payload bytes; after adding focused unit tests and updating the audit wording, test-sufficiency re-review reported no findings. Full implementation review reported no findings. Source-doc consistency review reported no findings. | Targeted validation tests passed; `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; explicit task-path staging was used and cached diff checks passed. | Adds paired `source_spec_audit.md` docs tracing public API groups and promised behavior to specs/tests, confirms the policy/trust split in all module specs and sources, classifies remaining reuse/artifact/witness/ATP integrations as deferred or `external_dependency_gap`, and adds focused validation tests without changing production behavior. |
-| 16. Bilingual documentation sync audit | complete | pending self-hash | Spec/docs review reported no findings. Test-sufficiency review reported no findings for docs-only verification. Full implementation review reported no findings. Source-doc consistency review reported no findings. | `git diff --check` passed; final cached diff check pending explicit staging. | Adds paired `bilingual_sync_audit.md` docs, verifies every English canonical `mizar-proof` design file has a synchronized Japanese companion, records that no placeholder or blocking bilingual drift remains, preserves trust-boundary/deferred-gap wording, and updates task metadata without source behavior changes. |
+| 16. Bilingual documentation sync audit | complete | `f58c9a6203179da1b360024fbc3a071263271c3b` | Spec/docs review reported no findings. Test-sufficiency review reported no findings for docs-only verification. Full implementation review reported no findings. Source-doc consistency review reported no findings. | `git diff --check` passed; explicit task-path staging was used and cached diff check passed. | Adds paired `bilingual_sync_audit.md` docs, verifies every English canonical `mizar-proof` design file has a synchronized Japanese companion, records that no placeholder or blocking bilingual drift remains, preserves trust-boundary/deferred-gap wording, and updates task metadata without source behavior changes. |
+| 17. Proof-reuse metadata export contract | complete | pending self-hash | Initial spec/docs review reported no findings. Test-sufficiency review found bundled dependency/schema compatibility coverage; independent artifact-fingerprint, dependency-schema, and proof-reuse-schema mutations were added, and focused re-review reported no findings. Full implementation review found `cache_reuse_predicate_complete` treated external evidence as complete; class-aware completeness plus EN/JA docs and tests resolved it, and focused re-review reported no findings. Source-doc consistency review and focused re-review reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed. Adjacent boundary checks: `cargo test -p mizar-kernel`, `cargo test -p mizar-vc`, `cargo test -p mizar-artifact`, and `cargo test -p mizar-checker` passed; `cargo test -p mizar-atp` failed on a `repo_metadata_conflict` in its task-28 closeout guard that still treats the now-formal `crates/mizar-proof` crate as a forbidden placeholder, and was not repaired in this task. Explicit task-path staging was used and cached diff check passed. | Extends selection/status reuse metadata with selected-candidate provenance, stable selection reason, proof-evidence identity, dependency artifact/schema compatibility, proof-reuse validation hashing, and class-aware completeness. Kernel reuse requires a selected witness hash, built-in discharge reuse requires a deterministic discharge hash, non-trusted classes remain metadata only, and no cache lookup, cache authority, trusted-status promotion, or external-evidence upgrade is added. |
 
 ## Current Handoff
 
@@ -35,22 +36,20 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Continue mizar-proof autonomous crate development with task 17 after the
-task-16 commit exists. First verify a clean worktree and confirm the task-16
-commit in HEAD history. Then implement the proof-reuse metadata export
-contract described by `todo.md`, `status.md`, `selection.md`, architecture 22,
-and internal 04: expose stable metadata for compatible verifier-policy
-fingerprint, `ObligationAnchor`, canonical VC/local-context/dependency-slice
-fingerprints, selected proof witness hash or deterministic discharge hash,
-matching proof-evidence identity, dependency artifact/schema compatibility,
-evidence class, selected-candidate provenance, and selection reason. Treat the
-metadata only as a reuse validation predicate; do not add cache lookup, cache
-authority, placeholder `mizar-cache` integration, trusted-status promotion, or
-external-evidence upgrades.
+Continue mizar-proof autonomous crate development with task 18 after the
+task-17 commit exists. First verify a clean worktree and confirm the task-17
+commit in HEAD history. Then perform the architecture-22 follow-up audit for
+the task-17 proof-reuse metadata export contract: re-run the source/spec
+correspondence and bilingual documentation sync scopes across `selection.md`,
+`status.md`, architecture 22, architecture 11, internal 04, and the current
+`selection.rs`/`status.rs` APIs. Record any remaining trust-boundary,
+witness-hash, deterministic-discharge, policy-selection, dependency-schema, or
+cache-facing metadata gaps as `deferred` or `external_dependency_gap`; do not
+add cache lookup, artifact publication stubs, or trusted-status promotion.
 ```
 
-Rationale: task 17 touches public API, proof-reuse identity, selection/status
-metadata, artifact compatibility, and architecture-22 trust boundaries. Keep
-`xhigh`; lower only for mechanical documentation alignment after the contract
-is fully settled, and raise only if contradictory source/spec requirements or
-cross-crate schema conflicts appear.
+Rationale: task 18 is audit-heavy but spans public proof-reuse APIs, bilingual
+spec synchronization, architecture-22 soundness boundaries, and downstream
+cache/artifact gaps. Keep `xhigh`; lower only if the audit remains purely
+mechanical with no source/spec drift, and raise only if contradictory
+architecture/spec requirements or cross-crate schema conflicts appear.

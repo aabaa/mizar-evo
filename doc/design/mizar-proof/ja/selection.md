@@ -145,6 +145,8 @@ selection は、proof reuse と後段の witness publication が使う安定 met
 | `deterministic_discharge_hash` | `DischargedBuiltin` の deterministic built-in discharge hash。 |
 | `external_admission_status` | `PolicyPermittedExternal` の external publication status。 |
 | `proof_witness_publication` | selected class に対する `available`、`external_dependency_gap`、または `not_applicable`。 |
+| `selected_candidate_provenance_hash` | 存在する場合、selected candidate から来る producer-owned provenance hash。reuse identity の一部であり proof authority ではない。 |
+| `selection_reason` | class ordering、primary rejected diagnostic candidate、または `NoSelectableEvidence` から結果が来たことを表す安定 reason code。 |
 | `tie_break_key_hash` | 実際の tie-break tuple の安定 hash。 |
 
 `KernelVerified` では、proof reuse は accepted kernel result と trusted `used_axioms` に
@@ -152,6 +154,9 @@ selection は、proof reuse と後段の witness publication が使う安定 met
 accepted built-in/kernel evidence path に依存する。`PolicyPermittedExternal` と
 `PolicyAssumed`、`PolicyOpen` では、reuse metadata は validation predicate にすぎず
 trusted acceptance にならない。
+selected provenance hash、selection reason、tie-break key hash、または selected
+witness/discharge/evidence hash のいずれかが変われば、downstream proof-reuse
+validation identity も変わらなければならない。
 
 現在の artifact witness reference は `discharged_builtin` publication をまだ support しない。
 artifact schema gap が閉じるまで、selection は deterministic discharge hash を export してよいが、

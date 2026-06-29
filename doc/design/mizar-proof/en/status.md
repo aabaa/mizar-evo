@@ -144,6 +144,10 @@ Status projection exports validation metadata for proof reuse:
 - deterministic discharge hash, when present;
 - trusted used-axiom reference hash, when present;
 - external admission status, when present;
+- matching proof-evidence identity, including selected candidate id,
+  selected-candidate provenance hash, selection reason, and tie-break key hash;
+- dependency artifact fingerprint and compatible dependency/proof-reuse schema
+  versions, when supplied by the artifact/cache boundary;
 - diagnostic or explanation reference hashes.
 
 This metadata is a cache validation predicate. It is never proof authority.
@@ -153,6 +157,21 @@ compatible verifier policy, matching proof evidence, and compatible referenced
 dependency artifacts and schemas. Cache records cannot promote externally
 attested, assumed, open, rejected, or no-selectable outcomes to trusted status,
 and cannot synthesize trusted `used_axioms`.
+
+Status projection also exports a stable proof-reuse validation hash over every
+field above. `mizar-cache` may compare that hash and the structured fields as a
+future reuse predicate, but a match only avoids recomputation after cache
+validation. Missing dependency artifact/schema compatibility, policy
+incompatibility, witness hash mismatch, deterministic discharge mismatch, or
+proof-evidence identity mismatch is a miss. A match never upgrades
+`ExternallyAttested`, `PolicyAssumed`, `Open`, `Rejected`, or
+`NoSelectableEvidence` to `Accepted`, and never creates trusted
+`used_axioms`.
+
+A complete proof-reuse predicate is class-aware: `KernelVerified` requires the
+selected proof witness hash, `DischargedBuiltin` requires the deterministic
+discharge hash, and non-trusted classes remain exported metadata only rather
+than complete proof-reuse hits.
 
 ## Deferred And External Dependency Gaps
 

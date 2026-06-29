@@ -6,6 +6,7 @@
 
 use std::{error::Error, fmt};
 
+use mizar_artifact::store::SchemaVersion;
 use mizar_kernel::checker::{KernelCheckResult, KernelCheckStatus, UsedAxiom};
 use mizar_session::Hash;
 use mizar_vc::vc_ir::VcId;
@@ -22,6 +23,7 @@ use crate::{
 };
 
 const USED_AXIOMS_HASH_DOMAIN: &str = "mizar-proof-trusted-used-axioms-v1";
+const PROOF_REUSE_VALIDATION_HASH_DOMAIN: &str = "mizar-proof-reuse-validation-v1";
 
 /// Stable source identity for proof-reuse candidates across edits.
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, std::hash::Hash)]
@@ -229,6 +231,7 @@ pub struct ProofStatusProjectionInput {
     selection: ArtifactProofSelection,
     policy: VerifierPolicy,
     identity: ProofObligationIdentity,
+    dependency_compatibility: Option<ProofReuseDependencyCompatibility>,
     trusted_used_axioms: Option<TrustedUsedAxiomsRef>,
     explanation_ref: Option<ExplanationRef>,
 }
@@ -244,9 +247,19 @@ impl ProofStatusProjectionInput {
             selection,
             policy,
             identity,
+            dependency_compatibility: None,
             trusted_used_axioms: None,
             explanation_ref: None,
         }
+    }
+
+    #[must_use]
+    pub fn with_dependency_compatibility(
+        mut self,
+        compatibility: ProofReuseDependencyCompatibility,
+    ) -> Self {
+        self.dependency_compatibility = Some(compatibility);
+        self
     }
 
     #[must_use]
@@ -327,6 +340,93 @@ impl ArtifactStatusPublication {
     }
 }
 
+/// Dependency artifact and schema compatibility metadata for proof reuse.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ProofReuseDependencyCompatibility {
+    dependency_artifact_fingerprint: Hash,
+    dependency_schema_version: SchemaVersion,
+    proof_reuse_schema_version: SchemaVersion,
+}
+
+impl ProofReuseDependencyCompatibility {
+    #[must_use]
+    pub const fn new(
+        dependency_artifact_fingerprint: Hash,
+        dependency_schema_version: SchemaVersion,
+        proof_reuse_schema_version: SchemaVersion,
+    ) -> Self {
+        Self {
+            dependency_artifact_fingerprint,
+            dependency_schema_version,
+            proof_reuse_schema_version,
+        }
+    }
+
+    #[must_use]
+    pub const fn dependency_artifact_fingerprint(self) -> Hash {
+        self.dependency_artifact_fingerprint
+    }
+
+    #[must_use]
+    pub const fn dependency_schema_version(self) -> SchemaVersion {
+        self.dependency_schema_version
+    }
+
+    #[must_use]
+    pub const fn proof_reuse_schema_version(self) -> SchemaVersion {
+        self.proof_reuse_schema_version
+    }
+}
+
+/// Stable identity for the proof evidence selected for possible reuse.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProofEvidenceReuseIdentity {
+    selected_candidate_id: Option<CandidateSourceId>,
+    selected_candidate_provenance_hash: Option<Hash>,
+    selected_evidence_hash: Option<Hash>,
+    selected_proof_witness_hash: Option<Hash>,
+    deterministic_discharge_hash: Option<Hash>,
+    tie_break_key_hash: Hash,
+    selection_reason: &'static str,
+}
+
+impl ProofEvidenceReuseIdentity {
+    #[must_use]
+    pub fn selected_candidate_id(&self) -> Option<&CandidateSourceId> {
+        self.selected_candidate_id.as_ref()
+    }
+
+    #[must_use]
+    pub const fn selected_candidate_provenance_hash(&self) -> Option<Hash> {
+        self.selected_candidate_provenance_hash
+    }
+
+    #[must_use]
+    pub const fn selected_evidence_hash(&self) -> Option<Hash> {
+        self.selected_evidence_hash
+    }
+
+    #[must_use]
+    pub const fn selected_proof_witness_hash(&self) -> Option<Hash> {
+        self.selected_proof_witness_hash
+    }
+
+    #[must_use]
+    pub const fn deterministic_discharge_hash(&self) -> Option<Hash> {
+        self.deterministic_discharge_hash
+    }
+
+    #[must_use]
+    pub const fn tie_break_key_hash(&self) -> Hash {
+        self.tie_break_key_hash
+    }
+
+    #[must_use]
+    pub const fn selection_reason(&self) -> &'static str {
+        self.selection_reason
+    }
+}
+
 /// Stable proof-reuse metadata emitted by status projection.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct StatusReuseMetadata {
@@ -344,8 +444,13 @@ pub struct StatusReuseMetadata {
     deterministic_discharge_hash: Option<Hash>,
     trusted_used_axioms_hash: Option<Hash>,
     external_admission_status: Option<ExternalEvidencePublicationStatus>,
+    selected_candidate_provenance_hash: Option<Hash>,
+    selection_reason: &'static str,
+    tie_break_key_hash: Hash,
+    dependency_compatibility: Option<ProofReuseDependencyCompatibility>,
     explanation_ref: Option<ExplanationRef>,
     diagnostic_result_id: Option<Hash>,
+    proof_reuse_validation_hash: Hash,
 }
 
 impl StatusReuseMetadata {
@@ -420,6 +525,26 @@ impl StatusReuseMetadata {
     }
 
     #[must_use]
+    pub const fn selected_candidate_provenance_hash(&self) -> Option<Hash> {
+        self.selected_candidate_provenance_hash
+    }
+
+    #[must_use]
+    pub const fn selection_reason(&self) -> &'static str {
+        self.selection_reason
+    }
+
+    #[must_use]
+    pub const fn tie_break_key_hash(&self) -> Hash {
+        self.tie_break_key_hash
+    }
+
+    #[must_use]
+    pub const fn dependency_compatibility(&self) -> Option<ProofReuseDependencyCompatibility> {
+        self.dependency_compatibility
+    }
+
+    #[must_use]
     pub const fn explanation_ref(&self) -> Option<ExplanationRef> {
         self.explanation_ref
     }
@@ -427,6 +552,41 @@ impl StatusReuseMetadata {
     #[must_use]
     pub const fn diagnostic_result_id(&self) -> Option<Hash> {
         self.diagnostic_result_id
+    }
+
+    #[must_use]
+    pub fn proof_evidence_identity(&self) -> ProofEvidenceReuseIdentity {
+        ProofEvidenceReuseIdentity {
+            selected_candidate_id: self.selected_candidate_id.clone(),
+            selected_candidate_provenance_hash: self.selected_candidate_provenance_hash,
+            selected_evidence_hash: self.selected_evidence_hash,
+            selected_proof_witness_hash: self.selected_proof_witness_hash,
+            deterministic_discharge_hash: self.deterministic_discharge_hash,
+            tie_break_key_hash: self.tie_break_key_hash,
+            selection_reason: self.selection_reason,
+        }
+    }
+
+    #[must_use]
+    pub const fn proof_reuse_validation_hash(&self) -> Hash {
+        self.proof_reuse_validation_hash
+    }
+
+    #[must_use]
+    pub const fn cache_reuse_predicate_complete(&self) -> bool {
+        if self.dependency_compatibility.is_none() {
+            return false;
+        }
+
+        match self.selected_class {
+            ProofWinnerClass::KernelVerified => self.selected_proof_witness_hash.is_some(),
+            ProofWinnerClass::DischargedBuiltin => self.deterministic_discharge_hash.is_some(),
+            ProofWinnerClass::PolicyPermittedExternal
+            | ProofWinnerClass::PolicyAssumed
+            | ProofWinnerClass::PolicyOpen
+            | ProofWinnerClass::Rejected
+            | ProofWinnerClass::NoSelectableEvidence => false,
+        }
     }
 }
 
@@ -584,7 +744,7 @@ pub fn project_status(
         .as_ref()
         .map(TrustedUsedAxiomsRef::used_axioms_hash);
 
-    let reuse_metadata = StatusReuseMetadata {
+    let mut reuse_metadata = StatusReuseMetadata {
         selected_class,
         projected_status,
         selected_candidate_id: input.selection.selection().selected_candidate_id().cloned(),
@@ -599,9 +759,15 @@ pub fn project_status(
         deterministic_discharge_hash: selection_metadata.deterministic_discharge_hash(),
         trusted_used_axioms_hash,
         external_admission_status: selection_metadata.external_admission_status(),
+        selected_candidate_provenance_hash: selection_metadata.selected_candidate_provenance_hash(),
+        selection_reason: selection_metadata.selection_reason(),
+        tie_break_key_hash: selection_metadata.tie_break_key_hash(),
+        dependency_compatibility: input.dependency_compatibility,
         explanation_ref: input.explanation_ref,
         diagnostic_result_id: input.selection.selection().diagnostic_result_id(),
+        proof_reuse_validation_hash: Hash::from_bytes([0; Hash::BYTE_LEN]),
     };
+    reuse_metadata.proof_reuse_validation_hash = hash_status_reuse_metadata(&reuse_metadata);
 
     Ok(ProofStatusProjection {
         vc: input.selection.vc(),
@@ -721,6 +887,135 @@ fn validated_trusted_used_axioms(
     Ok(Some(trusted_used_axioms))
 }
 
+fn hash_status_reuse_metadata(metadata: &StatusReuseMetadata) -> Hash {
+    let mut hash = StableHasher::new(PROOF_REUSE_VALIDATION_HASH_DOMAIN);
+    hash.field_str(
+        "selected_class",
+        proof_winner_class_key(metadata.selected_class),
+    );
+    hash.field_str(
+        "projected_status",
+        projected_proof_status_key(metadata.projected_status),
+    );
+    hash.field_optional_str(
+        "selected_candidate_id",
+        metadata
+            .selected_candidate_id
+            .as_ref()
+            .map(CandidateSourceId::as_str),
+    );
+    hash.field_str("obligation_anchor", metadata.obligation_anchor.as_str());
+    hash.field_hash("obligation_fingerprint", metadata.obligation_fingerprint);
+    hash.field_hash("vc_fingerprint", metadata.vc_fingerprint);
+    hash.field_hash(
+        "local_context_fingerprint",
+        metadata.local_context_fingerprint,
+    );
+    hash.field_hash(
+        "dependency_slice_fingerprint",
+        metadata.dependency_slice_fingerprint,
+    );
+    hash.field_hash("policy_fingerprint", metadata.policy_fingerprint.hash());
+    hash.field_optional_hash("selected_evidence_hash", metadata.selected_evidence_hash);
+    hash.field_optional_hash(
+        "selected_proof_witness_hash",
+        metadata.selected_proof_witness_hash,
+    );
+    hash.field_optional_hash(
+        "deterministic_discharge_hash",
+        metadata.deterministic_discharge_hash,
+    );
+    hash.field_optional_hash(
+        "trusted_used_axioms_hash",
+        metadata.trusted_used_axioms_hash,
+    );
+    hash.field_optional_str(
+        "external_admission_status",
+        metadata
+            .external_admission_status
+            .map(external_publication_status_key),
+    );
+    hash.field_optional_hash(
+        "selected_candidate_provenance_hash",
+        metadata.selected_candidate_provenance_hash,
+    );
+    hash.field_str("selection_reason", metadata.selection_reason);
+    hash.field_hash("tie_break_key_hash", metadata.tie_break_key_hash);
+    hash_dependency_compatibility(&mut hash, metadata.dependency_compatibility);
+    hash.field_optional_hash(
+        "explanation_ref",
+        metadata.explanation_ref.map(ExplanationRef::hash),
+    );
+    hash.field_optional_hash("diagnostic_result_id", metadata.diagnostic_result_id);
+    hash.finalize()
+}
+
+fn hash_dependency_compatibility(
+    hash: &mut StableHasher,
+    compatibility: Option<ProofReuseDependencyCompatibility>,
+) {
+    hash.field_bool("dependency_compatibility_present", compatibility.is_some());
+    if let Some(compatibility) = compatibility {
+        hash.field_hash(
+            "dependency_artifact_fingerprint",
+            compatibility.dependency_artifact_fingerprint(),
+        );
+        hash_schema_version(
+            hash,
+            "dependency_schema_version",
+            compatibility.dependency_schema_version(),
+        );
+        hash_schema_version(
+            hash,
+            "proof_reuse_schema_version",
+            compatibility.proof_reuse_schema_version(),
+        );
+    }
+}
+
+fn hash_schema_version(hash: &mut StableHasher, label: &str, version: SchemaVersion) {
+    hash.field_u16(&format!("{label}_major"), version.major());
+    hash.field_u16(&format!("{label}_minor"), version.minor());
+}
+
+fn proof_winner_class_key(class: ProofWinnerClass) -> &'static str {
+    match class {
+        ProofWinnerClass::KernelVerified => "kernel_verified",
+        ProofWinnerClass::DischargedBuiltin => "discharged_builtin",
+        ProofWinnerClass::PolicyPermittedExternal => "policy_permitted_external",
+        ProofWinnerClass::PolicyAssumed => "policy_assumed",
+        ProofWinnerClass::PolicyOpen => "policy_open",
+        ProofWinnerClass::Rejected => "rejected",
+        ProofWinnerClass::NoSelectableEvidence => "no_selectable_evidence",
+    }
+}
+
+fn projected_proof_status_key(status: ProjectedProofStatus) -> &'static str {
+    match status {
+        ProjectedProofStatus::Accepted => "accepted",
+        ProjectedProofStatus::ExternallyAttested => "externally_attested",
+        ProjectedProofStatus::PolicyAssumed => "policy_assumed",
+        ProjectedProofStatus::Open => "open",
+        ProjectedProofStatus::Rejected => "rejected",
+        ProjectedProofStatus::NotRequired => "not_required",
+    }
+}
+
+fn external_publication_status_key(status: ExternalEvidencePublicationStatus) -> &'static str {
+    match status {
+        ExternalEvidencePublicationStatus::RejectedByPolicy => "rejected_by_policy",
+        ExternalEvidencePublicationStatus::ExternallyAttestedDevelopment => {
+            "externally_attested_development"
+        }
+        ExternalEvidencePublicationStatus::ExternallyAttestedOpenDiagnostic => {
+            "externally_attested_open_diagnostic"
+        }
+        ExternalEvidencePublicationStatus::ExternallyAttestedPolicyPermitted => {
+            "externally_attested_policy_permitted"
+        }
+    }
+}
+
 fn hash_used_axioms(used_axioms: &[UsedAxiom]) -> Hash {
     let mut hash = StableHasher::new(USED_AXIOMS_HASH_DOMAIN);
     hash.field_u64("used_axiom_count", used_axioms.len() as u64);
@@ -773,8 +1068,16 @@ impl StableHasher {
         self.field_bytes(label, value.as_bytes());
     }
 
+    fn field_bool(&mut self, label: &str, value: bool) {
+        self.field_bytes(label, &[u8::from(value)]);
+    }
+
     fn field_u8(&mut self, label: &str, value: u8) {
         self.field_bytes(label, &[value]);
+    }
+
+    fn field_u16(&mut self, label: &str, value: u16) {
+        self.field_bytes(label, &value.to_le_bytes());
     }
 
     fn field_u32(&mut self, label: &str, value: u32) {
@@ -783,6 +1086,30 @@ impl StableHasher {
 
     fn field_u64(&mut self, label: &str, value: u64) {
         self.field_bytes(label, &value.to_le_bytes());
+    }
+
+    fn field_hash(&mut self, label: &str, value: Hash) {
+        self.field_bytes(label, value.as_bytes());
+    }
+
+    fn field_optional_hash(&mut self, label: &str, value: Option<Hash>) {
+        match value {
+            Some(value) => {
+                self.field_u8(&format!("{label}_tag"), 0);
+                self.field_hash(label, value);
+            }
+            None => self.field_u8(&format!("{label}_tag"), 1),
+        }
+    }
+
+    fn field_optional_str(&mut self, label: &str, value: Option<&str>) {
+        match value {
+            Some(value) => {
+                self.field_u8(&format!("{label}_tag"), 0);
+                self.field_str(label, value);
+            }
+            None => self.field_u8(&format!("{label}_tag"), 1),
+        }
     }
 
     fn field_bytes(&mut self, label: &str, value: &[u8]) {
@@ -1166,10 +1493,12 @@ mod tests {
         let explanation = ExplanationRef::new(hash(70));
         let projection = project_status(
             project_input(selection_for_external(), external_policy())
+                .with_dependency_compatibility(dependency_compatibility(40))
                 .with_explanation_ref(explanation),
         )
         .expect("projection succeeds");
         let reuse = projection.reuse_metadata();
+        let evidence_identity = reuse.proof_evidence_identity();
 
         assert_eq!(
             reuse.projected_status(),
@@ -1190,6 +1519,206 @@ mod tests {
             reuse.external_admission_status(),
             Some(ExternalEvidencePublicationStatus::ExternallyAttestedPolicyPermitted)
         );
+        assert_eq!(
+            reuse.dependency_compatibility(),
+            Some(dependency_compatibility(40))
+        );
+        assert_eq!(
+            evidence_identity
+                .selected_candidate_id()
+                .map(CandidateSourceId::as_str),
+            Some("external")
+        );
+        assert_eq!(
+            evidence_identity.selected_candidate_provenance_hash(),
+            Some(hash(33))
+        );
+        assert_eq!(
+            evidence_identity.selection_reason(),
+            "deterministic_winner_class"
+        );
+        assert_eq!(
+            evidence_identity.tie_break_key_hash(),
+            reuse.tie_break_key_hash()
+        );
+        assert_eq!(
+            reuse.proof_reuse_validation_hash(),
+            hash_status_reuse_metadata(reuse)
+        );
+        assert!(!reuse.cache_reuse_predicate_complete());
+    }
+
+    #[test]
+    fn proof_reuse_validation_hash_changes_or_invalidates_for_exported_components() {
+        let projection = project_status(
+            project_input(selection_for_kernel(true), VerifierPolicy::release())
+                .with_dependency_compatibility(dependency_compatibility(40))
+                .with_explanation_ref(ExplanationRef::new(hash(70))),
+        )
+        .expect("projection succeeds");
+        let base = projection.reuse_metadata().clone();
+        assert!(base.cache_reuse_predicate_complete());
+
+        assert_hash_changed(&base, "selected_class", |metadata| {
+            metadata.selected_class = ProofWinnerClass::PolicyAssumed;
+        });
+        assert_hash_changed(&base, "projected_status", |metadata| {
+            metadata.projected_status = ProjectedProofStatus::Open;
+        });
+        assert_hash_changed(&base, "selected_candidate_id", |metadata| {
+            metadata.selected_candidate_id =
+                Some(CandidateSourceId::new("other").expect("stable id"));
+        });
+        assert_hash_changed(&base, "obligation_anchor", |metadata| {
+            metadata.obligation_anchor = ObligationAnchor::new("anchor-1").expect("stable anchor");
+        });
+        assert_hash_changed(&base, "obligation_fingerprint", |metadata| {
+            metadata.obligation_fingerprint = hash(41);
+        });
+        assert_hash_changed(&base, "vc_fingerprint", |metadata| {
+            metadata.vc_fingerprint = hash(42);
+        });
+        assert_hash_changed(&base, "local_context_fingerprint", |metadata| {
+            metadata.local_context_fingerprint = hash(43);
+        });
+        assert_hash_changed(&base, "dependency_slice_fingerprint", |metadata| {
+            metadata.dependency_slice_fingerprint = hash(44);
+        });
+        assert_hash_changed(&base, "policy_fingerprint", |metadata| {
+            metadata.policy_fingerprint = external_policy().policy_fingerprint();
+        });
+        assert_hash_changed(&base, "selected_evidence_hash", |metadata| {
+            metadata.selected_evidence_hash = Some(hash(45));
+        });
+        assert_hash_changed(&base, "selected_proof_witness_hash", |metadata| {
+            metadata.selected_proof_witness_hash = Some(hash(46));
+        });
+        assert_hash_changed(&base, "deterministic_discharge_hash", |metadata| {
+            metadata.deterministic_discharge_hash = Some(hash(47));
+        });
+        assert_hash_changed(&base, "trusted_used_axioms_hash", |metadata| {
+            metadata.trusted_used_axioms_hash = Some(hash(48));
+        });
+        assert_hash_changed(&base, "external_admission_status", |metadata| {
+            metadata.external_admission_status =
+                Some(ExternalEvidencePublicationStatus::ExternallyAttestedDevelopment);
+        });
+        assert_hash_changed(&base, "selected_candidate_provenance_hash", |metadata| {
+            metadata.selected_candidate_provenance_hash = Some(hash(49));
+        });
+        assert_hash_changed(&base, "selection_reason", |metadata| {
+            metadata.selection_reason = "primary_rejected_diagnostic";
+        });
+        assert_hash_changed(&base, "tie_break_key_hash", |metadata| {
+            metadata.tie_break_key_hash = hash(50);
+        });
+        assert_hash_changed(&base, "dependency_artifact_fingerprint", |metadata| {
+            metadata.dependency_compatibility = Some(ProofReuseDependencyCompatibility::new(
+                hash(51),
+                SchemaVersion::new(1, 40),
+                SchemaVersion::new(2, 40),
+            ));
+        });
+        assert_hash_changed(&base, "dependency_schema_version", |metadata| {
+            metadata.dependency_compatibility = Some(ProofReuseDependencyCompatibility::new(
+                hash(40),
+                SchemaVersion::new(1, 41),
+                SchemaVersion::new(2, 40),
+            ));
+        });
+        assert_hash_changed(&base, "proof_reuse_schema_version", |metadata| {
+            metadata.dependency_compatibility = Some(ProofReuseDependencyCompatibility::new(
+                hash(40),
+                SchemaVersion::new(1, 40),
+                SchemaVersion::new(2, 41),
+            ));
+        });
+        assert_hash_changed(&base, "explanation_ref", |metadata| {
+            metadata.explanation_ref = Some(ExplanationRef::new(hash(52)));
+        });
+        assert_hash_changed(&base, "diagnostic_result_id", |metadata| {
+            metadata.diagnostic_result_id = Some(hash(53));
+        });
+
+        let mut missing_dependency_compatibility = base.clone();
+        missing_dependency_compatibility.dependency_compatibility = None;
+        assert!(!missing_dependency_compatibility.cache_reuse_predicate_complete());
+        assert_ne!(
+            hash_status_reuse_metadata(&missing_dependency_compatibility),
+            base.proof_reuse_validation_hash()
+        );
+    }
+
+    #[test]
+    fn externally_attested_reuse_metadata_never_upgrades_trust() {
+        let projection = project_status(
+            project_input(selection_for_external(), external_policy())
+                .with_dependency_compatibility(dependency_compatibility(40)),
+        )
+        .expect("projection succeeds");
+        let reuse = projection.reuse_metadata();
+
+        assert_eq!(
+            projection.projected_status(),
+            ProjectedProofStatus::ExternallyAttested
+        );
+        assert_eq!(
+            reuse.selected_class(),
+            ProofWinnerClass::PolicyPermittedExternal
+        );
+        assert!(!projection.projected_status().is_trusted());
+        assert!(!reuse.projected_status().is_trusted());
+        assert!(!reuse.cache_reuse_predicate_complete());
+        assert_eq!(projection.trusted_used_axioms(), None);
+        assert_eq!(reuse.trusted_used_axioms_hash(), None);
+        assert_eq!(
+            reuse.external_admission_status(),
+            Some(ExternalEvidencePublicationStatus::ExternallyAttestedPolicyPermitted)
+        );
+        assert_eq!(
+            reuse.proof_evidence_identity().selected_evidence_hash(),
+            Some(hash(30))
+        );
+        assert_eq!(projection.accepted_witness_obligation_id(), None);
+    }
+
+    #[test]
+    fn cache_reuse_predicate_completeness_is_class_aware() {
+        let kernel_with_witness = project_status(
+            project_input(selection_for_kernel(true), VerifierPolicy::release())
+                .with_dependency_compatibility(dependency_compatibility(40)),
+        )
+        .expect("projection succeeds");
+        assert!(
+            kernel_with_witness
+                .reuse_metadata()
+                .cache_reuse_predicate_complete()
+        );
+
+        let kernel_without_witness = project_status(
+            project_input(selection_for_kernel(false), VerifierPolicy::release())
+                .with_dependency_compatibility(dependency_compatibility(40)),
+        )
+        .expect("projection succeeds");
+        assert!(
+            !kernel_without_witness
+                .reuse_metadata()
+                .cache_reuse_predicate_complete()
+        );
+
+        let builtin = project_status(
+            project_input(selection_for_builtin(), VerifierPolicy::release())
+                .with_dependency_compatibility(dependency_compatibility(40)),
+        )
+        .expect("projection succeeds");
+        assert!(builtin.reuse_metadata().cache_reuse_predicate_complete());
+
+        let external = project_status(
+            project_input(selection_for_external(), external_policy())
+                .with_dependency_compatibility(dependency_compatibility(40)),
+        )
+        .expect("projection succeeds");
+        assert!(!external.reuse_metadata().cache_reuse_predicate_complete());
     }
 
     #[test]
@@ -1265,6 +1794,28 @@ mod tests {
         ProofStatusProjectionInput::new(selection, policy, identity())
     }
 
+    fn dependency_compatibility(tag: u8) -> ProofReuseDependencyCompatibility {
+        ProofReuseDependencyCompatibility::new(
+            hash(tag),
+            SchemaVersion::new(1, u16::from(tag)),
+            SchemaVersion::new(2, u16::from(tag)),
+        )
+    }
+
+    fn assert_hash_changed(
+        base: &StatusReuseMetadata,
+        label: &str,
+        mutate: impl FnOnce(&mut StatusReuseMetadata),
+    ) {
+        let mut changed = base.clone();
+        mutate(&mut changed);
+        assert_ne!(
+            hash_status_reuse_metadata(&changed),
+            base.proof_reuse_validation_hash(),
+            "{label} should participate in proof reuse validation hash"
+        );
+    }
+
     fn identity() -> ProofObligationIdentity {
         ProofObligationIdentity::new(
             "obligation-0",
@@ -1282,7 +1833,8 @@ mod tests {
             "kernel",
             KernelEvidenceOrigin::AtpFormulaSubstitution,
             hash(10),
-        );
+        )
+        .with_provenance_hash(hash(34));
         if with_witness {
             candidate = candidate.with_selected_proof_witness_hash(hash(50));
         }
@@ -1323,7 +1875,8 @@ mod tests {
                         "external",
                         evaluator.evaluate_candidate(&PolicyCandidate::ExternallyAttested),
                     )
-                    .with_evidence_hash(hash(30))]),
+                    .with_evidence_hash(hash(30))
+                    .with_provenance_hash(hash(33))]),
                 ),
             )],
             [],

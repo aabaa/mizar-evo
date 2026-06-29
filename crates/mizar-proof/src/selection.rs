@@ -435,6 +435,8 @@ pub struct SelectedReuseMetadata {
     deterministic_discharge_hash: Option<Hash>,
     external_admission_status: Option<ExternalEvidencePublicationStatus>,
     proof_witness_publication: ProofWitnessPublication,
+    selected_candidate_provenance_hash: Option<Hash>,
+    selection_reason: &'static str,
     tie_break_key_hash: Hash,
 }
 
@@ -477,6 +479,16 @@ impl SelectedReuseMetadata {
     #[must_use]
     pub const fn proof_witness_publication(&self) -> ProofWitnessPublication {
         self.proof_witness_publication
+    }
+
+    #[must_use]
+    pub const fn selected_candidate_provenance_hash(&self) -> Option<Hash> {
+        self.selected_candidate_provenance_hash
+    }
+
+    #[must_use]
+    pub const fn selection_reason(&self) -> &'static str {
+        self.selection_reason
     }
 
     #[must_use]
@@ -962,6 +974,8 @@ fn selected_candidate(
             .as_ref()
             .map(|admission| admission.publication_status()),
         proof_witness_publication,
+        selected_candidate_provenance_hash: candidate.provenance_hash(),
+        selection_reason: selection_reason(selected_class),
         tie_break_key_hash,
     };
 
@@ -989,6 +1003,8 @@ fn no_selectable_evidence(
         deterministic_discharge_hash: None,
         external_admission_status: None,
         proof_witness_publication: ProofWitnessPublication::NotApplicable,
+        selected_candidate_provenance_hash: None,
+        selection_reason: "no_selectable_evidence",
         tie_break_key_hash: diagnostic_result_id,
     };
 
@@ -1069,6 +1085,18 @@ fn selected_evidence_hash(
         | ProofWinnerClass::Rejected => candidate
             .evidence_hash()
             .or_else(|| candidate.deterministic_discharge_hash()),
+    }
+}
+
+fn selection_reason(selected_class: ProofWinnerClass) -> &'static str {
+    match selected_class {
+        ProofWinnerClass::Rejected => "primary_rejected_diagnostic",
+        ProofWinnerClass::NoSelectableEvidence => "no_selectable_evidence",
+        ProofWinnerClass::KernelVerified
+        | ProofWinnerClass::DischargedBuiltin
+        | ProofWinnerClass::PolicyPermittedExternal
+        | ProofWinnerClass::PolicyAssumed
+        | ProofWinnerClass::PolicyOpen => "deterministic_winner_class",
     }
 }
 
@@ -1742,6 +1770,15 @@ mod tests {
         assert_eq!(
             first.reuse_metadata().tie_break_key_hash(),
             second.reuse_metadata().tie_break_key_hash()
+        );
+        assert_eq!(first.reuse_metadata(), second.reuse_metadata());
+        assert_eq!(
+            first.reuse_metadata().selected_candidate_provenance_hash(),
+            Some(hash(9))
+        );
+        assert_eq!(
+            first.reuse_metadata().selection_reason(),
+            "deterministic_winner_class"
         );
     }
 

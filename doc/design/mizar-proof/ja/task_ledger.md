@@ -26,7 +26,8 @@ task commit は自分自身の hash を含められないため、self-hash は 
 | 13. Determinism suite | complete | `ba8c696e7b154a6fd9389222334d6ea8f3b5d6d7` | 初回 spec review は、publication token が意図的に opaque であるため published-witness 部分を public integration test で実装すべきでないと指摘した。実装では public policy/selection/status determinism を integration suite で覆い、staged/published witness-reference determinism を crate-private fixture を使う `witness_store.rs` unit test に分けた。実装後の spec/docs、test-sufficiency、full-implementation review は no findings。Source-doc consistency review は no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; task path を明示 staging し、cached diff check は passed。 | `tests/determinism_suite.rs` を追加し、public API 経由で policy classification、early-stop normalization、deterministic selection、status projection、reuse metadata が shuffled candidate order で安定することを覆う。`witness_store.rs` unit coverage は trusted-candidate order を shuffle しても staged/published witness reference が安定することを検証し、`CommittedWitnessPublicationProof` は opaque かつ test-only のまま保つ。lint guard と paired TODO status を更新し、ATP/backend/cache stub や semantic change は追加しない。 |
 | 14. Public-enum forward-compatibility policy | complete | `c3cd67512a460afde3319101504ef45524ccb302` | Spec/docs review は no findings。初回 test-sufficiency review は lint guard が hard-coded source file だけを scan し、line-prefix enum parsing を使っている点を指摘した。scan をすべての `src/**/*.rs` file 由来にし、tokenized public-enum detection に切り替えた後の test-sufficiency re-review は no findings。Full implementation review は no findings。Source-doc consistency review は no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; task path を明示 staging し、cached diff check は passed。 | 26 個すべての public enum を監査し、paired module spec に enum policy を記録し、exhaustive public enum 例外がないことを確認する。`SelectionInputError` と `ArtifactProofSelectionError` に欠けていた `#[non_exhaustive]` marker を追加し、status-facing enum の artifact-compatibility review requirement を記録し、proof semantics や trust boundary を変えずに all-`src`/EN/JA lint guard を追加する。 |
 | 15. Source/spec correspondence audit | complete | `7fdfe4945ba885f8d4f6990d023a6ee0aa35744d` | 初回 spec/docs review は ledger/handoff finalization 欠落と TODO indentation drift を指摘した。修正後の spec/docs re-review は no findings。初回 test-sufficiency review は empty candidate source id、empty obligation identity field、required canonical witness payload bytes の coverage overclaim を指摘した。focused unit tests を追加し audit wording を更新した後の test-sufficiency re-review は no findings。Full implementation review は no findings。Source-doc consistency review は no findings。 | targeted validation tests passed; `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; task path を明示 staging し、cached diff check は passed。 | paired `source_spec_audit.md` docs を追加し、public API group と promised behavior を specs/tests に trace し、すべての module spec/source の policy/trust split を確認し、残る reuse/artifact/witness/ATP integration を deferred または `external_dependency_gap` として分類し、production behavior を変えず focused validation tests を追加する。 |
-| 16. Bilingual documentation sync audit | complete | pending self-hash | Spec/docs review は no findings。Test-sufficiency review は docs-only verification で no findings。Full implementation review は no findings。Source-doc consistency review は no findings。 | `git diff --check` passed; 明示 staging 後の final cached diff check は pending。 | paired `bilingual_sync_audit.md` docs を追加し、すべての English canonical `mizar-proof` design file に synchronized Japanese companion があること、placeholder や blocking bilingual drift が残っていないことを確認し、trust-boundary/deferred-gap wording を保ち、source behavior change なしで task metadata を更新する。 |
+| 16. Bilingual documentation sync audit | complete | `f58c9a6203179da1b360024fbc3a071263271c3b` | Spec/docs review は no findings。Test-sufficiency review は docs-only verification で no findings。Full implementation review は no findings。Source-doc consistency review は no findings。 | `git diff --check` passed; task path を明示 staging し、cached diff check は passed。 | paired `bilingual_sync_audit.md` docs を追加し、すべての English canonical `mizar-proof` design file に synchronized Japanese companion があること、placeholder や blocking bilingual drift が残っていないことを確認し、trust-boundary/deferred-gap wording を保ち、source behavior change なしで task metadata を更新する。 |
+| 17. Proof-reuse metadata export contract | complete | pending self-hash | 初回 spec/docs review は no findings。Test-sufficiency review は dependency/schema compatibility coverage が bundled である点を指摘した。artifact fingerprint、dependency schema、proof-reuse schema を独立に mutate する test を追加し、focused re-review は no findings。Full implementation review は `cache_reuse_predicate_complete` が external evidence を complete と扱う点を指摘した。class-aware completeness、EN/JA docs、test を追加し、focused re-review は no findings。Source-doc consistency review と focused re-review は no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed。隣接 boundary check: `cargo test -p mizar-kernel`、`cargo test -p mizar-vc`、`cargo test -p mizar-artifact`、`cargo test -p mizar-checker` は passed。`cargo test -p mizar-atp` は、現在は正式 crate である `crates/mizar-proof` を forbidden placeholder と見なす task-28 closeout guard の `repo_metadata_conflict` で failed し、本 task では修復していない。task path を明示 staging し、cached diff check は passed。 | selection/status reuse metadata に selected-candidate provenance、stable selection reason、proof-evidence identity、dependency artifact/schema compatibility、proof-reuse validation hash、class-aware completeness を追加する。Kernel reuse は selected witness hash、built-in discharge reuse は deterministic discharge hash を要求し、non-trusted class は metadata のままにする。cache lookup、cache authority、trusted-status promotion、external-evidence upgrade は追加しない。 |
 
 ## Current Handoff
 
@@ -35,21 +36,20 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Continue mizar-proof autonomous crate development with task 17 after the
-task-16 commit exists. First verify a clean worktree and confirm the task-16
-commit in HEAD history. Then implement the proof-reuse metadata export
-contract described by `todo.md`, `status.md`, `selection.md`, architecture 22,
-and internal 04: expose stable metadata for compatible verifier-policy
-fingerprint, `ObligationAnchor`, canonical VC/local-context/dependency-slice
-fingerprints, selected proof witness hash or deterministic discharge hash,
-matching proof-evidence identity, dependency artifact/schema compatibility,
-evidence class, selected-candidate provenance, and selection reason. Treat the
-metadata only as a reuse validation predicate; do not add cache lookup, cache
-authority, placeholder `mizar-cache` integration, trusted-status promotion, or
-external-evidence upgrades.
+Continue mizar-proof autonomous crate development with task 18 after the
+task-17 commit exists. First verify a clean worktree and confirm the task-17
+commit in HEAD history. Then perform the architecture-22 follow-up audit for
+the task-17 proof-reuse metadata export contract: re-run the source/spec
+correspondence and bilingual documentation sync scopes across `selection.md`,
+`status.md`, architecture 22, architecture 11, internal 04, and the current
+`selection.rs`/`status.rs` APIs. Record any remaining trust-boundary,
+witness-hash, deterministic-discharge, policy-selection, dependency-schema, or
+cache-facing metadata gaps as `deferred` or `external_dependency_gap`; do not
+add cache lookup, artifact publication stubs, or trusted-status promotion.
 ```
 
-Rationale: task 17 は public API、proof-reuse identity、selection/status metadata、
-artifact compatibility、architecture-22 trust boundary に触れる。`xhigh` を維持する。
-contract が完全に固まった後の mechanical documentation alignment だけなら lower でよい。
-contradictory source/spec requirement または cross-crate schema conflict が出た場合だけ上げる。
+Rationale: task 18 は audit-heavy だが、public proof-reuse API、bilingual spec
+synchronization、architecture-22 soundness boundary、downstream cache/artifact gap
+にまたがる。`xhigh` を維持する。audit が source/spec drift のない mechanical な
+確認だけに留まるなら lower でよい。contradictory architecture/spec requirement または
+cross-crate schema conflict が出た場合だけ上げる。
