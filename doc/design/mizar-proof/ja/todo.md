@@ -56,10 +56,14 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
   非依存の検証結果を返し、この crate がその上でポリシーを評価する。外部
   認証された証拠はポリシーで記録される証拠であって信頼された状態では
   決してなく、`require_kernel_certificates` の下では勝てない。
-- **discharge 証拠の検証範囲: 未解決。task 6 で解決する。** `mizar-vc`
-  の pre-ATP discharge 証拠を kernel が再生するか、ポリシーに従う
-  決定的な built-in 証拠として受理するか。`mizar-kernel` とともにここで
-  決める（トップレベルと両 crate の todo に登録済み）。
+- **discharge 証拠の検証範囲: task 6 で解決済み。**
+  `DischargedBuiltin` は `KernelPolicyInput` から作られた
+  `TrustedKernelEvidence` を通じてだけ trusted selection に入る。public caller が
+  `KernelPolicyInput` を構築できるのは、`KernelCheckResult` と明示的 origin を
+  渡す場合だけである。したがって pre-ATP discharge は kernel replay されるか、
+  kernel が accept した primitive evidence として表現されなければならない。
+  それ以外は deterministic policy evidence のままであり、trusted `used_axioms` を
+  publish できない。
 - **ポリシー fingerprint の表面: task 2 で解決済み。task 3 で実装する。**
   `policy.md` は `PolicyFingerprint` に入る設定を定義する。将来の cache
   integration は `mizar-cache` task 2 と調整する。
@@ -141,13 +145,16 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
      「Winner Selection」。
    - 状態: paired spec を追加した。実装は task 6 で開始する。
 
-6. **勝者選択。** [ ]
+6. **勝者選択。** [x]
    - `ProofEvidenceSet` 上の決定的な勝者選択を実装する。built-in
      discharge 証拠がどのクラスに入るかを定める discharge 証拠の検証範囲
      決定を（`mizar-kernel` とともに）解決し記録する。
    - テスト: クラスとタイブレークをまたぐ順序フィクスチャ。候補到着を
      シャッフルしても勝者は変わらない。
    - 依存: 3、5、`mizar-kernel` task 16。仕様: `selection.md`。
+   - 状態: `src/selection.rs` に required stable candidate id、trusted-kernel
+     evidence marker、deterministic winner/rejection ordering、no-selectable
+     diagnostic outcome、reuse metadata、focused test を実装した。
 
 7. **artifact proof selection のマージ。** [ ]
    - portfolio の結果と phase 12 の built-in discharge の結果を `VcId`

@@ -107,7 +107,7 @@ fn proof_manifest_dependency_boundary_is_task_one_minimal() {
 }
 
 #[test]
-fn proof_lib_states_boundary_and_exposes_policy_module_after_spec() {
+fn proof_lib_states_boundary_and_exposes_modules_after_specs() {
     let lib_path = crate_root().join("src/lib.rs");
     let source = read_to_string(&lib_path);
 
@@ -129,15 +129,16 @@ fn proof_lib_states_boundary_and_exposes_policy_module_after_spec() {
     let declarations = public_module_declarations(&source);
     assert_eq!(
         declarations,
-        ["policy"],
-        "{} may expose only the task-3 policy module; selection, status, and \
-         witness modules require later paired specs; found {declarations:?}",
+        ["policy", "selection"],
+        "{} may expose only the task-3 policy module and task-6 selection \
+         module; status and witness modules require later paired specs; found \
+         {declarations:?}",
         lib_path.display()
     );
 }
 
 #[test]
-fn proof_crate_tree_contains_only_task_one_files() {
+fn proof_crate_tree_contains_only_task_six_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -147,10 +148,11 @@ fn proof_crate_tree_contains_only_task_one_files() {
             "Cargo.toml",
             "src/lib.rs",
             "src/policy.rs",
+            "src/selection.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-proof task 3 may contain only the policy module plus the lint \
-         guard; selection, status, witness-store, build scripts, examples, \
+        "mizar-proof task 6 may contain only the policy and selection modules \
+         plus the lint guard; status, witness-store, build scripts, examples, \
          benches, or extra tests require later explicit tasks; found {files:?}"
     );
 }

@@ -687,6 +687,7 @@ pub struct KernelPolicyInput {
     origin: KernelEvidenceOrigin,
     policy_taint: bool,
     kernel_rejections: Vec<RejectionRecord>,
+    accepted_evidence_hash: Option<Hash>,
 }
 
 impl KernelPolicyInput {
@@ -697,6 +698,7 @@ impl KernelPolicyInput {
             origin,
             policy_taint: result.policy_taint(),
             kernel_rejections: result.rejections().to_vec(),
+            accepted_evidence_hash: accepted_evidence_hash_from_kernel_result(result, origin),
         }
     }
 
@@ -719,6 +721,27 @@ impl KernelPolicyInput {
     pub fn kernel_rejections(&self) -> &[RejectionRecord] {
         &self.kernel_rejections
     }
+
+    #[must_use]
+    pub const fn accepted_evidence_hash(&self) -> Option<Hash> {
+        self.accepted_evidence_hash
+    }
+
+    #[cfg(test)]
+    pub(crate) fn for_test(
+        status: KernelCheckStatus,
+        origin: KernelEvidenceOrigin,
+        policy_taint: bool,
+        accepted_evidence_hash: Option<Hash>,
+    ) -> Self {
+        Self {
+            status,
+            origin,
+            policy_taint,
+            kernel_rejections: Vec::new(),
+            accepted_evidence_hash,
+        }
+    }
 }
 
 /// Explicit origin for a kernel result.
@@ -728,6 +751,16 @@ pub enum KernelEvidenceOrigin {
     AtpFormulaSubstitution,
     BuiltinDischarge,
     KernelPrimitive,
+}
+
+impl KernelEvidenceOrigin {
+    const fn as_str(self) -> &'static str {
+        match self {
+            Self::AtpFormulaSubstitution => "atp-formula-substitution",
+            Self::BuiltinDischarge => "builtin-discharge",
+            Self::KernelPrimitive => "kernel-primitive",
+        }
+    }
 }
 
 /// Normalized candidate accepted by the policy evaluator.
@@ -942,6 +975,63 @@ fn default_kernel_evidence_formats() -> BTreeSet<KernelEvidenceFormat> {
     .collect()
 }
 
+fn accepted_evidence_hash_from_kernel_result(
+    result: &KernelCheckResult,
+    origin: KernelEvidenceOrigin,
+) -> Option<Hash> {
+    if result.status() != KernelCheckStatus::Accepted || result.policy_taint() {
+        return None;
+    }
+
+    let mut hash = StableHasher::new("mizar-proof-kernel-accepted-evidence-v1");
+    hash.field_str("status", "accepted");
+    hash.field_str("origin", origin.as_str());
+    hash.field_bytes(
+        "target_vc_fingerprint",
+        &result.target_vc_fingerprint().sort_bytes(),
+    );
+    hash.field_u64(
+        "checked_import_count",
+        result.checked_imports().len() as u64,
+    );
+    hash.field_debug("checked_imports", result.checked_imports());
+    hash.field_u64(
+        "checked_substitution_count",
+        result.checked_substitutions().len() as u64,
+    );
+    hash.field_debug("checked_substitutions", result.checked_substitutions());
+    hash.field_u64(
+        "checked_resolution_step_count",
+        result.checked_resolution_steps().len() as u64,
+    );
+    hash.field_debug(
+        "checked_resolution_steps",
+        result.checked_resolution_steps(),
+    );
+    hash.field_u64(
+        "checked_cluster_step_count",
+        result.checked_cluster_steps().len() as u64,
+    );
+    hash.field_debug("checked_cluster_steps", result.checked_cluster_steps());
+    hash.field_u64(
+        "checked_reduction_step_count",
+        result.checked_reduction_steps().len() as u64,
+    );
+    hash.field_debug("checked_reduction_steps", result.checked_reduction_steps());
+    hash.field_u64(
+        "checked_derived_fact_count",
+        result.checked_derived_facts().len() as u64,
+    );
+    hash.field_debug("checked_derived_facts", result.checked_derived_facts());
+    hash.field_bool("has_sat_report", result.sat_check_report().is_some());
+    hash.field_debug("sat_check_report", result.sat_check_report());
+    hash.field_bool("has_final_goal", result.final_goal().is_some());
+    hash.field_debug("final_goal", result.final_goal());
+    hash.field_u64("used_axiom_count", result.used_axioms().len() as u64);
+    hash.field_debug("used_axioms", result.used_axioms());
+    Some(hash.finalize())
+}
+
 struct StableHasher {
     lanes: [u64; 4],
     length: u64,
@@ -964,6 +1054,10 @@ impl StableHasher {
 
     fn field_str(&mut self, label: &str, value: &str) {
         self.field_bytes(label, value.as_bytes());
+    }
+
+    fn field_debug(&mut self, label: &str, value: impl std::fmt::Debug) {
+        self.field_str(label, &format!("{value:?}"));
     }
 
     fn field_u16(&mut self, label: &str, value: u16) {
@@ -1384,12 +1478,7 @@ mod tests {
         origin: KernelEvidenceOrigin,
         policy_taint: bool,
     ) -> KernelPolicyInput {
-        KernelPolicyInput {
-            status,
-            origin,
-            policy_taint,
-            kernel_rejections: Vec::new(),
-        }
+        KernelPolicyInput::for_test(status, origin, policy_taint, None)
     }
 
     fn assert_policy_rejection(decision: PolicyDecision, reason: PolicyReasonCode) {

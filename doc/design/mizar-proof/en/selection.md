@@ -20,7 +20,8 @@ Selection consumes immutable records already produced by earlier stages:
 - normalized obligation identity and encoded problem hash;
 - active `VerifierPolicy` and `PolicyFingerprint`;
 - policy decisions from `ProofPolicyEvaluator`;
-- accepted kernel results paired with explicit kernel evidence origin;
+- accepted kernel results paired with explicit kernel evidence origin and the
+  accepted kernel evidence hash;
 - deterministic built-in discharge hashes;
 - externally attested admission records;
 - open-obligation explanations;
@@ -144,9 +145,10 @@ publication:
 | `policy_fingerprint` | Active `PolicyFingerprint`. |
 | `encoded_problem_hash` | Stable hash of the encoded obligation. |
 | `selected_evidence_hash` | Kernel evidence payload hash, external evidence hash, policy-assumption source hash, or open explanation hash, depending on class. |
-| `selected_proof_witness_hash` | Hash of the proof witness ref when artifact witness publication is available. |
+| `selected_proof_witness_hash` | Hash of the proof witness ref only when artifact witness publication is available. |
 | `deterministic_discharge_hash` | Deterministic built-in discharge hash for `DischargedBuiltin`. |
 | `external_admission_status` | External publication status for `PolicyPermittedExternal`. |
+| `proof_witness_publication` | `available`, `external_dependency_gap`, or `not_applicable` for the selected class. |
 | `tie_break_key_hash` | Stable hash of the actual tie-break tuple. |
 
 For `KernelVerified`, proof reuse may depend on the accepted kernel result and
@@ -157,8 +159,9 @@ metadata is a validation predicate only and does not become trusted acceptance.
 
 Current artifact witness references do not yet support `discharged_builtin`
 publication. Until the artifact schema gap is closed, selection may export a
-deterministic discharge hash but must mark proof-witness publication for that
-class as `external_dependency_gap`.
+deterministic discharge hash but must not export a selected proof witness hash
+for that class; it must mark proof-witness publication as
+`external_dependency_gap`.
 
 ## Result Shape
 
@@ -175,7 +178,9 @@ The task-6 implementation must expose a stable result with:
 
 The selected result must not synthesize trusted `used_axioms`. It may carry
 trusted `used_axioms` only by referencing the accepted kernel result selected
-as `KernelVerified` or `DischargedBuiltin`.
+as `KernelVerified` or `DischargedBuiltin`. The trusted marker used by
+selection must be bound to the accepted kernel evidence hash and must match the
+selected candidate's evidence hash.
 
 ## Deferred Integrations
 

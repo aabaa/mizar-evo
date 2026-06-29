@@ -57,10 +57,13 @@ internal: [04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.m
   policy-independent validation results; this crate evaluates policy on top
   of them. Externally attested evidence is policy-recorded evidence, never
   trusted status, and cannot win when `require_kernel_certificates` is set.
-- **Discharge-evidence validation scope: open, resolved by task 6.**
-  Whether `mizar-vc` pre-ATP discharge evidence is kernel-replayed or
-  accepted as deterministic built-in evidence per policy. Decided here with
-  `mizar-kernel` (registered at the top level and in both crates' todos).
+- **Discharge-evidence validation scope: resolved by task 6.**
+  `DischargedBuiltin` enters trusted selection only through
+  `TrustedKernelEvidence` created from `KernelPolicyInput`, which public
+  callers can construct only from `KernelCheckResult` plus explicit origin.
+  Pre-ATP discharge must therefore be kernel-replayed or represented as
+  kernel-accepted primitive evidence; otherwise it remains deterministic
+  policy evidence and cannot publish trusted `used_axioms`.
 - **Policy fingerprint surface: resolved by task 2, implemented by task 3.**
   `policy.md` defines the settings that enter `PolicyFingerprint`; coordinate
   future cache integration with `mizar-cache` task 2.
@@ -144,7 +147,7 @@ Keep `cargo test -p mizar-proof` green after each task (see
      "Winner Selection".
    - Status: paired specs added; implementation begins in task 6.
 
-6. **Winner selection.** [ ]
+6. **Winner selection.** [x]
    - Implement deterministic winner selection over
      `ProofEvidenceSet`s; resolve and record the discharge-evidence
      validation-scope decision (with `mizar-kernel`), since it determines
@@ -152,6 +155,9 @@ Keep `cargo test -p mizar-proof` green after each task (see
    - Tests: ordering fixtures across classes and tie-breaks; shuffled
      candidate arrival never changes the winner.
    - Deps: 3, 5, `mizar-kernel` task 16. Spec: `selection.md`.
+   - Status: implemented `src/selection.rs` with required stable candidate ids,
+     trusted-kernel evidence markers, deterministic winner/rejection ordering,
+     no-selectable diagnostic outcomes, reuse metadata, and focused tests.
 
 7. **Artifact proof selection merge.** [ ]
    - Merge portfolio results with phase-12 built-in discharge results per

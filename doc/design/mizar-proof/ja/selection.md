@@ -20,7 +20,8 @@ selection は、すでに前段が生成した immutable record を消費する:
 - 正規化された obligation identity と encoded problem hash;
 - active `VerifierPolicy` と `PolicyFingerprint`;
 - `ProofPolicyEvaluator` から来る policy decision;
-- 明示的な kernel evidence origin と対になった accepted kernel result;
+- 明示的な kernel evidence origin と accepted kernel evidence hash に対になった
+  accepted kernel result;
 - deterministic built-in discharge hash;
 - externally attested admission record;
 - open-obligation explanation;
@@ -140,9 +141,10 @@ selection は、proof reuse と後段の witness publication が使う安定 met
 | `policy_fingerprint` | active `PolicyFingerprint`。 |
 | `encoded_problem_hash` | encoded obligation の安定 hash。 |
 | `selected_evidence_hash` | class に応じた kernel evidence payload hash、external evidence hash、policy-assumption source hash、または open explanation hash。 |
-| `selected_proof_witness_hash` | artifact witness publication が利用可能な場合の proof witness ref hash。 |
+| `selected_proof_witness_hash` | artifact witness publication が利用可能な場合だけの proof witness ref hash。 |
 | `deterministic_discharge_hash` | `DischargedBuiltin` の deterministic built-in discharge hash。 |
 | `external_admission_status` | `PolicyPermittedExternal` の external publication status。 |
+| `proof_witness_publication` | selected class に対する `available`、`external_dependency_gap`、または `not_applicable`。 |
 | `tie_break_key_hash` | 実際の tie-break tuple の安定 hash。 |
 
 `KernelVerified` では、proof reuse は accepted kernel result と trusted `used_axioms` に
@@ -153,7 +155,8 @@ trusted acceptance にならない。
 
 現在の artifact witness reference は `discharged_builtin` publication をまだ support しない。
 artifact schema gap が閉じるまで、selection は deterministic discharge hash を export してよいが、
-その class の proof-witness publication は `external_dependency_gap` として mark しなければならない。
+その class では selected proof witness hash を export してはならない。proof-witness
+publication は `external_dependency_gap` として mark しなければならない。
 
 ## Result Shape
 
@@ -169,7 +172,8 @@ task 6 implementation は次を持つ安定 result を expose しなければな
 
 selected result は trusted `used_axioms` を合成してはならない。`KernelVerified` または
 `DischargedBuiltin` として選ばれた accepted kernel result を参照する場合だけ、
-trusted `used_axioms` を保持してよい。
+trusted `used_axioms` を保持してよい。selection が使う trusted marker は accepted
+kernel evidence hash に bind され、selected candidate の evidence hash と一致しなければならない。
 
 ## Deferred Integrations
 
