@@ -58,10 +58,10 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 - **キー/ストアの分離: internal 02 により解決済み。** `CacheKeyBuilder`
   はキーと依存サマリーを生産するだけである。再利用を決めるのは互換性
   チェックと proof witness 検証であり、どちらも信頼を与えない。
-- **スライス粒度: 未解決。task 5 で解決する。** アーキテクチャ 18 は
-  theorem、definition、cluster、notation、mode、attribute のスライスを
-  挙げる。実際に計算する初期スライス粒度（再ビルドトリガーが保守的で
-  ある限り粗くてよい）を決め、`dependency_fingerprint.md` に記録する。
+- **スライス粒度: task 4 で解決済み。** `dependency_fingerprint.md` は
+  theorem、definition、cluster、notation、mode、attribute を semantic target
+  taxonomy として維持する。一方で、より細かい producer slice が landing するまで、
+  task 5 は conservative な published-summary と per-VC slice 粒度から開始してよい。
 - **レコードエンコーディング: 未解決。task 7 で解決する。** キャッシュ
   レコードのバイナリエンコーディングと `cache_schema_version` の進化
   規則を決める。キャッシュレコードは内部用であり、artifact と違って
@@ -99,7 +99,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      どの入力の変化もキーを変える。
    - 依存: 2。仕様: `cache_key.md`。
 
-4. **仕様: `dependency_fingerprint.md`。** [ ]
+4. **仕様: `dependency_fingerprint.md`。** [x]
    - fingerprint の仕様を執筆する（英語と日本語、コードなし）:
      fingerprint の対象、依存スライス、安定入力（と除外される非決定的
      入力）、再ビルドトリガー、アーキテクチャ 18 の API 互換性 diff。
@@ -114,15 +114,20 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      VC ごとの依存スライス（`mizar-vc` task 14）の上で、決定した粒度の
      fingerprint を計算する。
    - テスト: 非インターフェース編集に対する fingerprint の安定性。
-     スライスの変化が正確に依存先の fingerprint だけを変える。
+     スライスの変化が正確に依存先の fingerprint だけを変えること。
+     deterministic output、canonical ordering と duplicate-conflict rejection、
+     comment/formatting/diagnostic/runtime/order/temporary/local path/
+     snapshot-local id の安定除外、missing/unknown/uncacheable miss behavior、
+     proof-reuse validation data が untrusted のままであることも cover する。
    - 依存: 3、4、`mizar-artifact` task 16。仕様:
      `dependency_fingerprint.md`。
 
 6. **再ビルドトリガーの評価。** [ ]
    - トリガー規則を実装する: どの fingerprint 変化がどのキャッシュ済み
      phase を無効化するか。スライスが粗い場合は保守的に。
-   - テスト: 変更種別（ソース、import、registration、ポリシー、ツール
-     チェーン）ごとのトリガーフィクスチャ。保守モードでの偽陰性なし。
+   - テスト: 変更種別（ソース、import、registration、cluster/reduction、
+     policy、toolchain、schema、proof-body、diagnostic-only）ごとの
+     トリガーフィクスチャ。保守モードでの偽陰性なし。
    - 依存: 5。仕様: `dependency_fingerprint.md`（トリガーの節）。
 
 ### ストア

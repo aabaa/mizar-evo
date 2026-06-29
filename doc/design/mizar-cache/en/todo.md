@@ -59,11 +59,11 @@ internal: [02](../../internal/en/02.artifact_store_cache_key_and_manifest.md),
 - **Key/store split: resolved by internal 02.** `CacheKeyBuilder` only
   produces keys and dependency summaries; compatibility checks and proof
   witness validation decide reuse. Neither grants trust.
-- **Slice granularity: open, resolved by task 5.** Architecture 18 names
-  theorem, definition, cluster, notation, mode, and attribute slices;
-  decide the initial slice granularity actually computed (coarser is
-  allowed if rebuild triggers stay conservative) and record it in
-  `dependency_fingerprint.md`.
+- **Slice granularity: resolved by task 4.** `dependency_fingerprint.md`
+  keeps theorem, definition, cluster, notation, mode, and attribute as the
+  semantic target taxonomy, while task 5 may begin with conservative
+  published-summary plus per-VC slice granularity until finer producer slices
+  land.
 - **Record encoding: open, resolved by task 7.** Decide the cache record
   binary encoding and its `cache_schema_version` evolution rules; cache
   records are internal and may embed raw IR encodings, unlike artifacts.
@@ -100,7 +100,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
      any input change changes the key.
    - Deps: 2. Spec: `cache_key.md`.
 
-4. **Spec: `dependency_fingerprint.md`.** [ ]
+4. **Spec: `dependency_fingerprint.md`.** [x]
    - Write the fingerprint spec (English and Japanese, no code):
      fingerprint targets, dependency slices, stable inputs (and excluded
      nondeterministic inputs), rebuild triggers, and the API-compatibility
@@ -115,7 +115,11 @@ Keep `cargo test -p mizar-cache` green after each task (see
      (`mizar-artifact` task 16) and per-VC dependency slices
      (`mizar-vc` task 14) at the decided granularity.
    - Tests: fingerprint stability under non-interface edits; slice changes
-     flip exactly the dependent fingerprints.
+     flip exactly the dependent fingerprints; deterministic output;
+     canonical ordering and duplicate-conflict rejection; stable exclusions for
+     comments, formatting, diagnostics, runtime/order, temporary/local paths,
+     and snapshot-local ids; missing/unknown/uncacheable miss behavior; and
+     proof-reuse validation data staying untrusted.
    - Deps: 3, 4, `mizar-artifact` task 16. Spec:
      `dependency_fingerprint.md`.
 
@@ -123,7 +127,8 @@ Keep `cargo test -p mizar-cache` green after each task (see
    - Implement the trigger rules: which fingerprint changes invalidate
      which cached phases, conservatively when slices are coarse.
    - Tests: trigger fixtures per change kind (source, import, registration,
-     policy, toolchain); no false negatives in the conservative mode.
+     cluster/reduction, policy, toolchain, schema, proof-body,
+     diagnostic-only); no false negatives in the conservative mode.
    - Deps: 5. Spec: `dependency_fingerprint.md` (triggers section).
 
 ### Store
