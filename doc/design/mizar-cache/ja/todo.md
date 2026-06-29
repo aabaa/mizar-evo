@@ -275,11 +275,18 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       artifact-publication-token API は追加しない。上記の実装と end-to-end test は
       owner が landing するまで deferred のままにする。
 
-16. **決定性と削除可能性のスイート。** [ ]
-    - プロパティ的検証: 同一入力が同一のキーとレコードを生む。任意の
-      キャッシュ部分集合を削除してもビルド結果は変わらず、変わるのは
-      ビルド時間だけである。
+16. **決定性と削除可能性のスイート。** [x]
+    - プロパティ的検証: 同一入力が同一のキーとレコードを生む。代表的な
+      crate-owned record/blob subset を削除しても deterministic repopulation
+      までの lookup availability だけが変わり、canonical identity や proof
+      acceptance は変わらない。build-result equivalence 全体は task 20 の
+      scope である。
     - 依存: 15。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
+    - task 16 で完了: `tests/determinism_suite.rs` は canonical cache-key
+      ordering、crate-owned store 上での record/blob deletion と repopulation、
+      proof-reuse diagnostic の決定性、外部認証された proof material を
+      non-reusable として拒否することを覆う。scheduler-level の
+      clean/incremental equivalence 全体は task 20 へ deferred のままである。
 
 17. **公開 enum の前方互換性ポリシー。** [ ]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。

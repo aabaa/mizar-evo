@@ -518,7 +518,7 @@ fn cluster_db_implementation_has_no_downstream_stub_or_timing_inputs() {
 }
 
 #[test]
-fn cache_crate_tree_contains_only_task_fourteen_files() {
+fn cache_crate_tree_contains_only_task_sixteen_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -532,12 +532,13 @@ fn cache_crate_tree_contains_only_task_fourteen_files() {
             "src/dependency_fingerprint.rs",
             "src/lib.rs",
             "src/proof_reuse.rs",
+            "tests/determinism_suite.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-cache task 14 contains only the crate manifest, root module, \
+        "mizar-cache task 16 contains only the crate manifest, root module, \
          cache_key implementation, dependency_fingerprint implementation, \
          cache_store implementation, proof_reuse implementation, cluster_db \
-         implementation, and lint guard; other behavior modules, \
+         implementation, determinism suite, and lint guard; other behavior modules, \
          build scripts, examples, benches, or extra tests require later \
          explicit tasks; found {files:?}"
     );

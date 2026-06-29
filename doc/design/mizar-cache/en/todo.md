@@ -288,11 +288,19 @@ Keep `cargo test -p mizar-cache` green after each task (see
       implementation and end-to-end tests above remain deferred until their
       owners land.
 
-16. **Determinism and deletability suite.** [ ]
+16. **Determinism and deletability suite.** [x]
     - Property coverage: identical inputs produce identical keys and
-      records; deleting arbitrary cache subsets never changes build
-      results, only build time.
+      records; deleting representative crate-owned record/blob subsets
+      changes only lookup availability until deterministic repopulation, not
+      canonical identity or proof acceptance. Full build-result equivalence is
+      task-20 scope.
     - Deps: 15. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+    - Completed by task 16: `tests/determinism_suite.rs` covers canonical
+      cache-key ordering, record/blob deletion and repopulation on the
+      crate-owned store, proof-reuse diagnostic determinism, and rejection of
+      externally attested proof material as non-reusable. Full
+      scheduler-level clean/incremental equivalence remains deferred to
+      task 20.
 
 17. **Public-enum forward-compatibility policy.** [ ]
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
