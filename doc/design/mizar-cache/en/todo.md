@@ -22,7 +22,7 @@ internal 02 and 06.
 |---|---|---|---|
 | cache_key | `cache_key.md` (task 2) | `src/cache_key.rs` | [x] |
 | dependency_fingerprint | `dependency_fingerprint.md` (task 4) | `src/dependency_fingerprint.rs` | [x] |
-| cache_store | `cache_store.md` (task 7) | `src/cache_store.rs` | [ ] |
+| cache_store | `cache_store.md` (task 7) | `src/cache_store.rs` | [x] |
 | proof_reuse | `proof_reuse.md` (task 10) | `src/proof_reuse.rs` | [ ] |
 | cluster_db | `cluster_db.md` (task 12) | `src/cluster_db.rs` | [ ] |
 
@@ -149,7 +149,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
    - Deps: 2. Spec: [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md)
      "Cache Store"/"Cache Record".
 
-8. **Record store.** [ ]
+8. **Record store.** [x]
    - Implement record write/read/validate with header compatibility checks
      (cache schema version, toolchain, output hash).
    - Tests: round-trips; incompatible headers miss instead of erroring;

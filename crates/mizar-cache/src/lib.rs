@@ -19,3 +19,6 @@ pub mod cache_key;
 
 /// Cache-side dependency footprint and fingerprint projection.
 pub mod dependency_fingerprint;
+
+/// Internal cache record storage and validation.
+pub mod cache_store;

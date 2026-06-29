@@ -135,8 +135,12 @@ fn cache_lib_states_boundary_and_cache_key_module() {
 
     assert_eq!(
         public_api_declarations(&source),
-        ["pub mod cache_key;", "pub mod dependency_fingerprint;"],
-        "{} must expose only the task-5 cache_key and dependency_fingerprint APIs",
+        [
+            "pub mod cache_key;",
+            "pub mod dependency_fingerprint;",
+            "pub mod cache_store;"
+        ],
+        "{} must expose only the task-8 cache_key, dependency_fingerprint, and cache_store APIs",
         lib_path.display()
     );
 }
@@ -255,7 +259,60 @@ fn dependency_fingerprint_implementation_excludes_mutable_runtime_inputs() {
 }
 
 #[test]
-fn cache_crate_tree_contains_only_task_five_files() {
+fn cache_store_api_does_not_expose_proof_authority_terms() {
+    let cache_store_path = crate_root().join("src/cache_store.rs");
+    let source = read_to_string(&cache_store_path);
+    let public_surface = public_api_surface_lines(&source);
+
+    for forbidden in [
+        "KernelCheckResult",
+        "ProofStatus",
+        "used_axioms",
+        "TrustedAcceptance",
+        "Authority",
+        "Accept",
+    ] {
+        assert!(
+            public_surface
+                .iter()
+                .all(|declaration| !declaration.contains(forbidden)),
+            "{} must not expose proof-authority projection terms through the \
+             cache_store public API; found `{forbidden}` in {public_surface:?}",
+            cache_store_path.display()
+        );
+    }
+}
+
+#[test]
+fn cache_store_implementation_keeps_boundary_terms_out_of_reuse_logic() {
+    let cache_store_path = crate_root().join("src/cache_store.rs");
+    let source = read_to_string(&cache_store_path);
+    let implementation = source
+        .split("#[cfg(test)]")
+        .next()
+        .expect("implementation prefix exists");
+
+    for forbidden in [
+        "SystemTime",
+        "Instant",
+        "scheduler",
+        "thread::current",
+        "process::id",
+        "temp_dir",
+        "KernelCheckResult",
+        "used_axioms",
+    ] {
+        assert!(
+            !implementation.contains(forbidden),
+            "{} cache_store implementation must not use mutable runtime or \
+             proof-authority input `{forbidden}` for reusable cache decisions",
+            cache_store_path.display()
+        );
+    }
+}
+
+#[test]
+fn cache_crate_tree_contains_only_task_eight_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -264,12 +321,14 @@ fn cache_crate_tree_contains_only_task_five_files() {
         [
             "Cargo.toml",
             "src/cache_key.rs",
+            "src/cache_store.rs",
             "src/dependency_fingerprint.rs",
             "src/lib.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-cache task 5 may contain only the crate manifest, root module, \
-         cache_key implementation, dependency_fingerprint implementation, and \
+        "mizar-cache task 8 may contain only the crate manifest, root module, \
+         cache_key implementation, dependency_fingerprint implementation, \
+         cache_store implementation, and \
          lint guard; other behavior modules, \
          build scripts, examples, benches, or extra tests require later \
          explicit tasks; found {files:?}"

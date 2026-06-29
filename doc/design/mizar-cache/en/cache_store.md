@@ -2,7 +2,8 @@
 
 > Canonical language: English. Japanese companion: [../ja/cache_store.md](../ja/cache_store.md).
 
-Status: specified by task 7. Source implementation begins in tasks 8 and 9.
+Status: specified by task 7. Inline record store implementation begins in
+task 8; content-addressed blob storage remains task 9.
 
 ## Purpose
 
@@ -22,9 +23,9 @@ publication. Deletion may only make later builds do more work.
 
 ## Public API
 
-Tasks 8 and 9 should expose a small record/blob store API. Exact Rust names may
-use newtypes, but the semantic decisions below must remain visible to tests
-and audit code.
+Tasks 8 and 9 expose a small record/blob store API. Exact Rust names may use
+newtypes, but the semantic decisions below must remain visible to tests and
+audit code.
 
 ```rust
 pub const CACHE_RECORD_SCHEMA_VERSION: &str;
@@ -37,7 +38,7 @@ pub struct CacheOutputDescriptor { ... }
 pub struct CacheBlobRef { ... }
 
 pub enum CacheLookupOutcome {
-    Hit(CacheRecord),
+    Hit(Box<CacheRecord>),
     Miss(CacheMiss),
 }
 
@@ -95,7 +96,10 @@ integrity diagnostic candidate.
 ## CacheRecordHeader
 
 `CacheRecordHeader` records every value needed to validate a candidate after
-an exact-key path lookup:
+an exact-key path lookup. Task 8 stores most compatibility and dependency
+validation fields inside the embedded `key.validation_inputs`; top-level rows
+below marked "embedded" are copied through that key rather than duplicated as
+separate header fields.
 
 | Field | Meaning |
 |---|---|
@@ -106,11 +110,11 @@ an exact-key path lookup:
 | `phase` | Pipeline phase copied from the key for quick rejection and diagnostics. |
 | `work_unit` | Phase-local unit copied from the key for quick rejection and diagnostics. |
 | `produced_by` | Toolchain identity and compatibility fields used for reuse checks. Unknown compatibility misses. |
-| `policy_fingerprint` | Verifier/proof policy fingerprint copied from the key. Incompatible policy misses. |
-| `schema_versions` | Output, artifact, footprint, proof-reuse metadata, and record schemas that affect interpretation. Unknown required schemas miss. |
-| `dependency_footprint_hash` | Reusable dependency footprint hash used by the output. `Complete` and `ConservativeComplete` are reusable; `IncompleteUncacheable`, missing, or unsupported footprints miss. |
-| `dependencies` | Dependency artifact availability and hash checks required before reuse. Missing or changed artifacts miss. |
-| `proof_reuse` | Optional proof-reuse validation metadata exported by `mizar-proof`. It is validation data only. |
+| `policy_fingerprint` | Embedded in `key`; verifier/proof policy fingerprint copied from the key. Incompatible policy misses. |
+| `schema_versions` | Embedded in `key`; output, artifact, footprint, proof-reuse metadata, and record schemas that affect interpretation. Unknown required schemas miss. |
+| `dependency_footprint_hash` | Embedded in `key.validation_inputs`; reusable dependency footprint hash used by the output. `Complete` and `ConservativeComplete` are reusable; `IncompleteUncacheable`, missing, or unsupported footprints miss. |
+| `dependencies` | Embedded in `key.validation_inputs`; dependency artifact availability and recorded domain/digest checks required before reuse. Missing or changed artifacts miss. Publication-token validation remains external. |
+| `proof_reuse` | Embedded in `key.validation_inputs`; optional proof-reuse validation metadata exported by `mizar-proof`. It is validation data only. |
 | `output` | `CacheOutputDescriptor` describing inline or blob-backed output bytes and their hash. |
 | `uncacheable` | Explicit marker that forces lookup and insert to miss/reject. |
 | `diagnostic_refs` | Optional diagnostic-only references for explaining misses. They never affect proof acceptance. |
@@ -177,19 +181,23 @@ Lookup is fail-closed:
    verifier policy compatibility, output schema compatibility, and
    proof-reuse metadata schema compatibility.
 7. Verify reusable dependency footprint status, dependency artifact
-   availability, dependency hashes, and dependency-slice fingerprints.
+   availability, recorded dependency artifact domain/digest, dependency
+   hashes, and dependency-slice fingerprints.
 8. For proof/VC-related records, validate the `mizar-proof` proof-reuse
    metadata, `ObligationAnchor`, canonical VC fingerprint, local-context
    fingerprint, dependency-slice fingerprints, selected proof witness hash, or
-   deterministic discharge hash as required by the key.
+   deterministic discharge hash as required by the key. Proof and ATP phase
+   records require proof-reuse evidence metadata even when VC metadata is
+   already present.
 9. Read inline bytes or blob bytes and verify `output_hash`.
 10. Return `Hit` only if every check succeeds.
 
 Any failed check returns `Miss`. Unknown schema, unknown toolchain
 compatibility, incomplete or unsupported dependency footprint, missing
-dependency artifact, incomplete proof-reuse validation input, unsupported
-proof evidence kind, explicit `uncacheable`, missing blob, and output hash
-mismatch must not be interpreted as reusable data.
+dependency artifact, dependency artifact domain/digest mismatch, incomplete
+proof-reuse validation input, unsupported proof evidence kind, explicit
+`uncacheable`, missing blob, and output hash mismatch must not be interpreted
+as reusable data.
 
 ## Insert
 
@@ -199,8 +207,9 @@ Insert accepts only complete cacheable records:
 - `uncacheable` is false;
 - the dependency footprint is `Complete` or `ConservativeComplete`;
 - compatibility fields are known and supported;
-- proof-reuse validation metadata is present when proof/VC reuse would skip
-  recomputation;
+- proof-reuse validation metadata is present when proof reuse would skip proof
+  or ATP recomputation, and VC validation metadata is present when VC reuse
+  would skip recomputation;
 - the output hash matches the output bytes or blob bytes.
 
 `Uncacheable` keys or records are not inserted as reusable records. An
@@ -209,10 +218,12 @@ data must not live in the reusable `records/<phase>/` namespace and must never
 return `Hit`.
 
 Writes use temporary files under `tmp/`, validate the complete encoded record,
-flush, and atomically rename into place. Two writers racing for the same key
-must either publish byte-identical records or one writer must lose without
-changing observable semantics. Divergent contents for the same validated key
-are a cache integrity miss, not competing proof outcomes.
+flush, and publish with create-new/no-overwrite semantics. Task 8 may publish
+by creating a same-filesystem hard link from the flushed temporary file to the
+final record path, then deleting the temporary file. Two writers racing for
+the same key must either publish byte-identical records or one writer must
+lose without changing observable semantics. Divergent contents for the same
+validated key are a cache integrity miss, not competing proof outcomes.
 
 ## Miss Reasons
 
@@ -273,12 +284,13 @@ projected by the proof/status owner layers.
 
 ## Tests
 
-Task 8 should cover at least:
+Task 8 covers at least:
 
 - record round-trip for inline output;
 - exact-key path lookup still validates embedded key and header;
 - incompatible record schema, key schema, toolchain, policy, and output schema
   returning misses;
+- missing or domain/digest-mismatched dependency artifacts returning misses;
 - `Complete` and `ConservativeComplete` footprints returning reusable records
   when every other compatibility check succeeds;
 - `uncacheable`, incomplete footprint, unsupported footprint, and missing
@@ -302,7 +314,7 @@ Task 9 should cover at least:
 |---|---|---|
 | `CACHESTORE-G001` | `external_dependency_gap` | `mizar-build` scheduler integration is not ready. This spec defines lookup/insert semantics only and does not add placeholder scheduling. |
 | `CACHESTORE-G002` | `external_dependency_gap` | `mizar-ir` cache adapters are absent. Records may carry opaque output bytes, but no IR adapter API is created here. |
-| `CACHESTORE-G003` | `external_dependency_gap` | Artifact committed publication-token integration is external. Cache records may depend on published artifact hashes only after the artifact owner exposes the token. |
+| `CACHESTORE-G003` | `external_dependency_gap` | Artifact committed publication-token integration is external. Task 8 checks only local availability plus the recorded dependency artifact domain/digest. Cache records may depend on published artifact hashes only after the artifact owner exposes the token. |
 | `CACHESTORE-G004` | `deferred` | `cluster-db` index storage is a later cache task. This record store spec does not make unaccepted registrations importer-visible. |
 
 ## Non-Goals

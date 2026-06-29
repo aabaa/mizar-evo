@@ -117,7 +117,10 @@ after an exact key match:
 - cache schema compatibility;
 - producing toolchain compatibility;
 - all dependency artifact hashes and availability;
-- complete dependency footprint status;
+- complete dependency footprint status, including conservative-complete
+  footprints that cover every required dependency family;
+- unsupported dependency footprint completeness or schema, which must remain a
+  miss and must not be interpreted as clean reuse;
 - `uncacheable` marker state;
 - verifier policy compatibility;
 - canonical VC fingerprint when the output is proof/VC-related;
@@ -233,6 +236,9 @@ Key construction and later cache reuse must fail closed:
 - unsupported or unknown cache record schema means miss;
 - unknown toolchain compatibility means miss;
 - incomplete dependency footprint means uncacheable and miss;
+- conservative-complete dependency footprint remains cacheable when every
+  other compatibility and validation input matches;
+- unsupported dependency footprint completeness or schema means miss;
 - explicit `uncacheable` marker always means miss;
 - missing dependency artifact hash means miss;
 - policy incompatibility means miss;

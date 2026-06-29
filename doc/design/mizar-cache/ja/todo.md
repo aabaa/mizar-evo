@@ -21,7 +21,7 @@ internal 02 のレコード/blob ストアを加えたものに従う。この c
 |---|---|---|---|
 | cache_key | `cache_key.md`（task 2） | `src/cache_key.rs` | [x] |
 | dependency_fingerprint | `dependency_fingerprint.md`（task 4） | `src/dependency_fingerprint.rs` | [x] |
-| cache_store | `cache_store.md`（task 7） | `src/cache_store.rs` | [ ] |
+| cache_store | `cache_store.md`（task 7） | `src/cache_store.rs` | [x] |
 | proof_reuse | `proof_reuse.md`（task 10） | `src/proof_reuse.rs` | [ ] |
 | cluster_db | `cluster_db.md`（task 12） | `src/cluster_db.rs` | [ ] |
 
@@ -146,7 +146,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - 依存: 2。仕様: [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)
      「Cache Store」「Cache Record」。
 
-8. **レコードストア。** [ ]
+8. **レコードストア。** [x]
    - ヘッダーの互換性チェック（cache schema version、ツールチェーン、
      出力ハッシュ）を備えたレコードの書き込み/読み込み/検証を実装する。
    - テスト: ラウンドトリップ。非互換ヘッダーはエラーではなくミスに

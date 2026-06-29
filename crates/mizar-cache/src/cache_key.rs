@@ -103,6 +103,10 @@ pub struct SourceIdentity {
 pub enum FootprintCompleteness {
     /// All required dependency information is available.
     Complete,
+    /// All required dependency families are covered, but some slices are coarse.
+    ConservativeComplete,
+    /// Footprint completeness or schema is unsupported by this cache version.
+    Unsupported,
     /// The work unit cannot be cached because dependency information is missing.
     IncompleteUncacheable,
 }
@@ -883,6 +887,8 @@ fn write_validation_inputs(hasher: &mut blake3::Hasher, value: &CacheValidationI
         "footprint_completeness",
         match value.footprint_completeness {
             FootprintCompleteness::Complete => "complete",
+            FootprintCompleteness::ConservativeComplete => "conservative_complete",
+            FootprintCompleteness::Unsupported => "unsupported",
             FootprintCompleteness::IncompleteUncacheable => "incomplete_uncacheable",
         },
     );

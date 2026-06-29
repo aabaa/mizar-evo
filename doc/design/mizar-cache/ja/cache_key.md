@@ -113,7 +113,10 @@ diagnostics-only source origin、local filesystem metadata は除外する。
 - cache schema compatibility;
 - producing toolchain compatibility;
 - 全 dependency artifact hash と availability;
-- complete dependency footprint status;
+- complete dependency footprint status。すべての required dependency family を cover する
+  conservative-complete footprint を含む;
+- unsupported dependency footprint completeness または schema。これは miss のままであり、
+  clean reuse と解釈してはならない;
 - `uncacheable` marker state;
 - verifier policy compatibility;
 - output が proof/VC 関連の場合の canonical VC fingerprint;
@@ -221,6 +224,9 @@ key construction と後続 cache reuse は fail closed でなければならな�
 - unsupported または unknown cache record schema は miss;
 - unknown toolchain compatibility は miss;
 - incomplete dependency footprint は uncacheable かつ miss;
+- conservative-complete dependency footprint は、他の compatibility と validation input が
+  すべて一致する場合は cacheable のままである;
+- unsupported dependency footprint completeness または schema は miss;
 - 明示的な `uncacheable` marker は常に miss;
 - dependency artifact hash の欠落は miss;
 - policy incompatibility は miss;
