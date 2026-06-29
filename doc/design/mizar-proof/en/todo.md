@@ -70,6 +70,15 @@ internal: [04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.m
 Keep `cargo test -p mizar-proof` green after each task (see
 [Recommended Verification](#recommended-verification)).
 
+### Protocol prerequisite
+
+0. **Crate plan and task ledger.** [x]
+   - Added paired crate plans and ledgers:
+     [00.crate_plan.md](./00.crate_plan.md) and
+     [task_ledger.md](./task_ledger.md).
+   - Status: complete for kickoff. Implementation starts at task 1 after this
+     docs-only task is reviewed, verified, and committed.
+
 ### Policy
 
 1. **Crate scaffold and lint-policy guard.** [ ]

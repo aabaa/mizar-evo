@@ -69,6 +69,15 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
 各タスクの後で `cargo test -p mizar-proof` を成功状態に保つこと
 （[推奨検証](#推奨検証)を参照）。
 
+### Protocol prerequisite
+
+0. **Crate plan と task ledger。** [x]
+   - paired crate plan と ledger を追加した:
+     [00.crate_plan.md](./00.crate_plan.md) と
+     [task_ledger.md](./task_ledger.md)。
+   - 状態: kickoff として完了。この docs-only task を review、verify、commit
+     した後に task 1 から実装を開始する。
+
 ### ポリシー
 
 1. **crate の足場と lint 方針のガード。** [ ]
