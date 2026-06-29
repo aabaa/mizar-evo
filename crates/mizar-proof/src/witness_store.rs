@@ -1652,6 +1652,41 @@ mod tests {
     }
 
     #[test]
+    fn draft_rejects_empty_required_canonical_payload_bytes() {
+        let obligation_fingerprint = artifact_ref(ArtifactHashClass::Interface, "obligation", 1);
+        let anchor = anchor();
+        let projection = status_projection(
+            "obl-1",
+            anchor.clone(),
+            &obligation_fingerprint,
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+            hash(2),
+            None,
+        );
+        let payload_schema = ProofWitnessPayloadSchema::with_canonical_bytes_required(
+            "mizar-proof/test-witness-payload",
+            SchemaVersion::new(1, 0),
+            true,
+        )
+        .expect("schema");
+
+        assert!(matches!(
+            ProofWitnessDraft::new(
+                "obl-1",
+                anchor,
+                obligation_fingerprint,
+                &projection,
+                trusted_metadata(KernelEvidenceOrigin::AtpFormulaSubstitution, hash(2), 9),
+                payload_schema,
+                Vec::<u8>::new(),
+                "proof-witnesses/empty.json",
+                provenance(KernelEvidenceOrigin::AtpFormulaSubstitution, hash(2)),
+            ),
+            Err(ProofWitnessStoreError::NonCanonicalPayloadBytes { .. })
+        ));
+    }
+
+    #[test]
     fn draft_requires_matching_status_projection() {
         let obligation_fingerprint = artifact_ref(ArtifactHashClass::Interface, "obligation", 1);
         let anchor = anchor();

@@ -276,11 +276,24 @@ Keep `cargo test -p mizar-proof` green after each task (see
      requirements for status-facing enums, and added a lint guard that scans
      every `src/**/*.rs` file and both EN/JA specs for enum-policy drift.
 
-15. **Source/spec correspondence audit.** [ ]
+15. **Source/spec correspondence audit.** [x]
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; verify the policy/trust split is restated
       in every module spec.
     - Deps: 14. Spec: all module specs and this TODO.
+    - Status: added paired
+      [`source_spec_audit.md`](./source_spec_audit.md) docs. The audit traces
+      public API groups for policy, selection, status, and witness-store to
+      their owning module specs and test coverage; verifies the policy/trust
+      split in every module; and finds no blocking `spec_gap`, `test_gap`,
+      `design_drift`, `source_drift`, `boundary_violation`, or
+      `repo_metadata_conflict`. Focused unit tests now cover empty candidate
+      source ids, empty obligation identity fields, and required canonical
+      witness payload bytes. Remaining work is classified as deferred or
+      `external_dependency_gap` for task-17 cache-facing reuse export,
+      `DischargedBuiltin` artifact witness support, artifact publication
+      tokens, copied kernel metadata, payload canonicality validators, and
+      downstream ATP early-stop integration.
 
 16. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under

@@ -1573,6 +1573,20 @@ mod tests {
     use super::*;
 
     #[test]
+    fn candidate_source_id_rejects_empty_id() {
+        assert_eq!(
+            CandidateSourceId::new(""),
+            Err(SelectionInputError::EmptyCandidateSourceId)
+        );
+        assert_eq!(
+            CandidateSourceId::new("stable-candidate")
+                .expect("stable id")
+                .as_str(),
+            "stable-candidate"
+        );
+    }
+
+    #[test]
     fn winner_order_prefers_trusted_then_policy_classes() {
         let policy = VerifierPolicy::interactive()
             .with_external_evidence(ExternalEvidenceMode::PermitNonTrustedWinner)

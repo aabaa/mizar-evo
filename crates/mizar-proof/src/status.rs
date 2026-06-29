@@ -854,6 +854,25 @@ mod tests {
     use super::*;
 
     #[test]
+    fn obligation_identity_rejects_empty_fields() {
+        assert_eq!(
+            ObligationAnchor::new(""),
+            Err(StatusProjectionError::EmptyObligationAnchor)
+        );
+        assert_eq!(
+            ProofObligationIdentity::new(
+                "",
+                ObligationAnchor::new("anchor-0").expect("valid anchor"),
+                hash(20),
+                hash(21),
+                hash(22),
+                hash(23),
+            ),
+            Err(StatusProjectionError::EmptyObligationId)
+        );
+    }
+
+    #[test]
     fn projects_selection_classes_without_status_collapse() {
         let kernel = project(selection_for_kernel(true), VerifierPolicy::release());
         assert_eq!(kernel.projected_status(), ProjectedProofStatus::Accepted);

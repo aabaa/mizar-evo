@@ -268,11 +268,23 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
      さらに、すべての `src/**/*.rs` file と EN/JA spec の enum-policy drift を検出する
      lint guard を追加した。
 
-15. **ソース/仕様対応監査。** [ ]
+15. **ソース/仕様対応監査。** [x]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
       トレースする。すべてのモジュール仕様がポリシー/信頼の分離を再掲
       していることを検証する。
     - 依存: 14。仕様: 全モジュール仕様と本 TODO。
+    - 状態: paired
+      [`source_spec_audit.md`](./source_spec_audit.md) docs を追加した。
+      audit は policy、selection、status、witness-store の public API group を
+      owning module spec と test coverage に trace し、各 module の policy/trust
+      split を検証した。blocking な `spec_gap`、`test_gap`、`design_drift`、
+      `source_drift`、`boundary_violation`、`repo_metadata_conflict` はない。
+      Focused unit tests は empty candidate source id、empty obligation identity
+      field、required canonical witness payload bytes を覆う。残作業は task-17
+      cache-facing reuse export、`DischargedBuiltin` artifact witness support、
+      artifact publication token、copy 済み kernel metadata、payload canonicality
+      validator、downstream ATP early-stop integration の deferred または
+      `external_dependency_gap` として分類した。
 
 16. **二言語ドキュメント同期監査。** [ ]
     - `doc/design/mizar-proof/en/` の各英語正本と日本語版を比較し、内容を
