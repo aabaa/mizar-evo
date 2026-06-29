@@ -125,6 +125,42 @@ Admission matrix:
 | development mode with record permission | yes | kernel certificate が不要で明示的に policy-permitted の場合以外 no | externally attested / development evidence |
 | interactive mode with record permission | yes | kernel certificate が不要で明示的に policy-permitted の場合以外 no | externally attested / open diagnostic |
 
+`ExternalEvidenceAdmission` は、この matrix の task-owned API surface である。次を持つ:
+
+- `record_as_development_evidence`;
+- `may_win_selection`;
+- `publication_status`;
+- `diagnostic`;
+- `trusted_used_axioms_allowed`。常に `false`。
+
+`publication_status` は次のいずれかである:
+
+- `RejectedByPolicy`;
+- `ExternallyAttestedDevelopment`;
+- `ExternallyAttestedOpenDiagnostic`;
+- `ExternallyAttestedPolicyPermitted`。
+
+完全な対応は次である:
+
+| `external_evidence` | `require_kernel_certificates` | `build_mode` | Record? | May win? | Publication status | `PolicyDecision.class` | Diagnostic |
+|---|---:|---|---:|---:|---|---|---|
+| `Reject` | any | any | no | no | `RejectedByPolicy` | `RejectedByPolicy` | `policy_rejection/external_evidence_rejected` |
+| `RecordDevelopment` | true | `Interactive` | yes | no | `ExternallyAttestedOpenDiagnostic` | `ExternallyAttested` | `policy_open/external_evidence_recorded` |
+| `RecordDevelopment` | true | `Release` または `Development` | yes | no | `RejectedByPolicy` | `RejectedByPolicy` | `policy_rejection/external_evidence_requires_kernel_certificate` |
+| `RecordDevelopment` | false | `Interactive` | yes | no | `ExternallyAttestedOpenDiagnostic` | `ExternallyAttested` | `policy_open/external_evidence_recorded` |
+| `RecordDevelopment` | false | `Release` または `Development` | yes | no | `ExternallyAttestedDevelopment` | `ExternallyAttested` | `policy_open/external_evidence_recorded` |
+| `PermitNonTrustedWinner` | true | `Interactive` | yes | no | `ExternallyAttestedOpenDiagnostic` | `ExternallyAttested` | `policy_open/external_evidence_recorded` |
+| `PermitNonTrustedWinner` | true | `Release` または `Development` | yes | no | `RejectedByPolicy` | `RejectedByPolicy` | `policy_rejection/external_evidence_requires_kernel_certificate` |
+| `PermitNonTrustedWinner` | false | any | yes | yes | `ExternallyAttestedPolicyPermitted` | `ExternallyAttested` | `policy_open/external_evidence_policy_permitted` |
+
+policy-tainted accepted kernel input は同じ external admission mapping を使う。
+元の kernel result は kernel status の唯一の由来のままだが、policy-tainted result は
+trusted `KernelVerified` または `DischargedBuiltin` として射影されない。
+
+external decision では、`PolicyDecision.diagnostic` は
+`ExternalEvidenceAdmission.diagnostic` を mirror する。両方とも absent であるか、
+構造的に等しくなければならない。kernel rejection record は external admission に保存しない。
+
 rejection diagnostic は policy rejection と kernel rejection を区別しなければならない。
 external record は `used_axioms` を合成してはならない。backend-reported axiom list は、
 kernel が独立に evidence を accept して trusted `used_axioms` を生むまでは

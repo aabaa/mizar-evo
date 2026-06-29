@@ -132,6 +132,44 @@ Admission matrix:
 | development mode with record permission | yes | no unless explicitly policy-permitted and kernel certificates are not required | externally attested / development evidence |
 | interactive mode with record permission | yes | no unless explicitly policy-permitted and kernel certificates are not required | externally attested / open diagnostic |
 
+`ExternalEvidenceAdmission` is the task-owned API surface for this matrix. It
+contains:
+
+- `record_as_development_evidence`;
+- `may_win_selection`;
+- `publication_status`;
+- `diagnostic`;
+- `trusted_used_axioms_allowed`, always `false`.
+
+`publication_status` is one of:
+
+- `RejectedByPolicy`;
+- `ExternallyAttestedDevelopment`;
+- `ExternallyAttestedOpenDiagnostic`;
+- `ExternallyAttestedPolicyPermitted`.
+
+The exhaustive mapping is:
+
+| `external_evidence` | `require_kernel_certificates` | `build_mode` | Record? | May win? | Publication status | `PolicyDecision.class` | Diagnostic |
+|---|---:|---|---:|---:|---|---|---|
+| `Reject` | any | any | no | no | `RejectedByPolicy` | `RejectedByPolicy` | `policy_rejection/external_evidence_rejected` |
+| `RecordDevelopment` | true | `Interactive` | yes | no | `ExternallyAttestedOpenDiagnostic` | `ExternallyAttested` | `policy_open/external_evidence_recorded` |
+| `RecordDevelopment` | true | `Release` or `Development` | yes | no | `RejectedByPolicy` | `RejectedByPolicy` | `policy_rejection/external_evidence_requires_kernel_certificate` |
+| `RecordDevelopment` | false | `Interactive` | yes | no | `ExternallyAttestedOpenDiagnostic` | `ExternallyAttested` | `policy_open/external_evidence_recorded` |
+| `RecordDevelopment` | false | `Release` or `Development` | yes | no | `ExternallyAttestedDevelopment` | `ExternallyAttested` | `policy_open/external_evidence_recorded` |
+| `PermitNonTrustedWinner` | true | `Interactive` | yes | no | `ExternallyAttestedOpenDiagnostic` | `ExternallyAttested` | `policy_open/external_evidence_recorded` |
+| `PermitNonTrustedWinner` | true | `Release` or `Development` | yes | no | `RejectedByPolicy` | `RejectedByPolicy` | `policy_rejection/external_evidence_requires_kernel_certificate` |
+| `PermitNonTrustedWinner` | false | any | yes | yes | `ExternallyAttestedPolicyPermitted` | `ExternallyAttested` | `policy_open/external_evidence_policy_permitted` |
+
+Policy-tainted accepted kernel inputs use the same external admission mapping;
+the original kernel result still remains the only source of kernel status, but
+the policy-tainted result is not projected as trusted `KernelVerified` or
+`DischargedBuiltin`.
+
+For external decisions, `PolicyDecision.diagnostic` mirrors
+`ExternalEvidenceAdmission.diagnostic`; both are either absent or structurally
+equal. Kernel rejection records are not stored in external admission.
+
 Rejection diagnostics must distinguish policy rejection from kernel rejection.
 External records must not synthesize `used_axioms`; backend-reported axiom
 lists remain diagnostic-only unless the kernel independently accepts evidence

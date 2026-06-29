@@ -116,12 +116,15 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
      classifier shape、schedulability check、deterministic policy fingerprint、
      focused test を実装した。
 
-4. **外部認証された証拠の扱い。** [ ]
+4. **外部認証された証拠の扱い。** [x]
    - 外部認証された証拠の許可とラベル付けを実装する: プロファイルが
      許せば開発証拠として記録可能、`require_kernel_certificates` の下では
      決して勝てない、信頼された `used_axioms` を決して生まない。
    - テスト: プロファイルごとの許可マトリクス。安定した拒否診断。
    - 依存: 3。仕様: `policy.md`（外部認証された証拠の節）。
+   - 状態: `ExternalEvidenceAdmission`、具体的な publication label、安定した
+     policy diagnostic、policy-tainted kernel result routing、profile/requirement
+     matrix test を実装した。
 
 ### 選択と状態
 

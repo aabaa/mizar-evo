@@ -286,19 +286,22 @@ impl ProofPolicyEvaluator {
     #[must_use]
     pub fn evaluate_candidate(&self, candidate: &PolicyCandidate) -> PolicyDecision {
         let can_schedule_kernel_check = self.can_schedule_kernel_check(candidate);
-        let (class, diagnostic, kernel_rejections) = match candidate {
+        let (class, diagnostic, kernel_rejections, external_admission) = match candidate {
             PolicyCandidate::KernelResult(input) => match input.status {
                 KernelCheckStatus::Accepted if input.policy_taint => {
                     self.externally_attested_decision()
                 }
                 KernelCheckStatus::Accepted => match input.origin {
                     KernelEvidenceOrigin::AtpFormulaSubstitution => {
-                        (CandidatePolicyClass::KernelVerified, None, Vec::new())
+                        (CandidatePolicyClass::KernelVerified, None, Vec::new(), None)
                     }
                     KernelEvidenceOrigin::BuiltinDischarge
-                    | KernelEvidenceOrigin::KernelPrimitive => {
-                        (CandidatePolicyClass::DischargedBuiltin, None, Vec::new())
-                    }
+                    | KernelEvidenceOrigin::KernelPrimitive => (
+                        CandidatePolicyClass::DischargedBuiltin,
+                        None,
+                        Vec::new(),
+                        None,
+                    ),
                 },
                 KernelCheckStatus::Rejected => self.kernel_rejected_decision(input),
                 _ => self.kernel_rejected_decision(input),
@@ -307,7 +310,12 @@ impl ProofPolicyEvaluator {
                 encoded_problem_matches,
             } => {
                 if can_schedule_kernel_check {
-                    (CandidatePolicyClass::KernelCheckable, None, Vec::new())
+                    (
+                        CandidatePolicyClass::KernelCheckable,
+                        None,
+                        Vec::new(),
+                        None,
+                    )
                 } else if *encoded_problem_matches {
                     self.rejection(PolicyReasonCode::KernelEvidenceFormatDisabled)
                 } else {
@@ -318,7 +326,12 @@ impl ProofPolicyEvaluator {
                 has_stable_kernel_representation,
             } => {
                 if can_schedule_kernel_check {
-                    (CandidatePolicyClass::KernelCheckable, None, Vec::new())
+                    (
+                        CandidatePolicyClass::KernelCheckable,
+                        None,
+                        Vec::new(),
+                        None,
+                    )
                 } else if *has_stable_kernel_representation {
                     self.rejection(PolicyReasonCode::KernelEvidenceFormatDisabled)
                 } else {
@@ -327,7 +340,12 @@ impl ProofPolicyEvaluator {
             }
             PolicyCandidate::KernelPrimitive { allowed_by_policy } => {
                 if can_schedule_kernel_check {
-                    (CandidatePolicyClass::KernelCheckable, None, Vec::new())
+                    (
+                        CandidatePolicyClass::KernelCheckable,
+                        None,
+                        Vec::new(),
+                        None,
+                    )
                 } else if *allowed_by_policy {
                     self.rejection(PolicyReasonCode::KernelEvidenceFormatDisabled)
                 } else {
@@ -346,6 +364,7 @@ impl ProofPolicyEvaluator {
                         PolicyReasonCode::OpenObligationAllowed,
                     )),
                     Vec::new(),
+                    None,
                 ),
             },
             PolicyCandidate::PolicyAssumption => match self.policy.policy_assumption {
@@ -359,6 +378,7 @@ impl ProofPolicyEvaluator {
                         PolicyReasonCode::PolicyAssumptionRecorded,
                     )),
                     Vec::new(),
+                    None,
                 ),
             },
             PolicyCandidate::BackendDiagnostic
@@ -374,6 +394,7 @@ impl ProofPolicyEvaluator {
                     PolicyReasonCode::DiagnosticOnly,
                 )),
                 Vec::new(),
+                None,
             ),
             PolicyCandidate::LegacyReplay => self.rejection(PolicyReasonCode::LegacyReplayRejected),
         };
@@ -383,6 +404,38 @@ impl ProofPolicyEvaluator {
             can_schedule_kernel_check,
             diagnostic,
             kernel_rejections,
+            external_admission,
+        }
+    }
+
+    #[must_use]
+    pub fn external_evidence_admission(&self) -> ExternalEvidenceAdmission {
+        match self.policy.external_evidence {
+            ExternalEvidenceMode::Reject => ExternalEvidenceAdmission::new(
+                false,
+                false,
+                ExternalEvidencePublicationStatus::RejectedByPolicy,
+                Some(PolicyDiagnostic::new(
+                    PolicyDiagnosticCategory::PolicyRejection,
+                    PolicyReasonCode::ExternalEvidenceRejected,
+                )),
+            ),
+            ExternalEvidenceMode::RecordDevelopment => self.external_recording_admission(false),
+            ExternalEvidenceMode::PermitNonTrustedWinner => {
+                if self.policy.require_kernel_certificates {
+                    self.external_recording_admission(false)
+                } else {
+                    ExternalEvidenceAdmission::new(
+                        true,
+                        true,
+                        ExternalEvidencePublicationStatus::ExternallyAttestedPolicyPermitted,
+                        Some(PolicyDiagnostic::new(
+                            PolicyDiagnosticCategory::PolicyOpen,
+                            PolicyReasonCode::ExternalEvidencePolicyPermitted,
+                        )),
+                    )
+                }
+            }
         }
     }
 
@@ -392,8 +445,70 @@ impl ProofPolicyEvaluator {
         CandidatePolicyClass,
         Option<PolicyDiagnostic>,
         Vec<RejectionRecord>,
+        Option<ExternalEvidenceAdmission>,
     ) {
-        (CandidatePolicyClass::ExternallyAttested, None, Vec::new())
+        let admission = self.external_evidence_admission();
+        (
+            admission.policy_class(),
+            admission.diagnostic().cloned(),
+            Vec::new(),
+            Some(admission),
+        )
+    }
+
+    fn external_recording_admission(&self, may_win_selection: bool) -> ExternalEvidenceAdmission {
+        if self.policy.require_kernel_certificates {
+            return match self.policy.build_mode {
+                BuildMode::Interactive => ExternalEvidenceAdmission::new(
+                    true,
+                    false,
+                    ExternalEvidencePublicationStatus::ExternallyAttestedOpenDiagnostic,
+                    Some(PolicyDiagnostic::new(
+                        PolicyDiagnosticCategory::PolicyOpen,
+                        PolicyReasonCode::ExternalEvidenceRecorded,
+                    )),
+                ),
+                BuildMode::Release | BuildMode::Development => ExternalEvidenceAdmission::new(
+                    true,
+                    false,
+                    ExternalEvidencePublicationStatus::RejectedByPolicy,
+                    Some(PolicyDiagnostic::new(
+                        PolicyDiagnosticCategory::PolicyRejection,
+                        PolicyReasonCode::ExternalEvidenceRequiresKernelCertificate,
+                    )),
+                ),
+            };
+        }
+
+        match (may_win_selection, self.policy.build_mode) {
+            (true, _) => ExternalEvidenceAdmission::new(
+                true,
+                true,
+                ExternalEvidencePublicationStatus::ExternallyAttestedPolicyPermitted,
+                Some(PolicyDiagnostic::new(
+                    PolicyDiagnosticCategory::PolicyOpen,
+                    PolicyReasonCode::ExternalEvidencePolicyPermitted,
+                )),
+            ),
+            (false, BuildMode::Interactive) => ExternalEvidenceAdmission::new(
+                true,
+                false,
+                ExternalEvidencePublicationStatus::ExternallyAttestedOpenDiagnostic,
+                Some(PolicyDiagnostic::new(
+                    PolicyDiagnosticCategory::PolicyOpen,
+                    PolicyReasonCode::ExternalEvidenceRecorded,
+                )),
+            ),
+            (false, BuildMode::Release | BuildMode::Development) => ExternalEvidenceAdmission::new(
+                true,
+                false,
+                ExternalEvidencePublicationStatus::ExternallyAttestedDevelopment,
+                Some(PolicyDiagnostic::new(
+                    PolicyDiagnosticCategory::PolicyOpen,
+                    PolicyReasonCode::ExternalEvidenceRecorded,
+                )),
+            ),
+        }
     }
 
     fn kernel_rejected_decision(
@@ -403,11 +518,13 @@ impl ProofPolicyEvaluator {
         CandidatePolicyClass,
         Option<PolicyDiagnostic>,
         Vec<RejectionRecord>,
+        Option<ExternalEvidenceAdmission>,
     ) {
         (
             CandidatePolicyClass::KernelRejected,
             None,
             input.kernel_rejections.clone(),
+            None,
         )
     }
 
@@ -418,6 +535,7 @@ impl ProofPolicyEvaluator {
         CandidatePolicyClass,
         Option<PolicyDiagnostic>,
         Vec<RejectionRecord>,
+        Option<ExternalEvidenceAdmission>,
     ) {
         (
             CandidatePolicyClass::RejectedByPolicy,
@@ -426,6 +544,7 @@ impl ProofPolicyEvaluator {
                 reason,
             )),
             Vec::new(),
+            None,
         )
     }
 }
@@ -656,6 +775,84 @@ pub struct PolicyDecision {
     pub can_schedule_kernel_check: bool,
     pub diagnostic: Option<PolicyDiagnostic>,
     pub kernel_rejections: Vec<RejectionRecord>,
+    pub external_admission: Option<ExternalEvidenceAdmission>,
+}
+
+/// Admission result for externally attested evidence.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ExternalEvidenceAdmission {
+    record_as_development_evidence: bool,
+    may_win_selection: bool,
+    publication_status: ExternalEvidencePublicationStatus,
+    diagnostic: Option<PolicyDiagnostic>,
+    trusted_used_axioms_allowed: bool,
+}
+
+impl ExternalEvidenceAdmission {
+    #[must_use]
+    pub const fn new(
+        record_as_development_evidence: bool,
+        may_win_selection: bool,
+        publication_status: ExternalEvidencePublicationStatus,
+        diagnostic: Option<PolicyDiagnostic>,
+    ) -> Self {
+        Self {
+            record_as_development_evidence,
+            may_win_selection,
+            publication_status,
+            diagnostic,
+            trusted_used_axioms_allowed: false,
+        }
+    }
+
+    #[must_use]
+    pub const fn policy_class(&self) -> CandidatePolicyClass {
+        match self.publication_status {
+            ExternalEvidencePublicationStatus::RejectedByPolicy => {
+                CandidatePolicyClass::RejectedByPolicy
+            }
+            ExternalEvidencePublicationStatus::ExternallyAttestedDevelopment
+            | ExternalEvidencePublicationStatus::ExternallyAttestedOpenDiagnostic
+            | ExternalEvidencePublicationStatus::ExternallyAttestedPolicyPermitted => {
+                CandidatePolicyClass::ExternallyAttested
+            }
+        }
+    }
+
+    #[must_use]
+    pub const fn record_as_development_evidence(&self) -> bool {
+        self.record_as_development_evidence
+    }
+
+    #[must_use]
+    pub const fn may_win_selection(&self) -> bool {
+        self.may_win_selection
+    }
+
+    #[must_use]
+    pub const fn publication_status(&self) -> ExternalEvidencePublicationStatus {
+        self.publication_status
+    }
+
+    #[must_use]
+    pub fn diagnostic(&self) -> Option<&PolicyDiagnostic> {
+        self.diagnostic.as_ref()
+    }
+
+    #[must_use]
+    pub const fn trusted_used_axioms_allowed(&self) -> bool {
+        self.trusted_used_axioms_allowed
+    }
+}
+
+/// Publication/status label for external evidence admission.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, std::hash::Hash)]
+#[non_exhaustive]
+pub enum ExternalEvidencePublicationStatus {
+    RejectedByPolicy,
+    ExternallyAttestedDevelopment,
+    ExternallyAttestedOpenDiagnostic,
+    ExternallyAttestedPolicyPermitted,
 }
 
 /// Stable policy diagnostic label.
@@ -696,6 +893,10 @@ impl PolicyDiagnosticCategory {
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, std::hash::Hash)]
 #[non_exhaustive]
 pub enum PolicyReasonCode {
+    ExternalEvidenceRejected,
+    ExternalEvidenceRequiresKernelCertificate,
+    ExternalEvidenceRecorded,
+    ExternalEvidencePolicyPermitted,
     KernelEvidenceTargetMismatch,
     KernelEvidenceFormatDisabled,
     MissingBuiltinKernelRepresentation,
@@ -712,6 +913,12 @@ impl PolicyReasonCode {
     #[must_use]
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::ExternalEvidenceRejected => "external_evidence_rejected",
+            Self::ExternalEvidenceRequiresKernelCertificate => {
+                "external_evidence_requires_kernel_certificate"
+            }
+            Self::ExternalEvidenceRecorded => "external_evidence_recorded",
+            Self::ExternalEvidencePolicyPermitted => "external_evidence_policy_permitted",
             Self::KernelEvidenceTargetMismatch => "kernel_evidence_target_mismatch",
             Self::KernelEvidenceFormatDisabled => "kernel_evidence_format_disabled",
             Self::MissingBuiltinKernelRepresentation => "missing_builtin_kernel_representation",
@@ -864,22 +1071,37 @@ mod tests {
 
     #[test]
     fn policy_tainted_kernel_results_do_not_become_trusted() {
-        let release = ProofPolicyEvaluator::new(VerifierPolicy::release());
-        let development = ProofPolicyEvaluator::new(VerifierPolicy::development());
-        let candidate = PolicyCandidate::KernelResult(kernel_input_for_test(
-            KernelCheckStatus::Accepted,
+        for origin in [
             KernelEvidenceOrigin::AtpFormulaSubstitution,
-            true,
-        ));
-
-        assert_eq!(
-            release.candidate_class(&candidate),
-            CandidatePolicyClass::ExternallyAttested
-        );
-        assert_eq!(
-            development.candidate_class(&candidate),
-            CandidatePolicyClass::ExternallyAttested
-        );
+            KernelEvidenceOrigin::BuiltinDischarge,
+            KernelEvidenceOrigin::KernelPrimitive,
+        ] {
+            assert_policy_tainted_admission(
+                VerifierPolicy::release(),
+                origin,
+                CandidatePolicyClass::RejectedByPolicy,
+                ExternalEvidencePublicationStatus::RejectedByPolicy,
+                PolicyDiagnosticCategory::PolicyRejection,
+                PolicyReasonCode::ExternalEvidenceRejected,
+            );
+            assert_policy_tainted_admission(
+                VerifierPolicy::development(),
+                origin,
+                CandidatePolicyClass::ExternallyAttested,
+                ExternalEvidencePublicationStatus::ExternallyAttestedDevelopment,
+                PolicyDiagnosticCategory::PolicyOpen,
+                PolicyReasonCode::ExternalEvidenceRecorded,
+            );
+            assert_policy_tainted_admission(
+                VerifierPolicy::development()
+                    .with_external_evidence(ExternalEvidenceMode::PermitNonTrustedWinner),
+                origin,
+                CandidatePolicyClass::ExternallyAttested,
+                ExternalEvidencePublicationStatus::ExternallyAttestedPolicyPermitted,
+                PolicyDiagnosticCategory::PolicyOpen,
+                PolicyReasonCode::ExternalEvidencePolicyPermitted,
+            );
+        }
     }
 
     #[test]
@@ -978,9 +1200,8 @@ mod tests {
         let interactive = ProofPolicyEvaluator::new(VerifierPolicy::interactive());
 
         assert_eq!(
-            ProofPolicyEvaluator::new(VerifierPolicy::release())
-                .candidate_class(&PolicyCandidate::ExternallyAttested),
-            CandidatePolicyClass::ExternallyAttested
+            release.candidate_class(&PolicyCandidate::ExternallyAttested),
+            CandidatePolicyClass::RejectedByPolicy
         );
         assert_eq!(
             development.candidate_class(&PolicyCandidate::ExternallyAttested),
@@ -1026,6 +1247,82 @@ mod tests {
             development.evaluate_candidate(&PolicyCandidate::LegacyReplay),
             PolicyReasonCode::LegacyReplayRejected,
         );
+    }
+
+    #[test]
+    fn externally_attested_admission_matrix_is_policy_driven() {
+        let cases = [
+            external_case(ExternalEvidenceMode::Reject, false, BuildMode::Release),
+            external_case(ExternalEvidenceMode::Reject, false, BuildMode::Development),
+            external_case(ExternalEvidenceMode::Reject, false, BuildMode::Interactive),
+            external_case(ExternalEvidenceMode::Reject, true, BuildMode::Release),
+            external_case(ExternalEvidenceMode::Reject, true, BuildMode::Development),
+            external_case(ExternalEvidenceMode::Reject, true, BuildMode::Interactive),
+            external_case(
+                ExternalEvidenceMode::RecordDevelopment,
+                false,
+                BuildMode::Release,
+            ),
+            external_case(
+                ExternalEvidenceMode::RecordDevelopment,
+                false,
+                BuildMode::Development,
+            ),
+            external_case(
+                ExternalEvidenceMode::RecordDevelopment,
+                false,
+                BuildMode::Interactive,
+            ),
+            external_case(
+                ExternalEvidenceMode::RecordDevelopment,
+                true,
+                BuildMode::Release,
+            ),
+            external_case(
+                ExternalEvidenceMode::RecordDevelopment,
+                true,
+                BuildMode::Development,
+            ),
+            external_case(
+                ExternalEvidenceMode::RecordDevelopment,
+                true,
+                BuildMode::Interactive,
+            ),
+            external_case(
+                ExternalEvidenceMode::PermitNonTrustedWinner,
+                false,
+                BuildMode::Release,
+            ),
+            external_case(
+                ExternalEvidenceMode::PermitNonTrustedWinner,
+                false,
+                BuildMode::Development,
+            ),
+            external_case(
+                ExternalEvidenceMode::PermitNonTrustedWinner,
+                false,
+                BuildMode::Interactive,
+            ),
+            external_case(
+                ExternalEvidenceMode::PermitNonTrustedWinner,
+                true,
+                BuildMode::Release,
+            ),
+            external_case(
+                ExternalEvidenceMode::PermitNonTrustedWinner,
+                true,
+                BuildMode::Development,
+            ),
+            external_case(
+                ExternalEvidenceMode::PermitNonTrustedWinner,
+                true,
+                BuildMode::Interactive,
+            ),
+        ];
+
+        for case in cases {
+            assert_external_admission(case);
+        }
     }
 
     #[test]
@@ -1099,6 +1396,7 @@ mod tests {
         assert_eq!(decision.class, CandidatePolicyClass::RejectedByPolicy);
         assert!(!decision.can_schedule_kernel_check);
         assert!(decision.kernel_rejections.is_empty());
+        assert!(decision.external_admission.is_none());
         assert_eq!(
             decision.diagnostic,
             Some(PolicyDiagnostic::new(
@@ -1106,5 +1404,189 @@ mod tests {
                 reason
             ))
         );
+    }
+
+    fn assert_policy_tainted_admission(
+        policy: VerifierPolicy,
+        origin: KernelEvidenceOrigin,
+        expected_class: CandidatePolicyClass,
+        expected_status: ExternalEvidencePublicationStatus,
+        expected_category: PolicyDiagnosticCategory,
+        expected_reason: PolicyReasonCode,
+    ) {
+        let evaluator = ProofPolicyEvaluator::new(policy);
+        let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(
+            kernel_input_for_test(KernelCheckStatus::Accepted, origin, true),
+        ));
+        let expected_diagnostic = Some(PolicyDiagnostic::new(expected_category, expected_reason));
+
+        assert_eq!(decision.class, expected_class);
+        assert!(!decision.can_schedule_kernel_check);
+        assert!(decision.kernel_rejections.is_empty());
+        assert_eq!(decision.diagnostic, expected_diagnostic);
+
+        let admission = decision
+            .external_admission
+            .expect("policy-tainted kernel input carries external admission");
+        assert_eq!(evaluator.external_evidence_admission(), admission);
+        assert_eq!(admission.policy_class(), expected_class);
+        assert_eq!(admission.publication_status(), expected_status);
+        assert_eq!(admission.diagnostic().cloned(), expected_diagnostic);
+        assert!(!admission.trusted_used_axioms_allowed());
+    }
+
+    fn assert_external_admission(case: ExternalAdmissionCase) {
+        let evaluator = ProofPolicyEvaluator::new(
+            VerifierPolicy::release()
+                .with_external_evidence(case.external_evidence)
+                .with_require_kernel_certificates(case.require_kernel_certificates)
+                .with_build_mode(case.build_mode),
+        );
+        let decision = evaluator.evaluate_candidate(&PolicyCandidate::ExternallyAttested);
+        let expected_diagnostic = Some(PolicyDiagnostic::new(
+            case.expected_category,
+            case.expected_reason,
+        ));
+
+        assert_eq!(decision.class, case.expected_class);
+        assert!(!decision.can_schedule_kernel_check);
+        assert!(decision.kernel_rejections.is_empty());
+        assert_eq!(decision.diagnostic, expected_diagnostic);
+
+        let admission = decision
+            .external_admission
+            .expect("external candidate carries admission result");
+        assert_eq!(evaluator.external_evidence_admission(), admission);
+        assert_eq!(
+            admission.record_as_development_evidence(),
+            case.expected_record
+        );
+        assert_eq!(admission.may_win_selection(), case.expected_may_win);
+        assert_eq!(admission.publication_status(), case.expected_status);
+        assert_eq!(admission.diagnostic().cloned(), expected_diagnostic);
+        assert!(!admission.trusted_used_axioms_allowed());
+    }
+
+    fn external_case(
+        external_evidence: ExternalEvidenceMode,
+        require_kernel_certificates: bool,
+        build_mode: BuildMode,
+    ) -> ExternalAdmissionCase {
+        let (
+            expected_class,
+            expected_record,
+            expected_may_win,
+            expected_status,
+            expected_category,
+            expected_reason,
+        ) = match external_evidence {
+            ExternalEvidenceMode::Reject => (
+                CandidatePolicyClass::RejectedByPolicy,
+                false,
+                false,
+                ExternalEvidencePublicationStatus::RejectedByPolicy,
+                PolicyDiagnosticCategory::PolicyRejection,
+                PolicyReasonCode::ExternalEvidenceRejected,
+            ),
+            ExternalEvidenceMode::RecordDevelopment if require_kernel_certificates => {
+                external_require_kernel_case(build_mode)
+            }
+            ExternalEvidenceMode::RecordDevelopment => external_record_case(build_mode),
+            ExternalEvidenceMode::PermitNonTrustedWinner if require_kernel_certificates => {
+                external_require_kernel_case(build_mode)
+            }
+            ExternalEvidenceMode::PermitNonTrustedWinner => (
+                CandidatePolicyClass::ExternallyAttested,
+                true,
+                true,
+                ExternalEvidencePublicationStatus::ExternallyAttestedPolicyPermitted,
+                PolicyDiagnosticCategory::PolicyOpen,
+                PolicyReasonCode::ExternalEvidencePolicyPermitted,
+            ),
+        };
+
+        ExternalAdmissionCase {
+            external_evidence,
+            require_kernel_certificates,
+            build_mode,
+            expected_class,
+            expected_record,
+            expected_may_win,
+            expected_status,
+            expected_category,
+            expected_reason,
+        }
+    }
+
+    fn external_require_kernel_case(
+        build_mode: BuildMode,
+    ) -> (
+        CandidatePolicyClass,
+        bool,
+        bool,
+        ExternalEvidencePublicationStatus,
+        PolicyDiagnosticCategory,
+        PolicyReasonCode,
+    ) {
+        match build_mode {
+            BuildMode::Interactive => (
+                CandidatePolicyClass::ExternallyAttested,
+                true,
+                false,
+                ExternalEvidencePublicationStatus::ExternallyAttestedOpenDiagnostic,
+                PolicyDiagnosticCategory::PolicyOpen,
+                PolicyReasonCode::ExternalEvidenceRecorded,
+            ),
+            BuildMode::Release | BuildMode::Development => (
+                CandidatePolicyClass::RejectedByPolicy,
+                true,
+                false,
+                ExternalEvidencePublicationStatus::RejectedByPolicy,
+                PolicyDiagnosticCategory::PolicyRejection,
+                PolicyReasonCode::ExternalEvidenceRequiresKernelCertificate,
+            ),
+        }
+    }
+
+    fn external_record_case(
+        build_mode: BuildMode,
+    ) -> (
+        CandidatePolicyClass,
+        bool,
+        bool,
+        ExternalEvidencePublicationStatus,
+        PolicyDiagnosticCategory,
+        PolicyReasonCode,
+    ) {
+        match build_mode {
+            BuildMode::Interactive => (
+                CandidatePolicyClass::ExternallyAttested,
+                true,
+                false,
+                ExternalEvidencePublicationStatus::ExternallyAttestedOpenDiagnostic,
+                PolicyDiagnosticCategory::PolicyOpen,
+                PolicyReasonCode::ExternalEvidenceRecorded,
+            ),
+            BuildMode::Release | BuildMode::Development => (
+                CandidatePolicyClass::ExternallyAttested,
+                true,
+                false,
+                ExternalEvidencePublicationStatus::ExternallyAttestedDevelopment,
+                PolicyDiagnosticCategory::PolicyOpen,
+                PolicyReasonCode::ExternalEvidenceRecorded,
+            ),
+        }
+    }
+
+    struct ExternalAdmissionCase {
+        external_evidence: ExternalEvidenceMode,
+        require_kernel_certificates: bool,
+        build_mode: BuildMode,
+        expected_class: CandidatePolicyClass,
+        expected_record: bool,
+        expected_may_win: bool,
+        expected_status: ExternalEvidencePublicationStatus,
+        expected_category: PolicyDiagnosticCategory,
+        expected_reason: PolicyReasonCode,
     }
 }

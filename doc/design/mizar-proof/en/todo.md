@@ -118,13 +118,16 @@ Keep `cargo test -p mizar-proof` green after each task (see
      base external classifier shape, schedulability checks, deterministic
      policy fingerprinting, and focused tests.
 
-4. **Externally attested evidence handling.** [ ]
+4. **Externally attested evidence handling.** [x]
    - Implement admission and labeling of externally attested evidence:
      recordable as development evidence when the profile allows, never
      winning under `require_kernel_certificates`, never producing trusted
      `used_axioms`.
    - Tests: admission matrices per profile; rejection diagnostics stable.
    - Deps: 3. Spec: `policy.md` (externally attested evidence section).
+   - Status: implemented `ExternalEvidenceAdmission`, concrete publication
+     labels, stable policy diagnostics, policy-tainted kernel-result routing,
+     and profile/requirement matrix tests.
 
 ### Selection and status
 
