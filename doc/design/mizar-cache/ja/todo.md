@@ -162,7 +162,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### proof 再利用と cluster db
 
-10. **仕様: `proof_reuse.md`。** [ ]
+10. **仕様: `proof_reuse.md`。** [x]
     - proof 再利用の仕様を執筆する（英語と日本語、コードなし）: 再利用は
       `ObligationAnchor`、canonical VC fingerprint、local-context fingerprint、
       dependency-slice fingerprint、選択された proof witness hash または
@@ -176,13 +176,23 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 11. **proof 再利用の検証。** [ ]
     - `ProofReuseEvidence` 上の再利用検証を実装する。失敗は再計算へ
       退化し、受理へは決して退化しない。
-    - テスト: 一致する証拠の再利用。各構成要素（`ObligationAnchor`、
-      canonical VC fingerprint、local-context fingerprint、dependency-slice
-      fingerprint、選択された witness hash、deterministic discharge hash、
-      ポリシー、schema）の不一致が再利用をブロックする。外部認証された
-      証拠がキャッシュ経由で kernel 検証済みになることは決してない。
-      cross-crate producer wiring、cache hit/miss timing、clean/incremental
-      equivalence は task 20 の gate に残す。
+    - テスト: 一致する `KernelVerified` と `DischargedBuiltin` evidence の再利用。
+      必要な各構成要素（`ObligationAnchor`、obligation fingerprint、canonical VC
+      fingerprint、local-context fingerprint、dependency-slice fingerprint、選択された
+      witness hash、deterministic discharge hash、selected proof class、
+      proof-evidence identity、selected evidence hash、selected candidate provenance hash、
+      selection reason、tie-break key hash、export される場合の trusted used-axioms reference hash、
+      proof-reuse validation hash、policy、schema、dependency artifact）の不一致が再利用を
+      ブロックすること（欠落も含む）。incomplete footprint、
+      unsupported schema、unknown toolchain、uncacheable marker が miss になること。
+      non-trusted class と externally attested evidence が cache 経由で kernel-verified
+      または trusted `used_axioms` にならず、trusted `used_axioms` を合成する record が
+      reject されること、trusted used-axioms reference hash を合成する record も reject されること。
+      upstream proof-reuse completeness が尊重されること。local validation が record
+      arrival/write order と cache hit/miss timing に依存しないこと。lint/source-surface guard により
+      scheduler、`mizar-ir`、artifact publication-token、witness publication shortcut を追加しないことを
+      確認すること。cross-crate producer wiring と full clean/incremental equivalence は task 20 の
+      gate に残す。
     - 依存: 8、10。仕様: `proof_reuse.md`。
 
 12. **仕様: `cluster_db.md`。** [ ]

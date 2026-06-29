@@ -17,8 +17,8 @@ the task commit that completes that task.
 | 6 | done | `da62b43ff4d5bccfe3220b8257569a43a6e0be96` | Spec/test/full/source-doc reviews: no findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Rebuild-trigger evaluation. |
 | 7 | done | `e22a02bb756809b8b71d7e098cf1addf9955684b` | Spec/test/full/source-doc reviews: no findings after fixes. | `git diff --check`; `git diff --cached --check` | Spec: `cache_store.md`. |
 | 8 | done | `3ce9076b271c923d6106e43e7e56b9cb97029eda` | Spec/test/full/source-doc reviews: no findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Record store. |
-| 9 | done | pending self-hash | Spec/test/full/source-doc reviews: no findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Blob store. |
-| 10 | pending | pending | pending | pending | Spec: `proof_reuse.md`. |
+| 9 | done | `33ae5456409f8083cde9540d6cead8c56b932902` | Spec/test/full/source-doc reviews: no findings after fixes. | `cargo fmt --check`; `cargo test -p mizar-cache`; `cargo clippy -p mizar-cache --all-targets -- -D warnings`; `cargo test -p mizar-artifact`; `cargo test -p mizar-vc`; `cargo test -p mizar-proof`; `cargo test -p mizar-build`; `cargo clippy --all-targets --all-features -- -D warnings`; `cargo test`; `git diff --check` | Blob store. |
+| 10 | done | pending self-hash | Spec/test/full/source-doc reviews: no findings after fixes. | `git diff --check`; `git diff --cached --check` | Spec: `proof_reuse.md`. |
 | 11 | pending | pending | pending | pending | Proof-reuse validation. |
 | 12 | pending | pending | pending | pending | Spec: `cluster_db.md`. |
 | 13 | pending | pending | pending | pending | Cluster-db writes and origin tracking. |
@@ -49,3 +49,8 @@ the task commit that completes that task.
 | CACHESTORE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache adapter exposes record payload integration without placeholder APIs. |
 | CACHESTORE-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication-token integration exists; until then the current cache store checks only local dependency artifact availability plus the recorded domain/digest. |
 | CACHESTORE-G004 | `deferred` | `mizar-cache` | Later cluster-db index storage task lands; record store spec does not publish unaccepted registrations. |
+| PROOFREUSE-G001 | `external_dependency_gap` | `mizar-build` | Scheduler integration can consume proof-reuse validation without placeholder scheduling. |
+| PROOFREUSE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache adapter integration exists; until then no IR placeholder API is created. |
+| PROOFREUSE-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact-owned committed witness publication token exists; until then cache compares selected witness hashes only. |
+| PROOFREUSE-G004 | `external_dependency_gap` | `mizar-artifact` | Artifact witness schema supports a distinct trusted `DischargedBuiltin` class. |
+| PROOFREUSE-G005 | `deferred` | `mizar-cache` | Full clean/incremental equivalence remains the task-20 gate. |

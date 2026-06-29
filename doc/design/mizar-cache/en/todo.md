@@ -165,7 +165,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
 
 ### Proof reuse and cluster db
 
-10. **Spec: `proof_reuse.md`.** [ ]
+10. **Spec: `proof_reuse.md`.** [x]
     - Write the proof-reuse spec (English and Japanese, no code): reuse
       requires matching `ObligationAnchor`, canonical VC fingerprint,
       local-context fingerprint, dependency-slice fingerprint, selected proof
@@ -180,13 +180,25 @@ Keep `cargo test -p mizar-cache` green after each task (see
 11. **Proof-reuse validation.** [ ]
     - Implement reuse validation over `ProofReuseEvidence`; failures
       degrade to recomputation, never to acceptance.
-    - Tests: matching evidence reuses; each mismatched component
-      (`ObligationAnchor`, canonical VC fingerprint, local-context
-      fingerprint, dependency-slice fingerprint, selected witness hash,
-      deterministic discharge hash, policy, schema) blocks reuse; external
-      evidence never becomes kernel-verified via cache. Cross-crate producer
-      wiring, cache hit/miss timing, and clean/incremental equivalence remain
-      the task-20 gate.
+    - Tests: matching `KernelVerified` and `DischargedBuiltin` evidence
+      reuses; each missing or mismatched required component (`ObligationAnchor`, obligation
+      fingerprint, canonical VC fingerprint, local-context fingerprint,
+      dependency-slice fingerprint, selected witness hash, deterministic
+      discharge hash, selected proof class, proof-evidence identity, selected
+      evidence hash, selected candidate provenance hash, selection reason,
+      tie-break key hash, trusted used-axioms reference hash when exported,
+      proof-reuse validation hash, policy, schema, and dependency artifact)
+      blocks reuse; incomplete footprints, unsupported
+      schemas, unknown toolchains, and uncacheable markers miss; non-trusted
+      classes and externally attested evidence never become kernel-verified or
+      trusted `used_axioms` via cache, and records that synthesize trusted
+      `used_axioms` or trusted used-axioms reference hashes are rejected;
+      upstream proof-reuse completeness is honored; local validation is
+      independent of record arrival/write order and cache hit/miss timing; a
+      lint/source-surface guard confirms no scheduler, `mizar-ir`, artifact
+      publication-token, or witness-publication shortcut is added. Cross-crate
+      producer wiring and full clean/incremental equivalence remain the task-20
+      gate.
     - Deps: 8, 10. Spec: `proof_reuse.md`.
 
 12. **Spec: `cluster_db.md`.** [ ]
