@@ -4,8 +4,9 @@
 > [../ja/cluster_db.md](../ja/cluster_db.md).
 
 Status: specified by task 12. Task 13 implements origin writes, stale-origin
-removal, and aggregate index rebuilds. Import-scoped view materialization
-begins in task 14.
+removal, and aggregate index rebuilds. Task 14 implements in-memory
+import-scoped view materialization and invalidation over accepted aggregate
+rows.
 
 ## Purpose
 
@@ -53,7 +54,8 @@ proof witness bytes, ATP evidence, or cache records.
 
 ## Conceptual Surface
 
-Task 13 exposes the source-level write/origin-tracking data layer:
+Tasks 13 and 14 expose the source-level write/origin-tracking and
+import-scoped-view data layer:
 
 ```rust
 pub const CLUSTER_DB_SCHEMA_VERSION: &str;
@@ -65,8 +67,18 @@ pub struct ClusterIndexEntry { ... }
 pub struct ClusterAggregateRow { ... }
 pub struct ClusterAggregateIndexes { ... }
 pub struct ClusterIndexSnapshot { ... }
+pub struct ImportScopedViewRequest { ... }
+pub struct ImportScopedViewKey { ... }
+pub struct ImportScopedView { ... }
 pub struct ClusterDbIndex { ... }
 pub struct ClusterDbUpdateReport { ... }
+
+pub enum ClusterDbViewMiss {
+    MissingRequiredIdentity { ... },
+    UnsupportedSchema { ... },
+    UnknownCompatibility { ... },
+    MissingVisibleOrigin { ... },
+}
 
 pub enum ClusterDbWriteRejection {
     UnsupportedSchema { ... },
@@ -87,9 +99,15 @@ records, stale origin records, uncacheable markers, incompatible verifier
 policy, or any unaccepted contribution force rejection or rebuild rather than
 a visible row.
 
-Task 14 may add import-scoped view names such as `ImportScopedViewKey`,
-`ImportScopedView`, and `ClusterDbLookupOutcome`. Task 13 must not expose those
-view materialization APIs.
+Task 14 exposes `ClusterDbIndex::import_scoped_view` as an in-memory cache-side
+projection. It canonicalizes the request, sorts and deduplicates visible origin
+keys, rejects missing visible origins, rejects unsupported cluster-db or
+producer schema metadata, rejects unknown policy/toolchain/traversal
+compatibility, rejects unknown producer schema compatibility, checks visible
+origins against the active verifier policy, schema compatibility, and
+toolchain compatibility, and filters the aggregate indexes by visible origin
+set. It does not add scheduler hooks, durable view files, `mizar-ir` adapters,
+proof status projection, lookup-outcome policy, or trace construction.
 
 ## Store Layout
 
@@ -237,12 +255,21 @@ includes:
 - verifier policy fingerprint;
 - cluster-db schema version;
 - producer schema versions required by the contributing origins;
+- policy compatibility identity;
+- producer schema compatibility identity;
 - toolchain compatibility identity;
 - traversal/profile settings that affect graph closure or reduction strategy.
 
 The view contains only rows whose `origin_key` is visible from the import
 closure. A view may include compact adjacency lists, filtered DAG edges,
 filtered attr/type/reduction rows, and stable diagnostic references.
+
+The task-14 implementation materializes this as `ImportScopedView` in memory.
+The request is fail-closed: missing importer identity, unsupported
+`cluster_db_schema_version`, missing producer schema versions, unknown or
+unsupported policy/schema/toolchain/traversal compatibility, missing visible
+origins, or visible origins whose verifier-policy or producer compatibility
+metadata do not match the request all produce `ClusterDbViewMiss`.
 
 Different import closures may see different views over the same aggregate
 indexes. The cache must not physically duplicate origins per import closure,
@@ -316,7 +343,7 @@ selection, proof acceptance, or artifact order.
 |---|---|---|
 | `CLUSTERDB-G001` | `external_dependency_gap` | Task 13 may consume concrete checker/artifact accepted-contribution producers if present. If the producer seam is insufficient, record the missing fields and defer rather than parsing raw source or fabricating accepted status. |
 | `CLUSTERDB-G002` | `deferred` | Task 13 implements the in-memory origin-write and aggregate-index data layer. Durable `cluster-db/` file materialization remains deferred until a persistent cluster-db storage task is scheduled. |
-| `CLUSTERDB-G003` | `deferred` | Task 14 owns import-scoped view materialization and invalidation tests. This task specifies view identity and invalidation rules only. |
+| `CLUSTERDB-G003` | `deferred` | Task 14 implements in-memory import-scoped view materialization and invalidation tests. Durable `views/` file materialization remains deferred until a persistent cluster-db storage task is scheduled. |
 | `CLUSTERDB-G004` | `external_dependency_gap` | Build scheduler integration remains owner-gated by task 15. `cluster_db` must not add placeholder scheduler APIs. |
 | `CLUSTERDB-G005` | `external_dependency_gap` | IR cache adapter integration remains owner-gated by task 15. `cluster_db` must not add placeholder `mizar-ir` APIs. |
 
@@ -344,15 +371,19 @@ Task 14 must cover:
 
 - import-scoped view reuse across unrelated changes;
 - visible-origin changes invalidating exactly affected views;
-- private/local-only origin visibility, incomplete origin footprints, missing
-  dependency interface hashes, missing trace replay hashes, and policy, schema,
-  toolchain, or traversal-profile changes missing;
+- filtering to visible origins across graph, subsumption-DAG, attribute, type,
+  and reduction indexes;
+- missing visible origins, unsupported cluster-db schema, unknown
+  policy/schema/toolchain/traversal compatibility, mismatched verifier policy,
+  missing producer schema metadata, and mismatched producer compatibility
+  metadata forcing fail-closed misses;
 - view contents independent of cache hit/miss timing and record arrival order;
 - no hidden cluster/reduction step inference beyond explicit traces.
 
 ## Non-Goals
 
-Tasks 12 and 13 do not implement scheduler integration, `mizar-ir` adapter
+Tasks 12-14 do not implement scheduler integration, `mizar-ir` adapter
 integration, artifact publication-token integration, proof status projection,
 proof winner selection, kernel checking, or `ResolutionTrace` construction.
-Task 13 also does not materialize import-scoped views; that remains task 14.
+Task 14 also does not materialize durable `views/` files; persistent storage
+remains a later cluster-db storage task.

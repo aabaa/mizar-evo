@@ -331,9 +331,19 @@ fn proof_reuse_api_does_not_expose_authority_results_or_publication_tokens() {
         "ProofWitnessPublication",
         "ProofWitnessRef",
         "PublicationToken",
+        "ResolutionTrace",
+        "TraceConstruction",
+        "TraceConstructor",
+        "ClusterTraceBuilder",
+        "ReductionSelector",
         "Scheduler",
         "IrCacheAdapter",
         "scheduler_hook",
+        "trace_constructor",
+        "cluster_trace_builder",
+        "reduction_selector",
+        "select_reduction",
+        "infer_trace",
         "artifact_publication",
         "proof_authority",
         "ir_cache_adapter",
@@ -384,6 +394,16 @@ fn proof_reuse_implementation_has_no_downstream_stub_or_timing_inputs() {
         "ProofWitnessRef",
         "ArtifactStatusPublication",
         "PublicationToken",
+        "ResolutionTrace",
+        "TraceConstruction",
+        "TraceConstructor",
+        "ClusterTraceBuilder",
+        "ReductionSelector",
+        "trace_constructor",
+        "cluster_trace_builder",
+        "reduction_selector",
+        "select_reduction",
+        "infer_trace",
         "witness_store",
     ] {
         assert!(
@@ -412,9 +432,19 @@ fn cluster_db_api_does_not_expose_proof_authority_or_downstream_stubs() {
         "ProofWitnessPublication",
         "ProofWitnessRef",
         "PublicationToken",
+        "ResolutionTrace",
+        "TraceConstruction",
+        "TraceConstructor",
+        "ClusterTraceBuilder",
+        "ReductionSelector",
         "Scheduler",
         "IrCacheAdapter",
         "scheduler_hook",
+        "trace_constructor",
+        "cluster_trace_builder",
+        "reduction_selector",
+        "select_reduction",
+        "infer_trace",
         "artifact_publication",
         "proof_authority",
         "ir_cache_adapter",
@@ -465,6 +495,16 @@ fn cluster_db_implementation_has_no_downstream_stub_or_timing_inputs() {
         "ProofWitnessRef",
         "ArtifactStatusPublication",
         "PublicationToken",
+        "ResolutionTrace",
+        "TraceConstruction",
+        "TraceConstructor",
+        "ClusterTraceBuilder",
+        "ReductionSelector",
+        "trace_constructor",
+        "cluster_trace_builder",
+        "reduction_selector",
+        "select_reduction",
+        "infer_trace",
         "witness_store",
     ] {
         assert!(
@@ -478,7 +518,7 @@ fn cluster_db_implementation_has_no_downstream_stub_or_timing_inputs() {
 }
 
 #[test]
-fn cache_crate_tree_contains_only_task_thirteen_files() {
+fn cache_crate_tree_contains_only_task_fourteen_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -494,7 +534,7 @@ fn cache_crate_tree_contains_only_task_thirteen_files() {
             "src/proof_reuse.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-cache task 13 may contain only the crate manifest, root module, \
+        "mizar-cache task 14 contains only the crate manifest, root module, \
          cache_key implementation, dependency_fingerprint implementation, \
          cache_store implementation, proof_reuse implementation, cluster_db \
          implementation, and lint guard; other behavior modules, \

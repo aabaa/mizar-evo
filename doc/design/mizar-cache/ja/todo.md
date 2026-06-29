@@ -234,11 +234,26 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       rebuild report、downstream/proof-authority stub に対する lint guard を公開する。
     - 依存: 12、`mizar-checker` task 16。仕様: `cluster_db.md`。
 
-14. **import スコープのビューと無効化。** [ ]
+14. **import スコープのビューと無効化。** [x]
     - 可視 origin 集合でキー付けされた import スコープのビューと、
       ビュー集合変化による無効化を実装する。
     - テスト: 無関係な変更をまたぐビューの再利用。可視 origin の変化が
-      正確に影響を受けたビューだけを無効化する。
+      正確に影響を受けたビューだけを無効化すること。欠落 origin、
+      unsupported schema、missing producer schema metadata、不明な
+      policy/schema/toolchain/traversal compatibility、mismatched verifier policy、
+      mismatched producer compatibility metadata の request validation が miss になること。
+      view ordering が record arrival/write order と visible-origin request order に
+      依存しないこと。hidden cluster/reduction step を推論しないこと。
+    - 実装: task 14 は in-memory の `ImportScopedViewRequest`、
+      `ImportScopedViewKey`、`ImportScopedView`、`ClusterDbViewMiss`、
+      `ClusterDbIndex::import_scoped_view` を追加する。view は request metadata を
+      canonicalize / validate し、visible origin を accepted origin record と照合し、
+      aggregate row を visible origin set で filter する。view hit は cache
+      optimization のままである。
+    - task 14 で deferred / scope 外: durable な `views/` file、scheduler
+      integration、`mizar-ir` adapter integration、artifact publication-token
+      linkage、proof status projection、trace construction は scope 外に残し、
+      stub しない。
     - 依存: 13。仕様: `cluster_db.md`。
 
 ### 統合とフォローアップ

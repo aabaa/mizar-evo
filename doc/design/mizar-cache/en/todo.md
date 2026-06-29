@@ -245,11 +245,27 @@ Keep `cargo test -p mizar-cache` green after each task (see
       lint guards for downstream/proof-authority stubs.
     - Deps: 12, `mizar-checker` task 16. Spec: `cluster_db.md`.
 
-14. **Import-scoped views and invalidation.** [ ]
+14. **Import-scoped views and invalidation.** [x]
     - Implement import-scoped views keyed by visible origin sets, with
       invalidation on view-set changes.
     - Tests: view reuse across unrelated changes; visible-origin change
-      invalidates exactly the affected views.
+      invalidates exactly the affected views; request validation misses for
+      missing origins, unsupported schema, missing producer schema metadata,
+      unknown policy/schema/toolchain/traversal compatibility, mismatched
+      verifier policy, and mismatched producer compatibility metadata;
+      deterministic view ordering is independent of record arrival/write order
+      and visible-origin request order; hidden cluster/reduction steps are not
+      inferred.
+    - Implementation: task 14 adds in-memory `ImportScopedViewRequest`,
+      `ImportScopedViewKey`, `ImportScopedView`, `ClusterDbViewMiss`, and
+      `ClusterDbIndex::import_scoped_view`. The view canonicalizes and
+      validates request metadata, checks visible origins against accepted
+      origin records, filters aggregate rows by visible origin set, and keeps
+      view hits as cache optimization only.
+    - Deferred/out of scope for task 14: durable `views/` files, scheduler
+      integration, `mizar-ir` adapter integration, artifact publication-token
+      linkage, proof status projection, and trace construction remain out of
+      scope and are not stubbed.
     - Deps: 13. Spec: `cluster_db.md`.
 
 ### Integration and follow-ups

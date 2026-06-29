@@ -256,6 +256,97 @@ pub struct ClusterIndexSnapshot {
     pub indexes: ClusterAggregateIndexes,
 }
 
+/// Request for materializing an import-scoped view.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ImportScopedViewRequest {
+    /// Importing package id.
+    pub importing_package_id: String,
+    /// Importing module path.
+    pub importing_module_path: String,
+    /// Canonical import-closure identity.
+    pub import_closure_identity: String,
+    /// Visible origin keys for this import closure.
+    pub visible_origin_keys: Vec<String>,
+    /// Active verifier policy.
+    pub verifier_policy_fingerprint: PolicyFingerprint,
+    /// Cluster-db schema version expected by the consumer.
+    pub cluster_db_schema_version: SchemaVersion,
+    /// Producer schemas required by this view.
+    pub producer_schema_versions: Vec<NamedSchemaVersion>,
+    /// Policy compatibility fields for this view.
+    pub policy_compatibility: Vec<CompatibilityField>,
+    /// Schema compatibility fields for this view.
+    pub schema_compatibility: Vec<CompatibilityField>,
+    /// Toolchain compatibility fields for this view.
+    pub toolchain_compatibility: Vec<CompatibilityField>,
+    /// Traversal/profile settings that affect closure or reduction strategy.
+    pub traversal_profile: Vec<CompatibilityField>,
+}
+
+/// Canonical import-scoped view key.
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ImportScopedViewKey {
+    /// Importing package id.
+    pub importing_package_id: String,
+    /// Importing module path.
+    pub importing_module_path: String,
+    /// Canonical import-closure identity.
+    pub import_closure_identity: String,
+    /// Hash of the sorted visible origin set.
+    pub visible_origin_set_hash: Hash,
+    /// Active verifier policy.
+    pub verifier_policy_fingerprint: PolicyFingerprint,
+    /// Cluster-db schema version.
+    pub cluster_db_schema_version: SchemaVersion,
+    /// Producer schemas required by this view.
+    pub producer_schema_versions: Vec<NamedSchemaVersion>,
+    /// Policy compatibility fields for this view.
+    pub policy_compatibility: Vec<CompatibilityField>,
+    /// Schema compatibility fields for this view.
+    pub schema_compatibility: Vec<CompatibilityField>,
+    /// Toolchain compatibility fields for this view.
+    pub toolchain_compatibility: Vec<CompatibilityField>,
+    /// Traversal/profile settings that affect graph closure or reduction strategy.
+    pub traversal_profile: Vec<CompatibilityField>,
+}
+
+/// Materialized import-scoped view.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ImportScopedView {
+    /// View key.
+    pub key: ImportScopedViewKey,
+    /// Sorted visible origin keys.
+    pub visible_origin_keys: Vec<String>,
+    /// Filtered aggregate indexes.
+    pub indexes: ClusterAggregateIndexes,
+}
+
+/// Fail-closed import-scoped view miss.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ClusterDbViewMiss {
+    /// A required identity field was empty.
+    MissingRequiredIdentity {
+        /// Field name.
+        field: &'static str,
+    },
+    /// Requested schema is unsupported.
+    UnsupportedSchema {
+        /// Actual schema.
+        actual: SchemaVersion,
+    },
+    /// Required schema, policy, toolchain, traversal, or producer compatibility is unknown.
+    UnknownCompatibility {
+        /// Compatibility family.
+        family: &'static str,
+    },
+    /// A requested visible origin does not exist.
+    MissingVisibleOrigin {
+        /// Missing origin key.
+        origin_key: String,
+    },
+}
+
 /// In-memory cluster-db index data layer.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct ClusterDbIndex {
@@ -340,7 +431,7 @@ pub enum ClusterDbWriteRejection {
         /// Existing owner module.
         existing_module_path: String,
     },
-    /// Required schema or toolchain compatibility is unknown or unsupported.
+    /// Required schema, policy, toolchain, or producer compatibility is unknown.
     UnknownCompatibility {
         /// Origin key.
         origin_key: String,
@@ -470,6 +561,73 @@ impl ClusterDbIndex {
         }
     }
 
+    /// Materializes an import-scoped view by filtering aggregate indexes to visible origins.
+    pub fn import_scoped_view(
+        &self,
+        request: ImportScopedViewRequest,
+    ) -> Result<ImportScopedView, ClusterDbViewMiss> {
+        let request = canonical_view_request(request)?;
+        for origin_key in &request.visible_origin_keys {
+            let record = self.origins.get(origin_key).ok_or_else(|| {
+                ClusterDbViewMiss::MissingVisibleOrigin {
+                    origin_key: origin_key.clone(),
+                }
+            })?;
+            validate_view_origin(record, &request)?;
+        }
+
+        let visible_origins: BTreeSet<&str> = request
+            .visible_origin_keys
+            .iter()
+            .map(String::as_str)
+            .collect();
+        let key = ImportScopedViewKey {
+            importing_package_id: request.importing_package_id,
+            importing_module_path: request.importing_module_path,
+            import_closure_identity: request.import_closure_identity,
+            visible_origin_set_hash: visible_origin_set_hash(&request.visible_origin_keys),
+            verifier_policy_fingerprint: request.verifier_policy_fingerprint,
+            cluster_db_schema_version: request.cluster_db_schema_version,
+            producer_schema_versions: request.producer_schema_versions,
+            policy_compatibility: request.policy_compatibility,
+            schema_compatibility: request.schema_compatibility,
+            toolchain_compatibility: request.toolchain_compatibility,
+            traversal_profile: request.traversal_profile,
+        };
+
+        Ok(ImportScopedView {
+            visible_origin_keys: request.visible_origin_keys.clone(),
+            indexes: ClusterAggregateIndexes {
+                graph_rows: filtered_sorted_rows(
+                    &self.graph_rows,
+                    &visible_origins,
+                    compare_graph_rows,
+                ),
+                subsumption_dag_rows: filtered_sorted_rows(
+                    &self.subsumption_dag_rows,
+                    &visible_origins,
+                    compare_subsumption_dag_rows,
+                ),
+                attr_index_rows: filtered_sorted_rows(
+                    &self.attr_index_rows,
+                    &visible_origins,
+                    compare_attr_index_rows,
+                ),
+                type_index_rows: filtered_sorted_rows(
+                    &self.type_index_rows,
+                    &visible_origins,
+                    compare_type_index_rows,
+                ),
+                reduction_index_rows: filtered_sorted_rows(
+                    &self.reduction_index_rows,
+                    &visible_origins,
+                    compare_reduction_index_rows,
+                ),
+            },
+            key,
+        })
+    }
+
     fn insert_rows_for(&mut self, record: &ClusterContributionRecord) {
         for entry in &record.index_entries {
             let row = aggregate_row(record, entry);
@@ -581,6 +739,32 @@ impl fmt::Display for ClusterDbWriteRejection {
 }
 
 impl Error for ClusterDbWriteRejection {}
+
+impl fmt::Display for ClusterDbViewMiss {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::MissingRequiredIdentity { field } => {
+                write!(formatter, "missing import-scoped view `{field}`")
+            }
+            Self::UnsupportedSchema { actual } => write!(
+                formatter,
+                "unsupported import-scoped view schema `{}`",
+                actual.as_str()
+            ),
+            Self::UnknownCompatibility { family } => {
+                write!(
+                    formatter,
+                    "unknown import-scoped view {family} compatibility"
+                )
+            }
+            Self::MissingVisibleOrigin { origin_key } => {
+                write!(formatter, "missing visible origin `{origin_key}`")
+            }
+        }
+    }
+}
+
+impl Error for ClusterDbViewMiss {}
 
 fn canonical_records(
     records: Vec<ClusterContributionRecord>,
@@ -780,6 +964,235 @@ fn sorted_rows(
     let mut rows: Vec<_> = rows.iter().cloned().collect();
     rows.sort_by(compare);
     rows
+}
+
+fn filtered_sorted_rows(
+    rows: &BTreeSet<ClusterAggregateRow>,
+    visible_origins: &BTreeSet<&str>,
+    compare: fn(&ClusterAggregateRow, &ClusterAggregateRow) -> Ordering,
+) -> Vec<ClusterAggregateRow> {
+    let mut rows: Vec<_> = rows
+        .iter()
+        .filter(|row| visible_origins.contains(row.origin_key.as_str()))
+        .cloned()
+        .collect();
+    rows.sort_by(compare);
+    rows
+}
+
+fn canonical_view_request(
+    mut request: ImportScopedViewRequest,
+) -> Result<ImportScopedViewRequest, ClusterDbViewMiss> {
+    reject_empty_view("importing_package_id", &request.importing_package_id)?;
+    reject_empty_view("importing_module_path", &request.importing_module_path)?;
+    reject_empty_view("import_closure_identity", &request.import_closure_identity)?;
+    if request.cluster_db_schema_version.as_str() != CLUSTER_DB_SCHEMA_VERSION {
+        return Err(ClusterDbViewMiss::UnsupportedSchema {
+            actual: request.cluster_db_schema_version,
+        });
+    }
+
+    request.visible_origin_keys.sort();
+    canonicalize_view_by_key(
+        "visible_origin_keys",
+        &mut request.visible_origin_keys,
+        String::clone,
+        ClusterDbViewMiss::MissingRequiredIdentity {
+            field: "visible_origin_keys",
+        },
+    )?;
+    for origin_key in &request.visible_origin_keys {
+        reject_empty_view("visible_origin_keys", origin_key)?;
+    }
+
+    canonicalize_view_schema_versions(&mut request.producer_schema_versions)?;
+    validate_view_schema_versions(&request.producer_schema_versions)?;
+    canonicalize_view_compatibility_fields(
+        "policy_compatibility",
+        &mut request.policy_compatibility,
+    )?;
+    validate_view_compatibility_fields("policy_compatibility", &request.policy_compatibility)?;
+    canonicalize_view_compatibility_fields(
+        "schema_compatibility",
+        &mut request.schema_compatibility,
+    )?;
+    validate_view_compatibility_fields("schema_compatibility", &request.schema_compatibility)?;
+    canonicalize_view_compatibility_fields(
+        "toolchain_compatibility",
+        &mut request.toolchain_compatibility,
+    )?;
+    validate_view_compatibility_fields(
+        "toolchain_compatibility",
+        &request.toolchain_compatibility,
+    )?;
+    canonicalize_view_compatibility_fields("traversal_profile", &mut request.traversal_profile)?;
+    validate_view_compatibility_fields("traversal_profile", &request.traversal_profile)?;
+
+    Ok(request)
+}
+
+fn validate_view_origin(
+    record: &ClusterContributionRecord,
+    request: &ImportScopedViewRequest,
+) -> Result<(), ClusterDbViewMiss> {
+    if record.origin.verifier_policy_fingerprint != request.verifier_policy_fingerprint {
+        return Err(ClusterDbViewMiss::UnknownCompatibility {
+            family: "verifier_policy_fingerprint",
+        });
+    }
+    for required in &record.origin.producer_schema_versions {
+        if !request.producer_schema_versions.contains(required) {
+            return Err(ClusterDbViewMiss::UnsupportedSchema {
+                actual: required.version.clone(),
+            });
+        }
+    }
+    for required in &record.origin.policy_compatibility {
+        if !request.policy_compatibility.contains(required) {
+            return Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "policy_compatibility",
+            });
+        }
+    }
+    for required in &record.origin.schema_compatibility {
+        if !request.schema_compatibility.contains(required) {
+            return Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "schema_compatibility",
+            });
+        }
+    }
+    for required in &record.origin.toolchain_compatibility {
+        if !request.toolchain_compatibility.contains(required) {
+            return Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "toolchain_compatibility",
+            });
+        }
+    }
+    Ok(())
+}
+
+fn canonicalize_view_schema_versions(
+    values: &mut Vec<NamedSchemaVersion>,
+) -> Result<(), ClusterDbViewMiss> {
+    values.sort_by_key(schema_version_key);
+    canonicalize_view_by_key(
+        "producer_schema_versions",
+        values,
+        schema_version_key,
+        ClusterDbViewMiss::UnknownCompatibility {
+            family: "producer_schema_versions",
+        },
+    )
+}
+
+fn validate_view_schema_versions(values: &[NamedSchemaVersion]) -> Result<(), ClusterDbViewMiss> {
+    if values.is_empty() {
+        return Err(ClusterDbViewMiss::UnknownCompatibility {
+            family: "producer_schema_versions",
+        });
+    }
+    for value in values {
+        reject_empty_view(
+            "producer_schema_versions.schema_family",
+            &value.schema_family,
+        )?;
+        reject_empty_view("producer_schema_versions.name", &value.name)?;
+        reject_empty_view("producer_schema_versions.version", value.version.as_str())?;
+        if value.version.as_str().eq_ignore_ascii_case("unknown")
+            || value.version.as_str().eq_ignore_ascii_case("unsupported")
+        {
+            return Err(ClusterDbViewMiss::UnsupportedSchema {
+                actual: value.version.clone(),
+            });
+        }
+    }
+    Ok(())
+}
+
+fn canonicalize_view_compatibility_fields(
+    field: &'static str,
+    values: &mut Vec<CompatibilityField>,
+) -> Result<(), ClusterDbViewMiss> {
+    values.sort_by_key(compatibility_field_key);
+    canonicalize_view_by_key(
+        field,
+        values,
+        compatibility_field_key,
+        ClusterDbViewMiss::UnknownCompatibility { family: field },
+    )
+}
+
+fn validate_view_compatibility_fields(
+    field: &'static str,
+    values: &[CompatibilityField],
+) -> Result<(), ClusterDbViewMiss> {
+    if values.is_empty() {
+        return Err(ClusterDbViewMiss::UnknownCompatibility { family: field });
+    }
+    for value in values {
+        reject_empty_view(field, &value.family)?;
+        reject_empty_view(field, &value.field_name)?;
+        reject_empty_view(field, &value.value)?;
+        if value.value.eq_ignore_ascii_case("unknown")
+            || value.value.eq_ignore_ascii_case("unsupported")
+        {
+            return Err(ClusterDbViewMiss::UnknownCompatibility { family: field });
+        }
+    }
+    Ok(())
+}
+
+fn canonicalize_view_by_key<T, K, F>(
+    _field: &'static str,
+    values: &mut Vec<T>,
+    key_for: F,
+    conflict_error: ClusterDbViewMiss,
+) -> Result<(), ClusterDbViewMiss>
+where
+    T: Clone + PartialEq,
+    K: Ord,
+    F: Fn(&T) -> K,
+{
+    let mut output: Vec<T> = Vec::with_capacity(values.len());
+    for value in values.iter() {
+        if let Some(previous) = output.last()
+            && key_for(previous) == key_for(value)
+        {
+            if previous == value {
+                continue;
+            }
+            return Err(conflict_error);
+        }
+        output.push(value.clone());
+    }
+    *values = output;
+    Ok(())
+}
+
+fn reject_empty_view(field: &'static str, value: &str) -> Result<(), ClusterDbViewMiss> {
+    if value.trim().is_empty() {
+        return Err(ClusterDbViewMiss::MissingRequiredIdentity { field });
+    }
+    Ok(())
+}
+
+fn visible_origin_set_hash(origin_keys: &[String]) -> Hash {
+    let mut hasher = blake3::Hasher::new();
+    write_view_hash_str(&mut hasher, "mizar-cache/cluster-db/visible-origin-set/v1");
+    write_view_hash_len(&mut hasher, origin_keys.len());
+    for origin_key in origin_keys {
+        write_view_hash_str(&mut hasher, origin_key);
+    }
+    Hash::from_bytes(*hasher.finalize().as_bytes())
+}
+
+fn write_view_hash_str(hasher: &mut blake3::Hasher, value: &str) {
+    write_view_hash_len(hasher, value.len());
+    hasher.update(value.as_bytes());
+}
+
+fn write_view_hash_len(hasher: &mut blake3::Hasher, value: usize) {
+    hasher.update(&(value as u64).to_le_bytes());
 }
 
 fn compare_graph_rows(left: &ClusterAggregateRow, right: &ClusterAggregateRow) -> Ordering {
@@ -1642,8 +2055,473 @@ mod tests {
         assert_eq!(db.snapshot().origins.len(), 1);
     }
 
+    #[test]
+    fn import_scoped_view_filters_to_visible_origins() {
+        let mut db = ClusterDbIndex::new();
+        db.apply_module_update(
+            "pkg",
+            "alpha",
+            vec![record(
+                "origin-a",
+                0,
+                vec![
+                    entry(ClusterIndexEntryKind::Graph, "type", "a-graph"),
+                    entry(ClusterIndexEntryKind::SubsumptionDag, "symbol", "a-edge"),
+                    entry(ClusterIndexEntryKind::Attribute, "attr", "a-attr"),
+                    entry(ClusterIndexEntryKind::Type, "mode", "a-type"),
+                    entry(ClusterIndexEntryKind::Reduction, "lhs", "a-rule"),
+                ],
+            )],
+        )
+        .expect("origin a inserted");
+        db.apply_module_update(
+            "pkg",
+            "beta",
+            vec![record_for(
+                "origin-b",
+                "pkg",
+                "beta",
+                0,
+                vec![
+                    entry(ClusterIndexEntryKind::Graph, "type", "b-graph"),
+                    entry(ClusterIndexEntryKind::SubsumptionDag, "symbol", "b-edge"),
+                    entry(ClusterIndexEntryKind::Attribute, "attr", "b-attr"),
+                    entry(ClusterIndexEntryKind::Type, "mode", "b-type"),
+                    entry(ClusterIndexEntryKind::Reduction, "lhs", "b-rule"),
+                ],
+            )],
+        )
+        .expect("origin b inserted");
+
+        let view = db
+            .import_scoped_view(view_request(&["origin-a"]))
+            .expect("visible origin view materializes");
+
+        assert_eq!(view.visible_origin_keys, ["origin-a"]);
+        assert_eq!(origin_keys(&view.indexes.graph_rows), ["origin-a"]);
+        assert_eq!(
+            origin_keys(&view.indexes.subsumption_dag_rows),
+            ["origin-a"]
+        );
+        assert_eq!(origin_keys(&view.indexes.attr_index_rows), ["origin-a"]);
+        assert_eq!(origin_keys(&view.indexes.type_index_rows), ["origin-a"]);
+        assert_eq!(
+            origin_keys(&view.indexes.reduction_index_rows),
+            ["origin-a"]
+        );
+    }
+
+    #[test]
+    fn import_scoped_view_reuses_across_unrelated_origin_changes() {
+        let mut db = ClusterDbIndex::new();
+        db.apply_module_update(
+            "pkg",
+            "alpha",
+            vec![record(
+                "origin-a",
+                0,
+                vec![entry(ClusterIndexEntryKind::Attribute, "attr", "a")],
+            )],
+        )
+        .expect("origin a inserted");
+        db.apply_module_update(
+            "pkg",
+            "beta",
+            vec![record_for(
+                "origin-b",
+                "pkg",
+                "beta",
+                0,
+                vec![entry(ClusterIndexEntryKind::Reduction, "lhs", "old")],
+            )],
+        )
+        .expect("origin b inserted");
+        let before = db
+            .import_scoped_view(view_request(&["origin-a"]))
+            .expect("origin a view before unrelated change");
+
+        db.apply_module_update(
+            "pkg",
+            "beta",
+            vec![record_for(
+                "origin-b",
+                "pkg",
+                "beta",
+                0,
+                vec![entry(ClusterIndexEntryKind::Reduction, "lhs", "new")],
+            )],
+        )
+        .expect("unrelated origin b changed");
+
+        let after = db
+            .import_scoped_view(view_request(&["origin-a"]))
+            .expect("origin a view after unrelated change");
+        assert_eq!(after, before);
+    }
+
+    #[test]
+    fn visible_origin_change_invalidates_exactly_affected_views() {
+        let mut db = ClusterDbIndex::new();
+        db.apply_module_update(
+            "pkg",
+            "alpha",
+            vec![record(
+                "origin-a",
+                0,
+                vec![entry(ClusterIndexEntryKind::Graph, "type", "old")],
+            )],
+        )
+        .expect("origin a inserted");
+        db.apply_module_update(
+            "pkg",
+            "beta",
+            vec![record_for(
+                "origin-b",
+                "pkg",
+                "beta",
+                0,
+                vec![entry(ClusterIndexEntryKind::Type, "mode", "stable")],
+            )],
+        )
+        .expect("origin b inserted");
+
+        let before_a = db
+            .import_scoped_view(view_request(&["origin-a"]))
+            .expect("view a before");
+        let before_b = db
+            .import_scoped_view(view_request(&["origin-b"]))
+            .expect("view b before");
+        let before_both = db
+            .import_scoped_view(view_request(&["origin-b", "origin-a"]))
+            .expect("view both before");
+
+        db.apply_module_update(
+            "pkg",
+            "alpha",
+            vec![record(
+                "origin-a",
+                0,
+                vec![entry(ClusterIndexEntryKind::Graph, "type", "new")],
+            )],
+        )
+        .expect("origin a changed");
+
+        let after_a = db
+            .import_scoped_view(view_request(&["origin-a"]))
+            .expect("view a after");
+        let after_b = db
+            .import_scoped_view(view_request(&["origin-b"]))
+            .expect("view b after");
+        let after_both = db
+            .import_scoped_view(view_request(&["origin-a", "origin-b"]))
+            .expect("view both after");
+
+        assert_ne!(after_a, before_a);
+        assert_eq!(after_a.key, before_a.key);
+        assert_eq!(after_b, before_b);
+        assert_ne!(after_both, before_both);
+        assert_ne!(
+            before_a.key.visible_origin_set_hash,
+            before_both.key.visible_origin_set_hash
+        );
+    }
+
+    #[test]
+    fn view_request_fails_closed_for_missing_origins_and_unknown_compatibility() {
+        let mut db = ClusterDbIndex::new();
+        db.apply_module_update(
+            "pkg",
+            "alpha",
+            vec![record(
+                "origin-a",
+                0,
+                vec![entry(ClusterIndexEntryKind::Attribute, "attr", "a")],
+            )],
+        )
+        .expect("origin inserted");
+
+        assert!(matches!(
+            db.import_scoped_view(view_request(&["missing-origin"])),
+            Err(ClusterDbViewMiss::MissingVisibleOrigin { .. })
+        ));
+
+        for (field, mutate) in [
+            (
+                "importing_package_id",
+                Box::new(|request: &mut ImportScopedViewRequest| {
+                    request.importing_package_id = " ".to_owned();
+                }) as Box<dyn Fn(&mut ImportScopedViewRequest)>,
+            ),
+            (
+                "importing_module_path",
+                Box::new(|request: &mut ImportScopedViewRequest| {
+                    request.importing_module_path = " ".to_owned();
+                }),
+            ),
+            (
+                "import_closure_identity",
+                Box::new(|request: &mut ImportScopedViewRequest| {
+                    request.import_closure_identity = " ".to_owned();
+                }),
+            ),
+        ] {
+            let mut missing_identity = view_request(&["origin-a"]);
+            mutate(&mut missing_identity);
+            assert!(matches!(
+                db.import_scoped_view(missing_identity),
+                Err(ClusterDbViewMiss::MissingRequiredIdentity {
+                    field: actual_field
+                }) if actual_field == field
+            ));
+        }
+
+        let mut unsupported_schema = view_request(&["origin-a"]);
+        unsupported_schema.cluster_db_schema_version = SchemaVersion::new("unsupported");
+        assert!(matches!(
+            db.import_scoped_view(unsupported_schema),
+            Err(ClusterDbViewMiss::UnsupportedSchema { .. })
+        ));
+
+        let mut unknown_policy = view_request(&["origin-a"]);
+        unknown_policy.policy_compatibility[0].value = "unknown".to_owned();
+        assert!(matches!(
+            db.import_scoped_view(unknown_policy),
+            Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "policy_compatibility"
+            })
+        ));
+
+        let mut unknown_schema_compatibility = view_request(&["origin-a"]);
+        unknown_schema_compatibility.schema_compatibility[0].value = "unknown".to_owned();
+        assert!(matches!(
+            db.import_scoped_view(unknown_schema_compatibility),
+            Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "schema_compatibility"
+            })
+        ));
+
+        let mut unsupported_producer_schema = view_request(&["origin-a"]);
+        unsupported_producer_schema.producer_schema_versions[0].version =
+            SchemaVersion::new("unknown");
+        assert!(matches!(
+            db.import_scoped_view(unsupported_producer_schema),
+            Err(ClusterDbViewMiss::UnsupportedSchema { .. })
+        ));
+
+        let mut unknown_toolchain = view_request(&["origin-a"]);
+        unknown_toolchain.toolchain_compatibility[0].value = "unsupported".to_owned();
+        assert!(matches!(
+            db.import_scoped_view(unknown_toolchain),
+            Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "toolchain_compatibility"
+            })
+        ));
+
+        let mut missing_schema = view_request(&["origin-a"]);
+        missing_schema.producer_schema_versions.clear();
+        assert!(matches!(
+            db.import_scoped_view(missing_schema),
+            Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "producer_schema_versions"
+            })
+        ));
+
+        let mut missing_schema_compatibility = view_request(&["origin-a"]);
+        missing_schema_compatibility.schema_compatibility.clear();
+        assert!(matches!(
+            db.import_scoped_view(missing_schema_compatibility),
+            Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "schema_compatibility"
+            })
+        ));
+
+        let mut producer_schema_mismatch = view_request(&["origin-a"]);
+        producer_schema_mismatch.producer_schema_versions[0].version = SchemaVersion::new("2.0");
+        assert!(matches!(
+            db.import_scoped_view(producer_schema_mismatch),
+            Err(ClusterDbViewMiss::UnsupportedSchema { .. })
+        ));
+
+        let mut policy_mismatch = view_request(&["origin-a"]);
+        policy_mismatch.policy_compatibility[0].value = "different-known".to_owned();
+        assert!(matches!(
+            db.import_scoped_view(policy_mismatch),
+            Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "policy_compatibility"
+            })
+        ));
+
+        let mut schema_compatibility_mismatch = view_request(&["origin-a"]);
+        schema_compatibility_mismatch.schema_compatibility[0].value = "different-known".to_owned();
+        assert!(matches!(
+            db.import_scoped_view(schema_compatibility_mismatch),
+            Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "schema_compatibility"
+            })
+        ));
+
+        let mut toolchain_mismatch = view_request(&["origin-a"]);
+        toolchain_mismatch.toolchain_compatibility[0].value = "different-known".to_owned();
+        assert!(matches!(
+            db.import_scoped_view(toolchain_mismatch),
+            Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "toolchain_compatibility"
+            })
+        ));
+
+        let mut missing_traversal = view_request(&["origin-a"]);
+        missing_traversal.traversal_profile.clear();
+        assert!(matches!(
+            db.import_scoped_view(missing_traversal),
+            Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "traversal_profile"
+            })
+        ));
+
+        let mut mismatched_policy = view_request(&["origin-a"]);
+        mismatched_policy.verifier_policy_fingerprint = PolicyFingerprint::new(hash(42));
+        assert!(matches!(
+            db.import_scoped_view(mismatched_policy),
+            Err(ClusterDbViewMiss::UnknownCompatibility {
+                family: "verifier_policy_fingerprint"
+            })
+        ));
+    }
+
+    #[test]
+    fn import_scoped_view_order_independent_of_visible_origin_order_and_write_order() {
+        let origin_a = record(
+            "origin-a",
+            0,
+            vec![
+                entry(ClusterIndexEntryKind::Graph, "type", "a-graph"),
+                entry(ClusterIndexEntryKind::SubsumptionDag, "symbol", "a-edge"),
+                entry(ClusterIndexEntryKind::Attribute, "attr", "a-attr"),
+                entry(ClusterIndexEntryKind::Type, "mode", "a-type"),
+                entry(ClusterIndexEntryKind::Reduction, "lhs", "a-rule"),
+            ],
+        );
+        let origin_b = record_for(
+            "origin-b",
+            "pkg",
+            "beta",
+            0,
+            vec![
+                entry(ClusterIndexEntryKind::Graph, "type", "b-graph"),
+                entry(ClusterIndexEntryKind::SubsumptionDag, "symbol", "b-edge"),
+                entry(ClusterIndexEntryKind::Attribute, "attr", "b-attr"),
+                entry(ClusterIndexEntryKind::Type, "mode", "b-type"),
+                entry(ClusterIndexEntryKind::Reduction, "lhs", "b-rule"),
+            ],
+        );
+
+        let mut left = ClusterDbIndex::new();
+        left.apply_module_update("pkg", "alpha", vec![origin_a.clone()])
+            .expect("left origin a");
+        left.apply_module_update("pkg", "beta", vec![origin_b.clone()])
+            .expect("left origin b");
+
+        let mut right = ClusterDbIndex::new();
+        right
+            .apply_module_update("pkg", "beta", vec![origin_b])
+            .expect("right origin b");
+        right
+            .apply_module_update("pkg", "alpha", vec![origin_a])
+            .expect("right origin a");
+
+        let left_view = left
+            .import_scoped_view(view_request(&["origin-b", "origin-a", "origin-a"]))
+            .expect("left view");
+        let right_view = right
+            .import_scoped_view(view_request(&["origin-a", "origin-b"]))
+            .expect("right view");
+
+        assert_eq!(left_view, right_view);
+        assert_eq!(left_view.visible_origin_keys, ["origin-a", "origin-b"]);
+        assert_eq!(
+            origin_keys(&left_view.indexes.graph_rows),
+            ["origin-a", "origin-b"]
+        );
+        assert_eq!(
+            origin_keys(&left_view.indexes.subsumption_dag_rows),
+            ["origin-a", "origin-b"]
+        );
+        assert_eq!(
+            origin_keys(&left_view.indexes.attr_index_rows),
+            ["origin-a", "origin-b"]
+        );
+        assert_eq!(
+            origin_keys(&left_view.indexes.type_index_rows),
+            ["origin-a", "origin-b"]
+        );
+        assert_eq!(
+            origin_keys(&left_view.indexes.reduction_index_rows),
+            ["origin-a", "origin-b"]
+        );
+    }
+
+    #[test]
+    fn import_scoped_view_does_not_infer_hidden_trace_steps() {
+        let mut db = ClusterDbIndex::new();
+        db.apply_module_update(
+            "pkg",
+            "alpha",
+            vec![record(
+                "origin-a",
+                0,
+                vec![entry(ClusterIndexEntryKind::Graph, "type", "graph-only")],
+            )],
+        )
+        .expect("graph-only origin inserted");
+        db.apply_module_update(
+            "pkg",
+            "beta",
+            vec![record_for(
+                "origin-b",
+                "pkg",
+                "beta",
+                0,
+                vec![entry(ClusterIndexEntryKind::Reduction, "lhs", "reduction")],
+            )],
+        )
+        .expect("reduction origin inserted");
+
+        let view = db
+            .import_scoped_view(view_request(&["origin-a"]))
+            .expect("view materializes");
+
+        assert_eq!(origin_keys(&view.indexes.graph_rows), ["origin-a"]);
+        assert!(view.indexes.reduction_index_rows.is_empty());
+        assert!(view.indexes.subsumption_dag_rows.is_empty());
+        assert!(view.indexes.attr_index_rows.is_empty());
+        assert!(view.indexes.type_index_rows.is_empty());
+
+        let reduction_only = db
+            .import_scoped_view(view_request(&["origin-b"]))
+            .expect("visible reduction-only view materializes");
+
+        assert!(reduction_only.indexes.graph_rows.is_empty());
+        assert!(reduction_only.indexes.subsumption_dag_rows.is_empty());
+        assert!(reduction_only.indexes.attr_index_rows.is_empty());
+        assert!(reduction_only.indexes.type_index_rows.is_empty());
+        assert_eq!(
+            origin_keys(&reduction_only.indexes.reduction_index_rows),
+            ["origin-b"]
+        );
+    }
+
     fn record(
         origin_key: &str,
+        declaration_order: u32,
+        index_entries: Vec<ClusterIndexEntry>,
+    ) -> ClusterContributionRecord {
+        record_for(origin_key, "pkg", "alpha", declaration_order, index_entries)
+    }
+
+    fn record_for(
+        origin_key: &str,
+        package_id: &str,
+        module_path: &str,
         declaration_order: u32,
         index_entries: Vec<ClusterIndexEntry>,
     ) -> ClusterContributionRecord {
@@ -1651,8 +2529,8 @@ mod tests {
             schema_version: SchemaVersion::new(CLUSTER_DB_SCHEMA_VERSION),
             origin: ClusterContributionOrigin {
                 origin_key: origin_key.to_owned(),
-                package_id: "pkg".to_owned(),
-                module_path: "alpha".to_owned(),
+                package_id: package_id.to_owned(),
+                module_path: module_path.to_owned(),
                 stable_contribution_id: format!("{origin_key}-id"),
                 label: format!("{origin_key}-label"),
                 contribution_kind: ClusterContributionKind::ConditionalCluster,
@@ -1678,6 +2556,25 @@ mod tests {
             declaration_order,
             index_entries,
             diagnostic_refs: vec![named_hash("diagnostic", 10)],
+        }
+    }
+
+    fn view_request(visible_origin_keys: &[&str]) -> ImportScopedViewRequest {
+        ImportScopedViewRequest {
+            importing_package_id: "consumer-pkg".to_owned(),
+            importing_module_path: "consumer".to_owned(),
+            import_closure_identity: "consumer/import-closure/v1".to_owned(),
+            visible_origin_keys: visible_origin_keys
+                .iter()
+                .map(|origin_key| (*origin_key).to_owned())
+                .collect(),
+            verifier_policy_fingerprint: PolicyFingerprint::new(hash(6)),
+            cluster_db_schema_version: SchemaVersion::new(CLUSTER_DB_SCHEMA_VERSION),
+            producer_schema_versions: vec![schema("registration-summary")],
+            policy_compatibility: vec![compat("verifier-policy", "known")],
+            schema_compatibility: vec![compat("cluster-db-schema", "known")],
+            toolchain_compatibility: vec![compat("producer-toolchain", "known")],
+            traversal_profile: vec![compat("traversal-profile", "canonical")],
         }
     }
 
