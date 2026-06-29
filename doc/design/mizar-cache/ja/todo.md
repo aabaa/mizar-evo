@@ -81,7 +81,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: `mizar-artifact` task 3。仕様: internal 02。
 
-2. **仕様: `cache_key.md`。** [ ]
+2. **仕様: `cache_key.md`。** [x]
    - キャッシュキーの仕様を執筆する（英語と日本語、コードなし）:
      `CacheKey` のフィールド（phase、work unit、ソース識別、入力/依存
      ハッシュ、依存スライス、設定ハッシュ、schema version、ポリシー

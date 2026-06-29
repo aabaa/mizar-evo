@@ -82,7 +82,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: `mizar-artifact` task 3. Spec: internal 02.
 
-2. **Spec: `cache_key.md`.** [ ]
+2. **Spec: `cache_key.md`.** [x]
    - Write the cache-key spec (English and Japanese, no code): the
      `CacheKey` fields (phase, work unit, source identity, input/dependency
      hashes, dependency slices, config hash, schema versions, policy
