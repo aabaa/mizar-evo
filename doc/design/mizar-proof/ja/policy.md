@@ -76,10 +76,10 @@ class の意味的な順序は selection task が定めるが、policy classific
 | Class | Source | Trusted? | Notes |
 |---|---|---:|---|
 | `KernelVerified` | ATP formula/substitution evidence に対する accepted kernel result。 | yes | kernel result から trusted `used_axioms` を伝播してよい。 |
-| `DischargedBuiltin` | built-in discharge evidence または allowed kernel primitive evidence に対する accepted kernel result。 | yes | `KernelVerified` とは別に射影する。ATP kernel verification へ潰してはならない。 |
+| `DischargedBuiltin` | kernel が accept した kernel-owned primitive evidence を含む、built-in discharge evidence に対する accepted kernel result。 | yes | `KernelVerified` とは別に射影する。ATP kernel verification へ潰してはならない。 |
 | `KernelRejected` | rejected kernel result。 | no | diagnostics のために structured rejection reason を持つ。 |
 | `KernelCheckable` | policy が kernel へ送ってよい unchecked formula/substitution candidate または built-in discharge evidence。 | no | schedule 可能な evidence にすぎない。kernel が accept するまで winner ではない。安定した kernel representation を持たない built-in discharge evidence はこの class ではない。 |
-| `ExternallyAttested` | policy が許可した external attestation。 | no | 許可され、`require_kernel_certificates` が false のときだけ recordable または policy-selectable。 |
+| `ExternallyAttested` | policy が許可した external attestation。 | no | `ExternalEvidenceAdmission` に従って recordable になりうる。policy-selectable になるのは許可され、`require_kernel_certificates` が false のときだけ。 |
 | `OpenAllowed` | build mode が許す open obligation。 | no | diagnostic/status projection のみ。 |
 | `AssumedByPolicy` | active policy が許す明示的な assumption。 | no | non-trusted policy status のみ。`require_kernel_certificates` を満たさず、trusted dependency を合成しない。 |
 | `RejectedByPolicy` | active policy が reject した evidence または open status。 | no | 安定した policy rejection diagnostic を要求する。 |
@@ -253,9 +253,9 @@ kernel failure と policy failure の両方が存在するとき、status projec
 - backend success、backend diagnostic、externally attested evidence、cache metadata、
   open obligation は trusted proof status を生まない。
 - trusted `used_axioms` は accepted kernel result からだけ copy する。
-- built-in discharge は accepted kernel checking または明示的に許可された kernel primitive
-  result の後でだけ trusted `discharged_builtin` になる。それ以外は deterministic policy
-  evidence のままである。
+- built-in discharge は、kernel が accept した kernel-owned primitive evidence を含む
+  accepted kernel result の後でだけ trusted `discharged_builtin` になる。それ以外は
+  deterministic policy evidence のままである。
 - 現在の artifact witness reference は formula/substitution の `kernel_verified`
   publication を support しているが、`discharged_builtin` publication は support していない。
   その artifact schema gap が閉じるまで、policy と selection は `discharged_builtin` を

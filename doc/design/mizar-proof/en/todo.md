@@ -20,7 +20,7 @@ crate refines architecture 08, 15, and 19 and internal 04.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | policy | `policy.md` (task 2) | `src/policy.rs` | [~] |
-| selection | `selection.md` (task 5) | `src/selection.rs` | [ ] |
+| selection | `selection.md` (task 5) | `src/selection.rs` | [~] |
 | status | `status.md` (task 8) | `src/status.rs` | [ ] |
 | witness_store | `witness_store.md` (task 10) | `src/witness_store.rs` | [ ] |
 
@@ -131,16 +131,18 @@ Keep `cargo test -p mizar-proof` green after each task (see
 
 ### Selection and status
 
-5. **Spec: `selection.md`.** [ ]
+5. **Spec: `selection.md`.** [x]
    - Write the winner-selection spec (English and Japanese, no code): the
-     deterministic ordering classes (kernel-verified satisfying release
-     policy → policy-permitted external → best-explained open), tie-break
-     keys (backend profile priority, certificate format priority, encoded
-     problem hash, profile id), the selected proof witness hash or
+     deterministic ordering classes (kernel-verified satisfying the active
+     policy → discharged built-in → policy-permitted external → policy
+     assumption → best-explained open), tie-break keys (backend profile
+     priority, certificate format priority, encoded problem hash, profile id,
+     stable candidate id), the selected proof witness hash or
      deterministic discharge hash exported for reuse validation, and the
      completion-time prohibition.
    - Deps: 2. Spec: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
      "Winner Selection".
+   - Status: paired specs added; implementation begins in task 6.
 
 6. **Winner selection.** [ ]
    - Implement deterministic winner selection over

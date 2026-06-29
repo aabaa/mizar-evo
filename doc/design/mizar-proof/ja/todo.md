@@ -19,7 +19,7 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | policy | `policy.md`（task 2） | `src/policy.rs` | [~] |
-| selection | `selection.md`（task 5） | `src/selection.rs` | [ ] |
+| selection | `selection.md`（task 5） | `src/selection.rs` | [~] |
 | status | `status.md`（task 8） | `src/status.rs` | [ ] |
 | witness_store | `witness_store.md`（task 10） | `src/witness_store.rs` | [ ] |
 
@@ -128,16 +128,18 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
 
 ### 選択と状態
 
-5. **仕様: `selection.md`。** [ ]
+5. **仕様: `selection.md`。** [x]
    - 勝者選択の仕様を執筆する（英語と日本語、コードなし）: 決定的な
-     順序クラス（リリースポリシーを満たす kernel 検証済み → ポリシーが
-     許す external → 最良の説明を持つ open）、タイブレークキー
-     （backend プロファイル優先度、証明書フォーマット優先度、エンコード
-     済み problem ハッシュ、プロファイル id）、reuse validation へ export
+     順序クラス（active policy を満たす kernel 検証済み → discharged
+     built-in → ポリシーが許す external → policy assumption → 最良の説明を持つ
+     open）、タイブレークキー（backend プロファイル優先度、証明書
+     フォーマット優先度、エンコード済み problem ハッシュ、プロファイル id、
+     安定した candidate id）、reuse validation へ export
      される選択済み proof witness hash または deterministic discharge hash、
      完了時刻の使用禁止。
    - 依存: 2。仕様: [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
      「Winner Selection」。
+   - 状態: paired spec を追加した。実装は task 6 で開始する。
 
 6. **勝者選択。** [ ]
    - `ProofEvidenceSet` 上の決定的な勝者選択を実装する。built-in

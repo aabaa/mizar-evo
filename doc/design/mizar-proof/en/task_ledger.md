@@ -14,7 +14,8 @@ extra unnumbered bookkeeping commit is permitted.
 | 1. Crate scaffold and lint-policy guard | complete | `bc7d33efd8b7427fa026807e729642219f62f809` | Initial reviews found only stale ledger/handoff finalization wording; scaffold, dependency boundary, lockfile, crate root, and lint guard had no findings. Focused re-reviews reported no scaffold or handoff findings after updates. Test sufficiency review reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-1 path staging. | Adds the workspace crate, scaffold-only crate root, dependency manifest, and lint-policy guard. |
 | 2. Spec: `policy.md` | complete | `193598cd5db448b17c5cddb721a5e22010b241b6` | Initial reviews found built-in discharge scheduling wording, `AssumedByPolicy`, artifact witness gap, fingerprint TODO, and ledger-finalization issues. After fixes, focused spec, test-sufficiency, full, and source-doc reviews reported no findings. | `git diff --check` passed; `git diff --cached --check` passed after explicit task-2 path staging. | Adds paired policy specs covering verifier policy settings, candidate classes, external evidence, open obligations, policy assumptions, fingerprint surface, scheduling, early stop, diagnostics, and trust boundary. |
 | 3. Policy evaluator | complete | `f3ac274d9cf7266f5ebdc4de94fe963f72ba67d5` | Initial reviews found synthesized accepted-kernel input risk, incomplete evidence-kind test coverage, negative scheduling test gaps, kernel/policy rejection layering drift, and task-4 external-admission overreach. After fixes, focused spec, test-sufficiency, full, and source-doc reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-3 path staging. | Implements the policy evaluator, normalized kernel-origin wrapper, candidate classes, schedulability checks, kernel rejection separation, and deterministic policy fingerprint; updates the lint guard for the policy module. |
-| 4. Externally attested evidence handling | complete | pending self-hash | Initial reviews found missing concrete publication-status mapping, unclear `PolicyDecision.class` and diagnostic ownership, public `trusted_used_axioms_allowed` invariant risk, module-status drift, matrix coverage gaps, and policy-tainted origin coverage gaps. After fixes, focused spec, test-sufficiency, full, and source-doc reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-4 path staging. | Implements external evidence admission labels, stable policy diagnostics, non-trusted admission matrix, and policy-tainted kernel-result routing without trusted `used_axioms`. |
+| 4. Externally attested evidence handling | complete | `986f62a184fa8d0a7fa0c98ef8f6c9669d85d844` | Initial reviews found missing concrete publication-status mapping, unclear `PolicyDecision.class` and diagnostic ownership, public `trusted_used_axioms_allowed` invariant risk, module-status drift, matrix coverage gaps, and policy-tainted origin coverage gaps. After fixes, focused spec, test-sufficiency, full, and source-doc reviews reported no findings. | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; `git diff --cached --check` passed after explicit task-4 path staging. | Implements external evidence admission labels, stable policy diagnostics, non-trusted admission matrix, and policy-tainted kernel-result routing without trusted `used_axioms`. |
+| 5. Spec: `selection.md` | complete | pending self-hash | Initial reviews found underspecified rejected/all-diagnostic outcomes, non-total tie-break inputs, `DischargedBuiltin` trust wording, missing policy-assumption handling, TODO ordering drift, and external recordable/selectable wording drift. After fixes, focused spec, test-sufficiency, full, and source-doc reviews reported no findings. | `git diff --check` passed; `git diff --cached --check` passed after explicit task-5 path staging. | Adds paired winner-selection specs and clarifies policy wording for deterministic winner classes, total tie-break identity, rejected/no-selectable diagnostics, reuse metadata, trusted/non-trusted boundaries, completion-time prohibition, and deferred downstream integrations. |
 
 ## Current Handoff
 
@@ -23,19 +24,19 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Continue mizar-proof autonomous crate development with task 5 after the task-4
-commit exists. First verify a clean worktree and confirm the task-4 commit in
-HEAD history. Then write the paired `selection.md` specs (English and
-Japanese, no code): deterministic winner ordering, tie-break keys, selected
-proof witness hash or deterministic discharge hash for reuse validation, and
-the completion-time/arrival-order prohibition. Do not implement selection code,
-status projection, witness staging, cache lookup, artifact commit, ATP
-execution, SAT solving, proof search, premise selection, substitution
-invention, or placeholder downstream integration.
+Continue mizar-proof autonomous crate development with task 6 after the task-5
+commit exists. First verify a clean worktree and confirm the task-5 commit in
+HEAD history. Then implement the deterministic winner-selection API from
+`doc/design/mizar-proof/en/selection.md` and its Japanese companion: evidence
+set inputs, winner classes, stable tie-break keys, selected reuse metadata, and
+diagnostic-only all-rejected handling. Do not implement status projection,
+witness staging, cache lookup, artifact commit, ATP execution, SAT solving,
+proof search, premise selection, substitution invention, or placeholder
+downstream integration.
 ```
 
-Rationale: task 5 defines the deterministic winner-selection contract before
-code exists. Keep `xhigh` because ordering or identity mistakes can make proof
-reuse depend on completion time or non-trusted evidence. Lower reasoning is
-appropriate only for typo-only cleanup; raise only if selection needs a new
+Rationale: task 6 turns the deterministic selection contract into public API,
+and ordering or identity mistakes can make proof reuse depend on completion
+time or non-trusted evidence. Keep `xhigh`; lower reasoning is appropriate
+only for typo-only cleanup, and raise only if implementation exposes a new
 external dependency gap.
