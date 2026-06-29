@@ -201,7 +201,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### 統合とフォローアップ
 
-15. **スケジューラと IR adapter の統合。** [ ]
+15. **スケジューラと IR adapter の integration readiness。** [ ]
     - ストアを `mizar-build` のキャッシュ seam（同 task 18）と
       `mizar-ir` の cache adapter（同 task 10）に接続する。キャッシュ
       ヒットは外部から見て同一の結果で作業をスキップする。
@@ -210,6 +210,10 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
     - 依存: 8、`mizar-build` task 18、`mizar-ir` task 10。仕様:
       [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)
       「Cache Lookup Before Task Execution」。
+    - Status: owning seam のどちらかが ready でなければ、欠けている seam を
+      `external_dependency_gap` として記録し、placeholder scheduler、
+      `mizar-ir`、artifact-publication-token API は追加しない。上記の実装と
+      end-to-end test は owner が landing するまで deferred のままにする。
 
 16. **決定性と削除可能性のスイート。** [ ]
     - プロパティ的検証: 同一入力が同一のキーとレコードを生む。任意の
@@ -270,6 +274,16 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       spec task を要求する。
     - 依存: 21。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
+
+23. **crate exit report と quality review。** [ ]
+    - task 1-22 が完了、または external dependency gap として明示的に deferred
+      された後で、paired crate exit report を作成する。task commit、hard-gate
+      status、review result、verification、deferred item、有効な 90/100 以上の
+      read-only quality score を記録する。
+    - 依存: 22。仕様:
+      [autonomous_crate_development.md](../../autonomous_crate_development.md)。
+    - Status: closeout のみ。この task には review が要求する修正以外の
+      new feature implementation を混ぜない。
 
 ## 推奨検証
 

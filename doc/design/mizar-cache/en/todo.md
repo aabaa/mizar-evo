@@ -203,7 +203,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
 
 ### Integration and follow-ups
 
-15. **Scheduler and IR-adapter integration.** [ ]
+15. **Scheduler and IR-adapter integration readiness.** [ ]
     - Plug the store into the `mizar-build` cache seam (its task 18) and
       the `mizar-ir` cache adapter (its task 10); cache hits skip work with
       externally identical results.
@@ -212,6 +212,10 @@ Keep `cargo test -p mizar-cache` green after each task (see
     - Deps: 8, `mizar-build` task 18, `mizar-ir` task 10. Spec:
       [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md)
       "Cache Lookup Before Task Execution".
+    - Status: if either owning seam is not ready, record the missing seam as
+      `external_dependency_gap` and do not add placeholder scheduler,
+      `mizar-ir`, or artifact-publication-token APIs. The implementation and
+      end-to-end tests above remain deferred until their owners land.
 
 16. **Determinism and deletability suite.** [ ]
     - Property coverage: identical inputs produce identical keys and
@@ -275,6 +279,16 @@ Keep `cargo test -p mizar-cache` green after each task (see
     - Deps: 21. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+
+23. **Crate exit report and quality review.** [ ]
+    - Produce the paired crate exit report after tasks 1-22 finish or are
+      explicitly deferred as external dependency gaps. Record task commits,
+      hard-gate status, review results, verification, deferred items, and a
+      valid read-only quality score of at least 90/100.
+    - Deps: 22. Spec:
+      [autonomous_crate_development.md](../../autonomous_crate_development.md).
+    - Status: closeout only; do not mix new feature implementation into this
+      task except fixes required by review.
 
 ## Recommended Verification
 
