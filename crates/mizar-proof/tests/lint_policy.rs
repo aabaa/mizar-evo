@@ -143,7 +143,7 @@ fn proof_lib_states_boundary_and_exposes_modules_after_specs() {
 }
 
 #[test]
-fn proof_crate_tree_contains_only_task_twelve_files() {
+fn proof_crate_tree_contains_only_task_thirteen_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -156,11 +156,13 @@ fn proof_crate_tree_contains_only_task_twelve_files() {
             "src/selection.rs",
             "src/status.rs",
             "src/witness_store.rs",
+            "tests/determinism_suite.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-proof task 12 may contain only the policy, selection, status, and \
-         witness_store modules plus the lint guard; build scripts, examples, \
-         benches, or extra tests require later explicit tasks; found {files:?}"
+        "mizar-proof task 13 may contain only the policy, selection, status, \
+         witness_store modules, the determinism suite, and the lint guard; \
+         build scripts, examples, benches, or extra tests require later \
+         explicit tasks; found {files:?}"
     );
 }
 

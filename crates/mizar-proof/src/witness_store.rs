@@ -1507,6 +1507,24 @@ mod tests {
     }
 
     #[test]
+    fn witness_stage_and_publish_refs_ignore_candidate_arrival_order() {
+        let first = witness_roundtrip_from_candidate_order(["candidate-1", "candidate-later"]);
+        let second = witness_roundtrip_from_candidate_order(["candidate-later", "candidate-1"]);
+
+        assert_eq!(first, second);
+        assert_eq!(
+            first
+                .0
+                .artifact_reference_candidate()
+                .expect("staged witness ref exists"),
+            second
+                .0
+                .artifact_reference_candidate()
+                .expect("staged witness ref exists")
+        );
+    }
+
+    #[test]
     fn publish_before_manifest_reference_fails() {
         let staged = stage(kernel_draft()).expect("kernel draft stages");
         let reference = staged
@@ -2097,6 +2115,45 @@ mod tests {
         .expect("valid builtin draft")
     }
 
+    fn witness_roundtrip_from_candidate_order(
+        order: [&'static str; 2],
+    ) -> (ProofWitnessStagedRef, ProofWitnessPublishedRef) {
+        let obligation_fingerprint = artifact_ref(ArtifactHashClass::Interface, "obligation", 1);
+        let anchor = anchor();
+        let projection = status_projection_from_candidate_order(
+            "obl-1",
+            anchor.clone(),
+            &obligation_fingerprint,
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+            order,
+        );
+        let draft = ProofWitnessDraft::new(
+            "obl-1",
+            anchor,
+            obligation_fingerprint,
+            &projection,
+            trusted_metadata(KernelEvidenceOrigin::AtpFormulaSubstitution, hash(2), 9),
+            payload_schema(),
+            b"canonical witness payload".to_vec(),
+            "proof-witnesses/obl-1.json",
+            provenance(KernelEvidenceOrigin::AtpFormulaSubstitution, hash(2)),
+        )
+        .expect("valid deterministic witness draft");
+        let staged = stage(draft).expect("deterministic witness stages");
+        let reference = staged
+            .artifact_reference_candidate()
+            .expect("kernel witness creates unpublished artifact ref")
+            .clone();
+        let proof = publication_proof(
+            &staged,
+            vec![reference.clone()],
+            vec![manifest_entry(&reference)],
+        )
+        .expect("coverage token is internally consistent");
+        let published = publish_ref(&staged, &proof).expect("published witness ref");
+        (staged, published)
+    }
+
     trait DraftTestExt {
         fn with_payload_bytes_for_test(self, bytes: Vec<u8>) -> Self;
         fn with_selected_evidence_hash_for_test(self, hash: Hash) -> Self;
@@ -2166,10 +2223,18 @@ mod tests {
     }
 
     fn provenance(origin: KernelEvidenceOrigin, accepted_hash: Hash) -> ProofWitnessProvenance {
+        provenance_for_candidate(origin, accepted_hash, candidate_id())
+    }
+
+    fn provenance_for_candidate(
+        origin: KernelEvidenceOrigin,
+        accepted_hash: Hash,
+        selected_candidate_id: CandidateSourceId,
+    ) -> ProofWitnessProvenance {
         ProofWitnessProvenance::new(
             hash(20),
             "mizar-proof-test",
-            candidate_id(),
+            selected_candidate_id,
             origin,
             hash(21),
             hash(22),
@@ -2275,6 +2340,28 @@ mod tests {
         project_status(input).expect("trusted projection succeeds")
     }
 
+    fn status_projection_from_candidate_order(
+        obligation_id: &'static str,
+        obligation_anchor: ObligationAnchor,
+        obligation_fingerprint: &ArtifactHashRef,
+        origin: KernelEvidenceOrigin,
+        order: [&'static str; 2],
+    ) -> ProofStatusProjection {
+        let policy = VerifierPolicy::release();
+        let selection = artifact_selection_for_origin_with_order(origin, order, policy.clone());
+        let identity = ProofObligationIdentity::new(
+            obligation_id,
+            obligation_anchor,
+            obligation_fingerprint.digest,
+            hash(21),
+            hash(28),
+            hash(22),
+        )
+        .expect("valid proof obligation identity");
+        project_status(ProofStatusProjectionInput::new(selection, policy, identity))
+            .expect("trusted projection succeeds")
+    }
+
     fn artifact_selection_for_origin(
         origin: KernelEvidenceOrigin,
         accepted_hash: Hash,
@@ -2303,7 +2390,53 @@ mod tests {
         merged.remove(0)
     }
 
+    fn artifact_selection_for_origin_with_order(
+        origin: KernelEvidenceOrigin,
+        order: [&'static str; 2],
+        policy: VerifierPolicy,
+    ) -> ArtifactProofSelection {
+        let candidates = order.into_iter().map(|id| match id {
+            "candidate-1" => trusted_candidate_with_id(id, origin, hash(2))
+                .with_backend_profile_priority(0)
+                .with_evidence_format_priority(0),
+            "candidate-later" => trusted_candidate_with_id(id, origin, hash(3))
+                .with_backend_profile_priority(1)
+                .with_evidence_format_priority(0),
+            _ => panic!("unknown candidate id in determinism fixture"),
+        });
+        let selection = select_winner(
+            &ProofEvidenceSet::new(b"witness-obligation".to_vec(), hash(100), policy)
+                .with_candidates(candidates),
+        );
+        assert_eq!(
+            selection
+                .selected_candidate_id()
+                .map(CandidateSourceId::as_str),
+            Some("candidate-1")
+        );
+        let vc_selection = VcProofSelection::new(VcId::new(0), selection);
+        let mut merged = match origin {
+            KernelEvidenceOrigin::AtpFormulaSubstitution => {
+                merge_artifact_proof_selections([vc_selection], [])
+            }
+            KernelEvidenceOrigin::BuiltinDischarge | KernelEvidenceOrigin::KernelPrimitive => {
+                merge_artifact_proof_selections([], [vc_selection])
+            }
+        }
+        .expect("artifact selection merge succeeds");
+        assert_eq!(merged.len(), 1);
+        merged.remove(0)
+    }
+
     fn trusted_candidate(
+        origin: KernelEvidenceOrigin,
+        accepted_hash: Hash,
+    ) -> ProofEvidenceCandidate {
+        trusted_candidate_with_id("candidate-1", origin, accepted_hash)
+    }
+
+    fn trusted_candidate_with_id(
+        id: &'static str,
         origin: KernelEvidenceOrigin,
         accepted_hash: Hash,
     ) -> ProofEvidenceCandidate {
@@ -2313,12 +2446,16 @@ mod tests {
             false,
             Some(accepted_hash),
         );
-        ProofEvidenceCandidate::from_trusted_kernel_input(candidate_id(), &input)
+        ProofEvidenceCandidate::from_trusted_kernel_input(candidate_id_named(id), &input)
             .expect("accepted kernel policy input is trusted")
     }
 
     fn candidate_id() -> CandidateSourceId {
-        CandidateSourceId::new("candidate-1").expect("candidate id")
+        candidate_id_named("candidate-1")
+    }
+
+    fn candidate_id_named(id: &'static str) -> CandidateSourceId {
+        CandidateSourceId::new(id).expect("candidate id")
     }
 
     fn policy_fingerprint_hash() -> Hash {

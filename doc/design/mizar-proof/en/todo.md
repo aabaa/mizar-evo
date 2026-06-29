@@ -252,11 +252,17 @@ Keep `cargo test -p mizar-proof` green after each task (see
 
 ### Hardening and cross-cutting follow-ups
 
-13. **Determinism suite.** [ ]
+13. **Determinism suite.** [x]
     - Property coverage that identical evidence sets produce identical
       classifications, winners, statuses, and witness references under
       shuffled arrival orders.
     - Deps: 11, 12. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+   - Status: added `tests/determinism_suite.rs` for public policy
+     classification, early-stop normalization, deterministic selection, status
+     projection, and reuse-metadata stability across shuffled candidate order.
+     Added `witness_store.rs` unit coverage for staged and published witness
+     reference determinism using the existing crate-private publication-token
+     fixture, preserving the artifact-boundary opacity.
 
 14. **Public-enum forward-compatibility policy.** [ ]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;

@@ -245,10 +245,16 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
 
 ### 強化と横断フォローアップ
 
-13. **決定性スイート。** [ ]
+13. **決定性スイート。** [x]
     - 同一の証拠集合が、到着順をシャッフルしても同一の分類、勝者、状態、
       witness 参照を生むことのプロパティ的検証。
     - 依存: 11、12。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
+   - 状態: `tests/determinism_suite.rs` を追加し、public API 経由の policy
+     classification、early-stop normalization、deterministic selection、status
+     projection、reuse metadata が shuffled candidate order で安定することを覆った。
+     `witness_store.rs` unit coverage では、既存の crate-private publication-token
+     fixture を使って staged/published witness reference determinism を検証し、
+     artifact boundary の opacity を維持した。
 
 14. **公開 enum の前方互換性ポリシー。** [ ]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。状態
