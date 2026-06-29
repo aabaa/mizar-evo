@@ -37,17 +37,17 @@ meaning-changing bilingual drift、missing companion、stale sync placeholder、
 
 | Document | Synchronized content checked | Result |
 |---|---|---|
-| `00.crate_plan.md` | crate responsibility、authority boundary、specification reference、known gap/drift、task 23 までの task decomposition、task 18 result、task 19 plan。 | Synchronized. |
+| `00.crate_plan.md` | crate responsibility、authority boundary、specification reference、known gap/drift、task 23 までの task decomposition、task 20 result、task 21 plan。 | Synchronized. |
 | `cache_key.md` | cache-key purpose、public API、validation input、canonical ordering/hashing、fail-closed rule、proof-reuse boundary、test、public enum policy、deferred gap、non-goal。 | Synchronized. |
 | `dependency_fingerprint.md` | fingerprint responsibility、public conceptual API、target taxonomy、stable input/exclusion、completeness state、rebuild trigger、API compatibility diff、trust boundary、planned test、public enum policy、deferred gap、non-goal。 | Synchronized. |
 | `cache_store.md` | record/blob store API、on-disk layout、record identity、header / encoding rule、lookup/insert fail-closed behavior、miss reason、deletability、trust boundary、test、public enum policy、deferred gap、non-goal。 | Synchronized. |
-| `proof_reuse.md` | proof-reuse metadata input、reusable class、validation predicate、determinism、failure semantics、output contract、public enum policy、test、deferred gap、non-goal。 | Synchronized. |
+| `proof_reuse.md` | proof-reuse metadata input、reusable class、validation predicate、determinism、failure semantics、output contract、public enum policy、test、deferred/external gap、non-goal。 | Synchronized. |
 | `cluster_db.md` | accepted-only cluster-db purpose、authority input、conceptual surface、store layout、origin metadata、importer-visible filtering、aggregate index、import-scoped view、invalidation、failure semantics、public enum policy、deferred gap、test、non-goal。 | Synchronized. |
 | `integration_readiness.md` | task 15 readiness scope、current cache surface、`mizar-build` / `mizar-ir` / publication-token external dependency gap、deferred work、docs-only verification。 | Synchronized. |
-| `source_spec_audit.md` | task 18 public module export、public API / method inventory、trust boundary、cross-module evidence、guarded test reference、ledger と parity する full gap table、no-drift conclusion。 | Synchronized. |
+| `source_spec_audit.md` | task 18 public module export、public API / method inventory、trust boundary、task-20 cross-module evidence、guarded test reference、ledger と parity する full gap table、no-drift conclusion。 | Synchronized. |
 | `bilingual_sync_audit.md` | task 19 scope、method、pair inventory、classification、sync edits。 | この paired audit document により synchronized。 |
-| `task_ledger.md` | task 18 までの task status と commit hash、pending task 19 self-hash、review/verification row、complete deferred/external dependency gap register。 | task 19 update により synchronized。task 19 self-hash は commit 作成後の次 task で backfill する。 |
-| `todo.md` | ordered task、task 19 までの完了 task、残る task 20-23 work、recommended verification、notes。 | task 19 update により synchronized。 |
+| `task_ledger.md` | task 19 までの task status と commit hash、pending task 20 self-hash、review/verification row、complete deferred/external dependency gap register。 | task 20 update により synchronized。task 20 self-hash は commit 作成後の次 task で backfill する。 |
+| `todo.md` | ordered task、task 20 までの完了 task、残る task 21-23 work、recommended verification、notes。 | task 20 update により synchronized。 |
 
 ## Classification
 
@@ -64,8 +64,10 @@ external dependency gap のままである。特に:
 - artifact/proof committed publication-token linkage は
   `external_dependency_gap` のまま。
 - fine-grained producer slice、persistent cluster-db storage、persistent
-  import-scoped view file、完全な task-20 clean/incremental cache contract は、
-  owning task が landing するまで `deferred` のまま。
+  import-scoped view file は owning task が landing するまで `deferred` のまま。
+  crate-owned task-20 contract を越える cross-crate clean/incremental
+  equivalence は scheduler と artifact publication owner に対する
+  `external_dependency_gap` のまま。
 
 task-19 edit は、`mizar-cache` が proof authority ではなく optimization owner で
 あるという規則を弱めない。Cache record、externally attested evidence、backend

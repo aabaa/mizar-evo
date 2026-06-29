@@ -38,17 +38,17 @@ document and backfills Task 18's commit hash in the paired ledgers.
 
 | Document | Synchronized content checked | Result |
 |---|---|---|
-| `00.crate_plan.md` | Crate responsibility, authority boundaries, specification references, known gaps/drift, task decomposition through task 23, task 18 result, and task 19 plan. | Synchronized. |
+| `00.crate_plan.md` | Crate responsibility, authority boundaries, specification references, known gaps/drift, task decomposition through task 23, task 20 result, and task 21 plan. | Synchronized. |
 | `cache_key.md` | Cache-key purpose, public API, validation inputs, canonical ordering/hashing, fail-closed rules, proof-reuse boundary, tests, public enum policy, deferred gaps, and non-goals. | Synchronized. |
 | `dependency_fingerprint.md` | Fingerprint responsibility, public conceptual API, target taxonomy, stable inputs/exclusions, completeness states, rebuild triggers, API compatibility diff, trust boundary, planned tests, public enum policy, deferred gaps, and non-goals. | Synchronized. |
 | `cache_store.md` | Record/blob store API, on-disk layout, record identity, header and encoding rules, lookup/insert fail-closed behavior, miss reasons, deletability, trust boundary, tests, public enum policy, deferred gaps, and non-goals. | Synchronized. |
-| `proof_reuse.md` | Proof-reuse metadata inputs, reusable classes, validation predicate, determinism, failure semantics, output contract, public enum policy, tests, deferred gaps, and non-goals. | Synchronized. |
+| `proof_reuse.md` | Proof-reuse metadata inputs, reusable classes, validation predicate, determinism, failure semantics, output contract, public enum policy, tests, deferred/external gaps, and non-goals. | Synchronized. |
 | `cluster_db.md` | Accepted-only cluster-db purpose, authority inputs, conceptual surface, store layout, origin metadata, importer-visible filtering, aggregate indexes, import-scoped views, invalidation, failure semantics, public enum policy, deferred gaps, tests, and non-goals. | Synchronized. |
 | `integration_readiness.md` | Task 15 readiness scope, current cache surface, `mizar-build`/`mizar-ir`/publication-token external dependency gaps, deferred work, and docs-only verification. | Synchronized. |
-| `source_spec_audit.md` | Task 18 public module exports, public API and method inventory, trust boundary, cross-module evidence, guarded test references, full gap table parity with ledgers, and no-drift conclusion. | Synchronized. |
+| `source_spec_audit.md` | Task 18 public module exports, public API and method inventory, trust boundary, task-20 cross-module evidence, guarded test references, full gap table parity with ledgers, and no-drift conclusion. | Synchronized. |
 | `bilingual_sync_audit.md` | Task 19 scope, method, pair inventory, classification, and sync edits. | Synchronized by this paired audit document. |
-| `task_ledger.md` | Task status and commit hashes through task 18, pending task 19 self-hash, review/verification rows, and complete deferred/external dependency gap register. | Synchronized by task 19 updates; task 19 self-hash is backfilled by the next task after its commit exists. |
-| `todo.md` | Ordered tasks, completed tasks through task 19, remaining task 20-23 work, recommended verification, and notes. | Synchronized by task 19 updates. |
+| `task_ledger.md` | Task status and commit hashes through task 19, pending task 20 self-hash, review/verification rows, and complete deferred/external dependency gap register. | Synchronized by task 20 updates; task 20 self-hash is backfilled by the next task after its commit exists. |
+| `todo.md` | Ordered tasks, completed tasks through task 20, remaining task 21-23 work, recommended verification, and notes. | Synchronized by task 20 updates. |
 
 ## Classification
 
@@ -64,9 +64,11 @@ listed in [task_ledger.md](./task_ledger.md) and repeated by
 - `mizar-ir` cache adapter integration remains an `external_dependency_gap`;
 - artifact/proof committed publication-token linkage remains an
   `external_dependency_gap`;
-- fine-grained producer slices, persistent cluster-db storage, persistent
-  import-scoped view files, and the full task-20 clean/incremental cache
-  contract remain `deferred` until their owning tasks land.
+- fine-grained producer slices, persistent cluster-db storage, and persistent
+  import-scoped view files remain `deferred` until their owning tasks land;
+  cross-crate clean/incremental equivalence beyond the crate-owned task-20
+  contract remains an `external_dependency_gap` on scheduler and artifact
+  publication owners.
 
 No task-19 edit weakens the rule that `mizar-cache` is an optimization owner,
 not proof authority. Cache records, externally attested evidence, backend

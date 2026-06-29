@@ -184,7 +184,7 @@ proof/status/artifact owner に問い合わせなければならない。
 | `PROOFREUSE-G002` | `external_dependency_gap` | `mizar-ir` cache adapter integration は存在しない。proof reuse validation は IR adapter API を発明しない。 |
 | `PROOFREUSE-G003` | `external_dependency_gap` | artifact committed witness publication token は artifact owner のまま。`proof_reuse` は selected witness hash を比較してよいが、committed publication ref を合成してはならない。 |
 | `PROOFREUSE-G004` | `external_dependency_gap` | artifact witness schema が distinct trusted class を持つまで、`DischargedBuiltin` artifact witness publication は unsupported のまま。reuse は deterministic discharge hash だけを使う。 |
-| `PROOFREUSE-G005` | `deferred` | scheduler、artifact publication、cache lookup をまたぐ full clean/incremental equivalence は task 20 gate に残る。 |
+| `PROOFREUSE-G005` | `external_dependency_gap` | task 20 は crate-owned cache lookup と proof-reuse validation contract を cover する。cross-crate clean/incremental equivalence は `mizar-build` scheduler と artifact publication integration に依存して残る。 |
 
 ## Tests For Task 11
 

@@ -203,9 +203,10 @@ Keep `cargo test -p mizar-cache` green after each task (see
       upstream proof-reuse completeness is honored; local validation is
       independent of record arrival/write order and cache hit/miss timing; a
       lint/source-surface guard confirms no scheduler, `mizar-ir`, artifact
-      publication-token, or witness-publication shortcut is added. Cross-crate
-      producer wiring and full clean/incremental equivalence remain the task-20
-      gate.
+      publication-token, or witness-publication shortcut is added. Task 20
+      covers the crate-owned cache validation contract; cross-crate producer
+      wiring and clean/incremental equivalence remain external integration
+      gaps.
     - Deps: 8, 10. Spec: `proof_reuse.md`.
 
 12. **Spec: `cluster_db.md`.** [x]
@@ -292,15 +293,16 @@ Keep `cargo test -p mizar-cache` green after each task (see
     - Property coverage: identical inputs produce identical keys and
       records; deleting representative crate-owned record/blob subsets
       changes only lookup availability until deterministic repopulation, not
-      canonical identity or proof acceptance. Full build-result equivalence is
-      task-20 scope.
+      canonical identity or proof acceptance. The crate-owned contract is
+      task-20 scope; scheduler-level build-result equivalence remains an
+      external integration gap.
     - Deps: 15. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
     - Completed by task 16: `tests/determinism_suite.rs` covers canonical
       cache-key ordering, record/blob deletion and repopulation on the
       crate-owned store, proof-reuse diagnostic determinism, and rejection of
-      externally attested proof material as non-reusable. Full
-      scheduler-level clean/incremental equivalence remains deferred to
-      task 20.
+      externally attested proof material as non-reusable. Task 20 covers the
+      crate-owned clean/incremental cache contract; scheduler-level
+      clean/incremental equivalence remains an external integration gap.
 
 17. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
@@ -329,7 +331,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
       with synchronized semantic content; no unresolved sync placeholder or
       bilingual drift was found.
 
-20. **Incremental verification fail-closed cache contract.** [ ]
+20. **Incremental verification fail-closed cache contract.** [x]
     - Implement and test the architecture-22 cache contract across
       `cache_key`, `dependency_fingerprint`, `cache_store`, and `proof_reuse`:
       a reusable output must have a complete dependency slice/footprint, an
@@ -347,6 +349,13 @@ Keep `cargo test -p mizar-cache` green after each task (see
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
       [11.artifact_and_incremental_build.md](../../architecture/en/11.artifact_and_incremental_build.md),
       [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
+    - Completed by task 20: `tests/incremental_contract.rs` covers the
+      crate-owned architecture-22 fail-closed cache contract across cache key
+      construction, dependency-footprint completeness, cache-store
+      compatibility, proof-reuse validation, deletion/non-semantic timing
+      boundaries, and external-evidence non-promotion. Remaining cross-crate
+      clean/incremental equivalence depends on scheduler and artifact
+      publication owners and remains `external_dependency_gap`.
 
 21. **Architecture-22 follow-up audit.** [ ]
     - Re-run the source/spec correspondence and bilingual documentation sync

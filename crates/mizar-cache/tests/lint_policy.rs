@@ -518,7 +518,7 @@ fn cluster_db_implementation_has_no_downstream_stub_or_timing_inputs() {
 }
 
 #[test]
-fn cache_crate_tree_contains_only_task_eighteen_files() {
+fn cache_crate_tree_contains_only_task_twenty_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -533,14 +533,15 @@ fn cache_crate_tree_contains_only_task_eighteen_files() {
             "src/lib.rs",
             "src/proof_reuse.rs",
             "tests/determinism_suite.rs",
+            "tests/incremental_contract.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-cache task 18 contains only the crate manifest, root module, \
+        "mizar-cache task 20 contains only the crate manifest, root module, \
          cache_key implementation, dependency_fingerprint implementation, \
          cache_store implementation, proof_reuse implementation, cluster_db \
-         implementation, determinism suite, and lint guard; other behavior modules, \
-         build scripts, examples, benches, or extra tests require later \
-         explicit tasks; found {files:?}"
+         implementation, determinism suite, incremental contract suite, and \
+         lint guard; other behavior modules, build scripts, examples, benches, \
+         or extra tests require later explicit tasks; found {files:?}"
     );
 }
 
@@ -560,6 +561,7 @@ fn cache_source_spec_audit_covers_public_modules_and_gaps() {
         "todo.md",
         "crates/mizar-cache/tests/lint_policy.rs",
         "crates/mizar-cache/tests/determinism_suite.rs",
+        "crates/mizar-cache/tests/incremental_contract.rs",
         "external_dependency_gap",
         "deferred",
         "repo_metadata_conflict",
@@ -622,9 +624,9 @@ fn cache_source_spec_audit_covers_public_modules_and_gaps() {
     }
 
     for marker in [
-        "Task 18 audits",
+        "Task 18 introduced this audit",
         "no unclassified",
-        "Task 18 introduces no new gap IDs",
+        "Task 20 introduces no new gap IDs",
         "The cache remains an internal optimization owner",
     ] {
         assert!(
@@ -634,9 +636,9 @@ fn cache_source_spec_audit_covers_public_modules_and_gaps() {
         );
     }
     for marker in [
-        "task 18 は",
+        "task 18 は public",
         "未分類",
-        "task 18 の新規 gap ID は追加しない",
+        "task 20 の新規 gap ID は追加しない",
         "Cache は internal optimization owner",
     ] {
         assert!(
@@ -816,6 +818,12 @@ fn source_spec_audit_test_markers() -> &'static [&'static str] {
         "cache_store_api_does_not_expose_proof_authority_terms",
         "cache_store_implementation_keeps_boundary_terms_out_of_reuse_logic",
         "cache_store_deletion_changes_only_lookup_availability",
+        "trusted_incremental_contract_requires_complete_cross_module_validation",
+        "missing_or_unknown_incremental_inputs_fail_closed_before_reuse",
+        "proof_reuse_requires_each_architecture_22_validation_field",
+        "dependency_footprint_projects_missing_and_external_proof_metadata_to_miss",
+        "cache_deletion_and_diagnostic_order_are_non_semantic",
+        "externally_attested_evidence_never_becomes_trusted_reuse",
         "proof_reuse_api_does_not_expose_authority_results_or_publication_tokens",
         "proof_reuse_implementation_has_no_downstream_stub_or_timing_inputs",
         "proof_reuse_validation_is_deterministic_and_never_promotes_external_evidence",

@@ -196,8 +196,9 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       upstream proof-reuse completeness が尊重されること。local validation が record
       arrival/write order と cache hit/miss timing に依存しないこと。lint/source-surface guard により
       scheduler、`mizar-ir`、artifact publication-token、witness publication shortcut を追加しないことを
-      確認すること。cross-crate producer wiring と full clean/incremental equivalence は task 20 の
-      gate に残す。
+      確認すること。task 20 は crate-owned cache validation contract を cover する。
+      cross-crate producer wiring と clean/incremental equivalence は external
+      integration gap として残る。
     - 依存: 8、10。仕様: `proof_reuse.md`。
 
 12. **仕様: `cluster_db.md`。** [x]
@@ -279,14 +280,15 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
     - プロパティ的検証: 同一入力が同一のキーとレコードを生む。代表的な
       crate-owned record/blob subset を削除しても deterministic repopulation
       までの lookup availability だけが変わり、canonical identity や proof
-      acceptance は変わらない。build-result equivalence 全体は task 20 の
-      scope である。
+      acceptance は変わらない。crate-owned contract は task 20 の scope であり、
+      scheduler-level build-result equivalence は external integration gap として残る。
     - 依存: 15。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
     - task 16 で完了: `tests/determinism_suite.rs` は canonical cache-key
       ordering、crate-owned store 上での record/blob deletion と repopulation、
       proof-reuse diagnostic の決定性、外部認証された proof material を
-      non-reusable として拒否することを覆う。scheduler-level の
-      clean/incremental equivalence 全体は task 20 へ deferred のままである。
+      non-reusable として拒否することを覆う。task 20 は crate-owned
+      clean/incremental cache contract を cover する。scheduler-level の
+      clean/incremental equivalence は external integration gap として残る。
 
 17. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。
@@ -312,7 +314,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       Japanese companion があり、未解決 sync placeholder または bilingual drift は
       見つからない。
 
-20. **増分検証の fail-closed cache 契約。** [ ]
+20. **増分検証の fail-closed cache 契約。** [x]
     - architecture 22 の cache contract を `cache_key`、
       `dependency_fingerprint`、`cache_store`、`proof_reuse` 全体で実装・
       テストする。再利用される output は完全な dependency slice / footprint
@@ -330,6 +332,13 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md),
       [11.artifact_and_incremental_build.md](../../architecture/ja/11.artifact_and_incremental_build.md),
       [18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
+    - task 20 で完了: `tests/incremental_contract.rs` は cache key
+      construction、dependency-footprint completeness、cache-store
+      compatibility、proof-reuse validation、deletion/non-semantic timing
+      boundary、external-evidence non-promotion をまたぐ crate-owned
+      architecture-22 fail-closed cache contract を cover する。残る
+      cross-crate clean/incremental equivalence は scheduler と artifact
+      publication owner に依存するため `external_dependency_gap` のまま。
 
 21. **architecture-22 フォローアップ監査。** [ ]
     - task 20 の cache-key、dependency-footprint、store、proof-reuse 契約に

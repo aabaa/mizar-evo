@@ -3,12 +3,12 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_spec_audit.md](../ja/source_spec_audit.md).
 
-Task 18 audits the public `mizar-cache` source surface implemented through
-task 17 against the paired module specifications. It changes no production
-behavior, public API semantics, cache lookup policy, proof acceptance policy,
-artifact publication policy, or downstream integration. Remaining unavailable
-behavior is recorded as `deferred` or `external_dependency_gap` work instead
-of being stubbed in `mizar-cache`.
+Task 18 introduced this audit for the public `mizar-cache` source surface, and
+task 20 updates it for the incremental fail-closed cache contract. It changes
+no production behavior, public API semantics, cache lookup policy, proof
+acceptance policy, artifact publication policy, or downstream integration.
+Remaining unavailable behavior is recorded as `deferred` or
+`external_dependency_gap` work instead of being stubbed in `mizar-cache`.
 
 ## Scope And Method
 
@@ -54,6 +54,9 @@ list, crate file allowlist, package dependencies, proof-authority boundary
 terms, downstream-stub exclusions, public-enum policy, and this audit's module
 coverage. `crates/mizar-cache/tests/determinism_suite.rs` covers cross-module
 determinism and cache-deletion semantics.
+`crates/mizar-cache/tests/incremental_contract.rs` covers the task-20
+architecture-22 fail-closed cache contract across cache keys, dependency
+footprints, cache-store lookup, and proof-reuse validation.
 
 ## Trust Boundary Restatement
 
@@ -253,12 +256,13 @@ Public inherent methods:
 | Crate scaffolding and dependency boundary | `Cargo.toml`, `src/lib.rs`, and `tests/lint_policy.rs`; guarded by manifest, workspace, module-export, dependency, file-tree, and lint-baseline tests. |
 | Cache data remains optimization-only | crate root boundary comments, API/implementation forbidden-term tests, and module specs all exclude proof-authority projection. |
 | Deterministic canonicalization | module unit tests plus `tests/determinism_suite.rs` cover cache-key ordering, record deletion/availability, proof-reuse diagnostic ordering, and rejection of externally attested proof material. |
+| Incremental verification fail-closed contract | `tests/incremental_contract.rs` exercises a complete trusted reuse path and independent misses for incomplete footprints, uncacheable markers, unknown schema/toolchain/policy, dependency artifact mismatch, proof metadata mismatches, deletion, diagnostic ordering, and externally attested evidence. |
 | Downstream integration remains owner-gated | `integration_readiness.md` and lint tests prohibit scheduler hooks, `mizar-ir` placeholders, publication-token shortcuts, and trace/reduction constructors. |
 | Public enum forward compatibility | source attributes, paired module policy tables, and `public_cache_enums_are_forward_compatible_and_documented`. |
 
 ## Guarded Test References
 
-The task-18 lint guard verifies that these named tests still exist and remain
+The source/spec lint guard verifies that these named tests still exist and remain
 referenced by the EN/JA audits:
 
 - `cache_key_api_does_not_expose_proof_authority_terms`
@@ -277,6 +281,12 @@ referenced by the EN/JA audits:
 - `cache_store_api_does_not_expose_proof_authority_terms`
 - `cache_store_implementation_keeps_boundary_terms_out_of_reuse_logic`
 - `cache_store_deletion_changes_only_lookup_availability`
+- `trusted_incremental_contract_requires_complete_cross_module_validation`
+- `missing_or_unknown_incremental_inputs_fail_closed_before_reuse`
+- `proof_reuse_requires_each_architecture_22_validation_field`
+- `dependency_footprint_projects_missing_and_external_proof_metadata_to_miss`
+- `cache_deletion_and_diagnostic_order_are_non_semantic`
+- `externally_attested_evidence_never_becomes_trusted_reuse`
 - `proof_reuse_api_does_not_expose_authority_results_or_publication_tokens`
 - `proof_reuse_implementation_has_no_downstream_stub_or_timing_inputs`
 - `proof_reuse_validation_is_deterministic_and_never_promotes_external_evidence`
@@ -286,9 +296,10 @@ referenced by the EN/JA audits:
 
 ## Gap Classification
 
-Task 18 introduces no new gap IDs. The audit repeats every existing
-`deferred` or `external_dependency_gap` ID from the task ledger and does not
-repair them with placeholder source:
+Task 20 introduces no new gap IDs. The audit repeats every existing
+`deferred` or `external_dependency_gap` ID from the task ledger, reclassifies
+`PROOFREUSE-G005` toward its external owners, and does not repair gaps with
+placeholder source:
 
 | ID | Class | Owner / trigger | Current handling |
 |---|---|---|---|
@@ -308,7 +319,7 @@ repair them with placeholder source:
 | `PROOFREUSE-G002` | `external_dependency_gap` | `mizar-ir` adapter | no IR placeholder API is created. |
 | `PROOFREUSE-G003` | `external_dependency_gap` | artifact witness publication token | cache compares selected witness hashes only. |
 | `PROOFREUSE-G004` | `external_dependency_gap` | artifact witness schema for a distinct trusted `DischargedBuiltin` class | proof reuse may validate deterministic discharge hashes but does not publish a trusted witness artifact for that class. |
-| `PROOFREUSE-G005` | `deferred` | task 20 clean/incremental equivalence gate | current module tests cover local validation; full architecture-22 cache contract remains scheduled for task 20. |
+| `PROOFREUSE-G005` | `external_dependency_gap` | `mizar-build` / `mizar-artifact` scheduler and publication integration | task 20 covers the crate-owned cache lookup and proof-reuse validation contract; cross-crate clean/incremental equivalence remains gated on scheduler and artifact publication integration. |
 | `CLUSTERDB-G001` | `external_dependency_gap` | checker/artifact accepted-contribution producers | missing producer fields are deferred rather than fabricated. |
 | `CLUSTERDB-G002` | `deferred` | persistent cluster-db storage task | task 13 implemented in-memory origins and aggregate indexes; durable `cluster-db/` files remain deferred. |
 | `CLUSTERDB-G003` | `deferred` | persistent import-scoped view storage task | task 14 implemented in-memory views and invalidation; durable `views/` files remain deferred. |
@@ -318,12 +329,12 @@ repair them with placeholder source:
 | `CACHE15-G002` | `external_dependency_gap` | `mizar-ir` cache adapter | `crates/mizar-ir` is absent; no placeholder crate, mock adapter, or rehydration API is added. |
 | `CACHE15-G003` | `external_dependency_gap` | `mizar-artifact` / `mizar-proof` committed witness publication token | cache validation compares hashes and metadata only; publication remains artifact/proof owned. |
 
-No `repo_metadata_conflict` is observed during the task-18 source/spec audit.
+No `repo_metadata_conflict` is observed during the current source/spec audit.
 
 ## Conclusion
 
 The current public `mizar-cache` source surface matches the module
-specifications and test coverage after task 17. The cache remains an internal optimization owner rather than proof authority. Cache records, dependency
+specifications and test coverage after task 20. The cache remains an internal optimization owner rather than proof authority. Cache records, dependency
 fingerprints, proof-reuse validation metadata, backend diagnostics/logs,
 timing metadata, and cluster-db indexes do not become kernel-verified proof
 status or trusted `used_axioms`. Existing incomplete integration points are
