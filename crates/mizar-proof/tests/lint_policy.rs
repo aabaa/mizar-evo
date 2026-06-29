@@ -1,5 +1,10 @@
 use std::{fs, path::PathBuf};
 
+use mizar_proof::policy::{
+    ExternalEvidenceMode, PolicyCandidate, PortfolioEarlyStopClass, PortfolioEarlyStopInput,
+    PortfolioEarlyStopReason, ProofPolicyEvaluator, VerifierPolicy,
+};
+
 #[test]
 fn proof_manifest_opts_into_workspace_lints() {
     let manifest_path = crate_root().join("Cargo.toml");
@@ -138,7 +143,7 @@ fn proof_lib_states_boundary_and_exposes_modules_after_specs() {
 }
 
 #[test]
-fn proof_crate_tree_contains_only_task_eleven_files() {
+fn proof_crate_tree_contains_only_task_twelve_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -153,10 +158,44 @@ fn proof_crate_tree_contains_only_task_eleven_files() {
             "src/witness_store.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-proof task 11 may contain only the policy, selection, status, and \
+        "mizar-proof task 12 may contain only the policy, selection, status, and \
          witness_store modules plus the lint guard; build scripts, examples, \
          benches, or extra tests require later explicit tasks; found {files:?}"
     );
+}
+
+#[test]
+fn early_stop_public_api_rejects_external_when_kernel_certificates_required() {
+    let evaluator = ProofPolicyEvaluator::new(
+        VerifierPolicy::interactive()
+            .with_external_evidence(ExternalEvidenceMode::PermitNonTrustedWinner)
+            .with_require_kernel_certificates(true),
+    );
+
+    assert_eq!(
+        evaluator.best_possible_early_stop_class(&PolicyCandidate::ExternallyAttested),
+        None
+    );
+
+    let input =
+        PortfolioEarlyStopInput::new(Some(PortfolioEarlyStopClass::PolicyPermittedExternal), []);
+    assert_eq!(
+        input.observed_best_class(),
+        Some(PortfolioEarlyStopClass::PolicyPermittedExternal)
+    );
+    assert_eq!(input.pending_best_possible_classes(), &[]);
+
+    let decision = evaluator.portfolio_early_stop_decision(&input);
+    assert!(!decision.may_stop());
+    assert_eq!(
+        decision.reason(),
+        PortfolioEarlyStopReason::ObservedClassNotSelectable
+    );
+    assert_eq!(
+        decision.observed_best_class(),
+        Some(PortfolioEarlyStopClass::PolicyPermittedExternal)
+    );
+    assert_eq!(decision.blocking_pending_class(), None);
 }
 
 fn crate_root() -> PathBuf {

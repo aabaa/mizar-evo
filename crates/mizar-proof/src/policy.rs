@@ -284,6 +284,125 @@ impl ProofPolicyEvaluator {
     }
 
     #[must_use]
+    pub fn best_possible_early_stop_class(
+        &self,
+        candidate: &PolicyCandidate,
+    ) -> Option<PortfolioEarlyStopClass> {
+        match candidate {
+            PolicyCandidate::KernelResult(input)
+                if input.status() == KernelCheckStatus::Accepted && !input.policy_taint() =>
+            {
+                Some(match input.origin() {
+                    KernelEvidenceOrigin::AtpFormulaSubstitution => {
+                        PortfolioEarlyStopClass::KernelVerified
+                    }
+                    KernelEvidenceOrigin::BuiltinDischarge
+                    | KernelEvidenceOrigin::KernelPrimitive => {
+                        PortfolioEarlyStopClass::DischargedBuiltin
+                    }
+                })
+            }
+            PolicyCandidate::KernelResult(input)
+                if input.status() == KernelCheckStatus::Accepted && input.policy_taint() =>
+            {
+                self.external_evidence_admission()
+                    .may_win_selection()
+                    .then_some(PortfolioEarlyStopClass::PolicyPermittedExternal)
+            }
+            PolicyCandidate::UncheckedFormulaSubstitution { .. }
+                if self.can_schedule_kernel_check(candidate) =>
+            {
+                Some(PortfolioEarlyStopClass::KernelVerified)
+            }
+            PolicyCandidate::UncheckedBuiltinDischarge { .. }
+            | PolicyCandidate::KernelPrimitive { .. }
+                if self.can_schedule_kernel_check(candidate) =>
+            {
+                Some(PortfolioEarlyStopClass::DischargedBuiltin)
+            }
+            PolicyCandidate::ExternallyAttested => self
+                .external_evidence_admission()
+                .may_win_selection()
+                .then_some(PortfolioEarlyStopClass::PolicyPermittedExternal),
+            PolicyCandidate::PolicyAssumption
+                if !self.policy.require_kernel_certificates()
+                    && self.policy.policy_assumption() == PolicyAssumptionMode::Record =>
+            {
+                Some(PortfolioEarlyStopClass::PolicyAssumed)
+            }
+            PolicyCandidate::OpenObligation
+                if self.policy.open_obligation() == OpenObligationMode::AllowPolicyOpen =>
+            {
+                Some(PortfolioEarlyStopClass::PolicyOpen)
+            }
+            PolicyCandidate::KernelResult(_)
+            | PolicyCandidate::UncheckedFormulaSubstitution { .. }
+            | PolicyCandidate::UncheckedBuiltinDischarge { .. }
+            | PolicyCandidate::KernelPrimitive { .. }
+            | PolicyCandidate::OpenObligation
+            | PolicyCandidate::PolicyAssumption
+            | PolicyCandidate::BackendDiagnostic
+            | PolicyCandidate::BackendProofPayload(_)
+            | PolicyCandidate::BackendReportedUsedAxioms
+            | PolicyCandidate::CacheRecord
+            | PolicyCandidate::Counterexample
+            | PolicyCandidate::TimingRecord
+            | PolicyCandidate::UnsupportedProofPayload
+            | PolicyCandidate::LegacyReplay => None,
+        }
+    }
+
+    #[must_use]
+    pub fn portfolio_early_stop_decision(
+        &self,
+        input: &PortfolioEarlyStopInput,
+    ) -> PortfolioEarlyStopDecision {
+        let Some(observed_best_class) = input.observed_best_class() else {
+            return PortfolioEarlyStopDecision::do_not_stop(
+                PortfolioEarlyStopReason::NoObservedCandidate,
+                None,
+                None,
+            );
+        };
+        if !self.early_stop_class_is_selectable(observed_best_class) {
+            return PortfolioEarlyStopDecision::do_not_stop(
+                PortfolioEarlyStopReason::ObservedClassNotSelectable,
+                Some(observed_best_class),
+                None,
+            );
+        }
+
+        let mut blocking_pending_class = None;
+        for pending_class in input.pending_best_possible_classes() {
+            if !self.early_stop_class_is_selectable(*pending_class) {
+                continue;
+            }
+            if pending_class.rank() <= observed_best_class.rank()
+                && blocking_pending_class.is_none_or(|current: PortfolioEarlyStopClass| {
+                    pending_class.rank() < current.rank()
+                })
+            {
+                blocking_pending_class = Some(*pending_class);
+            }
+        }
+
+        if let Some(blocking_pending_class) = blocking_pending_class {
+            let reason = if blocking_pending_class.rank() < observed_best_class.rank() {
+                PortfolioEarlyStopReason::BlockedByHigherClass
+            } else {
+                PortfolioEarlyStopReason::BlockedByEqualClass
+            };
+            return PortfolioEarlyStopDecision::do_not_stop(
+                reason,
+                Some(observed_best_class),
+                Some(blocking_pending_class),
+            );
+        }
+
+        PortfolioEarlyStopDecision::stop_allowed(observed_best_class)
+    }
+
+    #[must_use]
     pub fn evaluate_candidate(&self, candidate: &PolicyCandidate) -> PolicyDecision {
         let can_schedule_kernel_check = self.can_schedule_kernel_check(candidate);
         let (class, diagnostic, kernel_rejections, external_admission) = match candidate {
@@ -547,6 +666,23 @@ impl ProofPolicyEvaluator {
             None,
         )
     }
+
+    fn early_stop_class_is_selectable(&self, class: PortfolioEarlyStopClass) -> bool {
+        match class {
+            PortfolioEarlyStopClass::KernelVerified
+            | PortfolioEarlyStopClass::DischargedBuiltin => true,
+            PortfolioEarlyStopClass::PolicyPermittedExternal => {
+                self.external_evidence_admission().may_win_selection()
+            }
+            PortfolioEarlyStopClass::PolicyAssumed => {
+                !self.policy.require_kernel_certificates()
+                    && self.policy.policy_assumption() == PolicyAssumptionMode::Record
+            }
+            PortfolioEarlyStopClass::PolicyOpen => {
+                self.policy.open_obligation() == OpenObligationMode::AllowPolicyOpen
+            }
+        }
+    }
 }
 
 /// Stable hash over policy settings that affect proof policy behavior.
@@ -674,6 +810,123 @@ pub enum CandidatePolicyClass {
     AssumedByPolicy,
     RejectedByPolicy,
     DiagnosticOnly,
+}
+
+/// Policy-normalized winner class used by ATP portfolio early-stop queries.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, std::hash::Hash)]
+#[non_exhaustive]
+pub enum PortfolioEarlyStopClass {
+    KernelVerified,
+    DischargedBuiltin,
+    PolicyPermittedExternal,
+    PolicyAssumed,
+    PolicyOpen,
+}
+
+impl PortfolioEarlyStopClass {
+    const fn rank(self) -> u8 {
+        match self {
+            Self::KernelVerified => 0,
+            Self::DischargedBuiltin => 1,
+            Self::PolicyPermittedExternal => 2,
+            Self::PolicyAssumed => 3,
+            Self::PolicyOpen => 4,
+        }
+    }
+}
+
+/// Stable reason for an ATP portfolio early-stop decision.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, std::hash::Hash)]
+#[non_exhaustive]
+pub enum PortfolioEarlyStopReason {
+    NoObservedCandidate,
+    ObservedClassNotSelectable,
+    BlockedByHigherClass,
+    BlockedByEqualClass,
+    NoDisplacingPendingClass,
+}
+
+/// Class-level input for ATP portfolio early-stop finality.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PortfolioEarlyStopInput {
+    observed_best_class: Option<PortfolioEarlyStopClass>,
+    pending_best_possible_classes: Vec<PortfolioEarlyStopClass>,
+}
+
+impl PortfolioEarlyStopInput {
+    #[must_use]
+    pub fn new(
+        observed_best_class: Option<PortfolioEarlyStopClass>,
+        pending_best_possible_classes: impl IntoIterator<Item = PortfolioEarlyStopClass>,
+    ) -> Self {
+        Self {
+            observed_best_class,
+            pending_best_possible_classes: pending_best_possible_classes.into_iter().collect(),
+        }
+    }
+
+    #[must_use]
+    pub const fn observed_best_class(&self) -> Option<PortfolioEarlyStopClass> {
+        self.observed_best_class
+    }
+
+    #[must_use]
+    pub fn pending_best_possible_classes(&self) -> &[PortfolioEarlyStopClass] {
+        &self.pending_best_possible_classes
+    }
+}
+
+/// Policy decision for ATP portfolio early-stop finality.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PortfolioEarlyStopDecision {
+    may_stop: bool,
+    reason: PortfolioEarlyStopReason,
+    observed_best_class: Option<PortfolioEarlyStopClass>,
+    blocking_pending_class: Option<PortfolioEarlyStopClass>,
+}
+
+impl PortfolioEarlyStopDecision {
+    const fn stop_allowed(observed_best_class: PortfolioEarlyStopClass) -> Self {
+        Self {
+            may_stop: true,
+            reason: PortfolioEarlyStopReason::NoDisplacingPendingClass,
+            observed_best_class: Some(observed_best_class),
+            blocking_pending_class: None,
+        }
+    }
+
+    const fn do_not_stop(
+        reason: PortfolioEarlyStopReason,
+        observed_best_class: Option<PortfolioEarlyStopClass>,
+        blocking_pending_class: Option<PortfolioEarlyStopClass>,
+    ) -> Self {
+        Self {
+            may_stop: false,
+            reason,
+            observed_best_class,
+            blocking_pending_class,
+        }
+    }
+
+    #[must_use]
+    pub const fn may_stop(&self) -> bool {
+        self.may_stop
+    }
+
+    #[must_use]
+    pub const fn reason(&self) -> PortfolioEarlyStopReason {
+        self.reason
+    }
+
+    #[must_use]
+    pub const fn observed_best_class(&self) -> Option<PortfolioEarlyStopClass> {
+        self.observed_best_class
+    }
+
+    #[must_use]
+    pub const fn blocking_pending_class(&self) -> Option<PortfolioEarlyStopClass> {
+        self.blocking_pending_class
+    }
 }
 
 /// Normalized policy input for kernel results.
@@ -1119,6 +1372,10 @@ fn lower_hex(bytes: &[u8]) -> String {
 
 #[cfg(test)]
 mod tests {
+    use crate::selection::{
+        CandidateSourceId, ProofEvidenceCandidate, ProofEvidenceSet, select_winner,
+    };
+
     use super::*;
 
     #[test]
@@ -1420,6 +1677,322 @@ mod tests {
     }
 
     #[test]
+    fn early_stop_requires_observed_selectable_class() {
+        let release = ProofPolicyEvaluator::new(VerifierPolicy::release());
+
+        let missing = release.portfolio_early_stop_decision(&PortfolioEarlyStopInput::new(
+            None,
+            [PortfolioEarlyStopClass::KernelVerified],
+        ));
+        assert!(!missing.may_stop());
+        assert_eq!(
+            missing.reason(),
+            PortfolioEarlyStopReason::NoObservedCandidate
+        );
+        assert_eq!(missing.observed_best_class(), None);
+        assert_eq!(missing.blocking_pending_class(), None);
+
+        let unselectable = release.portfolio_early_stop_decision(&PortfolioEarlyStopInput::new(
+            Some(PortfolioEarlyStopClass::PolicyPermittedExternal),
+            [],
+        ));
+        assert!(!unselectable.may_stop());
+        assert_eq!(
+            unselectable.reason(),
+            PortfolioEarlyStopReason::ObservedClassNotSelectable
+        );
+        assert_eq!(
+            unselectable.observed_best_class(),
+            Some(PortfolioEarlyStopClass::PolicyPermittedExternal)
+        );
+        assert_eq!(unselectable.blocking_pending_class(), None);
+    }
+
+    #[test]
+    fn early_stop_blocks_equal_or_higher_pending_classes() {
+        let release = ProofPolicyEvaluator::new(VerifierPolicy::release());
+        let equal = release.portfolio_early_stop_decision(&PortfolioEarlyStopInput::new(
+            Some(PortfolioEarlyStopClass::KernelVerified),
+            [PortfolioEarlyStopClass::KernelVerified],
+        ));
+        assert!(!equal.may_stop());
+        assert_eq!(
+            equal.reason(),
+            PortfolioEarlyStopReason::BlockedByEqualClass
+        );
+        assert_eq!(
+            equal.blocking_pending_class(),
+            Some(PortfolioEarlyStopClass::KernelVerified)
+        );
+
+        let interactive = ProofPolicyEvaluator::new(
+            VerifierPolicy::interactive().with_policy_assumption(PolicyAssumptionMode::Record),
+        );
+        let higher = interactive.portfolio_early_stop_decision(&PortfolioEarlyStopInput::new(
+            Some(PortfolioEarlyStopClass::PolicyOpen),
+            [
+                PortfolioEarlyStopClass::PolicyAssumed,
+                PortfolioEarlyStopClass::KernelVerified,
+            ],
+        ));
+        assert!(!higher.may_stop());
+        assert_eq!(
+            higher.reason(),
+            PortfolioEarlyStopReason::BlockedByHigherClass
+        );
+        assert_eq!(
+            higher.blocking_pending_class(),
+            Some(PortfolioEarlyStopClass::KernelVerified)
+        );
+    }
+
+    #[test]
+    fn early_stop_allows_when_pending_classes_cannot_displace() {
+        let release = ProofPolicyEvaluator::new(VerifierPolicy::release());
+        let trusted = release.portfolio_early_stop_decision(&PortfolioEarlyStopInput::new(
+            Some(PortfolioEarlyStopClass::KernelVerified),
+            [
+                PortfolioEarlyStopClass::PolicyPermittedExternal,
+                PortfolioEarlyStopClass::PolicyAssumed,
+                PortfolioEarlyStopClass::PolicyOpen,
+            ],
+        ));
+        assert!(trusted.may_stop());
+        assert_eq!(
+            trusted.reason(),
+            PortfolioEarlyStopReason::NoDisplacingPendingClass
+        );
+        assert_eq!(
+            trusted.observed_best_class(),
+            Some(PortfolioEarlyStopClass::KernelVerified)
+        );
+        assert_eq!(trusted.blocking_pending_class(), None);
+
+        let interactive = ProofPolicyEvaluator::new(VerifierPolicy::interactive());
+        let open = interactive.portfolio_early_stop_decision(&PortfolioEarlyStopInput::new(
+            Some(PortfolioEarlyStopClass::PolicyAssumed),
+            [PortfolioEarlyStopClass::PolicyOpen],
+        ));
+        assert!(open.may_stop());
+        assert_eq!(
+            open.reason(),
+            PortfolioEarlyStopReason::NoDisplacingPendingClass
+        );
+    }
+
+    #[test]
+    fn early_stop_candidate_class_normalization_is_policy_driven() {
+        let release = ProofPolicyEvaluator::new(VerifierPolicy::release());
+        assert_eq!(
+            release.best_possible_early_stop_class(&PolicyCandidate::KernelResult(
+                kernel_input_for_test(
+                    KernelCheckStatus::Accepted,
+                    KernelEvidenceOrigin::AtpFormulaSubstitution,
+                    false,
+                )
+            )),
+            Some(PortfolioEarlyStopClass::KernelVerified)
+        );
+        assert_eq!(
+            release.best_possible_early_stop_class(&PolicyCandidate::KernelResult(
+                kernel_input_for_test(
+                    KernelCheckStatus::Accepted,
+                    KernelEvidenceOrigin::BuiltinDischarge,
+                    false,
+                )
+            )),
+            Some(PortfolioEarlyStopClass::DischargedBuiltin)
+        );
+        assert_eq!(
+            release.best_possible_early_stop_class(
+                &PolicyCandidate::UncheckedFormulaSubstitution {
+                    encoded_problem_matches: true,
+                }
+            ),
+            Some(PortfolioEarlyStopClass::KernelVerified)
+        );
+        assert_eq!(
+            release.best_possible_early_stop_class(&PolicyCandidate::UncheckedBuiltinDischarge {
+                has_stable_kernel_representation: true,
+            }),
+            Some(PortfolioEarlyStopClass::DischargedBuiltin)
+        );
+
+        for candidate in [
+            PolicyCandidate::ExternallyAttested,
+            PolicyCandidate::BackendDiagnostic,
+            PolicyCandidate::BackendReportedUsedAxioms,
+            PolicyCandidate::BackendProofPayload(BackendProofPayloadKind::ResolutionTrace),
+            PolicyCandidate::CacheRecord,
+            PolicyCandidate::TimingRecord,
+        ] {
+            assert_eq!(release.best_possible_early_stop_class(&candidate), None);
+        }
+
+        let external_permitted = ProofPolicyEvaluator::new(
+            VerifierPolicy::interactive()
+                .with_external_evidence(ExternalEvidenceMode::PermitNonTrustedWinner),
+        );
+        assert_eq!(
+            external_permitted.best_possible_early_stop_class(&PolicyCandidate::ExternallyAttested),
+            Some(PortfolioEarlyStopClass::PolicyPermittedExternal)
+        );
+        assert_eq!(
+            external_permitted.best_possible_early_stop_class(&PolicyCandidate::KernelResult(
+                kernel_input_for_test(
+                    KernelCheckStatus::Accepted,
+                    KernelEvidenceOrigin::AtpFormulaSubstitution,
+                    true,
+                )
+            )),
+            Some(PortfolioEarlyStopClass::PolicyPermittedExternal)
+        );
+
+        let development = ProofPolicyEvaluator::new(VerifierPolicy::development());
+        assert_eq!(
+            development.best_possible_early_stop_class(&PolicyCandidate::PolicyAssumption),
+            Some(PortfolioEarlyStopClass::PolicyAssumed)
+        );
+        assert_eq!(
+            ProofPolicyEvaluator::new(VerifierPolicy::interactive())
+                .best_possible_early_stop_class(&PolicyCandidate::OpenObligation),
+            Some(PortfolioEarlyStopClass::PolicyOpen)
+        );
+
+        let no_formula = ProofPolicyEvaluator::new(
+            VerifierPolicy::release()
+                .with_kernel_evidence_formats([KernelEvidenceFormat::BuiltinKernelEvidence]),
+        );
+        assert_eq!(
+            no_formula.best_possible_early_stop_class(
+                &PolicyCandidate::UncheckedFormulaSubstitution {
+                    encoded_problem_matches: true,
+                }
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn early_stop_allowed_matches_full_selection_result() {
+        let policy = VerifierPolicy::release();
+        let evaluator = ProofPolicyEvaluator::new(policy.clone());
+        let observed = trusted_selection_candidate(
+            "observed",
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+            hash(1),
+        )
+        .with_backend_profile_priority(0)
+        .with_evidence_format_priority(0);
+        let lower_pending = selection_candidate(
+            "external",
+            evaluator.evaluate_candidate(&PolicyCandidate::ExternallyAttested),
+        )
+        .with_evidence_hash(hash(2));
+
+        let decision = evaluator.portfolio_early_stop_decision(&PortfolioEarlyStopInput::new(
+            Some(PortfolioEarlyStopClass::KernelVerified),
+            [PortfolioEarlyStopClass::PolicyPermittedExternal],
+        ));
+        assert!(decision.may_stop());
+
+        let observed_only = select_winner(&selection_set(policy.clone(), [observed.clone()]));
+        let full_run = select_winner(&selection_set(policy, [observed, lower_pending]));
+        assert_eq!(
+            observed_only.selected_candidate_id(),
+            full_run.selected_candidate_id()
+        );
+        assert_eq!(
+            full_run
+                .selected_candidate_id()
+                .map(CandidateSourceId::as_str),
+            Some("observed")
+        );
+    }
+
+    #[test]
+    fn early_stop_allowed_matches_full_selection_with_selectable_lower_class() {
+        let policy = VerifierPolicy::interactive()
+            .with_external_evidence(ExternalEvidenceMode::PermitNonTrustedWinner)
+            .with_policy_assumption(PolicyAssumptionMode::Record);
+        let evaluator = ProofPolicyEvaluator::new(policy.clone());
+        let observed = selection_candidate(
+            "external",
+            evaluator.evaluate_candidate(&PolicyCandidate::ExternallyAttested),
+        )
+        .with_evidence_hash(hash(11));
+        let lower_pending = selection_candidate(
+            "assumed",
+            evaluator.evaluate_candidate(&PolicyCandidate::PolicyAssumption),
+        )
+        .with_evidence_hash(hash(12));
+
+        let decision = evaluator.portfolio_early_stop_decision(&PortfolioEarlyStopInput::new(
+            Some(PortfolioEarlyStopClass::PolicyPermittedExternal),
+            [PortfolioEarlyStopClass::PolicyAssumed],
+        ));
+        assert!(decision.may_stop());
+
+        let observed_only = select_winner(&selection_set(policy.clone(), [observed.clone()]));
+        let full_run = select_winner(&selection_set(policy, [observed, lower_pending]));
+        assert_eq!(
+            observed_only.selected_candidate_id(),
+            full_run.selected_candidate_id()
+        );
+        assert_eq!(
+            full_run
+                .selected_candidate_id()
+                .map(CandidateSourceId::as_str),
+            Some("external")
+        );
+    }
+
+    #[test]
+    fn equal_pending_class_blocks_when_full_selection_could_change() {
+        let policy = VerifierPolicy::release();
+        let evaluator = ProofPolicyEvaluator::new(policy.clone());
+        let observed = trusted_selection_candidate(
+            "observed",
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+            hash(5),
+        )
+        .with_backend_profile_priority(1)
+        .with_evidence_format_priority(0);
+        let equal_pending = trusted_selection_candidate(
+            "pending",
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+            hash(4),
+        )
+        .with_backend_profile_priority(0)
+        .with_evidence_format_priority(0);
+
+        let decision = evaluator.portfolio_early_stop_decision(&PortfolioEarlyStopInput::new(
+            Some(PortfolioEarlyStopClass::KernelVerified),
+            [PortfolioEarlyStopClass::KernelVerified],
+        ));
+        assert!(!decision.may_stop());
+        assert_eq!(
+            decision.reason(),
+            PortfolioEarlyStopReason::BlockedByEqualClass
+        );
+
+        let observed_only = select_winner(&selection_set(policy.clone(), [observed.clone()]));
+        let full_run = select_winner(&selection_set(policy, [observed, equal_pending]));
+        assert_eq!(
+            observed_only
+                .selected_candidate_id()
+                .map(CandidateSourceId::as_str),
+            Some("observed")
+        );
+        assert_eq!(
+            full_run
+                .selected_candidate_id()
+                .map(CandidateSourceId::as_str),
+            Some("pending")
+        );
+    }
+
+    #[test]
     fn fingerprint_changes_for_each_policy_relevant_setting() {
         let base = VerifierPolicy::release();
         let base_fingerprint = base.policy_fingerprint();
@@ -1479,6 +2052,39 @@ mod tests {
         policy_taint: bool,
     ) -> KernelPolicyInput {
         KernelPolicyInput::for_test(status, origin, policy_taint, None)
+    }
+
+    fn selection_set(
+        policy: VerifierPolicy,
+        candidates: impl IntoIterator<Item = ProofEvidenceCandidate>,
+    ) -> ProofEvidenceSet {
+        ProofEvidenceSet::new(b"obligation".to_vec(), hash(100), policy).with_candidates(candidates)
+    }
+
+    fn selection_candidate(id: &str, decision: PolicyDecision) -> ProofEvidenceCandidate {
+        ProofEvidenceCandidate::new(CandidateSourceId::new(id).expect("stable id"), decision)
+    }
+
+    fn trusted_selection_candidate(
+        id: &str,
+        origin: KernelEvidenceOrigin,
+        evidence_hash: Hash,
+    ) -> ProofEvidenceCandidate {
+        let input = KernelPolicyInput::for_test(
+            KernelCheckStatus::Accepted,
+            origin,
+            false,
+            Some(evidence_hash),
+        );
+        ProofEvidenceCandidate::from_trusted_kernel_input(
+            CandidateSourceId::new(id).expect("stable id"),
+            &input,
+        )
+        .expect("accepted kernel input is trusted evidence")
+    }
+
+    fn hash(seed: u8) -> Hash {
+        Hash::from_bytes([seed; Hash::BYTE_LEN])
     }
 
     fn assert_policy_rejection(decision: PolicyDecision, reason: PolicyReasonCode) {

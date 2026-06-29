@@ -223,7 +223,7 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
      validation、stable witness payload artifact hashing、provenance/status consistency
      check、invalid schema/path rejection、`DischargedBuiltin` unsupported-witness gap を実装した。
 
-12. **portfolio early-stop のポリシーフック。** [ ]
+12. **portfolio early-stop のポリシーフック。** [x]
     - ATP portfolio が early stop に使うポリシークエリ（これ以上良い
       クラスが不可能かの判定）を提供する。終了の決定はポリシー駆動で
       あり、時間駆動ではない。
@@ -232,6 +232,16 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
     - 依存: 6、`mizar-atp` task 18。仕様: `policy.md`、
       [internal 04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.md)
       「Early Stop and Cancellation」。
+   - 状態: `src/policy.rs` に `PortfolioEarlyStopInput`、
+     `PortfolioEarlyStopDecision`、`PortfolioEarlyStopClass`、stable な
+     `PortfolioEarlyStopReason` を実装し、policy-driven な
+     `best_possible_early_stop_class` normalization と class-level finality decision を
+     追加した。pending の selectable class が同一または上位なら rank により
+     early stop を block し、kernel certificate が要求される場合は external evidence を
+     block したままにし、policy-tainted kernel output は non-trusted のままに保つ。
+     selector equivalence test と public API test が stable surface を覆う。downstream
+     `mizar-atp` adoption、process cancellation wiring、live backend-state summary は
+     deferred な `external_dependency_gap` work のままである。
 
 ### 強化と横断フォローアップ
 

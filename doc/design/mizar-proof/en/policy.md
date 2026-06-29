@@ -234,8 +234,9 @@ fingerprint only as a validation predicate. It is not proof authority.
 The policy module may answer whether no better acceptable class is still
 possible for an ATP portfolio. The query is policy-driven:
 
-- a kernel-verified winner may stop remaining backend work when no higher
-  class exists under the active policy;
+- a kernel-verified winner may stop remaining backend work only when no
+  pending selectable class, including another `KernelVerified` candidate, can
+  displace it under the active policy;
 - external evidence cannot justify stopping when `require_kernel_certificates`
   is true;
 - diagnostic-only candidates never justify semantic early stop;
@@ -243,6 +244,70 @@ possible for an ATP portfolio. The query is policy-driven:
   evidence can produce a better allowed class.
 
 Runtime duration and first-completion order are never early-stop authority.
+
+Task 12 exposes this as a class-level finality query for the ATP portfolio:
+
+```text
+PortfolioEarlyStopInput
+  observed_best_class?
+  pending_best_possible_classes[]
+
+PortfolioEarlyStopDecision
+  may_stop
+  reason
+  observed_best_class?
+  blocking_pending_class?
+```
+
+`observed_best_class` is the best policy-normalized class already observed
+after any required kernel result is available. `pending_best_possible_classes`
+is the portfolio owner's conservative summary of classes that pending or
+running work can still produce. These classes are semantic possibilities, not
+backend completion events.
+
+The decision is `may_stop = true` only when all of the following hold:
+
+- an observed class exists and is selectable under the active policy;
+- every pending class is either not selectable under the active policy or is
+  strictly lower than the observed class in the deterministic winner order;
+- no pending class is equal to the observed class, because an equal-class
+  candidate can still displace the observed candidate through deterministic
+  tie-break keys unless a later API supplies an explicit dominance proof.
+
+`reason` is a stable enum, not a free-form string:
+
+| Reason | Meaning |
+|---|---|
+| `NoObservedCandidate` | No observed class is available yet. |
+| `ObservedClassNotSelectable` | The observed class cannot be a selectable winner under the active policy. |
+| `BlockedByHigherClass` | A pending class can produce a strictly better selectable winner. |
+| `BlockedByEqualClass` | A pending class equals the observed class and may still win by deterministic tie-break. |
+| `NoDisplacingPendingClass` | No pending selectable class can displace the observed class. |
+
+The query also provides a policy normalization helper that maps a
+`PolicyCandidate` to its best possible early-stop class:
+
+- accepted ATP formula/substitution kernel results and still-kernel-checkable
+  formula/substitution evidence map to `KernelVerified`;
+- accepted built-in/kernel-primitive evidence and still-kernel-checkable
+  built-in evidence map to `DischargedBuiltin`;
+- externally attested evidence maps to `PolicyPermittedExternal` only when the
+  active policy permits it to win and kernel certificates are not required;
+- policy assumptions and open obligations map to their non-trusted classes only
+  when the active policy allows those classes to win;
+- rejected and diagnostic-only material cannot justify stopping.
+
+The blocking pending class, when present, is selected by class rank, not by
+input order. The query does not run ATP backends, cancel processes, schedule
+kernel checks, inspect backend timing, choose the final winner within a class,
+or publish proof status. It is an advisory finality predicate consumed by the
+portfolio/scheduler owner.
+
+Task 12 defines the owner contract in `mizar-proof`. Downstream `mizar-atp`
+consumption of this contract, process cancellation wiring, and runtime
+portfolio integration remain deferred/external-dependency work until the ATP
+side adopts the API; `mizar-proof` does not add an ATP adapter or scheduler
+stub.
 
 ## Diagnostics
 

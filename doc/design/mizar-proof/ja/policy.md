@@ -222,14 +222,75 @@ version、決定的 byte encoding を使う。cache は fingerprint を validati
 policy module は、ATP portfolio でこれ以上よい acceptable class が不可能かどうかを
 答えてよい。この query は policy-driven である:
 
-- active policy でより上位 class が存在しない場合、kernel-verified winner は残りの
-  backend work を stop してよい;
+- kernel-verified winner は、別の `KernelVerified` candidate を含む pending selectable
+  class が active policy の下でそれを置き換えられない場合にだけ、残りの backend work を
+  stop してよい;
 - `require_kernel_certificates` が true のとき external evidence は stop の根拠にならない;
 - diagnostic-only candidate は semantic early stop の根拠にならない;
 - open result は、schedule 可能または running の evidence がよりよい allowed class を
   生めないと policy が証明できる場合だけ stop してよい。
 
 runtime duration と first-completion order は early-stop authority では決してない。
+
+task 12 はこれを ATP portfolio 向けの class-level finality query として公開する:
+
+```text
+PortfolioEarlyStopInput
+  observed_best_class?
+  pending_best_possible_classes[]
+
+PortfolioEarlyStopDecision
+  may_stop
+  reason
+  observed_best_class?
+  blocking_pending_class?
+```
+
+`observed_best_class` は、必要な kernel result が利用可能になった後に観測済みの最良の
+policy-normalized class である。`pending_best_possible_classes` は、pending または
+running work がまだ生みうる class について、portfolio owner が保守的にまとめたもので
+ある。これらの class は semantic possibility であり、backend completion event ではない。
+
+decision が `may_stop = true` になるのは次のすべてを満たす場合だけである:
+
+- observed class が存在し、active policy の下で selectable である;
+- すべての pending class が active policy の下で selectable でないか、deterministic
+  winner order において observed class より厳密に低い;
+- observed class と同じ pending class が存在しない。同じ class の candidate は、
+  後続 API が明示的な dominance proof を供給しない限り、deterministic tie-break key により
+  observed candidate を置き換えうるためである。
+
+`reason` は free-form string ではなく stable enum である:
+
+| Reason | Meaning |
+|---|---|
+| `NoObservedCandidate` | observed class がまだ存在しない。 |
+| `ObservedClassNotSelectable` | observed class は active policy の下で selectable winner になれない。 |
+| `BlockedByHigherClass` | pending class がより上位の selectable winner を生みうる。 |
+| `BlockedByEqualClass` | pending class が observed class と同じで、deterministic tie-break によりまだ勝ちうる。 |
+| `NoDisplacingPendingClass` | observed class を置き換えうる pending selectable class が存在しない。 |
+
+query は `PolicyCandidate` を best possible early-stop class に正規化する helper も提供する:
+
+- accepted ATP formula/substitution kernel result と、まだ kernel check 可能な
+  formula/substitution evidence は `KernelVerified` に map する;
+- accepted built-in/kernel-primitive evidence と、まだ kernel check 可能な built-in
+  evidence は `DischargedBuiltin` に map する;
+- externally attested evidence は、active policy がそれを winner として許可し、kernel
+  certificate を要求しない場合にだけ `PolicyPermittedExternal` に map する;
+- policy assumption と open obligation は、active policy がその class を winner として
+  許可する場合にだけ、それぞれの non-trusted class に map する;
+- rejected material と diagnostic-only material は stop の根拠にならない。
+
+blocking pending class が存在する場合、それは class rank により選ばれ、input order では
+選ばれない。この query は ATP backend を実行せず、process を cancel せず、kernel check を
+schedule せず、backend timing を調べず、class 内の final winner を選ばず、proof status を
+publish しない。portfolio/scheduler owner が消費する advisory finality predicate である。
+
+task 12 は owner contract を `mizar-proof` に定義する。downstream `mizar-atp` によるこの
+contract の消費、process cancellation wiring、runtime portfolio integration は、ATP 側が API を
+採用するまで deferred / external-dependency work のままである。`mizar-proof` は ATP adapter や
+scheduler stub を追加しない。
 
 ## Diagnostics
 

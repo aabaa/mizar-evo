@@ -230,7 +230,7 @@ Keep `cargo test -p mizar-proof` green after each task (see
      schema/path rejection, and the `DischargedBuiltin` unsupported-witness
      gap.
 
-12. **Portfolio early-stop policy hooks.** [ ]
+12. **Portfolio early-stop policy hooks.** [x]
     - Provide the policy queries the ATP portfolio uses for early stop
       (no-better-class-possible checks), keeping termination decisions
       policy-driven, not time-driven.
@@ -239,6 +239,16 @@ Keep `cargo test -p mizar-proof` green after each task (see
     - Deps: 6, `mizar-atp` task 18. Spec: `policy.md`,
       [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
       "Early Stop and Cancellation".
+   - Status: implemented `PortfolioEarlyStopInput`,
+     `PortfolioEarlyStopDecision`, `PortfolioEarlyStopClass`, and stable
+     `PortfolioEarlyStopReason` values in `src/policy.rs`, plus policy-driven
+     `best_possible_early_stop_class` normalization and class-level finality
+     decisions. Equal or higher pending selectable classes block early stop by
+     rank, external evidence remains blocked when kernel certificates are
+     required, policy-tainted kernel output stays non-trusted, and selector
+     equivalence/public API tests cover the stable surface. Downstream
+     `mizar-atp` adoption, process cancellation wiring, and live backend-state
+     summaries remain deferred `external_dependency_gap` work.
 
 ### Hardening and cross-cutting follow-ups
 
