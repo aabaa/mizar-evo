@@ -270,19 +270,23 @@ Keep `cargo test -p mizar-cache` green after each task (see
 
 ### Integration and follow-ups
 
-15. **Scheduler and IR-adapter integration readiness.** [ ]
+15. **Scheduler and IR-adapter integration readiness.** [x]
     - Plug the store into the `mizar-build` cache seam (its task 18) and
       the `mizar-ir` cache adapter (its task 10); cache hits skip work with
       externally identical results.
     - Tests: hit/miss end-to-end fixtures; hit results byte-identical to
-      clean-build results.
+      clean-build results when downstream owners are ready. Task 15 itself is
+      documentation/review only because those seams are not ready.
     - Deps: 8, `mizar-build` task 18, `mizar-ir` task 10. Spec:
       [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md)
       "Cache Lookup Before Task Execution".
-    - Status: if either owning seam is not ready, record the missing seam as
-      `external_dependency_gap` and do not add placeholder scheduler,
-      `mizar-ir`, or artifact-publication-token APIs. The implementation and
-      end-to-end tests above remain deferred until their owners land.
+    - Completed by task 15: [integration_readiness.md](./integration_readiness.md)
+      records `external_dependency_gap`s for the still-open `mizar-build`
+      cache-aware scheduler seam, absent `mizar-ir` cache adapter, and
+      artifact committed-publication token linkage. No placeholder scheduler,
+      `mizar-ir`, or artifact-publication-token APIs were added. The
+      implementation and end-to-end tests above remain deferred until their
+      owners land.
 
 16. **Determinism and deletability suite.** [ ]
     - Property coverage: identical inputs produce identical keys and
