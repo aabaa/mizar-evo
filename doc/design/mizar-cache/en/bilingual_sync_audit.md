@@ -38,7 +38,7 @@ document and backfills Task 18's commit hash in the paired ledgers.
 
 | Document | Synchronized content checked | Result |
 |---|---|---|
-| `00.crate_plan.md` | Crate responsibility, authority boundaries, specification references, known gaps/drift, relevant tests/source inventory through task 22, task decomposition through task 23, task 20-22 results. | Synchronized. |
+| `00.crate_plan.md` | Crate responsibility, authority boundaries, specification references, known gaps/drift, relevant tests/source inventory through task 22, task decomposition through task 23, task 20-22 results, and task 23 closeout plan. | Synchronized. |
 | `architecture_22_audit.md` | Task 21 architecture-22 follow-up audit, crate-owned contract checks, bilingual/source-spec result, residual gap classification, and no-blocking-finding conclusion. | Synchronized by task 21 updates. |
 | `cache_key.md` | Cache-key purpose, public API, validation inputs, canonical ordering/hashing, fail-closed rules, proof-reuse boundary, tests, public enum policy, deferred gaps, and non-goals. | Synchronized. |
 | `dependency_fingerprint.md` | Fingerprint responsibility, public conceptual API, target taxonomy, stable inputs/exclusions, completeness states, rebuild triggers, API compatibility diff, trust boundary, planned tests, public enum policy, deferred gaps, and non-goals. | Synchronized. |
@@ -48,9 +48,10 @@ document and backfills Task 18's commit hash in the paired ledgers.
 | `integration_readiness.md` | Task 15 readiness scope, current cache surface, `mizar-build`/`mizar-ir`/publication-token external dependency gaps, deferred work, and docs-only verification. | Synchronized. |
 | `source_spec_audit.md` | Task 18 public module exports, public API and method inventory, trust boundary, task-20 cross-module evidence, task-22 private test module paths, guarded test references, full gap table parity with ledgers, and no-drift conclusion. | Synchronized. |
 | `module_boundary_audit.md` | Task 22 source layout audit, private test-module split decision, public API invariants, source/spec and bilingual result, and verification scope. | Synchronized by task 22 updates. |
+| `crate_exit_report.md` | Task 23 closeout scope, task commits, final owned surfaces, hard gates, quality score, review results, deferred/external dependency items, verification, and handoff. | Synchronized by task 23 updates. |
 | `bilingual_sync_audit.md` | Task 19 scope, method, pair inventory, classification, and sync edits. | Synchronized by this paired audit document. |
-| `task_ledger.md` | Task status and commit hashes through task 21, pending task 22 self-hash, review/verification rows, and complete deferred/external dependency gap register. | Synchronized by task 22 updates; task 22 self-hash is backfilled by the next task after its commit exists. |
-| `todo.md` | Ordered tasks, completed tasks through task 22, remaining task 23 work, recommended verification, and notes. | Synchronized by task 22 updates. |
+| `task_ledger.md` | Task status and commit hashes through task 22, pending task 23 self-hash, review/verification rows, quality score, and complete deferred/external dependency gap register. | Synchronized by task 23 updates; task 23 self-hash is final-closeout self-reference metadata. |
+| `todo.md` | Ordered tasks, completed tasks through task 23, recommended verification, and notes. | Synchronized by task 23 updates. |
 
 ## Classification
 

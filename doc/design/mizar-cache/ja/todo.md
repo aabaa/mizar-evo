@@ -373,7 +373,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       behavior、diagnostic、deterministic output、artifact-facing schema、
       trust boundary、downstream integration status は変更しない。
 
-23. **crate exit report と quality review。** [ ]
+23. **crate exit report と quality review。** [x]
     - task 1-22 が完了、または external dependency gap として明示的に deferred
       された後で、paired crate exit report を作成する。task commit、hard-gate
       status、review result、verification、deferred item、有効な 90/100 以上の
@@ -382,6 +382,10 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       [autonomous_crate_development.md](../../autonomous_crate_development.md)。
     - Status: closeout のみ。この task には review が要求する修正以外の
       new feature implementation を混ぜない。
+    - task 23 で完了: paired `crate_exit_report.md` は全 task commit、final
+      owned surface、hard gate、review result、verification、deferred/external
+      dependency item、score cap なしの有効な 94/100 read-only quality score、
+      next-phase handoff を記録する。
 
 ## 推奨検証
 

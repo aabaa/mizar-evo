@@ -392,7 +392,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
       artifact-facing schemas, trust boundaries, and downstream integration
       status are unchanged.
 
-23. **Crate exit report and quality review.** [ ]
+23. **Crate exit report and quality review.** [x]
     - Produce the paired crate exit report after tasks 1-22 finish or are
       explicitly deferred as external dependency gaps. Record task commits,
       hard-gate status, review results, verification, deferred items, and a
@@ -401,6 +401,10 @@ Keep `cargo test -p mizar-cache` green after each task (see
       [autonomous_crate_development.md](../../autonomous_crate_development.md).
     - Status: closeout only; do not mix new feature implementation into this
       task except fixes required by review.
+    - Completed by task 23: paired `crate_exit_report.md` records all task
+      commits, final owned surfaces, hard gates, review results, verification,
+      deferred/external dependency items, a valid 94/100 read-only quality
+      score with no score cap, and the next-phase handoff.
 
 ## Recommended Verification
 
