@@ -372,7 +372,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
       fine-grained producer-slice, and durable cluster-db/view work stays
       classified as existing `external_dependency_gap` or `deferred` work.
 
-22. **Module-boundary refactor gate.** [ ]
+22. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
@@ -386,6 +386,11 @@ Keep `cargo test -p mizar-cache` green after each task (see
     - Deps: 21. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+    - Completed by task 22: inline unit tests were moved to private
+      `src/<module>/tests.rs` submodules for the five public modules. Public
+      APIs, production behavior, diagnostics, deterministic outputs,
+      artifact-facing schemas, trust boundaries, and downstream integration
+      status are unchanged.
 
 23. **Crate exit report and quality review.** [ ]
     - Produce the paired crate exit report after tasks 1-22 finish or are

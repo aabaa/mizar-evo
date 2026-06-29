@@ -518,7 +518,7 @@ fn cluster_db_implementation_has_no_downstream_stub_or_timing_inputs() {
 }
 
 #[test]
-fn cache_crate_tree_contains_only_task_twenty_files() {
+fn cache_crate_tree_contains_only_task_twenty_two_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -527,22 +527,45 @@ fn cache_crate_tree_contains_only_task_twenty_files() {
         [
             "Cargo.toml",
             "src/cache_key.rs",
+            "src/cache_key/tests.rs",
             "src/cache_store.rs",
+            "src/cache_store/tests.rs",
             "src/cluster_db.rs",
+            "src/cluster_db/tests.rs",
             "src/dependency_fingerprint.rs",
+            "src/dependency_fingerprint/tests.rs",
             "src/lib.rs",
             "src/proof_reuse.rs",
+            "src/proof_reuse/tests.rs",
             "tests/determinism_suite.rs",
             "tests/incremental_contract.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-cache task 20 contains only the crate manifest, root module, \
+        "mizar-cache task 22 contains only the crate manifest, root module, \
          cache_key implementation, dependency_fingerprint implementation, \
          cache_store implementation, proof_reuse implementation, cluster_db \
-         implementation, determinism suite, incremental contract suite, and \
-         lint guard; other behavior modules, build scripts, examples, benches, \
-         or extra tests require later explicit tasks; found {files:?}"
+         implementation, private test submodules, determinism suite, \
+         incremental contract suite, and lint guard; other behavior modules, \
+         build scripts, examples, benches, or extra tests require later \
+         explicit tasks; found {files:?}"
     );
+
+    for module in [
+        "cache_key",
+        "dependency_fingerprint",
+        "cache_store",
+        "proof_reuse",
+        "cluster_db",
+    ] {
+        let parent_path = crate_root().join(format!("src/{module}.rs"));
+        let parent = read_to_string(&parent_path);
+        assert!(
+            parent.contains("#[cfg(test)]\nmod tests;"),
+            "{} must import its private test submodule so moved task-22 tests \
+             are compiled by cargo test",
+            parent_path.display()
+        );
+    }
 }
 
 #[test]

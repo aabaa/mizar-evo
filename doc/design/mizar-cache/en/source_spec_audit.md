@@ -4,8 +4,9 @@
 > [../ja/source_spec_audit.md](../ja/source_spec_audit.md).
 
 Task 18 introduced this audit for the public `mizar-cache` source surface, and
-task 20 updates it for the incremental fail-closed cache contract. It changes
-no production behavior, public API semantics, cache lookup policy, proof
+task 20 updates it for the incremental fail-closed cache contract. Task 22
+updates the source inventory for private test-module splits only. These updates
+change no production behavior, public API semantics, cache lookup policy, proof
 acceptance policy, artifact publication policy, or downstream integration.
 Remaining unavailable behavior is recorded as `deferred` or
 `external_dependency_gap` work instead of being stubbed in `mizar-cache`.
@@ -44,10 +45,15 @@ classified in the gap register below.
 The corresponding source paths are:
 
 - `crates/mizar-cache/src/cache_key.rs`
+- `crates/mizar-cache/src/cache_key/tests.rs`
 - `crates/mizar-cache/src/dependency_fingerprint.rs`
+- `crates/mizar-cache/src/dependency_fingerprint/tests.rs`
 - `crates/mizar-cache/src/cache_store.rs`
+- `crates/mizar-cache/src/cache_store/tests.rs`
 - `crates/mizar-cache/src/proof_reuse.rs`
+- `crates/mizar-cache/src/proof_reuse/tests.rs`
 - `crates/mizar-cache/src/cluster_db.rs`
+- `crates/mizar-cache/src/cluster_db/tests.rs`
 
 Evidence: `crates/mizar-cache/tests/lint_policy.rs` checks the module export
 list, crate file allowlist, package dependencies, proof-authority boundary
@@ -334,7 +340,7 @@ No `repo_metadata_conflict` is observed during the current source/spec audit.
 ## Conclusion
 
 The current public `mizar-cache` source surface matches the module
-specifications and test coverage after task 20. The cache remains an internal optimization owner rather than proof authority. Cache records, dependency
+specifications and test coverage after task 22. The cache remains an internal optimization owner rather than proof authority. Cache records, dependency
 fingerprints, proof-reuse validation metadata, backend diagnostics/logs,
 timing metadata, and cluster-db indexes do not become kernel-verified proof
 status or trusted `used_axioms`. Existing incomplete integration points are

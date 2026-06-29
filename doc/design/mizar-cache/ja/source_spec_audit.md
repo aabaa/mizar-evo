@@ -4,8 +4,9 @@
 > [../en/source_spec_audit.md](../en/source_spec_audit.md)。
 
 task 18 は public `mizar-cache` source surface audit を導入し、task 20 は
-incremental fail-closed cache contract に合わせてこの audit を更新する。
-この task は production behavior、public API semantics、cache lookup policy、
+incremental fail-closed cache contract に合わせてこの audit を更新する。task
+22 は private test-module split だけを source inventory に反映する。これらの
+update は production behavior、public API semantics、cache lookup policy、
 proof acceptance policy、artifact publication policy、downstream integration
 を変更しない。まだ利用できない behavior は `mizar-cache` に stub として入れず、
 `deferred` または `external_dependency_gap` として記録する。
@@ -44,10 +45,15 @@ work は下の gap register で明示的に分類する。
 対応する source path は次の通り。
 
 - `crates/mizar-cache/src/cache_key.rs`
+- `crates/mizar-cache/src/cache_key/tests.rs`
 - `crates/mizar-cache/src/dependency_fingerprint.rs`
+- `crates/mizar-cache/src/dependency_fingerprint/tests.rs`
 - `crates/mizar-cache/src/cache_store.rs`
+- `crates/mizar-cache/src/cache_store/tests.rs`
 - `crates/mizar-cache/src/proof_reuse.rs`
+- `crates/mizar-cache/src/proof_reuse/tests.rs`
 - `crates/mizar-cache/src/cluster_db.rs`
+- `crates/mizar-cache/src/cluster_db/tests.rs`
 
 Evidence: `crates/mizar-cache/tests/lint_policy.rs` は module export list、crate
 file allowlist、package dependencies、proof-authority boundary term、
@@ -333,7 +339,7 @@ gap を修復しない。
 
 ## Conclusion
 
-task 20 後の現在の public `mizar-cache` source surface は module specification
+task 22 後の現在の public `mizar-cache` source surface は module specification
 および test coverage と一致している。Cache は internal optimization owner の
 ままであり、proof authority ではない。Cache record、dependency fingerprint、
 proof-reuse validation metadata、backend diagnostics/logs、timing metadata、

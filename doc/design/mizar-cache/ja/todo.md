@@ -356,7 +356,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       cluster-db/view work は既存の `external_dependency_gap` または
       `deferred` work のままである。
 
-22. **module 境界リファクタリング gate。** [ ]
+22. **module 境界リファクタリング gate。** [x]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、
       oversized file、混在した責務、module table と module spec 境界に沿って
       分割すべき private helper を洗い出す。review bottleneck になった実装
@@ -368,6 +368,10 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       spec task を要求する。
     - 依存: 21。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
+    - task 22 で完了: inline unit test を 5 つの public module の private
+      `src/<module>/tests.rs` submodule へ移動した。Public API、production
+      behavior、diagnostic、deterministic output、artifact-facing schema、
+      trust boundary、downstream integration status は変更しない。
 
 23. **crate exit report と quality review。** [ ]
     - task 1-22 が完了、または external dependency gap として明示的に deferred
