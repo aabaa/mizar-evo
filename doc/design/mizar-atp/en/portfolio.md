@@ -28,10 +28,11 @@ proof-cache promotion.
 
 Task 18 may implement the no-early-stop collection path. Early-stop mechanics
 may be implemented only after a stable external proof-policy finality contract
-exists; until then, no early stop is the only source-implementation path. It
-must not implement `mizar-proof` policy locally. Because `mizar-proof` is not
-currently a workspace crate, policy evaluation, witness publication, and proof
-cache promotion remain `external_dependency_gap` items.
+is consumed by an ATP/proof integration task; until then, no early stop is the
+only source-implementation path. It must not implement `mizar-proof` policy
+locally. `mizar-proof` is now the workspace proof-policy owner, but policy
+evaluation, witness publication, and proof-cache promotion remain
+`external_dependency_gap` items for `mizar-atp` until formal APIs are wired in.
 
 Task-18 source is limited to deterministic plan construction from prebuilt
 `BackendRunInput` values, validation that every run belongs to the same
@@ -67,14 +68,14 @@ Task 25 re-evaluates the portfolio completion-order independence gate. The
 release-policy gate described by the TODO requires a downstream proof-policy
 owner to say whether a later kernel-verifiable candidate displaces an earlier
 externally attested result, how policy/evidence-strength ties are resolved, and
-when pending candidates can no longer displace the selected class. Because
-`mizar-proof` is not a workspace crate, task 25 is completed here as an
-`external_dependency_gap` / `deferred` record plus a lint-policy guard. It does
-not add a mock proof-policy oracle, placeholder `mizar-proof` adapter,
-accepted proof state, kernel call, witness/cache output, early-stop
-implementation, or trusted backend proof material. The implemented
-crate-local guarantee remains the task-18/task-21 no-early-stop deterministic
-candidate handoff under shuffled completion order.
+when pending candidates can no longer displace the selected class. `mizar-proof`
+now owns those contracts, but task 25 is still completed here as an
+`external_dependency_gap` / `deferred` record plus a lint-policy guard because
+ATP/proof integration is a separate task. It does not add a mock proof-policy
+oracle, placeholder `mizar-proof` adapter, accepted proof state, kernel call,
+witness/cache output, early-stop implementation, or trusted backend proof
+material. The implemented crate-local guarantee remains the task-18/task-21
+no-early-stop deterministic candidate handoff under shuffled completion order.
 
 ## Inputs And Outputs
 
@@ -275,10 +276,11 @@ order, backend priority alone, externally attested success, or the presence of a
 candidate that has not yet been checked by the kernel.
 
 Task 25 Re-evaluation: the requested release-policy completion-order gate
-remains outside this module until a real `mizar-proof` owner contract exists.
-The module may keep testing no-early-stop candidate ordering under adversarial
-mock completion order, but it must not fabricate an early-stop oracle or a
-local proof-policy winner selector.
+remains outside this module until a dedicated ATP/proof integration task
+consumes the formal `mizar-proof` owner contract. The module may keep testing
+no-early-stop candidate ordering under adversarial mock completion order, but
+it must not fabricate an early-stop oracle or a local proof-policy winner
+selector.
 
 Cancellation is cooperative for in-process portfolio work. Child backend
 processes are terminated through the backend runner. Cancelled runs leave
@@ -356,9 +358,10 @@ An all-failed portfolio is an open proof obligation, not an accepted proof.
   collection over prebuilt backend runs/results, plus cancellation and
   fail-closed validation. It does not implement proof policy, kernel checks,
   real-output evidence extraction, witness publication, or cache promotion.
-- `external_dependency_gap`: `mizar-proof` is not a workspace crate, so proof
-  policy finality, artifact-facing winner selection, and witness publication
-  cannot be implemented here.
+- `external_dependency_gap`: `mizar-proof` is now the workspace proof-policy
+  owner, but proof policy finality consumption, artifact-facing winner
+  selection integration, and witness publication cannot be implemented here
+  until a dedicated ATP/proof integration task wires formal APIs.
 - `external_dependency_gap` / `deferred`: first real-backend formula/substitution
   extraction remains blocked by ATP-G-015. Task 18 must use existing mock
   candidates or already-specified candidate inputs; it must not invent a fake
@@ -370,10 +373,10 @@ An all-failed portfolio is an open proof obligation, not an accepted proof.
   metadata-only sidecars and exercises the ATP path through crate-local mock
   backend integration tests.
 - `external_dependency_gap` / `deferred`: task 25 re-evaluates the
-  release-policy portfolio completion-order gate. Since `mizar-proof` is not a
-  workspace crate and its policy tasks are unavailable, `mizar-atp` cannot
-  implement later-kernel-verifiable-vs-earlier-externally-attested winner
-  selection, policy tie-breaking, or early-stop finality without a boundary
+  release-policy portfolio completion-order gate. Since `mizar-proof` policy
+  APIs are not consumed by this ATP milestone, `mizar-atp` cannot implement
+  later-kernel-verifiable-vs-earlier-externally-attested winner selection,
+  policy tie-breaking, or early-stop finality without a boundary
   violation.
 
 ## Task-18 Test Coverage
@@ -402,7 +405,7 @@ completion-order gate as `external_dependency_gap` / `deferred`, and it checks
 that `src/portfolio.rs` still contains no proof-policy oracle, `mizar-proof`
 adapter, accepted state, kernel call, witness/cache output, or trusted backend
 proof material. Runtime release-policy winner tests must be added only after
-the downstream proof-policy owner exists.
+an ATP/proof integration task consumes `mizar-proof` policy APIs.
 
 ## Task-20 Corpus And Mock-Backend Coverage
 

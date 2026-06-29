@@ -71,9 +71,10 @@ spec-backed problem, translation, encoding, and generic backend-runner slices.
 Task 15 records the first real backend adapter and evidence extractor as
 `external_dependency_gap` / `deferred` until a paired extraction spec and a
 guarded supported backend route exist. Proof policy, witness publication, and
-cache promotion remain deferred to their own crates/tasks. `mizar-proof` is
-not a workspace crate, so policy and witness-publication integration is an
-`external_dependency_gap`, not a reason to add placeholders here.
+cache promotion remain deferred to their own crates/tasks. `mizar-proof` is now
+a workspace crate, but ATP/proof integration remains an
+`external_dependency_gap`, not a reason to add local proof-policy placeholders
+here.
 
 ## Resolved And Open Decisions
 
@@ -552,17 +553,17 @@ Keep `cargo test -p mizar-atp` green after each task (see
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md).
     - Status: deferred/external_dependency_gap completion. Task 25
       re-evaluated the release-policy completion-order gate after tasks 18,
-      21, 23, and 24. Because `mizar-proof` is not a workspace crate and
-      proof-policy tasks 7, 9, 12, and 13 are unavailable here, the later
-      kernel-verifiable-vs-earlier-externally-attested winner test, tie policy,
-      and early-stop finality oracle cannot be implemented inside `mizar-atp`
-      without crossing the proof-policy boundary. Existing task-18/task-21
-      coverage already guards the crate-local no-early-stop deterministic
-      candidate handoff under shuffled completion order. This task records the
-      external_dependency_gap, updates paired docs, and adds a lint-policy
-      guard that no mock proof-policy oracle, placeholder `mizar-proof`
-      adapter, accepted proof state, kernel call, witness/cache output, or
-      trusted backend proof material is introduced.
+      21, 23, and 24. `mizar-proof` now owns the proof-policy contracts, but
+      `mizar-atp` still has no integration task that calls those APIs. The
+      later kernel-verifiable-vs-earlier-externally-attested winner test, tie
+      policy, and early-stop finality oracle therefore cannot be implemented
+      inside `mizar-atp` without crossing the proof-policy boundary. Existing
+      task-18/task-21 coverage already guards the crate-local no-early-stop
+      deterministic candidate handoff under shuffled completion order. This
+      task records the external_dependency_gap, updates paired docs, and adds a
+      lint-policy guard that no mock proof-policy oracle, placeholder
+      `mizar-proof` adapter, accepted proof state, kernel call, witness/cache
+      output, or trusted backend proof material is introduced.
 
 26. **Architecture-22 follow-up audit.** [x]
     - Re-run the source/spec correspondence and bilingual documentation sync
@@ -577,9 +578,9 @@ Keep `cargo test -p mizar-atp` green after each task (see
       runtime duration cannot be semantic proof identity. No new source/spec
       drift, bilingual drift, repo metadata conflict, or additional follow-up
       gap was found. `ATP-AUDIT-G005` remains the single policy-boundary /
-      completion-order follow-up until `mizar-proof` exists and owns release
-      policy finality, winner selection, tie-breaking, and candidate
-      displacement.
+      completion-order follow-up until an ATP/proof integration task consumes
+      `mizar-proof` release policy finality, winner selection, tie-breaking,
+      and candidate displacement.
 
 27. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
@@ -617,8 +618,8 @@ Keep `cargo test -p mizar-atp` green after each task (see
       quality score of at least 90/100.
     - Reconfirm that `mizar-atp` remains a candidate evidence producer only:
       no kernel checking, proof policy, witness/cache publication, trusted
-      backend proof material, or placeholder `mizar-proof` / `mizar-cache`
-      crate is introduced.
+      backend proof material, local proof-policy adapter, or placeholder
+      `mizar-cache` crate is introduced.
     - Tests: docs/lint verification, crate-local verification, broad
       workspace verification when practical, and read-only quality review.
     - Deps: 27. Spec:
@@ -628,9 +629,11 @@ Keep `cargo test -p mizar-atp` green after each task (see
       complete for the current candidate-evidence producer milestone, quality
       score 94/100, no score caps, all hard gates passed, remaining
       `ATP-CLOSEOUT-*` deferred/external gaps, and the next-phase handoff.
-      `mizar-proof` and `mizar-cache` are design-only and not workspace crates,
-      so their missing verification and implementation remain
-      external_dependency_gap / deferred rather than placeholders.
+      Stale `mizar-proof` placeholder metadata was corrected after the proof
+      crate milestone. `mizar-cache` remains design-only and not a workspace
+      crate; `mizar-proof` is formal but not consumed by this ATP milestone, so
+      missing integrations remain external_dependency_gap / deferred rather
+      than local proof-policy placeholders.
 
 ## Recommended Verification
 

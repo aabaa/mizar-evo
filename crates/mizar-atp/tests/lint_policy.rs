@@ -2290,11 +2290,12 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
                     vec![
                         "Status: complete for the current candidate-evidence producer milestone.",
                         "Quality score: 94/100.",
+                        "Post-closeout metadata correction",
                         "ATP-CLOSEOUT-G001",
                         "ATP-CLOSEOUT-G002",
                         "ATP-CLOSEOUT-G003",
-                        "`cargo test -p mizar-proof` and `cargo test -p mizar-cache` were not run",
-                        "Placeholder `mizar-proof`",
+                        "`cargo test -p mizar-cache` was not run",
+                        "formal downstream workspace crate",
                     ],
                 ),
             ],
@@ -2331,11 +2332,12 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
                     vec![
                         "Status: 現在の candidate-evidence producer milestone として完了。",
                         "Quality score: 94/100",
+                        "Post-closeout metadata correction",
                         "ATP-CLOSEOUT-G001",
                         "ATP-CLOSEOUT-G002",
                         "ATP-CLOSEOUT-G003",
-                        "`cargo test -p mizar-proof` と `cargo test -p mizar-cache`",
-                        "placeholder `mizar-proof` または `mizar-cache` crate",
+                        "`cargo test -p mizar-cache` は",
+                        "現在正式な downstream workspace crate",
                     ],
                 ),
             ],
@@ -2352,6 +2354,37 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
                 if !document.contains(marker) {
                     violations.push(format!(
                         "{} must document task-28 closeout marker `{marker}`",
+                        path.display()
+                    ));
+                }
+            }
+        }
+    }
+
+    let stale_proof_owner_markers = [
+        "`mizar-proof` is not a workspace crate",
+        "until a real `mizar-proof` owner contract exists",
+        "until a real `mizar-proof` policy owner exists",
+        "after the downstream proof-policy owner exists",
+        "`mizar-proof` は workspace crate ではない",
+        "実際の `mizar-proof` policy owner が存在するまで",
+    ];
+    for language in ["en", "ja"] {
+        let doc_dir = workspace_root().join("doc/design/mizar-atp").join(language);
+        for file_name in [
+            "00.crate_plan.md",
+            "bilingual_sync_audit.md",
+            "crate_exit_report.md",
+            "portfolio.md",
+            "source_spec_audit.md",
+            "todo.md",
+        ] {
+            let path = doc_dir.join(file_name);
+            let document = read_to_string(&path);
+            for marker in stale_proof_owner_markers {
+                if document.contains(marker) {
+                    violations.push(format!(
+                        "{} must not retain stale mizar-proof placeholder marker `{marker}`",
                         path.display()
                     ));
                 }
@@ -2408,7 +2441,10 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
                 ),
                 (
                     "ATP-CLOSEOUT-G002",
-                    ["`mizar-proof` is design-only", "do not add proof policy"],
+                    [
+                        "`mizar-proof` is now the workspace proof-policy owner",
+                        "do not add proof policy",
+                    ],
                 ),
                 (
                     "ATP-CLOSEOUT-G003",
@@ -2445,7 +2481,7 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
                 (
                     "ATP-CLOSEOUT-G002",
                     [
-                        "`mizar-proof` は design-only",
+                        "`mizar-proof` は現在 workspace proof-policy owner",
                         "proof policy を `mizar-atp` に追加しない",
                     ],
                 ),
@@ -2509,7 +2545,8 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
     let workspace_manifest = read_to_string(&workspace_root().join("Cargo.toml"));
     let members = workspace_members(&workspace_manifest);
     let atp_manifest = read_to_string(&crate_root().join("Cargo.toml"));
-    for crate_name in ["mizar-proof", "mizar-cache"] {
+    {
+        let crate_name = "mizar-cache";
         let member = format!("crates/{crate_name}");
         if members
             .iter()
@@ -2525,9 +2562,11 @@ fn atp_task_twenty_eight_crate_exit_report_is_documented() {
                 "task 28 must not add placeholder crate directory `{member}`"
             ));
         }
+    }
+    for crate_name in ["mizar-proof", "mizar-cache"] {
         if atp_manifest.contains(crate_name) {
             violations.push(format!(
-                "{} must not depend on placeholder `{crate_name}` in task 28",
+                "{} must not depend on downstream crate `{crate_name}` in task 28",
                 crate_root().join("Cargo.toml").display()
             ));
         }

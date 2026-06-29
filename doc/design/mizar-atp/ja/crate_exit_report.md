@@ -9,6 +9,11 @@ Status: 現在の candidate-evidence producer milestone として完了。
 Quality score: 94/100。
 Score caps applied: none。
 
+Post-closeout metadata correction: `mizar-proof` が正式に scaffold され、
+workspace crate として完了した後、この report はそれを placeholder として分類
+しないよう補正された。ATP milestone は引き続き `mizar-proof` に依存せず、
+proof policy を `mizar-atp` 内に実装しない。
+
 ## Scope
 
 Milestone scope:
@@ -50,8 +55,9 @@ Excluded:
   substitution invention、overload resolution、cluster search、implicit
   coercion insertion、fallback inference、proof-policy winner selection、
   artifact witness publication、proof-cache promotion。
-- placeholder `mizar-proof` または `mizar-cache` crate。これらは design TODO を
-  持つが、この milestone では workspace member ではない。
+- placeholder `mizar-cache` crate または local proof-policy adapter。`mizar-proof`
+  は現在正式な downstream workspace crate だが、この ATP milestone はそれに
+  依存せず、proof policy を `mizar-atp` に移さない。
 
 ## Task Commits
 
@@ -84,7 +90,7 @@ Excluded:
 | 25 | `93a480bde30dbb12014681ba1bac2300587b5a06` | `docs(mizar-atp-task-25): defer portfolio order gate` |
 | 26 | `5dc6ab594c2ced35d8afc74e2c01707929a569d6` | `docs(mizar-atp-task-26): audit architecture order gate` |
 | 27 | `f896d48f3ea4f915084343a4f88007b77f9941cb` | `refactor(mizar-atp-task-27): split private test modules` |
-| 28 | pending self-hash | `docs(mizar-atp-task-28): add crate exit report` |
+| 28 | `be55e0e80f8b6e5a0079b40554c4fa56c9d2fda7` | `docs(mizar-atp-task-28): add crate exit report` |
 
 ## Hard Gates
 
@@ -133,13 +139,15 @@ cap は適用しない。
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
 | ATP-CLOSEOUT-G001 | `external_dependency_gap` | concrete backend output を kernel-parseable formula/substitution candidate payload に map する paired real-output extraction spec/source module がなく、この環境で検証済みの supported real backend executable route もない。 | task 15-16 を再開する前に、backend-specific EN/JA extraction spec、guarded fixture、backend proof material を除外する candidate mapping を追加する。 |
-| ATP-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-proof` は design-only で workspace crate ではないため、release-policy finality、deterministic winner selection、early-stop authority、proof-status projection、witness selection の implementation owner がない。 | 明示的に許可された後でのみ `mizar-proof` を自身の TODO に従って scaffold / complete する。proof policy を `mizar-atp` に追加しない。 |
+| ATP-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-proof` は現在 workspace proof-policy owner だが、この ATP milestone は release-policy finality、deterministic winner selection、proof-status projection、witness selection API をまだ呼び出さない。 | 別の integration task でのみ正式な `mizar-proof` API に接続する。proof policy を `mizar-atp` に追加しない。 |
 | ATP-CLOSEOUT-G003 | `external_dependency_gap` | `mizar-cache` は design-only で workspace crate ではないため、proof-reuse validation、cache lookup、policy-compatible reuse は利用できない。 | 明示的に許可された後でのみ `mizar-cache` を自身の TODO に従って scaffold / complete する。cache reuse は evidence を upgrade してはならない。 |
 | ATP-CLOSEOUT-G004 | `external_dependency_gap` / `deferred` | real artifact witness publication と proof/cache consumer integration は未完成である。`mizar-artifact` は witness schema/projection を所有し、ATP acceptance は所有しない。 | downstream proof/cache/artifact owner が、それぞれの spec で checked kernel evidence と published witness ref を接続する。 |
 | ATP-CLOSEOUT-G005 | `deferred` | active `.miz` advanced-semantics execution と source-derived ATP extraction は利用できない。task 20 は metadata-only corpus anchor を使う。 | staged runner と source extraction contract を追加してから、metadata-only coverage を active corpus coverage に置き換える。 |
 | ATP-CLOSEOUT-G006 | `deferred` | Typed TPTP/CNF/include route、SMT arithmetic/sorted signature/option/proof command、native declaration、backend-native shortcut は現在の spec で未対応である。 | 各 concrete extension に paired spec と test を追加してから実装する。 |
 
-`repo_metadata_conflict` は観測されなかった。
+`mizar-proof` を design-only non-workspace placeholder とした task-28 の古い記述は、
+proof crate milestone 後には `repo_metadata_conflict` だった。この metadata correction
+で解消済みであり、未解決の repo metadata conflict は残っていない。
 
 ## Human Review Surface
 
@@ -178,11 +186,20 @@ external runner と extraction gap により blocked のままである。
 | `git diff --check` | passed |
 | `git diff --cached --check` | 明示的な task-28 path staging 後に passed |
 
+Post-closeout metadata correction verification:
+
+- 上の表は historical task-28 closeout evidence として保持する。
+- `mizar-proof` workspace status を更新する metadata correction は、correction
+  commit 前に `cargo fmt --check`、`cargo test -p mizar-atp --test lint_policy`、
+  `cargo test -p mizar-atp`、
+  `cargo clippy -p mizar-atp --all-targets -- -D warnings`、`cargo test`、
+  `git diff --check`、`git diff --cached --check` を再実行した。
+
 Unrun deferred commands:
 
-- `cargo test -p mizar-proof` と `cargo test -p mizar-cache` は、これらの crate が
-  workspace member ではないため実行していない。Design TODO は external dependency gap
-  として記録し、placeholder は追加しない。
+- `cargo test -p mizar-cache` は、`mizar-cache` が workspace member ではないため
+  実行していない。`mizar-proof` は現在 workspace member であり、自身の crate
+  milestone と現在の full-workspace verification で cover される。
 
 ## Next-Phase Handoff
 
@@ -193,10 +210,12 @@ Prompt:
 ```text
 mizar-atp task 28 closeout commit が存在する状態から evidence-pipeline correction を
 継続してください。まず `git status --short` が clean であること、および
-`f896d48f3ea4f915084343a4f88007b77f9941cb` と task-28 closeout commit が HEAD 履歴に
-存在することを確認してください。次 phase が scaffold work を明示的に許可しない限り、
-placeholder `mizar-proof` / `mizar-cache` crate は作らないでください。proof-policy winner
-selection、proof-cache validation、real backend output extraction、real artifact witness
-publication、active source-derived ATP corpus execution は、owner spec と workspace crate が
-存在するまで external_dependency_gap / deferred として扱ってください。
+`f896d48f3ea4f915084343a4f88007b77f9941cb` と
+`be55e0e80f8b6e5a0079b40554c4fa56c9d2fda7` が HEAD 履歴に存在することを
+確認してください。placeholder `mizar-cache` crate は作らず、proof policy を
+`mizar-atp` へ移さないでください。正式な `mizar-proof` API は別の
+ATP/proof integration task でのみ使ってください。proof-cache validation、real
+backend output extraction、real artifact witness publication、active source-derived ATP
+corpus execution は、owner spec と workspace crate が存在するまで
+external_dependency_gap / deferred として扱ってください。
 ```

@@ -73,10 +73,10 @@ bilingual drift. Existing classified records remain:
   verification environment.
 - `external_dependency_gap`: `mizar-artifact` already owns `ProofWitnessRef`
   schema version `2.0` and `VerifiedArtifact` witness-reference validation for
-  formula/substitution kernel evidence, but real ATP producer output,
-  proof-policy selection, proof-cache integration, and real artifact witness
-  publication remain external. `mizar-proof` and `mizar-cache` are design-only
-  in this workspace.
+  formula/substitution kernel evidence, and `mizar-proof` now owns proof-policy
+  metadata, but real ATP producer output, proof-policy selection integration,
+  proof-cache integration, and real artifact witness publication remain
+  external. `mizar-cache` remains design-only in this workspace.
 - `deferred`: active `.miz` advanced-semantics execution and source-derived ATP extraction
   remain outside the current metadata-only corpus fixture.
 - `deferred`: TPTP typed/CNF/include paths, SMT arithmetic/sorted signatures,
@@ -96,18 +96,19 @@ bilingual audit guard.
 
 No other paired content required synchronization. The audit deliberately does
 not add real backend adapters, backend-output parsers, kernel calls, proof
-policy, witness writers, cache promotion, placeholder `mizar-proof` /
-`mizar-cache` crates, or trusted backend proof material.
+  policy, witness writers, cache promotion, local proof-policy adapters,
+  placeholder `mizar-cache` crates, or trusted backend proof material.
 
 ## Task 25 Sync Edits
 
 Task 25 marks the portfolio completion-order independence gate complete only as
 a deferred/external_dependency_gap re-evaluation. The paired TODO, crate plan,
 portfolio spec, source/spec audit, and this bilingual audit now state that the
-release-policy winner/early-stop gate requires a real `mizar-proof` policy
-owner. The edits deliberately do not add a mock proof-policy oracle,
-placeholder proof-policy adapter, accepted proof state, kernel call,
-witness/cache output, or trusted backend proof material.
+release-policy winner/early-stop gate requires a dedicated ATP/proof
+integration task consuming the formal `mizar-proof` policy owner APIs. The
+edits deliberately do not add a mock proof-policy oracle, placeholder
+proof-policy adapter, accepted proof state, kernel call, witness/cache output,
+or trusted backend proof material.
 
 ## Task 26 Sync Edits
 
@@ -117,7 +118,8 @@ state that Architecture 22 forbids backend completion order and runtime
 duration from becoming semantic proof identity. The re-run found no bilingual
 drift, stale task status, `repo_metadata_conflict`, or new follow-up gap.
 ATP-AUDIT-G005 remains the single policy-boundary / completion-order follow-up
-until a real `mizar-proof` policy owner exists.
+until a dedicated ATP/proof integration task consumes the formal `mizar-proof`
+policy owner APIs.
 
 ## Task 27 Sync Edits
 
@@ -150,8 +152,10 @@ producer milestone, quality score 94/100, no score caps, all hard gates
 passed, the `ATP-CLOSEOUT-*` deferred/external gap register, broad
 verification, and next-phase handoff.
 
-The re-run found no bilingual drift, stale task status,
-`repo_metadata_conflict`, source/spec behavior drift, or new ATP-AUDIT gap.
-`mizar-proof` and `mizar-cache` remain design-only and not workspace crates;
-their missing verification and implementation are recorded as
-external_dependency_gap / deferred instead of placeholder crates.
+The post-closeout metadata correction resolves the stale `mizar-proof`
+placeholder statement introduced by task 28. The re-run found no bilingual
+drift, stale task status, unresolved `repo_metadata_conflict`, source/spec
+behavior drift, or new ATP-AUDIT gap. `mizar-cache` remains design-only and not
+a workspace crate; `mizar-proof` is formal but not consumed by this ATP
+milestone, so missing integrations are recorded as external_dependency_gap /
+deferred instead of local proof-policy placeholders.
