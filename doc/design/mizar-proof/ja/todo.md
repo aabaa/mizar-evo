@@ -182,12 +182,16 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
      artifact projection limit、proof reuse metadata、deferred/external dependency gap
      を定義した。
 
-9. **証明状態の射影。** [ ]
+9. **証明状態の射影。** [x]
    - artifact と診断のための状態射影を実装する。信頼された
      `used_axioms` の抽出境界を含む。
    - テスト: 選択結果ごとの射影フィクスチャ。`used_axioms` は kernel が
      受理した証拠からのみ。
    - 依存: 7、8。仕様: `status.md`。
+   - 状態: `src/status.rs` に status projection input、projected/internal status
+     class、現在の artifact publication availability、accepted kernel result だけから
+     導出される trusted used-axiom reference、architecture-22 reuse metadata、
+     selected outcome ごとの fixture を実装した。
 
 ### witness ストア
 

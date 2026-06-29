@@ -47,7 +47,7 @@ internal projection result は selection winner class と projected obligation s
 | `PolicyAssumed` | `policy_assumed` internal status | no | accepted status や externally attested status と区別したままにする。現在の artifact schema にはこの public obligation status がないため、後続 schema が追加するまでは artifact publication は `external_dependency_gap` である。 |
 | `PolicyOpen` | `open` | no | 利用可能なら explanation reference を持つ。 |
 | `Rejected` | `rejected` | no | 選択された rejection または policy/kernel diagnostic reference を持つ。 |
-| `NoSelectableEvidence` | `open` または `rejected` | no | active policy が open obligation の publish を許す場合だけ `open`。それ以外は `rejected`。no-selectable-evidence explanation を持つ。 |
+| `NoSelectableEvidence` | `open` または `rejected` | no | active policy が `AllowPolicyOpen` で open obligation の publish を許す場合だけ `open`。`RecordDiagnostic` は diagnostics-only であり `rejected` に射影する。それ以外も `rejected`。no-selectable-evidence explanation を持つ。 |
 
 `not_required` は proof selection を必要としない producer-owned obligation のために
 予約される。`ArtifactProofSelection` からは emit しない。
@@ -127,7 +127,7 @@ status projection は proof reuse の validation metadata を export する:
 - canonical VC fingerprint;
 - canonical local-context fingerprint;
 - dependency-slice fingerprint;
-- policy fingerprint と compatibility class;
+- policy fingerprint;
 - selected evidence hash;
 - publish 可能な場合の selected proof witness hash;
 - 存在する場合の deterministic discharge hash;

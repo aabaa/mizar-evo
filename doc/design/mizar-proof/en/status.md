@@ -50,7 +50,7 @@ projected obligation status separate:
 | `PolicyAssumed` | `policy_assumed` internal status | no | Must remain distinct from accepted and externally attested status. Current artifact schema lacks this public obligation status, so artifact publication is `external_dependency_gap` unless a later schema adds it. |
 | `PolicyOpen` | `open` | no | Carries an explanation reference when available. |
 | `Rejected` | `rejected` | no | Carries the selected rejection or policy/kernel diagnostic reference. |
-| `NoSelectableEvidence` | `open` or `rejected` | no | `open` only when the active policy permits publishing open obligations; otherwise `rejected`. It carries a no-selectable-evidence explanation. |
+| `NoSelectableEvidence` | `open` or `rejected` | no | `open` only when the active policy permits publishing open obligations through `AllowPolicyOpen`; `RecordDiagnostic` is diagnostics-only and projects to `rejected`. It carries a no-selectable-evidence explanation. |
 
 `not_required` is reserved for producer-owned obligations that do not require a
 proof selection. It is not emitted from `ArtifactProofSelection`.
@@ -137,7 +137,7 @@ Status projection exports validation metadata for proof reuse:
 - canonical VC fingerprint;
 - canonical local-context fingerprint;
 - dependency-slice fingerprint;
-- policy fingerprint and compatibility class;
+- policy fingerprint;
 - selected evidence hash;
 - selected proof witness hash, when publishable;
 - deterministic discharge hash, when present;

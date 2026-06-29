@@ -18,7 +18,8 @@ task commit は自分自身の hash を含められないため、self-hash は 
 | 5. Spec: `selection.md` | complete | `6802bbec9f75d33f6c28b06391d60101726b2d51` | 初回 review は rejected/all-diagnostic outcome の仕様不足、non-total な tie-break input、`DischargedBuiltin` trust wording、policy-assumption handling 欠落、TODO ordering drift、external recordable/selectable wording drift を指摘した。修正後、focused spec、test-sufficiency、full、source-doc review は no findings。 | `git diff --check` passed; task-5 path の明示 staging 後に `git diff --cached --check` passed。 | 決定的な winner class、total な tie-break identity、rejected/no-selectable diagnostic、reuse metadata、trusted/non-trusted 境界、completion-time 禁止、deferred downstream integration を覆う paired winner-selection spec を追加し、policy wording を明確化する。 |
 | 6. Winner selection | complete | `9230c36464a58a4f35a43ae1f7dc9fcde6e5e94d` | 初回 review は trusted-marker spoofing、pending kernel-checkable input がある場合の non-trusted winner、duplicate-id diagnostic が surfaced されない問題、rejected-category ordering gap、witness publication gap 欠落、test 不足、accepted-evidence hash identity の弱さを指摘した。修正後、focused spec、test-sufficiency、full、source-doc review は no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; task-6 path の明示 staging 後に `git diff --cached --check` passed。 | deterministic winner selection、kernel-derived evidence hash に bind された trusted-kernel evidence marker、total tie-break/rejection ordering、pending-kernel gating、duplicate-id diagnostic、no-selectable diagnostic、reuse metadata、`discharged_builtin` witness-publication gap marking、selection module lint guard update を実装する。 |
 | 7. Artifact proof selection merge | complete | `6e9a5a0400aae2c4c8b5b8098594ecc0bd3d2949` | 初回 review は source/class compatibility validation の欠落、same-class merge tie-break、policy-assumed/rejected preservation、duplicate built-in discharge input の test gap を指摘した。修正後の focused spec、test-sufficiency、full、source-doc re-review は no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; task-7 path の明示 staging 後に `git diff --cached --check` passed。 | portfolio selection と built-in discharge selection を `VcId` ごとに artifact-facing merge し、invalid source/class pair と duplicate same-source input を reject し、status projection や artifact publication なしで trusted / non-trusted class を保つ。 |
-| 8. Spec: `status.md` | complete | pending self-hash | 初回 review は `DischargedBuiltin` artifact field overreach、architecture 22 proof-reuse metadata 不足、`KernelCheckResult::Accepted` wording drift、`ProofWitnessRef` schema-version wording の曖昧さ、task-17 TODO reuse-metadata drift を指摘した。修正後の focused spec、test-sufficiency、full、source-doc re-review は no findings。 | `git diff --check` passed; task-8 path の明示 staging 後に `git diff --cached --check` passed。 | artifact/diagnostic status、trusted `used_axioms` propagation、explanation reference、proof-reuse validation metadata、downstream gap を定義する paired status-projection spec を追加する。 |
+| 8. Spec: `status.md` | complete | `76f112237c55dab875cd3e26cbfa11d45439fe5e` | 初回 review は `DischargedBuiltin` artifact field overreach、architecture 22 proof-reuse metadata 不足、`KernelCheckResult::Accepted` wording drift、`ProofWitnessRef` schema-version wording の曖昧さ、task-17 TODO reuse-metadata drift を指摘した。修正後の focused spec、test-sufficiency、full、source-doc re-review は no findings。 | `git diff --check` passed; task-8 path の明示 staging 後に `git diff --cached --check` passed。 | artifact/diagnostic status、trusted `used_axioms` propagation、explanation reference、proof-reuse validation metadata、downstream gap を定義する paired status-projection spec を追加する。 |
+| 9. Proof status projection | complete | pending self-hash | 初回 review は public trusted-used-axiom constructor path、non-trusted trusted-axiom rejection coverage、reuse metadata coverage、`NoSelectableEvidence` の `RecordDiagnostic` publication semantics の test/design gap を指摘した。修正後の focused spec、test-sufficiency、full、source-doc re-review は no findings。 | `cargo test -p mizar-proof` passed; `cargo clippy -p mizar-proof --all-targets -- -D warnings` passed; `cargo fmt --check` passed; `git diff --check` passed; task-9 path の明示 staging 後に `git diff --cached --check` passed。 | `src/status.rs`、status module exposure、lint guard update を実装し、projected proof status、現在の artifact publication availability、trusted used-axiom boundary check、explanation reference、architecture-22 reuse metadata を提供する。 |
 
 ## Current Handoff
 
@@ -27,18 +28,20 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Continue mizar-proof autonomous crate development with task 9 after the task-8
-commit exists. First verify a clean worktree and confirm the task-8 commit in
-HEAD history. Then implement proof status projection in `src/status.rs` from
-the paired `status.md` specs: artifact/diagnostic status projection, trusted
-`used_axioms` extraction only from accepted kernel evidence references, stable
-explanation references, and projection metadata for proof reuse. Do not stage
-or publish witnesses, query caches, write artifact manifests, run ATP or kernel
-checks, perform SAT solving, invent substitutions, select premises, or add
+Continue mizar-proof autonomous crate development with task 10 after the task-9
+commit exists. First verify a clean worktree and confirm the task-9 commit in
+HEAD history. Then write paired `witness_store.md` specs (English and
+Japanese, no code): proof witness draft staging, stable content hashing used as
+proof witness hashes, publication references only after artifact manifest
+reference/commit, provenance metadata, and current `DischargedBuiltin`
+artifact witness `external_dependency_gap`. Do not implement witness store
+code, artifact manifest writes, cache lookup, ATP execution, kernel checking,
+SAT solving, proof search, premise selection, substitution invention, or
 placeholder downstream integration.
 ```
 
-Rationale: task 9 は trust-sensitive な status contract を public API と test にする。
-projection bug は non-trusted evidence や trusted `used_axioms` を静かに昇格させうるため
-`xhigh` を維持する。docs/ledger cleanup だけなら lower reasoning でよい。artifact または
-kernel API が新しい external dependency-gap decision を要求する場合だけ上げる。
+Rationale: task 10 は後続実装と artifact integration が消費する witness publication
+boundary を定義する。witness wording は staged または unsupported evidence を誤って
+published trusted material にしうるため `xhigh` を維持する。typo-only docs cleanup だけなら
+lower reasoning でよい。artifact manifest constraint が新しい dependency-gap decision を
+露出する場合だけ上げる。

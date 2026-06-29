@@ -185,12 +185,17 @@ Keep `cargo test -p mizar-proof` green after each task (see
      diagnostic/explanation references, artifact projection limits, proof
      reuse metadata, and deferred/external dependency gaps.
 
-9. **Proof status projection.** [ ]
+9. **Proof status projection.** [x]
    - Implement status projection for artifacts and diagnostics, including
      trusted `used_axioms` extraction boundaries.
    - Tests: projection fixtures per selection outcome; `used_axioms` only
      from kernel-accepted evidence.
    - Deps: 7, 8. Spec: `status.md`.
+   - Status: implemented `src/status.rs` with status projection inputs,
+     projected/internal status classes, current artifact publication
+     availability, trusted used-axiom references derived only from accepted
+     kernel results, architecture-22 reuse metadata, and fixtures per selected
+     outcome.
 
 ### Witness store
 
