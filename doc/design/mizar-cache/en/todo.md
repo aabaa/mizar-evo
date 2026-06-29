@@ -310,10 +310,14 @@ Keep `cargo test -p mizar-cache` green after each task (see
       `tests/lint_policy.rs`. `mizar-cache` owns no exhaustive public enum
       exceptions.
 
-18. **Source/spec correspondence audit.** [ ]
+18. **Source/spec correspondence audit.** [x]
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 17. Spec: all module specs and this TODO.
+    - Completed by task 18: paired `source_spec_audit.md` documents trace the
+      public API, promised behavior, tests, and existing deferred or
+      external-dependency gaps. No new unclassified source/spec drift or gap ID
+      was found.
 
 19. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under

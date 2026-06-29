@@ -295,10 +295,13 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       `#[non_exhaustive]` として文書化され、`tests/lint_policy.rs` で guard
       される。`mizar-cache` が所有する exhaustive public enum exception はない。
 
-18. **ソース/仕様対応監査。** [ ]
+18. **ソース/仕様対応監査。** [x]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
       トレースし、ギャップをフォローアップタスクとして記録する。
     - 依存: 17。仕様: 全モジュール仕様と本 TODO。
+    - task 18 で完了: paired `source_spec_audit.md` が public API、約束された
+      behavior、test、既存の deferred / external-dependency gap を trace する。
+      新しい未分類 source/spec drift または gap ID は見つからない。
 
 19. **二言語ドキュメント同期監査。** [ ]
     - `doc/design/mizar-cache/en/` の各英語正本と日本語版を比較し、内容を

@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{collections::BTreeMap, fs, path::PathBuf};
 
 #[test]
 fn cache_manifest_opts_into_workspace_lints() {
@@ -518,7 +518,7 @@ fn cluster_db_implementation_has_no_downstream_stub_or_timing_inputs() {
 }
 
 #[test]
-fn cache_crate_tree_contains_only_task_sixteen_files() {
+fn cache_crate_tree_contains_only_task_eighteen_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -535,13 +535,294 @@ fn cache_crate_tree_contains_only_task_sixteen_files() {
             "tests/determinism_suite.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-cache task 16 contains only the crate manifest, root module, \
+        "mizar-cache task 18 contains only the crate manifest, root module, \
          cache_key implementation, dependency_fingerprint implementation, \
          cache_store implementation, proof_reuse implementation, cluster_db \
          implementation, determinism suite, and lint guard; other behavior modules, \
          build scripts, examples, benches, or extra tests require later \
          explicit tasks; found {files:?}"
     );
+}
+
+#[test]
+fn cache_source_spec_audit_covers_public_modules_and_gaps() {
+    let en_path = workspace_root().join("doc/design/mizar-cache/en/source_spec_audit.md");
+    let ja_path = workspace_root().join("doc/design/mizar-cache/ja/source_spec_audit.md");
+    let en_audit = read_to_string(&en_path);
+    let ja_audit = read_to_string(&ja_path);
+    let en_ledger =
+        read_to_string(&workspace_root().join("doc/design/mizar-cache/en/task_ledger.md"));
+    let ja_ledger =
+        read_to_string(&workspace_root().join("doc/design/mizar-cache/ja/task_ledger.md"));
+
+    for marker in [
+        "integration_readiness.md",
+        "todo.md",
+        "crates/mizar-cache/tests/lint_policy.rs",
+        "crates/mizar-cache/tests/determinism_suite.rs",
+        "external_dependency_gap",
+        "deferred",
+        "repo_metadata_conflict",
+        "KernelCheckResult",
+        "used_axioms",
+    ] {
+        assert!(
+            en_audit.contains(marker),
+            "{} must mention task-18 audit marker `{marker}`",
+            en_path.display()
+        );
+        assert!(
+            ja_audit.contains(marker),
+            "{} must mention task-18 audit marker `{marker}`",
+            ja_path.display()
+        );
+    }
+
+    for source in rust_source_files() {
+        let source_path = crate_root().join(&source);
+        let source_text = read_to_string(&source_path);
+        let documented_path = format!("crates/mizar-cache/{source}");
+        assert_audit_marker(&en_audit, &en_path, &documented_path);
+        assert_audit_marker(&ja_audit, &ja_path, &documented_path);
+
+        for marker in public_api_audit_markers(&source_text) {
+            assert_audit_marker(&en_audit, &en_path, &marker);
+            assert_audit_marker(&ja_audit, &ja_path, &marker);
+        }
+    }
+
+    let en_ledger_gaps = gap_class_map(&en_ledger);
+    let ja_ledger_gaps = gap_class_map(&ja_ledger);
+    let en_audit_gaps = gap_class_map(&en_audit);
+    let ja_audit_gaps = gap_class_map(&ja_audit);
+    assert_eq!(
+        en_ledger_gaps, ja_ledger_gaps,
+        "EN/JA mizar-cache task ledgers must agree on deferred/external gap IDs and classes"
+    );
+    assert_eq!(
+        en_audit_gaps,
+        en_ledger_gaps,
+        "{} must repeat every ledger deferred/external gap ID with the same class",
+        en_path.display()
+    );
+    assert_eq!(
+        ja_audit_gaps,
+        en_ledger_gaps,
+        "{} must repeat every ledger deferred/external gap ID with the same class",
+        ja_path.display()
+    );
+
+    for marker in source_spec_audit_test_markers() {
+        assert!(
+            test_names().iter().any(|name| name == marker),
+            "task-18 audit test marker `{marker}` must name an existing test"
+        );
+        assert_audit_marker(&en_audit, &en_path, marker);
+        assert_audit_marker(&ja_audit, &ja_path, marker);
+    }
+
+    for marker in [
+        "Task 18 audits",
+        "no unclassified",
+        "Task 18 introduces no new gap IDs",
+        "The cache remains an internal optimization owner",
+    ] {
+        assert!(
+            en_audit.contains(marker),
+            "{} must keep English task-18 audit conclusion marker `{marker}`",
+            en_path.display()
+        );
+    }
+    for marker in [
+        "task 18 は",
+        "未分類",
+        "task 18 の新規 gap ID は追加しない",
+        "Cache は internal optimization owner",
+    ] {
+        assert!(
+            ja_audit.contains(marker),
+            "{} must keep Japanese task-18 audit conclusion marker `{marker}`",
+            ja_path.display()
+        );
+    }
+}
+
+fn assert_audit_marker(audit: &str, path: &std::path::Path, marker: &str) {
+    assert!(
+        audit.contains(marker),
+        "{} must mention task-18 audit marker `{marker}`",
+        path.display()
+    );
+}
+
+fn public_api_audit_markers(source: &str) -> Vec<String> {
+    let implementation = source
+        .split("#[cfg(test)]")
+        .next()
+        .expect("implementation prefix exists");
+    let public_type_names = public_type_names(implementation);
+    let mut markers = Vec::new();
+    let mut depth = 0usize;
+    let mut impl_owner: Option<String> = None;
+
+    for raw_line in implementation.lines() {
+        let line = raw_line.trim_start();
+        if line.is_empty() || line.starts_with("//") || line.starts_with("#[") {
+            continue;
+        }
+
+        if depth == 0 {
+            if let Some(name) = public_item_name(line) {
+                markers.push(name);
+            }
+            if let Some(owner) = impl_owner_name(line)
+                && public_type_names.iter().any(|name| name == &owner)
+            {
+                impl_owner = Some(owner);
+            }
+        } else if let Some(owner) = &impl_owner
+            && let Some(method) = public_fn_name(line)
+        {
+            markers.push(format!("{owner}::{method}"));
+        }
+
+        depth = depth
+            .saturating_add(line.matches('{').count())
+            .saturating_sub(line.matches('}').count());
+        if depth == 0 {
+            impl_owner = None;
+        }
+    }
+
+    markers.sort();
+    markers.dedup();
+    markers
+}
+
+fn public_type_names(source: &str) -> Vec<String> {
+    source
+        .lines()
+        .filter_map(|line| {
+            let trimmed = line.trim_start();
+            public_type_name(trimmed)
+        })
+        .collect()
+}
+
+fn public_type_name(line: &str) -> Option<String> {
+    line.strip_prefix("pub struct ")
+        .or_else(|| line.strip_prefix("pub enum "))
+        .map(identifier_prefix)
+}
+
+fn public_item_name(line: &str) -> Option<String> {
+    for prefix in [
+        "pub const ",
+        "pub enum ",
+        "pub fn ",
+        "pub mod ",
+        "pub static ",
+        "pub struct ",
+        "pub trait ",
+        "pub type ",
+    ] {
+        if let Some(rest) = line.strip_prefix(prefix) {
+            return Some(identifier_prefix(rest));
+        }
+    }
+    None
+}
+
+fn public_fn_name(line: &str) -> Option<String> {
+    line.strip_prefix("pub fn ")
+        .or_else(|| line.strip_prefix("pub const fn "))
+        .map(identifier_prefix)
+}
+
+fn impl_owner_name(line: &str) -> Option<String> {
+    let rest = line.strip_prefix("impl ")?;
+    if rest.contains(" for ") || rest.starts_with('<') {
+        return None;
+    }
+    let owner = identifier_prefix(rest);
+    (!owner.is_empty()).then_some(owner)
+}
+
+fn identifier_prefix(text: &str) -> String {
+    text.split(|ch: char| !(ch == '_' || ch.is_ascii_alphanumeric()))
+        .next()
+        .expect("split always yields a prefix")
+        .to_owned()
+}
+
+fn gap_class_map(document: &str) -> BTreeMap<String, String> {
+    let mut gaps = BTreeMap::new();
+    for line in document.lines() {
+        let cells = line.split('|').map(str::trim).collect::<Vec<_>>();
+        if cells.len() < 4 {
+            continue;
+        }
+        let id = cells[1].trim_matches('`');
+        let class = cells[2].trim_matches('`');
+        if id.contains("-G") && matches!(class, "deferred" | "external_dependency_gap") {
+            gaps.insert(id.to_owned(), class.to_owned());
+        }
+    }
+    gaps
+}
+
+fn test_names() -> Vec<String> {
+    let mut names = Vec::new();
+    for source in crate_files()
+        .into_iter()
+        .filter(|file| file.ends_with(".rs"))
+    {
+        let text = read_to_string(&crate_root().join(source));
+        let mut previous_line_was_test_attr = false;
+        for raw_line in text.lines() {
+            let line = raw_line.trim_start();
+            if line == "#[test]" {
+                previous_line_was_test_attr = true;
+                continue;
+            }
+            if previous_line_was_test_attr {
+                if let Some(rest) = line.strip_prefix("fn ") {
+                    names.push(identifier_prefix(rest));
+                }
+                previous_line_was_test_attr = false;
+            }
+        }
+    }
+    names.sort();
+    names.dedup();
+    names
+}
+
+fn source_spec_audit_test_markers() -> &'static [&'static str] {
+    &[
+        "cache_key_api_does_not_expose_proof_authority_terms",
+        "cache_key_implementation_excludes_mutable_runtime_inputs",
+        "key_builder_is_deterministic_and_sorts_all_vectors",
+        "every_semantic_field_changes_final_hash",
+        "diagnostic_refs_participate_only_when_supplied_and_nondeterministic_inputs_are_absent",
+        "dependency_fingerprint_api_does_not_expose_proof_authority_terms",
+        "dependency_fingerprint_implementation_excludes_mutable_runtime_inputs",
+        "non_interface_summary_metadata_is_excluded_from_importer_visible_fingerprint",
+        "interface_change_invalidates_importer_visible_fingerprint",
+        "implementation_only_change_does_not_change_importer_visible_subset",
+        "missing_unknown_and_uncacheable_inputs_force_miss",
+        "proof_reuse_validation_failures_force_miss_without_granting_trust",
+        "unsupported_footprint_schema_produces_no_footprint",
+        "cache_store_api_does_not_expose_proof_authority_terms",
+        "cache_store_implementation_keeps_boundary_terms_out_of_reuse_logic",
+        "cache_store_deletion_changes_only_lookup_availability",
+        "proof_reuse_api_does_not_expose_authority_results_or_publication_tokens",
+        "proof_reuse_implementation_has_no_downstream_stub_or_timing_inputs",
+        "proof_reuse_validation_is_deterministic_and_never_promotes_external_evidence",
+        "cluster_db_api_does_not_expose_proof_authority_or_downstream_stubs",
+        "cluster_db_implementation_has_no_downstream_stub_or_timing_inputs",
+        "public_cache_enums_are_forward_compatible_and_documented",
+    ]
 }
 
 #[test]
