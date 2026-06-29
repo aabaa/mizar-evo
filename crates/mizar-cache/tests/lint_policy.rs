@@ -140,7 +140,7 @@ fn cache_lib_states_boundary_and_cache_key_module() {
             "pub mod dependency_fingerprint;",
             "pub mod cache_store;"
         ],
-        "{} must expose only the task-8 cache_key, dependency_fingerprint, and cache_store APIs",
+        "{} must expose only the task-9 cache_key, dependency_fingerprint, and cache_store APIs",
         lib_path.display()
     );
 }
@@ -312,7 +312,7 @@ fn cache_store_implementation_keeps_boundary_terms_out_of_reuse_logic() {
 }
 
 #[test]
-fn cache_crate_tree_contains_only_task_eight_files() {
+fn cache_crate_tree_contains_only_task_nine_files() {
     let mut files = crate_files();
     files.sort();
 
@@ -326,7 +326,7 @@ fn cache_crate_tree_contains_only_task_eight_files() {
             "src/lib.rs",
             "tests/lint_policy.rs"
         ],
-        "mizar-cache task 8 may contain only the crate manifest, root module, \
+        "mizar-cache task 9 may contain only the crate manifest, root module, \
          cache_key implementation, dependency_fingerprint implementation, \
          cache_store implementation, and \
          lint guard; other behavior modules, \

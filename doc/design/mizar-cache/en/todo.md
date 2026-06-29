@@ -156,7 +156,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
      corrupted records detected.
    - Deps: 3, 7. Spec: `cache_store.md`.
 
-9. **Blob store.** [ ]
+9. **Blob store.** [x]
    - Implement content-addressed blob storage for large outputs with
      hash-verified reads and safe concurrent writes.
    - Tests: blob round-trips; hash mismatch detection; concurrent writers

@@ -11,6 +11,7 @@ use std::{
     io,
     io::Write,
     path::{Path, PathBuf},
+    sync::atomic::{AtomicU64, Ordering},
 };
 
 use mizar_artifact::store::{CanonicalJson, canonical_json_bytes};
@@ -27,11 +28,14 @@ use crate::cache_key::{
 pub const CACHE_RECORD_SCHEMA_VERSION: &str = "mizar-cache/cache-record-schema/v1";
 /// Magic bytes for the cache record binary envelope.
 pub const CACHE_RECORD_MAGIC: &[u8] = b"MIZAR-CACHE-RECORD\0";
+/// Supported content-addressed blob hash family.
+pub const CACHE_BLOB_HASH_FAMILY: &str = "blake3";
 
 const RECORD_FORMAT_VERSION: u32 = 1;
 const OUTPUT_HASH_DOMAIN: &str = "mizar-cache/cache-record-output/v1";
 const RECORD_EXTENSION: &str = "mcr";
 const TEMP_FILE_ATTEMPTS: usize = 32;
+static TEMP_FILE_NONCE: AtomicU64 = AtomicU64::new(0);
 
 /// Root for internal cache records.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -67,7 +71,7 @@ pub enum CacheOutputDescriptor {
         /// Output byte length.
         byte_len: u64,
     },
-    /// Output bytes are stored in the later task-9 blob store.
+    /// Output bytes are stored in the content-addressed blob store.
     Blob {
         /// Content-addressed blob reference.
         blob: CacheBlobRef,
@@ -87,12 +91,12 @@ pub struct CacheBlobRef {
     pub digest: String,
 }
 
-/// Cache record with inline output bytes for task 8.
+/// Cache record with validated output bytes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CacheRecord {
     /// Record header.
     pub header: CacheRecordHeader,
-    /// Inline output bytes. Blob-backed records have empty inline output.
+    /// Validated output bytes. On-disk blob records encode an empty payload.
     pub output: Vec<u8>,
 }
 
@@ -162,9 +166,9 @@ pub enum CacheStoreError {
         /// Fail-closed reason.
         reason: CacheMiss,
     },
-    /// A different record already exists for the same validated key.
+    /// A different record or blob already exists for the same validated identity.
     DivergentRecord {
-        /// Existing record path.
+        /// Existing record or blob path.
         path: PathBuf,
     },
 }
@@ -186,6 +190,14 @@ impl CacheStoreRoot {
             .join("records")
             .join(path_component_for(key.phase.as_str()))
             .join(format!("{}.{}", hash_hex(key.final_hash), RECORD_EXTENSION))
+    }
+
+    /// Returns the deterministic blob path for `blob`.
+    pub fn blob_path(&self, blob: &CacheBlobRef) -> PathBuf {
+        self.root
+            .join("blobs")
+            .join(path_component_for(&blob.hash_family))
+            .join(path_component_for(&blob.digest))
     }
 
     /// Looks up an already-built key.
@@ -244,6 +256,15 @@ impl CacheStoreRoot {
             };
         }
 
+        if matches!(record.header.output, CacheOutputDescriptor::Blob { .. }) {
+            let written_blob = self.write_blob(&record.output)?;
+            if Some(&written_blob) != record.header.output.blob_ref() {
+                return Err(CacheStoreError::InvalidRecord {
+                    reason: CacheMiss::CorruptRecord,
+                });
+            }
+        }
+
         let bytes = encode_record(record);
         let (decoded, output) = decode_record_bytes(&bytes)
             .map_err(|reason| CacheStoreError::InvalidRecord { reason })?;
@@ -277,6 +298,37 @@ impl CacheStoreRoot {
         self.write_via_unique_temp(&path, &temporary_dir, &bytes, record)
     }
 
+    /// Writes `bytes` into the content-addressed blob store and returns its reference.
+    pub fn write_blob(&self, bytes: &[u8]) -> Result<CacheBlobRef, CacheStoreError> {
+        let blob = CacheBlobRef::for_output(bytes);
+        let path = self.blob_path(&blob);
+        if let Ok(existing) = fs::read(&path) {
+            if existing == bytes {
+                return Ok(blob);
+            }
+            return Err(CacheStoreError::DivergentRecord { path });
+        }
+
+        let parent = path
+            .parent()
+            .expect("blob path always has parent directories");
+        fs::create_dir_all(parent).map_err(|source| CacheStoreError::Io {
+            operation: "create_dir_all",
+            path: parent.to_path_buf(),
+            source,
+        })?;
+
+        let temporary_dir = self.root.join("tmp");
+        fs::create_dir_all(&temporary_dir).map_err(|source| CacheStoreError::Io {
+            operation: "create_dir_all",
+            path: temporary_dir.clone(),
+            source,
+        })?;
+
+        self.write_blob_via_unique_temp(&blob, &path, &temporary_dir, bytes)?;
+        Ok(blob)
+    }
+
     fn write_via_unique_temp(
         &self,
         path: &Path,
@@ -285,8 +337,9 @@ impl CacheStoreRoot {
         record: &CacheRecord,
     ) -> Result<CacheInsertOutcome, CacheStoreError> {
         for attempt in 0..TEMP_FILE_ATTEMPTS {
+            let nonce = temporary_nonce(bytes);
             let temporary = temporary_dir.join(format!(
-                "{}-{}-{attempt}.tmp",
+                "{}-{}-{nonce}-{attempt}.tmp",
                 path_component_for(record.header.key.phase.as_str()),
                 hash_hex(record.header.key.final_hash)
             ));
@@ -349,6 +402,102 @@ impl CacheStoreRoot {
             path: path.to_path_buf(),
         })
     }
+
+    fn write_blob_via_unique_temp(
+        &self,
+        blob: &CacheBlobRef,
+        path: &Path,
+        temporary_dir: &Path,
+        bytes: &[u8],
+    ) -> Result<(), CacheStoreError> {
+        for attempt in 0..TEMP_FILE_ATTEMPTS {
+            if let Ok(existing) = fs::read(path)
+                && existing == bytes
+            {
+                return Ok(());
+            }
+            let nonce = temporary_nonce(bytes);
+            let temporary = temporary_dir.join(format!(
+                "{}-{}-{nonce}-{attempt}.blob.tmp",
+                path_component_for(&blob.hash_family),
+                blob.digest
+            ));
+            let mut file = match OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&temporary)
+            {
+                Ok(file) => file,
+                Err(error) if error.kind() == io::ErrorKind::AlreadyExists => continue,
+                Err(source) => {
+                    return Err(CacheStoreError::Io {
+                        operation: "create_new",
+                        path: temporary,
+                        source,
+                    });
+                }
+            };
+            file.write_all(bytes)
+                .map_err(|source| CacheStoreError::Io {
+                    operation: "write",
+                    path: temporary.clone(),
+                    source,
+                })?;
+            file.sync_all().map_err(|source| CacheStoreError::Io {
+                operation: "sync_all",
+                path: temporary.clone(),
+                source,
+            })?;
+            drop(file);
+
+            if !blob_matches_bytes(blob, bytes)
+                || fs::read(&temporary)
+                    .map(|written| written != bytes || !blob_matches_bytes(blob, &written))
+                    .unwrap_or(true)
+            {
+                let _ = fs::remove_file(&temporary);
+                return Err(CacheStoreError::InvalidRecord {
+                    reason: CacheMiss::CorruptRecord,
+                });
+            }
+
+            match fs::hard_link(&temporary, path) {
+                Ok(()) => {
+                    let _ = fs::remove_file(&temporary);
+                    return Ok(());
+                }
+                Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {
+                    let _ = fs::remove_file(&temporary);
+                    if let Ok(existing) = fs::read(path)
+                        && existing == bytes
+                    {
+                        return Ok(());
+                    }
+                    return Err(CacheStoreError::DivergentRecord {
+                        path: path.to_path_buf(),
+                    });
+                }
+                Err(source) => {
+                    let _ = fs::remove_file(&temporary);
+                    return Err(CacheStoreError::Io {
+                        operation: "hard_link",
+                        path: path.to_path_buf(),
+                        source,
+                    });
+                }
+            }
+        }
+
+        if let Ok(existing) = fs::read(path)
+            && existing == bytes
+        {
+            return Ok(());
+        }
+
+        Err(CacheStoreError::DivergentRecord {
+            path: path.to_path_buf(),
+        })
+    }
 }
 
 impl CacheRecordHeader {
@@ -363,6 +512,28 @@ impl CacheRecordHeader {
             diagnostic_refs: Vec::new(),
         }
     }
+
+    /// Creates a blob-output header.
+    pub fn new_blob(key: CacheKey, produced_by: Vec<CompatibilityField>, output: &[u8]) -> Self {
+        Self {
+            cache_record_schema_version: SchemaVersion::new(CACHE_RECORD_SCHEMA_VERSION),
+            key,
+            produced_by,
+            output: CacheOutputDescriptor::blob(output),
+            uncacheable: false,
+            diagnostic_refs: Vec::new(),
+        }
+    }
+}
+
+impl CacheBlobRef {
+    /// Creates the supported content-addressed blob reference for `output`.
+    pub fn for_output(output: &[u8]) -> Self {
+        Self {
+            hash_family: CACHE_BLOB_HASH_FAMILY.to_owned(),
+            digest: hash_hex(output_hash(output)),
+        }
+    }
 }
 
 impl CacheOutputDescriptor {
@@ -371,6 +542,22 @@ impl CacheOutputDescriptor {
         Self::Inline {
             output_hash: output_hash(output),
             byte_len: output.len() as u64,
+        }
+    }
+
+    /// Creates a blob descriptor for `output`.
+    pub fn blob(output: &[u8]) -> Self {
+        Self::Blob {
+            blob: CacheBlobRef::for_output(output),
+            output_hash: output_hash(output),
+            byte_len: output.len() as u64,
+        }
+    }
+
+    fn blob_ref(&self) -> Option<&CacheBlobRef> {
+        match self {
+            Self::Inline { .. } => None,
+            Self::Blob { blob, .. } => Some(blob),
         }
     }
 
@@ -400,6 +587,19 @@ impl CacheRecord {
             output,
         }
     }
+
+    /// Creates a blob-backed cache record.
+    pub fn new_blob(
+        key: CacheKey,
+        produced_by: Vec<CompatibilityField>,
+        output: impl Into<Vec<u8>>,
+    ) -> Self {
+        let output = output.into();
+        Self {
+            header: CacheRecordHeader::new_blob(key, produced_by, &output),
+            output,
+        }
+    }
 }
 
 impl fmt::Display for CacheStoreError {
@@ -419,7 +619,7 @@ impl fmt::Display for CacheStoreError {
             }
             Self::DivergentRecord { path } => write!(
                 formatter,
-                "divergent cache record already exists at `{}`",
+                "divergent cache record or blob already exists at `{}`",
                 path.display()
             ),
         }
@@ -461,13 +661,27 @@ fn insertion_rejection(record: &CacheRecord) -> Option<CacheMiss> {
     if proof_reuse_invalid(&record.header.key) {
         return Some(CacheMiss::ProofReuseInvalid);
     }
-    if !matches!(record.header.output, CacheOutputDescriptor::Inline { .. }) {
-        return Some(CacheMiss::CorruptRecord);
-    }
-    if record.header.output.byte_len() != record.output.len() as u64
-        || record.header.output.output_hash() != output_hash(&record.output)
-    {
-        return Some(CacheMiss::CorruptRecord);
+    match &record.header.output {
+        CacheOutputDescriptor::Inline { .. } => {
+            if record.header.output.byte_len() != record.output.len() as u64
+                || record.header.output.output_hash() != output_hash(&record.output)
+            {
+                return Some(CacheMiss::CorruptRecord);
+            }
+        }
+        CacheOutputDescriptor::Blob {
+            blob,
+            output_hash: expected_output_hash,
+            byte_len,
+        } => {
+            if !blob_ref_supported(blob)
+                || blob.digest != hash_hex(*expected_output_hash)
+                || *byte_len != record.output.len() as u64
+                || *expected_output_hash != output_hash(&record.output)
+            {
+                return Some(CacheMiss::CorruptRecord);
+            }
+        }
     }
     None
 }
@@ -515,15 +729,35 @@ fn validate_decoded_record(
         return Err(CacheMiss::ProofReuseInvalid);
     }
 
-    let output_descriptor = match decoded.output {
+    let (output_descriptor, output) = match decoded.output {
         DecodedOutput::Inline {
             output_hash,
             byte_len,
-        } => CacheOutputDescriptor::Inline {
-            output_hash,
+        } => (
+            CacheOutputDescriptor::Inline {
+                output_hash,
+                byte_len,
+            },
+            output,
+        ),
+        DecodedOutput::Blob {
+            blob,
+            output_hash: expected_output_hash,
             byte_len,
-        },
-        DecodedOutput::Blob => return Err(CacheMiss::CorruptRecord),
+        } => {
+            if !output.is_empty() {
+                return Err(CacheMiss::CorruptRecord);
+            }
+            let bytes = read_blob(root, &blob, expected_output_hash, byte_len)?;
+            (
+                CacheOutputDescriptor::Blob {
+                    blob,
+                    output_hash: expected_output_hash,
+                    byte_len,
+                },
+                bytes,
+            )
+        }
     };
 
     if output_descriptor.byte_len() != output.len() as u64
@@ -588,6 +822,39 @@ fn dependency_artifact_path(root: &Path, artifact: &DependencyArtifactAvailabili
     } else {
         root.parent().unwrap_or(root).join(path)
     }
+}
+
+fn read_blob(
+    root: &Path,
+    blob: &CacheBlobRef,
+    expected_output_hash: Hash,
+    expected_byte_len: u64,
+) -> Result<Vec<u8>, CacheMiss> {
+    if !blob_ref_supported(blob) {
+        return Err(CacheMiss::UnknownSchema);
+    }
+    if blob.digest != hash_hex(expected_output_hash) {
+        return Err(CacheMiss::CorruptRecord);
+    }
+    let bytes = fs::read(blob_path(root, blob)).map_err(|_| CacheMiss::CorruptRecord)?;
+    if bytes.len() as u64 != expected_byte_len || output_hash(&bytes) != expected_output_hash {
+        return Err(CacheMiss::CorruptRecord);
+    }
+    Ok(bytes)
+}
+
+fn blob_path(root: &Path, blob: &CacheBlobRef) -> PathBuf {
+    root.join("blobs")
+        .join(path_component_for(&blob.hash_family))
+        .join(path_component_for(&blob.digest))
+}
+
+fn blob_ref_supported(blob: &CacheBlobRef) -> bool {
+    blob.hash_family == CACHE_BLOB_HASH_FAMILY && hash_from_hex(&blob.digest).is_some()
+}
+
+fn blob_matches_bytes(blob: &CacheBlobRef, bytes: &[u8]) -> bool {
+    blob_ref_supported(blob) && blob.digest == hash_hex(output_hash(bytes))
 }
 
 fn unknown_compatibility(fields: &[CompatibilityField]) -> bool {
@@ -655,16 +922,23 @@ fn proof_reuse_invalid(key: &CacheKey) -> bool {
 
 fn encode_record(record: &CacheRecord) -> Vec<u8> {
     let header = canonical_json_bytes(&header_json(&record.header));
-    let mut encoded = Vec::with_capacity(
-        CACHE_RECORD_MAGIC.len() + 4 + 8 + header.len() + 8 + record.output.len(),
-    );
+    let payload = record_payload(record);
+    let mut encoded =
+        Vec::with_capacity(CACHE_RECORD_MAGIC.len() + 4 + 8 + header.len() + 8 + payload.len());
     encoded.extend_from_slice(CACHE_RECORD_MAGIC);
     encoded.extend_from_slice(&RECORD_FORMAT_VERSION.to_le_bytes());
     encoded.extend_from_slice(&(header.len() as u64).to_le_bytes());
     encoded.extend_from_slice(&header);
-    encoded.extend_from_slice(&(record.output.len() as u64).to_le_bytes());
-    encoded.extend_from_slice(&record.output);
+    encoded.extend_from_slice(&(payload.len() as u64).to_le_bytes());
+    encoded.extend_from_slice(payload);
     encoded
+}
+
+fn record_payload(record: &CacheRecord) -> &[u8] {
+    match record.header.output {
+        CacheOutputDescriptor::Inline { .. } => &record.output,
+        CacheOutputDescriptor::Blob { .. } => &[],
+    }
 }
 
 fn decode_record_bytes(bytes: &[u8]) -> Result<(DecodedHeader, Vec<u8>), CacheMiss> {
@@ -725,8 +999,15 @@ struct DecodedHeader {
 
 #[derive(Debug)]
 enum DecodedOutput {
-    Inline { output_hash: Hash, byte_len: u64 },
-    Blob,
+    Inline {
+        output_hash: Hash,
+        byte_len: u64,
+    },
+    Blob {
+        blob: CacheBlobRef,
+        output_hash: Hash,
+        byte_len: u64,
+    },
 }
 
 fn decoded_header_from_json(value: CanonicalJson) -> Result<DecodedHeader, CacheMiss> {
@@ -741,7 +1022,14 @@ fn decoded_header_from_json(value: CanonicalJson) -> Result<DecodedHeader, Cache
             output_hash,
             byte_len,
         },
-        "blob" => DecodedOutput::Blob,
+        "blob" => DecodedOutput::Blob {
+            blob: CacheBlobRef {
+                hash_family: string_field(output_object, "hash_family")?.to_owned(),
+                digest: string_field(output_object, "blob_digest")?.to_owned(),
+            },
+            output_hash,
+            byte_len,
+        },
         _ => return Err(CacheMiss::CorruptRecord),
     };
 
@@ -1376,11 +1664,20 @@ fn write_hash_part(hasher: &mut blake3::Hasher, bytes: &[u8]) {
     hasher.update(bytes);
 }
 
+fn temporary_nonce(bytes: &[u8]) -> String {
+    format!(
+        "{:016x}-{:016x}",
+        TEMP_FILE_NONCE.fetch_add(1, Ordering::Relaxed),
+        bytes.as_ptr() as usize
+    )
+}
+
 fn path_component_for(value: &str) -> String {
     let mut component = String::new();
     for byte in value.bytes() {
         match byte {
-            b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'.' | b'_' | b'-' => {
+            b'.' if value != "." && value != ".." => component.push('.'),
+            b'a'..=b'z' | b'A'..=b'Z' | b'0'..=b'9' | b'_' | b'-' => {
                 component.push(byte as char);
             }
             _ => {
@@ -1427,7 +1724,12 @@ fn hex_digit(byte: u8) -> Option<u8> {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::PathBuf};
+    use std::{
+        fs,
+        path::{Component, PathBuf},
+        sync::{Arc, Barrier},
+        thread,
+    };
 
     use super::*;
     use crate::cache_key::{
@@ -1461,6 +1763,282 @@ mod tests {
         };
         assert_eq!(hit.header.key, key);
         assert_eq!(hit.output, b"cached output");
+        cleanup(root);
+    }
+
+    #[test]
+    fn blob_record_round_trips_by_content_digest() {
+        let root = test_root("blob_round_trip");
+        let store = CacheStoreRoot::new(&root);
+        let key = key(FootprintCompleteness::Complete, "dev", false);
+        let output = b"large cached output bytes".to_vec();
+        let record = CacheRecord::new_blob(
+            key.clone(),
+            key.validation_inputs.toolchain_compatibility.clone(),
+            output.clone(),
+        );
+        let blob = record
+            .header
+            .output
+            .blob_ref()
+            .expect("blob record has ref")
+            .clone();
+        assert_eq!(CACHE_BLOB_HASH_FAMILY, "blake3");
+        assert_eq!(blob.hash_family, CACHE_BLOB_HASH_FAMILY);
+        assert_eq!(blob.digest, hash_hex(output_hash(&output)));
+
+        assert_eq!(
+            store.insert(&record).expect("insert blob record"),
+            CacheInsertOutcome::Inserted
+        );
+        assert_eq!(
+            store.insert(&record).expect("repeat blob insert"),
+            CacheInsertOutcome::AlreadyPresent
+        );
+        assert_eq!(fs::read(store.blob_path(&blob)).expect("read blob"), output);
+
+        let CacheLookupOutcome::Hit(hit) = store.lookup(&key) else {
+            panic!("expected blob cache hit");
+        };
+        assert_eq!(hit.header.output, record.header.output);
+        assert_eq!(hit.output, output);
+        cleanup(root);
+    }
+
+    #[test]
+    fn blob_lookup_fails_closed_for_missing_corrupt_or_unsupported_blob() {
+        let root = test_root("blob_miss");
+        let store = CacheStoreRoot::new(&root);
+        let key = key(FootprintCompleteness::Complete, "dev", false);
+        let output = b"blob output".to_vec();
+        let record = CacheRecord::new_blob(
+            key.clone(),
+            key.validation_inputs.toolchain_compatibility.clone(),
+            output.clone(),
+        );
+        store.insert(&record).expect("insert blob record");
+        let blob = record
+            .header
+            .output
+            .blob_ref()
+            .expect("blob record has ref")
+            .clone();
+
+        fs::remove_file(store.blob_path(&blob)).expect("delete blob");
+        assert_eq!(
+            store.lookup(&key),
+            CacheLookupOutcome::Miss(CacheMiss::CorruptRecord)
+        );
+
+        store.write_blob(&output).expect("restore blob");
+        fs::write(store.blob_path(&blob), b"wrong bytes").expect("corrupt blob");
+        assert_eq!(
+            store.lookup(&key),
+            CacheLookupOutcome::Miss(CacheMiss::CorruptRecord)
+        );
+
+        let mut unsupported_family = record.clone();
+        let CacheOutputDescriptor::Blob {
+            blob: unsupported_blob,
+            ..
+        } = &mut unsupported_family.header.output
+        else {
+            panic!("blob descriptor expected");
+        };
+        unsupported_blob.hash_family = "unknown-family".to_owned();
+        write_raw(&store, &key, encode_record(&unsupported_family));
+        assert_eq!(
+            store.lookup(&key),
+            CacheLookupOutcome::Miss(CacheMiss::UnknownSchema)
+        );
+
+        let mut uppercase_digest = record.clone();
+        let CacheOutputDescriptor::Blob {
+            blob: uppercase_blob,
+            ..
+        } = &mut uppercase_digest.header.output
+        else {
+            panic!("blob descriptor expected");
+        };
+        uppercase_blob.digest = uppercase_blob.digest.to_ascii_uppercase();
+        write_raw(&store, &key, encode_record(&uppercase_digest));
+        assert_eq!(
+            store.lookup(&key),
+            CacheLookupOutcome::Miss(CacheMiss::UnknownSchema)
+        );
+
+        let mut short_digest = record.clone();
+        let CacheOutputDescriptor::Blob {
+            blob: short_blob, ..
+        } = &mut short_digest.header.output
+        else {
+            panic!("blob descriptor expected");
+        };
+        short_blob.digest = "abcd".to_owned();
+        write_raw(&store, &key, encode_record(&short_digest));
+        assert_eq!(
+            store.lookup(&key),
+            CacheLookupOutcome::Miss(CacheMiss::UnknownSchema)
+        );
+
+        let mut path_like_digest = record.clone();
+        let CacheOutputDescriptor::Blob {
+            blob: path_like_blob,
+            ..
+        } = &mut path_like_digest.header.output
+        else {
+            panic!("blob descriptor expected");
+        };
+        path_like_blob.digest = "../escape".to_owned();
+        assert!(
+            !store
+                .blob_path(path_like_blob)
+                .components()
+                .any(|component| matches!(component, Component::ParentDir | Component::CurDir))
+        );
+        write_raw(&store, &key, encode_record(&path_like_digest));
+        assert_eq!(
+            store.lookup(&key),
+            CacheLookupOutcome::Miss(CacheMiss::UnknownSchema)
+        );
+
+        let unsafe_ref = CacheBlobRef {
+            hash_family: "..".to_owned(),
+            digest: ".".to_owned(),
+        };
+        assert!(
+            !store
+                .blob_path(&unsafe_ref)
+                .components()
+                .any(|component| matches!(component, Component::ParentDir | Component::CurDir))
+        );
+
+        let alternate = b"alternate blob".to_vec();
+        let alternate_blob = store.write_blob(&alternate).expect("write alternate blob");
+        let mut mismatched_digest = record.clone();
+        let CacheOutputDescriptor::Blob {
+            blob: mismatched_blob,
+            ..
+        } = &mut mismatched_digest.header.output
+        else {
+            panic!("blob descriptor expected");
+        };
+        *mismatched_blob = alternate_blob;
+        write_raw(&store, &key, encode_record(&mismatched_digest));
+        assert_eq!(
+            store.lookup(&key),
+            CacheLookupOutcome::Miss(CacheMiss::CorruptRecord)
+        );
+
+        fs::remove_file(store.blob_path(&blob)).expect("remove corrupt expected blob");
+        store.write_blob(&output).expect("restore expected blob");
+        let mut mismatched_len = record.clone();
+        let CacheOutputDescriptor::Blob { byte_len, .. } = &mut mismatched_len.header.output else {
+            panic!("blob descriptor expected");
+        };
+        *byte_len += 1;
+        write_raw(&store, &key, encode_record(&mismatched_len));
+        assert_eq!(
+            store.lookup(&key),
+            CacheLookupOutcome::Miss(CacheMiss::CorruptRecord)
+        );
+
+        let header = canonical_json_bytes(&header_json(&record.header));
+        write_raw(&store, &key, encode_raw_record(&header, b"nonempty"));
+        assert_eq!(
+            store.lookup(&key),
+            CacheLookupOutcome::Miss(CacheMiss::CorruptRecord)
+        );
+        cleanup(root);
+    }
+
+    #[test]
+    fn blob_writers_converge_and_reject_divergent_existing_digest() {
+        let root = test_root("blob_writers");
+        let store = CacheStoreRoot::new(&root);
+        let output = b"shared blob output".to_vec();
+
+        let first = store.write_blob(&output).expect("write blob");
+        let second = store.write_blob(&output).expect("repeat write");
+        assert_eq!(first, second);
+        assert_eq!(
+            fs::read(store.blob_path(&first)).expect("read blob"),
+            output
+        );
+
+        let temporary_dir = root.join("tmp");
+        fs::create_dir_all(&temporary_dir).expect("mkdir temp");
+        store
+            .write_blob_via_unique_temp(&first, &store.blob_path(&first), &temporary_dir, &output)
+            .expect("identical final-link collision converges");
+
+        let concurrent_output = b"parallel shared blob output".to_vec();
+        let expected_concurrent = CacheBlobRef::for_output(&concurrent_output);
+        let writers = 8;
+        let barrier = Arc::new(Barrier::new(writers));
+        let mut handles = Vec::new();
+        for _ in 0..writers {
+            let store = store.clone();
+            let barrier = Arc::clone(&barrier);
+            let output = concurrent_output.clone();
+            handles.push(thread::spawn(move || {
+                barrier.wait();
+                store.write_blob(&output).expect("concurrent blob write")
+            }));
+        }
+        for handle in handles {
+            assert_eq!(
+                handle.join().expect("writer thread joins"),
+                expected_concurrent
+            );
+        }
+        assert_eq!(
+            fs::read(store.blob_path(&expected_concurrent)).expect("read concurrent blob"),
+            concurrent_output
+        );
+
+        fs::write(store.blob_path(&first), b"divergent bytes").expect("corrupt existing blob");
+        assert!(matches!(
+            store.write_blob(&output),
+            Err(CacheStoreError::DivergentRecord { .. })
+        ));
+        assert!(matches!(
+            store.write_blob_via_unique_temp(
+                &first,
+                &store.blob_path(&first),
+                &temporary_dir,
+                &output
+            ),
+            Err(CacheStoreError::DivergentRecord { .. })
+        ));
+        cleanup(root);
+    }
+
+    #[test]
+    fn blob_insert_rejects_mismatched_descriptor_without_trusting_record() {
+        let root = test_root("blob_insert_mismatch");
+        let store = CacheStoreRoot::new(&root);
+        let key = key(FootprintCompleteness::Complete, "dev", false);
+        let mut record = CacheRecord::new_blob(
+            key,
+            vec![CompatibilityField {
+                family: "mizar".to_owned(),
+                field_name: "version".to_owned(),
+                value: "dev".to_owned(),
+            }],
+            b"blob output".to_vec(),
+        );
+        let CacheOutputDescriptor::Blob { blob, .. } = &mut record.header.output else {
+            panic!("blob descriptor expected");
+        };
+        blob.digest = hash_hex(hash(99));
+
+        assert!(matches!(
+            store.insert(&record),
+            Err(CacheStoreError::InvalidRecord {
+                reason: CacheMiss::CorruptRecord
+            })
+        ));
         cleanup(root);
     }
 

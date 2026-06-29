@@ -2,8 +2,8 @@
 
 > 正本は英語です。英語版: [../en/cache_store.md](../en/cache_store.md)。
 
-Status: task 7 で仕様化。inline record store implementation は task 8 から開始する。
-content-addressed blob storage は task 9 に残る。
+Status: task 7 で仕様化。task 8 は inline record を実装し、task 9 は
+content-addressed blob-backed record を実装する。
 
 ## Purpose
 
@@ -29,6 +29,7 @@ task 8 と task 9 は小さな record/blob store API を公開する。実際の
 ```rust
 pub const CACHE_RECORD_SCHEMA_VERSION: &str;
 pub const CACHE_RECORD_MAGIC: &[u8];
+pub const CACHE_BLOB_HASH_FAMILY: &str;
 
 pub struct CacheStoreRoot { ... }
 pub struct CacheRecordHeader { ... }
@@ -121,7 +122,7 @@ order、backend runtime duration、process id、thread id を compatibility inpu
 
 ## Record Encoding
 
-task 8 は単一の binary record envelope を使う:
+record store は単一の binary record envelope を使う:
 
 ```text
 magic bytes
@@ -141,8 +142,8 @@ write 前に reject する。payload は以下のいずれかである:
 
 output hash は record file path や record envelope ではなく、canonical output bytes に対して
 計算する。key hash mismatch、payload length mismatch、malformed canonical JSON、
-duplicate header key、unsupported enum variant、missing blob、output hash mismatch は miss
-である。
+duplicate header key、unsupported enum variant、malformed blob descriptor、missing blob、
+output hash mismatch は miss である。
 
 ## Blob Store
 
@@ -152,12 +153,18 @@ duplicate header key、unsupported enum variant、missing blob、output hash mis
 .mizar-cache/blobs/<hash-family>/<digest>
 ```
 
-hash family は明示する。初期実装は cache key と dependency fingerprint が使う BLAKE3
-ベースの hash family を使ってよいが、reader は unknown hash family を miss として扱わなければ
-ならない。blob write は atomic である: `tmp/` に書き、flush し、digest を検証し、final digest
-path へ rename する。同一 bytes に対する concurrent writer は同じ final file へ収束しなければ
-ならない。異なる bytes に対する concurrent writer は digest check が成功しない限り同じ digest を
-共有できないため、mismatch は cache integrity miss になる。
+task 9 の hash family は `blake3` である。その digest は
+`CacheOutputDescriptor.output_hash` に記録されるものと同じ domain-separated output hash の
+lowercase hexadecimal encoding であり、現時点では canonical output bytes に対して
+`mizar-cache/cache-record-output/v1` domain で frame した BLAKE3 hash である。reader は
+unknown hash family、lowercase hex でない digest、長さが違う digest、path-like digest spelling を
+blob read path を構築する前に reject しなければならない。
+
+blob write は atomic である: `tmp/` に書き、flush し、digest を検証し、同一 filesystem の
+hard link など create-new/no-overwrite semantics で final digest path に publish する。同一 bytes に
+対する concurrent writer は同じ final file へ収束しなければならない。異なる bytes に対する
+concurrent writer は digest check が成功しない限り同じ digest を共有できないため、mismatch は
+cache integrity miss になる。
 
 blob reference は内部用である。published artifact は cache blob を読まなくても読めなければ
 ならない。
@@ -209,7 +216,7 @@ miss accounting を別の場所に出力してよいが、その data は reusab
 namespace に置いてはならず、決して `Hit` を返してはならない。
 
 write は `tmp/` の temporary file を使い、complete encoded record を検証し、flush してから
-create-new/no-overwrite semantics で公開する。task 8 は、flush 済み temporary file から final
+create-new/no-overwrite semantics で公開する。実装は、flush 済み temporary file から final
 record path への same-filesystem hard link を作り、その後 temporary file を削除してよい。同じ key
 に対して競合する 2 writer は、byte-identical record を公開するか、片方が observable semantics を
 変えずに負けなければならない。同じ validated key に対する divergent content は cache integrity miss
@@ -288,7 +295,8 @@ task 8 は少なくとも以下を cover する:
 task 9 は少なくとも以下を cover する:
 
 - content digest による blob round-trip;
-- missing blob と digest mismatch が miss を返すこと;
+- missing blob、malformed descriptor、hash-family mismatch、digest/output mismatch が
+  miss を返すこと;
 - concurrent identical writer が収束すること;
 - 同じ digest に対する divergent writer が reject されること;
 - blob 削除が build semantics を変えずに miss を起こすこと。
@@ -299,7 +307,7 @@ task 9 は少なくとも以下を cover する:
 |---|---|---|
 | `CACHESTORE-G001` | `external_dependency_gap` | `mizar-build` scheduler integration は未準備。この仕様は lookup/insert semantics だけを定義し、placeholder scheduling は追加しない。 |
 | `CACHESTORE-G002` | `external_dependency_gap` | `mizar-ir` cache adapter は存在しない。record は opaque output bytes を持ってよいが、IR adapter API はここで作らない。 |
-| `CACHESTORE-G003` | `external_dependency_gap` | artifact committed publication-token integration は外部所有。task 8 は local availability と記録された dependency artifact domain/digest だけを check する。cache record は artifact owner が token を公開した後にだけ published artifact hash に依存できる。 |
+| `CACHESTORE-G003` | `external_dependency_gap` | artifact committed publication-token integration は外部所有。現在の cache store は local availability と記録された dependency artifact domain/digest だけを check する。cache record は artifact owner が token を公開した後にだけ published artifact hash に依存できる。 |
 | `CACHESTORE-G004` | `deferred` | `cluster-db` index storage は後続 cache task。この record store 仕様は unaccepted registration を importer-visible にしない。 |
 
 ## Non-Goals

@@ -153,7 +153,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
      なる。破損レコードの検出。
    - 依存: 3、7。仕様: `cache_store.md`。
 
-9. **blob ストア。** [ ]
+9. **blob ストア。** [x]
    - ハッシュ検証つき読み込みと安全な並行書き込みを備えた、大きな出力の
      content-addressed blob ストレージを実装する。
    - テスト: blob のラウンドトリップ。ハッシュ不一致の検出。並行 writer

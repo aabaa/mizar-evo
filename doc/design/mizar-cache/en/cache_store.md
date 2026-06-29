@@ -2,8 +2,8 @@
 
 > Canonical language: English. Japanese companion: [../ja/cache_store.md](../ja/cache_store.md).
 
-Status: specified by task 7. Inline record store implementation begins in
-task 8; content-addressed blob storage remains task 9.
+Status: specified by task 7. Task 8 implements inline records; task 9
+implements content-addressed blob-backed records.
 
 ## Purpose
 
@@ -30,6 +30,7 @@ audit code.
 ```rust
 pub const CACHE_RECORD_SCHEMA_VERSION: &str;
 pub const CACHE_RECORD_MAGIC: &[u8];
+pub const CACHE_BLOB_HASH_FAMILY: &str;
 
 pub struct CacheStoreRoot { ... }
 pub struct CacheRecordHeader { ... }
@@ -125,7 +126,7 @@ thread ids as compatibility inputs.
 
 ## Record Encoding
 
-Task 8 uses one binary record envelope:
+The record store uses one binary record envelope:
 
 ```text
 magic bytes
@@ -146,7 +147,8 @@ and duplicate identity keys are rejected before write. The payload is either:
 The output hash is computed over the canonical output bytes, not over the
 record file path or record envelope. A key hash mismatch, payload length
 mismatch, malformed canonical JSON, duplicate header key, unsupported enum
-variant, missing blob, or output hash mismatch is a miss.
+variant, malformed blob descriptor, missing blob, or output hash mismatch is a
+miss.
 
 ## Blob Store
 
@@ -156,13 +158,20 @@ Large outputs are stored content-addressably under:
 .mizar-cache/blobs/<hash-family>/<digest>
 ```
 
-The hash family is explicit. The initial implementation may use the same
-BLAKE3-based hash family used by cache keys and dependency fingerprints, but
-readers must treat unknown hash families as misses. Blob writes are atomic:
-write to `tmp/`, flush, verify the digest, and rename into the final digest
-path. Concurrent writers for identical bytes must converge on the same final
-file. Concurrent writers for different bytes cannot share the same digest
-unless the digest check succeeds, so a mismatch is a cache integrity miss.
+The task-9 hash family is `blake3`. Its digest is the lowercase hexadecimal
+encoding of the same domain-separated output hash recorded in
+`CacheOutputDescriptor.output_hash`, currently the BLAKE3 hash framed by the
+`mizar-cache/cache-record-output/v1` domain over canonical output bytes.
+Readers must reject unknown hash families, non-lowercase-hex digests, wrong
+digest lengths, and path-like digest spelling before constructing a blob read
+path.
+
+Blob writes are atomic: write to `tmp/`, flush, verify the digest, and publish
+to the final digest path with create-new/no-overwrite semantics such as a
+same-filesystem hard link. Concurrent writers for identical bytes must
+converge on the same final file. Concurrent writers for different bytes cannot
+share the same digest unless the digest check succeeds, so a mismatch is a
+cache integrity miss.
 
 Blob references are internal. Published artifacts must be readable without
 loading cache blobs.
@@ -218,12 +227,13 @@ data must not live in the reusable `records/<phase>/` namespace and must never
 return `Hit`.
 
 Writes use temporary files under `tmp/`, validate the complete encoded record,
-flush, and publish with create-new/no-overwrite semantics. Task 8 may publish
-by creating a same-filesystem hard link from the flushed temporary file to the
-final record path, then deleting the temporary file. Two writers racing for
-the same key must either publish byte-identical records or one writer must
-lose without changing observable semantics. Divergent contents for the same
-validated key are a cache integrity miss, not competing proof outcomes.
+flush, and publish with create-new/no-overwrite semantics. The implementation
+may publish by creating a same-filesystem hard link from the flushed temporary
+file to the final record path, then deleting the temporary file. Two writers
+racing for the same key must either publish byte-identical records or one
+writer must lose without changing observable semantics. Divergent contents for
+the same validated key are a cache integrity miss, not competing proof
+outcomes.
 
 ## Miss Reasons
 
@@ -300,10 +310,11 @@ Task 8 covers at least:
 - output hash mismatch returning miss;
 - record write order and arrival order not changing lookup results.
 
-Task 9 should cover at least:
+Task 9 covers at least:
 
 - blob round-trip by content digest;
-- missing blob and digest mismatch returning misses;
+- missing blob, malformed descriptor, hash-family mismatch, and digest/output
+  mismatch returning misses;
 - concurrent identical writers converging;
 - divergent writers for the same digest being rejected;
 - blob deletion causing a miss without changing build semantics.
@@ -314,7 +325,7 @@ Task 9 should cover at least:
 |---|---|---|
 | `CACHESTORE-G001` | `external_dependency_gap` | `mizar-build` scheduler integration is not ready. This spec defines lookup/insert semantics only and does not add placeholder scheduling. |
 | `CACHESTORE-G002` | `external_dependency_gap` | `mizar-ir` cache adapters are absent. Records may carry opaque output bytes, but no IR adapter API is created here. |
-| `CACHESTORE-G003` | `external_dependency_gap` | Artifact committed publication-token integration is external. Task 8 checks only local availability plus the recorded dependency artifact domain/digest. Cache records may depend on published artifact hashes only after the artifact owner exposes the token. |
+| `CACHESTORE-G003` | `external_dependency_gap` | Artifact committed publication-token integration is external. The current cache store checks only local availability plus the recorded dependency artifact domain/digest. Cache records may depend on published artifact hashes only after the artifact owner exposes the token. |
 | `CACHESTORE-G004` | `deferred` | `cluster-db` index storage is a later cache task. This record store spec does not make unaccepted registrations importer-visible. |
 
 ## Non-Goals
