@@ -24,18 +24,18 @@ Projection consumes:
 - the active `VerifierPolicy` or an equivalent publication profile for the
   current build;
 - stable obligation identity supplied by the VC/artifact producer:
-  `VcId`, obligation id, `ObligationAnchor`, obligation fingerprint, source
-  range or diagnostic anchor, canonical VC fingerprint, canonical local-context
-  fingerprint, dependency-slice fingerprint, and policy fingerprint;
+  `VcId`, obligation id, `ObligationAnchor`, obligation fingerprint, canonical
+  VC fingerprint, canonical local-context fingerprint, and dependency-slice
+  fingerprint;
 - optional trusted kernel result references for selected trusted classes,
   bound to the selected accepted evidence hash;
 - optional diagnostic or explanation references produced by the policy,
   kernel, ATP, or diagnostics owner.
 
 Projection must reject stale or mismatched inputs. A `VcId`,
-`ObligationAnchor`, source range, arrival order, completion time, runtime
-duration, backend profile runtime, or cache hit alone is never proof identity
-and is never sufficient for status reuse.
+`ObligationAnchor`, arrival order, completion time, runtime duration, backend
+profile runtime, or cache hit alone is never proof identity and is never
+sufficient for status reuse.
 
 ## Status Model
 
@@ -83,16 +83,25 @@ are not accepted dependency facts.
 
 ## Diagnostics And Explanations
 
-Every non-accepted projection has a stable explanation surface:
+Every non-accepted projection has a stable explanation surface made from
+metadata and diagnostics-owned references:
 
-- `externally_attested` records the external admission status and policy
-  fingerprint;
-- `policy_assumed` records the policy assumption reason and policy fingerprint;
-- `open` records the open-obligation reason and any best diagnostic reference;
-- `rejected` records the failure layer: policy rejection, evidence rejection,
-  kernel rejection, backend exhaustion, or invalid selection input;
-- `NoSelectableEvidence` records a generated no-selectable-evidence diagnostic
-  result id.
+- `externally_attested` records the external admission status, policy
+  fingerprint, selected class, selection reason, and optional explanation ref;
+- `policy_assumed` records the selected class, selection reason, policy
+  fingerprint, and optional explanation ref;
+- `open` records the selected class, selection reason, ordered diagnostic refs,
+  and optional explanation ref;
+- `rejected` records the selected class, selection reason, ordered diagnostic
+  refs, and optional explanation ref;
+- `NoSelectableEvidence` records the selected class, selection reason, ordered
+  diagnostic refs, optional explanation ref, and generated diagnostic result
+  id.
+
+Structured policy-assumption, open-obligation, rejection-layer, and backend
+exhaustion details are diagnostics-owned payloads referenced through stable
+diagnostic or explanation refs. Status projection does not embed those payloads
+directly.
 
 Diagnostic ordering follows architecture 19: source identity, source range,
 phase order, severity, diagnostic code, and stable detail key. Parallel

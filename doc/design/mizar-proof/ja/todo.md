@@ -322,13 +322,20 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
       cache authority、trusted-status promotion、external-evidence upgrade は
       追加していない。
 
-18. **architecture-22 フォローアップ監査。** [ ]
+18. **architecture-22 フォローアップ監査。** [x]
     - task 17 の reuse-metadata export 契約について、ソース/仕様対応監査と
       二言語ドキュメント同期監査を再実行する。残る trust-boundary、
       witness-hash、deterministic discharge、policy-selection gap を
       フォローアップタスクとして記録する。
     - 依存: 17。仕様: 全モジュール仕様、本 TODO、リポジトリの
       ドキュメント方針。
+    - 状態: paired
+      [`architecture_22_audit.md`](./architecture_22_audit.md) docs を追加した。
+      audit は task-17 reuse metadata が proof authority ではなく validation
+      contract のままであることを確認し、cache、artifact witness、committed
+      publication、kernel metadata、ATP integration、non-blocking branch coverage
+      gap を記録し、`mizar-atp` closeout guard mismatch を本 task では修復せず
+      `repo_metadata_conflict` として報告する。
 
 19. **module 境界リファクタリング gate。** [ ]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、

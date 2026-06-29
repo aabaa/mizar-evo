@@ -333,13 +333,20 @@ Keep `cargo test -p mizar-proof` green after each task (see
       only. No cache lookup, cache authority, trusted-status promotion, or
       external-evidence upgrade was added.
 
-18. **Architecture-22 follow-up audit.** [ ]
+18. **Architecture-22 follow-up audit.** [x]
     - Re-run the source/spec correspondence and bilingual documentation sync
       audits for the task-17 reuse-metadata export contract; record any
       remaining trust-boundary, witness-hash, deterministic discharge, or
       policy-selection gaps as follow-up tasks.
     - Deps: 17. Spec: all module specs, this TODO, and repository
       documentation policy.
+    - Status: added paired
+      [`architecture_22_audit.md`](./architecture_22_audit.md) docs. The audit
+      confirms task-17 reuse metadata remains a validation contract, not proof
+      authority; records remaining cache, artifact witness, committed
+      publication, kernel-metadata, ATP integration, and non-blocking branch
+      coverage gaps; and reports the `mizar-atp` closeout guard mismatch as a
+      `repo_metadata_conflict` without repairing it in this task.
 
 19. **Module-boundary refactor gate.** [ ]
     - Before treating the crate as ready for downstream consumers, audit the

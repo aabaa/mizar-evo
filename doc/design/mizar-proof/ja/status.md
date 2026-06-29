@@ -21,18 +21,17 @@ projection は次を消費する:
 - deterministic selection merge が作る `ArtifactProofSelection` stream;
 - 現在の build に対する active `VerifierPolicy` または同等の publication profile;
 - VC/artifact producer が供給する stable obligation identity:
-  `VcId`、obligation id、`ObligationAnchor`、obligation fingerprint、source range
-  または diagnostic anchor、canonical VC fingerprint、canonical local-context
-  fingerprint、dependency-slice fingerprint、policy fingerprint;
+  `VcId`、obligation id、`ObligationAnchor`、obligation fingerprint、canonical
+  VC fingerprint、canonical local-context fingerprint、dependency-slice
+  fingerprint;
 - selected trusted class に対し、selected accepted evidence hash に bind された
   optional trusted kernel result reference;
 - policy、kernel、ATP、diagnostics owner が作った optional diagnostic または
   explanation reference。
 
 projection は stale または不一致な入力を reject しなければならない。`VcId`、
-`ObligationAnchor`、source range、arrival order、completion time、runtime duration、
-backend profile runtime、cache hit だけは proof identity ではなく、status reuse に
-十分ではない。
+`ObligationAnchor`、arrival order、completion time、runtime duration、backend profile
+runtime、cache hit だけは proof identity ではなく、status reuse に十分ではない。
 
 ## 状態モデル
 
@@ -78,14 +77,23 @@ dependency fact ではない。
 
 ## Diagnostics And Explanations
 
-すべての non-accepted projection は安定した explanation surface を持つ:
+すべての non-accepted projection は、metadata と diagnostics-owned reference から
+作られる安定した explanation surface を持つ:
 
-- `externally_attested` は external admission status と policy fingerprint を記録する;
-- `policy_assumed` は policy assumption reason と policy fingerprint を記録する;
-- `open` は open-obligation reason と、利用可能なら best diagnostic reference を記録する;
-- `rejected` は policy rejection、evidence rejection、kernel rejection、backend
-  exhaustion、invalid selection input の failure layer を記録する;
-- `NoSelectableEvidence` は生成された no-selectable-evidence diagnostic result id を記録する。
+- `externally_attested` は external admission status、policy fingerprint、selected
+  class、selection reason、optional explanation ref を記録する;
+- `policy_assumed` は selected class、selection reason、policy fingerprint、
+  optional explanation ref を記録する;
+- `open` は selected class、selection reason、ordered diagnostic ref、optional
+  explanation ref を記録する;
+- `rejected` は selected class、selection reason、ordered diagnostic ref、optional
+  explanation ref を記録する;
+- `NoSelectableEvidence` は selected class、selection reason、ordered diagnostic ref、
+  optional explanation ref、generated diagnostic result id を記録する。
+
+structured policy-assumption、open-obligation、rejection-layer、backend exhaustion
+detail は diagnostics-owned payload であり、stable diagnostic または explanation ref
+を通じて参照される。status projection はそれらの payload を直接 embed しない。
 
 diagnostic ordering は architecture 19 に従う: source identity、source range、
 phase order、severity、diagnostic code、stable detail key である。parallel completion
