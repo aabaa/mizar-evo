@@ -214,7 +214,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
       synchronize content.
     - Deps: 16. Spec: repository documentation policy.
 
-18. **Architecture-22 follow-up audit.** [ ]
+18. **Architecture-22 follow-up audit.** [x]
     - Re-run the source/spec correspondence and bilingual documentation sync
       audits for the publisher, cache-adapter, and snapshot-replacement
       contract added for architecture 22: obsolete outputs cannot publish as

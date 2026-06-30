@@ -208,7 +208,7 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
       同期する。
     - 依存: 16。仕様: リポジトリのドキュメント方針。
 
-18. **architecture-22 フォローアップ監査。** [ ]
+18. **architecture-22 フォローアップ監査。** [x]
     - architecture 22 のために追加した publisher、cache-adapter、
       snapshot-replacement 契約について、ソース/仕様対応監査と二言語
       ドキュメント同期監査を再実行する。obsolete output は current として
