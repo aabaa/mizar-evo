@@ -20,6 +20,7 @@ use crate::{
     storage::{
         AnyPhaseOutputRef, BlobDecoder, IrSideTables, IrStorageService, PendingOutputSlot,
         PhaseOutputRef, SchemaVersion, SealCanonicalOutputInput, SideTableRecord, StorageError,
+        StorageGeneration,
     },
 };
 
@@ -116,7 +117,14 @@ pub struct PhaseOutputPublisher {
 struct PublisherState {
     current_snapshots: HashSet<BuildSnapshotId>,
     obsolete_snapshots: HashSet<BuildSnapshotId>,
+    current_outputs: HashSet<CurrentOutputRoot>,
     allowed_work_units: HashSet<AllowedWorkUnit>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, std::hash::Hash)]
+struct CurrentOutputRoot {
+    output: PhaseOutputId,
+    generation: StorageGeneration,
 }
 
 /// Errors reported by the phase-output publisher.
@@ -160,6 +168,22 @@ pub enum PublishError {
         parent: PhaseOutputId,
         /// Parent snapshot.
         parent_snapshot: BuildSnapshotId,
+    },
+    /// Output handle belongs to a different snapshot.
+    OutputSnapshotMismatch {
+        /// Publish snapshot.
+        snapshot: BuildSnapshotId,
+        /// Output id.
+        output: PhaseOutputId,
+        /// Output snapshot.
+        output_snapshot: BuildSnapshotId,
+    },
+    /// Output is sealed but was not published as a current/package result.
+    OutputNotCurrentPackage {
+        /// Current snapshot.
+        snapshot: BuildSnapshotId,
+        /// Output id.
+        output: PhaseOutputId,
     },
     /// Canonical payload bytes were missing.
     MissingCanonicalPayload,
@@ -218,6 +242,50 @@ impl PhaseOutputPublisher {
         Ok(())
     }
 
+    /// Validates that a snapshot is eligible for current/package projection.
+    pub fn validate_current_snapshot(&self, snapshot: BuildSnapshotId) -> Result<(), PublishError> {
+        let state = self.state.lock().expect("publisher mutex poisoned");
+        validate_snapshot_state(
+            &state,
+            snapshot,
+            OutputOrigin::PackageSource,
+            PublicationTarget::CurrentPackage,
+        )
+    }
+
+    /// Validates that a sealed output was published as a current/package result.
+    pub fn validate_current_output(
+        &self,
+        snapshot: BuildSnapshotId,
+        output: &AnyPhaseOutputRef,
+    ) -> Result<(), PublishError> {
+        let state = self.state.lock().expect("publisher mutex poisoned");
+        validate_snapshot_state(
+            &state,
+            snapshot,
+            OutputOrigin::PackageSource,
+            PublicationTarget::CurrentPackage,
+        )?;
+        if output.snapshot() != snapshot {
+            return Err(PublishError::OutputSnapshotMismatch {
+                snapshot,
+                output: output.output(),
+                output_snapshot: output.snapshot(),
+            });
+        }
+        let root = CurrentOutputRoot {
+            output: output.output(),
+            generation: output.generation(),
+        };
+        if !state.current_outputs.contains(&root) {
+            return Err(PublishError::OutputNotCurrentPackage {
+                snapshot,
+                output: output.output(),
+            });
+        }
+        Ok(())
+    }
+
     /// Registers an explicit allowed work-unit context.
     pub fn allow_work_unit(&self, allowed: AllowedWorkUnit) {
         self.state
@@ -257,7 +325,7 @@ impl PhaseOutputPublisher {
         T: Send + Sync + 'static,
     {
         let slot_for_abandon = input.slot.clone();
-        let state = self.state.lock().expect("publisher mutex poisoned");
+        let mut state = self.state.lock().expect("publisher mutex poisoned");
         if let Err(error) =
             validate_snapshot_state(&state, input.snapshot, input.origin, input.target)
         {
@@ -337,6 +405,8 @@ impl PhaseOutputPublisher {
             }
         };
         let lineage = registration.lineage.clone();
+        let output = lineage.output;
+        let publishes_current = input.target == PublicationTarget::CurrentPackage;
 
         match self.storage.seal_canonical(SealCanonicalOutputInput {
             slot: input.slot,
@@ -346,7 +416,15 @@ impl PhaseOutputPublisher {
             canonical_bytes: canonical_payload,
             decode: input.decode,
         }) {
-            Ok(handle) => Ok(handle),
+            Ok(handle) => {
+                if publishes_current {
+                    state.current_outputs.insert(CurrentOutputRoot {
+                        output,
+                        generation: handle.any().generation(),
+                    });
+                }
+                Ok(handle)
+            }
             Err(error) => {
                 if registration.status == PhaseOutputRegistrationStatus::Inserted {
                     self.registry.rollback_inserted_output(&lineage);
@@ -446,6 +524,22 @@ impl fmt::Display for PublishError {
                 write!(
                     formatter,
                     "parent `{parent:?}` from `{parent_snapshot:?}` cannot be used for `{snapshot:?}`"
+                )
+            }
+            Self::OutputSnapshotMismatch {
+                snapshot,
+                output,
+                output_snapshot,
+            } => {
+                write!(
+                    formatter,
+                    "output `{output:?}` from `{output_snapshot:?}` cannot be used for `{snapshot:?}`"
+                )
+            }
+            Self::OutputNotCurrentPackage { snapshot, output } => {
+                write!(
+                    formatter,
+                    "output `{output:?}` was not published as current/package output for `{snapshot:?}`"
                 )
             }
             Self::MissingCanonicalPayload => formatter.write_str("missing canonical payload bytes"),

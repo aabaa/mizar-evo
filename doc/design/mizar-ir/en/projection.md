@@ -35,7 +35,9 @@ driver-session, or publication-token APIs, and it must not depend on
 - validation that every projected source item comes from sealed, readable
   outputs in the intended current snapshot;
 - conversion from crate-local projection input records to the stable
-  `mizar-artifact` `VerifiedArtifact` schema shape;
+  `mizar-artifact` `VerifiedArtifact` schema shape. Until real producer
+  crates expose richer typed records, those crate-local records may directly
+  wrap strongly typed `mizar-artifact` schema structs;
 - deterministic ordering of projected exports, expression metadata,
   obligations, witness references, diagnostics, and dependency provenance;
 - rejection of raw internal IR leakage before a draft is returned;
@@ -101,7 +103,9 @@ not placeholder downstream APIs; they are the local validation boundary for
 tests and future integration.
 
 Crate-local projection input records must be strongly typed to the
-`mizar-artifact` fields listed in this document. They must not include
+`mizar-artifact` fields listed in this document. Task 12 may use the
+`mizar-artifact` schema structs themselves as that strongly typed boundary.
+They must not include
 arbitrary extension maps, raw JSON blobs, byte payloads, or passthrough
 producer objects. This structural rule prevents raw IR from being smuggled
 through an "extension" escape hatch; tests may still use raw-looking sentinel
@@ -214,7 +218,8 @@ Failure conditions include:
 | output from obsolete snapshot used as current | fail projection; return no draft |
 | collected or unreadable handle | fail projection; return no draft |
 | schema/version mismatch with `mizar-artifact` | fail projection; return no draft |
-| unsorted or duplicate projected ids | fail projection; return no draft |
+| duplicate projected ids | fail projection; return no draft |
+| unsorted projected collections | canonicalize before draft validation |
 | raw IR or storage internals detected in projected fields | fail projection; return no draft |
 | witness/obligation schema inconsistency | fail projection; return no draft |
 | missing real diagnostics/producer/publication integration | classify as `external_dependency_gap`; do not add stubs |

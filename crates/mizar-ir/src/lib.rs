@@ -25,5 +25,8 @@ pub mod identity;
 /// Phase-output publisher for sealed handles.
 pub mod publisher;
 
+/// Artifact projection from sealed handles to stable external schemas.
+pub mod projection;
+
 /// Immutable phase-output storage and typed handles.
 pub mod storage;

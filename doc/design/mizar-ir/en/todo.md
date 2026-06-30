@@ -23,7 +23,7 @@ Module names follow the minimum split of
 | storage | `storage.md` (task 4) | `src/storage.rs` | [~] |
 | publisher | `publisher.md` (task 7) | `src/publisher.rs` | [x] |
 | cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [x] |
-| projection | `projection.md` (task 11) | `src/projection.rs` | [~] |
+| projection | `projection.md` (task 11) | `src/projection.rs` | [x] |
 
 `mizar-ir` owns compiler-internal IR storage and snapshot output handles:
 immutable storage slots for phase outputs, typed `PhaseOutputRef<T>` handles,
@@ -173,7 +173,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
     - Deps: 7. Spec: [internal 06](../../internal/en/06.ir_storage_and_snapshot_handles.md)
       "Artifact Projection Boundary".
 
-12. **Artifact projection service.** [ ]
+12. **Artifact projection service.** [x]
     - Implement projection from sealed outputs into
       `VerifiedArtifactDraft` values using the `mizar-artifact` schemas.
     - Tests: projection fixtures with test-local sealed fixture outputs;

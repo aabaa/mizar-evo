@@ -95,24 +95,19 @@ fn ir_manifest_dependency_boundary_stays_narrow() {
             "dependencies".to_owned(),
             vec![
                 "blake3 = \"1.8.5\"",
+                "mizar-artifact = { path = \"../mizar-artifact\" }",
                 "mizar-cache = { path = \"../mizar-cache\" }",
                 "mizar-session = { path = \"../mizar-session\" }",
             ],
         )],
-        "{} task 10 must keep production dependencies limited to deterministic \
-         hashing, mizar-session, and the mizar-cache validation seam; artifact \
-         dependencies arrive only in their later task specs, and \
-         mizar-driver/mizar-diagnostics must remain absent",
+        "{} task 12 must keep production dependencies limited to deterministic \
+         hashing, mizar-session, mizar-cache validation, and mizar-artifact \
+         stable schemas; mizar-driver/mizar-diagnostics must remain absent",
         manifest_path.display()
     );
 
     for (section, lines) in &dependency_sections {
-        for forbidden in [
-            "mizar-artifact",
-            "mizar-build",
-            "mizar-diagnostics",
-            "mizar-driver",
-        ] {
+        for forbidden in ["mizar-build", "mizar-diagnostics", "mizar-driver"] {
             assert!(
                 lines.iter().all(|line| !line.contains(forbidden)),
                 "{} must not list premature downstream crate `{forbidden}` in [{section}]",
