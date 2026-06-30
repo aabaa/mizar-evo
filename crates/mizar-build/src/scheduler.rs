@@ -1,6 +1,10 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use crate::{
+    cache_seam::{
+        CacheSchedulingOutcome, CacheSchedulingPlan, CacheSchedulingPlanDiagnosticKind,
+        ValidatedCacheHit,
+    },
     cancel::{CancellationCheckpoint, CancellationDecision, CancellationState},
     failure_state::{BlockReason, BlockedTaskRecord, BuildFailureRecord},
     resource::{
@@ -22,6 +26,7 @@ pub struct SchedulerInput {
     pub mode: SchedulerMode,
     pub priority_hints: PriorityHints,
     pub cache: CacheSchedulingPolicy,
+    pub cache_decisions: CacheSchedulingPlan,
     pub resource_budget: ResourceBudget,
     pub cancellation: CancellationPolicy,
     pub task_outcomes: Vec<SyntheticTaskOutcome>,
@@ -96,6 +101,7 @@ pub struct PriorityHints {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CacheSchedulingPolicy {
     Disabled,
+    Enabled,
     Miss,
     Unavailable,
     ErrorAsMiss,
@@ -178,7 +184,9 @@ pub struct SchedulerDiagnostic {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum SchedulerDiagnosticKind {
+    DuplicateCacheDecision,
     DuplicateOutcome,
+    UnknownCacheDecision,
     UnknownTask,
     MissingRootTask,
     IncompleteDependencyCoverage,
@@ -191,6 +199,7 @@ struct SchedulerBuilder {
     graph_order: BTreeMap<TaskId, usize>,
     tasks_by_id: BTreeMap<TaskId, BuildTask>,
     outcomes_by_task: BTreeMap<TaskId, SyntheticTaskOutcome>,
+    cache_decisions_by_task: BTreeMap<TaskId, CacheSchedulingOutcome>,
     dependents_by_task: BTreeMap<TaskId, Vec<TaskId>>,
     states: BTreeMap<TaskId, TaskStateRecord>,
     results: BTreeMap<TaskId, SchedulerResult>,
@@ -213,6 +222,7 @@ impl SchedulerInput {
             mode: SchedulerMode::Batch,
             priority_hints: PriorityHints::default(),
             cache: CacheSchedulingPolicy::Disabled,
+            cache_decisions: CacheSchedulingPlan::default(),
             resource_budget: ResourceBudget::default(),
             cancellation: CancellationPolicy::default(),
             task_outcomes: Vec::new(),
@@ -324,6 +334,7 @@ impl SchedulerBuilder {
             graph_order,
             tasks_by_id,
             outcomes_by_task: BTreeMap::new(),
+            cache_decisions_by_task: BTreeMap::new(),
             dependents_by_task,
             states: BTreeMap::new(),
             results: BTreeMap::new(),
@@ -341,6 +352,7 @@ impl SchedulerBuilder {
 
     fn run(mut self) -> Result<(SchedulerRun, Vec<Vec<TaskId>>), SchedulerDiagnostics> {
         self.validate_outcomes();
+        self.validate_cache_decisions();
         if !self.diagnostics.is_empty() {
             sort_scheduler_diagnostics(&mut self.diagnostics, &self.graph_order);
             return Err(SchedulerDiagnostics {
@@ -445,6 +457,39 @@ impl SchedulerBuilder {
         }
     }
 
+    fn validate_cache_decisions(&mut self) {
+        let known_tasks = self.tasks_by_id.keys().cloned().collect::<BTreeSet<_>>();
+        match self
+            .input
+            .cache_decisions
+            .validated_decision_map(&known_tasks)
+        {
+            Ok(decisions) => {
+                self.cache_decisions_by_task = decisions;
+            }
+            Err(diagnostics) => {
+                self.diagnostics
+                    .extend(
+                        diagnostics
+                            .into_diagnostics()
+                            .into_iter()
+                            .map(|diagnostic| SchedulerDiagnostic {
+                                task_id: Some(diagnostic.task_id.clone()),
+                                kind: match diagnostic.kind {
+                                    CacheSchedulingPlanDiagnosticKind::DuplicateDecision => {
+                                        SchedulerDiagnosticKind::DuplicateCacheDecision
+                                    }
+                                    CacheSchedulingPlanDiagnosticKind::UnknownTask => {
+                                        SchedulerDiagnosticKind::UnknownCacheDecision
+                                    }
+                                },
+                                value: Some(diagnostic.task_id.as_str().to_owned()),
+                            }),
+                    );
+            }
+        }
+    }
+
     fn initialize_states(&mut self) {
         let mut root_count = 0_usize;
         for task in self.input.graph.tasks.clone() {
@@ -523,6 +568,15 @@ impl SchedulerBuilder {
                         self.block_dependents(&task_id);
                         continue;
                     }
+                    if self.apply_cache_decision_if_hit(&task) {
+                        made_progress = true;
+                        if self.states.get(&task_id).is_some_and(|record| {
+                            matches!(record.state, TaskState::Cancelled | TaskState::Failed)
+                        }) {
+                            self.block_dependents(&task_id);
+                        }
+                        continue;
+                    }
                     match self.try_admit_ready_task(&task) {
                         ResourceAdmissionStatus::Admitted => {
                             made_progress = true;
@@ -594,6 +648,7 @@ impl SchedulerBuilder {
     fn execute_task(&self, task: &BuildTask) -> TaskState {
         match self.input.cache {
             CacheSchedulingPolicy::Disabled
+            | CacheSchedulingPolicy::Enabled
             | CacheSchedulingPolicy::Miss
             | CacheSchedulingPolicy::Unavailable
             | CacheSchedulingPolicy::ErrorAsMiss => {}
@@ -617,6 +672,32 @@ impl SchedulerBuilder {
             }
             Some(SyntheticTaskStatus::Complete) | None => TaskState::Completed,
         }
+    }
+
+    fn apply_cache_decision_if_hit(&mut self, task: &BuildTask) -> bool {
+        if self.input.cache != CacheSchedulingPolicy::Enabled {
+            return false;
+        }
+        let Some(decision) = self.cache_decisions_by_task.get(&task.id).cloned() else {
+            return false;
+        };
+        let CacheSchedulingOutcome::ValidatedHit(hit) = decision else {
+            return false;
+        };
+
+        let final_state = self.apply_publication_freshness(task, TaskState::CacheHit);
+        self.set_state(&task.id, final_state);
+        if final_state == TaskState::CacheHit {
+            self.record_cache_hit_result(task, hit);
+        } else {
+            self.record_result(task, final_state);
+        }
+        self.events.push(event_for_task(
+            SchedulerEventKind::TaskFinished,
+            &task.id,
+            self.graph_index(&task.id),
+        ));
+        true
     }
 
     fn new_ready_tasks(&mut self) -> VecDeque<TaskId> {
@@ -1007,6 +1088,38 @@ impl SchedulerBuilder {
         );
     }
 
+    fn record_cache_hit_result(&mut self, task: &BuildTask, hit: ValidatedCacheHit) {
+        let mut output_refs = hit
+            .output_refs
+            .into_iter()
+            .map(|output| SyntheticOutputRef::new(output.identity, output.content))
+            .collect::<Vec<_>>();
+        output_refs.sort();
+        output_refs.dedup();
+        let mut diagnostics = hit
+            .diagnostics
+            .into_iter()
+            .map(|diagnostic| {
+                SchedulerDiagnosticRef::new(diagnostic.source, diagnostic.code, diagnostic.message)
+            })
+            .collect::<Vec<_>>();
+        diagnostics.sort();
+        diagnostics.dedup();
+        self.results.insert(
+            task.id.clone(),
+            SchedulerResult {
+                task_id: task.id.clone(),
+                state: TaskState::CacheHit,
+                canonical_order: SchedulerOrderKey {
+                    graph_index: self.graph_index(&task.id),
+                    lifecycle_rank: lifecycle_rank(SchedulerEventKind::TaskFinished),
+                },
+                output_refs,
+                diagnostics,
+            },
+        );
+    }
+
     fn graph_index(&self, task_id: &TaskId) -> usize {
         self.graph_order.get(task_id).copied().unwrap_or(usize::MAX)
     }
@@ -1258,6 +1371,7 @@ fn sort_scheduler_diagnostics(
 mod tests {
     use super::*;
     use crate::{
+        cache_seam::{CacheDiagnosticRef, CacheFallbackReason, CacheOutputRef, CacheTaskDecision},
         failure_state::{BlockReason, FailureCategory},
         module_index::{ModuleId, ModuleIndex, ModuleIndexEntry, ModuleIndexLocation},
         planner::{
@@ -1901,6 +2015,311 @@ mod tests {
     }
 
     #[test]
+    fn validated_cache_hit_skips_execution_and_publishes_clean_equivalent_outputs() {
+        let graph = sample_graph();
+        let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+        let clean_output = SyntheticOutputRef::new("frontend-summary", "clean");
+        let clean_diagnostic = SchedulerDiagnosticRef::new("frontend", "W001", "clean warning");
+        let clean = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            task_outcomes: vec![SyntheticTaskOutcome {
+                task_id: frontend.clone(),
+                status: SyntheticTaskStatus::Complete,
+                outputs: vec![clean_output.clone()],
+                diagnostics: vec![clean_diagnostic.clone()],
+            }],
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("clean run succeeds");
+
+        let hit = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cache: CacheSchedulingPolicy::Enabled,
+            cache_decisions: CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+                frontend.clone(),
+                CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                    vec![
+                        CacheOutputRef::new("frontend-summary", "clean"),
+                        CacheOutputRef::new("frontend-summary", "clean"),
+                    ],
+                    vec![CacheDiagnosticRef::new("frontend", "W001", "clean warning")],
+                )),
+            )]),
+            task_outcomes: vec![SyntheticTaskOutcome::fail(
+                frontend.clone(),
+                vec![SchedulerDiagnosticRef::new(
+                    "frontend",
+                    "E999",
+                    "would fail if executed",
+                )],
+            )],
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("cache-hit run succeeds");
+
+        assert_eq!(state_for(&hit, &frontend), TaskState::CacheHit);
+        assert_eq!(
+            result_for(&hit, &frontend).output_refs,
+            result_for(&clean, &frontend).output_refs
+        );
+        assert_eq!(
+            result_for(&hit, &frontend).diagnostics,
+            result_for(&clean, &frontend).diagnostics
+        );
+        assert!(hit.failure_records.is_empty());
+        assert!(hit.events.iter().all(|event| {
+            event.task_id.as_ref() != Some(&frontend)
+                || event.kind != SchedulerEventKind::TaskStarted
+        }));
+        assert!(
+            hit.resource_telemetry
+                .iter()
+                .all(|telemetry| telemetry.task_id != frontend)
+        );
+        assert_eq!(
+            state_for(&hit, &task_id_for_kind(&graph, TaskKind::ArtifactCommit)),
+            TaskState::Completed
+        );
+    }
+
+    #[test]
+    fn cache_hit_result_canonicalizes_public_payload_fields() {
+        let graph = sample_graph();
+        let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cache: CacheSchedulingPolicy::Enabled,
+            cache_decisions: CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+                frontend.clone(),
+                CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit {
+                    output_refs: vec![
+                        CacheOutputRef::new("b", "second"),
+                        CacheOutputRef::new("a", "first"),
+                        CacheOutputRef::new("a", "first"),
+                    ],
+                    diagnostics: vec![
+                        CacheDiagnosticRef::new("frontend", "W002", "later"),
+                        CacheDiagnosticRef::new("frontend", "W001", "earlier"),
+                        CacheDiagnosticRef::new("frontend", "W001", "earlier"),
+                    ],
+                }),
+            )]),
+            ..SchedulerInput::new(graph)
+        })
+        .expect("cache-hit run succeeds");
+
+        assert_eq!(
+            result_for(&run, &frontend).output_refs,
+            vec![
+                SyntheticOutputRef::new("a", "first"),
+                SyntheticOutputRef::new("b", "second"),
+            ]
+        );
+        assert_eq!(
+            result_for(&run, &frontend).diagnostics,
+            vec![
+                SchedulerDiagnosticRef::new("frontend", "W001", "earlier"),
+                SchedulerDiagnosticRef::new("frontend", "W002", "later"),
+            ]
+        );
+    }
+
+    #[test]
+    fn obsolete_cache_hit_is_cancelled_without_publication_and_blocks_dependents() {
+        let graph = sample_graph();
+        let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+        let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cache: CacheSchedulingPolicy::Enabled,
+            cache_decisions: CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+                frontend.clone(),
+                CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                    vec![CacheOutputRef::new("frontend", "stale cached output")],
+                    vec![CacheDiagnosticRef::new(
+                        "frontend",
+                        "W001",
+                        "stale cached diagnostic",
+                    )],
+                )),
+            )]),
+            cancellation: CancellationPolicy::default()
+                .with_obsolete_completed_task(frontend.clone()),
+            ..SchedulerInput::new(graph)
+        })
+        .expect("obsolete cache-hit run succeeds");
+
+        assert_eq!(state_for(&run, &frontend), TaskState::Cancelled);
+        let result = result_for(&run, &frontend);
+        assert_eq!(result.state, TaskState::Cancelled);
+        assert!(result.output_refs.is_empty());
+        assert!(result.diagnostics.is_empty());
+        assert_eq!(state_for(&run, &artifact), TaskState::Blocked);
+        assert!(run.blocked_records.iter().any(|record| {
+            record.blocked_by.contains(&frontend)
+                && record.reason == BlockReason::DependencyCancelled
+        }));
+    }
+
+    #[test]
+    fn cache_fallback_decisions_execute_normally() {
+        for outcome in [
+            CacheSchedulingOutcome::Miss(CacheFallbackReason::Miss),
+            CacheSchedulingOutcome::NoKey(CacheFallbackReason::NoKey),
+            CacheSchedulingOutcome::Unavailable(CacheFallbackReason::Unavailable),
+            CacheSchedulingOutcome::ErrorAsMiss(CacheFallbackReason::Error),
+        ] {
+            let graph = sample_graph();
+            let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+            let run = run_scheduler(SchedulerInput {
+                graph: graph.clone(),
+                cache: CacheSchedulingPolicy::Enabled,
+                cache_decisions: CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+                    frontend.clone(),
+                    outcome,
+                )]),
+                task_outcomes: vec![SyntheticTaskOutcome::complete(
+                    frontend.clone(),
+                    vec![SyntheticOutputRef::new("frontend", "executed")],
+                )],
+                ..SchedulerInput::new(graph)
+            })
+            .expect("fallback run succeeds");
+
+            assert_eq!(state_for(&run, &frontend), TaskState::Completed);
+            assert_eq!(
+                result_for(&run, &frontend).output_refs,
+                vec![SyntheticOutputRef::new("frontend", "executed")]
+            );
+            assert!(
+                run.events.iter().any(|event| {
+                    event.task_id.as_ref() == Some(&frontend)
+                        && event.kind == SchedulerEventKind::TaskStarted
+                }),
+                "fallback decision must execute the task"
+            );
+        }
+    }
+
+    #[test]
+    fn disabled_cache_scheduling_ignores_validated_hits() {
+        let graph = sample_graph();
+        let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cache: CacheSchedulingPolicy::Disabled,
+            cache_decisions: CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+                frontend.clone(),
+                CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                    vec![CacheOutputRef::new("frontend", "cached")],
+                    Vec::new(),
+                )),
+            )]),
+            task_outcomes: vec![SyntheticTaskOutcome::complete(
+                frontend.clone(),
+                vec![SyntheticOutputRef::new("frontend", "executed")],
+            )],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("disabled cache run succeeds");
+
+        assert_eq!(state_for(&run, &frontend), TaskState::Completed);
+        assert_eq!(
+            result_for(&run, &frontend).output_refs,
+            vec![SyntheticOutputRef::new("frontend", "executed")]
+        );
+        assert!(
+            run.task_states.iter().all(|record| {
+                record.task_id != frontend || record.state != TaskState::CacheHit
+            })
+        );
+    }
+
+    #[test]
+    fn cache_decision_boundary_rejects_duplicate_and_unknown_tasks() {
+        let graph = sample_graph();
+        let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+        let unknown = TaskId::new_for_test("unknown-cache-decision-task");
+        let diagnostics = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cache: CacheSchedulingPolicy::Enabled,
+            cache_decisions: CacheSchedulingPlan::new(vec![
+                CacheTaskDecision::new(
+                    frontend.clone(),
+                    CacheSchedulingOutcome::Miss(CacheFallbackReason::Miss),
+                ),
+                CacheTaskDecision::new(
+                    frontend.clone(),
+                    CacheSchedulingOutcome::NoKey(CacheFallbackReason::NoKey),
+                ),
+                CacheTaskDecision::new(
+                    unknown.clone(),
+                    CacheSchedulingOutcome::Unavailable(CacheFallbackReason::Unavailable),
+                ),
+            ]),
+            ..SchedulerInput::new(graph)
+        })
+        .expect_err("invalid cache decision plan is rejected");
+
+        assert!(diagnostics.diagnostics().iter().any(|diagnostic| {
+            diagnostic.task_id.as_ref() == Some(&frontend)
+                && diagnostic.kind == SchedulerDiagnosticKind::DuplicateCacheDecision
+        }));
+        assert!(diagnostics.diagnostics().iter().any(|diagnostic| {
+            diagnostic.task_id.as_ref() == Some(&unknown)
+                && diagnostic.kind == SchedulerDiagnosticKind::UnknownCacheDecision
+        }));
+    }
+
+    #[test]
+    fn cache_hit_collation_is_deterministic_across_worker_order() {
+        let graph = multi_module_graph();
+        let main = task_id_for_module_kind(&graph, TaskKind::Frontend, "app", "main");
+        let util = task_id_for_module_kind(&graph, TaskKind::Frontend, "app", "util");
+        let cache_decisions = CacheSchedulingPlan::new(vec![
+            CacheTaskDecision::new(
+                util.clone(),
+                CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                    vec![CacheOutputRef::new("util", "cached")],
+                    Vec::new(),
+                )),
+            ),
+            CacheTaskDecision::new(
+                main.clone(),
+                CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                    vec![CacheOutputRef::new("main", "cached")],
+                    Vec::new(),
+                )),
+            ),
+        ]);
+        let canonical = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cache: CacheSchedulingPolicy::Enabled,
+            cache_decisions: cache_decisions.clone(),
+            worker_count: 1,
+            completion_order: CompletionOrder::Canonical,
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("canonical cache-hit run succeeds");
+        let reverse = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cache: CacheSchedulingPolicy::Enabled,
+            cache_decisions,
+            worker_count: 4,
+            completion_order: CompletionOrder::Reverse,
+            ..SchedulerInput::new(graph)
+        })
+        .expect("reverse cache-hit run succeeds");
+
+        assert_eq!(canonical.task_states, reverse.task_states);
+        assert_eq!(canonical.results, reverse.results);
+        assert_eq!(canonical.events, reverse.events);
+        assert_eq!(canonical.resource_telemetry, reverse.resource_telemetry);
+        assert_eq!(state_for(&canonical, &main), TaskState::CacheHit);
+        assert_eq!(state_for(&canonical, &util), TaskState::CacheHit);
+    }
+
+    #[test]
     fn failed_and_cancelled_dependencies_block_dependents_boundedly() {
         let graph = multi_module_graph();
         let frontend = task_id_for_module_kind(&graph, TaskKind::Frontend, "app", "main");
@@ -2489,6 +2908,7 @@ mod tests {
         let resource_source = include_str!("resource.rs");
         let cancel_source = include_str!("cancel.rs");
         let failure_source = include_str!("failure_state.rs");
+        let cache_seam_source = include_str!("cache_seam.rs");
         for forbidden in [
             concat!("Cache", "Key"),
             concat!("Dependency", "Fingerprint"),
@@ -2524,6 +2944,16 @@ mod tests {
             assert!(
                 !failure_source.contains(forbidden),
                 "{forbidden} leaked into failure-state source"
+            );
+            assert!(
+                !cache_seam_source.contains(forbidden),
+                "{forbidden} leaked into cache seam source"
+            );
+        }
+        for forbidden in [concat!("mizar", "_cache"), concat!("mizar", "-", "cache")] {
+            assert!(
+                !cache_seam_source.contains(forbidden),
+                "{forbidden} leaked into cache seam source"
             );
         }
 

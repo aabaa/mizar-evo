@@ -17,6 +17,7 @@ It is an execution-order component, not a semantic authority.
 - [architecture 14](../../architecture/en/14.parallel_verification_and_scheduling.md)
 - [architecture 22](../../architecture/en/22.incremental_verification_contract.md)
 - [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
+- [cache_seam.md](./cache_seam.md)
 - [task_graph.md](./task_graph.md)
 
 ## Scope
@@ -57,7 +58,7 @@ It is an execution-order component, not a semantic authority.
 | SCH-G005 | `source_drift` / `test_gap` | Before tasks 11-12, resource-budget accounting existed only in architecture notes. Task 12 adds `src/resource.rs`, scheduler admission integration, and focused tests. | Keep this spec, `resource.md`, and the scheduler/resource Rust surface synchronized as budget scopes evolve. |
 | SCH-G006 | `source_drift` / `test_gap` | Cancellation state was absent before tasks 13-14. Task 14 adds `src/cancel.rs`, scheduler checkpoint integration, and focused tests. | Keep scheduler cancellation checkpoints synchronized with `cancel.md`; snapshot-token ownership remains there. |
 | SCH-G007 | `source_drift` / `test_gap` | Failure-state propagation was absent before task 16. Task 16 adds deterministic `failure_records` / `blocked_records`, bounded propagation, scheduler integration, and focused tests. | Keep the scheduler record surface synchronized with `failure_state.md`; detailed taxonomy belongs there. |
-| SCH-G008 | `deferred` | Cache-aware scheduling is task 18 and `mizar-cache` already owns cache validation. | Model cache hits as validated execution-skip outcomes only; do not construct cache keys or proof-reuse decisions here. |
+| SCH-G008 | `source_drift` / `test_gap` | Before task 18, cache-aware scheduling had only disabled/miss placeholders while `mizar-cache` already owned validation. | Task 18 models cache hits as validated execution-skip outcomes only; do not construct cache keys or proof-reuse decisions here. |
 | SCH-G009 | `external_dependency_gap` | Real producer artifact publication tokens are not available to `mizar-build`. | Order commit tasks deterministically and hand caller-supplied manifest entries to `mizar-artifact`; do not mint publication authority. |
 
 ## Data Model
@@ -71,6 +72,7 @@ struct SchedulerInput {
     mode: SchedulerMode,
     priority_hints: PriorityHints,
     cache: CacheSchedulingPolicy,
+    cache_decisions: CacheSchedulingPlan,
     resource_budget: ResourceBudget,
     cancellation: CancellationPolicy,
     task_outcomes: Vec<SyntheticTaskOutcome>,
@@ -222,6 +224,8 @@ Initial state:
    but that is outside task 10.
 3. A task becomes `Ready` when all graph dependencies are terminal states that
    satisfy the task's dependency coverage.
+4. When cache scheduling is enabled, the scheduler may consume a caller-supplied
+   validated cache decision for a ready task before worker/resource admission.
 
 Terminal dependency handling:
 
@@ -235,7 +239,7 @@ Execution transition:
 
 ```text
 Pending -> Ready -> Running -> Completed
-Pending -> Ready -> CacheHit  (after task 18 cache integration)
+Pending -> Ready -> CacheHit
 Pending -> Blocked
 Ready   -> Blocked
 Running -> Failed
@@ -249,9 +253,10 @@ resource budgets decide whether a ready task can reserve all applicable
 workspace, package, module, obligation, backend, and commit units. Temporary
 resource denial leaves the task ready/queued; impossible requests block with a
 stable resource diagnostic. Task 14 adds cancellation checkpoints, and task 16
-adds deterministic failure/block records. Cache validation remains deferred to
-the cache-aware scheduling task and `mizar-cache`; scheduler records never
-promote cache hits, skipped work, or artifact records to proof authority.
+adds deterministic failure/block records. Task 18 adds the build-side cache
+decision seam. Cache validation remains owned by `mizar-cache`; scheduler
+records never promote cache hits, skipped work, or artifact records to proof
+authority.
 
 ## Work Queues
 
@@ -345,17 +350,19 @@ bridge responsibilities.
 
 ## Cache-Aware Scheduling Seam
 
-Cache-aware scheduling is an optimization seam.
+Cache-aware scheduling is an optimization seam. The detailed seam contract is
+specified in [cache_seam.md](./cache_seam.md).
 
-Before executing an admitted ready task, the scheduler may ask an external
-cache seam for a validated outcome:
+Before executing a ready task, the scheduler may consume a caller-supplied
+cache seam outcome:
 
 ```rust
 enum CacheSchedulingOutcome {
-    ValidatedHit,
-    Miss,
-    Unavailable,
-    Error,
+    ValidatedHit(ValidatedCacheHit),
+    Miss(CacheFallbackReason),
+    NoKey(CacheFallbackReason),
+    Unavailable(CacheFallbackReason),
+    ErrorAsMiss(CacheFallbackReason),
 }
 ```
 
@@ -364,22 +371,26 @@ Rules:
 - `scheduler` does not construct `CacheKey`s.
 - `scheduler` does not compute dependency fingerprints.
 - `scheduler` does not validate proof reuse.
-- `ValidatedHit` is enabled only when task 18 connects the real `mizar-cache`
-  public contract; it may move a task to `CacheHit` and skip execution.
-- `Miss` and `Unavailable` run the task normally.
-- `Error` is treated as `Miss` unless a later explicit cache-required mode says
-  to emit a cache diagnostic.
+- `ValidatedHit` is a caller assertion that the `mizar-cache` public contract
+  has already validated the record and output handles. It may move a task to
+  `CacheHit` and skip execution.
+- `Miss`, `NoKey`, and `Unavailable` run the task normally.
+- `ErrorAsMiss` is treated as `Miss` unless a later explicit cache-required
+  mode says to emit a cache diagnostic.
 - `CacheHit` is a completed scheduling dependency, not proof evidence.
 - cache miss timing and lookup order do not affect proof selection,
   diagnostics, artifact order, or trusted status.
 
-Task 10 defaults this seam to `Unavailable` or `Miss` and must not produce
-`CacheHit`. Task 18 connects the real `mizar-cache` public contract and adds
-validated-hit execution-skip behavior.
+Task 18 exposes a validated-hit input surface while preserving uncached
+execution as the default. The scheduler still validates cache decision shape at
+the input boundary, but disabled cache scheduling ignores valid caller-supplied
+hit decisions. Validated hits are considered before modeled worker/resource
+admission, so a cache-hit task has no `TaskStarted` event and no execution
+resource telemetry.
 
-The task-10 Rust surface exposes only disabled, miss, unavailable, and
-error-as-miss policies. It does not expose a validated-hit input, construct a
-cache key, compute dependency fingerprints, or perform proof-reuse validation.
+The Rust surface exposes only scheduler decisions and synthetic output
+references. It does not expose a cache key, compute dependency fingerprints,
+read cache records, or perform proof-reuse validation.
 
 ## Failure, Cancellation, and Commit Seams
 
@@ -423,6 +434,10 @@ Task 9 is documentation-only. Task 10 adds focused Rust tests for:
 - `BuildTask.dependencies` and scheduler state records staying consistent;
 - disabled cache seam behavior: `Miss`, `Unavailable`, and error-as-miss run
   tasks normally, produce no `CacheHit`, and do not construct cache keys;
+- task-18 cache seam behavior: caller-validated hits skip execution, publish
+  canonical scheduler-visible output references, unblock dependents, and do
+  not create proof authority; duplicate cache decisions and decisions for task
+  ids absent from the graph fail the scheduler input boundary;
 - missing or failed dependencies producing bounded `Blocked` states;
 - synthetic cancellation preventing current publication;
 - absence of `mizar-driver`, `mizar-ir`, cache-key construction,

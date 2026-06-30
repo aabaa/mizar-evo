@@ -14,7 +14,7 @@ Full module specs are written by their own spec tasks (English and Japanese in
 the same change) before the implementation tasks that cite them. The `planner`
 and `module_index` sources now cover wave A phase-0 planning and module-index
 provider work; wave B module specs and source implementation now include
-`artifact_commit`. Module names follow
+`cache_seam`. Module names follow
 [internal 07](../../internal/en/07.crate_module_layout.md)
 (minimum: `task_graph`, `scheduler`, `cancel`, `failure_state`) plus the
 phase-0 planning modules from architecture 00/03; the crate refines
@@ -30,6 +30,7 @@ architecture 14 and 19 and internal 01.
 | cancel | `cancel.md` (task 13) | `src/cancel.rs` | [x] |
 | failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [x] |
 | artifact_commit | `artifact_commit.md` (task 17) | `src/artifact_commit.rs` | [x] |
+| cache_seam | `cache_seam.md` (task 18) | `src/cache_seam.rs` | [x] |
 
 `mizar-build` currently implements pipeline phase 0 (workspace planning:
 manifests, lockfile, dependency graph, `BuildPlan`, module index) and owns the
@@ -72,11 +73,12 @@ spec: [23.package_management_and_build_system.md](../../../spec/en/23.package_ma
 - **Initial task granularity: resolved by task 7.** `task_graph.md` chooses
   module-level phase tasks through VC generation and VC-level proof tasks only
   after explicit VC descriptors are available.
-- **Cache-aware scheduling timing: open, resolved by task 18.** Cache
-  lookup before task execution consumes `mizar-cache` validation decisions and
-  must later be callable from the required driver-owned `salsa` query boundary
-  (`mizar-driver` tasks 4-5); until then the scheduler runs uncached with the
-  build-side seam in place.
+- **Cache-aware scheduling timing: resolved by task 18.** Cache lookup before
+  task execution consumes externally validated cache decisions through the
+  build-side seam and remains callable later from the required driver-owned
+  `salsa` query boundary (`mizar-driver` tasks 4-5). Until that external
+  boundary exists, tests use synthetic decisions and `mizar-build` remains
+  uncached by default.
 
 ## Ordered Task List
 
@@ -288,7 +290,7 @@ Keep `cargo test -p mizar-build` green after each task (see
       [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
       "Artifact Commit Boundary"; `artifact_commit.md`.
 
-18. **Cache-aware scheduling seam.** [ ]
+18. **Cache-aware scheduling seam.** [x]
     - Add the cache-lookup-before-execution seam (internal 02 control flow)
       behind an interface so `mizar-cache` can plug in; uncached execution
       remains the default until then.
@@ -297,10 +299,14 @@ Keep `cargo test -p mizar-build` green after each task (see
       enqueue work through this seam, while result ordering and artifact commits
       remain deterministic. `mizar-build` still does not depend on
       `mizar-driver`.
-    - Tests: seam fixtures with a mock cache; hits skip execution with
-      identical externally visible results.
+    - Tests: seam fixtures with synthetic caller-supplied cache scheduling
+      decisions; hits skip execution with identical externally visible
+      results.
     - Deps: 10. Spec: [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md)
-      "Cache Lookup Before Task Execution".
+      "Cache Lookup Before Task Execution"; `cache_seam.md`.
+    - Completed by task 18: `cache_seam.md` and `src/cache_seam.rs` add the
+      validated-hit decision boundary. `mizar-driver`, `mizar-ir`, and real
+      producer publication-token integration remain `external_dependency_gap`s.
 
 ### Hardening and cross-cutting follow-ups
 
@@ -339,10 +345,10 @@ Keep `cargo test -p mizar-build` green after each task (see
       dependency-facing summaries, proof acceptance, and canonical diagnostics.
       Progress or build-event timing may differ when cache hits skip work, but
       event consumers must not observe stale publications as current results.
-    - Tests: randomized ready-task scheduling and worker counts; mock cache
-      hit/miss timing; cancellation/supersession leaves no partial publication;
-      cache misses enqueue work without changing the deterministic commit
-      boundary.
+    - Tests: randomized ready-task scheduling and worker counts; synthetic
+      cache decision hit/miss timing; cancellation/supersession leaves no
+      partial publication; cache misses enqueue work without changing the
+      deterministic commit boundary.
     - Deps: 14, 18, 20. Spec:
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
       [14.parallel_verification_and_scheduling.md](../../architecture/en/14.parallel_verification_and_scheduling.md),

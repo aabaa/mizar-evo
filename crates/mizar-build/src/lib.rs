@@ -3,6 +3,9 @@
 /// Deterministic build-side manifest transaction ordering.
 pub mod artifact_commit;
 
+/// Cache-aware scheduling decision seam.
+pub mod cache_seam;
+
 /// Cooperative versioned cancellation and freshness checks.
 pub mod cancel;
 
