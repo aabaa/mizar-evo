@@ -235,3 +235,13 @@ Task 14 adds focused Rust coverage for:
   semantic rejection.
 - `mizar-build` remains independent of `mizar-driver`; driver-owned sessions
   may call into this contract, but this crate must not depend on them.
+
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module.
+
+| Enum | Decision |
+|---|---|
+| `CancellationReason` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `CancellationDecision` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `CancellationCheckpoint` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |

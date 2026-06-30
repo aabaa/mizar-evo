@@ -152,3 +152,13 @@ Task 18 adds focused Rust tests for:
 - `mizar-build` does not construct cache keys, dependency fingerprints, or
   proof-reuse validation records.
 - `mizar-build` does not depend on `mizar-driver`.
+
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module.
+
+| Enum | Decision |
+|---|---|
+| `CacheSchedulingOutcome` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `CacheFallbackReason` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `CacheSchedulingPlanDiagnosticKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |

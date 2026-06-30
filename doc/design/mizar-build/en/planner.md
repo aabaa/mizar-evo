@@ -354,3 +354,19 @@ The planner test suite covers:
   `mizar-build`.
 - Package dependency resolution is package-level only. Import graph resolution
   and symbol visibility are resolver responsibilities.
+
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module.
+
+| Enum | Decision |
+|---|---|
+| `LockSource` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `DependencyKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `VersionConstraint` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `VersionComparison` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `Solver` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `DependencySelection` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `PackagePlanSource` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `ManifestDiagnosticKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `ManifestValidationError` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |

@@ -5,6 +5,7 @@ use crate::{
 use mizar_session::BuildSnapshotId;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum FailureCategory {
     ParseError,
     ResolveError,
@@ -18,6 +19,7 @@ pub enum FailureCategory {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum BlockReason {
     DependencyFailed,
     DependencyBlocked,

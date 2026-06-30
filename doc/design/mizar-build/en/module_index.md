@@ -323,3 +323,15 @@ If `mizar-resolve` task 7 is still open, task 6 must classify resolver stub
 replacement and resolver-fixture parity as an external dependency gap, complete
 only the `mizar-build` index and build-side provider slice, and leave
 resolver-owned compatibility work to `mizar-resolve`.
+
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module.
+
+| Enum | Decision |
+|---|---|
+| `PackageIndexSource` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `NamespaceRoot` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `ModuleIndexLocation` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `ModuleIndexDiagnosticKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `ModuleIndexProviderError` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |

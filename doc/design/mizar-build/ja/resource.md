@@ -250,3 +250,12 @@ Task 11 は documentation-only である。Task 12 は focused Rust tests を追
 - Backend process completion order は proof evidence を決して選ばない。
 - Resource telemetry は cache validation や trusted status に影響しない。
 - Artifact commit permits は publication authority を mint しない。
+
+## 公開 enum policy
+
+この module が所有する exhaustive public enum exception はない。
+
+| Enum | Policy |
+|---|---|
+| `ResourceAdmissionStatus` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `ResourceScope` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |

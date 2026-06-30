@@ -158,3 +158,11 @@ Task 17 adds focused Rust tests that:
   artifact-schema, hash-construction, proof-witness-validation, cache-key,
   dependency-fingerprint, proof-reuse, proof-authority, and
   producer-publication-token placeholders.
+
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module.
+
+| Enum | Decision |
+|---|---|
+| `ArtifactCommitError` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |

@@ -53,6 +53,7 @@ pub struct TaskEdge {
 pub struct TaskId(String);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub enum TaskKind {
     PackageResolve,
     SourceLoad,
@@ -69,6 +70,7 @@ pub enum TaskKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub enum PipelinePhase {
     PackageResolve,
     SourceLoad,
@@ -90,6 +92,7 @@ pub enum PipelinePhase {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum WorkUnit {
     Workspace,
     Package {
@@ -115,6 +118,7 @@ pub enum WorkUnit {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DependencyCoverage {
     Complete,
     PackageConservative,
@@ -123,6 +127,7 @@ pub enum DependencyCoverage {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ResourceClass {
     Coordinator,
     SourceIo,
@@ -135,6 +140,7 @@ pub enum ResourceClass {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PriorityClass {
     Root,
     Source,
@@ -158,6 +164,7 @@ pub struct ModuleDependencyEdge {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ModuleDependencyCoverage {
     Complete,
     CoveredModules(Vec<ModuleId>),
@@ -166,6 +173,7 @@ pub enum ModuleDependencyCoverage {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ModuleDependencyKind {
     ImportSummary,
     VisibleRegistration,
@@ -188,12 +196,14 @@ pub struct TaskGraphProfile {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DocumentationProfile {
     Disabled,
     Enabled,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum VcDescriptorPolicy {
     Optional,
     RequiredForArtifactCommit,

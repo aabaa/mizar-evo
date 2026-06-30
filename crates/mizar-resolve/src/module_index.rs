@@ -222,6 +222,7 @@ fn location_key(location: &ModuleIndexLocation) -> Vec<String> {
             artifact.clone(),
             hash_hex(content_hash.as_bytes()),
         ],
+        _ => vec!["2".to_owned()],
     }
 }
 

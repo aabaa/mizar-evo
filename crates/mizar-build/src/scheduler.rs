@@ -74,6 +74,7 @@ pub struct SchedulerEvent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TaskState {
     Pending,
     Ready,
@@ -87,6 +88,7 @@ pub enum TaskState {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SchedulerMode {
     Batch,
     Watch,
@@ -99,6 +101,7 @@ pub struct PriorityHints {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CacheSchedulingPolicy {
     Disabled,
     Enabled,
@@ -116,6 +119,7 @@ pub struct SyntheticTaskOutcome {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SyntheticTaskStatus {
     Complete,
     Fail,
@@ -136,12 +140,14 @@ pub struct SchedulerDiagnosticRef {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CompletionOrder {
     Canonical,
     Reverse,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum SchedulerQueue {
     Coordinator,
     SourceLocalCpu,
@@ -154,6 +160,7 @@ pub enum SchedulerQueue {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum SchedulerEventKind {
     TaskBecameReady,
     TaskStarted,

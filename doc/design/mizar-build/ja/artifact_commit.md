@@ -149,3 +149,11 @@ task 17 は focused Rust tests を追加する:
 - driver、IR、manifest-transaction-internal、artifact-schema、hash-construction、
   proof-witness-validation、cache-key、dependency-fingerprint、proof-reuse、
   proof-authority、producer-publication-token placeholders が source boundary にないこと。
+
+## 公開 enum policy
+
+この module が所有する exhaustive public enum exception はない。
+
+| Enum | Policy |
+|---|---|
+| `ArtifactCommitError` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |

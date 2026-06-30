@@ -226,3 +226,13 @@ task 14 は以下の focused Rust coverage を追加する:
   数えない。
 - `mizar-build` は `mizar-driver` から独立したままである。driver-owned session がこの
   contract を呼び出してよいが、この crate はそれらに依存してはならない。
+
+## 公開 enum policy
+
+この module が所有する exhaustive public enum exception はない。
+
+| Enum | Policy |
+|---|---|
+| `CancellationReason` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `CancellationDecision` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `CancellationCheckpoint` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |

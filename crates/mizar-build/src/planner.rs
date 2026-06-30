@@ -51,6 +51,7 @@ pub struct LockedDependency {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum LockSource {
     Workspace { path: String },
     Registry { registry: String, checksum: String },
@@ -65,12 +66,14 @@ pub struct ManifestDependency {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum DependencyKind {
     Normal,
     Dev,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum VersionConstraint {
     Exact(Version),
     Caret(Version),
@@ -85,6 +88,7 @@ pub struct VersionComparator {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum VersionComparison {
     Greater,
     GreaterEqual,
@@ -101,6 +105,7 @@ pub struct VerifierConfig {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum Solver {
     Auto,
     Vampire,
@@ -124,6 +129,7 @@ pub struct PlanRequest {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DependencySelection {
     Normal,
     NormalAndDev,
@@ -158,6 +164,7 @@ pub struct PackagePlan {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PackagePlanSource {
     Workspace {
         root: String,

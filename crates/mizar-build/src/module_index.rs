@@ -26,6 +26,7 @@ pub struct PackageIndexEntry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PackageIndexSource {
     Workspace {
         package_root: String,
@@ -46,6 +47,7 @@ pub struct NamespaceIndexEntry {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum NamespaceRoot {
     PackageName,
     Std,
@@ -71,6 +73,7 @@ pub struct ModuleIndexEntry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ModuleIndexLocation {
     WorkspaceFile {
         source_root: String,

@@ -303,3 +303,12 @@ Task 16 adds focused Rust coverage for:
 - no `mizar-driver`, `mizar-ir`, diagnostic-registry, cache-key,
   dependency-fingerprint, proof-reuse, publication-token, or proof-authority
   placeholder is introduced.
+
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module.
+
+| Enum | Decision |
+|---|---|
+| `FailureCategory` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `BlockReason` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |

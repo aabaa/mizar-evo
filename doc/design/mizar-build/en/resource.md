@@ -265,3 +265,12 @@ Task 11 is documentation-only. Task 12 must add focused Rust tests for:
 - Backend process completion order never selects proof evidence.
 - Resource telemetry does not affect cache validation or trusted status.
 - Artifact commit permits do not mint publication authority.
+
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module.
+
+| Enum | Decision |
+|---|---|
+| `ResourceAdmissionStatus` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `ResourceScope` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |

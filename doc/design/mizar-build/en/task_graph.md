@@ -433,3 +433,21 @@ Task 7 is documentation-only. Task 8 must add focused Rust tests for:
   proof evidence.
 - Artifact records and commit ordering do not promote proof trust.
 - Backend completion order never selects the accepted proof candidate.
+
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module.
+
+| Enum | Decision |
+|---|---|
+| `TaskKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `PipelinePhase` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `WorkUnit` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `DependencyCoverage` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `ResourceClass` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `PriorityClass` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `ModuleDependencyCoverage` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `ModuleDependencyKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `DocumentationProfile` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `VcDescriptorPolicy` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `TaskGraphDiagnosticKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |

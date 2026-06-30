@@ -294,3 +294,12 @@ task 16 は以下の focused Rust coverage を追加する。
   authority を作らないこと。
 - `mizar-driver`、`mizar-ir`、diagnostic-registry、cache-key、dependency-fingerprint、
   proof-reuse、publication-token、proof-authority placeholder を導入しないこと。
+
+## 公開 enum policy
+
+この module が所有する exhaustive public enum exception はない。
+
+| Enum | Policy |
+|---|---|
+| `FailureCategory` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `BlockReason` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |

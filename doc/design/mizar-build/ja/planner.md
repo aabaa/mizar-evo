@@ -333,3 +333,19 @@ planner test suite は次を covered する。
 - planner は source/snapshot identity を割り当てない。それらは `mizar-session` が所有する。
 - planner は `mizar-driver` に依存しない。driver が `mizar-build` に依存する。
 - package dependency resolution は package level だけである。import graph resolution と symbol visibility は resolver の責務である。
+
+## 公開 enum policy
+
+この module が所有する exhaustive public enum exception はない。
+
+| Enum | Policy |
+|---|---|
+| `LockSource` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `DependencyKind` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `VersionConstraint` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `VersionComparison` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `Solver` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `DependencySelection` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `PackagePlanSource` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `ManifestDiagnosticKind` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |
+| `ManifestValidationError` | `#[non_exhaustive]`; downstream callers は wildcard match arms を含めなければならない。 |

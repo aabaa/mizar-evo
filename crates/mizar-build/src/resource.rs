@@ -43,6 +43,7 @@ pub struct ResourceRequestUnits {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum ResourceAdmissionStatus {
     Admitted,
     Delayed,
@@ -69,6 +70,7 @@ pub struct ResourceTelemetry {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ResourceScope {
     WorkspaceWorkers,
     PackageWorkers {

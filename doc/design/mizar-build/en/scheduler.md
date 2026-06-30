@@ -452,3 +452,18 @@ Task 9 is documentation-only. Task 10 adds focused Rust tests for:
 - Worker completion order never selects a proof candidate, diagnostic order,
   artifact order, or cache publication order.
 - Artifact commit records do not promote trusted status.
+
+## Public Enum Policy
+
+No exhaustive public enum exceptions are owned by this module.
+
+| Enum | Decision |
+|---|---|
+| `TaskState` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `SchedulerMode` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `CacheSchedulingPolicy` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `SyntheticTaskStatus` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `CompletionOrder` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `SchedulerQueue` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `SchedulerEventKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `SchedulerDiagnosticKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |

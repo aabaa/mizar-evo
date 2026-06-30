@@ -14,6 +14,7 @@ pub struct CacheTaskDecision {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CacheSchedulingOutcome {
     ValidatedHit(ValidatedCacheHit),
     Miss(CacheFallbackReason),
@@ -23,6 +24,7 @@ pub enum CacheSchedulingOutcome {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum CacheFallbackReason {
     Miss,
     NoKey,
@@ -63,6 +65,7 @@ pub struct CacheSchedulingPlanDiagnostic {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum CacheSchedulingPlanDiagnosticKind {
     DuplicateDecision,
     UnknownTask,

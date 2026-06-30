@@ -341,8 +341,13 @@ Keep `cargo test -p mizar-build` green after each task (see
       priority variants, cache hit/miss commit projections, shuffled manifest
       commits, and explicit external-gap placeholder guards.
 
-21. **Public-enum forward-compatibility policy.** [ ]
+21. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
+    - Completed by task 21: every current `mizar-build` public enum is
+      `#[non_exhaustive]`; each owning English and Japanese module spec records
+      the decision in a `Public Enum Policy` table and states that there are no
+      exhaustive public enum exceptions. `tests/lint_policy.rs` guards future
+      source/spec drift.
     - Deps: 16. Spec: all module specs.
 
 22. **Source/spec correspondence audit.** [ ]
