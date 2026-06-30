@@ -310,12 +310,23 @@ Keep `cargo test -p mizar-build` green after each task (see
 
 ### Hardening and cross-cutting follow-ups
 
-19. **Batch-build integration suite.** [ ]
+19. **Batch-build integration suite.** [x]
     - End-to-end batch build over a small workspace through plan → graph →
-      schedule → commit with the phase services available at the time
-      (frontend now, semantic phases as they land).
+      schedule → commit with the build-side boundaries available at the time.
+      Frontend-shaped tasks are scheduled with synthetic outcomes until a real
+      driver-owned phase-service boundary is available to consume.
+    - Task 19 scope: the fixture covers the public `mizar-build` boundaries
+      available now and records absent driver, IR, and producer-token
+      integration as `external_dependency_gap`; it must not add fake driver
+      APIs, IR handles, producer publication tokens, or proof authority.
     - Deps: 6, 17. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
-      "Batch Build".
+      "Batch Build"; `batch_integration.md`.
+    - Completed by task 19: `tests/batch_integration.rs` exercises plan,
+      module index, task graph, batch scheduling, and deterministic manifest
+      commit through `mizar-artifact`. Real driver, IR, and producer-token
+      integration remain `external_dependency_gap`s; explicit placeholder
+      guards and a validated-cache-hit non-authority check cover the Task 19
+      boundary.
 
 20. **Determinism suite.** [ ]
     - Property coverage that plans, graphs, schedules, events, and commits
