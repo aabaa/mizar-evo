@@ -22,7 +22,7 @@ Module names follow the minimum split of
 | identity | `identity.md` (task 2) | `src/identity.rs` | [x] |
 | storage | `storage.md` (task 4) | `src/storage.rs` | [~] |
 | publisher | `publisher.md` (task 7) | `src/publisher.rs` | [x] |
-| cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [ ] |
+| cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [~] |
 | projection | `projection.md` (task 11) | `src/projection.rs` | [ ] |
 
 `mizar-ir` owns compiler-internal IR storage and snapshot output handles:
@@ -144,7 +144,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
      stable; side tables retrievable from handles.
    - Deps: 5, 7. Spec: `publisher.md`.
 
-9. **Spec: `cache_adapter.md`.** [ ]
+9. **Spec: `cache_adapter.md`.** [x]
    - Write the cache-adapter spec (English and Japanese, no code): which
      outputs are cacheable, record serialization with schema versions and
      dependency summaries, hit validation before handle reconstruction, and
@@ -159,6 +159,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
       consumes `mizar-cache` validation results.
     - Tests: round-trip through mock cache; invalid hits, incomplete
       dependency footprints, and `uncacheable` records are rejected;
+      tampered payload or side-table hashes miss before sealing;
       rehydrated handles equal originals.
     - Deps: 8, 9. Spec: `cache_adapter.md`.
 
