@@ -156,6 +156,14 @@ lineage; current/obsolete publication checks are implemented by the later
 publisher and snapshot-replacement tasks. Since `BuildSnapshotId` is a
 hash-like opaque id, semantic ordering must not be inferred from it.
 
+## Public Enum Forward-Compatibility
+
+`IdentityError` is `#[non_exhaustive]` for downstream crates so future
+fail-closed identity, lineage, and snapshot-validation errors can be added
+without breaking external exhaustive matches. This module has no intentional
+exhaustive public-enum exception; `mizar-ir` internal matches may remain
+exhaustive where they are crate-local checks.
+
 ## Tests
 
 Task 3 must cover:

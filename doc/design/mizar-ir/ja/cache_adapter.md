@@ -90,6 +90,15 @@ cache skip または miss を返さなければならない。
 classification でなければならない。`mizar-cache` の dependency fingerprint state や
 proof-reuse validation rule を、独立した authority として複製してはならない。
 
+## Public enum forward-compatibility
+
+`CacheAdapterCacheability`、`EncodeCacheRecordOutcome`、
+`CacheRehydrateOutcome`、`CacheAdapterMiss` は downstream crate 向けに
+`#[non_exhaustive]` とする。これにより、将来の cacheability classification、encode
+outcome、rehydration outcome、fail-closed miss reason を、外部の exhaustive match を
+壊さずに追加できる。この module には意図的に exhaustive とする public enum 例外はない。
+`mizar-ir` 内部の crate-local check では必要に応じて exhaustive match を保ってよい。
+
 ## Record payload shape
 
 adapter-owned payload は内部 cache data である。cache record は published artifact

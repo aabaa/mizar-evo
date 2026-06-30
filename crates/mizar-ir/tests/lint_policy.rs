@@ -1,7 +1,39 @@
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
+
+const PUBLIC_ENUM_DOCS: &[(&str, &str, &str)] = &[
+    (
+        "cache_adapter.rs",
+        "CacheAdapterCacheability",
+        "cache_adapter.md",
+    ),
+    ("cache_adapter.rs", "CacheAdapterMiss", "cache_adapter.md"),
+    (
+        "cache_adapter.rs",
+        "CacheRehydrateOutcome",
+        "cache_adapter.md",
+    ),
+    (
+        "cache_adapter.rs",
+        "EncodeCacheRecordOutcome",
+        "cache_adapter.md",
+    ),
+    ("identity.rs", "IdentityError", "identity.md"),
+    ("publisher.rs", "OutputOrigin", "publisher.md"),
+    ("projection.rs", "ProjectionError", "projection.md"),
+    (
+        "projection.rs",
+        "ProjectionExternalDependencyGap",
+        "projection.md",
+    ),
+    ("publisher.rs", "PublicationTarget", "publisher.md"),
+    ("publisher.rs", "PublishError", "publisher.md"),
+    ("storage.rs", "StorageError", "storage.md"),
+    ("storage.rs", "StoragePlacement", "storage.md"),
+];
 
 #[test]
 fn ir_manifest_opts_into_workspace_lints() {
@@ -160,6 +192,40 @@ fn public_forward_compatible_enums_are_marked_non_exhaustive() {
     );
 }
 
+#[test]
+fn public_enum_forward_compatibility_decisions_are_documented() {
+    let root = crate_root();
+    let actual = public_enums(&root.join("src"));
+    let expected = PUBLIC_ENUM_DOCS
+        .iter()
+        .map(|(source, enum_name, _doc)| ((*source).to_owned(), (*enum_name).to_owned()))
+        .collect::<BTreeSet<_>>();
+    assert_eq!(
+        actual, expected,
+        "every public enum must have a task-15 decision in its owning EN/JA module spec"
+    );
+
+    for (_source, enum_name, doc_file) in PUBLIC_ENUM_DOCS {
+        for language in ["en", "ja"] {
+            let path = workspace_root()
+                .join("doc/design/mizar-ir")
+                .join(language)
+                .join(doc_file);
+            let document = read_to_string(&path);
+            assert!(
+                document.contains(enum_name),
+                "{} must record the task-15 decision for `{enum_name}`",
+                path.display()
+            );
+            assert!(
+                enum_policy_is_documented(&document, enum_name),
+                "{} must document `{enum_name}` and `#[non_exhaustive]` in the same policy paragraph",
+                path.display()
+            );
+        }
+    }
+}
+
 fn crate_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
 }
@@ -245,6 +311,39 @@ fn has_preceding_non_exhaustive_attribute(lines: &[&str], enum_index: usize) -> 
     }
 
     false
+}
+
+fn public_enums(root: &Path) -> BTreeSet<(String, String)> {
+    let mut enums = BTreeSet::new();
+    for path in rust_source_files(root) {
+        let source = read_to_string(&path);
+        let relative = path
+            .strip_prefix(root)
+            .unwrap_or(&path)
+            .display()
+            .to_string();
+        for line in source.lines() {
+            if let Some(name) = public_enum_name(line) {
+                enums.insert((relative.clone(), name));
+            }
+        }
+    }
+    enums
+}
+
+fn public_enum_name(line: &str) -> Option<String> {
+    let rest = line.trim_start().strip_prefix("pub enum ")?;
+    let name = rest
+        .chars()
+        .take_while(|character| character.is_ascii_alphanumeric() || *character == '_')
+        .collect::<String>();
+    (!name.is_empty()).then_some(name)
+}
+
+fn enum_policy_is_documented(document: &str, enum_name: &str) -> bool {
+    document
+        .split("\n\n")
+        .any(|paragraph| paragraph.contains(enum_name) && paragraph.contains("#[non_exhaustive]"))
 }
 
 fn section<'a>(manifest: &'a str, name: &str) -> Vec<&'a str> {

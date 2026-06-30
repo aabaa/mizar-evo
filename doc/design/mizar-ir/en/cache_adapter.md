@@ -92,6 +92,16 @@ but it must be a consumer-facing classification such as cacheable, skip,
 miss, or incompatible. It must not duplicate `mizar-cache` dependency
 fingerprint states or proof-reuse validation rules as an independent authority.
 
+## Public Enum Forward-Compatibility
+
+`CacheAdapterCacheability`, `EncodeCacheRecordOutcome`,
+`CacheRehydrateOutcome`, and `CacheAdapterMiss` are `#[non_exhaustive]` for
+downstream crates. Future cacheability classifications, encode outcomes,
+rehydration outcomes, and fail-closed miss reasons may be added without
+breaking external exhaustive matches. This module has no intentional exhaustive
+public-enum exception; `mizar-ir` internal matches may remain exhaustive where
+they are crate-local checks.
+
 ## Record Payload Shape
 
 The adapter-owned payload is internal cache data. It may contain canonical

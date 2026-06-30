@@ -199,7 +199,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
       leaks under randomized retain/release sequences.
     - Deps: 13. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-15. **Public-enum forward-compatibility policy.** [ ]
+15. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
     - Deps: 12. Spec: all module specs.
 

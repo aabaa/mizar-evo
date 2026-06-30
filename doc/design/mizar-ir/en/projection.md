@@ -228,6 +228,15 @@ Projection errors are not proof failures and do not mutate storage. The
 scheduler may rerun the producer or leave the previous artifact manifest in
 place.
 
+## Public Enum Forward-Compatibility
+
+`ProjectionExternalDependencyGap` and `ProjectionError` are
+`#[non_exhaustive]` for downstream crates. Future deferred integration gaps and
+fail-closed projection rejection reasons may be added without breaking external
+exhaustive matches. This module has no intentional exhaustive public-enum
+exception; `mizar-ir` internal matches may remain exhaustive where they are
+crate-local checks.
+
 ## Tests
 
 Task 12 must cover:

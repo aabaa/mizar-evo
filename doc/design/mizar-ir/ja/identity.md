@@ -151,6 +151,13 @@ current/obsolete publication check は後続の publisher と snapshot-replaceme
 実装する。`BuildSnapshotId` は hash-like な opaque id なので、semantic ordering を
 推測してはならない。
 
+## Public enum forward-compatibility
+
+`IdentityError` は downstream crate 向けに `#[non_exhaustive]` とする。これにより、
+将来の fail-closed な identity、lineage、snapshot validation error を、外部の exhaustive
+match を壊さずに追加できる。この module には意図的に exhaustive とする public enum 例外は
+ない。`mizar-ir` 内部の crate-local check では必要に応じて exhaustive match を保ってよい。
+
 ## Tests
 
 task 3 は以下を cover しなければならない:

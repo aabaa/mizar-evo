@@ -205,6 +205,14 @@ publish してはならない。storage は `BuildSnapshotId` の順序や hash 
 すべての storage error は fail closed である。cache rehydration 由来の error は、後続の cache
 adapter が handle を公開する前に cache miss として扱う。
 
+## Public enum forward-compatibility
+
+`StoragePlacement` と `StorageError` は downstream crate 向けに `#[non_exhaustive]`
+とする。これにより、将来の storage placement、blob policy、stale-handle guard、
+fail-closed validation error を、外部の exhaustive match を壊さずに追加できる。この
+module には意図的に exhaustive とする public enum 例外はない。`mizar-ir` 内部の
+crate-local check では必要に応じて exhaustive match を保ってよい。
+
 ## Tests
 
 Task 5 と 6 は以下を cover しなければならない:

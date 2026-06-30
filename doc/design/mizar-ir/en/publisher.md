@@ -168,6 +168,15 @@ handle only after `mizar-cache` validation succeeds. Incomplete, unknown,
 uncacheable, incompatible, or corrupt records are misses before any
 `PhaseOutputRef<T>` is reconstructed.
 
+## Public Enum Forward-Compatibility
+
+`OutputOrigin`, `PublicationTarget`, and `PublishError` are
+`#[non_exhaustive]` for downstream crates. Future origin classes, publication
+targets, and fail-closed rejection reasons may be added without breaking
+external exhaustive matches. This module has no intentional exhaustive
+public-enum exception; `mizar-ir` internal matches may remain exhaustive where
+they are crate-local checks.
+
 ## Errors
 
 | Condition | Handling |

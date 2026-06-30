@@ -147,6 +147,14 @@ cache hit は optimization data である。後続 cache adapter は `mizar-cach
 後に限って seal 済み handle を作ってよい。incomplete、unknown、uncacheable、incompatible、
 corrupt record は、`PhaseOutputRef<T>` を復元する前に miss となる。
 
+## Public enum forward-compatibility
+
+`OutputOrigin`、`PublicationTarget`、`PublishError` は downstream crate 向けに
+`#[non_exhaustive]` とする。これにより、将来の origin class、publication target、
+fail-closed rejection reason を、外部の exhaustive match を壊さずに追加できる。この
+module には意図的に exhaustive とする public enum 例外はない。`mizar-ir` 内部の
+crate-local check では必要に応じて exhaustive match を保ってよい。
+
 ## Errors
 
 | Condition | Handling |

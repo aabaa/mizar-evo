@@ -194,7 +194,7 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
       retain/release 列の下で参照カウントが漏れない。
     - 依存: 13。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 
-15. **公開 enum の前方互換性ポリシー。** [ ]
+15. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。
     - 依存: 12。仕様: 全モジュール仕様。
 

@@ -217,6 +217,15 @@ be published as current results. Storage does not infer currentness from
 All storage errors fail closed. If an error originates from cache rehydration,
 the later cache adapter treats it as a cache miss before exposing a handle.
 
+## Public Enum Forward-Compatibility
+
+`StoragePlacement` and `StorageError` are `#[non_exhaustive]` for downstream
+crates. Future storage placements, blob policies, stale-handle guards, and
+fail-closed validation errors may be added without breaking external
+exhaustive matches. This module has no intentional exhaustive public-enum
+exception; `mizar-ir` internal matches may remain exhaustive where they are
+crate-local checks.
+
 ## Tests
 
 Tasks 5 and 6 must cover:

@@ -212,6 +212,14 @@ failure condition:
 projection error は proof failure ではなく、storage を変更しない。scheduler は producer を
 再実行してよく、または以前の artifact manifest をそのままにしてよい。
 
+## Public enum forward-compatibility
+
+`ProjectionExternalDependencyGap` と `ProjectionError` は downstream crate 向けに
+`#[non_exhaustive]` とする。これにより、将来の deferred integration gap と fail-closed
+projection rejection reason を、外部の exhaustive match を壊さずに追加できる。この
+module には意図的に exhaustive とする public enum 例外はない。`mizar-ir` 内部の
+crate-local check では必要に応じて exhaustive match を保ってよい。
+
 ## Tests
 
 task 12 は以下を cover しなければならない:
