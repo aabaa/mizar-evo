@@ -370,6 +370,7 @@ dependencies = [
 name = "mizar-build"
 version = "0.1.0"
 dependencies = [
+ "mizar-artifact",
  "mizar-session",
  "semver",
  "toml",

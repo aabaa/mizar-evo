@@ -58,7 +58,7 @@ It is an execution-order component, not a semantic authority.
 | SCH-G006 | `source_drift` / `test_gap` | Cancellation state was absent before tasks 13-14. Task 14 adds `src/cancel.rs`, scheduler checkpoint integration, and focused tests. | Keep scheduler cancellation checkpoints synchronized with `cancel.md`; snapshot-token ownership remains there. |
 | SCH-G007 | `source_drift` / `test_gap` | Failure-state propagation was absent before task 16. Task 16 adds deterministic `failure_records` / `blocked_records`, bounded propagation, scheduler integration, and focused tests. | Keep the scheduler record surface synchronized with `failure_state.md`; detailed taxonomy belongs there. |
 | SCH-G008 | `deferred` | Cache-aware scheduling is task 18 and `mizar-cache` already owns cache validation. | Model cache hits as validated execution-skip outcomes only; do not construct cache keys or proof-reuse decisions here. |
-| SCH-G009 | `external_dependency_gap` | Real producer artifact publication tokens are not available to `mizar-build`. | Order commit tasks deterministically but do not publish artifacts or mint publication authority. |
+| SCH-G009 | `external_dependency_gap` | Real producer artifact publication tokens are not available to `mizar-build`. | Order commit tasks deterministically and hand caller-supplied manifest entries to `mizar-artifact`; do not mint publication authority. |
 
 ## Data Model
 
@@ -399,10 +399,12 @@ Blocked and cancelled tasks do not copy synthetic outcome outputs or
 diagnostics into `SchedulerResult`. Failed tasks may carry failure diagnostics
 but never publish output references to dependents.
 
-Artifact commit remains a scheduling boundary in this spec. The scheduler
-orders `ArtifactCommit` tasks canonically and records their outcomes, but it
-does not write manifests, mint publication tokens, or treat artifact records
-as proof authority.
+Artifact commit has a scheduler layer and a manifest-transaction layer. This
+spec defines canonical `ArtifactCommit` task ordering and outcomes; the
+build-side manifest consumer is specified by `artifact_commit.md`. That
+consumer may pass caller-supplied manifest entries to `mizar-artifact`, but it
+does not write producer artifacts, mint publication tokens, or treat artifact
+records as proof authority.
 
 ## Tests
 

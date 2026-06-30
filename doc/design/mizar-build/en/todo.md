@@ -13,8 +13,8 @@
 Full module specs are written by their own spec tasks (English and Japanese in
 the same change) before the implementation tasks that cite them. The `planner`
 and `module_index` sources now cover wave A phase-0 planning and module-index
-provider work; wave B module specs and source implementation through
-`failure_state` now exist. Module names follow
+provider work; wave B module specs and source implementation now include
+`artifact_commit`. Module names follow
 [internal 07](../../internal/en/07.crate_module_layout.md)
 (minimum: `task_graph`, `scheduler`, `cancel`, `failure_state`) plus the
 phase-0 planning modules from architecture 00/03; the crate refines
@@ -29,6 +29,7 @@ architecture 14 and 19 and internal 01.
 | resource | `resource.md` (task 11) | `src/resource.rs` | [x] |
 | cancel | `cancel.md` (task 13) | `src/cancel.rs` | [x] |
 | failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [x] |
+| artifact_commit | `artifact_commit.md` (task 17) | `src/artifact_commit.rs` | [x] |
 
 `mizar-build` currently implements pipeline phase 0 (workspace planning:
 manifests, lockfile, dependency graph, `BuildPlan`, module index) and owns the
@@ -272,15 +273,20 @@ Keep `cargo test -p mizar-build` green after each task (see
       from publishing outputs.
     - Deps: 10, 15. Spec: `failure_state.md`.
 
-17. **Deterministic commit boundary.** [ ]
+17. **Deterministic commit boundary.** [x]
     - Integrate artifact commit through `mizar-artifact` manifest
       transactions: commits serialize in canonical order regardless of
       completion order.
     - Tests: shuffled completion commits identical manifests; interrupted
       commit leaves old state visible.
+    - Result: added `src/artifact_commit.rs` with deterministic
+      `ModuleArtifactEntry` staging, `mizar-artifact` `ManifestTransaction`
+      consumption, freshness-check forwarding, deterministic commit records,
+      and focused tests for shuffled ordering, obsolete freshness rejection,
+      conflict propagation, and boundary placeholder absence.
     - Deps: 10, `mizar-artifact` task 14. Spec:
       [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
-      "Artifact Commit Boundary".
+      "Artifact Commit Boundary"; `artifact_commit.md`.
 
 18. **Cache-aware scheduling seam.** [ ]
     - Add the cache-lookup-before-execution seam (internal 02 control flow)

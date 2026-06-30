@@ -55,7 +55,7 @@ order component であり、semantic authority ではない。
 | SCH-G006 | `source_drift` / `test_gap` | cancellation state は tasks 13-14 以前には存在しなかった。task 14 が `src/cancel.rs`、scheduler checkpoint integration、focused tests を追加する。 | scheduler cancellation checkpoint を `cancel.md` と同期し続ける。snapshot-token ownership はそこに属する。 |
 | SCH-G007 | `source_drift` / `test_gap` | failure-state propagation は task 16 以前には存在しなかった。task 16 が deterministic `failure_records` / `blocked_records`、bounded propagation、scheduler integration、focused tests を追加する。 | scheduler record surface を `failure_state.md` と同期し続ける。詳細な taxonomy はそこに属する。 |
 | SCH-G008 | `deferred` | cache-aware scheduling は task 18 であり、`mizar-cache` はすでに cache validation を所有する。 | cache hit は validated execution-skip outcome としてのみ model し、cache key や proof-reuse decision をここで構築しない。 |
-| SCH-G009 | `external_dependency_gap` | real producer artifact publication token は `mizar-build` が利用できない。 | commit tasks を決定的に order するが、artifacts を publish せず publication authority を作らない。 |
+| SCH-G009 | `external_dependency_gap` | real producer artifact publication token は `mizar-build` が利用できない。 | commit tasks を決定的に order し、caller-supplied manifest entries を `mizar-artifact` へ渡すが、publication authority を作らない。 |
 
 ## Data Model
 
@@ -389,9 +389,11 @@ Blocked tasks と cancelled tasks は synthetic outcome outputs や diagnostics 
 `SchedulerResult` に copy しない。failed tasks は failure diagnostics を持ってよいが、
 dependents へ output references を publish しない。
 
-Artifact commit はこの spec では scheduling boundary のままである。scheduler は
-`ArtifactCommit` tasks を canonical order に並べ outcomes を記録するが、manifests を書かず、
-publication tokens を mint せず、artifact records を proof authority として扱わない。
+Artifact commit は scheduler layer と manifest-transaction layer を持つ。この spec は
+canonical `ArtifactCommit` task ordering と outcome を定義し、build-side manifest consumer は
+`artifact_commit.md` が定義する。その consumer は caller-supplied manifest entries を
+`mizar-artifact` へ渡してよいが、producer artifacts を書かず、publication token を mint せず、
+artifact records を proof authority として扱わない。
 
 ## Tests
 

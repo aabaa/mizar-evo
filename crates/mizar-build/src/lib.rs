@@ -1,5 +1,8 @@
 //! Build planning and validation for package and workspace inputs.
 
+/// Deterministic build-side manifest transaction ordering.
+pub mod artifact_commit;
+
 /// Cooperative versioned cancellation and freshness checks.
 pub mod cancel;
 
