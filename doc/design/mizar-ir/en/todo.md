@@ -21,7 +21,7 @@ Module names follow the minimum split of
 |---|---|---|---|
 | identity | `identity.md` (task 2) | `src/identity.rs` | [x] |
 | storage | `storage.md` (task 4) | `src/storage.rs` | [~] |
-| publisher | `publisher.md` (task 7) | `src/publisher.rs` | [ ] |
+| publisher | `publisher.md` (task 7) | `src/publisher.rs` | [~] |
 | cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [ ] |
 | projection | `projection.md` (task 11) | `src/projection.rs` | [ ] |
 
@@ -129,7 +129,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
 
 ### Publication and adapters
 
-7. **Spec: `publisher.md`.** [ ]
+7. **Spec: `publisher.md`.** [x]
    - Write the publisher spec (English and Japanese, no code): snapshot/
      work-unit validation, canonical-encoding content hashes, source-map
      and diagnostic side-table attachment, obsolete-snapshot publication
