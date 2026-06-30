@@ -20,7 +20,7 @@ Module names follow the minimum split of
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | identity | `identity.md` (task 2) | `src/identity.rs` | [x] |
-| storage | `storage.md` (task 4) | `src/storage.rs` | [~] |
+| storage | `storage.md` (task 4) | `src/storage.rs` | [x] |
 | publisher | `publisher.md` (task 7) | `src/publisher.rs` | [x] |
 | cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [x] |
 | projection | `projection.md` (task 11) | `src/projection.rs` | [x] |
@@ -223,7 +223,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
     - Deps: 10, 13, 14, 17. Spec: all module specs, this TODO, and repository
       documentation policy.
 
-19. **Module-boundary refactor gate.** [ ]
+19. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
