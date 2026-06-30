@@ -19,5 +19,8 @@
 /// Snapshot-scoped IR identity tables and phase-output lineage.
 pub mod identity;
 
+/// Phase-output publisher for sealed handles.
+pub mod publisher;
+
 /// Immutable phase-output storage and typed handles.
 pub mod storage;

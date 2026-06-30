@@ -21,7 +21,7 @@ Module names follow the minimum split of
 |---|---|---|---|
 | identity | `identity.md` (task 2) | `src/identity.rs` | [x] |
 | storage | `storage.md` (task 4) | `src/storage.rs` | [~] |
-| publisher | `publisher.md` (task 7) | `src/publisher.rs` | [~] |
+| publisher | `publisher.md` (task 7) | `src/publisher.rs` | [x] |
 | cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [ ] |
 | projection | `projection.md` (task 11) | `src/projection.rs` | [ ] |
 
@@ -138,7 +138,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
    - Deps: 4. Spec: [internal 06](../../internal/en/06.ir_storage_and_snapshot_handles.md)
      "Phase Output Publisher".
 
-8. **Phase output publisher.** [ ]
+8. **Phase output publisher.** [x]
    - Implement the narrow sealing API used by phase services.
    - Tests: wrong-snapshot or obsolete-snapshot publication rejected; hashes
      stable; side tables retrievable from handles.

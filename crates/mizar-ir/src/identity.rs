@@ -169,6 +169,25 @@ pub struct PhaseOutputLineage {
     pub side_table_hash: Hash,
 }
 
+/// Result of registering phase-output lineage.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct PhaseOutputRegistration {
+    /// Registered lineage.
+    pub(crate) lineage: PhaseOutputLineage,
+    /// Whether registration inserted new registry state.
+    pub(crate) status: PhaseOutputRegistrationStatus,
+}
+
+/// Phase-output registration status.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub(crate) enum PhaseOutputRegistrationStatus {
+    /// The lineage was newly inserted.
+    Inserted,
+    /// The same lineage was already registered.
+    Existing,
+}
+
 /// Snapshot-scoped identity and lineage registry.
 #[derive(Debug, Default)]
 pub struct SnapshotHandleRegistry {
@@ -456,6 +475,15 @@ impl SnapshotHandleRegistry {
         &self,
         input: OutputIdentityInput,
     ) -> Result<PhaseOutputLineage, IdentityError> {
+        Ok(self.register_output_with_status(input)?.lineage)
+    }
+
+    /// Registers phase-output lineage and reports whether it was newly
+    /// inserted.
+    pub(crate) fn register_output_with_status(
+        &self,
+        input: OutputIdentityInput,
+    ) -> Result<PhaseOutputRegistration, IdentityError> {
         let lineage = derive_phase_output_lineage(input)?;
         let output = lineage.output;
         let key =
@@ -496,7 +524,10 @@ impl SnapshotHandleRegistry {
         }
 
         match state.outputs.get(&output) {
-            Some(existing) if existing == &lineage => Ok(existing.clone()),
+            Some(existing) if existing == &lineage => Ok(PhaseOutputRegistration {
+                lineage: existing.clone(),
+                status: PhaseOutputRegistrationStatus::Existing,
+            }),
             Some(_) => Err(IdentityError::OutputCollision { output }),
             None => {
                 state.outputs.insert(output, lineage.clone());
@@ -506,9 +537,30 @@ impl SnapshotHandleRegistry {
                     .expect("snapshot was checked above")
                     .output_keys
                     .insert(key, output);
-                Ok(lineage)
+                Ok(PhaseOutputRegistration {
+                    lineage,
+                    status: PhaseOutputRegistrationStatus::Inserted,
+                })
             }
         }
+    }
+
+    /// Removes lineage only if it still exactly matches a newly inserted
+    /// registration being rolled back.
+    pub(crate) fn rollback_inserted_output(&self, lineage: &PhaseOutputLineage) -> bool {
+        let key =
+            phase_output_duplicate_key(&lineage.phase, &lineage.work_unit, &lineage.output_kind);
+        let mut state = self.state.lock().expect("identity registry mutex poisoned");
+        if state.outputs.get(&lineage.output) != Some(lineage) {
+            return false;
+        }
+        state.outputs.remove(&lineage.output);
+        if let Some(snapshot) = state.snapshots.get_mut(&lineage.snapshot)
+            && snapshot.output_keys.get(&key) == Some(&lineage.output)
+        {
+            snapshot.output_keys.remove(&key);
+        }
+        true
     }
 
     /// Returns registered lineage for a phase output.
@@ -558,6 +610,11 @@ impl PhaseOutputId {
 }
 
 impl PhaseOutputLineage {
+    /// Derives canonical output lineage without registering it.
+    pub fn from_input(input: OutputIdentityInput) -> Result<Self, IdentityError> {
+        derive_phase_output_lineage(input)
+    }
+
     /// Validates that this lineage still matches its canonical
     /// `PhaseOutputId`.
     pub fn validate_identity(&self) -> Result<(), IdentityError> {

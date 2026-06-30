@@ -143,6 +143,22 @@ pub struct SealBlobOutputInput<T> {
     pub decode: BlobDecoder<T>,
 }
 
+/// Input for sealing a complete payload with canonical bytes.
+pub struct SealCanonicalOutputInput<T> {
+    /// Pending slot allocated for this output.
+    pub slot: PendingOutputSlot<T>,
+    /// Registered output lineage.
+    pub lineage: PhaseOutputLineage,
+    /// Side tables to store beside the payload.
+    pub side_tables: IrSideTables,
+    /// Complete immutable payload.
+    pub payload: T,
+    /// Canonical payload bytes used for blob placement and content addressing.
+    pub canonical_bytes: Vec<u8>,
+    /// Decoder for reconstructing the typed payload from blob-backed bytes.
+    pub decode: BlobDecoder<T>,
+}
+
 /// Typed decoder for blob-backed payloads.
 pub struct BlobDecoder<T> {
     decode: TypedBlobDecoder<T>,
@@ -466,6 +482,34 @@ impl IrStorageService {
         )
     }
 
+    /// Seals a complete payload while using canonical bytes for placement.
+    pub fn seal_canonical<T>(
+        &self,
+        input: SealCanonicalOutputInput<T>,
+    ) -> Result<PhaseOutputRef<T>, StorageError>
+    where
+        T: Send + Sync + 'static,
+    {
+        if input.canonical_bytes.len() <= self.policy.blob_spill_threshold {
+            return self.seal_with_payload(
+                input.slot,
+                input.lineage,
+                input.side_tables,
+                PendingPayload::Resident(Arc::new(input.payload)),
+            );
+        }
+
+        self.seal_with_payload(
+            input.slot,
+            input.lineage,
+            input.side_tables,
+            PendingPayload::BlobCandidate {
+                canonical_bytes: input.canonical_bytes,
+                decode: input.decode.into_erased(),
+            },
+        )
+    }
+
     fn seal_with_payload<T>(
         &self,
         slot: PendingOutputSlot<T>,
@@ -656,6 +700,19 @@ impl IrStorageService {
             });
         };
         Ok(sealed.side_tables.clone())
+    }
+
+    /// Validates that an erased handle still names a sealed output in this
+    /// storage service.
+    pub fn validate_handle(&self, handle: &AnyPhaseOutputRef) -> Result<(), StorageError> {
+        let state = self.state.lock().expect("IR storage mutex poisoned");
+        let record = sealed_record_for_handle(&state, handle)?;
+        if !matches!(record.state, SlotState::Sealed(_)) {
+            return Err(StorageError::UnsealedOutput {
+                slot: slot_for_handle(&state, handle)?,
+            });
+        }
+        Ok(())
     }
 
     /// Validates an erased handle for the requested type and output kind.
