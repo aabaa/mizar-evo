@@ -46,7 +46,8 @@ committed autonomously without holding the rest of the crate in flight.
 The crate depends on `mizar-session` only (source ranges and snapshot ids).
 The first resolver adoption point was deferred by `mizar-resolve` task 13; the
 next trigger is the first user-facing resolver diagnostic integration. The LSP
-bridge consumes the same records from `mizar-lsp`. Architecture:
+bridge in `mizar-lsp` consumes `mizar-diagnostics` records and indexes.
+Architecture:
 [12.diagnostics_and_lsp.md](../../architecture/en/12.diagnostics_and_lsp.md),
 [19.failure_semantics.md](../../architecture/en/19.failure_semantics.md);
 internal: [03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md);
@@ -142,7 +143,9 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
    - Implement aggregation into immutable `BuildDiagnosticIndex` values
      with deterministic ordering independent of production order.
    - Tests: shuffled input produces identical indexes; dedup fixtures;
-     stale-snapshot rejection.
+     snapshot-scoped id determinism; stale-snapshot rejection; negative dedup
+     cases where otherwise equal code/phase/primary-span records keep distinct
+     structured details, fix edits, or explanation refs.
    - Deps: 7, 8. Spec: `aggregator.md`.
 
 ### Presentation
@@ -156,7 +159,9 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
 
 11. **CLI rendering.** [ ]
     - Implement deterministic CLI rendering from records and line maps.
-    - Tests: golden-file render fixtures; byte-identical output.
+    - Tests: golden-file render fixtures; byte-identical output; coverage for
+      workspace-relative paths, primary and secondary spans, multiline spans,
+      Unicode-scalar column counts, notes, and fix/help projections.
     - Deps: 9, 10. Spec: `render.md`.
 
 12. **Spec: `fix.md`.** [ ]
@@ -187,12 +192,21 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
 ### Adoption and follow-ups
 
 16. **Consumer adoption and migration decision.** [ ]
-    - Wire the first consumer (`mizar-resolve`) through the sink and
-      aggregator; resolve the migration decision for the pre-existing
-      lexer/frontend/parser diagnostics and record it here and at the top
-      level.
-    - Tests: resolver diagnostics flow end-to-end; conversion adapters (if
-      chosen) round-trip.
+    - Decide whether a real consumer adoption seam exists for the first
+      consumer (`mizar-resolve`) and for pre-existing lexer/frontend/parser
+      diagnostics. If the resolver/LSP/driver or frontend-family adoption
+      seams are not ready, record `external_dependency_gap` or `deferred`
+      dispositions here and at the top level.
+    - If a real seam exists, wire only that consumer through the sink and
+      aggregator and add the matching end-to-end tests. If no real seam exists,
+      this task is documentation-only.
+    - Do not add placeholder adapters, stub APIs, fake resolver adoption,
+      provisional conversion layers, or `mizar-driver`/`mizar-lsp`
+      dependencies from this crate.
+    - Tests: documentation verification when adoption is deferred; otherwise
+      end-to-end flow for every real adopted consumer, any real conversion
+      adapter chosen by the owning consumer round-trips, and consumer corpus or
+      `.miz` coverage is added when user-facing language diagnostics migrate.
     - Deps: 9, `mizar-resolve` task 15. Spec: `aggregator.md`.
 
 17. **Determinism suite.** [ ]
@@ -246,7 +260,15 @@ For adoption/migration tasks, also run the consumers:
 ```text
 cargo test -p mizar-resolve
 cargo test -p mizar-frontend
+cargo test -p mizar-parser
+cargo test -p mizar-lexer
+cargo test -p mizar-lsp
+cargo test -p mizar-build
 ```
+
+Run only the consumer commands whose implemented seams are touched by the
+task. If a named consumer crate or `mizar-driver` integration seam is absent,
+record it as an `external_dependency_gap` rather than adding a placeholder.
 
 Check the task off here once tests pass.
 
