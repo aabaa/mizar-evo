@@ -193,7 +193,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
 
 ### Hardening and cross-cutting follow-ups
 
-14. **Determinism and lifetime property suite.** [ ]
+14. **Determinism and lifetime property suite.** [x]
     - Property coverage: identical inputs yield identical ids and hashes;
       no use-after-collect; collect is idempotent; reference counting never
       leaks under randomized retain/release sequences.
