@@ -30,14 +30,14 @@ and 19 and internal 01.
 | cancel | `cancel.md` (task 13) | `src/cancel.rs` | [ ] |
 | failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [ ] |
 
-`mizar-build` implements pipeline phase 0 (workspace planning: manifests,
-lockfile, dependency graph, `BuildPlan`, module index) and the parallel
-verification machinery (task graph, scheduler, resource budgets,
-cancellation, blocked-task state). Scheduling is separate from semantics:
-parallelism may change latency but never diagnostics order, artifact order,
-proof acceptance, or reproducibility. Build requests and the phase-service
-registry belong to `mizar-driver`, which depends on this crate — never the
-reverse.
+`mizar-build` currently implements pipeline phase 0 (workspace planning:
+manifests, lockfile, dependency graph, `BuildPlan`, module index) and owns the
+planned parallel verification machinery (task graph, scheduler, resource
+budgets, cancellation, blocked-task state). Scheduling is separate from
+semantics: parallelism may change latency but never diagnostics order,
+artifact order, proof acceptance, or reproducibility. Build requests and the
+phase-service registry belong to `mizar-driver`, which depends on this crate —
+never the reverse.
 
 It is built in two waves: **wave A** (planner and module index, phase 0)
 lands early because the resolver's module-index input replaces its
@@ -68,11 +68,9 @@ spec: [23.package_management_and_build_system.md](../../../spec/en/23.package_ma
   requests, CLI/watch/LSP entry points, and the phase registry;
   `mizar-build` owns planning and scheduling and stays
   entry-point-agnostic.
-- **Initial task granularity: open, resolved by task 8.** The scheduler may
-  choose coarser task granularity initially (architecture 14 constraints)
-  as long as architectural dependency boundaries hold; decide the first
-  granularity (default candidate: per-module semantic tasks, per-VC proof
-  tasks later) and record it in `task_graph.md`.
+- **Initial task granularity: resolved by task 7.** `task_graph.md` chooses
+  module-level phase tasks through VC generation and VC-level proof tasks only
+  after explicit VC descriptors are available.
 - **Cache-aware scheduling timing: open, resolved by task 18.** Cache
   lookup before task execution consumes `mizar-cache` validation decisions and
   must later be callable from the required driver-owned `salsa` query boundary
@@ -149,17 +147,17 @@ Keep `cargo test -p mizar-build` green after each task (see
 
 ### Wave B: task graph and scheduling
 
-7. **Spec: `task_graph.md`.** [ ]
-   - Write the task-graph spec (English and Japanese, no code): task kinds,
+7. **Spec: `task_graph.md`.** [x]
+   - Wrote the task-graph spec (English and Japanese, no code): task kinds,
      versioned task identity, dependency edges (module dependencies gate
-     semantic phases; VCs as fine-grained tasks), and the initial
-     granularity decision.
+     semantic phases; VCs as fine-grained tasks), dependency-coverage
+     handling, and the initial granularity decision.
    - Deps: 2. Spec: architecture 14 "Task Graph"/"VCs Are Fine-Grained
      Tasks", [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md).
 
 8. **Task graph construction.** [ ]
-   - Expand a `BuildPlan` into the versioned task graph; resolve and record
-     the granularity decision.
+   - Expand a `BuildPlan`, `ModuleIndex`, dependency overlay, and explicit VC
+     descriptors into the versioned task graph.
    - Tests: graph expansion fixtures; dependency edges match the
      architecture boundaries; deterministic expansion.
    - Deps: 7. Spec: `task_graph.md`.
