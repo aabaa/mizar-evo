@@ -53,11 +53,16 @@ publisher は以下を検証する:
   拒否される。future integration が editor-only handle または stale read を必要とする場合に限り
   internal-only output として retain してよいが、Task 8 は current output の test では拒否する。
 
-currentness は明示 state であり、`BuildSnapshotId` value の比較ではない。後続の
-snapshot-replacement task がこの state を拡張し、新しい snapshot が古い snapshot を
-supersede できるようにする。それまでは、Task 8 は test と downstream adapter のために
-crate-local な `register_current_snapshot` と `mark_obsolete` operation を公開してよいが、
-hash から currentness を推測したり、存在しない driver に問い合わせたりしてはならない。
+currentness は明示 state であり、`BuildSnapshotId` value の比較ではない。publisher は
+test と downstream adapter のために crate-local な `register_current_snapshot`、
+`mark_obsolete`、`replace_current_snapshot` operation を公開してよいが、hash から
+currentness を推測したり、存在しない driver に問い合わせたりしてはならない。
+
+`replace_current_snapshot(old, new)` は、新しい snapshot を current として登録し、
+古い snapshot を obsolete として mark することを atomic に行う。古い snapshot は
+known なまま残るため、retain された handle は storage を通して読め、cache adapter は
+古い output を fail-closed な cache input として encode または validate してよい。
+supersede 済み snapshot を再登録しても current publication state として復活してはならない。
 
 obsolete output は storage に retain されている間は読み取り可能なままでよく、cache adapter が
 validated cache input として使ってよい。snapshot が obsolete と mark された後、current result

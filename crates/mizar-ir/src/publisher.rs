@@ -4,7 +4,7 @@
 //! [`publisher.md`](../../../../doc/design/mizar-ir/en/publisher.md).
 
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     error::Error,
     fmt,
     sync::{Arc, Mutex},
@@ -117,6 +117,7 @@ pub struct PhaseOutputPublisher {
 struct PublisherState {
     current_snapshots: HashSet<BuildSnapshotId>,
     obsolete_snapshots: HashSet<BuildSnapshotId>,
+    superseded_by: HashMap<BuildSnapshotId, BuildSnapshotId>,
     current_outputs: HashSet<CurrentOutputRoot>,
     allowed_work_units: HashSet<AllowedWorkUnit>,
 }
@@ -140,6 +141,18 @@ pub enum PublishError {
     ObsoleteSnapshot {
         /// Obsolete snapshot.
         snapshot: BuildSnapshotId,
+    },
+    /// Snapshot replacement tried to replace a snapshot with itself.
+    InvalidSnapshotReplacement {
+        /// Snapshot supplied as both old and new.
+        snapshot: BuildSnapshotId,
+    },
+    /// Snapshot has already been superseded and cannot become current again.
+    SupersededSnapshot {
+        /// Superseded snapshot.
+        snapshot: BuildSnapshotId,
+        /// Replacement snapshot.
+        replacement: BuildSnapshotId,
     },
     /// Open-buffer output was requested as current/package output.
     OpenBufferOutput {
@@ -226,10 +239,12 @@ impl PhaseOutputPublisher {
 
     /// Registers a snapshot as current/known for publication.
     pub fn register_current_snapshot(&self, snapshot: BuildSnapshotId) {
-        self.registry.register_snapshot(snapshot);
         let mut state = self.state.lock().expect("publisher mutex poisoned");
+        self.registry.register_snapshot(snapshot);
         state.current_snapshots.insert(snapshot);
-        state.obsolete_snapshots.remove(&snapshot);
+        if !state.superseded_by.contains_key(&snapshot) {
+            state.obsolete_snapshots.remove(&snapshot);
+        }
     }
 
     /// Marks a snapshot obsolete for current publication.
@@ -239,6 +254,45 @@ impl PhaseOutputPublisher {
             return Err(PublishError::UnknownSnapshot { snapshot });
         }
         state.obsolete_snapshots.insert(snapshot);
+        Ok(())
+    }
+
+    /// Atomically replaces one current snapshot with another.
+    ///
+    /// The old snapshot remains known so retained handles can be read and cache
+    /// encoded while storage keeps them alive. It is also permanently marked
+    /// obsolete for current/package publication unless a future owner creates a
+    /// distinct replacement snapshot.
+    pub fn replace_current_snapshot(
+        &self,
+        old_snapshot: BuildSnapshotId,
+        new_snapshot: BuildSnapshotId,
+    ) -> Result<(), PublishError> {
+        if old_snapshot == new_snapshot {
+            return Err(PublishError::InvalidSnapshotReplacement {
+                snapshot: old_snapshot,
+            });
+        }
+
+        let mut state = self.state.lock().expect("publisher mutex poisoned");
+        validate_snapshot_state(
+            &state,
+            old_snapshot,
+            OutputOrigin::PackageSource,
+            PublicationTarget::CurrentPackage,
+        )?;
+        if let Some(replacement) = state.superseded_by.get(&new_snapshot).copied() {
+            return Err(PublishError::SupersededSnapshot {
+                snapshot: new_snapshot,
+                replacement,
+            });
+        }
+
+        self.registry.register_snapshot(new_snapshot);
+        state.current_snapshots.insert(new_snapshot);
+        state.obsolete_snapshots.remove(&new_snapshot);
+        state.obsolete_snapshots.insert(old_snapshot);
+        state.superseded_by.insert(old_snapshot, new_snapshot);
         Ok(())
     }
 
@@ -489,6 +543,18 @@ impl fmt::Display for PublishError {
                 write!(
                     formatter,
                     "snapshot `{snapshot:?}` is obsolete for current publication"
+                )
+            }
+            Self::InvalidSnapshotReplacement { snapshot } => {
+                write!(formatter, "snapshot `{snapshot:?}` cannot replace itself")
+            }
+            Self::SupersededSnapshot {
+                snapshot,
+                replacement,
+            } => {
+                write!(
+                    formatter,
+                    "snapshot `{snapshot:?}` was already superseded by `{replacement:?}`"
                 )
             }
             Self::OpenBufferOutput { snapshot } => {
@@ -1328,6 +1394,164 @@ mod tests {
         )
         .expect_err("obsolete current publication is rejected");
         assert!(matches!(obsolete, PublishError::ObsoleteSnapshot { .. }));
+    }
+
+    #[test]
+    fn snapshot_replacement_makes_old_outputs_stale_but_retained_until_release() {
+        let old_snapshot = snapshot(31);
+        let new_snapshot = snapshot(32);
+        let publisher = publisher(old_snapshot);
+        let old_output = publish_text(
+            &publisher,
+            old_snapshot,
+            "unit",
+            "old",
+            Vec::new(),
+            IrSideTables::default(),
+            (
+                OutputOrigin::PackageSource,
+                PublicationTarget::CurrentPackage,
+            ),
+        )
+        .expect("old snapshot output publishes");
+        let owner = crate::storage::RetainOwner::new("stale-lsp-snapshot");
+        publisher
+            .storage()
+            .retain(old_output.output(), owner.clone())
+            .expect("old output can be retained");
+
+        publisher
+            .replace_current_snapshot(old_snapshot, new_snapshot)
+            .expect("snapshot replacement succeeds");
+
+        assert!(matches!(
+            publisher.validate_current_snapshot(old_snapshot),
+            Err(PublishError::ObsoleteSnapshot { snapshot }) if snapshot == old_snapshot
+        ));
+        publisher
+            .validate_current_snapshot(new_snapshot)
+            .expect("new snapshot is current");
+        assert!(matches!(
+            publisher.validate_current_output(old_snapshot, old_output.any()),
+            Err(PublishError::ObsoleteSnapshot { snapshot }) if snapshot == old_snapshot
+        ));
+
+        let republish = publish_text(
+            &publisher,
+            old_snapshot,
+            "unit",
+            "old-again",
+            Vec::new(),
+            IrSideTables::default(),
+            (
+                OutputOrigin::PackageSource,
+                PublicationTarget::CurrentPackage,
+            ),
+        )
+        .expect_err("superseded snapshot cannot publish current output");
+        assert!(matches!(
+            republish,
+            PublishError::ObsoleteSnapshot { snapshot } if snapshot == old_snapshot
+        ));
+
+        let retained = publisher.storage().collect(crate::storage::CollectInput {
+            snapshot: old_snapshot,
+            protected_outputs: Vec::new(),
+        });
+        assert_eq!(retained.retained_outputs, 1);
+        assert_eq!(
+            &*publisher
+                .storage()
+                .get(&old_output)
+                .expect("retained stale output remains readable"),
+            "old"
+        );
+
+        publisher
+            .storage()
+            .release(old_output.output(), &owner)
+            .expect("release succeeds");
+        let released = publisher.storage().collect(crate::storage::CollectInput {
+            snapshot: old_snapshot,
+            protected_outputs: Vec::new(),
+        });
+        assert_eq!(released.outputs_dropped, 1);
+        assert!(matches!(
+            publisher.storage().get(&old_output),
+            Err(StorageError::CollectedOutput { output }) if output == old_output.output()
+        ));
+    }
+
+    #[test]
+    fn registering_current_snapshot_does_not_revive_superseded_snapshot() {
+        let old_snapshot = snapshot(33);
+        let new_snapshot = snapshot(34);
+        let publisher = publisher(old_snapshot);
+        publisher
+            .replace_current_snapshot(old_snapshot, new_snapshot)
+            .expect("snapshot replacement succeeds");
+
+        publisher.register_current_snapshot(old_snapshot);
+        let error = publish_text(
+            &publisher,
+            old_snapshot,
+            "unit",
+            "revived",
+            Vec::new(),
+            IrSideTables::default(),
+            (
+                OutputOrigin::PackageSource,
+                PublicationTarget::CurrentPackage,
+            ),
+        )
+        .expect_err("superseded snapshot cannot be revived as current");
+
+        assert!(matches!(
+            error,
+            PublishError::ObsoleteSnapshot { snapshot } if snapshot == old_snapshot
+        ));
+    }
+
+    #[test]
+    fn rejects_invalid_snapshot_replacement_requests() {
+        let current_snapshot = snapshot(35);
+        let publisher = publisher(current_snapshot);
+        let self_replacement = publisher
+            .replace_current_snapshot(current_snapshot, current_snapshot)
+            .expect_err("self replacement is rejected");
+        assert!(matches!(
+            self_replacement,
+            PublishError::InvalidSnapshotReplacement { snapshot } if snapshot == current_snapshot
+        ));
+
+        let unknown = snapshot(36);
+        let unknown_replacement = publisher
+            .replace_current_snapshot(unknown, snapshot(37))
+            .expect_err("unknown old snapshot is rejected");
+        assert!(matches!(
+            unknown_replacement,
+            PublishError::UnknownSnapshot { snapshot } if snapshot == unknown
+        ));
+
+        let first_replacement = snapshot(38);
+        let second_replacement = snapshot(39);
+        publisher
+            .replace_current_snapshot(current_snapshot, first_replacement)
+            .expect("first replacement succeeds");
+        let reused_old_snapshot = publisher
+            .replace_current_snapshot(first_replacement, current_snapshot)
+            .expect_err("superseded snapshot cannot become a new current target");
+        assert!(matches!(
+            reused_old_snapshot,
+            PublishError::SupersededSnapshot {
+                snapshot,
+                replacement
+            } if snapshot == current_snapshot && replacement == first_replacement
+        ));
+
+        publisher
+            .replace_current_snapshot(first_replacement, second_replacement)
+            .expect("current replacement chain may advance with a fresh snapshot");
     }
 
     #[test]

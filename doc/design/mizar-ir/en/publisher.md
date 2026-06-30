@@ -63,11 +63,16 @@ The publisher validates:
   Task 8 rejects them for current output tests.
 
 Currentness is explicit state, not a comparison between `BuildSnapshotId`
-values. A later snapshot-replacement task extends this state so a newer
-snapshot supersedes an older one. Until then, Task 8 may expose crate-local
-`register_current_snapshot` and `mark_obsolete` operations for tests and
+values. The publisher exposes crate-local `register_current_snapshot`,
+`mark_obsolete`, and `replace_current_snapshot` operations for tests and
 downstream adapters, but it must not infer currentness from hashes or consult a
 missing driver.
+
+`replace_current_snapshot(old, new)` atomically registers the new snapshot as
+current and marks the old snapshot obsolete. The old snapshot remains known so
+retained handles can be read through storage, and so a cache adapter may encode
+or validate the old output as a fail-closed cache input. Re-registering a
+superseded snapshot must not revive it as current publication state.
 
 Obsolete outputs may remain readable through storage while retained and may be
 used as validated cache input by the cache adapter. They cannot be published as

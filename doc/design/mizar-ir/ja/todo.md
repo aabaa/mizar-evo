@@ -175,7 +175,7 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
       生 IR の漏出が射影を失敗させる。
     - 依存: 8、11、`mizar-artifact` task 11。仕様: `projection.md`。
 
-13. **watch/LSP の snapshot 置換。** [ ]
+13. **watch/LSP の snapshot 置換。** [x]
     - snapshot 置換を実装する: 新しい snapshot が古いものに取って代わり、
       retain された参照は解放まで古い出力を生かしておく。古い出力は
       読み取り可能なまま、または検証済み cache input になり得るが、

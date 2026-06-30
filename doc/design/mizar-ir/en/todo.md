@@ -180,7 +180,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
       raw-IR leakage fails the projection.
     - Deps: 8, 11, `mizar-artifact` task 11. Spec: `projection.md`.
 
-13. **Watch/LSP snapshot replacement.** [ ]
+13. **Watch/LSP snapshot replacement.** [x]
    - Implement snapshot replacement: new snapshots supersede old ones
      while retained references keep old outputs alive until released. Old
      outputs may remain readable or become validated cache inputs, but they

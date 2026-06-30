@@ -1346,6 +1346,32 @@ mod tests {
     }
 
     #[test]
+    fn superseded_snapshot_output_can_still_encode_as_cache_input() {
+        let old_snapshot = snapshot(24);
+        let new_snapshot = snapshot(25);
+        let publisher = publisher(old_snapshot);
+        let adapter = IrCacheAdapter::new(publisher.clone());
+        let handle = publish_text(&publisher, old_snapshot, "payload", side_tables(80));
+
+        publisher
+            .replace_current_snapshot(old_snapshot, new_snapshot)
+            .expect("snapshot replacement succeeds");
+        assert!(matches!(
+            publisher.validate_current_output(old_snapshot, handle.any()),
+            Err(PublishError::ObsoleteSnapshot { snapshot }) if snapshot == old_snapshot
+        ));
+
+        let outcome = adapter.encode(EncodeCacheRecordInput {
+            handle,
+            cache_key: cache_key(21),
+            produced_by: produced_by(),
+            canonical_payload: b"payload".to_vec(),
+            cacheability: CacheAdapterCacheability::Cacheable,
+        });
+        assert!(matches!(outcome, EncodeCacheRecordOutcome::Encoded(_)));
+    }
+
+    #[test]
     fn decode_failure_misses_without_rehydration() {
         let old_snapshot = snapshot(9);
         let current_snapshot = snapshot(10);
