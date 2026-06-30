@@ -418,6 +418,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "mizar-ir"
+version = "0.1.0"
+dependencies = [
+ "mizar-session",
+]
+
+[[package]]
 name = "mizar-kernel"
 version = "0.1.0"
 dependencies = [

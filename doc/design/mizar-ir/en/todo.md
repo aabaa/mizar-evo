@@ -25,15 +25,15 @@ Module names follow the minimum split of
 | cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [ ] |
 | projection | `projection.md` (task 11) | `src/projection.rs` | [ ] |
 
-`mizar-ir` owns compiler-internal IR storage and snapshot handles: immutable
-storage slots for phase outputs, typed `PhaseOutputRef<T>` handles, the
-snapshot handle registry (`BuildSnapshotId` and per-snapshot identity
-assignment), the phase-output publisher that seals outputs, the cache adapter
-that converts outputs to and from cache records, and the artifact projection
-boundary that turns sealed internal IR into `VerifiedArtifactDraft`s. It
-implements the resident-set discipline: keep interfaces and indexes resident,
-spill large outputs to content-addressed blobs, and collect unreferenced
-outputs.
+`mizar-ir` owns compiler-internal IR storage and snapshot output handles:
+immutable storage slots for phase outputs, typed `PhaseOutputRef<T>` handles,
+IR-local identity assignment scoped by `mizar-session` `BuildSnapshotId`, the
+phase-output publisher that seals outputs, the cache adapter boundary that
+converts sealed outputs to cache records and rehydrates handles only from
+validated `mizar-cache` records, and the artifact projection boundary that
+turns sealed internal IR into `VerifiedArtifactDraft`s. It implements the
+resident-set discipline: keep interfaces and indexes resident, spill large
+outputs to content-addressed blobs, and collect unreferenced outputs.
 
 Dependency order: `identity` → `storage` → `publisher` → `cache_adapter` /
 `projection`.
@@ -44,12 +44,15 @@ committed autonomously without holding the rest of the crate in flight.
 
 ## Crate Prerequisites
 
-The crate depends on `mizar-session` (snapshot and source identity) and, for
-the projection boundary, on `mizar-artifact` (draft schemas). The cache
-adapter integrates `mizar-cache` through a seam and is testable with a mock
-cache. It is wired into the pipeline together with `mizar-driver` and the
-`mizar-build` scheduling wave; phase services themselves stay independent of
-it (they receive context handles, not storage internals). Architecture:
+The task-1 scaffold depends only on `mizar-session` for snapshot and source
+identity. Later projection tasks may add `mizar-artifact` for stable draft
+schemas, and later cache-adapter tasks may add `mizar-cache` consumption
+through a seam; they must not reimplement `CacheKey`, dependency fingerprints,
+or proof-reuse validation. Real pipeline wiring with `mizar-driver` and the
+`mizar-build` scheduling wave is an `external_dependency_gap` risk tag until
+the owning crates expose real seams; phase services themselves stay independent
+of this crate (they receive context handles, not storage internals).
+Architecture:
 [01.ir_layers.md](../../architecture/en/01.ir_layers.md),
 [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md);
 internal: [06](../../internal/en/06.ir_storage_and_snapshot_handles.md).
@@ -76,9 +79,9 @@ Keep `cargo test -p mizar-ir` green after each task (see
 
 ### Identity and storage
 
-1. **Crate scaffold and lint-policy guard.** [ ]
-   - Add the `mizar-ir` workspace member depending on `mizar-session`; add
-     `tests/lint_policy.rs` mirroring the `mizar-frontend` guard.
+1. **Crate scaffold and lint-policy guard.** [x]
+   - Add the `mizar-ir` workspace member depending only on `mizar-session`;
+     add `tests/lint_policy.rs` mirroring the `mizar-frontend` guard.
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: none. Spec: internal 06.
 
@@ -90,6 +93,8 @@ Keep `cargo test -p mizar-ir` green after each task (see
      the no-reuse-across-incompatible-snapshots rule.
    - Deps: 1. Spec: [internal 06](../../internal/en/06.ir_storage_and_snapshot_handles.md)
      "Snapshot Handle Registry", architecture 01 "Cross-Layer Identity".
+     `mizar-ir` consumes `BuildSnapshotId` from `mizar-session`; it does not
+     own source/snapshot id construction.
 
 3. **Snapshot handle registry.** [ ]
    - Implement the registry with deterministic id assignment and
@@ -150,8 +155,8 @@ Keep `cargo test -p mizar-ir` green after each task (see
      "IR Cache Adapter", [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md).
 
 10. **Cache adapter.** [ ]
-    - Implement record conversion and hit rehydration behind a cache seam
-      (mock cache until `mizar-cache` lands).
+    - Implement record conversion and hit rehydration behind a cache seam that
+      consumes `mizar-cache` validation results.
     - Tests: round-trip through mock cache; invalid hits, incomplete
       dependency footprints, and `uncacheable` records are rejected;
       rehydrated handles equal originals.
