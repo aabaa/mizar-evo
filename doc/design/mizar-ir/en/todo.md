@@ -23,7 +23,7 @@ Module names follow the minimum split of
 | storage | `storage.md` (task 4) | `src/storage.rs` | [~] |
 | publisher | `publisher.md` (task 7) | `src/publisher.rs` | [x] |
 | cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [x] |
-| projection | `projection.md` (task 11) | `src/projection.rs` | [ ] |
+| projection | `projection.md` (task 11) | `src/projection.rs` | [~] |
 
 `mizar-ir` owns compiler-internal IR storage and snapshot output handles:
 immutable storage slots for phase outputs, typed `PhaseOutputRef<T>` handles,
@@ -163,7 +163,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
       rehydrated handles equal originals.
     - Deps: 8, 9. Spec: `cache_adapter.md`.
 
-11. **Spec: `projection.md`.** [ ]
+11. **Spec: `projection.md`.** [x]
     - Write the projection spec (English and Japanese, no code): the
       artifact projection boundary — exported symbols, normalized
       signatures, proof status and witness refs, diagnostics and
@@ -176,8 +176,8 @@ Keep `cargo test -p mizar-ir` green after each task (see
 12. **Artifact projection service.** [ ]
     - Implement projection from sealed outputs into
       `VerifiedArtifactDraft` values using the `mizar-artifact` schemas.
-    - Tests: projection fixtures with stub phase outputs; raw-IR leakage
-      fails the projection.
+    - Tests: projection fixtures with test-local sealed fixture outputs;
+      raw-IR leakage fails the projection.
     - Deps: 8, 11, `mizar-artifact` task 11. Spec: `projection.md`.
 
 13. **Watch/LSP snapshot replacement.** [ ]
