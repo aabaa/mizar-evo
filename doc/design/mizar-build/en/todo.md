@@ -54,8 +54,9 @@ committed autonomously without holding the rest of the crate in flight.
 
 Wave A depends on `mizar-session` and the manifest formats of spec chapter
 23. Wave B is testable with synthetic tasks; its commit boundary integrates
-`mizar-artifact` manifest transactions, and cache-aware scheduling
-integrates `mizar-cache` when that crate exists. Architecture:
+`mizar-artifact` manifest transactions, and cache-aware scheduling consumes
+`mizar-cache` through the task-18 scheduler seam without reimplementing cache
+internals. Architecture:
 [14.parallel_verification_and_scheduling.md](../../architecture/en/14.parallel_verification_and_scheduling.md),
 [19.failure_semantics.md](../../architecture/en/19.failure_semantics.md);
 internal: [01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md);
@@ -73,9 +74,10 @@ spec: [23.package_management_and_build_system.md](../../../spec/en/23.package_ma
   granularity (default candidate: per-module semantic tasks, per-VC proof
   tasks later) and record it in `task_graph.md`.
 - **Cache-aware scheduling timing: open, resolved by task 18.** Cache
-  lookup before task execution needs `mizar-cache` and must be callable from
-  the required driver-owned `salsa` query boundary (`mizar-driver` tasks 4-5);
-  until then the scheduler runs uncached with the seam in place.
+  lookup before task execution consumes `mizar-cache` validation decisions and
+  must later be callable from the required driver-owned `salsa` query boundary
+  (`mizar-driver` tasks 4-5); until then the scheduler runs uncached with the
+  build-side seam in place.
 
 ## Ordered Task List
 
@@ -321,17 +323,23 @@ cargo test -p mizar-build
 cargo clippy -p mizar-build --all-targets -- -D warnings
 ```
 
-For tasks that touch the resolver provider or the commit boundary, also run:
+For tasks that touch the resolver provider or the commit boundary, also run the
+available adjacent crate checks:
 
 ```text
 cargo test -p mizar-resolve
 cargo test -p mizar-artifact
 ```
 
-For the architecture-22 equivalence gate, also run:
+For the architecture-22 equivalence gate, also run the available adjacent crate
+checks, and explicitly justify any missing crate such as an uncreated
+`mizar-driver`:
 
 ```text
 cargo test -p mizar-cache
+cargo test -p mizar-artifact
+cargo test -p mizar-vc
+cargo test -p mizar-proof
 cargo test -p mizar-driver
 cargo test -p mizar-test
 ```
