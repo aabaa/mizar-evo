@@ -101,6 +101,9 @@ decodes only through the schema binding registered for that exact output kind
 and `T`. Schema mismatch, kind mismatch, corrupt bytes, or missing codec data
 fail closed as storage errors; the read path must not infer another kind,
 reinterpret bytes, or synthesize cache validation.
+Producer-provided decoders run outside the storage mutex. Decoder errors or
+panics fail closed as `CorruptBlob` and must not poison storage or turn a cache
+record into authority.
 
 The handle is not proof evidence. Possessing a handle, including a handle
 rehydrated from cache by a later adapter, never upgrades proof status or trusted
@@ -123,9 +126,14 @@ performance and memory policy, not an identity rule. Changing it must not
 change `PhaseOutputId`, content hash, proof status, or artifact projection.
 
 Task 6 implements the policy with an explicit `StoragePolicy` so tests and
-future build profiles can choose a lower or higher threshold. The crate must
-not expose blob paths as artifact data. Blob references are internal
-content-addressed references keyed by payload hash and schema version.
+future build profiles can choose a lower or higher threshold. Producers that
+already have canonical bytes use the blob-aware sealing path; storage spills
+those bytes when they exceed the threshold and decodes them only through the
+registered runtime kind/schema binding. Producers that do not yet have
+canonical bytes use the resident sealing path until the later publisher
+integration supplies canonical encodings. The crate must not expose blob paths
+as artifact data. Blob references are internal content-addressed references
+keyed by payload hash and schema version.
 
 ## Side Tables
 

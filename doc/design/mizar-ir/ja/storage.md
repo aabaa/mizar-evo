@@ -95,6 +95,9 @@ schema version、blob content hash を検証する。その後、その output k
 登録された schema binding だけを通じて decode する。schema mismatch、kind mismatch、
 corrupt bytes、codec data の欠落は storage error として fail closed する。read path は
 別 kind を推測したり、byte を再解釈したり、cache validation を合成したりしてはならない。
+producer-provided decoder は storage mutex の外で実行する。decoder error または panic は
+`CorruptBlob` として fail closed し、storage を poison したり cache record を authority に
+変えたりしてはならない。
 
 handle は proof evidence ではない。後続 adapter が cache から rehydrate した handle を
 含め、handle を持つことは proof status や trusted status を昇格しない。
@@ -116,9 +119,12 @@ length が 64 KiB を超える payload は既定で blob-backed になり、64 K
 変わってはならない。
 
 Task 6 は明示的な `StoragePolicy` でこの policy を実装し、test や将来の build profile が
-より低い、または高い threshold を選べるようにする。この crate は blob path を artifact
-data として公開してはならない。blob reference は payload hash と schema version を key と
-する internal content-addressed reference である。
+より低い、または高い threshold を選べるようにする。すでに canonical bytes を持つ producer は
+blob-aware sealing path を使う。storage はそれらの byte が threshold を超える場合に spill し、
+registered runtime kind/schema binding だけを通じて decode する。canonical bytes をまだ持たない
+producer は、後続の publisher integration が canonical encoding を供給するまで resident sealing
+path を使う。この crate は blob path を artifact data として公開してはならない。blob reference は
+payload hash と schema version を key とする internal content-addressed reference である。
 
 ## Side tables
 

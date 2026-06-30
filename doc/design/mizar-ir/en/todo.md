@@ -119,7 +119,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
      round-trips.
    - Deps: 3, 4. Spec: `storage.md`.
 
-6. **Content-addressed blobs and collection.** [ ]
+6. **Content-addressed blobs and collection.** [x]
    - Implement blob spill per the threshold decision and
      `retain`/`collect` over reference tracking (dependent tasks, LSP
      snapshots, diagnostics, explanation requests, cache writers).

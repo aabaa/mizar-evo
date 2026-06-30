@@ -116,7 +116,7 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
      ラウンドトリップ。
    - 依存: 3、4。仕様: `storage.md`。
 
-6. **content-addressed blob と回収。** [ ]
+6. **content-addressed blob と回収。** [x]
    - 閾値決定に従う blob 退避と、参照追跡（依存タスク、LSP snapshot、
      診断、explanation リクエスト、キャッシュ writer）上の
      `retain`/`collect` を実装する。
