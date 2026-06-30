@@ -58,7 +58,7 @@ cache validation, or artifact publication authority.
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | FAIL-G001 | `design_drift` | `todo.md` required `failure_state.md`, but no module spec existed before task 15. | Task 15 adds this spec and its Japanese companion. |
-| FAIL-G002 | `source_drift` / `test_gap` | `src/failure_state.rs` and focused failure-state tests remain absent until task 16. | Implement build-side records, bounded propagation helpers, deterministic ordering, and focused tests in task 16. |
+| FAIL-G002 | `source_drift` / `test_gap` | `src/failure_state.rs` and focused failure-state tests were absent before task 16. | Task 16 adds build-side records, bounded propagation helpers, deterministic ordering, scheduler integration, and focused tests. |
 | FAIL-G003 | `external_dependency_gap` | This checkout has no `mizar-diagnostics` crate for the stable diagnostic registry or rendered failure snapshots. | Keep failure records synthetic/build-side; do not invent diagnostic-registry APIs in `mizar-build`. |
 | FAIL-G004 | `external_dependency_gap` | `mizar-driver` and real phase-service failure emission are absent in this checkout. | Consume future phase failure records by value; do not add driver dependencies or placeholder phase-service APIs. |
 | FAIL-G005 | `external_dependency_gap` | `mizar-ir` output storage and phase output handles are absent. | Do not publish failed or blocked output handles; keep tests synthetic until real output handles exist. |
@@ -79,6 +79,7 @@ enum FailureCategory {
     AtpTimeout,
     CertificateRejection,
     KernelRejection,
+    BuildInfrastructure,
 }
 
 enum BlockReason {
@@ -120,13 +121,15 @@ struct BlockedTaskRecord {
 }
 ```
 
-`FailureCategory` mirrors architecture 19's stable phase-level categories.
-`mizar-build` may store and sort those categories, but producer crates own
-their semantic detection. `BlockReason` is scheduler-local: it explains why a
-task did not run and must not be reported as semantic failure of that task.
-Direct failure records carry producer diagnostic ordering metadata when it is
-available, plus the scheduler order fallback for synthetic or build-side-only
-failures.
+`FailureCategory` consumes architecture 19's stable producer phase-level
+categories and adds the build-side `BuildInfrastructure` extension for
+scheduler/resource or artifact-boundary failures that have no producer semantic
+category. `mizar-build` may store and sort those categories, but producer
+crates own their semantic detection. `BlockReason` is scheduler-local: it
+explains why a task did not run and must not be reported as semantic failure of
+that task. Direct failure records carry producer diagnostic ordering metadata
+when it is available, plus the scheduler order fallback for synthetic or
+build-side-only failures.
 
 ## Direct Failure Versus Blocked Work
 
@@ -187,7 +190,9 @@ dependencies failed, were cancelled, or lacked required coverage."
 ## Stable Failure Categories
 
 `failure_state` uses architecture 19's phase categories as the stable
-machine-readable classification for direct failures:
+machine-readable classification for producer-owned direct failures, plus the
+build-side `build_infrastructure` extension for non-semantic scheduler/resource
+or artifact-boundary failures:
 
 | Category | Build-side meaning |
 |---|---|
@@ -199,12 +204,32 @@ machine-readable classification for direct failures:
 | `atp_timeout` | ATP/backend work ended without accepted evidence due to timeout or equivalent non-acceptance. |
 | `certificate_rejection` | Evidence/certificate material was malformed, unsupported, or failed evidence-level validation. |
 | `kernel_rejection` | Kernel replay/checking rejected the proof evidence. |
+| `build_infrastructure` | Build-side setup, scheduling, resource, artifact I/O, or documentation boundary failure without a producer-owned semantic category. |
 
 More specific rejection reasons, such as `malformed_certificate`,
 `unsupported_certificate_format`, `invalid_substitution`, or
 `invalid_sat_refutation`, remain structured detail on the record. They refine
 diagnostics but do not replace the phase-level category used for propagation
 and stable ordering.
+
+`build_infrastructure` is a build-side extension for scheduler/resource or
+artifact-boundary failures that lack producer semantic metadata. It is not a
+proof rejection, semantic acceptance result, or trusted-status input.
+
+Until real producer failure records are available, synthetic scheduler tests
+project task kinds to categories as follows:
+
+| Task kind | Synthetic category |
+|---|---|
+| `PackageResolve`, `ArtifactCommit`, `DocumentationExtract` | `build_infrastructure` |
+| `SourceLoad`, `Frontend` | `parse_error` |
+| `ModuleResolve` | `resolve_error` |
+| `CheckAndElaborate`, `VcGenerate`, `VcDischarge` | `type_error` |
+| `AtpSolve`, `BackendRun` | `atp_timeout` |
+| `KernelCheck` | `kernel_rejection` |
+
+Synthetic build-side records derive `stable_detail_key` from stable task
+identity plus diagnostic code. Diagnostic message text is not an ordering key.
 
 ## Deterministic Ordering
 
@@ -256,7 +281,7 @@ outcomes only at documented seams.
 
 ## Task 16 Coverage
 
-Task 15 is documentation-only. Task 16 must add focused Rust coverage for:
+Task 16 adds focused Rust coverage for:
 
 - one failed task blocks exactly the correctness dependents that require its
   outputs;

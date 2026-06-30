@@ -57,7 +57,7 @@ validation、artifact publication authority は変えない。
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | FAIL-G001 | `design_drift` | `todo.md` は `failure_state.md` を要求していたが、task 15 以前には module spec がなかった。 | task 15 でこの仕様と日本語 companion を追加する。 |
-| FAIL-G002 | `source_drift` / `test_gap` | `src/failure_state.rs` と focused failure-state tests は task 16 まで存在しない。 | task 16 で build-side record、有界 propagation helper、決定的 ordering、focused tests を実装する。 |
+| FAIL-G002 | `source_drift` / `test_gap` | `src/failure_state.rs` と focused failure-state tests は task 16 以前には存在しなかった。 | task 16 で build-side record、有界 propagation helper、決定的 ordering、scheduler integration、focused tests を追加する。 |
 | FAIL-G003 | `external_dependency_gap` | この checkout には stable diagnostic registry や rendered failure snapshot を担う `mizar-diagnostics` crate がない。 | failure record は synthetic / build-side に保ち、diagnostic-registry API を `mizar-build` 内で創作しない。 |
 | FAIL-G004 | `external_dependency_gap` | この checkout には `mizar-driver` と real phase-service failure emission が存在しない。 | 将来の phase failure record は値として消費し、driver dependency や placeholder phase-service API を追加しない。 |
 | FAIL-G005 | `external_dependency_gap` | `mizar-ir` output storage と phase output handle が存在しない。 | failed / blocked output handle を publish せず、real output handle が存在するまで tests は synthetic に保つ。 |
@@ -78,6 +78,7 @@ enum FailureCategory {
     AtpTimeout,
     CertificateRejection,
     KernelRejection,
+    BuildInfrastructure,
 }
 
 enum BlockReason {
@@ -119,13 +120,14 @@ struct BlockedTaskRecord {
 }
 ```
 
-`FailureCategory` は architecture 19 の安定した phase-level category を反映する。
-`mizar-build` はそれらの category を保存し sort してよいが、semantic detection は
-producer crates が所有する。`BlockReason` は scheduler-local である。これは task が
-なぜ実行されなかったかを説明するものであり、その task 自身の semantic failure として
-報告してはならない。Direct failure record は、利用可能な場合は producer diagnostic
-ordering metadata を持ち、synthetic または build-side-only failure のために scheduler
-order fallback も持つ。
+`FailureCategory` は architecture 19 の安定した producer phase-level category を消費し、
+producer semantic category を持たない scheduler/resource または artifact-boundary
+failure のために build-side `BuildInfrastructure` extension を追加する。`mizar-build` は
+それらの category を保存し sort してよいが、semantic detection は producer crates が
+所有する。`BlockReason` は scheduler-local である。これは task がなぜ実行されなかったかを
+説明するものであり、その task 自身の semantic failure として報告してはならない。Direct
+failure record は、利用可能な場合は producer diagnostic ordering metadata を持ち、
+synthetic または build-side-only failure のために scheduler order fallback も持つ。
 
 ## direct failure と blocked work
 
@@ -181,8 +183,10 @@ tasks を黙って省略してはならない。user や test は、「この ta
 
 ## 安定した failure category
 
-`failure_state` は、direct failure の安定した machine-readable classification として
-architecture 19 の phase category を使う。
+`failure_state` は、producer-owned direct failure の安定した machine-readable
+classification として architecture 19 の phase category を使い、non-semantic
+scheduler/resource または artifact-boundary failure のために build-side
+`build_infrastructure` extension を追加する。
 
 | Category | Build-side meaning |
 |---|---|
@@ -194,11 +198,31 @@ architecture 19 の phase category を使う。
 | `atp_timeout` | ATP/backend work が timeout または同等の non-acceptance により accepted evidence なしで終了した。 |
 | `certificate_rejection` | evidence/certificate material が malformed、unsupported、または evidence-level validation で失敗した。 |
 | `kernel_rejection` | kernel replay/checking が proof evidence を reject した。 |
+| `build_infrastructure` | producer-owned semantic category を持たない build-side setup、scheduling、resource、artifact I/O、documentation boundary failure。 |
 
 `malformed_certificate`、`unsupported_certificate_format`、
 `invalid_substitution`、`invalid_sat_refutation` のようなより具体的な rejection reason は
 record 上の structured detail のままである。それらは diagnostics を精緻化するが、
 propagation と stable ordering に使う phase-level category を置き換えない。
+
+`build_infrastructure` は producer semantic metadata を持たない scheduler / resource
+または artifact-boundary failure のための build-side extension である。これは proof
+rejection、semantic acceptance result、trusted-status input ではない。
+
+real producer failure record が利用可能になるまで、synthetic scheduler tests は
+task kind を以下の category へ project する:
+
+| Task kind | Synthetic category |
+|---|---|
+| `PackageResolve`, `ArtifactCommit`, `DocumentationExtract` | `build_infrastructure` |
+| `SourceLoad`, `Frontend` | `parse_error` |
+| `ModuleResolve` | `resolve_error` |
+| `CheckAndElaborate`, `VcGenerate`, `VcDischarge` | `type_error` |
+| `AtpSolve`, `BackendRun` | `atp_timeout` |
+| `KernelCheck` | `kernel_rejection` |
+
+synthetic build-side record は、stable task identity と diagnostic code から
+`stable_detail_key` を導出する。diagnostic message text は ordering key ではない。
 
 ## 決定的 ordering
 
@@ -249,8 +273,7 @@ authority である。`mizar-build` は文書化された seam でそれらの s
 
 ## task 16 の coverage
 
-task 15 は documentation-only である。task 16 は以下の focused Rust coverage を
-追加しなければならない。
+task 16 は以下の focused Rust coverage を追加する。
 
 - 1 つの failed task が、その output を必要とする correctness dependents だけを
   block すること。

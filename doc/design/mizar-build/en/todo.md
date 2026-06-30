@@ -13,8 +13,8 @@
 Full module specs are written by their own spec tasks (English and Japanese in
 the same change) before the implementation tasks that cite them. The `planner`
 and `module_index` sources now cover wave A phase-0 planning and module-index
-provider work; wave B module specs through `failure_state` now exist, and the
-remaining source implementation follows its dedicated task. Module names follow
+provider work; wave B module specs and source implementation through
+`failure_state` now exist. Module names follow
 [internal 07](../../internal/en/07.crate_module_layout.md)
 (minimum: `task_graph`, `scheduler`, `cancel`, `failure_state`) plus the
 phase-0 planning modules from architecture 00/03; the crate refines
@@ -28,7 +28,7 @@ architecture 14 and 19 and internal 01.
 | scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` | [x] |
 | resource | `resource.md` (task 11) | `src/resource.rs` | [x] |
 | cancel | `cancel.md` (task 13) | `src/cancel.rs` | [x] |
-| failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [~] |
+| failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [x] |
 
 `mizar-build` currently implements pipeline phase 0 (workspace planning:
 manifests, lockfile, dependency graph, `BuildPlan`, module index) and owns the
@@ -259,11 +259,17 @@ Keep `cargo test -p mizar-build` green after each task (see
     - Deps: 9. Spec: architecture 14 "Failure Propagation Is Bounded",
       [19.failure_semantics.md](../../architecture/en/19.failure_semantics.md).
 
-16. **Failure propagation.** [ ]
+16. **Failure propagation.** [x]
     - Implement blocked/failed task states with bounded propagation and
       deterministic failure reporting.
     - Tests: one failing task blocks exactly its dependents; failure order
       deterministic.
+    - Result: added `src/failure_state.rs` with direct failure records,
+      blocked-task records, stable block reasons, deterministic ordering, and
+      synthetic task-category projection; scheduler runs now emit
+      `failure_records` and `blocked_records`, keep nearest blockers, preserve
+      direct scheduler block reasons, and keep failed/blocked/cancelled work
+      from publishing outputs.
     - Deps: 10, 15. Spec: `failure_state.md`.
 
 17. **Deterministic commit boundary.** [ ]

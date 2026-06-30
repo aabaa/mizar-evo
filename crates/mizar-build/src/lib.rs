@@ -3,6 +3,9 @@
 /// Cooperative versioned cancellation and freshness checks.
 pub mod cancel;
 
+/// Explicit failed and blocked task-state records.
+pub mod failure_state;
+
 /// Module-index construction and build-side provider contract.
 pub mod module_index;
 

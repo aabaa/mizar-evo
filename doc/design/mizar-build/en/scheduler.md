@@ -55,8 +55,8 @@ It is an execution-order component, not a semantic authority.
 | SCH-G003 | `external_dependency_gap` | `mizar-driver` request/session/registry/event integration is absent in this checkout. | Accept caller-supplied graph/session-like inputs in later source; do not add a driver dependency or placeholder driver API. |
 | SCH-G004 | `external_dependency_gap` | `mizar-ir` sealed output handles and storage adapters are absent. | Use synthetic in-memory task outputs in scheduler tests; do not invent IR storage APIs. |
 | SCH-G005 | `source_drift` / `test_gap` | Before tasks 11-12, resource-budget accounting existed only in architecture notes. Task 12 adds `src/resource.rs`, scheduler admission integration, and focused tests. | Keep this spec, `resource.md`, and the scheduler/resource Rust surface synchronized as budget scopes evolve. |
-| SCH-G006 | `deferred` | Cancellation is tasks 13-14. | Define versioned cancellation state transitions only; token storage and snapshot invalidation belong to `cancel.md`. |
-| SCH-G007 | `deferred` | Failure-state propagation is tasks 15-16. | Define bounded blocked-state behavior only; detailed failure taxonomy belongs to `failure_state.md`. |
+| SCH-G006 | `source_drift` / `test_gap` | Cancellation state was absent before tasks 13-14. Task 14 adds `src/cancel.rs`, scheduler checkpoint integration, and focused tests. | Keep scheduler cancellation checkpoints synchronized with `cancel.md`; snapshot-token ownership remains there. |
+| SCH-G007 | `source_drift` / `test_gap` | Failure-state propagation was absent before task 16. Task 16 adds deterministic `failure_records` / `blocked_records`, bounded propagation, scheduler integration, and focused tests. | Keep the scheduler record surface synchronized with `failure_state.md`; detailed taxonomy belongs there. |
 | SCH-G008 | `deferred` | Cache-aware scheduling is task 18 and `mizar-cache` already owns cache validation. | Model cache hits as validated execution-skip outcomes only; do not construct cache keys or proof-reuse decisions here. |
 | SCH-G009 | `external_dependency_gap` | Real producer artifact publication tokens are not available to `mizar-build`. | Order commit tasks deterministically but do not publish artifacts or mint publication authority. |
 
@@ -83,6 +83,8 @@ struct SchedulerRun {
     snapshot: BuildSnapshotId,
     task_states: Vec<TaskStateRecord>,
     results: Vec<SchedulerResult>,
+    failure_records: Vec<BuildFailureRecord>,
+    blocked_records: Vec<BlockedTaskRecord>,
     events: Vec<SchedulerEvent>,
     resource_telemetry: Vec<ResourceTelemetry>,
     diagnostics: Vec<SchedulerDiagnostic>,
@@ -246,9 +248,10 @@ scheduler. `worker_count` still bounds synthetic dispatch batches, while
 resource budgets decide whether a ready task can reserve all applicable
 workspace, package, module, obligation, backend, and commit units. Temporary
 resource denial leaves the task ready/queued; impossible requests block with a
-stable resource diagnostic. Cancellation-token storage, cache validation, and
-rich failure propagation remain deferred until their dedicated tasks implement
-them.
+stable resource diagnostic. Task 14 adds cancellation checkpoints, and task 16
+adds deterministic failure/block records. Cache validation remains deferred to
+the cache-aware scheduling task and `mizar-cache`; scheduler records never
+promote cache hits, skipped work, or artifact records to proof authority.
 
 ## Work Queues
 
@@ -329,9 +332,9 @@ work is completed, skipped, failed, blocked, or cancelled.
 ### Watch
 
 Watch mode uses the same graph and state transitions, but a newer snapshot may
-supersede pending or running work. Until cancellation is implemented, scheduler
-tests use explicit synthetic cancellation seam responses instead of driver
-watch APIs.
+supersede pending or running work. Scheduler tests use explicit synthetic
+cancellation seam responses instead of driver watch APIs because driver watch
+integration is not available in this checkout.
 
 ### LSP
 
@@ -381,9 +384,11 @@ cache key, compute dependency fingerprints, or perform proof-reuse validation.
 ## Failure, Cancellation, and Commit Seams
 
 Failure propagation is bounded. A failed task blocks only correctness
-dependents that require its outputs. Independent tasks may continue. Detailed
-failure classes, blocked-state diagnostics, and degraded-mode permissions are
-specified by `failure_state.md` in tasks 15-16.
+dependents that require its outputs. Independent tasks may continue.
+`SchedulerRun` carries deterministic `failure_records` and `blocked_records`;
+detailed failure classes, blocked-state diagnostics, nearest-blocker
+propagation, and degraded-mode permissions are specified by
+`failure_state.md`.
 
 Cancellation is versioned by snapshot. A cancelled task never publishes current
 diagnostics or artifacts. Actual cancellation-token storage, child-process

@@ -2,6 +2,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use crate::{
     cancel::{CancellationCheckpoint, CancellationDecision, CancellationState},
+    failure_state::{BlockReason, BlockedTaskRecord, BuildFailureRecord},
     resource::{
         ResourceAdmissionStatus, ResourceBudget, ResourceManager, ResourceTelemetry,
         TaskResourceRequest, resource_queue_rank,
@@ -34,6 +35,8 @@ pub struct SchedulerRun {
     pub snapshot: BuildSnapshotId,
     pub task_states: Vec<TaskStateRecord>,
     pub results: Vec<SchedulerResult>,
+    pub failure_records: Vec<BuildFailureRecord>,
+    pub blocked_records: Vec<BlockedTaskRecord>,
     pub events: Vec<SchedulerEvent>,
     pub resource_telemetry: Vec<ResourceTelemetry>,
     pub diagnostics: Vec<SchedulerDiagnostic>,
@@ -191,6 +194,8 @@ struct SchedulerBuilder {
     dependents_by_task: BTreeMap<TaskId, Vec<TaskId>>,
     states: BTreeMap<TaskId, TaskStateRecord>,
     results: BTreeMap<TaskId, SchedulerResult>,
+    failure_records: Vec<BuildFailureRecord>,
+    blocked_records: Vec<BlockedTaskRecord>,
     events: Vec<SchedulerEvent>,
     resource_manager: ResourceManager,
     cancellation_state: CancellationState,
@@ -322,6 +327,8 @@ impl SchedulerBuilder {
             dependents_by_task,
             states: BTreeMap::new(),
             results: BTreeMap::new(),
+            failure_records: Vec::new(),
+            blocked_records: Vec::new(),
             events: Vec::new(),
             resource_manager,
             cancellation_state,
@@ -374,6 +381,10 @@ impl SchedulerBuilder {
         });
         let mut results = self.results.into_values().collect::<Vec<_>>();
         results.sort_by_key(|result| (result.canonical_order, result.task_id.as_str().to_owned()));
+        let mut failure_records = self.failure_records;
+        failure_records.sort_by_key(BuildFailureRecord::sort_key);
+        let mut blocked_records = self.blocked_records;
+        blocked_records.sort_by_key(BlockedTaskRecord::sort_key);
         self.events.sort_by_key(|event| {
             (
                 event.order,
@@ -400,6 +411,8 @@ impl SchedulerBuilder {
                 snapshot: self.input.graph.snapshot,
                 task_states,
                 results,
+                failure_records,
+                blocked_records,
                 events: self.events,
                 resource_telemetry: self.resource_telemetry,
                 diagnostics: self.diagnostics,
@@ -634,14 +647,17 @@ impl SchedulerBuilder {
                 .expect("state record has task metadata")
                 .clone();
             if self.coverage_blocks(&task) {
-                self.block_task(
+                if self.block_task(
                     &task.id,
                     Vec::new(),
+                    BlockReason::MissingDependencyCoverage,
                     Some((
                         SchedulerDiagnosticKind::IncompleteDependencyCoverage,
                         "dependency coverage is incomplete".to_owned(),
                     )),
-                );
+                ) {
+                    self.block_dependents(&task.id);
+                }
                 continue;
             }
 
@@ -664,7 +680,10 @@ impl SchedulerBuilder {
                 .map(|(dependency, _state)| dependency.clone())
                 .collect::<Vec<_>>();
             if !blocking_dependencies.is_empty() {
-                self.block_task(&task.id, blocking_dependencies, None);
+                let reason = primary_dependency_block_reason(&dependency_states);
+                if self.block_task(&task.id, blocking_dependencies, reason, None) {
+                    self.block_dependents(&task.id);
+                }
                 continue;
             }
 
@@ -723,11 +742,14 @@ impl SchedulerBuilder {
             let value = blocking_scope
                 .map(|scope| scope.stable_label())
                 .unwrap_or_else(|| "resource request cannot be admitted".to_owned());
-            self.block_task(
+            if self.block_task(
                 &task.id,
                 Vec::new(),
+                BlockReason::ImpossibleResourceRequest,
                 Some((SchedulerDiagnosticKind::ImpossibleResourceRequest, value)),
-            );
+            ) {
+                self.block_dependents(&task.id);
+            }
         }
 
         status
@@ -808,17 +830,23 @@ impl SchedulerBuilder {
             .cloned()
             .unwrap_or_default()
             .into_iter()
+            .map(|dependent| (dependent, task_id.clone()))
             .collect::<VecDeque<_>>();
-        while let Some(dependent) = queue.pop_front() {
-            if self
-                .states
-                .get(&dependent)
-                .is_some_and(|record| record.state == TaskState::Pending)
-            {
-                self.block_task(&dependent, vec![task_id.clone()], None);
+        while let Some((dependent, blocker)) = queue.pop_front() {
+            if self.states.get(&dependent).is_some_and(|record| {
+                matches!(record.state, TaskState::Pending | TaskState::Blocked)
+            }) {
+                let reason = self
+                    .states
+                    .get(&blocker)
+                    .and_then(|record| block_reason_for_terminal(record.state))
+                    .unwrap_or(BlockReason::DependencyBlocked);
+                if !self.block_task(&dependent, vec![blocker], reason, None) {
+                    continue;
+                }
                 if let Some(next_dependents) = self.dependents_by_task.get(&dependent) {
                     for next in next_dependents {
-                        queue.push_back(next.clone());
+                        queue.push_back((next.clone(), dependent.clone()));
                     }
                 }
             }
@@ -836,6 +864,7 @@ impl SchedulerBuilder {
             self.block_task(
                 &task_id,
                 Vec::new(),
+                BlockReason::NoSchedulablePath,
                 Some((
                     SchedulerDiagnosticKind::NoSchedulablePath,
                     "no schedulable path".to_owned(),
@@ -848,14 +877,33 @@ impl SchedulerBuilder {
         &mut self,
         task_id: &TaskId,
         blocked_by: Vec<TaskId>,
+        reason: BlockReason,
         diagnostic: Option<(SchedulerDiagnosticKind, String)>,
-    ) {
+    ) -> bool {
+        let blocked_by = normalized_task_ids(blocked_by);
+        let mut merge_existing = None;
+        let mut already_blocked = false;
         if let Some(record) = self.states.get_mut(task_id) {
             if record.state == TaskState::Blocked {
-                return;
+                already_blocked = true;
+                if !blocked_by.is_empty() && !record.blocked_by.is_empty() {
+                    let mut merged = record.blocked_by.clone();
+                    merged.extend(blocked_by.clone());
+                    let merged = normalized_task_ids(merged);
+                    record.blocked_by = merged.clone();
+                    merge_existing = Some(merged);
+                }
+            } else {
+                record.state = TaskState::Blocked;
+                record.blocked_by = blocked_by.clone();
             }
-            record.state = TaskState::Blocked;
-            record.blocked_by = blocked_by;
+        }
+        if let Some(merged) = merge_existing {
+            self.merge_blocked_record(task_id, merged, reason);
+            return false;
+        }
+        if already_blocked {
+            return false;
         }
         let task = self
             .tasks_by_id
@@ -863,6 +911,16 @@ impl SchedulerBuilder {
             .expect("blocked task has task metadata")
             .clone();
         self.record_result(&task, TaskState::Blocked);
+        self.blocked_records.push(BlockedTaskRecord::new(
+            task.id.clone(),
+            self.input.graph.snapshot,
+            blocked_by,
+            reason,
+            SchedulerOrderKey {
+                graph_index: self.graph_index(task_id),
+                lifecycle_rank: lifecycle_rank(SchedulerEventKind::TaskBlocked),
+            },
+        ));
         self.events.push(event_for_task(
             SchedulerEventKind::TaskBlocked,
             task_id,
@@ -874,6 +932,24 @@ impl SchedulerBuilder {
                 kind,
                 value: Some(value),
             });
+        }
+        true
+    }
+
+    fn merge_blocked_record(
+        &mut self,
+        task_id: &TaskId,
+        blocked_by: Vec<TaskId>,
+        reason: BlockReason,
+    ) {
+        let blocked_by = normalized_task_ids(blocked_by);
+        if let Some(record) = self
+            .blocked_records
+            .iter_mut()
+            .find(|record| &record.task_id == task_id)
+        {
+            record.blocked_by = blocked_by;
+            record.reason = record.reason.min(reason);
         }
     }
 
@@ -906,15 +982,25 @@ impl SchedulerBuilder {
             | TaskState::Blocked
             | TaskState::Cancelled => (Vec::new(), Vec::new()),
         };
+        let canonical_order = SchedulerOrderKey {
+            graph_index: self.graph_index(&task.id),
+            lifecycle_rank: lifecycle_rank(SchedulerEventKind::TaskFinished),
+        };
+        if state == TaskState::Failed {
+            self.failure_records
+                .extend(BuildFailureRecord::from_failed_task(
+                    task,
+                    self.input.graph.snapshot,
+                    canonical_order,
+                    &diagnostics,
+                ));
+        }
         self.results.insert(
             task.id.clone(),
             SchedulerResult {
                 task_id: task.id.clone(),
                 state,
-                canonical_order: SchedulerOrderKey {
-                    graph_index: self.graph_index(&task.id),
-                    lifecycle_rank: lifecycle_rank(SchedulerEventKind::TaskFinished),
-                },
+                canonical_order,
                 output_refs,
                 diagnostics,
             },
@@ -1083,6 +1169,34 @@ fn blocking_terminal(state: TaskState) -> bool {
     )
 }
 
+fn block_reason_for_terminal(state: TaskState) -> Option<BlockReason> {
+    match state {
+        TaskState::Failed => Some(BlockReason::DependencyFailed),
+        TaskState::Blocked => Some(BlockReason::DependencyBlocked),
+        TaskState::Cancelled => Some(BlockReason::DependencyCancelled),
+        TaskState::Pending
+        | TaskState::Ready
+        | TaskState::Running
+        | TaskState::Completed
+        | TaskState::CacheHit
+        | TaskState::Skipped => None,
+    }
+}
+
+fn primary_dependency_block_reason(dependency_states: &[(TaskId, TaskState)]) -> BlockReason {
+    dependency_states
+        .iter()
+        .filter_map(|(_dependency, state)| block_reason_for_terminal(*state))
+        .min()
+        .unwrap_or(BlockReason::DependencyBlocked)
+}
+
+fn normalized_task_ids(mut task_ids: Vec<TaskId>) -> Vec<TaskId> {
+    task_ids.sort();
+    task_ids.dedup();
+    task_ids
+}
+
 fn default_output_for_task(task: &BuildTask) -> SyntheticOutputRef {
     SyntheticOutputRef::new(
         format!("synthetic-output:{}", task.id.as_str()),
@@ -1144,6 +1258,7 @@ fn sort_scheduler_diagnostics(
 mod tests {
     use super::*;
     use crate::{
+        failure_state::{BlockReason, FailureCategory},
         module_index::{ModuleId, ModuleIndex, ModuleIndexEntry, ModuleIndexLocation},
         planner::{
             BuildConfig, BuildPlan, DependencyGraph, Lockfile, PackagePlan, PackagePlanSource,
@@ -1151,9 +1266,9 @@ mod tests {
         },
         resource::{ResourceAdmissionStatus, ResourceBudget, ResourceScope},
         task_graph::{
-            BackendProfileId, DocumentationProfile, ModuleDependencyOverlay, TaskGraphInput,
-            TaskGraphProfile, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId, WorkUnit,
-            build_task_graph,
+            BackendProfileId, DocumentationProfile, ModuleDependencyOverlay, PipelinePhase,
+            ResourceClass, TaskGraphInput, TaskGraphProfile, VcOrderKey, VcTaskDescriptor,
+            VcTaskDescriptorId, WorkUnit, build_task_graph,
         },
     };
     use mizar_session::{Edition, Hash, ModulePath, PackageId, ToolchainInfo, WorkspaceRoot};
@@ -1181,6 +1296,8 @@ mod tests {
         assert!(parallel_batches.iter().any(|batch| batch.len() == 2));
         assert_eq!(canonical.task_states, shuffled.task_states);
         assert_eq!(canonical.results, shuffled.results);
+        assert_eq!(canonical.failure_records, shuffled.failure_records);
+        assert_eq!(canonical.blocked_records, shuffled.blocked_records);
         assert_eq!(canonical.events, shuffled.events);
         assert_eq!(canonical.diagnostics, shuffled.diagnostics);
     }
@@ -1291,6 +1408,11 @@ mod tests {
             diagnostic.task_id.as_ref() == Some(&module_resolve_id)
                 && diagnostic.kind == SchedulerDiagnosticKind::IncompleteDependencyCoverage
         }));
+        assert!(scheduler_run.blocked_records.iter().any(|record| {
+            record.task_id == module_resolve_id
+                && record.reason == BlockReason::MissingDependencyCoverage
+                && record.blocked_by.is_empty()
+        }));
     }
 
     #[test]
@@ -1310,6 +1432,9 @@ mod tests {
         }));
         assert!(run.diagnostics.iter().any(|diagnostic| {
             diagnostic.kind == SchedulerDiagnosticKind::IncompleteDependencyCoverage
+        }));
+        assert!(run.blocked_records.iter().any(|record| {
+            record.reason == BlockReason::MissingDependencyCoverage && record.blocked_by.is_empty()
         }));
     }
 
@@ -1420,6 +1545,11 @@ mod tests {
             diagnostic.task_id.as_ref() == Some(&source)
                 && diagnostic.kind == SchedulerDiagnosticKind::ImpossibleResourceRequest
                 && diagnostic.value.as_deref() == Some("source-workers")
+        }));
+        assert!(run.blocked_records.iter().any(|record| {
+            record.task_id == source
+                && record.reason == BlockReason::ImpossibleResourceRequest
+                && record.blocked_by.is_empty()
         }));
         assert!(run.resource_telemetry.iter().any(|telemetry| {
             telemetry.task_id == source
@@ -1698,6 +1828,11 @@ mod tests {
         assert_eq!(state_for(&run, &kernel), TaskState::Blocked);
         assert_eq!(state_for(&run, &artifact), TaskState::Blocked);
         assert_eq!(state_for(&run, &documentation), TaskState::Blocked);
+        assert!(run.blocked_records.iter().any(|record| {
+            record.task_id == kernel
+                && record.reason == BlockReason::NoSchedulablePath
+                && record.blocked_by.is_empty()
+        }));
 
         let graph = sample_graph();
         let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
@@ -1754,6 +1889,10 @@ mod tests {
                     .iter()
                     .all(|record| record.state != TaskState::CacheHit)
             );
+            assert!(
+                run.failure_records.is_empty(),
+                "cache miss/unavailable/error-as-miss must not become failure"
+            );
             let debug = format!("{run:#?}").to_lowercase();
             assert!(!debug.contains("cachekey"));
             assert!(!debug.contains("dependencyfingerprint"));
@@ -1782,6 +1921,20 @@ mod tests {
         .expect("scheduler run succeeds");
 
         assert_eq!(state_for(&run, &frontend), TaskState::Failed);
+        assert_eq!(run.failure_records.len(), 1);
+        assert_eq!(&run.failure_records[0].task_id, &frontend);
+        assert_eq!(run.failure_records[0].category, FailureCategory::ParseError);
+        assert_eq!(run.failure_records[0].diagnostic_code, "E001");
+        let failed_result = result_for(&run, &frontend);
+        assert!(failed_result.output_refs.is_empty());
+        assert_eq!(
+            failed_result.diagnostics,
+            vec![SchedulerDiagnosticRef::new(
+                "main",
+                "E001",
+                "frontend failed"
+            )]
+        );
         let blocked_by_frontend = run
             .task_states
             .iter()
@@ -1796,6 +1949,17 @@ mod tests {
                 .all(|record| { task_belongs_to_module(&graph, &record.task_id, "app", "main") })
         );
         assert_eq!(state_for(&run, &util_artifact), TaskState::Completed);
+        assert!(run.blocked_records.iter().any(|record| {
+            record.blocked_by == vec![frontend.clone()]
+                && record.reason == BlockReason::DependencyFailed
+        }));
+        assert!(run.blocked_records.iter().any(|record| {
+            record.reason == BlockReason::DependencyBlocked
+                && record
+                    .blocked_by
+                    .iter()
+                    .all(|blocked_by| blocked_by != &frontend)
+        }));
 
         let graph = multi_module_graph();
         let source = task_id_for_module_kind(&graph, TaskKind::SourceLoad, "app", "main");
@@ -1819,6 +1983,10 @@ mod tests {
         })
         .expect("scheduler run succeeds");
         assert_eq!(state_for(&run, &source), TaskState::Cancelled);
+        assert!(
+            run.failure_records.is_empty(),
+            "cancellation must not create failure records"
+        );
         let blocked_by_source = run
             .task_states
             .iter()
@@ -1833,9 +2001,187 @@ mod tests {
                 .all(|record| { task_belongs_to_module(&graph, &record.task_id, "app", "main") })
         );
         assert_eq!(state_for(&run, &util_artifact), TaskState::Completed);
+        assert!(run.blocked_records.iter().any(|record| {
+            record.blocked_by == vec![source.clone()]
+                && record.reason == BlockReason::DependencyCancelled
+        }));
         let blocked_frontend = result_for(&run, &frontend);
         assert!(blocked_frontend.output_refs.is_empty());
         assert!(blocked_frontend.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn failure_records_are_deterministic_and_independent_failures_remain_visible() {
+        let graph = multi_module_graph();
+        let main = task_id_for_module_kind(&graph, TaskKind::Frontend, "app", "main");
+        let util = task_id_for_module_kind(&graph, TaskKind::Frontend, "app", "util");
+        let outcomes = vec![
+            SyntheticTaskOutcome::fail(
+                util.clone(),
+                vec![SchedulerDiagnosticRef::new("util", "E020", "util failed")],
+            ),
+            SyntheticTaskOutcome::fail(
+                main.clone(),
+                vec![SchedulerDiagnosticRef::new("main", "E010", "main failed")],
+            ),
+        ];
+        let canonical = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            task_outcomes: outcomes.clone(),
+            worker_count: 1,
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+        let reverse = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            task_outcomes: outcomes,
+            worker_count: 3,
+            completion_order: CompletionOrder::Reverse,
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        assert_eq!(canonical.failure_records, reverse.failure_records);
+        assert_eq!(canonical.blocked_records, reverse.blocked_records);
+        assert_eq!(
+            canonical
+                .failure_records
+                .iter()
+                .map(|record| record.diagnostic_code.as_str())
+                .collect::<Vec<_>>(),
+            vec!["E010", "E020"]
+        );
+        assert_eq!(state_for(&canonical, &main), TaskState::Failed);
+        assert_eq!(state_for(&canonical, &util), TaskState::Failed);
+        assert!(
+            canonical
+                .blocked_records
+                .iter()
+                .all(|record| record.blocked_by.len() <= 1)
+        );
+    }
+
+    #[test]
+    fn multiple_failed_predecessors_have_completion_order_independent_blockers() {
+        let graph = diamond_failure_graph(DependencyCoverage::Complete);
+        let left = TaskId::new_for_test("left");
+        let right = TaskId::new_for_test("right");
+        let join = TaskId::new_for_test("join");
+        let outcomes = vec![
+            SyntheticTaskOutcome::fail(
+                left.clone(),
+                vec![SchedulerDiagnosticRef::new("left", "E010", "left failed")],
+            ),
+            SyntheticTaskOutcome::fail(
+                right.clone(),
+                vec![SchedulerDiagnosticRef::new("right", "E020", "right failed")],
+            ),
+        ];
+        let canonical = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            worker_count: 2,
+            task_outcomes: outcomes.clone(),
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+        let reverse = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            worker_count: 2,
+            completion_order: CompletionOrder::Reverse,
+            task_outcomes: outcomes,
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        let canonical_block = blocked_record_for(&canonical, &join);
+        let reverse_block = blocked_record_for(&reverse, &join);
+        assert_eq!(canonical_block, reverse_block);
+        assert_eq!(canonical_block.reason, BlockReason::DependencyFailed);
+        assert_eq!(canonical_block.blocked_by, vec![left, right]);
+    }
+
+    #[test]
+    fn direct_scheduler_blocks_propagate_before_no_schedulable_fallback() {
+        let graph = diamond_failure_graph(DependencyCoverage::MissingModuleDependencyOverlay);
+        let left = TaskId::new_for_test("left");
+        let join = TaskId::new_for_test("join");
+
+        let run = run_scheduler(SchedulerInput::new(graph)).expect("scheduler run succeeds");
+
+        let left_block = blocked_record_for(&run, &left);
+        assert_eq!(left_block.reason, BlockReason::MissingDependencyCoverage);
+        assert!(left_block.blocked_by.is_empty());
+        let join_block = blocked_record_for(&run, &join);
+        assert_eq!(join_block.reason, BlockReason::DependencyBlocked);
+        assert_eq!(join_block.blocked_by, vec![left]);
+    }
+
+    #[test]
+    fn dependency_terminal_blocks_propagate_before_no_schedulable_fallback() {
+        let root = TaskId::new_for_test("root");
+        let left = TaskId::new_for_test("left");
+        let right = TaskId::new_for_test("right");
+        let join = TaskId::new_for_test("join");
+        let tail = TaskId::new_for_test("tail");
+        let graph = TaskGraph {
+            version: crate::task_graph::TaskGraphVersion::current(),
+            snapshot: snapshot(6),
+            tasks: vec![
+                scheduler_test_task(
+                    root.clone(),
+                    TaskKind::PackageResolve,
+                    Vec::new(),
+                    DependencyCoverage::Complete,
+                    PriorityClass::Root,
+                ),
+                scheduler_test_task(
+                    tail.clone(),
+                    TaskKind::DocumentationExtract,
+                    vec![join.clone()],
+                    DependencyCoverage::Complete,
+                    PriorityClass::Commit,
+                ),
+                scheduler_test_task(
+                    join.clone(),
+                    TaskKind::ArtifactCommit,
+                    vec![left.clone(), right.clone()],
+                    DependencyCoverage::Complete,
+                    PriorityClass::Commit,
+                ),
+                scheduler_test_task(
+                    left.clone(),
+                    TaskKind::Frontend,
+                    vec![root.clone()],
+                    DependencyCoverage::Complete,
+                    PriorityClass::Source,
+                ),
+                scheduler_test_task(
+                    right.clone(),
+                    TaskKind::ModuleResolve,
+                    vec![root],
+                    DependencyCoverage::Complete,
+                    PriorityClass::Source,
+                ),
+            ],
+            edges: Vec::new(),
+            diagnostics: Vec::new(),
+        };
+
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cancellation: CancellationPolicy::default()
+                .with_cancelled_task(left.clone())
+                .with_cancelled_task(right.clone()),
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        let join_block = blocked_record_for(&run, &join);
+        assert_eq!(join_block.reason, BlockReason::DependencyCancelled);
+        assert_eq!(join_block.blocked_by, vec![left, right]);
+        let tail_block = blocked_record_for(&run, &tail);
+        assert_eq!(tail_block.reason, BlockReason::DependencyBlocked);
+        assert_eq!(tail_block.blocked_by, vec![join]);
     }
 
     #[test]
@@ -2142,6 +2488,7 @@ mod tests {
         let source = include_str!("scheduler.rs");
         let resource_source = include_str!("resource.rs");
         let cancel_source = include_str!("cancel.rs");
+        let failure_source = include_str!("failure_state.rs");
         for forbidden in [
             concat!("Cache", "Key"),
             concat!("Dependency", "Fingerprint"),
@@ -2158,6 +2505,9 @@ mod tests {
             concat!("Artifact", "Commit", "Token"),
             concat!("Proof", "Trust"),
             concat!("Cache", "Lookup"),
+            concat!("mizar", "-", "diagnostics"),
+            concat!("Diagnostic", "Registry"),
+            concat!("Failure", "Snapshot", "Store"),
         ] {
             assert!(
                 !source.contains(forbidden),
@@ -2170,6 +2520,10 @@ mod tests {
             assert!(
                 !cancel_source.contains(forbidden),
                 "{forbidden} leaked into cancel source"
+            );
+            assert!(
+                !failure_source.contains(forbidden),
+                "{forbidden} leaked into failure-state source"
             );
         }
 
@@ -2260,6 +2614,87 @@ mod tests {
             vc_descriptors: Vec::new(),
             profile: TaskGraphProfile::default(),
         })
+    }
+
+    fn diamond_failure_graph(left_coverage: DependencyCoverage) -> TaskGraph {
+        let root = TaskId::new_for_test("root");
+        let left = TaskId::new_for_test("left");
+        let right = TaskId::new_for_test("right");
+        let join = TaskId::new_for_test("join");
+        TaskGraph {
+            version: crate::task_graph::TaskGraphVersion::current(),
+            snapshot: snapshot(5),
+            // Join intentionally sorts before left so direct-block propagation
+            // cannot rely on one forward scan before the no-schedulable fallback.
+            tasks: vec![
+                scheduler_test_task(
+                    root.clone(),
+                    TaskKind::PackageResolve,
+                    Vec::new(),
+                    DependencyCoverage::Complete,
+                    PriorityClass::Root,
+                ),
+                scheduler_test_task(
+                    join.clone(),
+                    TaskKind::ArtifactCommit,
+                    vec![left.clone(), right.clone()],
+                    DependencyCoverage::Complete,
+                    PriorityClass::Commit,
+                ),
+                scheduler_test_task(
+                    left.clone(),
+                    TaskKind::Frontend,
+                    vec![root.clone()],
+                    left_coverage,
+                    PriorityClass::Source,
+                ),
+                scheduler_test_task(
+                    right.clone(),
+                    TaskKind::ModuleResolve,
+                    vec![root.clone()],
+                    DependencyCoverage::Complete,
+                    PriorityClass::Source,
+                ),
+            ],
+            edges: Vec::new(),
+            diagnostics: Vec::new(),
+        }
+    }
+
+    fn scheduler_test_task(
+        id: TaskId,
+        kind: TaskKind,
+        dependencies: Vec<TaskId>,
+        dependency_coverage: DependencyCoverage,
+        priority_class: PriorityClass,
+    ) -> BuildTask {
+        BuildTask {
+            id,
+            kind,
+            unit: WorkUnit::Workspace,
+            phases: vec![pipeline_phase_for_kind(kind)],
+            dependencies,
+            dependency_coverage,
+            resource_class: ResourceClass::CpuLocal,
+            priority_class,
+        }
+    }
+
+    fn pipeline_phase_for_kind(kind: TaskKind) -> PipelinePhase {
+        match kind {
+            TaskKind::PackageResolve => PipelinePhase::PackageResolve,
+            TaskKind::SourceLoad => PipelinePhase::SourceLoad,
+            TaskKind::Frontend => PipelinePhase::Frontend,
+            TaskKind::ModuleResolve => PipelinePhase::ModuleResolve,
+            TaskKind::CheckAndElaborate => PipelinePhase::TypeChecking,
+            TaskKind::VcGenerate => PipelinePhase::VcGenerate,
+            TaskKind::VcDischarge => PipelinePhase::VcDischarge,
+            TaskKind::AtpSolve => PipelinePhase::AtpSolve,
+            TaskKind::BackendRun => PipelinePhase::BackendRun,
+            TaskKind::KernelCheck => PipelinePhase::KernelCheck,
+            TaskKind::ArtifactCommit => PipelinePhase::ArtifactCommit,
+            TaskKind::DocumentationExtract => PipelinePhase::DocumentationExtract,
+        }
     }
 
     fn build_plan(packages: Vec<PackagePlan>) -> BuildPlan {
@@ -2474,6 +2909,13 @@ mod tests {
             .iter()
             .find(|result| &result.task_id == task_id)
             .expect("result exists")
+    }
+
+    fn blocked_record_for<'a>(run: &'a SchedulerRun, task_id: &TaskId) -> &'a BlockedTaskRecord {
+        run.blocked_records
+            .iter()
+            .find(|record| &record.task_id == task_id)
+            .expect("blocked record exists")
     }
 
     fn state_for(run: &SchedulerRun, task_id: &TaskId) -> TaskState {
