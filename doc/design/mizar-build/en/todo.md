@@ -361,10 +361,16 @@ Keep `cargo test -p mizar-build` green after each task (see
       `external_dependency_gap`.
     - Deps: 21. Spec: all module specs and this TODO.
 
-23. **Bilingual documentation sync audit.** [ ]
+23. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-build/en/` with its Japanese companion and
       synchronize content.
+    - Completed by task 23: `bilingual_documentation_synchronization.md`
+      records the paired-file audit. All English canonical design docs have
+      same-named Japanese companions; no deferred companion updates remain,
+      BUILD-G-016 stays a non-blocking `test_gap`, and existing driver, IR,
+      producer-token, and full real clean/incremental integration gaps remain
+      `external_dependency_gap`.
     - Deps: 22. Spec: repository documentation policy.
 
 24. **Incremental/parallel equivalence gate.** [ ]
