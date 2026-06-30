@@ -328,10 +328,18 @@ Keep `cargo test -p mizar-build` green after each task (see
       guards and a validated-cache-hit non-authority check cover the Task 19
       boundary.
 
-20. **Determinism suite.** [ ]
+20. **Determinism suite.** [x]
     - Property coverage that plans, graphs, schedules, events, and commits
       are identical for identical inputs across worker counts.
-    - Deps: 17. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+    - Task 20 scope: cover implemented `mizar-build` seams with table-driven
+      fixtures; record absent driver, IR, and producer-token clean/incremental
+      integration as `external_dependency_gap` and do not add placeholders.
+    - Deps: 17, 18, 19. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md);
+      `determinism_suite.md`.
+    - Completed by task 20: `tests/determinism_suite.rs` compares deterministic
+      plan/index/graph projections, scheduler results/events across worker and
+      priority variants, cache hit/miss commit projections, shuffled manifest
+      commits, and explicit external-gap placeholder guards.
 
 21. **Public-enum forward-compatibility policy.** [ ]
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
