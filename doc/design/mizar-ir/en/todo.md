@@ -20,7 +20,7 @@ Module names follow the minimum split of
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | identity | `identity.md` (task 2) | `src/identity.rs` | [x] |
-| storage | `storage.md` (task 4) | `src/storage.rs` | [ ] |
+| storage | `storage.md` (task 4) | `src/storage.rs` | [~] |
 | publisher | `publisher.md` (task 7) | `src/publisher.rs` | [ ] |
 | cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [ ] |
 | projection | `projection.md` (task 11) | `src/projection.rs` | [ ] |
@@ -59,11 +59,10 @@ internal: [06](../../internal/en/06.ir_storage_and_snapshot_handles.md).
 
 ## Resolved And Open Decisions
 
-- **Blob spill thresholds: open, resolved by task 6.** Decide when a phase
-  output is stored in memory versus as a content-addressed blob (size
-  thresholds, per-IR overrides) and record the policy in `storage.md`; the
-  resident-set rules of the internal overview are the constraint, not a
-  performance guarantee.
+- **Blob spill thresholds: resolved by task 4.** `storage.md` sets the default
+  spill threshold to 64 KiB of canonical payload bytes and keeps the threshold
+  as a storage policy, not an identity, proof, cache, or artifact rule. Task 6
+  implements the policy and collection behavior.
 - **Identity stability under edits: resolved by architecture 01.** IDs are
   deterministic for identical inputs; where edits make perfect stability
   impossible they degrade predictably, and arena indices are never exposed
@@ -104,7 +103,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
      links round-trip; IR-local ids are not proof-reuse authority.
    - Deps: 2. Spec: `identity.md`.
 
-4. **Spec: `storage.md`.** [ ]
+4. **Spec: `storage.md`.** [x]
    - Write the storage spec (English and Japanese, no code): immutable
      storage slots, typed `PhaseOutputRef<T>`, sealing semantics,
      in-memory versus blob placement (with the spill-threshold decision),
