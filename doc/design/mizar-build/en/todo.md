@@ -165,11 +165,14 @@ Keep `cargo test -p mizar-build` green after each task (see
      artifact/documentation scheduling edges, and focused unit tests.
    - Deps: 7. Spec: `task_graph.md`.
 
-9. **Spec: `scheduler.md`.** [ ]
+9. **Spec: `scheduler.md`.** [x]
    - Write the scheduler spec (English and Japanese, no code): work queues,
      priority policy, batch versus watch/LSP modes, build events, and the
      deterministic-result-ordering rule (completion order is never semantic
      or artifact order).
+   - Result: added synchronized `scheduler.md` specs covering task states,
+     ready queues, priority/collation, scheduler events, cache-aware seam
+     boundaries, and deferred resource/cancel/failure/commit seams.
    - Deps: 7. Spec: architecture 14 "Deterministic Result Ordering",
      [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
      "Pipeline Scheduler".
