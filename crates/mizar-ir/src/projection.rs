@@ -966,6 +966,82 @@ mod tests {
     }
 
     #[test]
+    fn raw_ir_leakage_across_projected_field_families_is_rejected() {
+        let snapshot = snapshot(16);
+        let publisher = publisher(snapshot);
+        let handle = publish_fixture(&publisher, snapshot, "module");
+        let output = handle.erase();
+        let service = ArtifactProjectionService::new(publisher);
+
+        assert_raw_leakage_rejected(&service, snapshot, output.clone(), "expressions", |input| {
+            input.expressions[0].rendered_surface = "raw CoreIr expression".to_owned();
+        });
+        assert_raw_leakage_rejected(&service, snapshot, output.clone(), "expressions", |input| {
+            input.expressions[0]
+                .overload_resolution
+                .as_mut()
+                .expect("fixture has overload metadata")
+                .coercion_summary = Some("raw checker dump".to_owned());
+        });
+        assert_raw_leakage_rejected(&service, snapshot, output.clone(), "obligations", |input| {
+            input.obligations[0].statement_summary = "raw VcIr obligation".to_owned();
+        });
+        assert_raw_leakage_rejected(&service, snapshot, output.clone(), "obligations", |input| {
+            input.obligations[0].dependency_slice_fingerprint =
+                hash_ref(ArtifactHashClass::Interface, "AtpProblem", 17);
+        });
+        assert_raw_leakage_rejected(
+            &service,
+            snapshot,
+            output.clone(),
+            "proof_witnesses",
+            |input| {
+                let accepted = accepted_obligation("obl-alpha", 55);
+                let mut witness = witness_for(&accepted, 56);
+                witness.witness_path = "proof-witnesses/raw AtpProblem.json".to_owned();
+                input.obligations = vec![accepted];
+                input.proof_witnesses = vec![witness];
+            },
+        );
+        assert_raw_leakage_rejected(
+            &service,
+            snapshot,
+            output.clone(),
+            "proof_witnesses",
+            |input| {
+                let accepted = accepted_obligation("obl-beta", 57);
+                let mut witness = witness_for(&accepted, 58);
+                witness.kernel_acceptance.formula_evidence_hash =
+                    hash_ref(ArtifactHashClass::Interface, "kernel-internal", 59);
+                input.obligations = vec![accepted];
+                input.proof_witnesses = vec![witness];
+            },
+        );
+        assert_raw_leakage_rejected(&service, snapshot, output.clone(), "diagnostics", |input| {
+            input.diagnostics[0].rendered_message = "kernel-internal diagnostic".to_owned();
+        });
+        assert_raw_leakage_rejected(&service, snapshot, output.clone(), "diagnostics", |input| {
+            input.diagnostics[0].related[0].rendered_message =
+                "storage slot related diagnostic".to_owned();
+        });
+        assert_raw_leakage_rejected(&service, snapshot, output.clone(), "provenance", |input| {
+            input.provenance.toolchain = "raw SurfaceAst toolchain".to_owned();
+        });
+        assert_raw_leakage_rejected(&service, snapshot, output.clone(), "provenance", |input| {
+            input.provenance.cache_key = Some("PhaseOutputRef<cached>".to_owned());
+        });
+        assert_raw_leakage_rejected(&service, snapshot, output.clone(), "provenance", |input| {
+            input.provenance.dependency_artifact_hashes[0]
+                .module
+                .module_path = "raw TypedAst dependency".to_owned();
+        });
+        assert_raw_leakage_rejected(&service, snapshot, output, "provenance", |input| {
+            input.provenance.dependency_artifact_hashes[0].interface_hash =
+                hash_ref(ArtifactHashClass::Interface, "StorageGeneration", 60);
+        });
+    }
+
+    #[test]
     fn wrong_snapshot_output_is_rejected() {
         let current = snapshot(3);
         let old = snapshot(4);
@@ -1285,6 +1361,25 @@ mod tests {
             diagnostics: vec![diagnostic("D010", 80), diagnostic("D001", 70)],
             provenance: provenance(),
         }
+    }
+
+    fn assert_raw_leakage_rejected(
+        service: &ArtifactProjectionService,
+        snapshot: BuildSnapshotId,
+        output: AnyPhaseOutputRef,
+        expected_field_fragment: &str,
+        mutate: impl FnOnce(&mut ProjectVerifiedArtifactInput),
+    ) {
+        let mut input = project_input(snapshot, output);
+        mutate(&mut input);
+        let error = service
+            .project_module(input)
+            .expect_err("raw IR marker is rejected");
+        assert!(matches!(
+            error,
+            ProjectionError::RawInternalLeak { field, .. }
+                if field.contains(expected_field_fragment)
+        ));
     }
 
     fn export(origin: &str, seed: u8) -> VerifiedExport {

@@ -1275,6 +1275,74 @@ mod tests {
     }
 
     #[test]
+    fn unknown_snapshot_public_registry_apis_are_rejected() {
+        let known = snapshot(20);
+        let unknown = snapshot(21);
+        let registry = registered_registry(known);
+        let module = registry
+            .module_id(module_input(known))
+            .expect("known module is registered");
+        let item = registry
+            .item_id(ItemIdentityInput {
+                snapshot: known,
+                module,
+                item_kind: "theorem".to_owned(),
+                origin_key: "Main.Th1".to_owned(),
+                declaration_order_key: "0001".to_owned(),
+            })
+            .expect("known item is registered");
+
+        assert_eq!(
+            registry
+                .module_id(module_input(unknown))
+                .expect_err("unknown snapshot module id is rejected"),
+            IdentityError::UnknownSnapshot { snapshot: unknown }
+        );
+        assert_eq!(
+            registry
+                .item_id(ItemIdentityInput {
+                    snapshot: unknown,
+                    module,
+                    item_kind: "theorem".to_owned(),
+                    origin_key: "Main.Th2".to_owned(),
+                    declaration_order_key: "0002".to_owned(),
+                })
+                .expect_err("unknown snapshot item id is rejected"),
+            IdentityError::UnknownSnapshot { snapshot: unknown }
+        );
+        assert_eq!(
+            registry
+                .expr_id(ExprIdentityInput {
+                    snapshot: unknown,
+                    module,
+                    item: Some(item),
+                    expression_kind: "formula".to_owned(),
+                    producer_path_key: "proof/1/thesis".to_owned(),
+                })
+                .expect_err("unknown snapshot expression id is rejected"),
+            IdentityError::UnknownSnapshot { snapshot: unknown }
+        );
+        assert_eq!(
+            registry
+                .vc_id(VcIdentityInput {
+                    snapshot: unknown,
+                    module,
+                    item: Some(item),
+                    obligation_order_key: "vc/0002".to_owned(),
+                    canonical_vc_fingerprint: Some(hash(31)),
+                })
+                .expect_err("unknown snapshot vc id is rejected"),
+            IdentityError::UnknownSnapshot { snapshot: unknown }
+        );
+        assert_eq!(
+            registry
+                .register_output(output_input(unknown, "unknown", Vec::new(), Vec::new()))
+                .expect_err("unknown snapshot output registration is rejected"),
+            IdentityError::UnknownSnapshot { snapshot: unknown }
+        );
+    }
+
+    #[test]
     fn conflicting_duplicate_module_key_is_rejected() {
         let snapshot = snapshot(13);
         let registry = registered_registry(snapshot);

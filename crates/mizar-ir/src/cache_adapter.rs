@@ -700,7 +700,7 @@ mod tests {
     use crate::{
         identity::{OutputIdentityInput, PhaseOutputLineage, SnapshotHandleRegistry},
         publisher::AllowedWorkUnit,
-        storage::{BlobDecodeError, IrStorageService},
+        storage::{BlobDecodeError, CollectInput, IrStorageService, StorageError},
     };
 
     fn hash(seed: u8) -> Hash {
@@ -930,6 +930,15 @@ mod tests {
         content_hash: Hash,
         side_table_hash: Hash,
     ) -> PhaseOutputLineage {
+        expected_lineage_with_parents(snapshot, content_hash, side_table_hash, Vec::new())
+    }
+
+    fn expected_lineage_with_parents(
+        snapshot: BuildSnapshotId,
+        content_hash: Hash,
+        side_table_hash: Hash,
+        parents: Vec<PhaseOutputId>,
+    ) -> PhaseOutputLineage {
         PhaseOutputLineage::from_input(OutputIdentityInput {
             snapshot,
             phase: phase(),
@@ -937,7 +946,7 @@ mod tests {
             output_kind: output_kind(),
             content_hash,
             side_table_hash,
-            parents: Vec::new(),
+            parents,
             named_input_hashes: vec![named(1)],
         })
         .expect("expected lineage derives")
@@ -1073,6 +1082,149 @@ mod tests {
             outcome,
             CacheRehydrateOutcome::Miss(CacheAdapterMiss::ParentMismatch)
         ));
+        assert!(
+            target_publisher
+                .registry()
+                .output_lineage(expected.output)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn collected_parent_handle_misses_before_current_rehydration() {
+        let old_snapshot = snapshot(25);
+        let current_snapshot = snapshot(26);
+        let source_publisher = publisher(old_snapshot);
+        let target_publisher = publisher(current_snapshot);
+        let source_adapter = IrCacheAdapter::new(source_publisher.clone());
+        let target_adapter = IrCacheAdapter::new(target_publisher.clone());
+        let old_parent = publish_text_with(
+            &source_publisher,
+            old_snapshot,
+            parent_work_unit(),
+            "parent",
+            Vec::new(),
+            side_tables(84),
+        );
+        let old_child = publish_text_with(
+            &source_publisher,
+            old_snapshot,
+            work_unit(),
+            "child",
+            vec![old_parent.erase()],
+            side_tables(85),
+        );
+        let current_parent = publish_text_with(
+            &target_publisher,
+            current_snapshot,
+            parent_work_unit(),
+            "parent",
+            Vec::new(),
+            side_tables(84),
+        );
+        let parent_ref = current_parent.erase();
+        let record = encode_record(&source_adapter, &old_child, "child");
+        let cached = decode_cached_payload(&record.output).expect("payload decodes");
+        let expected = expected_lineage_with_parents(
+            current_snapshot,
+            cached.content_hash,
+            cached.side_table_hash,
+            vec![current_parent.output()],
+        );
+        target_publisher.storage().collect(CollectInput {
+            snapshot: current_snapshot,
+            protected_outputs: Vec::new(),
+        });
+
+        let outcome =
+            rehydrate_with_parents(&target_adapter, record, current_snapshot, vec![parent_ref]);
+
+        assert!(matches!(
+            outcome,
+            CacheRehydrateOutcome::Miss(CacheAdapterMiss::Storage { error })
+                if matches!(*error, StorageError::CollectedOutput { output } if output == current_parent.output())
+        ));
+        assert_eq!(target_adapter.successful_rehydrations(), 0);
+        assert!(
+            target_publisher
+                .registry()
+                .output_lineage(expected.output)
+                .is_none()
+        );
+    }
+
+    #[test]
+    fn stale_generation_parent_handle_after_collection_misses_before_current_rehydration() {
+        let old_snapshot = snapshot(27);
+        let current_snapshot = snapshot(28);
+        let source_publisher = publisher(old_snapshot);
+        let target_publisher = publisher(current_snapshot);
+        let source_adapter = IrCacheAdapter::new(source_publisher.clone());
+        let target_adapter = IrCacheAdapter::new(target_publisher.clone());
+        let old_parent = publish_text_with(
+            &source_publisher,
+            old_snapshot,
+            parent_work_unit(),
+            "parent",
+            Vec::new(),
+            side_tables(86),
+        );
+        let old_child = publish_text_with(
+            &source_publisher,
+            old_snapshot,
+            work_unit(),
+            "child",
+            vec![old_parent.erase()],
+            side_tables(87),
+        );
+        let current_parent = publish_text_with(
+            &target_publisher,
+            current_snapshot,
+            parent_work_unit(),
+            "parent",
+            Vec::new(),
+            side_tables(86),
+        );
+        let stale_parent_ref = current_parent.erase();
+        target_publisher.storage().collect(CollectInput {
+            snapshot: current_snapshot,
+            protected_outputs: Vec::new(),
+        });
+        let resealed_parent = publish_text_with(
+            &target_publisher,
+            current_snapshot,
+            parent_work_unit(),
+            "parent",
+            Vec::new(),
+            side_tables(86),
+        );
+        assert_eq!(current_parent.output(), resealed_parent.output());
+        assert_ne!(
+            current_parent.any().generation(),
+            resealed_parent.any().generation()
+        );
+        let record = encode_record(&source_adapter, &old_child, "child");
+        let cached = decode_cached_payload(&record.output).expect("payload decodes");
+        let expected = expected_lineage_with_parents(
+            current_snapshot,
+            cached.content_hash,
+            cached.side_table_hash,
+            vec![current_parent.output()],
+        );
+
+        let outcome = rehydrate_with_parents(
+            &target_adapter,
+            record,
+            current_snapshot,
+            vec![stale_parent_ref],
+        );
+
+        assert!(matches!(
+            outcome,
+            CacheRehydrateOutcome::Miss(CacheAdapterMiss::Storage { error })
+                if matches!(*error, StorageError::CollectedOutput { output } if output == current_parent.output())
+        ));
+        assert_eq!(target_adapter.successful_rehydrations(), 0);
         assert!(
             target_publisher
                 .registry()

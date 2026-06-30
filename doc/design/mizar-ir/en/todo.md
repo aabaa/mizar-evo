@@ -203,7 +203,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
     - Deps: 12. Spec: all module specs.
 
-16. **Source/spec correspondence audit.** [ ]
+16. **Source/spec correspondence audit.** [x]
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 15. Spec: all module specs and this TODO.
