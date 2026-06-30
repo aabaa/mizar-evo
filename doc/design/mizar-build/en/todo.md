@@ -190,16 +190,28 @@ Keep `cargo test -p mizar-build` green after each task (see
       and focused unit tests.
     - Deps: 8, 9. Spec: `scheduler.md`.
 
-11. **Spec: `resource.md`.** [ ]
+11. **Spec: `resource.md`.** [x]
     - Write the resource-budget spec (English and Japanese, no code):
       hierarchical budgets (build → package → task), worker pool sizing,
       and external-process limits handed to ATP runners.
+    - Result: added synchronized `resource.md` specs covering hierarchical
+      budgets, deterministic queue admission, worker pools, ATP/backend limits,
+      release accounting, telemetry, and non-authority rules.
     - Deps: 9. Spec: architecture 14 "Resource Budgets Are Hierarchical".
 
 12. **Resource budgets.** [ ]
     - Implement budget accounting and enforcement in the scheduler.
-    - Tests: budget exhaustion queues rather than overcommits; budgets
-      compose hierarchically.
+    - Tests: budget exhaustion queues rather than overcommits; budgets compose
+      hierarchically through workspace/package/module/obligation/backend/commit
+      scopes; terminal states release exactly once; ATP portfolio work does not
+      consume backend process slots; backend fanout respects obligation and
+      global process limits; worker-count changes preserve canonical
+      result/event collation; admission is deterministic under shuffled
+      ready/completion order; impossible requests produce stable diagnostics;
+      telemetry and I/O commit permits do not create proof, cache, artifact
+      publication, or trusted-status authority; no `mizar-driver`,
+      `mizar-cache`, ATP OS-process, artifact publication token, or
+      proof-authority placeholder is introduced.
     - Deps: 10, 11. Spec: `resource.md`.
 
 13. **Spec: `cancel.md`.** [ ]
