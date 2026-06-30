@@ -24,7 +24,7 @@ and 19 and internal 01.
 |---|---|---|---|
 | planner | `planner.md` (task 2) | `src/planner.rs` | [x] |
 | module_index | `module_index.md` (task 5) | `src/module_index.rs` | [x] |
-| task_graph | `task_graph.md` (task 7) | `src/task_graph.rs` | [ ] |
+| task_graph | `task_graph.md` (task 7) | `src/task_graph.rs` | [x] |
 | scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` | [ ] |
 | resource | `resource.md` (task 11) | `src/resource.rs` | [ ] |
 | cancel | `cancel.md` (task 13) | `src/cancel.rs` | [ ] |
@@ -155,11 +155,14 @@ Keep `cargo test -p mizar-build` green after each task (see
    - Deps: 2. Spec: architecture 14 "Task Graph"/"VCs Are Fine-Grained
      Tasks", [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md).
 
-8. **Task graph construction.** [ ]
+8. **Task graph construction.** [x]
    - Expand a `BuildPlan`, `ModuleIndex`, dependency overlay, and explicit VC
      descriptors into the versioned task graph.
    - Tests: graph expansion fixtures; dependency edges match the
      architecture boundaries; deterministic expansion.
+   - Result: implemented `src/task_graph.rs` with deterministic task IDs,
+     dependency coverage diagnostics, explicit VC/backend/kernel subgraphs,
+     artifact/documentation scheduling edges, and focused unit tests.
    - Deps: 7. Spec: `task_graph.md`.
 
 9. **Spec: `scheduler.md`.** [ ]

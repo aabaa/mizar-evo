@@ -52,7 +52,7 @@ or artifact publication trust.
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | TG-G001 | `design_drift` | `todo.md` required `task_graph.md`, but no module spec existed before task 7. | Task 7 adds this spec and its Japanese companion. |
-| TG-G002 | `source_drift` / `test_gap` | `src/task_graph.rs` and task-graph tests do not exist yet. | Task 8 implements source/tests against this spec. |
+| TG-G002 | resolved `source_drift` / `test_gap` | `src/task_graph.rs` and focused task-graph tests were absent before task 8. | Task 8 implements source/tests against this spec. |
 | TG-G003 | `external_dependency_gap` | `mizar-driver` request/session/registry/salsa work is open and the crate is absent. | Use caller-supplied snapshot tokens in the graph model; do not add a driver dependency, session model, or placeholder driver APIs. |
 | TG-G004 | `external_dependency_gap` | `mizar-ir` output handles and storage adapters are absent. | Model output requirements as opaque phase-output requirements only; do not invent IR storage APIs. |
 | TG-G005 | `external_dependency_gap` / `deferred` | Real VC descriptors are produced by later `mizar-vc` integration. | Support explicit/synthetic VC descriptors for tests; do not fabricate VCs from source text. |
@@ -352,13 +352,19 @@ The graph must sort:
 - modules by `ModuleIndex.modules` canonical order;
 - task kinds by the pipeline phase order above;
 - VC descriptors by `vc_order_key`;
-- backend profiles by configured backend priority, then profile id;
+- backend profiles by configured backend priority;
 - evidence candidates by deterministic candidate id;
 - edges by `(dependent, dependency)`;
 - diagnostics by package id, module path, task kind, and stable diagnostic code.
 
 Worker completion order, queue priority, cache lookup timing, and backend
 runtime duration never participate in graph ordering.
+
+In the task-8 model, the caller-supplied `backend_profiles` vector on each
+`VcTaskDescriptor` is the configured backend-priority list. `task_graph`
+preserves that priority order. Duplicate generated task identities are rejected
+by normal graph validation; `task_graph` does not attach solver semantics to
+the profile ids.
 
 ## Construction Algorithm
 

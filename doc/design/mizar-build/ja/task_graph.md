@@ -51,7 +51,7 @@ publication trust は決定しない。
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | TG-G001 | `design_drift` | `todo.md` は `task_graph.md` を要求していたが、task 7 の前には module spec が存在しなかった。 | task 7 でこの spec と Japanese companion を追加する。 |
-| TG-G002 | `source_drift` / `test_gap` | `src/task_graph.rs` と task-graph tests はまだ存在しない。 | task 8 でこの spec に沿って source/tests を実装する。 |
+| TG-G002 | resolved `source_drift` / `test_gap` | `src/task_graph.rs` と focused task-graph tests は task 8 の前には存在しなかった。 | task 8 でこの spec に沿って source/tests を実装する。 |
 | TG-G003 | `external_dependency_gap` | `mizar-driver` request/session/registry/salsa work は open で、crate も存在しない。 | graph model では caller-supplied snapshot token を使い、driver dependency、session model、placeholder driver API を追加しない。 |
 | TG-G004 | `external_dependency_gap` | `mizar-ir` output handle と storage adapter が存在しない。 | output requirements は opaque phase-output requirements としてのみ model し、IR storage API を創作しない。 |
 | TG-G005 | `external_dependency_gap` / `deferred` | real VC descriptor は後続の `mizar-vc` integration が生成する。 | tests では explicit/synthetic VC descriptors を支援し、source text から VC を捏造しない。 |
@@ -357,13 +357,19 @@ graph は以下を sort しなければならない:
 - modules は `ModuleIndex.modules` canonical order。
 - task kinds は上記 pipeline phase order。
 - VC descriptors は `vc_order_key`。
-- backend profiles は configured backend priority、その後 profile id。
+- backend profiles は configured backend priority。
 - evidence candidates は deterministic candidate id。
 - edges は `(dependent, dependency)`。
 - diagnostics は package id、module path、task kind、stable diagnostic code。
 
 Worker completion order、queue priority、cache lookup timing、backend runtime
 duration は graph ordering に参加しない。
+
+task 8 の model では、各 `VcTaskDescriptor` の caller-supplied
+`backend_profiles` vector が configured backend-priority list である。
+`task_graph` はその priority order を保持する。重複する generated task identity
+は通常の graph validation で拒否される。profile id に solver semantics を
+付与しない。
 
 ## Construction algorithm
 

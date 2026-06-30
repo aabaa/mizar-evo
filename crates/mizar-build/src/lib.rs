@@ -5,3 +5,6 @@ pub mod module_index;
 
 /// Package manifest validation and build-plan input models.
 pub mod planner;
+
+/// Deterministic verification task graph construction.
+pub mod task_graph;
