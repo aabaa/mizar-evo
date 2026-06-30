@@ -52,7 +52,7 @@ publication 禁止規則を保たなければならない。
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | CAN-G001 | `design_drift` | `todo.md` は `cancel.md` を要求していたが、task 13 以前には module spec がなかった。 | task 13 でこの仕様と日本語 companion を追加する。 |
-| CAN-G002 | `source_drift` / `test_gap` | `src/cancel.rs` と cancellation tests は task 14 まで存在しない。 | task 14 で token、snapshot invalidation、publication guard、focused tests を実装する。 |
+| CAN-G002 | `source_drift` / `test_gap` | `src/cancel.rs` と cancellation tests は task 14 以前には存在しなかった。 | task 14 で versioned token、snapshot invalidation、publication guard、scheduler integration、focused tests を追加する。 |
 | CAN-G003 | `external_dependency_gap` | この checkout には `mizar-driver` request/session/watch/LSP integration が存在しない。 | cancellation を input-driven かつ snapshot-oriented に保ち、driver dependency や placeholder driver API を追加しない。 |
 | CAN-G004 | `external_dependency_gap` | この checkout には `mizar-ir` output storage と snapshot-handle rehydration が存在しない。 | real IR seam が存在するまで cancelled/obsolete output handling は synthetic に保ち、IR handle や storage API を創作しない。 |
 | CAN-G005 | `external_dependency_gap` | ATP/backend process manager は `mizar-build` の外側にある。 | cooperative cancellation と backend cancellation outcome だけを model 化し、OS process を spawn、kill、supervise しない。 |
@@ -97,6 +97,13 @@ enum CancellationDecision {
 すべての cancellation decision は task graph version と `BuildSnapshotId` に
 scope される。将来の driver は snapshot stream を供給してよいが、
 `mizar-build` は `mizar-driver` に依存せず identifier と decision を消費する。
+
+`current_snapshot` が既知で graph snapshot と異なる場合、`mizar-build` はその
+graph を scheduling 上すでに superseded として扱う。pending と ready work は
+開始前に cancel され、running work は次の safe checkpoint を観測し、既に完了済みの
+result も scheduler-visible output になる前に publication freshness guard を通る。
+例外は atomic transaction が既に開始された artifact commit である。`mizar-build` は
+その transaction を中断せず、visible outcome は deterministic commit boundary が決める。
 
 ## versioned cancellation
 
@@ -190,10 +197,9 @@ canonical diagnostics、artifact ordering、cache publication ordering、proof s
 ordering は、worker が cancellation token を観測した瞬間に依存してはならない。
 cancellation telemetry は破棄された作業を説明してよいが、semantic ordering key ではない。
 
-## task 14 で必要なテスト
+## task 14 の coverage
 
-task 13 は documentation-only である。task 14 は以下の focused Rust coverage を
-追加しなければならない:
+task 14 は以下の focused Rust coverage を追加する:
 
 - pending と ready work が開始前に cancel されること。
 - running work が safe checkpoint でのみ cancel されること。

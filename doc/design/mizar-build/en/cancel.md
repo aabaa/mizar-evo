@@ -53,7 +53,7 @@ boundaries, and the no-partial-publication rule.
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | CAN-G001 | `design_drift` | `todo.md` required `cancel.md`, but no module spec existed before task 13. | Task 13 adds this spec and its Japanese companion. |
-| CAN-G002 | `source_drift` / `test_gap` | `src/cancel.rs` and cancellation tests remain absent until task 14. | Implement tokens, snapshot invalidation, publication guards, and focused tests in task 14. |
+| CAN-G002 | `source_drift` / `test_gap` | `src/cancel.rs` and cancellation tests were absent before task 14. | Task 14 adds versioned tokens, snapshot invalidation, publication guards, scheduler integration, and focused tests. |
 | CAN-G003 | `external_dependency_gap` | `mizar-driver` request/session/watch/LSP integration is absent in this checkout. | Keep cancellation input-driven and snapshot-oriented; do not add a driver dependency or placeholder driver API. |
 | CAN-G004 | `external_dependency_gap` | `mizar-ir` output storage and snapshot-handle rehydration are absent in this checkout. | Keep cancelled/obsolete output handling synthetic until a real IR seam exists; do not invent IR handles or storage APIs. |
 | CAN-G005 | `external_dependency_gap` | ATP/backend process managers are outside `mizar-build`. | Model cooperative cancellation and backend cancellation outcomes only; do not spawn, kill, or supervise OS processes. |
@@ -100,6 +100,15 @@ Every cancellation decision is scoped to a task graph version and
 `BuildSnapshotId`. A future driver may provide the snapshot stream, but
 `mizar-build` consumes the identifiers and decisions without depending on
 `mizar-driver`.
+
+If `current_snapshot` is known and differs from the graph snapshot,
+`mizar-build` treats the graph as already superseded for scheduling purposes:
+pending and ready work is cancelled before start, running work observes the
+next safe checkpoint, and any already completed result still passes through the
+publication freshness guard before it can become scheduler-visible output. An
+artifact commit whose atomic transaction has already started is the exception:
+`mizar-build` does not interrupt that transaction, and the deterministic commit
+boundary decides the visible outcome.
 
 ## Versioned Cancellation
 
@@ -195,9 +204,9 @@ status ordering must not depend on the instant at which a worker observed a
 cancellation token. Cancellation telemetry may explain discarded work, but it
 is not a semantic ordering key.
 
-## Tests Required By Task 14
+## Task 14 Coverage
 
-Task 13 is documentation-only. Task 14 must add focused Rust coverage for:
+Task 14 adds focused Rust coverage for:
 
 - pending and ready work cancelled before start;
 - running work cancelled only at safe checkpoints;

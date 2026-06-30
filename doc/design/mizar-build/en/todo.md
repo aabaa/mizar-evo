@@ -13,12 +13,12 @@
 Full module specs do not exist yet; each is written by its own spec task
 (English and Japanese in the same change) before the implementation tasks that
 cite it. The `planner` and `module_index` sources now cover wave A phase-0
-planning and module-index provider work; remaining modules still follow their
-dedicated spec-before-implementation tasks. Module names follow
+planning and module-index provider work; the remaining module still follows
+its dedicated spec-before-implementation task. Module names follow
 [internal 07](../../internal/en/07.crate_module_layout.md)
-(minimum: `task_graph`, `scheduler`, `failure_state`) plus the phase-0
-planning modules from architecture 00/03; the crate refines architecture 14
-and 19 and internal 01.
+(minimum: `task_graph`, `scheduler`, `cancel`, `failure_state`) plus the
+phase-0 planning modules from architecture 00/03; the crate refines
+architecture 14 and 19 and internal 01.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
@@ -27,7 +27,7 @@ and 19 and internal 01.
 | task_graph | `task_graph.md` (task 7) | `src/task_graph.rs` | [x] |
 | scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` | [x] |
 | resource | `resource.md` (task 11) | `src/resource.rs` | [x] |
-| cancel | `cancel.md` (task 13) | `src/cancel.rs` | [ ] |
+| cancel | `cancel.md` (task 13) | `src/cancel.rs` | [x] |
 | failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [ ] |
 
 `mizar-build` currently implements pipeline phase 0 (workspace planning:
@@ -230,7 +230,7 @@ Keep `cargo test -p mizar-build` green after each task (see
     - Deps: 9. Spec: architecture 14 "Cancellation Is Cooperative and
       Versioned".
 
-14. **Cancellation.** [ ]
+14. **Cancellation.** [x]
     - Implement cancellation tokens and snapshot-version invalidation;
       cancelled work never publishes outputs.
     - Tests: pending/ready pre-start cancellation; running cancellation at
@@ -241,6 +241,11 @@ Keep `cargo test -p mizar-build` green after each task (see
       commit-boundary behavior before/after the modeled atomic transaction
       begins; deterministic/idempotent cancellation; no driver/cache/IR/
       process/artifact-token/proof-authority placeholders.
+    - Result: implemented `src/cancel.rs` with versioned cancellation policy,
+      monotonic generations, tokens, canonical decisions, snapshot freshness
+      checks, commit-started decisions, and scheduler integration for
+      pre-start, checkpoint, and obsolete-completed cancellation without adding
+      driver/cache/IR/process/artifact-token/proof-authority placeholders.
     - Deps: 10, 13. Spec: `cancel.md`.
 
 15. **Spec: `failure_state.md`.** [ ]

@@ -1,5 +1,8 @@
 //! Build planning and validation for package and workspace inputs.
 
+/// Cooperative versioned cancellation and freshness checks.
+pub mod cancel;
+
 /// Module-index construction and build-side provider contract.
 pub mod module_index;
 

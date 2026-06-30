@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use crate::{
+    cancel::{CancellationCheckpoint, CancellationDecision, CancellationState},
     resource::{
         ResourceAdmissionStatus, ResourceBudget, ResourceManager, ResourceTelemetry,
         TaskResourceRequest, resource_queue_rank,
@@ -11,6 +12,8 @@ use crate::{
     },
 };
 use mizar_session::BuildSnapshotId;
+
+pub use crate::cancel::CancellationPolicy;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct SchedulerInput {
@@ -93,11 +96,6 @@ pub enum CacheSchedulingPolicy {
     Miss,
     Unavailable,
     ErrorAsMiss,
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct CancellationPolicy {
-    pub cancelled_tasks: Vec<TaskId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -195,6 +193,7 @@ struct SchedulerBuilder {
     results: BTreeMap<TaskId, SchedulerResult>,
     events: Vec<SchedulerEvent>,
     resource_manager: ResourceManager,
+    cancellation_state: CancellationState,
     resource_telemetry: Vec<ResourceTelemetry>,
     diagnostics: Vec<SchedulerDiagnostic>,
     dispatch_batches: Vec<Vec<TaskId>>,
@@ -314,6 +313,7 @@ impl SchedulerBuilder {
             .collect::<BTreeMap<_, _>>();
         let dependents_by_task = dependents_by_task(&input.graph);
         let resource_manager = ResourceManager::new(input.resource_budget.clone());
+        let cancellation_state = CancellationState::from_policy(&input.cancellation, &input.graph);
         Self {
             input,
             graph_order,
@@ -324,6 +324,7 @@ impl SchedulerBuilder {
             results: BTreeMap::new(),
             events: Vec::new(),
             resource_manager,
+            cancellation_state,
             resource_telemetry: Vec::new(),
             diagnostics: Vec::new(),
             dispatch_batches: Vec::new(),
@@ -444,12 +445,8 @@ impl SchedulerBuilder {
                 dependency_coverage: task.dependency_coverage,
             };
 
-            let cancelled = self
-                .input
-                .cancellation
-                .cancelled_tasks
-                .iter()
-                .any(|cancelled| cancelled == &task.id);
+            let cancelled = self.cancellation_decision(&task, CancellationCheckpoint::Pending)
+                == CancellationDecision::CancelBeforeStart;
 
             if task.kind == TaskKind::PackageResolve {
                 root_count += 1;
@@ -508,6 +505,11 @@ impl SchedulerBuilder {
                         .get(&task_id)
                         .expect("ready task has task metadata")
                         .clone();
+                    if self.cancel_before_start_if_requested(&task) {
+                        made_progress = true;
+                        self.block_dependents(&task_id);
+                        continue;
+                    }
                     match self.try_admit_ready_task(&task) {
                         ResourceAdmissionStatus::Admitted => {
                             made_progress = true;
@@ -555,6 +557,7 @@ impl SchedulerBuilder {
                     .clone();
 
                 let final_state = self.execute_task(&task);
+                let final_state = self.apply_publication_freshness(&task, final_state);
                 self.set_state(&task_id, final_state);
                 self.record_result(&task, final_state);
                 self.events.push(event_for_task(
@@ -581,6 +584,12 @@ impl SchedulerBuilder {
             | CacheSchedulingPolicy::Miss
             | CacheSchedulingPolicy::Unavailable
             | CacheSchedulingPolicy::ErrorAsMiss => {}
+        }
+
+        if self.cancellation_decision(task, CancellationCheckpoint::RunningSafeCheckpoint)
+            == CancellationDecision::CancelAtCheckpoint
+        {
+            return TaskState::Cancelled;
         }
 
         match self
@@ -662,6 +671,10 @@ impl SchedulerBuilder {
             if dependency_states.iter().all(|(dependency, state)| {
                 self.unblocking_dependency(dependency, *state, task.kind)
             }) {
+                if self.cancel_before_start_if_requested(&task) {
+                    self.block_dependents(&task.id);
+                    continue;
+                }
                 self.set_state(&task.id, TaskState::Ready);
                 self.events.push(event_for_task(
                     SchedulerEventKind::TaskBecameReady,
@@ -731,6 +744,47 @@ impl SchedulerBuilder {
                 admission_order,
             });
         }
+    }
+
+    fn cancel_before_start_if_requested(&mut self, task: &BuildTask) -> bool {
+        if self.cancellation_decision(task, CancellationCheckpoint::Ready)
+            != CancellationDecision::CancelBeforeStart
+        {
+            return false;
+        }
+
+        self.set_state(&task.id, TaskState::Cancelled);
+        self.record_result(task, TaskState::Cancelled);
+        self.events.push(event_for_task(
+            SchedulerEventKind::TaskFinished,
+            &task.id,
+            self.graph_index(&task.id),
+        ));
+        self.release_task_resources(&task.id);
+        true
+    }
+
+    fn apply_publication_freshness(&self, task: &BuildTask, state: TaskState) -> TaskState {
+        if matches!(
+            state,
+            TaskState::Completed | TaskState::Failed | TaskState::Skipped | TaskState::CacheHit
+        ) && self.cancellation_decision(task, CancellationCheckpoint::CompletedBeforePublication)
+            == CancellationDecision::DiscardObsoleteResult
+        {
+            return TaskState::Cancelled;
+        }
+
+        state
+    }
+
+    fn cancellation_decision(
+        &self,
+        task: &BuildTask,
+        checkpoint: CancellationCheckpoint,
+    ) -> CancellationDecision {
+        self.cancellation_state
+            .decision_for_checkpoint(task, self.graph_index(&task.id), checkpoint)
+            .decision
     }
 
     fn next_admission_order(&mut self) -> usize {
@@ -1750,9 +1804,7 @@ mod tests {
             task_id_for_module_kind(&graph, TaskKind::ArtifactCommit, "app", "util");
         let run = run_scheduler(SchedulerInput {
             graph: graph.clone(),
-            cancellation: CancellationPolicy {
-                cancelled_tasks: vec![source.clone()],
-            },
+            cancellation: CancellationPolicy::default().with_cancelled_task(source.clone()),
             task_outcomes: vec![SyntheticTaskOutcome {
                 task_id: frontend.clone(),
                 status: SyntheticTaskStatus::Complete,
@@ -1792,9 +1844,7 @@ mod tests {
         let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
         let run = run_scheduler(SchedulerInput {
             graph: graph.clone(),
-            cancellation: CancellationPolicy {
-                cancelled_tasks: vec![artifact.clone()],
-            },
+            cancellation: CancellationPolicy::default().with_cancelled_task(artifact.clone()),
             task_outcomes: vec![SyntheticTaskOutcome {
                 task_id: artifact.clone(),
                 status: SyntheticTaskStatus::Complete,
@@ -1822,9 +1872,7 @@ mod tests {
         let source = task_id_for_kind(&graph, TaskKind::SourceLoad);
         let run = run_scheduler(SchedulerInput {
             graph: graph.clone(),
-            cancellation: CancellationPolicy {
-                cancelled_tasks: vec![root.clone()],
-            },
+            cancellation: CancellationPolicy::default().with_cancelled_task(root.clone()),
             task_outcomes: vec![SyntheticTaskOutcome {
                 task_id: root.clone(),
                 status: SyntheticTaskStatus::Complete,
@@ -1844,6 +1892,225 @@ mod tests {
         assert!(result.output_refs.is_empty());
         assert!(result.diagnostics.is_empty());
         assert_eq!(state_for(&run, &source), TaskState::Blocked);
+    }
+
+    #[test]
+    fn ready_cancellation_prevents_start_and_current_publication() {
+        let graph = sample_graph();
+        let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+        let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cancellation: CancellationPolicy::default().with_ready_cancelled_task(frontend.clone()),
+            task_outcomes: vec![SyntheticTaskOutcome {
+                task_id: frontend.clone(),
+                status: SyntheticTaskStatus::Complete,
+                outputs: vec![SyntheticOutputRef::new("frontend", "should not publish")],
+                diagnostics: vec![SchedulerDiagnosticRef::new(
+                    "frontend",
+                    "W001",
+                    "should not publish",
+                )],
+            }],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        let result = result_for(&run, &frontend);
+        assert_eq!(result.state, TaskState::Cancelled);
+        assert!(result.output_refs.is_empty());
+        assert!(result.diagnostics.is_empty());
+        assert_eq!(state_for(&run, &artifact), TaskState::Blocked);
+        assert!(!run.events.iter().any(|event| {
+            event.kind == SchedulerEventKind::TaskStarted
+                && event.task_id.as_ref() == Some(&frontend)
+        }));
+    }
+
+    #[test]
+    fn running_checkpoint_cancellation_releases_resources_once() {
+        let graph = sample_graph();
+        let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+        let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cancellation: CancellationPolicy::default()
+                .with_checkpoint_cancelled_task(frontend.clone()),
+            task_outcomes: vec![SyntheticTaskOutcome {
+                task_id: frontend.clone(),
+                status: SyntheticTaskStatus::Complete,
+                outputs: vec![SyntheticOutputRef::new("frontend", "should not publish")],
+                diagnostics: vec![SchedulerDiagnosticRef::new(
+                    "frontend",
+                    "W002",
+                    "should not publish",
+                )],
+            }],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        let result = result_for(&run, &frontend);
+        assert_eq!(result.state, TaskState::Cancelled);
+        assert!(result.output_refs.is_empty());
+        assert!(result.diagnostics.is_empty());
+        assert_eq!(state_for(&run, &artifact), TaskState::Blocked);
+        assert!(run.events.iter().any(|event| {
+            event.kind == SchedulerEventKind::TaskStarted
+                && event.task_id.as_ref() == Some(&frontend)
+        }));
+        assert_eq!(
+            telemetry_counts(&run, ResourceAdmissionStatus::Admitted).get(&frontend),
+            Some(&1)
+        );
+        assert_eq!(
+            telemetry_counts(&run, ResourceAdmissionStatus::Released).get(&frontend),
+            Some(&1)
+        );
+    }
+
+    #[test]
+    fn obsolete_completed_result_is_discarded_before_publication() {
+        let graph = sample_graph();
+        let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
+        let documentation = task_id_for_kind(&graph, TaskKind::DocumentationExtract);
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cancellation: CancellationPolicy::default()
+                .with_obsolete_completed_task(artifact.clone()),
+            task_outcomes: vec![SyntheticTaskOutcome {
+                task_id: artifact.clone(),
+                status: SyntheticTaskStatus::Complete,
+                outputs: vec![SyntheticOutputRef::new("artifact", "should not publish")],
+                diagnostics: vec![SchedulerDiagnosticRef::new(
+                    "artifact",
+                    "W003",
+                    "should not publish",
+                )],
+            }],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        let result = result_for(&run, &artifact);
+        assert_eq!(result.state, TaskState::Cancelled);
+        assert!(result.output_refs.is_empty());
+        assert!(result.diagnostics.is_empty());
+        assert_eq!(state_for(&run, &documentation), TaskState::Blocked);
+    }
+
+    #[test]
+    fn current_snapshot_mismatch_cancels_snapshot_before_start() {
+        let graph = sample_graph();
+        let current_snapshot = snapshot(99);
+        let source = task_id_for_kind(&graph, TaskKind::SourceLoad);
+        let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cancellation: CancellationPolicy::default().with_current_snapshot(current_snapshot),
+            task_outcomes: vec![SyntheticTaskOutcome {
+                task_id: source.clone(),
+                status: SyntheticTaskStatus::Complete,
+                outputs: vec![SyntheticOutputRef::new("source", "should not publish")],
+                diagnostics: vec![SchedulerDiagnosticRef::new(
+                    "source",
+                    "W004",
+                    "should not publish",
+                )],
+            }],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        let result = result_for(&run, &source);
+        assert_eq!(result.state, TaskState::Cancelled);
+        assert!(result.output_refs.is_empty());
+        assert!(result.diagnostics.is_empty());
+        assert_eq!(state_for(&run, &frontend), TaskState::Cancelled);
+        assert!(
+            !run.events
+                .iter()
+                .any(|event| { event.kind == SchedulerEventKind::TaskStarted })
+        );
+    }
+
+    #[test]
+    fn commit_boundary_cancels_before_start_but_not_after_transaction_start() {
+        let graph = sample_graph();
+        let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
+        let before_start = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cancellation: CancellationPolicy::default().with_cancelled_task(artifact.clone()),
+            task_outcomes: vec![SyntheticTaskOutcome::complete(
+                artifact.clone(),
+                vec![SyntheticOutputRef::new("artifact", "should not publish")],
+            )],
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+        assert_eq!(state_for(&before_start, &artifact), TaskState::Cancelled);
+        assert!(result_for(&before_start, &artifact).output_refs.is_empty());
+        assert!(!before_start.events.iter().any(|event| {
+            event.kind == SchedulerEventKind::TaskStarted
+                && event.task_id.as_ref() == Some(&artifact)
+        }));
+
+        let after_start = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cancellation: CancellationPolicy::default()
+                .with_cancelled_task(artifact.clone())
+                .with_commit_started_task(artifact.clone()),
+            task_outcomes: vec![SyntheticTaskOutcome::complete(
+                artifact.clone(),
+                vec![SyntheticOutputRef::new(
+                    "artifact",
+                    "modeled committed output",
+                )],
+            )],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+        let result = result_for(&after_start, &artifact);
+        assert_eq!(result.state, TaskState::Completed);
+        assert_eq!(
+            result.output_refs,
+            vec![SyntheticOutputRef::new(
+                "artifact",
+                "modeled committed output"
+            )]
+        );
+        let debug = format!("{after_start:#?}").to_lowercase();
+        assert!(!debug.contains("publicationtoken"));
+        assert!(!debug.contains("trustedstatus"));
+    }
+
+    #[test]
+    fn cancellation_is_deterministic_across_workers_and_completion_order() {
+        let graph = multi_module_graph();
+        let frontend = task_id_for_module_kind(&graph, TaskKind::Frontend, "app", "main");
+        let cancellation =
+            CancellationPolicy::default().with_checkpoint_cancelled_task(frontend.clone());
+        let canonical = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            worker_count: 1,
+            cancellation: cancellation.clone(),
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+        let reverse = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            worker_count: 3,
+            completion_order: CompletionOrder::Reverse,
+            cancellation,
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        assert_eq!(canonical.task_states, reverse.task_states);
+        assert_eq!(canonical.results, reverse.results);
+        assert_eq!(canonical.events, reverse.events);
+        assert_eq!(canonical.diagnostics, reverse.diagnostics);
+        assert_eq!(canonical.resource_telemetry, reverse.resource_telemetry);
     }
 
     #[test]
@@ -1874,6 +2141,7 @@ mod tests {
         assert!(!manifest.contains("mizar-cache"));
         let source = include_str!("scheduler.rs");
         let resource_source = include_str!("resource.rs");
+        let cancel_source = include_str!("cancel.rs");
         for forbidden in [
             concat!("Cache", "Key"),
             concat!("Dependency", "Fingerprint"),
@@ -1884,6 +2152,12 @@ mod tests {
             concat!("std", "::process"),
             concat!("process", "::Command"),
             concat!("Command", "::new"),
+            concat!("Driver", "Request"),
+            concat!("Driver", "Session"),
+            concat!("Ir", "Snapshot", "Handle"),
+            concat!("Artifact", "Commit", "Token"),
+            concat!("Proof", "Trust"),
+            concat!("Cache", "Lookup"),
         ] {
             assert!(
                 !source.contains(forbidden),
@@ -1892,6 +2166,10 @@ mod tests {
             assert!(
                 !resource_source.contains(forbidden),
                 "{forbidden} leaked into resource source"
+            );
+            assert!(
+                !cancel_source.contains(forbidden),
+                "{forbidden} leaked into cancel source"
             );
         }
 
