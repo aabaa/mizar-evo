@@ -350,9 +350,15 @@ Keep `cargo test -p mizar-build` green after each task (see
       source/spec drift.
     - Deps: 16. Spec: all module specs.
 
-22. **Source/spec correspondence audit.** [ ]
+22. **Source/spec correspondence audit.** [x]
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; record gaps as follow-up tasks.
+    - Completed by task 22: `source_spec_correspondence.md` records the
+      source/spec/test map for implemented public API families and behavior
+      promises. It found no new blocking/high drift; BUILD-G-016 records one
+      non-blocking public-helper `test_gap`, and existing driver, IR,
+      producer-token, and full real clean/incremental integration gaps remain
+      `external_dependency_gap`.
     - Deps: 21. Spec: all module specs and this TODO.
 
 23. **Bilingual documentation sync audit.** [ ]
