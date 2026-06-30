@@ -219,18 +219,28 @@ Keep `cargo test -p mizar-build` green after each task (see
       cache, OS-process, publication-token, or proof-authority boundaries.
     - Deps: 10, 11. Spec: `resource.md`.
 
-13. **Spec: `cancel.md`.** [ ]
+13. **Spec: `cancel.md`.** [x]
     - Write the cancellation spec (English and Japanese, no code):
       cooperative versioned cancellation tokens, snapshot invalidation for
       watch/LSP, and the no-partial-artifacts rule.
+    - Result: added synchronized `cancel.md` specs covering versioned
+      cancellation, snapshot freshness checks, cooperative checkpoints,
+      no-current-publication for cancelled/obsolete work, resource-release
+      handoff, and explicit non-authority/cache/artifact/driver boundaries.
     - Deps: 9. Spec: architecture 14 "Cancellation Is Cooperative and
       Versioned".
 
 14. **Cancellation.** [ ]
     - Implement cancellation tokens and snapshot-version invalidation;
       cancelled work never publishes outputs.
-    - Tests: cancel mid-graph leaves no partial published state; stale
-      snapshot versions never publish.
+    - Tests: pending/ready pre-start cancellation; running cancellation at
+      safe checkpoints; monotonic generation/token propagation; canonical
+      cancellation-decision ordering; stale completed-result discard before
+      publication; no current diagnostics, cache records, or artifact commit
+      attempts from cancelled work; exactly-once resource release;
+      commit-boundary behavior before/after the modeled atomic transaction
+      begins; deterministic/idempotent cancellation; no driver/cache/IR/
+      process/artifact-token/proof-authority placeholders.
     - Deps: 10, 13. Spec: `cancel.md`.
 
 15. **Spec: `failure_state.md`.** [ ]
