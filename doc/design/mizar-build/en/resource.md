@@ -50,7 +50,7 @@ or cache behavior. It consumes the `TaskGraph` and scheduler queues defined by
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | RES-G001 | `design_drift` | `todo.md` required `resource.md`, but no module spec existed before task 11. | Task 11 adds this spec and its Japanese companion. |
-| RES-G002 | `source_drift` / `test_gap` | `src/resource.rs` and resource-budget tests do not exist yet. | Task 12 implements accounting/admission source and focused tests against this spec. |
+| RES-G002 | `source_drift` / `test_gap` | Before task 12, `src/resource.rs` and resource-budget tests did not exist. Task 12 adds the accounting/admission source and focused tests against this spec. | Keep scheduler/resource source, tests, and this spec synchronized as budget scopes evolve. |
 | RES-G003 | `external_dependency_gap` | Real ATP backend process managers and capture adapters are outside `mizar-build`. | Model backend limits and handoff values only; do not spawn or supervise OS processes here. |
 | RES-G004 | `external_dependency_gap` | `mizar-driver` request/session/watch integration is absent in this checkout. | Keep budgets input-driven and session-agnostic; do not add a driver dependency or placeholder driver API. |
 | RES-G005 | `deferred` | Cache-aware scheduling remains task 18 and `mizar-cache` owns validation. | Resource decisions may prioritize cache-ready work but must not construct cache keys or promote cache hits. |
@@ -78,11 +78,17 @@ Task 12 may start with integral units:
 ```rust
 struct ResourceBudget {
     workspace_workers: usize,
+    package_workers: usize,
+    module_workers: usize,
+    obligation_workers: usize,
     source_workers: usize,
     proof_workers: usize,
+    atp_portfolios: usize,
     atp_processes: usize,
+    backend_fanout: usize,
     kernel_workers: usize,
     io_commits: usize,
+    documentation_workers: usize,
     memory_units: usize,
 }
 
@@ -94,6 +100,7 @@ struct TaskResourceRequest {
     worker_units: usize,
     memory_units: usize,
     external_process_slots: usize,
+    commit_permits: usize,
 }
 ```
 
@@ -125,6 +132,10 @@ the task rather than spin indefinitely. The diagnostic is not proof evidence and
 does not promote or demote trusted status by itself.
 
 ## Deterministic Ordering
+
+`worker_count` remains the scheduler's synthetic executor dispatch cap.
+Resource budgets are an additional modeled admission layer: a ready task starts
+only when the dispatch cap and all applicable resource budgets admit it.
 
 Resource availability affects latency only.
 
@@ -172,6 +183,10 @@ manager owns actual process creation, termination, and output capture.
 
 ## ATP and Backend Limits
 
+The per-obligation backend fanout limit lives in `ResourceBudget`. It is a
+build-side scheduling constraint over declared `BackendRun` tasks, not a new
+field in `VcTaskDescriptor` and not a proof policy.
+
 For one VC portfolio:
 
 - `AtpSolve` consumes a proof/portfolio coordination permit.
@@ -207,9 +222,14 @@ Resource telemetry may record:
 
 - task id and queue;
 - requested units;
-- admitted or delayed status;
+- admitted, delayed, impossible, or released status;
 - blocking budget scope;
 - deterministic admission attempt order.
+
+Release telemetry reuses the deterministic admission order of the reservation
+being released. A duplicate admission attempt for an already-reserved task is
+idempotent and reports the original reservation order rather than reserving a
+second time.
 
 Telemetry is for progress/debugging and later driver events. It is not a
 diagnostic ordering key, artifact manifest input, cache validation input, or

@@ -304,6 +304,12 @@ pub fn build_task_graph(input: TaskGraphInput) -> Result<TaskGraph, TaskGraphDia
 }
 
 impl TaskId {
+    #[cfg(test)]
+    #[must_use]
+    pub(crate) fn new_for_test(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
     #[must_use]
     pub fn as_str(&self) -> &str {
         &self.0

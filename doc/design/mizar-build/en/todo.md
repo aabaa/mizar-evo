@@ -26,7 +26,7 @@ and 19 and internal 01.
 | module_index | `module_index.md` (task 5) | `src/module_index.rs` | [x] |
 | task_graph | `task_graph.md` (task 7) | `src/task_graph.rs` | [x] |
 | scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` | [x] |
-| resource | `resource.md` (task 11) | `src/resource.rs` | [ ] |
+| resource | `resource.md` (task 11) | `src/resource.rs` | [x] |
 | cancel | `cancel.md` (task 13) | `src/cancel.rs` | [ ] |
 | failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [ ] |
 
@@ -199,7 +199,7 @@ Keep `cargo test -p mizar-build` green after each task (see
       release accounting, telemetry, and non-authority rules.
     - Deps: 9. Spec: architecture 14 "Resource Budgets Are Hierarchical".
 
-12. **Resource budgets.** [ ]
+12. **Resource budgets.** [x]
     - Implement budget accounting and enforcement in the scheduler.
     - Tests: budget exhaustion queues rather than overcommits; budgets compose
       hierarchically through workspace/package/module/obligation/backend/commit
@@ -212,6 +212,11 @@ Keep `cargo test -p mizar-build` green after each task (see
       publication, or trusted-status authority; no `mizar-driver`,
       `mizar-cache`, ATP OS-process, artifact publication token, or
       proof-authority placeholder is introduced.
+    - Result: implemented `src/resource.rs` with modeled hierarchical budget
+      accounting, deterministic admission/release telemetry, per-pool and
+      per-scope limits, ATP portfolio/process separation, backend fanout, and
+      commit permits; integrated scheduler admission without adding driver,
+      cache, OS-process, publication-token, or proof-authority boundaries.
     - Deps: 10, 11. Spec: `resource.md`.
 
 13. **Spec: `cancel.md`.** [ ]

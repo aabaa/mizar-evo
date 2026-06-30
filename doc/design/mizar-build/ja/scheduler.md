@@ -51,7 +51,7 @@ order component であり、semantic authority ではない。
 | SCH-G002 | `source_drift` / `test_gap` | task 10 の前には `src/scheduler.rs` と scheduler tests が存在しなかった。task 10 は synthetic scheduler core と focused unit tests を提供している。 | 後続の resource/cancel/failure/cache tasks が module を拡張するとき、この spec、Rust surface、tests を同期し続ける。 |
 | SCH-G003 | `external_dependency_gap` | この checkout には `mizar-driver` request/session/registry/event integration が存在しない。 | 後続 source では caller-supplied graph/session-like inputs を受け取り、driver dependency や placeholder driver API を追加しない。 |
 | SCH-G004 | `external_dependency_gap` | `mizar-ir` sealed output handles と storage adapters が存在しない。 | scheduler tests では synthetic in-memory task outputs を使い、IR storage API を創作しない。 |
-| SCH-G005 | `deferred` | resource-budget accounting は tasks 11-12 である。 | resource class と queue admission seam だけを定義し、enforcement は `resource.md` と `src/resource.rs` に属する。 |
+| SCH-G005 | `source_drift` / `test_gap` | tasks 11-12 の前は resource-budget accounting が architecture notes にしか存在しなかった。task 12 が `src/resource.rs`、scheduler admission integration、focused tests を追加する。 | budget scopes が発展するとき、この spec、`resource.md`、scheduler/resource Rust surface を同期し続ける。 |
 | SCH-G006 | `deferred` | cancellation は tasks 13-14 である。 | versioned cancellation state transitions だけを定義し、token storage と snapshot invalidation は `cancel.md` に属する。 |
 | SCH-G007 | `deferred` | failure-state propagation は tasks 15-16 である。 | bounded blocked-state behavior だけを定義し、詳細な failure taxonomy は `failure_state.md` に属する。 |
 | SCH-G008 | `deferred` | cache-aware scheduling は task 18 であり、`mizar-cache` はすでに cache validation を所有する。 | cache hit は validated execution-skip outcome としてのみ model し、cache key や proof-reuse decision をここで構築しない。 |
@@ -67,6 +67,7 @@ struct SchedulerInput {
     mode: SchedulerMode,
     priority_hints: PriorityHints,
     cache: CacheSchedulingPolicy,
+    resource_budget: ResourceBudget,
     cancellation: CancellationPolicy,
     task_outcomes: Vec<SyntheticTaskOutcome>,
     worker_count: usize,
@@ -79,6 +80,7 @@ struct SchedulerRun {
     task_states: Vec<TaskStateRecord>,
     results: Vec<SchedulerResult>,
     events: Vec<SchedulerEvent>,
+    resource_telemetry: Vec<ResourceTelemetry>,
     diagnostics: Vec<SchedulerDiagnostic>,
 }
 
@@ -94,8 +96,10 @@ struct TaskStateRecord {
 
 `SchedulerInput` は build-side data である。将来の driver はこれを sessions と
 live event streams で包んでよいが、`mizar-build` は `mizar-driver` に依存せず
-利用可能でなければならない。task 10 は意図的に `ResourceAdmissionSeam` を持たない。
-resource budget と denial behavior は tasks 11-12 が仕様化し実装する。
+利用可能でなければならない。`worker_count` は scheduler tests が使う synthetic
+executor dispatch cap のままであり、`resource_budget` はその下にある modeled
+queue-admission layer である。ready task が running になるには、両方の limit を
+満たさなければならない。
 
 ### TaskState
 
@@ -182,6 +186,24 @@ events が同じ scheduler order と task を共有する場合、lifecycle rank
 `RunFinished` の順である。run-finished event は同じ run のすべての task events の後に
 sort される。
 
+### ResourceTelemetry
+
+```rust
+struct ResourceTelemetry {
+    task_id: TaskId,
+    queue: SchedulerQueue,
+    status: ResourceAdmissionStatus,
+    requested_units: ResourceRequestUnits,
+    blocking_scope: Option<ResourceScope>,
+    admission_order: usize,
+}
+```
+
+Resource telemetry は admission、delay、impossible requests、release を説明する。
+これは debugging と後続 driver events のため deterministic に sort されるが、
+diagnostic ordering key、artifact manifest input、cache validation input、proof
+evidence、trusted-status authority ではない。
+
 ## Readiness and State Transitions
 
 初期状態:
@@ -214,10 +236,13 @@ Pending/Ready/Running -> Cancelled
 Ready/Running -> Skipped
 ```
 
-task 10 は synthetic tasks 用の core deterministic scheduler を `worker_count` で
-制限された dispatch batch として実装する。Resource denial、
-cancellation-token storage、cache validation、rich failure propagation は、それぞれの
-専用 task が実装するまで deferred である。
+task 12 は core deterministic scheduler の下に modeled resource admission を重ねる。
+`worker_count` は synthetic dispatch batches を引き続き制限し、resource budgets は
+ready task が該当する workspace、package、module、obligation、backend、commit units を
+すべて reserve できるかを決める。temporary resource denial は task を ready/queued に
+残し、impossible request は stable resource diagnostic で block する。Cancellation-token
+storage、cache validation、rich failure propagation は、それぞれの専用 task が実装するまで
+deferred である。
 
 ## Work Queues
 
@@ -277,10 +302,11 @@ records は canonical keys で collate する:
 - artifact commit attempts は canonical module と manifest order。
 - canonical scheduler events は `SchedulerOrderKey`。
 
-同じ `TaskGraph`、synthetic task behavior、cache seam responses を使う 2 つの実行は、
-canonical serialization 後の `SchedulerRun` records が byte-for-byte equivalent で
-なければならない。後続の resource-admission decisions も同じ canonical collation rule を
-保たなければならない。
+同じ `TaskGraph`、resource configuration、synthetic task behavior、cache seam responses を
+使う 2 つの実行は、canonical serialization 後の `SchedulerRun` records が byte-for-byte
+equivalent でなければならない。Resource admission と release telemetry も同じ canonical
+collation rule を保ち、scheduler result、diagnostic、artifact、cache、proof authority を
+変えてはならない。
 
 ## Batch, Watch, and LSP Modes
 

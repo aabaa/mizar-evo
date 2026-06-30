@@ -54,7 +54,7 @@ It is an execution-order component, not a semantic authority.
 | SCH-G002 | `source_drift` / `test_gap` | Before task 10, `src/scheduler.rs` and scheduler tests were absent; task 10 now provides the synthetic scheduler core and focused unit tests. | Keep this spec, the Rust surface, and tests synchronized as later resource/cancel/failure/cache tasks extend the module. |
 | SCH-G003 | `external_dependency_gap` | `mizar-driver` request/session/registry/event integration is absent in this checkout. | Accept caller-supplied graph/session-like inputs in later source; do not add a driver dependency or placeholder driver API. |
 | SCH-G004 | `external_dependency_gap` | `mizar-ir` sealed output handles and storage adapters are absent. | Use synthetic in-memory task outputs in scheduler tests; do not invent IR storage APIs. |
-| SCH-G005 | `deferred` | Resource-budget accounting is tasks 11-12. | Define resource classes and queue admission seams only; enforcement belongs to `resource.md` and `src/resource.rs`. |
+| SCH-G005 | `source_drift` / `test_gap` | Before tasks 11-12, resource-budget accounting existed only in architecture notes. Task 12 adds `src/resource.rs`, scheduler admission integration, and focused tests. | Keep this spec, `resource.md`, and the scheduler/resource Rust surface synchronized as budget scopes evolve. |
 | SCH-G006 | `deferred` | Cancellation is tasks 13-14. | Define versioned cancellation state transitions only; token storage and snapshot invalidation belong to `cancel.md`. |
 | SCH-G007 | `deferred` | Failure-state propagation is tasks 15-16. | Define bounded blocked-state behavior only; detailed failure taxonomy belongs to `failure_state.md`. |
 | SCH-G008 | `deferred` | Cache-aware scheduling is task 18 and `mizar-cache` already owns cache validation. | Model cache hits as validated execution-skip outcomes only; do not construct cache keys or proof-reuse decisions here. |
@@ -71,6 +71,7 @@ struct SchedulerInput {
     mode: SchedulerMode,
     priority_hints: PriorityHints,
     cache: CacheSchedulingPolicy,
+    resource_budget: ResourceBudget,
     cancellation: CancellationPolicy,
     task_outcomes: Vec<SyntheticTaskOutcome>,
     worker_count: usize,
@@ -83,6 +84,7 @@ struct SchedulerRun {
     task_states: Vec<TaskStateRecord>,
     results: Vec<SchedulerResult>,
     events: Vec<SchedulerEvent>,
+    resource_telemetry: Vec<ResourceTelemetry>,
     diagnostics: Vec<SchedulerDiagnostic>,
 }
 
@@ -98,9 +100,10 @@ struct TaskStateRecord {
 
 `SchedulerInput` is build-side data. A future driver may wrap it in sessions
 and live event streams, but `mizar-build` must remain usable without depending
-on `mizar-driver`. Task 10 intentionally has no `ResourceAdmissionSeam`;
-resource budgets and denial behavior are specified and implemented by tasks
-11-12.
+on `mizar-driver`. `worker_count` remains a synthetic executor dispatch cap
+used by scheduler tests; `resource_budget` is the modeled queue-admission layer
+under that cap. Both limits must be satisfied before a ready task becomes
+running.
 
 ### TaskState
 
@@ -188,6 +191,24 @@ When events share the same scheduler order and task, the lifecycle rank is:
 `TaskFinished`, then `RunFinished`. A run-finished event sorts after all task
 events for the same run.
 
+### ResourceTelemetry
+
+```rust
+struct ResourceTelemetry {
+    task_id: TaskId,
+    queue: SchedulerQueue,
+    status: ResourceAdmissionStatus,
+    requested_units: ResourceRequestUnits,
+    blocking_scope: Option<ResourceScope>,
+    admission_order: usize,
+}
+```
+
+Resource telemetry explains admission, delay, impossible requests, and
+releases. It is sorted deterministically for debugging and later driver events,
+but it is not a diagnostic ordering key, artifact manifest input, cache
+validation input, proof evidence, or trusted-status authority.
+
 ## Readiness and State Transitions
 
 Initial state:
@@ -220,10 +241,14 @@ Pending/Ready/Running -> Cancelled
 Ready/Running -> Skipped
 ```
 
-Task 10 implements the core deterministic scheduler for synthetic tasks,
-bounded by `worker_count` dispatch batches. Resource denial, cancellation-token
-storage, cache validation, and rich failure propagation are deferred until
-their dedicated tasks implement them.
+Task 12 layers modeled resource admission under the core deterministic
+scheduler. `worker_count` still bounds synthetic dispatch batches, while
+resource budgets decide whether a ready task can reserve all applicable
+workspace, package, module, obligation, backend, and commit units. Temporary
+resource denial leaves the task ready/queued; impossible requests block with a
+stable resource diagnostic. Cancellation-token storage, cache validation, and
+rich failure propagation remain deferred until their dedicated tasks implement
+them.
 
 ## Work Queues
 
@@ -285,10 +310,12 @@ externally visible records by canonical keys:
 - artifact commit attempts by canonical module and manifest order;
 - canonical scheduler events by `SchedulerOrderKey`.
 
-When two executions use the same `TaskGraph`, synthetic task behavior, and
-cache seam responses, their `SchedulerRun` records must be byte-for-byte
-equivalent after canonical serialization. Later resource-admission decisions
-must preserve the same canonical collation rule.
+When two executions use the same `TaskGraph`, resource configuration,
+synthetic task behavior, and cache seam responses, their `SchedulerRun` records
+must be byte-for-byte equivalent after canonical serialization. Resource
+admission and release telemetry must preserve the same canonical collation
+rule and must not change scheduler result, diagnostic, artifact, cache, or
+proof authority.
 
 ## Batch, Watch, and LSP Modes
 

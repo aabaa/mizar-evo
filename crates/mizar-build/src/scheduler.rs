@@ -1,8 +1,14 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
-use crate::task_graph::{
-    BuildTask, DependencyCoverage, PriorityClass, ResourceClass, TaskGraph, TaskGraphVersion,
-    TaskId, TaskKind,
+use crate::{
+    resource::{
+        ResourceAdmissionStatus, ResourceBudget, ResourceManager, ResourceTelemetry,
+        TaskResourceRequest, resource_queue_rank,
+    },
+    task_graph::{
+        BuildTask, DependencyCoverage, PriorityClass, ResourceClass, TaskGraph, TaskGraphVersion,
+        TaskId, TaskKind,
+    },
 };
 use mizar_session::BuildSnapshotId;
 
@@ -12,6 +18,7 @@ pub struct SchedulerInput {
     pub mode: SchedulerMode,
     pub priority_hints: PriorityHints,
     pub cache: CacheSchedulingPolicy,
+    pub resource_budget: ResourceBudget,
     pub cancellation: CancellationPolicy,
     pub task_outcomes: Vec<SyntheticTaskOutcome>,
     pub worker_count: usize,
@@ -25,6 +32,7 @@ pub struct SchedulerRun {
     pub task_states: Vec<TaskStateRecord>,
     pub results: Vec<SchedulerResult>,
     pub events: Vec<SchedulerEvent>,
+    pub resource_telemetry: Vec<ResourceTelemetry>,
     pub diagnostics: Vec<SchedulerDiagnostic>,
 }
 
@@ -174,6 +182,7 @@ pub enum SchedulerDiagnosticKind {
     MissingRootTask,
     IncompleteDependencyCoverage,
     NoSchedulablePath,
+    ImpossibleResourceRequest,
 }
 
 struct SchedulerBuilder {
@@ -185,8 +194,11 @@ struct SchedulerBuilder {
     states: BTreeMap<TaskId, TaskStateRecord>,
     results: BTreeMap<TaskId, SchedulerResult>,
     events: Vec<SchedulerEvent>,
+    resource_manager: ResourceManager,
+    resource_telemetry: Vec<ResourceTelemetry>,
     diagnostics: Vec<SchedulerDiagnostic>,
     dispatch_batches: Vec<Vec<TaskId>>,
+    admission_counter: usize,
 }
 
 impl SchedulerInput {
@@ -197,6 +209,7 @@ impl SchedulerInput {
             mode: SchedulerMode::Batch,
             priority_hints: PriorityHints::default(),
             cache: CacheSchedulingPolicy::Disabled,
+            resource_budget: ResourceBudget::default(),
             cancellation: CancellationPolicy::default(),
             task_outcomes: Vec::new(),
             worker_count: 1,
@@ -300,6 +313,7 @@ impl SchedulerBuilder {
             .map(|task| (task.id.clone(), task.clone()))
             .collect::<BTreeMap<_, _>>();
         let dependents_by_task = dependents_by_task(&input.graph);
+        let resource_manager = ResourceManager::new(input.resource_budget.clone());
         Self {
             input,
             graph_order,
@@ -309,8 +323,11 @@ impl SchedulerBuilder {
             states: BTreeMap::new(),
             results: BTreeMap::new(),
             events: Vec::new(),
+            resource_manager,
+            resource_telemetry: Vec::new(),
             diagnostics: Vec::new(),
             dispatch_batches: Vec::new(),
+            admission_counter: 0,
         }
     }
 
@@ -366,6 +383,14 @@ impl SchedulerBuilder {
                     .unwrap_or_default(),
             )
         });
+        self.resource_telemetry.sort_by_key(|telemetry| {
+            telemetry.sort_key(
+                graph_order
+                    .get(&telemetry.task_id)
+                    .copied()
+                    .unwrap_or(usize::MAX),
+            )
+        });
         sort_scheduler_diagnostics(&mut self.diagnostics, &graph_order);
 
         Ok((
@@ -375,6 +400,7 @@ impl SchedulerBuilder {
                 task_states,
                 results,
                 events: self.events,
+                resource_telemetry: self.resource_telemetry,
                 diagnostics: self.diagnostics,
             },
             self.dispatch_batches,
@@ -467,7 +493,8 @@ impl SchedulerBuilder {
             }
 
             let mut batch = Vec::new();
-            for _ in 0..self.worker_count() {
+            let mut made_progress = false;
+            while batch.len() < self.worker_count() {
                 let Some(task_id) = ready.pop_front() else {
                     break;
                 };
@@ -476,17 +503,35 @@ impl SchedulerBuilder {
                     .get(&task_id)
                     .is_some_and(|record| record.state == TaskState::Ready)
                 {
-                    self.events.push(event_for_task(
-                        SchedulerEventKind::TaskStarted,
-                        &task_id,
-                        self.graph_index(&task_id),
-                    ));
-                    self.set_state(&task_id, TaskState::Running);
-                    batch.push(task_id);
+                    let task = self
+                        .tasks_by_id
+                        .get(&task_id)
+                        .expect("ready task has task metadata")
+                        .clone();
+                    match self.try_admit_ready_task(&task) {
+                        ResourceAdmissionStatus::Admitted => {
+                            made_progress = true;
+                            self.events.push(event_for_task(
+                                SchedulerEventKind::TaskStarted,
+                                &task_id,
+                                self.graph_index(&task_id),
+                            ));
+                            self.set_state(&task_id, TaskState::Running);
+                            batch.push(task_id);
+                        }
+                        ResourceAdmissionStatus::Delayed => {}
+                        ResourceAdmissionStatus::Impossible => {
+                            made_progress = true;
+                        }
+                        ResourceAdmissionStatus::Released => {}
+                    }
                 }
             }
 
             if batch.is_empty() {
+                if made_progress {
+                    continue;
+                }
                 break;
             }
 
@@ -521,6 +566,7 @@ impl SchedulerBuilder {
                     &task_id,
                     self.graph_index(&task_id),
                 ));
+                self.release_task_resources(&task_id);
 
                 if final_state == TaskState::Failed || final_state == TaskState::Cancelled {
                     self.block_dependents(&task_id);
@@ -645,10 +691,52 @@ impl SchedulerBuilder {
                 preferred.get(task_id).copied().unwrap_or(usize::MAX),
                 self.downstream_rank(task_id),
                 self.task_kind_rank(task_id),
+                self.resource_queue_rank(task_id),
                 self.graph_index(task_id),
                 task_id.as_str().to_owned(),
             )
         });
+    }
+
+    fn try_admit_ready_task(&mut self, task: &BuildTask) -> ResourceAdmissionStatus {
+        let request = TaskResourceRequest::for_task(task, scheduler_queue(task));
+        let admission_order = self.next_admission_order();
+        let admission = self.resource_manager.try_admit(request, admission_order);
+        let status = admission.status;
+        let blocking_scope = admission.blocking_scope.clone();
+        self.resource_telemetry.push(admission.telemetry());
+
+        if status == ResourceAdmissionStatus::Impossible {
+            let value = blocking_scope
+                .map(|scope| scope.stable_label())
+                .unwrap_or_else(|| "resource request cannot be admitted".to_owned());
+            self.block_task(
+                &task.id,
+                Vec::new(),
+                Some((SchedulerDiagnosticKind::ImpossibleResourceRequest, value)),
+            );
+        }
+
+        status
+    }
+
+    fn release_task_resources(&mut self, task_id: &TaskId) {
+        if let Some((request, admission_order)) = self.resource_manager.release(task_id) {
+            self.resource_telemetry.push(ResourceTelemetry {
+                task_id: request.task_id,
+                queue: request.queue,
+                status: ResourceAdmissionStatus::Released,
+                requested_units: request.units,
+                blocking_scope: None,
+                admission_order,
+            });
+        }
+    }
+
+    fn next_admission_order(&mut self) -> usize {
+        let order = self.admission_counter;
+        self.admission_counter += 1;
+        order
     }
 
     fn coverage_blocks(&self, task: &BuildTask) -> bool {
@@ -863,6 +951,13 @@ impl SchedulerBuilder {
             .map(|task| task_kind_rank(task.kind))
             .unwrap_or(usize::MAX)
     }
+
+    fn resource_queue_rank(&self, task_id: &TaskId) -> usize {
+        self.tasks_by_id
+            .get(task_id)
+            .map(|task| resource_queue_rank(scheduler_queue(task)))
+            .unwrap_or(usize::MAX)
+    }
 }
 
 fn run_scheduler_with_dispatch_batches(
@@ -1000,6 +1095,7 @@ mod tests {
             BuildConfig, BuildPlan, DependencyGraph, Lockfile, PackagePlan, PackagePlanSource,
             VerifierConfig, WorkspaceBuildConfig, WorkspaceVerifierConfig,
         },
+        resource::{ResourceAdmissionStatus, ResourceBudget, ResourceScope},
         task_graph::{
             BackendProfileId, DocumentationProfile, ModuleDependencyOverlay, TaskGraphInput,
             TaskGraphProfile, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId, WorkUnit,
@@ -1185,6 +1281,231 @@ mod tests {
                 SchedulerQueue::IoCommit,
                 SchedulerQueue::Documentation,
             ])
+        );
+    }
+
+    #[test]
+    fn resource_budget_queues_source_work_without_changing_collation() {
+        let graph = multi_module_graph();
+        let mut budget = ResourceBudget::unbounded();
+        budget.source_workers = 1;
+        let (limited, batches) = run_scheduler_with_dispatch_batches(SchedulerInput {
+            graph: graph.clone(),
+            worker_count: 2,
+            resource_budget: budget.clone(),
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+        let (reverse_limited, reverse_batches) =
+            run_scheduler_with_dispatch_batches(SchedulerInput {
+                graph: graph.clone(),
+                worker_count: 2,
+                completion_order: CompletionOrder::Reverse,
+                resource_budget: budget,
+                ..SchedulerInput::new(graph.clone())
+            })
+            .expect("scheduler run succeeds");
+        let serial = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            worker_count: 1,
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+
+        assert_eq!(serial.task_states, limited.task_states);
+        assert_eq!(serial.results, limited.results);
+        assert_eq!(serial.events, limited.events);
+        assert_eq!(serial.diagnostics, limited.diagnostics);
+        assert_eq!(limited.task_states, reverse_limited.task_states);
+        assert_eq!(limited.results, reverse_limited.results);
+        assert_eq!(limited.events, reverse_limited.events);
+        assert_eq!(limited.diagnostics, reverse_limited.diagnostics);
+        assert_eq!(
+            limited.resource_telemetry,
+            reverse_limited.resource_telemetry
+        );
+        assert!(limited.resource_telemetry.iter().any(|telemetry| {
+            telemetry.status == ResourceAdmissionStatus::Delayed
+                && telemetry.blocking_scope == Some(ResourceScope::SourceWorkers)
+        }));
+        assert!(batches.iter().all(|batch| {
+            batch
+                .iter()
+                .filter(|task_id| {
+                    matches!(
+                        task_kind_for_id(&graph, task_id),
+                        TaskKind::SourceLoad
+                            | TaskKind::Frontend
+                            | TaskKind::ModuleResolve
+                            | TaskKind::CheckAndElaborate
+                            | TaskKind::VcGenerate
+                    )
+                })
+                .count()
+                <= 1
+        }));
+        assert_eq!(batches, reverse_batches);
+    }
+
+    #[test]
+    fn impossible_resource_request_blocks_with_stable_diagnostic() {
+        let graph = sample_graph();
+        let source = task_id_for_kind(&graph, TaskKind::SourceLoad);
+        let mut budget = ResourceBudget::unbounded();
+        budget.source_workers = 0;
+
+        let run = run_scheduler(SchedulerInput {
+            graph,
+            resource_budget: budget,
+            ..SchedulerInput::new(sample_graph())
+        })
+        .expect("scheduler run succeeds");
+
+        assert_eq!(state_for(&run, &source), TaskState::Blocked);
+        assert!(run.diagnostics.iter().any(|diagnostic| {
+            diagnostic.task_id.as_ref() == Some(&source)
+                && diagnostic.kind == SchedulerDiagnosticKind::ImpossibleResourceRequest
+                && diagnostic.value.as_deref() == Some("source-workers")
+        }));
+        assert!(run.resource_telemetry.iter().any(|telemetry| {
+            telemetry.task_id == source
+                && telemetry.status == ResourceAdmissionStatus::Impossible
+                && telemetry.blocking_scope == Some(ResourceScope::SourceWorkers)
+        }));
+    }
+
+    #[test]
+    fn io_commit_permits_serialize_commit_work_without_publication_authority() {
+        let graph = multi_module_graph();
+        let mut budget = ResourceBudget::unbounded();
+        budget.io_commits = 1;
+        let (run, batches) = run_scheduler_with_dispatch_batches(SchedulerInput {
+            graph: graph.clone(),
+            worker_count: 4,
+            resource_budget: budget,
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+
+        assert!(batches.iter().all(|batch| {
+            batch
+                .iter()
+                .filter(|task_id| task_kind_for_id(&graph, task_id) == TaskKind::ArtifactCommit)
+                .count()
+                <= 1
+        }));
+        assert!(run.resource_telemetry.iter().any(|telemetry| {
+            telemetry.status == ResourceAdmissionStatus::Delayed
+                && telemetry.blocking_scope == Some(ResourceScope::IoCommits)
+        }));
+        let debug = format!("{run:#?}").to_lowercase();
+        assert!(!debug.contains("publicationtoken"));
+        assert!(!debug.contains("trustedstatus"));
+    }
+
+    #[test]
+    fn backend_limits_bound_global_processes_and_obligation_fanout() {
+        let graph = multi_backend_graph();
+        let mut global_budget = ResourceBudget::unbounded();
+        global_budget.atp_processes = 1;
+        global_budget.backend_fanout = 2;
+        let (global_limited, global_batches) =
+            run_scheduler_with_dispatch_batches(SchedulerInput {
+                graph: graph.clone(),
+                worker_count: 4,
+                resource_budget: global_budget,
+                ..SchedulerInput::new(graph.clone())
+            })
+            .expect("scheduler run succeeds");
+
+        assert_backend_batches_are_serial(&graph, &global_batches);
+        assert!(global_limited.resource_telemetry.iter().any(|telemetry| {
+            telemetry.status == ResourceAdmissionStatus::Delayed
+                && telemetry.blocking_scope == Some(ResourceScope::AtpProcesses)
+        }));
+
+        let mut fanout_budget = ResourceBudget::unbounded();
+        fanout_budget.atp_processes = 2;
+        fanout_budget.backend_fanout = 1;
+        let (fanout_limited, fanout_batches) =
+            run_scheduler_with_dispatch_batches(SchedulerInput {
+                graph: graph.clone(),
+                worker_count: 4,
+                resource_budget: fanout_budget,
+                ..SchedulerInput::new(graph.clone())
+            })
+            .expect("scheduler run succeeds");
+
+        assert_backend_batches_are_serial(&graph, &fanout_batches);
+        assert!(fanout_limited.resource_telemetry.iter().any(|telemetry| {
+            telemetry.status == ResourceAdmissionStatus::Delayed
+                && matches!(
+                    telemetry.blocking_scope,
+                    Some(ResourceScope::BackendFanout { .. })
+                )
+        }));
+    }
+
+    #[test]
+    fn atp_portfolio_admission_does_not_consume_backend_process_slot() {
+        let graph = sample_graph();
+        let atp = task_id_for_kind(&graph, TaskKind::AtpSolve);
+        let backend = task_id_for_kind(&graph, TaskKind::BackendRun);
+        let mut budget = ResourceBudget::unbounded();
+        budget.atp_portfolios = 1;
+        budget.atp_processes = 0;
+
+        let run = run_scheduler(SchedulerInput {
+            graph,
+            resource_budget: budget,
+            ..SchedulerInput::new(sample_graph())
+        })
+        .expect("scheduler run succeeds");
+
+        assert_eq!(state_for(&run, &atp), TaskState::Completed);
+        assert_eq!(state_for(&run, &backend), TaskState::Blocked);
+        assert!(run.resource_telemetry.iter().any(|telemetry| {
+            telemetry.task_id == atp && telemetry.status == ResourceAdmissionStatus::Admitted
+        }));
+        assert!(run.resource_telemetry.iter().any(|telemetry| {
+            telemetry.task_id == backend
+                && telemetry.status == ResourceAdmissionStatus::Impossible
+                && telemetry.blocking_scope == Some(ResourceScope::AtpProcesses)
+        }));
+    }
+
+    #[test]
+    fn admitted_tasks_release_resources_exactly_once() {
+        let graph = sample_graph();
+        assert_all_admitted_tasks_release_once(
+            run_scheduler(SchedulerInput::new(graph.clone())).expect("completed run succeeds"),
+        );
+
+        let atp = task_id_for_kind(&graph, TaskKind::AtpSolve);
+        assert_all_admitted_tasks_release_once(
+            run_scheduler(SchedulerInput {
+                graph: graph.clone(),
+                task_outcomes: vec![SyntheticTaskOutcome::skip(atp)],
+                ..SchedulerInput::new(graph.clone())
+            })
+            .expect("skipped run succeeds"),
+        );
+
+        let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+        assert_all_admitted_tasks_release_once(
+            run_scheduler(SchedulerInput {
+                graph: graph.clone(),
+                task_outcomes: vec![SyntheticTaskOutcome::fail(
+                    frontend,
+                    vec![SchedulerDiagnosticRef::new(
+                        "frontend",
+                        "E001",
+                        "frontend failed",
+                    )],
+                )],
+                ..SchedulerInput::new(graph)
+            })
+            .expect("failed run succeeds"),
         );
     }
 
@@ -1552,6 +1873,7 @@ mod tests {
         assert!(!manifest.contains("mizar-ir"));
         assert!(!manifest.contains("mizar-cache"));
         let source = include_str!("scheduler.rs");
+        let resource_source = include_str!("resource.rs");
         for forbidden in [
             concat!("Cache", "Key"),
             concat!("Dependency", "Fingerprint"),
@@ -1559,10 +1881,17 @@ mod tests {
             concat!("Publication", "Token"),
             concat!("Proof", "Authority"),
             concat!("Trusted", "Status"),
+            concat!("std", "::process"),
+            concat!("process", "::Command"),
+            concat!("Command", "::new"),
         ] {
             assert!(
                 !source.contains(forbidden),
                 "{forbidden} leaked into scheduler source"
+            );
+            assert!(
+                !resource_source.contains(forbidden),
+                "{forbidden} leaked into resource source"
             );
         }
 
@@ -1827,6 +2156,39 @@ mod tests {
                 | WorkUnit::EvidenceCandidate { module, .. } => module == &expected,
                 WorkUnit::Workspace | WorkUnit::Package { .. } => false,
             })
+    }
+
+    fn assert_backend_batches_are_serial(graph: &TaskGraph, batches: &[Vec<TaskId>]) {
+        assert!(batches.iter().all(|batch| {
+            batch
+                .iter()
+                .filter(|task_id| task_kind_for_id(graph, task_id) == TaskKind::BackendRun)
+                .count()
+                <= 1
+        }));
+    }
+
+    fn telemetry_counts(
+        run: &SchedulerRun,
+        status: ResourceAdmissionStatus,
+    ) -> BTreeMap<TaskId, usize> {
+        let mut counts = BTreeMap::new();
+        for telemetry in run
+            .resource_telemetry
+            .iter()
+            .filter(|telemetry| telemetry.status == status)
+        {
+            *counts.entry(telemetry.task_id.clone()).or_default() += 1;
+        }
+        counts
+    }
+
+    fn assert_all_admitted_tasks_release_once(run: SchedulerRun) {
+        let admitted = telemetry_counts(&run, ResourceAdmissionStatus::Admitted);
+        let released = telemetry_counts(&run, ResourceAdmissionStatus::Released);
+
+        assert_eq!(admitted, released);
+        assert!(released.values().all(|count| *count == 1));
     }
 
     fn result_for<'a>(run: &'a SchedulerRun, task_id: &TaskId) -> &'a SchedulerResult {

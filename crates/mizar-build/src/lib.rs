@@ -6,6 +6,9 @@ pub mod module_index;
 /// Package manifest validation and build-plan input models.
 pub mod planner;
 
+/// Modeled resource-budget admission and release accounting.
+pub mod resource;
+
 /// Deterministic synthetic task scheduling over task graphs.
 pub mod scheduler;
 
