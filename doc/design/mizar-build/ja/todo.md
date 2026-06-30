@@ -450,6 +450,10 @@ cargo test -p mizar-test
 
 テストが通ったらここでタスクにチェックを付ける。
 
+Closeout は [crate_exit_report.md](./crate_exit_report.md) に記録する。この report は
+hard gates、deferred items、verification、human review surface、next-phase handoff を
+要約する。
+
 ## 備考
 
 - スケジューリングは検証された意味論、診断順、artifact 順、証明の受理を

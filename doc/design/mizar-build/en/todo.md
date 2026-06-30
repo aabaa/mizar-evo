@@ -462,6 +462,10 @@ cargo test -p mizar-test
 
 Check the task off here once tests pass.
 
+Closeout is recorded in [crate_exit_report.md](./crate_exit_report.md). It
+summarizes hard gates, deferred items, verification, human review surface, and
+the next-phase handoff.
+
 ## Notes
 
 - Scheduling must not change verified semantics, diagnostic order, artifact

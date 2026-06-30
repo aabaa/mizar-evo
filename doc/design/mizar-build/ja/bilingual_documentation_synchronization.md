@@ -4,7 +4,8 @@
 > [../en/bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md)。
 
 状態: task 23 audit complete; task 24 paired-file addition recorded; task 25
-re-run complete; task 26 paired-file addition and source-layout split recorded。
+re-run complete; task 26 paired-file addition and source-layout split recorded;
+closeout paired-file addition recorded。
 
 ## 範囲
 
@@ -18,7 +19,8 @@ task-23 audit は source/spec correspondence report を含む task 22 までの�
 `mizar-build` crate-development tasks を覆う。task-24 update は新しい paired
 incremental/parallel equivalence note と task status を記録する。task-25 update は
 post-task-24 の source/spec と bilingual audit re-run を記録する。task-26 update は
-paired module-boundary report と private unit-test module split を記録する。この監査は
+paired module-boundary report と private unit-test module split を記録する。closeout
+update は paired crate exit report を記録する。この監査は
 [source_spec_correspondence.md](./source_spec_correspondence.md) を置き換えない。
 また、`doc/spec`、`.miz` source、expectation は変更しない。
 
@@ -29,8 +31,8 @@ paired module-boundary report と private unit-test module split を記録する
 - module boundary、public API family、public enum forward-compatibility
   decision、task completion state、boundary invariant、milestone handoff wording に
   残る英日不一致は見つからなかった。
-- task status は crate-plan task 0 と ordered tasks 1 から 26 まで完了、
-  close-out は未完了として同期している。
+- task status は crate-plan task 0、ordered tasks 1 から 26、close-out complete として
+  同期している。
 - follow-up classification は同期している: BUILD-G-016 は
   `sorted_manifest_updates` helper の direct coverage に対する non-blocking
   `test_gap` であり、BUILD-G-017 は task-24 implemented-seam equivalence の
@@ -53,6 +55,7 @@ paired module-boundary report と private unit-test module split を記録する
 | [batch_integration.md](../en/batch_integration.md) | [./batch_integration.md](./batch_integration.md) | batch integration scope、implemented-seam path、deterministic projection、placeholder prohibition、validated-cache-hit non-authority rule、test が同期している。 |
 | [cache_seam.md](../en/cache_seam.md) | [./cache_seam.md](./cache_seam.md) | caller-supplied validated cache decision、cache miss handling、fallback diagnostic、scheduler consumption、proof-authority prohibition、public enum policy、test が同期している。 |
 | [cancel.md](../en/cancel.md) | [./cancel.md](./cancel.md) | cooperative cancellation、build generation、supersession、partial-publication 禁止、resource handoff、non-authority boundary、public enum policy、test が同期している。 |
+| [crate_exit_report.md](../en/crate_exit_report.md) | [./crate_exit_report.md](./crate_exit_report.md) | closeout status、hard gates、quality score、deferred items、verification、human review surface、handoff が同期している。 |
 | [determinism_suite.md](../en/determinism_suite.md) | [./determinism_suite.md](./determinism_suite.md) | implemented-seam determinism scope、task-24 equivalence extension、clean/incremental external gap、cache and commit projection、placeholder guard、test が同期している。 |
 | [failure_state.md](../en/failure_state.md) | [./failure_state.md](./failure_state.md) | failure category、blocked-work record、bounded propagation、deterministic ordering、publication boundary、public enum policy、test が同期している。 |
 | [incremental_parallel_equivalence.md](../en/incremental_parallel_equivalence.md) | [./incremental_parallel_equivalence.md](./incremental_parallel_equivalence.md) | task-24 implemented-seam equivalence scope、visible projection、stale-publication guard、BUILD-G-017、non-authority rules、handoff notes が同期している。 |
@@ -64,11 +67,11 @@ paired module-boundary report と private unit-test module split を記録する
 | [source_spec_correspondence.md](../en/source_spec_correspondence.md) | [./source_spec_correspondence.md](./source_spec_correspondence.md) | public API correspondence、behavior-boundary correspondence、task-25 architecture-22 re-run、task-26 source-layout re-run、test / follow-up record、BUILD-G-016、BUILD-G-017、BUILD-G-018、未変更の external dependency gap が同期している。 |
 | [task_graph.md](../en/task_graph.md) | [./task_graph.md](./task_graph.md) | task identity、phase/work-unit mapping、dependency edge、VC descriptor policy、resource class、deterministic expansion、public enum policy、test が同期している。 |
 | [todo.md](../en/todo.md) | [./todo.md](./todo.md) | module implementation table、task 26 までの ordered task state、closeout scope、recommended verification、boundary note が同期している。 |
-| [bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md) | [./bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | この audit baseline と task-24 / task-25 / task-26 updates は、同じ scope、result、pair checklist、handoff note を両言語で記録している。 |
+| [bilingual_documentation_synchronization.md](../en/bilingual_documentation_synchronization.md) | [./bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | この audit baseline と task-24 / task-25 / task-26 / closeout updates は、同じ scope、result、pair checklist、handoff note を両言語で記録している。 |
 
 ## handoff
 
 今後の `mizar-build` documentation update は、この監査を二言語同期状態の baseline として扱う。
 将来 design file を追加する場合は、同じ task で両言語 directory に追加する。
-close-out が documented behavior を変更する場合は、この report または後続 audit を
-更新する。
+後続 external integration が documented behavior を変更する場合は、この report または
+後続 audit を更新する。
