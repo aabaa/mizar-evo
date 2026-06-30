@@ -12,6 +12,11 @@ arrival order が変わっても、安定した plans、module indexes、task gr
 clean scheduler records/events、cache-equivalent public payloads、artifact
 manifest commits を生成することを検証する。
 
+task 24 はこの suite を拡張し、implemented-seam architecture-22 equivalence gate
+を追加する。clean sequential、clean parallel、incremental sequential、
+incremental parallel scheduler runs を、externally visible manifest、hash、
+diagnostic、failure、blocked-record projections により比較する。
+
 この suite は focused module tests の上に置く integration / regression layer
 である。driver-owned build sessions、`mizar-ir` handles、cache-key
 construction、dependency fingerprint construction、proof-reuse validation、
@@ -23,6 +28,7 @@ producer publication tokens は追加しない。
 |---|---|---|---|
 | BUILD-G-014 | `test_gap` | task 20 以前は planner、module-index、scheduler、cache seam、artifact-commit modules に focused determinism tests はあったが、implemented seams を単一 deterministic pipeline projection として比較する cross-boundary suite はなかった。 | plan/index/graph/scheduler/commit determinism の table-driven integration suite を追加する。 |
 | BUILD-G-015 | `external_dependency_gap` | real `mizar-driver` sessions、real `mizar-ir` output handles、producer publication tokens、full clean/incremental build execution は利用できない。 | task 20 は implemented seams に限定し、full clean/incremental equivalence は後続の external integration tasks に残す。placeholders は追加しない。 |
+| BUILD-G-017 | `external_dependency_gap` | task 24 は implemented seams について architecture-22 equivalence を覆うが、real driver sessions、real IR output rehydration、producer-owned artifact projection、producer publication tokens はまだ利用できない。 | それらの external seams が存在するまで、task-24 gate は synthetic かつ build-side に保つ。 |
 
 ## Boundary Rules
 
@@ -38,6 +44,11 @@ producer publication tokens は追加しない。
 - Cache hits は execution-skip records にすぎない。hit は clean outputs と
   一致し得るが、semantic acceptance、proof authority、producer publication
   authority、trusted-status promotion になってはならない。
+- 同じ snapshot 上の clean sequential、clean parallel、incremental sequential、
+  incremental parallel implemented-seam runs は、同一の visible manifest、hash、
+  diagnostic、failure、blocked-record projections を publish しなければならない。
+- Stale validated hits と superseded snapshots は current manifest updates を
+  publish してはならない。
 - Artifact manifest commits は serialization boundaries であり続ける。
   Manifest updates は `mizar-artifact` へ渡す前に build-side deterministic key
   で sort される。
@@ -57,6 +68,9 @@ task-20 fixtures は次を覆う。
   committed artifacts と manifest hashes を残すこと。
 - shuffled manifest updates が同一 manifests と build-side commit records を
   commit すること。
+- clean sequential、clean parallel、incremental sequential、incremental parallel
+  scheduler runs に対する architecture-22 implemented-seam equivalence gate。
+- stale validated-hit と superseded-snapshot publication guards。
 
 利用できない real driver/IR/producer-token paths は `external_dependency_gap` として
 記録し、それらの skipped placeholder APIs を追加してはならない。

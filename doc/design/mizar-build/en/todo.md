@@ -373,7 +373,7 @@ Keep `cargo test -p mizar-build` green after each task (see
       `external_dependency_gap`.
     - Deps: 22. Spec: repository documentation policy.
 
-24. **Incremental/parallel equivalence gate.** [ ]
+24. **Incremental/parallel equivalence gate.** [x]
     - Add the scheduler-level regression gate for architecture 22: clean
       sequential, clean parallel, incremental sequential, and incremental
       parallel execution over the same `BuildSnapshot` and verifier policy must
@@ -389,6 +389,13 @@ Keep `cargo test -p mizar-build` green after each task (see
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
       [14.parallel_verification_and_scheduling.md](../../architecture/en/14.parallel_verification_and_scheduling.md),
       [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+    - Completed by task 24: `incremental_parallel_equivalence.md` records the
+      implemented-seam scope and BUILD-G-017 `external_dependency_gap`.
+      `tests/determinism_suite.rs` compares the externally visible projection
+      for clean sequential, clean parallel, incremental sequential, and
+      incremental parallel scheduler runs over the same snapshot, and checks
+      that stale or superseded incremental results do not publish current
+      manifest updates.
 
 25. **Architecture-22 follow-up audit.** [ ]
     - Re-run the source/spec correspondence and bilingual documentation sync

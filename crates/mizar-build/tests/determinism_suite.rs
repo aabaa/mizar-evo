@@ -6,7 +6,10 @@ use std::{
 };
 
 use mizar_artifact::{
-    manifest::{ArtifactManifest, ManifestProvenance, ModuleArtifactEntry, PackageIdentity},
+    manifest::{
+        ArtifactManifest, ManifestProofWitnessEntry, ManifestProvenance, ModuleArtifactEntry,
+        PackageIdentity,
+    },
     module_summary::ModuleSummaryIdentity,
     registration_summary::{ArtifactHashClass, ArtifactHashRef},
     store::{PublishedArtifactPath, SchemaVersion, artifact_hash_domain, write_published_artifact},
@@ -25,6 +28,7 @@ use mizar_build::{
         CacheFallbackReason, CacheOutputRef, CacheSchedulingOutcome, CacheSchedulingPlan,
         CacheTaskDecision, ValidatedCacheHit,
     },
+    failure_state::{BlockedTaskRecord, BuildFailureRecord},
     module_index::{
         ModuleId, ModuleIndex, StaticSourceLayout, WorkspaceSourceFile, WorkspaceSourcePackage,
         build_module_index,
@@ -34,8 +38,8 @@ use mizar_build::{
         parse_package_manifest, produce_build_plan,
     },
     scheduler::{
-        CacheSchedulingPolicy, CompletionOrder, PriorityHints, SchedulerInput, SchedulerRun,
-        SyntheticOutputRef, SyntheticTaskOutcome, TaskState, run_scheduler,
+        CacheSchedulingPolicy, CancellationPolicy, CompletionOrder, PriorityHints, SchedulerInput,
+        SchedulerRun, SyntheticOutputRef, SyntheticTaskOutcome, TaskState, run_scheduler,
     },
     task_graph::{
         BuildTask, DocumentationProfile, ModuleDependencyEdge, ModuleDependencyKind,
@@ -166,6 +170,144 @@ fn shuffled_manifest_updates_commit_identical_records() {
 }
 
 #[test]
+fn clean_and_incremental_parallel_runs_publish_identical_visible_projection() {
+    let fixture = build_fixture(workspace_packages_canonical(), source_layout_canonical());
+    let source_load_ids = task_ids(&fixture.graph, TaskKind::SourceLoad);
+    let cache_decisions = clean_equivalent_cache_decisions(&fixture.graph);
+    let reversed_source_hints = PriorityHints {
+        preferred_tasks: source_load_ids.into_iter().rev().collect(),
+    };
+
+    let clean_sequential = schedule_clean(
+        fixture.graph.clone(),
+        PriorityHints::default(),
+        1,
+        CompletionOrder::Canonical,
+    );
+    let clean_parallel = schedule_clean(
+        fixture.graph.clone(),
+        reversed_source_hints.clone(),
+        4,
+        CompletionOrder::Reverse,
+    );
+    let incremental_sequential = schedule_incremental(
+        fixture.graph.clone(),
+        cache_decisions.clone(),
+        PriorityHints::default(),
+        1,
+        CompletionOrder::Canonical,
+    );
+    let incremental_parallel = schedule_incremental(
+        fixture.graph.clone(),
+        cache_decisions,
+        reversed_source_hints,
+        4,
+        CompletionOrder::Reverse,
+    );
+
+    let reference = visible_projection(&fixture.graph, &clean_sequential);
+    assert_eq!(
+        reference,
+        visible_projection(&fixture.graph, &clean_parallel)
+    );
+    assert_eq!(
+        reference,
+        visible_projection(&fixture.graph, &incremental_sequential)
+    );
+    assert_eq!(
+        reference,
+        visible_projection(&fixture.graph, &incremental_parallel)
+    );
+
+    let cached_util = module_task(&fixture.graph, TaskKind::Frontend, "util");
+    let missed_main = module_task(&fixture.graph, TaskKind::Frontend, "main");
+    assert_eq!(
+        state_for(&incremental_parallel, &cached_util.id),
+        TaskState::CacheHit
+    );
+    assert_eq!(
+        state_for(&incremental_parallel, &missed_main.id),
+        TaskState::Completed
+    );
+}
+
+#[test]
+fn superseded_or_stale_incremental_results_do_not_publish_current_artifacts() {
+    let fixture = build_fixture(workspace_packages_canonical(), source_layout_canonical());
+    let cached_util = module_task(&fixture.graph, TaskKind::Frontend, "util");
+    let stale_cache_decisions = CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+        cached_util.id.clone(),
+        CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+            vec![CacheOutputRef::new(
+                "frontend:util",
+                "synthetic-frontend-output",
+            )],
+            Vec::new(),
+        )),
+    )]);
+
+    let stale_hit = run_scheduler(SchedulerInput {
+        cache: CacheSchedulingPolicy::Enabled,
+        cache_decisions: stale_cache_decisions,
+        cancellation: CancellationPolicy::default()
+            .with_obsolete_completed_task(cached_util.id.clone()),
+        task_outcomes: frontend_outcomes(&fixture.graph),
+        worker_count: 4,
+        completion_order: CompletionOrder::Reverse,
+        ..SchedulerInput::new(fixture.graph.clone())
+    })
+    .expect("stale cache-hit run succeeds");
+
+    assert_eq!(state_for(&stale_hit, &cached_util.id), TaskState::Cancelled);
+    assert!(
+        stale_hit
+            .results
+            .iter()
+            .find(|result| result.task_id == cached_util.id)
+            .expect("stale hit result")
+            .output_refs
+            .is_empty()
+    );
+    let stale_projection = visible_projection(&fixture.graph, &stale_hit);
+    assert!(
+        stale_projection
+            .modules
+            .iter()
+            .all(|module| module.module_path != "util" && module.module_path != "main")
+    );
+
+    let superseded = run_scheduler(SchedulerInput {
+        cache: CacheSchedulingPolicy::Enabled,
+        cache_decisions: clean_equivalent_cache_decisions(&fixture.graph),
+        cancellation: CancellationPolicy::default().with_current_snapshot(distinct_snapshot_id()),
+        task_outcomes: frontend_outcomes(&fixture.graph),
+        worker_count: 4,
+        completion_order: CompletionOrder::Reverse,
+        ..SchedulerInput::new(fixture.graph.clone())
+    })
+    .expect("superseded run succeeds");
+
+    assert!(
+        superseded
+            .results
+            .iter()
+            .any(|result| result.state == TaskState::Cancelled)
+    );
+    assert!(
+        superseded
+            .results
+            .iter()
+            .all(|result| result.output_refs.is_empty())
+    );
+    assert!(
+        visible_projection(&fixture.graph, &superseded)
+            .modules
+            .is_empty()
+    );
+    assert!(superseded.failure_records.is_empty());
+}
+
+#[test]
 fn determinism_suite_records_external_gaps_without_placeholder_boundaries() {
     let manifest = include_str!("../Cargo.toml");
     for forbidden_dependency in [concat!("mizar", "-", "driver"), concat!("mizar", "-", "ir")] {
@@ -215,6 +357,37 @@ struct CommitProjection {
     modules: Vec<(String, String, String)>,
     module_paths: Vec<String>,
     artifact_files: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct VisibleProjection {
+    manifest_hash: Hash,
+    modules: Vec<VisibleModuleProjection>,
+    scheduler_outputs: Vec<(String, String, String)>,
+    scheduler_diagnostics: Vec<(Option<String>, String, Option<String>)>,
+    result_diagnostics: Vec<(String, String, String, String)>,
+    failure_records: Vec<BuildFailureRecord>,
+    blocked_records: Vec<BlockedTaskRecord>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct VisibleModuleProjection {
+    package_id: String,
+    module_path: String,
+    source_file: String,
+    artifact_file: String,
+    source_hash: Hash,
+    artifact_hash: ArtifactHashRef,
+    interface_hash: ArtifactHashRef,
+    implementation_hash: ArtifactHashRef,
+    module_summary_file: Option<String>,
+    module_summary_hash: Option<ArtifactHashRef>,
+    module_summary_interface_hash: Option<ArtifactHashRef>,
+    registration_summary_file: Option<String>,
+    registration_summary_hash: Option<ArtifactHashRef>,
+    registration_interface_hash: Option<ArtifactHashRef>,
+    proof_witnesses: Vec<ManifestProofWitnessEntry>,
+    diagnostics_hash: Option<ArtifactHashRef>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -397,6 +570,14 @@ fn build_graph(plan: BuildPlan, index: ModuleIndex) -> TaskGraph {
 }
 
 fn snapshot_id() -> BuildSnapshotId {
+    snapshot_id_with_seed(10, 11)
+}
+
+fn distinct_snapshot_id() -> BuildSnapshotId {
+    snapshot_id_with_seed(90, 91)
+}
+
+fn snapshot_id_with_seed(lockfile_seed: u8, verifier_seed: u8) -> BuildSnapshotId {
     let registry = SnapshotRegistry::new();
     let allocator = InMemorySessionIdAllocator::new();
     let request = allocator.next_request_id().expect("request id");
@@ -407,9 +588,9 @@ fn snapshot_id() -> BuildSnapshotId {
                 workspace_root: WorkspaceRoot::new("workspace"),
                 source_versions: Vec::new(),
                 dependency_artifacts: Vec::new(),
-                lockfile_hash: hash(10),
+                lockfile_hash: hash(lockfile_seed),
                 toolchain: ToolchainInfo::new("mizar-evo-test"),
-                verifier_config_hash: hash(11),
+                verifier_config_hash: hash(verifier_seed),
             },
         )
         .expect("valid snapshot");
@@ -442,6 +623,50 @@ fn schedule_with_cache(graph: TaskGraph, cache_decisions: CacheSchedulingPlan) -
         ..SchedulerInput::new(graph)
     })
     .expect("cached scheduler run")
+}
+
+fn schedule_incremental(
+    graph: TaskGraph,
+    cache_decisions: CacheSchedulingPlan,
+    priority_hints: PriorityHints,
+    worker_count: usize,
+    completion_order: CompletionOrder,
+) -> SchedulerRun {
+    run_scheduler(SchedulerInput {
+        cache: CacheSchedulingPolicy::Enabled,
+        cache_decisions,
+        priority_hints,
+        task_outcomes: frontend_outcomes(&graph),
+        worker_count,
+        completion_order,
+        ..SchedulerInput::new(graph)
+    })
+    .expect("incremental scheduler run")
+}
+
+fn clean_equivalent_cache_decisions(graph: &TaskGraph) -> CacheSchedulingPlan {
+    let decisions = graph
+        .tasks
+        .iter()
+        .filter(|task| task.kind == TaskKind::Frontend)
+        .map(|task| {
+            let module = module_for_task(task);
+            let output = CacheOutputRef::new(
+                format!("frontend:{}", module.path.as_str()),
+                "synthetic-frontend-output",
+            );
+            let outcome = if module.path.as_str() == "main" {
+                CacheSchedulingOutcome::Miss(CacheFallbackReason::Miss)
+            } else {
+                CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                    vec![output],
+                    Vec::new(),
+                ))
+            };
+            CacheTaskDecision::new(task.id.clone(), outcome)
+        })
+        .collect();
+    CacheSchedulingPlan::new(decisions)
 }
 
 fn scheduler_projection(run: SchedulerRun) -> (Vec<_TaskResult>, Vec<_TaskEvent>) {
@@ -495,13 +720,101 @@ fn committed_projection(graph: &TaskGraph, run: &SchedulerRun) -> CommitProjecti
     commit_projection(graph, run, ManifestArrival::Reverse)
 }
 
+fn visible_projection(graph: &TaskGraph, run: &SchedulerRun) -> VisibleProjection {
+    let commit = commit_summary(graph, run, ManifestArrival::Reverse);
+    let mut scheduler_outputs = run
+        .results
+        .iter()
+        .flat_map(|result| {
+            result.output_refs.iter().map(|output| {
+                (
+                    result.task_id.as_str().to_owned(),
+                    output.identity.clone(),
+                    output.content.clone(),
+                )
+            })
+        })
+        .collect::<Vec<_>>();
+    scheduler_outputs.sort();
+
+    let mut result_diagnostics = run
+        .results
+        .iter()
+        .flat_map(|result| {
+            result.diagnostics.iter().map(|diagnostic| {
+                (
+                    result.task_id.as_str().to_owned(),
+                    diagnostic.source.clone(),
+                    diagnostic.code.clone(),
+                    diagnostic.message.clone(),
+                )
+            })
+        })
+        .collect::<Vec<_>>();
+    result_diagnostics.sort();
+
+    VisibleProjection {
+        manifest_hash: commit.manifest_hash,
+        modules: commit
+            .manifest
+            .modules
+            .iter()
+            .map(|module| VisibleModuleProjection {
+                package_id: module.module.package_id.clone(),
+                module_path: module.module.module_path.clone(),
+                source_file: module.source_file.clone(),
+                artifact_file: module.artifact_file.clone(),
+                source_hash: module.source_hash,
+                artifact_hash: module.artifact_hash.clone(),
+                interface_hash: module.interface_hash.clone(),
+                implementation_hash: module.implementation_hash.clone(),
+                module_summary_file: module.module_summary_file.clone(),
+                module_summary_hash: module.module_summary_hash.clone(),
+                module_summary_interface_hash: module.module_summary_interface_hash.clone(),
+                registration_summary_file: module.registration_summary_file.clone(),
+                registration_summary_hash: module.registration_summary_hash.clone(),
+                registration_interface_hash: module.registration_interface_hash.clone(),
+                proof_witnesses: module.proof_witnesses.clone(),
+                diagnostics_hash: module.diagnostics_hash.clone(),
+            })
+            .collect(),
+        scheduler_outputs,
+        scheduler_diagnostics: run
+            .diagnostics
+            .iter()
+            .map(|diagnostic| {
+                (
+                    diagnostic
+                        .task_id
+                        .as_ref()
+                        .map(|task_id| task_id.as_str().to_owned()),
+                    format!("{:?}", diagnostic.kind),
+                    diagnostic.value.clone(),
+                )
+            })
+            .collect(),
+        result_diagnostics,
+        failure_records: run.failure_records.clone(),
+        blocked_records: run.blocked_records.clone(),
+    }
+}
+
 fn commit_projection(
     graph: &TaskGraph,
     run: &SchedulerRun,
     arrival: ManifestArrival,
 ) -> CommitProjection {
+    let commit = commit_summary(graph, run, arrival);
+    commit_projection_from_summary(commit)
+}
+
+fn commit_summary(
+    graph: &TaskGraph,
+    run: &SchedulerRun,
+    arrival: ManifestArrival,
+) -> ManifestCommitSummary {
     let root = TestArtifactRoot::new();
-    let commit = commit_manifest_updates(
+    commit_manifest_updates(
         ManifestCommitRequest::new(
             root.path(),
             seed_manifest(),
@@ -509,8 +822,7 @@ fn commit_projection(
         ),
         None,
     )
-    .expect("manifest commit succeeds");
-    commit_projection_from_summary(commit)
+    .expect("manifest commit succeeds")
 }
 
 fn commit_projection_from_summary(summary: ManifestCommitSummary) -> CommitProjection {
@@ -619,6 +931,14 @@ fn module_task<'a>(graph: &'a TaskGraph, kind: TaskKind, module_path: &str) -> &
                 )
         })
         .expect("module task exists")
+}
+
+fn state_for(run: &SchedulerRun, task_id: &TaskId) -> TaskState {
+    run.results
+        .iter()
+        .find(|result| &result.task_id == task_id)
+        .map(|result| result.state)
+        .expect("task result exists")
 }
 
 fn module_for_task(task: &BuildTask) -> &ModuleId {

@@ -3,7 +3,7 @@
 > Canonical language: English. Japanese companion:
 > [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md).
 
-Status: task 23 audit complete.
+Status: task 23 audit complete; task 24 paired-file addition recorded.
 
 ## Scope
 
@@ -14,8 +14,11 @@ statements, public API lists, public enum policy tables, task completion
 states, gap classifications, boundary invariants, external dependency records,
 and handoff wording relevant to the `mizar-build` task stream.
 
-The audit covers the completed `mizar-build` crate-development tasks through
-task 22, including the source/spec correspondence report. It does not replace
+The task-23 audit covers the completed `mizar-build` crate-development tasks
+through task 22, including the source/spec correspondence report. The task-24
+update records the new paired incremental/parallel equivalence note and task
+status; task 25 owns the full post-task-24 source/spec and bilingual audit
+re-run. This document does not replace
 [source_spec_correspondence.md](./source_spec_correspondence.md), and it does
 not change `doc/spec`, `.miz` sources, expectations, or Rust source.
 
@@ -27,17 +30,17 @@ not change `doc/spec`, `.miz` sources, expectations, or Rust source.
   API families, public enum forward-compatibility decisions, task completion
   states, boundary invariants, or milestone handoff wording.
 - Task status is synchronized as crate-plan task 0 and ordered tasks 1 through
-  22 complete, task 23 complete with this audit, and tasks 24 through close-out
-  still open.
-- Existing follow-up classifications remain synchronized: BUILD-G-016 is a
-  non-blocking `test_gap` for direct `sorted_manifest_updates` helper coverage,
-  and BUILD-G-002, BUILD-G-003, BUILD-G-004, BUILD-G-006, BUILD-G-009,
+  24 complete, with tasks 25 through close-out still open.
+- Follow-up classifications remain synchronized: BUILD-G-016 is a non-blocking
+  `test_gap` for direct `sorted_manifest_updates` helper coverage; BUILD-G-017
+  is the task-24 implemented-seam equivalence `external_dependency_gap`; and
+  BUILD-G-002, BUILD-G-003, BUILD-G-004, BUILD-G-006, BUILD-G-009,
   BUILD-G-011, BUILD-G-012, BUILD-G-013, and BUILD-G-015 remain
   `external_dependency_gap` records.
 - No new `spec_gap`, `test_gap`, `design_drift`, `source_drift`,
   `source_undocumented_behavior`, `test_expectation_drift`,
   `boundary_violation`, `repo_metadata_conflict`, or
-  `external_dependency_gap` was introduced by this audit.
+  `external_dependency_gap` was introduced by the bilingual audit itself.
 - No deferred Japanese companion update remains.
 
 ## Pair Checklist
@@ -49,8 +52,9 @@ not change `doc/spec`, `.miz` sources, expectations, or Rust source.
 | [batch_integration.md](./batch_integration.md) | [../ja/batch_integration.md](../ja/batch_integration.md) | Batch integration scope, implemented-seam path, deterministic projections, placeholder prohibitions, validated-cache-hit non-authority rule, and tests are synchronized. |
 | [cache_seam.md](./cache_seam.md) | [../ja/cache_seam.md](../ja/cache_seam.md) | Caller-supplied validated cache decisions, cache miss handling, fallback diagnostics, scheduler consumption, proof-authority prohibition, public enum policy, and tests are synchronized. |
 | [cancel.md](./cancel.md) | [../ja/cancel.md](../ja/cancel.md) | Cooperative cancellation, build generations, supersession, no-partial-publication rule, resource handoff, non-authority boundaries, public enum policy, and tests are synchronized. |
-| [determinism_suite.md](./determinism_suite.md) | [../ja/determinism_suite.md](../ja/determinism_suite.md) | Implemented-seam determinism scope, clean/incremental external gap, cache and commit projections, placeholder guards, and tests are synchronized. |
+| [determinism_suite.md](./determinism_suite.md) | [../ja/determinism_suite.md](../ja/determinism_suite.md) | Implemented-seam determinism scope, task-24 equivalence extension, clean/incremental external gap, cache and commit projections, placeholder guards, and tests are synchronized. |
 | [failure_state.md](./failure_state.md) | [../ja/failure_state.md](../ja/failure_state.md) | Failure categories, blocked-work records, bounded propagation, deterministic ordering, publication boundaries, public enum policy, and tests are synchronized. |
+| [incremental_parallel_equivalence.md](./incremental_parallel_equivalence.md) | [../ja/incremental_parallel_equivalence.md](../ja/incremental_parallel_equivalence.md) | Task-24 implemented-seam equivalence scope, visible projection, stale-publication guard, BUILD-G-017, non-authority rules, and handoff notes are synchronized. |
 | [module_index.md](./module_index.md) | [../ja/module_index.md](../ja/module_index.md) | Package/module identity, namespace roots, source layout provider, diagnostics, resolver-facing provider boundary, public enum policy, and tests are synchronized. |
 | [planner.md](./planner.md) | [../ja/planner.md](../ja/planner.md) | Manifest and lockfile models, dependency graph resolution, deterministic planning, diagnostics, public enum policy, and tests are synchronized. |
 | [resource.md](./resource.md) | [../ja/resource.md](../ja/resource.md) | Hierarchical budgets, admission and release accounting, worker pools, external-process limits, telemetry, non-authority boundaries, public enum policy, and tests are synchronized. |
@@ -65,5 +69,5 @@ not change `doc/spec`, `.miz` sources, expectations, or Rust source.
 Future `mizar-build` documentation updates should treat this audit as the
 baseline bilingual sync state. Add future design files in both language
 directories in the same task, and update this report or a successor audit when
-task 24, the architecture-22 follow-up audit, the module-boundary gate, or
-close-out changes documented behavior.
+the architecture-22 follow-up audit, the module-boundary gate, or close-out
+changes documented behavior.
