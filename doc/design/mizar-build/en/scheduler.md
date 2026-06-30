@@ -51,7 +51,7 @@ It is an execution-order component, not a semantic authority.
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | SCH-G001 | `design_drift` | `todo.md` required `scheduler.md`, but no module spec existed before task 9. | Task 9 adds this spec and its Japanese companion. |
-| SCH-G002 | `source_drift` / `test_gap` | `src/scheduler.rs` and scheduler tests do not exist yet. | Task 10 implements source/tests against this spec and `task_graph.md`. |
+| SCH-G002 | `source_drift` / `test_gap` | Before task 10, `src/scheduler.rs` and scheduler tests were absent; task 10 now provides the synthetic scheduler core and focused unit tests. | Keep this spec, the Rust surface, and tests synchronized as later resource/cancel/failure/cache tasks extend the module. |
 | SCH-G003 | `external_dependency_gap` | `mizar-driver` request/session/registry/event integration is absent in this checkout. | Accept caller-supplied graph/session-like inputs in later source; do not add a driver dependency or placeholder driver API. |
 | SCH-G004 | `external_dependency_gap` | `mizar-ir` sealed output handles and storage adapters are absent. | Use synthetic in-memory task outputs in scheduler tests; do not invent IR storage APIs. |
 | SCH-G005 | `deferred` | Resource-budget accounting is tasks 11-12. | Define resource classes and queue admission seams only; enforcement belongs to `resource.md` and `src/resource.rs`. |
@@ -70,9 +70,11 @@ struct SchedulerInput {
     graph: TaskGraph,
     mode: SchedulerMode,
     priority_hints: PriorityHints,
-    cache: CacheSchedulingSeam,
-    resource_admission: ResourceAdmissionSeam,
-    cancellation: CancellationSeam,
+    cache: CacheSchedulingPolicy,
+    cancellation: CancellationPolicy,
+    task_outcomes: Vec<SyntheticTaskOutcome>,
+    worker_count: usize,
+    completion_order: CompletionOrder,
 }
 
 struct SchedulerRun {
@@ -81,6 +83,7 @@ struct SchedulerRun {
     task_states: Vec<TaskStateRecord>,
     results: Vec<SchedulerResult>,
     events: Vec<SchedulerEvent>,
+    diagnostics: Vec<SchedulerDiagnostic>,
 }
 
 struct TaskStateRecord {
@@ -88,12 +91,16 @@ struct TaskStateRecord {
     state: TaskState,
     dependencies: Vec<TaskId>,
     blocked_by: Vec<TaskId>,
+    queue: SchedulerQueue,
+    dependency_coverage: DependencyCoverage,
 }
 ```
 
 `SchedulerInput` is build-side data. A future driver may wrap it in sessions
 and live event streams, but `mizar-build` must remain usable without depending
-on `mizar-driver`.
+on `mizar-driver`. Task 10 intentionally has no `ResourceAdmissionSeam`;
+resource budgets and denial behavior are specified and implemented by tasks
+11-12.
 
 ### TaskState
 
@@ -115,7 +122,7 @@ State meanings:
 
 - `Pending`: dependencies are not terminal yet.
 - `Ready`: all correctness dependencies are terminal and the task may wait in
-  a queue for resource admission before execution or cache probing.
+  a deterministic dispatch batch before execution or cache probing.
 - `Running`: a worker owns the task execution attempt.
 - `Completed`: execution finished and produced scheduler-visible outputs.
 - `CacheHit`: execution was skipped after external cache validation succeeded.
@@ -213,9 +220,10 @@ Pending/Ready/Running -> Cancelled
 Ready/Running -> Skipped
 ```
 
-Task 10 implements the core deterministic scheduler for synthetic tasks.
-Resource denial, cancellation, cache validation, and rich failure propagation
-are represented through seams until their dedicated tasks implement them.
+Task 10 implements the core deterministic scheduler for synthetic tasks,
+bounded by `worker_count` dispatch batches. Resource denial, cancellation-token
+storage, cache validation, and rich failure propagation are deferred until
+their dedicated tasks implement them.
 
 ## Work Queues
 
@@ -250,7 +258,7 @@ The default priority key is a stable tuple:
 
 1. build mode priority class;
 2. open/requested-file hint rank;
-3. graph dependency depth, with unblocking tasks before leaf work;
+3. downstream fanout, with unblocking tasks before leaf work;
 4. task kind rank from `task_graph.md`;
 5. package/module/VC/backend/evidence canonical work-unit order;
 6. `TaskId`.
@@ -277,9 +285,10 @@ externally visible records by canonical keys:
 - artifact commit attempts by canonical module and manifest order;
 - canonical scheduler events by `SchedulerOrderKey`.
 
-When two executions use the same `TaskGraph`, synthetic task behavior, resource
-admission decisions, and cache seam responses, their `SchedulerRun` records
-must be byte-for-byte equivalent after canonical serialization.
+When two executions use the same `TaskGraph`, synthetic task behavior, and
+cache seam responses, their `SchedulerRun` records must be byte-for-byte
+equivalent after canonical serialization. Later resource-admission decisions
+must preserve the same canonical collation rule.
 
 ## Batch, Watch, and LSP Modes
 
@@ -338,6 +347,10 @@ Task 10 defaults this seam to `Unavailable` or `Miss` and must not produce
 `CacheHit`. Task 18 connects the real `mizar-cache` public contract and adds
 validated-hit execution-skip behavior.
 
+The task-10 Rust surface exposes only disabled, miss, unavailable, and
+error-as-miss policies. It does not expose a validated-hit input, construct a
+cache key, compute dependency fingerprints, or perform proof-reuse validation.
+
 ## Failure, Cancellation, and Commit Seams
 
 Failure propagation is bounded. A failed task blocks only correctness
@@ -350,6 +363,10 @@ diagnostics or artifacts. Actual cancellation-token storage, child-process
 termination, and snapshot supersession are specified by `cancel.md` in tasks
 13-14.
 
+Blocked and cancelled tasks do not copy synthetic outcome outputs or
+diagnostics into `SchedulerResult`. Failed tasks may carry failure diagnostics
+but never publish output references to dependents.
+
 Artifact commit remains a scheduling boundary in this spec. The scheduler
 orders `ArtifactCommit` tasks canonically and records their outcomes, but it
 does not write manifests, mint publication tokens, or treat artifact records
@@ -357,7 +374,7 @@ as proof authority.
 
 ## Tests
 
-Task 9 is documentation-only. Task 10 must add focused Rust tests for:
+Task 9 is documentation-only. Task 10 adds focused Rust tests for:
 
 - deterministic execution under shuffled worker completion order;
 - worker-count variation producing identical result and event collation;

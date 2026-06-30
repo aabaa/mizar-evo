@@ -1,0 +1,1846 @@
+use std::collections::{BTreeMap, BTreeSet, VecDeque};
+
+use crate::task_graph::{
+    BuildTask, DependencyCoverage, PriorityClass, ResourceClass, TaskGraph, TaskGraphVersion,
+    TaskId, TaskKind,
+};
+use mizar_session::BuildSnapshotId;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SchedulerInput {
+    pub graph: TaskGraph,
+    pub mode: SchedulerMode,
+    pub priority_hints: PriorityHints,
+    pub cache: CacheSchedulingPolicy,
+    pub cancellation: CancellationPolicy,
+    pub task_outcomes: Vec<SyntheticTaskOutcome>,
+    pub worker_count: usize,
+    pub completion_order: CompletionOrder,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SchedulerRun {
+    pub graph_version: TaskGraphVersion,
+    pub snapshot: BuildSnapshotId,
+    pub task_states: Vec<TaskStateRecord>,
+    pub results: Vec<SchedulerResult>,
+    pub events: Vec<SchedulerEvent>,
+    pub diagnostics: Vec<SchedulerDiagnostic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TaskStateRecord {
+    pub task_id: TaskId,
+    pub state: TaskState,
+    pub dependencies: Vec<TaskId>,
+    pub blocked_by: Vec<TaskId>,
+    pub queue: SchedulerQueue,
+    pub dependency_coverage: DependencyCoverage,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SchedulerResult {
+    pub task_id: TaskId,
+    pub state: TaskState,
+    pub canonical_order: SchedulerOrderKey,
+    pub output_refs: Vec<SyntheticOutputRef>,
+    pub diagnostics: Vec<SchedulerDiagnosticRef>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SchedulerEvent {
+    pub kind: SchedulerEventKind,
+    pub task_id: Option<TaskId>,
+    pub order: SchedulerOrderKey,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TaskState {
+    Pending,
+    Ready,
+    Running,
+    Completed,
+    CacheHit,
+    Skipped,
+    Failed,
+    Blocked,
+    Cancelled,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SchedulerMode {
+    Batch,
+    Watch,
+    Lsp,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct PriorityHints {
+    pub preferred_tasks: Vec<TaskId>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CacheSchedulingPolicy {
+    Disabled,
+    Miss,
+    Unavailable,
+    ErrorAsMiss,
+}
+
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CancellationPolicy {
+    pub cancelled_tasks: Vec<TaskId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SyntheticTaskOutcome {
+    pub task_id: TaskId,
+    pub status: SyntheticTaskStatus,
+    pub outputs: Vec<SyntheticOutputRef>,
+    pub diagnostics: Vec<SchedulerDiagnosticRef>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SyntheticTaskStatus {
+    Complete,
+    Fail,
+    Skip,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SyntheticOutputRef {
+    pub identity: String,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SchedulerDiagnosticRef {
+    pub source: String,
+    pub code: String,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CompletionOrder {
+    Canonical,
+    Reverse,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum SchedulerQueue {
+    Coordinator,
+    SourceLocalCpu,
+    DeterministicProof,
+    AtpPortfolio,
+    AtpProcess,
+    Kernel,
+    IoCommit,
+    Documentation,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum SchedulerEventKind {
+    TaskBecameReady,
+    TaskStarted,
+    TaskSkipped,
+    TaskBlocked,
+    TaskFinished,
+    RunFinished,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SchedulerOrderKey {
+    pub graph_index: usize,
+    pub lifecycle_rank: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SchedulerDiagnostics {
+    diagnostics: Vec<SchedulerDiagnostic>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SchedulerDiagnostic {
+    pub task_id: Option<TaskId>,
+    pub kind: SchedulerDiagnosticKind,
+    pub value: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
+pub enum SchedulerDiagnosticKind {
+    DuplicateOutcome,
+    UnknownTask,
+    MissingRootTask,
+    IncompleteDependencyCoverage,
+    NoSchedulablePath,
+}
+
+struct SchedulerBuilder {
+    input: SchedulerInput,
+    graph_order: BTreeMap<TaskId, usize>,
+    tasks_by_id: BTreeMap<TaskId, BuildTask>,
+    outcomes_by_task: BTreeMap<TaskId, SyntheticTaskOutcome>,
+    dependents_by_task: BTreeMap<TaskId, Vec<TaskId>>,
+    states: BTreeMap<TaskId, TaskStateRecord>,
+    results: BTreeMap<TaskId, SchedulerResult>,
+    events: Vec<SchedulerEvent>,
+    diagnostics: Vec<SchedulerDiagnostic>,
+    dispatch_batches: Vec<Vec<TaskId>>,
+}
+
+impl SchedulerInput {
+    #[must_use]
+    pub fn new(graph: TaskGraph) -> Self {
+        Self {
+            graph,
+            mode: SchedulerMode::Batch,
+            priority_hints: PriorityHints::default(),
+            cache: CacheSchedulingPolicy::Disabled,
+            cancellation: CancellationPolicy::default(),
+            task_outcomes: Vec::new(),
+            worker_count: 1,
+            completion_order: CompletionOrder::Canonical,
+        }
+    }
+}
+
+impl SyntheticTaskOutcome {
+    #[must_use]
+    pub fn complete(task_id: TaskId, outputs: Vec<SyntheticOutputRef>) -> Self {
+        Self {
+            task_id,
+            status: SyntheticTaskStatus::Complete,
+            outputs,
+            diagnostics: Vec::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn fail(task_id: TaskId, diagnostics: Vec<SchedulerDiagnosticRef>) -> Self {
+        Self {
+            task_id,
+            status: SyntheticTaskStatus::Fail,
+            outputs: Vec::new(),
+            diagnostics,
+        }
+    }
+
+    #[must_use]
+    pub fn skip(task_id: TaskId) -> Self {
+        Self {
+            task_id,
+            status: SyntheticTaskStatus::Skip,
+            outputs: Vec::new(),
+            diagnostics: Vec::new(),
+        }
+    }
+}
+
+impl SyntheticOutputRef {
+    #[must_use]
+    pub fn new(identity: impl Into<String>, content: impl Into<String>) -> Self {
+        Self {
+            identity: identity.into(),
+            content: content.into(),
+        }
+    }
+}
+
+impl SchedulerDiagnosticRef {
+    #[must_use]
+    pub fn new(
+        source: impl Into<String>,
+        code: impl Into<String>,
+        message: impl Into<String>,
+    ) -> Self {
+        Self {
+            source: source.into(),
+            code: code.into(),
+            message: message.into(),
+        }
+    }
+}
+
+impl SchedulerDiagnostics {
+    #[must_use]
+    pub fn new(mut diagnostics: Vec<SchedulerDiagnostic>) -> Self {
+        sort_scheduler_diagnostics(&mut diagnostics, &BTreeMap::new());
+        Self { diagnostics }
+    }
+
+    #[must_use]
+    pub fn diagnostics(&self) -> &[SchedulerDiagnostic] {
+        &self.diagnostics
+    }
+
+    #[must_use]
+    pub fn into_diagnostics(self) -> Vec<SchedulerDiagnostic> {
+        self.diagnostics
+    }
+}
+
+pub fn run_scheduler(input: SchedulerInput) -> Result<SchedulerRun, SchedulerDiagnostics> {
+    run_scheduler_with_dispatch_batches(input).map(|(run, _dispatch_batches)| run)
+}
+
+impl SchedulerBuilder {
+    fn new(input: SchedulerInput) -> Self {
+        let graph_order = input
+            .graph
+            .tasks
+            .iter()
+            .enumerate()
+            .map(|(index, task)| (task.id.clone(), index))
+            .collect::<BTreeMap<_, _>>();
+        let tasks_by_id = input
+            .graph
+            .tasks
+            .iter()
+            .map(|task| (task.id.clone(), task.clone()))
+            .collect::<BTreeMap<_, _>>();
+        let dependents_by_task = dependents_by_task(&input.graph);
+        Self {
+            input,
+            graph_order,
+            tasks_by_id,
+            outcomes_by_task: BTreeMap::new(),
+            dependents_by_task,
+            states: BTreeMap::new(),
+            results: BTreeMap::new(),
+            events: Vec::new(),
+            diagnostics: Vec::new(),
+            dispatch_batches: Vec::new(),
+        }
+    }
+
+    fn run(mut self) -> Result<(SchedulerRun, Vec<Vec<TaskId>>), SchedulerDiagnostics> {
+        self.validate_outcomes();
+        if !self.diagnostics.is_empty() {
+            sort_scheduler_diagnostics(&mut self.diagnostics, &self.graph_order);
+            return Err(SchedulerDiagnostics {
+                diagnostics: self.diagnostics,
+            });
+        }
+
+        self.initialize_states();
+        if self
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.kind == SchedulerDiagnosticKind::MissingRootTask)
+        {
+            sort_scheduler_diagnostics(&mut self.diagnostics, &self.graph_order);
+            return Err(SchedulerDiagnostics {
+                diagnostics: self.diagnostics,
+            });
+        }
+
+        self.process_ready_queue();
+        self.block_remaining_pending_tasks();
+        self.events.push(SchedulerEvent {
+            kind: SchedulerEventKind::RunFinished,
+            task_id: None,
+            order: SchedulerOrderKey {
+                graph_index: usize::MAX,
+                lifecycle_rank: lifecycle_rank(SchedulerEventKind::RunFinished),
+            },
+        });
+
+        let graph_order = self.graph_order.clone();
+        let mut task_states = self.states.into_values().collect::<Vec<_>>();
+        task_states.sort_by_key(|record| {
+            graph_order
+                .get(&record.task_id)
+                .copied()
+                .unwrap_or(usize::MAX)
+        });
+        let mut results = self.results.into_values().collect::<Vec<_>>();
+        results.sort_by_key(|result| (result.canonical_order, result.task_id.as_str().to_owned()));
+        self.events.sort_by_key(|event| {
+            (
+                event.order,
+                event
+                    .task_id
+                    .as_ref()
+                    .map(|task_id| task_id.as_str().to_owned())
+                    .unwrap_or_default(),
+            )
+        });
+        sort_scheduler_diagnostics(&mut self.diagnostics, &graph_order);
+
+        Ok((
+            SchedulerRun {
+                graph_version: self.input.graph.version,
+                snapshot: self.input.graph.snapshot,
+                task_states,
+                results,
+                events: self.events,
+                diagnostics: self.diagnostics,
+            },
+            self.dispatch_batches,
+        ))
+    }
+
+    fn validate_outcomes(&mut self) {
+        let mut seen = BTreeSet::new();
+        for outcome in &self.input.task_outcomes {
+            if !self.tasks_by_id.contains_key(&outcome.task_id) {
+                self.diagnostics.push(SchedulerDiagnostic {
+                    task_id: Some(outcome.task_id.clone()),
+                    kind: SchedulerDiagnosticKind::UnknownTask,
+                    value: Some(outcome.task_id.as_str().to_owned()),
+                });
+                continue;
+            }
+            if !seen.insert(outcome.task_id.clone()) {
+                self.diagnostics.push(SchedulerDiagnostic {
+                    task_id: Some(outcome.task_id.clone()),
+                    kind: SchedulerDiagnosticKind::DuplicateOutcome,
+                    value: Some(outcome.task_id.as_str().to_owned()),
+                });
+                continue;
+            }
+            self.outcomes_by_task
+                .insert(outcome.task_id.clone(), outcome.clone());
+        }
+    }
+
+    fn initialize_states(&mut self) {
+        let mut root_count = 0_usize;
+        for task in self.input.graph.tasks.clone() {
+            let queue = scheduler_queue(&task);
+            let mut record = TaskStateRecord {
+                task_id: task.id.clone(),
+                state: TaskState::Pending,
+                dependencies: task.dependencies.clone(),
+                blocked_by: Vec::new(),
+                queue,
+                dependency_coverage: task.dependency_coverage,
+            };
+
+            let cancelled = self
+                .input
+                .cancellation
+                .cancelled_tasks
+                .iter()
+                .any(|cancelled| cancelled == &task.id);
+
+            if task.kind == TaskKind::PackageResolve {
+                root_count += 1;
+            }
+
+            if cancelled {
+                record.state = TaskState::Cancelled;
+                self.record_result(&task, TaskState::Cancelled);
+                self.events.push(event_for_task(
+                    SchedulerEventKind::TaskFinished,
+                    &task.id,
+                    self.graph_index(&task.id),
+                ));
+            } else if task.kind == TaskKind::PackageResolve {
+                record.state = TaskState::Completed;
+                self.record_result(&task, TaskState::Completed);
+                self.events.push(event_for_task(
+                    SchedulerEventKind::TaskFinished,
+                    &task.id,
+                    self.graph_index(&task.id),
+                ));
+            }
+
+            self.states.insert(task.id, record);
+        }
+
+        if root_count == 0 {
+            self.diagnostics.push(SchedulerDiagnostic {
+                task_id: None,
+                kind: SchedulerDiagnosticKind::MissingRootTask,
+                value: Some("PackageResolve".to_owned()),
+            });
+        }
+    }
+
+    fn process_ready_queue(&mut self) {
+        loop {
+            let mut ready = self.new_ready_tasks();
+            if ready.is_empty() {
+                break;
+            }
+
+            let mut batch = Vec::new();
+            for _ in 0..self.worker_count() {
+                let Some(task_id) = ready.pop_front() else {
+                    break;
+                };
+                if self
+                    .states
+                    .get(&task_id)
+                    .is_some_and(|record| record.state == TaskState::Ready)
+                {
+                    self.events.push(event_for_task(
+                        SchedulerEventKind::TaskStarted,
+                        &task_id,
+                        self.graph_index(&task_id),
+                    ));
+                    self.set_state(&task_id, TaskState::Running);
+                    batch.push(task_id);
+                }
+            }
+
+            if batch.is_empty() {
+                break;
+            }
+
+            self.dispatch_batches.push(batch.clone());
+            if self.input.completion_order == CompletionOrder::Reverse {
+                batch.reverse();
+            }
+
+            for task_id in batch {
+                if self
+                    .states
+                    .get(&task_id)
+                    .is_some_and(|record| record.state != TaskState::Running)
+                {
+                    continue;
+                }
+                let task = self
+                    .tasks_by_id
+                    .get(&task_id)
+                    .expect("running task has task metadata")
+                    .clone();
+
+                let final_state = self.execute_task(&task);
+                self.set_state(&task_id, final_state);
+                self.record_result(&task, final_state);
+                self.events.push(event_for_task(
+                    if final_state == TaskState::Skipped {
+                        SchedulerEventKind::TaskSkipped
+                    } else {
+                        SchedulerEventKind::TaskFinished
+                    },
+                    &task_id,
+                    self.graph_index(&task_id),
+                ));
+
+                if final_state == TaskState::Failed || final_state == TaskState::Cancelled {
+                    self.block_dependents(&task_id);
+                }
+            }
+        }
+    }
+
+    fn execute_task(&self, task: &BuildTask) -> TaskState {
+        match self.input.cache {
+            CacheSchedulingPolicy::Disabled
+            | CacheSchedulingPolicy::Miss
+            | CacheSchedulingPolicy::Unavailable
+            | CacheSchedulingPolicy::ErrorAsMiss => {}
+        }
+
+        match self
+            .outcomes_by_task
+            .get(&task.id)
+            .map(|outcome| outcome.status)
+        {
+            Some(SyntheticTaskStatus::Fail) => TaskState::Failed,
+            Some(SyntheticTaskStatus::Skip) => TaskState::Skipped,
+            Some(SyntheticTaskStatus::Complete) | None if self.skip_due_to_dependency(task) => {
+                TaskState::Skipped
+            }
+            Some(SyntheticTaskStatus::Complete) | None => TaskState::Completed,
+        }
+    }
+
+    fn new_ready_tasks(&mut self) -> VecDeque<TaskId> {
+        let mut ready = Vec::new();
+        let task_ids = self
+            .input
+            .graph
+            .tasks
+            .iter()
+            .map(|task| task.id.clone())
+            .collect::<Vec<_>>();
+
+        for task_id in task_ids {
+            let Some(record) = self.states.get(&task_id) else {
+                continue;
+            };
+            if record.state == TaskState::Ready {
+                ready.push(task_id);
+                continue;
+            }
+            if record.state != TaskState::Pending {
+                continue;
+            }
+
+            let task = self
+                .tasks_by_id
+                .get(&task_id)
+                .expect("state record has task metadata")
+                .clone();
+            if self.coverage_blocks(&task) {
+                self.block_task(
+                    &task.id,
+                    Vec::new(),
+                    Some((
+                        SchedulerDiagnosticKind::IncompleteDependencyCoverage,
+                        "dependency coverage is incomplete".to_owned(),
+                    )),
+                );
+                continue;
+            }
+
+            let dependency_states = task
+                .dependencies
+                .iter()
+                .map(|dependency| {
+                    let state = self
+                        .states
+                        .get(dependency)
+                        .map(|record| record.state)
+                        .unwrap_or(TaskState::Blocked);
+                    (dependency.clone(), state)
+                })
+                .collect::<Vec<_>>();
+
+            let blocking_dependencies = dependency_states
+                .iter()
+                .filter(|(_dependency, state)| blocking_terminal(*state))
+                .map(|(dependency, _state)| dependency.clone())
+                .collect::<Vec<_>>();
+            if !blocking_dependencies.is_empty() {
+                self.block_task(&task.id, blocking_dependencies, None);
+                continue;
+            }
+
+            if dependency_states.iter().all(|(dependency, state)| {
+                self.unblocking_dependency(dependency, *state, task.kind)
+            }) {
+                self.set_state(&task.id, TaskState::Ready);
+                self.events.push(event_for_task(
+                    SchedulerEventKind::TaskBecameReady,
+                    &task.id,
+                    self.graph_index(&task.id),
+                ));
+                ready.push(task.id.clone());
+            }
+        }
+
+        self.sort_ready_tasks(&mut ready);
+        ready.into()
+    }
+
+    fn sort_ready_tasks(&self, ready: &mut [TaskId]) {
+        let preferred = self
+            .input
+            .priority_hints
+            .preferred_tasks
+            .iter()
+            .enumerate()
+            .map(|(index, task_id)| (task_id.clone(), index))
+            .collect::<BTreeMap<_, _>>();
+        ready.sort_by_key(|task_id| {
+            (
+                self.mode_priority_rank(task_id),
+                preferred.get(task_id).copied().unwrap_or(usize::MAX),
+                self.downstream_rank(task_id),
+                self.task_kind_rank(task_id),
+                self.graph_index(task_id),
+                task_id.as_str().to_owned(),
+            )
+        });
+    }
+
+    fn coverage_blocks(&self, task: &BuildTask) -> bool {
+        matches!(
+            task.dependency_coverage,
+            DependencyCoverage::MissingModuleDependencyOverlay
+                | DependencyCoverage::MissingVcDescriptors
+        )
+    }
+
+    fn block_dependents(&mut self, task_id: &TaskId) {
+        let mut queue = self
+            .dependents_by_task
+            .get(task_id)
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .collect::<VecDeque<_>>();
+        while let Some(dependent) = queue.pop_front() {
+            if self
+                .states
+                .get(&dependent)
+                .is_some_and(|record| record.state == TaskState::Pending)
+            {
+                self.block_task(&dependent, vec![task_id.clone()], None);
+                if let Some(next_dependents) = self.dependents_by_task.get(&dependent) {
+                    for next in next_dependents {
+                        queue.push_back(next.clone());
+                    }
+                }
+            }
+        }
+    }
+
+    fn block_remaining_pending_tasks(&mut self) {
+        let pending = self
+            .states
+            .iter()
+            .filter(|(_task_id, record)| record.state == TaskState::Pending)
+            .map(|(task_id, _record)| task_id.clone())
+            .collect::<Vec<_>>();
+        for task_id in pending {
+            self.block_task(
+                &task_id,
+                Vec::new(),
+                Some((
+                    SchedulerDiagnosticKind::NoSchedulablePath,
+                    "no schedulable path".to_owned(),
+                )),
+            );
+        }
+    }
+
+    fn block_task(
+        &mut self,
+        task_id: &TaskId,
+        blocked_by: Vec<TaskId>,
+        diagnostic: Option<(SchedulerDiagnosticKind, String)>,
+    ) {
+        if let Some(record) = self.states.get_mut(task_id) {
+            if record.state == TaskState::Blocked {
+                return;
+            }
+            record.state = TaskState::Blocked;
+            record.blocked_by = blocked_by;
+        }
+        let task = self
+            .tasks_by_id
+            .get(task_id)
+            .expect("blocked task has task metadata")
+            .clone();
+        self.record_result(&task, TaskState::Blocked);
+        self.events.push(event_for_task(
+            SchedulerEventKind::TaskBlocked,
+            task_id,
+            self.graph_index(task_id),
+        ));
+        if let Some((kind, value)) = diagnostic {
+            self.diagnostics.push(SchedulerDiagnostic {
+                task_id: Some(task_id.clone()),
+                kind,
+                value: Some(value),
+            });
+        }
+    }
+
+    fn set_state(&mut self, task_id: &TaskId, state: TaskState) {
+        if let Some(record) = self.states.get_mut(task_id) {
+            record.state = state;
+        }
+    }
+
+    fn record_result(&mut self, task: &BuildTask, state: TaskState) {
+        let outcome = self.outcomes_by_task.get(&task.id);
+        let mut outputs = outcome
+            .map(|outcome| outcome.outputs.clone())
+            .unwrap_or_else(|| vec![default_output_for_task(task)]);
+        outputs.sort();
+        outputs.dedup();
+        let mut diagnostics = outcome
+            .map(|outcome| outcome.diagnostics.clone())
+            .unwrap_or_default();
+        diagnostics.sort();
+        diagnostics.dedup();
+        let (output_refs, diagnostics) = match state {
+            TaskState::Completed => (outputs, diagnostics),
+            TaskState::Failed => (Vec::new(), diagnostics),
+            TaskState::Pending
+            | TaskState::Ready
+            | TaskState::Running
+            | TaskState::CacheHit
+            | TaskState::Skipped
+            | TaskState::Blocked
+            | TaskState::Cancelled => (Vec::new(), Vec::new()),
+        };
+        self.results.insert(
+            task.id.clone(),
+            SchedulerResult {
+                task_id: task.id.clone(),
+                state,
+                canonical_order: SchedulerOrderKey {
+                    graph_index: self.graph_index(&task.id),
+                    lifecycle_rank: lifecycle_rank(SchedulerEventKind::TaskFinished),
+                },
+                output_refs,
+                diagnostics,
+            },
+        );
+    }
+
+    fn graph_index(&self, task_id: &TaskId) -> usize {
+        self.graph_order.get(task_id).copied().unwrap_or(usize::MAX)
+    }
+
+    fn worker_count(&self) -> usize {
+        self.input.worker_count.max(1)
+    }
+
+    fn skip_due_to_dependency(&self, task: &BuildTask) -> bool {
+        matches!(task.kind, TaskKind::BackendRun | TaskKind::KernelCheck)
+            && task.dependencies.iter().any(|dependency| {
+                self.states
+                    .get(dependency)
+                    .is_some_and(|record| record.state == TaskState::Skipped)
+            })
+    }
+
+    fn unblocking_dependency(
+        &self,
+        dependency: &TaskId,
+        state: TaskState,
+        dependent_kind: TaskKind,
+    ) -> bool {
+        match state {
+            TaskState::Completed | TaskState::CacheHit => true,
+            TaskState::Skipped => self.skipped_dependency_unblocks(dependency, dependent_kind),
+            TaskState::Pending
+            | TaskState::Ready
+            | TaskState::Running
+            | TaskState::Failed
+            | TaskState::Blocked
+            | TaskState::Cancelled => false,
+        }
+    }
+
+    fn skipped_dependency_unblocks(&self, dependency: &TaskId, dependent_kind: TaskKind) -> bool {
+        let Some(task) = self.tasks_by_id.get(dependency) else {
+            return false;
+        };
+        match (task.kind, dependent_kind) {
+            (TaskKind::AtpSolve, TaskKind::BackendRun | TaskKind::ArtifactCommit) => true,
+            (TaskKind::BackendRun, TaskKind::KernelCheck | TaskKind::ArtifactCommit) => {
+                self.skip_due_to_dependency(task)
+            }
+            (TaskKind::KernelCheck, TaskKind::ArtifactCommit) => self.skip_due_to_dependency(task),
+            _ => false,
+        }
+    }
+
+    fn mode_priority_rank(&self, task_id: &TaskId) -> usize {
+        let Some(task) = self.tasks_by_id.get(task_id) else {
+            return usize::MAX;
+        };
+        match self.input.mode {
+            SchedulerMode::Batch => priority_class_rank(task.priority_class),
+            SchedulerMode::Watch | SchedulerMode::Lsp
+                if matches!(
+                    task.kind,
+                    TaskKind::SourceLoad | TaskKind::Frontend | TaskKind::ModuleResolve
+                ) =>
+            {
+                0
+            }
+            SchedulerMode::Watch | SchedulerMode::Lsp => {
+                priority_class_rank(task.priority_class) + 1
+            }
+        }
+    }
+
+    fn downstream_rank(&self, task_id: &TaskId) -> usize {
+        usize::MAX
+            - self
+                .dependents_by_task
+                .get(task_id)
+                .map(Vec::len)
+                .unwrap_or_default()
+    }
+
+    fn task_kind_rank(&self, task_id: &TaskId) -> usize {
+        self.tasks_by_id
+            .get(task_id)
+            .map(|task| task_kind_rank(task.kind))
+            .unwrap_or(usize::MAX)
+    }
+}
+
+fn run_scheduler_with_dispatch_batches(
+    input: SchedulerInput,
+) -> Result<(SchedulerRun, Vec<Vec<TaskId>>), SchedulerDiagnostics> {
+    SchedulerBuilder::new(input).run()
+}
+
+fn dependents_by_task(graph: &TaskGraph) -> BTreeMap<TaskId, Vec<TaskId>> {
+    let mut dependents = BTreeMap::<TaskId, Vec<TaskId>>::new();
+    for task in &graph.tasks {
+        for dependency in &task.dependencies {
+            dependents
+                .entry(dependency.clone())
+                .or_default()
+                .push(task.id.clone());
+        }
+    }
+    for dependents in dependents.values_mut() {
+        dependents.sort();
+        dependents.dedup();
+    }
+    dependents
+}
+
+fn event_for_task(
+    kind: SchedulerEventKind,
+    task_id: &TaskId,
+    graph_index: usize,
+) -> SchedulerEvent {
+    SchedulerEvent {
+        kind,
+        task_id: Some(task_id.clone()),
+        order: SchedulerOrderKey {
+            graph_index,
+            lifecycle_rank: lifecycle_rank(kind),
+        },
+    }
+}
+
+fn lifecycle_rank(kind: SchedulerEventKind) -> usize {
+    match kind {
+        SchedulerEventKind::TaskBecameReady => 0,
+        SchedulerEventKind::TaskStarted => 1,
+        SchedulerEventKind::TaskSkipped => 2,
+        SchedulerEventKind::TaskBlocked => 3,
+        SchedulerEventKind::TaskFinished => 4,
+        SchedulerEventKind::RunFinished => 5,
+    }
+}
+
+fn scheduler_queue(task: &BuildTask) -> SchedulerQueue {
+    match (task.resource_class, task.kind) {
+        (ResourceClass::Coordinator, _) => SchedulerQueue::Coordinator,
+        (ResourceClass::SourceIo | ResourceClass::CpuLocal, _) => SchedulerQueue::SourceLocalCpu,
+        (ResourceClass::ProofLocal, _) => SchedulerQueue::DeterministicProof,
+        (ResourceClass::AtpProcess, TaskKind::AtpSolve) => SchedulerQueue::AtpPortfolio,
+        (ResourceClass::AtpProcess, _) => SchedulerQueue::AtpProcess,
+        (ResourceClass::Kernel, _) => SchedulerQueue::Kernel,
+        (ResourceClass::ArtifactIo, _) => SchedulerQueue::IoCommit,
+        (ResourceClass::Documentation, _) => SchedulerQueue::Documentation,
+    }
+}
+
+fn blocking_terminal(state: TaskState) -> bool {
+    matches!(
+        state,
+        TaskState::Failed | TaskState::Blocked | TaskState::Cancelled
+    )
+}
+
+fn default_output_for_task(task: &BuildTask) -> SyntheticOutputRef {
+    SyntheticOutputRef::new(
+        format!("synthetic-output:{}", task.id.as_str()),
+        format!("{:?}", task.kind),
+    )
+}
+
+fn priority_class_rank(priority_class: PriorityClass) -> usize {
+    match priority_class {
+        PriorityClass::Root => 0,
+        PriorityClass::Source => 1,
+        PriorityClass::Semantic => 2,
+        PriorityClass::Proof => 3,
+        PriorityClass::Commit => 4,
+        PriorityClass::Documentation => 5,
+    }
+}
+
+fn task_kind_rank(kind: TaskKind) -> usize {
+    match kind {
+        TaskKind::PackageResolve => 0,
+        TaskKind::SourceLoad => 1,
+        TaskKind::Frontend => 2,
+        TaskKind::ModuleResolve => 3,
+        TaskKind::CheckAndElaborate => 4,
+        TaskKind::VcGenerate => 5,
+        TaskKind::VcDischarge => 6,
+        TaskKind::AtpSolve => 7,
+        TaskKind::BackendRun => 8,
+        TaskKind::KernelCheck => 9,
+        TaskKind::ArtifactCommit => 10,
+        TaskKind::DocumentationExtract => 11,
+    }
+}
+
+fn sort_scheduler_diagnostics(
+    diagnostics: &mut [SchedulerDiagnostic],
+    graph_order: &BTreeMap<TaskId, usize>,
+) {
+    diagnostics.sort_by_key(|diagnostic| {
+        (
+            diagnostic
+                .task_id
+                .as_ref()
+                .and_then(|task_id| graph_order.get(task_id).copied())
+                .unwrap_or(usize::MAX),
+            diagnostic.kind,
+            diagnostic
+                .task_id
+                .as_ref()
+                .map(|task_id| task_id.as_str().to_owned())
+                .unwrap_or_default(),
+            diagnostic.value.clone().unwrap_or_default(),
+        )
+    });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        module_index::{ModuleId, ModuleIndex, ModuleIndexEntry, ModuleIndexLocation},
+        planner::{
+            BuildConfig, BuildPlan, DependencyGraph, Lockfile, PackagePlan, PackagePlanSource,
+            VerifierConfig, WorkspaceBuildConfig, WorkspaceVerifierConfig,
+        },
+        task_graph::{
+            BackendProfileId, DocumentationProfile, ModuleDependencyOverlay, TaskGraphInput,
+            TaskGraphProfile, VcOrderKey, VcTaskDescriptor, VcTaskDescriptorId, WorkUnit,
+            build_task_graph,
+        },
+    };
+    use mizar_session::{Edition, Hash, ModulePath, PackageId, ToolchainInfo, WorkspaceRoot};
+    use semver::Version;
+
+    #[test]
+    fn shuffled_completion_and_worker_count_collate_identical_results() {
+        let graph = multi_module_graph();
+        let (canonical, serial_batches) = run_scheduler_with_dispatch_batches(SchedulerInput {
+            graph: graph.clone(),
+            completion_order: CompletionOrder::Canonical,
+            worker_count: 1,
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+        let (shuffled, parallel_batches) = run_scheduler_with_dispatch_batches(SchedulerInput {
+            graph: graph.clone(),
+            completion_order: CompletionOrder::Reverse,
+            worker_count: 2,
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        assert_ne!(serial_batches, parallel_batches);
+        assert!(parallel_batches.iter().any(|batch| batch.len() == 2));
+        assert_eq!(canonical.task_states, shuffled.task_states);
+        assert_eq!(canonical.results, shuffled.results);
+        assert_eq!(canonical.events, shuffled.events);
+        assert_eq!(canonical.diagnostics, shuffled.diagnostics);
+    }
+
+    #[test]
+    fn package_resolve_root_starts_completed_and_non_roots_progress() {
+        let graph = sample_graph();
+        let run = run_scheduler(SchedulerInput::new(graph)).expect("scheduler run succeeds");
+        let root = run
+            .task_states
+            .iter()
+            .find(|record| {
+                run.results.iter().any(|result| {
+                    result.task_id == record.task_id
+                        && result.output_refs[0].content == "PackageResolve"
+                })
+            })
+            .expect("root state exists");
+
+        assert_eq!(root.state, TaskState::Completed);
+        assert!(
+            run.task_states
+                .iter()
+                .all(|record| matches!(record.state, TaskState::Completed))
+        );
+    }
+
+    #[test]
+    fn immutable_outputs_and_diagnostics_are_canonicalized() {
+        let graph = sample_graph();
+        let task = task_id_for_kind(&graph, TaskKind::Frontend);
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            task_outcomes: vec![SyntheticTaskOutcome {
+                task_id: task.clone(),
+                status: SyntheticTaskStatus::Complete,
+                outputs: vec![
+                    SyntheticOutputRef::new("b", "second"),
+                    SyntheticOutputRef::new("a", "first"),
+                ],
+                diagnostics: vec![
+                    SchedulerDiagnosticRef::new("main", "W002", "later"),
+                    SchedulerDiagnosticRef::new("main", "W001", "earlier"),
+                ],
+            }],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        let result = result_for(&run, &task);
+        assert_eq!(
+            result.output_refs,
+            vec![
+                SyntheticOutputRef::new("a", "first"),
+                SyntheticOutputRef::new("b", "second"),
+            ]
+        );
+        assert_eq!(
+            result.diagnostics,
+            vec![
+                SchedulerDiagnosticRef::new("main", "W001", "earlier"),
+                SchedulerDiagnosticRef::new("main", "W002", "later"),
+            ]
+        );
+    }
+
+    #[test]
+    fn dependency_coverage_controls_readiness() {
+        let package_conservative =
+            graph_with_overlay(ModuleDependencyOverlay::package_only(Vec::new()))
+                .expect("package-only graph builds");
+        let package_run = run_scheduler(SchedulerInput::new(package_conservative))
+            .expect("scheduler run succeeds");
+        assert!(
+            package_run
+                .task_states
+                .iter()
+                .any(|record| record.dependency_coverage
+                    == DependencyCoverage::PackageConservative
+                    && record.state == TaskState::Completed)
+        );
+
+        let missing_overlay = graph_with_overlay(ModuleDependencyOverlay::unavailable())
+            .expect_err("graph reports missing overlay");
+        assert!(
+            missing_overlay
+                .diagnostics()
+                .iter()
+                .any(|diagnostic| diagnostic.kind
+                    == crate::task_graph::TaskGraphDiagnosticKind::MissingModuleDependencyOverlay)
+        );
+
+        let mut scheduler_graph = sample_graph();
+        let module_resolve = scheduler_graph
+            .tasks
+            .iter_mut()
+            .find(|task| task.kind == TaskKind::ModuleResolve)
+            .expect("module resolve task exists");
+        let module_resolve_id = module_resolve.id.clone();
+        module_resolve.dependency_coverage = DependencyCoverage::MissingModuleDependencyOverlay;
+        let scheduler_run =
+            run_scheduler(SchedulerInput::new(scheduler_graph)).expect("scheduler run succeeds");
+        assert_eq!(
+            state_for(&scheduler_run, &module_resolve_id),
+            TaskState::Blocked
+        );
+        assert!(scheduler_run.diagnostics.iter().any(|diagnostic| {
+            diagnostic.task_id.as_ref() == Some(&module_resolve_id)
+                && diagnostic.kind == SchedulerDiagnosticKind::IncompleteDependencyCoverage
+        }));
+    }
+
+    #[test]
+    fn missing_vc_descriptors_block_synthetic_scheduler_tasks() {
+        let mut graph = sample_graph();
+        let artifact = graph
+            .tasks
+            .iter_mut()
+            .find(|task| task.kind == TaskKind::ArtifactCommit)
+            .expect("artifact task exists");
+        artifact.dependency_coverage = DependencyCoverage::MissingVcDescriptors;
+
+        let run = run_scheduler(SchedulerInput::new(graph)).expect("scheduler run succeeds");
+        assert!(run.task_states.iter().any(|record| {
+            record.dependency_coverage == DependencyCoverage::MissingVcDescriptors
+                && record.state == TaskState::Blocked
+        }));
+        assert!(run.diagnostics.iter().any(|diagnostic| {
+            diagnostic.kind == SchedulerDiagnosticKind::IncompleteDependencyCoverage
+        }));
+    }
+
+    #[test]
+    fn scheduler_routes_all_expected_queues() {
+        let run =
+            run_scheduler(SchedulerInput::new(sample_graph())).expect("scheduler run succeeds");
+        let queues = run
+            .task_states
+            .iter()
+            .map(|record| record.queue)
+            .collect::<BTreeSet<_>>();
+
+        assert_eq!(
+            queues,
+            BTreeSet::from([
+                SchedulerQueue::Coordinator,
+                SchedulerQueue::SourceLocalCpu,
+                SchedulerQueue::DeterministicProof,
+                SchedulerQueue::AtpPortfolio,
+                SchedulerQueue::AtpProcess,
+                SchedulerQueue::Kernel,
+                SchedulerQueue::IoCommit,
+                SchedulerQueue::Documentation,
+            ])
+        );
+    }
+
+    #[test]
+    fn priority_hints_affect_start_order_but_not_canonical_results() {
+        let graph = multi_module_graph();
+        let main_source = task_id_for_module_kind(&graph, TaskKind::SourceLoad, "app", "main");
+        let util_source = task_id_for_module_kind(&graph, TaskKind::SourceLoad, "app", "util");
+        let (hinted, hinted_batches) = run_scheduler_with_dispatch_batches(SchedulerInput {
+            graph: graph.clone(),
+            worker_count: 1,
+            priority_hints: PriorityHints {
+                preferred_tasks: vec![util_source.clone()],
+            },
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+        let (default, default_batches) = run_scheduler_with_dispatch_batches(SchedulerInput {
+            graph,
+            worker_count: 1,
+            ..SchedulerInput::new(multi_module_graph())
+        })
+        .expect("scheduler run succeeds");
+
+        assert_eq!(default_batches[0], vec![main_source]);
+        assert_eq!(hinted_batches[0], vec![util_source]);
+        assert_eq!(hinted.results, default.results);
+        assert_eq!(hinted.task_states, default.task_states);
+        assert_eq!(hinted.events, default.events);
+    }
+
+    #[test]
+    fn backend_and_kernel_completion_order_does_not_change_collation_or_authority() {
+        let graph = multi_backend_graph();
+        assert!(task_ids_for_kind(&graph, TaskKind::BackendRun).len() >= 2);
+        assert!(task_ids_for_kind(&graph, TaskKind::KernelCheck).len() >= 2);
+
+        let (reverse, batches) = run_scheduler_with_dispatch_batches(SchedulerInput {
+            graph: graph.clone(),
+            completion_order: CompletionOrder::Reverse,
+            worker_count: 4,
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+        let canonical =
+            run_scheduler(SchedulerInput::new(graph.clone())).expect("scheduler run succeeds");
+
+        assert_eq!(canonical.results, reverse.results);
+        assert!(batches.iter().any(|batch| {
+            batch
+                .iter()
+                .filter(|task_id| task_kind_for_id(&graph, task_id) == TaskKind::BackendRun)
+                .count()
+                >= 2
+        }));
+        assert!(batches.iter().any(|batch| {
+            batch
+                .iter()
+                .filter(|task_id| task_kind_for_id(&graph, task_id) == TaskKind::KernelCheck)
+                .count()
+                >= 2
+        }));
+        let canonical_proof_results = canonical
+            .results
+            .iter()
+            .filter(|result| {
+                matches!(
+                    task_kind_for_id(&graph, &result.task_id),
+                    TaskKind::BackendRun | TaskKind::KernelCheck
+                )
+            })
+            .map(|result| result.task_id.clone())
+            .collect::<Vec<_>>();
+        let reverse_proof_results = reverse
+            .results
+            .iter()
+            .filter(|result| {
+                matches!(
+                    task_kind_for_id(&graph, &result.task_id),
+                    TaskKind::BackendRun | TaskKind::KernelCheck
+                )
+            })
+            .map(|result| result.task_id.clone())
+            .collect::<Vec<_>>();
+        assert_eq!(canonical_proof_results, reverse_proof_results);
+        let debug = format!("{reverse:#?}").to_lowercase();
+        for forbidden in ["proofauthority", "proofacceptance", "trustedstatus"] {
+            assert!(!debug.contains(forbidden));
+        }
+    }
+
+    #[test]
+    fn skipped_atp_cascades_over_backend_subgraph_without_authority() {
+        let graph = sample_graph();
+        let atp = task_id_for_kind(&graph, TaskKind::AtpSolve);
+        let backend = task_id_for_kind(&graph, TaskKind::BackendRun);
+        let kernel = task_id_for_kind(&graph, TaskKind::KernelCheck);
+        let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
+        let documentation = task_id_for_kind(&graph, TaskKind::DocumentationExtract);
+
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            task_outcomes: vec![SyntheticTaskOutcome::skip(atp.clone())],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        assert_eq!(state_for(&run, &atp), TaskState::Skipped);
+        assert_eq!(state_for(&run, &backend), TaskState::Skipped);
+        assert_eq!(state_for(&run, &kernel), TaskState::Skipped);
+        assert_eq!(state_for(&run, &artifact), TaskState::Completed);
+        assert_eq!(state_for(&run, &documentation), TaskState::Completed);
+        assert!(result_for(&run, &backend).output_refs.is_empty());
+        let debug = format!("{run:#?}").to_lowercase();
+        for forbidden in ["proofauthority", "proofacceptance", "trustedstatus"] {
+            assert!(!debug.contains(forbidden));
+        }
+    }
+
+    #[test]
+    fn non_conditional_skips_do_not_unblock_artifacts_or_documentation() {
+        let graph = sample_graph();
+        let backend = task_id_for_kind(&graph, TaskKind::BackendRun);
+        let kernel = task_id_for_kind(&graph, TaskKind::KernelCheck);
+        let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
+        let documentation = task_id_for_kind(&graph, TaskKind::DocumentationExtract);
+
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            task_outcomes: vec![SyntheticTaskOutcome::skip(backend.clone())],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        assert_eq!(state_for(&run, &backend), TaskState::Skipped);
+        assert_eq!(state_for(&run, &kernel), TaskState::Blocked);
+        assert_eq!(state_for(&run, &artifact), TaskState::Blocked);
+        assert_eq!(state_for(&run, &documentation), TaskState::Blocked);
+
+        let graph = sample_graph();
+        let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
+        let documentation = task_id_for_kind(&graph, TaskKind::DocumentationExtract);
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            task_outcomes: vec![SyntheticTaskOutcome::skip(artifact.clone())],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        assert_eq!(state_for(&run, &artifact), TaskState::Skipped);
+        assert_eq!(state_for(&run, &documentation), TaskState::Blocked);
+    }
+
+    #[test]
+    fn state_records_match_build_task_dependencies() {
+        let graph = sample_graph();
+        let dependencies = graph
+            .tasks
+            .iter()
+            .map(|task| (task.id.clone(), task.dependencies.clone()))
+            .collect::<BTreeMap<_, _>>();
+        let run = run_scheduler(SchedulerInput::new(graph)).expect("scheduler run succeeds");
+
+        for record in &run.task_states {
+            assert_eq!(
+                record.dependencies,
+                dependencies
+                    .get(&record.task_id)
+                    .expect("state record task exists")
+                    .clone()
+            );
+        }
+    }
+
+    #[test]
+    fn disabled_cache_seam_never_produces_cache_hit_or_cache_identity() {
+        for cache in [
+            CacheSchedulingPolicy::Disabled,
+            CacheSchedulingPolicy::Miss,
+            CacheSchedulingPolicy::Unavailable,
+            CacheSchedulingPolicy::ErrorAsMiss,
+        ] {
+            let graph = sample_graph();
+            let run = run_scheduler(SchedulerInput {
+                graph: graph.clone(),
+                cache,
+                ..SchedulerInput::new(graph)
+            })
+            .expect("scheduler run succeeds");
+            assert!(
+                run.task_states
+                    .iter()
+                    .all(|record| record.state != TaskState::CacheHit)
+            );
+            let debug = format!("{run:#?}").to_lowercase();
+            assert!(!debug.contains("cachekey"));
+            assert!(!debug.contains("dependencyfingerprint"));
+            assert!(!debug.contains("proofreuse"));
+        }
+    }
+
+    #[test]
+    fn failed_and_cancelled_dependencies_block_dependents_boundedly() {
+        let graph = multi_module_graph();
+        let frontend = task_id_for_module_kind(&graph, TaskKind::Frontend, "app", "main");
+        let util_artifact =
+            task_id_for_module_kind(&graph, TaskKind::ArtifactCommit, "app", "util");
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            task_outcomes: vec![SyntheticTaskOutcome::fail(
+                frontend.clone(),
+                vec![SchedulerDiagnosticRef::new(
+                    "main",
+                    "E001",
+                    "frontend failed",
+                )],
+            )],
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+
+        assert_eq!(state_for(&run, &frontend), TaskState::Failed);
+        let blocked_by_frontend = run
+            .task_states
+            .iter()
+            .filter(|record| {
+                record.state == TaskState::Blocked && record.blocked_by.contains(&frontend)
+            })
+            .collect::<Vec<_>>();
+        assert!(!blocked_by_frontend.is_empty());
+        assert!(
+            blocked_by_frontend
+                .iter()
+                .all(|record| { task_belongs_to_module(&graph, &record.task_id, "app", "main") })
+        );
+        assert_eq!(state_for(&run, &util_artifact), TaskState::Completed);
+
+        let graph = multi_module_graph();
+        let source = task_id_for_module_kind(&graph, TaskKind::SourceLoad, "app", "main");
+        let frontend = task_id_for_module_kind(&graph, TaskKind::Frontend, "app", "main");
+        let util_artifact =
+            task_id_for_module_kind(&graph, TaskKind::ArtifactCommit, "app", "util");
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cancellation: CancellationPolicy {
+                cancelled_tasks: vec![source.clone()],
+            },
+            task_outcomes: vec![SyntheticTaskOutcome {
+                task_id: frontend.clone(),
+                status: SyntheticTaskStatus::Complete,
+                outputs: vec![SyntheticOutputRef::new("frontend", "should not publish")],
+                diagnostics: vec![SchedulerDiagnosticRef::new(
+                    "main",
+                    "E002",
+                    "blocked frontend did not run",
+                )],
+            }],
+            ..SchedulerInput::new(graph.clone())
+        })
+        .expect("scheduler run succeeds");
+        assert_eq!(state_for(&run, &source), TaskState::Cancelled);
+        let blocked_by_source = run
+            .task_states
+            .iter()
+            .filter(|record| {
+                record.state == TaskState::Blocked && record.blocked_by.contains(&source)
+            })
+            .collect::<Vec<_>>();
+        assert!(!blocked_by_source.is_empty());
+        assert!(
+            blocked_by_source
+                .iter()
+                .all(|record| { task_belongs_to_module(&graph, &record.task_id, "app", "main") })
+        );
+        assert_eq!(state_for(&run, &util_artifact), TaskState::Completed);
+        let blocked_frontend = result_for(&run, &frontend);
+        assert!(blocked_frontend.output_refs.is_empty());
+        assert!(blocked_frontend.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn synthetic_cancellation_prevents_current_publication() {
+        let graph = sample_graph();
+        let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cancellation: CancellationPolicy {
+                cancelled_tasks: vec![artifact.clone()],
+            },
+            task_outcomes: vec![SyntheticTaskOutcome {
+                task_id: artifact.clone(),
+                status: SyntheticTaskStatus::Complete,
+                outputs: vec![SyntheticOutputRef::new("artifact", "should not publish")],
+                diagnostics: vec![SchedulerDiagnosticRef::new(
+                    "artifact",
+                    "W001",
+                    "should not publish",
+                )],
+            }],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        let result = result_for(&run, &artifact);
+        assert_eq!(result.state, TaskState::Cancelled);
+        assert!(result.output_refs.is_empty());
+        assert!(result.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn root_cancellation_prevents_current_publication_and_blocks_dependents() {
+        let graph = sample_graph();
+        let root = task_id_for_kind(&graph, TaskKind::PackageResolve);
+        let source = task_id_for_kind(&graph, TaskKind::SourceLoad);
+        let run = run_scheduler(SchedulerInput {
+            graph: graph.clone(),
+            cancellation: CancellationPolicy {
+                cancelled_tasks: vec![root.clone()],
+            },
+            task_outcomes: vec![SyntheticTaskOutcome {
+                task_id: root.clone(),
+                status: SyntheticTaskStatus::Complete,
+                outputs: vec![SyntheticOutputRef::new("root", "should not publish")],
+                diagnostics: vec![SchedulerDiagnosticRef::new(
+                    "root",
+                    "W001",
+                    "should not publish",
+                )],
+            }],
+            ..SchedulerInput::new(graph)
+        })
+        .expect("scheduler run succeeds");
+
+        let result = result_for(&run, &root);
+        assert_eq!(result.state, TaskState::Cancelled);
+        assert!(result.output_refs.is_empty());
+        assert!(result.diagnostics.is_empty());
+        assert_eq!(state_for(&run, &source), TaskState::Blocked);
+    }
+
+    #[test]
+    fn malformed_graph_without_root_returns_scheduler_diagnostics() {
+        let mut graph = sample_graph();
+        graph
+            .tasks
+            .retain(|task| task.kind != TaskKind::PackageResolve);
+        graph
+            .edges
+            .retain(|edge| graph.tasks.iter().any(|task| task.id == edge.dependent));
+
+        let diagnostics =
+            run_scheduler(SchedulerInput::new(graph)).expect_err("missing root is invalid");
+        assert!(
+            diagnostics
+                .diagnostics()
+                .iter()
+                .any(|diagnostic| { diagnostic.kind == SchedulerDiagnosticKind::MissingRootTask })
+        );
+    }
+
+    #[test]
+    fn scheduler_boundary_excludes_driver_ir_cache_and_publication_authority() {
+        let manifest = include_str!("../Cargo.toml");
+        assert!(!manifest.contains("mizar-driver"));
+        assert!(!manifest.contains("mizar-ir"));
+        assert!(!manifest.contains("mizar-cache"));
+        let source = include_str!("scheduler.rs");
+        for forbidden in [
+            concat!("Cache", "Key"),
+            concat!("Dependency", "Fingerprint"),
+            concat!("Proof", "Reuse"),
+            concat!("Publication", "Token"),
+            concat!("Proof", "Authority"),
+            concat!("Trusted", "Status"),
+        ] {
+            assert!(
+                !source.contains(forbidden),
+                "{forbidden} leaked into scheduler source"
+            );
+        }
+
+        let run =
+            run_scheduler(SchedulerInput::new(sample_graph())).expect("scheduler run succeeds");
+        let debug = format!("{run:#?}").to_lowercase();
+        for forbidden in [
+            "cachekey",
+            "dependencyfingerprint",
+            "proofreuse",
+            "publicationtoken",
+            "proofauthority",
+            "trustedstatus",
+        ] {
+            assert!(
+                !debug.contains(forbidden),
+                "{forbidden} leaked into scheduler state"
+            );
+        }
+    }
+
+    fn sample_graph() -> TaskGraph {
+        build_task_graph(TaskGraphInput {
+            graph_version: crate::task_graph::TaskGraphVersion::current(),
+            snapshot: snapshot(1),
+            build_plan: build_plan(vec![workspace_package("app")]),
+            module_index: module_index(vec![workspace_module("app", "main")]),
+            dependency_overlay: ModuleDependencyOverlay::complete(Vec::new()),
+            vc_descriptors: vec![vc_descriptor(
+                "vc-main",
+                module_id("app", "main"),
+                "001",
+                vec!["vampire"],
+                vec!["kernel-candidate"],
+            )],
+            profile: TaskGraphProfile {
+                documentation: DocumentationProfile::Enabled,
+                ..TaskGraphProfile::default()
+            },
+        })
+        .expect("sample graph builds")
+    }
+
+    fn multi_module_graph() -> TaskGraph {
+        build_task_graph(TaskGraphInput {
+            graph_version: crate::task_graph::TaskGraphVersion::current(),
+            snapshot: snapshot(3),
+            build_plan: build_plan(vec![workspace_package("app")]),
+            module_index: module_index(vec![
+                workspace_module("app", "main"),
+                workspace_module("app", "util"),
+            ]),
+            dependency_overlay: ModuleDependencyOverlay::complete(Vec::new()),
+            vc_descriptors: Vec::new(),
+            profile: TaskGraphProfile::default(),
+        })
+        .expect("multi-module graph builds")
+    }
+
+    fn multi_backend_graph() -> TaskGraph {
+        build_task_graph(TaskGraphInput {
+            graph_version: crate::task_graph::TaskGraphVersion::current(),
+            snapshot: snapshot(4),
+            build_plan: build_plan(vec![workspace_package("app")]),
+            module_index: module_index(vec![workspace_module("app", "main")]),
+            dependency_overlay: ModuleDependencyOverlay::complete(Vec::new()),
+            vc_descriptors: vec![vc_descriptor(
+                "vc-main",
+                module_id("app", "main"),
+                "001",
+                vec!["vampire", "eprover"],
+                vec!["kernel-a", "kernel-b"],
+            )],
+            profile: TaskGraphProfile::default(),
+        })
+        .expect("multi-backend graph builds")
+    }
+
+    fn graph_with_overlay(
+        dependency_overlay: ModuleDependencyOverlay,
+    ) -> Result<TaskGraph, crate::task_graph::TaskGraphDiagnostics> {
+        build_task_graph(TaskGraphInput {
+            graph_version: crate::task_graph::TaskGraphVersion::current(),
+            snapshot: snapshot(2),
+            build_plan: build_plan(vec![workspace_package("app")]),
+            module_index: module_index(vec![workspace_module("app", "main")]),
+            dependency_overlay,
+            vc_descriptors: Vec::new(),
+            profile: TaskGraphProfile::default(),
+        })
+    }
+
+    fn build_plan(packages: Vec<PackagePlan>) -> BuildPlan {
+        BuildPlan {
+            workspace_root: WorkspaceRoot::new("."),
+            packages,
+            dependency_graph: DependencyGraph { edges: Vec::new() },
+            lockfile: Lockfile {
+                schema_version: 1,
+                packages: Vec::new(),
+            },
+            toolchain: ToolchainInfo::new("test"),
+            verifier_config: WorkspaceVerifierConfig {
+                packages: Vec::new(),
+            },
+            build_config: WorkspaceBuildConfig {
+                packages: Vec::new(),
+            },
+        }
+    }
+
+    fn workspace_package(package_id: &str) -> PackagePlan {
+        PackagePlan {
+            package_id: PackageId::new(package_id),
+            version: Version::new(1, 0, 0),
+            source: PackagePlanSource::Workspace {
+                root: package_id.to_owned(),
+                source_root: format!("{package_id}/src"),
+                manifest_path: format!("{package_id}/mizar.pkg"),
+            },
+            edition: Edition::new("2025"),
+            dependencies: Vec::new(),
+            verifier_config: VerifierConfig::default(),
+            build_config: BuildConfig::default(),
+        }
+    }
+
+    fn module_index(modules: Vec<ModuleIndexEntry>) -> ModuleIndex {
+        let packages = modules
+            .iter()
+            .map(|entry| crate::module_index::PackageIndexEntry {
+                package_id: entry.module.package.clone(),
+                version: Version::new(1, 0, 0),
+                edition: Edition::new("2025"),
+                source: crate::module_index::PackageIndexSource::Workspace {
+                    package_root: entry.module.package.as_str().to_owned(),
+                    source_root: format!("{}/src", entry.module.package.as_str()),
+                    manifest_path: format!("{}/mizar.pkg", entry.module.package.as_str()),
+                },
+                dependencies: Vec::new(),
+            })
+            .collect();
+        ModuleIndex {
+            packages,
+            namespace_bindings: Vec::new(),
+            modules,
+            dependency_summaries: Vec::new(),
+        }
+    }
+
+    fn workspace_module(package_id: &str, module_path: &str) -> ModuleIndexEntry {
+        let module = module_id(package_id, module_path);
+        ModuleIndexEntry {
+            module: module.clone(),
+            package_id: module.package.clone(),
+            module_path: module.path.clone(),
+            location: ModuleIndexLocation::WorkspaceFile {
+                source_root: format!("{package_id}/src"),
+                normalized_path: format!("{package_id}/src/{module_path}.miz"),
+                source_relative_path: format!("{module_path}.miz"),
+            },
+            edition: Edition::new("2025"),
+        }
+    }
+
+    fn module_id(package_id: &str, module_path: &str) -> ModuleId {
+        ModuleId::new(PackageId::new(package_id), ModulePath::new(module_path))
+    }
+
+    fn vc_descriptor(
+        id: &str,
+        module: ModuleId,
+        order_key: &str,
+        backend_profiles: Vec<&str>,
+        evidence_candidates: Vec<&str>,
+    ) -> VcTaskDescriptor {
+        VcTaskDescriptor::new(
+            VcTaskDescriptorId::new(id),
+            module,
+            VcOrderKey::new(order_key),
+            backend_profiles
+                .into_iter()
+                .map(BackendProfileId::new)
+                .collect(),
+            evidence_candidates
+                .into_iter()
+                .map(crate::task_graph::EvidenceCandidateId::new)
+                .collect(),
+        )
+    }
+
+    fn snapshot(seed: u8) -> BuildSnapshotId {
+        let hex = format!("{seed:02x}").repeat(Hash::BYTE_LEN);
+        BuildSnapshotId::from_published_schema_str(&format!(
+            "mizar-session-build-snapshot-v1:{hex}"
+        ))
+        .expect("valid snapshot id")
+    }
+
+    fn task_id_for_kind(graph: &TaskGraph, kind: TaskKind) -> TaskId {
+        graph
+            .tasks
+            .iter()
+            .find(|task| task.kind == kind)
+            .expect("task exists")
+            .id
+            .clone()
+    }
+
+    fn task_ids_for_kind(graph: &TaskGraph, kind: TaskKind) -> Vec<TaskId> {
+        graph
+            .tasks
+            .iter()
+            .filter(|task| task.kind == kind)
+            .map(|task| task.id.clone())
+            .collect()
+    }
+
+    fn task_kind_for_id(graph: &TaskGraph, task_id: &TaskId) -> TaskKind {
+        graph
+            .tasks
+            .iter()
+            .find(|task| &task.id == task_id)
+            .expect("task exists")
+            .kind
+    }
+
+    fn task_id_for_module_kind(
+        graph: &TaskGraph,
+        kind: TaskKind,
+        package_id: &str,
+        module_path: &str,
+    ) -> TaskId {
+        let expected = module_id(package_id, module_path);
+        graph
+            .tasks
+            .iter()
+            .find(|task| {
+                task.kind == kind
+                    && matches!(&task.unit, WorkUnit::Module { module } if module == &expected)
+            })
+            .expect("module task exists")
+            .id
+            .clone()
+    }
+
+    fn task_belongs_to_module(
+        graph: &TaskGraph,
+        task_id: &TaskId,
+        package_id: &str,
+        module_path: &str,
+    ) -> bool {
+        let expected = module_id(package_id, module_path);
+        graph
+            .tasks
+            .iter()
+            .find(|task| &task.id == task_id)
+            .is_some_and(|task| match &task.unit {
+                WorkUnit::Module { module }
+                | WorkUnit::Vc { module, .. }
+                | WorkUnit::BackendAttempt { module, .. }
+                | WorkUnit::EvidenceCandidate { module, .. } => module == &expected,
+                WorkUnit::Workspace | WorkUnit::Package { .. } => false,
+            })
+    }
+
+    fn result_for<'a>(run: &'a SchedulerRun, task_id: &TaskId) -> &'a SchedulerResult {
+        run.results
+            .iter()
+            .find(|result| &result.task_id == task_id)
+            .expect("result exists")
+    }
+
+    fn state_for(run: &SchedulerRun, task_id: &TaskId) -> TaskState {
+        run.task_states
+            .iter()
+            .find(|record| &record.task_id == task_id)
+            .expect("state exists")
+            .state
+    }
+}

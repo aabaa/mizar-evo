@@ -48,7 +48,7 @@ order component であり、semantic authority ではない。
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | SCH-G001 | `design_drift` | `todo.md` は `scheduler.md` を要求していたが、task 9 の前には module spec が存在しなかった。 | task 9 でこの spec と Japanese companion を追加する。 |
-| SCH-G002 | `source_drift` / `test_gap` | `src/scheduler.rs` と scheduler tests はまだ存在しない。 | task 10 でこの spec と `task_graph.md` に沿って source/tests を実装する。 |
+| SCH-G002 | `source_drift` / `test_gap` | task 10 の前には `src/scheduler.rs` と scheduler tests が存在しなかった。task 10 は synthetic scheduler core と focused unit tests を提供している。 | 後続の resource/cancel/failure/cache tasks が module を拡張するとき、この spec、Rust surface、tests を同期し続ける。 |
 | SCH-G003 | `external_dependency_gap` | この checkout には `mizar-driver` request/session/registry/event integration が存在しない。 | 後続 source では caller-supplied graph/session-like inputs を受け取り、driver dependency や placeholder driver API を追加しない。 |
 | SCH-G004 | `external_dependency_gap` | `mizar-ir` sealed output handles と storage adapters が存在しない。 | scheduler tests では synthetic in-memory task outputs を使い、IR storage API を創作しない。 |
 | SCH-G005 | `deferred` | resource-budget accounting は tasks 11-12 である。 | resource class と queue admission seam だけを定義し、enforcement は `resource.md` と `src/resource.rs` に属する。 |
@@ -66,9 +66,11 @@ struct SchedulerInput {
     graph: TaskGraph,
     mode: SchedulerMode,
     priority_hints: PriorityHints,
-    cache: CacheSchedulingSeam,
-    resource_admission: ResourceAdmissionSeam,
-    cancellation: CancellationSeam,
+    cache: CacheSchedulingPolicy,
+    cancellation: CancellationPolicy,
+    task_outcomes: Vec<SyntheticTaskOutcome>,
+    worker_count: usize,
+    completion_order: CompletionOrder,
 }
 
 struct SchedulerRun {
@@ -77,6 +79,7 @@ struct SchedulerRun {
     task_states: Vec<TaskStateRecord>,
     results: Vec<SchedulerResult>,
     events: Vec<SchedulerEvent>,
+    diagnostics: Vec<SchedulerDiagnostic>,
 }
 
 struct TaskStateRecord {
@@ -84,12 +87,15 @@ struct TaskStateRecord {
     state: TaskState,
     dependencies: Vec<TaskId>,
     blocked_by: Vec<TaskId>,
+    queue: SchedulerQueue,
+    dependency_coverage: DependencyCoverage,
 }
 ```
 
 `SchedulerInput` は build-side data である。将来の driver はこれを sessions と
 live event streams で包んでよいが、`mizar-build` は `mizar-driver` に依存せず
-利用可能でなければならない。
+利用可能でなければならない。task 10 は意図的に `ResourceAdmissionSeam` を持たない。
+resource budget と denial behavior は tasks 11-12 が仕様化し実装する。
 
 ### TaskState
 
@@ -111,7 +117,7 @@ enum TaskState {
 
 - `Pending`: dependencies がまだ terminal ではない。
 - `Ready`: すべての correctness dependencies が terminal で、task は execution または
-  cache probing の前に resource admission を queue で待ってよい。
+  cache probing の前に deterministic dispatch batch で待ってよい。
 - `Running`: worker が task execution attempt を所有している。
 - `Completed`: execution が終了し、scheduler-visible outputs を生成した。
 - `CacheHit`: external cache validation が成功した後に execution を skip した。
@@ -208,9 +214,10 @@ Pending/Ready/Running -> Cancelled
 Ready/Running -> Skipped
 ```
 
-task 10 は synthetic tasks 用の core deterministic scheduler を実装する。Resource
-denial、cancellation、cache validation、rich failure propagation は、それぞれの
-専用 task が実装するまで seam として表現する。
+task 10 は synthetic tasks 用の core deterministic scheduler を `worker_count` で
+制限された dispatch batch として実装する。Resource denial、
+cancellation-token storage、cache validation、rich failure propagation は、それぞれの
+専用 task が実装するまで deferred である。
 
 ## Work Queues
 
@@ -245,7 +252,7 @@ default priority key は stable tuple である:
 
 1. build mode priority class。
 2. open/requested-file hint rank。
-3. graph dependency depth。downstream を unblock する task を leaf work より先にする。
+3. downstream fanout。downstream を unblock する task を leaf work より先にする。
 4. `task_graph.md` の task kind rank。
 5. package/module/VC/backend/evidence canonical work-unit order。
 6. `TaskId`。
@@ -270,9 +277,10 @@ records は canonical keys で collate する:
 - artifact commit attempts は canonical module と manifest order。
 - canonical scheduler events は `SchedulerOrderKey`。
 
-同じ `TaskGraph`、synthetic task behavior、resource admission decisions、cache seam
-responses を使う 2 つの実行は、canonical serialization 後の `SchedulerRun` records が
-byte-for-byte equivalent でなければならない。
+同じ `TaskGraph`、synthetic task behavior、cache seam responses を使う 2 つの実行は、
+canonical serialization 後の `SchedulerRun` records が byte-for-byte equivalent で
+なければならない。後続の resource-admission decisions も同じ canonical collation rule を
+保たなければならない。
 
 ## Batch, Watch, and LSP Modes
 
@@ -330,6 +338,10 @@ task 10 ではこの seam を `Unavailable` または `Miss` に default し、`
 ならない。task 18 が real `mizar-cache` public contract を接続し、validated-hit
 execution-skip behavior を追加する。
 
+task 10 の Rust surface は disabled、miss、unavailable、error-as-miss policies だけを
+公開する。validated-hit input を公開せず、cache key を構築せず、dependency fingerprint を
+計算せず、proof-reuse validation もしない。
+
 ## Failure, Cancellation, and Commit Seams
 
 Failure propagation は bounded である。failed task は、その outputs を必要とする
@@ -341,14 +353,17 @@ Cancellation は snapshot で versioned である。cancelled task は current d
 artifacts を publish しない。実際の cancellation-token storage、child-process termination、
 snapshot supersession は tasks 13-14 の `cancel.md` が定義する。
 
+Blocked tasks と cancelled tasks は synthetic outcome outputs や diagnostics を
+`SchedulerResult` に copy しない。failed tasks は failure diagnostics を持ってよいが、
+dependents へ output references を publish しない。
+
 Artifact commit はこの spec では scheduling boundary のままである。scheduler は
 `ArtifactCommit` tasks を canonical order に並べ outcomes を記録するが、manifests を書かず、
 publication tokens を mint せず、artifact records を proof authority として扱わない。
 
 ## Tests
 
-Task 9 は documentation-only である。Task 10 は focused Rust tests を追加しなければ
-ならない:
+Task 9 は documentation-only である。Task 10 は focused Rust tests を追加する:
 
 - shuffled worker completion order の下での deterministic execution。
 - worker-count variation が同一 result/event collation を生成すること。

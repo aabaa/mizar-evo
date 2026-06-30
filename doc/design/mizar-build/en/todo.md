@@ -25,7 +25,7 @@ and 19 and internal 01.
 | planner | `planner.md` (task 2) | `src/planner.rs` | [x] |
 | module_index | `module_index.md` (task 5) | `src/module_index.rs` | [x] |
 | task_graph | `task_graph.md` (task 7) | `src/task_graph.rs` | [x] |
-| scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` | [ ] |
+| scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` | [x] |
 | resource | `resource.md` (task 11) | `src/resource.rs` | [ ] |
 | cancel | `cancel.md` (task 13) | `src/cancel.rs` | [ ] |
 | failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [ ] |
@@ -177,12 +177,17 @@ Keep `cargo test -p mizar-build` green after each task (see
      [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
      "Pipeline Scheduler".
 
-10. **Scheduler core.** [ ]
-    - Implement worker pools and queue execution over the task graph with
-      deterministic result ordering under arbitrary completion order;
-      synthetic tasks for tests.
-    - Tests: shuffled completion produces identical result and event
-      orders; immutable published outputs.
+10. **Scheduler core.** [x]
+    - Implement deterministic dispatch batches and queue execution over the
+      task graph with deterministic result ordering under arbitrary completion
+      order; synthetic tasks for tests. Resource-budgeted worker pools remain
+      tasks 11-12.
+    - Tests: shuffled completion and worker-count variation produce identical
+      result and event orders; immutable published outputs.
+    - Result: implemented `src/scheduler.rs` with deterministic synthetic
+      scheduling, queue routing, terminal/blocked states, canonical event and
+      result collation, disabled cache seam behavior, synthetic cancellation,
+      and focused unit tests.
     - Deps: 8, 9. Spec: `scheduler.md`.
 
 11. **Spec: `resource.md`.** [ ]
