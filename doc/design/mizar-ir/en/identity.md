@@ -1,0 +1,136 @@
+# mizar-ir Identity
+
+> Canonical language: English. Japanese companion:
+> [../ja/identity.md](../ja/identity.md).
+
+## Purpose
+
+This document specifies the identity boundary for `mizar-ir`.
+
+`mizar-ir` consumes `BuildSnapshotId` and session-owned source identity from
+`mizar-session`. It does not construct build snapshots, source ids, cache keys,
+dependency fingerprints, proof-reuse identities, or proof-trust state. Within a
+single `BuildSnapshotId`, it assigns deterministic IR-local identities and
+records parent/derived relationships between sealed phase outputs.
+
+## Consumed And Owned Identities
+
+| Identity | Owner | Stability |
+|---|---|---|
+| `BuildSnapshotId` | `mizar-session` | Deterministic for the exact source, dependency, lockfile, toolchain, and verifier-config state. |
+| `SourceId` | `mizar-session` | Session-owned source handle carried by IR tables. |
+| `ModuleId` | `mizar-ir` | Deterministic inside one `BuildSnapshotId` from package/module identity and source identity. |
+| `ItemId` | `mizar-ir` | Deterministic inside one `BuildSnapshotId` from owning module and producer-declared item key. |
+| `ExprId` | `mizar-ir` | Deterministic inside one `BuildSnapshotId` from owning item or module and producer-declared expression key. |
+| `VcId` | `mizar-ir` | Deterministic inside one `BuildSnapshotId` from owning obligation order key; it is not a cross-edit proof-reuse identity. |
+| `PhaseOutputId` | `mizar-ir` | Deterministic inside one `BuildSnapshotId` from phase, work unit, output kind, content hash, side-table hash, and dependency output ids. |
+
+`BuildSnapshotId` and `SourceId` are consumed session identities. `mizar-ir`
+does not assign or persist them.
+
+All IR-owned ids are snapshot-scoped unless an artifact projection maps them
+into a stable published schema. Arena indices, memory addresses, slot numbers,
+task ids, worker ids, filesystem temporary names, cache lookup timing, and
+runtime duration are never stable identity inputs.
+
+## Snapshot Identity Input
+
+`BuildSnapshotId` already covers the exact build input state:
+
+- normalized source versions and source hashes;
+- dependency artifacts and their content hashes;
+- lockfile hash;
+- toolchain identity;
+- verifier configuration hash.
+
+`mizar-ir` must not weaken that identity. A handle created for one
+`BuildSnapshotId` cannot be used as a current result for another snapshot. The
+only allowed cross-snapshot reuse path is validated cache rehydration or an
+explicit unchanged-input path defined by a later owning integration task. Both
+paths are fail-closed and create a new current-snapshot handle only after
+validation.
+
+## Canonical ID Assignment
+
+Each `mizar-ir` id is derived from a domain-separated canonical byte sequence:
+
+```text
+mizar-ir/<identity-family>/v1
+snapshot = <BuildSnapshotId published-schema string>
+canonical fields = sorted producer-owned identity fields
+```
+
+The canonical fields for each family are:
+
+| Family | Required fields |
+|---|---|
+| Module | package id, module path, session source id when available, source hash |
+| Item | module id, item kind, normalized origin key, declaration order key |
+| Expression | module id, optional item id, expression kind, producer path key |
+| VC | module id, optional item id, obligation order key, canonical VC fingerprint when available |
+| Phase output | phase, work unit, runtime output kind tag, content hash, side-table hash, dependency output ids |
+
+Producer path keys are semantic or source-shaped keys supplied by the owning
+phase. `mizar-ir` validates ordering, domains, and snapshot compatibility, but
+it does not decide name resolution, type semantics, obligation anchors, proof
+reuse, or proof acceptance.
+
+Collections used as identity input are sorted by their stable string or hash
+keys before hashing. Duplicate identity keys with conflicting payloads are
+rejected. Missing required identity fields are rejected rather than replaced
+with empty defaults.
+
+## Parent And Derived Output Relationships
+
+The snapshot handle registry records lineage for each sealed output:
+
+- `producer`: the phase/work-unit identity that produced the output;
+- `parents`: input `PhaseOutputId`s consumed by the producer;
+- `named_input_hashes`: non-output inputs declared by the producer;
+- `content_hash`: semantic hash of the sealed output;
+- `side_table_hash`: hash of side tables such as source maps, diagnostics,
+  explanation refs, and documentation attachments.
+
+A derived output must have the same `BuildSnapshotId` as every parent unless a
+cache adapter has first validated and rehydrated that parent into the current
+snapshot. Parent links round-trip through the registry and are used by storage,
+publisher, cache adapter, and snapshot replacement logic. Lineage is not proof
+evidence and must not be promoted to trusted status.
+
+## Incompatible Snapshot Reuse
+
+The registry rejects these operations:
+
+- registering an output whose parent handle belongs to another snapshot;
+- publishing an obsolete snapshot output as a current result;
+- assigning an IR-local id for a snapshot unknown to the registry;
+- treating matching `ModuleId`, `ItemId`, `ExprId`, `VcId`, source range, arena
+  id, or output hash alone as cross-snapshot validation;
+- rehydrating a cache record before `mizar-cache` has validated schema,
+  dependency footprint, policy compatibility, dependency artifacts, and
+  proof-reuse metadata where applicable.
+
+Cache hits are optimization data. A validated cache hit may reconstruct an
+ordinary sealed handle for the current snapshot, but it does not upgrade proof
+status or change the proof authority boundary.
+
+## Snapshot Replacement
+
+When a newer snapshot supersedes an older one, the registry marks the older
+snapshot as obsolete for current publication. Existing retained handles may
+remain readable for stale diagnostics, explanations, LSP requests, or validated
+cache input. They cannot be reported as current results after supersession.
+
+Snapshot replacement is explicit: the current snapshot is a registry property,
+not a comparison between id values. Since `BuildSnapshotId` is a hash-like
+opaque id, semantic ordering must not be inferred from it.
+
+## Tests
+
+Task 3 must cover:
+
+- identical snapshot/id inputs produce identical IR-local ids;
+- conflicting duplicate identity keys are rejected;
+- handles from incompatible snapshots cannot be reused as current parents;
+- parent/derived output lineage round-trips;
+- `VcId` and other IR ids do not behave as proof-reuse authority.

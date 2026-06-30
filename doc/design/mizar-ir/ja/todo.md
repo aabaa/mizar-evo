@@ -84,12 +84,11 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: なし。仕様: internal 06。
 
-2. **仕様: `identity.md`。** [ ]
-   - 識別の仕様を執筆する（英語と日本語、コードなし）: ソース/依存/
-     ツールチェーン/設定の正確な状態からの `BuildSnapshotId` 割り当て、
-     snapshot ごとの id 族（`SourceId`、`ModuleId`、`ItemId`、`ExprId`、
-     `VcId`）、親/派生の出力関係、非互換 snapshot をまたぐ再利用禁止の
-     規則。
+2. **仕様: `identity.md`。** [x]
+   - 識別の仕様を執筆する（英語と日本語、コードなし）: `mizar-session` の
+     `BuildSnapshotId` と `SourceId` の消費、snapshot ごとの IR-local id 族
+     （`ModuleId`、`ItemId`、`ExprId`、`VcId`、`PhaseOutputId`）、親/派生の
+     出力関係、非互換 snapshot をまたぐ再利用禁止の規則。
    - 依存: 1。仕様: [internal 06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)
      「Snapshot Handle Registry」、アーキテクチャ 01「Cross-Layer
      Identity」。`mizar-ir` は `mizar-session` の `BuildSnapshotId` を消費し、
@@ -97,8 +96,9 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
 
 3. **snapshot ハンドルレジストリ。** [ ]
    - 決定的な id 割り当てと親/派生の追跡を備えたレジストリを実装する。
-   - テスト: 同一状態に対する id の決定性。非互換 snapshot の再利用の
-     拒否。派生リンクのラウンドトリップ。
+   - テスト: 同一状態に対する id の決定性。衝突する duplicate identity key の
+     拒否。非互換 snapshot の再利用の拒否。派生リンクのラウンドトリップ。
+     IR-local id は proof-reuse authority ではないこと。
    - 依存: 2。仕様: `identity.md`。
 
 4. **仕様: `storage.md`。** [ ]

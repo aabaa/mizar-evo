@@ -85,12 +85,12 @@ Keep `cargo test -p mizar-ir` green after each task (see
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: none. Spec: internal 06.
 
-2. **Spec: `identity.md`.** [ ]
+2. **Spec: `identity.md`.** [x]
    - Write the identity spec (English and Japanese, no code):
-     `BuildSnapshotId` assignment from exact source/dependency/toolchain/
-     config states, per-snapshot id families (`SourceId`, `ModuleId`,
-     `ItemId`, `ExprId`, `VcId`), parent/derived output relationships, and
-     the no-reuse-across-incompatible-snapshots rule.
+     consumption of `mizar-session` `BuildSnapshotId` and `SourceId`,
+     IR-local per-snapshot id families (`ModuleId`, `ItemId`, `ExprId`,
+     `VcId`, `PhaseOutputId`), parent/derived output relationships, and the
+     no-reuse-across-incompatible-snapshots rule.
    - Deps: 1. Spec: [internal 06](../../internal/en/06.ir_storage_and_snapshot_handles.md)
      "Snapshot Handle Registry", architecture 01 "Cross-Layer Identity".
      `mizar-ir` consumes `BuildSnapshotId` from `mizar-session`; it does not
@@ -99,8 +99,9 @@ Keep `cargo test -p mizar-ir` green after each task (see
 3. **Snapshot handle registry.** [ ]
    - Implement the registry with deterministic id assignment and
      parent/derived tracking.
-   - Tests: id determinism for identical states; incompatible-snapshot
-     reuse rejected; derived links round-trip.
+   - Tests: id determinism for identical states; conflicting duplicate
+     identity keys rejected; incompatible-snapshot reuse rejected; derived
+     links round-trip; IR-local ids are not proof-reuse authority.
    - Deps: 2. Spec: `identity.md`.
 
 4. **Spec: `storage.md`.** [ ]
