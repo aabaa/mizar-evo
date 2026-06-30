@@ -109,7 +109,7 @@ internal: [06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)。
    - 依存: 2。仕様: [internal 06](../../internal/ja/06.ir_storage_and_snapshot_handles.md)
      「IR Storage Service」。
 
-5. **ストレージスロットと seal。** [ ]
+5. **ストレージスロットと seal。** [x]
    - スロット割り当て、seal、型付きハンドルの返却を実装する。seal 済み
      出力は不変であり、未 seal の出力は他タスクから見えない。
    - テスト: 二重 seal の拒否。seal 前アクセスの失敗。ハンドル型付けの

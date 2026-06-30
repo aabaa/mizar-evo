@@ -56,6 +56,10 @@ storage は 2 段階の lifecycle を使う:
 projection、cache writing、current publication から不可視である。pending slot を
 id で読むことは `UnsealedOutput` として拒否する。slot の二重 seal は
 `AlreadySealed` として拒否する。seal 済み output の変更は support しない。
+payload を保存する前に、storage は supplied lineage が identity module によって割り当てられた
+canonical `PhaseOutputId` とまだ一致していることを検証する。clone または mutate された
+lineage の content hash、side-table hash、parent、named input、producer metadata が output id
+と一致しなくなっている場合、`InvalidLineage` として拒否し、その pending slot を abandoned にする。
 
 seal 済み handle は immutable である:
 
@@ -184,9 +188,11 @@ publish してはならない。storage は `BuildSnapshotId` の順序や hash 
 |---|---|
 | seal 前の read | `UnsealedOutput` として拒否し、handle を publish しない。 |
 | 二重 seal | `AlreadySealed` として拒否し、最初の seal 済み value を保つ。 |
-| slot 欠落または unknown output id | `UnknownOutput` として拒否する。 |
+| pending slot がこの storage service に存在しない | `UnknownSlot` として拒否する。 |
+| unknown sealed output id | `UnknownOutput` として拒否する。 |
 | collect 済み slot の read | `CollectedOutput` として拒否し、handle を暗黙に再作成しない。 |
 | runtime kind mismatch | `TypeMismatch` として拒否し、byte を再解釈しない。 |
+| lineage が canonical output id と一致しなくなっている | `InvalidLineage` として拒否し、pending slot を abandoned にする。 |
 | corrupt internal blob | `CorruptBlob` として拒否し、caller が producer を再実行するか cache-origin value を miss として扱う。 |
 | stale generation | `StaleHandle` として拒否し、非互換 handle 間で storage slot を再利用しない。 |
 

@@ -58,6 +58,11 @@ Only sealing returns a `PhaseOutputRef<T>`. Pending slots are invisible to
 other tasks, artifact projection, cache writing, and current publication.
 Reading a pending slot by id is rejected as `UnsealedOutput`. Sealing a slot
 twice is rejected as `AlreadySealed`. Mutating a sealed output is not supported.
+Before storing the payload, storage validates that the supplied lineage still
+matches the canonical `PhaseOutputId` assigned by the identity module. A cloned
+or mutated lineage whose content hash, side-table hash, parents, named inputs,
+or producer metadata no longer match its output id is rejected as
+`InvalidLineage` and the pending slot is abandoned.
 
 A sealed handle is immutable:
 
@@ -193,9 +198,11 @@ be published as current results. Storage does not infer currentness from
 |---|---|
 | read before seal | Reject as `UnsealedOutput`; no handle may be published. |
 | double seal | Reject as `AlreadySealed`; preserve the first sealed value. |
-| missing slot or unknown output id | Reject as `UnknownOutput`. |
+| pending slot missing from this storage service | Reject as `UnknownSlot`. |
+| unknown sealed output id | Reject as `UnknownOutput`. |
 | collected slot read | Reject as `CollectedOutput`; do not recreate a handle implicitly. |
 | runtime kind mismatch | Reject as `TypeMismatch`; never reinterpret bytes. |
+| lineage no longer matches canonical output id | Reject as `InvalidLineage` and abandon the pending slot. |
 | corrupt internal blob | Reject as `CorruptBlob` and let the caller rerun the producer or treat a cache-origin value as a miss. |
 | stale generation | Reject as `StaleHandle`; do not reuse storage slots across incompatible handles. |
 

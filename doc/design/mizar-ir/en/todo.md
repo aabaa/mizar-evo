@@ -111,7 +111,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
    - Deps: 2. Spec: [internal 06](../../internal/en/06.ir_storage_and_snapshot_handles.md)
      "IR Storage Service".
 
-5. **Storage slots and sealing.** [ ]
+5. **Storage slots and sealing.** [x]
    - Implement slot allocation, sealing, and typed handle return; sealed
      outputs are immutable and unsealed outputs are invisible to other
      tasks.

@@ -18,3 +18,6 @@
 
 /// Snapshot-scoped IR identity tables and phase-output lineage.
 pub mod identity;
+
+/// Immutable phase-output storage and typed handles.
+pub mod storage;

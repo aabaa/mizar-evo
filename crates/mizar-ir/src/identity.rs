@@ -285,6 +285,12 @@ pub enum IdentityError {
         /// Output id.
         output: PhaseOutputId,
     },
+    /// A lineage record no longer matches the canonical output identity it
+    /// carries.
+    LineageIdentityMismatch {
+        /// Output id carried by the lineage.
+        output: PhaseOutputId,
+    },
 }
 
 impl SnapshotHandleRegistry {
@@ -450,77 +456,24 @@ impl SnapshotHandleRegistry {
         &self,
         input: OutputIdentityInput,
     ) -> Result<PhaseOutputLineage, IdentityError> {
-        reject_empty("output.phase", input.phase.as_str())?;
-        reject_empty("output.work_unit", input.work_unit.as_str())?;
-        reject_empty("output.output_kind", input.output_kind.as_str())?;
-
-        let mut parents = input.parents;
-        sort_phase_output_ids(&mut parents);
-        parents.dedup();
-        let named_input_hashes = canonicalize_named_input_hashes(input.named_input_hashes)?;
-
-        let key = canonical_key(
-            PHASE_OUTPUT_ID_DOMAIN,
-            vec![
-                field_string("phase", input.phase.as_str().to_owned()),
-                field_string("work_unit", input.work_unit.as_str().to_owned()),
-                field_string("output_kind", input.output_kind.as_str().to_owned()),
-            ],
-        );
-        let mut fields = vec![
-            field_string("phase", input.phase.as_str().to_owned()),
-            field_string("work_unit", input.work_unit.as_str().to_owned()),
-            field_string("output_kind", input.output_kind.as_str().to_owned()),
-            field_hash("content_hash", CONTENT_HASH_DOMAIN, input.content_hash),
-            field_hash(
-                "side_table_hash",
-                SIDE_TABLE_HASH_DOMAIN,
-                input.side_table_hash,
-            ),
-        ];
-        for parent in &parents {
-            fields.push(field_id("parent", parent.hash()));
-        }
-        for value in &named_input_hashes {
-            fields.push(field_string("named_input_name", value.name.clone()));
-            fields.push(field_string("named_input_domain", value.domain.clone()));
-            fields.push(field_hash(
-                "named_input_digest",
-                NAMED_INPUT_HASH_DOMAIN,
-                value.digest,
-            ));
-        }
-
-        let output = PhaseOutputId(hash_identity(
-            PHASE_OUTPUT_ID_DOMAIN,
-            input.snapshot,
-            &fields,
-        )?);
-        let lineage = PhaseOutputLineage {
-            output,
-            snapshot: input.snapshot,
-            phase: input.phase,
-            work_unit: input.work_unit,
-            output_kind: input.output_kind,
-            parents,
-            named_input_hashes,
-            content_hash: input.content_hash,
-            side_table_hash: input.side_table_hash,
-        };
+        let lineage = derive_phase_output_lineage(input)?;
+        let output = lineage.output;
+        let key =
+            phase_output_duplicate_key(&lineage.phase, &lineage.work_unit, &lineage.output_kind);
 
         let mut state = self.state.lock().expect("identity registry mutex poisoned");
-        if !state.snapshots.contains_key(&input.snapshot) {
+        if !state.snapshots.contains_key(&lineage.snapshot) {
             return Err(IdentityError::UnknownSnapshot {
-                snapshot: input.snapshot,
+                snapshot: lineage.snapshot,
             });
         }
         for parent in &lineage.parents {
             let Some(parent_lineage) = state.outputs.get(parent) else {
                 return Err(IdentityError::UnknownParentOutput { parent: *parent });
             };
-            if parent_lineage.snapshot != input.snapshot {
+            if parent_lineage.snapshot != lineage.snapshot {
                 return Err(IdentityError::IncompatibleSnapshotParent {
-                    snapshot: input.snapshot,
+                    snapshot: lineage.snapshot,
                     parent: *parent,
                     parent_snapshot: parent_lineage.snapshot,
                 });
@@ -528,7 +481,7 @@ impl SnapshotHandleRegistry {
         }
         let existing_for_key = state
             .snapshots
-            .get(&input.snapshot)
+            .get(&lineage.snapshot)
             .expect("snapshot was checked above")
             .output_keys
             .get(&key)
@@ -549,7 +502,7 @@ impl SnapshotHandleRegistry {
                 state.outputs.insert(output, lineage.clone());
                 state
                     .snapshots
-                    .get_mut(&input.snapshot)
+                    .get_mut(&lineage.snapshot)
                     .expect("snapshot was checked above")
                     .output_keys
                     .insert(key, output);
@@ -601,6 +554,30 @@ impl PhaseOutputId {
     /// Returns the opaque hash backing this id.
     pub const fn hash(self) -> Hash {
         self.0
+    }
+}
+
+impl PhaseOutputLineage {
+    /// Validates that this lineage still matches its canonical
+    /// `PhaseOutputId`.
+    pub fn validate_identity(&self) -> Result<(), IdentityError> {
+        let expected = derive_phase_output_lineage(OutputIdentityInput {
+            snapshot: self.snapshot,
+            phase: self.phase.clone(),
+            work_unit: self.work_unit.clone(),
+            output_kind: self.output_kind.clone(),
+            content_hash: self.content_hash,
+            side_table_hash: self.side_table_hash,
+            parents: self.parents.clone(),
+            named_input_hashes: self.named_input_hashes.clone(),
+        })?;
+        if expected == *self {
+            Ok(())
+        } else {
+            Err(IdentityError::LineageIdentityMismatch {
+                output: self.output,
+            })
+        }
     }
 }
 
@@ -695,6 +672,12 @@ impl fmt::Display for IdentityError {
                 write!(
                     formatter,
                     "phase output hash collision or conflicting lineage for `{output:?}`"
+                )
+            }
+            Self::LineageIdentityMismatch { output } => {
+                write!(
+                    formatter,
+                    "phase output lineage `{output:?}` does not match its canonical identity"
                 )
             }
         }
@@ -852,6 +835,74 @@ fn canonicalize_named_input_hashes(
     }
 
     Ok(result)
+}
+
+fn derive_phase_output_lineage(
+    input: OutputIdentityInput,
+) -> Result<PhaseOutputLineage, IdentityError> {
+    reject_empty("output.phase", input.phase.as_str())?;
+    reject_empty("output.work_unit", input.work_unit.as_str())?;
+    reject_empty("output.output_kind", input.output_kind.as_str())?;
+
+    let mut parents = input.parents;
+    sort_phase_output_ids(&mut parents);
+    parents.dedup();
+    let named_input_hashes = canonicalize_named_input_hashes(input.named_input_hashes)?;
+
+    let mut fields = vec![
+        field_string("phase", input.phase.as_str().to_owned()),
+        field_string("work_unit", input.work_unit.as_str().to_owned()),
+        field_string("output_kind", input.output_kind.as_str().to_owned()),
+        field_hash("content_hash", CONTENT_HASH_DOMAIN, input.content_hash),
+        field_hash(
+            "side_table_hash",
+            SIDE_TABLE_HASH_DOMAIN,
+            input.side_table_hash,
+        ),
+    ];
+    for parent in &parents {
+        fields.push(field_id("parent", parent.hash()));
+    }
+    for value in &named_input_hashes {
+        fields.push(field_string("named_input_name", value.name.clone()));
+        fields.push(field_string("named_input_domain", value.domain.clone()));
+        fields.push(field_hash(
+            "named_input_digest",
+            NAMED_INPUT_HASH_DOMAIN,
+            value.digest,
+        ));
+    }
+
+    Ok(PhaseOutputLineage {
+        output: PhaseOutputId(hash_identity(
+            PHASE_OUTPUT_ID_DOMAIN,
+            input.snapshot,
+            &fields,
+        )?),
+        snapshot: input.snapshot,
+        phase: input.phase,
+        work_unit: input.work_unit,
+        output_kind: input.output_kind,
+        parents,
+        named_input_hashes,
+        content_hash: input.content_hash,
+        side_table_hash: input.side_table_hash,
+    })
+}
+
+fn phase_output_duplicate_key(
+    phase: &PipelinePhase,
+    work_unit: &WorkUnit,
+    output_kind: &OutputKind,
+) -> CanonicalIdentityKey {
+    canonical_key(
+        PHASE_OUTPUT_ID_DOMAIN,
+        vec![
+            field_string("phase", phase.as_str().to_owned()),
+            field_string("work_unit", work_unit.as_str().to_owned()),
+            field_string("output_kind", output_kind.as_str().to_owned()),
+        ],
+    )
 }
 
 fn named_input_key(value: &NamedInputHash) -> (&str, &str) {
