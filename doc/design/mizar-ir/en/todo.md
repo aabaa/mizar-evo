@@ -208,7 +208,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 15. Spec: all module specs and this TODO.
 
-17. **Bilingual documentation sync audit.** [ ]
+17. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-ir/en/` with its Japanese companion and
       synchronize content.
