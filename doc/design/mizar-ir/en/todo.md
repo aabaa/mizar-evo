@@ -22,7 +22,7 @@ Module names follow the minimum split of
 | identity | `identity.md` (task 2) | `src/identity.rs` | [x] |
 | storage | `storage.md` (task 4) | `src/storage.rs` | [~] |
 | publisher | `publisher.md` (task 7) | `src/publisher.rs` | [x] |
-| cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [~] |
+| cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [x] |
 | projection | `projection.md` (task 11) | `src/projection.rs` | [ ] |
 
 `mizar-ir` owns compiler-internal IR storage and snapshot output handles:
@@ -154,7 +154,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
    - Deps: 7. Spec: [internal 06](../../internal/en/06.ir_storage_and_snapshot_handles.md)
      "IR Cache Adapter", [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md).
 
-10. **Cache adapter.** [ ]
+10. **Cache adapter.** [x]
     - Implement record conversion and hit rehydration behind a cache seam that
       consumes `mizar-cache` validation results.
     - Tests: round-trip through mock cache; invalid hits, incomplete

@@ -636,13 +636,19 @@ impl IrStorageService {
         Ok(())
     }
 
-    fn abandon_pending_slot(&self, slot: OutputSlotId) {
+    pub(crate) fn abandon<T>(&self, slot: PendingOutputSlot<T>) -> bool {
+        self.abandon_pending_slot(slot.id)
+    }
+
+    fn abandon_pending_slot(&self, slot: OutputSlotId) -> bool {
         let mut state = self.state.lock().expect("IR storage mutex poisoned");
         if let Some(record) = state.slots.get_mut(&slot)
             && matches!(record.state, SlotState::Pending)
         {
             record.state = SlotState::Abandoned;
+            return true;
         }
+        false
     }
 
     /// Reads a sealed payload through a typed handle.
@@ -895,6 +901,11 @@ impl<T> BlobDecoder<T> {
         }
     }
 
+    /// Decodes canonical bytes into a typed payload.
+    pub fn decode(&self, bytes: &[u8]) -> Result<T, BlobDecodeError> {
+        (self.decode)(bytes)
+    }
+
     fn into_erased(self) -> ErasedBlobDecoder
     where
         T: Send + Sync + 'static,
@@ -904,6 +915,14 @@ impl<T> BlobDecoder<T> {
             let value = decode(bytes)?;
             Ok(Arc::new(value) as Arc<dyn Any + Send + Sync>)
         })
+    }
+}
+
+impl<T> Clone for BlobDecoder<T> {
+    fn clone(&self) -> Self {
+        Self {
+            decode: self.decode.clone(),
+        }
     }
 }
 

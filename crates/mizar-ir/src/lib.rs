@@ -16,6 +16,9 @@
 
 #![forbid(unsafe_code)]
 
+/// Cache-record adapter for sealed IR handles.
+pub mod cache_adapter;
+
 /// Snapshot-scoped IR identity tables and phase-output lineage.
 pub mod identity;
 

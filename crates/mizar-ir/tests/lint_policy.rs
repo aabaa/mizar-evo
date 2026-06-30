@@ -95,12 +95,13 @@ fn ir_manifest_dependency_boundary_stays_narrow() {
             "dependencies".to_owned(),
             vec![
                 "blake3 = \"1.8.5\"",
+                "mizar-cache = { path = \"../mizar-cache\" }",
                 "mizar-session = { path = \"../mizar-session\" }",
             ],
         )],
-        "{} task 3 must keep production dependencies limited to deterministic \
-         hashing plus mizar-session; cache/artifact dependencies arrive only \
-         in their later task specs, and \
+        "{} task 10 must keep production dependencies limited to deterministic \
+         hashing, mizar-session, and the mizar-cache validation seam; artifact \
+         dependencies arrive only in their later task specs, and \
          mizar-driver/mizar-diagnostics must remain absent",
         manifest_path.display()
     );
@@ -109,7 +110,6 @@ fn ir_manifest_dependency_boundary_stays_narrow() {
         for forbidden in [
             "mizar-artifact",
             "mizar-build",
-            "mizar-cache",
             "mizar-diagnostics",
             "mizar-driver",
         ] {

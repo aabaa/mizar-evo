@@ -27,6 +27,15 @@ const CONTENT_HASH_DOMAIN: &str = "mizar-ir/publisher-content-hash/v1";
 const SIDE_TABLE_HASH_DOMAIN: &str = "mizar-ir/publisher-side-table-hash/v1";
 const NAMED_INPUT_HASH_DOMAIN: &str = "mizar-ir/publisher-named-input-hash/v1";
 
+/// Hash summary for a sealed parent output.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, std::hash::Hash)]
+pub(crate) struct ParentHashSummary {
+    /// Parent content hash.
+    pub(crate) content_hash: Hash,
+    /// Parent side-table hash.
+    pub(crate) side_table_hash: Hash,
+}
+
 /// Origin of a publish request.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, std::hash::Hash)]
 #[non_exhaustive]
@@ -247,35 +256,67 @@ impl PhaseOutputPublisher {
     where
         T: Send + Sync + 'static,
     {
+        let slot_for_abandon = input.slot.clone();
         let state = self.state.lock().expect("publisher mutex poisoned");
-        validate_snapshot_state(&state, input.snapshot, input.origin, input.target)?;
-        validate_allowed_work_unit(&state, &input.phase, &input.work_unit, &input.output_kind)?;
-        validate_slot_metadata(
+        if let Err(error) =
+            validate_snapshot_state(&state, input.snapshot, input.origin, input.target)
+        {
+            self.storage.abandon(slot_for_abandon);
+            return Err(error);
+        }
+        if let Err(error) =
+            validate_allowed_work_unit(&state, &input.phase, &input.work_unit, &input.output_kind)
+        {
+            self.storage.abandon(slot_for_abandon);
+            return Err(error);
+        }
+        if let Err(error) = validate_slot_metadata(
             &input.slot,
             input.snapshot,
             &input.phase,
             &input.work_unit,
             &input.output_kind,
             input.schema_version,
-        )?;
-        validate_side_tables(&input.side_tables)?;
+        ) {
+            self.storage.abandon(slot_for_abandon);
+            return Err(error);
+        }
+        if let Err(error) = validate_side_tables(&input.side_tables) {
+            self.storage.abandon(slot_for_abandon);
+            return Err(error);
+        }
 
-        let canonical_payload = input
-            .canonical_payload
-            .clone()
-            .ok_or(PublishError::MissingCanonicalPayload)?;
-        let mut parents = input.parents;
-        self.validate_parent_handles(input.snapshot, &parents)?;
+        let Some(canonical_payload) = input.canonical_payload.clone() else {
+            self.storage.abandon(slot_for_abandon);
+            return Err(PublishError::MissingCanonicalPayload);
+        };
+        let mut parents = input.parents.clone();
+        if let Err(error) = self.validate_parent_handles(input.snapshot, &parents) {
+            self.storage.abandon(slot_for_abandon);
+            return Err(error);
+        }
         sort_parent_refs(&mut parents);
-        let content_hash = content_hash(
+        let content_hash = match content_hash(
             &canonical_payload,
             &parents,
             input.named_input_hashes.clone(),
-        )?;
-        let side_table_hash = side_table_hash(&input.side_tables)?;
+        ) {
+            Ok(hash) => hash,
+            Err(error) => {
+                self.storage.abandon(slot_for_abandon);
+                return Err(error);
+            }
+        };
+        let side_table_hash = match side_table_hash(&input.side_tables) {
+            Ok(hash) => hash,
+            Err(error) => {
+                self.storage.abandon(slot_for_abandon);
+                return Err(error);
+            }
+        };
         let parent_ids = parents.iter().map(AnyPhaseOutputRef::output).collect();
 
-        let registration = self
+        let registration = match self
             .registry
             .register_output_with_status(OutputIdentityInput {
                 snapshot: input.snapshot,
@@ -286,10 +327,15 @@ impl PhaseOutputPublisher {
                 side_table_hash,
                 parents: parent_ids,
                 named_input_hashes: input.named_input_hashes,
-            })
-            .map_err(|error| PublishError::Identity {
-                error: Box::new(error),
-            })?;
+            }) {
+            Ok(registration) => registration,
+            Err(error) => {
+                self.storage.abandon(slot_for_abandon);
+                return Err(PublishError::Identity {
+                    error: Box::new(error),
+                });
+            }
+        };
         let lineage = registration.lineage.clone();
 
         match self.storage.seal_canonical(SealCanonicalOutputInput {
@@ -342,6 +388,15 @@ impl AllowedWorkUnit {
             phase,
             output_kind,
             work_unit,
+        }
+    }
+}
+
+impl From<&AnyPhaseOutputRef> for ParentHashSummary {
+    fn from(value: &AnyPhaseOutputRef) -> Self {
+        Self {
+            content_hash: value.content_hash(),
+            side_table_hash: value.side_table_hash(),
         }
     }
 }
@@ -512,12 +567,26 @@ fn content_hash(
     parents: &[AnyPhaseOutputRef],
     named_input_hashes: Vec<NamedInputHash>,
 ) -> Result<Hash, PublishError> {
+    let parents = parents
+        .iter()
+        .map(ParentHashSummary::from)
+        .collect::<Vec<_>>();
+    content_hash_from_parent_summaries(canonical_payload, &parents, named_input_hashes)
+}
+
+pub(crate) fn content_hash_from_parent_summaries(
+    canonical_payload: &[u8],
+    parents: &[ParentHashSummary],
+    named_input_hashes: Vec<NamedInputHash>,
+) -> Result<Hash, PublishError> {
     let mut named_input_hashes = canonicalize_named_inputs(named_input_hashes)?;
+    let mut parents = parents.to_vec();
+    sort_parent_summaries(&mut parents);
     let mut hasher = stable_hasher(CONTENT_HASH_DOMAIN);
     write_bytes(&mut hasher, canonical_payload);
     write_len(&mut hasher, parents.len());
     for parent in parents {
-        write_hash(&mut hasher, "parent_content", parent.content_hash());
+        write_hash(&mut hasher, "parent_content", parent.content_hash);
     }
     write_len(&mut hasher, named_input_hashes.len());
     for named in named_input_hashes.drain(..) {
@@ -528,7 +597,7 @@ fn content_hash(
     Ok(finish_hash(hasher))
 }
 
-fn side_table_hash(side_tables: &IrSideTables) -> Result<Hash, PublishError> {
+pub(crate) fn side_table_hash(side_tables: &IrSideTables) -> Result<Hash, PublishError> {
     validate_side_tables(side_tables)?;
     let mut hasher = stable_hasher(SIDE_TABLE_HASH_DOMAIN);
     for (category, values) in [
@@ -551,6 +620,28 @@ fn side_table_hash(side_tables: &IrSideTables) -> Result<Hash, PublishError> {
         }
     }
     Ok(finish_hash(hasher))
+}
+
+pub(crate) fn canonical_parent_summaries(parents: &[AnyPhaseOutputRef]) -> Vec<ParentHashSummary> {
+    let mut summaries = parents
+        .iter()
+        .map(ParentHashSummary::from)
+        .collect::<Vec<_>>();
+    sort_parent_summaries(&mut summaries);
+    summaries
+}
+
+fn sort_parent_summaries(parents: &mut [ParentHashSummary]) {
+    parents.sort_by(|left, right| {
+        left.content_hash
+            .as_bytes()
+            .cmp(right.content_hash.as_bytes())
+            .then_with(|| {
+                left.side_table_hash
+                    .as_bytes()
+                    .cmp(right.side_table_hash.as_bytes())
+            })
+    });
 }
 
 fn canonicalize_named_inputs(
