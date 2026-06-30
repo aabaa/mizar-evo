@@ -18,12 +18,12 @@ records parent/derived relationships between sealed phase outputs.
 | Identity | Owner | Stability |
 |---|---|---|
 | `BuildSnapshotId` | `mizar-session` | Deterministic for the exact source, dependency, lockfile, toolchain, and verifier-config state. |
-| `SourceId` | `mizar-session` | Session-owned source handle carried by IR tables. |
+| `SourceId` | `mizar-session` | Session-owned source handle accepted as non-canonical metadata; Task 3 does not retain it. |
 | `ModuleId` | `mizar-ir` | Deterministic inside one `BuildSnapshotId` from package/module identity and source identity. |
 | `ItemId` | `mizar-ir` | Deterministic inside one `BuildSnapshotId` from owning module and producer-declared item key. |
 | `ExprId` | `mizar-ir` | Deterministic inside one `BuildSnapshotId` from owning item or module and producer-declared expression key. |
 | `VcId` | `mizar-ir` | Deterministic inside one `BuildSnapshotId` from owning obligation order key; it is not a cross-edit proof-reuse identity. |
-| `PhaseOutputId` | `mizar-ir` | Deterministic inside one `BuildSnapshotId` from phase, work unit, output kind, content hash, side-table hash, and dependency output ids. |
+| `PhaseOutputId` | `mizar-ir` | Deterministic inside one `BuildSnapshotId` from phase, work unit, output kind, content hash, side-table hash, dependency output ids, and sorted named input hashes. |
 
 `BuildSnapshotId` and `SourceId` are consumed session identities. `mizar-ir`
 does not assign or persist them.
@@ -57,23 +57,46 @@ Each `mizar-ir` id is derived from a domain-separated canonical byte sequence:
 ```text
 mizar-ir/<identity-family>/v1
 snapshot = <BuildSnapshotId published-schema string>
-canonical fields = sorted producer-owned identity fields
+canonical fields = fixed per-family producer-owned identity fields
 ```
+
+The current implementation uses the fixed per-family field order listed below.
+Collection-valued fields inside a family are sorted by their stable keys before
+hashing.
 
 The canonical fields for each family are:
 
 | Family | Required fields |
 |---|---|
-| Module | package id, module path, session source id when available, source hash |
+| Module | package id, module path, source hash |
 | Item | module id, item kind, normalized origin key, declaration order key |
 | Expression | module id, optional item id, expression kind, producer path key |
 | VC | module id, optional item id, obligation order key, canonical VC fingerprint when available |
-| Phase output | phase, work unit, runtime output kind tag, content hash, side-table hash, dependency output ids |
+| Phase output | phase, work unit, runtime output kind tag, content hash, side-table hash, dependency output ids, sorted named input hashes |
+
+The registry also keeps a logical duplicate key for each family. The duplicate
+key is narrower than the final id when a producer payload can legitimately
+change the final hash:
+
+- module duplicate key: package id and module path; source hash is payload;
+- VC duplicate key: module id, optional item id, and obligation order key;
+- phase-output duplicate key: phase, work unit, and output kind.
+
+Registering the same logical key with a different payload in one snapshot is
+rejected as a conflicting duplicate instead of silently producing a second
+current identity.
 
 Producer path keys are semantic or source-shaped keys supplied by the owning
 phase. `mizar-ir` validates ordering, domains, and snapshot compatibility, but
 it does not decide name resolution, type semantics, obligation anchors, proof
 reuse, or proof acceptance.
+
+`SourceId` may be accepted beside module identity inputs so later tasks can add
+non-canonical source metadata plumbing, but Task 3 does not retain it in the
+registry and it is intentionally not hashed into `ModuleId`: `mizar-session`
+treats `SourceId` as a non-persistable session handle, while
+`BuildSnapshotId`, package id, module path, and source hash provide the
+deterministic identity inputs.
 
 Collections used as identity input are sorted by their stable string or hash
 keys before hashing. Duplicate identity keys with conflicting payloads are
@@ -102,7 +125,12 @@ evidence and must not be promoted to trusted status.
 The registry rejects these operations:
 
 - registering an output whose parent handle belongs to another snapshot;
-- publishing an obsolete snapshot output as a current result;
+- assigning an item, expression, or VC id from an owning module or item that is
+  not registered in the same snapshot;
+- assigning an expression or VC id from an item whose recorded owning module
+  differs from the supplied module;
+- publishing an obsolete snapshot output as a current result once the later
+  publisher and snapshot-replacement tasks add current/obsolete state;
 - assigning an IR-local id for a snapshot unknown to the registry;
 - treating matching `ModuleId`, `ItemId`, `ExprId`, `VcId`, source range, arena
   id, or output hash alone as cross-snapshot validation;
@@ -116,14 +144,17 @@ status or change the proof authority boundary.
 
 ## Snapshot Replacement
 
-When a newer snapshot supersedes an older one, the registry marks the older
-snapshot as obsolete for current publication. Existing retained handles may
-remain readable for stale diagnostics, explanations, LSP requests, or validated
-cache input. They cannot be reported as current results after supersession.
+Task 13 extends this registry with snapshot replacement. When a newer snapshot
+supersedes an older one, the registry marks the older snapshot as obsolete for
+current publication. Existing retained handles may remain readable for stale
+diagnostics, explanations, LSP requests, or validated cache input. They cannot
+be reported as current results after supersession.
 
 Snapshot replacement is explicit: the current snapshot is a registry property,
-not a comparison between id values. Since `BuildSnapshotId` is a hash-like
-opaque id, semantic ordering must not be inferred from it.
+not a comparison between id values. Task 3 records only known snapshots and
+lineage; current/obsolete publication checks are implemented by the later
+publisher and snapshot-replacement tasks. Since `BuildSnapshotId` is a
+hash-like opaque id, semantic ordering must not be inferred from it.
 
 ## Tests
 

@@ -18,12 +18,12 @@ seal 済み phase output 間の親/派生関係を記録する。
 | Identity | Owner | Stability |
 |---|---|---|
 | `BuildSnapshotId` | `mizar-session` | 正確な source、dependency、lockfile、toolchain、verifier-config state に対して決定的。 |
-| `SourceId` | `mizar-session` | IR table が運ぶ session-owned source handle。 |
+| `SourceId` | `mizar-session` | non-canonical metadata として受け取る session-owned source handle。Task 3 は保持しない。 |
 | `ModuleId` | `mizar-ir` | package/module identity と source identity から、1 つの `BuildSnapshotId` 内で決定的。 |
 | `ItemId` | `mizar-ir` | owning module と producer-declared item key から、1 つの `BuildSnapshotId` 内で決定的。 |
 | `ExprId` | `mizar-ir` | owning item または module と producer-declared expression key から、1 つの `BuildSnapshotId` 内で決定的。 |
 | `VcId` | `mizar-ir` | owning obligation order key から、1 つの `BuildSnapshotId` 内で決定的。cross-edit proof-reuse identity ではない。 |
-| `PhaseOutputId` | `mizar-ir` | phase、work unit、output kind、content hash、side-table hash、dependency output ids から、1 つの `BuildSnapshotId` 内で決定的。 |
+| `PhaseOutputId` | `mizar-ir` | phase、work unit、output kind、content hash、side-table hash、dependency output ids、sort 済み named input hashes から、1 つの `BuildSnapshotId` 内で決定的。 |
 
 `BuildSnapshotId` と `SourceId` は消費する session identity である。`mizar-ir` は
 それらを割り当てず、永続化しない。
@@ -57,23 +57,42 @@ path も fail-closed で、validation 後にだけ current snapshot の新しい
 ```text
 mizar-ir/<identity-family>/v1
 snapshot = <BuildSnapshotId published-schema string>
-canonical fields = sorted producer-owned identity fields
+canonical fields = fixed per-family producer-owned identity fields
 ```
+
+現在の実装は、下表に示す family ごとの固定 field order を使う。family 内の
+collection-valued field は、hash 前に stable key で sort する。
 
 各 family の canonical fields は次の通り:
 
 | Family | Required fields |
 |---|---|
-| Module | package id、module path、利用可能なら session source id、source hash |
+| Module | package id、module path、source hash |
 | Item | module id、item kind、normalized origin key、declaration order key |
 | Expression | module id、任意の item id、expression kind、producer path key |
 | VC | module id、任意の item id、obligation order key、利用可能なら canonical VC fingerprint |
-| Phase output | phase、work unit、runtime output kind tag、content hash、side-table hash、dependency output ids |
+| Phase output | phase、work unit、runtime output kind tag、content hash、side-table hash、dependency output ids、sort 済み named input hashes |
+
+registry は各 family について logical duplicate key も保持する。producer payload が
+final hash を正当に変え得る場合、duplicate key は final id より狭い:
+
+- module duplicate key: package id と module path。source hash は payload。
+- VC duplicate key: module id、任意の item id、obligation order key。
+- phase-output duplicate key: phase、work unit、output kind。
+
+1 つの snapshot 内で同じ logical key を異なる payload で登録すると、2 つ目の
+current identity を黙って作るのではなく conflicting duplicate として拒否する。
 
 Producer path key は、owning phase が供給する semantic または source-shaped key
 である。`mizar-ir` は ordering、domain、snapshot compatibility を検証するが、
 name resolution、type semantics、obligation anchor、proof reuse、proof
 acceptance は決定しない。
+
+`SourceId` は、後続 task が non-canonical source metadata plumbing を追加できるよう
+module identity input の横で受け取ってよい。ただし Task 3 は registry に保持せず、
+意図的に `ModuleId` の hash へ入れない。`mizar-session` は `SourceId` を
+non-persistable な session handle として扱う。一方で `BuildSnapshotId`、package id、
+module path、source hash が決定的な identity input を提供する。
 
 Identity input に使う collection は、stable string または hash key で sort して
 から hash する。payload が衝突する duplicate identity key は拒否する。必須
@@ -101,7 +120,12 @@ trusted status へ昇格してはならない。
 registry は以下を拒否する:
 
 - 別 snapshot の parent handle を持つ output の登録。
-- obsolete snapshot output を current result として publish すること。
+- 同じ snapshot に登録されていない owning module または item から item、
+  expression、VC id を割り当てること。
+- 記録済み owning module が supplied module と異なる item から expression または
+  VC id を割り当てること。
+- 後続の publisher と snapshot-replacement task が current/obsolete state を追加した後、
+  obsolete snapshot output を current result として publish すること。
 - registry が知らない snapshot に対する IR-local id の割り当て。
 - `ModuleId`、`ItemId`、`ExprId`、`VcId`、source range、arena id、output hash の
   一致だけを cross-snapshot validation として扱うこと。
@@ -115,15 +139,17 @@ cache hit は optimization data である。validated cache hit は current snap
 
 ## Snapshot replacement
 
-新しい snapshot が古い snapshot を supersede すると、registry は古い snapshot を
-current publication 不能として mark する。既存の retained handle は stale
-diagnostic、explanation、LSP request、または validated cache input のために
-読み取り可能なままでよい。supersession 後に current result として報告しては
-ならない。
+Task 13 はこの registry に snapshot replacement を拡張する。新しい snapshot が
+古い snapshot を supersede すると、registry は古い snapshot を current publication
+不能として mark する。既存の retained handle は stale diagnostic、explanation、
+LSP request、または validated cache input のために読み取り可能なままでよい。
+supersession 後に current result として報告してはならない。
 
 snapshot replacement は明示的である。current snapshot は registry property であり、
-id value の比較ではない。`BuildSnapshotId` は hash-like な opaque id なので、
-semantic ordering を推測してはならない。
+id value の比較ではない。Task 3 は known snapshots と lineage だけを記録する。
+current/obsolete publication check は後続の publisher と snapshot-replacement task が
+実装する。`BuildSnapshotId` は hash-like な opaque id なので、semantic ordering を
+推測してはならない。
 
 ## Tests
 

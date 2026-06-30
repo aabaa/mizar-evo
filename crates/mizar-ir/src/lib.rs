@@ -15,3 +15,6 @@
 //! [`00.crate_plan.md`](../../../doc/design/mizar-ir/en/00.crate_plan.md).
 
 #![forbid(unsafe_code)]
+
+/// Snapshot-scoped IR identity tables and phase-output lineage.
+pub mod identity;

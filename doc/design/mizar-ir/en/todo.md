@@ -19,7 +19,7 @@ Module names follow the minimum split of
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| identity | `identity.md` (task 2) | `src/identity.rs` | [ ] |
+| identity | `identity.md` (task 2) | `src/identity.rs` | [x] |
 | storage | `storage.md` (task 4) | `src/storage.rs` | [ ] |
 | publisher | `publisher.md` (task 7) | `src/publisher.rs` | [ ] |
 | cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [ ] |
@@ -96,7 +96,7 @@ Keep `cargo test -p mizar-ir` green after each task (see
      `mizar-ir` consumes `BuildSnapshotId` from `mizar-session`; it does not
      own source/snapshot id construction.
 
-3. **Snapshot handle registry.** [ ]
+3. **Snapshot handle registry.** [x]
    - Implement the registry with deterministic id assignment and
      parent/derived tracking.
    - Tests: id determinism for identical states; conflicting duplicate
