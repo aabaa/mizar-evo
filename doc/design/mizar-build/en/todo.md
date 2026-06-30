@@ -397,11 +397,16 @@ Keep `cargo test -p mizar-build` green after each task (see
       that stale or superseded incremental results do not publish current
       manifest updates.
 
-25. **Architecture-22 follow-up audit.** [ ]
+25. **Architecture-22 follow-up audit.** [x]
     - Re-run the source/spec correspondence and bilingual documentation sync
       audits for the task-24 scheduler equivalence, cancellation, and cache
       seam contract; record any remaining stale-publication or deterministic
       commit-boundary gaps as follow-up tasks.
+    - Completed by task 25: `architecture_22_follow_up_audit.md` records the
+      source/spec and bilingual audit re-run. `source_spec_correspondence.md`
+      and `bilingual_documentation_synchronization.md` now include the task-24
+      gate, BUILD-G-017, and synchronized EN/JA status. No stale-publication or
+      deterministic commit-boundary gap remains unresolved above low severity.
     - Deps: 24. Spec: all module specs, this TODO, and repository
       documentation policy.
 

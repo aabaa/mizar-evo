@@ -15,7 +15,9 @@ task 22 は task 21 後の `mizar-build` を監査する。crate plan、TODO、m
 [cancel.md](./cancel.md)、[failure_state.md](./failure_state.md)、
 [artifact_commit.md](./artifact_commit.md)、[cache_seam.md](./cache_seam.md)、
 [batch_integration.md](./batch_integration.md)、および
-[determinism_suite.md](./determinism_suite.md) である。
+[determinism_suite.md](./determinism_suite.md) である。task 25 は task 24 後に
+architecture-22 部分を再実行し、追加で
+[incremental_parallel_equivalence.md](./incremental_parallel_equivalence.md) を監査する。
 
 分類結果:
 
@@ -30,7 +32,9 @@ task 22 は task 21 後の `mizar-build` を監査する。crate plan、TODO、m
 - `boundary_violation`: 見つからない。
 - `repo_metadata_conflict`: 見つからない。
 - `external_dependency_gap`: 既存の driver、IR、producer-token、full real
-  clean/incremental integration gaps は下記のとおり残る。
+  clean/incremental integration gaps は下記のとおり残る。BUILD-G-017 は
+  remaining real driver / IR / producer-token integration gap に対する
+  task-24/25 implemented-seam equivalence record である。
 
 ## public API 対応
 
@@ -48,6 +52,7 @@ task 22 は task 21 後の `mizar-build` を監査する。crate plan、TODO、m
 | [cache_seam.md](./cache_seam.md) | `CacheSchedulingPlan`, task decisions, hit/miss/unavailable/no-key outcomes, validated hit payloads, cache output/diagnostic refs, plan diagnostics, `validated_decision_map` | `crates/mizar-build/src/cache_seam.rs`; scheduler integration は `src/scheduler.rs` | cache-seam と scheduler tests が externally supplied validated hits、clean-equivalent scheduler payloads、fallback execution、disabled policy behavior、duplicate/unknown decisions、deterministic hit payload collation、local cache-key/fingerprint/proof-reuse logic の不在を覆う。 | No finding. |
 | [batch_integration.md](./batch_integration.md) | planner、module index、task graph、scheduler、cache seam、artifact commit をまたぐ available batch path | `crates/mizar-build/tests/batch_integration.rs` | integration tests が plan -> graph -> schedule -> commit、cache hit non-authority、explicit external-gap placeholder guards を覆う。 | No finding. |
 | [determinism_suite.md](./determinism_suite.md) | implemented seams の cross-boundary determinism | `crates/mizar-build/tests/determinism_suite.rs` | determinism tests が shuffled logical inputs、scheduler worker/priority/completion variants、cache hit/miss placement、shuffled manifest updates、boundary placeholder absence を覆う。 | No finding. |
+| [incremental_parallel_equivalence.md](./incremental_parallel_equivalence.md) | implemented-seam architecture-22 equivalence gate | `crates/mizar-build/tests/determinism_suite.rs` | `clean_and_incremental_parallel_runs_publish_identical_visible_projection` が同じ snapshot 上の clean sequential、clean parallel、incremental sequential、incremental parallel visible projections を比較し、scheduler output refs、manifest hashes、summary refs、proof-witness entries、diagnostics、failure records、blocked records を含める。`superseded_or_stale_incremental_results_do_not_publish_current_artifacts` は current publication 前の stale validated hits と superseded snapshots を確認する。 | No finding. |
 | 全 module specs | 現在の全 public enum に対する public enum forward-compatibility policy | `crates/mizar-build/src/**/*.rs` の `#[non_exhaustive]` attributes; `crates/mizar-resolve/src/module_index.rs` の downstream wildcard arm | `tests/lint_policy.rs` が source を scan し、EN/JA policy rows の完全一致を確認し、downstream-compatible public enum declarations を要求する。`cargo test -p mizar-resolve` が現在の downstream build-side consumer を検証する。 | No finding. |
 
 ## 挙動対応
@@ -63,6 +68,7 @@ task 22 は task 21 後の `mizar-build` を監査する。crate plan、TODO、m
 | failure propagation は direct failures と bounded blocked states を記録し、producer outputs のコピー、diagnostics の創作、cancellation の proof failure 化を行わない。 | `failure_state.rs` と scheduler failure tests。 | No finding. |
 | artifact commit は `mizar-artifact` manifest transactions と caller-supplied entries だけを消費し、artifact schema、producer payloads、tokens、proof authority を所有しない。 | `artifact_commit.rs`、`mizar-artifact` tests、batch/determinism suites。 | No finding. |
 | cache-aware scheduling は外部で検証済みの cache decisions だけを消費する。cache hit は execution skip の候補だが、semantic acceptance、proof authority、trusted status を昇格しない。 | `cache_seam.rs`、scheduler cache tests、batch cache test、determinism suite、`mizar-cache` adjacent tests。 | No finding. |
+| Architecture-22 implemented-seam equivalence は clean sequential、clean parallel、incremental sequential、incremental parallel scheduler runs の externally visible projection を保ち、stale / superseded work が current artifacts を publish しない。 | `tests/determinism_suite.rs` の task-24 additions が visible projections と stale-publication guards を比較する。task-25 follow-up audit は [architecture_22_follow_up_audit.md](./architecture_22_follow_up_audit.md) に記録する。 | No finding. |
 | crate は `mizar-driver` に依存せず、driver-owned requests、sessions、event streams、registry dispatch、`salsa` query storage を実装しない。 | `Cargo.toml` dependency tree、`tests/batch_integration.rs`、boundary guard tests。 | No finding. |
 
 ## 残る gaps
@@ -81,9 +87,13 @@ task 22 は新しい blocking/high `spec_gap`、`test_gap`、`design_drift`、
 | BUILD-G-004 / BUILD-G-013 | `external_dependency_gap` | Real producer artifact publication tokens と full phase-15 emission inputs はまだ利用できない。`mizar-build` は caller-supplied `mizar-artifact` entries を消費し、tokens を創作しない。 |
 | BUILD-G-006 / BUILD-G-015 | `external_dependency_gap` | Full real resolver/checker/VC/proof/kernel/driver integration と clean/incremental/parallel equivalence は external seams が存在するまで利用できない。task 24 が implemented-seam equivalence gate を所有する。 |
 | BUILD-G-009 | `external_dependency_gap` | Driver-owned cache query integration、`mizar-ir` output rehydration、producer publication tokens は存在しない。cache seam は caller-supplied decisions だけを消費し続ける。 |
+| BUILD-G-017 | `external_dependency_gap` | task 24/25 は architecture-22 equivalence を実装済み `mizar-build` seams に限って覆う。full real driver sessions、real IR output rehydration、producer-owned artifact projection、producer publication tokens はまだ利用できず、stub してはならない。 |
 
 ## 検証
 
 task 22 は documentation-only である。検証結果は task commit とともに記録し、
-documentation diff checks を含める。直前の task-21 commit は、監査対象 source と
-隣接する public-enum consumer changes が compile することをすでに検証している。
+documentation diff checks を含める。task 25 も documentation-only であり、
+post-task-24 audit re-run を記録する。その検証は task commit の documentation
+diff checks である。task-24 commit は implemented equivalence gate を
+`cargo test -p mizar-build`、clippy、fmt、利用可能な adjacent cache / artifact /
+VC / proof crate tests によりすでに検証している。

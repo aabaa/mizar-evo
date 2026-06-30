@@ -16,7 +16,9 @@ The audited design inputs are [00.crate_plan.md](./00.crate_plan.md),
 [cancel.md](./cancel.md), [failure_state.md](./failure_state.md),
 [artifact_commit.md](./artifact_commit.md), [cache_seam.md](./cache_seam.md),
 [batch_integration.md](./batch_integration.md), and
-[determinism_suite.md](./determinism_suite.md).
+[determinism_suite.md](./determinism_suite.md). Task 25 re-runs the
+architecture-22 portion after task 24 and additionally audits
+[incremental_parallel_equivalence.md](./incremental_parallel_equivalence.md).
 
 Classification result:
 
@@ -33,7 +35,9 @@ Classification result:
 - `boundary_violation`: none found.
 - `repo_metadata_conflict`: none found.
 - `external_dependency_gap`: existing driver, IR, producer-token, and full real
-  clean/incremental integration gaps remain recorded below.
+  clean/incremental integration gaps remain recorded below. BUILD-G-017 is the
+  task-24/25 implemented-seam equivalence record for the remaining real
+  driver/IR/producer-token integration gap.
 
 ## Public API Correspondence
 
@@ -51,6 +55,7 @@ Classification result:
 | [cache_seam.md](./cache_seam.md) | `CacheSchedulingPlan`, task decisions, hit/miss/unavailable/no-key outcomes, validated hit payloads, cache output/diagnostic refs, plan diagnostics, and `validated_decision_map` | `crates/mizar-build/src/cache_seam.rs`; scheduler integration in `src/scheduler.rs` | Cache-seam and scheduler tests cover externally supplied validated hits, clean-equivalent scheduler payloads, fallback execution, disabled policy behavior, duplicate/unknown decisions, deterministic hit payload collation, and absence of local cache-key/fingerprint/proof-reuse logic. | No finding. |
 | [batch_integration.md](./batch_integration.md) | Available batch path over planner, module index, task graph, scheduler, cache seam, and artifact commit | `crates/mizar-build/tests/batch_integration.rs` | Integration tests cover plan -> graph -> schedule -> commit, cache hit non-authority, and explicit external-gap placeholder guards. | No finding. |
 | [determinism_suite.md](./determinism_suite.md) | Cross-boundary determinism for implemented seams | `crates/mizar-build/tests/determinism_suite.rs` | Determinism tests cover shuffled logical inputs, scheduler worker/priority/completion variants, cache hit/miss placement, shuffled manifest updates, and boundary placeholder absence. | No finding. |
+| [incremental_parallel_equivalence.md](./incremental_parallel_equivalence.md) | Implemented-seam architecture-22 equivalence gate | `crates/mizar-build/tests/determinism_suite.rs` | `clean_and_incremental_parallel_runs_publish_identical_visible_projection` compares clean sequential, clean parallel, incremental sequential, and incremental parallel visible projections over the same snapshot, including scheduler output refs, manifest hashes, summary refs, proof-witness entries, diagnostics, failure records, and blocked records. `superseded_or_stale_incremental_results_do_not_publish_current_artifacts` checks stale validated hits and superseded snapshots before current publication. | No finding. |
 | All module specs | Public enum forward-compatibility policy for every current public enum | `#[non_exhaustive]` attributes in `crates/mizar-build/src/**/*.rs`; downstream wildcard arm in `crates/mizar-resolve/src/module_index.rs` | `tests/lint_policy.rs` scans source, checks exact EN/JA policy rows, and requires downstream-compatible public enum declarations. `cargo test -p mizar-resolve` verifies the current downstream build-side consumer. | No finding. |
 
 ## Behavior Correspondence
@@ -66,6 +71,7 @@ Classification result:
 | Failure propagation records direct failures and bounded blocked states without copying producer outputs, fabricating diagnostics, or collapsing cancellation into proof failure. | `failure_state.rs` and scheduler failure tests. | No finding. |
 | Artifact commit consumes `mizar-artifact` manifest transactions and caller-supplied entries only; it does not own artifact schema, producer payloads, tokens, or proof authority. | `artifact_commit.rs`, `mizar-artifact` tests, and batch/determinism suites. | No finding. |
 | Cache-aware scheduling consumes externally validated cache decisions only; cache hit may skip execution but never upgrades semantic acceptance, proof authority, or trusted status. | `cache_seam.rs`, scheduler cache tests, batch cache test, determinism suite, and `mizar-cache` adjacent tests. | No finding. |
+| Architecture-22 implemented-seam equivalence preserves externally visible projection across clean sequential, clean parallel, incremental sequential, and incremental parallel scheduler runs, and stale/superseded work does not publish current artifacts. | Task-24 additions to `tests/determinism_suite.rs` compare visible projections and stale-publication guards; task-25 follow-up audit is recorded in [architecture_22_follow_up_audit.md](./architecture_22_follow_up_audit.md). | No finding. |
 | The crate has no dependency on `mizar-driver` and does not implement driver-owned requests, sessions, event streams, registry dispatch, or `salsa` query storage. | `Cargo.toml` dependency tree, `tests/batch_integration.rs`, and boundary guard tests. | No finding. |
 
 ## Remaining Gaps
@@ -84,9 +90,13 @@ Existing non-blocking follow-up gaps remain:
 | BUILD-G-004 / BUILD-G-013 | `external_dependency_gap` | Real producer artifact publication tokens and full phase-15 emission inputs remain unavailable. `mizar-build` consumes caller-supplied `mizar-artifact` entries and does not invent tokens. |
 | BUILD-G-006 / BUILD-G-015 | `external_dependency_gap` | Full real resolver/checker/VC/proof/kernel/driver integration and clean/incremental/parallel equivalence remain unavailable until external seams exist. Task 24 owns the implemented-seam equivalence gate. |
 | BUILD-G-009 | `external_dependency_gap` | Driver-owned cache query integration, `mizar-ir` output rehydration, and producer publication tokens remain absent. The cache seam continues to consume caller-supplied decisions only. |
+| BUILD-G-017 | `external_dependency_gap` | Task 24/25 covers architecture-22 equivalence for implemented `mizar-build` seams. Full real driver sessions, real IR output rehydration, producer-owned artifact projection, and producer publication tokens remain unavailable and must not be stubbed. |
 
 ## Verification
 
 Task 22 is documentation-only. Verification is recorded with the task commit and
-includes documentation diff checks. The previous task-21 commit already verified
-that the audited source and adjacent public-enum consumer changes compile.
+includes documentation diff checks. Task 25 is also documentation-only and
+records the post-task-24 audit re-run; its verification is the documentation
+diff checks for the task commit. The task-24 commit already verified the
+implemented equivalence gate with `cargo test -p mizar-build`, clippy, fmt, and
+the available adjacent cache/artifact/VC/proof crate tests.
