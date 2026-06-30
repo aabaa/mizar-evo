@@ -22,10 +22,10 @@ architecture 14 and 19 and internal 01.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| planner | `planner.md` (task 2) | `src/planner.rs` | [x] |
-| module_index | `module_index.md` (task 5) | `src/module_index.rs` | [x] |
-| task_graph | `task_graph.md` (task 7) | `src/task_graph.rs` | [x] |
-| scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` | [x] |
+| planner | `planner.md` (task 2) | `src/planner.rs` + private `src/planner/tests.rs` | [x] |
+| module_index | `module_index.md` (task 5) | `src/module_index.rs` + private `src/module_index/tests.rs` | [x] |
+| task_graph | `task_graph.md` (task 7) | `src/task_graph.rs` + private `src/task_graph/tests.rs` | [x] |
+| scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` + private `src/scheduler/tests.rs` | [x] |
 | resource | `resource.md` (task 11) | `src/resource.rs` | [x] |
 | cancel | `cancel.md` (task 13) | `src/cancel.rs` | [x] |
 | failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [x] |
@@ -410,7 +410,7 @@ Keep `cargo test -p mizar-build` green after each task (see
     - Deps: 24. Spec: all module specs, this TODO, and repository
       documentation policy.
 
-26. **Module-boundary refactor gate.** [ ]
+26. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
@@ -424,6 +424,11 @@ Keep `cargo test -p mizar-build` green after each task (see
     - Deps: 25. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+    - Completed by task 26: `module_boundary_refactor_gate.md` records
+      BUILD-G-018 as a resolved layout-only `source_drift`. Inline unit-test
+      bodies for `planner`, `module_index`, `task_graph`, and `scheduler`
+      moved into private child modules without changing public exports,
+      diagnostics, deterministic renderings, schemas, or behavior.
 
 ## Recommended Verification
 

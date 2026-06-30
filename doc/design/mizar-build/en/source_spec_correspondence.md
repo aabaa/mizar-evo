@@ -19,6 +19,8 @@ The audited design inputs are [00.crate_plan.md](./00.crate_plan.md),
 [determinism_suite.md](./determinism_suite.md). Task 25 re-runs the
 architecture-22 portion after task 24 and additionally audits
 [incremental_parallel_equivalence.md](./incremental_parallel_equivalence.md).
+Task 26 re-runs the source-layout portion for moved unit-test modules and
+additionally audits [module_boundary_refactor_gate.md](./module_boundary_refactor_gate.md).
 
 Classification result:
 
@@ -27,7 +29,9 @@ Classification result:
   `sorted_manifest_updates`; commit-order behavior is already covered through
   `commit_manifest_updates`.
 - `design_drift`: none found for implemented `mizar-build` behavior.
-- `source_drift`: none found for implemented `mizar-build` behavior.
+- `source_drift`: BUILD-G-018 was opened and resolved as layout-only source
+  drift for oversized inline unit-test modules; no implemented behavior drift
+  remains.
 - `source_undocumented_behavior`: none found for implemented `mizar-build`
   behavior.
 - `test_expectation_drift`: none found for implemented `mizar-build`
@@ -44,10 +48,10 @@ Classification result:
 | Spec | Public API checked | Source | Test evidence | Finding |
 |---|---|---|---|---|
 | [00.crate_plan.md](./00.crate_plan.md), [todo.md](./todo.md) | Public modules `planner`, `module_index`, `task_graph`, `scheduler`, `resource`, `cancel`, `failure_state`, `artifact_commit`, and `cache_seam` | `crates/mizar-build/src/lib.rs` | `tests/lint_policy.rs` guards workspace lint opt-in and the public enum policy; crate tests exercise each public module. | No finding. |
-| [planner.md](./planner.md) | Manifest, lockfile, dependency graph, package plan, config, version constraint, diagnostic, validation, and `BuildPlan` APIs; `parse_package_manifest`, `parse_workspace_manifest`, `parse_lockfile`, `validate_package_manifest`, `validate_package_id_spelling`, `validate_lockfile_for_workspace`, `produce_build_plan`, `is_lowercase_snake_case_package_id` | `crates/mizar-build/src/planner.rs` | Planner unit tests cover valid and invalid package/workspace/lockfile inputs, deterministic diagnostic ordering, package-id spelling, lockfile consistency, dependency graph cycles, version conflicts, dev-dependency selection, unsupported editions, and shuffled-input `BuildPlan` equality. | No finding. |
-| [module_index.md](./module_index.md) | `ModuleIndex`, package/namespace/module/dependency-summary entries, source layout provider, build-side provider traits, diagnostics, provider errors, and `build_module_index` | `crates/mizar-build/src/module_index.rs`; downstream wildcard consumption in `crates/mizar-resolve/src/module_index.rs` | Module-index unit tests cover multi-package workspaces, dependency summaries, alias-independent module identity, deterministic source discovery, duplicate/conflict diagnostics, provider lookup, provider errors, and dependency artifact validation. `cargo test -p mizar-resolve` verifies the downstream provider seam. | No finding. |
-| [task_graph.md](./task_graph.md) | `TaskGraphVersion`, `TaskGraphInput`, `TaskGraph`, `BuildTask`, `TaskId`, task kinds, phases, work units, dependency coverage, resource/priority classes, module dependency overlays, VC/backend/evidence IDs, diagnostics, and `build_task_graph` | `crates/mizar-build/src/task_graph.rs` | Task-graph unit tests cover deterministic IDs, package/module ordering, phase expansion, dependency-summary inputs, package and module dependency edges, coverage diagnostics, explicit VC descriptors, duplicate/cycle rejection, placeholder absence, and non-authority boundaries. | No finding. |
-| [scheduler.md](./scheduler.md) | `SchedulerInput`, `SchedulerRun`, task state/result/event records, modes, cache policy, synthetic outcomes, output/diagnostic refs, queues, order keys, diagnostics, `CancellationPolicy` re-export, and `run_scheduler` | `crates/mizar-build/src/scheduler.rs` | Scheduler unit tests cover readiness transitions, queues, priority hints, completion-order independence, cache hit/miss scheduling, resource admission, cancellation, failure/block propagation, event/result collation, immutable synthetic outputs, and placeholder absence. | No finding. |
+| [planner.md](./planner.md) | Manifest, lockfile, dependency graph, package plan, config, version constraint, diagnostic, validation, and `BuildPlan` APIs; `parse_package_manifest`, `parse_workspace_manifest`, `parse_lockfile`, `validate_package_manifest`, `validate_package_id_spelling`, `validate_lockfile_for_workspace`, `produce_build_plan`, `is_lowercase_snake_case_package_id` | `crates/mizar-build/src/planner.rs`; private unit tests in `crates/mizar-build/src/planner/tests.rs` | Planner unit tests cover valid and invalid package/workspace/lockfile inputs, deterministic diagnostic ordering, package-id spelling, lockfile consistency, dependency graph cycles, version conflicts, dev-dependency selection, unsupported editions, and shuffled-input `BuildPlan` equality. | No finding. |
+| [module_index.md](./module_index.md) | `ModuleIndex`, package/namespace/module/dependency-summary entries, source layout provider, build-side provider traits, diagnostics, provider errors, and `build_module_index` | `crates/mizar-build/src/module_index.rs`; private unit tests in `crates/mizar-build/src/module_index/tests.rs`; downstream wildcard consumption in `crates/mizar-resolve/src/module_index.rs` | Module-index unit tests cover multi-package workspaces, dependency summaries, alias-independent module identity, deterministic source discovery, duplicate/conflict diagnostics, provider lookup, provider errors, and dependency artifact validation. `cargo test -p mizar-resolve` verifies the downstream provider seam. | No finding. |
+| [task_graph.md](./task_graph.md) | `TaskGraphVersion`, `TaskGraphInput`, `TaskGraph`, `BuildTask`, `TaskId`, task kinds, phases, work units, dependency coverage, resource/priority classes, module dependency overlays, VC/backend/evidence IDs, diagnostics, and `build_task_graph` | `crates/mizar-build/src/task_graph.rs`; private unit tests in `crates/mizar-build/src/task_graph/tests.rs` | Task-graph unit tests cover deterministic IDs, package/module ordering, phase expansion, dependency-summary inputs, package and module dependency edges, coverage diagnostics, explicit VC descriptors, duplicate/cycle rejection, placeholder absence, and non-authority boundaries. | No finding. |
+| [scheduler.md](./scheduler.md) | `SchedulerInput`, `SchedulerRun`, task state/result/event records, modes, cache policy, synthetic outcomes, output/diagnostic refs, queues, order keys, diagnostics, `CancellationPolicy` re-export, and `run_scheduler` | `crates/mizar-build/src/scheduler.rs`; private unit tests in `crates/mizar-build/src/scheduler/tests.rs` | Scheduler unit tests cover readiness transitions, queues, priority hints, completion-order independence, cache hit/miss scheduling, resource admission, cancellation, failure/block propagation, event/result collation, immutable synthetic outputs, and placeholder absence. | No finding. |
 | [resource.md](./resource.md) | `ResourceBudget`, `TaskResourceRequest`, request units, admission status, admission records, telemetry, scopes, `ResourceManager`, and `resource_queue_rank` | `crates/mizar-build/src/resource.rs` | Resource tests cover hierarchical scopes, delayed admission without overcommit, impossible requests, idempotent duplicate admission, release accounting, worker/memory pools, ATP portfolio/process separation, backend fanout, and deterministic telemetry. | No finding. |
 | [cancel.md](./cancel.md) | `CancellationGeneration`, policy/state/token/decision records, reasons, decisions, checkpoints, freshness and publication guards, and graph-ordered decision helpers | `crates/mizar-build/src/cancel.rs`; scheduler integration in `src/scheduler.rs` | Cancellation tests cover monotonic generations, snapshot supersession, pending/ready/running/completed decisions, checkpoint decisions, obsolete result discard, idempotent requests, canonical ordering, scheduler cancellation, and resource release. | No finding. |
 | [failure_state.md](./failure_state.md) | `FailureCategory`, `BlockReason`, `FailureSourceOrder`, `BuildFailureRecord`, `BlockedTaskRecord`, synthetic failure categories, and stable sort keys | `crates/mizar-build/src/failure_state.rs`; scheduler integration in `src/scheduler.rs` | Failure-state and scheduler tests cover direct failures, bounded blockers, nearest blockers, independent failures, deterministic ordering, cancelled versus failed states, and absence of inherited producer outputs. | No finding. |
@@ -72,13 +76,16 @@ Classification result:
 | Artifact commit consumes `mizar-artifact` manifest transactions and caller-supplied entries only; it does not own artifact schema, producer payloads, tokens, or proof authority. | `artifact_commit.rs`, `mizar-artifact` tests, and batch/determinism suites. | No finding. |
 | Cache-aware scheduling consumes externally validated cache decisions only; cache hit may skip execution but never upgrades semantic acceptance, proof authority, or trusted status. | `cache_seam.rs`, scheduler cache tests, batch cache test, determinism suite, and `mizar-cache` adjacent tests. | No finding. |
 | Architecture-22 implemented-seam equivalence preserves externally visible projection across clean sequential, clean parallel, incremental sequential, and incremental parallel scheduler runs, and stale/superseded work does not publish current artifacts. | Task-24 additions to `tests/determinism_suite.rs` compare visible projections and stale-publication guards; task-25 follow-up audit is recorded in [architecture_22_follow_up_audit.md](./architecture_22_follow_up_audit.md). | No finding. |
+| Module-boundary source layout keeps public modules stable while moving large inline unit-test bodies into private child modules. | Task-26 private test modules are recorded in [module_boundary_refactor_gate.md](./module_boundary_refactor_gate.md); `cargo test -p mizar-build` confirms the moved unit tests still exercise the same parent modules. | No finding. |
 | The crate has no dependency on `mizar-driver` and does not implement driver-owned requests, sessions, event streams, registry dispatch, or `salsa` query storage. | `Cargo.toml` dependency tree, `tests/batch_integration.rs`, and boundary guard tests. | No finding. |
 
 ## Remaining Gaps
 
 No new blocking/high `spec_gap`, `test_gap`, `design_drift`, `source_drift`,
 `source_undocumented_behavior`, `test_expectation_drift`, `boundary_violation`,
-or `repo_metadata_conflict` was opened by task 22.
+or `repo_metadata_conflict` remains after task 26. BUILD-G-018 was opened and
+resolved in task 26 as a layout-only `source_drift` by moving large inline
+unit-test bodies into private child modules.
 
 Existing non-blocking follow-up gaps remain:
 
@@ -99,4 +106,9 @@ includes documentation diff checks. Task 25 is also documentation-only and
 records the post-task-24 audit re-run; its verification is the documentation
 diff checks for the task commit. The task-24 commit already verified the
 implemented equivalence gate with `cargo test -p mizar-build`, clippy, fmt, and
-the available adjacent cache/artifact/VC/proof crate tests.
+the available adjacent cache/artifact/VC/proof crate tests. Task 26 changes
+Rust source layout only; its verification passed `cargo test -p mizar-build`,
+`cargo clippy -p mizar-build --all-targets -- -D warnings`, `cargo fmt
+--check`, and the additional available adjacent checks for `mizar-cache`,
+`mizar-artifact`, `mizar-vc`, and `mizar-proof`. `mizar-driver` is absent in
+this checkout and remains an `external_dependency_gap`.
