@@ -10,11 +10,11 @@
 
 ## Module Implementation
 
-Full module specs do not exist yet; each is written by its own spec task
-(English and Japanese in the same change) before the implementation tasks that
-cite it. The `planner` and `module_index` sources now cover wave A phase-0
-planning and module-index provider work; the remaining module still follows
-its dedicated spec-before-implementation task. Module names follow
+Full module specs are written by their own spec tasks (English and Japanese in
+the same change) before the implementation tasks that cite them. The `planner`
+and `module_index` sources now cover wave A phase-0 planning and module-index
+provider work; wave B module specs through `failure_state` now exist, and the
+remaining source implementation follows its dedicated task. Module names follow
 [internal 07](../../internal/en/07.crate_module_layout.md)
 (minimum: `task_graph`, `scheduler`, `cancel`, `failure_state`) plus the
 phase-0 planning modules from architecture 00/03; the crate refines
@@ -28,7 +28,7 @@ architecture 14 and 19 and internal 01.
 | scheduler | `scheduler.md` (task 9) | `src/scheduler.rs` | [x] |
 | resource | `resource.md` (task 11) | `src/resource.rs` | [x] |
 | cancel | `cancel.md` (task 13) | `src/cancel.rs` | [x] |
-| failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [ ] |
+| failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [~] |
 
 `mizar-build` currently implements pipeline phase 0 (workspace planning:
 manifests, lockfile, dependency graph, `BuildPlan`, module index) and owns the
@@ -248,10 +248,14 @@ Keep `cargo test -p mizar-build` green after each task (see
       driver/cache/IR/process/artifact-token/proof-authority placeholders.
     - Deps: 10, 13. Spec: `cancel.md`.
 
-15. **Spec: `failure_state.md`.** [ ]
+15. **Spec: `failure_state.md`.** [x]
     - Write the failure-state spec (English and Japanese, no code):
       blocked-task states, bounded failure propagation, and stable failure
       categories per architecture 19.
+    - Result: added synchronized `failure_state.md` specs covering direct
+      failure records, blocked-work records, bounded propagation, stable
+      categories, deterministic ordering, publication/authority boundaries,
+      and task-16 coverage.
     - Deps: 9. Spec: architecture 14 "Failure Propagation Is Bounded",
       [19.failure_semantics.md](../../architecture/en/19.failure_semantics.md).
 
