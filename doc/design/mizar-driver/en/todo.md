@@ -359,17 +359,33 @@ Keep `cargo test -p mizar-driver` green after each task (see
       watcher, source loader, LSP payload, artifact token, cache/proof
       decision, or producer output was introduced.
 
-15. **Phase service adapters for semantic phases.** [ ] — paced by the
+15. **Phase service adapters for semantic phases.** [x] — paced by the
     pipeline crates.
     - Register adapters for `ModuleResolver`, `SemanticChecker`,
       `Elaborator`, `VcService`, `AtpService`, `KernelService`,
       `ArtifactService`, and `DocExtractionService` as each crate's
       service-facing surface lands; one adapter per change. Checked off
-      when the last adapter lands.
+      for this task stream when every currently available owner-provided
+      adapter has either been registered and tested or classified as
+      unavailable; future real adapter landings require one task per adapter.
     - Tests per adapter: fixture run through the driver; diagnostics and
       outputs flow end-to-end.
     - Deps: 8; pairs with the respective crates' integration tasks. Spec:
       `registry.md`.
+    - Completed by task D-015 as a readiness/classification task, not a source
+      adapter implementation: [registry.md](registry.md) records that no
+      semantic/proof/artifact/doc owner currently exposes the full
+      driver-callable service input, canonical `mizar-ir` producer output,
+      `mizar-diagnostics` bridge, and proof/cache/artifact/LSP authority
+      boundaries required for a real adapter. `ModuleResolver`,
+      `SemanticChecker`, `Elaborator`, `VcService`, `AtpService`,
+      `KernelService`, and `ArtifactService` remain classified
+      `external_dependency_gap`; `DocExtractionService` remains `deferred`; the
+      absent `mizar-artifact` closeout report remains a report-only
+      `repo_metadata_conflict`. Existing registry tests cover missing-service
+      gap reporting and boundary guards. No fake adapter, placeholder producer
+      output, provisional publication token, proof/cache authority movement, or
+      LSP bridge was introduced.
 
 ### Hardening and cross-cutting follow-ups
 

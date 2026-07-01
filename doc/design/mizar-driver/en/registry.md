@@ -61,6 +61,39 @@ adapter, stub API, provisional token, or temporary wiring.
 | The requested `mizar-artifact` closeout report is absent in this checkout. | `repo_metadata_conflict` | Report only; do not repair artifact metadata in the driver task stream. |
 | Test-only registry fixture services are needed for deterministic registration and cache-key purity tests. | allowed test fixture | Fixtures must live only in tests and must not be exported or presented as real phase adapters. |
 
+## Task D-015 Semantic Adapter Readiness
+
+Task D-015 audits the semantic/proof/artifact/doc phase adapters after the
+driver core, event stream, CLI batch entry point, and watch orchestration exist.
+No production semantic adapter is registered by this task. A real adapter may be
+registered only when the owner crate exposes all of these seams at once:
+
+- a driver-callable service input over scheduler work-unit identity and sealed
+  parent output handles;
+- a canonical producer output that can be stored through `mizar-ir` without a
+  synthetic payload;
+- diagnostic records or a documented diagnostics bridge through
+  `mizar-diagnostics`, not message-text identity;
+- proof, cache, artifact, and LSP authority remaining in the owning crates.
+
+| Service | D-015 readiness | Classification |
+|---|---|---|
+| `ModuleResolver` | `mizar-resolve` exposes resolver-owned data shapes and deterministic internal diagnostics, but public resolver diagnostic codes and artifact-backed `ModuleSummary` reuse remain unavailable; no driver service envelope or sealed producer payload is exposed. | `external_dependency_gap` |
+| `SemanticChecker` | `mizar-checker` exposes explicit checker-owned payloads, but source-derived payload extraction, accepted proof/artifact status integration, public diagnostic allocation, artifact emission/reuse, and a unified driver service envelope remain unavailable. | `external_dependency_gap` |
+| `Elaborator` | `mizar-core` exposes explicit lowering/control-flow data and local diagnostics, but source-to-checker extraction, concrete downstream identities, artifact schemas, public diagnostic allocation, and downstream VC/kernel/proof/artifact consumers remain unavailable. | `external_dependency_gap` |
+| `VcService` | `mizar-vc` exposes untrusted VC candidates, handoff hashes, and reuse inputs over explicit payloads, but source-derived `proof_verification` runners, full upstream payload families, downstream proof/cache/artifact consumers, and accepted discharge paths remain unavailable. | `external_dependency_gap` |
+| `AtpService` | `mizar-atp` exposes untrusted backend-neutral problem/candidate machinery and generic runner behavior, but real backend adapters, backend-output extraction to kernel-owned formula/substitution candidates, proof-policy integration, cache reuse, and witness publication remain unavailable. | `external_dependency_gap` |
+| `KernelService` | `mizar-kernel` exposes trusted evidence checking for explicit normalized inputs, but source-derived certificates, ATP proof translation, cluster/reduction producer payloads, service-envelope normalization, cancellation plumbing, and downstream proof/cache/artifact consumers remain unavailable. | `external_dependency_gap` |
+| `ArtifactService` | `mizar-artifact` exposes artifact schemas/store primitives, but real producer projections and phase-15 emission are still external gaps, and the driver has no publication-token authority to mint. The requested closeout report is absent as a separate report-only `repo_metadata_conflict` recorded in the gap table. | `external_dependency_gap` |
+| `DocExtractionService` | `mizar-doc` has design TODOs, but no workspace crate or implemented service-facing extraction owner surface exists. | `deferred` |
+
+Existing registry tests remain the appropriate coverage for D-015 because no
+real adapter is registered: they prove missing services report owner gaps,
+test-only fixtures stay local to tests, duplicate coverage is rejected, and the
+driver/query boundary does not move proof/cache/artifact/LSP authority. Per-
+adapter fixture tests must be added in the later task that registers each real
+adapter.
+
 ## Phase Service Table
 
 The registry records one service descriptor for each architecture phase or
