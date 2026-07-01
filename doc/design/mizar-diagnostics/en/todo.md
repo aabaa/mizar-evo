@@ -76,12 +76,22 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
 
 ### Records and registry
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-diagnostics` workspace member depending on
      `mizar-session`; add `tests/lint_policy.rs` mirroring the
      `mizar-frontend` guard.
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: none. Spec: architecture 12.
+   - Completed by task 1: the workspace member, crate manifest, empty boundary
+     root, and lint-policy guard are in place without registry, record, sink,
+     adapter, driver, LSP, or artifact behavior. The guard covers workspace
+     membership, package metadata, `mizar-session`-only dependencies, workspace
+     lint opt-in, the shared rustc/clippy lint baseline, documented allow
+     exceptions, the empty initial public API, and no premature workspace reverse
+     dependencies on `mizar-diagnostics`. Verification passed
+     `cargo test -p mizar-diagnostics`,
+     `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`, and
+     `cargo fmt --check`.
 
 2. **Spec: `registry.md`.** [ ]
    - Write the registry spec (English and Japanese, no code): permanent

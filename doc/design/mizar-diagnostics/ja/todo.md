@@ -77,12 +77,21 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
 
 ### レコードとレジストリ
 
-1. **crate の足場と lint 方針のガード。** [ ]
+1. **crate の足場と lint 方針のガード。** [x]
    - `mizar-session` に依存する workspace メンバー `mizar-diagnostics` を
      追加し、`mizar-frontend` のガードに倣った `tests/lint_policy.rs` を
      追加する。
    - テスト: lint 方針ガードが通る。workspace がビルドできる。
    - 依存: なし。仕様: アーキテクチャ 12。
+   - task 1 で完了: workspace member、crate manifest、空の boundary root、
+     lint-policy guard を追加した。registry、record、sink、adapter、driver、LSP、
+     artifact behavior はまだ追加していない。この guard は workspace membership、
+     package metadata、`mizar-session` のみの dependency、workspace lint opt-in、
+     共有 rustc/clippy lint baseline、documented allow exceptions、空の初期 public API、
+     `mizar-diagnostics` への未準備な workspace reverse dependency の禁止を覆う。
+     verification は `cargo test -p mizar-diagnostics`、
+     `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`、
+     `cargo fmt --check` が通った。
 
 2. **仕様: `registry.md`。** [ ]
    - レジストリの仕様を執筆する（英語と日本語、コードなし）: 恒久的な

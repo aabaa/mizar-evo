@@ -6,6 +6,7 @@ members = [
     "crates/mizar-cache",
     "crates/mizar-checker",
     "crates/mizar-core",
+    "crates/mizar-diagnostics",
     "crates/mizar-frontend",
     "crates/mizar-ir",
     "crates/mizar-kernel",

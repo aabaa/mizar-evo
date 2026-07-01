@@ -406,6 +406,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "mizar-diagnostics"
+version = "0.1.0"
+dependencies = [
+ "mizar-session",
+]
+
+[[package]]
 name = "mizar-frontend"
 version = "0.1.0"
 dependencies = [
