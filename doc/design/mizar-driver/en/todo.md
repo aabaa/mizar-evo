@@ -10,7 +10,7 @@
 
 ## Module Implementation
 
-Module specs do not exist yet; each is written by its own spec task (English
+Module specs land incrementally; each is written by its own spec task (English
 and Japanese in the same change) before the implementation tasks that cite it.
 The crate refines [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
 per the ownership map of
@@ -95,22 +95,29 @@ Keep `cargo test -p mizar-driver` green after each task (see
      No request/session/registry/event/CLI/watch behavior or placeholder seam
      was introduced.
 
-2. **Spec: `request.md`.** [ ]
+2. **Spec: `request.md`.** [x]
    - Write the request spec (English and Japanese, no code):
      `BuildRequest` shapes for batch/watch/LSP, `BuildSession` and its
-     source/dependency snapshots, session lifecycle states, and the
-     current-snapshot boundary that rejects obsolete publications from
-     superseded watch/LSP sessions.
+     source/dependency snapshots, session lifecycle states, and the combined
+     driver lane-current-session plus request-generation snapshot guard that
+     rejects obsolete publications from superseded watch/LSP sessions.
    - Deps: 1. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
      "Build Session".
+   - Completed by task D-002: [request.md](request.md) defines request
+     origins, driver-owned currentness lanes, session lifecycle states, snapshot
+     capture through `mizar-session`, and obsolete-publication suppression for
+     superseded watch/LSP sessions through the combined publication guard. No
+     source implementation was added.
 
 3. **`BuildRequest` and `BuildSession`.** [ ]
    - Implement requests and sessions with snapshot capture through
-     `mizar-session`/`mizar-ir` identities, including the current-snapshot
-     boundary used to reject obsolete publications from superseded watch/LSP
-     sessions.
+     `mizar-session`/`mizar-ir` identities, including the combined
+     lane-current-session and request-generation snapshot guard used to reject
+     obsolete publications from superseded watch/LSP sessions.
    - Tests: session round-trips; identical workspace states produce
-     identical snapshot ids.
+     identical snapshot ids; fresh request ids share a driver lane across
+     watch/LSP generations; a superseded session is rejected even when it has
+     the same snapshot id as the lane-current session.
    - Deps: 2. Spec: `request.md`.
 
 4. **Spec: `registry.md`.** [ ]
