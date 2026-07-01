@@ -46,7 +46,9 @@ committed autonomously without holding the rest of the crate in flight.
 The crate depends on `mizar-session` only (source ranges and snapshot ids).
 The first resolver adoption point was deferred by `mizar-resolve` task 13; the
 next trigger is the first user-facing resolver diagnostic integration. The LSP
-bridge in `mizar-lsp` consumes `mizar-diagnostics` records and indexes.
+bridge in `mizar-lsp` is a target consumer of `mizar-diagnostics` records and
+indexes, but real LSP adoption remains an `external_dependency_gap` until the
+consumer seam is ready.
 Architecture:
 [12.diagnostics_and_lsp.md](../../architecture/en/12.diagnostics_and_lsp.md),
 [19.failure_semantics.md](../../architecture/en/19.failure_semantics.md);
@@ -203,13 +205,21 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
      `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`, and
      `cargo fmt --check`.
 
-8. **Spec: `aggregator.md`.** [ ]
+8. **Spec: `aggregator.md`.** [x]
    - Write the aggregator spec (English and Japanese, no code):
      normalization, identity assignment, deduplication, canonical sort
      order, `BuildDiagnosticIndex`, and the obsolete-snapshot rule
      (diagnostics from stale snapshots are never published as current).
-   - Deps: 4. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
+   - Deps: 4, 6, 7. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
      "Diagnostic Aggregator", architecture 19.
+   - Completed by task 8: `aggregator.md` now specifies current-snapshot
+     aggregation from sealed batches, immutable `BuildDiagnosticIndex`
+     semantics, deterministic source keys, strict obsolete-snapshot filtering,
+     stable structured deduplication identity, production-order-independent
+     sorting and handle assignment, debug snapshots, and boundary rules. Phase
+     status joins, workspace path normalization, driver/LSP/artifact/resolver
+     adoption, and legacy diagnostic migration are recorded as outside task 9
+     scope or `external_dependency_gap` rather than placeholder APIs.
 
 9. **Aggregator implementation.** [ ]
    - Implement aggregation into immutable `BuildDiagnosticIndex` values
