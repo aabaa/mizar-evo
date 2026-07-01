@@ -21,7 +21,7 @@ and internal 03; the crate refines architecture 12 and 19 and internal 03.
 |---|---|---|---|
 | registry | `registry.md` (task 2) | `src/registry.rs` | [x] |
 | failure_record | `failure_record.md` (task 4) | `src/failure_record.rs` | [x] |
-| sink | `sink.md` (task 6) | `src/sink.rs` | [ ] |
+| sink | `sink.md` (task 6) | `src/sink.rs` | [x] |
 | aggregator | `aggregator.md` (task 8) | `src/aggregator.rs` | [ ] |
 | render | `render.md` (task 10) | `src/render.rs` | [ ] |
 | fix | `fix.md` (task 12) | `src/fix.rs` | [ ] |
@@ -184,12 +184,24 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
      the sink. Verification passed `git diff --check` and
      `git diff --cached --check`.
 
-7. **Sink implementation.** [ ]
+7. **Sink implementation.** [x]
    - Implement the sink with per-phase draft collection ready for
      aggregation.
    - Tests: sink fixtures across simulated phases; drafts preserved
      unmodified.
    - Deps: 5, 6. Spec: `sink.md`.
+   - Completed by task 7: `src/sink.rs` now provides
+     `DiagnosticProducerScope`, `DiagnosticSink`, immutable
+     `DiagnosticBatch`, and `DiagnosticSinkError`. The sink accepts validated
+     drafts whose phase and source snapshot match the scope, rejects sealed or
+     mismatched emits without mutating previously collected drafts, preserves
+     drafts in local order, and exposes byte-stable batch debug snapshots. Tests
+     cover local-order preservation, non-mutating failed emits, sealed behavior,
+     consumed-batch preservation, empty and non-empty debug snapshots, and the
+     crate boundary guard. Verification passed
+     `cargo test -p mizar-diagnostics`,
+     `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`, and
+     `cargo fmt --check`.
 
 8. **Spec: `aggregator.md`.** [ ]
    - Write the aggregator spec (English and Japanese, no code):

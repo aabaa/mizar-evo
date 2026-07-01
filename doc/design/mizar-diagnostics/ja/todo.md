@@ -21,7 +21,7 @@ registry/render/fix/explain モジュールを加えたものに従う。この 
 |---|---|---|---|
 | registry | `registry.md`（task 2） | `src/registry.rs` | [x] |
 | failure_record | `failure_record.md`（task 4） | `src/failure_record.rs` | [x] |
-| sink | `sink.md`（task 6） | `src/sink.rs` | [ ] |
+| sink | `sink.md`（task 6） | `src/sink.rs` | [x] |
 | aggregator | `aggregator.md`（task 8） | `src/aggregator.rs` | [ ] |
 | render | `render.md`（task 10） | `src/render.rs` | [ ] |
 | fix | `fix.md`（task 12） | `src/fix.rs` | [ ] |
@@ -180,11 +180,21 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
      定義する。verification は `git diff --check` と `git diff --cached --check` が
      通った。
 
-7. **sink の実装。** [ ]
+7. **sink の実装。** [x]
    - 集約に備えた phase ごとのドラフト収集を持つ sink を実装する。
    - テスト: 模擬 phase をまたぐ sink のフィクスチャ。ドラフトが無変更で
      保存される。
    - 依存: 5、6。仕様: `sink.md`。
+   - task 7 で完了: `src/sink.rs` は `DiagnosticProducerScope`、
+     `DiagnosticSink`、immutable `DiagnosticBatch`、`DiagnosticSinkError` を提供する。
+     sink は scope と phase/source snapshot が一致する validated draft を受け取り、
+     sealed または mismatched emit を previously collected draft を mutate せず reject
+     し、draft を local order で保存し、byte-stable batch debug snapshot を公開する。
+     tests は local-order preservation、non-mutating failed emits、sealed behavior、
+     consumed-batch preservation、empty/non-empty debug snapshot、crate boundary guard を
+     覆う。verification は `cargo test -p mizar-diagnostics`、
+     `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`、
+     `cargo fmt --check` が通った。
 
 8. **仕様: `aggregator.md`。** [ ]
    - 集約の仕様を執筆する（英語と日本語、コードなし）: 正規化、識別の
