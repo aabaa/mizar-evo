@@ -5,9 +5,10 @@
 
 ## Scope
 
-この task-19 audit は task 18 の後、bilingual sync gate と module-boundary gate の
-前に実施した。crate-owned public API と module specification が約束する behavior を
-source と tests に照合する。
+元の task-19 audit は task 18 の後、bilingual sync gate と module-boundary gate の
+前に実施した。Task 21 は private module split 後に source-inventory scope を再実行し、
+移動した private helpers についてだけこの文書を更新する。この audit は crate-owned
+public API と module specification が約束する behavior を source と tests に照合する。
 
 この audit は producer adapter、driver event、LSP protocol shape、artifact projection、
 resolver diagnostic code、または既存 lexer/frontend/parser/resolver diagnostics の
@@ -15,8 +16,9 @@ migration wiring を追加しない。
 
 ## Method
 
-- Source inventory: `crates/mizar-diagnostics/src/{registry,failure_record,sink,aggregator,render,fix,explain}.rs`
-  と crate root。
+- Source inventory: `crates/mizar-diagnostics/src/{registry,failure_record,sink,aggregator,render,fix,explain}.rs`、
+  private `src/registry/builtin.rs`、
+  private `src/failure_record/{validation,debug}.rs`、crate root。
 - Specification inventory:
   `registry.md`、`failure_record.md`、`sink.md`、`aggregator.md`、`render.md`、
   `fix.md`、`explain.md`、`consumer_adoption_decision.md`、crate plan、`todo.md`。
@@ -74,6 +76,11 @@ crate-owned public surface について新しい `spec_gap`、`test_gap`、`sour
 である `crates/mizar-diagnostics/tests/` 以下を指すようにした。以前の文言は source-file
 unit tests を指していたが、実装済み test suite は integration tests である。これは
 `design_drift` であり、この task で修復した。
+
+Task 21 scoped rerun は private helper moves に合わせて source inventory を更新する:
+`src/registry/builtin.rs`、`src/failure_record/validation.rs`、
+`src/failure_record/debug.rs`。これらの moved items は上記の public API trace や
+behavior correspondence を変更しない。
 
 ## Audit Result
 

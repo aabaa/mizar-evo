@@ -5,9 +5,11 @@
 
 ## Scope
 
-This task-19 audit was performed after task 18 and before the bilingual sync and
-module-boundary gates. It compares the crate-owned public API and promised
-behavior in the module specifications with source and tests.
+The original task-19 audit was performed after task 18 and before the bilingual
+sync and module-boundary gates. Task 21 re-runs the source-inventory scope after
+the private module split and updates this document only for the moved private
+helpers. The audit compares the crate-owned public API and promised behavior in
+the module specifications with source and tests.
 
 The audit does not add producer adapters, driver events, LSP protocol shapes,
 artifact projections, resolver diagnostic codes, or migration wiring for
@@ -15,8 +17,9 @@ pre-existing lexer/frontend/parser/resolver diagnostics.
 
 ## Method
 
-- Source inventory: `crates/mizar-diagnostics/src/{registry,failure_record,sink,aggregator,render,fix,explain}.rs`
-  plus the crate root.
+- Source inventory: `crates/mizar-diagnostics/src/{registry,failure_record,sink,aggregator,render,fix,explain}.rs`,
+  private `src/registry/builtin.rs`,
+  private `src/failure_record/{validation,debug}.rs`, and the crate root.
 - Specification inventory:
   `registry.md`, `failure_record.md`, `sink.md`, `aggregator.md`, `render.md`,
   `fix.md`, `explain.md`, `consumer_adoption_decision.md`, this crate plan, and
@@ -76,6 +79,11 @@ This task also corrects the crate plan's relevant-test table to point at the
 actual integration test files under `crates/mizar-diagnostics/tests/`. Earlier
 wording referred to source-file unit tests, but the implemented test suite lives
 in integration tests. This was `design_drift` and is repaired in this task.
+
+Task 21 scoped rerun updates the source inventory for private helper moves:
+`src/registry/builtin.rs`, `src/failure_record/validation.rs`, and
+`src/failure_record/debug.rs`. These moved items do not change the public API
+trace or behavior correspondence above.
 
 ## Audit Result
 

@@ -19,8 +19,8 @@ and internal 03; the crate refines architecture 12 and 19 and internal 03.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| registry | `registry.md` (task 2) | `src/registry.rs` | [x] |
-| failure_record | `failure_record.md` (task 4) | `src/failure_record.rs` | [x] |
+| registry | `registry.md` (task 2) | `src/registry.rs`; private `src/registry/builtin.rs` | [x] |
+| failure_record | `failure_record.md` (task 4) | `src/failure_record.rs`; private `src/failure_record/{validation,debug}.rs` | [x] |
 | sink | `sink.md` (task 6) | `src/sink.rs` | [x] |
 | aggregator | `aggregator.md` (task 8) | `src/aggregator.rs` | [x] |
 | render | `render.md` (task 10) | `src/render.rs` | [x] |
@@ -423,7 +423,7 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       required edits beyond the audit report and paired plan/TODO completion
       records.
 
-21. **Module-boundary refactor gate.** [ ]
+21. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
@@ -437,6 +437,14 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
     - Deps: 20. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+    - Completed by task 21:
+      [module_boundary_refactor_gate.md](module_boundary_refactor_gate.md)
+      records the layout audit. The review-bottleneck registry descriptor table
+      moved to private `src/registry/builtin.rs`; failure-record validation and
+      debug rendering moved to private `src/failure_record/validation.rs` and
+      `src/failure_record/debug.rs`. Public APIs, diagnostic identity,
+      deterministic snapshots, rendering, fix/explain payloads, and
+      downstream-authority boundaries are unchanged.
 
 ## Recommended Verification
 

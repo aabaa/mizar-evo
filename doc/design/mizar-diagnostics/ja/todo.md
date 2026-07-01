@@ -19,8 +19,8 @@ registry/render/fix/explain モジュールを加えたものに従う。この 
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| registry | `registry.md`（task 2） | `src/registry.rs` | [x] |
-| failure_record | `failure_record.md`（task 4） | `src/failure_record.rs` | [x] |
+| registry | `registry.md`（task 2） | `src/registry.rs`; private `src/registry/builtin.rs` | [x] |
+| failure_record | `failure_record.md`（task 4） | `src/failure_record.rs`; private `src/failure_record/{validation,debug}.rs` | [x] |
 | sink | `sink.md`（task 6） | `src/sink.rs` | [x] |
 | aggregator | `aggregator.md`（task 8） | `src/aggregator.rs` | [x] |
 | render | `render.md`（task 10） | `src/render.rs` | [x] |
@@ -399,7 +399,7 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       まで substance が同期済みであることを記録する。module-spec drift は audit
       report と paired plan/TODO completion records 以外の edit を要求しなかった。
 
-21. **module 境界リファクタリング gate。** [ ]
+21. **module 境界リファクタリング gate。** [x]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、
       oversized file、混在した責務、module table と module spec 境界に沿って
       分割すべき private helper を洗い出す。review bottleneck になった実装
@@ -411,6 +411,13 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       spec task を要求する。
     - 依存: 20。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
+    - task 21 で完了:
+      [module_boundary_refactor_gate.md](module_boundary_refactor_gate.md) は layout
+      audit を記録する。review-bottleneck だった registry descriptor table は private
+      `src/registry/builtin.rs` へ移動し、failure-record validation と debug rendering は
+      private `src/failure_record/validation.rs` と `src/failure_record/debug.rs` へ移動した。
+      public API、diagnostic identity、deterministic snapshots、rendering、fix/explain
+      payloads、downstream-authority boundaries は変わらない。
 
 ## 推奨検証
 

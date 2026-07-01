@@ -24,11 +24,12 @@ rendering, fix/explanation payloads, or any downstream adoption boundary.
 | `explain.md` | `explain.md` | Present and synchronized in substance. |
 | `failure_record.md` | `failure_record.md` | Present and synchronized in substance. |
 | `fix.md` | `fix.md` | Present and synchronized in substance. |
+| `module_boundary_refactor_gate.md` | `module_boundary_refactor_gate.md` | Present and synchronized in substance after task 21 scoped rerun. |
 | `registry.md` | `registry.md` | Present and synchronized in substance. |
 | `render.md` | `render.md` | Present and synchronized in substance. |
 | `sink.md` | `sink.md` | Present and synchronized in substance. |
 | `source_spec_correspondence.md` | `source_spec_correspondence.md` | Present and synchronized in substance. |
-| `todo.md` | `todo.md` | Present and synchronized in substance through task 20. |
+| `todo.md` | `todo.md` | Present and synchronized in substance through task 21 scoped rerun. |
 
 No English-only diagnostics design document and no Japanese-only companion was
 found in this directory pair.
@@ -51,9 +52,10 @@ unchanged.
 
 ## Sync Result
 
-The audit found no substantive bilingual drift requiring edits to module specs.
-Task 20 adds this audit report and updates the crate plan and TODO in both
-languages. Those updates are the only documentation changes for this task.
+The task-20 audit found no substantive bilingual drift requiring edits to module
+specs. Task 21 re-runs this inventory for the module-boundary gate report and
+updates this file with the new paired document. No unsynchronized companion is
+introduced.
 
 ## Remaining Boundaries
 

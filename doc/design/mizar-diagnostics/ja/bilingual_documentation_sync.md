@@ -24,11 +24,12 @@ diagnostic identity、registry allocation、aggregation、rendering、fix/explan
 | `explain.md` | `explain.md` | 存在し、実質同期済み。 |
 | `failure_record.md` | `failure_record.md` | 存在し、実質同期済み。 |
 | `fix.md` | `fix.md` | 存在し、実質同期済み。 |
+| `module_boundary_refactor_gate.md` | `module_boundary_refactor_gate.md` | task 21 scoped rerun 後に存在し、実質同期済み。 |
 | `registry.md` | `registry.md` | 存在し、実質同期済み。 |
 | `render.md` | `render.md` | 存在し、実質同期済み。 |
 | `sink.md` | `sink.md` | 存在し、実質同期済み。 |
 | `source_spec_correspondence.md` | `source_spec_correspondence.md` | 存在し、実質同期済み。 |
-| `todo.md` | `todo.md` | task 20 まで存在し、実質同期済み。 |
+| `todo.md` | `todo.md` | task 21 scoped rerun まで存在し、実質同期済み。 |
 
 この directory pair には English-only diagnostics design document も
 Japanese-only companion も見つからなかった。
@@ -50,9 +51,9 @@ gap classes、API names は意図的に変更しない。
 
 ## Sync Result
 
-この audit は、module specs に修正が必要な substantive bilingual drift を見つけなかった。
-Task 20 はこの audit report を追加し、crate plan と TODO を両言語で更新する。この task
-の documentation changes はそれだけである。
+task-20 audit は、module specs に修正が必要な substantive bilingual drift を見つけなかった。
+Task 21 は module-boundary gate report についてこの inventory を再実行し、この file に
+new paired document を追加する。unsynchronized companion は導入されない。
 
 ## Remaining Boundaries
 
