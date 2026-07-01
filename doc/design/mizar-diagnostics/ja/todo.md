@@ -130,13 +130,20 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
      `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`、
      `cargo fmt --check` が通った。
 
-4. **仕様: `failure_record.md`。** [ ]
+4. **仕様: `failure_record.md`。** [x]
    - レコードの仕様を執筆する（英語と日本語、コードなし）:
      `DiagnosticDraft` と `DiagnosticRecord` の形、アーキテクチャ 19 に
      従う安定した failure カテゴリ、primary/secondary スパン、構造化
      詳細、機械可読ペイロードの規則。
    - 依存: 2。仕様: [19.failure_semantics.md](../../architecture/ja/19.failure_semantics.md)、
      [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
+   - task 4 で完了: `failure_record.md` は 2 段階の draft/record lifecycle、
+     stable code を持つ共有 field、`SourceRange` に基づく primary/secondary span、
+     snapshot freshness state、安定した failure category、structured-detail payload
+     rules、note payload、後続の fix/explain task のための attachment slot、
+     deterministic debug rendering requirements、proof、driver、LSP、cache、artifact
+     authority を record model の外に保つ boundary rules を定義する。verification は
+     `git diff --check` と `git diff --cached --check` が通った。
 
 5. **レコードとドラフトの実装。** [ ]
    - スパン・詳細テーブルと決定的 debug レンダリングを備えたドラフトと

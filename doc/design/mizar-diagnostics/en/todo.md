@@ -130,13 +130,21 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
      `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`, and
      `cargo fmt --check`.
 
-4. **Spec: `failure_record.md`.** [ ]
+4. **Spec: `failure_record.md`.** [x]
    - Write the record spec (English and Japanese, no code):
      `DiagnosticDraft` and `DiagnosticRecord` shapes, stable failure
      categories per architecture 19, primary/secondary spans, structured
      details, and machine-readable payload rules.
    - Deps: 2. Spec: [19.failure_semantics.md](../../architecture/en/19.failure_semantics.md),
      [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md).
+   - Completed by task 4: `failure_record.md` now defines the two-stage
+     draft/record lifecycle, shared stable-code fields, `SourceRange`-backed
+     primary and secondary spans, snapshot freshness states, stable failure
+     categories, structured-detail payload rules, note payloads, attachment
+     slots for later fix/explain tasks, deterministic debug rendering
+     requirements, and boundary rules that keep proof, driver, LSP, cache, and
+     artifact authority outside the record model. Verification passed
+     `git diff --check` and `git diff --cached --check`.
 
 5. **Record and draft implementation.** [ ]
    - Implement drafts and records with span and detail tables and a
