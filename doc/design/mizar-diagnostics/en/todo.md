@@ -386,11 +386,18 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       explanation preview truncation, aggregation order, and rendering without
       adding or changing public APIs.
 
-18. **Public-enum forward-compatibility policy.** [ ]
+18. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;
       severity and category enums additionally follow the architecture 19
       compatibility policy.
     - Deps: 16. Spec: all module specs.
+    - Completed by task 18: every public enum is explicitly covered by the
+      lint-policy guard and marked `#[non_exhaustive]`. Module specs record the
+      compatibility decision for registry, records, sink, aggregation, render,
+      fix, and explain surfaces. `DiagnosticSeverity` and `FailureCategory`
+      remain stable machine-readable classifications under architecture 19;
+      adding or reclassifying variants requires compatibility review, and
+      downstream consumers must keep wildcard handling.
 
 19. **Source/spec correspondence audit.** [ ]
     - Trace every public API and promised behavior in the module specs to

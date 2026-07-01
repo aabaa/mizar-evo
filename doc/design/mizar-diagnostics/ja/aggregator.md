@@ -173,6 +173,13 @@ producer name、local draft ordinal、draft debug snapshot で sort され、`re
 thread id、hash-map iteration order、key としての localized text、process-local ordering
 を含めてはならない。
 
+## Public Enum Compatibility
+
+Task 18 は `DiagnosticAggregationError` を downstream forward compatibility のため
+`#[non_exhaustive]` として mark する。aggregation errors は producer/index boundary failure
+であり、user diagnostic identity ではない。error variant の追加には tests と本 spec の更新が
+必要であり、downstream consumers は wildcard handling を維持しなければならない。
+
 ## Boundary Rules
 
 - aggregation は record を publish するが、render はしない。

@@ -364,10 +364,18 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       追加・変更せず、sink collection、record normalization、fix ordering、
       explanation preview truncation、aggregation order、rendering を検証する。
 
-18. **公開 enum の前方互換性ポリシー。** [ ]
+18. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。重大度と
       カテゴリの enum はさらにアーキテクチャ 19 の互換性ポリシーに従う。
     - 依存: 16。仕様: 全モジュール仕様。
+    - task 18 で完了: すべての public enum を lint-policy guard で明示的に
+      cover し、`#[non_exhaustive]` を付与した。module specs は registry、
+      records、sink、aggregation、render、fix、explain surface ごとの
+      compatibility decision を記録する。`DiagnosticSeverity` と
+      `FailureCategory` は architecture 19 のもとで stable machine-readable
+      classification であり続ける。variant の追加または reclassification は
+      compatibility review を要求し、downstream consumer は wildcard handling を
+      維持しなければならない。
 
 19. **ソース/仕様対応監査。** [ ]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ

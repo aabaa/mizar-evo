@@ -164,6 +164,13 @@ This debug data is not CLI rendering. It must not include memory addresses,
 thread IDs, map iteration order, localized field names, or process-local
 ordering other than the explicit local emission ordinal.
 
+## Public Enum Compatibility
+
+Task 18 marks `DiagnosticSinkError` as `#[non_exhaustive]` for downstream
+forward compatibility. Sink errors protect the producer boundary and may grow as
+collection rules become stricter; they are not public `DiagnosticCode`
+identities.
+
 ## Boundary Rules
 
 - The sink collects drafts only; it does not create `DiagnosticRecord` values.

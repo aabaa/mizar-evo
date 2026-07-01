@@ -206,6 +206,24 @@ Snapshots are test/debug data, not CLI rendering and not LSP responses. They
 must not include memory addresses, map iteration order, localized field names,
 process-local ordering, or full unbounded traces.
 
+## Public Enum Compatibility
+
+Task 18 marks explain-owned public enums as `#[non_exhaustive]` for downstream
+forward compatibility:
+
+- `ExplanationKind`;
+- `ExplanationSubject`;
+- `ExplanationSourceRef`;
+- `ExplanationPreviewFormat`;
+- `ExplanationResolution`;
+- `ExplanationMissingReason`;
+- `ExplanationError`.
+
+Future variants must preserve the lazy-reference boundary: explanations may add
+new handle kinds, subjects, sources, or resolution states, but they must not move
+proof status, artifact mutation, LSP routing, or driver orchestration into this
+crate.
+
 ## Boundary Rules
 
 - Explanation handles are references, not embedded proof/type/VC traces.

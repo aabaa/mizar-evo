@@ -160,6 +160,13 @@ debug output.
 ANSI styling is a presentation layer only. Tests must cover the plain mode first
 and may separately cover style token placement.
 
+## Public Enum Compatibility
+
+Task 18 marks `RenderStyle` as `#[non_exhaustive]` for downstream forward
+compatibility. `Plain` remains the byte-stable testing mode and `Ansi` remains a
+presentation mode; adding a future style must not change diagnostic identity,
+record ordering, or LSP conversion boundaries.
+
 ## Boundary Rules
 
 - Rendering reads records; it does not mutate or reclassify them.

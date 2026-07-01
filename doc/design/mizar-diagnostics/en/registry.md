@@ -238,3 +238,27 @@ rather than choose a code.
 Unknown codes, malformed code strings, or descriptors that fail compatibility
 validation are registry failures. Aggregation and rendering must not invent a
 descriptor for an unknown code.
+
+## Public Enum Compatibility
+
+Task 18 marks registry-owned public enums as `#[non_exhaustive]` for downstream
+forward compatibility:
+
+- `DiagnosticSeverity`;
+- `PhaseFamily`;
+- `DiagnosticCodeError`;
+- `DiagnosticStatus`;
+- `RegistryValidationError`.
+
+`DiagnosticSeverity` follows architecture 19. The existing machine-readable
+meaning and sort order of `Error`, `Warning`, and `Info` are compatibility
+surfaces, and adding or reclassifying a variant requires compatibility review
+and test updates. Consumers must not confuse severity with message text,
+localized rendering, or phase success.
+
+`PhaseFamily` is registry ownership metadata; it does not decide phase success,
+driver orchestration, proof acceptance, or kernel acceptance. `DiagnosticStatus`
+is registry lifecycle metadata; it does not decide artifact mutation or
+publication. The `#[non_exhaustive]` marker is for external matching
+compatibility only; internal validation may keep exhaustive matches where
+deliberate review is required.

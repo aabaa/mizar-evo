@@ -149,6 +149,18 @@ task 13 は deterministic fix debug snapshot を公開するべきであり、fi
 snapshot は test/debug data であり、CLI rendering でも LSP code action でもない。memory
 address、map iteration order、localized field name、process-local ordering を含めてはならない。
 
+## Public Enum Compatibility
+
+Task 18 は fix-owned public enums を downstream forward compatibility のため
+`#[non_exhaustive]` として mark する。
+
+- `FixApplicability`;
+- `FixSafety`;
+- `FixSuggestionError`。
+
+将来の applicability または safety variant は no-auto-apply boundary を維持しなければならず、
+consumer が expose する前に precondition を文書化しなければならない。
+
 ## Boundary Rules
 
 - fix suggestion は advisory である。source text や artifact を mutate しない。

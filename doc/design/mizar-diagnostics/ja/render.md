@@ -155,6 +155,13 @@ localized field name なし、memory address なし、map iteration order なし
 ANSI styling は presentation layer にすぎない。tests はまず plain mode を cover し、必要なら
 style token placement を別途 cover してよい。
 
+## Public Enum Compatibility
+
+Task 18 は `RenderStyle` を downstream forward compatibility のため `#[non_exhaustive]`
+として mark する。`Plain` は byte-stable testing mode のままであり、`Ansi` は presentation
+mode のままである。将来 style を追加しても diagnostic identity、record ordering、LSP
+conversion boundary を変えてはならない。
+
 ## Boundary Rules
 
 - rendering は record を read するだけで、mutate や reclassify はしない。

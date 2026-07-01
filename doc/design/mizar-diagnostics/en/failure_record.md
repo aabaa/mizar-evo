@@ -375,6 +375,28 @@ their complete freshness state and related handles.
 It must not include nondeterministic map iteration order, localized strings as
 identity, memory addresses, or process-local ordering.
 
+## Public Enum Compatibility
+
+Task 18 marks all failure-record public enums as `#[non_exhaustive]` for
+downstream forward compatibility:
+
+- `PipelinePhase`;
+- `FailureCategory`;
+- `StaleDiagnosticReason`;
+- `DiagnosticFreshness`;
+- `DiagnosticSpanRole`;
+- `SpanFreshness`;
+- `ZeroWidthSpanIntent`;
+- `DiagnosticNoteKind`;
+- `DiagnosticDetailValue`;
+- `DiagnosticRecordError`.
+
+`FailureCategory` additionally follows architecture 19: category names and
+phase ownership are stable machine-readable semantics, and adding or
+reclassifying a category requires compatibility review. The marker prevents
+external exhaustive matches from becoming a semver trap; internal matches remain
+exhaustive where the crate needs deliberate review.
+
 ## Boundary Rules
 
 - Records may describe proof, kernel, cache, artifact, driver, or LSP facts, but

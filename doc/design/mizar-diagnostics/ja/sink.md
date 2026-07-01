@@ -161,6 +161,13 @@ color 無し、localized field name 無しで、field order は次の通り。
 order、localized field name、明示的な local emission ordinal 以外の process-local
 ordering を含めてはならない。
 
+## Public Enum Compatibility
+
+Task 18 は `DiagnosticSinkError` を downstream forward compatibility のため
+`#[non_exhaustive]` として mark する。sink errors は producer boundary を保護し、collection
+rules が厳格になるにつれて増える可能性がある。これらは public `DiagnosticCode` identity
+ではない。
+
 ## Boundary Rules
 
 - sink は draft だけを collect し、`DiagnosticRecord` は作らない。

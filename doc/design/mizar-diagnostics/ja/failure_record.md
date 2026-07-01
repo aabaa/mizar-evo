@@ -368,6 +368,28 @@ record は complete freshness state と related handle を render する。
 これは nondeterministic map iteration order、identity としての localized string、
 memory address、process-local ordering を含めてはならない。
 
+## Public Enum Compatibility
+
+Task 18 はすべての failure-record public enums を downstream forward compatibility の
+ため `#[non_exhaustive]` として mark する。
+
+- `PipelinePhase`;
+- `FailureCategory`;
+- `StaleDiagnosticReason`;
+- `DiagnosticFreshness`;
+- `DiagnosticSpanRole`;
+- `SpanFreshness`;
+- `ZeroWidthSpanIntent`;
+- `DiagnosticNoteKind`;
+- `DiagnosticDetailValue`;
+- `DiagnosticRecordError`。
+
+`FailureCategory` はさらに architecture 19 に従う。category name と phase ownership は
+stable machine-readable semantics であり、category の追加または reclassification には
+compatibility review が必要である。この marker は external exhaustive match が semver
+trap になることを防ぐ。crate 内部の match は deliberate review が必要な箇所では exhaustive の
+ままでよい。
+
 ## Boundary Rules
 
 - record は proof、kernel、cache、artifact、driver、LSP の fact を記述してよいが、

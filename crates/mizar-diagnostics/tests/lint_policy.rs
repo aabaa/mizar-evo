@@ -1,4 +1,4 @@
-use std::{fs, path::PathBuf};
+use std::{collections::BTreeSet, fs, path::PathBuf};
 
 #[test]
 fn diagnostics_manifest_opts_into_workspace_lints() {
@@ -257,6 +257,65 @@ fn diagnostics_sources_do_not_export_macros() {
         "mizar-diagnostics must not expose exported macros before a task-scoped \
          spec introduces them:\n{}",
         declarations.join("\n")
+    );
+}
+
+#[test]
+fn public_forward_compatible_enums_are_marked_non_exhaustive() {
+    let root = crate_root();
+    let expected = [
+        ("src/aggregator.rs", "DiagnosticAggregationError"),
+        ("src/explain.rs", "ExplanationError"),
+        ("src/explain.rs", "ExplanationKind"),
+        ("src/explain.rs", "ExplanationMissingReason"),
+        ("src/explain.rs", "ExplanationPreviewFormat"),
+        ("src/explain.rs", "ExplanationResolution"),
+        ("src/explain.rs", "ExplanationSourceRef"),
+        ("src/explain.rs", "ExplanationSubject"),
+        ("src/failure_record.rs", "DiagnosticDetailValue"),
+        ("src/failure_record.rs", "DiagnosticFreshness"),
+        ("src/failure_record.rs", "DiagnosticNoteKind"),
+        ("src/failure_record.rs", "DiagnosticRecordError"),
+        ("src/failure_record.rs", "DiagnosticSpanRole"),
+        ("src/failure_record.rs", "FailureCategory"),
+        ("src/failure_record.rs", "PipelinePhase"),
+        ("src/failure_record.rs", "SpanFreshness"),
+        ("src/failure_record.rs", "StaleDiagnosticReason"),
+        ("src/failure_record.rs", "ZeroWidthSpanIntent"),
+        ("src/fix.rs", "FixApplicability"),
+        ("src/fix.rs", "FixSafety"),
+        ("src/fix.rs", "FixSuggestionError"),
+        ("src/registry.rs", "DiagnosticCodeError"),
+        ("src/registry.rs", "DiagnosticSeverity"),
+        ("src/registry.rs", "DiagnosticStatus"),
+        ("src/registry.rs", "PhaseFamily"),
+        ("src/registry.rs", "RegistryValidationError"),
+        ("src/render.rs", "RenderStyle"),
+        ("src/sink.rs", "DiagnosticSinkError"),
+    ]
+    .into_iter()
+    .map(|(path, enum_name)| (path.to_owned(), enum_name.to_owned()))
+    .collect::<BTreeSet<_>>();
+    let observed = public_enum_declarations(&root);
+
+    assert_eq!(
+        observed, expected,
+        "task 18 public enum policy must explicitly cover every public enum"
+    );
+
+    let mut violations = Vec::new();
+    for (relative_path, enum_name) in expected {
+        let source = read_to_string(&root.join(&relative_path));
+        if !enum_has_attribute(&source, &enum_name, "non_exhaustive") {
+            violations.push(format!("{relative_path}: pub enum {enum_name}"));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "task 18 public enum forward-compatibility policy requires \
+         #[non_exhaustive] on:\n{}",
+        violations.join("\n")
     );
 }
 
@@ -561,6 +620,76 @@ fn rust_target_files(root: &std::path::Path) -> Vec<PathBuf> {
     files.sort();
     files.dedup();
     files
+}
+
+fn public_enum_declarations(root: &std::path::Path) -> BTreeSet<(String, String)> {
+    let mut declarations = BTreeSet::new();
+    let manifest_targets = rust_target_files(root);
+    for path in manifest_targets {
+        let Ok(relative_path) = path.strip_prefix(root) else {
+            continue;
+        };
+        let Some(relative_path) = relative_path.to_str() else {
+            continue;
+        };
+        let source = read_to_string(&path);
+        for enum_name in public_enum_names(&source) {
+            declarations.insert((relative_path.to_owned(), enum_name));
+        }
+    }
+    declarations
+}
+
+fn public_enum_names(source: &str) -> Vec<String> {
+    source
+        .lines()
+        .map(str::trim_start)
+        .filter_map(|line| line.strip_prefix("pub enum "))
+        .filter_map(|rest| {
+            let name = rest
+                .split(|character: char| character == '{' || character.is_whitespace())
+                .next()?;
+            (!name.is_empty()).then(|| name.to_owned())
+        })
+        .collect()
+}
+
+fn enum_has_attribute(source: &str, enum_name: &str, attribute_name: &str) -> bool {
+    let enum_declaration = format!("pub enum {enum_name}");
+    let lines = source.lines().collect::<Vec<_>>();
+
+    for (line_index, line) in lines.iter().enumerate() {
+        if line.trim_start().starts_with(&enum_declaration) {
+            return preceding_attributes(&lines, line_index)
+                .iter()
+                .any(|attribute| attribute_is(attribute, attribute_name));
+        }
+    }
+
+    false
+}
+
+fn preceding_attributes(lines: &[&str], declaration_line_index: usize) -> Vec<String> {
+    let mut attributes = Vec::new();
+    let mut line_index = declaration_line_index;
+
+    while line_index > 0 {
+        let previous_line_index = line_index - 1;
+        if !starts_attribute(lines[previous_line_index]) {
+            break;
+        }
+        let (attribute, _) = attribute_block(lines, previous_line_index);
+        attributes.push(attribute);
+        line_index = previous_line_index;
+    }
+
+    attributes
+}
+
+fn attribute_is(attribute: &str, attribute_name: &str) -> bool {
+    let compact = compact_attribute_tokens(attribute);
+
+    compact == format!("#[{attribute_name}]") || compact == format!("#![{attribute_name}]")
 }
 
 fn add_explicit_manifest_target_files(root: &std::path::Path, files: &mut Vec<PathBuf>) {

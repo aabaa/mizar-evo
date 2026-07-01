@@ -238,3 +238,26 @@ alias/current-name collision を拒否するため、alias lookup は determinis
 unknown code、malformed code string、compatibility validation に失敗した
 descriptor は registry failure である。aggregation と rendering は unknown code
 の descriptor を捏造してはならない。
+
+## Public Enum Compatibility
+
+Task 18 は registry-owned public enums を downstream forward compatibility のため
+`#[non_exhaustive]` として mark する。
+
+- `DiagnosticSeverity`;
+- `PhaseFamily`;
+- `DiagnosticCodeError`;
+- `DiagnosticStatus`;
+- `RegistryValidationError`。
+
+`DiagnosticSeverity` は architecture 19 に従う。`Error`、`Warning`、`Info` の既存の
+machine-readable meaning と sort order は compatibility surface であり、variant の
+追加または reclassification には compatibility review と test update が必要である。
+consumer は severity を message text、localized rendering、または phase success と混同しては
+ならない。
+
+`PhaseFamily` は registry ownership metadata であり、phase success、driver orchestration、
+proof acceptance、または kernel acceptance を決定しない。`DiagnosticStatus` は registry
+lifecycle metadata であり、artifact mutation や publication を決定しない。
+`#[non_exhaustive]` marker は external matching compatibility のためだけのものであり、
+internal validation は deliberate review のため exhaustive match を続けてよい。

@@ -73,6 +73,7 @@ impl Default for RenderOptions {
 
 /// Output style for CLI rendering.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum RenderStyle {
     /// Byte-stable plain text with no ANSI escapes.
     Plain,

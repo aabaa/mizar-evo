@@ -27,6 +27,7 @@ macro_rules! builtin_descriptor {
 
 /// User-facing diagnostic severity encoded in a diagnostic-code prefix.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[non_exhaustive]
 pub enum DiagnosticSeverity {
     /// Error diagnostic, encoded by the `E` prefix.
     Error,
@@ -68,6 +69,7 @@ impl fmt::Display for DiagnosticSeverity {
 
 /// Canonical phase-family vocabulary for registry descriptors.
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[non_exhaustive]
 pub enum PhaseFamily {
     /// Lexical and syntax diagnostics.
     Syntax,
@@ -231,6 +233,7 @@ impl FromStr for DiagnosticCode {
 
 /// Error returned when parsing or constructing a malformed diagnostic code.
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum DiagnosticCodeError {
     /// The code was not exactly five ASCII bytes.
     InvalidLength {
@@ -274,6 +277,7 @@ impl Error for DiagnosticCodeError {}
 
 /// Registry lifecycle status for a diagnostic descriptor.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum DiagnosticStatus {
     /// The code may be emitted by current diagnostics.
     Active,
@@ -904,6 +908,7 @@ fn insert_lookup_name(
 
 /// Registry validation or compatibility error.
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[non_exhaustive]
 pub enum RegistryValidationError {
     /// Two descriptors used the same code.
     DuplicateCode {

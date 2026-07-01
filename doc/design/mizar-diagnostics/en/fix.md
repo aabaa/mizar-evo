@@ -160,6 +160,18 @@ Snapshots are test/debug data, not CLI rendering and not LSP code actions. They
 must not include memory addresses, map iteration order, localized field names,
 or process-local ordering.
 
+## Public Enum Compatibility
+
+Task 18 marks fix-owned public enums as `#[non_exhaustive]` for downstream
+forward compatibility:
+
+- `FixApplicability`;
+- `FixSafety`;
+- `FixSuggestionError`.
+
+Future applicability or safety variants must keep the no-auto-apply boundary and
+must document their preconditions before consumers expose them.
+
 ## Boundary Rules
 
 - A fix suggestion is advisory. It never mutates source text or artifacts.

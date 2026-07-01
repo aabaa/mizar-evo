@@ -184,6 +184,13 @@ snapshot, and rendered after the `record[n]` lines as `obsolete[n]` lines. The
 snapshot must not include memory addresses, thread ids, hash-map iteration
 order, localized text as keys, or process-local ordering.
 
+## Public Enum Compatibility
+
+Task 18 marks `DiagnosticAggregationError` as `#[non_exhaustive]` for downstream
+forward compatibility. Aggregation errors are producer/index boundary failures,
+not user diagnostic identities. Adding an error variant requires updating tests
+and this spec; downstream consumers must keep wildcard handling.
+
 ## Boundary Rules
 
 - Aggregation publishes records; it does not render them.
