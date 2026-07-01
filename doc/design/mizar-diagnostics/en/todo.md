@@ -312,12 +312,20 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       and CLI rendering projects bounded help text without applying edits or
       creating LSP code actions.
 
-14. **Spec: `explain.md`.** [ ]
+14. **Spec: `explain.md`.** [x]
     - Write the explanation spec (English and Japanese, no code): lazy
       explanation handles, bounded previews, and the rule that large traces
       stay in artifacts or dedicated files.
     - Deps: 4. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
       "Explanation Store".
+    - Completed by task 14: `explain.md` defines lazy explanation handles as
+      compact structured references with kind, subject, source reference,
+      snapshot/artifact/hash preconditions, optional bounded previews, lazy
+      resolution statuses, canonical explanation identity, deterministic debug
+      snapshots, and boundaries that keep trace generation, proof/kernel/trusted
+      status, artifact/cache mutation, LSP request shaping, driver
+      orchestration, source loading, and protocol conversion outside explain
+      authority.
 
 15. **Explanation store.** [ ]
     - Implement the explanation store with lazy resolution and bounded

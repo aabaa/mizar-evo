@@ -295,12 +295,18 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       含める。CLI rendering は bounded help text を projection するだけで、edit の
       application や LSP code action は作らない。
 
-14. **仕様: `explain.md`。** [ ]
+14. **仕様: `explain.md`。** [x]
     - explanation の仕様を執筆する（英語と日本語、コードなし）: 遅延
       explanation ハンドル、上限付きプレビュー、「大きな trace は
       artifact または専用ファイルに留まる」という規則。
     - 依存: 4。仕様: [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)
       「Explanation Store」。
+    - task 14 で完了: `explain.md` は lazy explanation handle を kind、subject、source
+      reference、snapshot/artifact/hash precondition、optional bounded preview、lazy resolution
+      status、canonical explanation identity、deterministic debug snapshot を持つ compact structured
+      reference として定義する。trace generation、proof/kernel/trusted status、artifact/cache
+      mutation、LSP request shaping、driver orchestration、source loading、protocol conversion は
+      explain authority の外に保つ。
 
 15. **explanation ストア。** [ ]
     - 遅延解決と上限付きプレビューを備えた explanation ストアを実装する。
