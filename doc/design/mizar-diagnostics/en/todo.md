@@ -282,11 +282,19 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`, and
       `cargo fmt --check`.
 
-12. **Spec: `fix.md`.** [ ]
+12. **Spec: `fix.md`.** [x]
     - Write the fix-suggestion spec (English and Japanese, no code):
       structured edit suggestions, applicability levels, and safety rules
       (suggestions never auto-apply).
     - Deps: 4. Spec: architecture 12 "Fix Suggestion".
+    - Completed by task 12: `fix.md` now specifies structured fix suggestions
+      as bounded advisory payloads attached to diagnostic records. It defines
+      stable suggestion identity, edit payload shape, applicability and safety
+      classes, source-range edit validation, expected-text/snapshot/hash
+      preconditions, attachment and deduplication rules, debug snapshots, and
+      boundaries that keep automatic application, LSP code-action conversion,
+      current-buffer validation, command execution, artifact mutation,
+      driver orchestration, and proof/kernel acceptance outside fix authority.
 
 13. **Fix suggestions.** [ ]
     - Implement structured fix payloads attached to records.

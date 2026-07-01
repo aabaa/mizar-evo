@@ -268,11 +268,18 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`、
       `cargo fmt --check` が通った。
 
-12. **仕様: `fix.md`。** [ ]
+12. **仕様: `fix.md`。** [x]
     - fix 提案の仕様を執筆する（英語と日本語、コードなし）: 構造化された
       編集提案、適用可能性レベル、安全規則（提案は決して自動適用され
       ない）。
     - 依存: 4。仕様: アーキテクチャ 12「Fix Suggestion」。
+    - task 12 で完了: `fix.md` は structured fix suggestion を diagnostic record に
+      attached される bounded advisory payload として定義する。stable suggestion identity、
+      edit payload shape、applicability/safety class、source-range edit validation、
+      expected-text/snapshot/hash precondition、attachment/deduplication rule、debug
+      snapshot、そして automatic application、LSP code-action conversion、current-buffer
+      validation、command execution、artifact mutation、driver orchestration、
+      proof/kernel acceptance を fix authority の外に保つ boundary を定義した。
 
 13. **fix 提案。** [ ]
     - レコードに付く構造化 fix ペイロードを実装する。
