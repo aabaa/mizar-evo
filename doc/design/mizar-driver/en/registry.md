@@ -57,7 +57,7 @@ adapter, stub API, provisional token, or temporary wiring.
 | Real semantic phase adapters for phases 4-14 are not all available. | `external_dependency_gap` | Leave those phases unregistered until the owning crates expose real service surfaces. |
 | Real phase-15 producer outputs and artifact publication tokens are not available to the driver. | `external_dependency_gap` | Accept only owner-provided artifact/proof seams later; do not mint publication authority. |
 | Real LSP protocol bridge and event consumption are owned by `mizar-lsp`. | `external_dependency_gap` | Keep registry outputs protocol-agnostic; event/LSP conversion belongs outside this module. |
-| Durable cache lookup and compatibility are owned by `mizar-cache`. | `external_dependency_gap` until task 5 integration, then owner seam | The driver query may call cache APIs, but compatibility and proof-reuse decisions stay in `mizar-cache`. |
+| Durable cache lookup and compatibility are owned by `mizar-cache`. | `external_dependency_gap` until a later cache integration task wires the real owner API | Task 5 records cache-key intent through the driver query boundary only. Compatibility, lookup, and proof-reuse decisions stay in `mizar-cache`. |
 | The requested `mizar-artifact` closeout report is absent in this checkout. | `repo_metadata_conflict` | Report only; do not repair artifact metadata in the driver task stream. |
 | Test-only registry fixture services are needed for deterministic registration and cache-key purity tests. | allowed test fixture | Fixtures must live only in tests and must not be exported or presented as real phase adapters. |
 
@@ -81,6 +81,13 @@ their real owning crate exposes an adapter seam.
 | `ArtifactService` | 15 | `mizar-artifact` plus producer seams | `external_dependency_gap`; no publication token is invented by the registry. |
 | `DocExtractionService` | 16 | `mizar-doc` | `deferred` until documentation/extraction owner surfaces land. |
 
+The Rust registry uses `mizar-build::task_graph::PipelinePhase` as its concrete
+phase key. Some `PipelinePhase` variants intentionally group architecture
+subphases: `Frontend` covers lexing/parsing phases 2-3, and `BackendRun` is
+the backend execution subphase of ATP dispatch. The registry's internal rank is
+therefore a deterministic ordering over current `PipelinePhase` variants, not a
+replacement for the architecture phase numbers in the table above.
+
 The registry may expose missing-service diagnostics for a submitted task, but
 the diagnostic must identify the missing owner seam. It must not emulate the
 phase, fabricate output handles, or mark a phase as complete.
@@ -93,10 +100,10 @@ The registry-level trait is conceptual; task 5 may choose concrete Rust type
 parameters or object-safe adapters that fit the available owner APIs.
 
 ```rust
-trait PhaseService<I, O> {
+trait PhaseService {
     fn phase(&self) -> PhaseDescriptor;
-    fn cache_key(&self, input: &I, context: &PhaseCacheContext) -> PhaseCacheIntent;
-    fn execute(&self, input: I, context: PhaseExecutionContext) -> PhaseResult<O>;
+    fn cache_key(&self, input: &PhaseInput, context: &PhaseCacheContext) -> PhaseCacheIntent;
+    fn execute(&self, input: PhaseInput, context: PhaseExecutionContext) -> PhaseResult;
 }
 ```
 
@@ -137,9 +144,9 @@ struct PhaseCacheContext {
 
 struct PhaseExecutionContext {
     common: PhaseContext,
-    cancellation: CancellationToken,
-    diagnostics: DiagnosticSink,
-    output_store: OutputStoreHandle,
+    cancellation: Option<CancellationToken>,
+    diagnostics: Option<DiagnosticSink>,
+    output_publisher: Option<PhaseOutputPublisher>,
 }
 ```
 
@@ -156,6 +163,11 @@ These fields are references to owner seams:
 - diagnostics flow through `mizar-diagnostics` producer sinks and records;
 - output sealing flows through `mizar-ir` publisher/storage handles.
 
+The handles are optional in task 5 because no real phase adapter is registered
+yet. A real adapter must use the owner handle supplied by the registry context
+or report an `external_dependency_gap`; it must not bypass the context with a
+private sink, output store, or publication token.
+
 `PhaseContext` must not expose mutable scheduler internals, wall-clock time,
 worker ids, event subscribers, LSP protocol payloads, artifact manifest
 transactions, cache-store handles, cache lookup handles, or publication tokens
@@ -166,10 +178,9 @@ returns a pure intent.
 ### PhaseResult
 
 ```rust
-struct PhaseResult<O> {
+struct PhaseResult {
     status: PhaseStatus,
-    output: Option<O>,
-    diagnostics: DiagnosticBatch,
+    diagnostics: Vec<DiagnosticBatch>,
     output_refs: Vec<AnyPhaseOutputRef>,
     cache_observation: Option<PhaseCacheObservation>,
 }
@@ -265,8 +276,9 @@ schema version, input-handle hashes, and owner dependency fingerprints. They may
 compute:
 
 - the service cache-key intent;
-- the cache lookup request/result returned by `mizar-cache`;
-- the phase execution result when cache lookup misses or is disabled;
+- the cache-key intent and query observation used by the later `mizar-cache`
+  owner seam;
+- the phase execution result when a later cache lookup misses or is disabled;
 - the scheduler-visible output references and diagnostic batches for the task.
 
 Cancellation is not a semantic input to cached query identity. A cancellation

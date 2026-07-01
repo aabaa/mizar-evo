@@ -17,3 +17,4 @@ mizar-build = { path = "../mizar-build" }
 mizar-diagnostics = { path = "../mizar-diagnostics" }
 mizar-ir = { path = "../mizar-ir" }
 mizar-session = { path = "../mizar-session" }
+salsa = "0.27.2"

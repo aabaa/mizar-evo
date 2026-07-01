@@ -10,4 +10,5 @@
 
 #![forbid(unsafe_code)]
 
+pub mod registry;
 pub mod request;

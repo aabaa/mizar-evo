@@ -79,6 +79,7 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "mizar-diagnostics".to_owned(),
         "mizar-ir".to_owned(),
         "mizar-session".to_owned(),
+        "salsa".to_owned(),
     ]);
 
     assert_eq!(
@@ -114,6 +115,13 @@ fn driver_dependency_boundary_is_exact_for_scaffold_task() {
         "mizar-session",
         "../mizar-session",
     );
+    assert!(
+        dependencies
+            .iter()
+            .any(|line| line.starts_with("salsa =") && line.contains("\"0.27.2\"")),
+        "{} must depend on salsa only for the driver-owned registry query boundary",
+        manifest_path.display()
+    );
 }
 
 #[test]
@@ -147,7 +155,11 @@ path = "../fake"
 fn driver_source_surface_matches_completed_tasks() {
     let root = crate_root();
     let source_files = rust_source_files(&root);
-    let expected_files = vec![root.join("src/lib.rs"), root.join("src/request.rs")];
+    let expected_files = vec![
+        root.join("src/lib.rs"),
+        root.join("src/registry.rs"),
+        root.join("src/request.rs"),
+    ];
 
     assert_eq!(
         source_files, expected_files,
@@ -183,12 +195,7 @@ fn driver_does_not_expose_later_task_modules_yet() {
 
     for path in rust_source_files(&root) {
         let source = read_to_string(&path);
-        for forbidden in [
-            "pub mod registry",
-            "pub mod driver",
-            "pub mod events",
-            "pub mod cli",
-        ] {
+        for forbidden in ["pub mod driver", "pub mod events", "pub mod cli"] {
             if source.contains(forbidden) {
                 let relative = path.strip_prefix(&root).unwrap_or(&path);
                 violations.push(format!("{} contains {forbidden}", relative.display()));
@@ -222,9 +229,64 @@ fn lib_code_line_detector_blocks_unexpected_item_forms() {
         "#![forbid(unsafe_code)]",
         "#[test]",
         "pub mod request;",
+        "pub mod registry;",
     ] {
         assert!(!lib_has_unexpected_code_line(line), "{line}");
     }
+}
+
+#[test]
+fn phase_owner_crates_do_not_depend_on_driver_or_salsa() {
+    let workspace = workspace_root();
+    let owner_crates = [
+        "mizar-lexer",
+        "mizar-syntax",
+        "mizar-parser",
+        "mizar-frontend",
+        "mizar-resolve",
+        "mizar-checker",
+        "mizar-core",
+        "mizar-vc",
+        "mizar-atp",
+        "mizar-kernel",
+        "mizar-proof",
+        "mizar-artifact",
+        "mizar-doc",
+    ];
+    let expected_missing = BTreeSet::from(["mizar-doc"]);
+    let mut missing = BTreeSet::new();
+    let mut violations = Vec::new();
+
+    for crate_name in owner_crates {
+        let manifest_path = workspace.join("crates").join(crate_name).join("Cargo.toml");
+        if !manifest_path.exists() {
+            missing.insert(crate_name);
+            continue;
+        }
+        let manifest = read_to_string(&manifest_path);
+        let dependency_names = dependency_section_names(&manifest)
+            .into_iter()
+            .flat_map(|section_name| dependency_names(&section(&manifest, &section_name)))
+            .collect::<BTreeSet<_>>();
+        for forbidden in ["mizar-driver", "salsa"] {
+            if dependency_names.contains(forbidden) {
+                violations.push(format!(
+                    "{} depends on {forbidden}",
+                    manifest_path.display()
+                ));
+            }
+        }
+    }
+
+    assert_eq!(
+        missing, expected_missing,
+        "phase owner dependency scan must cover every existing owner crate and only skip documented absent owners"
+    );
+    assert!(
+        violations.is_empty(),
+        "phase owner crates must not gain driver or salsa dependencies through the registry:\n{}",
+        violations.join("\n")
+    );
 }
 
 #[test]
@@ -493,6 +555,7 @@ fn public_enum_name(line: &str) -> Option<&str> {
 fn lib_has_unexpected_code_line(line: &str) -> bool {
     let ignored_prefixes = ["//", "#![", "#[", "//!"];
     line != "pub mod request;"
+        && line != "pub mod registry;"
         && !line.is_empty()
         && !ignored_prefixes
             .iter()
