@@ -1,10 +1,12 @@
 use std::str::FromStr;
 
 use mizar_diagnostics::{
+    explain::{
+        ExplanationHandle, ExplanationHandleId, ExplanationPreview, ExplanationPreviewFormat,
+    },
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
-        DiagnosticNote, DiagnosticNoteKind, DiagnosticSpan, ExplanationRef, FailureCategory,
-        PipelinePhase,
+        DiagnosticNote, DiagnosticNoteKind, DiagnosticSpan, FailureCategory, PipelinePhase,
     },
     fix::{FixSuggestion, FixSuggestionId},
     registry::DiagnosticCode,
@@ -322,11 +324,22 @@ fn rich_draft(snapshot: BuildSnapshotId, source_id: SourceId) -> DiagnosticDraft
             )
             .expect("valid informational fix"),
         ],
-        explanation: Some(
-            ExplanationRef::new("sink.explain_unexpected_token").expect("valid explanation ref"),
-        ),
+        explanation: Some(explanation("sink.explain_unexpected_token", "sink preview")),
     })
     .expect("valid rich draft")
+}
+
+fn explanation(identity: &str, preview: &str) -> ExplanationHandle {
+    ExplanationHandle::preview_only(
+        ExplanationHandleId::new(identity).expect("valid explanation identity"),
+        DiagnosticCode::from_str("E0001").expect("allocated code"),
+        "syntax.unexpected_token",
+        Some(ExplanationPreview::new(
+            ExplanationPreviewFormat::PlainText,
+            preview,
+        )),
+    )
+    .expect("valid explanation handle")
 }
 
 fn snapshot_id(byte: u8) -> BuildSnapshotId {

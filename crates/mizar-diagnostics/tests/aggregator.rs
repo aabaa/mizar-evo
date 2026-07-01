@@ -2,9 +2,13 @@ use std::str::FromStr;
 
 use mizar_diagnostics::{
     aggregator::{BuildDiagnosticIndex, DiagnosticAggregationInput},
+    explain::{
+        ExplanationHandle, ExplanationHandleId, ExplanationHandleInput, ExplanationKind,
+        ExplanationPreview, ExplanationPreviewFormat, ExplanationSourceRef, ExplanationSubject,
+    },
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
-        DiagnosticFreshness, DiagnosticSpan, ExplanationRef, FailureCategory, PipelinePhase,
+        DiagnosticFreshness, DiagnosticSpan, FailureCategory, PipelinePhase,
     },
     fix::{
         FixApplicability, FixCommandRef, FixEdit, FixSafety, FixSuggestion, FixSuggestionId,
@@ -487,7 +491,7 @@ fn deduplication_keeps_distinct_fix_and_explanation_identities() {
             .records()
             .iter()
             .filter_map(|record| record.explanation())
-            .map(|explanation| explanation.identity())
+            .map(|explanation| explanation.id().identity())
             .collect::<Vec<_>>(),
         vec!["agg.exp_a", "agg.exp_b"]
     );
@@ -738,6 +742,144 @@ fn deduplication_includes_each_canonical_fix_payload_field_and_normalizes_fix_or
             .collect::<Vec<_>>(),
         vec!["agg.order_a", "agg.order_b"]
     );
+}
+
+#[test]
+fn deduplication_includes_canonical_explanation_fields_but_not_preview_text() {
+    let snapshot = snapshot_id(20);
+    let source_id = source_id(snapshot);
+    let same_identity_alpha = draft(
+        DraftFixture::new(snapshot, source_id, PipelinePhase::Parser, 0, 1, "same")
+            .detail("agg.case", DiagnosticDetailValue::Integer(1))
+            .structured_explanation(structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical").preview("alpha"),
+            )),
+    );
+    let same_identity_zeta = draft(
+        DraftFixture::new(snapshot, source_id, PipelinePhase::Parser, 0, 1, "same")
+            .detail("agg.case", DiagnosticDetailValue::Integer(1))
+            .structured_explanation(structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical").preview("zeta"),
+            )),
+    );
+
+    let preview_index = BuildDiagnosticIndex::from_batches(
+        snapshot,
+        vec![batch(
+            snapshot,
+            PipelinePhase::Parser,
+            "parser.recovery",
+            vec![same_identity_zeta, same_identity_alpha],
+        )],
+    )
+    .expect("aggregation succeeds");
+    assert_eq!(preview_index.len(), 1);
+    assert_eq!(
+        preview_index.records()[0]
+            .explanation()
+            .and_then(ExplanationHandle::preview)
+            .map(ExplanationPreview::text),
+        Some("alpha")
+    );
+
+    let cases = vec![
+        (
+            "id",
+            structured_explanation(StructuredExplanationFixture::new("agg.explain_id_a")),
+            structured_explanation(StructuredExplanationFixture::new("agg.explain_id_b")),
+        ),
+        (
+            "kind",
+            structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical")
+                    .kind(ExplanationKind::DiagnosticContext),
+            ),
+            structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical")
+                    .kind(ExplanationKind::ProofFailure),
+            ),
+        ),
+        (
+            "subject",
+            structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical")
+                    .subject(ExplanationSubject::Expression("expr.left".to_owned())),
+            ),
+            structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical")
+                    .subject(ExplanationSubject::Expression("expr.right".to_owned())),
+            ),
+        ),
+        (
+            "source",
+            structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical")
+                    .source(ExplanationSourceRef::PreviewOnly),
+            ),
+            structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical").source(
+                    ExplanationSourceRef::QueryService {
+                        service_key: "agg.explain_service".to_owned(),
+                        query_key: "agg.query_key".to_owned(),
+                    },
+                ),
+            ),
+        ),
+        (
+            "snapshot precondition",
+            structured_explanation(StructuredExplanationFixture::new("agg.explain_canonical")),
+            structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical")
+                    .required_snapshot(Some(snapshot)),
+            ),
+        ),
+        (
+            "artifact hash precondition",
+            structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical")
+                    .required_artifact_hash(Some(Hash::from_bytes([1; Hash::BYTE_LEN]))),
+            ),
+            structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical")
+                    .required_artifact_hash(Some(Hash::from_bytes([2; Hash::BYTE_LEN]))),
+            ),
+        ),
+        (
+            "summary hash",
+            structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical")
+                    .summary_hash(Some(Hash::from_bytes([3; Hash::BYTE_LEN]))),
+            ),
+            structured_explanation(
+                StructuredExplanationFixture::new("agg.explain_canonical")
+                    .summary_hash(Some(Hash::from_bytes([4; Hash::BYTE_LEN]))),
+            ),
+        ),
+    ];
+
+    for (label, left_explanation, right_explanation) in cases {
+        let left = draft(
+            DraftFixture::new(snapshot, source_id, PipelinePhase::Parser, 2, 3, "same")
+                .detail("agg.case", DiagnosticDetailValue::Integer(2))
+                .structured_explanation(left_explanation),
+        );
+        let right = draft(
+            DraftFixture::new(snapshot, source_id, PipelinePhase::Parser, 2, 3, "same")
+                .detail("agg.case", DiagnosticDetailValue::Integer(2))
+                .structured_explanation(right_explanation),
+        );
+        let index = BuildDiagnosticIndex::from_batches(
+            snapshot,
+            vec![batch(
+                snapshot,
+                PipelinePhase::Parser,
+                "parser.recovery",
+                vec![right, left],
+            )],
+        )
+        .expect("aggregation succeeds");
+        assert_eq!(index.len(), 2, "{label}");
+    }
 }
 
 #[test]
@@ -1037,7 +1179,7 @@ struct DraftFixture {
     stable_detail_key: &'static str,
     details: Vec<(&'static str, DiagnosticDetailValue)>,
     fixes: Vec<FixSuggestion>,
-    explanation: Option<&'static str>,
+    explanation: Option<ExplanationHandle>,
 }
 
 impl DraftFixture {
@@ -1096,7 +1238,12 @@ impl DraftFixture {
     }
 
     fn explanation(mut self, identity: &'static str) -> Self {
-        self.explanation = Some(identity);
+        self.explanation = Some(explanation(identity, identity));
+        self
+    }
+
+    fn structured_explanation(mut self, explanation: ExplanationHandle) -> Self {
+        self.explanation = Some(explanation);
         self
     }
 }
@@ -1122,9 +1269,7 @@ fn draft(fixture: DraftFixture) -> DiagnosticDraft {
         notes: vec![],
         details: DiagnosticDetails::from_entries(fixture.details).expect("valid details"),
         fixes: fixture.fixes,
-        explanation: fixture
-            .explanation
-            .map(|identity| ExplanationRef::new(identity).expect("valid explanation")),
+        explanation: fixture.explanation,
     })
     .expect("valid draft")
 }
@@ -1309,6 +1454,101 @@ fn command_fix(identity: &str, command: &str) -> FixSuggestion {
         required_text_hash: None,
     })
     .expect("valid command fix")
+}
+
+fn explanation(identity: &str, preview: &str) -> ExplanationHandle {
+    ExplanationHandle::preview_only(
+        ExplanationHandleId::new(identity).expect("valid explanation identity"),
+        DiagnosticCode::from_str("E0001").expect("allocated code"),
+        "syntax.unexpected_token",
+        Some(ExplanationPreview::new(
+            ExplanationPreviewFormat::PlainText,
+            preview,
+        )),
+    )
+    .expect("valid explanation handle")
+}
+
+#[derive(Clone)]
+struct StructuredExplanationFixture {
+    identity: &'static str,
+    kind: ExplanationKind,
+    subject: ExplanationSubject,
+    source: ExplanationSourceRef,
+    required_snapshot: Option<BuildSnapshotId>,
+    required_artifact_hash: Option<Hash>,
+    summary_hash: Option<Hash>,
+    preview: &'static str,
+}
+
+impl StructuredExplanationFixture {
+    fn new(identity: &'static str) -> Self {
+        Self {
+            identity,
+            kind: ExplanationKind::DiagnosticContext,
+            subject: ExplanationSubject::Diagnostic {
+                code: DiagnosticCode::from_str("E0001").expect("allocated code"),
+                stable_detail_key: "syntax.unexpected_token".to_owned(),
+            },
+            source: ExplanationSourceRef::PreviewOnly,
+            required_snapshot: None,
+            required_artifact_hash: None,
+            summary_hash: None,
+            preview: "preview",
+        }
+    }
+
+    fn kind(mut self, kind: ExplanationKind) -> Self {
+        self.kind = kind;
+        self
+    }
+
+    fn subject(mut self, subject: ExplanationSubject) -> Self {
+        self.subject = subject;
+        self
+    }
+
+    fn source(mut self, source: ExplanationSourceRef) -> Self {
+        self.source = source;
+        self
+    }
+
+    fn required_snapshot(mut self, required_snapshot: Option<BuildSnapshotId>) -> Self {
+        self.required_snapshot = required_snapshot;
+        self
+    }
+
+    fn required_artifact_hash(mut self, required_artifact_hash: Option<Hash>) -> Self {
+        self.required_artifact_hash = required_artifact_hash;
+        self
+    }
+
+    fn summary_hash(mut self, summary_hash: Option<Hash>) -> Self {
+        self.summary_hash = summary_hash;
+        self
+    }
+
+    fn preview(mut self, preview: &'static str) -> Self {
+        self.preview = preview;
+        self
+    }
+}
+
+fn structured_explanation(fixture: StructuredExplanationFixture) -> ExplanationHandle {
+    ExplanationHandle::new(ExplanationHandleInput {
+        id: ExplanationHandleId::new(fixture.identity).expect("valid explanation identity"),
+        kind: fixture.kind,
+        subject: fixture.subject,
+        source: fixture.source,
+        required_snapshot: fixture.required_snapshot,
+        required_artifact_hash: fixture.required_artifact_hash,
+        summary_hash: fixture.summary_hash,
+        preview: Some(ExplanationPreview::new(
+            ExplanationPreviewFormat::PlainText,
+            fixture.preview,
+        )),
+    })
+    .expect("valid structured explanation handle")
 }
 
 fn snapshot_id(byte: u8) -> BuildSnapshotId {

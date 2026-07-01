@@ -115,7 +115,7 @@ the field level. The sink must not:
 - sort drafts;
 - deduplicate drafts;
 - assign `DiagnosticId` or `DiagnosticHandle`;
-- rewrite messages, notes, details, fixes, or explanation refs;
+- rewrite messages, notes, details, fixes, or explanation handles;
 - drop drafts because another draft looks similar.
 
 The aggregator may later normalize, deduplicate, sort, assign handles, reject

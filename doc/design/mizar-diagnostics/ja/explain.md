@@ -39,8 +39,7 @@ explain module が所有しないもの:
 
 ## Data Model
 
-task 15 は現在の `ExplanationRef` identity slot を次と等価な structured payload で
-置き換えるか、または拡張するべきである。
+task 15 は次と等価な structured explanation payload を実装する。
 
 ```rust
 struct ExplanationHandle {
@@ -83,6 +82,8 @@ struct ExplanationPreview {
 `VerificationCondition` subject は、この crate boundary では opaque structured key である。意味は
 owning phase または後続 query service が定義する。`mizar-diagnostics` は key を保存・比較するが、
 semantic authority として解釈しない。
+`Diagnostic` subject が diagnostic draft に attach される場合、その code と stable detail key は
+containing draft と一致しなければならない。
 
 `ExplanationHandleId` は publication 前に explicit producer key または deterministic
 producer-local ordinal から割り当てられる。human preview や localized wording から derived
@@ -115,11 +116,10 @@ kind は explanation payload を分類するだけである。proof、kernel rep
 
 ## Preview Bounds
 
-preview は optional かつ bounded である。task 15 は次の実装定数を強制するべきである。
+preview は optional かつ bounded である。実装は次の定数を強制する。
 
 - maximum preview bytes。
 - maximum preview lines。
-- preview が structured になる場合の maximum nested structured entries。
 - deterministic truncation marker。
 
 preview が bound を超える場合、stored preview は deterministic に truncate され、
@@ -128,7 +128,7 @@ preview が bound を超える場合、stored preview は deterministic に trun
 
 ## Lazy Resolution
 
-task 15 は handle を lazy に resolve し、次と等価な bounded result を返す store を公開するべきである。
+task 15 は handle を lazy に resolve し、次と等価な bounded result を返す store を公開する。
 
 ```rust
 enum ExplanationResolution {
@@ -139,13 +139,14 @@ enum ExplanationResolution {
 }
 ```
 
-resolution は backing data を読む前に handle precondition を確認する。snapshot-bound handle は
-`required_snapshot` の外では stale である。artifact-backed handle は expected artifact hash が
-利用できない、または一致しない場合 stale または missing である。cache-backed handle は query を
-高速化してよいが、cache data の欠落は `Missing` または `Unavailable` に degrade しなければならず、
-diagnostic identity や proof acceptance を変えてはならない。`summary_hash` が存在し、backing data が
-比較可能な summary hash を公開する場合、mismatch は異なる explanation data を silent に返すのではなく
-`Missing` または `Unavailable` に degrade する。
+resolution は、この crate が backing storage を所有せずに検証できる handle precondition を確認する。
+snapshot-bound handle は `required_snapshot` の外では stale である。artifact hash と cache/query
+precondition は backing owner が検証できるよう handle identity に保存される。その canonical handle に
+対する bounded payload が登録されていない場合、resolution は `Missing` へ degrade する。cache-backed
+handle は query を高速化してよいが、cache data 欠落は `Missing` または `Unavailable` へ degrade
+しなければならず、diagnostic identity や proof acceptance を変えてはならない。`summary_hash` が存在し
+registered backing data が comparable summary hash を公開する場合、mismatch は異なる explanation data を
+黙って返すのではなく、`Unavailable` へ degrade する。
 
 store は bounded explanation payload だけを返す。LSP response を publish せず、build を
 schedule せず、artifact を mutate せず、proof status を validate しない。
@@ -156,7 +157,7 @@ explanation handle は compact structured payload または stable handle とし
 attach される。次を preserve しなければならない。
 
 - 所属する diagnostic code。
-- 存在する場合は published diagnostic handle。
+- 存在する場合は、containing published diagnostic handle を projection として扱うこと。
 - stable explanation handle id。
 - kind と subject。
 - source reference。
@@ -164,15 +165,19 @@ attach される。次を preserve しなければならない。
 - 存在する場合は summary hash。
 - optional bounded preview metadata。
 
-structured handle が実装された後、aggregation deduplication は canonical explanation identity を
-diagnostic identity に含めなければならない。canonical explanation identity は handle id、kind、
-subject、source reference、snapshot/artifact/hash precondition、存在する場合は `summary_hash` で
-構成される。preview text、localized text、rendered `explain:` line、full explanation payload は
-deduplication key ではない。
+draft construction は、snapshot precondition が draft の source snapshot と異なる explanation
+handle、または diagnostic subject が異なる code/stable detail key を指す explanation handle を
+拒否する。これにより stale または foreign diagnostic explanation が current explanation data として
+publish されることを防ぐ。
+
+aggregation deduplication は canonical explanation identity を diagnostic identity に含める。
+canonical explanation identity は handle id、kind、subject、source reference、
+snapshot/artifact/hash precondition、存在する場合は `summary_hash` で構成される。preview text、
+localized text、rendered `explain:` line、full explanation payload は deduplication key ではない。
 
 ## Debug Snapshot
 
-task 15 は deterministic explanation debug snapshot を公開するべきであり、field order は次の通り。
+task 15 は deterministic explanation debug snapshot を公開し、field order は次の通り。
 
 1. `kind=explanation`。
 2. `id`。

@@ -139,9 +139,9 @@ including stable fix ids and human titles. It must not invent text edits, code
 actions, or automatic application behavior, and it must not treat fix titles as
 identity.
 
-Task 11 may render an `ExplanationRef` as a bounded `explain:` reference or
-documentation hint, but it must not resolve large traces. Explanation storage
-and lazy resolution are task 15 behavior.
+Rendering may project an `ExplanationHandle` as a bounded `explain:` reference
+with preview text when present, but it must not resolve large traces or shape
+LSP explanation responses. Lazy resolution is owned by the explain module.
 
 ## Styling And Determinism
 

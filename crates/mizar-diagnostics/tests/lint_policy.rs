@@ -177,7 +177,7 @@ fn diagnostics_allow_exceptions_are_documented_inline() {
 }
 
 #[test]
-fn diagnostics_lib_states_task_thirteen_boundary() {
+fn diagnostics_lib_states_task_fifteen_boundary() {
     let lib_path = crate_root().join("src/lib.rs");
     let source = read_to_string(&lib_path);
 
@@ -192,9 +192,10 @@ fn diagnostics_lib_states_task_thirteen_boundary() {
         "aggregation,",
         "CLI rendering",
         "structured fix suggestions",
-        "driver, LSP, artifact, and",
-        "explanation integration",
+        "lazy explanation handles",
+        "driver, LSP, and artifact",
         "pub mod aggregator;",
+        "pub mod explain;",
         "pub mod failure_record;",
         "pub mod fix;",
         "pub mod registry;",
@@ -203,12 +204,12 @@ fn diagnostics_lib_states_task_thirteen_boundary() {
     ] {
         assert!(
             source.contains(marker),
-            "{} must keep the task-13 diagnostics-boundary marker `{marker}`",
+            "{} must keep the task-15 diagnostics-boundary marker `{marker}`",
             lib_path.display()
         );
     }
 
-    for forbidden_module in ["explain", "driver", "lsp", "artifact"] {
+    for forbidden_module in ["driver", "lsp", "artifact"] {
         assert!(
             !source.contains(&format!("mod {forbidden_module}")),
             "{} must not add private `{forbidden_module}` wiring before its \
@@ -225,13 +226,14 @@ fn diagnostics_lib_states_task_thirteen_boundary() {
             .collect::<Vec<_>>(),
         vec![
             "pub mod aggregator;",
+            "pub mod explain;",
             "pub mod failure_record;",
             "pub mod fix;",
             "pub mod registry;",
             "pub mod render;",
             "pub mod sink;",
         ],
-        "{} must expose only the task-13 aggregator, registry, failure_record, fix, render, and sink modules at \
+        "{} must expose only the task-15 aggregator, registry, explain, failure_record, fix, render, and sink modules at \
          the crate root for now",
         lib_path.display()
     );

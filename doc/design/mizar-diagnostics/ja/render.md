@@ -135,9 +135,9 @@ rendering は structured fix payload を bounded な `help:` line として proj
 stable fix id と human title を含めてよいが、text edit、code action、automatic application
 behavior を invent してはならず、fix title を identity として扱ってはならない。
 
-task 11 は `ExplanationRef` を bounded `explain:` reference または documentation hint として
-render してよいが、large trace を resolve してはならない。explanation storage と lazy
-resolution は task 15 の behavior である。
+rendering は `ExplanationHandle` を、preview text が存在する場合はそれを含む bounded `explain:`
+reference として projection してよいが、large trace を resolve したり LSP explanation response を
+shape したりしてはならない。lazy resolution は explain module が所有する。
 
 ## Styling And Determinism
 

@@ -4,8 +4,11 @@ use std::{cmp::Ordering, collections::BTreeMap, error::Error, fmt};
 
 use mizar_session::{BuildSnapshotId, SourceRange};
 
-use crate::fix::FixSuggestion;
 use crate::registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity, DiagnosticStatus};
+use crate::{
+    explain::{ExplanationHandle, ExplanationSubject},
+    fix::FixSuggestion,
+};
 
 /// Pipeline phase that produced a diagnostic.
 ///
@@ -559,30 +562,6 @@ impl PartialOrd for DiagnosticDetailValue {
     }
 }
 
-/// Opaque identity of a lazy explanation.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ExplanationRef {
-    identity: String,
-}
-
-impl ExplanationRef {
-    /// Creates an explanation reference identity.
-    pub fn new(identity: impl Into<String>) -> Result<Self, DiagnosticRecordError> {
-        let identity = identity.into();
-        validate_detail_key(&identity).map_err(|_| {
-            DiagnosticRecordError::InvalidExplanationIdentity {
-                identity: identity.clone(),
-            }
-        })?;
-        Ok(Self { identity })
-    }
-
-    /// Returns the stable explanation identity.
-    pub fn identity(&self) -> &str {
-        &self.identity
-    }
-}
-
 /// Input used to create a validated diagnostic draft.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DiagnosticDraftInput {
@@ -608,8 +587,8 @@ pub struct DiagnosticDraftInput {
     pub details: DiagnosticDetails,
     /// Structured fix suggestions.
     pub fixes: Vec<FixSuggestion>,
-    /// Optional lazy explanation reference.
-    pub explanation: Option<ExplanationRef>,
+    /// Optional lazy explanation handle.
+    pub explanation: Option<ExplanationHandle>,
 }
 
 /// Producer-owned diagnostic draft before aggregation.
@@ -626,7 +605,7 @@ pub struct DiagnosticDraft {
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
     fixes: Vec<FixSuggestion>,
-    explanation: Option<ExplanationRef>,
+    explanation: Option<ExplanationHandle>,
 }
 
 impl DiagnosticDraft {
@@ -652,6 +631,12 @@ impl DiagnosticDraft {
             }
         })?;
         validate_primary_and_secondary_spans(&input.primary_span, &input.secondary_spans)?;
+        validate_explanation_attachment(
+            input.explanation.as_ref(),
+            input.source_snapshot,
+            input.code,
+            &input.stable_detail_key,
+        )?;
 
         Ok(Self {
             source_snapshot: input.source_snapshot,
@@ -724,8 +709,8 @@ impl DiagnosticDraft {
         &self.fixes
     }
 
-    /// Returns the optional explanation reference.
-    pub const fn explanation(&self) -> Option<&ExplanationRef> {
+    /// Returns the optional explanation handle.
+    pub const fn explanation(&self) -> Option<&ExplanationHandle> {
         self.explanation.as_ref()
     }
 
@@ -751,7 +736,7 @@ pub struct DiagnosticRecord {
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
     fixes: Vec<FixSuggestion>,
-    explanation: Option<ExplanationRef>,
+    explanation: Option<ExplanationHandle>,
     related: Vec<DiagnosticHandle>,
     freshness: DiagnosticFreshness,
 }
@@ -878,8 +863,8 @@ impl DiagnosticRecord {
         &self.fixes
     }
 
-    /// Returns the optional explanation reference.
-    pub const fn explanation(&self) -> Option<&ExplanationRef> {
+    /// Returns the optional explanation handle.
+    pub const fn explanation(&self) -> Option<&ExplanationHandle> {
         self.explanation.as_ref()
     }
 
@@ -912,11 +897,6 @@ pub enum DiagnosticRecordError {
     InvalidDetailKey {
         /// Rejected key.
         key: String,
-    },
-    /// An explanation identity was malformed.
-    InvalidExplanationIdentity {
-        /// Rejected identity.
-        identity: String,
     },
     /// The diagnostic code is not allocated in the registry.
     UnknownDiagnosticCode {
@@ -958,6 +938,24 @@ pub enum DiagnosticRecordError {
     SecondarySpanMustNotUsePrimaryRole {
         /// Rejected secondary span index.
         index: usize,
+    },
+    /// Explanation snapshot precondition did not match the draft snapshot.
+    ExplanationSnapshotMismatch {
+        /// Draft source snapshot.
+        source_snapshot: BuildSnapshotId,
+        /// Explanation required snapshot.
+        required_snapshot: BuildSnapshotId,
+    },
+    /// Explanation diagnostic subject did not match the containing diagnostic.
+    ExplanationDiagnosticSubjectMismatch {
+        /// Containing diagnostic code.
+        expected_code: DiagnosticCode,
+        /// Containing stable detail key.
+        expected_stable_detail_key: String,
+        /// Explanation subject code.
+        actual_code: DiagnosticCode,
+        /// Explanation subject stable detail key.
+        actual_stable_detail_key: String,
     },
     /// Retired codes cannot be emitted as current records.
     RetiredDescriptorForCurrentRecord {
@@ -1017,9 +1015,6 @@ impl fmt::Display for DiagnosticRecordError {
                 write!(formatter, "invalid stable detail key `{key}`")
             }
             Self::InvalidDetailKey { key } => write!(formatter, "invalid detail key `{key}`"),
-            Self::InvalidExplanationIdentity { identity } => {
-                write!(formatter, "invalid explanation identity `{identity}`")
-            }
             Self::UnknownDiagnosticCode { code } => {
                 write!(formatter, "unknown diagnostic code {code}")
             }
@@ -1054,6 +1049,24 @@ impl fmt::Display for DiagnosticRecordError {
             Self::SecondarySpanMustNotUsePrimaryRole { index } => {
                 write!(formatter, "secondary span {index} used primary role")
             }
+            Self::ExplanationSnapshotMismatch {
+                source_snapshot,
+                required_snapshot,
+            } => write!(
+                formatter,
+                "explanation required snapshot {required_snapshot:?} does not match draft \
+                 source snapshot {source_snapshot:?}"
+            ),
+            Self::ExplanationDiagnosticSubjectMismatch {
+                expected_code,
+                expected_stable_detail_key,
+                actual_code,
+                actual_stable_detail_key,
+            } => write!(
+                formatter,
+                "explanation diagnostic subject {actual_code}/{actual_stable_detail_key:?} \
+                 does not match containing diagnostic {expected_code}/{expected_stable_detail_key:?}"
+            ),
             Self::RetiredDescriptorForCurrentRecord { code } => {
                 write!(
                     formatter,
@@ -1182,6 +1195,41 @@ fn validate_primary_and_secondary_spans(
         if span.role == DiagnosticSpanRole::Primary {
             return Err(DiagnosticRecordError::SecondarySpanMustNotUsePrimaryRole { index });
         }
+    }
+    Ok(())
+}
+
+fn validate_explanation_attachment(
+    explanation: Option<&ExplanationHandle>,
+    source_snapshot: BuildSnapshotId,
+    code: DiagnosticCode,
+    stable_detail_key: &str,
+) -> Result<(), DiagnosticRecordError> {
+    let Some(explanation) = explanation else {
+        return Ok(());
+    };
+    if let Some(required_snapshot) = explanation.required_snapshot()
+        && required_snapshot != source_snapshot
+    {
+        return Err(DiagnosticRecordError::ExplanationSnapshotMismatch {
+            source_snapshot,
+            required_snapshot,
+        });
+    }
+    if let ExplanationSubject::Diagnostic {
+        code: actual_code,
+        stable_detail_key: actual_stable_detail_key,
+    } = explanation.subject()
+        && (*actual_code != code || actual_stable_detail_key != stable_detail_key)
+    {
+        return Err(
+            DiagnosticRecordError::ExplanationDiagnosticSubjectMismatch {
+                expected_code: code,
+                expected_stable_detail_key: stable_detail_key.to_owned(),
+                actual_code: *actual_code,
+                actual_stable_detail_key: actual_stable_detail_key.clone(),
+            },
+        );
     }
     Ok(())
 }
@@ -1329,7 +1377,7 @@ fn render_debug_snapshot(snapshot: DebugSnapshot<'_>) -> String {
             ));
             lines.push(format!(
                 "explanation={}",
-                render_explanation(draft.explanation.as_ref())
+                render_explanation(draft.explanation.as_ref(), "unpublished")
             ));
             lines.push("related=[]".to_owned());
         }
@@ -1361,7 +1409,7 @@ fn render_debug_snapshot(snapshot: DebugSnapshot<'_>) -> String {
             ));
             lines.push(format!(
                 "explanation={}",
-                render_explanation(record.explanation.as_ref())
+                render_explanation(record.explanation.as_ref(), &render_handle(record.handle))
             ));
             lines.push(format!("related={}", render_handles(&record.related)));
         }
@@ -1507,10 +1555,12 @@ fn render_fixes(fixes: &[FixSuggestion], diagnostic: &str) -> String {
     format!("[{}]", rendered.join(", "))
 }
 
-fn render_explanation(explanation: Option<&ExplanationRef>) -> String {
+fn render_explanation(explanation: Option<&ExplanationHandle>, diagnostic: &str) -> String {
     explanation.map_or_else(
         || "none".to_owned(),
-        |explanation| format!("{:?}", explanation.identity),
+        |explanation| {
+            escape_embedded_snapshot(&explanation.debug_snapshot_with_diagnostic(diagnostic))
+        },
     )
 }
 

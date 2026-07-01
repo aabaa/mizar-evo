@@ -112,17 +112,18 @@ deduplication は stable machine-readable field を key にする。
 7. ordered canonical fix payload: suggestion id、producer key、applicability、
    safety、expected text を含む ordered edit、optional command reference、
    snapshot/hash precondition。
-8. optional explanation identity。
+8. optional canonical explanation handle identity。
 
 message text、localized text、rendered label、terminal styling、LSP range、source excerpt、
 producer order は identity ではない。message を変更しても、2 つの diagnostic が
 deduplicate されるかどうかを変えてはならない。
 
-aggregator は primary span、structured detail、canonical fix payload、explanation identity
-が異なる diagnostic を merge してはならない。fix title、diagnostic message、rendered help、
-localized text は presentation であり identity ではない。secondary span と note は canonical
-representative から保存される。producer は identity-bearing な違いを human text に頼らず、
-structured detail、fix、explanation ref に入れるべきである。
+aggregator は primary span、structured detail、canonical fix payload、canonical
+explanation handle identity が異なる diagnostic を merge してはならない。fix title、
+diagnostic message、rendered help、localized text、rendered explanation preview は
+presentation であり identity ではない。secondary span と note は canonical representative
+から保存される。producer は identity-bearing な違いを human text に頼らず、structured
+detail、fix、explanation handle metadata に入れるべきである。
 
 同じ dedup identity を持つ複数 draft が異なる presentation payload を持つ場合、aggregator
 は full presentation payload を tie-breaker として sort し、deterministic に representative

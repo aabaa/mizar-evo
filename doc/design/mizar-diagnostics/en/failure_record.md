@@ -45,7 +45,7 @@ Both drafts and records carry these fields:
 | `notes` | `Vec<DiagnosticNote>` | yes, may be empty | Human-facing note/help text plus optional source anchors. |
 | `details` | `DiagnosticDetails` | yes, may be empty | Machine-readable payload map. |
 | `fixes` | `Vec<FixSuggestion>` | yes, may be empty | Structured advisory fix suggestions. They are normalized by canonical payload and never apply edits. |
-| `explanation` | `Option<ExplanationRef>` | optional | Lazy explanation handle added by task 15. Until then this is an attachment slot. |
+| `explanation` | `Option<ExplanationHandle>` | optional | Structured lazy explanation handle with bounded preview metadata. |
 
 The message, notes, summaries, rendered labels, and localized text are
 presentation payloads. Tools and consumers must key on `DiagnosticCode` and
@@ -66,7 +66,7 @@ struct DiagnosticDraft {
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
     fixes: Vec<FixSuggestion>,
-    explanation: Option<ExplanationRef>,
+    explanation: Option<ExplanationHandle>,
 }
 ```
 
@@ -84,6 +84,10 @@ Draft rules:
   artifact mutation instructions, or driver events.
 - Producers may attach structured details only when each key has stable meaning
   independent of human wording.
+- If a producer attaches an `ExplanationHandle` with `required_snapshot`, that
+  snapshot must match the draft `source_snapshot`.
+- If an attached `ExplanationHandle` uses a diagnostic subject, its
+  `DiagnosticCode` and stable detail key must match the containing diagnostic.
 
 ## DiagnosticRecord
 
@@ -102,7 +106,7 @@ struct DiagnosticRecord {
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
     fixes: Vec<FixSuggestion>,
-    explanation: Option<ExplanationRef>,
+    explanation: Option<ExplanationHandle>,
     related: Vec<DiagnosticHandle>,
     freshness: DiagnosticFreshness,
 }
@@ -177,7 +181,7 @@ enum StaleDiagnosticReason {
 `DiagnosticId` is deterministic within one `BuildSnapshotId`; it is not globally
 meaningful. The aggregator derives it from source identity, diagnostic code,
 phase, primary span, stable detail key, normalized details, canonical fix
-payloads, explanation identity, and the deduplicated ordinal.
+payloads, explanation handle identity, and the deduplicated ordinal.
 
 `Current` records are eligible for CLI output, artifact projection, and semantic
 LSP publication by the owning consumer. `Stale` records may be shown by an editor
@@ -328,8 +332,8 @@ Structured edits belong to `FixSuggestion` payloads and `fix.md`.
 adapters. They carry stable suggestion identity, optional producer identity,
 applicability, safety, edits, command refs, and snapshot/hash preconditions as
 specified by `fix.md`; they do not apply edits, create LSP code actions, execute
-commands, or mutate artifacts. `ExplanationRef` remains an attachment slot until
-task 15 defines lazy explanation handles. These attachment identities use the
+commands, or mutate artifacts. `ExplanationHandle` values are structured lazy
+references with bounded preview metadata. These attachment identities use the
 same ASCII grammar as `stable_detail_key` so aggregation and debug snapshots can
 compare them deterministically, and they must not reinterpret human-facing text
 as identity.

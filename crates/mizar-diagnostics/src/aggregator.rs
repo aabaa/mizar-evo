@@ -5,6 +5,7 @@ use std::{collections::BTreeMap, error::Error, fmt};
 use mizar_session::{BuildSnapshotId, SourceId};
 
 use crate::{
+    explain::ExplanationHandleKey,
     failure_record::{
         DiagnosticDetailValue, DiagnosticDraft, DiagnosticFreshness, DiagnosticHandle,
         DiagnosticId, DiagnosticRecord, DiagnosticRecordError, DiagnosticSpan, FailureCategory,
@@ -429,7 +430,7 @@ struct DedupKey {
     stable_detail_key: String,
     details: Vec<(String, DiagnosticDetailValue)>,
     fixes: Vec<FixSuggestionKey>,
-    explanation: Option<String>,
+    explanation: Option<ExplanationHandleKey>,
 }
 
 impl DedupKey {
@@ -453,7 +454,7 @@ impl DedupKey {
                 .collect(),
             explanation: draft
                 .explanation()
-                .map(|explanation| explanation.identity().to_owned()),
+                .map(|explanation| explanation.canonical_key()),
         }
     }
 }

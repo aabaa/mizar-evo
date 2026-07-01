@@ -113,7 +113,7 @@ producer がしてはならないこと:
 - draft の sort。
 - draft の deduplication。
 - `DiagnosticId` または `DiagnosticHandle` の assignment。
-- message、note、detail、fix、explanation ref の rewrite。
+- message、note、detail、fix、explanation handle の rewrite。
 - 他の draft と似ているという理由で draft を drop すること。
 
 aggregator は後で normalize、deduplicate、sort、handle assignment、stale publication

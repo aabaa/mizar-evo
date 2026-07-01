@@ -1,6 +1,11 @@
 use std::str::FromStr;
 
 use mizar_diagnostics::{
+    explain::{
+        ExplanationError, ExplanationHandle, ExplanationHandleId, ExplanationHandleInput,
+        ExplanationKind, ExplanationPreview, ExplanationPreviewFormat, ExplanationSourceRef,
+        ExplanationSubject,
+    },
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
         DiagnosticFreshness, DiagnosticHandle, DiagnosticId, DiagnosticNote, DiagnosticNoteKind,
@@ -55,9 +60,7 @@ fn draft_and_record_round_trip_through_descriptor_metadata() {
     ])
     .expect("valid details");
     let fix = informational_fix("syntax.insert_end", "insert a matching keyword");
-    let explanation =
-        mizar_diagnostics::failure_record::ExplanationRef::new("syntax.unexpected_token.context")
-            .expect("valid explanation ref");
+    let explanation = explanation("syntax.unexpected_token.context", "syntax context");
 
     let draft = DiagnosticDraft::new(DiagnosticDraftInput {
         source_snapshot: snapshot,
@@ -435,8 +438,77 @@ fn invalid_fix_and_explanation_identities_are_rejected() {
         Err(FixSuggestionError::InvalidFixIdentity { identity }) if identity == "bad-key"
     ));
     assert!(matches!(
-        mizar_diagnostics::failure_record::ExplanationRef::new("bad key"),
-        Err(DiagnosticRecordError::InvalidExplanationIdentity { identity }) if identity == "bad key"
+        ExplanationHandleId::new("bad key"),
+        Err(ExplanationError::InvalidHandleId { identity }) if identity == "bad key"
+    ));
+}
+
+#[test]
+fn draft_rejects_stale_or_foreign_diagnostic_explanation_handles() {
+    let snapshot = snapshot_id(14);
+    let other_snapshot = snapshot_id(15);
+    let source_id = source_id(snapshot);
+    let primary_span = DiagnosticSpan::primary(
+        SourceRange {
+            source_id,
+            start: 0,
+            end: 1,
+        },
+        None,
+    )
+    .expect("valid primary span");
+    let mut input = draft_input(snapshot, source_id, primary_span.clone(), vec![]);
+    input.explanation = Some(structured_explanation(
+        "syntax.unexpected_token.snapshot",
+        Some(other_snapshot),
+        "syntax.unexpected_token",
+    ));
+
+    assert!(matches!(
+        DiagnosticDraft::new(input),
+        Err(DiagnosticRecordError::ExplanationSnapshotMismatch {
+            source_snapshot,
+            required_snapshot,
+        }) if source_snapshot == snapshot && required_snapshot == other_snapshot
+    ));
+
+    let mut input = draft_input(snapshot, source_id, primary_span.clone(), vec![]);
+    input.explanation = Some(structured_explanation(
+        "syntax.unexpected_token.foreign",
+        Some(snapshot),
+        "syntax.alternate",
+    ));
+    assert!(matches!(
+        DiagnosticDraft::new(input),
+        Err(DiagnosticRecordError::ExplanationDiagnosticSubjectMismatch {
+            expected_code,
+            expected_stable_detail_key,
+            actual_code,
+            actual_stable_detail_key,
+        }) if expected_code == DiagnosticCode::from_str("E0001").expect("allocated code")
+            && expected_stable_detail_key == "syntax.unexpected_token"
+            && actual_code == DiagnosticCode::from_str("E0001").expect("allocated code")
+            && actual_stable_detail_key == "syntax.alternate"
+    ));
+
+    let mut input = draft_input(snapshot, source_id, primary_span, vec![]);
+    input.explanation = Some(structured_explanation_with_code(
+        "syntax.unexpected_token.foreign_code",
+        Some(snapshot),
+        DiagnosticCode::from_str("W0001").expect("allocated code"),
+        "syntax.unexpected_token",
+    ));
+    assert!(matches!(
+        DiagnosticDraft::new(input),
+        Err(DiagnosticRecordError::ExplanationDiagnosticSubjectMismatch {
+            expected_code,
+            expected_stable_detail_key,
+            actual_code,
+            actual_stable_detail_key,
+        }) if expected_code == DiagnosticCode::from_str("E0001").expect("allocated code")
+            && expected_stable_detail_key == "syntax.unexpected_token"
+            && actual_code == DiagnosticCode::from_str("W0001").expect("allocated code")
+            && actual_stable_detail_key == "syntax.unexpected_token"
     ));
 }
 
@@ -473,12 +545,10 @@ fn debug_rendering_is_byte_stable_and_sorts_details() {
             "syntax.insert_end",
             "insert a matching keyword",
         )],
-        explanation: Some(
-            mizar_diagnostics::failure_record::ExplanationRef::new(
-                "syntax.unexpected_token.context",
-            )
-            .expect("valid explanation ref"),
-        ),
+        explanation: Some(explanation(
+            "syntax.unexpected_token.context",
+            "syntax context",
+        )),
     })
     .expect("valid draft");
     let record = DiagnosticRecord::from_draft(
@@ -514,7 +584,12 @@ fn debug_rendering_is_byte_stable_and_sorts_details() {
             "diagnostic=unpublished\\ntitle=\"insert a matching keyword\"\\n",
             "applicability=informational\\nsafety=command_only\\nedits=[]\\n",
             "command=none\\nrequired_snapshot=none\\nrequired_text_hash=none]\n",
-            "explanation=\"syntax.unexpected_token.context\"\n",
+            "explanation=kind=explanation\\nid=\"syntax.unexpected_token.context\"\\n",
+            "diagnostic=unpublished\\nexplanation_kind=diagnostic_context\\n",
+            "subject=diagnostic(code=E0001,stable_detail_key=\"syntax.unexpected_token\")\\n",
+            "source=preview_only\\nrequired_snapshot=none\\nrequired_artifact_hash=none\\n",
+            "summary_hash=none\\npreview={format=plain_text,text=\"syntax context\",",
+            "truncated=false,byte_len=14,line_count=1}\n",
             "related=[]\n",
         )
     );
@@ -545,7 +620,14 @@ fn debug_rendering_is_byte_stable_and_sorts_details() {
             "title=\"insert a matching keyword\"\\napplicability=informational\\n",
             "safety=command_only\\nedits=[]\\ncommand=none\\n",
             "required_snapshot=none\\nrequired_text_hash=none]\n",
-            "explanation=\"syntax.unexpected_token.context\"\n",
+            "explanation=kind=explanation\\nid=\"syntax.unexpected_token.context\"\\n",
+            "diagnostic=mizar-session-build-snapshot-v1:",
+            "0404040404040404040404040404040404040404040404040404040404040404#3\\n",
+            "explanation_kind=diagnostic_context\\n",
+            "subject=diagnostic(code=E0001,stable_detail_key=\"syntax.unexpected_token\")\\n",
+            "source=preview_only\\nrequired_snapshot=none\\nrequired_artifact_hash=none\\n",
+            "summary_hash=none\\npreview={format=plain_text,text=\"syntax context\",",
+            "truncated=false,byte_len=14,line_count=1}\n",
             "related=[mizar-session-build-snapshot-v1:",
             "0404040404040404040404040404040404040404040404040404040404040404#4]\n",
         )
@@ -790,6 +872,57 @@ fn informational_fix(identity: &str, title: &str) -> FixSuggestion {
         title,
     )
     .expect("valid informational fix")
+}
+
+fn explanation(identity: &str, preview: &str) -> ExplanationHandle {
+    ExplanationHandle::preview_only(
+        ExplanationHandleId::new(identity).expect("valid explanation identity"),
+        DiagnosticCode::from_str("E0001").expect("allocated code"),
+        "syntax.unexpected_token",
+        Some(ExplanationPreview::new(
+            ExplanationPreviewFormat::PlainText,
+            preview,
+        )),
+    )
+    .expect("valid explanation handle")
+}
+
+fn structured_explanation(
+    identity: &str,
+    required_snapshot: Option<BuildSnapshotId>,
+    stable_detail_key: &str,
+) -> ExplanationHandle {
+    structured_explanation_with_code(
+        identity,
+        required_snapshot,
+        DiagnosticCode::from_str("E0001").expect("allocated code"),
+        stable_detail_key,
+    )
+}
+
+fn structured_explanation_with_code(
+    identity: &str,
+    required_snapshot: Option<BuildSnapshotId>,
+    code: DiagnosticCode,
+    stable_detail_key: &str,
+) -> ExplanationHandle {
+    ExplanationHandle::new(ExplanationHandleInput {
+        id: ExplanationHandleId::new(identity).expect("valid explanation identity"),
+        kind: ExplanationKind::DiagnosticContext,
+        subject: ExplanationSubject::Diagnostic {
+            code,
+            stable_detail_key: stable_detail_key.to_owned(),
+        },
+        source: ExplanationSourceRef::PreviewOnly,
+        required_snapshot,
+        required_artifact_hash: None,
+        summary_hash: None,
+        preview: Some(ExplanationPreview::new(
+            ExplanationPreviewFormat::PlainText,
+            "preview",
+        )),
+    })
+    .expect("valid structured explanation handle")
 }
 
 fn snapshot_id(byte: u8) -> BuildSnapshotId {

@@ -1,11 +1,15 @@
 use std::{collections::HashMap, str::FromStr};
 
 use mizar_diagnostics::{
+    explain::{
+        ExplanationHandle, ExplanationHandleId, ExplanationHandleInput, ExplanationKind,
+        ExplanationPreview, ExplanationPreviewFormat, ExplanationSourceRef, ExplanationSubject,
+    },
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
         DiagnosticFreshness, DiagnosticHandle, DiagnosticId, DiagnosticNote, DiagnosticNoteKind,
-        DiagnosticSpan, DiagnosticSpanRole, ExplanationRef, FailureCategory, PipelinePhase,
-        SpanFreshness, ZeroWidthSpanIntent,
+        DiagnosticSpan, DiagnosticSpanRole, FailureCategory, PipelinePhase, SpanFreshness,
+        ZeroWidthSpanIntent,
     },
     fix::{
         FixApplicability, FixCommandRef, FixEdit, FixSafety, FixSuggestion, FixSuggestionId,
@@ -18,8 +22,8 @@ use mizar_diagnostics::{
     },
 };
 use mizar_session::{
-    BuildSnapshotId, InMemorySessionIdAllocator, LineColumn, LineColumnRange, SessionIdAllocator,
-    SourceId, SourceRange,
+    BuildSnapshotId, Hash, InMemorySessionIdAllocator, LineColumn, LineColumnRange,
+    SessionIdAllocator, SourceId, SourceRange,
 };
 
 #[test]
@@ -65,7 +69,7 @@ fn plain_rendering_is_byte_stable_for_primary_secondary_notes_and_refs() {
                 "render.qualify",
                 "qualify one candidate",
             )])
-            .explanation(ExplanationRef::new("render.explain").expect("valid explanation")),
+            .explanation(explanation("render.explain", "show overload candidates")),
     );
 
     assert_eq!(
@@ -91,7 +95,7 @@ fn plain_rendering_is_byte_stable_for_primary_secondary_notes_and_refs() {
             "   | --- closing token\n",
             "   = help: qualify one candidate\n",
             "   = help: fix suggestion `render.qualify`: qualify one candidate\n",
-            "   = explain: `render.explain`",
+            "   = explain: `render.explain`: show overload candidates",
         )
     );
 }
@@ -126,6 +130,63 @@ fn fix_rendering_projects_edit_and_command_metadata_without_application_payloads
     assert!(!rendered.contains("WorkspaceEdit"));
     assert!(!rendered.contains("replacement"));
     assert!(!rendered.contains("expected_text"));
+}
+
+#[test]
+fn explanation_rendering_projects_only_handle_id_and_bounded_preview_without_resolution_payloads() {
+    let snapshot = snapshot_id(8);
+    let source_id = source_id(snapshot);
+    let context =
+        TestSourceContext::new().with_source(source_id, "explain.miz", "Src(8)", "abc\ndef\n");
+    let artifact_record = record(
+        RecordFixture::new(snapshot, source_id, 0, 1, "artifact explanation")
+            .explanation(backing_explanation(snapshot, true)),
+    );
+    let query_record = record(
+        RecordFixture::new(snapshot, source_id, 4, 7, "query explanation")
+            .explanation(query_explanation()),
+    );
+    let rendered = render_diagnostics(DiagnosticRenderInput::new(
+        &[artifact_record, query_record],
+        &context,
+        RenderOptions::plain(),
+    ));
+
+    assert_eq!(
+        rendered,
+        concat!(
+            "error[E0001]: artifact explanation (syntax.unexpected_token)\n",
+            "  --> explain.miz:1:1\n",
+            "   |\n",
+            " 1 | abc\n",
+            "   | ^ artifact explanation\n",
+            "   = explain: `render.artifact_explain`: bounded preview\n",
+            "\n",
+            "error[E0001]: query explanation (syntax.unexpected_token)\n",
+            "  --> explain.miz:2:1\n",
+            "   |\n",
+            " 2 | def\n",
+            "   | ^^^ query explanation\n",
+            "   = explain: `render.query_explain`",
+        )
+    );
+    for forbidden in [
+        "explain/proof.json",
+        "0101010101010101010101010101010101010101010101010101010101010101",
+        "0202020202020202020202020202020202020202020202020202020202020202",
+        "required_snapshot",
+        "artifact payload",
+        "WorkspaceEdit",
+        "jsonrpc",
+        "mizar/explain",
+        "replacement",
+        "expected_text",
+    ] {
+        assert!(
+            !rendered.contains(forbidden),
+            "rendered explanation must not leak `{forbidden}`"
+        );
+    }
 }
 
 #[test]
@@ -555,7 +616,7 @@ struct RecordFixture {
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     fixes: Vec<FixSuggestion>,
-    explanation: Option<ExplanationRef>,
+    explanation: Option<ExplanationHandle>,
 }
 
 impl RecordFixture {
@@ -618,7 +679,7 @@ impl RecordFixture {
         self
     }
 
-    fn explanation(mut self, explanation: ExplanationRef) -> Self {
+    fn explanation(mut self, explanation: ExplanationHandle) -> Self {
         self.explanation = Some(explanation);
         self
     }
@@ -707,6 +768,58 @@ fn command_fix() -> FixSuggestion {
         required_text_hash: None,
     })
     .expect("valid command fix")
+}
+
+fn explanation(identity: &str, preview: &str) -> ExplanationHandle {
+    ExplanationHandle::preview_only(
+        ExplanationHandleId::new(identity).expect("valid explanation identity"),
+        DiagnosticCode::from_str("E0001").expect("allocated code"),
+        "syntax.unexpected_token",
+        Some(ExplanationPreview::new(
+            ExplanationPreviewFormat::PlainText,
+            preview,
+        )),
+    )
+    .expect("valid explanation handle")
+}
+
+fn backing_explanation(snapshot: BuildSnapshotId, with_preview: bool) -> ExplanationHandle {
+    ExplanationHandle::new(ExplanationHandleInput {
+        id: ExplanationHandleId::new("render.artifact_explain").expect("valid explanation id"),
+        kind: ExplanationKind::ProofFailure,
+        subject: ExplanationSubject::Diagnostic {
+            code: DiagnosticCode::from_str("E0001").expect("allocated code"),
+            stable_detail_key: "syntax.unexpected_token".to_owned(),
+        },
+        source: ExplanationSourceRef::Artifact {
+            path: "explain/proof.json".to_owned(),
+            content_hash: Hash::from_bytes([1; Hash::BYTE_LEN]),
+        },
+        required_snapshot: Some(snapshot),
+        required_artifact_hash: Some(Hash::from_bytes([1; Hash::BYTE_LEN])),
+        summary_hash: Some(Hash::from_bytes([2; Hash::BYTE_LEN])),
+        preview: with_preview.then(|| {
+            ExplanationPreview::new(ExplanationPreviewFormat::PlainText, "bounded preview")
+        }),
+    })
+    .expect("valid backing explanation handle")
+}
+
+fn query_explanation() -> ExplanationHandle {
+    ExplanationHandle::new(ExplanationHandleInput {
+        id: ExplanationHandleId::new("render.query_explain").expect("valid explanation id"),
+        kind: ExplanationKind::OverloadResolution,
+        subject: ExplanationSubject::Expression("expr.render".to_owned()),
+        source: ExplanationSourceRef::QueryService {
+            service_key: "render.explain_service".to_owned(),
+            query_key: "render.query".to_owned(),
+        },
+        required_snapshot: None,
+        required_artifact_hash: None,
+        summary_hash: None,
+        preview: None,
+    })
+    .expect("valid query explanation handle")
 }
 
 fn line_starts(text: &str) -> Vec<usize> {

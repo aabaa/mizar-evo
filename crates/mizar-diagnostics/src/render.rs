@@ -164,7 +164,7 @@ fn render_record(
         lines.push(render_fix_help(fix));
     }
     if let Some(explanation) = record.explanation() {
-        lines.push(format!("   = explain: `{}`", explanation.identity()));
+        lines.push(render_explanation(explanation));
     }
 
     lines.join("\n")
@@ -214,6 +214,17 @@ fn render_fix_help(fix: &crate::fix::FixSuggestion) -> String {
         ));
     }
     help
+}
+
+fn render_explanation(explanation: &crate::explain::ExplanationHandle) -> String {
+    let mut line = format!("   = explain: `{}`", explanation.id().identity());
+    if let Some(preview) = explanation.preview()
+        && !preview.text().is_empty()
+    {
+        line.push_str(": ");
+        line.push_str(preview.text());
+    }
+    line
 }
 
 fn render_severity(severity: DiagnosticSeverity) -> &'static str {

@@ -45,7 +45,7 @@ draft と record は次の field を共有する。
 | `notes` | `Vec<DiagnosticNote>` | yes, may be empty | 人間向け note/help text と任意の source anchor。 |
 | `details` | `DiagnosticDetails` | yes, may be empty | machine-readable payload map。 |
 | `fixes` | `Vec<FixSuggestion>` | yes, may be empty | structured advisory fix suggestion。canonical payload で normalize され、edit を適用しない。 |
-| `explanation` | `Option<ExplanationRef>` | optional | task 15 が追加する lazy explanation handle。それまでは attachment slot。 |
+| `explanation` | `Option<ExplanationHandle>` | optional | bounded preview metadata を持つ structured lazy explanation handle。 |
 
 message、note、summary、rendered label、localized text は presentation payload である。
 tools と consumers はこれらの文字列ではなく `DiagnosticCode` と structured field を
@@ -66,7 +66,7 @@ struct DiagnosticDraft {
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
     fixes: Vec<FixSuggestion>,
-    explanation: Option<ExplanationRef>,
+    explanation: Option<ExplanationHandle>,
 }
 ```
 
@@ -83,6 +83,10 @@ draft の規則:
   instruction、driver event を attach してはならない。
 - producer が structured detail を attach できるのは、各 key が人間向け wording から
   独立した stable meaning を持つ場合だけである。
+- producer が `required_snapshot` を持つ `ExplanationHandle` を attach する場合、
+  その snapshot は draft の `source_snapshot` と一致しなければならない。
+- attach された `ExplanationHandle` が diagnostic subject を使う場合、その
+  `DiagnosticCode` と stable detail key は containing diagnostic と一致しなければならない。
 
 ## DiagnosticRecord
 
@@ -101,7 +105,7 @@ struct DiagnosticRecord {
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
     fixes: Vec<FixSuggestion>,
-    explanation: Option<ExplanationRef>,
+    explanation: Option<ExplanationHandle>,
     related: Vec<DiagnosticHandle>,
     freshness: DiagnosticFreshness,
 }
@@ -174,7 +178,7 @@ enum StaleDiagnosticReason {
 `DiagnosticId` は 1 つの `BuildSnapshotId` の中で deterministic であり、global な
 意味は持たない。aggregator は source identity、diagnostic code、phase、primary
 span、stable detail key、normalized details、canonical fix payload、explanation
-identity、deduplicated ordinal からこれを導出する。
+handle identity、deduplicated ordinal からこれを導出する。
 
 `Current` record は、owning consumer による CLI output、artifact projection、
 semantic LSP publication の対象になりうる。`Stale` record は LSP layer が stale と
@@ -322,11 +326,10 @@ structured edit は `FixSuggestion` payload と `fix.md` に属する。
 `FixSuggestion` value は structured advisory payload であり、placeholder adapter ではない。
 `fix.md` が定義する stable suggestion identity、optional producer identity、applicability、
 safety、edit、command ref、snapshot/hash precondition を保持するが、edit の適用、LSP code
-action の作成、command execution、artifact mutation は行わない。`ExplanationRef` は task 15
-が lazy explanation handle を定義するまで attachment slot のままである。これらの attachment
-identity は、aggregation と debug snapshot が deterministic に比較できるよう
-`stable_detail_key` と同じ ASCII grammar を使い、人間向け text を identity として再解釈しては
-ならない。
+action の作成、command execution、artifact mutation は行わない。`ExplanationHandle` value は bounded
+preview metadata を持つ structured lazy reference である。これらの attachment identity は、
+aggregation と debug snapshot が deterministic に比較できるよう `stable_detail_key` と同じ ASCII
+grammar を使い、人間向け text を identity として再解釈してはならない。
 
 ## Deterministic Debug Rendering
 

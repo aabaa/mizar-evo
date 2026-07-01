@@ -25,7 +25,7 @@ and internal 03; the crate refines architecture 12 and 19 and internal 03.
 | aggregator | `aggregator.md` (task 8) | `src/aggregator.rs` | [x] |
 | render | `render.md` (task 10) | `src/render.rs` | [x] |
 | fix | `fix.md` (task 12) | `src/fix.rs` | [x] |
-| explain | `explain.md` (task 14) | `src/explain.rs` | [ ] |
+| explain | `explain.md` (task 14) | `src/explain.rs` | [x] |
 
 `mizar-diagnostics` owns the canonical diagnostic record shared by every
 phase: the stable diagnostic-code registry, structured failure records
@@ -228,7 +228,7 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
    - Tests: shuffled input produces identical indexes; dedup fixtures;
      snapshot-scoped id determinism; stale-snapshot rejection; negative dedup
      cases where otherwise equal code/phase/primary-span records keep distinct
-     structured details, fix edits, or explanation refs.
+     structured details, fix edits, or explanation handle identities.
    - Deps: 7, 8. Spec: `aggregator.md`.
    - Completed by task 9: `src/aggregator.rs` now provides
      `DiagnosticAggregationInput`, deterministic `DiagnosticSourceKey`,
@@ -257,7 +257,7 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       deterministic projection from `DiagnosticRecord` plus caller-supplied
       source context. It defines header layout, span/source-block layout,
       Unicode-scalar columns, missing-source fallbacks, notes/help projection,
-      bounded fix/explanation references before their implementation tasks,
+      bounded fix/explanation projections before their implementation tasks,
       plain/styled output options, and boundary rules that keep code identity,
       aggregation, source loading, LSP conversion, proof/phase status, driver
       orchestration, and artifact mutation outside rendering authority.
@@ -274,7 +274,7 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       input order, emits code/severity/semantic headers, reads caller-supplied
       paths/source keys/line-column data, renders primary and secondary source
       blocks plus note spans, projects notes, structured fix payloads, and
-      explanation refs as bounded text, supports byte-stable plain output and
+      explanation handles as bounded text, supports byte-stable plain output and
       ANSI header styling, and falls back deterministically when source context
       is missing. Tests
       cover byte-stable plain rendering, secondary and note spans, fix/help and
@@ -327,12 +327,22 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       orchestration, source loading, and protocol conversion outside explain
       authority.
 
-15. **Explanation store.** [ ]
+15. **Explanation store.** [x]
     - Implement the explanation store with lazy resolution and bounded
       previews.
     - Tests: handle resolution fixtures; preview bounds enforced; missing
       backing data degrades cleanly.
     - Deps: 13, 14. Spec: `explain.md`.
+    - Completed by task 15: `src/explain.rs` now provides structured
+      explanation handles, explanation kinds, pre-publication subjects,
+      source references, bounded previews with deterministic truncation, a
+      lazy in-memory resolution store, stale/missing/unavailable statuses,
+      summary-hash integrity checks, canonical explanation identity for
+      aggregation, and deterministic debug snapshots. Records and aggregation
+      now carry structured explanation handles, draft construction rejects
+      stale or foreign diagnostic explanation attachments, and CLI rendering
+      projects only bounded preview text or handle references without resolving
+      large traces or creating LSP responses.
 
 ### Adoption and follow-ups
 

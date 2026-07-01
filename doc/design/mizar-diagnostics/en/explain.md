@@ -45,8 +45,7 @@ The explain module does not own:
 
 ## Data Model
 
-Task 15 should replace or augment the current `ExplanationRef` identity slot
-with structured payloads equivalent to:
+Task 15 implements structured explanation payloads equivalent to:
 
 ```rust
 struct ExplanationHandle {
@@ -90,6 +89,8 @@ struct ExplanationPreview {
 this crate boundary. The owning phase or later query service defines their
 meaning. `mizar-diagnostics` stores and compares the keys but does not interpret
 them as semantic authority.
+When a `Diagnostic` subject is attached to a diagnostic draft, its code and
+stable detail key must match the containing draft.
 
 `ExplanationHandleId` is assigned before publication from an explicit producer
 key or deterministic producer-local ordinal. It must not be derived from the
@@ -122,12 +123,10 @@ kernel replay, or phase succeeded.
 
 ## Preview Bounds
 
-Previews are optional and bounded. Task 15 should enforce implementation
-constants for:
+Previews are optional and bounded. The implementation enforces constants for:
 
 - maximum preview bytes;
 - maximum preview lines;
-- maximum nested structured entries when previews become structured;
 - deterministic truncation markers.
 
 When a preview exceeds a bound, the stored preview must be truncated
@@ -137,8 +136,8 @@ diagnostic projections.
 
 ## Lazy Resolution
 
-Task 15 should expose a store that resolves handles lazily and returns bounded
-results equivalent to:
+Task 15 exposes a store that resolves handles lazily and returns bounded results
+equivalent to:
 
 ```rust
 enum ExplanationResolution {
@@ -149,13 +148,15 @@ enum ExplanationResolution {
 }
 ```
 
-Resolution checks the handle preconditions before reading backing data. A
-snapshot-bound handle is stale outside `required_snapshot`. An artifact-backed
-handle is stale or missing when the expected artifact hash is unavailable or
-does not match. A cache-backed handle may accelerate a query, but missing cache
-data must degrade to `Missing` or `Unavailable`; it must not change diagnostic
-identity or proof acceptance. When `summary_hash` is present and backing data
-exposes a comparable summary hash, a mismatch degrades to `Missing` or
+Resolution checks the handle preconditions that this crate can validate without
+owning backing storage. A snapshot-bound handle is stale outside
+`required_snapshot`. Artifact hash and cache/query preconditions are preserved
+in the handle identity for the backing owner to validate; when no bounded
+payload has been registered for that canonical handle, resolution degrades to
+`Missing`. A cache-backed handle may accelerate a query, but missing cache data
+must degrade to `Missing` or `Unavailable`; it must not change diagnostic
+identity or proof acceptance. When `summary_hash` is present and registered
+backing data exposes a comparable summary hash, a mismatch degrades to
 `Unavailable` rather than silently returning different explanation data.
 
 The store returns bounded explanation payloads only. It does not publish LSP
@@ -167,7 +168,7 @@ Explanation handles attach to diagnostic records as compact structured payloads
 or stable handles. They must preserve:
 
 - the diagnostic code they belong to;
-- the published diagnostic handle when one exists;
+- the containing published diagnostic handle as a projection when one exists;
 - stable explanation handle id;
 - kind and subject;
 - source reference;
@@ -175,16 +176,21 @@ or stable handles. They must preserve:
 - summary hash, when present;
 - optional bounded preview metadata.
 
-Aggregation deduplication must include canonical explanation identity in
-diagnostic identity once structured handles are implemented. Canonical
-explanation identity consists of handle id, kind, subject, source reference,
-snapshot/artifact/hash preconditions, and `summary_hash` when present. Preview
-text, localized text, rendered `explain:` lines, and full explanation payloads
-must not be deduplication keys.
+Draft construction rejects explanation handles whose snapshot precondition
+points at a different snapshot from the draft source snapshot, or whose
+diagnostic subject names a different code or stable detail key. This prevents
+stale or foreign diagnostic explanations from being published as current
+explanation data.
+
+Aggregation deduplication includes canonical explanation identity in diagnostic
+identity. Canonical explanation identity consists of handle id, kind, subject,
+source reference, snapshot/artifact/hash preconditions, and `summary_hash` when
+present. Preview text, localized text, rendered `explain:` lines, and full
+explanation payloads must not be deduplication keys.
 
 ## Debug Snapshot
 
-Task 15 should expose deterministic explanation debug snapshots with:
+Task 15 exposes deterministic explanation debug snapshots with:
 
 1. `kind=explanation`.
 2. `id`.

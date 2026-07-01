@@ -25,7 +25,7 @@ registry/render/fix/explain モジュールを加えたものに従う。この 
 | aggregator | `aggregator.md`（task 8） | `src/aggregator.rs` | [x] |
 | render | `render.md`（task 10） | `src/render.rs` | [x] |
 | fix | `fix.md`（task 12） | `src/fix.rs` | [x] |
-| explain | `explain.md`（task 14） | `src/explain.rs` | [ ] |
+| explain | `explain.md`（task 14） | `src/explain.rs` | [x] |
 
 `mizar-diagnostics` はすべての phase が共有する正準 diagnostic レコードを
 所有する: 安定した diagnostic コードのレジストリ、構造化された failure
@@ -218,7 +218,7 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
      集約を実装する。
    - テスト: 入力をシャッフルしても同一の索引。重複排除のフィクスチャ。
      snapshot-scoped id determinism。古い snapshot の拒否。code/phase/primary-span
-     が同じでも structured details、fix edits、explanation refs が異なる record を
+     が同じでも structured details、fix edits、explanation handle identities が異なる record を
      merge しない negative dedup cases。
    - 依存: 7、8。仕様: `aggregator.md`。
    - task 9 で完了: `src/aggregator.rs` は `DiagnosticAggregationInput`、
@@ -245,7 +245,7 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
     - task 10 で完了: `render.md` は CLI rendering を `DiagnosticRecord` と
       caller-supplied source context からの deterministic projection として定義する。
       header layout、span/source-block layout、Unicode-scalar column、missing-source
-      fallback、note/help projection、実装 task 前の bounded fix/explanation reference、
+      fallback、note/help projection、実装 task 前の bounded fix/explanation projection、
       plain/styled output option、そして code identity、aggregation、source loading、LSP
       conversion、proof/phase status、driver orchestration、artifact mutation を rendering
       authority の外に保つ boundary rules を定義した。
@@ -260,7 +260,7 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       `RenderOptions`、`RenderStyle`、`DiagnosticRenderInput`、`render_diagnostics` を
       提供する。rendering は input order を保存し、code/severity/semantic header を emit
       し、caller-supplied path/source key/line-column data を読み、primary/secondary source
-      block と note span を render し、note、structured fix payload、explanation ref を
+      block と note span を render し、note、structured fix payload、explanation handle を
       bounded text として project し、byte-stable plain output と ANSI header styling を
       support し、source context が欠ける場合も deterministic fallback を使う。tests は byte-stable plain
       rendering、secondary/note span、fix/help と explanation projection、missing-source
@@ -308,11 +308,19 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       mutation、LSP request shaping、driver orchestration、source loading、protocol conversion は
       explain authority の外に保つ。
 
-15. **explanation ストア。** [ ]
+15. **explanation ストア。** [x]
     - 遅延解決と上限付きプレビューを備えた explanation ストアを実装する。
     - テスト: ハンドル解決のフィクスチャ。プレビュー上限の強制。裏付け
       データ欠落時の明確な劣化。
     - 依存: 13、14。仕様: `explain.md`。
+    - task 15 で完了: `src/explain.rs` は structured explanation handle、
+      explanation kind、pre-publication subject、source reference、deterministic truncation
+      付き bounded preview、lazy in-memory resolution store、stale/missing/unavailable status、
+      summary-hash integrity check、aggregation 用 canonical explanation identity、deterministic
+      debug snapshot を提供する。record と aggregation は structured explanation handle を保持し、
+      draft construction は stale または foreign diagnostic explanation attachment を拒否する。
+      CLI rendering は large trace を resolve したり LSP response を作成したりせず、bounded preview
+      text または handle reference だけを projection する。
 
 ### 採用とフォローアップ
 
