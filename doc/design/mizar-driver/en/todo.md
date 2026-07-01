@@ -429,10 +429,17 @@ Keep `cargo test -p mizar-driver` green after each task (see
       procedure is reserved for task 18, which is the driver-wide
       source/spec correspondence audit. No runtime behavior changed.
 
-18. **Source/spec correspondence audit.** [ ]
+18. **Source/spec correspondence audit.** [x]
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 17. Spec: all module specs and this TODO.
+    - Completed by task D-018: [source_spec_correspondence.md](source_spec_correspondence.md)
+      traces the implemented `request`, `registry`, `driver`, `events`, and
+      `cli` public APIs and promised behaviors to source and tests. No new
+      unresolved blocking, high, or medium source/spec drift was found. Existing
+      `external_dependency_gap`, `deferred`, and report-only
+      `repo_metadata_conflict` items remain classified follow-ups rather than
+      source changes in this audit.
 
 19. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under
