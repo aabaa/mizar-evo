@@ -389,10 +389,15 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       driver、artifact、metadata に関する既存 gap は placeholder API なしで分類済みの
       ままである。
 
-20. **二言語ドキュメント同期監査。** [ ]
+20. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-diagnostics/en/` の各英語正本と日本語版を比較し、
       内容を同期する。
     - 依存: 19。仕様: リポジトリのドキュメント方針。
+    - task 20 で完了:
+      [bilingual_documentation_sync.md](bilingual_documentation_sync.md) は、
+      すべての diagnostics design documents に paired EN/JA files があり、task 20
+      まで substance が同期済みであることを記録する。module-spec drift は audit
+      report と paired plan/TODO completion records 以外の edit を要求しなかった。
 
 21. **module 境界リファクタリング gate。** [ ]
     - crate を下流 consumer 向けに完了扱いにする前に、source layout を監査し、

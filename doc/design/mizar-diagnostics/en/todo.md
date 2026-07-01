@@ -411,11 +411,17 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       LSP, driver, artifact, and metadata gaps remain classified without
       placeholder APIs.
 
-20. **Bilingual documentation sync audit.** [ ]
+20. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-diagnostics/en/` with its Japanese companion and
       synchronize content.
     - Deps: 19. Spec: repository documentation policy.
+    - Completed by task 20:
+      [bilingual_documentation_sync.md](bilingual_documentation_sync.md)
+      records that all diagnostics design documents have paired EN/JA files and
+      are synchronized in substance through task 20. No module-spec drift
+      required edits beyond the audit report and paired plan/TODO completion
+      records.
 
 21. **Module-boundary refactor gate.** [ ]
     - Before treating the crate as ready for downstream consumers, audit the
