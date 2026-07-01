@@ -352,10 +352,17 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       では利用できない。source、dependency、placeholder adapter、stub API、fake
       resolver adoption、provisional LSP/driver bridge は追加していない。
 
-17. **決定性スイート。** [ ]
+17. **決定性スイート。** [x]
     - 同一入力が同一のレコード、索引、レンダリング出力、explanation
       プレビューを生むことのプロパティ的検証。
     - 依存: 11、15。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
+    - task 17 で完了: `tests/determinism.rs` は equivalent な parser/resolver
+      diagnostic input を異なる producer batch order で build し、
+      `BuildDiagnosticIndex` snapshot、record debug snapshot、CLI render output、
+      dense handle、bounded explanation preview metadata が同一であることを assert
+      する cross-module regression fixture を追加する。この test は public API を
+      追加・変更せず、sink collection、record normalization、fix ordering、
+      explanation preview truncation、aggregation order、rendering を検証する。
 
 18. **公開 enum の前方互換性ポリシー。** [ ]
     - 各公開 enum に `mizar-frontend` task 25 の手続きを適用する。重大度と

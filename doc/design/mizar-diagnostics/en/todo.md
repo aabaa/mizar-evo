@@ -373,10 +373,18 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       checkout. No source, dependency, placeholder adapter, stub API, fake
       resolver adoption, or provisional LSP/driver bridge was added.
 
-17. **Determinism suite.** [ ]
+17. **Determinism suite.** [x]
     - Property coverage that identical inputs produce identical records,
       indexes, render output, and explanation previews.
     - Deps: 11, 15. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md).
+    - Completed by task 17: `tests/determinism.rs` adds a cross-module
+      regression fixture that builds equivalent parser/resolver diagnostic
+      inputs in different producer batch orders and asserts identical
+      `BuildDiagnosticIndex` snapshots, record debug snapshots, CLI render
+      output, dense handles, and bounded explanation preview metadata. The test
+      exercises sink collection, record normalization, fix ordering,
+      explanation preview truncation, aggregation order, and rendering without
+      adding or changing public APIs.
 
 18. **Public-enum forward-compatibility policy.** [ ]
     - Apply the `mizar-frontend` task-25 procedure to each public enum;
