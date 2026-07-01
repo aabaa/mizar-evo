@@ -23,7 +23,7 @@ and internal 03; the crate refines architecture 12 and 19 and internal 03.
 | failure_record | `failure_record.md` (task 4) | `src/failure_record.rs` | [x] |
 | sink | `sink.md` (task 6) | `src/sink.rs` | [x] |
 | aggregator | `aggregator.md` (task 8) | `src/aggregator.rs` | [x] |
-| render | `render.md` (task 10) | `src/render.rs` | [ ] |
+| render | `render.md` (task 10) | `src/render.rs` | [x] |
 | fix | `fix.md` (task 12) | `src/fix.rs` | [ ] |
 | explain | `explain.md` (task 14) | `src/explain.rs` | [ ] |
 
@@ -261,12 +261,26 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       aggregation, source loading, LSP conversion, proof/phase status, driver
       orchestration, and artifact mutation outside rendering authority.
 
-11. **CLI rendering.** [ ]
+11. **CLI rendering.** [x]
     - Implement deterministic CLI rendering from records and line maps.
     - Tests: golden-file render fixtures; byte-identical output; coverage for
       workspace-relative paths, primary and secondary spans, multiline spans,
       Unicode-scalar column counts, notes, and fix/help projections.
     - Deps: 9, 10. Spec: `render.md`.
+    - Completed by task 11: `src/render.rs` now provides
+      `DiagnosticSourceContext`, `RenderOptions`, `RenderStyle`,
+      `DiagnosticRenderInput`, and `render_diagnostics`. Rendering preserves
+      input order, emits code/severity/semantic headers, reads caller-supplied
+      paths/source keys/line-column data, renders primary and secondary source
+      blocks plus note spans, projects notes/fix refs/explanation refs as
+      bounded text, supports byte-stable plain output and ANSI header styling,
+      and falls back deterministically when source context is missing. Tests
+      cover byte-stable plain rendering, secondary and note spans, fix/help and
+      explanation projections, missing-source fallback, multi-diagnostic
+      separators, input ordering, and ANSI header styling. Verification passed
+      `cargo test -p mizar-diagnostics`,
+      `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`, and
+      `cargo fmt --check`.
 
 12. **Spec: `fix.md`.** [ ]
     - Write the fix-suggestion spec (English and Japanese, no code):

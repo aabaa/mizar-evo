@@ -149,7 +149,7 @@ Rendering options must support at least:
 - plain output with no ANSI color for tests and non-terminal consumers;
 - optional ANSI styling for terminal output;
 - context line limit for multiline spans;
-- stable path display mode supplied by the caller.
+- stable path display through the caller-supplied `DiagnosticSourceContext`.
 
 Plain output must be byte-stable: LF line endings, no trailing whitespace, no
 localized field names, no memory addresses, no map iteration order, and no

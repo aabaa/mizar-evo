@@ -146,7 +146,7 @@ rendering option は少なくとも次を support しなければならない。
 - tests と non-terminal consumer のための ANSI color なし plain output。
 - terminal output のための optional ANSI styling。
 - multiline span 用 context line limit。
-- caller が supplied する stable path display mode。
+- caller-supplied `DiagnosticSourceContext` を通じた stable path display。
 
 plain output は byte-stable でなければならない。LF line ending、trailing whitespace なし、
 localized field name なし、memory address なし、map iteration order なし、debug output で明示

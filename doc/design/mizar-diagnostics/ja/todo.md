@@ -23,7 +23,7 @@ registry/render/fix/explain モジュールを加えたものに従う。この 
 | failure_record | `failure_record.md`（task 4） | `src/failure_record.rs` | [x] |
 | sink | `sink.md`（task 6） | `src/sink.rs` | [x] |
 | aggregator | `aggregator.md`（task 8） | `src/aggregator.rs` | [x] |
-| render | `render.md`（task 10） | `src/render.rs` | [ ] |
+| render | `render.md`（task 10） | `src/render.rs` | [x] |
 | fix | `fix.md`（task 12） | `src/fix.rs` | [ ] |
 | explain | `explain.md`（task 14） | `src/explain.rs` | [ ] |
 
@@ -249,12 +249,24 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       conversion、proof/phase status、driver orchestration、artifact mutation を rendering
       authority の外に保つ boundary rules を定義した。
 
-11. **CLI レンダリング。** [ ]
+11. **CLI レンダリング。** [x]
     - レコードと行マップから決定的な CLI レンダリングを実装する。
     - テスト: golden ファイルのレンダリングフィクスチャ。バイト同一の
       出力。workspace-relative paths、primary/secondary spans、multiline spans、
       Unicode-scalar column counts、notes、fix/help projections の coverage。
     - 依存: 9、10。仕様: `render.md`。
+    - task 11 で完了: `src/render.rs` は `DiagnosticSourceContext`、
+      `RenderOptions`、`RenderStyle`、`DiagnosticRenderInput`、`render_diagnostics` を
+      提供する。rendering は input order を保存し、code/severity/semantic header を emit
+      し、caller-supplied path/source key/line-column data を読み、primary/secondary source
+      block と note span を render し、note/fix ref/explanation ref を bounded text として
+      project し、byte-stable plain output と ANSI header styling を support し、source
+      context が欠ける場合も deterministic fallback を使う。tests は byte-stable plain
+      rendering、secondary/note span、fix/help と explanation projection、missing-source
+      fallback、multi-diagnostic separator、input ordering、ANSI header styling を覆う。
+      verification は `cargo test -p mizar-diagnostics`、
+      `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`、
+      `cargo fmt --check` が通った。
 
 12. **仕様: `fix.md`。** [ ]
     - fix 提案の仕様を執筆する（英語と日本語、コードなし）: 構造化された
