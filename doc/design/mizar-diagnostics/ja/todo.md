@@ -166,12 +166,19 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
 
 ### 生産と集約
 
-6. **仕様: `sink.md`。** [ ]
+6. **仕様: `sink.md`。** [x]
    - 生産者 API の仕様を執筆する（英語と日本語、コードなし）:
      `DiagnosticSink`、phase 側のドラフト発行規則、生産者がしてはなら
      ないこと（CLI 整形なし、LSP 形なし）。
    - 依存: 4。仕様: [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)
      「Diagnostic Producer API」。
+   - task 6 で完了: `sink.md` は producer scope、`DiagnosticSink` /
+     `DiagnosticBatch` behavior、sink-level phase/snapshot validation、immutable draft
+     preservation、local production order、deterministic debug data、producer emission
+     rules、sink error、formatting、LSP protocol shape、proof/phase status、driver
+     orchestration、artifact mutation、consumer migration を sink の外に保つ boundary を
+     定義する。verification は `git diff --check` と `git diff --cached --check` が
+     通った。
 
 7. **sink の実装。** [ ]
    - 集約に備えた phase ごとのドラフト収集を持つ sink を実装する。

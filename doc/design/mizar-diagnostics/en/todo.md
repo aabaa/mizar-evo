@@ -169,12 +169,20 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
 
 ### Production and aggregation
 
-6. **Spec: `sink.md`.** [ ]
+6. **Spec: `sink.md`.** [x]
    - Write the producer-API spec (English and Japanese, no code):
      `DiagnosticSink`, phase-side draft emission rules, and what producers
      may not do (no CLI formatting, no LSP shapes).
    - Deps: 4. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
      "Diagnostic Producer API".
+   - Completed by task 6: `sink.md` now specifies producer scopes,
+     `DiagnosticSink`/`DiagnosticBatch` behavior, sink-level phase and snapshot
+     validation, immutable draft preservation, local production order,
+     deterministic debug data, producer emission rules, sink errors, and
+     boundaries that keep formatting, LSP protocol shapes, proof/phase status,
+     driver orchestration, artifact mutation, and consumer migration outside
+     the sink. Verification passed `git diff --check` and
+     `git diff --cached --check`.
 
 7. **Sink implementation.** [ ]
    - Implement the sink with per-phase draft collection ready for
