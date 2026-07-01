@@ -243,19 +243,27 @@ Keep `cargo test -p mizar-driver` green after each task (see
      cancellation-flow task because `mizar-build` exposes no driver-owned
      mutator for that reason.
 
-9. **Spec: `events.md`.** [ ]
+9. **Spec: `events.md`.** [x]
    - Write the events spec (English and Japanese, no code): the
      `BuildEventStream` (progress, phase completion, diagnostics
      readiness, commit), deterministic event ordering, and consumer rules
      for CLI and LSP.
    - Deps: 7. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
      "Build Events".
+   - Completed by task D-009: [events.md](events.md) defines the
+     protocol-agnostic event boundary, freshness suppression, deterministic
+     ordering key, diagnostics and artifact readiness limits, CLI/LSP consumer
+     rules, and D-010 test requirements. It deliberately adds no `src/events.rs`
+     implementation and leaves artifact/LSP/diagnostics authority with their
+     owner crates.
 
 10. **Build event stream.** [ ]
     - Implement event publication with deterministic ordering independent
       of worker completion order.
     - Tests: shuffled completion produces identical event sequences;
-      events reference valid sessions.
+      events reference valid sessions/snapshots; stale sessions suppress
+      current publication; dispatch, phase-service, diagnostics, and artifact
+      gap/non-authority guards are enforced.
     - Deps: 8, 9. Spec: `events.md`.
 
 11. **Cancellation flow.** [ ]
