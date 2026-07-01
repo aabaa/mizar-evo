@@ -29,8 +29,8 @@ Task D-006 records the `SourceFrontend` adapter readiness decision in
 the registry continues to classify that real adapter as an external dependency
 gap until owner seams exist.
 
-`mizar-driver` is the front door for all build modes: it parses CLI/watch/LSP
-requests into `BuildRequest`s, bootstraps phase 0 through the `mizar-build`
+`mizar-driver` is the front door for all build modes: it maps CLI/watch/LSP
+requests into `BuildRequestDraft`s, bootstraps phase 0 through the `mizar-build`
 planner, creates `BuildSession`s with source and dependency snapshots,
 registers phase service implementations behind the `PhaseService` trait,
 submits the initial task graph to the scheduler, and publishes build events
@@ -293,16 +293,21 @@ Keep `cargo test -p mizar-driver` green after each task (see
 
 ### Entry points
 
-12. **Spec: `cli.md` and the CLI surface decision.** [ ]
+12. **Spec: `cli.md` and the CLI surface decision.** [x]
     - Resolve the CLI-surface decision against the spec-23 build
       lifecycle; write the CLI spec (binary, subcommands, exit codes,
-      progress rendering via `mizar-diagnostics`).
+      progress rendering from `BuildEventStream`, diagnostics rendering via
+      `mizar-diagnostics`).
     - Deps: 7. Spec:
       [23.package_management_and_build_system.md](../../../spec/en/23.package_management_and_build_system.md).
+    - Completed by task D-012: [cli.md](cli.md) defines `mizar build`, batch
+      request mapping, progress rendering from `BuildEventStream`, diagnostics
+      rendering through `mizar-diagnostics`, stable exit codes, and gap handling
+      for unavailable owner seams. No source implementation was added.
 
 13. **CLI batch entry point.** [ ]
     - Implement the batch subcommand: parse arguments into a
-      `BuildRequest`, run the driver, render diagnostics and progress,
+      `BuildRequestDraft`, run the driver, render diagnostics and progress,
       and map results to exit codes.
     - Tests: end-to-end CLI run over a fixture workspace; stable exit
       codes; golden-file output.
