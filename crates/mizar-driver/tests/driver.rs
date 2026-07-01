@@ -1,4 +1,5 @@
 use mizar_build::{
+    cancel::CancellationPolicy,
     module_index::{StaticSourceLayout, WorkspaceSourceFile, WorkspaceSourcePackage},
     planner::{
         DependencySelection, PlanRequest, WorkspacePackage, parse_lockfile, parse_package_manifest,
@@ -21,8 +22,8 @@ use mizar_driver::{
     },
 };
 use mizar_session::{
-    DependencyArtifactRef, Hash, InMemorySessionIdAllocator, PackageId, SnapshotRegistry,
-    ToolchainInfo, WorkspaceRoot,
+    BuildSnapshotId, DependencyArtifactRef, Hash, InMemorySessionIdAllocator, PackageId,
+    SnapshotRegistry, ToolchainInfo, WorkspaceRoot,
 };
 
 #[test]
@@ -309,6 +310,60 @@ fn missing_phase_services_block_before_scheduler_outputs_are_interpreted() {
 }
 
 #[test]
+fn scheduler_cancellation_finishes_without_partial_publication() {
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let mut driver = CompilerDriver::default();
+    let mut input = submit_input(Vec::new());
+    input.cancellation = CancellationPolicy::default().with_current_snapshot(snapshot(99));
+
+    let submission = driver
+        .submit(request(8), &ids, &snapshots, input)
+        .expect("phase-0 cancellation submits through mizar-build scheduler");
+
+    assert_eq!(
+        submission.status,
+        DriverSubmissionStatus::SchedulerValidated
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Cancelled)
+    );
+    assert_eq!(
+        driver
+            .session(submission.session.id)
+            .map(|session| session.state),
+        Some(BuildSessionState::Finished(BuildSessionOutcome::Cancelled))
+    );
+    assert!(submission.scheduler_run.as_ref().is_some_and(|run| {
+        run.task_states
+            .iter()
+            .any(|record| record.state == mizar_build::scheduler::TaskState::Cancelled)
+    }));
+    assert_event(&driver, submission.session.id, |kind| {
+        matches!(
+            kind,
+            BuildEventKind::TaskProgress { task }
+                if task.state == Some(mizar_build::scheduler::TaskState::Cancelled)
+        )
+    });
+    assert_event(&driver, submission.session.id, |kind| {
+        matches!(
+            kind,
+            BuildEventKind::SessionFinished {
+                outcome: BuildSessionOutcome::Cancelled
+            }
+        )
+    });
+    assert_no_event(&driver, submission.session.id, |kind| {
+        matches!(
+            kind,
+            BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
+        )
+    });
+}
+
+#[test]
 fn driver_source_does_not_claim_diagnostics_artifact_or_lsp_authority() {
     let source = std::fs::read_to_string(
         std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/driver.rs"),
@@ -479,6 +534,14 @@ fn request_with_lane_generation(
             [seed.wrapping_add(2); Hash::BYTE_LEN],
         )),
     }
+}
+
+fn snapshot(seed: u8) -> BuildSnapshotId {
+    let serialized = format!(
+        "mizar-session-build-snapshot-v1:{}",
+        format!("{seed:02x}").repeat(Hash::BYTE_LEN)
+    );
+    BuildSnapshotId::from_published_schema_str(&serialized).unwrap()
 }
 
 #[derive(Debug)]

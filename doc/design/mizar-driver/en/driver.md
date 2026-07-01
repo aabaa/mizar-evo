@@ -81,7 +81,12 @@ impl CompilerDriver {
     fn submit(&mut self, request: BuildRequestDraft, input: DriverSubmitInput)
         -> Result<BuildSubmission, DriverSubmitError>;
 
-    fn cancel(&mut self, session: BuildSessionId, reason: DriverCancelReason)
+    fn cancel(
+        &mut self,
+        session: BuildSessionId,
+        reason: DriverCancelReason,
+        snapshots: &SnapshotRegistry,
+    )
         -> DriverCancelOutcome;
 
     fn events(&self, session: BuildSessionId) -> BuildEventStream;
@@ -93,9 +98,12 @@ may be CLI, watch mode, or `mizar-lsp`, but they must provide protocol-agnostic
 driver inputs. LSP ranges, JSON-RPC ids, and editor command payloads are not
 accepted by this API.
 
-`cancel` records a driver/session cancellation request and expresses it through
-`mizar-build::cancel::CancellationPolicy`. It does not kill worker threads or
-reinterpret cancellation as phase failure.
+`cancel` records a driver/session cancellation request and terminal outcome. It
+uses the supplied snapshot registry with the driver lane table to apply the
+combined publication guard before appending terminal events. It uses
+`mizar-build::cancel::CancellationPolicy` only for supported owner seams such as
+snapshot supersession. It does not kill worker threads or reinterpret
+cancellation as phase failure.
 
 `events` returns a session-scoped, protocol-agnostic event stream implemented
 by [events.md](events.md) / `src/events.rs`. The driver stores replayable
@@ -209,21 +217,22 @@ must not:
 
 ## Cancellation
 
-`cancel(session, reason)` is idempotent.
+`cancel(session, reason, snapshots)` is idempotent.
 
 If the session is unknown or terminal, the driver returns a no-op outcome. If
-the session is active, the driver moves it to `Cancelling`, updates the
-session's cancellation policy when the current `mizar-build::cancel` seam can
-represent the requested reason, and lets scheduler/phase services observe
-cancellation through owner tokens and safe checkpoints.
+the session is active, D-011 moves it through `Cancelling` to a terminal session
+state and appends the matching terminal build event. Explicit requests and
+shutdown finish as `Cancelled`; supersession finishes as `Superseded`. A
+suppressed-publication event is emitted when the combined lane/snapshot
+publication guard returns `Suppressed`.
 
 The current `mizar-build::CancellationPolicy` can express snapshot
 supersession and task-scoped explicit cancellation, but it does not expose a
-driver-owned snapshot-wide explicit-request or shutdown mutator. D-008 therefore
-propagates `DriverCancelReason::Superseded` through `supersede_snapshot` and
-records explicit-request/shutdown session state without inventing a false
-supersession reason. Snapshot-wide explicit/shutdown policy propagation remains
-an `external_dependency_gap` for the cancellation-flow task.
+driver-owned snapshot-wide explicit-request or shutdown mutator. D-011 therefore
+propagates `DriverCancelReason::Superseded` through `supersede_snapshot`, leaves
+explicit-request/shutdown out of the build policy rather than inventing a false
+supersession reason, and records snapshot-wide explicit/shutdown policy
+propagation as an `external_dependency_gap`.
 
 For watch/LSP supersession, the newer session becomes lane-current and the
 older session is cancelled or finished as `Superseded`. Obsolete completed
@@ -263,7 +272,7 @@ diagnostic payloads, or use message strings as identity.
 
 ## Testing Requirements
 
-Task D-008 source tests must cover:
+Task D-008 and D-011 source tests must cover:
 
 - submit captures a session snapshot and marks it submitted/running only after
   the `mizar-build` bootstrap succeeds;
@@ -279,8 +288,13 @@ Task D-008 source tests must cover:
 - source/lint guards prove D-008 does not allocate diagnostic codes, deduplicate
   diagnostic records, render CLI/LSP diagnostics, serialize artifacts, mint
   publication tokens, or treat scheduler completion as artifact publication;
-- cancellation is idempotent and is expressed through `mizar-build`
-  cancellation policy/tokens.
+- cancellation is idempotent, reaches terminal `Cancelled` or `Superseded`
+  session outcomes, and appends terminal replay events;
+- supersession is expressed through
+  `mizar-build::CancellationPolicy::supersede_snapshot`;
+- explicit-request and shutdown cancellation do not invent unsupported
+  snapshot-wide policy tokens and keep that propagation classified as
+  `external_dependency_gap`.
 
 If a test needs a phase service, it may use a test-local fixture only for the
 specific implemented behavior under test. Fixture services must not be exported

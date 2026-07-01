@@ -442,11 +442,15 @@ impl CompilerDriver {
         })
     }
 
-    pub fn cancel(
+    pub fn cancel<A>(
         &mut self,
         session: BuildSessionId,
         reason: DriverCancelReason,
-    ) -> DriverCancelOutcome {
+        snapshots: &SnapshotRegistry<A>,
+    ) -> DriverCancelOutcome
+    where
+        A: SessionIdAllocator,
+    {
         let Some(record) = self.sessions.get_mut(&session) else {
             return DriverCancelOutcome {
                 session,
@@ -454,11 +458,26 @@ impl CompilerDriver {
                 state: None,
             };
         };
-        let changed = record.session.cancel();
+        if record.session.is_terminal() {
+            return DriverCancelOutcome {
+                session,
+                changed: false,
+                state: Some(record.session.state),
+            };
+        }
+
+        let cancellation_started = record.session.cancel();
+        let outcome = cancellation_outcome(reason);
+        let terminal_changed = record.session.finish(outcome);
+        let changed = cancellation_started || terminal_changed;
         if changed && reason == DriverCancelReason::Superseded {
             record
                 .cancellation
                 .supersede_snapshot(record.session.captured.snapshot.id);
+        }
+        if changed {
+            let publication = self.lanes.publication_decision(snapshots, &record.session);
+            record.events = append_terminal_events(&record.events, &record.session, publication);
         }
         DriverCancelOutcome {
             session,
@@ -642,6 +661,46 @@ fn submission_events(
         .expect("driver-generated events reference the stored session")
 }
 
+fn append_terminal_events(
+    stream: &BuildEventStream,
+    session: &BuildSession,
+    publication: PublicationDecision,
+) -> BuildEventStream {
+    let identity = BuildEventIdentity {
+        session: session.id,
+        lane: session.request.lane,
+        generation: session.request.generation,
+        snapshot: Some(session.captured.snapshot.id),
+        publication,
+    };
+    let mut events = stream.events().to_vec();
+    if matches!(publication, PublicationDecision::Suppressed(_)) {
+        events.push(BuildEvent::new(
+            identity.clone(),
+            BuildEventOrderKey::new(80, 2),
+            BuildEventKind::PublicationSuppressed,
+        ));
+    }
+    if let BuildSessionState::Finished(outcome) = session.state {
+        events.push(BuildEvent::new(
+            identity,
+            BuildEventOrderKey::new(90, 2),
+            BuildEventKind::SessionFinished { outcome },
+        ));
+    }
+    BuildEventStream::from_events(session.id, true, events)
+        .expect("driver-generated cancellation events reference the stored session")
+}
+
+fn cancellation_outcome(reason: DriverCancelReason) -> BuildSessionOutcome {
+    match reason {
+        DriverCancelReason::Superseded => BuildSessionOutcome::Superseded,
+        DriverCancelReason::ExplicitRequest | DriverCancelReason::Shutdown => {
+            BuildSessionOutcome::Cancelled
+        }
+    }
+}
+
 impl Default for CompilerDriver {
     fn default() -> Self {
         Self::new(PhaseRegistry::empty())
@@ -733,34 +792,77 @@ mod tests {
     fn cancel_active_session_updates_build_policy_once() {
         let ids = InMemorySessionIdAllocator::new();
         let snapshots = SnapshotRegistry::new();
-        let session = request(9)
+        let lane = BuildLaneId::new(9);
+        let session = request_with_lane_generation(9, lane, BuildRequestGeneration::new(0))
+            .allocate(&ids)
+            .unwrap()
+            .capture_snapshot(&snapshots)
+            .unwrap();
+        let newer = request_with_lane_generation(12, lane, BuildRequestGeneration::new(1))
             .allocate(&ids)
             .unwrap()
             .capture_snapshot(&snapshots)
             .unwrap();
         let session_id = session.id;
+        let snapshot_id = session.captured.snapshot.id;
         let mut driver = CompilerDriver::default();
+        assert!(driver.lanes.mark_current(&session));
         driver.store_session(
             session,
             CancellationPolicy::default(),
             BuildEventStream::empty(session_id, true),
         );
+        assert!(driver.lanes.mark_current(&newer));
 
-        let first = driver.cancel(session_id, DriverCancelReason::Superseded);
-        let second = driver.cancel(session_id, DriverCancelReason::Superseded);
+        let first = driver.cancel(session_id, DriverCancelReason::Superseded, &snapshots);
+        let second = driver.cancel(session_id, DriverCancelReason::Superseded, &snapshots);
 
         assert!(first.changed);
-        assert_eq!(first.state, Some(BuildSessionState::Cancelling));
+        assert_eq!(
+            first.state,
+            Some(BuildSessionState::Finished(BuildSessionOutcome::Superseded))
+        );
         assert!(!second.changed);
-        assert_eq!(second.state, Some(BuildSessionState::Cancelling));
+        assert_eq!(
+            second.state,
+            Some(BuildSessionState::Finished(BuildSessionOutcome::Superseded))
+        );
         assert_eq!(
             driver
                 .cancellation_policy(session_id)
                 .unwrap()
-                .superseded_snapshots()
-                .len(),
+                .superseded_snapshots(),
+            &[snapshot_id]
+        );
+        let stream = driver.events(session_id);
+        assert_eq!(
+            stream
+                .events()
+                .iter()
+                .filter(|event| matches!(event.kind, BuildEventKind::PublicationSuppressed))
+                .count(),
             1
         );
+        let terminal_events: Vec<_> = stream
+            .events()
+            .iter()
+            .filter(|event| {
+                matches!(
+                    event.kind,
+                    BuildEventKind::SessionFinished {
+                        outcome: BuildSessionOutcome::Superseded
+                    }
+                )
+            })
+            .collect();
+        assert_eq!(terminal_events.len(), 1);
+        match terminal_events[0].identity.publication {
+            PublicationDecision::Suppressed(obsolete) => {
+                assert!(!obsolete.lane_current);
+                assert!(obsolete.request_snapshot_current);
+            }
+            PublicationDecision::Current => panic!("superseded cancel must not publish current"),
+        }
     }
 
     #[test]
@@ -778,16 +880,20 @@ mod tests {
                 .unwrap();
             let session_id = session.id;
             let mut driver = CompilerDriver::default();
+            assert!(driver.lanes.mark_current(&session));
             driver.store_session(
                 session,
                 CancellationPolicy::default(),
                 BuildEventStream::empty(session_id, true),
             );
 
-            let outcome = driver.cancel(session_id, reason);
+            let outcome = driver.cancel(session_id, reason, &snapshots);
 
             assert!(outcome.changed);
-            assert_eq!(outcome.state, Some(BuildSessionState::Cancelling));
+            assert_eq!(
+                outcome.state,
+                Some(BuildSessionState::Finished(BuildSessionOutcome::Cancelled))
+            );
             assert!(
                 driver
                     .cancellation_policy(session_id)
@@ -795,16 +901,43 @@ mod tests {
                     .superseded_snapshots()
                     .is_empty()
             );
+            let stream = driver.events(session_id);
+            assert!(stream.events().iter().any(|event| {
+                matches!(
+                    event.kind,
+                    BuildEventKind::SessionFinished {
+                        outcome: BuildSessionOutcome::Cancelled
+                    }
+                )
+            }));
+            assert!(
+                !stream
+                    .events()
+                    .iter()
+                    .any(|event| matches!(event.kind, BuildEventKind::PublicationSuppressed))
+            );
         }
     }
 
     fn request(seed: u8) -> BuildRequestDraft {
+        request_with_lane_generation(
+            seed,
+            BuildLaneId::new(u64::from(seed)),
+            BuildRequestGeneration::new(0),
+        )
+    }
+
+    fn request_with_lane_generation(
+        seed: u8,
+        lane: BuildLaneId,
+        generation: BuildRequestGeneration,
+    ) -> BuildRequestDraft {
         BuildRequestDraft {
-            lane: BuildLaneId::new(u64::from(seed)),
+            lane,
             origin: BuildRequestOrigin::Batch(BatchRequest {
                 invocation: BatchInvocation::default(),
             }),
-            generation: BuildRequestGeneration::new(0),
+            generation,
             workspace_root: WorkspaceRoot::new("workspace"),
             profile: BuildProfile::new("check"),
             targets: BuildTargets::default(),

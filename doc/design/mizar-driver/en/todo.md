@@ -208,10 +208,11 @@ Keep `cargo test -p mizar-driver` green after each task (see
      "Driver API"/"Control Flow".
    - Completed by task D-007: [driver.md](driver.md) defines the
      `CompilerDriver` submit/cancel/events boundary, phase-0 bootstrap through
-     `mizar-build`, task-graph and scheduler submission ownership, cancellation
-     through `mizar-build::CancellationPolicy`, diagnostics and artifact
-     handoff boundaries, and the rule that missing phase services remain
-     classified gaps rather than synthetic scheduler outputs.
+     `mizar-build`, task-graph and scheduler submission ownership, terminal
+     cancellation behavior with supported supersession through
+     `mizar-build::CancellationPolicy`, diagnostics and artifact handoff
+     boundaries, and the rule that missing phase services remain classified
+     gaps rather than synthetic scheduler outputs.
 
 8. **Driver core.** [x]
    - Implement `submit`: bootstrap phase 0 via the `mizar-build` planner,
@@ -232,15 +233,15 @@ Keep `cargo test -p mizar-driver` green after each task (see
      planner/module-index/task-graph APIs, modeled scheduler submission/result
      consumption, missing-phase-service blocking without synthetic outputs,
      same-lane stale request suppression before scheduler submission, minimal
-     protocol-agnostic event stream handle, and idempotent cancellation through
-     `mizar-build` `CancellationPolicy`. Public scheduler submission results
-     expose only output-free task-state/event/diagnostic summaries. Test-local
+     protocol-agnostic event stream handle, and idempotent terminal
+     cancellation state. Public scheduler submission results expose only
+     output-free task-state/event/diagnostic summaries. Test-local
      descriptor-only phase fixtures prove that non-phase-0 work blocks on the
      DRIVER-G-011 dispatch gap even when descriptors exist, and panic if cache
      keys or execution are requested. Real scheduler-driven phase-service
-     dispatch remains DRIVER-G-011 `external_dependency_gap`; snapshot-wide
-     explicit/shutdown cancellation policy propagation is also deferred to the
-     cancellation-flow task because `mizar-build` exposes no driver-owned
+     dispatch remains DRIVER-G-011 `external_dependency_gap`. Task D-011
+     records snapshot-wide explicit/shutdown cancellation policy propagation as
+     an `external_dependency_gap` because `mizar-build` exposes no driver-owned
      mutator for that reason.
 
 9. **Spec: `events.md`.** [x]
@@ -275,15 +276,20 @@ Keep `cargo test -p mizar-driver` green after each task (see
      does not implement CLI rendering, LSP conversion, diagnostic aggregation,
      artifact tokens, or real phase dispatch.
 
-11. **Cancellation flow.** [ ]
-    - Implement `cancel`: propagate through `mizar-build` cancellation
-      tokens and report a terminal session state; superseded watch
-      sessions cancel cleanly.
+11. **Cancellation flow.** [x]
+    - Implement `cancel`: propagate supported supersession through
+      `mizar-build` cancellation policy and report a terminal session state;
+      superseded watch sessions cancel cleanly.
     - Tests: cancel mid-build reaches a terminal state without partial
       publications; double-cancel is idempotent.
     - Deps: 8, `mizar-build` task 14. Spec: `driver.md`,
       [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
       "Cancellation".
+   - Completed by task D-011: `CompilerDriver::cancel` now moves active sessions
+     to terminal `Cancelled` or `Superseded` outcomes, appends terminal replay
+     events, keeps double-cancel idempotent, and propagates only real
+     supersession policy through `mizar-build`. Snapshot-wide explicit/shutdown
+     policy propagation is recorded as `external_dependency_gap`.
 
 ### Entry points
 

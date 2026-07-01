@@ -80,7 +80,12 @@ impl CompilerDriver {
     fn submit(&mut self, request: BuildRequestDraft, input: DriverSubmitInput)
         -> Result<BuildSubmission, DriverSubmitError>;
 
-    fn cancel(&mut self, session: BuildSessionId, reason: DriverCancelReason)
+    fn cancel(
+        &mut self,
+        session: BuildSessionId,
+        reason: DriverCancelReason,
+        snapshots: &SnapshotRegistry,
+    )
         -> DriverCancelOutcome;
 
     fn events(&self, session: BuildSessionId) -> BuildEventStream;
@@ -92,9 +97,11 @@ CLI、watch mode、`mizar-lsp` のいずれでもよいが、protocol-agnostic d
 渡さなければならない。この API は LSP range、JSON-RPC id、editor command payload を
 受け付けない。
 
-`cancel` は driver / session の cancellation request を記録し、
-`mizar-build::cancel::CancellationPolicy` を通じて表現する。worker thread を kill せず、
-cancellation を phase failure と再解釈しない。
+`cancel` は driver / session の cancellation request と terminal outcome を記録する。
+渡された snapshot registry と driver lane table で combined publication guard を適用してから
+terminal event を追加する。`mizar-build::cancel::CancellationPolicy` は snapshot supersession
+など owner seam が対応する場合だけ使う。worker thread を kill せず、cancellation を phase
+failure と再解釈しない。
 
 `events` は [events.md](events.md) / `src/events.rs` が実装する session-scoped かつ
 protocol-agnostic な event stream を返す。driver は replay 可能な session event を保存するが、
@@ -199,19 +206,20 @@ driver は scheduler record を build event と session status へ map してよ
 
 ## Cancellation
 
-`cancel(session, reason)` は冪等である。
+`cancel(session, reason, snapshots)` は冪等である。
 
 session が unknown または terminal なら、driver は no-op outcome を返す。session が active なら、
-driver は state を `Cancelling` に移し、現在の `mizar-build::cancel` seam が要求 reason を
-表現できる場合に session の cancellation policy を更新し、scheduler / phase service が owner
-token と safe checkpoint で cancellation を観測できるようにする。
+D-011 は state を `Cancelling` 経由で terminal session state へ移し、対応する terminal build event を
+追加する。explicit request と shutdown は `Cancelled` として finish する。supersession は
+`Superseded` として finish する。combined lane/snapshot publication guard が `Suppressed` を
+返した場合に suppressed-publication event を emit する。
 
 現在の `mizar-build::CancellationPolicy` は snapshot supersession と task-scoped explicit
 cancellation を表現できるが、driver-owned snapshot-wide explicit-request / shutdown mutator を
-公開していない。したがって D-008 は `DriverCancelReason::Superseded` だけを
+公開していない。したがって D-011 は `DriverCancelReason::Superseded` だけを
 `supersede_snapshot` で伝播し、explicit-request / shutdown は false supersession reason を
-発明せず session state として記録する。snapshot-wide explicit / shutdown policy propagation は
-cancellation-flow task の `external_dependency_gap` のままである。
+発明せず build policy には入れない。snapshot-wide explicit / shutdown policy propagation は
+`external_dependency_gap` として記録する。
 
 watch/LSP supersession では、新しい session が lane-current になり、古い session は cancel
 されるか `Superseded` として finish する。obsolete completed result は、event や diagnostic が
@@ -248,7 +256,7 @@ driver は diagnostic batch と readiness event を transport してよい。dia
 
 ## Testing Requirements
 
-Task D-008 の source test は次を cover しなければならない:
+Task D-008 と D-011 の source test は次を cover しなければならない:
 
 - submit は session snapshot を capture し、`mizar-build` bootstrap が成功した後だけ
   submitted / running と mark する;
@@ -264,7 +272,11 @@ Task D-008 の source test は次を cover しなければならない:
   deduplication、CLI / LSP diagnostic rendering、artifact serialization、
   publication token minting、scheduler completion の artifact publication 扱いを追加しないことを
   証明する;
-- cancellation は冪等であり、`mizar-build` cancellation policy / token を通じて表現される。
+- cancellation は冪等であり、terminal な `Cancelled` または `Superseded`
+  session outcome に到達し、terminal replay event を追加する;
+- supersession は `mizar-build::CancellationPolicy::supersede_snapshot` を通じて表現される;
+- explicit-request / shutdown cancellation は未対応の snapshot-wide policy token を発明せず、
+  その propagation を `external_dependency_gap` として保つ。
 
 test が phase service を必要とする場合、test 対象の実装済み挙動に限って test-local fixture を
 使ってよい。fixture service は export してはならず、real adapter として文書化してもならない。
