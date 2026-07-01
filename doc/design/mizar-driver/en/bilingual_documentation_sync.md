@@ -3,9 +3,8 @@
 > Canonical language: English. Japanese companion:
 > [../ja/bilingual_documentation_sync.md](../ja/bilingual_documentation_sync.md).
 
-Status: completed by task D-019; refreshed by task D-020 for the
-architecture-22 follow-up audit pair and by task D-021 for the module-boundary
-refactor gate pair.
+Status: completed by task D-019; refreshed by tasks D-020 through D-022 for
+new paired audit and closeout documents.
 
 ## Scope
 
@@ -32,7 +31,7 @@ semantics.
 - No unresolved blocking or high EN/JA documentation drift was found.
 - The English and Japanese file sets are paired one-to-one for the current
   driver design corpus, including this audit document.
-- Task records through D-021, the known `DRIVER-G-*` classifications,
+- Task records through D-022, the known `DRIVER-G-*` classifications,
   `external_dependency_gap`, `deferred`, and report-only
   `repo_metadata_conflict` records are present in both languages.
 - The D-018 source/spec correspondence audit remains synchronized and continues
@@ -41,13 +40,15 @@ semantics.
   reports no unresolved blocking/high drift for implemented driver seams.
 - The D-021 module-boundary refactor gate is paired in both languages and
   records a private-helper-only source split with unchanged public APIs.
+- The D-022 crate exit report is paired in both languages and records the
+  closeout quality score, verification, residual gaps, and handoff.
 
 ## Pair Coverage
 
 | English canonical file | Japanese companion | Sync result |
 |---|---|---|
-| `00.crate_plan.md` | `00.crate_plan.md` | Paired. Responsibility, preflight, gap table, task decomposition through D-021, exit criteria, and known deferred/external gaps are aligned. |
-| `todo.md` | `todo.md` | Paired. Module ownership, prerequisites, ordered tasks, D-018 through D-021 completion, source-path table, verification notes, and non-owner boundaries are aligned. |
+| `00.crate_plan.md` | `00.crate_plan.md` | Paired. Responsibility, preflight, gap table, task decomposition through D-022, exit criteria, and known deferred/external gaps are aligned. |
+| `todo.md` | `todo.md` | Paired. Module ownership, prerequisites, ordered tasks, D-018 through D-022 completion, source-path table, verification notes, and non-owner boundaries are aligned. |
 | `request.md` | `request.md` | Paired. Request/session data model, currentness lanes, snapshot capture, publication suppression, supersession, error handling, tests, and public enum policy are aligned. |
 | `registry.md` | `registry.md` | Paired. Phase service table, readiness gaps, registration rules, cache-key purity, salsa boundary, scheduler/cache seams, diagnostics/artifact/LSP boundaries, tests, and public enum policy are aligned. |
 | `driver.md` | `driver.md` | Paired. Driver front-door ownership, public API, submit flow, scheduler boundary, cancellation, artifact/diagnostics boundaries, tests, and public enum policy are aligned. |
@@ -58,6 +59,7 @@ semantics.
 | `bilingual_documentation_sync.md` | `bilingual_documentation_sync.md` | Paired by this task. |
 | `architecture_22_follow_up_audit.md` | `architecture_22_follow_up_audit.md` | Paired by D-020. Architecture-22 query-boundary, stale-output, diagnostics, artifact-publication, and determinism classifications are aligned. |
 | `module_boundary_refactor_gate.md` | `module_boundary_refactor_gate.md` | Paired by D-021. Private helper split, source-path table updates, owner-boundary preservation, and verification requirements are aligned. |
+| `crate_exit_report.md` | `crate_exit_report.md` | Paired by D-022. Task commits, milestone scope, score caps/breakdown, hard gates, verification, quality score, human review surface, test expectation summary, residual gaps, and next-phase handoff are aligned. |
 
 ## Drift And Follow-up Records
 
@@ -77,9 +79,9 @@ Existing classified records remain unchanged:
 
 ## Verification
 
-This audit's D-019 and D-020 updates were documentation-only. Its D-021 refresh
-is part of a Rust source split, so it follows the D-021 verification plan.
-Required local documentation checks are:
+This audit's D-019, D-020, and D-022 updates were documentation-only. Its D-021
+refresh was part of a Rust source split and followed the D-021 verification
+plan. Required local documentation checks are:
 
 - `git diff --check`
 - `git diff --cached --check` after staging the task-related paths

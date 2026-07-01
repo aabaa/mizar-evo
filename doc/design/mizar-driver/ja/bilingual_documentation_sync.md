@@ -3,8 +3,8 @@
 > 正本は英語です。英語版:
 > [../en/bilingual_documentation_sync.md](../en/bilingual_documentation_sync.md)。
 
-状態: task D-019 で完了。task D-020 で architecture-22 follow-up audit の file pair を
-含めて更新し、task D-021 で module-boundary refactor gate の file pair を含めて更新。
+状態: task D-019 で完了。task D-020 から D-022 で新しい paired audit / closeout document を
+含めて更新。
 
 ## 範囲
 
@@ -27,7 +27,7 @@ source behavior や language semantics を変更しない。
 - 未解決の blocking/high EN/JA documentation drift は見つからなかった。
 - 現在の driver design corpus では、英語と日本語の file set はこの audit document を含め
   1 対 1 で対応している。
-- D-021 までの task record、既知の `DRIVER-G-*` classification、
+- D-022 までの task record、既知の `DRIVER-G-*` classification、
   `external_dependency_gap`、`deferred`、report-only `repo_metadata_conflict` record は
   両言語に存在する。
 - D-018 source/spec correspondence audit は同期済みのままであり、未解決の blocking、
@@ -36,13 +36,15 @@ source behavior や language semantics を変更しない。
   未解決の blocking/high drift がないことを報告している。
 - D-021 module-boundary refactor gate は両言語で paired になり、public API を変えない
   private-helper-only source split を記録している。
+- D-022 crate exit report は両言語で paired になり、closeout quality score、
+  verification、residual gap、handoff を記録している。
 
 ## ペア coverage
 
 | 英語正本 file | 日本語 companion | 同期結果 |
 |---|---|---|
-| `00.crate_plan.md` | `00.crate_plan.md` | paired。Responsibility、preflight、gap table、D-021 までの task decomposition、exit criteria、既知の deferred/external gap は aligned。 |
-| `todo.md` | `todo.md` | paired。Module ownership、prerequisite、ordered task、D-018 から D-021 の completion、source-path table、verification note、non-owner boundary は aligned。 |
+| `00.crate_plan.md` | `00.crate_plan.md` | paired。Responsibility、preflight、gap table、D-022 までの task decomposition、exit criteria、既知の deferred/external gap は aligned。 |
+| `todo.md` | `todo.md` | paired。Module ownership、prerequisite、ordered task、D-018 から D-022 の completion、source-path table、verification note、non-owner boundary は aligned。 |
 | `request.md` | `request.md` | paired。Request/session data model、currentness lane、snapshot capture、publication suppression、supersession、error handling、test、public enum policy は aligned。 |
 | `registry.md` | `registry.md` | paired。Phase service table、readiness gap、registration rule、cache-key purity、salsa boundary、scheduler/cache seam、diagnostics/artifact/LSP boundary、test、public enum policy は aligned。 |
 | `driver.md` | `driver.md` | paired。Driver front-door ownership、public API、submit flow、scheduler boundary、cancellation、artifact/diagnostics boundary、test、public enum policy は aligned。 |
@@ -53,6 +55,7 @@ source behavior や language semantics を変更しない。
 | `bilingual_documentation_sync.md` | `bilingual_documentation_sync.md` | この task で paired。 |
 | `architecture_22_follow_up_audit.md` | `architecture_22_follow_up_audit.md` | D-020 で paired。Architecture-22 query-boundary、stale-output、diagnostics、artifact-publication、determinism classification は aligned。 |
 | `module_boundary_refactor_gate.md` | `module_boundary_refactor_gate.md` | D-021 で paired。Private helper split、source-path table update、owner-boundary preservation、verification requirement は aligned。 |
+| `crate_exit_report.md` | `crate_exit_report.md` | D-022 で paired。Task commit、milestone scope、score cap/breakdown、hard gate、verification、quality score、human review surface、test expectation summary、residual gap、next-phase handoff は aligned。 |
 
 ## Drift と follow-up 記録
 
@@ -70,9 +73,9 @@ source behavior や language semantics を変更しない。
 
 ## 検証
 
-この audit の D-019 / D-020 update は documentation-only であった。D-021 refresh は Rust
-source split の一部なので、D-021 verification plan に従う。必要な local documentation
-check:
+この audit の D-019、D-020、D-022 update は documentation-only であった。D-021 refresh は
+Rust source split の一部であり、D-021 verification plan に従った。必要な local
+documentation check:
 
 - `git diff --check`
 - task 関連 path を stage した後の `git diff --cached --check`

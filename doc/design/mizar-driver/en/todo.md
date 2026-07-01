@@ -66,10 +66,9 @@ inputs/outputs to the build scheduler and cache seams.
 - **Driver/build split: resolved by internal 00/01.** Planning and
   scheduling live in `mizar-build`; this crate owns request lifecycle,
   service registry, and entry points.
-- **CLI surface: open, resolved by task 12.** Decide the binary name and
-  subcommand set against the build lifecycle of spec chapter 23 (default
-  candidate: a single `mizar` binary with `build`/`check`/`doc`
-  subcommands grown incrementally) and record the decision in `cli.md`.
+- **CLI surface: resolved by task 12.** The binary name is `mizar`, with
+  `mizar build` as the implemented batch entry point. Future subcommands stay
+  documented in `cli.md` before implementation.
 - **`cache_key` purity: resolved by internal 01.** `PhaseService::cache_key`
   is a pure projection from input identities, configuration, schema
   versions, and dependency hashes; the registry enforces and tests this
@@ -492,6 +491,19 @@ Keep `cargo test -p mizar-driver` green after each task (see
       `src/registry/catalog.rs`. Public modules, public APIs, deterministic
       renderings, diagnostics/artifact-facing schemas, and owner boundaries did
       not change.
+
+22. **Crate exit report and quality review.** [x]
+    - Close the autonomous task stream with hard-gate evidence, task commit
+      hashes, quality score, classified residual gaps, final verification, and
+      next-phase handoff.
+    - Deps: 21. Spec: autonomous crate protocol and this TODO.
+    - Completed by task D-022: [crate_exit_report.md](crate_exit_report.md)
+      records the task commit list, milestone scope, included/excluded items,
+      final driver ownership shape, hard-gate status, score caps, score
+      breakdown, verification, 94/100 quality score, human review surface, test
+      expectation summary, remaining classified gaps, and next-phase handoff.
+      The report preserves all non-owner boundaries and does not claim real
+      adapters, artifact publication, LSP bridge, or cache/proof authority.
 
 ## Recommended Verification
 
