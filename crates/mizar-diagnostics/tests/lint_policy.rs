@@ -185,8 +185,9 @@ fn diagnostics_lib_states_initial_boundary() {
         "#![forbid(unsafe_code)]",
         "Stable diagnostic identity",
         "00.crate_plan.md",
-        "initial scaffold exposes no registry",
-        "driver, LSP, or artifact integration surface",
+        "diagnostic-code registry only",
+        "records, sinks, aggregation, rendering, driver, LSP, and artifact integration",
+        "pub mod registry;",
     ] {
         assert!(
             source.contains(marker),
@@ -194,16 +195,46 @@ fn diagnostics_lib_states_initial_boundary() {
             lib_path.display()
         );
     }
+
+    for forbidden_module in [
+        "failure_record",
+        "sink",
+        "aggregator",
+        "render",
+        "fix",
+        "explain",
+        "driver",
+        "lsp",
+        "artifact",
+    ] {
+        assert!(
+            !source.contains(&format!("mod {forbidden_module}")),
+            "{} must not add private `{forbidden_module}` wiring before its \
+             task-scoped spec and implementation land",
+            lib_path.display()
+        );
+    }
+
+    assert_eq!(
+        source
+            .lines()
+            .map(str::trim)
+            .filter(|line| line.starts_with("pub ") || line.starts_with("pub("))
+            .collect::<Vec<_>>(),
+        vec!["pub mod registry;"],
+        "{} must expose only the task-3 registry module at the crate root for now",
+        lib_path.display()
+    );
 }
 
 #[test]
-fn diagnostics_sources_keep_initial_public_api_empty() {
+fn diagnostics_sources_do_not_export_macros() {
     let root = crate_root();
     let mut declarations = Vec::new();
 
-    for path in source_rust_files(&root) {
+    for path in rust_target_files(&root) {
         let source = read_to_string(&path);
-        for declaration in public_api_declarations(&source) {
+        for declaration in macro_export_declarations(&source) {
             let relative = path.strip_prefix(&root).unwrap_or(&path);
             declarations.push(format!("{}: {declaration}", relative.display()));
         }
@@ -211,8 +242,8 @@ fn diagnostics_sources_keep_initial_public_api_empty() {
 
     assert!(
         declarations.is_empty(),
-        "mizar-diagnostics must not expose public modules, APIs, or exported \
-         macros before task-scoped diagnostics specs introduce them:\n{}",
+        "mizar-diagnostics must not expose exported macros before a task-scoped \
+         spec introduces them:\n{}",
         declarations.join("\n")
     );
 }
@@ -260,18 +291,18 @@ fn allow_scanner_handles_multiline_attributes_and_requires_rationale_text() {
 }
 
 #[test]
-fn public_api_detector_flags_macro_exports() {
-    let source = "#[macro_export]\nmacro_rules! sample { () => {}; }\n# [macro_export]\nmacro_rules! other { () => {}; }\n#[\n    macro_export\n]\nmacro_rules! third { () => {}; }\n";
-    assert_eq!(
-        public_api_declarations(source),
-        vec!["#[macro_export]", "# [macro_export]", "#["]
-    );
-}
-
-#[test]
 fn rust_file_collector_skips_crate_local_target_directory() {
     assert!(skip_rust_directory(&PathBuf::from("target")));
     assert!(!skip_rust_directory(&PathBuf::from("src")));
+}
+
+#[test]
+fn macro_export_detector_flags_common_attribute_shapes() {
+    let source = "#[macro_export]\nmacro_rules! sample { () => {}; }\n# [macro_export]\nmacro_rules! other { () => {}; }\n#[\n    macro_export\n]\nmacro_rules! third { () => {}; }\n";
+    assert_eq!(
+        macro_export_declarations(source),
+        vec!["#[macro_export]", "# [macro_export]", "#["]
+    );
 }
 
 #[test]
@@ -515,14 +546,6 @@ fn rust_target_files(root: &std::path::Path) -> Vec<PathBuf> {
     let mut files = Vec::new();
     collect_rust_files(root, &mut files);
     add_explicit_manifest_target_files(root, &mut files);
-    files.sort();
-    files.dedup();
-    files
-}
-
-fn source_rust_files(root: &std::path::Path) -> Vec<PathBuf> {
-    let mut files = Vec::new();
-    collect_rust_files(&root.join("src"), &mut files);
     files.sort();
     files.dedup();
     files
@@ -869,7 +892,7 @@ fn comment_text(line: &str) -> Option<&str> {
     }
 }
 
-fn public_api_declarations(source: &str) -> Vec<String> {
+fn macro_export_declarations(source: &str) -> Vec<String> {
     let lines = source.lines().collect::<Vec<_>>();
     let mut declarations = Vec::new();
     let mut line_index = 0;
@@ -885,9 +908,6 @@ fn public_api_declarations(source: &str) -> Vec<String> {
             continue;
         }
 
-        if trimmed.starts_with("pub ") || trimmed.starts_with("pub(") {
-            declarations.push(trimmed.to_owned());
-        }
         line_index += 1;
     }
 

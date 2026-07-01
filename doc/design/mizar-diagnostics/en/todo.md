@@ -19,7 +19,7 @@ and internal 03; the crate refines architecture 12 and 19 and internal 03.
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| registry | `registry.md` (task 2) | `src/registry.rs` | [ ] |
+| registry | `registry.md` (task 2) | `src/registry.rs` | [x] |
 | failure_record | `failure_record.md` (task 4) | `src/failure_record.rs` | [ ] |
 | sink | `sink.md` (task 6) | `src/sink.rs` | [ ] |
 | aggregator | `aggregator.md` (task 8) | `src/aggregator.rs` | [ ] |
@@ -112,13 +112,23 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
      artifact mutation outside registry authority. Verification passed
      `git diff --check` and `git diff --cached --check`.
 
-3. **Registry implementation.** [ ]
+3. **Registry implementation.** [x]
    - Implement the code registry with compatibility validation (a code is
      never reused for a different meaning) and a registry-consistency test
      that locks allocated codes.
    - Tests: allocation/retirement fixtures; reuse attempts fail; lookup
      metadata round-trips.
    - Deps: 2. Spec: `registry.md`.
+   - Completed by task 3: `src/registry.rs` now provides `DiagnosticCode`,
+     canonical `PhaseFamily` and severity metadata, built-in spec-22
+     descriptors, validated `DiagnosticRegistry` lookup by code/semantic name
+     and alias, descriptor consistency validation, and baseline compatibility
+     validation. Tests lock the initial allocation list, metadata round-trips,
+     malformed/deferred range rejection, retirement finality, code-reuse
+     rejection, semantic rename alias requirements, and alias-domain
+     determinism. Verification passed `cargo test -p mizar-diagnostics`,
+     `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`, and
+     `cargo fmt --check`.
 
 4. **Spec: `failure_record.md`.** [ ]
    - Write the record spec (English and Japanese, no code):

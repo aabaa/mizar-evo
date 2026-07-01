@@ -19,7 +19,7 @@ registry/render/fix/explain モジュールを加えたものに従う。この 
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| registry | `registry.md`（task 2） | `src/registry.rs` | [ ] |
+| registry | `registry.md`（task 2） | `src/registry.rs` | [x] |
 | failure_record | `failure_record.md`（task 4） | `src/failure_record.rs` | [ ] |
 | sink | `sink.md`（task 6） | `src/sink.rs` | [ ] |
 | aggregator | `aggregator.md`（task 8） | `src/aggregator.rs` | [ ] |
@@ -112,13 +112,23 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
      明記した。verification は `git diff --check` と `git diff --cached --check` が
      通った。
 
-3. **レジストリの実装。** [ ]
+3. **レジストリの実装。** [x]
    - 互換性検証（コードは別の意味で決して再利用されない）と、割り当て
      済みコードを固定するレジストリ整合性テストを備えたコードレジストリを
      実装する。
    - テスト: 割り当て/retirement のフィクスチャ。再利用の試みの失敗。
      参照メタデータのラウンドトリップ。
    - 依存: 2。仕様: `registry.md`。
+   - task 3 で完了: `src/registry.rs` は `DiagnosticCode`、canonical
+     `PhaseFamily` と severity metadata、spec-22 の built-in descriptor、code /
+     semantic name / alias による validated `DiagnosticRegistry` lookup、descriptor
+     consistency validation、baseline compatibility validation を提供する。tests は
+     initial allocation list、metadata round-trip、malformed/deferred range rejection、
+     retirement finality、code-reuse rejection、semantic rename alias requirement、
+     alias-domain determinism を固定する。verification は
+     `cargo test -p mizar-diagnostics`、
+     `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`、
+     `cargo fmt --check` が通った。
 
 4. **仕様: `failure_record.md`。** [ ]
    - レコードの仕様を執筆する（英語と日本語、コードなし）:
