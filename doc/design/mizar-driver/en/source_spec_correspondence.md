@@ -137,8 +137,8 @@ Existing classified follow-ups remain:
 - Full clean/incremental/parallel equivalence with real cache hits, producer
   outputs, artifact commits, proof reuse, and multi-task driver phase dispatch
   remains deferred until those owner seams exist.
-- D-019 must still perform the bilingual documentation sync audit; this D-018
-  audit checked source/spec correspondence, not full translation quality.
+- D-019 completed the bilingual documentation sync audit; this D-018 audit
+  checked source/spec correspondence, not full translation quality.
 
 ## Verification
 

@@ -441,11 +441,18 @@ Keep `cargo test -p mizar-driver` green after each task (see
       `repo_metadata_conflict` items remain classified follow-ups rather than
       source changes in this audit.
 
-19. **Bilingual documentation sync audit.** [ ]
+19. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-driver/en/` with its Japanese companion and
       synchronize content.
     - Deps: 18. Spec: repository documentation policy.
+    - Completed by task D-019: [bilingual_documentation_sync.md](bilingual_documentation_sync.md)
+      records that the driver design corpus is paired one-to-one across
+      `en/` and `ja/`, including crate plan, TODO, module specs, adapter
+      readiness, source/spec correspondence, and the new sync audit itself.
+      No unresolved blocking or high EN/JA documentation drift was found.
+      Existing `external_dependency_gap`, `deferred`, and report-only
+      `repo_metadata_conflict` records remain unchanged and synchronized.
 
 20. **Architecture-22 follow-up audit.** [ ]
     - Re-run the source/spec correspondence and bilingual documentation sync

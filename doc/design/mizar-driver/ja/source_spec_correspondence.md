@@ -131,8 +131,8 @@ API 監査の対象外である。
 - real cache hit、producer output、artifact commit、proof reuse、multi-task driver phase
   dispatch を含む full clean / incremental / parallel equivalence は、それらの owner seam が
   存在するまで deferred のまま。
-- D-019 では引き続き bilingual documentation sync audit を行う。この D-018 audit は
-  source/spec correspondence を確認するものであり、翻訳品質全体の監査ではない。
+- D-019 は bilingual documentation sync audit を完了した。この D-018 audit は
+  source/spec correspondence を確認したものであり、翻訳品質全体の監査ではない。
 
 ## 検証
 
