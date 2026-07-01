@@ -399,10 +399,17 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       adding or reclassifying variants requires compatibility review, and
       downstream consumers must keep wildcard handling.
 
-19. **Source/spec correspondence audit.** [ ]
+19. **Source/spec correspondence audit.** [x]
     - Trace every public API and promised behavior in the module specs to
       implementation and tests; record gaps as follow-up tasks.
     - Deps: 18. Spec: all module specs and this TODO.
+    - Completed by task 19:
+      [source_spec_correspondence.md](source_spec_correspondence.md) records
+      public API and behavior traceability for registry, records, sink,
+      aggregation, render, fix, explain, and crate-boundary lint policy. The
+      audit found no new crate-owned source/spec/test gaps; inherited consumer,
+      LSP, driver, artifact, and metadata gaps remain classified without
+      placeholder APIs.
 
 20. **Bilingual documentation sync audit.** [ ]
     - Compare each English canonical document under

@@ -377,10 +377,17 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       compatibility review を要求し、downstream consumer は wildcard handling を
       維持しなければならない。
 
-19. **ソース/仕様対応監査。** [ ]
+19. **ソース/仕様対応監査。** [x]
     - モジュール仕様の全公開 API と約束された挙動を実装とテストへ
       トレースし、ギャップをフォローアップタスクとして記録する。
     - 依存: 18。仕様: 全モジュール仕様と本 TODO。
+    - task 19 で完了:
+      [source_spec_correspondence.md](source_spec_correspondence.md) は
+      registry、records、sink、aggregation、render、fix、explain、crate-boundary
+      lint policy について public API と behavior traceability を記録する。この audit
+      は新しい crate-owned source/spec/test gap を見つけなかった。consumer、LSP、
+      driver、artifact、metadata に関する既存 gap は placeholder API なしで分類済みの
+      ままである。
 
 20. **二言語ドキュメント同期監査。** [ ]
     - `doc/design/mizar-diagnostics/en/` の各英語正本と日本語版を比較し、
