@@ -144,48 +144,75 @@ path = "../fake"
 }
 
 #[test]
-fn driver_scaffold_has_no_behavioral_surface_yet() {
+fn driver_source_surface_matches_completed_tasks() {
     let root = crate_root();
     let source_files = rust_source_files(&root);
-    let expected_files = vec![root.join("src/lib.rs")];
-    let mut violations = Vec::new();
+    let expected_files = vec![root.join("src/lib.rs"), root.join("src/request.rs")];
 
     assert_eq!(
         source_files, expected_files,
-        "D-001 must stay a minimal library scaffold until request/session or \
-         later module specs land"
+        "driver source files must match the completed task surface"
     );
+}
 
-    for path in source_files {
+#[test]
+fn driver_lib_exposes_only_completed_modules() {
+    let root = crate_root();
+    let lib_rs = root.join("src/lib.rs");
+    let source = read_to_string(&lib_rs);
+    let mut violations = Vec::new();
+
+    for (index, line) in source.lines().enumerate() {
+        let trimmed = line.trim();
+        if lib_has_unexpected_code_line(trimmed) {
+            violations.push(format!("src/lib.rs:{}", index + 1));
+        }
+    }
+
+    assert!(
+        violations.is_empty(),
+        "driver lib must expose only modules whose paired specs have landed:\n{}",
+        violations.join("\n")
+    );
+}
+
+#[test]
+fn driver_does_not_expose_later_task_modules_yet() {
+    let root = crate_root();
+    let mut violations = Vec::new();
+
+    for path in rust_source_files(&root) {
         let source = read_to_string(&path);
-        for (index, line) in source.lines().enumerate() {
-            let trimmed = line.trim();
-            if scaffold_has_code_line(trimmed) {
+        for forbidden in [
+            "pub mod registry",
+            "pub mod driver",
+            "pub mod events",
+            "pub mod cli",
+        ] {
+            if source.contains(forbidden) {
                 let relative = path.strip_prefix(&root).unwrap_or(&path);
-                violations.push(format!("{}:{}", relative.display(), index + 1));
+                violations.push(format!("{} contains {forbidden}", relative.display()));
             }
         }
     }
 
     assert!(
         violations.is_empty(),
-        "D-001 must not introduce request/session/registry/driver/events/CLI/watch \
-         behavior or placeholder seams:\n{}",
+        "later task modules require their own spec/implementation tasks:\n{}",
         violations.join("\n")
     );
 }
 
 #[test]
-fn scaffold_code_line_detector_blocks_common_item_forms() {
+fn lib_code_line_detector_blocks_unexpected_item_forms() {
     for line in [
-        "pub mod request;",
         "pub(crate) mod request;",
         "impl Driver {}",
         "macro_rules! driver {}",
         "extern crate fake;",
         "pub fn run() {}",
     ] {
-        assert!(scaffold_has_code_line(line), "{line}");
+        assert!(lib_has_unexpected_code_line(line), "{line}");
     }
 
     for line in [
@@ -194,8 +221,9 @@ fn scaffold_code_line_detector_blocks_common_item_forms() {
         "// comment",
         "#![forbid(unsafe_code)]",
         "#[test]",
+        "pub mod request;",
     ] {
-        assert!(!scaffold_has_code_line(line), "{line}");
+        assert!(!lib_has_unexpected_code_line(line), "{line}");
     }
 }
 
@@ -462,9 +490,10 @@ fn public_enum_name(line: &str) -> Option<&str> {
         .find(|part| !part.is_empty())
 }
 
-fn scaffold_has_code_line(line: &str) -> bool {
+fn lib_has_unexpected_code_line(line: &str) -> bool {
     let ignored_prefixes = ["//", "#![", "#[", "//!"];
-    !line.is_empty()
+    line != "pub mod request;"
+        && !line.is_empty()
         && !ignored_prefixes
             .iter()
             .any(|prefix| line.starts_with(prefix))

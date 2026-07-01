@@ -233,10 +233,11 @@ The combined check is required for:
   committed result;
 - any later driver API that exposes "latest" build state.
 
-If either check fails, the driver must suppress the publication as obsolete and
-emit only a protocol-agnostic stale/suppressed event for observers that are
-still subscribed to the old session. It must not relabel stale diagnostics,
-phase outputs, cache decisions, or artifact records as current.
+If either check fails, the request layer must return a suppressed publication
+decision. The later event layer may turn that decision into a protocol-agnostic
+stale/suppressed event for observers that are still subscribed to the old
+session. The driver must not relabel stale diagnostics, phase outputs, cache
+decisions, or artifact records as current.
 
 Batch sessions normally have no superseding generation, but they still use the
 same guard so all driver publication paths share one freshness rule.
@@ -248,7 +249,10 @@ generation with a fresh `BuildRequestId` in the same driver `BuildLaneId`, then
 marking the newer session current in the driver-owned lane table.
 `SnapshotRegistry::create_snapshot` updates only the current snapshot for the
 new request generation; it is not the watch/LSP lane supersession authority.
-After the driver lane table is updated:
+The lane table must be monotonic by `BuildRequestGeneration`: an older
+generation must not become current again after a newer generation is marked
+current, and repeating the same generation is valid only for the same
+session/snapshot tuple. After the driver lane table is updated:
 
 - older sessions in the lane are obsolete for current publication, even if they
   have the same `BuildSnapshotId` as the newer generation;
@@ -266,10 +270,12 @@ falling back to older successful outputs.
 ## Error Handling
 
 Snapshot creation errors are reported as driver request/session failures without
-inventing phase diagnostics. The driver may wrap owner errors for event
-delivery, but structured identity must remain the owner-provided error or
-diagnostic record. Message text is presentation and must not be used as
-diagnostic identity.
+inventing phase diagnostics. The request layer must preserve the pending
+request/session context when returning a snapshot creation error so callers can
+report the failure against the submitted request. The driver may wrap owner
+errors for event delivery, but structured identity must remain the
+owner-provided error or diagnostic record. Message text is presentation and
+must not be used as diagnostic identity.
 
 Cancellation is idempotent at the driver boundary. Cancelling a session that is
 already terminal does not revive it, release unrelated snapshots, or publish
@@ -287,13 +293,17 @@ Task D-003 implementation must add Rust tests that cover:
   watch/LSP generations share one driver `BuildLaneId`;
 - watch/LSP supersession replacing the lane-current session, not only the
   lane-current snapshot;
+- rejection of stale lane-current updates that try to restore an older
+  generation, and rejection of same-generation replacement by a different
+  session;
 - obsolete publication rejection for superseded watch/LSP sessions, including
   an older session whose snapshot id equals the newer lane-current session's
   snapshot id;
 - the combined lane-current-session and `SnapshotRegistry::is_current_for_request`
   publication guard;
-- stale/suppressed event production without current diagnostics/artifact
+- stale/suppressed publication decisions without current diagnostics/artifact
   publication;
+- snapshot creation errors returning the pending request/session context;
 - idempotent cancellation of current and already-superseded sessions.
 
 No `.miz` tests are required because this module defines orchestration state,

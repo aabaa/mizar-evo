@@ -18,7 +18,7 @@ per the ownership map of
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| request | `request.md` (task 2) | `src/request.rs` | [ ] |
+| request | `request.md` (task 2) | `src/request.rs` | [x] |
 | registry | `registry.md` (task 4) | `src/registry.rs` | [ ] |
 | driver | `driver.md` (task 7) | `src/driver.rs` | [ ] |
 | events | `events.md` (task 9) | `src/events.rs` | [ ] |
@@ -109,7 +109,7 @@ Keep `cargo test -p mizar-driver` green after each task (see
      superseded watch/LSP sessions through the combined publication guard. No
      source implementation was added.
 
-3. **`BuildRequest` and `BuildSession`.** [ ]
+3. **`BuildRequest` and `BuildSession`.** [x]
    - Implement requests and sessions with snapshot capture through
      `mizar-session`/`mizar-ir` identities, including the combined
      lane-current-session and request-generation snapshot guard used to reject
@@ -119,6 +119,16 @@ Keep `cargo test -p mizar-driver` green after each task (see
      watch/LSP generations; a superseded session is rejected even when it has
      the same snapshot id as the lane-current session.
    - Deps: 2. Spec: `request.md`.
+   - Completed by task D-003: `src/request.rs` implements request drafts,
+     allocated pending requests, captured sessions, lifecycle transitions,
+     driver lane-current-session tracking, and publication decisions. The
+     request tests cover snapshot capture through `mizar-session`, same
+     canonical snapshot ids with distinct allocator-issued ids, same-snapshot
+     supersession rejection, stale request-generation snapshots, stale lane
+     update rejection, snapshot-creation failure context, suppressed
+     publication decisions, and idempotent cancellation. No LSP protocol
+     conversion, scheduler semantics, artifact publication, cache/proof
+     authority, or phase semantics was added.
 
 4. **Spec: `registry.md`.** [ ]
    - Write the registry spec (English and Japanese, no code): the
