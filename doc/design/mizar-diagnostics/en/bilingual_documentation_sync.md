@@ -17,10 +17,11 @@ rendering, fix/explanation payloads, or any downstream adoption boundary.
 
 | English canonical file | Japanese companion | Result |
 |---|---|---|
-| `00.crate_plan.md` | `00.crate_plan.md` | Present and synchronized in substance through task 20. |
+| `00.crate_plan.md` | `00.crate_plan.md` | Present and synchronized in substance through closeout. |
 | `aggregator.md` | `aggregator.md` | Present and synchronized in substance. |
 | `bilingual_documentation_sync.md` | `bilingual_documentation_sync.md` | Present and synchronized in substance for this audit. |
 | `consumer_adoption_decision.md` | `consumer_adoption_decision.md` | Present and synchronized in substance. |
+| `crate_exit_report.md` | `crate_exit_report.md` | Present and synchronized in substance for closeout. |
 | `explain.md` | `explain.md` | Present and synchronized in substance. |
 | `failure_record.md` | `failure_record.md` | Present and synchronized in substance. |
 | `fix.md` | `fix.md` | Present and synchronized in substance. |
@@ -29,7 +30,7 @@ rendering, fix/explanation payloads, or any downstream adoption boundary.
 | `render.md` | `render.md` | Present and synchronized in substance. |
 | `sink.md` | `sink.md` | Present and synchronized in substance. |
 | `source_spec_correspondence.md` | `source_spec_correspondence.md` | Present and synchronized in substance. |
-| `todo.md` | `todo.md` | Present and synchronized in substance through task 21 scoped rerun. |
+| `todo.md` | `todo.md` | Present and synchronized in substance through closeout. |
 
 No English-only diagnostics design document and no Japanese-only companion was
 found in this directory pair.
@@ -54,8 +55,9 @@ unchanged.
 
 The task-20 audit found no substantive bilingual drift requiring edits to module
 specs. Task 21 re-runs this inventory for the module-boundary gate report and
-updates this file with the new paired document. No unsynchronized companion is
-introduced.
+updates this file with the new paired document. The closeout task adds the
+paired crate exit report and reruns the inventory. No unsynchronized companion
+is introduced.
 
 ## Remaining Boundaries
 

@@ -419,6 +419,15 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       public API、diagnostic identity、deterministic snapshots、rendering、fix/explain
       payloads、downstream-authority boundaries は変わらない。
 
+22. **crate exit report と quality review。** [x]
+    - 最終 task ledger、owned surfaces、hard gates、deferred/external gaps、
+      verification、read-only quality score、next-phase handoff を記録する。
+    - 依存: 21。仕様: autonomous crate development protocol。
+    - closeout で完了:
+      [crate_exit_report.md](crate_exit_report.md) は 95/100 quality score、
+      score cap なし、passing hard gates、no-placeholder downstream gap
+      classifications、closeout review results、final verification を記録する。
+
 ## 推奨検証
 
 各タスクの後で実行する:

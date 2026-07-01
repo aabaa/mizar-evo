@@ -17,10 +17,11 @@ diagnostic identity、registry allocation、aggregation、rendering、fix/explan
 
 | English canonical file | Japanese companion | Result |
 |---|---|---|
-| `00.crate_plan.md` | `00.crate_plan.md` | task 20 まで存在し、実質同期済み。 |
+| `00.crate_plan.md` | `00.crate_plan.md` | closeout まで存在し、実質同期済み。 |
 | `aggregator.md` | `aggregator.md` | 存在し、実質同期済み。 |
 | `bilingual_documentation_sync.md` | `bilingual_documentation_sync.md` | この audit について存在し、実質同期済み。 |
 | `consumer_adoption_decision.md` | `consumer_adoption_decision.md` | 存在し、実質同期済み。 |
+| `crate_exit_report.md` | `crate_exit_report.md` | closeout について存在し、実質同期済み。 |
 | `explain.md` | `explain.md` | 存在し、実質同期済み。 |
 | `failure_record.md` | `failure_record.md` | 存在し、実質同期済み。 |
 | `fix.md` | `fix.md` | 存在し、実質同期済み。 |
@@ -29,7 +30,7 @@ diagnostic identity、registry allocation、aggregation、rendering、fix/explan
 | `render.md` | `render.md` | 存在し、実質同期済み。 |
 | `sink.md` | `sink.md` | 存在し、実質同期済み。 |
 | `source_spec_correspondence.md` | `source_spec_correspondence.md` | 存在し、実質同期済み。 |
-| `todo.md` | `todo.md` | task 21 scoped rerun まで存在し、実質同期済み。 |
+| `todo.md` | `todo.md` | closeout まで存在し、実質同期済み。 |
 
 この directory pair には English-only diagnostics design document も
 Japanese-only companion も見つからなかった。
@@ -53,7 +54,8 @@ gap classes、API names は意図的に変更しない。
 
 task-20 audit は、module specs に修正が必要な substantive bilingual drift を見つけなかった。
 Task 21 は module-boundary gate report についてこの inventory を再実行し、この file に
-new paired document を追加する。unsynchronized companion は導入されない。
+new paired document を追加する。closeout task は paired crate exit report を追加し、
+inventory を再実行する。unsynchronized companion は導入されない。
 
 ## Remaining Boundaries
 

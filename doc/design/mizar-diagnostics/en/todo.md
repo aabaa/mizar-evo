@@ -446,6 +446,16 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       deterministic snapshots, rendering, fix/explain payloads, and
       downstream-authority boundaries are unchanged.
 
+22. **Crate exit report and quality review.** [x]
+    - Record the final task ledger, owned surfaces, hard gates,
+      deferred/external gaps, verification, read-only quality score, and
+      next-phase handoff.
+    - Deps: 21. Spec: autonomous crate development protocol.
+    - Completed by closeout:
+      [crate_exit_report.md](crate_exit_report.md) records a 95/100 quality
+      score, no score cap, passing hard gates, no-placeholder downstream gap
+      classifications, closeout review results, and final verification.
+
 ## Recommended Verification
 
 Run after each task:
