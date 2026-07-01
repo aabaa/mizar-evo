@@ -65,7 +65,7 @@ pre-existing lexer/frontend/parser/resolver diagnostics.
 | ID | Class | Observation | Disposition |
 |---|---|---|---|
 | DIAG-AUDIT-001 | `external_dependency_gap` / `deferred` | Existing lexer/frontend/parser/resolver diagnostics still have no real shared-index consumer adoption seam. | Already recorded by `consumer_adoption_decision.md`; no placeholder adapter, stub API, or fake resolver adoption is added. |
-| DIAG-AUDIT-002 | `external_dependency_gap` | `mizar-lsp` and `mizar-driver` adoption remain unavailable: LSP conversion is LSP-owned, and `crates/mizar-driver` is not present in this checkout. | Already recorded by `consumer_adoption_decision.md`; no protocol conversion or driver session API is added. |
+| DIAG-AUDIT-002 | `external_dependency_gap` | `mizar-lsp` adoption remains LSP-owned, and the later `mizar-driver` scaffold does not yet provide real driver sessions, events, or publication orchestration. | Already recorded by `consumer_adoption_decision.md`; no protocol conversion or driver session API is added by diagnostics. |
 | DIAG-AUDIT-003 | `external_dependency_gap` | Artifact publication and durable artifact projection remain artifact-owned. | No artifact mutation or projection authority is added to `mizar-diagnostics`. |
 | DIAG-AUDIT-004 | `repo_metadata_conflict` | Preflight found no `doc/design/mizar-artifact/en/crate_exit_report.md` to consult, although the user-requested preflight named an artifact closeout report. | Report only; do not repair backup/stash/history metadata from this crate task. |
 

@@ -82,13 +82,18 @@ Keep `cargo test -p mizar-driver` green after each task (see
 
 ### Requests and services
 
-1. **Crate scaffold and lint-policy guard.** [ ]
+1. **Crate scaffold and lint-policy guard.** [x]
    - Add the `mizar-driver` workspace member depending on `mizar-session`,
      `mizar-build`, `mizar-ir`, and `mizar-diagnostics`; add
      `tests/lint_policy.rs` mirroring the `mizar-frontend` guard.
    - Tests: lint-policy guard passes; workspace builds.
    - Deps: `mizar-build` task 10, `mizar-ir` task 8,
      `mizar-diagnostics` task 9. Spec: internal 01.
+   - Completed by task D-001: added the workspace member, minimal crate
+     manifest and library scaffold, driver lint-policy guard, and the
+     diagnostics reverse-dependency guard exception for the driver scaffold.
+     No request/session/registry/event/CLI/watch behavior or placeholder seam
+     was introduced.
 
 2. **Spec: `request.md`.** [ ]
    - Write the request spec (English and Japanese, no code):

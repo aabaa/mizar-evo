@@ -135,7 +135,7 @@ surface.
 |---|---|---|
 | DIAG-G-003 | `spec_gap`, disposition `external_dependency_gap`/`deferred` | Resolver public diagnostic-code allocation and real resolver consumer adoption must be decided by the resolver/integration phase. This crate did not invent resolver codes or adapters. |
 | DIAG-G-004 | `design_drift`, disposition `external_dependency_gap` | `mizar-lsp` owns protocol conversion, document-version handling, open-buffer publication, and LSP explanation requests. This crate exposes records/indexes only. |
-| DIAG-G-005 | `design_drift`, disposition `external_dependency_gap` | `mizar-driver` is absent, so real driver sessions, events, and publication orchestration remain outside this crate. No placeholder dependency or event API was added. |
+| DIAG-G-005 | `design_drift`, disposition `external_dependency_gap` | `mizar-driver` now has a scaffold crate and is the only allowed diagnostics reverse dependency, but real driver sessions, events, and publication orchestration remain outside this crate until the driver-owned seams land. No placeholder dependency or event API was added by diagnostics. |
 | DIAG-G-006 | `source_drift`, disposition `external_dependency_gap`/`deferred` | Existing lexer/frontend/parser diagnostics remain owning-crate local until a real migration seam and consumer tests exist. |
 | DIAG-G-007 | `design_drift`, disposition `external_dependency_gap` | `mizar-artifact` owns artifact mutation and publication. Diagnostics may be projected by future artifact owners, but this crate does not mutate manifests or mint publication authority. |
 | DIAG-G-008 | `repo_metadata_conflict`, report only | The requested `mizar-artifact` closeout report is absent in this checkout. This diagnostics stream reports the conflict and does not repair artifact metadata. |
@@ -163,7 +163,9 @@ gate, and explicit gap records.
 
 Consumer-boundary commands for `mizar-resolve`, `mizar-lsp`, and `mizar-build`
 were not required for closeout because this task does not change an implemented
-consumer seam. `mizar-driver` is absent and remains an `external_dependency_gap`.
+consumer seam. The later `mizar-driver` scaffold may depend on diagnostics, but
+real driver sessions, events, and publication orchestration remain an
+`external_dependency_gap` until the driver-owned seams land.
 
 ## Human Review Surface
 

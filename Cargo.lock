@@ -413,6 +413,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "mizar-driver"
+version = "0.1.0"
+dependencies = [
+ "mizar-build",
+ "mizar-diagnostics",
+ "mizar-ir",
+ "mizar-session",
+]
+
+[[package]]
 name = "mizar-frontend"
 version = "0.1.0"
 dependencies = [

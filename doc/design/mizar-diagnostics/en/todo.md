@@ -369,8 +369,9 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       by the resolver public diagnostic code-space gap, lexer/frontend/parser
       diagnostics remain owning-crate local until a real migration seam exists,
       `mizar-lsp` diagnostic publication and explanation conversion remain LSP
-      tasks, and `mizar-driver` orchestration remains unavailable in this
-      checkout. No source, dependency, placeholder adapter, stub API, fake
+      tasks. A later `mizar-driver` scaffold may depend on diagnostics, but
+      real driver sessions, events, and publication orchestration remain driver
+      tasks. No diagnostics source, placeholder adapter, stub API, fake
       resolver adoption, or provisional LSP/driver bridge was added.
 
 17. **Determinism suite.** [x]

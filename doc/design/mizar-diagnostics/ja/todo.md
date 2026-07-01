@@ -348,9 +348,10 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       resolver public diagnostic code-space gap により blocked のままであり、
       lexer/frontend/parser diagnostics は real migration seam が存在するまで
       owning-crate local に残る。`mizar-lsp` diagnostic publication と explanation
-      conversion は LSP tasks に残り、`mizar-driver` orchestration はこの checkout
-      では利用できない。source、dependency、placeholder adapter、stub API、fake
-      resolver adoption、provisional LSP/driver bridge は追加していない。
+      conversion は LSP tasks に残る。後続の `mizar-driver` scaffold は diagnostics
+      に依存できるが、real driver sessions、events、publication orchestration は
+      driver tasks に残る。diagnostics source、placeholder adapter、stub API、
+      fake resolver adoption、provisional LSP/driver bridge は追加していない。
 
 17. **決定性スイート。** [x]
     - 同一入力が同一のレコード、索引、レンダリング出力、explanation

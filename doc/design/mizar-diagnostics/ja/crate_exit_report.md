@@ -136,7 +136,7 @@ score cap にはならない。missing `mizar-artifact` closeout report は
 |---|---|---|
 | DIAG-G-003 | `spec_gap`, disposition `external_dependency_gap`/`deferred` | resolver public diagnostic-code allocation と real resolver consumer adoption は resolver/integration phase が決定する。この crate は resolver codes や adapters を発明していない。 |
 | DIAG-G-004 | `design_drift`, disposition `external_dependency_gap` | `mizar-lsp` は protocol conversion、document-version handling、open-buffer publication、LSP explanation requests を所有する。この crate は records/indexes のみを expose する。 |
-| DIAG-G-005 | `design_drift`, disposition `external_dependency_gap` | `mizar-driver` は存在しないため、real driver sessions、events、publication orchestration は crate 外に残る。placeholder dependency/event API は追加していない。 |
+| DIAG-G-005 | `design_drift`, disposition `external_dependency_gap` | `mizar-driver` は現在 scaffold crate を持ち、許可された唯一の diagnostics reverse dependency である。ただし real driver sessions、events、publication orchestration は driver-owned seam が着地するまでこの crate 外に残る。diagnostics は placeholder dependency/event API を追加していない。 |
 | DIAG-G-006 | `source_drift`, disposition `external_dependency_gap`/`deferred` | 既存 lexer/frontend/parser diagnostics は real migration seam と consumer tests が存在するまで owning-crate local のままである。 |
 | DIAG-G-007 | `design_drift`, disposition `external_dependency_gap` | `mizar-artifact` は artifact mutation と publication を所有する。diagnostics は将来 artifact owner により project され得るが、この crate は manifests を mutate せず publication authority を mint しない。 |
 | DIAG-G-008 | `repo_metadata_conflict`, report only | 要求された `mizar-artifact` closeout report はこの checkout に存在しない。この diagnostics stream は conflict を report し、artifact metadata を修復しない。 |
@@ -164,7 +164,9 @@ cover される。
 
 `mizar-resolve`、`mizar-lsp`、`mizar-build` の consumer-boundary commands は、
 この closeout task が implemented consumer seam を変更しないため不要である。
-`mizar-driver` は存在せず、`external_dependency_gap` のままである。
+後続の `mizar-driver` scaffold は diagnostics に依存できるが、real driver
+sessions、events、publication orchestration は driver-owned seam が着地するまで
+`external_dependency_gap` のままである。
 
 ## Human Review Surface
 

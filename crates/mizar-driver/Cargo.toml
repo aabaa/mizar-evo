@@ -1,0 +1,19 @@
+[package]
+name = "mizar-driver"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "mizar_driver"
+path = "src/lib.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+mizar-build = { path = "../mizar-build" }
+mizar-diagnostics = { path = "../mizar-diagnostics" }
+mizar-ir = { path = "../mizar-ir" }
+mizar-session = { path = "../mizar-session" }

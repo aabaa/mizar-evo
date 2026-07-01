@@ -35,14 +35,14 @@ fn workspace_manifest_includes_mizar_diagnostics_once() {
 }
 
 #[test]
-fn workspace_consumers_do_not_depend_on_mizar_diagnostics_yet() {
+fn workspace_consumers_are_limited_to_driver_until_adoption_seams_land() {
     let root = workspace_root();
     let workspace_manifest_path = root.join("Cargo.toml");
     let workspace_manifest = read_to_string(&workspace_manifest_path);
     let mut reverse_dependencies = Vec::new();
 
     for member in workspace_members(&workspace_manifest) {
-        if member == "crates/mizar-diagnostics" {
+        if member == "crates/mizar-diagnostics" || member == "crates/mizar-driver" {
             continue;
         }
 
@@ -66,8 +66,9 @@ fn workspace_consumers_do_not_depend_on_mizar_diagnostics_yet() {
 
     assert!(
         reverse_dependencies.is_empty(),
-        "real consumer adoption must remain deferred until the adoption seam is \
-         ready; unexpected mizar-diagnostics reverse dependencies:\n{}",
+        "mizar-driver is the only allowed diagnostics consumer until real \
+         adoption seams land; unexpected mizar-diagnostics reverse \
+         dependencies:\n{}",
         reverse_dependencies.join("\n")
     );
 }

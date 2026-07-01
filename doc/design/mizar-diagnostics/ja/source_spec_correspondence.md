@@ -62,7 +62,7 @@ migration wiring を追加しない。
 | ID | Class | Observation | Disposition |
 |---|---|---|---|
 | DIAG-AUDIT-001 | `external_dependency_gap` / `deferred` | 既存 lexer/frontend/parser/resolver diagnostics には、real shared-index consumer adoption seam がまだない。 | `consumer_adoption_decision.md` で記録済み。placeholder adapter、stub API、fake resolver adoption は追加しない。 |
-| DIAG-AUDIT-002 | `external_dependency_gap` | `mizar-lsp` と `mizar-driver` adoption はまだ利用できない。LSP conversion は LSP-owned であり、この checkout には `crates/mizar-driver` がない。 | `consumer_adoption_decision.md` で記録済み。protocol conversion や driver session API は追加しない。 |
+| DIAG-AUDIT-002 | `external_dependency_gap` | `mizar-lsp` adoption は LSP-owned のままであり、後続の `mizar-driver` scaffold はまだ real driver sessions、events、publication orchestration を提供しない。 | `consumer_adoption_decision.md` で記録済み。diagnostics は protocol conversion や driver session API を追加しない。 |
 | DIAG-AUDIT-003 | `external_dependency_gap` | artifact publication と durable artifact projection は artifact-owned のままである。 | `mizar-diagnostics` に artifact mutation または projection authority を追加しない。 |
 | DIAG-AUDIT-004 | `repo_metadata_conflict` | preflight では、user-requested preflight が artifact closeout report を挙げていたにもかかわらず、`doc/design/mizar-artifact/en/crate_exit_report.md` を参照できなかった。 | report only。この crate task では backup/stash/history metadata を修復しない。 |
 
