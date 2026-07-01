@@ -13,8 +13,8 @@ use mizar_build::{
     resource::ResourceBudget,
     scheduler::{
         CacheSchedulingPolicy, CompletionOrder, PriorityHints, SchedulerDiagnostic,
-        SchedulerDiagnostics, SchedulerEvent, SchedulerInput, SchedulerMode, SchedulerRun,
-        TaskState, TaskStateRecord, run_scheduler,
+        SchedulerDiagnostics, SchedulerEvent, SchedulerEventKind, SchedulerInput, SchedulerMode,
+        SchedulerRun, TaskState, TaskStateRecord, run_scheduler,
     },
     task_graph::{
         ModuleDependencyOverlay, PipelinePhase, TaskGraph, TaskGraphDiagnostics, TaskGraphInput,
@@ -24,6 +24,10 @@ use mizar_build::{
 use mizar_session::{BuildSessionId, IdError, SessionIdAllocator, SnapshotRegistry};
 
 use crate::{
+    events::{
+        BuildEvent, BuildEventIdentity, BuildEventKind, BuildEventOrderKey, BuildEventStream,
+        PlanningEventStatus, TaskEventRef,
+    },
     registry::{PhaseRegistry, PhaseRegistryError, PhaseServiceAvailability},
     request::{
         BuildRequestDraft, BuildSession, BuildSessionOutcome, BuildSessionState,
@@ -76,12 +80,7 @@ pub struct CompilerDriver {
 struct DriverSessionRecord {
     session: BuildSession,
     cancellation: CancellationPolicy,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct BuildEventStream {
-    pub session: BuildSessionId,
-    pub known_session: bool,
+    events: BuildEventStream,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -196,7 +195,12 @@ impl CompilerDriver {
         if !self.lanes.mark_current(&session) {
             session.finish(BuildSessionOutcome::Superseded);
             let publication_decision = self.lanes.publication_decision(snapshots, &session);
-            self.store_session(session.clone(), input.cancellation);
+            let events = submission_events(
+                &session,
+                publication_decision,
+                DriverEventDetails::default(),
+            );
+            self.store_session(session.clone(), input.cancellation, events);
             return Ok(BuildSubmission {
                 session,
                 build_plan: None,
@@ -234,7 +238,16 @@ impl CompilerDriver {
             Err(diagnostics) => {
                 session.finish(BuildSessionOutcome::Failed);
                 let failed_session = session.clone();
-                self.store_session(session, cancellation);
+                let publication_decision = self.lanes.publication_decision(snapshots, &session);
+                let events = submission_events(
+                    &session,
+                    publication_decision,
+                    DriverEventDetails {
+                        planning: Some(PlanningEventStatus::Failed),
+                        ..DriverEventDetails::default()
+                    },
+                );
+                self.store_session(session, cancellation, events);
                 return Err(DriverSubmitError::Planning {
                     session: Box::new(failed_session),
                     diagnostics,
@@ -247,7 +260,16 @@ impl CompilerDriver {
                 Err(diagnostics) => {
                     session.finish(BuildSessionOutcome::Failed);
                     let failed_session = session.clone();
-                    self.store_session(session, cancellation);
+                    let publication_decision = self.lanes.publication_decision(snapshots, &session);
+                    let events = submission_events(
+                        &session,
+                        publication_decision,
+                        DriverEventDetails {
+                            planning: Some(PlanningEventStatus::Failed),
+                            ..DriverEventDetails::default()
+                        },
+                    );
+                    self.store_session(session, cancellation, events);
                     return Err(DriverSubmitError::ModuleIndex {
                         session: Box::new(failed_session),
                         diagnostics,
@@ -267,7 +289,16 @@ impl CompilerDriver {
             Err(diagnostics) => {
                 session.finish(BuildSessionOutcome::Failed);
                 let failed_session = session.clone();
-                self.store_session(session, cancellation);
+                let publication_decision = self.lanes.publication_decision(snapshots, &session);
+                let events = submission_events(
+                    &session,
+                    publication_decision,
+                    DriverEventDetails {
+                        planning: Some(PlanningEventStatus::Failed),
+                        ..DriverEventDetails::default()
+                    },
+                );
+                self.store_session(session, cancellation, events);
                 return Err(DriverSubmitError::TaskGraph {
                     session: Box::new(failed_session),
                     diagnostics,
@@ -282,7 +313,16 @@ impl CompilerDriver {
             Err(error) => {
                 session.finish(BuildSessionOutcome::Failed);
                 let failed_session = session.clone();
-                self.store_session(session, cancellation);
+                let publication_decision = self.lanes.publication_decision(snapshots, &session);
+                let events = submission_events(
+                    &session,
+                    publication_decision,
+                    DriverEventDetails {
+                        planning: Some(PlanningEventStatus::Failed),
+                        ..DriverEventDetails::default()
+                    },
+                );
+                self.store_session(session, cancellation, events);
                 return Err(DriverSubmitError::PhaseRegistry {
                     session: Box::new(failed_session),
                     error,
@@ -292,7 +332,16 @@ impl CompilerDriver {
         if !missing_services.is_empty() {
             session.finish(BuildSessionOutcome::Blocked);
             let publication_decision = self.lanes.publication_decision(snapshots, &session);
-            self.store_session(session.clone(), cancellation);
+            let events = submission_events(
+                &session,
+                publication_decision,
+                DriverEventDetails {
+                    planning: Some(PlanningEventStatus::Ready),
+                    missing_services: &missing_services,
+                    ..DriverEventDetails::default()
+                },
+            );
+            self.store_session(session.clone(), cancellation, events);
             return Ok(BuildSubmission {
                 session,
                 build_plan: Some(build_plan),
@@ -310,7 +359,16 @@ impl CompilerDriver {
         if !dispatch_gap_phases.is_empty() {
             session.finish(BuildSessionOutcome::Blocked);
             let publication_decision = self.lanes.publication_decision(snapshots, &session);
-            self.store_session(session.clone(), cancellation);
+            let events = submission_events(
+                &session,
+                publication_decision,
+                DriverEventDetails {
+                    planning: Some(PlanningEventStatus::Ready),
+                    dispatch_gap_phases: &dispatch_gap_phases,
+                    ..DriverEventDetails::default()
+                },
+            );
+            self.store_session(session.clone(), cancellation, events);
             return Ok(BuildSubmission {
                 session,
                 build_plan: Some(build_plan),
@@ -339,7 +397,16 @@ impl CompilerDriver {
             Err(diagnostics) => {
                 session.finish(BuildSessionOutcome::Failed);
                 let failed_session = session.clone();
-                self.store_session(session, cancellation);
+                let publication_decision = self.lanes.publication_decision(snapshots, &session);
+                let events = submission_events(
+                    &session,
+                    publication_decision,
+                    DriverEventDetails {
+                        planning: Some(PlanningEventStatus::Ready),
+                        ..DriverEventDetails::default()
+                    },
+                );
+                self.store_session(session, cancellation, events);
                 return Err(DriverSubmitError::Scheduler {
                     session: Box::new(failed_session),
                     diagnostics,
@@ -351,7 +418,17 @@ impl CompilerDriver {
         let driver_scheduler_run = DriverSchedulerRun::from_scheduler_run(scheduler_run);
         session.finish(outcome);
         let publication_decision = self.lanes.publication_decision(snapshots, &session);
-        self.store_session(session.clone(), cancellation);
+        let events = submission_events(
+            &session,
+            publication_decision,
+            DriverEventDetails {
+                planning: Some(PlanningEventStatus::Ready),
+                scheduler_events: &driver_scheduler_run.events,
+                scheduler_task_states: &driver_scheduler_run.task_states,
+                ..DriverEventDetails::default()
+            },
+        );
+        self.store_session(session.clone(), cancellation, events);
         Ok(BuildSubmission {
             session,
             build_plan: Some(build_plan),
@@ -391,10 +468,10 @@ impl CompilerDriver {
     }
 
     pub fn events(&self, session: BuildSessionId) -> BuildEventStream {
-        BuildEventStream {
-            session,
-            known_session: self.sessions.contains_key(&session),
-        }
+        self.sessions
+            .get(&session)
+            .map(|record| record.events.replay())
+            .unwrap_or_else(|| BuildEventStream::empty(session, false))
     }
 
     fn missing_services(
@@ -430,12 +507,18 @@ impl CompilerDriver {
             .collect())
     }
 
-    fn store_session(&mut self, session: BuildSession, cancellation: CancellationPolicy) {
+    fn store_session(
+        &mut self,
+        session: BuildSession,
+        cancellation: CancellationPolicy,
+        events: BuildEventStream,
+    ) {
         self.sessions.insert(
             session.id,
             DriverSessionRecord {
                 session,
                 cancellation,
+                events,
             },
         );
     }
@@ -449,6 +532,114 @@ impl DriverSchedulerRun {
             diagnostics: run.diagnostics,
         }
     }
+}
+
+#[derive(Default)]
+struct DriverEventDetails<'a> {
+    planning: Option<PlanningEventStatus>,
+    missing_services: &'a [DriverMissingPhaseService],
+    dispatch_gap_phases: &'a [PipelinePhase],
+    scheduler_events: &'a [SchedulerEvent],
+    scheduler_task_states: &'a [TaskStateRecord],
+}
+
+fn submission_events(
+    session: &BuildSession,
+    publication: PublicationDecision,
+    details: DriverEventDetails<'_>,
+) -> BuildEventStream {
+    let identity = BuildEventIdentity {
+        session: session.id,
+        lane: session.request.lane,
+        generation: session.request.generation,
+        snapshot: Some(session.captured.snapshot.id),
+        publication,
+    };
+    let mut events = vec![
+        BuildEvent::new(
+            identity.clone(),
+            BuildEventOrderKey::new(0, 0),
+            BuildEventKind::SessionAccepted,
+        ),
+        BuildEvent::new(
+            identity.clone(),
+            BuildEventOrderKey::new(10, 0),
+            BuildEventKind::SnapshotCaptured,
+        ),
+    ];
+
+    if let Some(status) = details.planning {
+        events.push(BuildEvent::new(
+            identity.clone(),
+            BuildEventOrderKey::new(20, 0),
+            BuildEventKind::PlanningReady { status },
+        ));
+    }
+
+    for missing in details.missing_services {
+        events.push(BuildEvent::new(
+            identity.clone(),
+            BuildEventOrderKey::new(30, 1).with_phase(missing.phase),
+            BuildEventKind::PhaseServiceGap {
+                phase: missing.phase,
+                availability: missing.availability,
+            },
+        ));
+    }
+
+    if !details.dispatch_gap_phases.is_empty() {
+        let first_phase = details.dispatch_gap_phases[0];
+        events.push(BuildEvent::new(
+            identity.clone(),
+            BuildEventOrderKey::new(31, 1).with_phase(first_phase),
+            BuildEventKind::DispatchGap {
+                phases: details.dispatch_gap_phases.to_vec(),
+            },
+        ));
+    }
+
+    for event in details.scheduler_events {
+        if event.kind == SchedulerEventKind::RunFinished {
+            continue;
+        }
+        let Some(task_id_ref) = event.task_id.as_ref() else {
+            continue;
+        };
+        let task_state = details
+            .scheduler_task_states
+            .iter()
+            .find(|record| record.task_id == *task_id_ref)
+            .map(|record| record.state);
+        let task_id = task_id_ref.as_str().to_owned();
+        events.push(BuildEvent::new(
+            identity.clone(),
+            BuildEventOrderKey::new(40, 1)
+                .with_scheduler_order(event.order)
+                .with_work_unit(task_id.clone()),
+            BuildEventKind::TaskProgress {
+                task: TaskEventRef::new(task_id, event.kind, task_state),
+            },
+        ));
+    }
+
+    if matches!(publication, PublicationDecision::Suppressed(_)) {
+        events.push(BuildEvent::new(
+            identity.clone(),
+            BuildEventOrderKey::new(80, 1),
+            BuildEventKind::PublicationSuppressed,
+        ));
+    }
+
+    if let BuildSessionState::Finished(outcome) = session.state {
+        events.push(BuildEvent::new(
+            identity,
+            BuildEventOrderKey::new(90, 1),
+            BuildEventKind::SessionFinished { outcome },
+        ));
+    }
+
+    BuildEventStream::from_events(session.id, true, events)
+        .expect("driver-generated events reference the stored session")
 }
 
 impl Default for CompilerDriver {
@@ -549,7 +740,11 @@ mod tests {
             .unwrap();
         let session_id = session.id;
         let mut driver = CompilerDriver::default();
-        driver.store_session(session, CancellationPolicy::default());
+        driver.store_session(
+            session,
+            CancellationPolicy::default(),
+            BuildEventStream::empty(session_id, true),
+        );
 
         let first = driver.cancel(session_id, DriverCancelReason::Superseded);
         let second = driver.cancel(session_id, DriverCancelReason::Superseded);
@@ -583,7 +778,11 @@ mod tests {
                 .unwrap();
             let session_id = session.id;
             let mut driver = CompilerDriver::default();
-            driver.store_session(session, CancellationPolicy::default());
+            driver.store_session(
+                session,
+                CancellationPolicy::default(),
+                BuildEventStream::empty(session_id, true),
+            );
 
             let outcome = driver.cancel(session_id, reason);
 

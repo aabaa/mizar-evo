@@ -11,7 +11,7 @@
 
 driver は request/session state、phase-service registry、`mizar-build` の
 planning / task-graph / scheduler authority、diagnostics sink、IR output
-publication、後続の event stream を結線する。所有するのは orchestration である。
+publication、protocol-agnostic event stream を結線する。所有するのは orchestration である。
 phase semantics、scheduler semantics、cache compatibility、proof acceptance、
 artifact serialization、LSP protocol conversion は所有しない。
 
@@ -32,7 +32,7 @@ artifact serialization、LSP protocol conversion は所有しない。
 - registered phase service を `PhaseRegistry` 経由でのみ dispatch する;
 - owner-provided phase result、diagnostic batch、sealed output handle を
   driver / scheduler / session outcome へ変換する;
-- 後続の `events` module のため、protocol-agnostic event stream handle を公開する。
+- `events` module の replayable protocol-agnostic event stream を公開する。
 
 `driver` が所有しないもの:
 
@@ -62,7 +62,7 @@ artifact serialization、LSP protocol conversion は所有しない。
 | real cache lookup / compatibility はまだ `mizar-cache` 経由で結線されていない。 | `external_dependency_gap` | real cache decision が owner seam から供給されるまで、disabled / unavailable cache scheduling を使う。 |
 | real artifact publication token と phase-15 producer emission が利用できない。 | `external_dependency_gap` | driver-owned code から committed-artifact event や manifest publication record を emit しない。 |
 | 現在の `mizar-build` scheduler は public registry-dispatch callback ではなく precomputed modeled outcome を受け取る。 | `external_dependency_gap` | D-008 は scheduler submission と result consumption を validate してよいが、real scheduler-driven phase execution は owner dispatch seam を待つ。 |
-| event stream source module は task D-010。 | `events.md` / `src/events.rs` が着地するまで `deferred` | `driver.md` は subscription boundary だけを仕様化する。event payload は後続で定義する。 |
+| CLI rendering や LSP protocol conversion などの後続 event consumer はまだ実装されていない。 | entry-point task へ `deferred` | `events.md` / `src/events.rs` は protocol-agnostic event payload と replay を定義する。consumer は CLI / LSP authority を driver へ持ち込んではならない。 |
 
 ## Public API
 
@@ -96,9 +96,10 @@ CLI、watch mode、`mizar-lsp` のいずれでもよいが、protocol-agnostic d
 `mizar-build::cancel::CancellationPolicy` を通じて表現する。worker thread を kill せず、
 cancellation を phase failure と再解釈しない。
 
-`events` は session-scoped かつ protocol-agnostic な event stream を返す。
-`events.md` が着地するまで、task D-008 は test に必要な最小 in-memory /
-subscription boundary だけを公開してよいが、LSP payload を公開してはならない。
+`events` は [events.md](events.md) / `src/events.rs` が実装する session-scoped かつ
+protocol-agnostic な event stream を返す。driver は replay 可能な session event を保存するが、
+CLI-rendered diagnostics、LSP payload、artifact publication token、scheduler synthetic output を
+event payload として公開してはならない。
 
 ## Submit Input
 

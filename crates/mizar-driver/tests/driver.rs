@@ -8,6 +8,7 @@ use mizar_build::{
 };
 use mizar_driver::{
     driver::{BuildSubmission, CompilerDriver, DriverSubmissionStatus, DriverSubmitInput},
+    events::BuildEventKind,
     registry::{
         PhaseCacheContext, PhaseCacheIntent, PhaseDescriptor, PhaseExecutionContext, PhaseInput,
         PhaseRegistry, PhaseRegistryBuilder, PhaseResult, PhaseService, PhaseServiceAvailability,
@@ -67,7 +68,31 @@ fn submit_bootstraps_phase_zero_and_consumes_modeled_scheduler() {
             .map(|session| session.state),
         Some(BuildSessionState::Finished(BuildSessionOutcome::Succeeded))
     );
-    assert!(driver.events(submission.session.id).known_session);
+    let stream = driver.events(submission.session.id);
+    let task_progress: Vec<_> = stream
+        .events()
+        .iter()
+        .filter_map(|event| match &event.kind {
+            BuildEventKind::TaskProgress { task } => Some(task),
+            _ => None,
+        })
+        .collect();
+    assert!(!task_progress.is_empty());
+    assert!(
+        task_progress
+            .iter()
+            .all(|task| !task.task_id.is_empty() && task.state.is_some()),
+        "all task-progress events must carry scheduler task identity and state"
+    );
+    assert_event(&driver, submission.session.id, |kind| {
+        matches!(kind, BuildEventKind::SessionFinished { .. })
+    });
+    assert_no_event(&driver, submission.session.id, |kind| {
+        matches!(
+            kind,
+            BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
+        )
+    });
 }
 
 #[test]
@@ -111,6 +136,17 @@ fn non_phase_zero_descriptor_fixtures_block_on_dispatch_gap() {
         submission.session.state,
         BuildSessionState::Finished(BuildSessionOutcome::Blocked)
     );
+    assert_event(&driver, submission.session.id, |kind| {
+        matches!(kind, BuildEventKind::DispatchGap { .. })
+    });
+    assert_no_event(&driver, submission.session.id, |kind| {
+        matches!(
+            kind,
+            BuildEventKind::TaskProgress { .. }
+                | BuildEventKind::DiagnosticsReady { .. }
+                | BuildEventKind::ArtifactBoundary { .. }
+        )
+    });
 }
 
 #[test]
@@ -169,6 +205,9 @@ fn failed_module_index_submission_is_stored_and_preserves_lane_currentness() {
         PublicationDecision::Current => panic!("older request must not become current"),
         _ => panic!("older request must produce a concrete suppression decision"),
     }
+    assert_event(&driver, older.session.id, |kind| {
+        matches!(kind, BuildEventKind::PublicationSuppressed)
+    });
 }
 
 #[test]
@@ -217,6 +256,9 @@ fn stale_same_lane_submission_is_suppressed_before_scheduler_submission() {
         PublicationDecision::Current => panic!("stale same-lane request must not publish current"),
         _ => panic!("stale same-lane request must produce a concrete suppression decision"),
     }
+    assert_event(&driver, stale.session.id, |kind| {
+        matches!(kind, BuildEventKind::PublicationSuppressed)
+    });
 }
 
 #[test]
@@ -255,6 +297,15 @@ fn missing_phase_services_block_before_scheduler_outputs_are_interpreted() {
             .iter()
             .any(|task| task.phases.contains(&PipelinePhase::SourceLoad))
     );
+    assert_event(&driver, submission.session.id, |kind| {
+        matches!(kind, BuildEventKind::PhaseServiceGap { .. })
+    });
+    assert_no_event(&driver, submission.session.id, |kind| {
+        matches!(
+            kind,
+            BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
+        )
+    });
 }
 
 #[test]
@@ -266,11 +317,17 @@ fn driver_source_does_not_claim_diagnostics_artifact_or_lsp_authority() {
 
     for forbidden in [
         "DiagnosticRegistry",
+        "DiagnosticCode",
         "DiagnosticRecord",
         "DiagnosticAggregator",
         "render_cli",
         "JsonRpc",
         "LspDiagnostic",
+        "DiagnosticSeverity",
+        "CodeAction",
+        "DocumentUri",
+        "DocumentVersion",
+        "ProgressToken",
         "PublicationToken",
         "commit_manifest_updates",
         "VerifiedArtifact",
@@ -295,6 +352,34 @@ fn assert_missing(submission: &BuildSubmission, phase: PipelinePhase) {
         missing.phase == phase
             && missing.availability == PhaseServiceAvailability::ExternalDependencyGap
     }));
+}
+
+fn assert_event(
+    driver: &CompilerDriver,
+    session: mizar_session::BuildSessionId,
+    predicate: impl Fn(&BuildEventKind) -> bool,
+) {
+    let stream = driver.events(session);
+    assert!(stream.known_session);
+    assert!(
+        stream.events().iter().any(|event| predicate(&event.kind)),
+        "expected event was not present in {:#?}",
+        stream.events()
+    );
+}
+
+fn assert_no_event(
+    driver: &CompilerDriver,
+    session: mizar_session::BuildSessionId,
+    predicate: impl Fn(&BuildEventKind) -> bool,
+) {
+    let stream = driver.events(session);
+    assert!(stream.known_session);
+    assert!(
+        stream.events().iter().all(|event| !predicate(&event.kind)),
+        "forbidden event was present in {:#?}",
+        stream.events()
+    );
 }
 
 fn scheduler_fixture_registry() -> PhaseRegistry {

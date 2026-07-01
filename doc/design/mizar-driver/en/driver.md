@@ -12,7 +12,7 @@ submission, cancellation, and event subscription.
 
 The driver connects request/session state, the phase-service registry,
 `mizar-build` planning/task-graph/scheduler authority, diagnostics sinks,
-IR output publication, and later event streams. It owns orchestration. It does
+IR output publication, and protocol-agnostic event streams. It owns orchestration. It does
 not own phase semantics, scheduler semantics, cache compatibility, proof
 acceptance, artifact serialization, or LSP protocol conversion.
 
@@ -33,8 +33,7 @@ acceptance, artifact serialization, or LSP protocol conversion.
 - dispatching registered phase services only through `PhaseRegistry`;
 - translating owner-provided phase results, diagnostics batches, and sealed
   output handles into driver/scheduler/session outcomes;
-- exposing a protocol-agnostic event stream handle for the later `events`
-  module.
+- exposing replayable protocol-agnostic event streams from the `events` module.
 
 `driver` does not own:
 
@@ -64,7 +63,7 @@ acceptance, artifact serialization, or LSP protocol conversion.
 | Real cache lookup/compatibility is not wired through `mizar-cache` yet. | `external_dependency_gap` | Use disabled/unavailable cache scheduling unless a real cache decision is supplied by the owner seam. |
 | Real artifact publication tokens and phase-15 producer emission are unavailable. | `external_dependency_gap` | Do not emit committed-artifact events or manifest publication records from driver-owned code. |
 | The current `mizar-build` scheduler accepts precomputed modeled outcomes rather than a public registry-dispatch callback. | `external_dependency_gap` | D-008 may validate scheduler submission and result consumption, but real scheduler-driven phase execution waits for an owner dispatch seam. |
-| Event stream source module is task D-010. | `deferred` until `events.md`/`src/events.rs` land | `driver.md` specifies the subscription boundary only; event payloads are defined later. |
+| Later event consumers such as CLI rendering and LSP protocol conversion are not implemented yet. | `deferred` to entry-point tasks | `events.md` / `src/events.rs` define protocol-agnostic event payloads and replay. Consumers must not pull CLI/LSP authority into the driver. |
 
 ## Public API
 
@@ -98,9 +97,10 @@ accepted by this API.
 `mizar-build::cancel::CancellationPolicy`. It does not kill worker threads or
 reinterpret cancellation as phase failure.
 
-`events` returns a session-scoped, protocol-agnostic event stream. Until
-`events.md` lands, task D-008 may expose only a minimal in-memory/subscription
-boundary needed by tests, but it must not expose LSP payloads.
+`events` returns a session-scoped, protocol-agnostic event stream implemented
+by [events.md](events.md) / `src/events.rs`. The driver stores replayable
+session events, but it must not expose CLI-rendered diagnostics, LSP payloads,
+artifact publication tokens, or scheduler synthetic outputs as event payloads.
 
 ## Submit Input
 

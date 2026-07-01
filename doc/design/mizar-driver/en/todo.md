@@ -21,7 +21,7 @@ per the ownership map of
 | request | `request.md` (task 2) | `src/request.rs` | [x] |
 | registry | `registry.md` (task 4) | `src/registry.rs` | [x] |
 | driver | `driver.md` (task 7) | `src/driver.rs` | [x] |
-| events | `events.md` (task 9) | `src/events.rs` | [ ] |
+| events | `events.md` (task 9) | `src/events.rs` | [x] |
 | cli | `cli.md` (task 12) | `src/cli.rs` | [ ] |
 
 Task D-006 records the `SourceFrontend` adapter readiness decision in
@@ -257,7 +257,7 @@ Keep `cargo test -p mizar-driver` green after each task (see
      implementation and leaves artifact/LSP/diagnostics authority with their
      owner crates.
 
-10. **Build event stream.** [ ]
+10. **Build event stream.** [x]
     - Implement event publication with deterministic ordering independent
       of worker completion order.
     - Tests: shuffled completion produces identical event sequences;
@@ -265,6 +265,15 @@ Keep `cargo test -p mizar-driver` green after each task (see
       current publication; dispatch, phase-service, diagnostics, and artifact
       gap/non-authority guards are enforced.
     - Deps: 8, 9. Spec: `events.md`.
+   - Completed by task D-010: `src/events.rs` defines protocol-agnostic
+     `BuildEventStream`, event identity/order keys, deterministic sorting and
+     replay, `DispatchGap`, `OwnerReadinessGap`, phase-service gap, owner
+     readiness reference, and stale-publication event carriers. Event tests
+     cover shuffled ordering, session/snapshot validity, stale suppression,
+     gap/non-authority guards, cancelled phase readiness, owner refs without
+     diagnostics/LSP authority, replay, and source authority guards. The module
+     does not implement CLI rendering, LSP conversion, diagnostic aggregation,
+     artifact tokens, or real phase dispatch.
 
 11. **Cancellation flow.** [ ]
     - Implement `cancel`: propagate through `mizar-build` cancellation
