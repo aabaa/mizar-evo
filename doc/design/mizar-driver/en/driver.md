@@ -157,11 +157,15 @@ publication tokens.
    surface: it accepts precomputed `SyntheticTaskOutcome` values and has no
    public callback that asks the driver to run a `PhaseService` at scheduler
    dispatch time. Real scheduler-driven phase execution is therefore an
-   `external_dependency_gap`.
+   `external_dependency_gap`. If the task graph contains any phase beyond
+   `PackageResolve`, D-008 blocks the session with `BlockedByPhaseDispatchGap`
+   and records the affected phases instead of submitting a modeled scheduler
+   run that would synthesize successful phase outputs.
 9. Pass the resulting `SchedulerInput` to `mizar-build::scheduler::run_scheduler`
-   only for scheduler submission validation and consumption of authoritative
-   scheduler state. The driver must not treat scheduler synthetic outputs,
-   including default completed outputs, as real `mizar-ir` phase outputs.
+   only for phase-0 scheduler submission validation and consumption of
+   authoritative scheduler state. The driver must not treat scheduler synthetic
+   outputs, including default completed outputs, as real `mizar-ir` phase
+   outputs.
 10. When a future `mizar-build` owner seam exposes real scheduler dispatch, the
     driver will execute available phase services only through the registry query
     boundary at scheduler-selected execution points and will convert only real
@@ -172,10 +176,10 @@ publication tokens.
     from the structured scheduler/session outcomes.
 
 The driver may choose fail-fast behavior when a required real owner seam is
-missing. It may still run a scheduler validation over modeled or test-local
-outcomes when the test explicitly scopes them as scheduler fixtures. It must
-not use `mizar-build` synthetic output types to pretend that an absent phase
-produced output.
+missing. Until the real scheduler-dispatch owner seam exists, D-008 may only
+run scheduler validation for phase-0 bootstrap graphs. It must not use
+`mizar-build` synthetic output types to pretend that an absent phase produced
+output.
 
 ## Scheduler Boundary
 
@@ -186,6 +190,11 @@ produced output.
 - `SchedulerRun`, `TaskStateRecord`, `SchedulerResult`, `SchedulerEvent`,
   failure records, blocked records, resource telemetry, and scheduler
   diagnostics as authoritative scheduler output.
+
+D-008 consumes the raw `SchedulerRun` internally, but its public
+`BuildSubmission` surface exposes only an output-free driver scheduler summary:
+task states, scheduler events, and scheduler diagnostics. It does not expose
+`SchedulerResult.output_refs` or any `SyntheticOutputRef`.
 
 The driver may map scheduler records into build events and session status. It
 must not:
@@ -204,9 +213,17 @@ must not:
 
 If the session is unknown or terminal, the driver returns a no-op outcome. If
 the session is active, the driver moves it to `Cancelling`, updates the
-session's cancellation policy using `mizar-build::cancel::CancellationPolicy`,
-and lets scheduler/phase services observe cancellation through owner tokens and
-safe checkpoints.
+session's cancellation policy when the current `mizar-build::cancel` seam can
+represent the requested reason, and lets scheduler/phase services observe
+cancellation through owner tokens and safe checkpoints.
+
+The current `mizar-build::CancellationPolicy` can express snapshot
+supersession and task-scoped explicit cancellation, but it does not expose a
+driver-owned snapshot-wide explicit-request or shutdown mutator. D-008 therefore
+propagates `DriverCancelReason::Superseded` through `supersede_snapshot` and
+records explicit-request/shutdown session state without inventing a false
+supersession reason. Snapshot-wide explicit/shutdown policy propagation remains
+an `external_dependency_gap` for the cancellation-flow task.
 
 For watch/LSP supersession, the newer session becomes lane-current and the
 older session is cancelled or finished as `Superseded`. Obsolete completed

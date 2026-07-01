@@ -20,7 +20,7 @@ per the ownership map of
 |---|---|---|---|
 | request | `request.md` (task 2) | `src/request.rs` | [x] |
 | registry | `registry.md` (task 4) | `src/registry.rs` | [x] |
-| driver | `driver.md` (task 7) | `src/driver.rs` | [ ] |
+| driver | `driver.md` (task 7) | `src/driver.rs` | [x] |
 | events | `events.md` (task 9) | `src/events.rs` | [ ] |
 | cli | `cli.md` (task 12) | `src/cli.rs` | [ ] |
 
@@ -213,7 +213,7 @@ Keep `cargo test -p mizar-driver` green after each task (see
      handoff boundaries, and the rule that missing phase services remain
      classified gaps rather than synthetic scheduler outputs.
 
-8. **Driver core.** [ ]
+8. **Driver core.** [x]
    - Implement `submit`: bootstrap phase 0 via the `mizar-build` planner,
      create the session, expand and submit the task graph, and consume the
      current modeled scheduler seam without duplicating scheduler semantics.
@@ -221,11 +221,27 @@ Keep `cargo test -p mizar-driver` green after each task (see
      `external_dependency_gap` dispatch seam.
    - Tests: batch-oriented fixture workspace that captures a session, builds
      the plan/index/graph through `mizar-build`, reports missing real phase
-     services as classified gaps without synthetic outputs, and validates
-     deterministic scheduler submission/phase ordering over modeled scheduler
-     fixtures. A real frontend-service fixture is required only after the
-     D-006 owner seams exist.
+     services as classified gaps without synthetic outputs, validates phase-0
+     scheduler submission against `mizar-build` authority, and verifies that
+     descriptor-present non-phase-0 work blocks on DRIVER-G-011 instead of
+     exposing synthetic phase outputs. A real frontend-service fixture is
+     required only after the D-006 owner seams exist.
    - Deps: 3, 5, 6, 7, `mizar-build` task 8. Spec: `driver.md`.
+   - Completed by task D-008: `src/driver.rs` implements `CompilerDriver`
+     session submission, phase-0 bootstrap through `mizar-build`
+     planner/module-index/task-graph APIs, modeled scheduler submission/result
+     consumption, missing-phase-service blocking without synthetic outputs,
+     same-lane stale request suppression before scheduler submission, minimal
+     protocol-agnostic event stream handle, and idempotent cancellation through
+     `mizar-build` `CancellationPolicy`. Public scheduler submission results
+     expose only output-free task-state/event/diagnostic summaries. Test-local
+     descriptor-only phase fixtures prove that non-phase-0 work blocks on the
+     DRIVER-G-011 dispatch gap even when descriptors exist, and panic if cache
+     keys or execution are requested. Real scheduler-driven phase-service
+     dispatch remains DRIVER-G-011 `external_dependency_gap`; snapshot-wide
+     explicit/shutdown cancellation policy propagation is also deferred to the
+     cancellation-flow task because `mizar-build` exposes no driver-owned
+     mutator for that reason.
 
 9. **Spec: `events.md`.** [ ]
    - Write the events spec (English and Japanese, no code): the

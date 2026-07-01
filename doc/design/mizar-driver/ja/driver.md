@@ -151,11 +151,14 @@ cache key を構築したり、output handle を mint したり、publication to
    `mizar-build` scheduler は modeled / synthetic scheduler input surface であり、
    precomputed `SyntheticTaskOutcome` を受け取るが、scheduler dispatch 時に driver へ
    `PhaseService` 実行を依頼する public callback を持たない。したがって real
-   scheduler-driven phase execution は `external_dependency_gap` である。
-9. 得られた `SchedulerInput` は scheduler submission validation と authoritative scheduler
-   state の消費のためだけに `mizar-build::scheduler::run_scheduler` へ渡す。driver は、
-   default completed output を含む scheduler synthetic output を real `mizar-ir` phase output
-   と扱ってはならない。
+   scheduler-driven phase execution は `external_dependency_gap` である。task graph が
+   `PackageResolve` を超える phase を含む場合、D-008 は modeled scheduler run を投入して
+   successful phase output を synthetic に作らせるのではなく、session を
+   `BlockedByPhaseDispatchGap` で block し、影響する phase を記録する。
+9. 得られた `SchedulerInput` は phase-0 scheduler submission validation と authoritative
+   scheduler state の消費のためだけに `mizar-build::scheduler::run_scheduler` へ渡す。
+   driver は、default completed output を含む scheduler synthetic output を real
+   `mizar-ir` phase output と扱ってはならない。
 10. 将来 `mizar-build` owner seam が real scheduler dispatch を公開したら、driver は
     scheduler-selected execution point でのみ registry query boundary 経由の phase service を
     実行し、real `PhaseResult` の output reference だけを session outcome へ変換する。
@@ -164,10 +167,10 @@ cache key を構築したり、output handle を mint したり、publication to
 12. structured scheduler / session outcome から、session を succeeded、failed、blocked、
     cancelled、superseded のいずれかとして finish する。
 
-required real owner seam がない場合、driver は fail-fast を選んでよい。test が明示的に
-scheduler fixture として scope する場合だけ、modeled または test-local outcome 上の scheduler
-validation を実行してよい。存在しない phase が output を生成したように見せるために、
-`mizar-build` synthetic output type を使ってはならない。
+required real owner seam がない場合、driver は fail-fast を選んでよい。real scheduler-dispatch
+owner seam が存在するまで、D-008 は phase-0 bootstrap graph に限って scheduler validation を
+実行してよい。存在しない phase が output を生成したように見せるために、`mizar-build`
+synthetic output type を使ってはならない。
 
 ## Scheduler Boundary
 
@@ -178,6 +181,10 @@ validation を実行してよい。存在しない phase が output を生成し
 - authoritative scheduler output としての `SchedulerRun`、`TaskStateRecord`、
   `SchedulerResult`、`SchedulerEvent`、failure record、blocked record、
   resource telemetry、scheduler diagnostic。
+
+D-008 は raw `SchedulerRun` を内部で消費するが、public な `BuildSubmission` surface には
+output-free な driver scheduler summary（task state、scheduler event、scheduler diagnostic）
+だけを公開する。`SchedulerResult.output_refs` や `SyntheticOutputRef` は公開しない。
 
 driver は scheduler record を build event と session status へ map してよい。次は禁止:
 
@@ -194,9 +201,16 @@ driver は scheduler record を build event と session status へ map してよ
 `cancel(session, reason)` は冪等である。
 
 session が unknown または terminal なら、driver は no-op outcome を返す。session が active なら、
-driver は state を `Cancelling` に移し、`mizar-build::cancel::CancellationPolicy` を使って
-session の cancellation policy を更新し、scheduler / phase service が owner token と safe
-checkpoint で cancellation を観測できるようにする。
+driver は state を `Cancelling` に移し、現在の `mizar-build::cancel` seam が要求 reason を
+表現できる場合に session の cancellation policy を更新し、scheduler / phase service が owner
+token と safe checkpoint で cancellation を観測できるようにする。
+
+現在の `mizar-build::CancellationPolicy` は snapshot supersession と task-scoped explicit
+cancellation を表現できるが、driver-owned snapshot-wide explicit-request / shutdown mutator を
+公開していない。したがって D-008 は `DriverCancelReason::Superseded` だけを
+`supersede_snapshot` で伝播し、explicit-request / shutdown は false supersession reason を
+発明せず session state として記録する。snapshot-wide explicit / shutdown policy propagation は
+cancellation-flow task の `external_dependency_gap` のままである。
 
 watch/LSP supersession では、新しい session が lane-current になり、古い session は cancel
 されるか `Superseded` として finish する。obsolete completed result は、event や diagnostic が

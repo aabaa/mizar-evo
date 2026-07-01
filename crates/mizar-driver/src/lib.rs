@@ -10,5 +10,6 @@
 
 #![forbid(unsafe_code)]
 
+pub mod driver;
 pub mod registry;
 pub mod request;
