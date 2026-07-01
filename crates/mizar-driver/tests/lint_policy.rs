@@ -156,6 +156,7 @@ fn driver_source_surface_matches_completed_tasks() {
     let root = crate_root();
     let source_files = rust_source_files(&root);
     let expected_files = vec![
+        root.join("src/cli.rs"),
         root.join("src/driver.rs"),
         root.join("src/events.rs"),
         root.join("src/lib.rs"),
@@ -197,7 +198,7 @@ fn driver_does_not_expose_later_task_modules_yet() {
 
     for path in rust_source_files(&root) {
         let source = read_to_string(&path);
-        for forbidden in ["pub mod cli"] {
+        for forbidden in ["pub mod watch"] {
             if source.contains(forbidden) {
                 let relative = path.strip_prefix(&root).unwrap_or(&path);
                 violations.push(format!("{} contains {forbidden}", relative.display()));
@@ -230,6 +231,7 @@ fn lib_code_line_detector_blocks_unexpected_item_forms() {
         "// comment",
         "#![forbid(unsafe_code)]",
         "#[test]",
+        "pub mod cli;",
         "pub mod driver;",
         "pub mod events;",
         "pub mod request;",
@@ -559,6 +561,7 @@ fn public_enum_name(line: &str) -> Option<&str> {
 fn lib_has_unexpected_code_line(line: &str) -> bool {
     let ignored_prefixes = ["//", "#![", "#[", "//!"];
     line != "pub mod request;"
+        && line != "pub mod cli;"
         && line != "pub mod driver;"
         && line != "pub mod events;"
         && line != "pub mod registry;"

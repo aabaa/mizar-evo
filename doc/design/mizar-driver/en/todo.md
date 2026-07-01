@@ -22,7 +22,7 @@ per the ownership map of
 | registry | `registry.md` (task 4) | `src/registry.rs` | [x] |
 | driver | `driver.md` (task 7) | `src/driver.rs` | [x] |
 | events | `events.md` (task 9) | `src/events.rs` | [x] |
-| cli | `cli.md` (task 12) | `src/cli.rs` | [ ] |
+| cli | `cli.md` (task 12) | `src/cli.rs` | [x] |
 
 Task D-006 records the `SourceFrontend` adapter readiness decision in
 [frontend_adapter.md](frontend_adapter.md). It is not a module source surface;
@@ -305,13 +305,28 @@ Keep `cargo test -p mizar-driver` green after each task (see
       rendering through `mizar-diagnostics`, stable exit codes, and gap handling
       for unavailable owner seams. No source implementation was added.
 
-13. **CLI batch entry point.** [ ]
+13. **CLI batch entry point.** [x]
     - Implement the batch subcommand: parse arguments into a
       `BuildRequestDraft`, run the driver, render diagnostics and progress,
       and map results to exit codes.
     - Tests: end-to-end CLI run over a fixture workspace; stable exit
-      codes; golden-file output.
+      codes; golden-file output or inline golden output assertions.
     - Deps: 10, 12. Spec: `cli.md`.
+    - Completed by task D-013: `src/cli.rs` implements the library-level
+      batch entry point for `mizar build`, argument parsing, request-draft
+      creation over owner-provided snapshot inputs, `CompilerDriver::submit`
+      execution, protocol-agnostic human/JSON progress rendering from
+      `BuildEventStream`, and stable exit-code mapping. Planning/lockfile
+      diagnostics are reported as an explicit diagnostics owner bridge gap
+      until real `mizar-diagnostics` records are available. Missing phase
+      services and dispatch gaps exit as `UnavailableOwner`; no artifact
+      publication token, committed output path, LSP payload, cache
+      compatibility decision, proof acceptance, or fake producer output was
+      introduced.
+      The D-013 library entry point rejects unresolved manifest-path selection,
+      non-matching package/module targets, and source-layout/snapshot mismatches
+      as `external_dependency_gap` before driver submission so it cannot claim a
+      current build for work outside the captured request snapshot.
 
 14. **Watch mode.** [ ]
     - Implement the watch loop: file-change detection, snapshot

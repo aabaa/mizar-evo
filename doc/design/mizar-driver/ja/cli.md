@@ -2,7 +2,7 @@
 
 > 正本は英語です。英語版: [../en/cli.md](../en/cli.md)。
 
-状態: task D-012 で仕様化。source implementation は task D-013。
+状態: task D-012 で仕様化。source implementation は task D-013 で完了。
 
 ## 目的
 
@@ -106,6 +106,9 @@ owner diagnostic severity を見る。
 | Gap | Classification | CLI disposition |
 |---|---|---|
 | planning / scheduler error 用 driver-to-diagnostics owner record bridge が未完成。 | `external_dependency_gap` | owner-readiness / gap status を報告する。diagnostic id を allocate したり fake diagnostic を render したりしない。 |
+| filesystem-backed な `--manifest-path` selection と workspace / member discovery は D-013 library entry point では未完成。 | `external_dependency_gap` | `UnavailableOwner` で exit する。owner-provided batch input なしに manifest path が選択済みであるかのように扱わない。 |
+| current single-package input を超える package / module target filtering は未完成。 | `external_dependency_gap` | supplied package と完全一致する package selection だけを受け入れる。それ以外は real target resolver が存在するまで `UnavailableOwner` で exit する。 |
+| source layout と request snapshot input が一致しない。 | `external_dependency_gap` | driver submission 前に拒否し、captured snapshot の外側の work について current event を publish しない。 |
 | real semantic / proof / artifact phase adapter が unavailable。 | `external_dependency_gap` / `deferred` | `UnavailableOwner` で exit する。build success を報告したり artifact を fabricate したりしない。 |
 | real artifact publication token / manifest commit seam が unavailable。 | `external_dependency_gap` | artifact output path が committed されたと claim しない。 |
 | LSP protocol conversion は CLI の外。 | out of scope | JSON-RPC、document URI、code action、progress token、LSP severity を emit しない。 |

@@ -2,7 +2,7 @@
 
 > Canonical language: English. Japanese companion: [../ja/cli.md](../ja/cli.md).
 
-Status: specified by task D-012. Source implementation is task D-013.
+Status: specified by task D-012. Source implementation completed by task D-013.
 
 ## Purpose
 
@@ -114,6 +114,9 @@ diagnostic severity, not rendered message text.
 | Gap | Classification | CLI disposition |
 |---|---|---|
 | Driver-to-diagnostics owner record bridge for planning/scheduler errors is not complete. | `external_dependency_gap` | Report an owner-readiness/gap status; do not allocate diagnostic ids or render fake diagnostics. |
+| Filesystem-backed `--manifest-path` selection and workspace/member discovery are not complete in the D-013 library entry point. | `external_dependency_gap` | Exit `UnavailableOwner`; do not pretend a manifest path was selected without an owner-provided batch input. |
+| Package/module target filtering beyond the current single-package input is not complete. | `external_dependency_gap` | Accept only package selections that exactly match the supplied package; otherwise exit `UnavailableOwner` until a real target resolver exists. |
+| Source layout and request snapshot inputs disagree. | `external_dependency_gap` | Reject before driver submission so a session cannot publish current events for work outside the captured snapshot. |
 | Real semantic/proof/artifact phase adapters are unavailable. | `external_dependency_gap` / `deferred` | Exit `UnavailableOwner`; do not report build success or fabricate artifacts. |
 | Real artifact publication token/manifest commit seam is unavailable. | `external_dependency_gap` | Do not claim artifact output paths were committed. |
 | LSP protocol conversion is outside the CLI. | out of scope | Do not emit JSON-RPC, document URIs, code actions, progress tokens, or LSP severities. |

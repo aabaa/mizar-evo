@@ -10,6 +10,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod cli;
 pub mod driver;
 pub mod events;
 pub mod registry;
