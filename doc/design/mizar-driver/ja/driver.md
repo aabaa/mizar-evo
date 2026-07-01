@@ -62,6 +62,8 @@ artifact serialization、LSP protocol conversion は所有しない。
 | real cache lookup / compatibility はまだ `mizar-cache` 経由で結線されていない。 | `external_dependency_gap` | real cache decision が owner seam から供給されるまで、disabled / unavailable cache scheduling を使う。 |
 | real artifact publication token と phase-15 producer emission が利用できない。 | `external_dependency_gap` | driver-owned code から committed-artifact event や manifest publication record を emit しない。 |
 | 現在の `mizar-build` scheduler は public registry-dispatch callback ではなく precomputed modeled outcome を受け取る。 | `external_dependency_gap` | D-008 は scheduler submission と result consumption を validate してよいが、real scheduler-driven phase execution は owner dispatch seam を待つ。 |
+| external file watcher / coalescing owner と LSP build bridge が利用できない。 | `external_dependency_gap` / `deferred` | D-014 は owner-provided changed path と snapshot input を受け取ってよいが、fake file watcher API、source-loading rule、LSP document payload、editor snapshot conversion は作らない。 |
+| `mizar-ir` snapshot replacement は `PhaseOutputPublisher` 経由でのみ利用できる。 | real owner seam が供給された場合のみ real、それ以外は `external_dependency_gap` | D-014 は最初の watch snapshot を current として register し、real publisher が供給され snapshot id が変わる場合だけ `replace_current_snapshot(old, new)` を呼ぶ。same-snapshot replacement は no-op。publisher input がない場合は provisional output handle ではなく分類済み gap。 |
 | CLI rendering や LSP protocol conversion などの後続 event consumer はまだ実装されていない。 | entry-point task へ `deferred` | `events.md` / `src/events.rs` は protocol-agnostic event payload と replay を定義する。consumer は CLI / LSP authority を driver へ持ち込んではならない。 |
 
 ## Public API
@@ -80,6 +82,14 @@ impl CompilerDriver {
     fn submit(&mut self, request: BuildRequestDraft, input: DriverSubmitInput)
         -> Result<BuildSubmission, DriverSubmitError>;
 
+    fn submit_watch_change(
+        &mut self,
+        request: BuildRequestDraft,
+        input: DriverSubmitInput,
+        control: WatchSubmitControl,
+    )
+        -> Result<WatchSubmission, WatchSubmitError>;
+
     fn cancel(
         &mut self,
         session: BuildSessionId,
@@ -92,10 +102,12 @@ impl CompilerDriver {
 }
 ```
 
-`submit` は driver-owned build session を開始する唯一の entry である。caller は
+`submit` は driver-owned build session を開始する canonical primitive である。caller は
 CLI、watch mode、`mizar-lsp` のいずれでもよいが、protocol-agnostic driver input を
-渡さなければならない。この API は LSP range、JSON-RPC id、editor command payload を
-受け付けない。
+渡さなければならない。`submit_watch_change` は watch-facing wrapper であり、session
+creation を `submit` に委譲したうえで lane-current supersession、replay suppression、
+任意の IR snapshot replacement を処理する。どちらの API も LSP range、JSON-RPC id、
+editor command payload を受け付けない。
 
 `cancel` は driver / session の cancellation request と terminal outcome を記録する。
 渡された snapshot registry と driver lane table で combined publication guard を適用してから
@@ -224,6 +236,32 @@ cancellation を表現できるが、driver-owned snapshot-wide explicit-request
 watch/LSP supersession では、新しい session が lane-current になり、古い session は cancel
 されるか `Superseded` として finish する。obsolete completed result は、event や diagnostic が
 current になる前に combined publication guard を通過しなければならない。
+
+task D-014 は同じ `submit` boundary の上に watch-facing submission helper を追加する。
+この helper は、changed path と source snapshot input がすでに external owner から供給
+された `BuildRequestOrigin::Watch` draft を受け取る。filesystem watching、change
+debounce、source text loading、module target inference、LSP protocol data conversion は
+所有しない。新しい watch generation が accept された後、この helper は previous session
+がすでに terminal state に達していた場合でも stored replay を更新し、replayed event が
+`Current` status を主張し続けるのではなく、suppressed publication decision と terminal
+`Superseded` outcome を運ぶようにする。
+
+新しい watch request が request-id allocation や snapshot validation failure など
+snapshot capture より前に失敗した場合、helper は previous session を current のままにし、
+snapshot replacement も記録しない。snapshot capture が成功し、その後の planning、
+module indexing、task graph construction、registry checking、scheduler submission が
+失敗した場合、captured newer session は review 対象の lane generation になっている。
+そのため previous session は supersede され replay は suppress され、供給された publisher
+seam には successful submission と同じ規則で captured snapshot の register / replace を
+依頼する。
+
+real `mizar-ir::publisher::PhaseOutputPublisher` が供給された場合、最初の watch session は
+snapshot を current として register する。以降の watch submission は snapshot id が変わる
+場合に `replace_current_snapshot(old, new)` を呼ぶ。新しい generation が同じ snapshot id
+を捕捉した場合、request / session lane guard が supersession を処理するため replacement は
+no-op である。publisher が供給されない、または owner seam が replacement を拒否した場合、
+result は分類済み gap / error を記録する。driver はこの seam の処理中も output handle、
+artifact publication token、cache / proof reuse decision を mint しない。
 
 real artifact owner が atomic commit 開始を報告した後、cancellation は artifact manifest
 transaction を中断してはならない。driver はその transaction state を所有しない。存在する場合に

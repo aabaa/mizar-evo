@@ -86,10 +86,12 @@ contain mutable phase outputs, cache decisions, artifact handles, LSP protocol
 payloads, or pre-rendered diagnostic text.
 
 Batch requests are produced from CLI arguments plus package defaults. Watch
-requests are produced by the watch loop after file-change coalescing. LSP
-requests are produced by the `mizar-lsp` bridge after protocol conversion; the
-driver receives protocol-agnostic open-buffer source inputs and priority hints
-only.
+requests are produced by a watch-facing orchestrator after an owner-provided
+file-change/coalescing layer has normalized changed paths and source snapshot
+inputs. The driver does not own OS file watching, debouncing, source loading,
+or file-to-module discovery rules. LSP requests are produced by the
+`mizar-lsp` bridge after protocol conversion; the driver receives
+protocol-agnostic open-buffer source inputs and priority hints only.
 
 ### Request Origins
 
@@ -111,9 +113,11 @@ struct LspRequest {
 
 Batch requests may run to a terminal status without superseding another
 session. Watch requests supersede previous sessions in the same watch lane when
-the next coalesced generation creates a new snapshot. LSP requests supersede
-previous sessions in the same LSP lane when newer open-buffer inputs should
-replace older diagnostics for that lane.
+the next coalesced generation is accepted, including when that generation
+captures the same `BuildSnapshotId`; same-snapshot replacement is an IR
+publisher no-op, not a reason to keep the older session current. LSP requests
+supersede previous sessions in the same LSP lane when newer open-buffer inputs
+should replace older diagnostics for that lane.
 
 `LspRequest` must stay protocol-agnostic. It may refer to source inputs already
 normalized by `mizar-session` and priority information selected by `mizar-lsp`,

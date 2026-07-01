@@ -328,15 +328,36 @@ Keep `cargo test -p mizar-driver` green after each task (see
       as `external_dependency_gap` before driver submission so it cannot claim a
       current build for work outside the captured request snapshot.
 
-14. **Watch mode.** [ ]
-    - Implement the watch loop: file-change detection, snapshot
-      replacement through `mizar-ir`, superseding-session cancellation,
-      and incremental resubmission.
-    - Tests: change → rebuild fixtures; stale sessions never publish;
-      replacement keeps retained outputs alive.
+14. **Watch mode.** [x]
+    - Implement the watch-facing orchestration helper over owner-provided
+      changed paths and snapshot inputs: incremental resubmission through
+      `CompilerDriver::submit`, superseded-session cancellation, stale replay
+      suppression, and real `mizar-ir::PhaseOutputPublisher` snapshot
+      replacement when that owner seam is supplied.
+    - Do not implement OS file watching, debounce/coalescing, source loading,
+      file-to-module discovery, LSP protocol conversion, fake watcher APIs, or
+      provisional producer/artifact tokens. Missing file-watcher/LSP/publisher
+      seams are classified gaps.
+    - Tests: change → rebuild fixtures over owner-provided snapshot inputs;
+      stale sessions, including already-terminal sessions, never replay current
+      publication after supersession; real publisher replacement is invoked;
+      same-snapshot replacement is a no-op; missing publisher is a classified
+      gap; non-watch requests are rejected; source guards prevent watcher/LSP/
+      artifact/proof/cache authority from entering the driver.
     - Deps: 11, 13, `mizar-ir` task 13. Spec:
       [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
-      "Watch and LSP Build".
+      "Watch and LSP Build", `driver.md`, and
+      [mizar-ir crate exit report](../../mizar-ir/en/crate_exit_report.md)
+      snapshot replacement.
+    - Completed by task D-014: `CompilerDriver::submit_watch_change` accepts
+      watch-origin drafts over owner-provided changed paths and snapshot inputs,
+      derives/validates the lane-current previous watch session, resubmits
+      through `CompilerDriver::submit`, mutates stale previous replay to
+      suppressed `Superseded`, and consumes the real
+      `mizar-ir::PhaseOutputPublisher` replacement seam when supplied. Missing
+      file-watcher/LSP/publisher owner seams remain classified gaps. No fake
+      watcher, source loader, LSP payload, artifact token, cache/proof
+      decision, or producer output was introduced.
 
 15. **Phase service adapters for semantic phases.** [ ] — paced by the
     pipeline crates.

@@ -84,10 +84,12 @@ source/dependency state を snapshot に捕捉するかを指定する。mutable
 cache decision、artifact handle、LSP protocol payload、render 済み diagnostic text
 を含めてはならない。
 
-batch request は CLI arguments と package defaults から作られる。watch request は
-watch loop が file-change coalescing の後に作る。LSP request は `mizar-lsp` bridge
-が protocol conversion を終えた後に作る。driver は protocol-agnostic な
-open-buffer source input と priority hint だけを受け取る。
+batch request は CLI arguments と package defaults から作られる。watch request は、
+owner-provided file-change / coalescing layer が changed path と source snapshot
+input を正規化した後、watch-facing orchestrator が作る。driver は OS file
+watching、debouncing、source loading、file-to-module discovery rule を所有しない。
+LSP request は `mizar-lsp` bridge が protocol conversion を終えた後に作る。driver
+は protocol-agnostic な open-buffer source input と priority hint だけを受け取る。
 
 ### Request Origins
 
@@ -108,10 +110,11 @@ struct LspRequest {
 ```
 
 batch request は別の session を置き換えずに terminal status へ進める。watch
-request は、次の coalesced generation が新しい snapshot を作るとき、同じ watch
-lane の以前の session を置き換える。LSP request は、新しい open-buffer input が
-その lane の古い diagnostics を置き換えるべきとき、同じ LSP lane の以前の
-session を置き換える。
+request は、次の coalesced generation が accept されたとき、同じ watch lane の以前の
+session を置き換える。これは同じ `BuildSnapshotId` を捕捉した場合も含む。
+same-snapshot replacement は IR publisher の no-op であり、古い session を current のまま
+保つ理由ではない。LSP request は、新しい open-buffer input がその lane の古い diagnostics
+を置き換えるべきとき、同じ LSP lane の以前の session を置き換える。
 
 `LspRequest` は protocol-agnostic のままでなければならない。`mizar-session` により
 正規化済みの source input と、`mizar-lsp` が選んだ priority 情報は参照できるが、

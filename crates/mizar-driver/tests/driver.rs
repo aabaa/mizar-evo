@@ -390,7 +390,6 @@ fn driver_source_does_not_claim_diagnostics_artifact_or_lsp_authority() {
         "SyntheticOutputRef",
         ".output_refs",
         "AnyPhaseOutputRef",
-        "PhaseOutputPublisher",
         "SchedulerResult",
         "cache_key_for_phase",
         "execute_phase",

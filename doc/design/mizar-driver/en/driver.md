@@ -63,6 +63,8 @@ acceptance, artifact serialization, or LSP protocol conversion.
 | Real cache lookup/compatibility is not wired through `mizar-cache` yet. | `external_dependency_gap` | Use disabled/unavailable cache scheduling unless a real cache decision is supplied by the owner seam. |
 | Real artifact publication tokens and phase-15 producer emission are unavailable. | `external_dependency_gap` | Do not emit committed-artifact events or manifest publication records from driver-owned code. |
 | The current `mizar-build` scheduler accepts precomputed modeled outcomes rather than a public registry-dispatch callback. | `external_dependency_gap` | D-008 may validate scheduler submission and result consumption, but real scheduler-driven phase execution waits for an owner dispatch seam. |
+| External file watcher/coalescing owner and LSP build bridge are not available. | `external_dependency_gap` / `deferred` | D-014 may accept owner-provided changed paths and snapshot inputs, but it must not create fake file watcher APIs, source-loading rules, LSP document payloads, or editor snapshot conversion. |
+| `mizar-ir` snapshot replacement is available only through `PhaseOutputPublisher`. | real owner seam when supplied; otherwise `external_dependency_gap` | D-014 registers the first watch snapshot as current and calls `replace_current_snapshot(old, new)` only when a real publisher is supplied and the snapshot id changes. Same-snapshot replacement is a no-op. Missing publisher input is a classified gap, not a provisional output handle. |
 | Later event consumers such as CLI rendering and LSP protocol conversion are not implemented yet. | `deferred` to entry-point tasks | `events.md` / `src/events.rs` define protocol-agnostic event payloads and replay. Consumers must not pull CLI/LSP authority into the driver. |
 
 ## Public API
@@ -81,6 +83,14 @@ impl CompilerDriver {
     fn submit(&mut self, request: BuildRequestDraft, input: DriverSubmitInput)
         -> Result<BuildSubmission, DriverSubmitError>;
 
+    fn submit_watch_change(
+        &mut self,
+        request: BuildRequestDraft,
+        input: DriverSubmitInput,
+        control: WatchSubmitControl,
+    )
+        -> Result<WatchSubmission, WatchSubmitError>;
+
     fn cancel(
         &mut self,
         session: BuildSessionId,
@@ -93,10 +103,13 @@ impl CompilerDriver {
 }
 ```
 
-`submit` is the only entry that starts a driver-owned build session. Callers
-may be CLI, watch mode, or `mizar-lsp`, but they must provide protocol-agnostic
-driver inputs. LSP ranges, JSON-RPC ids, and editor command payloads are not
-accepted by this API.
+`submit` is the canonical primitive that starts a driver-owned build session.
+Callers may be CLI, watch mode, or `mizar-lsp`, but they must provide
+protocol-agnostic driver inputs. `submit_watch_change` is a watch-facing wrapper
+that delegates session creation to `submit` and then handles lane-current
+supersession, replay suppression, and optional IR snapshot replacement. LSP
+ranges, JSON-RPC ids, and editor command payloads are not accepted by either
+API.
 
 `cancel` records a driver/session cancellation request and terminal outcome. It
 uses the supplied snapshot registry with the driver lane table to apply the
@@ -238,6 +251,34 @@ For watch/LSP supersession, the newer session becomes lane-current and the
 older session is cancelled or finished as `Superseded`. Obsolete completed
 results still pass through the combined publication guard before any event or
 diagnostic can become current.
+
+Task D-014 adds a watch-facing submission helper over the same `submit`
+boundary. The helper accepts a `BuildRequestOrigin::Watch` draft whose changed
+paths and source snapshot inputs were already supplied by an external owner. It
+does not watch the filesystem, debounce changes, load source text, infer module
+targets, or convert LSP protocol data. After a newer watch generation is
+accepted, the helper updates the previous session's stored replay, even if that
+session had already reached a terminal state, so replayed events carry a
+suppressed publication decision and a terminal `Superseded` outcome rather than
+continuing to claim `Current` status.
+
+If the newer watch request fails before snapshot capture, such as request-id
+allocation or snapshot validation failure, the helper leaves the previous
+session current and records no snapshot replacement. If snapshot capture
+succeeds and later planning, module indexing, task graph construction, registry
+checking, or scheduler submission fails, the captured newer session has become
+the lane generation under review; the previous session is superseded and replay
+suppressed, and any supplied publisher seam is asked to register or replace the
+captured snapshot according to the same rules as a successful submission.
+
+When a real `mizar-ir::publisher::PhaseOutputPublisher` is supplied, the first
+watch session registers its snapshot as current; later watch submissions call
+`replace_current_snapshot(old, new)` when the snapshot id changes. If the newer
+generation captures the same snapshot id, replacement is a no-op because the
+request/session lane guard still handles supersession. If no publisher is
+supplied, or if the owner seam rejects replacement, the result records a
+classified gap/error. The driver never mints output handles, artifact
+publication tokens, or cache/proof reuse decisions while handling this seam.
 
 Cancellation must not interrupt an artifact manifest transaction after the real
 artifact owner reports that the atomic commit has started. The driver does not

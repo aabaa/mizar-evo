@@ -21,17 +21,20 @@ use mizar_build::{
         TaskGraphProfile, VcTaskDescriptor, build_task_graph,
     },
 };
-use mizar_session::{BuildSessionId, IdError, SessionIdAllocator, SnapshotRegistry};
+use mizar_ir::publisher::{PhaseOutputPublisher, PublishError};
+use mizar_session::{
+    BuildSessionId, BuildSnapshotId, IdError, SessionIdAllocator, SnapshotRegistry,
+};
 
 use crate::{
     events::{
         BuildEvent, BuildEventIdentity, BuildEventKind, BuildEventOrderKey, BuildEventStream,
-        PlanningEventStatus, TaskEventRef,
+        OwnerGapClassification, PlanningEventStatus, TaskEventRef,
     },
     registry::{PhaseRegistry, PhaseRegistryError, PhaseServiceAvailability},
     request::{
-        BuildRequestDraft, BuildSession, BuildSessionOutcome, BuildSessionState,
-        CaptureSnapshotError, DriverLanes, PublicationDecision,
+        BuildRequestDraft, BuildRequestOrigin, BuildSession, BuildSessionOutcome,
+        BuildSessionState, CaptureSnapshotError, DriverLanes, PublicationDecision,
     },
 };
 
@@ -74,6 +77,110 @@ pub struct CompilerDriver {
     sessions: HashMap<BuildSessionId, DriverSessionRecord>,
     lanes: DriverLanes,
     registry: PhaseRegistry,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WatchSubmission {
+    pub submission: BuildSubmission,
+    pub superseded: Option<WatchSupersededSession>,
+    pub snapshot_replacement: WatchSnapshotReplacement,
+    pub gaps: Vec<WatchModeGap>,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct WatchSubmitControl<'a> {
+    pub previous_session: Option<BuildSessionId>,
+    pub output_publisher: Option<&'a PhaseOutputPublisher>,
+    pub file_watcher: WatchOwnerSeam,
+    pub lsp_bridge: WatchOwnerSeam,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WatchSupersededSession {
+    pub session: BuildSessionId,
+    pub snapshot: BuildSnapshotId,
+    pub previous_state: BuildSessionState,
+    pub state: BuildSessionState,
+    pub publication_decision: PublicationDecision,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WatchSnapshotReplacement {
+    pub old_snapshot: Option<BuildSnapshotId>,
+    pub new_snapshot: BuildSnapshotId,
+    pub status: WatchSnapshotReplacementStatus,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum WatchSnapshotReplacementStatus {
+    RegisteredInitialSnapshot,
+    Replaced,
+    SameSnapshot,
+    ExternalDependencyGap,
+    Failed { error: Box<PublishError> },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WatchModeGap {
+    pub owner: WatchModeGapOwner,
+    pub classification: OwnerGapClassification,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum WatchModeGapOwner {
+    FileWatcher,
+    LspBridge,
+    IrSnapshotReplacement,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum WatchOwnerSeam {
+    OwnerProvided,
+    ExternalDependencyGap,
+    Deferred,
+    Unavailable,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum WatchSubmitError {
+    NonWatchRequest {
+        origin: &'static str,
+    },
+    PreviousSessionUnknown {
+        session: BuildSessionId,
+    },
+    PreviousSessionLaneMismatch {
+        session: BuildSessionId,
+    },
+    PreviousSessionNotWatch {
+        session: BuildSessionId,
+    },
+    PreviousSessionNotCurrent {
+        session: BuildSessionId,
+        current: BuildSessionId,
+    },
+    NonMonotonicGeneration {
+        session: BuildSessionId,
+    },
+    Submit(Box<WatchSubmitFailure>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct WatchSubmitFailure {
+    pub error: Box<DriverSubmitError>,
+    pub superseded: Option<WatchSupersededSession>,
+    pub snapshot_replacement: Option<WatchSnapshotReplacement>,
+    pub gaps: Vec<WatchModeGap>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct WatchPreviousSession {
+    session: Option<BuildSessionId>,
+    snapshot: Option<BuildSnapshotId>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -172,6 +279,65 @@ impl CompilerDriver {
         self.sessions
             .get(&session)
             .map(|record| &record.cancellation)
+    }
+
+    pub fn submit_watch_change<A, L>(
+        &mut self,
+        request: BuildRequestDraft,
+        allocator: &A,
+        snapshots: &SnapshotRegistry<A>,
+        input: DriverSubmitInput<L>,
+        control: WatchSubmitControl<'_>,
+    ) -> Result<WatchSubmission, WatchSubmitError>
+    where
+        A: SessionIdAllocator,
+        L: SourceLayoutProvider,
+    {
+        if !matches!(&request.origin, BuildRequestOrigin::Watch(_)) {
+            return Err(WatchSubmitError::NonWatchRequest {
+                origin: request_origin_name(&request.origin),
+            });
+        }
+
+        let previous_watch = self.validate_watch_previous(control.previous_session, &request)?;
+        let gaps = watch_mode_gaps(&control);
+        let submission = match self.submit(request, allocator, snapshots, input) {
+            Ok(submission) => submission,
+            Err(error) => {
+                let captured = submit_error_session(&error).cloned();
+                let (superseded, snapshot_replacement) = if let Some(session) = captured.as_ref() {
+                    (
+                        self.supersede_previous_watch_session(previous_watch.session, snapshots),
+                        Some(replace_watch_snapshot(
+                            control.output_publisher,
+                            previous_watch.snapshot,
+                            session,
+                        )),
+                    )
+                } else {
+                    (None, None)
+                };
+                return Err(WatchSubmitError::Submit(Box::new(WatchSubmitFailure {
+                    error: Box::new(error),
+                    superseded,
+                    snapshot_replacement,
+                    gaps,
+                })));
+            }
+        };
+        let superseded = self.supersede_previous_watch_session(previous_watch.session, snapshots);
+        let snapshot_replacement = replace_watch_snapshot(
+            control.output_publisher,
+            previous_watch.snapshot,
+            &submission.session,
+        );
+
+        Ok(WatchSubmission {
+            submission,
+            superseded,
+            snapshot_replacement,
+            gaps,
+        })
     }
 
     pub fn submit<A, L>(
@@ -493,6 +659,82 @@ impl CompilerDriver {
             .unwrap_or_else(|| BuildEventStream::empty(session, false))
     }
 
+    fn validate_watch_previous(
+        &self,
+        previous_session: Option<BuildSessionId>,
+        request: &BuildRequestDraft,
+    ) -> Result<WatchPreviousSession, WatchSubmitError> {
+        let current = self.lanes.current(request.lane);
+        let derived_previous = current.map(|current| current.session);
+        let previous_session = match (previous_session, derived_previous) {
+            (Some(supplied), Some(current)) if supplied != current => {
+                return Err(WatchSubmitError::PreviousSessionNotCurrent {
+                    session: supplied,
+                    current,
+                });
+            }
+            (Some(supplied), None) => supplied,
+            (Some(supplied), Some(_current)) => supplied,
+            (None, Some(current)) => current,
+            (None, None) => {
+                return Ok(WatchPreviousSession {
+                    session: None,
+                    snapshot: None,
+                });
+            }
+        };
+        let Some(record) = self.sessions.get(&previous_session) else {
+            return Err(WatchSubmitError::PreviousSessionUnknown {
+                session: previous_session,
+            });
+        };
+        if record.session.request.lane != request.lane {
+            return Err(WatchSubmitError::PreviousSessionLaneMismatch {
+                session: previous_session,
+            });
+        }
+        if !matches!(&record.session.request.origin, BuildRequestOrigin::Watch(_)) {
+            return Err(WatchSubmitError::PreviousSessionNotWatch {
+                session: previous_session,
+            });
+        }
+        if record.session.request.generation.get() >= request.generation.get() {
+            return Err(WatchSubmitError::NonMonotonicGeneration {
+                session: previous_session,
+            });
+        }
+        Ok(WatchPreviousSession {
+            session: Some(previous_session),
+            snapshot: Some(record.session.captured.snapshot.id),
+        })
+    }
+
+    fn supersede_previous_watch_session<A>(
+        &mut self,
+        previous_session: Option<BuildSessionId>,
+        snapshots: &SnapshotRegistry<A>,
+    ) -> Option<WatchSupersededSession>
+    where
+        A: SessionIdAllocator,
+    {
+        let previous_session = previous_session?;
+        let record = self.sessions.get_mut(&previous_session)?;
+        let previous_state = record.session.state;
+        let snapshot = record.session.captured.snapshot.id;
+        record.session.state = BuildSessionState::Finished(BuildSessionOutcome::Superseded);
+        record.cancellation.supersede_snapshot(snapshot);
+        let publication_decision = self.lanes.publication_decision(snapshots, &record.session);
+        record.events =
+            suppress_watch_replay_events(&record.events, &record.session, publication_decision);
+        Some(WatchSupersededSession {
+            session: previous_session,
+            snapshot,
+            previous_state,
+            state: record.session.state,
+            publication_decision,
+        })
+    }
+
     fn missing_services(
         &self,
         task_graph: &TaskGraph,
@@ -690,6 +932,150 @@ fn append_terminal_events(
     }
     BuildEventStream::from_events(session.id, true, events)
         .expect("driver-generated cancellation events reference the stored session")
+}
+
+fn suppress_watch_replay_events(
+    stream: &BuildEventStream,
+    session: &BuildSession,
+    publication: PublicationDecision,
+) -> BuildEventStream {
+    let identity = BuildEventIdentity {
+        session: session.id,
+        lane: session.request.lane,
+        generation: session.request.generation,
+        snapshot: Some(session.captured.snapshot.id),
+        publication,
+    };
+    let mut events = Vec::new();
+    for event in stream.events() {
+        if matches!(
+            event.kind,
+            BuildEventKind::PublicationSuppressed
+                | BuildEventKind::SessionFinished { .. }
+                | BuildEventKind::PhaseReady { .. }
+                | BuildEventKind::DiagnosticsReady { .. }
+                | BuildEventKind::ArtifactBoundary { .. }
+        ) {
+            continue;
+        }
+        let mut suppressed = event.clone();
+        suppressed.identity.publication = publication;
+        events.push(suppressed);
+    }
+    if matches!(publication, PublicationDecision::Suppressed(_)) {
+        events.push(BuildEvent::new(
+            identity.clone(),
+            BuildEventOrderKey::new(80, 3),
+            BuildEventKind::PublicationSuppressed,
+        ));
+    }
+    events.push(BuildEvent::new(
+        identity,
+        BuildEventOrderKey::new(90, 3),
+        BuildEventKind::SessionFinished {
+            outcome: BuildSessionOutcome::Superseded,
+        },
+    ));
+    BuildEventStream::from_events(session.id, true, events)
+        .expect("watch-suppressed replay events reference the stored session")
+}
+
+fn replace_watch_snapshot(
+    publisher: Option<&PhaseOutputPublisher>,
+    old_snapshot: Option<BuildSnapshotId>,
+    session: &BuildSession,
+) -> WatchSnapshotReplacement {
+    let new_snapshot = session.captured.snapshot.id;
+    let Some(publisher) = publisher else {
+        return WatchSnapshotReplacement {
+            old_snapshot,
+            new_snapshot,
+            status: WatchSnapshotReplacementStatus::ExternalDependencyGap,
+        };
+    };
+    let status = match old_snapshot {
+        None => {
+            publisher.register_current_snapshot(new_snapshot);
+            WatchSnapshotReplacementStatus::RegisteredInitialSnapshot
+        }
+        Some(old_snapshot) if old_snapshot == new_snapshot => {
+            WatchSnapshotReplacementStatus::SameSnapshot
+        }
+        Some(old_snapshot) => {
+            match publisher.replace_current_snapshot(old_snapshot, new_snapshot) {
+                Ok(()) => WatchSnapshotReplacementStatus::Replaced,
+                Err(error) => WatchSnapshotReplacementStatus::Failed {
+                    error: Box::new(error),
+                },
+            }
+        }
+    };
+    WatchSnapshotReplacement {
+        old_snapshot,
+        new_snapshot,
+        status,
+    }
+}
+
+fn watch_mode_gaps(control: &WatchSubmitControl<'_>) -> Vec<WatchModeGap> {
+    let mut gaps = Vec::new();
+    push_watch_seam_gap(
+        &mut gaps,
+        WatchModeGapOwner::FileWatcher,
+        control.file_watcher,
+    );
+    push_watch_seam_gap(&mut gaps, WatchModeGapOwner::LspBridge, control.lsp_bridge);
+    if control.output_publisher.is_none() {
+        gaps.push(WatchModeGap {
+            owner: WatchModeGapOwner::IrSnapshotReplacement,
+            classification: OwnerGapClassification::ExternalDependencyGap,
+        });
+    }
+    gaps
+}
+
+fn push_watch_seam_gap(
+    gaps: &mut Vec<WatchModeGap>,
+    owner: WatchModeGapOwner,
+    seam: WatchOwnerSeam,
+) {
+    if let Some(classification) = watch_seam_classification(seam) {
+        gaps.push(WatchModeGap {
+            owner,
+            classification,
+        });
+    }
+}
+
+fn watch_seam_classification(seam: WatchOwnerSeam) -> Option<OwnerGapClassification> {
+    match seam {
+        WatchOwnerSeam::OwnerProvided => None,
+        WatchOwnerSeam::ExternalDependencyGap => {
+            Some(OwnerGapClassification::ExternalDependencyGap)
+        }
+        WatchOwnerSeam::Deferred => Some(OwnerGapClassification::Deferred),
+        WatchOwnerSeam::Unavailable => Some(OwnerGapClassification::Unavailable),
+    }
+}
+
+fn request_origin_name(origin: &BuildRequestOrigin) -> &'static str {
+    match origin {
+        BuildRequestOrigin::Batch(_) => "batch",
+        BuildRequestOrigin::Watch(_) => "watch",
+        BuildRequestOrigin::Lsp(_) => "lsp",
+    }
+}
+
+fn submit_error_session(error: &DriverSubmitError) -> Option<&BuildSession> {
+    match error {
+        DriverSubmitError::RequestIdAllocation { .. }
+        | DriverSubmitError::SnapshotCapture { .. } => None,
+        DriverSubmitError::Planning { session, .. }
+        | DriverSubmitError::ModuleIndex { session, .. }
+        | DriverSubmitError::TaskGraph { session, .. }
+        | DriverSubmitError::PhaseRegistry { session, .. }
+        | DriverSubmitError::Scheduler { session, .. } => Some(session.as_ref()),
+    }
 }
 
 fn cancellation_outcome(reason: DriverCancelReason) -> BuildSessionOutcome {
