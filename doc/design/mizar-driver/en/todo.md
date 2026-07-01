@@ -69,11 +69,11 @@ inputs/outputs to the build scheduler and cache seams.
   is a pure projection from input identities, configuration, schema
   versions, and dependency hashes; the registry enforces and tests this
   contract.
-- **Salsa query boundary: open, resolved by tasks 4-5.** `salsa` is required
-  for the final query/cache layer. Decide how `PhaseService` inputs, outputs,
-  cancellation/versioning, and cache keys map onto a salsa database in
-  `registry.md`, then keep phase crates free of direct driver/query-engine
-  dependencies.
+- **Salsa query boundary: specified by task 4; implementation remains task 5.**
+  `salsa` is required for the final query/cache layer. `registry.md` specifies
+  how `PhaseService` inputs, outputs, cancellation/versioning, and cache-key
+  intents map onto a driver-owned salsa database while keeping phase crates
+  free of direct driver/query-engine dependencies.
 
 ## Ordered Task List
 
@@ -130,7 +130,7 @@ Keep `cargo test -p mizar-driver` green after each task (see
      conversion, scheduler semantics, artifact publication, cache/proof
      authority, or phase semantics was added.
 
-4. **Spec: `registry.md`.** [ ]
+4. **Spec: `registry.md`.** [x]
    - Write the registry spec (English and Japanese, no code): the
      `PhaseService` trait (`phase`, `cache_key`, `execute`),
      `PhaseContext`/`PhaseResult`, the service table for phases 0-16, and
@@ -141,6 +141,13 @@ Keep `cargo test -p mizar-driver` green after each task (see
      than depending on `salsa` directly.
    - Deps: 2. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
      "Phase Services"/"Phase Service API".
+   - Completed by task D-004: [registry.md](registry.md) defines the
+     deterministic phase-service registry, phase 0-16 service table,
+     driver-owned salsa query boundary, cache-key purity contract,
+     scheduler/cache seam handoff, and diagnostics/artifact/LSP non-ownership
+     rules. Missing real phase adapters, artifact publication tokens,
+     producer outputs, and LSP bridge work remain classified gaps rather than
+     fake adapters or provisional APIs.
 
 5. **Phase service registry.** [ ]
    - Implement registration and lookup of phase services with
@@ -150,7 +157,12 @@ Keep `cargo test -p mizar-driver` green after each task (see
      database handles, and all inputs/outputs pass through the same
      query-compatible boundary used by later real phase services.
    - Tests: registration fixtures; duplicate rejection; `cache_key`
-     determinism harness with a stub service.
+     determinism harness with test-only fixture services; missing real owner
+     seams reported as classified gaps without synthetic outputs; a positive
+     guard for the driver-owned salsa/query boundary; dependency scans proving
+     syntax/parser/phase owner crates do not gain driver or salsa dependencies;
+     boundary guards against cache compatibility, proof acceptance, artifact
+     publication-token, LSP payload, or scheduler-readiness ownership.
    - Deps: 4. Spec: `registry.md`.
 
 6. **`SourceFrontend` service adapter.** [ ]
