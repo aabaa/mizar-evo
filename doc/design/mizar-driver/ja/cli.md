@@ -16,6 +16,20 @@ CLI は user interface である。manifest syntax、dependency resolution、pha
 type checking、proof acceptance、cache compatibility、artifact serialization、artifact
 publication token、LSP protocol conversion は所有しない。
 
+## 公開 enum の互換性
+
+この module の public enum はすべて downstream-facing な CLI boundary type であり、
+`#[non_exhaustive]` を付ける。D-017 では以下について exhaustive exception を記録しない:
+
+- `CliCommand`;
+- `CliBuildProfile`;
+- `CliMessageFormat`;
+- `CliExitCode`。
+
+Downstream crate はこれらの enum を match するとき wildcard arm を持たなければならない。
+将来の command、profile、message format、exit code は、manifest semantics、diagnostics
+identity、artifact output authority、LSP protocol conversion を CLI に移さずに追加できる。
+
 ## Command Surface
 
 binary name は `mizar`。task D-013 が実装するのは batch build command のみである:

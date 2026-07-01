@@ -37,6 +37,22 @@ event stream は次をしてはならない:
 - cache compatibility、proof acceptance、trusted status、kernel acceptance を決定する;
 - artifact、diagnostic、phase result を worker completion order で並べ替える。
 
+## 公開 enum の互換性
+
+この module の public enum はすべて downstream-facing な event boundary type であり、
+`#[non_exhaustive]` を付ける。D-017 では以下について exhaustive exception を記録しない:
+
+- `BuildEventKind`;
+- `PlanningEventStatus`;
+- `EventOwner`;
+- `OwnerGapClassification`;
+- `BuildEventError`。
+
+Downstream crate はこれらの enum を match するとき wildcard arm を持たなければならない。
+将来の event kind、owner、gap classification、validation error は、driver を diagnostics
+identity、artifact publication、proof / cache decision、LSP protocol conversion の owner に
+せずに追加できる。
+
 ## イベント形状
 
 具体的な Rust 名は task D-010 で変わり得るが、すべての build event は次の共通 identity を

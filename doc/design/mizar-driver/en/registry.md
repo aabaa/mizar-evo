@@ -50,6 +50,22 @@ adapter, stub API, provisional token, or temporary wiring.
 - `mizar-lsp` protocol conversion, document-version handling, editor command
   shaping, or LSP diagnostic/code-action payloads.
 
+## Public Enum Compatibility
+
+All public enums in this module are downstream-facing registry boundary types
+and are marked `#[non_exhaustive]`. D-017 records no exhaustive exceptions for:
+
+- `PhaseOwner`;
+- `PhaseServiceAvailability`;
+- `PhaseStatus`;
+- `PhaseCacheIntent`;
+- `PhaseRegistryError`.
+
+Downstream crates must use wildcard arms when matching these enums. Future
+phase owners, status values, cache intents, or registry errors may be added
+without transferring phase semantics, cache compatibility, proof acceptance,
+artifact publication, or LSP authority into the driver.
+
 ## Gap Classification
 
 | Gap | Classification | Registry disposition |

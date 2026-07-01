@@ -40,6 +40,21 @@ conversion.
 - LSP document-version protocol conversion, range conversion, code actions, or
   editor commands.
 
+## Public Enum Compatibility
+
+All public enums in this module are downstream-facing driver envelopes and are
+marked `#[non_exhaustive]`. D-017 records no exhaustive exceptions for:
+
+- `BuildRequestOrigin`;
+- `LspPriority`;
+- `BuildSessionState`;
+- `BuildSessionOutcome`;
+- `PublicationDecision`.
+
+Downstream crates must use wildcard arms when matching these enums. Crate-local
+code may still match the known variants internally when a new variant should be
+reviewed with the request/session lifecycle.
+
 ## Data Model
 
 ### Request Identity And Currentness Lane

@@ -17,6 +17,21 @@ resolution, phase semantics, type checking, proof acceptance, cache
 compatibility, artifact serialization, artifact publication tokens, or LSP
 protocol conversion.
 
+## Public Enum Compatibility
+
+All public enums in this module are downstream-facing CLI boundary types and are
+marked `#[non_exhaustive]`. D-017 records no exhaustive exceptions for:
+
+- `CliCommand`;
+- `CliBuildProfile`;
+- `CliMessageFormat`;
+- `CliExitCode`.
+
+Downstream crates must use wildcard arms when matching these enums. Future
+commands, profiles, message formats, or exit codes may be added without moving
+manifest semantics, diagnostics identity, artifact output authority, or LSP
+protocol conversion into the CLI.
+
 ## Command Surface
 
 The binary name is `mizar`. Task D-013 implements only the batch build command:

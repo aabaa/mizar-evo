@@ -43,6 +43,22 @@ The event stream must not:
   acceptance;
 - reorder artifacts, diagnostics, or phase results by worker completion order.
 
+## Public Enum Compatibility
+
+All public enums in this module are downstream-facing event boundary types and
+are marked `#[non_exhaustive]`. D-017 records no exhaustive exceptions for:
+
+- `BuildEventKind`;
+- `PlanningEventStatus`;
+- `EventOwner`;
+- `OwnerGapClassification`;
+- `BuildEventError`.
+
+Downstream crates must use wildcard arms when matching these enums. Future
+event kinds, owners, gap classifications, or validation errors may be added
+without making the driver the owner of diagnostics identity, artifact
+publication, proof/cache decisions, or LSP protocol conversion.
+
 ## Event Shape
 
 Concrete Rust names may evolve in task D-010, but every build event must carry

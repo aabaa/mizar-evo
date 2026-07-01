@@ -329,8 +329,9 @@ fn public_driver_enums_are_forward_compatible() {
 
     assert!(
         violations.is_empty(),
-        "public driver enums must be forward-compatible until task D-017 \
-         installs the full enum policy:\n{}",
+        "public driver enums must stay forward-compatible; document any \
+         exhaustive exception in the owning module spec before changing this \
+         guard:\n{}",
         violations.join("\n")
     );
 }

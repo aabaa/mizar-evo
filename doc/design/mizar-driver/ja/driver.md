@@ -53,6 +53,24 @@ artifact serialization、LSP protocol conversion は所有しない。
 - `mizar-lsp` の JSON-RPC payload、document-version handling、range conversion、
   code action、editor command。
 
+## 公開 enum の互換性
+
+この module の public enum はすべて downstream-facing な driver / session boundary
+type であり、`#[non_exhaustive]` を付ける。D-017 では以下について exhaustive
+exception を記録しない:
+
+- `WatchSnapshotReplacementStatus`;
+- `WatchModeGapOwner`;
+- `WatchOwnerSeam`;
+- `WatchSubmitError`;
+- `DriverSubmissionStatus`;
+- `DriverCancelReason`;
+- `DriverSubmitError`。
+
+Downstream crate はこれらの enum を match するとき wildcard arm を持たなければならない。
+将来の watch owner seam、cancellation reason、submission state、structured submit error
+は、driver に phase semantics、proof、cache、artifact、LSP authority を与えずに追加できる。
+
 ## Gap Classification
 
 | Gap | Classification | Driver disposition |

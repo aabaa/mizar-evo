@@ -39,6 +39,21 @@ semantics、diagnostic identity、artifact serialization、LSP protocol conversi
 - LSP document-version protocol conversion、range conversion、code action、
   editor command。
 
+## 公開 enum の互換性
+
+この module の public enum はすべて downstream-facing な driver envelope であり、
+`#[non_exhaustive]` を付ける。D-017 では以下について exhaustive exception を記録しない:
+
+- `BuildRequestOrigin`;
+- `LspPriority`;
+- `BuildSessionState`;
+- `BuildSessionOutcome`;
+- `PublicationDecision`。
+
+Downstream crate はこれらの enum を match するとき wildcard arm を持たなければならない。
+Crate-local code は、新しい variant を request/session lifecycle とともに review すべき
+場所では、既知 variant への exhaustive match を内部に保ってよい。
+
 ## データモデル
 
 ### Request Identity と Currentness Lane

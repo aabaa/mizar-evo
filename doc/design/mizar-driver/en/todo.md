@@ -416,9 +416,18 @@ Keep `cargo test -p mizar-driver` green after each task (see
       multi-task driver phase dispatch remains deferred until those owner seams
       exist.
 
-17. **Public-enum forward-compatibility policy.** [ ]
+17. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
     - Deps: 13. Spec: all module specs.
+    - Completed by task D-017: every current public enum in `request`,
+      `registry`, `driver`, `events`, and `cli` is classified in its owning
+      module spec as a downstream-facing `#[non_exhaustive]` boundary type with
+      no exhaustive exceptions. The existing enum declarations already
+      satisfied that policy and were audited rather than changed; only the
+      lint-policy guard wording was updated to describe the completed policy.
+      The source/spec correspondence table portion of the frontend task-25
+      procedure is reserved for task 18, which is the driver-wide
+      source/spec correspondence audit. No runtime behavior changed.
 
 18. **Source/spec correspondence audit.** [ ]
     - Trace every public API and promised behavior in the module specs to

@@ -54,6 +54,25 @@ acceptance, artifact serialization, or LSP protocol conversion.
 - `mizar-lsp` JSON-RPC payloads, document-version handling, range conversion,
   code actions, or editor commands.
 
+## Public Enum Compatibility
+
+All public enums in this module are downstream-facing driver/session boundary
+types and are marked `#[non_exhaustive]`. D-017 records no exhaustive exceptions
+for:
+
+- `WatchSnapshotReplacementStatus`;
+- `WatchModeGapOwner`;
+- `WatchOwnerSeam`;
+- `WatchSubmitError`;
+- `DriverSubmissionStatus`;
+- `DriverCancelReason`;
+- `DriverSubmitError`.
+
+Downstream crates must use wildcard arms when matching these enums. Future
+watch owner seams, cancellation reasons, submission states, and structured
+submit errors may be added without giving the driver phase semantics, proof,
+cache, artifact, or LSP authority.
+
 ## Gap Classification
 
 | Gap | Classification | Driver disposition |
