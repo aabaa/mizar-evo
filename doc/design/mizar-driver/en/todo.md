@@ -454,13 +454,21 @@ Keep `cargo test -p mizar-driver` green after each task (see
       Existing `external_dependency_gap`, `deferred`, and report-only
       `repo_metadata_conflict` records remain unchanged and synchronized.
 
-20. **Architecture-22 follow-up audit.** [ ]
+20. **Architecture-22 follow-up audit.** [x]
     - Re-run the source/spec correspondence and bilingual documentation sync
       audits for the task-16 driver query-boundary, stale-output rejection,
       diagnostics, and artifact-publication contract; record any remaining
       architecture-22 gaps as follow-up tasks.
     - Deps: 16, 19. Spec: all module specs, this TODO, and repository
       documentation policy.
+    - Completed by task D-020: [architecture_22_follow_up_audit.md](architecture_22_follow_up_audit.md)
+      records no unresolved blocking/high architecture-22 drift for implemented
+      driver seams. Query boundary, stale-output suppression, diagnostics
+      owner-gap handling, artifact-boundary non-ownership, and worker-count
+      determinism remain covered by existing tests and docs. Full real
+      clean/incremental/parallel equivalence, scheduler-selected phase
+      dispatch, LSP bridge, and semantic/proof/artifact adapters remain
+      classified as `deferred` or `external_dependency_gap`.
 
 21. **Module-boundary refactor gate.** [ ]
     - Before treating the crate as ready for downstream consumers, audit the
