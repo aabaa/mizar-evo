@@ -199,20 +199,32 @@ Keep `cargo test -p mizar-driver` green after each task (see
 
 ### Orchestration
 
-7. **Spec: `driver.md`.** [ ]
+7. **Spec: `driver.md`.** [x]
    - Write the driver spec (English and Japanese, no code): the
      `CompilerDriver` API (`submit`, `cancel`, `events`), phase-0
      bootstrap, task-graph submission, and the artifact commit boundary
      hand-off.
    - Deps: 4. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
      "Driver API"/"Control Flow".
+   - Completed by task D-007: [driver.md](driver.md) defines the
+     `CompilerDriver` submit/cancel/events boundary, phase-0 bootstrap through
+     `mizar-build`, task-graph and scheduler submission ownership, cancellation
+     through `mizar-build::CancellationPolicy`, diagnostics and artifact
+     handoff boundaries, and the rule that missing phase services remain
+     classified gaps rather than synthetic scheduler outputs.
 
 8. **Driver core.** [ ]
    - Implement `submit`: bootstrap phase 0 via the `mizar-build` planner,
-     create the session, expand and submit the task graph, and drive
-     registered services through the scheduler.
-   - Tests: batch run over a fixture workspace with the frontend service;
-     deterministic phase ordering.
+     create the session, expand and submit the task graph, and consume the
+     current modeled scheduler seam without duplicating scheduler semantics.
+     Real scheduler-driven service execution waits for the D-007
+     `external_dependency_gap` dispatch seam.
+   - Tests: batch-oriented fixture workspace that captures a session, builds
+     the plan/index/graph through `mizar-build`, reports missing real phase
+     services as classified gaps without synthetic outputs, and validates
+     deterministic scheduler submission/phase ordering over modeled scheduler
+     fixtures. A real frontend-service fixture is required only after the
+     D-006 owner seams exist.
    - Deps: 3, 5, 6, 7, `mizar-build` task 8. Spec: `driver.md`.
 
 9. **Spec: `events.md`.** [ ]
