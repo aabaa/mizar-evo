@@ -235,12 +235,19 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
 
 ### 表示
 
-10. **仕様: `render.md`。** [ ]
+10. **仕様: `render.md`。** [x]
     - CLI レンダリングの仕様を執筆する（英語と日本語、コードなし）:
       メッセージレイアウト、スパン抜粋、重大度のスタイル、レンダリングは
       コードメタデータをキーにするという規則。
     - 依存: 8。仕様: [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)、
       アーキテクチャ 12。
+    - task 10 で完了: `render.md` は CLI rendering を `DiagnosticRecord` と
+      caller-supplied source context からの deterministic projection として定義する。
+      header layout、span/source-block layout、Unicode-scalar column、missing-source
+      fallback、note/help projection、実装 task 前の bounded fix/explanation reference、
+      plain/styled output option、そして code identity、aggregation、source loading、LSP
+      conversion、proof/phase status、driver orchestration、artifact mutation を rendering
+      authority の外に保つ boundary rules を定義した。
 
 11. **CLI レンダリング。** [ ]
     - レコードと行マップから決定的な CLI レンダリングを実装する。

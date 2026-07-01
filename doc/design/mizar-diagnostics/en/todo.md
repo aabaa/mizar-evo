@@ -246,12 +246,20 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
 
 ### Presentation
 
-10. **Spec: `render.md`.** [ ]
+10. **Spec: `render.md`.** [x]
     - Write the CLI rendering spec (English and Japanese, no code): message
       layout, span excerpts, severity styling, and the rule that rendering
       is keyed by code metadata.
     - Deps: 8. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md),
       architecture 12.
+    - Completed by task 10: `render.md` now specifies CLI rendering as a
+      deterministic projection from `DiagnosticRecord` plus caller-supplied
+      source context. It defines header layout, span/source-block layout,
+      Unicode-scalar columns, missing-source fallbacks, notes/help projection,
+      bounded fix/explanation references before their implementation tasks,
+      plain/styled output options, and boundary rules that keep code identity,
+      aggregation, source loading, LSP conversion, proof/phase status, driver
+      orchestration, and artifact mutation outside rendering authority.
 
 11. **CLI rendering.** [ ]
     - Implement deterministic CLI rendering from records and line maps.
