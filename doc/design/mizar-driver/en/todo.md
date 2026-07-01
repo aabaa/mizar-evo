@@ -389,7 +389,7 @@ Keep `cargo test -p mizar-driver` green after each task (see
 
 ### Hardening and cross-cutting follow-ups
 
-16. **End-to-end determinism suite.** [ ]
+16. **End-to-end determinism suite.** [x]
     - Property coverage that identical workspaces produce identical event
       streams, diagnostics, and exit codes across worker counts and runs.
       After the cache/scheduler seam is wired, include architecture-22
@@ -400,6 +400,21 @@ Keep `cargo test -p mizar-driver` green after each task (see
     - Deps: 13, 14, `mizar-build` task 24. Spec:
       [20.test_strategy.md](../../architecture/en/20.test_strategy.md),
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md).
+    - Completed by task D-016: `tests/determinism.rs` compares the
+      driver-owned public projection for identical phase-zero workspaces across
+      repeated runs, worker counts, and scheduler completion orders; checks
+      byte-stable CLI human/JSON output and exit codes for successful builds,
+      manifest diagnostics owner gaps, and unavailable phase-service owner
+      gaps; verifies that multi-task source/module work is deterministically
+      blocked before scheduler submission while real phase dispatch remains an
+      owner gap; and verifies that superseded watch replay deterministically
+      emits suppressed publications without `diagnostics_ready` or
+      `artifact_boundary` events. The suite does not invent semantic/proof
+      adapters, cache compatibility decisions, artifact publication tokens, or
+      LSP protocol bridges. Full clean/incremental/parallel equivalence with
+      real cache hits, producer outputs, artifact commits, proof reuse, and
+      multi-task driver phase dispatch remains deferred until those owner seams
+      exist.
 
 17. **Public-enum forward-compatibility policy.** [ ]
     - Apply the `mizar-frontend` task-25 procedure to each public enum.
