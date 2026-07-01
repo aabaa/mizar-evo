@@ -20,7 +20,7 @@ and internal 03; the crate refines architecture 12 and 19 and internal 03.
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | registry | `registry.md` (task 2) | `src/registry.rs` | [x] |
-| failure_record | `failure_record.md` (task 4) | `src/failure_record.rs` | [ ] |
+| failure_record | `failure_record.md` (task 4) | `src/failure_record.rs` | [x] |
 | sink | `sink.md` (task 6) | `src/sink.rs` | [ ] |
 | aggregator | `aggregator.md` (task 8) | `src/aggregator.rs` | [ ] |
 | render | `render.md` (task 10) | `src/render.rs` | [ ] |
@@ -146,12 +146,26 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
      artifact authority outside the record model. Verification passed
      `git diff --check` and `git diff --cached --check`.
 
-5. **Record and draft implementation.** [ ]
+5. **Record and draft implementation.** [x]
    - Implement drafts and records with span and detail tables and a
      deterministic debug rendering.
    - Tests: record round-trips; spans always reference a `SourceId`;
      rendering stability.
    - Deps: 3, 4. Spec: `failure_record.md`.
+   - Completed by task 5: `src/failure_record.rs` now provides validated
+     `DiagnosticDraft` and immutable `DiagnosticRecord` types, source
+     snapshot/freshness state, snapshot-scoped handles, stable failure
+     categories, span validation with zero-width intent, structured detail maps
+     with deterministic key grammar and value ordering, note payloads, opaque
+     fix/explanation attachment refs, descriptor projection from the registry,
+     and deterministic debug snapshots. Tests cover structural draft-to-record
+     round-trips, `SourceId`-backed span invariants, detail-key validation and
+     sorted details, byte-stable debug output, stale/current freshness
+     validation, retired-code rejection for current records, and related-handle
+     snapshot boundaries. Verification passed
+     `cargo test -p mizar-diagnostics`,
+     `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`, and
+     `cargo fmt --check`.
 
 ### Production and aggregation
 

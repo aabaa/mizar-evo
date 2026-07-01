@@ -185,19 +185,21 @@ fn diagnostics_lib_states_initial_boundary() {
         "#![forbid(unsafe_code)]",
         "Stable diagnostic identity",
         "00.crate_plan.md",
-        "diagnostic-code registry only",
-        "records, sinks, aggregation, rendering, driver, LSP, and artifact integration",
+        "diagnostic-code registry and",
+        "structured failure records",
+        "sinks, aggregation, rendering, driver, LSP, and",
+        "artifact integration are added by later tasks",
+        "pub mod failure_record;",
         "pub mod registry;",
     ] {
         assert!(
             source.contains(marker),
-            "{} must keep the task-1 diagnostics-boundary marker `{marker}`",
+            "{} must keep the task-5 diagnostics-boundary marker `{marker}`",
             lib_path.display()
         );
     }
 
     for forbidden_module in [
-        "failure_record",
         "sink",
         "aggregator",
         "render",
@@ -221,8 +223,9 @@ fn diagnostics_lib_states_initial_boundary() {
             .map(str::trim)
             .filter(|line| line.starts_with("pub ") || line.starts_with("pub("))
             .collect::<Vec<_>>(),
-        vec!["pub mod registry;"],
-        "{} must expose only the task-3 registry module at the crate root for now",
+        vec!["pub mod failure_record;", "pub mod registry;"],
+        "{} must expose only the task-5 registry and failure_record modules at \
+         the crate root for now",
         lib_path.display()
     );
 }

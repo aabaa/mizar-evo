@@ -20,7 +20,7 @@ registry/render/fix/explain モジュールを加えたものに従う。この 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | registry | `registry.md`（task 2） | `src/registry.rs` | [x] |
-| failure_record | `failure_record.md`（task 4） | `src/failure_record.rs` | [ ] |
+| failure_record | `failure_record.md`（task 4） | `src/failure_record.rs` | [x] |
 | sink | `sink.md`（task 6） | `src/sink.rs` | [ ] |
 | aggregator | `aggregator.md`（task 8） | `src/aggregator.rs` | [ ] |
 | render | `render.md`（task 10） | `src/render.rs` | [ ] |
@@ -145,12 +145,24 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
      authority を record model の外に保つ boundary rules を定義する。verification は
      `git diff --check` と `git diff --cached --check` が通った。
 
-5. **レコードとドラフトの実装。** [ ]
+5. **レコードとドラフトの実装。** [x]
    - スパン・詳細テーブルと決定的 debug レンダリングを備えたドラフトと
      レコードを実装する。
    - テスト: レコードのラウンドトリップ。スパンは必ず `SourceId` を参照
      する。レンダリングの安定性。
    - 依存: 3、4。仕様: `failure_record.md`。
+   - task 5 で完了: `src/failure_record.rs` は validated `DiagnosticDraft` と
+     immutable `DiagnosticRecord`、source snapshot/freshness state、snapshot-scoped
+     handle、stable failure category、zero-width intent 付き span validation、
+     deterministic key grammar と value ordering を持つ structured detail map、note
+     payload、opaque fix/explanation attachment ref、registry descriptor projection、
+     deterministic debug snapshot を提供する。tests は structural draft-to-record
+     round-trip、`SourceId` に基づく span invariant、detail-key validation と sorted
+     details、byte-stable debug output、stale/current freshness validation、current
+     record での retired-code rejection、related-handle snapshot boundary を覆う。
+     verification は `cargo test -p mizar-diagnostics`、
+     `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`、
+     `cargo fmt --check` が通った。
 
 ### 生産と集約
 

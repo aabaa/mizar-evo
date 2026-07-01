@@ -124,12 +124,14 @@ Record rules:
 ## Construction And Round Trips
 
 Task 5 record round-trips are in-memory structural round-trips, not durable
-serialization. A record constructed from a draft, a validated registry
-descriptor, a handle, and freshness must preserve every shared draft field
-exactly, copy `semantic_name` and `severity` from the descriptor, and expose the
-same values through cloning, equality, accessors, and deterministic debug
-snapshots. `SourceId` and `BuildSnapshotId` remain session-local identities; no
-Task 5 API promises JSON, LSP, artifact, or cross-session serialization.
+serialization. A draft constructor must validate its code against a
+`DiagnosticRegistry` and reject unknown or retired codes. A record constructor
+must look up the draft code in a validated registry, preserve every shared draft
+field exactly, copy `semantic_name` and `severity` from the descriptor found by
+that lookup, and expose the same values through cloning, equality, accessors,
+and deterministic debug snapshots. `SourceId` and `BuildSnapshotId` remain
+session-local identities for Task 5 record APIs; no Task 5 API promises JSON,
+LSP, artifact, or cross-session serialization.
 
 The aggregator supplies the publication snapshot when converting drafts to
 records. A draft whose `source_snapshot` equals the publication snapshot may
@@ -328,6 +330,10 @@ applicability. Task 15 defines lazy explanation handles. Until those tasks land,
 record implementation may represent these fields as empty attachment vectors or
 opaque references only when doing so is required by the record shape; it must not
 invent provisional LSP code actions, CLI formatting, or explanation storage.
+Task 5 opaque attachment identities use the same ASCII grammar as
+`stable_detail_key` so aggregation and debug snapshots can compare them
+deterministically. Later fix/explain tasks may wrap those identities with richer
+payloads, but they must not reinterpret human-facing text as identity.
 
 ## Deterministic Debug Rendering
 
