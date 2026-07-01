@@ -22,7 +22,7 @@ CLI rendering owns:
 - severity/code/semantic-name headers;
 - source-location headers derived from caller-provided path and line-map data;
 - source excerpts, primary underlines, secondary underlines, and labels;
-- note/help lines projected from record notes and later structured fix data;
+- note/help lines projected from record notes and structured fix payloads;
 - optional color/style tokens that can be disabled for byte-stable output;
 - golden-test snapshots for rendered text.
 
@@ -134,9 +134,10 @@ source block for that span immediately before the note text, using `-`
 underlines and the note message as the label unless the span already has a
 label. Rendering must not drop note source context silently.
 
-Task 11 may render existing `FixSuggestionRef` values only as opaque, bounded
-help references until task 13 defines structured fix payloads. It must not
-invent text edits, code actions, or automatic application behavior.
+Rendering may project structured fix payloads as bounded `help:` lines,
+including stable fix ids and human titles. It must not invent text edits, code
+actions, or automatic application behavior, and it must not treat fix titles as
+identity.
 
 Task 11 may render an `ExplanationRef` as a bounded `explain:` reference or
 documentation hint, but it must not resolve large traces. Explanation storage

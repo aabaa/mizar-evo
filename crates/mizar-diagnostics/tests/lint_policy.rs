@@ -177,7 +177,7 @@ fn diagnostics_allow_exceptions_are_documented_inline() {
 }
 
 #[test]
-fn diagnostics_lib_states_initial_boundary() {
+fn diagnostics_lib_states_task_thirteen_boundary() {
     let lib_path = crate_root().join("src/lib.rs");
     let source = read_to_string(&lib_path);
 
@@ -191,22 +191,24 @@ fn diagnostics_lib_states_initial_boundary() {
         "deterministic",
         "aggregation,",
         "CLI rendering",
-        "driver, LSP, and artifact integration",
-        "tasks.",
+        "structured fix suggestions",
+        "driver, LSP, artifact, and",
+        "explanation integration",
         "pub mod aggregator;",
         "pub mod failure_record;",
+        "pub mod fix;",
         "pub mod registry;",
         "pub mod render;",
         "pub mod sink;",
     ] {
         assert!(
             source.contains(marker),
-            "{} must keep the task-11 diagnostics-boundary marker `{marker}`",
+            "{} must keep the task-13 diagnostics-boundary marker `{marker}`",
             lib_path.display()
         );
     }
 
-    for forbidden_module in ["fix", "explain", "driver", "lsp", "artifact"] {
+    for forbidden_module in ["explain", "driver", "lsp", "artifact"] {
         assert!(
             !source.contains(&format!("mod {forbidden_module}")),
             "{} must not add private `{forbidden_module}` wiring before its \
@@ -224,11 +226,12 @@ fn diagnostics_lib_states_initial_boundary() {
         vec![
             "pub mod aggregator;",
             "pub mod failure_record;",
+            "pub mod fix;",
             "pub mod registry;",
             "pub mod render;",
             "pub mod sink;",
         ],
-        "{} must expose only the task-11 aggregator, registry, failure_record, render, and sink modules at \
+        "{} must expose only the task-13 aggregator, registry, failure_record, fix, render, and sink modules at \
          the crate root for now",
         lib_path.display()
     );

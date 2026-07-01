@@ -109,15 +109,18 @@ deduplication は stable machine-readable field を key にする。
 4. primary span の source key、start、end、role、freshness、zero-width intent。
 5. `stable_detail_key`。
 6. canonical order の structured details。
-7. ordered fix suggestion identity。
+7. ordered canonical fix payload: suggestion id、producer key、applicability、
+   safety、expected text を含む ordered edit、optional command reference、
+   snapshot/hash precondition。
 8. optional explanation identity。
 
 message text、localized text、rendered label、terminal styling、LSP range、source excerpt、
 producer order は identity ではない。message を変更しても、2 つの diagnostic が
 deduplicate されるかどうかを変えてはならない。
 
-aggregator は primary span、structured detail、fix suggestion identity、explanation identity
-が異なる diagnostic を merge してはならない。secondary span と note は canonical
+aggregator は primary span、structured detail、canonical fix payload、explanation identity
+が異なる diagnostic を merge してはならない。fix title、diagnostic message、rendered help、
+localized text は presentation であり identity ではない。secondary span と note は canonical
 representative から保存される。producer は identity-bearing な違いを human text に頼らず、
 structured detail、fix、explanation ref に入れるべきである。
 

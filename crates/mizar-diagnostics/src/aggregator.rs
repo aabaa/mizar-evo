@@ -10,6 +10,7 @@ use crate::{
         DiagnosticId, DiagnosticRecord, DiagnosticRecordError, DiagnosticSpan, FailureCategory,
         PipelinePhase, SpanFreshness,
     },
+    fix::FixSuggestionKey,
     registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity},
     sink::DiagnosticBatch,
 };
@@ -427,7 +428,7 @@ struct DedupKey {
     primary_span: SpanIdentityKey,
     stable_detail_key: String,
     details: Vec<(String, DiagnosticDetailValue)>,
-    fixes: Vec<String>,
+    fixes: Vec<FixSuggestionKey>,
     explanation: Option<String>,
 }
 
@@ -448,7 +449,7 @@ impl DedupKey {
             fixes: draft
                 .fixes()
                 .iter()
-                .map(|fix| fix.identity().to_owned())
+                .map(|fix| fix.canonical_key())
                 .collect(),
             explanation: draft
                 .explanation()

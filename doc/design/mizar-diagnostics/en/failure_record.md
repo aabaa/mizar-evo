@@ -44,7 +44,7 @@ Both drafts and records carry these fields:
 | `secondary_spans` | `Vec<DiagnosticSpan>` | yes, may be empty | Supporting locations, sorted by producer when naturally ordered and normalized by the aggregator. |
 | `notes` | `Vec<DiagnosticNote>` | yes, may be empty | Human-facing note/help text plus optional source anchors. |
 | `details` | `DiagnosticDetails` | yes, may be empty | Machine-readable payload map. |
-| `fixes` | `Vec<FixSuggestionRef>` | yes, may be empty | Structured fix suggestions added by task 13. Until then this is an attachment slot. |
+| `fixes` | `Vec<FixSuggestion>` | yes, may be empty | Structured advisory fix suggestions. They are normalized by canonical payload and never apply edits. |
 | `explanation` | `Option<ExplanationRef>` | optional | Lazy explanation handle added by task 15. Until then this is an attachment slot. |
 
 The message, notes, summaries, rendered labels, and localized text are
@@ -65,7 +65,7 @@ struct DiagnosticDraft {
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
-    fixes: Vec<FixSuggestionRef>,
+    fixes: Vec<FixSuggestion>,
     explanation: Option<ExplanationRef>,
 }
 ```
@@ -101,7 +101,7 @@ struct DiagnosticRecord {
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
-    fixes: Vec<FixSuggestionRef>,
+    fixes: Vec<FixSuggestion>,
     explanation: Option<ExplanationRef>,
     related: Vec<DiagnosticHandle>,
     freshness: DiagnosticFreshness,
@@ -176,8 +176,8 @@ enum StaleDiagnosticReason {
 
 `DiagnosticId` is deterministic within one `BuildSnapshotId`; it is not globally
 meaningful. The aggregator derives it from source identity, diagnostic code,
-phase, primary span, stable detail key, normalized details, fix identity,
-explanation identity, and the deduplicated ordinal.
+phase, primary span, stable detail key, normalized details, canonical fix
+payloads, explanation identity, and the deduplicated ordinal.
 
 `Current` records are eligible for CLI output, artifact projection, and semantic
 LSP publication by the owning consumer. `Stale` records may be shown by an editor
@@ -320,20 +320,19 @@ enum DiagnosticNoteKind {
 
 Notes are human-facing projections attached to the record. A `help` note may be
 rendered as `help:` by CLI output, but the note itself is not a structured edit.
-Structured edits belong to `FixSuggestionRef` and task 13.
+Structured edits belong to `FixSuggestion` payloads and `fix.md`.
 
 ## Attachment Slots
 
-`FixSuggestionRef` and `ExplanationRef` are record attachment slots, not
-placeholder adapters. Task 13 defines structured fix payloads and edit
-applicability. Task 15 defines lazy explanation handles. Until those tasks land,
-record implementation may represent these fields as empty attachment vectors or
-opaque references only when doing so is required by the record shape; it must not
-invent provisional LSP code actions, CLI formatting, or explanation storage.
-Task 5 opaque attachment identities use the same ASCII grammar as
-`stable_detail_key` so aggregation and debug snapshots can compare them
-deterministically. Later fix/explain tasks may wrap those identities with richer
-payloads, but they must not reinterpret human-facing text as identity.
+`FixSuggestion` values are structured advisory payloads, not placeholder
+adapters. They carry stable suggestion identity, optional producer identity,
+applicability, safety, edits, command refs, and snapshot/hash preconditions as
+specified by `fix.md`; they do not apply edits, create LSP code actions, execute
+commands, or mutate artifacts. `ExplanationRef` remains an attachment slot until
+task 15 defines lazy explanation handles. These attachment identities use the
+same ASCII grammar as `stable_detail_key` so aggregation and debug snapshots can
+compare them deterministically, and they must not reinterpret human-facing text
+as identity.
 
 ## Deterministic Debug Rendering
 

@@ -24,7 +24,7 @@ and internal 03; the crate refines architecture 12 and 19 and internal 03.
 | sink | `sink.md` (task 6) | `src/sink.rs` | [x] |
 | aggregator | `aggregator.md` (task 8) | `src/aggregator.rs` | [x] |
 | render | `render.md` (task 10) | `src/render.rs` | [x] |
-| fix | `fix.md` (task 12) | `src/fix.rs` | [ ] |
+| fix | `fix.md` (task 12) | `src/fix.rs` | [x] |
 | explain | `explain.md` (task 14) | `src/explain.rs` | [ ] |
 
 `mizar-diagnostics` owns the canonical diagnostic record shared by every
@@ -158,8 +158,9 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
      `DiagnosticDraft` and immutable `DiagnosticRecord` types, source
      snapshot/freshness state, snapshot-scoped handles, stable failure
      categories, span validation with zero-width intent, structured detail maps
-     with deterministic key grammar and value ordering, note payloads, opaque
-     fix/explanation attachment refs, descriptor projection from the registry,
+     with deterministic key grammar and value ordering, note payloads,
+     structured fix storage and explanation attachment slots, descriptor
+     projection from the registry,
      and deterministic debug snapshots. Tests cover structural draft-to-record
      round-trips, `SourceId`-backed span invariants, detail-key validation and
      sorted details, byte-stable debug output, stale/current freshness
@@ -272,9 +273,10 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       `DiagnosticRenderInput`, and `render_diagnostics`. Rendering preserves
       input order, emits code/severity/semantic headers, reads caller-supplied
       paths/source keys/line-column data, renders primary and secondary source
-      blocks plus note spans, projects notes/fix refs/explanation refs as
-      bounded text, supports byte-stable plain output and ANSI header styling,
-      and falls back deterministically when source context is missing. Tests
+      blocks plus note spans, projects notes, structured fix payloads, and
+      explanation refs as bounded text, supports byte-stable plain output and
+      ANSI header styling, and falls back deterministically when source context
+      is missing. Tests
       cover byte-stable plain rendering, secondary and note spans, fix/help and
       explanation projections, missing-source fallback, multi-diagnostic
       separators, input ordering, and ANSI header styling. Verification passed
@@ -296,10 +298,19 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       current-buffer validation, command execution, artifact mutation,
       driver orchestration, and proof/kernel acceptance outside fix authority.
 
-13. **Fix suggestions.** [ ]
+13. **Fix suggestions.** [x]
     - Implement structured fix payloads attached to records.
     - Tests: fix round-trips; edits reference valid ranges.
     - Deps: 5, 12. Spec: `fix.md`.
+    - Completed by task 13: `src/fix.rs` now provides stable
+      `FixSuggestionId`, optional producer keys, structured edit payloads,
+      applicability and safety metadata, command refs, snapshot/hash
+      preconditions, deterministic edit ordering, overlap/range validation,
+      and byte-stable debug snapshots. `DiagnosticDraft` and
+      `DiagnosticRecord` carry normalized structured fixes, aggregation dedup
+      keys include the canonical fix payload while excluding title/message text,
+      and CLI rendering projects bounded help text without applying edits or
+      creating LSP code actions.
 
 14. **Spec: `explain.md`.** [ ]
     - Write the explanation spec (English and Japanese, no code): lazy

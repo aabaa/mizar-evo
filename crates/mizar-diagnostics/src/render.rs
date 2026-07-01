@@ -161,7 +161,7 @@ fn render_record(
     }
 
     for fix in record.fixes() {
-        lines.push(format!("   = help: fix suggestion `{}`", fix.identity()));
+        lines.push(render_fix_help(fix));
     }
     if let Some(explanation) = record.explanation() {
         lines.push(format!("   = explain: `{}`", explanation.identity()));
@@ -186,6 +186,34 @@ fn render_header(record: &DiagnosticRecord, style: RenderStyle) -> String {
             DiagnosticSeverity::Info => format!("\x1b[36m{header}\x1b[0m"),
         },
     }
+}
+
+fn render_fix_help(fix: &crate::fix::FixSuggestion) -> String {
+    let title = if fix.title().is_empty() {
+        fix.id().identity()
+    } else {
+        fix.title()
+    };
+    let mut help = format!(
+        "   = help: fix suggestion `{}`: {title}",
+        fix.id().identity()
+    );
+    if !fix.edits().is_empty() {
+        help.push_str(&format!(
+            " ({} {}, {} edit{})",
+            fix.applicability(),
+            fix.safety(),
+            fix.edits().len(),
+            if fix.edits().len() == 1 { "" } else { "s" }
+        ));
+    } else if let Some(command) = fix.command() {
+        help.push_str(&format!(
+            " ({} command `{}`)",
+            fix.safety(),
+            command.identity()
+        ));
+    }
+    help
 }
 
 fn render_severity(severity: DiagnosticSeverity) -> &'static str {

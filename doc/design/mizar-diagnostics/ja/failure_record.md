@@ -44,7 +44,7 @@ draft と record は次の field を共有する。
 | `secondary_spans` | `Vec<DiagnosticSpan>` | yes, may be empty | 補助 location。自然な順序がある場合は producer が並べ、aggregator が normalize する。 |
 | `notes` | `Vec<DiagnosticNote>` | yes, may be empty | 人間向け note/help text と任意の source anchor。 |
 | `details` | `DiagnosticDetails` | yes, may be empty | machine-readable payload map。 |
-| `fixes` | `Vec<FixSuggestionRef>` | yes, may be empty | task 13 が追加する structured fix suggestion。それまでは attachment slot。 |
+| `fixes` | `Vec<FixSuggestion>` | yes, may be empty | structured advisory fix suggestion。canonical payload で normalize され、edit を適用しない。 |
 | `explanation` | `Option<ExplanationRef>` | optional | task 15 が追加する lazy explanation handle。それまでは attachment slot。 |
 
 message、note、summary、rendered label、localized text は presentation payload である。
@@ -65,7 +65,7 @@ struct DiagnosticDraft {
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
-    fixes: Vec<FixSuggestionRef>,
+    fixes: Vec<FixSuggestion>,
     explanation: Option<ExplanationRef>,
 }
 ```
@@ -100,7 +100,7 @@ struct DiagnosticRecord {
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
-    fixes: Vec<FixSuggestionRef>,
+    fixes: Vec<FixSuggestion>,
     explanation: Option<ExplanationRef>,
     related: Vec<DiagnosticHandle>,
     freshness: DiagnosticFreshness,
@@ -173,8 +173,8 @@ enum StaleDiagnosticReason {
 
 `DiagnosticId` は 1 つの `BuildSnapshotId` の中で deterministic であり、global な
 意味は持たない。aggregator は source identity、diagnostic code、phase、primary
-span、stable detail key、normalized details、fix identity、explanation identity、
-deduplicated ordinal からこれを導出する。
+span、stable detail key、normalized details、canonical fix payload、explanation
+identity、deduplicated ordinal からこれを導出する。
 
 `Current` record は、owning consumer による CLI output、artifact projection、
 semantic LSP publication の対象になりうる。`Stale` record は LSP layer が stale と
@@ -315,20 +315,18 @@ enum DiagnosticNoteKind {
 
 note は record に attach される human-facing projection である。`help` note は CLI
 output で `help:` として render されてよいが、note 自体は structured edit ではない。
-structured edit は `FixSuggestionRef` と task 13 に属する。
+structured edit は `FixSuggestion` payload と `fix.md` に属する。
 
 ## Attachment Slots
 
-`FixSuggestionRef` と `ExplanationRef` は record attachment slot であり、placeholder
-adapter ではない。task 13 は structured fix payload と edit applicability を定義する。
-task 15 は lazy explanation handle を定義する。それらの task が入るまでは、record
-実装は record shape に必要な場合に限り、これらの field を空 attachment vector または
-opaque reference として表してよい。provisional LSP code action、CLI formatting、
-explanation storage を発明してはならない。
-task 5 の opaque attachment identity は、aggregation と debug snapshot が deterministic
-に比較できるよう `stable_detail_key` と同じ ASCII grammar を使う。後続の fix/explain
-task はこれらの identity をより豊かな payload で wrap してよいが、人間向け text を
-identity として再解釈してはならない。
+`FixSuggestion` value は structured advisory payload であり、placeholder adapter ではない。
+`fix.md` が定義する stable suggestion identity、optional producer identity、applicability、
+safety、edit、command ref、snapshot/hash precondition を保持するが、edit の適用、LSP code
+action の作成、command execution、artifact mutation は行わない。`ExplanationRef` は task 15
+が lazy explanation handle を定義するまで attachment slot のままである。これらの attachment
+identity は、aggregation と debug snapshot が deterministic に比較できるよう
+`stable_detail_key` と同じ ASCII grammar を使い、人間向け text を identity として再解釈しては
+ならない。
 
 ## Deterministic Debug Rendering
 

@@ -4,8 +4,9 @@ use mizar_diagnostics::{
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
         DiagnosticNote, DiagnosticNoteKind, DiagnosticSpan, ExplanationRef, FailureCategory,
-        FixSuggestionRef, PipelinePhase,
+        PipelinePhase,
     },
+    fix::{FixSuggestion, FixSuggestionId},
     registry::DiagnosticCode,
     sink::{DiagnosticProducerScope, DiagnosticSink, DiagnosticSinkError},
 };
@@ -314,7 +315,13 @@ fn rich_draft(snapshot: BuildSnapshotId, source_id: SourceId) -> DiagnosticDraft
             ("sink.payload_present", DiagnosticDetailValue::Boolean(true)),
         ])
         .expect("valid details"),
-        fixes: vec![FixSuggestionRef::new("sink.insert_expected_token").expect("valid fix ref")],
+        fixes: vec![
+            FixSuggestion::informational(
+                FixSuggestionId::new("sink.insert_expected_token").expect("valid fix identity"),
+                "insert the expected token",
+            )
+            .expect("valid informational fix"),
+        ],
         explanation: Some(
             ExplanationRef::new("sink.explain_unexpected_token").expect("valid explanation ref"),
         ),

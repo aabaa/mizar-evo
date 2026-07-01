@@ -116,7 +116,9 @@ Deduplication is keyed on stable machine-readable fields:
 4. Primary span source key, start, end, role, freshness, and zero-width intent.
 5. `stable_detail_key`.
 6. Canonically ordered structured details.
-7. Ordered fix suggestion identities.
+7. Ordered canonical fix payloads: suggestion id, producer key,
+   applicability, safety, ordered edits including expected text, optional
+   command reference, and snapshot/hash preconditions.
 8. Optional explanation identity.
 
 Message text, localized text, rendered labels, terminal styling, LSP ranges,
@@ -124,10 +126,12 @@ source excerpts, and producer order are not identity. Changing a message must
 not change whether two diagnostics deduplicate.
 
 The aggregator must not merge diagnostics with different primary spans,
-different structured details, different fix suggestion identities, or different
-explanation identities. Secondary spans and notes are preserved from the
-canonical representative; producers should put identity-bearing distinctions in
-structured details, fixes, or explanation refs instead of relying on human text.
+different structured details, different canonical fix payloads, or different
+explanation identities. Fix titles, diagnostic messages, rendered help, and
+localized text are presentation, not identity. Secondary spans and notes are
+preserved from the canonical representative; producers should put
+identity-bearing distinctions in structured details, fixes, or explanation refs
+instead of relying on human text.
 
 When several drafts have the same dedup identity but different presentation
 payloads, the aggregator chooses a representative deterministically by sorting

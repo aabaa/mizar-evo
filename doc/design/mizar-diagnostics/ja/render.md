@@ -22,7 +22,7 @@ CLI rendering が所有するもの:
 - severity/code/semantic-name header。
 - caller-provided path と line-map data から derived される source-location header。
 - source excerpt、primary underline、secondary underline、label。
-- record note と後続 structured fix data から projection される note/help line。
+- record note と structured fix payload から projection される note/help line。
 - byte-stable output のために disable できる optional color/style token。
 - rendered text の golden-test snapshot。
 
@@ -131,9 +131,9 @@ secondary-style source block を emit する。underline は `-` を使い、spa
 場合を除き note message を label とする。rendering は note source context を silent に drop
 してはならない。
 
-task 11 は、task 13 が structured fix payload を定義するまで、既存 `FixSuggestionRef` を
-opaque で bounded な help reference としてのみ render してよい。text edit、code action、
-automatic application behavior を invent してはならない。
+rendering は structured fix payload を bounded な `help:` line として projection してよい。
+stable fix id と human title を含めてよいが、text edit、code action、automatic application
+behavior を invent してはならず、fix title を identity として扱ってはならない。
 
 task 11 は `ExplanationRef` を bounded `explain:` reference または documentation hint として
 render してよいが、large trace を resolve してはならない。explanation storage と lazy

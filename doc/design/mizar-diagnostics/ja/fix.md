@@ -34,8 +34,7 @@ fix module が所有しないもの:
 
 ## Data Model
 
-task 13 は temporary な `FixSuggestionRef` attachment slot を次と等価な structured payload で
-置き換えるか、または拡張するべきである。
+task 13 は diagnostic record 上に次と等価な形の structured fix payload を保存する。
 
 ```rust
 struct FixSuggestion {
@@ -138,13 +137,14 @@ task 13 は deterministic fix debug snapshot を公開するべきであり、fi
 
 1. `kind=fix`。
 2. `id`。
-3. `diagnostic`。
-4. `title`。Rust debug-string escaping で escape する。
-5. `applicability`。
-6. `safety`。
-7. ordered edits。
-8. optional command。
-9. snapshot/hash precondition。
+3. `producer_key`。
+4. `diagnostic`。
+5. `title`。Rust debug-string escaping で escape する。
+6. `applicability`。
+7. `safety`。
+8. ordered edits。
+9. optional command。
+10. snapshot/hash precondition。
 
 snapshot は test/debug data であり、CLI rendering でも LSP code action でもない。memory
 address、map iteration order、localized field name、process-local ordering を含めてはならない。

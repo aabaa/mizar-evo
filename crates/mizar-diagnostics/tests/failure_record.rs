@@ -5,9 +5,10 @@ use mizar_diagnostics::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
         DiagnosticFreshness, DiagnosticHandle, DiagnosticId, DiagnosticNote, DiagnosticNoteKind,
         DiagnosticRecord, DiagnosticRecordError, DiagnosticSpan, DiagnosticSpanRole,
-        FailureCategory, FixSuggestionRef, PipelinePhase, SpanFreshness, StaleDiagnosticReason,
-        ZeroWidthSpanIntent, is_valid_detail_key,
+        FailureCategory, PipelinePhase, SpanFreshness, StaleDiagnosticReason, ZeroWidthSpanIntent,
+        is_valid_detail_key,
     },
+    fix::{FixSuggestion, FixSuggestionError, FixSuggestionId},
     registry::{
         BUILTIN_DESCRIPTORS, DiagnosticCode, DiagnosticDescriptor, DiagnosticRegistry,
         DiagnosticStatus,
@@ -53,7 +54,7 @@ fn draft_and_record_round_trip_through_descriptor_metadata() {
         ("parse.recovered", DiagnosticDetailValue::Boolean(true)),
     ])
     .expect("valid details");
-    let fix = FixSuggestionRef::new("syntax.insert_end").expect("valid fix ref");
+    let fix = informational_fix("syntax.insert_end", "insert a matching keyword");
     let explanation =
         mizar_diagnostics::failure_record::ExplanationRef::new("syntax.unexpected_token.context")
             .expect("valid explanation ref");
@@ -430,8 +431,8 @@ fn detail_values_have_canonical_ordering() {
 #[test]
 fn invalid_fix_and_explanation_identities_are_rejected() {
     assert!(matches!(
-        FixSuggestionRef::new("bad-key"),
-        Err(DiagnosticRecordError::InvalidFixIdentity { identity }) if identity == "bad-key"
+        FixSuggestionId::new("bad-key"),
+        Err(FixSuggestionError::InvalidFixIdentity { identity }) if identity == "bad-key"
     ));
     assert!(matches!(
         mizar_diagnostics::failure_record::ExplanationRef::new("bad key"),
@@ -468,7 +469,10 @@ fn debug_rendering_is_byte_stable_and_sorts_details() {
         secondary_spans: vec![],
         notes: vec![],
         details,
-        fixes: vec![FixSuggestionRef::new("syntax.insert_end").expect("valid fix ref")],
+        fixes: vec![informational_fix(
+            "syntax.insert_end",
+            "insert a matching keyword",
+        )],
         explanation: Some(
             mizar_diagnostics::failure_record::ExplanationRef::new(
                 "syntax.unexpected_token.context",
@@ -506,7 +510,10 @@ fn debug_rendering_is_byte_stable_and_sorts_details() {
             "secondary=[]\n",
             "notes=[]\n",
             "details={parse.expected_count=int:2, parse.recovered=bool:true}\n",
-            "fixes=[\"syntax.insert_end\"]\n",
+            "fixes=[kind=fix\\nid=\"syntax.insert_end\"\\nproducer_key=none\\n",
+            "diagnostic=unpublished\\ntitle=\"insert a matching keyword\"\\n",
+            "applicability=informational\\nsafety=command_only\\nedits=[]\\n",
+            "command=none\\nrequired_snapshot=none\\nrequired_text_hash=none]\n",
             "explanation=\"syntax.unexpected_token.context\"\n",
             "related=[]\n",
         )
@@ -532,7 +539,12 @@ fn debug_rendering_is_byte_stable_and_sorts_details() {
             "secondary=[]\n",
             "notes=[]\n",
             "details={parse.expected_count=int:2, parse.recovered=bool:true}\n",
-            "fixes=[\"syntax.insert_end\"]\n",
+            "fixes=[kind=fix\\nid=\"syntax.insert_end\"\\nproducer_key=none\\n",
+            "diagnostic=mizar-session-build-snapshot-v1:",
+            "0404040404040404040404040404040404040404040404040404040404040404#3\\n",
+            "title=\"insert a matching keyword\"\\napplicability=informational\\n",
+            "safety=command_only\\nedits=[]\\ncommand=none\\n",
+            "required_snapshot=none\\nrequired_text_hash=none]\n",
             "explanation=\"syntax.unexpected_token.context\"\n",
             "related=[mizar-session-build-snapshot-v1:",
             "0404040404040404040404040404040404040404040404040404040404040404#4]\n",
@@ -770,6 +782,14 @@ fn draft_input(
         fixes: vec![],
         explanation: None,
     }
+}
+
+fn informational_fix(identity: &str, title: &str) -> FixSuggestion {
+    FixSuggestion::informational(
+        FixSuggestionId::new(identity).expect("valid fix identity"),
+        title,
+    )
+    .expect("valid informational fix")
 }
 
 fn snapshot_id(byte: u8) -> BuildSnapshotId {

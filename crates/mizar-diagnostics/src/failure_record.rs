@@ -4,6 +4,7 @@ use std::{cmp::Ordering, collections::BTreeMap, error::Error, fmt};
 
 use mizar_session::{BuildSnapshotId, SourceRange};
 
+use crate::fix::FixSuggestion;
 use crate::registry::{DiagnosticCode, DiagnosticRegistry, DiagnosticSeverity, DiagnosticStatus};
 
 /// Pipeline phase that produced a diagnostic.
@@ -558,28 +559,6 @@ impl PartialOrd for DiagnosticDetailValue {
     }
 }
 
-/// Opaque identity of a structured fix suggestion.
-#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct FixSuggestionRef {
-    identity: String,
-}
-
-impl FixSuggestionRef {
-    /// Creates a fix-suggestion reference identity.
-    pub fn new(identity: impl Into<String>) -> Result<Self, DiagnosticRecordError> {
-        let identity = identity.into();
-        validate_detail_key(&identity).map_err(|_| DiagnosticRecordError::InvalidFixIdentity {
-            identity: identity.clone(),
-        })?;
-        Ok(Self { identity })
-    }
-
-    /// Returns the stable fix identity.
-    pub fn identity(&self) -> &str {
-        &self.identity
-    }
-}
-
 /// Opaque identity of a lazy explanation.
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ExplanationRef {
@@ -627,8 +606,8 @@ pub struct DiagnosticDraftInput {
     pub notes: Vec<DiagnosticNote>,
     /// Structured details.
     pub details: DiagnosticDetails,
-    /// Opaque fix suggestion references.
-    pub fixes: Vec<FixSuggestionRef>,
+    /// Structured fix suggestions.
+    pub fixes: Vec<FixSuggestion>,
     /// Optional lazy explanation reference.
     pub explanation: Option<ExplanationRef>,
 }
@@ -646,7 +625,7 @@ pub struct DiagnosticDraft {
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
-    fixes: Vec<FixSuggestionRef>,
+    fixes: Vec<FixSuggestion>,
     explanation: Option<ExplanationRef>,
 }
 
@@ -685,7 +664,7 @@ impl DiagnosticDraft {
             secondary_spans: input.secondary_spans,
             notes: input.notes,
             details: input.details,
-            fixes: input.fixes,
+            fixes: normalize_fixes(input.fixes),
             explanation: input.explanation,
         })
     }
@@ -740,8 +719,8 @@ impl DiagnosticDraft {
         &self.details
     }
 
-    /// Returns fix suggestion references.
-    pub fn fixes(&self) -> &[FixSuggestionRef] {
+    /// Returns structured fix suggestions.
+    pub fn fixes(&self) -> &[FixSuggestion] {
         &self.fixes
     }
 
@@ -771,7 +750,7 @@ pub struct DiagnosticRecord {
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
     details: DiagnosticDetails,
-    fixes: Vec<FixSuggestionRef>,
+    fixes: Vec<FixSuggestion>,
     explanation: Option<ExplanationRef>,
     related: Vec<DiagnosticHandle>,
     freshness: DiagnosticFreshness,
@@ -894,8 +873,8 @@ impl DiagnosticRecord {
         &self.details
     }
 
-    /// Returns fix suggestion references.
-    pub fn fixes(&self) -> &[FixSuggestionRef] {
+    /// Returns structured fix suggestions.
+    pub fn fixes(&self) -> &[FixSuggestion] {
         &self.fixes
     }
 
@@ -933,11 +912,6 @@ pub enum DiagnosticRecordError {
     InvalidDetailKey {
         /// Rejected key.
         key: String,
-    },
-    /// A fix identity was malformed.
-    InvalidFixIdentity {
-        /// Rejected identity.
-        identity: String,
     },
     /// An explanation identity was malformed.
     InvalidExplanationIdentity {
@@ -1043,9 +1017,6 @@ impl fmt::Display for DiagnosticRecordError {
                 write!(formatter, "invalid stable detail key `{key}`")
             }
             Self::InvalidDetailKey { key } => write!(formatter, "invalid detail key `{key}`"),
-            Self::InvalidFixIdentity { identity } => {
-                write!(formatter, "invalid fix identity `{identity}`")
-            }
             Self::InvalidExplanationIdentity { identity } => {
                 write!(formatter, "invalid explanation identity `{identity}`")
             }
@@ -1290,6 +1261,16 @@ fn validate_related_handles(
     Ok(())
 }
 
+fn normalize_fixes(mut fixes: Vec<FixSuggestion>) -> Vec<FixSuggestion> {
+    fixes.sort_by(|left, right| {
+        left.canonical_key()
+            .cmp(&right.canonical_key())
+            .then_with(|| left.debug_snapshot().cmp(&right.debug_snapshot()))
+    });
+    fixes.dedup_by(|left, right| left.canonical_key() == right.canonical_key());
+    fixes
+}
+
 fn variant_order(value: &DiagnosticDetailValue) -> u8 {
     match value {
         DiagnosticDetailValue::Boolean(_) => 0,
@@ -1342,7 +1323,10 @@ fn render_debug_snapshot(snapshot: DebugSnapshot<'_>) -> String {
             ));
             lines.push(format!("notes={}", render_notes(&draft.notes)));
             lines.push(format!("details={}", render_details(&draft.details)));
-            lines.push(format!("fixes={}", render_fixes(&draft.fixes)));
+            lines.push(format!(
+                "fixes={}",
+                render_fixes(&draft.fixes, "unpublished")
+            ));
             lines.push(format!(
                 "explanation={}",
                 render_explanation(draft.explanation.as_ref())
@@ -1371,7 +1355,10 @@ fn render_debug_snapshot(snapshot: DebugSnapshot<'_>) -> String {
             ));
             lines.push(format!("notes={}", render_notes(&record.notes)));
             lines.push(format!("details={}", render_details(&record.details)));
-            lines.push(format!("fixes={}", render_fixes(&record.fixes)));
+            lines.push(format!(
+                "fixes={}",
+                render_fixes(&record.fixes, &render_handle(record.handle))
+            ));
             lines.push(format!(
                 "explanation={}",
                 render_explanation(record.explanation.as_ref())
@@ -1512,10 +1499,10 @@ fn render_detail_value(value: &DiagnosticDetailValue) -> String {
     }
 }
 
-fn render_fixes(fixes: &[FixSuggestionRef]) -> String {
+fn render_fixes(fixes: &[FixSuggestion], diagnostic: &str) -> String {
     let rendered = fixes
         .iter()
-        .map(|fix| format!("{:?}", fix.identity))
+        .map(|fix| escape_embedded_snapshot(&fix.debug_snapshot_with_diagnostic(diagnostic)))
         .collect::<Vec<_>>();
     format!("[{}]", rendered.join(", "))
 }
@@ -1529,4 +1516,11 @@ fn render_explanation(explanation: Option<&ExplanationRef>) -> String {
 
 fn render_optional_string(value: Option<&str>) -> String {
     value.map_or_else(|| "none".to_owned(), |value| format!("{value:?}"))
+}
+
+fn escape_embedded_snapshot(snapshot: &str) -> String {
+    snapshot
+        .strip_suffix('\n')
+        .unwrap_or(snapshot)
+        .replace('\n', "\\n")
 }

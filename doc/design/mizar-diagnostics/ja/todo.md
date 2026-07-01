@@ -24,7 +24,7 @@ registry/render/fix/explain モジュールを加えたものに従う。この 
 | sink | `sink.md`（task 6） | `src/sink.rs` | [x] |
 | aggregator | `aggregator.md`（task 8） | `src/aggregator.rs` | [x] |
 | render | `render.md`（task 10） | `src/render.rs` | [x] |
-| fix | `fix.md`（task 12） | `src/fix.rs` | [ ] |
+| fix | `fix.md`（task 12） | `src/fix.rs` | [x] |
 | explain | `explain.md`（task 14） | `src/explain.rs` | [ ] |
 
 `mizar-diagnostics` はすべての phase が共有する正準 diagnostic レコードを
@@ -156,7 +156,8 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
      immutable `DiagnosticRecord`、source snapshot/freshness state、snapshot-scoped
      handle、stable failure category、zero-width intent 付き span validation、
      deterministic key grammar と value ordering を持つ structured detail map、note
-     payload、opaque fix/explanation attachment ref、registry descriptor projection、
+     payload、structured fix storage と explanation attachment slot、
+     registry descriptor projection、
      deterministic debug snapshot を提供する。tests は structural draft-to-record
      round-trip、`SourceId` に基づく span invariant、detail-key validation と sorted
      details、byte-stable debug output、stale/current freshness validation、current
@@ -259,9 +260,9 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       `RenderOptions`、`RenderStyle`、`DiagnosticRenderInput`、`render_diagnostics` を
       提供する。rendering は input order を保存し、code/severity/semantic header を emit
       し、caller-supplied path/source key/line-column data を読み、primary/secondary source
-      block と note span を render し、note/fix ref/explanation ref を bounded text として
-      project し、byte-stable plain output と ANSI header styling を support し、source
-      context が欠ける場合も deterministic fallback を使う。tests は byte-stable plain
+      block と note span を render し、note、structured fix payload、explanation ref を
+      bounded text として project し、byte-stable plain output と ANSI header styling を
+      support し、source context が欠ける場合も deterministic fallback を使う。tests は byte-stable plain
       rendering、secondary/note span、fix/help と explanation projection、missing-source
       fallback、multi-diagnostic separator、input ordering、ANSI header styling を覆う。
       verification は `cargo test -p mizar-diagnostics`、
@@ -281,10 +282,18 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       validation、command execution、artifact mutation、driver orchestration、
       proof/kernel acceptance を fix authority の外に保つ boundary を定義した。
 
-13. **fix 提案。** [ ]
+13. **fix 提案。** [x]
     - レコードに付く構造化 fix ペイロードを実装する。
     - テスト: fix のラウンドトリップ。編集が有効な範囲を参照する。
     - 依存: 5、12。仕様: `fix.md`。
+    - task 13 で完了: `src/fix.rs` は stable `FixSuggestionId`、optional
+      producer key、structured edit payload、applicability/safety metadata、
+      command ref、snapshot/hash precondition、deterministic edit ordering、
+      overlap/range validation、byte-stable debug snapshot を提供する。
+      `DiagnosticDraft` と `DiagnosticRecord` は normalized structured fix を保持し、
+      aggregation dedup key は title/message text を除外しながら canonical fix payload を
+      含める。CLI rendering は bounded help text を projection するだけで、edit の
+      application や LSP code action は作らない。
 
 14. **仕様: `explain.md`。** [ ]
     - explanation の仕様を執筆する（英語と日本語、コードなし）: 遅延

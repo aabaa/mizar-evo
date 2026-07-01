@@ -37,8 +37,8 @@ The fix module does not own:
 
 ## Data Model
 
-Task 13 should replace the temporary `FixSuggestionRef` attachment slot with, or
-augment it by, structured payloads equivalent to:
+Task 13 stores structured fix payloads on diagnostic records in the shape
+equivalent to:
 
 ```rust
 struct FixSuggestion {
@@ -147,13 +147,14 @@ Task 13 should expose deterministic fix debug snapshots with:
 
 1. `kind=fix`.
 2. `id`.
-3. `diagnostic`.
-4. `title`, escaped with Rust debug-string escaping.
-5. `applicability`.
-6. `safety`.
-7. ordered edits.
-8. optional command.
-9. snapshot/hash preconditions.
+3. `producer_key`.
+4. `diagnostic`.
+5. `title`, escaped with Rust debug-string escaping.
+6. `applicability`.
+7. `safety`.
+8. ordered edits.
+9. optional command.
+10. snapshot/hash preconditions.
 
 Snapshots are test/debug data, not CLI rendering and not LSP code actions. They
 must not include memory addresses, map iteration order, localized field names,

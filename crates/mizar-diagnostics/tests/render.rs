@@ -4,8 +4,12 @@ use mizar_diagnostics::{
     failure_record::{
         DiagnosticDetailValue, DiagnosticDetails, DiagnosticDraft, DiagnosticDraftInput,
         DiagnosticFreshness, DiagnosticHandle, DiagnosticId, DiagnosticNote, DiagnosticNoteKind,
-        DiagnosticSpan, DiagnosticSpanRole, ExplanationRef, FailureCategory, FixSuggestionRef,
-        PipelinePhase, SpanFreshness, ZeroWidthSpanIntent,
+        DiagnosticSpan, DiagnosticSpanRole, ExplanationRef, FailureCategory, PipelinePhase,
+        SpanFreshness, ZeroWidthSpanIntent,
+    },
+    fix::{
+        FixApplicability, FixCommandRef, FixEdit, FixSafety, FixSuggestion, FixSuggestionId,
+        FixSuggestionInput,
     },
     registry::DiagnosticCode,
     render::{
@@ -57,9 +61,10 @@ fn plain_rendering_is_byte_stable_for_primary_secondary_notes_and_refs() {
                     Some(note_span),
                 ),
             ])
-            .fixes(vec![
-                FixSuggestionRef::new("render.qualify").expect("valid fix"),
-            ])
+            .fixes(vec![informational_fix(
+                "render.qualify",
+                "qualify one candidate",
+            )])
             .explanation(ExplanationRef::new("render.explain").expect("valid explanation")),
     );
 
@@ -85,10 +90,42 @@ fn plain_rendering_is_byte_stable_for_primary_secondary_notes_and_refs() {
             " 3 | end\n",
             "   | --- closing token\n",
             "   = help: qualify one candidate\n",
-            "   = help: fix suggestion `render.qualify`\n",
+            "   = help: fix suggestion `render.qualify`: qualify one candidate\n",
             "   = explain: `render.explain`",
         )
     );
+}
+
+#[test]
+fn fix_rendering_projects_edit_and_command_metadata_without_application_payloads() {
+    let snapshot = snapshot_id(7);
+    let source_id = source_id(snapshot);
+    let context = TestSourceContext::new().with_source(source_id, "fix.miz", "Src(7)", "abc\n");
+    let record = record(
+        RecordFixture::new(snapshot, source_id, 0, 1, "fixes")
+            .fixes(vec![command_fix(), text_edit_fix(source_id)]),
+    );
+    let rendered = render_diagnostics(DiagnosticRenderInput::new(
+        std::slice::from_ref(&record),
+        &context,
+        RenderOptions::plain(),
+    ));
+
+    assert_eq!(
+        rendered,
+        concat!(
+            "error[E0001]: fixes (syntax.unexpected_token)\n",
+            "  --> fix.miz:1:1\n",
+            "   |\n",
+            " 1 | abc\n",
+            "   | ^ fixes\n",
+            "   = help: fix suggestion `render.command`: open command (command_only command `render.open_command`)\n",
+            "   = help: fix suggestion `render.insert`: insert token (machine_applicable local_text_edit, 1 edit)",
+        )
+    );
+    assert!(!rendered.contains("WorkspaceEdit"));
+    assert!(!rendered.contains("replacement"));
+    assert!(!rendered.contains("expected_text"));
 }
 
 #[test]
@@ -517,7 +554,7 @@ struct RecordFixture {
     primary_span: Option<DiagnosticSpan>,
     secondary_spans: Vec<DiagnosticSpan>,
     notes: Vec<DiagnosticNote>,
-    fixes: Vec<FixSuggestionRef>,
+    fixes: Vec<FixSuggestion>,
     explanation: Option<ExplanationRef>,
 }
 
@@ -576,7 +613,7 @@ impl RecordFixture {
         self
     }
 
-    fn fixes(mut self, fixes: Vec<FixSuggestionRef>) -> Self {
+    fn fixes(mut self, fixes: Vec<FixSuggestion>) -> Self {
         self.fixes = fixes;
         self
     }
@@ -626,6 +663,50 @@ fn record(fixture: RecordFixture) -> mizar_diagnostics::failure_record::Diagnost
         vec![],
     )
     .expect("valid record")
+}
+
+fn informational_fix(identity: &str, title: &str) -> FixSuggestion {
+    FixSuggestion::informational(
+        FixSuggestionId::new(identity).expect("valid fix identity"),
+        title,
+    )
+    .expect("valid informational fix")
+}
+
+fn text_edit_fix(source_id: SourceId) -> FixSuggestion {
+    FixSuggestion::local_text_edit(
+        FixSuggestionId::new("render.insert").expect("valid fix identity"),
+        "insert token",
+        FixApplicability::MachineApplicable,
+        vec![
+            FixEdit::new(
+                SourceRange {
+                    source_id,
+                    start: 1,
+                    end: 1,
+                },
+                "x",
+                Some(String::new()),
+            )
+            .expect("valid edit"),
+        ],
+    )
+    .expect("valid text edit fix")
+}
+
+fn command_fix() -> FixSuggestion {
+    FixSuggestion::new(FixSuggestionInput {
+        id: FixSuggestionId::new("render.command").expect("valid fix identity"),
+        producer_key: None,
+        title: "open command".to_owned(),
+        applicability: FixApplicability::MaybeIncorrect,
+        safety: FixSafety::CommandOnly,
+        edits: Vec::new(),
+        command: Some(FixCommandRef::new("render.open_command").expect("valid command")),
+        required_snapshot: None,
+        required_text_hash: None,
+    })
+    .expect("valid command fix")
 }
 
 fn line_starts(text: &str) -> Vec<usize> {
