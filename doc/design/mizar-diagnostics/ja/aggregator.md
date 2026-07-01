@@ -164,9 +164,10 @@ structured field を key にしなければならない。
    `\n` として escape して embed する。
 
 task 9 が obsolete accounting entry を公開する場合、その debug form は source snapshot、
-producer name、local draft ordinal、draft debug snapshot で sort されなければならない。
-snapshot は memory address、thread id、hash-map iteration order、key としての localized
-text、process-local ordering を含めてはならない。
+producer name、local draft ordinal、draft debug snapshot で sort され、`record[n]` line の
+後に `obsolete[n]` line として render されなければならない。snapshot は memory address、
+thread id、hash-map iteration order、key としての localized text、process-local ordering
+を含めてはならない。
 
 ## Boundary Rules
 

@@ -22,7 +22,7 @@ and internal 03; the crate refines architecture 12 and 19 and internal 03.
 | registry | `registry.md` (task 2) | `src/registry.rs` | [x] |
 | failure_record | `failure_record.md` (task 4) | `src/failure_record.rs` | [x] |
 | sink | `sink.md` (task 6) | `src/sink.rs` | [x] |
-| aggregator | `aggregator.md` (task 8) | `src/aggregator.rs` | [ ] |
+| aggregator | `aggregator.md` (task 8) | `src/aggregator.rs` | [x] |
 | render | `render.md` (task 10) | `src/render.rs` | [ ] |
 | fix | `fix.md` (task 12) | `src/fix.rs` | [ ] |
 | explain | `explain.md` (task 14) | `src/explain.rs` | [ ] |
@@ -221,7 +221,7 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
      adoption, and legacy diagnostic migration are recorded as outside task 9
      scope or `external_dependency_gap` rather than placeholder APIs.
 
-9. **Aggregator implementation.** [ ]
+9. **Aggregator implementation.** [x]
    - Implement aggregation into immutable `BuildDiagnosticIndex` values
      with deterministic ordering independent of production order.
    - Tests: shuffled input produces identical indexes; dedup fixtures;
@@ -229,6 +229,20 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
      cases where otherwise equal code/phase/primary-span records keep distinct
      structured details, fix edits, or explanation refs.
    - Deps: 7, 8. Spec: `aggregator.md`.
+   - Completed by task 9: `src/aggregator.rs` now provides
+     `DiagnosticAggregationInput`, deterministic `DiagnosticSourceKey`,
+     obsolete-draft accounting, immutable `BuildDiagnosticIndex`, and
+     `DiagnosticAggregationError`. Aggregation consumes sealed batches, filters
+     non-publication snapshots out of current records, deduplicates by stable
+     structured identity rather than message text, chooses representatives
+     deterministically, assigns dense snapshot-local handles after canonical
+     sorting, and exposes by-source/by-id lookup plus byte-stable debug
+     snapshots. Tests cover shuffled input determinism, message-independent
+     deduplication, negative dedup cases for details/fixes/explanations,
+     obsolete snapshot withholding, snapshot-scoped id lookup, and debug output.
+     Verification passed `cargo test -p mizar-diagnostics`,
+     `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`, and
+     `cargo fmt --check`.
 
 ### Presentation
 

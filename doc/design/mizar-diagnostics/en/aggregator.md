@@ -175,8 +175,9 @@ field order:
 
 If task 9 exposes obsolete accounting entries, their debug form must be sorted
 by source snapshot, producer name, local draft ordinal, and draft debug
-snapshot. The snapshot must not include memory addresses, thread ids, hash-map
-iteration order, localized text as keys, or process-local ordering.
+snapshot, and rendered after the `record[n]` lines as `obsolete[n]` lines. The
+snapshot must not include memory addresses, thread ids, hash-map iteration
+order, localized text as keys, or process-local ordering.
 
 ## Boundary Rules
 

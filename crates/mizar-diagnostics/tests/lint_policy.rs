@@ -188,29 +188,23 @@ fn diagnostics_lib_states_initial_boundary() {
         "diagnostic-code registry,",
         "structured failure records",
         "producer-side sinks",
-        "aggregation, rendering,",
+        "deterministic",
+        "aggregation; rendering,",
         "driver, LSP, and artifact integration",
-        "artifact integration are added by later tasks",
+        "later tasks.",
+        "pub mod aggregator;",
         "pub mod failure_record;",
         "pub mod registry;",
         "pub mod sink;",
     ] {
         assert!(
             source.contains(marker),
-            "{} must keep the task-7 diagnostics-boundary marker `{marker}`",
+            "{} must keep the task-9 diagnostics-boundary marker `{marker}`",
             lib_path.display()
         );
     }
 
-    for forbidden_module in [
-        "aggregator",
-        "render",
-        "fix",
-        "explain",
-        "driver",
-        "lsp",
-        "artifact",
-    ] {
+    for forbidden_module in ["render", "fix", "explain", "driver", "lsp", "artifact"] {
         assert!(
             !source.contains(&format!("mod {forbidden_module}")),
             "{} must not add private `{forbidden_module}` wiring before its \
@@ -226,11 +220,12 @@ fn diagnostics_lib_states_initial_boundary() {
             .filter(|line| line.starts_with("pub ") || line.starts_with("pub("))
             .collect::<Vec<_>>(),
         vec![
+            "pub mod aggregator;",
             "pub mod failure_record;",
             "pub mod registry;",
             "pub mod sink;",
         ],
-        "{} must expose only the task-7 registry, failure_record, and sink modules at \
+        "{} must expose only the task-9 aggregator, registry, failure_record, and sink modules at \
          the crate root for now",
         lib_path.display()
     );

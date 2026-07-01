@@ -22,7 +22,7 @@ registry/render/fix/explain モジュールを加えたものに従う。この 
 | registry | `registry.md`（task 2） | `src/registry.rs` | [x] |
 | failure_record | `failure_record.md`（task 4） | `src/failure_record.rs` | [x] |
 | sink | `sink.md`（task 6） | `src/sink.rs` | [x] |
-| aggregator | `aggregator.md`（task 8） | `src/aggregator.rs` | [ ] |
+| aggregator | `aggregator.md`（task 8） | `src/aggregator.rs` | [x] |
 | render | `render.md`（task 10） | `src/render.rs` | [ ] |
 | fix | `fix.md`（task 12） | `src/fix.rs` | [ ] |
 | explain | `explain.md`（task 14） | `src/explain.rs` | [ ] |
@@ -212,7 +212,7 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
      adoption、legacy diagnostic migration は task 9 の scope 外または placeholder API では
      なく `external_dependency_gap` として記録した。
 
-9. **集約の実装。** [ ]
+9. **集約の実装。** [x]
    - 生産順に依存しない決定的順序を持つ不変の `BuildDiagnosticIndex` への
      集約を実装する。
    - テスト: 入力をシャッフルしても同一の索引。重複排除のフィクスチャ。
@@ -220,6 +220,18 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
      が同じでも structured details、fix edits、explanation refs が異なる record を
      merge しない negative dedup cases。
    - 依存: 7、8。仕様: `aggregator.md`。
+   - task 9 で完了: `src/aggregator.rs` は `DiagnosticAggregationInput`、
+     deterministic `DiagnosticSourceKey`、obsolete draft accounting、immutable
+     `BuildDiagnosticIndex`、`DiagnosticAggregationError` を提供する。aggregation は
+     sealed batch を consume し、publication snapshot ではない draft を current record
+     から除外し、message text ではなく stable structured identity で deduplicate し、
+     representative を deterministic に選び、canonical sort 後に dense snapshot-local
+     handle を assign し、by-source/by-id lookup と byte-stable debug snapshot を公開する。
+     tests は shuffled input determinism、message-independent deduplication、details/fixes/
+     explanations の negative dedup case、obsolete snapshot withholding、snapshot-scoped id
+     lookup、debug output を覆う。verification は `cargo test -p mizar-diagnostics`、
+     `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`、
+     `cargo fmt --check` が通った。
 
 ### 表示
 
