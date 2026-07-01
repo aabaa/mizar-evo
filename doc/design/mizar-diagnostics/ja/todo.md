@@ -62,11 +62,12 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
   R-015 は name diagnostic を crate-local/internal に保った。resolver diagnostic code
   ownership がまだ `spec_gap` であるためである。後続の user-facing resolver diagnostic
   integration の前に再検討する。
-- **既存の crate ごとの診断の移行: 未解決。task 16 で解決する。**
+- **既存の crate ごとの診断の移行: task 16 で解決済み、deferred。**
   `mizar-lexer`/`mizar-frontend`/`mizar-parser` の診断はこの crate より
-  古い。共有レコードへ移行する（その順序も）か、変換アダプターの背後で
-  ローカル型を維持するかを決め、決定とそのトリガーをここととトップ
-  レベルに記録する。
+  古く、real migration seam が存在するまで owning-crate local に残る。
+  [consumer_adoption_decision.md](consumer_adoption_decision.md) は
+  `external_dependency_gap`/`deferred` disposition、trigger、no-placeholder
+  boundary を記録する。
 - **コード空間の割り当て: 初期 spec-22 registry については task 2 で解決済み。**
   `registry.md` は現在の数値 range、canonical `PhaseFamily` vocabulary、
   descriptor default、retirement finality を固定する。normative range を持たない
@@ -324,7 +325,7 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
 
 ### 採用とフォローアップ
 
-16. **消費者の採用と移行の決定。** [ ]
+16. **消費者の採用と移行の決定。** [x]
     - 最初の消費者（`mizar-resolve`）および既存 lexer/frontend/parser 診断に
       real consumer adoption seam が存在するかを判断する。resolver/LSP/driver
       または frontend-family の adoption seam が未準備なら、ここおよびトップ
@@ -342,6 +343,14 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       language diagnostics を migrate する場合の consumer corpus または `.miz`
       coverage。
     - 依存: 9、`mizar-resolve` task 15。仕様: `aggregator.md`。
+    - task 16 で完了: [consumer_adoption_decision.md](consumer_adoption_decision.md)
+      は adoption を documentation-only として記録する。`mizar-resolve` は
+      resolver public diagnostic code-space gap により blocked のままであり、
+      lexer/frontend/parser diagnostics は real migration seam が存在するまで
+      owning-crate local に残る。`mizar-lsp` diagnostic publication と explanation
+      conversion は LSP tasks に残り、`mizar-driver` orchestration はこの checkout
+      では利用できない。source、dependency、placeholder adapter、stub API、fake
+      resolver adoption、provisional LSP/driver bridge は追加していない。
 
 17. **決定性スイート。** [ ]
     - 同一入力が同一のレコード、索引、レンダリング出力、explanation

@@ -62,11 +62,12 @@ spec: [22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_
   records and R-015 kept name diagnostics crate-local/internal because resolver
   diagnostic code ownership is still a `spec_gap`. Revisit before the first
   later user-facing resolver diagnostic integration.
-- **Migration of existing per-crate diagnostics: open, resolved by
-  task 16.** `mizar-lexer`/`mizar-frontend`/`mizar-parser` diagnostics
-  predate this crate. Decide whether they migrate to the shared record (and
-  in what order) or keep local types behind conversion adapters; record the
-  decision and its trigger here and at the top level.
+- **Migration of existing per-crate diagnostics: resolved by task 16,
+  deferred.** `mizar-lexer`/`mizar-frontend`/`mizar-parser` diagnostics
+  predate this crate and remain owning-crate local until a real migration seam
+  exists. [consumer_adoption_decision.md](consumer_adoption_decision.md)
+  records the `external_dependency_gap`/`deferred` disposition, triggers, and
+  no-placeholder boundary.
 - **Code-space allocation: resolved for the initial spec-22 registry by
   task 2.** `registry.md` fixes the current numeric ranges, canonical
   `PhaseFamily` vocabulary, descriptor defaults, and retirement finality.
@@ -346,7 +347,7 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
 
 ### Adoption and follow-ups
 
-16. **Consumer adoption and migration decision.** [ ]
+16. **Consumer adoption and migration decision.** [x]
     - Decide whether a real consumer adoption seam exists for the first
       consumer (`mizar-resolve`) and for pre-existing lexer/frontend/parser
       diagnostics. If the resolver/LSP/driver or frontend-family adoption
@@ -363,6 +364,14 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       adapter chosen by the owning consumer round-trips, and consumer corpus or
       `.miz` coverage is added when user-facing language diagnostics migrate.
     - Deps: 9, `mizar-resolve` task 15. Spec: `aggregator.md`.
+    - Completed by task 16: [consumer_adoption_decision.md](consumer_adoption_decision.md)
+      records adoption as documentation-only. `mizar-resolve` remains blocked
+      by the resolver public diagnostic code-space gap, lexer/frontend/parser
+      diagnostics remain owning-crate local until a real migration seam exists,
+      `mizar-lsp` diagnostic publication and explanation conversion remain LSP
+      tasks, and `mizar-driver` orchestration remains unavailable in this
+      checkout. No source, dependency, placeholder adapter, stub API, fake
+      resolver adoption, or provisional LSP/driver bridge was added.
 
 17. **Determinism suite.** [ ]
     - Property coverage that identical inputs produce identical records,
