@@ -24,6 +24,11 @@ per the ownership map of
 | events | `events.md` (task 9) | `src/events.rs` | [ ] |
 | cli | `cli.md` (task 12) | `src/cli.rs` | [ ] |
 
+Task D-006 records the `SourceFrontend` adapter readiness decision in
+[frontend_adapter.md](frontend_adapter.md). It is not a module source surface;
+the registry continues to classify that real adapter as an external dependency
+gap until owner seams exist.
+
 `mizar-driver` is the front door for all build modes: it parses CLI/watch/LSP
 requests into `BuildRequest`s, bootstraps phase 0 through the `mizar-build`
 planner, creates `BuildSession`s with source and dependency snapshots,
@@ -175,7 +180,7 @@ Keep `cargo test -p mizar-driver` green after each task (see
      proof acceptance, artifact publication token, LSP payload, or scheduler
      readiness logic was introduced.
 
-6. **`SourceFrontend` service adapter.** [ ]
+6. **`SourceFrontend` service adapter.** [x]
    - Wrap `mizar-frontend` phases 1-3 as the first real `PhaseService`
      (input: plan slice; output: frontend outputs sealed through
      `mizar-ir`).
@@ -183,6 +188,14 @@ Keep `cargo test -p mizar-driver` green after each task (see
      into the sink.
    - Deps: 5, `mizar-ir` task 8. Spec: `registry.md`,
      [mizar-frontend todo](../../mizar-frontend/en/todo.md).
+   - Completed by task D-006 as a classified `external_dependency_gap`, not as
+     source implementation: [frontend_adapter.md](frontend_adapter.md) records
+     that `mizar-frontend` has a real in-memory `FrontendOutput`, but the
+     required canonical `mizar-ir` producer payload, diagnostics-draft bridge,
+     and driver build-plan-to-source-request mapping are not yet real seams. No
+     fake adapter, synthetic IR payload, or message-text keyed diagnostic bridge
+     was added. The registry's `SourceFrontend` requirement remains
+     `external_dependency_gap`.
 
 ### Orchestration
 

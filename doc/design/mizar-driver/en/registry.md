@@ -71,7 +71,7 @@ their real owning crate exposes an adapter seam.
 | Service | Phases | Owner seam | Registry status |
 |---|---:|---|---|
 | `WorkspacePlanner` | 0 | `mizar-build` planner | Real bootstrap owner exists; driver task 8 wires it without duplicating planner semantics. |
-| `SourceFrontend` | 1-3 | `mizar-frontend` | Real adapter is task 6. Until then, record `external_dependency_gap`. |
+| `SourceFrontend` | 1-3 | `mizar-frontend` | D-006 records the adapter as `external_dependency_gap`; a real adapter requires future producer/diagnostic/input seams. |
 | `ModuleResolver` | 4-5 | `mizar-resolve` | `external_dependency_gap` until the resolver exposes a service surface. |
 | `SemanticChecker` | 6-8 | `mizar-checker` | `external_dependency_gap` until checker services expose real typed outputs. |
 | `Elaborator` | 9-10 | `mizar-core` | `external_dependency_gap` until core/elaboration services land. |

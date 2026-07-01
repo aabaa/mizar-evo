@@ -66,7 +66,7 @@ adapter seam を公開するまで absent でよい。
 | Service | Phases | Owner seam | Registry status |
 |---|---:|---|---|
 | `WorkspacePlanner` | 0 | `mizar-build` planner | Real bootstrap owner は存在する。driver task 8 が planner semantics を複製せず結線する。 |
-| `SourceFrontend` | 1-3 | `mizar-frontend` | real adapter は task 6。そこまでは `external_dependency_gap` として記録する。 |
+| `SourceFrontend` | 1-3 | `mizar-frontend` | D-006 は adapter を `external_dependency_gap` として記録する。real adapter には将来の producer / diagnostic / input seam が必要。 |
 | `ModuleResolver` | 4-5 | `mizar-resolve` | resolver が service surface を公開するまで `external_dependency_gap`。 |
 | `SemanticChecker` | 6-8 | `mizar-checker` | checker service が real typed output を公開するまで `external_dependency_gap`。 |
 | `Elaborator` | 9-10 | `mizar-core` | core/elaboration service が着地するまで `external_dependency_gap`。 |
