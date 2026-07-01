@@ -19,10 +19,10 @@ per the ownership map of
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | request | `request.md` (task 2) | `src/request.rs` | [x] |
-| registry | `registry.md` (task 4) | `src/registry.rs` | [x] |
-| driver | `driver.md` (task 7) | `src/driver.rs` | [x] |
+| registry | `registry.md` (task 4) | `src/registry.rs`; private helpers in `src/registry/catalog.rs` | [x] |
+| driver | `driver.md` (task 7) | `src/driver.rs`; private helpers in `src/driver/{event_log,scheduler,watch}.rs`; unit tests in `src/driver/tests.rs` | [x] |
 | events | `events.md` (task 9) | `src/events.rs` | [x] |
-| cli | `cli.md` (task 12) | `src/cli.rs` | [x] |
+| cli | `cli.md` (task 12) | `src/cli.rs`; private rendering helpers in `src/cli/output.rs` | [x] |
 
 Task D-006 records the `SourceFrontend` adapter readiness decision in
 [frontend_adapter.md](frontend_adapter.md). It is not a module source surface;
@@ -470,7 +470,7 @@ Keep `cargo test -p mizar-driver` green after each task (see
       dispatch, LSP bridge, and semantic/proof/artifact adapters remain
       classified as `deferred` or `external_dependency_gap`.
 
-21. **Module-boundary refactor gate.** [ ]
+21. **Module-boundary refactor gate.** [x]
     - Before treating the crate as ready for downstream consumers, audit the
       source layout for oversized files, mixed responsibilities, and private
       helpers that should be split along the module table and spec boundaries.
@@ -484,6 +484,14 @@ Keep `cargo test -p mizar-driver` green after each task (see
     - Deps: 20. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+    - Completed by task D-021: [module_boundary_refactor_gate.md](module_boundary_refactor_gate.md)
+      records the source-layout audit and private helper split. `cli` output
+      rendering moved to `src/cli/output.rs`; driver event construction,
+      scheduler helpers, watch helpers, and unit tests moved to private
+      `src/driver/` children; registry phase catalog/hash helpers moved to
+      `src/registry/catalog.rs`. Public modules, public APIs, deterministic
+      renderings, diagnostics/artifact-facing schemas, and owner boundaries did
+      not change.
 
 ## Recommended Verification
 

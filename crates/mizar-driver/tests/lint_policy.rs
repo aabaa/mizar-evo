@@ -156,10 +156,16 @@ fn driver_source_surface_matches_completed_tasks() {
     let root = crate_root();
     let source_files = rust_source_files(&root);
     let expected_files = vec![
+        root.join("src/cli/output.rs"),
         root.join("src/cli.rs"),
+        root.join("src/driver/event_log.rs"),
+        root.join("src/driver/scheduler.rs"),
+        root.join("src/driver/tests.rs"),
+        root.join("src/driver/watch.rs"),
         root.join("src/driver.rs"),
         root.join("src/events.rs"),
         root.join("src/lib.rs"),
+        root.join("src/registry/catalog.rs"),
         root.join("src/registry.rs"),
         root.join("src/request.rs"),
     ];
@@ -189,6 +195,37 @@ fn driver_lib_exposes_only_completed_modules() {
         "driver lib must expose only modules whose paired specs have landed:\n{}",
         violations.join("\n")
     );
+}
+
+#[test]
+fn driver_private_helper_modules_stay_private() {
+    let root = crate_root();
+    let helper_modules = [
+        ("src/cli.rs", "output"),
+        ("src/driver.rs", "event_log"),
+        ("src/driver.rs", "scheduler"),
+        ("src/driver.rs", "watch"),
+        ("src/registry.rs", "catalog"),
+    ];
+
+    for (module_file, module_name) in helper_modules {
+        let path = root.join(module_file);
+        let source = read_to_string(&path);
+        assert!(
+            source
+                .lines()
+                .any(|line| line.trim() == format!("mod {module_name};")),
+            "{module_file} must declare private helper module {module_name}"
+        );
+        assert!(
+            !source.lines().any(|line| {
+                let trimmed = line.trim();
+                trimmed == format!("pub mod {module_name};")
+                    || trimmed == format!("pub(crate) mod {module_name};")
+            }),
+            "{module_file} must not expose helper module {module_name}"
+        );
+    }
 }
 
 #[test]
