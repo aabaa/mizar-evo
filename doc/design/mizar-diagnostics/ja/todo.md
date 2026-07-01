@@ -66,9 +66,11 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
   古い。共有レコードへ移行する（その順序も）か、変換アダプターの背後で
   ローカル型を維持するかを決め、決定とそのトリガーをここととトップ
   レベルに記録する。
-- **コード空間の割り当て: 未解決。task 2 で解決する。** 仕様第 22 章に
-  従い、phase ファミリーごとの数値コード範囲と retirement ポリシーを
-  決める。
+- **コード空間の割り当て: 初期 spec-22 registry については task 2 で解決済み。**
+  `registry.md` は現在の数値 range、canonical `PhaseFamily` vocabulary、
+  descriptor default、retirement finality を固定する。normative range を持たない
+  architecture surface は `external_dependency_gap` または `spec_gap` のままとし、
+  placeholder allocation を与えてはならない。
 
 ## 順序付きタスク一覧
 
@@ -93,7 +95,7 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
      `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`、
      `cargo fmt --check` が通った。
 
-2. **仕様: `registry.md`。** [ ]
+2. **仕様: `registry.md`。** [x]
    - レジストリの仕様を執筆する（英語と日本語、コードなし）: 恒久的な
      `DiagnosticCode` の割り当て、phase ファミリーごとのコード空間、
      retirement 規則、互換性検証、参照メタデータ（意味論名、既定の
@@ -101,6 +103,14 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
    - 依存: 1。仕様: [internal 03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)
      「Diagnostic Registry」、
      [22.error_handling_and_diagnostics.md](../../../spec/ja/22.error_handling_and_diagnostics.md)。
+   - task 2 で完了: `registry.md` は stable code identity、初期 spec-22
+     phase-family range、canonical `PhaseFamily` 名、descriptor default、allocation
+     と final retirement の規則、compatibility validation、spec 22.7 に基づく
+     initial allocation、deferred code-space gap、lookup behavior を定義する。
+     message text、localized text、rendering、ordering、LSP mapping、proof status、
+     driver orchestration、artifact mutation は registry authority の外に置くことを
+     明記した。verification は `git diff --check` と `git diff --cached --check` が
+     通った。
 
 3. **レジストリの実装。** [ ]
    - 互換性検証（コードは別の意味で決して再利用されない）と、割り当て

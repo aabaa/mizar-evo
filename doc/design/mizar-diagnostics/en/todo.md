@@ -65,9 +65,11 @@ spec: [22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_
   predate this crate. Decide whether they migrate to the shared record (and
   in what order) or keep local types behind conversion adapters; record the
   decision and its trigger here and at the top level.
-- **Code-space allocation: open, resolved by task 2.** Decide the numeric
-  code ranges per phase family and the retirement policy, following spec
-  chapter 22.
+- **Code-space allocation: resolved for the initial spec-22 registry by
+  task 2.** `registry.md` fixes the current numeric ranges, canonical
+  `PhaseFamily` vocabulary, descriptor defaults, and retirement finality.
+  Architecture surfaces without normative ranges remain `external_dependency_gap`
+  or `spec_gap` and must not receive placeholder allocations.
 
 ## Ordered Task List
 
@@ -93,7 +95,7 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
      `cargo clippy -p mizar-diagnostics --all-targets -- -D warnings`, and
      `cargo fmt --check`.
 
-2. **Spec: `registry.md`.** [ ]
+2. **Spec: `registry.md`.** [x]
    - Write the registry spec (English and Japanese, no code): permanent
      `DiagnosticCode` allocation, code-space ranges per phase family,
      retirement rules, compatibility validation, and lookup metadata
@@ -101,6 +103,14 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
    - Deps: 1. Spec: [internal 03](../../internal/en/03.diagnostics_model_and_lsp_bridge.md)
      "Diagnostic Registry",
      [22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md).
+   - Completed by task 2: `registry.md` now defines stable code identity,
+     initial spec-22 phase-family ranges, canonical `PhaseFamily` names,
+     descriptor defaults, allocation and final retirement rules, compatibility
+     validation, initial allocations from spec 22.7, deferred code-space gaps,
+     and lookup behavior. It explicitly keeps message text, localized text,
+     rendering, ordering, LSP mapping, proof status, driver orchestration, and
+     artifact mutation outside registry authority. Verification passed
+     `git diff --check` and `git diff --cached --check`.
 
 3. **Registry implementation.** [ ]
    - Implement the code registry with compatibility validation (a code is
