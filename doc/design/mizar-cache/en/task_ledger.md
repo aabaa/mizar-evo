@@ -37,21 +37,21 @@ the task commit that completes that task.
 
 | ID | Class | Owner | Unblock condition |
 |---|---|---|---|
-| CACHE-G-003 | `external_dependency_gap` | `mizar-build` | Cache-aware scheduler seam task lands. |
-| CACHE-G-004 | `external_dependency_gap` | `mizar-ir` | IR cache adapter crate/tasks land. |
-| CACHE-G-005 | `external_dependency_gap` | `mizar-artifact` / `mizar-proof` | Committed witness publication token exists. |
-| DEPFPR-G001 | `external_dependency_gap` | `mizar-build` | Dependency-fingerprint consumers can plug into the scheduler cache seam. |
-| DEPFPR-G002 | `external_dependency_gap` | `mizar-ir` | IR cache adapter exposes dependency-fingerprint inputs without a placeholder API. |
-| DEPFPR-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication token integration exists; until then cache records only availability/hash inputs. |
+| CACHE-G-003 | `external_dependency_gap` | `mizar-build` | Existing cache-aware scheduler seams are wired through owner-scoped build/driver integration. |
+| CACHE-G-004 | `external_dependency_gap` | `mizar-ir` | Existing IR cache-adapter validation boundaries are wired into end-to-end rehydration integration. |
+| CACHE-G-005 | `external_dependency_gap` | `mizar-artifact` / `mizar-proof` | Artifact/proof owners provide committed witness publication-token integration. |
+| DEPFPR-G001 | `external_dependency_gap` | `mizar-build` | Dependency-fingerprint consumers are wired into the existing scheduler cache seam. |
+| DEPFPR-G002 | `external_dependency_gap` | `mizar-ir` | Existing IR cache-adapter boundaries expose dependency-fingerprint inputs through owner integration without a placeholder API. |
+| DEPFPR-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication token integration remains owner-gated; cache records only availability/hash inputs until that seam is provided. |
 | DEPFPR-G004 | `deferred` | `mizar-cache` / producers | Finer theorem/definition/cluster/notation/mode/attribute producer slices land; task 5 starts from conservative published-summary plus per-VC granularity. |
 | DEPFPR-G005 | `external_dependency_gap` | proof/cache/artifact consumers | Downstream consumers of proof-reuse metadata are owner-gated; cache records validation identities only. |
-| CACHESTORE-G001 | `external_dependency_gap` | `mizar-build` | Cache lookup/insert semantics can plug into the scheduler without placeholder scheduling. |
-| CACHESTORE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache adapter exposes record payload integration without placeholder APIs. |
-| CACHESTORE-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication-token integration exists; until then the current cache store checks only local dependency artifact availability plus the recorded domain/digest. |
+| CACHESTORE-G001 | `external_dependency_gap` | `mizar-build` | Cache lookup/insert semantics can plug into existing scheduler seams without placeholder scheduling; end-to-end owner integration remains unwired. |
+| CACHESTORE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache-adapter validation boundaries now exist, but end-to-end record rehydration integration is unwired; no placeholder APIs are added. |
+| CACHESTORE-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication-token integration remains owner-gated; the current cache store checks only local dependency artifact availability plus the recorded domain/digest until that seam is provided. |
 | CACHESTORE-G004 | `deferred` | `mizar-cache` | Later cluster-db index storage task lands; record store spec does not publish unaccepted registrations. |
-| PROOFREUSE-G001 | `external_dependency_gap` | `mizar-build` | Scheduler integration can consume proof-reuse validation without placeholder scheduling. |
-| PROOFREUSE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache adapter integration exists; until then no IR placeholder API is created. |
-| PROOFREUSE-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact-owned committed witness publication token exists; until then cache compares selected witness hashes only. |
+| PROOFREUSE-G001 | `external_dependency_gap` | `mizar-build` | Existing scheduler seams can consume proof-reuse validation, but end-to-end owner integration remains unwired; no placeholder scheduling is added. |
+| PROOFREUSE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache-adapter validation boundaries now exist, but end-to-end rehydration integration is unwired; no IR placeholder API is created. |
+| PROOFREUSE-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact-owned committed witness publication token integration remains owner-gated; cache compares selected witness hashes only until that seam is provided. |
 | PROOFREUSE-G004 | `external_dependency_gap` | `mizar-artifact` | Artifact witness schema supports a distinct trusted `DischargedBuiltin` class. |
 | PROOFREUSE-G005 | `external_dependency_gap` | `mizar-build` / `mizar-artifact` | Task 20 covers the crate-owned cache lookup and proof-reuse validation contract; cross-crate clean/incremental equivalence remains gated on scheduler and artifact publication integration. |
 | CLUSTERDB-G001 | `external_dependency_gap` | checker/artifact producers | Concrete accepted-contribution producer fields exist; otherwise task 13 records missing fields and defers rather than fabricating accepted status. |
@@ -59,6 +59,6 @@ the task commit that completes that task.
 | CLUSTERDB-G003 | `deferred` | `mizar-cache` | Task 14 implements in-memory import-scoped view materialization and invalidation tests; durable `views/` files remain deferred until persistent cluster-db storage lands. |
 | CLUSTERDB-G004 | `external_dependency_gap` | `mizar-build` | Scheduler integration remains owner-gated; no placeholder scheduler API. |
 | CLUSTERDB-G005 | `external_dependency_gap` | `mizar-ir` | IR cache adapter integration remains owner-gated; no placeholder `mizar-ir` API. |
-| CACHE15-G001 | `external_dependency_gap` | `mizar-build` | Cache-aware scheduler seam task 18 is open; task 15 adds no scheduler hook or cache scheduling trait. |
-| CACHE15-G002 | `external_dependency_gap` | `mizar-ir` | `crates/mizar-ir` is absent and cache-adapter tasks 9-10 are open; task 15 adds no placeholder crate, mock adapter, or rehydration API. |
+| CACHE15-G001 | `external_dependency_gap` | `mizar-build` / `mizar-driver` | Cache-aware scheduler seams now exist, but end-to-end cache lookup/use through owner-scoped build/driver integration is not wired; task 15 adds no scheduler hook or cache scheduling trait. |
+| CACHE15-G002 | `external_dependency_gap` | `mizar-ir` / owner integration path | `mizar-ir` now exists and owns cache-adapter validation-before-rehydration boundaries, but end-to-end cache-record rehydration through build/driver execution is not wired; task 15 adds no placeholder mock adapter or rehydration shortcut. |
 | CACHE15-G003 | `external_dependency_gap` | `mizar-artifact` / `mizar-proof` | Artifact-owned committed witness publication proof token is absent; task 15 adds no publication-token shortcut. |

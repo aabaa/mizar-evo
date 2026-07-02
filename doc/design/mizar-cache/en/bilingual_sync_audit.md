@@ -63,8 +63,10 @@ Existing classified records remain the deferred and external dependency gaps
 listed in [task_ledger.md](./task_ledger.md) and repeated by
 [source_spec_audit.md](./source_spec_audit.md). In particular:
 
-- `mizar-build` scheduler integration remains an `external_dependency_gap`;
-- `mizar-ir` cache adapter integration remains an `external_dependency_gap`;
+- `mizar-build` scheduler seams now exist, while end-to-end scheduler/cache
+  lookup integration remains an `external_dependency_gap`;
+- `mizar-ir` cache-adapter validation boundaries now exist, while end-to-end
+  rehydration integration remains an `external_dependency_gap`;
 - artifact/proof committed publication-token linkage remains an
   `external_dependency_gap`;
 - fine-grained producer slices, persistent cluster-db storage, and persistent

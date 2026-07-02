@@ -225,12 +225,13 @@ Keep `cargo test -p mizar-artifact` green after each task (see
     - Deps: 14, 15, this crate's task 23, `mizar-kernel` task 28,
       `mizar-proof` task 11 (witness staging/publication). Spec:
       `verified_artifact.md`, `manifest.md`.
-    - Status: still deferred as `external_dependency_gap` after task 23 because
-      the required real producer outputs and `mizar-proof` witness
-      staging/publication crate are not present in this checkout. Phase-15
-      emission must use the task-23 formula/substitution kernel evidence
-      witness schema; do not stub producer outputs here. The task-17
-      reevaluation is recorded in
+    - Status: still deferred as `external_dependency_gap` after task 23.
+      `mizar-proof` now exists and owns witness staging/publication metadata,
+      but full phase-15 emission still lacks real producer projection outputs,
+      committed publication reachability integration, and an artifact-owned
+      end-to-end emission handoff. Phase-15 emission must use the task-23
+      formula/substitution kernel evidence witness schema; do not stub
+      producer outputs here. The task-17 reevaluation is recorded in
       [phase15_emission_reevaluation.md](./phase15_emission_reevaluation.md).
 
 ### Hardening and cross-cutting follow-ups

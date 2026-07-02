@@ -338,8 +338,8 @@ Task 9 covers at least:
 
 | Gap | Classification | Handling |
 |---|---|---|
-| `CACHESTORE-G001` | `external_dependency_gap` | `mizar-build` scheduler integration is not ready. This spec defines lookup/insert semantics only and does not add placeholder scheduling. |
-| `CACHESTORE-G002` | `external_dependency_gap` | `mizar-ir` cache adapters are absent. Records may carry opaque output bytes, but no IR adapter API is created here. |
+| `CACHESTORE-G001` | `external_dependency_gap` | `mizar-build` now owns scheduler integration seams, but end-to-end cache lookup/insert scheduling is not wired here. This spec defines lookup/insert semantics only and does not add placeholder scheduling. |
+| `CACHESTORE-G002` | `external_dependency_gap` | `mizar-ir` now owns cache-adapter validation boundaries. Records may carry opaque output bytes, but no IR adapter API or rehydration shortcut is created here. |
 | `CACHESTORE-G003` | `external_dependency_gap` | Artifact committed publication-token integration is external. The current cache store checks only local availability plus the recorded dependency artifact domain/digest. Cache records may depend on published artifact hashes only after the artifact owner exposes the token. |
 | `CACHESTORE-G004` | `deferred` | `cluster-db` index storage is a later cache task. This record store spec does not make unaccepted registrations importer-visible. |
 

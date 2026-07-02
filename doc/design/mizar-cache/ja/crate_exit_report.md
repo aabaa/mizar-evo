@@ -35,8 +35,8 @@ excluded:
 - cache record、externally attested evidence、backend diagnostic、backend log、
   timing metadata、record arrival/write order、cluster-db data を
   kernel-verified proof status や trusted `used_axioms` へ昇格させること。
-- unfinished `mizar-build`、存在しない `mizar-ir`、artifact committed
-  publication-token surface への placeholder downstream integration。
+- owner-scoped な `mizar-build`、`mizar-ir`、artifact committed publication-token
+  surface への placeholder downstream integration。
 
 ## Task Commits
 
@@ -173,11 +173,11 @@ external evidence、backend diagnostics/logs、timing、cluster-db data を proo
 authority にしてはならない。trusted acceptance は proof/status owner 経由の
 `mizar-kernel` KernelCheckResult だけから来る。
 
-よい次 task は owning `mizar-build` cache-aware scheduler integration、または
-artifact publication-token integration である。`mizar-ir` adapter work は
-`mizar-ir` crate/task が存在するまで blocked として扱う。owning crate が real
-seam を提供するまで、すべての external_dependency_gap classification を保ち、
-`mizar-cache` に placeholder を追加しない。
+よい次 task は、既存の `mizar-build` cache-aware scheduler seam、既存の
+`mizar-ir` cache-adapter validation boundary、または artifact publication-token
+integration を結線する owning integration task である。owning crate が real seam を
+提供するまで、すべての external_dependency_gap classification を保ち、`mizar-cache`
+に placeholder を追加しない。
 ```
 
 同時に scheduler/artifact/proof integration と広い API migration を扱う場合だけ

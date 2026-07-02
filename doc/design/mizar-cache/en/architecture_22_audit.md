@@ -64,7 +64,7 @@ Task 21 adds no new gap IDs. Existing residual work remains classified in
 | Gap | Classification | Task-21 disposition |
 |---|---|---|
 | `CACHE-G-003`, `DEPFPR-G001`, `CACHESTORE-G001`, `PROOFREUSE-G001`, `CLUSTERDB-G004`, `CACHE15-G001` | `external_dependency_gap` | `mizar-build` scheduler integration and dependency-fingerprint consumption are still owner-gated; no placeholder scheduling API is added. |
-| `CACHE-G-004`, `DEPFPR-G002`, `CACHESTORE-G002`, `PROOFREUSE-G002`, `CLUSTERDB-G005`, `CACHE15-G002` | `external_dependency_gap` | `mizar-ir` cache adapter integration is absent; no placeholder crate or adapter API is added. |
+| `CACHE-G-004`, `DEPFPR-G002`, `CACHESTORE-G002`, `PROOFREUSE-G002`, `CLUSTERDB-G005`, `CACHE15-G002` | `external_dependency_gap` | `mizar-ir` now owns cache-adapter validation boundaries, but end-to-end cache rehydration through build/driver integration is not wired; no placeholder adapter API is added. |
 | `CACHE-G-005`, `DEPFPR-G003`, `CACHESTORE-G003`, `PROOFREUSE-G003`, `CACHE15-G003` | `external_dependency_gap` | artifact/proof publication-token integration remains artifact/proof owned; cache compares hashes and validation metadata only. |
 | `DEPFPR-G005`, `PROOFREUSE-G004`, `PROOFREUSE-G005` | `external_dependency_gap` | downstream proof/cache/artifact consumers, trusted `DischargedBuiltin` publication, and cross-crate clean/incremental equivalence remain external to this crate. |
 | `CLUSTERDB-G001` | `external_dependency_gap` | accepted-contribution producer fields remain checker/artifact owned; cache records missing fields and does not fabricate accepted status. |

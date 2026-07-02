@@ -69,9 +69,9 @@ verification が source behavior の evidence である。
 - `external_dependency_gap` / `deferred`: `mizar-kernel` は現在 corrected
   formula/substitution evidence checking を所有するが、`mizar-vc` にはまだ task-25
   handoff builder と task-26 kernel-evidence hash integration がない。`mizar-atp`、
-  `mizar-proof`、`mizar-cache` は active workspace consumer ではないため、ATP
-  translation、proof policy、cache lookup/reuse、artifact persistence、proof-witness
-  validation はこの crate の外に残る。
+  `mizar-proof`、`mizar-cache` は現在存在するが、この VC milestone の active consumer
+  としては未配線であるため、ATP translation、proof policy、cache lookup/reuse、
+  artifact persistence、proof-witness validation はこの crate の外に残る。
 - `external_dependency_gap`: registration、redefinition、reduction、call-precondition、
   branch、match、range-loop、collection-loop、term-only termination、partial termination、
   Pick non-emptiness、ghost-erasure、complete trace family、source-derived core formula

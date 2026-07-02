@@ -73,10 +73,10 @@ bilingual drift. Existing classified records remain:
   verification environment.
 - `external_dependency_gap`: `mizar-artifact` already owns `ProofWitnessRef`
   schema version `2.0` and `VerifiedArtifact` witness-reference validation for
-  formula/substitution kernel evidence, and `mizar-proof` now owns proof-policy
-  metadata, but real ATP producer output, proof-policy selection integration,
-  proof-cache integration, and real artifact witness publication remain
-  external. `mizar-cache` remains design-only in this workspace.
+  formula/substitution kernel evidence, `mizar-proof` owns proof-policy
+  metadata, and `mizar-cache` owns cache validation, but real ATP producer
+  output, proof-policy selection integration, proof-cache integration, and real
+  artifact witness publication remain external.
 - `deferred`: active `.miz` advanced-semantics execution and source-derived ATP extraction
   remain outside the current metadata-only corpus fixture.
 - `deferred`: TPTP typed/CNF/include paths, SMT arithmetic/sorted signatures,
@@ -155,7 +155,8 @@ verification, and next-phase handoff.
 The post-closeout metadata correction resolves the stale `mizar-proof`
 placeholder statement introduced by task 28. The re-run found no bilingual
 drift, stale task status, unresolved `repo_metadata_conflict`, source/spec
-behavior drift, or new ATP-AUDIT gap. `mizar-cache` remains design-only and not
-a workspace crate; `mizar-proof` is formal but not consumed by this ATP
-milestone, so missing integrations are recorded as external_dependency_gap /
+behavior drift, or new ATP-AUDIT gap. `mizar-cache` now exists and owns cache
+validation, but this ATP milestone still does not consume proof/cache APIs;
+`mizar-proof` is formal but not consumed by this ATP milestone, so missing
+integrations are recorded as external_dependency_gap /
 deferred instead of local proof-policy placeholders.

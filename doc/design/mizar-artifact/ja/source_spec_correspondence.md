@@ -66,7 +66,7 @@ crate-owned behavior について、この監査は新しい `spec_gap`、`test_
 | ART-G-014 | `external_dependency_gap` | full `VerifiedArtifact` emission のための real resolver/checker/VC/proof/kernel projection input は upstream に残る。 |
 | ART-G-015 | `external_dependency_gap` | development artifact payload hash recomputation は producer-owned payload schema に blocked されている。 |
 | ART-G-016 | `external_dependency_gap` | clean/incremental/parallel scheduler、cache-race、ATP completion order、real-emission determinism は upstream integration concern のまま。 |
-| ART-G-017 | `external_dependency_gap` | task 17 の再評価は [phase15_emission_reevaluation.md](./phase15_emission_reevaluation.md) に記録する。この checkout では `mizar-proof` が workspace crate ではなく、real producer publication output もないため、task 17 は deferred のままである。 |
+| ART-G-017 | `external_dependency_gap` | task 17 の再評価は [phase15_emission_reevaluation.md](./phase15_emission_reevaluation.md) に記録する。`mizar-proof` は現在存在し witness staging/publication metadata を所有するが、real producer projection output、committed publication reachability integration、artifact-owned end-to-end emission handoff がないため、task 17 は deferred のままである。 |
 
 ## Verification
 

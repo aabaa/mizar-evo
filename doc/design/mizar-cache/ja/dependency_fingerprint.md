@@ -374,8 +374,8 @@ uncacheable marker、missing proof-reuse validation change の rebuild-trigger f
 
 | Gap | Classification | Handling |
 |---|---|---|
-| `DEPFPR-G001` | `external_dependency_gap` | `mizar-build` scheduler cache seam は未準備。placeholder scheduler integration は追加しない。 |
-| `DEPFPR-G002` | `external_dependency_gap` | `mizar-ir` cache adapter は存在しない。adapter stub は作らない。 |
+| `DEPFPR-G001` | `external_dependency_gap` | `mizar-build` は現在 scheduler cache seam を所有するが、end-to-end scheduler integration はここでは未接続である。placeholder scheduler integration は追加しない。 |
+| `DEPFPR-G002` | `external_dependency_gap` | `mizar-ir` は現在 cache-adapter validation boundary を所有する。adapter stub や rehydration shortcut は作らない。 |
 | `DEPFPR-G003` | `external_dependency_gap` | artifact committed publication token integration は未利用。availability/hash input だけを記録する。 |
 | `DEPFPR-G004` | `deferred` | より細かい theorem/definition/cluster/notation/mode/attribute producer slice は後で追加してよい。task 5 は artifact summary と `mizar-vc` per-VC slice から保守的に開始する。 |
 | `DEPFPR-G005` | `external_dependency_gap` | proof-reuse metadata の downstream proof/cache/artifact consumer は owner gate 待ち。この module は validation identity だけを記録する。 |

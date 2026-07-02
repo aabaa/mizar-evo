@@ -70,9 +70,10 @@ verification recorded in the ledger is the relevant source behavior evidence.
 - `external_dependency_gap` / `deferred`: `mizar-kernel` now owns corrected
   formula/substitution evidence checking, but `mizar-vc` still lacks the task-25
   handoff builder and task-26 kernel-evidence hash integration. `mizar-atp`,
-  `mizar-proof`, and `mizar-cache` are not active workspace consumers, so ATP
-  translation, proof policy, cache lookup/reuse, artifact persistence, and
-  proof-witness validation remain outside this crate.
+  `mizar-proof`, and `mizar-cache` now exist, but they are not wired as active
+  consumers of this VC milestone, so ATP translation, proof policy, cache
+  lookup/reuse, artifact persistence, and proof-witness validation remain
+  outside this crate.
 - `external_dependency_gap`: upstream explicit/stable payloads remain
   incomplete for registration, redefinition, reduction, call-precondition,
   branch, match, range-loop, collection-loop, term-only termination, partial

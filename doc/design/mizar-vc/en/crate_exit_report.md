@@ -203,12 +203,16 @@ remains blocked by the external runner and extraction gaps listed above.
 Unrun deferred commands:
 
 - `cargo test -p mizar-cache` and `cargo test -p mizar-proof` were not run as
-  dedicated consumer checks because those crates do not exist in the workspace.
-  The broad `cargo test` command covers the current workspace.
-- Dedicated `mizar-atp` checks were not run for the same reason: that crate is
-  still an external gap for this report. `mizar-kernel` now exists and is
-  verified by its own task-23 through task-29 correction commits; Task 24 is
-  docs-only, and Tasks 25-26 do not call into kernel code or SAT solvers.
+  dedicated consumer checks in the original closeout because those crates did
+  not exist in that milestone context. The roadmap sync records that they now
+  exist; future VC/proof/cache integration tasks should run dedicated consumer
+  checks when they touch those seams.
+- Dedicated `mizar-atp` checks were not run in the original closeout for the
+  same milestone-context reason. The roadmap sync records that `mizar-atp` now
+  exists; future VC/ATP integration tasks should run dedicated checks when they
+  touch that seam. `mizar-kernel` now exists and is verified by its own task-23
+  through task-29 correction commits; Task 24 is docs-only, and Tasks 25-26 do
+  not call into kernel code or SAT solvers.
 
 ## Draft Next-Crate Handoff
 

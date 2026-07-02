@@ -147,7 +147,7 @@ clean.
 
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
-| PROOF-CLOSEOUT-G001 | `external_dependency_gap` | `mizar-cache` is not a workspace crate, so proof-reuse validation has no cache lookup or consumer contract. | Build `mizar-cache` with its own spec; consume `mizar-proof` metadata as validation input only. |
+| PROOF-CLOSEOUT-G001 | `external_dependency_gap` | `mizar-cache` now exists and owns proof-reuse validation, but this proof-policy closeout does not call cache lookup, hit/miss decisions, or cache promotion APIs. | Keep `mizar-proof` metadata as validation input only; add any proof/cache consumer wiring in a separate integration task. |
 | PROOF-CLOSEOUT-G002 | `external_dependency_gap` | Downstream `mizar-atp` adoption of early-stop queries and live backend cancellation is not wired. | Update `mizar-atp` in a separate task to call the policy API without moving policy or winner selection into ATP. |
 | PROOF-CLOSEOUT-G003 | `external_dependency_gap` | Artifact committed publication tokens are intentionally opaque in `mizar-proof`; real phase-15 emission and manifest transaction integration remain downstream. | `mizar-artifact` / emitter tasks must supply committed reachability proof and exact witness coverage. |
 | PROOF-CLOSEOUT-G004 | `external_dependency_gap` | `mizar-artifact` currently lacks trusted `DischargedBuiltin` witness publication support. | Extend artifact witness schema in its owning task before publishing built-in discharge witness refs. |
@@ -203,8 +203,10 @@ and runner gaps listed above.
 
 Unrun deferred commands:
 
-- `cargo test -p mizar-cache` was not run because `mizar-cache` is not a
-  workspace crate.
+- `cargo test -p mizar-cache` was not run in the original closeout because
+  `mizar-cache` was not yet a workspace crate. The roadmap sync records that
+  cache now exists; future proof/cache integration should run the dedicated
+  cache checks in that task.
 
 ## Next-Phase Handoff
 
@@ -216,12 +218,13 @@ Prompt:
 Start the next evidence-pipeline integration phase after the mizar-proof task
 20 closeout commit exists and `36d1a9c` is in HEAD history. Keep
 `mizar-proof` as the proof-policy/winner/status/witness/reuse owner. A good
-next task is either `mizar-cache` formal scaffold for proof-reuse validation
-or a focused `mizar-atp` integration task that consumes the existing early-stop
-policy APIs without moving policy or winner selection into ATP. Do not add
-placeholder cache behavior, artifact witness publication, kernel acceptance,
-SAT solving, backend proof trust, or proof search. Run the AGENTS.md review
-phases and full workspace verification before committing.
+next task is a focused integration task, such as wiring `mizar-cache`
+proof-reuse validation into an owning cache/driver path or wiring `mizar-atp`
+to consume the existing early-stop policy APIs without moving policy or winner
+selection into ATP. Do not add placeholder cache behavior, artifact witness
+publication, kernel acceptance, SAT solving, backend proof trust, or proof
+search. Run the AGENTS.md review phases and full workspace verification before
+committing.
 ```
 
 Rationale: downstream integration crosses proof/cache/artifact/ATP ownership

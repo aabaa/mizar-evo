@@ -309,8 +309,8 @@ Task 3 must cover at least:
 
 | Gap | Classification | Handling |
 |---|---|---|
-| `CACHEKEY2-G001` | `external_dependency_gap` | `mizar-build` cache-aware scheduler integration is not ready. This spec defines keys only; scheduler hit/miss behavior remains task 15. |
-| `CACHEKEY2-G002` | `external_dependency_gap` | `mizar-ir` cache adapters are absent. This spec defines key inputs for adapters but does not create placeholder adapter APIs. |
+| `CACHEKEY2-G001` | `external_dependency_gap` | `mizar-build` now owns cache-aware scheduler seams, but end-to-end scheduler hit/miss integration is not wired here. This spec defines keys only. |
+| `CACHEKEY2-G002` | `external_dependency_gap` | `mizar-ir` now owns cache-adapter validation boundaries. This spec defines key inputs for adapters but does not create placeholder adapter APIs or rehydration shortcuts. |
 | `CACHEKEY2-G003` | `external_dependency_gap` | Artifact committed-publication tokens remain artifact/proof-owned. Cache keys may carry witness/publication hashes as validation inputs only. |
 
 ## Non-Goals

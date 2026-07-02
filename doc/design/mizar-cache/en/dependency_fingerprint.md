@@ -379,8 +379,8 @@ coarse-slice mode.
 
 | Gap | Classification | Handling |
 |---|---|---|
-| `DEPFPR-G001` | `external_dependency_gap` | `mizar-build` scheduler cache seam is not ready; do not add placeholder scheduler integration. |
-| `DEPFPR-G002` | `external_dependency_gap` | `mizar-ir` cache adapter is absent; do not create adapter stubs. |
+| `DEPFPR-G001` | `external_dependency_gap` | `mizar-build` now owns scheduler cache seams, but end-to-end scheduler integration is not wired here; do not add placeholder scheduler integration. |
+| `DEPFPR-G002` | `external_dependency_gap` | `mizar-ir` now owns cache-adapter validation boundaries; do not create adapter stubs or rehydration shortcuts. |
 | `DEPFPR-G003` | `external_dependency_gap` | artifact committed publication token integration is not available; record availability/hash inputs only. |
 | `DEPFPR-G004` | `deferred` | finer theorem/definition/cluster/notation/mode/attribute producer slices may be added later; task 5 starts conservatively from artifact summaries and `mizar-vc` per-VC slices. |
 | `DEPFPR-G005` | `external_dependency_gap` | downstream proof/cache/artifact consumers of proof-reuse metadata remain owner-gated; this module only records validation identities. |

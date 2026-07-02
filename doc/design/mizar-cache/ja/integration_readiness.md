@@ -35,8 +35,8 @@ publication、proof winner selection、scheduler policy、IR handle reconstructi
 
 | Integration | Classification | Evidence | Task-15 handling |
 |---|---|---|---|
-| `mizar-build` cache-aware scheduler | `external_dependency_gap` | `mizar-build` wave B の task-graph と scheduler task 7-10 は open であり、cache-aware scheduling task 18 も open である。task-18 seam は将来の driver-owned query boundary を通して消費される必要もある。 | `mizar-cache` に scheduler hook や cache scheduling trait を追加しない。将来の integration は `mizar-build` が seam を所有した後で既存 cache API を消費する。 |
-| `mizar-ir` cache adapter | `external_dependency_gap` | `crates/mizar-ir` は存在しない。`doc/design/mizar-ir/en/todo.md` では scaffold task 1、cache-adapter spec task 9、cache-adapter implementation task 10 が open のままである。 | placeholder crate、mock adapter、rehydration API を作らない。将来の integration は `mizar-ir` が所有し、handle reconstruction 前に cache record を validate する。 |
+| `mizar-build` cache-aware scheduler | `external_dependency_gap` | `mizar-build` は現在 task-graph、scheduler、cache-aware decision、scheduler-selected dispatch seam を所有する。end-to-end cache lookup/use は、cache authority を scheduler に移さず `mizar-cache` を呼ぶ owner-scoped build/driver integration task をまだ必要とする。 | `mizar-cache` に scheduler hook や driver-owned cache scheduling trait を追加しない。将来の integration は owning build/driver path から既存 cache API を消費する。 |
+| `mizar-ir` cache adapter | `external_dependency_gap` | `mizar-ir` は現在存在し、cache-adapter の validation-before-rehydration boundary を所有する。この cache milestone では build/driver execution を通じた end-to-end rehydration は未配線である。 | IR handle reconstruction や driver orchestration を `mizar-cache` に移さない。将来の integration は owner path が所有し、handle reconstruction 前に cache record を validate する。 |
 | artifact committed publication token linkage | `external_dependency_gap` | `mizar-proof` は、`mizar-artifact` が artifact-owned committed publication proof token を公開するまで `CommittedWitnessPublicationProof` を opaque に保つ。artifact crate はその production token を公開していない。 | cache validation を artifact publication shortcut に接続しない。cache は witness、dependency-artifact、reuse metadata を比較してよいが、publication は artifact/proof owner に残る。 |
 
 ## deferred work
@@ -53,8 +53,8 @@ build と byte-identical な externally visible result を生むことを示す 
 - externally attested evidence と cache record は kernel-verified status や trusted
   `used_axioms` にならない。
 
-それらの owner seam が存在するまでは、task 15 は `external_dependency_gap` を記録し、
-no-stub boundary を保つことで完了する。
+それらの owner integration task が既存 seam を結線するまでは、task 15 は
+`external_dependency_gap` を記録し、no-stub boundary を保つことで完了する。
 
 ## verification
 

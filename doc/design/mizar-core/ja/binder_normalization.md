@@ -40,7 +40,7 @@ checking が再生する表現と操作を提供する。
 |---|---|---|---|
 | BIND-G001 | `spec_gap` | task 4 前に `binder_normalization.md` は存在しない。 | 本 document が task 5 と task 6 用の module-spec gap を閉じる。 |
 | BIND-G002 | `test_gap` | task 5 前に binder-normalization source / test は存在しない。 | task 5 が substitution test を追加し、task 6 が alpha-equivalence / normalization test を追加する。 |
-| BIND-G003 | `external_dependency_gap` | `mizar-kernel` は workspace crate ではなく、certificate replay も未実装。 | replay 可能な形のみを仕様化し、kernel API を仮実装しない。 |
+| BIND-G003 | `external_dependency_gap` | `mizar-kernel` は現在存在するが、binder-normalized replay / consumer integration は evidence pipeline にまだ配線されていない。 | replay 可能な形のみを仕様化し、kernel API や proof-consumer shortcut を仮実装しない。 |
 | BIND-G004 | `external_dependency_gap` | source-derived checker payload extraction は upstream で deferred。 | 実際の source-to-core fixture を作れるまでは explicit Rust fixture を使う。 |
 | BIND-G005 | `deferred` | cross-edit proof reuse anchor と `VcId` は downstream concern。 | binder path は決定的にするが、downstream id は割り当てない。 |
 

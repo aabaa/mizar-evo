@@ -69,9 +69,10 @@ internal: [02](../../internal/en/02.artifact_store_cache_key_and_manifest.md),
   land.
 - **Record encoding: resolved by task 7.** `cache_store.md` uses a binary
   record envelope with a canonical UTF-8 JSON header and inline or blob-backed
-  payload bytes. Cache records are internal, but `mizar-ir` adapter and raw-IR
-  integration remain external dependency gaps; do not add placeholder IR
-  storage APIs before the owning task lands.
+  payload bytes. Cache records are internal, and `mizar-ir` now owns
+  cache-adapter validation boundaries, but raw-IR rehydration through
+  build/driver integration remains an external dependency gap; do not add
+  placeholder IR storage APIs or rehydration shortcuts here.
 - **Cluster-db visibility: resolved by task 12.** `cluster_db.md` keeps
   `origins/` as the invalidation source of truth, derives spec-23.7.7 aggregate
   indexes from accepted origin records only, and materializes import-scoped
@@ -282,12 +283,12 @@ Keep `cargo test -p mizar-cache` green after each task (see
       [internal 02](../../internal/en/02.artifact_store_cache_key_and_manifest.md)
       "Cache Lookup Before Task Execution".
     - Completed by task 15: [integration_readiness.md](./integration_readiness.md)
-      records `external_dependency_gap`s for the still-open `mizar-build`
-      cache-aware scheduler seam, absent `mizar-ir` cache adapter, and
+      records `external_dependency_gap`s for owner-scoped `mizar-build`
+      cache-aware scheduler seam, `mizar-ir` cache adapter integration, and
       artifact committed-publication token linkage. No placeholder scheduler,
       `mizar-ir`, or artifact-publication-token APIs were added. The
-      implementation and end-to-end tests above remain deferred until their
-      owners land.
+      implementation and end-to-end tests above remain deferred until owner
+      integration tasks wire the existing seams.
 
 16. **Determinism and deletability suite.** [x]
     - Property coverage: identical inputs produce identical keys and

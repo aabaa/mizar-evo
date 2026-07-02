@@ -71,8 +71,8 @@ record は残る:
   向け `ProofWitnessRef` schema version `2.0` と `VerifiedArtifact` witness-reference
   validation を所有し、`mizar-proof` は現在 proof-policy metadata を所有するが、real ATP
   producer output、proof-policy selection integration、proof-cache integration、real artifact
-  witness publication は external のままである。`mizar-cache` はこの workspace では
-  design-only のままである。
+  witness publication は external のままである。`mizar-cache` は現在 cache validation を
+  所有するが、ATP milestone は proof/cache API を消費しない。
 - `deferred`: active `.miz` advanced-semantics execution と source-derived ATP extraction は、
   現在の metadata-only corpus fixture の外に残る。
 - `deferred`: TPTP typed/CNF/include path、SMT arithmetic/sorted signature、solver
@@ -145,6 +145,7 @@ broad verification、next-phase handoff を記録する。
 Post-closeout metadata correction は task 28 が導入した古い `mizar-proof` placeholder
 記述を解消する。この re-run では bilingual drift、古い task status、未解決の
 `repo_metadata_conflict`、source/spec behavior drift、新しい ATP-AUDIT gap は見つからなかった。
-`mizar-cache` は design-only で workspace crate ではなく、`mizar-proof` は正式だがこの
-ATP milestone からは消費しないため、未実装連携は local proof-policy placeholder ではなく
+`mizar-cache` は現在存在し cache validation を所有するが、この ATP milestone は
+proof/cache API をまだ消費しない。`mizar-proof` は正式だがこの ATP milestone からは
+消費しないため、未実装連携は local proof-policy placeholder ではなく
 external_dependency_gap / deferred として記録する。

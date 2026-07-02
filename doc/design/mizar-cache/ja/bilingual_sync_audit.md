@@ -62,8 +62,10 @@ task 19 は新しい `spec_gap`、`test_gap`、`design_drift`、
 [source_spec_audit.md](./source_spec_audit.md) に再掲されている deferred /
 external dependency gap のままである。特に:
 
-- `mizar-build` scheduler integration は `external_dependency_gap` のまま。
-- `mizar-ir` cache adapter integration は `external_dependency_gap` のまま。
+- `mizar-build` scheduler seam は現在存在するが、end-to-end scheduler/cache lookup
+  integration は `external_dependency_gap` のまま。
+- `mizar-ir` cache-adapter validation boundary は現在存在するが、end-to-end
+  rehydration integration は `external_dependency_gap` のまま。
 - artifact/proof committed publication-token linkage は
   `external_dependency_gap` のまま。
 - fine-grained producer slice、persistent cluster-db storage、persistent

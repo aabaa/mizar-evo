@@ -576,9 +576,10 @@ deferred のままである。`mizar-proof` は現在 workspace crate だが、A
       94/100、score cap なし、全 hard gate passed、残る `ATP-CLOSEOUT-*`
       deferred/external gap、next-phase handoff を記録する。古い `mizar-proof`
       placeholder metadata は proof crate milestone 後に補正された。`mizar-cache` は
-      design-only で workspace crate ではなく、`mizar-proof` は正式だがこの ATP milestone
-      からは消費しないため、未実装連携は local proof-policy placeholder ではなく
-      external_dependency_gap / deferred に残る。
+      現在存在し cache validation を所有するが、この ATP milestone は proof/cache API を
+      まだ消費しない。`mizar-proof` は正式だがこの ATP milestone からは消費しないため、
+      未実装連携は local proof-policy placeholder ではなく external_dependency_gap /
+      deferred に残る。
 
 ## 推奨検証
 

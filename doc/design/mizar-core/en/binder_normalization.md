@@ -42,7 +42,7 @@ Out of scope:
 |---|---|---|---|
 | BIND-G001 | `spec_gap` | `binder_normalization.md` did not exist before task 4. | This document closes the module-spec gap for tasks 5 and 6. |
 | BIND-G002 | `test_gap` | No binder-normalization source or tests exist before task 5. | Task 5 adds substitution tests; task 6 adds alpha-equivalence and normalization tests. |
-| BIND-G003 | `external_dependency_gap` | `mizar-kernel` is not a workspace crate and certificate replay is not implemented. | Specify replayable shapes only; do not fabricate kernel APIs. |
+| BIND-G003 | `external_dependency_gap` | `mizar-kernel` now exists, but binder-normalized replay/consumer integration is still not wired through the evidence pipeline. | Specify replayable shapes only; do not fabricate kernel APIs or proof-consumer shortcuts. |
 | BIND-G004 | `external_dependency_gap` | Source-derived checker payload extraction remains deferred upstream. | Use explicit Rust fixtures until real source-to-core fixtures can be produced. |
 | BIND-G005 | `deferred` | Cross-edit proof reuse anchors and `VcId`s are downstream concerns. | Binder paths must be deterministic but must not allocate downstream ids. |
 

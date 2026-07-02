@@ -36,8 +36,8 @@ policy, or IR handle reconstruction authority.
 
 | Integration | Classification | Evidence | Task-15 handling |
 |---|---|---|---|
-| `mizar-build` cache-aware scheduler | `external_dependency_gap` | `mizar-build` wave B task-graph and scheduler tasks 7-10 are open, and cache-aware scheduling task 18 is open. The task-18 seam must also be consumed through the future driver-owned query boundary. | Do not add scheduler hooks or a cache scheduling trait in `mizar-cache`. Future integration should consume the existing cache APIs after `mizar-build` owns the seam. |
-| `mizar-ir` cache adapter | `external_dependency_gap` | `crates/mizar-ir` is absent. `doc/design/mizar-ir/en/todo.md` still has scaffold task 1, cache-adapter spec task 9, and cache-adapter implementation task 10 open. | Do not create a placeholder crate, mock adapter, or rehydration API. Future integration belongs to `mizar-ir` and should validate cache records before reconstructing handles. |
+| `mizar-build` cache-aware scheduler | `external_dependency_gap` | `mizar-build` now owns task-graph, scheduler, cache-aware decision, and scheduler-selected dispatch seams. End-to-end cache lookup/use still needs an owner-scoped build/driver integration task that calls `mizar-cache` without moving cache authority into the scheduler. | Do not add scheduler hooks or a driver-owned cache scheduling trait in `mizar-cache`. Future integration should consume existing cache APIs from the owning build/driver path. |
+| `mizar-ir` cache adapter | `external_dependency_gap` | `mizar-ir` now exists and owns cache-adapter validation-before-rehydration boundaries. End-to-end rehydration through build/driver execution is not wired in this cache milestone. | Do not move IR handle reconstruction or driver orchestration into `mizar-cache`. Future integration belongs to the owner path and should validate cache records before reconstructing handles. |
 | Artifact committed publication token linkage | `external_dependency_gap` | `mizar-proof` keeps `CommittedWitnessPublicationProof` opaque until `mizar-artifact` exposes an artifact-owned committed publication proof token. The artifact crate does not expose that production token. | Do not link cache validation to artifact publication shortcuts. Cache may compare witness, dependency-artifact, and reuse metadata, but publication remains artifact/proof owned. |
 
 ## Deferred Work
@@ -54,8 +54,9 @@ visible results to a clean build. That future task must still prove:
 - externally attested evidence and cache records never become
   kernel-verified status or trusted `used_axioms`.
 
-Until those owner seams exist, task 15 is complete by recording the
-`external_dependency_gap`s and preserving the no-stub boundary.
+Until those owner integration tasks wire the existing seams together, task 15
+is complete by recording the `external_dependency_gap`s and preserving the
+no-stub boundary.
 
 ## Verification
 

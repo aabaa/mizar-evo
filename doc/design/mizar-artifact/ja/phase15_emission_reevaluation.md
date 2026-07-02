@@ -31,9 +31,9 @@ task 23 は、将来の emission が必要とする artifact 側 witness project
 
 task 17 に残る blocker は `mizar-artifact` の外側にある。
 
-- この checkout には `mizar-proof` workspace crate が存在しない。
-- artifact store と manifest に入力する producer-owned な witness staging/publication
-  output が存在しない。
+- `mizar-proof` は現在存在し witness staging/publication metadata を所有するが、
+  artifact store と manifest に入力する統合済み producer-owned witness publication
+  output はまだ存在しない。
 - full `VerifiedArtifact` emission 用の real producer output が存在しない。
 - checked kernel evidence、選択済み proof status、witness file、manifest entry を接続する
   producer-owned publication hook が存在しない。
@@ -51,8 +51,8 @@ placeholder crate、fake witness schema、fake producer projection、artifact pu
 次に task 17 を実施できるのは、少なくとも次が存在してからである。
 
 - real producer-owned `VerifiedArtifact` projection input。
-- proof/witness publication owner。想定は `mizar-proof`。
-- stable witness staging と manifest publication output。
+- owning proof/artifact integration からの stable proof/witness staging と
+  manifest publication output。
 - `mizar-artifact` 内の proof authority を変更せず、real emission を実行する integration test。
 
 それらの依存が存在するまでは、`mizar-artifact` は stable schema、canonical writer/reader、

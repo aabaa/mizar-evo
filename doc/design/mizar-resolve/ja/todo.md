@@ -77,12 +77,13 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
   R-015 は name diagnostic を crate-local/internal に保つ。R-G001 に resolver code range
   がまだないため public resolver diagnostics を出さない。後続の user-facing resolver
   diagnostic integration の前に再検討する。
-- **ModuleSummary 再利用の時期: task 24 で deferred。**
+- **ModuleSummary 再利用の時期: task 24 を再開可能。**
   アーキテクチャ 03 は依存モジュールをソース再読込ではなく `ModuleSummary`
   artifact として消費することを許す。最初のイテレーションはメモリ内の
-  依存閉包を解決し、artifact 経由の経路は `mizar-artifact` の
-  module-summary スキーマを先に必要とする。R-024 はこれを
-  `external_dependency_gap` と分類し、resolver-local な artifact format を
+  依存閉包を解決する。artifact 経由の経路は当初 `mizar-artifact` の
+  module-summary schema を待っていたが、task 5 が schema、writer、検証付き
+  reader、compatibility policy を提供済みである。R-024 は resolver-owned
+  integration work として再開し、引き続き resolver-local な artifact format は
   創作しない。
 - **nested proof label shadowing の文言: task 17 で解決済み。**
   以前の task 18 の test note は「nested proof の label shadowing」を求めていたが、
@@ -343,9 +344,10 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       `SymbolIndex` / `DefinitionIndex` / `RegistrationIndex` / `OverloadIndex` への
       登録、internal duplicate / illegal-overload diagnostic、recovered と
       context-only shell policy、contribution tracking、決定的な unit test を追加した。
-      専用 lexical-summary data shape は R-021 で完了済みであり、
-      artifact-summary data shape は `mizar-artifact` task 5 が完了するまで
-      R-024 の `external_dependency_gap` として deferred である。
+      専用 lexical-summary data shape は R-021 で完了済みである。
+      artifact-backed summary consumption は `mizar-artifact` task 5 が着地するまで
+      R-024 の下で deferred だった。artifact 側 blocker は現在解消済みであり、
+      R-024 は resolver integration work として再開可能である。
 
 21. **種別ごとのシグネチャ抽出。** [x] — `mizar-parser` task 23-31 が律速。
     - 具体的なシグネチャ（struct、mode、attribute、predicate、functor、
@@ -400,7 +402,7 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       R-G007 test-gap follow-up として将来の runner assertion 拡張に記録するが、
       実行可能な declaration-symbol runner と初期の traceable active set は揃った。
 
-24. **ModuleSummary の再利用。** [x] deferred / external_dependency_gap
+24. **ModuleSummary の再利用。** [ ] 解決済み external_dependency_gap 後に再開可能
     - 依存モジュールを（schema-version を検証した）`ModuleSummary` artifact
       として消費し、ソースを再読込しない。summary が無い・非互換のときは
       ソース解決へフォールバックする。
@@ -408,12 +410,11 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       する。非互換スキーマは診断付きでフォールバックする。
     - 依存: 20、`mizar-artifact` task 5。仕様: アーキテクチャ 03「Module
       Summary」、[18.dependency_fingerprint.md](../../architecture/ja/18.dependency_fingerprint.md)。
-    - R-024 gate 結果: `mizar-artifact` task 5 は未完了で、
-      `mizar-artifact` workspace crate もまだ存在しないため、この task は R-G003
-      `external_dependency_gap` として明示的に deferred とする。resolver 側の
-      artifact schema、shim、fallback reader は実装しない。解除条件は
-      `mizar-artifact` task 1〜5 により canonical な `ModuleSummary` schema、
-      writer、検証つき reader、version compatibility policy が揃うことである。
+    - R-024 gate 結果: 以前の `external_dependency_gap` は解消済みである。
+      `mizar-artifact` task 5 は canonical な `ModuleSummary` schema、writer、
+      検証付き reader、version compatibility policy を提供している。resolver 側の
+      artifact schema、shim、fallback reader はまだ実装していない。この task を
+      resolver integration work として再開する。
 
 25. **決定性スイート。** [x]
     - 同一入力が同一の id、テーブル、診断順、debug レンダリングを生むことの
@@ -486,8 +487,9 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
 ## crate close-out
 
 - 完了: [crate_exit_report.md](./crate_exit_report.md) に、non-deferred task completion、
-  R-024 deferral、milestone gate、quality score 94/100、full verification、
-  human-review surface、task commit、next-crate handoff を記録した。
+  当初の R-024 deferral と現在の resume-ready status、milestone gate、quality
+  score 94/100、full verification、human-review surface、task commit、
+  next-task handoff を記録した。
 
 ## 推奨検証
 

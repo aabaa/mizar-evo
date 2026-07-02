@@ -33,8 +33,8 @@ Excluded:
 - Promotion of cache records, externally attested evidence, backend
   diagnostics, backend logs, timing metadata, record arrival/write order, or
   cluster-db data into kernel-verified proof status or trusted `used_axioms`.
-- Placeholder downstream integration with unfinished `mizar-build`,
-  nonexistent `mizar-ir`, or artifact committed-publication-token surfaces.
+- Placeholder downstream integration with owner-scoped `mizar-build`,
+  `mizar-ir`, or artifact committed-publication-token surfaces.
 
 ## Task Commits
 
@@ -173,11 +173,11 @@ hits, cache records, external evidence, backend diagnostics/logs, timing, or
 cluster-db data become proof authority; trusted acceptance still comes only
 from `mizar-kernel` KernelCheckResult through proof/status owners.
 
-A good next task is the owning `mizar-build` cache-aware scheduler integration
-or the artifact publication-token integration. Treat `mizar-ir` adapter work as
-blocked until the `mizar-ir` crate/tasks exist. Preserve all
-external_dependency_gap classifications until the owning crate provides the
-real seam; do not add placeholders in `mizar-cache`.
+A good next task is an owning integration task that wires the existing
+`mizar-build` cache-aware scheduler seam, the existing `mizar-ir` cache-adapter
+validation boundary, and/or artifact publication-token integration. Preserve all
+external_dependency_gap classifications until the owning crate provides the real
+seam; do not add placeholders in `mizar-cache`.
 ```
 
 Raise reasoning above `xhigh` only for simultaneous scheduler/artifact/proof

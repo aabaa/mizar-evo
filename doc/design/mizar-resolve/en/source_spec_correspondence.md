@@ -3,7 +3,8 @@
 > Canonical language: English. Japanese companion:
 > [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md).
 
-Status: task R-027 audit complete; task R-029 refactor scope re-run complete.
+Status: task R-027 audit complete; task R-029 refactor scope re-run complete;
+2026-07-02 roadmap synchronization overlay complete.
 
 ## Scope
 
@@ -20,11 +21,14 @@ The R-029 re-run covers the same public API and behavior promises after the
 behavior-preserving private helper/test split. It updates moved source paths and
 task correspondence through R-029 without expanding resolver behavior.
 
-Task R-024 is explicitly deferred as `external_dependency_gap`; it is audited
-only for its deferral record and for the absence of a resolver-owned artifact
-schema or reader. This audit does not replace executable tests, and it does not
-change `doc/spec`, existing `.miz` sources, or expectation sidecars to match
-implementation behavior.
+At the original close-out, task R-024 was explicitly deferred as
+`external_dependency_gap` and was audited only for its deferral record and for
+the absence of a resolver-owned artifact schema or reader. The 2026-07-02
+roadmap synchronization records that the artifact-side blocker is now resolved
+by `mizar-artifact` task 5; resolver-side `ModuleSummary` consumption remains
+unimplemented and should resume as R-024. This audit does not replace
+executable tests, and it does not change `doc/spec`, existing `.miz` sources,
+or expectation sidecars to match implementation behavior.
 
 ## Result
 
@@ -34,11 +38,11 @@ implementation behavior.
 - No resolver behavior was found that requires a new `doc/spec` change or a
   rebaseline of existing `.miz` tests/expectations.
 - Source behavior that remains outside the current executable corpus is already
-  classified below: public resolver diagnostic codes (`R-G001`), artifact-backed
-  `ModuleSummary` reuse (`R-G003`), parser/syntax scheme declaration exposure
-  (`R-G006`), and broader semantic `.miz` runner assertions. The broad
-  historical corpus gap remains `R-G002`; its current concrete remainder is
-  refined by `R-G007`.
+  classified below: public resolver diagnostic codes (`R-G001`), resolver-side
+  `ModuleSummary` consumption after the resolved artifact dependency (`R-G003` /
+  R-024), parser/syntax scheme declaration exposure (`R-G006`), and broader
+  semantic `.miz` runner assertions. The broad historical corpus gap remains
+  `R-G002`; its current concrete remainder is refined by `R-G007`.
 - Boundary checks found no parser/syntax/frontend/session/build/checker/proof/
   artifact responsibility takeover. The resolver consumes the build-side module
   index seam and syntax `SurfaceAst`; it does not own source loading, module
@@ -83,7 +87,7 @@ implementation behavior.
 | Build/session boundary | `module_index.rs` consumes the build-side `ModuleIndexProvider` contract and preserves alias-independent `ModuleId` construction. It does not parse manifests, discover modules, load sources, or own build planning. |
 | Checker/type/proof boundary | Name and dot-chain resolution records unresolved, ambiguous, overload-group, and deferred-selector states. It does not perform type-directed overload winner selection, selector type checking, cluster firing, proof checking, obligation generation, or VC production. |
 | Diagnostics boundary | Resolver diagnostics remain crate-local/internal while `R-G001` is open. R-023 declaration-symbol expectations compare internal detail keys in payload metadata and keep public `diagnostic_codes` empty. |
-| Artifact boundary | R-024 remains deferred. No resolver-owned `ModuleSummary` schema, artifact reader, writer, or fallback format exists in source. |
+| Artifact boundary | R-024 was deferred at close-out, and the artifact-side blocker is now resolved by `mizar-artifact` task 5. Source still contains no resolver-owned `ModuleSummary` schema, artifact reader, writer, or fallback format; resolver-side consumption remains open R-024 work. |
 | Determinism boundary | Module-local tests plus the R-025 public-seam regression cover deterministic ids, table ordering, graph ordering, diagnostic ordering, and debug rendering. |
 
 ## Task Requirement Correspondence
@@ -98,7 +102,7 @@ implementation behavior.
 | R-012 to R-016 names | `names.md` is implemented by `src/names.rs`; unit tests cover namespace lookup, declaration-point filtering, visibility/shadowing, unresolved/ambiguous representation, internal diagnostic ordering/cascade suppression, and dot-chain finalization without checker-owned selector validation. |
 | R-017 to R-018 labels | `labels.md` is implemented by `src/labels.rs`; unit tests cover theorem/lemma and proof-step label scopes, forward-reference rejection, qualified/imported citation lookup, diagnostics, recovery, and deterministic tables. |
 | R-019 to R-023 symbols and corpus runner | `symbols.md` is implemented by `src/symbols.rs`; unit tests cover opaque and parser-backed signatures, duplicates/conflicts, overload grouping, registrations, recovery, context-only shells, and deterministic diagnostics. R-023 adds active declaration-symbol pass/fail corpus seeds and traceability metadata. |
-| R-024 ModuleSummary reuse | Explicitly deferred as `R-G003` / `external_dependency_gap`. Source audit found no resolver-owned artifact schema, reader, or shim. |
+| R-024 ModuleSummary reuse | Deferred at close-out as `R-G003` / `external_dependency_gap`; current roadmap sync records the artifact-side condition satisfied by `mizar-artifact` task 5. Source audit still finds no resolver-owned artifact schema, reader, or shim, so this is ready-to-resume resolver integration work rather than completed behavior. |
 | R-025 determinism suite | `src/lib.rs` contains the public-seam determinism regression over import graphs, name diagnostics, `ResolvedAst` snapshots, and `SymbolEnv` snapshots, complementing module-local determinism tests. |
 | R-026 public enum policy | Module specs list every resolver-owned public enum decision; source attributes mark all listed enums `#[non_exhaustive]`; `tests/lint_policy.rs` guards source/spec drift for the spec-owned modules. |
 | R-027 source/spec audit | This document records the correspondence. The audit found no unclassified blocking/high `spec_gap`, `test_gap`, `source_drift`, `source_undocumented_behavior`, `test_expectation_drift`, `boundary_violation`, or `repo_metadata_conflict`. |
@@ -114,6 +118,6 @@ remain:
 |---|---|---|---|
 | R-G001 | `spec_gap` | Public resolver diagnostic code range and eventual `mizar-diagnostics` adoption. | Deferred. Current resolver diagnostics stay crate-local/internal; do not add public numeric codes until the specification assigns ownership. |
 | R-G002 | `test_gap` | Historical lack of semantic resolver corpus coverage beyond lexical/parser import/export syntax. | Partially closed by R-023's active declaration-symbol smoke/fail fixtures. The remaining concrete corpus assertion work is refined by R-G007 and remains non-blocking for R-027 because unit tests cover the implemented behavior. |
-| R-G003 | `external_dependency_gap` / deferred | Consume dependency modules from canonical `ModuleSummary` artifacts. | Deferred R-024. Unblock only after `mizar-artifact` tasks 1-5 provide the schema, writer, validating reader, and version compatibility policy. |
+| R-G003 | resolved `external_dependency_gap`; open R-024 integration | Consume dependency modules from canonical `ModuleSummary` artifacts. | Artifact-side unblock condition is satisfied by `mizar-artifact` task 5, which provides the schema, writer, validating reader, and version compatibility policy. Resume R-024 in `mizar-resolve` without creating resolver-owned schemas or artifact shims. |
 | R-G006 | `external_dependency_gap` | Module-level scheme/template declaration shell once parser/syntax exposes an owning source role. | Non-blocking for represented source roles. Current resolver preserves direct template roles in owning signature payloads and does not fabricate scheme/template module symbols. |
 | R-G007 | `test_gap` | Concrete remainder of R-G002: broader active semantic `.miz` assertions for import graph, namespace/name resolution, dot-chain, and label-reference facts from tasks R-009 to R-019, plus any symbol assertions beyond the R-023 declaration-symbol seed set. | Non-blocking for R-027 because unit tests cover the behavior and R-023 installed the declaration-symbol runner plus initial traceable active set. Grow coverage in a future runner assertion expansion without inventing behavior beyond `doc/spec/en`. |

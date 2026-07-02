@@ -332,7 +332,7 @@ placeholder source:
 | `CLUSTERDB-G004` | `external_dependency_gap` | `mizar-build` scheduler integration | no placeholder scheduler API is added. |
 | `CLUSTERDB-G005` | `external_dependency_gap` | `mizar-ir` adapter integration | no placeholder `mizar-ir` API is added. |
 | `CACHE15-G001` | `external_dependency_gap` | `mizar-build` cache-aware scheduler seam | `mizar-cache` exposes local cache APIs only; no scheduler hook or scheduling trait is added. |
-| `CACHE15-G002` | `external_dependency_gap` | `mizar-ir` cache adapter | `crates/mizar-ir` is absent; no placeholder crate, mock adapter, or rehydration API is added. |
+| `CACHE15-G002` | `external_dependency_gap` | `mizar-ir` cache adapter | `mizar-ir` now exists and owns cache-adapter validation-before-rehydration boundaries, but end-to-end cache-record rehydration through build/driver execution is not wired; no placeholder mock adapter or rehydration shortcut is added. |
 | `CACHE15-G003` | `external_dependency_gap` | `mizar-artifact` / `mizar-proof` committed witness publication token | cache validation compares hashes and metadata only; publication remains artifact/proof owned. |
 
 No `repo_metadata_conflict` is observed during the current source/spec audit.

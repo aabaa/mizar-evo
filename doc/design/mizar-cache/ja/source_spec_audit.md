@@ -332,7 +332,7 @@ gap を修復しない。
 | `CLUSTERDB-G004` | `external_dependency_gap` | `mizar-build` scheduler integration | placeholder scheduler API は追加しない。 |
 | `CLUSTERDB-G005` | `external_dependency_gap` | `mizar-ir` adapter integration | placeholder `mizar-ir` API は追加しない。 |
 | `CACHE15-G001` | `external_dependency_gap` | `mizar-build` cache-aware scheduler seam | `mizar-cache` は local cache API だけを公開する。scheduler hook や scheduling trait は追加しない。 |
-| `CACHE15-G002` | `external_dependency_gap` | `mizar-ir` cache adapter | `crates/mizar-ir` は存在しない。placeholder crate、mock adapter、rehydration API は追加しない。 |
+| `CACHE15-G002` | `external_dependency_gap` | `mizar-ir` cache adapter | `mizar-ir` は現在存在し cache-adapter validation-before-rehydration boundary を所有するが、build/driver execution を通じた end-to-end cache-record rehydration は未配線である。placeholder mock adapter や rehydration shortcut は追加しない。 |
 | `CACHE15-G003` | `external_dependency_gap` | `mizar-artifact` / `mizar-proof` committed witness publication token | cache validation は hash と metadata だけを比較する。publication は artifact/proof owner に残す。 |
 
 現在の source/spec audit では `repo_metadata_conflict` は見つからない。

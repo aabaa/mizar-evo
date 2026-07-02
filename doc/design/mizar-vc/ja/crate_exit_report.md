@@ -193,11 +193,12 @@ external runner / extraction gap により blocked のまま。
 
 Unrun deferred commands:
 
-- `cargo test -p mizar-cache` と `cargo test -p mizar-proof` は、それらの crate が
-  workspace に存在しないため dedicated consumer check としては実行していない。現在の workspace
-  は broad `cargo test` で cover する。
-- Dedicated `mizar-atp` check は同じ理由で未実行である。その crate はこの report
-  ではまだ external gap である。`mizar-kernel` は現在存在し、task 23 から task 29 の
+- `cargo test -p mizar-cache` と `cargo test -p mizar-proof` は、original closeout では
+  それらの crate がその milestone context に存在しなかったため dedicated consumer check
+  としては実行していない。roadmap sync は現在それらが存在することを記録する。将来の
+  VC/proof/cache integration task がその seam に触れる場合は dedicated consumer check を実行する。
+- Dedicated `mizar-atp` check は original closeout では同じ理由で未実行だった。roadmap
+  sync は現在 `mizar-atp` も存在することを記録する。`mizar-kernel` は現在存在し、task 23 から task 29 の
   correction commit で独自に verified 済みである。Task 24 は docs-only であり、
   Task 25-26 は kernel code や SAT solver を呼び出さない。
 

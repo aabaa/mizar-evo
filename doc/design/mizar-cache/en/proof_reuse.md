@@ -192,8 +192,8 @@ status projection and publication decisions.
 
 | Gap | Classification | Handling |
 |---|---|---|
-| `PROOFREUSE-G001` | `external_dependency_gap` | `mizar-build` scheduler integration is not ready. Task 11 validates metadata locally and does not add placeholder scheduling. |
-| `PROOFREUSE-G002` | `external_dependency_gap` | `mizar-ir` cache adapter integration is absent. Proof reuse validation must not invent IR adapter APIs. |
+| `PROOFREUSE-G001` | `external_dependency_gap` | `mizar-build` now owns scheduler integration seams, but end-to-end proof-reuse scheduling is not wired here. Task 11 validates metadata locally and does not add placeholder scheduling. |
+| `PROOFREUSE-G002` | `external_dependency_gap` | `mizar-ir` now owns cache-adapter validation boundaries. Proof reuse validation must not invent IR adapter APIs or rehydration shortcuts. |
 | `PROOFREUSE-G003` | `external_dependency_gap` | Artifact committed witness publication tokens remain artifact-owned. `proof_reuse` may compare selected witness hashes but must not synthesize committed publication refs. |
 | `PROOFREUSE-G004` | `external_dependency_gap` | `DischargedBuiltin` artifact witness publication remains unsupported until the artifact witness schema grows a distinct trusted class. Reuse uses deterministic discharge hashes only. |
 | `PROOFREUSE-G005` | `external_dependency_gap` | Task 20 covers the crate-owned cache lookup and proof-reuse validation contract; cross-crate clean/incremental equivalence still depends on `mizar-build` scheduler and artifact publication integration. |

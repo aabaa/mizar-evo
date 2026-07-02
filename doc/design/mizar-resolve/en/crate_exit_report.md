@@ -5,8 +5,10 @@
 
 ## Result
 
-Status: complete for non-deferred tasks R-001 to R-029. Task R-024 remains
-explicitly deferred as R-G003 `external_dependency_gap`.
+Status: complete for non-deferred tasks R-001 to R-029. Task R-024 was
+explicitly deferred as R-G003 `external_dependency_gap` at closeout; the
+2026-07-02 roadmap sync records that the artifact-side unblock condition is now
+satisfied and R-024 should resume as resolver integration work.
 
 Quality score: 94/100.
 
@@ -28,9 +30,10 @@ Included:
 
 Excluded:
 
-- R-024 summary-backed `ModuleSummary` reuse is deferred until
-  `mizar-artifact` task 5 supplies the canonical schema, writer, validating
-  reader, and version compatibility policy.
+- R-024 summary-backed `ModuleSummary` reuse was excluded from the closeout.
+  `mizar-artifact` task 5 now supplies the canonical schema, writer, validating
+  reader, and version compatibility policy, so R-024 is the next resolver work
+  rather than an artifact-blocked item.
 - Public resolver diagnostic code allocation remains R-G001 `spec_gap`; current
   resolver diagnostics stay crate-local/internal.
 - Broader semantic `.miz` assertions for import/name/dot-chain/label facts
@@ -43,7 +46,7 @@ Excluded:
 | A | R-001 to R-007 foundation/module-index seam | Passed. Crate scaffold, `ResolvedAst`, `SymbolEnv`, deterministic snapshots, and resolver-side module-index seam are committed. |
 | B | R-008 to R-016 imports/names | Passed. Import graph/path resolution, declaration shells, namespace/name lookup, internal diagnostics, and dot-chain finalization are committed; public diagnostic codes remain deferred under R-G001. |
 | C | R-017 to R-023 labels/symbols/corpus runner | Passed. Label resolution, signature collection, recovered syntax policy, and active `declaration_symbol` runner seeds are committed. |
-| D | R-024 ModuleSummary reuse | Deferred as R-G003 `external_dependency_gap`; no resolver-owned artifact schema, reader, writer, or shim was created. |
+| D | R-024 ModuleSummary reuse | Deferred at closeout as R-G003 `external_dependency_gap`; no resolver-owned artifact schema, reader, writer, or shim was created. The artifact-side blocker is now resolved by `mizar-artifact` task 5, so R-024 should resume. |
 | E | R-025 to R-029 hardening/audits/refactor | Passed. Determinism, public enum policy, source/spec audit, bilingual sync audit, module-boundary refactor, full verification, and quality review are complete. |
 
 ## Hard Gates
@@ -77,7 +80,7 @@ Excluded:
 | ID | Reason | Owner | Unblock condition |
 |---|---|---|---|
 | R-G001 | Public resolver diagnostic code range is absent from `doc/spec/en` chapter 22. | spec / diagnostics planning | Assign public resolver diagnostic ownership before user-facing resolver diagnostic integration. |
-| R-G003 / R-024 | Artifact-backed `ModuleSummary` reuse depends on missing `mizar-artifact` task 5. | `mizar-artifact` | Complete tasks 1 to 5 with canonical `ModuleSummary` schema, writer, validating reader, and version compatibility policy. |
+| R-G003 / R-024 | Artifact-backed `ModuleSummary` reuse was not implemented in the closeout. The original artifact task-5 dependency is now satisfied. | `mizar-resolve` | Resume R-024 using the canonical `mizar-artifact` schema/writer/reader; do not create resolver-local artifact formats. |
 | R-G006 | Parser/syntax does not expose a module-level scheme/template declaration source role. | `mizar-parser` / `mizar-syntax` | Expose the owning source role; resolver must not fabricate module-level scheme/template symbols before then. |
 | R-G007 | Broader active semantic `.miz` assertions are not yet implemented for import/name/dot-chain/label facts. | future `mizar-test` / resolver corpus work | Extend runner assertions from `doc/spec/en` without inventing behavior or rebaselining existing tests. |
 
@@ -164,22 +167,24 @@ Results:
 
 ## Handoff
 
-Recommended next crate: `mizar-artifact` wave A, tasks 1 to 5.
+Recommended next task: resume `mizar-resolve` R-024 `ModuleSummary` reuse.
 
-Reasoning setting: high. Raise to xhigh only if the artifact schema appears to
-conflict with `doc/spec/en`, architecture 11/18, or resolver `ModuleSummary`
-expectations; lower to medium for documentation-only subtasks.
+Reasoning setting: xhigh. Lower to high only for a narrow documentation-only
+preparation task; keep xhigh for implementation because the task crosses the
+resolver/artifact/build cacheability boundary and must preserve crate ownership.
 
 Prompt:
 
 ```text
-mizar-artifact の自律 crate 開発を、doc/design/mizar-artifact/ja/todo.md の
-task 1〜5（wave A）から進めてください。AGENTS.md と
-doc/design/autonomous_crate_development.md に従い、英語正本と日本語 companion を
-同期し、task-by-task で review-only Agent、検証、コミットまで完了してください。
+Resume mizar-resolve R-024 now that mizar-artifact task 5 provides the
+canonical ModuleSummary schema, writer, validating reader, and version
+compatibility policy. Follow AGENTS.md and
+doc/design/autonomous_crate_development.md through review-only agents,
+verification, and commit.
 
-目的は、mizar-resolve R-024 を解除できる canonical `ModuleSummary`
-schema / writer / validating reader / version compatibility policy を
-`mizar-artifact` 側で所有することです。resolver-local artifact schema や shim は
-作らず、producer crates が `mizar-artifact` に依存する方向を守ってください。
+Implement resolver-side consumption of canonical ModuleSummary artifacts without
+creating resolver-owned artifact schemas, readers, writers, or shim formats.
+Compare summary-backed and source-backed resolution on shared fixtures, keep
+artifact ownership in mizar-artifact, and update paired EN/JA design docs and
+focused tests as needed.
 ```

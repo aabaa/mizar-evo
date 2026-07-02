@@ -42,8 +42,9 @@ Prompt:
 Start the next evidence-pipeline integration phase after the mizar-proof task
 20 closeout commit exists and `36d1a9c` is in HEAD history. Keep `mizar-proof`
 as the proof-policy/winner/status/witness/reuse owner. A good next task is
-either `mizar-cache` formal scaffold for proof-reuse validation or a focused
-`mizar-atp` integration task that consumes the existing early-stop policy APIs
+either wiring `mizar-cache` proof-reuse validation into an owning cache/driver
+path or a focused `mizar-atp` integration task that consumes the existing
+early-stop policy APIs
 without moving policy or winner selection into ATP. Do not add placeholder
 cache behavior, artifact witness publication, kernel acceptance, SAT solving,
 backend proof trust, or proof search. Run the AGENTS.md review phases and full

@@ -295,8 +295,8 @@ task 3 は少なくとも以下を cover する:
 
 | Gap | Classification | Handling |
 |---|---|---|
-| `CACHEKEY2-G001` | `external_dependency_gap` | `mizar-build` cache-aware scheduler integration は ready ではない。この仕様は key だけを定義し、scheduler hit/miss behavior は task 15 に残す。 |
-| `CACHEKEY2-G002` | `external_dependency_gap` | `mizar-ir` cache adapter は存在しない。この仕様は adapter の key input を定義するが、placeholder adapter API は作らない。 |
+| `CACHEKEY2-G001` | `external_dependency_gap` | `mizar-build` は現在 cache-aware scheduler seam を所有するが、end-to-end scheduler hit/miss integration はここでは未接続である。この仕様は key だけを定義する。 |
+| `CACHEKEY2-G002` | `external_dependency_gap` | `mizar-ir` は現在 cache-adapter validation boundary を所有する。この仕様は adapter の key input を定義するが、placeholder adapter API や rehydration shortcut は作らない。 |
 | `CACHEKEY2-G003` | `external_dependency_gap` | artifact committed-publication token は artifact/proof owner 側に残る。cache key は witness/publication hash を validation input としてだけ保持してよい。 |
 
 ## Non-Goals

@@ -33,9 +33,9 @@ Task 23 supplies the artifact-side witness projection needed by future emission:
 
 The remaining task 17 blockers are outside `mizar-artifact`:
 
-- no `mizar-proof` workspace crate exists in this checkout;
-- no producer-owned witness staging/publication output exists to feed the
-  artifact store and manifest;
+- `mizar-proof` now exists and owns witness staging/publication metadata, but
+  there is still no integrated producer-owned witness publication output to
+  feed the artifact store and manifest;
 - no real producer output exists for full `VerifiedArtifact` emission;
 - no producer-owned publication hook exists to connect checked kernel evidence,
   selected proof status, witness files, and manifest entries.
@@ -53,8 +53,8 @@ publication shim is added.
 The next valid task 17 attempt requires all of the following to exist first:
 
 - real producer-owned `VerifiedArtifact` projection inputs;
-- a proof/witness publication owner, expected to be `mizar-proof`;
-- stable witness staging and manifest publication outputs;
+- stable proof/witness staging and manifest publication outputs from the
+  owning proof/artifact integration;
 - integration tests that exercise real emission without changing proof
   authority inside `mizar-artifact`.
 

@@ -630,10 +630,11 @@ Keep `cargo test -p mizar-atp` green after each task (see
       score 94/100, no score caps, all hard gates passed, remaining
       `ATP-CLOSEOUT-*` deferred/external gaps, and the next-phase handoff.
       Stale `mizar-proof` placeholder metadata was corrected after the proof
-      crate milestone. `mizar-cache` remains design-only and not a workspace
-      crate; `mizar-proof` is formal but not consumed by this ATP milestone, so
-      missing integrations remain external_dependency_gap / deferred rather
-      than local proof-policy placeholders.
+      crate milestone. `mizar-cache` now exists and owns cache validation, but
+      this ATP milestone still does not consume proof/cache APIs; `mizar-proof`
+      is formal but not consumed by this ATP milestone, so missing integrations
+      remain external_dependency_gap / deferred rather than local proof-policy
+      placeholders.
 
 ## Recommended Verification
 

@@ -66,9 +66,10 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
   task 5 は conservative な published-summary と per-VC slice 粒度から開始してよい。
 - **レコードエンコーディング: task 7 で解決済み。** `cache_store.md` は
   canonical UTF-8 JSON header と inline または blob-backed payload bytes を持つ
-  binary record envelope を使う。cache record は内部用だが、`mizar-ir` adapter と
-  raw-IR integration は external dependency gap のままであり、owner task が landing
-  する前に placeholder IR storage API を追加しない。
+  binary record envelope を使う。cache record は内部用であり、`mizar-ir` は現在
+  cache-adapter validation boundary を所有するが、build/driver integration を通じた
+  raw-IR rehydration は external dependency gap のままである。placeholder IR storage
+  API や rehydration shortcut はここで追加しない。
 - **cluster-db visibility: task 12 で解決済み。** `cluster_db.md` は
   `origins/` を invalidation の source of truth とし、spec 23.7.7 の aggregate
   index を accepted origin record だけから導出し、import スコープ view を削除可能な
@@ -270,11 +271,11 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       [internal 02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)
       「Cache Lookup Before Task Execution」。
     - task 15 で完了: [integration_readiness.md](./integration_readiness.md) は、
-      まだ open の `mizar-build` cache-aware scheduler seam、存在しない
-      `mizar-ir` cache adapter、artifact committed-publication token linkage を
+      owner-scoped な `mizar-build` cache-aware scheduler seam、`mizar-ir`
+      cache adapter、artifact committed-publication token linkage を
       `external_dependency_gap` として記録する。placeholder scheduler、`mizar-ir`、
       artifact-publication-token API は追加しない。上記の実装と end-to-end test は
-      owner が landing するまで deferred のままにする。
+      owner integration task が既存 seam を結線するまで deferred のままにする。
 
 16. **決定性と削除可能性のスイート。** [x]
     - プロパティ的検証: 同一入力が同一のキーとレコードを生む。代表的な

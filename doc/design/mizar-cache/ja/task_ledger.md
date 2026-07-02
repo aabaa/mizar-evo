@@ -37,21 +37,21 @@ task を完了する commit の中で更新する。
 
 | ID | Class | Owner | Unblock condition |
 |---|---|---|---|
-| CACHE-G-003 | `external_dependency_gap` | `mizar-build` | Cache-aware scheduler seam task が landing する。 |
-| CACHE-G-004 | `external_dependency_gap` | `mizar-ir` | IR cache adapter crate/task が landing する。 |
-| CACHE-G-005 | `external_dependency_gap` | `mizar-artifact` / `mizar-proof` | committed witness publication token が存在する。 |
-| DEPFPR-G001 | `external_dependency_gap` | `mizar-build` | Dependency-fingerprint consumer が scheduler cache seam に接続できる。 |
-| DEPFPR-G002 | `external_dependency_gap` | `mizar-ir` | IR cache adapter が placeholder API なしで dependency-fingerprint input を公開する。 |
-| DEPFPR-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication token integration が存在する。それまでは availability/hash input だけを記録する。 |
+| CACHE-G-003 | `external_dependency_gap` | `mizar-build` | 既存の cache-aware scheduler seam を owner-scoped build/driver integration で配線する。 |
+| CACHE-G-004 | `external_dependency_gap` | `mizar-ir` | 既存の IR cache-adapter validation boundary を end-to-end rehydration integration に配線する。 |
+| CACHE-G-005 | `external_dependency_gap` | `mizar-artifact` / `mizar-proof` | artifact/proof owner が committed witness publication-token integration を提供する。 |
+| DEPFPR-G001 | `external_dependency_gap` | `mizar-build` | Dependency-fingerprint consumer を既存 scheduler cache seam に配線する。 |
+| DEPFPR-G002 | `external_dependency_gap` | `mizar-ir` | 既存の IR cache-adapter boundary が placeholder API なしで dependency-fingerprint input を owner integration 経由で公開する。 |
+| DEPFPR-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication token integration は owner-gated のままである。その seam が提供されるまでは availability/hash input だけを記録する。 |
 | DEPFPR-G004 | `deferred` | `mizar-cache` / producer | より細かい theorem/definition/cluster/notation/mode/attribute producer slice が landing する。task 5 は conservative な published-summary と per-VC 粒度から開始する。 |
 | DEPFPR-G005 | `external_dependency_gap` | proof/cache/artifact consumer | proof-reuse metadata の downstream consumer は owner gate 待ち。cache は validation identity だけを記録する。 |
-| CACHESTORE-G001 | `external_dependency_gap` | `mizar-build` | placeholder scheduling なしで cache lookup/insert semantics が scheduler に接続できる。 |
-| CACHESTORE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache adapter が placeholder API なしで record payload integration を公開する。 |
-| CACHESTORE-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication-token integration が存在する。それまでは現在の cache store は local dependency artifact availability と記録された domain/digest だけを check する。 |
+| CACHESTORE-G001 | `external_dependency_gap` | `mizar-build` | cache lookup/insert semantics は既存 scheduler seam に接続可能だが、end-to-end owner integration は未配線である。placeholder scheduling は追加しない。 |
+| CACHESTORE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache-adapter validation boundary は現在存在するが、end-to-end record rehydration integration は未配線である。placeholder API は追加しない。 |
+| CACHESTORE-G003 | `external_dependency_gap` | `mizar-artifact` | Artifact committed publication-token integration は owner-gated のままである。その seam が提供されるまでは現在の cache store は local dependency artifact availability と記録された domain/digest だけを check する。 |
 | CACHESTORE-G004 | `deferred` | `mizar-cache` | 後続の cluster-db index storage task が landing する。record store spec は unaccepted registration を publish しない。 |
-| PROOFREUSE-G001 | `external_dependency_gap` | `mizar-build` | placeholder scheduling なしで scheduler integration が proof-reuse validation を消費できる。 |
-| PROOFREUSE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache adapter integration が存在する。それまでは IR placeholder API を作らない。 |
-| PROOFREUSE-G003 | `external_dependency_gap` | `mizar-artifact` | artifact-owned committed witness publication token が存在する。それまでは cache は selected witness hash だけを比較する。 |
+| PROOFREUSE-G001 | `external_dependency_gap` | `mizar-build` | 既存 scheduler seam は proof-reuse validation を消費できるが、end-to-end owner integration は未配線である。placeholder scheduling は追加しない。 |
+| PROOFREUSE-G002 | `external_dependency_gap` | `mizar-ir` | IR cache-adapter validation boundary は現在存在するが、end-to-end rehydration integration は未配線である。IR placeholder API は作らない。 |
+| PROOFREUSE-G003 | `external_dependency_gap` | `mizar-artifact` | artifact-owned committed witness publication token integration は owner-gated のままである。その seam が提供されるまでは cache は selected witness hash だけを比較する。 |
 | PROOFREUSE-G004 | `external_dependency_gap` | `mizar-artifact` | artifact witness schema が distinct trusted `DischargedBuiltin` class を support する。 |
 | PROOFREUSE-G005 | `external_dependency_gap` | `mizar-build` / `mizar-artifact` | task 20 は crate-owned cache lookup と proof-reuse validation contract を cover する。cross-crate clean/incremental equivalence は scheduler と artifact publication integration に残る。 |
 | CLUSTERDB-G001 | `external_dependency_gap` | checker/artifact producer | concrete accepted-contribution producer field が存在する。なければ task 13 は欠けている field を記録して defer し、accepted status を fabricate しない。 |
@@ -59,6 +59,6 @@ task を完了する commit の中で更新する。
 | CLUSTERDB-G003 | `deferred` | `mizar-cache` | task 14 は in-memory import-scoped view materialization と invalidation test を実装する。durable な `views/` file は persistent cluster-db storage が landing するまで deferred。 |
 | CLUSTERDB-G004 | `external_dependency_gap` | `mizar-build` | scheduler integration は owner gate に残る。placeholder scheduler API は作らない。 |
 | CLUSTERDB-G005 | `external_dependency_gap` | `mizar-ir` | IR cache adapter integration は owner gate に残る。placeholder `mizar-ir` API は作らない。 |
-| CACHE15-G001 | `external_dependency_gap` | `mizar-build` | cache-aware scheduler seam task 18 は open。task 15 は scheduler hook や cache scheduling trait を追加しない。 |
-| CACHE15-G002 | `external_dependency_gap` | `mizar-ir` | `crates/mizar-ir` は存在せず、cache-adapter task 9-10 も open。task 15 は placeholder crate、mock adapter、rehydration API を追加しない。 |
+| CACHE15-G001 | `external_dependency_gap` | `mizar-build` / `mizar-driver` | cache-aware scheduler seam は現在存在するが、owner-scoped build/driver integration を通じた end-to-end cache lookup/use は未配線である。task 15 は scheduler hook や cache scheduling trait を追加しない。 |
+| CACHE15-G002 | `external_dependency_gap` | `mizar-ir` / owner integration path | `mizar-ir` は現在存在し cache-adapter validation-before-rehydration boundary を所有するが、build/driver execution を通じた end-to-end cache-record rehydration は未配線である。task 15 は placeholder mock adapter や rehydration shortcut を追加しない。 |
 | CACHE15-G003 | `external_dependency_gap` | `mizar-artifact` / `mizar-proof` | artifact-owned committed witness publication proof token は存在しない。task 15 は publication-token shortcut を追加しない。 |

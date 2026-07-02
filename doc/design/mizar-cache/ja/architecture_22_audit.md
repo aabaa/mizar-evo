@@ -63,7 +63,7 @@ task 21 は新しい gap ID を追加しない。残る work は `task_ledger.md
 | Gap | Classification | Task-21 disposition |
 |---|---|---|
 | `CACHE-G-003`, `DEPFPR-G001`, `CACHESTORE-G001`, `PROOFREUSE-G001`, `CLUSTERDB-G004`, `CACHE15-G001` | `external_dependency_gap` | `mizar-build` scheduler integration と dependency-fingerprint consumption は owner-gated のまま。placeholder scheduling API は追加しない。 |
-| `CACHE-G-004`, `DEPFPR-G002`, `CACHESTORE-G002`, `PROOFREUSE-G002`, `CLUSTERDB-G005`, `CACHE15-G002` | `external_dependency_gap` | `mizar-ir` cache adapter integration は存在しない。placeholder crate や adapter API は追加しない。 |
+| `CACHE-G-004`, `DEPFPR-G002`, `CACHESTORE-G002`, `PROOFREUSE-G002`, `CLUSTERDB-G005`, `CACHE15-G002` | `external_dependency_gap` | `mizar-ir` は現在 cache-adapter validation boundary を所有するが、build/driver integration を通じた end-to-end cache rehydration は未接続である。placeholder adapter API は追加しない。 |
 | `CACHE-G-005`, `DEPFPR-G003`, `CACHESTORE-G003`, `PROOFREUSE-G003`, `CACHE15-G003` | `external_dependency_gap` | artifact/proof publication-token integration は artifact/proof owner のまま。cache は hash と validation metadata だけを比較する。 |
 | `DEPFPR-G005`, `PROOFREUSE-G004`, `PROOFREUSE-G005` | `external_dependency_gap` | downstream proof/cache/artifact consumer、trusted `DischargedBuiltin` publication、cross-crate clean/incremental equivalence はこの crate の外部に残る。 |
 | `CLUSTERDB-G001` | `external_dependency_gap` | accepted-contribution producer field は checker/artifact owner に残る。cache は missing field を記録し、accepted status を fabricate しない。 |

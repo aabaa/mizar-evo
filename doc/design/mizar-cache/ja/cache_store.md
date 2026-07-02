@@ -320,8 +320,8 @@ task 9 は少なくとも以下を cover する:
 
 | Gap | Classification | Handling |
 |---|---|---|
-| `CACHESTORE-G001` | `external_dependency_gap` | `mizar-build` scheduler integration は未準備。この仕様は lookup/insert semantics だけを定義し、placeholder scheduling は追加しない。 |
-| `CACHESTORE-G002` | `external_dependency_gap` | `mizar-ir` cache adapter は存在しない。record は opaque output bytes を持ってよいが、IR adapter API はここで作らない。 |
+| `CACHESTORE-G001` | `external_dependency_gap` | `mizar-build` は現在 scheduler integration seam を所有するが、end-to-end cache lookup/insert scheduling はここでは未接続である。この仕様は lookup/insert semantics だけを定義し、placeholder scheduling は追加しない。 |
+| `CACHESTORE-G002` | `external_dependency_gap` | `mizar-ir` は現在 cache-adapter validation boundary を所有する。record は opaque output bytes を持ってよいが、IR adapter API や rehydration shortcut はここで作らない。 |
 | `CACHESTORE-G003` | `external_dependency_gap` | artifact committed publication-token integration は外部所有。現在の cache store は local availability と記録された dependency artifact domain/digest だけを check する。cache record は artifact owner が token を公開した後にだけ published artifact hash に依存できる。 |
 | `CACHESTORE-G004` | `deferred` | `cluster-db` index storage は後続 cache task。この record store 仕様は unaccepted registration を importer-visible にしない。 |
 
