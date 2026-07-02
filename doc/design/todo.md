@@ -33,6 +33,43 @@ and the crate ownership map in
    with an initial slice only; their TODO state, not crate presence alone,
    determines readiness for downstream work.
 
+## Completion Compass
+
+This roadmap is intended to be sufficient guidance for the verification-focused
+Mizar-evo implementation to reach an end-to-end usable state, provided that
+remaining `external_dependency_gap`, `deferred`, `test_gap`, and `design_drift`
+records are promoted into real owner tasks before they are closed. A gap is not
+complete merely because a downstream crate can construct a placeholder. It is
+complete only when the owning crate exposes the real producer or consumer seam,
+the relevant corpus runner can exercise it where applicable, and the authority
+order in [autonomous_crate_development.md](./autonomous_crate_development.md)
+still agrees with the resulting behavior.
+
+The current TODO stream should be read as targeting these completion gates:
+
+| Gate | Completion condition | Primary roadmap owners |
+|---|---|---|
+| Source-to-semantics bridge | Real `.miz` inputs can pass from frontend output through resolver and checker-owned payload extraction into `ResolvedTypedAst`, with active semantic corpus coverage instead of the current extraction-gap sentinel. | `mizar-test`, `mizar-resolve`, `mizar-checker` |
+| Core and VC bridge | Checker-derived payloads lower into `CoreIr`, `ControlFlowIr`, and source-derived VC inputs without reconstructing missing source or fabricating registration/proof facts. | `mizar-checker`, `mizar-core`, `mizar-vc`, `mizar-test` |
+| Proof and algorithm verification | Source-derived proof and algorithm obligations can flow through VC generation, ATP candidate production, kernel checking, proof policy/status projection, and proof-reuse metadata with active `proof_verification` coverage. | `mizar-vc`, `mizar-atp`, `mizar-kernel`, `mizar-proof`, `mizar-cache`, `mizar-test` |
+| Artifact publication | Verified module, registration, proof-witness, and diagnostic projections are emitted through real `mizar-artifact` store/manifest transactions from producer-owned outputs. | `mizar-artifact`, `mizar-ir`, `mizar-driver`, producer crates |
+| Build orchestration | Clean, incremental, sequential, and parallel driver/build runs agree on externally visible artifacts, proof statuses, cache decisions, and diagnostics for implemented phases. | `mizar-driver`, `mizar-build`, `mizar-ir`, `mizar-cache`, `mizar-test` |
+| User-facing projections | Public diagnostics, LSP features, and documentation rendering consume stable artifacts, diagnostic records, and metadata without owning semantic or proof authority. | `mizar-diagnostics`, `mizar-lsp`, `mizar-doc`, producer crates |
+
+When all non-parked items in those gates are complete and the relevant broad
+verification commands pass, the roadmap supports claiming a source-to-artifact
+verification pipeline. Algorithm *execution* is a separate claim from algorithm
+verification: before claiming executable algorithm runtime support, promote the
+currently deferred MVM/code-extraction/backend specification work from
+`spec.en.20.algorithm_and_verification` coverage into explicit owner tasks with
+tests and artifact/build integration.
+
+If a future task discovers that one of these gates cannot be closed by the
+existing crate TODOs, update this roadmap in the same change that records the
+new gap. Do not silently close the gate by weakening tests, changing
+expectations to match current behavior, or moving trust authority into a
+convenient downstream crate.
+
 ## Crate Status
 
 | Crate | Workspace crate | Role | Status | TODO |
