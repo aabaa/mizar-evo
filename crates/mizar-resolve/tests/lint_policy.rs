@@ -242,6 +242,11 @@ const PUBLIC_ENUM_DECISIONS: &[PublicEnumDecision] = &[
         enum_name: "SymbolDiagnosticClass",
         spec_name: "symbols.md",
     },
+    PublicEnumDecision {
+        relative_path: "src/module_summary_reuse.rs",
+        enum_name: "ModuleSummaryReuseReason",
+        spec_name: "module_summary_reuse.md",
+    },
 ];
 
 const PUBLIC_ENUM_DECISION_SOURCE_FILES: &[&str] = &[
@@ -250,6 +255,7 @@ const PUBLIC_ENUM_DECISION_SOURCE_FILES: &[&str] = &[
     "src/imports.rs",
     "src/labels.rs",
     "src/names.rs",
+    "src/module_summary_reuse.rs",
     "src/resolved_ast.rs",
     "src/symbols.rs",
 ];

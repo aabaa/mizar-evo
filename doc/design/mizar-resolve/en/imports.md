@@ -32,8 +32,9 @@ publishes resolver output.
 - `ModuleIndexInput` from task R-007, backed by the build-side
   `ModuleIndexProvider` contract.
 - Source-backed summaries for current-workspace modules and dependency summary
-  projections as later resolver tasks provide them. This specification does not
-  assume a `mizar-artifact` `ModuleSummary` schema before task R-024.
+  projections. Artifact-backed dependency projections are supplied by R-024
+  through canonical `mizar-artifact` `ModuleSummary` consumption; imports does
+  not define an artifact schema.
 
 Malformed or recovered syntax remains visible to this phase when the parser can
 produce a `SurfaceAst` node for it. If the parser cannot produce a directive

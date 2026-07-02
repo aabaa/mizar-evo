@@ -283,17 +283,18 @@ only resolver-owned interface data:
 The module lexical summary feeds downstream active lexical environments with
 public predicate/functor notation and other lexer-visible user symbols. It
 does not include private declarations, algorithm identifiers, theorem labels,
-or inline proof abbreviations. Artifact-backed summary reuse is task R-024.
-Until then, symbols may consume source-backed or in-memory dependency
-projections, but must not define a resolver-local artifact schema.
+or inline proof abbreviations. R-024 adds artifact-backed summary reuse as a
+separate adapter that consumes canonical `mizar-artifact` `ModuleSummary`
+records and projects their validated public surface into these summary
+contribution indexes without defining a resolver-local artifact schema.
 
 R-020 does not add a dedicated lexical-summary or artifact-summary data shape.
 R-021 adds the resolver-local `ModuleLexicalSummaryIndex`; the parser-backed
 extractor marks lexer-visible notation tokens (`UserSymbol` / `LexemeRun`) as
 eligible, and collection seeds only export-visible, non-recovered projections.
 Property keywords, algorithms, theorem labels, structure constructors, and
-selectors do not seed active lexical summaries in R-021. Artifact-backed
-`ModuleSummary` reuse remains R-024 work.
+selectors do not seed active lexical summaries in R-021. R-024 reuses only the
+exported lexical entries already present in validated canonical summaries.
 
 ## Dependency Edges And Relations
 

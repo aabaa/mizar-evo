@@ -265,16 +265,17 @@ interface data だけを含む:
 module lexical summary は downstream active lexical environment に public predicate /
 functor notation とその他の lexer-visible user symbol を供給する。private declaration、
 algorithm identifier、theorem label、inline proof abbreviation は含めない。
-artifact-backed summary reuse は task R-024 で扱う。それまでは source-backed または
-in-memory dependency projection を消費してよいが、resolver-local artifact schema を
-定義してはならない。
+R-024 は artifact-backed summary reuse を独立した adapter として追加し、canonical な
+`mizar-artifact` `ModuleSummary` record を消費して、検証済み public surface をこれらの
+summary contribution index へ project する。resolver-local artifact schema は定義しない。
 
 R-020 は専用の lexical-summary または artifact-summary data shape を追加しない。
 R-021 は resolver-local `ModuleLexicalSummaryIndex` を追加する。parser-backed extractor
 が lexer-visible notation token（`UserSymbol` / `LexemeRun`）を eligible として marker し、
 collection は export-visible かつ non-recovered な projection だけを seed する。property
 keyword、algorithm、theorem label、structure constructor、selector は R-021 の active
-lexical summary を seed しない。artifact-backed `ModuleSummary` reuse は R-024 に残る。
+lexical summary を seed しない。R-024 は検証済み canonical summary に含まれる exported
+lexical entry だけを再利用する。
 
 ## Dependency Edge と Relation
 

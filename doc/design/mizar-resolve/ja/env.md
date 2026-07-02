@@ -71,9 +71,9 @@ struct SymbolEnv {
 `SymbolId`、fully qualified name、visible spelling、namespace、source contribution
 から lookup できなければならない。
 
-`module_summaries` は resolver/checker boundary で利用できる in-memory dependency
-summary index である。artifact-backed summary reuse は task R-024 が仕様化するため、
-この data shape で創作してはならない。
+`module_summaries` は resolver/checker boundary で利用できる dependency-facing summary
+index である。R-024 は canonical な artifact-backed summary をこの index へ消費する。
+ただし、`env` data shape は artifact schema、reader、writer、hash framing を定義しない。
 
 この文書の `RegistrationIndex` は、checker validation と obligation acceptance より前の
 registration に対する resolver-side declaration index である。

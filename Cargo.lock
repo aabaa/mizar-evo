@@ -576,6 +576,7 @@ dependencies = [
 name = "mizar-resolve"
 version = "0.1.0"
 dependencies = [
+ "mizar-artifact",
  "mizar-build",
  "mizar-session",
  "mizar-syntax",

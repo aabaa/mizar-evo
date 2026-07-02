@@ -25,6 +25,9 @@ pub mod labels;
 /// Resolver-side module-index phase input seam.
 pub mod module_index;
 
+/// Dependency `ModuleSummary` reuse through canonical artifact projections.
+pub mod module_summary_reuse;
+
 /// Namespace, preliminary symbol-name resolution, internal diagnostics, and
 /// dot-chain finalization.
 pub mod names;

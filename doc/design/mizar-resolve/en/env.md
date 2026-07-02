@@ -73,9 +73,10 @@ The index family is deterministic and query-oriented: later phases must be able
 to look up by `SymbolId`, fully qualified name, visible spelling, namespace, or
 source contribution without observing raw map iteration order.
 
-`module_summaries` is the in-memory dependency-facing summary index available
-to the resolver/checker boundary. Artifact-backed summary reuse is specified by
-task R-024 and must not be invented by this data shape.
+`module_summaries` is the dependency-facing summary index available to the
+resolver/checker boundary. R-024 consumes canonical artifact-backed summaries
+into this index; the `env` data shape still does not define artifact schemas,
+readers, writers, or hash framing.
 
 The `RegistrationIndex` in this document is the resolver-side declaration index
 for registrations before checker validation and obligation acceptance. It is

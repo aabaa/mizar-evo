@@ -30,9 +30,9 @@ semantic import resolution は resolver output を公開する前に、`SurfaceA
 - 現在の module の canonical `ModuleId`。
 - task R-007 の `ModuleIndexInput`。これは build-side `ModuleIndexProvider`
   contract によって backed される。
-- 後続の resolver task が提供する current-workspace module の source-backed
-  summary と dependency summary projection。この仕様は task R-024 より前に
-  `mizar-artifact` の `ModuleSummary` schema を仮定しない。
+- current-workspace module の source-backed summary と dependency summary projection。
+  artifact-backed dependency projection は R-024 の canonical な `mizar-artifact`
+  `ModuleSummary` consumption が供給する。imports は artifact schema を定義しない。
 
 parser が `SurfaceAst` node として表現できる場合、malformed / recovered syntax は
 この phase に見える。parser が directive node を生成できない場合、resolver は

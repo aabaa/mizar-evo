@@ -79,14 +79,13 @@ IR ownership: [01.ir_layers.md](../../architecture/en/01.ir_layers.md).
   and R-015 keeps name diagnostics crate-local/internal, because R-G001 still
   lacks a resolver code range. Revisit before the first later user-facing
   resolver diagnostic integration.
-- **ModuleSummary reuse timing: ready to resume at task 24.** Architecture 03
-  allows dependency modules to be consumed as `ModuleSummary` artifacts
-  instead of re-read sources. The first iteration resolves the in-memory
-  dependency closure. The artifact-backed path originally waited for
-  `mizar-artifact` module-summary schemas; task 5 now provides that schema,
-  writer, validating reader, and compatibility policy. R-024 should resume as
-  resolver-owned integration work and still must not invent a resolver-local
-  artifact format.
+- **ModuleSummary reuse timing: resolved by task 24.** Architecture 03 allows
+  dependency modules to be consumed as `ModuleSummary` artifacts instead of
+  re-read sources. The first iteration resolves the in-memory dependency
+  closure. R-024 now consumes canonical `mizar-artifact` module summaries
+  through the artifact-owned reader and maps validated projections into
+  resolver-owned summary contribution indexes without inventing a
+  resolver-local artifact format.
 - **Nested proof label shadowing wording: resolved by task 17.** An earlier
   task-18 test note asked for "label shadowing across nested proofs", but
   spec chapter 15 forbids inner-scope label shadowing. R-017 classifies that
@@ -366,9 +365,8 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       internal duplicate and illegal-overload diagnostics, recovered and
       context-only shell policy, contribution tracking, and deterministic unit
       tests. Dedicated lexical-summary data shapes are completed by R-021.
-      Artifact-backed summary consumption remained deferred under R-024 until
-      `mizar-artifact` task 5 landed; the artifact-side blocker is now resolved
-      and R-024 is ready to resume as resolver integration work.
+      Artifact-backed summary consumption is implemented by R-024 as a
+      canonical `mizar-artifact` `ModuleSummary` consumer.
 
 21. **Per-kind signature extraction.** [x] — paced by `mizar-parser` tasks 23-31.
     - Extract concrete signatures (structs, modes, attributes, predicates,
@@ -425,7 +423,7 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       assertion expansion, but the executable declaration-symbol runner and
       initial traceable active set are in place.
 
-24. **ModuleSummary reuse.** [ ] ready to resume after resolved external_dependency_gap
+24. **ModuleSummary reuse.** [x]
     - Consume dependency modules as `ModuleSummary` artifacts (schema-version
       checked) instead of re-reading sources; fall back to source resolution
       when summaries are absent or incompatible.
@@ -433,11 +431,14 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       fixture; incompatible schema falls back with a diagnostic.
     - Deps: 20, `mizar-artifact` task 5. Spec: architecture 03 "Module
       Summary", [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md).
-    - R-024 gate result: the earlier `external_dependency_gap` is resolved
-      because `mizar-artifact` task 5 now provides the canonical
-      `ModuleSummary` schema, writer, validating reader, and version
-      compatibility policy. No resolver artifact schema, shim, or fallback
-      reader is implemented yet. Resume this task as resolver integration work.
+    - Completed by R-024: `src/module_summary_reuse.rs` consumes canonical
+      `mizar-artifact` `ModuleSummary` JSON through the artifact-owned reader,
+      projects validated exported symbols, labels, lexical entries, re-exports,
+      and dependency interface references into `SymbolEnv` summary
+      contribution indexes, and produces deterministic crate-local fallback
+      records for missing, incompatible, or unsupported summaries. The resolver
+      does not define artifact schemas, readers, writers, hash framing, public
+      diagnostics, or source loading for artifact-only dependency modules.
 
 25. **Determinism suite.** [x]
     - Property coverage that identical inputs produce identical ids, tables,
@@ -472,8 +473,9 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       `test_expectation_drift`, `boundary_violation`, or
       `repo_metadata_conflict`. Existing classified records remain: R-G001
       public resolver diagnostic code-space `spec_gap`, R-G002 historical
-      semantic corpus coverage `test_gap` refined by R-G007, R-G003 deferred
-      `ModuleSummary` reuse, and R-G006 parser/syntax scheme-role dependency.
+      semantic corpus coverage `test_gap` refined by R-G007, and R-G006
+      parser/syntax scheme-role dependency. R-G003 deferred `ModuleSummary`
+      reuse is resolved by R-024.
 
 28. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
@@ -531,9 +533,9 @@ Keep `cargo test -p mizar-resolve` green after each task (see
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records
-  non-deferred task completion, the original R-024 deferral and current
-  resume-ready status, milestone gates, quality score 94/100, full
-  verification, human-review surface, task commits, and next-task handoff.
+  non-deferred task completion, the original R-024 deferral, the R-024
+  follow-up implementation overlay, milestone gates, quality score 94/100,
+  full verification, human-review surface, task commits, and next-task handoff.
   R-030 is a later integration follow-up opened by the spec-coverage audit; it
   does not reopen the completed R-001 through R-029 milestone.
 
