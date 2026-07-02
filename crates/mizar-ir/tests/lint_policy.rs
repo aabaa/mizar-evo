@@ -21,6 +21,11 @@ const PUBLIC_ENUM_DOCS: &[(&str, &str, &str)] = &[
         "EncodeCacheRecordOutcome",
         "cache_adapter.md",
     ),
+    (
+        "dispatch_input.rs",
+        "DispatchInputError",
+        "dispatch_input.md",
+    ),
     ("identity.rs", "IdentityError", "identity.md"),
     ("publisher.rs", "OutputOrigin", "publisher.md"),
     ("projection.rs", "ProjectionError", "projection.md"),
@@ -171,6 +176,35 @@ fn ir_lib_states_boundary_and_external_gaps() {
             source.contains(marker),
             "{} must keep the task-1 boundary marker `{marker}`",
             lib_path.display()
+        );
+    }
+}
+
+#[test]
+fn dispatch_input_source_excludes_non_ir_authority_terms() {
+    let path = crate_root().join("src/dispatch_input.rs");
+    let source = read_to_string(&path);
+
+    for forbidden in [
+        "mizar_build",
+        "mizar_driver",
+        "mizar_diagnostics",
+        "mizar_lsp",
+        "mizar_proof",
+        "mizar_artifact",
+        "CacheKey",
+        "cache compatibility",
+        "artifact publication",
+        "publication token",
+        "semantic adapter",
+        "proof adapter",
+        "proof acceptance",
+        "LSP",
+    ] {
+        assert!(
+            !source.contains(forbidden),
+            "{} must not import or describe non-IR authority `{forbidden}`",
+            path.display()
         );
     }
 }

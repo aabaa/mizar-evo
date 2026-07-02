@@ -21,14 +21,27 @@ use mizar_driver::{
     events::BuildEventKind,
     registry::{
         PhaseCacheContext, PhaseCacheIntent, PhaseDescriptor, PhaseExecutionContext, PhaseInput,
-        PhaseInputIdentities, PhaseRegistry, PhaseRegistryBuilder, PhaseResult, PhaseService,
-        PhaseServiceAvailability, PhaseStatus, required_phase_services,
+        PhaseRegistry, PhaseRegistryBuilder, PhaseResult, PhaseService, PhaseServiceAvailability,
+        PhaseStatus, required_phase_services,
     },
     request::{
         BatchInvocation, BatchRequest, BuildLaneId, BuildProfile, BuildRequestDraft,
         BuildRequestGeneration, BuildRequestOrigin, BuildSessionOutcome, BuildSessionState,
         BuildTargets, DependencyInputSet, PublicationDecision, SourceInputSet, VerifierConfigInput,
     },
+};
+use mizar_ir::{
+    dispatch_input::{
+        PhaseDispatchInputBundle, PhaseDispatchInputRequest, SealedParentOutputHandle,
+    },
+    identity::{
+        NamedInputHash, OutputKind, PipelinePhase as IrPipelinePhase, SnapshotHandleRegistry,
+        WorkUnit as IrWorkUnit,
+    },
+    publisher::{
+        AllowedWorkUnit, OutputOrigin, PhaseOutputPublisher, PublicationTarget, PublishOutputInput,
+    },
+    storage::{BlobDecodeError, BlobDecoder, IrSideTables, IrStorageService, SchemaVersion},
 };
 use mizar_session::{
     BuildSnapshotId, DependencyArtifactRef, Hash, InMemorySessionIdAllocator, PackageId,
@@ -226,6 +239,109 @@ fn registered_services_execute_from_scheduler_selected_dispatch() {
         matches!(kind, BuildEventKind::TaskProgress { .. })
     });
     assert_no_event(&driver, submission.session.id, |kind| {
+        matches!(kind, BuildEventKind::DispatchGap { .. })
+    });
+}
+
+#[test]
+fn invalid_phase_dispatch_bundle_fails_without_dispatch_gap() {
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let calls = Arc::new(Mutex::new(Vec::new()));
+    let mut driver = CompilerDriver::new(executable_scheduler_fixture_registry(calls.clone()));
+    let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
+    input.phase_dispatch_inputs = Some(Box::new(WrongSnapshotPhaseInputs));
+
+    let submission = driver
+        .submit(request(5), &ids, &snapshots, input)
+        .expect("invalid dispatch input is reported through scheduler outcome");
+
+    assert_eq!(
+        submission.status,
+        DriverSubmissionStatus::SchedulerValidated
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Failed)
+    );
+    assert!(submission.dispatch_gap_phases.is_empty());
+    assert!(
+        calls.lock().expect("calls lock is not poisoned").is_empty(),
+        "invalid dispatch input must fail before phase execution"
+    );
+    assert_no_event(&driver, submission.session.id, |kind| {
+        matches!(
+            kind,
+            BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
+        )
+    });
+}
+
+#[test]
+fn phase_dispatch_provider_error_fails_without_dispatch_gap() {
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let calls = Arc::new(Mutex::new(Vec::new()));
+    let mut driver = CompilerDriver::new(executable_scheduler_fixture_registry(calls.clone()));
+    let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
+    input.phase_dispatch_inputs = Some(Box::new(ErrorPhaseInputs));
+
+    let submission = driver
+        .submit(request(6), &ids, &snapshots, input)
+        .expect("provider dispatch error is reported through scheduler outcome");
+
+    assert_eq!(
+        submission.status,
+        DriverSubmissionStatus::SchedulerValidated
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Failed)
+    );
+    assert!(submission.dispatch_gap_phases.is_empty());
+    assert!(
+        calls.lock().expect("calls lock is not poisoned").is_empty(),
+        "invalid provider result must fail before phase execution"
+    );
+    assert_no_event(&driver, submission.session.id, |kind| {
+        matches!(
+            kind,
+            BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
+        )
+    });
+}
+
+#[test]
+fn phase_dispatch_provider_none_blocks_as_dispatch_gap() {
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let calls = Arc::new(Mutex::new(Vec::new()));
+    let mut driver = CompilerDriver::new(executable_scheduler_fixture_registry(calls.clone()));
+    let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
+    input.phase_dispatch_inputs = Some(Box::new(NonePhaseInputs));
+
+    let submission = driver
+        .submit(request(7), &ids, &snapshots, input)
+        .expect("missing provider bundle is reported as dispatch gap");
+
+    assert_eq!(
+        submission.status,
+        DriverSubmissionStatus::BlockedByPhaseDispatchGap
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Blocked)
+    );
+    assert!(
+        submission
+            .dispatch_gap_phases
+            .contains(&PipelinePhase::SourceLoad)
+    );
+    assert!(
+        calls.lock().expect("calls lock is not poisoned").is_empty(),
+        "missing provider bundle must block before phase execution"
+    );
+    assert_event(&driver, submission.session.id, |kind| {
         matches!(kind, BuildEventKind::DispatchGap { .. })
     });
 }
@@ -605,6 +721,14 @@ fn driver_scheduler_helper_does_not_claim_phase_output_or_cache_authority() {
         source.contains("execute_phase_with_resources"),
         "scheduler helper must consume the registry execution boundary"
     );
+    assert!(
+        source.contains("invalid_phase_dispatch_input"),
+        "scheduler helper must classify invalid owner dispatch inputs separately from missing bundles"
+    );
+    assert!(
+        source.contains("missing_phase_input_identities"),
+        "scheduler helper must keep missing owner dispatch bundles classified as dispatch gaps"
+    );
     for forbidden in [
         "DiagnosticRegistry",
         "DiagnosticCode",
@@ -858,19 +982,123 @@ impl PhaseService for DescriptorOnlyFixtureService {
 
 struct FixturePhaseInputs;
 
-impl PhaseDispatchInputProvider for FixturePhaseInputs {
-    fn input_identities_for_task(&self, task: &BuildTask) -> Option<PhaseInputIdentities> {
-        let seed = task
+impl PhaseDispatchInputProvider<BuildTask> for FixturePhaseInputs {
+    fn dispatch_input_for_task(
+        &self,
+        request: PhaseDispatchInputRequest<'_, BuildTask>,
+    ) -> Result<Option<PhaseDispatchInputBundle>, mizar_ir::dispatch_input::DispatchInputError>
+    {
+        let seed = request
+            .task()
             .id
             .as_str()
             .bytes()
             .fold(0_u8, |accumulator, byte| accumulator.wrapping_add(byte));
-        Some(PhaseInputIdentities::new(
-            Hash::from_bytes([seed; Hash::BYTE_LEN]),
-            Vec::new(),
-            Vec::new(),
+        Ok(Some(
+            PhaseDispatchInputBundle::new(
+                request.snapshot(),
+                Hash::from_bytes([seed; Hash::BYTE_LEN]),
+                Vec::new(),
+                vec![fixture_parent_handle(request.snapshot(), seed)],
+            )
+            .expect("fixture parent bundle is valid"),
         ))
     }
+}
+
+struct WrongSnapshotPhaseInputs;
+
+impl PhaseDispatchInputProvider<BuildTask> for WrongSnapshotPhaseInputs {
+    fn dispatch_input_for_task(
+        &self,
+        _request: PhaseDispatchInputRequest<'_, BuildTask>,
+    ) -> Result<Option<PhaseDispatchInputBundle>, mizar_ir::dispatch_input::DispatchInputError>
+    {
+        Ok(Some(PhaseDispatchInputBundle::without_parent_outputs(
+            snapshot(0xee),
+            Hash::from_bytes([0xee; Hash::BYTE_LEN]),
+            Vec::new(),
+        )))
+    }
+}
+
+struct ErrorPhaseInputs;
+
+impl PhaseDispatchInputProvider<BuildTask> for ErrorPhaseInputs {
+    fn dispatch_input_for_task(
+        &self,
+        _request: PhaseDispatchInputRequest<'_, BuildTask>,
+    ) -> Result<Option<PhaseDispatchInputBundle>, mizar_ir::dispatch_input::DispatchInputError>
+    {
+        Err(
+            mizar_ir::dispatch_input::DispatchInputError::DispatchSnapshotMismatch {
+                expected: snapshot(0xaa),
+                actual: snapshot(0xbb),
+            },
+        )
+    }
+}
+
+struct NonePhaseInputs;
+
+impl PhaseDispatchInputProvider<BuildTask> for NonePhaseInputs {
+    fn dispatch_input_for_task(
+        &self,
+        _request: PhaseDispatchInputRequest<'_, BuildTask>,
+    ) -> Result<Option<PhaseDispatchInputBundle>, mizar_ir::dispatch_input::DispatchInputError>
+    {
+        Ok(None)
+    }
+}
+
+fn fixture_parent_handle(snapshot: BuildSnapshotId, seed: u8) -> SealedParentOutputHandle {
+    let publisher = PhaseOutputPublisher::new(
+        Arc::new(IrStorageService::new()),
+        Arc::new(SnapshotHandleRegistry::new()),
+    );
+    let phase = IrPipelinePhase::new("driver-fixture-parent");
+    let work_unit = IrWorkUnit::new(format!("parent-{seed}"));
+    let output_kind = OutputKind::new("driver-fixture-parent-output");
+    publisher.register_current_snapshot(snapshot);
+    publisher.allow_work_unit(AllowedWorkUnit::new(
+        phase.clone(),
+        output_kind.clone(),
+        work_unit.clone(),
+    ));
+    let payload = format!("parent-{seed}");
+    let handle = publisher
+        .publish(PublishOutputInput {
+            slot: publisher.allocate(
+                snapshot,
+                phase.clone(),
+                work_unit.clone(),
+                output_kind.clone(),
+                SchemaVersion::new(1),
+            ),
+            snapshot,
+            phase,
+            work_unit,
+            output_kind,
+            schema_version: SchemaVersion::new(1),
+            payload: payload.clone(),
+            canonical_payload: Some(payload.into_bytes()),
+            decode: BlobDecoder::new(|bytes| {
+                String::from_utf8(bytes.to_vec())
+                    .map_err(|error| BlobDecodeError::new(error.to_string()))
+            }),
+            parents: Vec::new(),
+            named_input_hashes: vec![NamedInputHash {
+                name: "source".to_owned(),
+                domain: "driver-fixture".to_owned(),
+                digest: Hash::from_bytes([seed; Hash::BYTE_LEN]),
+            }],
+            side_tables: IrSideTables::default(),
+            origin: OutputOrigin::PackageSource,
+            target: PublicationTarget::CurrentPackage,
+        })
+        .expect("fixture parent output publishes");
+    SealedParentOutputHandle::from_current_output(&publisher, snapshot, handle.erase())
+        .expect("fixture parent handle validates")
 }
 
 #[derive(Debug)]
@@ -889,7 +1117,18 @@ impl PhaseService for ExecutableFixtureService {
         panic!("driver scheduler dispatch must not request phase fixture cache keys")
     }
 
-    fn execute(&self, _input: PhaseInput, _context: PhaseExecutionContext) -> PhaseResult {
+    fn execute(&self, _input: PhaseInput, context: PhaseExecutionContext) -> PhaseResult {
+        assert!(
+            !context.parent_outputs.is_empty(),
+            "scheduler-selected dispatch should pass sealed parent handles"
+        );
+        assert!(
+            context
+                .parent_outputs
+                .iter()
+                .all(|parent| parent.snapshot() == context.common.snapshot),
+            "scheduler-selected dispatch must pass parent handles for the execution snapshot"
+        );
         self.calls
             .lock()
             .expect("calls lock is not poisoned")

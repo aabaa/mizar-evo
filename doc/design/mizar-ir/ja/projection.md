@@ -152,11 +152,11 @@ diagnostic は stable id、code、severity、source range、message key、render
 related location、任意の explanation reference を持つ `ArtifactDiagnostic` record へ
 射影される。
 
-この checkout に `mizar-diagnostics` は存在しない。そのため task 12 は crate-local な
-安定 diagnostic projection record を使い、real diagnostic registry / renderer integration
-を `external_dependency_gap` と分類しなければならない。projection は diagnostic
-publication token を捏造してはならず、rendered diagnostic を proof authority として
-扱ってもならない。
+`mizar-diagnostics` は現在この workspace に存在するが、その real registry / renderer
+integration は `mizar-ir` に公開されていない。そのためこの module は crate-local な
+安定 diagnostic projection record を使い、real diagnostic registry / renderer seam を
+`external_dependency_gap` と分類する。projection は diagnostic publication token を
+捏造してはならず、rendered diagnostic を proof authority として扱ってもならない。
 
 ### Provenance
 
@@ -233,4 +233,5 @@ task 12 は以下を cover しなければならない:
 - accepted-obligation witness consistency を `mizar-artifact` schema に委譲し、
   `mizar-ir` が proof authority にならないこと。
 - cache-key と dependency-fingerprint を所有しないこと。
-- `mizar-driver` と placeholder diagnostics / publication-token API が存在しないこと。
+- `mizar-driver` dependency と placeholder diagnostics / publication-token API が
+  存在しないこと。

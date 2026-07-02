@@ -18,12 +18,12 @@ companion なしで残された English canonical content もない。
 
 | Check | Evidence | Result |
 |---|---|---|
-| File coverage | 両言語 directory は `00.crate_plan.md`、`cache_adapter.md`、`identity.md`、`projection.md`、`publisher.md`、`source_spec_correspondence.md`、`storage.md`、`todo.md` を含む。この audit は `bilingual_documentation_sync.md` を両方に追加する。 | Synchronized。 |
-| Heading parity | 既存 file ごとの heading count は一致する: crate plan 27、cache adapter 13、identity 10、projection 15、publisher 11、source/spec audit 6、storage 12、TODO 11。この audit pair も対応する section を持つ。 | Synchronized。 |
-| Task status parity | TODO task state は揃っている: task 1-17 は complete、task 18-19 は open のまま。 | Synchronized。 |
-| Gap classification parity | crate plan の `IR-G-001` から `IR-G-009`、source/spec の `IR-G-004` から `IR-G-009` は両言語に存在し、class と disposition が対応している。 | Synchronized。 |
+| File coverage | 両言語 directory は paired crate plan、TODO、module spec、dispatch input spec、source/spec audit、bilingual audit、architecture-22 audit、module-boundary gate、crate exit report を含む。 | task 20 scope で synchronized。 |
+| Heading parity | paired task-20 document は matching section を保つ。既存 bilingual pair は dispatch input と closeout 更新後も揃っている。 | Synchronized。 |
+| Task status parity | TODO task state は揃っている: task 1-20 は complete。 | task 20 scope で synchronized。 |
+| Gap classification parity | crate plan の `IR-G-001` から `IR-G-012`、source/spec の `IR-G-004` から `IR-G-012` は両言語に存在し、class と disposition が対応している。 | task 20 scope で synchronized。 |
 | Ownership boundaries | 両言語 set は、`mizar-ir` が internal IR storage、snapshot handle、phase output reference、publication、cache adaptation、projection、snapshot replacement を所有する一方、proof acceptance、trusted status、kernel acceptance、`CacheKey`、dependency fingerprint、proof-reuse validation は所有しないと述べている。 | Synchronized。 |
-| External dependency gaps | 両言語 set は、real `mizar-driver`、`mizar-diagnostics`、producer projection payload、artifact publication token、system equivalence を placeholder API ではなく deferred external gap として分類している。 | Synchronized。 |
+| External dependency gaps | 両言語 set は、remaining producer dispatch、diagnostics rendering、producer projection payload、artifact publication token、cache-compatibility wiring、LSP conversion、system equivalence を placeholder API ではなく deferred external gap として分類している。 | Synchronized。 |
 | Cache and snapshot freshness | 両言語 set は、handle reconstruction 前の fail-closed cache miss behavior を要求し、obsolete/open output を current artifact として publish することを禁止している。 | Synchronized。 |
 | Projection boundary | 両言語 set は、raw `SurfaceAst`、`TypedAst`、`CoreIr`、`ControlFlowIr`、`VcIr`、`AtpProblem`、kernel-internal state、storage handle、inline proof-witness payload の公開を禁止している。 | Synchronized。 |
 
@@ -34,9 +34,10 @@ mizar-ir document set に current な bilingual 固有の `spec_gap`、`source_d
 既存の crate-plan gap row は `design_drift` を含む protocol class を保持しており、
 それらの class は両言語で同期している。deferred integration は既存の crate plan と
 module specification に `external_dependency_gap` risk tag として記録済みである。
+task 20 は `dispatch_input.md` を追加し、古い driver 不在という表現を、missing
+driver crate ではなく現在の downstream integration gap として再分類する。
 
 ## Audit Result
 
-Task 17 は、この audit record、crate-plan inventory entry、TODO status update 以外の
-synchronized content change なしで close する。Task 18 は、この bilingual scope を再利用しつつ、
-architecture-22 の publisher、cache-adapter、snapshot-replacement contract に特化して確認する。
+Task 20 は bilingual sync invariant を保つ。新しい dispatch input boundary、closeout
+status、verification record、gap classification は両言語 directory に反映されている。

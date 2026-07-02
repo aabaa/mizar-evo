@@ -47,10 +47,10 @@ publisher/cache/snapshot-replacement scope.
 
 `IR-G-007` remains the tracked system-level `test_gap` with
 `external_dependency_gap` risk: full clean/incremental/parallel driver
-equivalence requires downstream orchestration crates that are not present in
-this checkout. This task does not add placeholder `mizar-driver`,
-`mizar-diagnostics`, producer-token, cache-key, dependency-fingerprint, or
-proof-policy APIs.
+equivalence requires downstream orchestration and real producer/cache/artifact
+seams that are not wired to `mizar-ir` in this checkout. This task does not add
+a `mizar-driver` dependency, placeholder diagnostics integration,
+producer-token, cache-key, dependency-fingerprint, or proof-policy APIs.
 
 ## Audit Result
 

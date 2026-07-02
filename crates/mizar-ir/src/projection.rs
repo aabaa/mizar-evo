@@ -76,7 +76,7 @@ pub struct VerifiedArtifactDraft {
 pub enum ProjectionExternalDependencyGap {
     /// Real driver build sessions are owned outside `mizar-ir`.
     DriverSession,
-    /// Real diagnostic registry/renderer integration is not present here.
+    /// Real diagnostic registry/renderer integration is not exposed here.
     DiagnosticsIntegration,
     /// Real producer typed projection payloads are not exposed yet.
     ProducerProjectionPayload,

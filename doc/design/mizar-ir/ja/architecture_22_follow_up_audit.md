@@ -45,10 +45,10 @@ architecture-22 の publisher/cache/snapshot-replacement scope について、cu
 drift は見つからなかった。
 
 `IR-G-007` は system-level `test_gap` かつ `external_dependency_gap` risk として残る:
-full clean/incremental/parallel driver equivalence は、この checkout にはない downstream
-orchestration crate を必要とする。この task は placeholder の `mizar-driver`、
-`mizar-diagnostics`、producer-token、cache-key、dependency-fingerprint、proof-policy
-API を追加しない。
+full clean/incremental/parallel driver equivalence は、この checkout で `mizar-ir` にまだ
+wiring されていない downstream orchestration と real producer/cache/artifact seam を必要
+とする。この task は `mizar-driver` dependency、placeholder diagnostics integration、
+producer-token、cache-key、dependency-fingerprint、proof-policy API を追加しない。
 
 ## Audit Result
 

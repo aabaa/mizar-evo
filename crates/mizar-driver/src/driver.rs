@@ -21,6 +21,7 @@ use mizar_build::{
         TaskGraphInput, TaskGraphProfile, VcTaskDescriptor, build_task_graph,
     },
 };
+pub use mizar_ir::dispatch_input::PhaseDispatchInputProvider;
 use mizar_ir::publisher::{PhaseOutputPublisher, PublishError};
 use mizar_session::{
     BuildSessionId, BuildSnapshotId, IdError, SessionIdAllocator, SnapshotRegistry,
@@ -28,7 +29,7 @@ use mizar_session::{
 
 use crate::{
     events::{BuildEventStream, OwnerGapClassification, PlanningEventStatus},
-    registry::{PhaseInputIdentities, PhaseRegistry, PhaseRegistryError, PhaseServiceAvailability},
+    registry::{PhaseRegistry, PhaseRegistryError, PhaseServiceAvailability},
     request::{
         BuildRequestDraft, BuildRequestOrigin, BuildSession, BuildSessionOutcome,
         BuildSessionState, CaptureSnapshotError, DriverLanes, PublicationDecision,
@@ -81,13 +82,9 @@ where
     pub cache_decisions: CacheSchedulingPlan,
     pub resource_budget: ResourceBudget,
     pub cancellation: CancellationPolicy,
-    pub phase_dispatch_inputs: Option<Box<dyn PhaseDispatchInputProvider>>,
+    pub phase_dispatch_inputs: Option<Box<dyn PhaseDispatchInputProvider<BuildTask>>>,
     pub worker_count: usize,
     pub completion_order: CompletionOrder,
-}
-
-pub trait PhaseDispatchInputProvider {
-    fn input_identities_for_task(&self, task: &BuildTask) -> Option<PhaseInputIdentities>;
 }
 
 pub struct CompilerDriver {

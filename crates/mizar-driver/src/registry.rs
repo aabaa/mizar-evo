@@ -5,7 +5,11 @@ use mizar_build::{
     task_graph::{PipelinePhase, WorkUnit},
 };
 use mizar_diagnostics::sink::{DiagnosticBatch, DiagnosticSink};
-use mizar_ir::{publisher::PhaseOutputPublisher, storage::AnyPhaseOutputRef};
+use mizar_ir::{
+    dispatch_input::{PhaseDispatchInputBundle, PhaseInputIdentities, SealedParentOutputHandle},
+    publisher::PhaseOutputPublisher,
+    storage::AnyPhaseOutputRef,
+};
 use mizar_session::{BuildSnapshotId, Hash};
 
 mod catalog;
@@ -36,14 +40,8 @@ pub struct PhaseRequirement {
 pub struct PhaseInput {
     pub snapshot: BuildSnapshotId,
     pub work_unit: WorkUnit,
-    pub identities: PhaseInputIdentities,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PhaseInputIdentities {
-    pub input_hash: Hash,
-    pub dependency_hashes: Vec<Hash>,
-    pub parent_output_hashes: Vec<Hash>,
+    identities: PhaseInputIdentities,
+    parent_outputs: Vec<SealedParentOutputHandle>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,6 +62,7 @@ pub struct PhaseExecutionContext {
     pub cancellation: Option<CancellationToken>,
     pub diagnostics: Option<DiagnosticSink>,
     pub output_publisher: Option<PhaseOutputPublisher>,
+    pub parent_outputs: Vec<SealedParentOutputHandle>,
 }
 
 #[derive(Debug, Default)]
@@ -286,16 +285,22 @@ impl PhaseDescriptor {
 }
 
 impl PhaseInput {
-    pub fn new(
-        snapshot: BuildSnapshotId,
-        work_unit: WorkUnit,
-        identities: PhaseInputIdentities,
-    ) -> Self {
+    pub fn new(work_unit: WorkUnit, bundle: PhaseDispatchInputBundle) -> Self {
+        let (snapshot, identities, parent_outputs) = bundle.into_parts();
         Self {
             snapshot,
             work_unit,
             identities,
+            parent_outputs,
         }
+    }
+
+    pub fn identities(&self) -> &PhaseInputIdentities {
+        &self.identities
+    }
+
+    pub fn parent_outputs(&self) -> &[SealedParentOutputHandle] {
+        &self.parent_outputs
     }
 
     fn cache_context(&self) -> PhaseCacheContext {
@@ -317,22 +322,7 @@ impl PhaseInput {
             cancellation: resources.cancellation,
             diagnostics: resources.diagnostics,
             output_publisher: resources.output_publisher,
-        }
-    }
-}
-
-impl PhaseInputIdentities {
-    pub fn new(
-        input_hash: Hash,
-        mut dependency_hashes: Vec<Hash>,
-        mut parent_output_hashes: Vec<Hash>,
-    ) -> Self {
-        dependency_hashes.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
-        parent_output_hashes.sort_by(|left, right| left.as_bytes().cmp(right.as_bytes()));
-        Self {
-            input_hash,
-            dependency_hashes,
-            parent_output_hashes,
+            parent_outputs: self.parent_outputs.clone(),
         }
     }
 }

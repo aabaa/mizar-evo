@@ -5,7 +5,7 @@
 
 ## Result
 
-Status: complete for the `mizar-ir` internal-IR milestone.
+Status: completed after task 20 dispatch-input follow-up.
 Quality score: 95/100.
 Score caps applied: none.
 
@@ -40,8 +40,9 @@ Excluded:
 - raw `SurfaceAst`, `TypedAst`, `CoreIr`, `ControlFlowIr`, `VcIr`,
   `AtpProblem`, kernel-internal state, storage references, or inline proof
   witness payloads in published artifacts;
-- placeholder `mizar-driver`, `mizar-diagnostics`, producer-publication-token,
-  artifact-publication-token, or downstream integration APIs.
+- placeholder producer/diagnostics integration APIs, producer-publication
+  tokens, artifact-publication tokens, or any `mizar-driver` dependency inside
+  `mizar-ir`.
 
 ## Task Commits
 
@@ -67,7 +68,7 @@ Excluded:
 | 17 | `7a8d5efab3256e7fc7079cc63a367b61be01817c` | `docs(ir-task-17): audit bilingual documentation sync` |
 | 18 | `ba01d4f6e6978c62e520292e314cd39ea412c89b` | `docs(ir-task-18): audit architecture 22 freshness` |
 | 19 | `b0a0201bf783797ed03ca2ceeac3e500c9c322db` | `docs(ir-task-19): audit module boundaries` |
-| 20 | pending self-hash | `docs(ir-task-20): add ir crate exit report` |
+| 20 | pending self-hash | `feat(ir-task-20): add dispatch input boundary` |
 
 ## Final Owned Surfaces
 
@@ -79,7 +80,8 @@ Excluded:
 | Cache adapter | `IrCacheAdapter` consumes caller-supplied `mizar-cache` `CacheKey` values, `CacheRecord` payloads, and validated lookup outcomes. It consumes key/header/dependency/proof compatibility from `mizar-cache`, then validates adapter schema, cacheability markers, parents, payload hash, side-table hash, storage freshness, and publisher acceptance before returning a rehydrated handle; all unknown, incomplete, uncacheable, incompatible, corrupt, tampered, stale, or undecodable states are miss results before handle exposure. |
 | Artifact projection | `ArtifactProjectionService` validates current sealed handles and creates unpublished `VerifiedArtifactDraft` values using stable `mizar-artifact` schemas. It rejects raw internal IR names, storage handles, kernel-internal state, inline proof witness payloads, duplicate projected rows, and schema mismatches. |
 | Snapshot replacement | `replace_current_snapshot` supersedes old snapshots for current publication while retained old outputs remain readable or cache-encodable until release and collection. Obsolete outputs cannot become current results except through the validated cache-rehydration boundary for a new snapshot. |
-| Integration boundary | Real driver sessions, diagnostics registry/rendering, producer projection payloads, artifact publication tokens, and system-level clean/incremental/parallel equivalence remain classified as `external_dependency_gap`. No placeholder crate, stub API, fake token, or `mizar-driver` dependency was added. |
+| Dispatch input boundary | `PhaseInputIdentities`, snapshot-bound `PhaseDispatchInputBundle`, `SealedParentOutputHandle`, and `PhaseDispatchInputProvider<Task>` are owned by `mizar-ir`. Parent output identities are derived only from validated sealed handles; bundle/provider validation distinguishes missing owner inputs from invalid snapshot/storage/currentness failures. |
+| Integration boundary | Real driver/front-door and diagnostics crates now exist, but diagnostics registry/rendering integration, producer projection payloads, artifact publication tokens, semantic/proof adapters, cache-compatibility wiring, LSP conversion, and system-level clean/incremental/parallel equivalence remain classified as `external_dependency_gap` or `deferred`. No placeholder producer, stub API, fake token, or `mizar-driver` dependency was added to `mizar-ir`. |
 
 ## Hard Gates
 
@@ -94,8 +96,8 @@ Excluded:
 | Proof and cache authority boundary | passed | `mizar-ir` does not own proof acceptance, trusted status, policy selection, kernel acceptance, `CacheKey`, dependency fingerprints, or proof-reuse validation; lint guards and module tests cover this boundary. |
 | Test expectation integrity | passed | No `doc/spec` language file, `.miz` fixture, traceability row, or expectation sidecar was changed to match current implementation behavior. |
 | Design/source synchronization | passed | English canonical docs and Japanese companions are paired and synchronized; source/docs audits and lint guards record no current drift. |
-| Downstream gaps classified | passed | Real driver, diagnostics, producer projection, artifact publication token, and full system-equivalence work is classified as `external_dependency_gap`, not stubbed. |
-| Verification | passed | Crate-local and workspace Rust verification, adjacent cache/artifact/build tests, diff checks, staged diff checks, and closeout reviews passed. `mizar-driver` is absent and remains an external dependency gap. |
+| Downstream gaps classified | passed | Real producer, diagnostics rendering, artifact publication token, semantic/proof adapter, cache-compatibility, LSP conversion, and full system-equivalence work is classified as `external_dependency_gap` or `deferred`, not stubbed. |
+| Verification | passed | Crate-local and workspace Rust verification, adjacent cache/artifact/build/driver tests, diff checks, staged diff checks, and task-20 reviews passed. Driver verification is included because `mizar-driver` consumes the IR-owned dispatch input bundle. |
 
 ## Score Breakdown
 
@@ -112,27 +114,28 @@ Excluded:
 | Total | 95/100 |
 
 The score deducts for downstream gaps that are intentionally outside the
-milestone: real `mizar-driver` sessions and cache scheduling, real
-`mizar-diagnostics` integration, producer-owned projection payloads,
-artifact-publication-token integration, and full clean/incremental/parallel
+milestone: real diagnostics rendering, producer-owned projection payloads,
+artifact-publication-token integration, semantic/proof adapters,
+cache-compatibility wiring, LSP conversion, and full clean/incremental/parallel
 system equivalence. These gaps do not cap the score because they are
-classified, not stubbed, and all hard gates pass.
+classified, not stubbed. Task 20 restored the score after adding the
+dispatch-input boundary and passing driver front-door verification.
 
 ## Review Results
 
 | Review | Result |
 |---|---|
 | Implementation specification / documentation review | No findings. The closeout scope, owned/excluded boundaries, hard gates, external gaps, quality score rationale, and handoff are complete and consistent with the crate plan and module specs. |
-| Test sufficiency review | No findings. Crate-local tests cover deterministic identity, sealed storage, publisher currentness, fail-closed cache rehydration, projection leakage, snapshot replacement, lifetime collection, enum policy, and boundary guards; system-level equivalence remains correctly classified as `external_dependency_gap`. |
-| Full implementation review | No findings. The report matches the implemented source boundary; no production source change is part of closeout, and prior source audits found no unresolved blocking/high issue. |
-| Source/documentation consistency review | No findings. English and Japanese closeout reports are synchronized, task hashes and subjects match git history, and source/documentation ownership statements agree. |
-| Read-only crate quality review | Valid quality score: 95/100. No score cap applies; all hard gates pass. |
+| Test sufficiency review | No findings. Tests cover deterministic identity, sealed storage, publisher currentness, fail-closed cache rehydration, projection leakage, snapshot replacement, lifetime collection, enum policy, dispatch input validation, provider missing/error branches, driver consumption, and boundary guards; system-level equivalence remains correctly classified as `external_dependency_gap`. |
+| Full implementation review | No findings after the low documentation wording fix. The implemented source boundary owns dispatch input identities and sealed parent handles in `mizar-ir` while the driver consumes them at scheduler-selected dispatch. |
+| Source/documentation consistency review | No findings. English and Japanese closeout reports are synchronized, task status and verification records match the source/tests, and source/documentation ownership statements agree. |
+| Read-only crate quality review | 95/100. Hard gates pass; no unresolved blocking/high/medium findings remain. |
 
 ## Deferred And External Dependency Items
 
 | ID | Crate-plan class | Risk tag / status | Owner / unblock condition |
 |---|---|---|---|
-| IR-G-004 | `design_drift` | `external_dependency_gap` | Real `mizar-driver` build sessions, phase registry, driver-owned cache lookup, cache scheduling, and publication freshness must be provided by a future driver/build integration phase. `mizar-ir` must continue to have no `mizar-driver` dependency. |
+| IR-G-004 | `design_drift` | `external_dependency_gap` | `mizar-driver` now provides the registry/front door, but real producer dispatch inputs, driver-owned cache lookup over real records, cache scheduling integration, and publication freshness wiring still require downstream integration. `mizar-ir` must continue to have no `mizar-driver` dependency. |
 | IR-G-005 | `design_drift` | `external_dependency_gap` | Real `mizar-diagnostics` registry/rendering integration must be provided by the diagnostics owner. `mizar-ir` stores stable side-table/projection references only and does not add a stub diagnostics crate or API. |
 | IR-G-006 | `design_drift` | `external_dependency_gap` | Real resolver/checker/core/VC/ATP/kernel/proof producer projection payloads, producer publication tokens, and artifact publication tokens must be supplied by their owning crates. Projection stays on stable draft schemas and does not mint tokens. |
 | IR-G-007 | `test_gap` | `external_dependency_gap` | Full clean/incremental/parallel driver equivalence requires downstream orchestration and real producer/cache/artifact/driver seams. Crate-local deterministic and lifetime tests cover the implemented boundary until that phase exists. |
@@ -157,14 +160,15 @@ module-boundary audit, bilingual audit, and explicit gap records.
 | `cargo test -p mizar-cache` | passed |
 | `cargo test -p mizar-artifact` | passed |
 | `cargo test -p mizar-build` | passed |
+| `cargo test -p mizar-driver` | passed |
 | `cargo clippy --all-targets --all-features -- -D warnings` | passed |
 | `cargo test` | passed |
 | `git diff --check` | passed |
 | `git diff --cached --check` | passed |
 
-`cargo test -p mizar-driver` was not run because no `mizar-driver` workspace
-crate exists in this checkout. This is the recorded `external_dependency_gap`,
-not something `mizar-ir` should patch with a placeholder crate.
+Task 20 superseded the earlier no-driver condition: `mizar-driver` now exists
+and was verified because it consumes the IR-owned dispatch input bundle. The
+staged diff check passed immediately before the task-20 commit.
 
 ## Human Review Surface
 
@@ -200,8 +204,9 @@ verifier-policy selection, kernel acceptance, `mizar-cache` `CacheKey`
 construction, dependency fingerprints, or proof-reuse validation into
 `mizar-ir`.
 
-The best next task is a real downstream integration phase: driver-owned build
-sessions/phase registry/cache scheduling, diagnostics registry integration,
+The best next task is a real downstream integration phase: producer dispatch
+inputs through the driver front door, driver-owned cache lookup over real
+records, cache scheduling integration, diagnostics registry integration,
 producer projection payloads, or artifact publication tokens. Preserve the
 existing `external_dependency_gap` classifications until the owning crate
 provides the real seam. Do not add placeholder crates, stub APIs, fake

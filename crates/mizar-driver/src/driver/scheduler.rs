@@ -7,9 +7,10 @@ use mizar_build::{
     },
     task_graph::{BuildTask, PipelinePhase, TaskGraph},
 };
+use mizar_ir::dispatch_input::{PhaseDispatchInputProvider, PhaseDispatchInputRequest};
 
 use crate::{
-    driver::{DriverSchedulerRun, PhaseDispatchInputProvider},
+    driver::DriverSchedulerRun,
     registry::{
         PhaseExecutionResources, PhaseInput, PhaseRegistry, PhaseRegistryError, PhaseStatus,
     },
@@ -52,13 +53,13 @@ pub(super) fn scheduler_outcome(run: &SchedulerRun) -> BuildSessionOutcome {
 
 pub(super) struct RegistrySchedulerDispatcher<'a> {
     registry: &'a PhaseRegistry,
-    phase_inputs: Option<&'a dyn PhaseDispatchInputProvider>,
+    phase_inputs: Option<&'a dyn PhaseDispatchInputProvider<BuildTask>>,
 }
 
 impl<'a> RegistrySchedulerDispatcher<'a> {
     pub(super) const fn new(
         registry: &'a PhaseRegistry,
-        phase_inputs: Option<&'a dyn PhaseDispatchInputProvider>,
+        phase_inputs: Option<&'a dyn PhaseDispatchInputProvider<BuildTask>>,
     ) -> Self {
         Self {
             registry,
@@ -104,7 +105,7 @@ pub(super) fn dispatch_gap_phases(
 
 fn dispatch_registry_phase(
     registry: &PhaseRegistry,
-    phase_inputs: Option<&dyn PhaseDispatchInputProvider>,
+    phase_inputs: Option<&dyn PhaseDispatchInputProvider<BuildTask>>,
     task: SchedulerDispatchTask<'_>,
 ) -> SchedulerDispatchOutcome {
     if task.task.phases.is_empty() {
@@ -123,14 +124,44 @@ fn dispatch_registry_phase(
         return SchedulerDispatchOutcome::complete();
     }
 
-    let Some(identities) =
-        phase_inputs.and_then(|provider| provider.input_identities_for_task(task.task))
-    else {
-        return SchedulerDispatchOutcome::blocked(vec![dispatch_diagnostic(
-            task.task,
-            "missing_phase_input_identities",
-            "owner-provided phase input identities are unavailable",
-        )]);
+    let dispatch_input = match phase_inputs {
+        Some(provider) => {
+            match provider
+                .dispatch_input_for_task(PhaseDispatchInputRequest::new(task.task, task.snapshot))
+            {
+                Ok(Some(bundle)) => {
+                    if let Err(error) = bundle.validate_snapshot(task.snapshot) {
+                        return SchedulerDispatchOutcome::failed(vec![dispatch_diagnostic(
+                            task.task,
+                            "invalid_phase_dispatch_input",
+                            error.to_string(),
+                        )]);
+                    }
+                    bundle
+                }
+                Ok(None) => {
+                    return SchedulerDispatchOutcome::blocked(vec![dispatch_diagnostic(
+                        task.task,
+                        "missing_phase_input_identities",
+                        "owner-provided phase input bundle is unavailable",
+                    )]);
+                }
+                Err(error) => {
+                    return SchedulerDispatchOutcome::failed(vec![dispatch_diagnostic(
+                        task.task,
+                        "invalid_phase_dispatch_input",
+                        error.to_string(),
+                    )]);
+                }
+            }
+        }
+        None => {
+            return SchedulerDispatchOutcome::blocked(vec![dispatch_diagnostic(
+                task.task,
+                "missing_phase_input_identities",
+                "owner-provided phase input bundle is unavailable",
+            )]);
+        }
     };
 
     let mut dispatched_descriptors = BTreeSet::new();
@@ -164,7 +195,7 @@ fn dispatch_registry_phase(
         if !dispatched_descriptors.insert(descriptor_key) {
             continue;
         }
-        let input = PhaseInput::new(task.snapshot, task.task.unit.clone(), identities.clone());
+        let input = PhaseInput::new(task.task.unit.clone(), dispatch_input.clone());
         match registry.execute_phase_with_resources(
             *phase,
             input,

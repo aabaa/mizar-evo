@@ -6,8 +6,19 @@ use std::sync::{
 use mizar_build::task_graph::{PipelinePhase, WorkUnit};
 use mizar_driver::registry::{
     PhaseCacheContext, PhaseCacheIntent, PhaseDescriptor, PhaseExecutionContext, PhaseInput,
-    PhaseInputIdentities, PhaseOwner, PhaseRegistry, PhaseRegistryBuilder, PhaseRegistryError,
-    PhaseResult, PhaseService, PhaseServiceAvailability, required_phase_services,
+    PhaseOwner, PhaseRegistry, PhaseRegistryBuilder, PhaseRegistryError, PhaseResult, PhaseService,
+    PhaseServiceAvailability, required_phase_services,
+};
+use mizar_ir::{
+    dispatch_input::{PhaseDispatchInputBundle, SealedParentOutputHandle},
+    identity::{
+        NamedInputHash, OutputKind, PipelinePhase as IrPipelinePhase, SnapshotHandleRegistry,
+        WorkUnit as IrWorkUnit,
+    },
+    publisher::{
+        AllowedWorkUnit, OutputOrigin, PhaseOutputPublisher, PublicationTarget, PublishOutputInput,
+    },
+    storage::{BlobDecodeError, BlobDecoder, IrSideTables, IrStorageService, SchemaVersion},
 };
 use mizar_session::{BuildSnapshotId, Hash};
 
@@ -246,13 +257,13 @@ fn cache_key_purity_uses_only_cache_context_identities() {
     let changed_dependency = registry
         .cache_key_for_phase(
             PipelinePhase::SourceLoad,
-            &phase_input_with_hashes(1, 2, vec![42], vec![5]),
+            &phase_input_with_dependency_hashes(1, 2, vec![hash(42)]),
         )
         .unwrap();
     let changed_parent = registry
         .cache_key_for_phase(
             PipelinePhase::SourceLoad,
-            &phase_input_with_hashes(1, 2, vec![3], vec![43]),
+            &phase_input_with_parent(1, 2, 43),
         )
         .unwrap();
 
@@ -272,8 +283,9 @@ fn query_identity_distinguishes_dependency_and_parent_partitions() {
         vec![PipelinePhase::PackageResolve],
         11,
     )]);
-    let dependency_input = phase_input_with_hashes(3, 4, vec![0xfe], Vec::new());
-    let parent_input = phase_input_with_hashes(3, 4, Vec::new(), vec![0xfe]);
+    let parent = parent_handle(3, 0xfe);
+    let dependency_input = phase_input_with_dependency_hashes(3, 4, vec![parent.identity_hash()]);
+    let parent_input = phase_input_with_parent_handle(3, 4, parent);
 
     let dependency_query = registry
         .cache_key_for_phase(PipelinePhase::PackageResolve, &dependency_input)
@@ -298,7 +310,7 @@ fn query_boundary_mediates_cache_key_and_execute_calls() {
         execute_calls.clone(),
     );
     let registry = registry_with_services(vec![service]);
-    let input = phase_input(9, 4);
+    let input = phase_input_with_parent(9, 4, 8);
 
     let cache = registry
         .cache_key_for_phase(PipelinePhase::PackageResolve, &input)
@@ -417,29 +429,105 @@ fn fixture_service_with_calls(
 }
 
 fn phase_input(snapshot_seed: u8, input_seed: u8) -> PhaseInput {
-    phase_input_with_hashes(
+    phase_input_with_dependency_hashes(
         snapshot_seed,
         input_seed,
-        vec![input_seed.wrapping_add(1), input_seed.wrapping_add(2)],
-        vec![input_seed.wrapping_add(3)],
+        vec![
+            hash(input_seed.wrapping_add(1)),
+            hash(input_seed.wrapping_add(2)),
+        ],
     )
 }
 
-fn phase_input_with_hashes(
+fn phase_input_with_dependency_hashes(
     snapshot_seed: u8,
     input_seed: u8,
-    dependency_seeds: Vec<u8>,
-    parent_seeds: Vec<u8>,
+    dependency_hashes: Vec<Hash>,
 ) -> PhaseInput {
     PhaseInput::new(
-        snapshot(snapshot_seed),
         WorkUnit::Workspace,
-        PhaseInputIdentities::new(
+        PhaseDispatchInputBundle::without_parent_outputs(
+            snapshot(snapshot_seed),
             hash(input_seed),
-            dependency_seeds.into_iter().map(hash).collect(),
-            parent_seeds.into_iter().map(hash).collect(),
+            dependency_hashes,
         ),
     )
+}
+
+fn phase_input_with_parent(snapshot_seed: u8, input_seed: u8, parent_seed: u8) -> PhaseInput {
+    phase_input_with_parent_handle(
+        snapshot_seed,
+        input_seed,
+        parent_handle(snapshot_seed, parent_seed),
+    )
+}
+
+fn phase_input_with_parent_handle(
+    snapshot_seed: u8,
+    input_seed: u8,
+    parent: SealedParentOutputHandle,
+) -> PhaseInput {
+    PhaseInput::new(
+        WorkUnit::Workspace,
+        PhaseDispatchInputBundle::new(
+            snapshot(snapshot_seed),
+            hash(input_seed),
+            Vec::new(),
+            vec![parent],
+        )
+        .expect("parent dispatch bundle is valid"),
+    )
+}
+
+fn parent_handle(snapshot_seed: u8, seed: u8) -> SealedParentOutputHandle {
+    let snapshot = snapshot(snapshot_seed);
+    let publisher = PhaseOutputPublisher::new(
+        Arc::new(IrStorageService::new()),
+        Arc::new(SnapshotHandleRegistry::new()),
+    );
+    let phase = IrPipelinePhase::new("registry-parent");
+    let work_unit = IrWorkUnit::new(format!("parent-{seed}"));
+    let output_kind = OutputKind::new("registry-parent-output");
+    publisher.register_current_snapshot(snapshot);
+    publisher.allow_work_unit(AllowedWorkUnit::new(
+        phase.clone(),
+        output_kind.clone(),
+        work_unit.clone(),
+    ));
+    let payload = format!("parent-{seed}");
+    let handle = publisher
+        .publish(PublishOutputInput {
+            slot: publisher.allocate(
+                snapshot,
+                phase.clone(),
+                work_unit.clone(),
+                output_kind.clone(),
+                SchemaVersion::new(1),
+            ),
+            snapshot,
+            phase,
+            work_unit,
+            output_kind,
+            schema_version: SchemaVersion::new(1),
+            payload: payload.clone(),
+            canonical_payload: Some(payload.into_bytes()),
+            decode: BlobDecoder::new(|bytes| {
+                String::from_utf8(bytes.to_vec())
+                    .map_err(|error| BlobDecodeError::new(error.to_string()))
+            }),
+            parents: Vec::new(),
+            named_input_hashes: vec![NamedInputHash {
+                name: "source".to_owned(),
+                domain: "registry-test".to_owned(),
+                digest: hash(seed),
+            }],
+            side_tables: IrSideTables::default(),
+            origin: OutputOrigin::PackageSource,
+            target: PublicationTarget::CurrentPackage,
+        })
+        .expect("parent output publishes");
+    SealedParentOutputHandle::from_current_output(&publisher, snapshot, handle.erase())
+        .expect("parent handle validates")
 }
 
 fn snapshot(seed: u8) -> BuildSnapshotId {
@@ -470,15 +558,15 @@ impl PhaseService for FixtureService {
     fn cache_key(&self, input: &PhaseInput, context: &PhaseCacheContext) -> PhaseCacheIntent {
         self.cache_calls.fetch_add(1, Ordering::SeqCst);
         assert_eq!(context.common.snapshot, input.snapshot);
-        assert_eq!(context.input_identities, input.identities);
+        assert_eq!(&context.input_identities, input.identities());
 
-        let mut bytes = *input.identities.input_hash.as_bytes();
+        let mut bytes = *input.identities().input_hash().as_bytes();
         bytes[0] = bytes[0].wrapping_add(self.salt);
         for (index, hash) in input
-            .identities
-            .dependency_hashes
+            .identities()
+            .dependency_hashes()
             .iter()
-            .chain(input.identities.parent_output_hashes.iter())
+            .chain(input.identities().parent_output_hashes().iter())
             .enumerate()
         {
             let target = index % Hash::BYTE_LEN;
@@ -492,6 +580,7 @@ impl PhaseService for FixtureService {
     fn execute(&self, input: PhaseInput, context: PhaseExecutionContext) -> PhaseResult {
         self.execute_calls.fetch_add(1, Ordering::SeqCst);
         assert_eq!(context.common.snapshot, input.snapshot);
+        assert_eq!(context.parent_outputs, input.parent_outputs());
         PhaseResult::complete()
     }
 }

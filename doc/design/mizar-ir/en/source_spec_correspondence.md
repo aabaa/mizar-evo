@@ -6,9 +6,10 @@
 ## Scope
 
 This task-16 audit traces public `mizar-ir` APIs and promised module-spec
-behavior to source files and tests. It covers the task stream through task 15:
-identity, storage, publisher, cache adapter, artifact projection, snapshot
-replacement, determinism/lifetime tests, and public enum compatibility.
+behavior to source files and tests. It originally covered the task stream
+through task 15: identity, storage, publisher, cache adapter, artifact
+projection, snapshot replacement, determinism/lifetime tests, and public enum
+compatibility. Task 20 extends the audit scope for `dispatch_input`.
 
 The audit found no unresolved/current `spec_gap`, `source_drift`,
 `test_expectation_drift`, or `boundary_violation` blocking crate completion.
@@ -29,6 +30,7 @@ no placeholder APIs are added.
 | `cache_adapter.md` | Fail-closed miss behavior for missing/incomplete/unknown/uncacheable/incompatible/corrupt/tampered records and storage/publisher failures before handle exposure. | `cache_adapter.rs` | `cache_adapter.rs` unit tests | Covered. |
 | `projection.md` | `ArtifactProjectionService` validates current sealed outputs and builds unpublished `VerifiedArtifactDraft` values backed by `mizar-artifact` schemas. | `crates/mizar-ir/src/projection.rs` | `projection.rs` unit tests | Covered. |
 | `projection.md` | Raw IR/storage leakage rejection, canonical projected ordering, duplicate rejection, schema validation, and external dependency gap recording. | `projection.rs` | `projection.rs` unit tests; `tests/lint_policy.rs` | Covered. |
+| `dispatch_input.md` | IR-owned phase input identity bundles, sealed parent output handles, snapshot/currentness validation, rehydrated-handle boundary, snapshot-aware dispatch request, and generic dispatch input provider seam. | `crates/mizar-ir/src/dispatch_input.rs` | `dispatch_input.rs` unit tests and driver registry/driver tests | Covered. |
 | all module specs, task 15 | Public enum forward compatibility with `#[non_exhaustive]` and per-enum decisions in owning module specs. | public enums in `src/*.rs` | `tests/lint_policy.rs` | Covered. |
 | `00.crate_plan.md` | Workspace membership, dependency boundary, crate ownership statement, no `mizar-driver`/`mizar-diagnostics` dependency, and no proof/cache authority markers in public boundaries. | `Cargo.toml`, `src/lib.rs`, module source | `tests/lint_policy.rs`; module unit tests | Covered. |
 
@@ -39,7 +41,9 @@ fields on input/output records are covered with their containing types.
 
 | Module | Public API surface | Spec/test correspondence |
 |---|---|---|
-| `lib.rs` | Public modules `cache_adapter`, `identity`, `publisher`, `projection`, and `storage`. | Crate boundary is specified in `00.crate_plan.md` and guarded by `tests/lint_policy.rs`. |
+| `lib.rs` | Public modules `cache_adapter`, `dispatch_input`, `identity`, `publisher`, `projection`, and `storage`. | Crate boundary is specified in `00.crate_plan.md` and guarded by `tests/lint_policy.rs`. |
+| `dispatch_input.rs` | Records `PhaseInputIdentities`, `SealedParentOutputHandle`, snapshot-bound `PhaseDispatchInputBundle`, and `PhaseDispatchInputRequest`; trait `PhaseDispatchInputProvider<Task>`; enum `DispatchInputError`. | `dispatch_input.md` specifies ownership, canonical identity construction, snapshot/currentness validation, provider request shape, external gaps, tests, and enum policy. `dispatch_input.rs` unit tests cover canonical ordering, duplicate parent rejection, bundle/scheduler snapshot mismatch, wrong/obsolete/foreign-storage parent rejection, and validated rehydrated handles; driver tests cover registry/front-door consumption. |
+| `dispatch_input.rs` | Methods `PhaseInputIdentities::{without_parent_outputs, input_hash, dependency_hashes, parent_output_hashes}`, `PhaseDispatchInputRequest::{new, task, snapshot}`, `SealedParentOutputHandle::{from_current_output, from_validated_rehydrated_output, as_output_ref, into_output_ref, output, snapshot, identity_hash}`, `PhaseDispatchInputBundle::{new, without_parent_outputs, snapshot, validate_snapshot, identities, parent_outputs, into_parts}`, and `DispatchInputError` display/error traits. | Covered by task-20 mizar-ir unit tests and mizar-driver registry/driver tests. No raw parent-output hash constructor is exposed. |
 | `identity.rs` | Id newtypes `ModuleId`, `ItemId`, `ExprId`, `VcId`, `PhaseOutputId`; labels `PipelinePhase`, `WorkUnit`, `OutputKind`; records `NamedInputHash`, `ModuleIdentityInput`, `ItemIdentityInput`, `ExprIdentityInput`, `VcIdentityInput`, `OutputIdentityInput`, `PhaseOutputLineage`; `SnapshotHandleRegistry`; `IdentityError`. | `identity.md` specifies ownership, deterministic fields, duplicate keys, lineage, incompatible reuse, and enum policy. `identity.rs` unit tests and `tests/determinism_lifetime.rs` cover deterministic assignment, duplicate/conflict errors, parent lineage, incompatible snapshots, and proof non-authority. |
 | `identity.rs` | Methods `SnapshotHandleRegistry::{new, register_snapshot, module_id, item_id, expr_id, vc_id, register_output, output_lineage}`; id `hash` accessors; `PhaseOutputLineage::{from_input, validate_identity}`; label constructors/accessors `PipelinePhase::{new, as_str}`, `WorkUnit::{new, as_str}`, `OutputKind::{new, as_str}`; `IdentityError` display/error traits. | Same as above; rollback-only helpers remain crate-private and are exercised through publisher/storage failure tests. |
 | `storage.rs` | Constant `DEFAULT_BLOB_SPILL_THRESHOLD`; metadata types `SchemaVersion`, `OutputSlotId`, `StorageGeneration`, `ContentBlobId`, `StoragePolicy`; records `SideTableRecord`, `IrSideTables`, `AllocateSlotInput`, `SealOutputInput<T>`, `SealBlobOutputInput<T>`, `SealCanonicalOutputInput<T>`, `CollectInput`, `CollectionSummary`; handle types `PendingOutputSlot<T>`, `AnyPhaseOutputRef`, `PhaseOutputRef<T>`; blob/error/owner types `BlobDecoder<T>`, `BlobDecodeError`, `RetainOwner`, `StoragePlacement`, `StorageError`; service `IrStorageService`. | `storage.md` specifies slot lifecycle, sealing, typed handles, blob placement, side tables, retention, collection, snapshot replacement boundary, errors, and enum policy. `storage.rs` unit tests and `tests/determinism_lifetime.rs` cover the promised behavior. |
@@ -56,12 +60,15 @@ fields on input/output records are covered with their containing types.
 
 | ID | Crate-plan class | Risk tag | Evidence | Current disposition |
 |---|---|---|---|---|
-| IR-G-004 | `design_drift` | `external_dependency_gap` | Real `mizar-driver` build sessions, driver cache scheduling, and publication tokens are absent from this checkout. | Recorded in crate plan, `lib.rs`, cache adapter spec, publisher spec, and projection spec. No placeholder APIs. |
-| IR-G-005 | `design_drift` | `external_dependency_gap` | `mizar-diagnostics` is absent, so side-table records and projected diagnostics cannot integrate with a real registry/renderer. | Recorded in crate plan, storage/publisher/projection specs, and draft projection gaps. No stub crate or token. |
+| IR-G-004 | `design_drift` | `external_dependency_gap` | Earlier docs treated real `mizar-driver` sessions and diagnostics integration as absent. The crates now exist; real producer, diagnostics rendering, artifact-token, cache-compatibility, proof/semantic adapter, and LSP seams remain external gaps. | Updated in crate plan and task 20 docs. No placeholder APIs. |
+| IR-G-005 | `design_drift` | `external_dependency_gap` | `mizar-diagnostics` exists, but side-table records and projected diagnostics cannot yet integrate with a real registry/renderer seam exposed to `mizar-ir`. | Recorded in crate plan, storage/publisher/projection specs, and draft projection gaps. No stub API or token. |
 | IR-G-006 | `design_drift` | `external_dependency_gap` | Real resolver/checker/core/VC/ATP/kernel producer projection payloads and publication tokens are not exposed. | Projection uses crate-local stable records and `mizar-artifact` schemas only; no producer-token placeholder. |
 | IR-G-007 | `test_gap` | `external_dependency_gap` | Full clean/incremental/parallel driver equivalence requires downstream orchestration crates. | Covered crate-locally by deterministic identity/hash/lifetime tests and deferred for system integration. |
 | IR-G-008 | `boundary_violation` | guarded ownership constraint | Reimplementing `mizar-cache` cache keys, dependency fingerprints, proof-reuse validation, proof acceptance, trusted status, or kernel acceptance would violate ownership. | Guarded by specs, tests, crate dependencies, and authority-marker lint tests. No violation observed. |
 | IR-G-009 | `design_drift` | resolved locally | Older internal 06 API sketches can be read as assigning cache-key or snapshot-identity ownership to `mizar-ir`. | Resolved in module specs and source by consuming `mizar-session` ids and `mizar-cache` validated records only. |
+| IR-G-010 | `design_drift` | task 20 | Driver/diagnostics crate availability changed after the earlier audit. | Updated crate plan/TODO/source-spec/bilingual docs in task 20. |
+| IR-G-011 | `source_drift` / `boundary_violation` risk | resolved in task 20 | `mizar-driver` owned `PhaseInputIdentities` and raw parent hashes before task 20. | Identity and the generic provider seam now live in `mizar-ir`; driver consumes `PhaseDispatchInputBundle`. |
+| IR-G-012 | `external_dependency_gap` | task 20 | Producer outputs, semantic/proof adapters, artifact tokens, cache compatibility, and LSP conversion are not ready. | Carry only validated identities and sealed parent handles; do not fabricate missing seams. |
 
 ## Audit Result
 

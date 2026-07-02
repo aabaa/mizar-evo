@@ -165,11 +165,12 @@ Diagnostics are projected into `ArtifactDiagnostic` records with stable ids,
 codes, severities, source ranges, message keys, rendered messages, related
 locations, and optional explanation references.
 
-`mizar-diagnostics` is not present in this checkout. Therefore task 12 must use
-crate-local stable diagnostic projection records and classify real diagnostic
-registry/renderer integration as `external_dependency_gap`. Projection must not
-invent diagnostic publication tokens or treat rendered diagnostics as proof
-authority.
+`mizar-diagnostics` now exists in this workspace, but its real
+registry/renderer integration is not exposed to `mizar-ir`. Therefore this
+module uses crate-local stable diagnostic projection records and classifies the
+real diagnostic registry/renderer seam as `external_dependency_gap`.
+Projection must not invent diagnostic publication tokens or treat rendered
+diagnostics as proof authority.
 
 ### Provenance
 
@@ -252,5 +253,5 @@ Task 12 must cover:
 - accepted-obligation witness consistency delegated to `mizar-artifact`
   schemas without making `mizar-ir` proof authority;
 - cache-key and dependency-fingerprint non-ownership;
-- absence of `mizar-driver` and placeholder diagnostics/publication-token
-  APIs.
+- absence of a `mizar-driver` dependency and placeholder diagnostics or
+  publication-token APIs.

@@ -24,6 +24,7 @@ Module names follow the minimum split of
 | publisher | `publisher.md` (task 7) | `src/publisher.rs` | [x] |
 | cache_adapter | `cache_adapter.md` (task 9) | `src/cache_adapter.rs` | [x] |
 | projection | `projection.md` (task 11) | `src/projection.rs` | [x] |
+| dispatch_input | `dispatch_input.md` (task 20) | `src/dispatch_input.rs` | [x] |
 
 `mizar-ir` owns compiler-internal IR storage and snapshot output handles:
 immutable storage slots for phase outputs, typed `PhaseOutputRef<T>` handles,
@@ -48,10 +49,13 @@ The task-1 scaffold depends only on `mizar-session` for snapshot and source
 identity. Later projection tasks may add `mizar-artifact` for stable draft
 schemas, and later cache-adapter tasks may add `mizar-cache` consumption
 through a seam; they must not reimplement `CacheKey`, dependency fingerprints,
-or proof-reuse validation. Real pipeline wiring with `mizar-driver` and the
-`mizar-build` scheduling wave is an `external_dependency_gap` risk tag until
-the owning crates expose real seams; phase services themselves stay independent
-of this crate (they receive context handles, not storage internals).
+or proof-reuse validation. The `mizar-driver` and `mizar-build` scheduling wave
+now exist, but real producer payloads, diagnostics rendering, artifact
+publication tokens, semantic adapters, proof adapters, cache-compatibility
+decisions, and LSP protocol conversion remain `external_dependency_gap` or
+`deferred` until their owning crates expose real seams. Phase services
+themselves stay independent of this crate; they receive context handles, not
+storage internals.
 Architecture:
 [01.ir_layers.md](../../architecture/en/01.ir_layers.md),
 [18.dependency_fingerprint.md](../../architecture/en/18.dependency_fingerprint.md);
@@ -238,6 +242,22 @@ Keep `cargo test -p mizar-ir` green after each task (see
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
 
+20. **Dispatch input identity and sealed parent handles.** [x]
+    - Add the IR-owned dispatch input module: `PhaseInputIdentities`,
+      `PhaseDispatchInputBundle`, `SealedParentOutputHandle`, and generic
+      `PhaseDispatchInputProvider<Task>`.
+    - Move the driver registry/front door to consume `mizar-ir` identities and
+      pass sealed parent handles through execution context at
+      scheduler-selected dispatch.
+    - Tests: canonical identity ordering, duplicate parent rejection,
+      bundle/scheduler snapshot mismatch, wrong/obsolete/foreign-storage parent
+      rejection, validated rehydrated-handle acceptance, provider missing/error
+      branches, driver query fingerprinting, and scheduler-selected
+      parent-handle flow.
+    - Deps: 8, 10, 19 and mizar-build phase dispatch. Spec:
+      `dispatch_input.md`, mizar-build `phase_dispatch.md`, and mizar-driver
+      registry/driver specs.
+
 ## Recommended Verification
 
 Run after each task:
@@ -245,6 +265,13 @@ Run after each task:
 ```text
 cargo test -p mizar-ir
 cargo clippy -p mizar-ir --all-targets -- -D warnings
+```
+
+Task 20 also requires the downstream front-door checks because it changes the
+driver consumption surface:
+
+```text
+cargo test -p mizar-driver
 ```
 
 For projection tasks, also run:

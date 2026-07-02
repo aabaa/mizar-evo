@@ -196,14 +196,18 @@ struct PhaseExecutionContext {
     cancellation: Option<CancellationToken>,
     diagnostics: Option<DiagnosticSink>,
     output_publisher: Option<PhaseOutputPublisher>,
+    parent_outputs: Vec<SealedParentOutputHandle>,
 }
 ```
 
 `PhaseContext` is the immutable common driver-service identity boundary.
 `PhaseCacheContext` is the narrowed view passed to `cache_key`; it contains
-only immutable identity data allowed by the purity contract. `PhaseExecutionContext`
-is passed to `execute` and contains the owner handles needed for execution.
-These fields are references to owner seams:
+only immutable identity data allowed by the purity contract.
+`PhaseExecutionContext` is passed to `execute` and contains the owner handles
+needed for execution. `PhaseInputIdentities`, `PhaseDispatchInputBundle`, and
+`SealedParentOutputHandle` are owned by `mizar-ir`; the driver registry is only
+the front door that consumes the IR-owned bundle at scheduler-selected
+dispatch. These fields are references to owner seams:
 
 - snapshot ids come from `request` and `mizar-session`;
 - session id and request generation stay in the driver query/event/publication
@@ -211,11 +215,16 @@ These fields are references to owner seams:
 - work-unit identity and cancellation are consumed from `mizar-build`;
 - diagnostics flow through `mizar-diagnostics` producer sinks and records;
 - output sealing flows through `mizar-ir` publisher/storage handles.
+- sealed parent outputs flow through `mizar-ir` dispatch input handles after
+  snapshot/currentness validation.
 
-The handles are optional in task 5 because no real phase adapter is registered
-yet. A real adapter must use the owner handle supplied by the registry context
-or report an `external_dependency_gap`; it must not bypass the context with a
-private sink, output store, or publication token.
+The output publisher and diagnostics handles are optional because real producer
+adapters are still external dependency gaps. Parent output handles are present
+only when the IR-owned `PhaseDispatchInputProvider` supplies a validated
+snapshot-bound dispatch bundle for the scheduler-selected task. A real adapter
+must use the owner handle supplied by the registry context or report an
+`external_dependency_gap`; it must not bypass the context with a private sink,
+output store, raw parent-output hash, or publication token.
 
 `PhaseContext` must not expose mutable scheduler internals, wall-clock time,
 worker ids, event subscribers, LSP protocol payloads, artifact manifest

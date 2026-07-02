@@ -161,13 +161,13 @@ pub(super) fn registry_query_identity_fingerprint(
         .unwrap_or_else(|_| format!("{:?}", input.snapshot));
     state.write_str(snapshot.as_str());
     state.write_str(format!("{:?}", input.work_unit).as_str());
-    state.write_hash(input.identities.input_hash);
-    state.write_usize(input.identities.dependency_hashes.len());
-    for hash in &input.identities.dependency_hashes {
+    state.write_hash(input.identities().input_hash());
+    state.write_usize(input.identities().dependency_hashes().len());
+    for hash in input.identities().dependency_hashes() {
         state.write_hash(*hash);
     }
-    state.write_usize(input.identities.parent_output_hashes.len());
-    for hash in &input.identities.parent_output_hashes {
+    state.write_usize(input.identities().parent_output_hashes().len());
+    for hash in input.identities().parent_output_hashes() {
         state.write_hash(*hash);
     }
     state.write_u8(match adapter {

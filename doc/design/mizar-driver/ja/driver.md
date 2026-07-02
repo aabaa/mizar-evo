@@ -158,9 +158,12 @@ lockfile / toolchain identity、verifier-config identity、target、profile、or
   seam がない場合の classified unavailable coverage;
 - task graph profile、scheduler mode、priority hint、resource budget、
   cancellation policy、cache scheduling plan / policy;
-- scheduler-selected registry dispatch 用の任意の `PhaseDispatchInputProvider`
-  identities。欠落した identities は、task が scheduler-selected dispatch callback に到達した
-  場合にだけ報告される。
+- scheduler-selected registry dispatch 用の任意の `mizar-ir`
+  `PhaseDispatchInputProvider<BuildTask>` bundle。bundle は IR 所有 phase input
+  identity と validated sealed parent output handle を含み、scheduler-selected
+  snapshot と一致しなければならない。欠落した bundle は、task が scheduler-selected
+  dispatch callback に到達した場合にだけ報告される。invalid IR dispatch input は
+  別に報告し、fail closed する。
 
 driver はこれらの input が存在し適切に分類されていることを validate してよい。
 local rule で manifest を parse したり、semantics を推測して module dependency を導出したり、
@@ -189,9 +192,12 @@ cache key を構築したり、output handle を mint したり、publication to
    driver は compatibility を決定してはならない。
 8. scheduler submission の前に phase service を実行せず、scheduler readiness、cache hit、
    cancellation、resource admission logic を dispatch preflight として replay しない。
-   scheduler-selected task が owner-provided dispatch inputs を欠く場合、
+   scheduler-selected task が owner-provided `mizar-ir` dispatch input bundle を欠く場合、
    registry-backed dispatcher は blocked scheduler outcome を返す。driver はその scheduler
-   result から `BlockedByPhaseDispatchGap` と affected phases を記録する。
+   result から `BlockedByPhaseDispatchGap` と affected phases を記録する。driver は欠落した
+   parent handle を生 hash で置き換えてはならない。供給された IR bundle が別 snapshot
+   用であるか validation failure を報告する場合、dispatch は欠落 bundle として扱わず、
+   invalid-input diagnostic で fail する。
 9. 得られた `SchedulerInput` は registry-backed dispatcher 付きで
    `mizar-build::scheduler::run_scheduler_with_dispatcher` へ渡す。dispatcher は
    scheduler-selected execution point でだけ `PhaseRegistry` を呼び、selected task に listed

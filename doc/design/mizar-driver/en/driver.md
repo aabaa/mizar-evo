@@ -163,9 +163,12 @@ origin. `BuildRequestId` is allocated only when the draft is accepted into a
   classified unavailable coverage when those seams are absent;
 - task graph profile, scheduler mode, priority hints, resource budget,
   cancellation policy, and cache scheduling plan/policy;
-- optional `PhaseDispatchInputProvider` identities for scheduler-selected
-  registry dispatch. Missing identities are reported only for tasks that reach
-  the scheduler-selected dispatch callback.
+- optional `mizar-ir` `PhaseDispatchInputProvider<BuildTask>` bundles for
+  scheduler-selected registry dispatch. The bundle contains IR-owned phase
+  input identities plus validated sealed parent output handles and must match
+  the scheduler-selected snapshot. Missing bundles are reported only for tasks
+  that reach the scheduler-selected dispatch callback; invalid IR dispatch
+  inputs are reported separately and fail closed.
 
 The driver may validate that these inputs are present and well classified. It
 must not parse manifests with local rules, derive module dependencies by
@@ -196,10 +199,13 @@ publication tokens.
    real owner-provided plan; the driver must not decide compatibility itself.
 8. Do not execute phase services before scheduler submission, and do not replay
    scheduler readiness, cache-hit, cancellation, or resource-admission logic as
-   a dispatch preflight. If a scheduler-selected task lacks owner-provided
-   dispatch inputs, the registry-backed dispatcher returns a blocked scheduler
-   outcome; the driver records `BlockedByPhaseDispatchGap` and the affected
-   phases from that scheduler result.
+   a dispatch preflight. If a scheduler-selected task lacks an owner-provided
+   `mizar-ir` dispatch input bundle, the registry-backed dispatcher returns a
+   blocked scheduler outcome; the driver records `BlockedByPhaseDispatchGap`
+   and the affected phases from that scheduler result. The driver must not
+   replace missing parent handles with raw hashes. If a supplied IR bundle is
+   for a different snapshot or reports validation failure, dispatch fails with
+   an invalid-input diagnostic rather than treating it as a missing bundle.
 9. Pass the resulting `SchedulerInput` to
    `mizar-build::scheduler::run_scheduler_with_dispatcher` with a
    registry-backed dispatcher. The dispatcher calls `PhaseRegistry` only at

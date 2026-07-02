@@ -7,9 +7,10 @@
 //! status, policy selection, and kernel acceptance remain owned by their
 //! dedicated crates.
 //!
-//! Downstream driver sessions, diagnostics integration, producer projection
-//! tokens, and artifact publication tokens are external dependency gaps until
-//! their owning crates expose real integration seams.
+//! Downstream driver and diagnostics crates exist, but real producer dispatch,
+//! diagnostic rendering, producer projection tokens, and artifact publication
+//! tokens remain classified as external dependency gaps until their owning
+//! crates expose integration seams that `mizar-ir` can consume.
 //!
 //! Design task stream:
 //! [`00.crate_plan.md`](../../../doc/design/mizar-ir/en/00.crate_plan.md).
@@ -18,6 +19,9 @@
 
 /// Cache-record adapter for sealed IR handles.
 pub mod cache_adapter;
+
+/// Phase input identities and sealed parent handles for scheduler dispatch.
+pub mod dispatch_input;
 
 /// Snapshot-scoped IR identity tables and phase-output lineage.
 pub mod identity;
