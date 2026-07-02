@@ -15,6 +15,9 @@ mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }
 mizar-syntax = { path = "../mizar-syntax" }
 
+[lints]
+workspace = true
+
 [[bin]]
 name = "mizar-test"
 path = "src/main.rs"

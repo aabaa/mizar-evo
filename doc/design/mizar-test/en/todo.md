@@ -72,7 +72,7 @@ Keep `cargo test -p mizar-test` green after each task (see
 
 ### Foundation
 
-1. **Lint-policy guard.** [ ]
+1. **Lint-policy guard.** [x]
    - Add `tests/lint_policy.rs` mirroring the `mizar-frontend` guard
      (workspace lint opt-in, deny baseline, rationale next to any `allow`).
    - Tests: lint-policy guard passes.
