@@ -1,9 +1,13 @@
 use std::collections::BTreeMap;
 use std::fmt;
+use std::fs;
+use std::io;
+use std::path::{Path, PathBuf};
 
 use mizar_session::{Hash, hash_text};
 
 use crate::expectation::TestCaseId;
+use crate::path_rules::clean_relative_path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SchemaVersion(pub u32);
@@ -75,6 +79,67 @@ pub struct SnapshotTextDiff {
     pub line: usize,
     pub expected: Option<String>,
     pub actual: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SnapshotUpdateReason {
+    SchemaChange,
+    DiagnosticContractChange,
+    SemanticBehaviorChange,
+    FuzzPropertyReproducer,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SnapshotUpdateMode {
+    VerifyOnly,
+    Update { reason: SnapshotUpdateReason },
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SnapshotBaselineStatus {
+    Matched,
+    Created,
+    Updated,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SnapshotBaselineReport {
+    pub path: PathBuf,
+    pub status: SnapshotBaselineStatus,
+    pub update_reason: Option<SnapshotUpdateReason>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SnapshotBaselineMismatch {
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Hash,
+    pub first_difference: Option<SnapshotTextDiff>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SnapshotBaselineError {
+    Snapshot(SnapshotError),
+    InvalidBaselinePath {
+        path: PathBuf,
+    },
+    Io {
+        path: PathBuf,
+        message: String,
+    },
+    MissingBaseline {
+        path: PathBuf,
+    },
+    Mismatch {
+        path: PathBuf,
+        mismatch: Box<SnapshotBaselineMismatch>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SnapshotDeterminismFailure {
+    pub baseline_index: usize,
+    pub candidate_index: usize,
+    pub mismatch: Box<SnapshotMismatch>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -198,6 +263,77 @@ pub fn compare_snapshot_records(
     })
 }
 
+pub fn verify_or_update_snapshot_baseline(
+    tests_root: impl AsRef<Path>,
+    relative_path: impl AsRef<Path>,
+    record: &SnapshotRecord,
+    mode: SnapshotUpdateMode,
+) -> Result<SnapshotBaselineReport, SnapshotBaselineError> {
+    let relative_path = relative_path.as_ref();
+    validate_baseline_path(relative_path)?;
+
+    let full_path = tests_root.as_ref().join(relative_path);
+    let actual_text = record
+        .canonical_text()
+        .map_err(SnapshotBaselineError::Snapshot)?;
+    match fs::read_to_string(&full_path) {
+        Ok(expected_text) if expected_text == actual_text => Ok(SnapshotBaselineReport {
+            path: relative_path.to_path_buf(),
+            status: SnapshotBaselineStatus::Matched,
+            update_reason: None,
+        }),
+        Ok(expected_text) => match mode {
+            SnapshotUpdateMode::VerifyOnly => Err(SnapshotBaselineError::Mismatch {
+                path: relative_path.to_path_buf(),
+                mismatch: Box::new(baseline_mismatch(&expected_text, record, &actual_text)),
+            }),
+            SnapshotUpdateMode::Update { reason } => {
+                write_snapshot_baseline(&full_path, &actual_text)?;
+                Ok(SnapshotBaselineReport {
+                    path: relative_path.to_path_buf(),
+                    status: SnapshotBaselineStatus::Updated,
+                    update_reason: Some(reason),
+                })
+            }
+        },
+        Err(error) if error.kind() == io::ErrorKind::NotFound => match mode {
+            SnapshotUpdateMode::VerifyOnly => Err(SnapshotBaselineError::MissingBaseline {
+                path: relative_path.to_path_buf(),
+            }),
+            SnapshotUpdateMode::Update { reason } => {
+                write_snapshot_baseline(&full_path, &actual_text)?;
+                Ok(SnapshotBaselineReport {
+                    path: relative_path.to_path_buf(),
+                    status: SnapshotBaselineStatus::Created,
+                    update_reason: Some(reason),
+                })
+            }
+        },
+        Err(error) => Err(SnapshotBaselineError::Io {
+            path: relative_path.to_path_buf(),
+            message: error.to_string(),
+        }),
+    }
+}
+
+pub fn verify_snapshot_determinism(
+    records: &[SnapshotRecord],
+) -> Result<(), SnapshotDeterminismFailure> {
+    let Some(baseline) = records.first() else {
+        return Ok(());
+    };
+    for (index, candidate) in records.iter().enumerate().skip(1) {
+        if let Err(mismatch) = compare_snapshot_records(baseline, candidate) {
+            return Err(SnapshotDeterminismFailure {
+                baseline_index: 0,
+                candidate_index: index,
+                mismatch: Box::new(mismatch),
+            });
+        }
+    }
+    Ok(())
+}
+
 fn validate_record_parts(
     test_id: &TestCaseId,
     profile: &SnapshotProfile,
@@ -227,6 +363,64 @@ fn validate_record_parts(
         return Err(SnapshotError::LocalPath { token });
     }
     Ok(())
+}
+
+fn validate_baseline_path(path: &Path) -> Result<(), SnapshotBaselineError> {
+    if !clean_relative_path(path)
+        || !path.starts_with("snapshots")
+        || path.extension().and_then(|extension| extension.to_str()) != Some("snap")
+    {
+        return Err(SnapshotBaselineError::InvalidBaselinePath {
+            path: path.to_path_buf(),
+        });
+    }
+    Ok(())
+}
+
+fn write_snapshot_baseline(path: &Path, content: &str) -> Result<(), SnapshotBaselineError> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent).map_err(|error| SnapshotBaselineError::Io {
+            path: path.to_path_buf(),
+            message: error.to_string(),
+        })?;
+    }
+    let temp_path = temporary_baseline_path(path);
+    fs::write(&temp_path, content).map_err(|error| SnapshotBaselineError::Io {
+        path: temp_path.clone(),
+        message: error.to_string(),
+    })?;
+    fs::rename(&temp_path, path).map_err(|error| SnapshotBaselineError::Io {
+        path: path.to_path_buf(),
+        message: error.to_string(),
+    })
+}
+
+fn temporary_baseline_path(path: &Path) -> PathBuf {
+    let file_name = path
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or("snapshot");
+    path.with_file_name(format!(".{file_name}.tmp.{}", std::process::id()))
+}
+
+fn baseline_mismatch(
+    expected_text: &str,
+    record: &SnapshotRecord,
+    actual_text: &str,
+) -> SnapshotBaselineMismatch {
+    SnapshotBaselineMismatch {
+        expected_hash: content_hash_from_snapshot_text(expected_text),
+        actual_hash: record
+            .recomputed_content_hash()
+            .unwrap_or(record.content_hash),
+        first_difference: first_text_difference(expected_text, actual_text),
+    }
+}
+
+fn content_hash_from_snapshot_text(text: &str) -> Option<Hash> {
+    text.lines()
+        .find_map(|line| line.strip_prefix("content_hash = "))
+        .and_then(parse_lower_hex_hash)
 }
 
 fn canonical_hash_input(
@@ -422,6 +616,27 @@ fn hash_hex(hash: Hash) -> String {
     output
 }
 
+fn parse_lower_hex_hash(value: &str) -> Option<Hash> {
+    if value.len() != Hash::BYTE_LEN * 2 {
+        return None;
+    }
+    let mut bytes = [0; Hash::BYTE_LEN];
+    for (index, pair) in value.as_bytes().chunks_exact(2).enumerate() {
+        let high = parse_lower_hex_nibble(pair[0])?;
+        let low = parse_lower_hex_nibble(pair[1])?;
+        bytes[index] = (high << 4) | low;
+    }
+    Some(Hash::from_bytes(bytes))
+}
+
+fn parse_lower_hex_nibble(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        _ => None,
+    }
+}
+
 impl SnapshotKind {
     pub fn as_str(self) -> &'static str {
         match self {
@@ -465,3 +680,31 @@ impl fmt::Display for SnapshotError {
 }
 
 impl std::error::Error for SnapshotError {}
+
+impl fmt::Display for SnapshotBaselineError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Snapshot(error) => write!(f, "{error}"),
+            Self::InvalidBaselinePath { path } => write!(
+                f,
+                "snapshot baseline path `{}` must be a clean tests-root-relative .snap file under snapshots/",
+                path.display()
+            ),
+            Self::Io { path, message } => {
+                write!(
+                    f,
+                    "snapshot baseline `{}` IO error: {message}",
+                    path.display()
+                )
+            }
+            Self::MissingBaseline { path } => {
+                write!(f, "snapshot baseline `{}` is missing", path.display())
+            }
+            Self::Mismatch { path, .. } => {
+                write!(f, "snapshot baseline `{}` differs", path.display())
+            }
+        }
+    }
+}
+
+impl std::error::Error for SnapshotBaselineError {}

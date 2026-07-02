@@ -23,7 +23,7 @@ per [internal 07](../../internal/en/07.crate_module_layout.md).
 | traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs implemented; coverage modes/status/prerequisites pending |
 | harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs`, `src/runner.rs` | [~] metadata plan, validation-mode CLI, profile filtering, and active parse/declaration/type runners |
 | miz_corpus | [miz_corpus.md](./miz_corpus.md) | corpus tree under `tests/` | [~] roots discovered; provenance/profile/reporting rules pending |
-| snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs`, `src/expectation.rs`, `src/runner.rs` | [~] general snapshot record API/hash implemented; update/determinism pending |
+| snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs`, `src/expectation.rs`, `src/runner.rs` | [~] general snapshot record API/hash/update/determinism helpers implemented; sidecar/runner integration pending |
 | fail_soundness | [fail_soundness.md](./fail_soundness.md) | future `src/fail_soundness.rs`, harness rules + corpus cases | [ ] |
 | minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate boundary + CLI | [~] metadata plan, validation modes, and CLI fixtures implemented; coverage gates pending |
 
@@ -148,7 +148,7 @@ Keep `cargo test -p mizar-test` green after each task (see
    - Deps: 2. Spec: [snapshot.md](./snapshot.md) "Public
      API"/"Canonicalization".
 
-5. **Snapshot update policy and determinism checks.** [ ]
+5. **Snapshot update policy and determinism checks.** [x]
    - Implement the baseline update flow (resolving the update-mechanism
      decision) and the determinism checks of
      [snapshot.md](./snapshot.md) (repeat-render comparison).

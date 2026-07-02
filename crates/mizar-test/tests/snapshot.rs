@@ -1,10 +1,17 @@
 use std::collections::BTreeMap;
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use mizar_session::Hash;
 use mizar_test::{
-    ParallelismProfile, SchemaVersion, SnapshotBody, SnapshotError, SnapshotKind, SnapshotProfile,
-    SnapshotRecord, SnapshotTextDiff, TestCaseId, ToolchainInfo, compare_snapshot_records,
+    ParallelismProfile, SchemaVersion, SnapshotBaselineError, SnapshotBaselineStatus, SnapshotBody,
+    SnapshotError, SnapshotKind, SnapshotProfile, SnapshotRecord, SnapshotTextDiff,
+    SnapshotUpdateMode, SnapshotUpdateReason, TestCaseId, ToolchainInfo, compare_snapshot_records,
+    verify_or_update_snapshot_baseline, verify_snapshot_determinism,
 };
+
+static NEXT_ROOT: AtomicUsize = AtomicUsize::new(0);
 
 #[test]
 fn snapshot_records_normalize_line_endings_and_sort_profile_metadata() {
@@ -393,6 +400,272 @@ fn snapshot_records_validate_identity_and_profile_fields() {
     assert_eq!(zero_workers, SnapshotError::ParallelWorkerCountZero);
 }
 
+#[test]
+fn snapshot_update_creates_and_verify_round_trips() {
+    let root = SnapshotRoot::new();
+    let baseline_path = Path::new("snapshots/general/snapshot_case.snap");
+    let snapshot = record(
+        "snapshot_case",
+        SnapshotKind::SurfaceAst,
+        profile(),
+        "root\n",
+    );
+
+    let missing = verify_or_update_snapshot_baseline(
+        root.path(),
+        baseline_path,
+        &snapshot,
+        SnapshotUpdateMode::VerifyOnly,
+    )
+    .unwrap_err();
+    assert!(matches!(
+        missing,
+        SnapshotBaselineError::MissingBaseline { .. }
+    ));
+    assert!(!root.path().join(baseline_path).exists());
+
+    let created = verify_or_update_snapshot_baseline(
+        root.path(),
+        baseline_path,
+        &snapshot,
+        SnapshotUpdateMode::Update {
+            reason: SnapshotUpdateReason::SemanticBehaviorChange,
+        },
+    )
+    .unwrap();
+
+    assert_eq!(created.status, SnapshotBaselineStatus::Created);
+    assert_eq!(
+        created.update_reason,
+        Some(SnapshotUpdateReason::SemanticBehaviorChange)
+    );
+    assert_eq!(root.read(baseline_path), snapshot.canonical_text().unwrap());
+
+    let matched = verify_or_update_snapshot_baseline(
+        root.path(),
+        baseline_path,
+        &snapshot,
+        SnapshotUpdateMode::VerifyOnly,
+    )
+    .unwrap();
+    assert_eq!(matched.status, SnapshotBaselineStatus::Matched);
+    assert_eq!(matched.update_reason, None);
+}
+
+#[test]
+fn snapshot_verify_only_missing_baseline_does_not_create_parent_directories() {
+    let root = SnapshotRoot::new();
+    let baseline_path = Path::new("snapshots/deep/missing/snapshot_case.snap");
+    let snapshot = record(
+        "snapshot_case",
+        SnapshotKind::SurfaceAst,
+        profile(),
+        "root\n",
+    );
+
+    let missing = verify_or_update_snapshot_baseline(
+        root.path(),
+        baseline_path,
+        &snapshot,
+        SnapshotUpdateMode::VerifyOnly,
+    )
+    .unwrap_err();
+
+    assert!(matches!(
+        missing,
+        SnapshotBaselineError::MissingBaseline { .. }
+    ));
+    assert!(!root.path().join("snapshots/deep").exists());
+}
+
+#[test]
+fn snapshot_verify_only_reports_mismatch_without_rewriting() {
+    let root = SnapshotRoot::new();
+    let baseline_path = Path::new("snapshots/general/snapshot_case.snap");
+    root.write(baseline_path, "old\ncontent_hash = not-a-hash\n");
+    let snapshot = record(
+        "snapshot_case",
+        SnapshotKind::SurfaceAst,
+        profile(),
+        "new\n",
+    );
+
+    let mismatch = verify_or_update_snapshot_baseline(
+        root.path(),
+        baseline_path,
+        &snapshot,
+        SnapshotUpdateMode::VerifyOnly,
+    )
+    .unwrap_err();
+
+    let SnapshotBaselineError::Mismatch { mismatch, .. } = mismatch else {
+        panic!("expected mismatch");
+    };
+    assert_eq!(mismatch.expected_hash, None);
+    assert_eq!(mismatch.actual_hash, snapshot.content_hash);
+    assert_eq!(
+        mismatch.first_difference,
+        Some(SnapshotTextDiff {
+            line: 1,
+            expected: Some("old".to_owned()),
+            actual: Some("snapshot_record = \"mizar-test-snapshot\"".to_owned()),
+        })
+    );
+    assert_eq!(root.read(baseline_path), "old\ncontent_hash = not-a-hash\n");
+
+    let updated = verify_or_update_snapshot_baseline(
+        root.path(),
+        baseline_path,
+        &snapshot,
+        SnapshotUpdateMode::Update {
+            reason: SnapshotUpdateReason::DiagnosticContractChange,
+        },
+    )
+    .unwrap();
+    assert_eq!(updated.status, SnapshotBaselineStatus::Updated);
+    assert_eq!(root.read(baseline_path), snapshot.canonical_text().unwrap());
+}
+
+#[test]
+fn snapshot_baseline_helper_rejects_stale_records_before_io() {
+    let root = SnapshotRoot::new();
+    let baseline_path = Path::new("snapshots/general/snapshot_case.snap");
+    let mut snapshot = record(
+        "snapshot_case",
+        SnapshotKind::SurfaceAst,
+        profile(),
+        "root\n",
+    );
+    snapshot.body = SnapshotBody::text("changed\n");
+
+    let error = verify_or_update_snapshot_baseline(
+        root.path(),
+        baseline_path,
+        &snapshot,
+        SnapshotUpdateMode::Update {
+            reason: SnapshotUpdateReason::SchemaChange,
+        },
+    )
+    .unwrap_err();
+
+    assert!(matches!(
+        error,
+        SnapshotBaselineError::Snapshot(SnapshotError::StaleContentHash { .. })
+    ));
+    assert!(!root.path().join("snapshots").exists());
+}
+
+#[test]
+fn snapshot_update_reports_io_errors() {
+    let root = SnapshotRoot::new();
+    root.write(Path::new("snapshots/general"), "not a directory\n");
+    let baseline_path = Path::new("snapshots/general/snapshot_case.snap");
+    let snapshot = record(
+        "snapshot_case",
+        SnapshotKind::SurfaceAst,
+        profile(),
+        "root\n",
+    );
+
+    let error = verify_or_update_snapshot_baseline(
+        root.path(),
+        baseline_path,
+        &snapshot,
+        SnapshotUpdateMode::Update {
+            reason: SnapshotUpdateReason::SchemaChange,
+        },
+    )
+    .unwrap_err();
+
+    assert!(matches!(error, SnapshotBaselineError::Io { .. }));
+}
+
+#[test]
+fn snapshot_update_rejects_unsafe_baseline_paths() {
+    let root = SnapshotRoot::new();
+    let snapshot = record(
+        "snapshot_case",
+        SnapshotKind::SurfaceAst,
+        profile(),
+        "root\n",
+    );
+
+    for path in [
+        Path::new("../snapshots/out.snap"),
+        Path::new("snapshots/out.txt"),
+        Path::new("other/out.snap"),
+        Path::new("/tmp/out.snap"),
+    ] {
+        let error = verify_or_update_snapshot_baseline(
+            root.path(),
+            path,
+            &snapshot,
+            SnapshotUpdateMode::Update {
+                reason: SnapshotUpdateReason::SchemaChange,
+            },
+        )
+        .unwrap_err();
+
+        assert!(matches!(
+            error,
+            SnapshotBaselineError::InvalidBaselinePath { .. }
+        ));
+    }
+}
+
+#[test]
+fn snapshot_determinism_check_accepts_repeated_canonical_renders() {
+    let first = record(
+        "snapshot_case",
+        SnapshotKind::SurfaceAst,
+        profile(),
+        "root\r\nchild\r",
+    );
+    let second = record(
+        "snapshot_case",
+        SnapshotKind::SurfaceAst,
+        profile(),
+        "root\nchild\n",
+    );
+
+    verify_snapshot_determinism(&[first, second]).unwrap();
+}
+
+#[test]
+fn snapshot_determinism_check_reports_first_injected_difference() {
+    let first = record(
+        "snapshot_case",
+        SnapshotKind::SurfaceAst,
+        profile(),
+        "duration = 10\n",
+    );
+    let same = record(
+        "snapshot_case",
+        SnapshotKind::SurfaceAst,
+        profile(),
+        "duration = 10\n",
+    );
+    let nondeterministic = record(
+        "snapshot_case",
+        SnapshotKind::SurfaceAst,
+        profile(),
+        "duration = 11\n",
+    );
+
+    let failure = verify_snapshot_determinism(&[first, same, nondeterministic]).unwrap_err();
+
+    assert_eq!(failure.baseline_index, 0);
+    assert_eq!(failure.candidate_index, 2);
+    assert_eq!(
+        failure.mismatch.first_difference,
+        Some(SnapshotTextDiff {
+            line: 1,
+            expected: Some("duration = 10".to_owned()),
+            actual: Some("duration = 11".to_owned()),
+        })
+    );
+}
+
 fn record(
     test_id: &str,
     kind: SnapshotKind,
@@ -431,4 +704,41 @@ fn profile_with_metadata<const N: usize>(metadata: [(&str, &str); N]) -> Snapsho
 
 fn hash(byte: u8) -> Hash {
     Hash::from_bytes([byte; Hash::BYTE_LEN])
+}
+
+struct SnapshotRoot {
+    path: PathBuf,
+}
+
+impl SnapshotRoot {
+    fn new() -> Self {
+        let id = NEXT_ROOT.fetch_add(1, Ordering::SeqCst);
+        let path =
+            std::env::temp_dir().join(format!("mizar-test-snapshot-{}-{id}", std::process::id()));
+        if path.exists() {
+            fs::remove_dir_all(&path).unwrap();
+        }
+        fs::create_dir_all(&path).unwrap();
+        Self { path }
+    }
+
+    fn path(&self) -> &Path {
+        &self.path
+    }
+
+    fn write(&self, relative_path: &Path, content: &str) {
+        let path = self.path.join(relative_path);
+        fs::create_dir_all(path.parent().unwrap()).unwrap();
+        fs::write(path, content).unwrap();
+    }
+
+    fn read(&self, relative_path: &Path) -> String {
+        fs::read_to_string(self.path.join(relative_path)).unwrap()
+    }
+}
+
+impl Drop for SnapshotRoot {
+    fn drop(&mut self) {
+        let _ = fs::remove_dir_all(&self.path);
+    }
 }

@@ -166,6 +166,13 @@ active type-elaboration expectation は harness error である。
 `active_type_elaboration` tag を持つ expectation が runnable case predicate の
 いずれかを満たさない場合、runner は silent skip ではなく harness error として扱う。
 
+上記の general snapshot と determinism runner rows は target-state harness modes である。
+task 4 と task 5 は shared `SnapshotRecord`、baseline verify/update、
+repeat-render comparison API を提供するが、この harness はまだ general
+`[[snapshots]]` sidecar entries を parse せず、general snapshot/update subcommand も
+実行しない。active parse-only `SurfaceAst` shortcut が runner execution に接続済みの
+唯一の snapshot path である。
+
 ## Determinism Requirements
 
 harness は identical inputs が次を生成することを check する。

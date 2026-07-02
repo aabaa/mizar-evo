@@ -24,8 +24,11 @@ pub use runner::{
     run_parse_only_corpus, run_type_elaboration_corpus,
 };
 pub use snapshot::{
-    ParallelismProfile, SchemaVersion, SnapshotBody, SnapshotError, SnapshotKind, SnapshotMismatch,
-    SnapshotProfile, SnapshotRecord, SnapshotTextDiff, ToolchainInfo, compare_snapshot_records,
+    ParallelismProfile, SchemaVersion, SnapshotBaselineError, SnapshotBaselineMismatch,
+    SnapshotBaselineReport, SnapshotBaselineStatus, SnapshotBody, SnapshotDeterminismFailure,
+    SnapshotError, SnapshotKind, SnapshotMismatch, SnapshotProfile, SnapshotRecord,
+    SnapshotTextDiff, SnapshotUpdateMode, SnapshotUpdateReason, ToolchainInfo,
+    compare_snapshot_records, verify_or_update_snapshot_baseline, verify_snapshot_determinism,
 };
 pub use staged_model::Stage;
 pub use traceability::{SpecRequirement, SpecRequirementId, TraceManifest, parse_trace_manifest};

@@ -84,6 +84,53 @@ pub struct SnapshotTextDiff {
     pub actual: Option<String>,
 }
 
+pub enum SnapshotUpdateReason {
+    SchemaChange,
+    DiagnosticContractChange,
+    SemanticBehaviorChange,
+    FuzzPropertyReproducer,
+}
+
+pub enum SnapshotUpdateMode {
+    VerifyOnly,
+    Update { reason: SnapshotUpdateReason },
+}
+
+pub enum SnapshotBaselineStatus {
+    Matched,
+    Created,
+    Updated,
+}
+
+pub struct SnapshotBaselineReport {
+    pub path: PathBuf,
+    pub status: SnapshotBaselineStatus,
+    pub update_reason: Option<SnapshotUpdateReason>,
+}
+
+pub struct SnapshotBaselineMismatch {
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Hash,
+    pub first_difference: Option<SnapshotTextDiff>,
+}
+
+pub enum SnapshotBaselineError {
+    Snapshot(SnapshotError),
+    InvalidBaselinePath { path: PathBuf },
+    Io { path: PathBuf, message: String },
+    MissingBaseline { path: PathBuf },
+    Mismatch {
+        path: PathBuf,
+        mismatch: Box<SnapshotBaselineMismatch>,
+    },
+}
+
+pub struct SnapshotDeterminismFailure {
+    pub baseline_index: usize,
+    pub candidate_index: usize,
+    pub mismatch: Box<SnapshotMismatch>,
+}
+
 pub enum SnapshotError {
     EmptyTestId,
     EmptyToolchainName,
@@ -133,6 +180,17 @@ pub fn compare_snapshot_records(
     expected: &SnapshotRecord,
     actual: &SnapshotRecord,
 ) -> Result<(), SnapshotMismatch>;
+
+pub fn verify_or_update_snapshot_baseline(
+    tests_root: impl AsRef<Path>,
+    relative_path: impl AsRef<Path>,
+    record: &SnapshotRecord,
+    mode: SnapshotUpdateMode,
+) -> Result<SnapshotBaselineReport, SnapshotBaselineError>;
+
+pub fn verify_snapshot_determinism(
+    records: &[SnapshotRecord],
+) -> Result<(), SnapshotDeterminismFailure>;
 ```
 
 ## Canonicalization
@@ -185,15 +243,31 @@ allowed update reasons:
 
 harness は normal test runs 中に snapshots を update してはならない。
 
+The general baseline helper enforces that policy with
+`SnapshotUpdateMode::VerifyOnly` as the non-mutating default. Verify-only mode
+never creates parent directories and never writes baseline files: missing
+baselines report `MissingBaseline`, and differing baselines report
+`Mismatch` with a precise text diff. Baselines are created or rewritten only
+when the caller passes `SnapshotUpdateMode::Update { reason }`, where `reason`
+is one of the allowed update reasons above. Update mode creates missing parent
+directories, writes the new baseline to a temporary file in the destination
+directory, and then renames it into place.
+
+General snapshot baseline paths are clean tests-root-relative `.snap` paths
+under `snapshots/`. Paths outside `snapshots/`, absolute paths, parent
+traversals, and non-`.snap` files are rejected before any IO.
+
 現在の実装済み slice: parser task 38 は、移行用 sidecar field
 `snapshots = "snapshots/parser/<id>.surface_ast.snap"` を通じて active parse-only
 `SurfaceAst` baseline を接続する。diagnostics が一致した後、commit 済みの
 `SurfaceAst::snapshot_text()` output を byte-for-byte で比較する。これは将来の
 一般 snapshot hash registry や update mode を実装するものではない。
 
-現在の general snapshot API slice: task 4 は canonical in-memory
-`SnapshotRecord` construction、hashing、validation、comparison を提供する。
-baseline files の read/write/update は行わない。それらは task 5 の作業として残る。
+現在の general snapshot API slice: task 4 と task 5 は canonical in-memory
+`SnapshotRecord` construction、hashing、validation、comparison、explicit
+verify/update baseline IO、repeat-render determinism comparison を提供する。
+General `[[snapshots]]` sidecar parsing と runner integration は future harness
+work として残る。
 
 ## Determinism Checks
 
@@ -204,6 +278,11 @@ snapshot tests は少なくとも次を run する。
 3. test profile が support する場合 parallel build
 
 externally visible snapshot hashes は一致しなければならない。
+
+The in-memory determinism helper compares each repeated `SnapshotRecord`
+against the first record after recomputing hashes from current public fields.
+The first mismatch reports the baseline index, candidate index, and the
+underlying `SnapshotMismatch`.
 
 ## Tests
 

@@ -84,6 +84,53 @@ pub struct SnapshotTextDiff {
     pub actual: Option<String>,
 }
 
+pub enum SnapshotUpdateReason {
+    SchemaChange,
+    DiagnosticContractChange,
+    SemanticBehaviorChange,
+    FuzzPropertyReproducer,
+}
+
+pub enum SnapshotUpdateMode {
+    VerifyOnly,
+    Update { reason: SnapshotUpdateReason },
+}
+
+pub enum SnapshotBaselineStatus {
+    Matched,
+    Created,
+    Updated,
+}
+
+pub struct SnapshotBaselineReport {
+    pub path: PathBuf,
+    pub status: SnapshotBaselineStatus,
+    pub update_reason: Option<SnapshotUpdateReason>,
+}
+
+pub struct SnapshotBaselineMismatch {
+    pub expected_hash: Option<Hash>,
+    pub actual_hash: Hash,
+    pub first_difference: Option<SnapshotTextDiff>,
+}
+
+pub enum SnapshotBaselineError {
+    Snapshot(SnapshotError),
+    InvalidBaselinePath { path: PathBuf },
+    Io { path: PathBuf, message: String },
+    MissingBaseline { path: PathBuf },
+    Mismatch {
+        path: PathBuf,
+        mismatch: Box<SnapshotBaselineMismatch>,
+    },
+}
+
+pub struct SnapshotDeterminismFailure {
+    pub baseline_index: usize,
+    pub candidate_index: usize,
+    pub mismatch: Box<SnapshotMismatch>,
+}
+
 pub enum SnapshotError {
     EmptyTestId,
     EmptyToolchainName,
@@ -133,6 +180,17 @@ pub fn compare_snapshot_records(
     expected: &SnapshotRecord,
     actual: &SnapshotRecord,
 ) -> Result<(), SnapshotMismatch>;
+
+pub fn verify_or_update_snapshot_baseline(
+    tests_root: impl AsRef<Path>,
+    relative_path: impl AsRef<Path>,
+    record: &SnapshotRecord,
+    mode: SnapshotUpdateMode,
+) -> Result<SnapshotBaselineReport, SnapshotBaselineError>;
+
+pub fn verify_snapshot_determinism(
+    records: &[SnapshotRecord],
+) -> Result<(), SnapshotDeterminismFailure>;
 ```
 
 ## Canonicalization
@@ -187,15 +245,31 @@ Allowed update reasons:
 
 The harness must not update snapshots during normal test runs.
 
+The general baseline helper enforces that policy with
+`SnapshotUpdateMode::VerifyOnly` as the non-mutating default. Verify-only mode
+never creates parent directories and never writes baseline files: missing
+baselines report `MissingBaseline`, and differing baselines report
+`Mismatch` with a precise text diff. Baselines are created or rewritten only
+when the caller passes `SnapshotUpdateMode::Update { reason }`, where `reason`
+is one of the allowed update reasons above. Update mode creates missing parent
+directories, writes the new baseline to a temporary file in the destination
+directory, and then renames it into place.
+
+General snapshot baseline paths are clean tests-root-relative `.snap` paths
+under `snapshots/`. Paths outside `snapshots/`, absolute paths, parent
+traversals, and non-`.snap` files are rejected before any IO.
+
 Current implemented slice: parser task 38 wires active parse-only `SurfaceAst`
 baselines through a transitional sidecar field
 `snapshots = "snapshots/parser/<id>.surface_ast.snap"`. This compares committed
 `SurfaceAst::snapshot_text()` output byte-for-byte after diagnostics match. It
 does not implement the future general snapshot hash registry or update mode.
 
-Current general snapshot API slice: task 4 provides canonical in-memory
-`SnapshotRecord` construction, hashing, validation, and comparison. It does not
-read, write, or update baseline files; those remain task 5 work.
+Current general snapshot API slice: tasks 4 and 5 provide canonical in-memory
+`SnapshotRecord` construction, hashing, validation, comparison, explicit
+verify/update baseline IO, and repeat-render determinism comparison. General
+`[[snapshots]]` sidecar parsing and runner integration remain future harness
+work.
 
 ## Determinism Checks
 
@@ -206,6 +280,11 @@ Snapshot tests run at least:
 3. parallel build when the test profile supports it.
 
 The externally visible snapshot hashes must match.
+
+The in-memory determinism helper compares each repeated `SnapshotRecord`
+against the first record after recomputing hashes from current public fields.
+The first mismatch reports the baseline index, candidate index, and the
+underlying `SnapshotMismatch`.
 
 ## Tests
 

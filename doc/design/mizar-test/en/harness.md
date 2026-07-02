@@ -168,6 +168,13 @@ harness errors until public checker diagnostic codes are specified. An
 expectation tagged `active_type_elaboration` but missing one of the runnable
 case predicates is a harness error rather than a silent skip.
 
+General snapshot and determinism runner rows above are target-state harness
+modes. Tasks 4 and 5 provide the shared `SnapshotRecord`, baseline
+verify/update, and repeat-render comparison APIs, but this harness does not yet
+parse general `[[snapshots]]` sidecar entries or run a general snapshot/update
+subcommand. The active parse-only `SurfaceAst` shortcut remains the only
+snapshot path wired into runner execution.
+
 ## Determinism Requirements
 
 The harness checks that identical inputs produce:
