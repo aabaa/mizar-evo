@@ -73,6 +73,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.02.lexical.dot_disambiguation.parser_surface"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.3 Dot Disambiguation"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.02.lexical.dot_disambiguation.selector_shadowing_handoff"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.5.3 Dot Disambiguation"
@@ -235,30 +247,6 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.02.lexical.preprocessing.active_lexicon"
-source = "doc/spec/en/02.lexical_structure.md"
-section = "2.10 Lexical Preprocessing"
-stage = "lexical"
-status = "covered"
-required = true
-coverage = "property"
-tests = [
-  "tests/property/lexical_environment_phase4_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.02.lexical.preprocessing.comments_removed"
-source = "doc/spec/en/02.lexical_structure.md"
-section = "2.10 Lexical Preprocessing"
-stage = "lexical"
-status = "covered"
-required = true
-coverage = "manual_review"
-tests = [
-  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
-]
-
-[[requirement]]
 id = "spec.en.02.lexical.phase7.fuzz_handoff"
 source = "doc/design/mizar-lexer/en/test_and_implementation_plan.md"
 section = "Phase 7: Regression, Property, And Fuzz Handoff"
@@ -280,6 +268,42 @@ required = true
 coverage = "property"
 tests = [
   "tests/property/lexer_phase7_regression_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.preprocessing.active_lexicon"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.10 Lexical Preprocessing"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "property"
+tests = [
+  "tests/property/lexical_environment_phase4_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.preprocessing.comments_not_raw_tokens"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.10 Lexical Preprocessing"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.preprocessing.comments_removed"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.10 Lexical Preprocessing"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
 ]
 
 [[requirement]]
@@ -306,19 +330,6 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.02.lexical.raw.span_preservation"
-source = "doc/design/mizar-lexer/en/raw_lexer.md"
-section = "Stage 1: Raw Scan"
-stage = "lexical"
-status = "covered"
-required = true
-coverage = "property"
-tests = [
-  "tests/property/lexer_phase7_regression_001.expect.toml",
-  "tests/fuzz/lexer_phase7_fuzz_handoff_001.expect.toml",
-]
-
-[[requirement]]
 id = "spec.en.02.lexical.raw.lexeme_runs"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.3 Tokens and Lexicon"
@@ -342,6 +353,19 @@ required = true
 coverage = "pass_and_fail"
 tests = [
   "tests/lexical/pass/pass_lexical_raw_numeral_like_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.02.lexical.raw.span_preservation"
+source = "doc/design/mizar-lexer/en/raw_lexer.md"
+section = "Stage 1: Raw Scan"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "property"
+tests = [
+  "tests/property/lexer_phase7_regression_001.expect.toml",
+  "tests/fuzz/lexer_phase7_fuzz_handoff_001.expect.toml",
 ]
 
 [[requirement]]
@@ -394,25 +418,6 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.02.lexical.string_literals.context_sensitive"
-source = "doc/spec/en/02.lexical_structure.md"
-section = "2.7 Numerals and Literals"
-stage = "lexical"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_arguments_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_escape_matrix_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_single_escape_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_escape_backslash_001.expect.toml",
-  "tests/lexical/fail/fail_lexical_disambiguator_string_literal_context_malformed_001.expect.toml",
-  "tests/lexical/fail/fail_lexical_disambiguator_string_literal_context_invalid_escape_001.expect.toml",
-  "tests/lexical/fail/fail_lexical_disambiguator_string_outside_context_001.expect.toml",
-]
-
-[[requirement]]
 id = "spec.en.02.lexical.scope_override.skeleton"
 source = "doc/design/mizar-lexer/en/scope_skeleton.md"
 section = "ScopeLexView"
@@ -438,15 +443,22 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.02.lexical.preprocessing.comments_not_raw_tokens"
+id = "spec.en.02.lexical.string_literals.context_sensitive"
 source = "doc/spec/en/02.lexical_structure.md"
-section = "2.10 Lexical Preprocessing"
+section = "2.7 Numerals and Literals"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "manual_review"
+coverage = "pass_and_fail"
 tests = [
-  "tests/property/lexer_phase7_spec_boundary_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_arguments_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_escape_matrix_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_single_escape_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_string_literal_context_escape_backslash_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_disambiguator_string_literal_context_malformed_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_disambiguator_string_literal_context_invalid_escape_001.expect.toml",
+  "tests/lexical/fail/fail_lexical_disambiguator_string_outside_context_001.expect.toml",
 ]
 
 [[requirement]]
@@ -526,9 +538,111 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.11.symbol_management.active_lexicon.imported_symbols"
-source = "doc/spec/en/11.symbol_management.md"
-section = "11.2.3 Imported Symbols"
+id = "spec.en.03.type_expressions.parser"
+source = "doc/spec/en/03.type_system.md"
+section = "3.3 Type Expressions"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_type_expressions_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_type_expression_malformed_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_type_expression_missing_bracket_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.04.variables_and_constants.binders.lexical_shapes"
+source = "doc/spec/en/04.variables_and_constants.md"
+section = "4 Variables and Constants"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_lexical_scope_skeleton_basic_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
+  "tests/lexical/fail/fail_lexical_scope_skeleton_complete_003.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_004.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_algorithm_do_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_scope_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_shadowing_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_statement_local_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_lifetimes_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
+  "tests/property/scope_skeleton_phase5_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.05.structures.parser"
+source = "doc/spec/en/05.structures.md"
+section = "5.2 Syntax; 5.3 Inheritance; 5.3.1 Syntax (EBNF); 5.3.2 Coherence (Type Specialization); 5.6 Dependent Structures; 5.9 Complete Syntax (EBNF)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_structures_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_structures_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.06.attribute_definitions.parser"
+source = "doc/spec/en/06.attributes.md"
+section = "6.2 Syntax; 6.9 Complete Syntax; Appendix A.6 Attributes"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_definition_attributes_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_definition_attributes_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.07.mode_definitions.parser"
+source = "doc/spec/en/07.modes.md"
+section = "7.2 Syntax for Declaring and Using Modes; 7.6 Unified Mode Syntax; 7.7 Dependent Modes; 7.8 Correctness Conditions; 7.8.1 Mode Property: `sethood`; 7.10 Complete Syntax"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_mode_definitions_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_mode_definitions_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.09.predicate_definitions.parser"
+source = "doc/spec/en/09.predicates.md"
+section = "9.1 Overview and Syntax; 9.3 Definition Styles; 9.4 Dependent and Typed Parameters; 9.5 Correctness Conditions; 9.10 Complete Syntax"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_predicate_definitions_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_predicate_definitions_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.10.functor_definitions.parser"
+source = "doc/spec/en/10.functors.md"
+section = "10.1 Functor Definitions; 10.3 Definition Styles: `equals` vs `means`; 10.5 Conditional Functor Definitions; 10.6 Correctness Conditions for Functors; 10.8 Functor Patterns and Notation; 10.13 Grammar"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_functor_definitions_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_functor_definitions_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.11.symbol_management.active_lexicon.fingerprint"
+source = "doc/design/mizar-lexer/en/lexical_environment.md"
+section = "Algorithm"
 stage = "lexical"
 status = "covered"
 required = true
@@ -550,9 +664,9 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.11.symbol_management.active_lexicon.reserved_collisions"
-source = "doc/spec/en/02.lexical_structure.md"
-section = "2.5.2 User-Defined Symbolic Names"
+id = "spec.en.11.symbol_management.active_lexicon.imported_symbols"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.2.3 Imported Symbols"
 stage = "lexical"
 status = "covered"
 required = true
@@ -562,9 +676,9 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.11.symbol_management.active_lexicon.fingerprint"
-source = "doc/design/mizar-lexer/en/lexical_environment.md"
-section = "Algorithm"
+id = "spec.en.11.symbol_management.active_lexicon.reserved_collisions"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.2 User-Defined Symbolic Names"
 stage = "lexical"
 status = "covered"
 required = true
@@ -598,62 +712,55 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.12.modules.visibility.semantic"
+id = "spec.en.12.modules.compilation_unit_skeleton"
 source = "doc/spec/en/12.modules_and_namespaces.md"
-section = "12.5 Visibility Control (Private/Public)"
-stage = "declaration_symbol"
-status = "partial"
-required = true
-coverage = "manual_review"
-tests = [
-  "tests/miz/pass/resolve/pass_resolve_declaration_symbol_smoke_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.16.theorems_and_proofs.labels.declaration_symbols"
-source = "doc/spec/en/16.theorems_and_proofs.md"
-section = "16.2 Syntax of Theorem Declarations"
-stage = "declaration_symbol"
-status = "partial"
-required = true
-coverage = "manual_review"
-tests = [
-  "tests/miz/pass/resolve/pass_resolve_declaration_symbol_smoke_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.16.theorems_and_proofs.labels.same_scope_uniqueness"
-source = "doc/spec/en/16.theorems_and_proofs.md"
-section = "16.4.2 Scope and Visibility"
-stage = "declaration_symbol"
+section = "12.7 Complete Syntax (EBNF)"
+stage = "parse_only"
 status = "covered"
 required = true
-coverage = "fail"
+coverage = "pass_and_fail"
 tests = [
-  "tests/miz/fail/resolve/fail_resolve_duplicate_theorem_symbol_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_module_skeleton_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_missing_block_semicolon_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_missing_definition_end_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_missing_semicolon_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_unexpected_top_level_token_001.expect.toml",
 ]
 
 [[requirement]]
-id = "spec.en.04.variables_and_constants.binders.lexical_shapes"
-source = "doc/spec/en/04.variables_and_constants.md"
-section = "4 Variables and Constants"
-stage = "lexical"
+id = "spec.en.12.modules.export_visibility.parser"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.7 Complete Syntax (EBNF)"
+stage = "parse_only"
 status = "covered"
 required = true
-coverage = "pass"
+coverage = "pass_and_fail"
 tests = [
-  "tests/lexical/pass/pass_lexical_scope_skeleton_basic_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
-  "tests/lexical/fail/fail_lexical_scope_skeleton_complete_003.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_004.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_algorithm_do_override_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_nested_scope_override_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_nested_shadowing_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_statement_local_override_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_lifetimes_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
-  "tests/property/scope_skeleton_phase5_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_export_visibility_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_export_late_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_import_after_export_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_export_missing_path_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_export_trailing_comma_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_export_missing_semicolon_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_visibility_dangling_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_visibility_duplicate_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_visibility_invalid_target_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.import_items.parser"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.7 Complete Syntax (EBNF)"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_import_items_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_import_late_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_import_missing_alias_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_import_missing_branch_close_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_import_missing_semicolon_001.expect.toml",
 ]
 
 [[requirement]]
@@ -742,116 +849,54 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.16.theorems_and_proofs.blocks.lexical_ranges"
-source = "doc/spec/en/16.theorems_and_proofs.md"
-section = "16 Theorems and Proofs"
-stage = "lexical"
-status = "covered"
+id = "spec.en.12.modules.visibility.semantic"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.5 Visibility Control (Private/Public)"
+stage = "declaration_symbol"
+status = "partial"
 required = true
-coverage = "pass_and_fail"
+coverage = "manual_review"
 tests = [
-  "tests/lexical/pass/pass_lexical_scope_skeleton_basic_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
-  "tests/lexical/fail/fail_lexical_scope_skeleton_complete_003.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_004.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_algorithm_do_override_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_nested_scope_override_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_disambiguator_nested_shadowing_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_lifetimes_001.expect.toml",
-  "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
-  "tests/property/scope_skeleton_phase5_001.expect.toml",
+  "tests/miz/pass/resolve/pass_resolve_declaration_symbol_smoke_001.expect.toml",
 ]
 
 [[requirement]]
-id = "spec.en.syntax.parser_minimal_token_stream"
-source = "doc/design/mizar-parser/en/grammar.md"
-section = "Current behavior"
+id = "spec.en.13.choice_operator.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.5 The Choice Operator"
 stage = "parse_only"
 status = "covered"
 required = true
 coverage = "pass"
 tests = [
-  "tests/miz/pass/parser/pass_parser_minimal_token_stream_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
 ]
 
 [[requirement]]
-id = "spec.en.testing.surface_ast_snapshots"
-source = "doc/design/mizar-test/en/snapshot.md"
-section = "Update Policy"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "snapshot"
-tests = [
-  "tests/miz/pass/parser/pass_parser_minimal_token_stream_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_unexpected_top_level_token_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.12.modules.compilation_unit_skeleton"
-source = "doc/spec/en/12.modules_and_namespaces.md"
-section = "12.7 Complete Syntax (EBNF)"
+id = "spec.en.13.functor_applications.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.2 Functor Applications"
 stage = "parse_only"
 status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
-  "tests/miz/pass/parser/pass_parser_module_skeleton_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_missing_block_semicolon_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_missing_definition_end_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_missing_semicolon_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_unexpected_top_level_token_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_primary_terms_missing_delimiter_001.expect.toml",
 ]
 
 [[requirement]]
-id = "spec.en.12.modules.import_items.parser"
-source = "doc/spec/en/12.modules_and_namespaces.md"
-section = "12.7 Complete Syntax (EBNF)"
+id = "spec.en.13.operator_precedence.parser"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.7 Operator Precedence and Associativity; Appendix B.2 Term Operators"
 stage = "parse_only"
 status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
-  "tests/miz/pass/parser/pass_parser_import_items_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_import_late_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_import_missing_alias_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_import_missing_branch_close_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_import_missing_semicolon_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.12.modules.export_visibility.parser"
-source = "doc/spec/en/12.modules_and_namespaces.md"
-section = "12.7 Complete Syntax (EBNF)"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_export_visibility_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_export_late_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_import_after_export_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_export_missing_path_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_export_trailing_comma_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_export_missing_semicolon_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_visibility_dangling_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_visibility_duplicate_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_visibility_invalid_target_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.03.type_expressions.parser"
-source = "doc/spec/en/03.type_system.md"
-section = "3.3 Type Expressions"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_type_expressions_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_type_expression_malformed_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_type_expression_missing_bracket_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_operator_terms_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_operator_dangling_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_operator_nonassoc_001.expect.toml",
 ]
 
 [[requirement]]
@@ -869,29 +914,16 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.13.functor_applications.parser"
+id = "spec.en.13.qua_qualification.parser"
 source = "doc/spec/en/13.term_expression.md"
-section = "13.2 Functor Applications"
+section = "13.6 Type Qualification (qua)"
 stage = "parse_only"
 status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
-  "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_primary_terms_missing_delimiter_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.13.structure_expressions.parser"
-source = "doc/spec/en/13.term_expression.md"
-section = "13.3 Structure Expressions"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass"
-tests = [
-  "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
-  "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_qua_terms_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_qua_missing_type_001.expect.toml",
 ]
 
 [[requirement]]
@@ -906,32 +938,6 @@ tests = [
   "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_selector_call_missing_close_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_selector_missing_name_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.13.structure_update.parser"
-source = "doc/spec/en/13.term_expression.md"
-section = "13.3.3 Structure Update"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_structure_update_missing_close_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_structure_update_missing_value_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.02.lexical.dot_disambiguation.parser_surface"
-source = "doc/spec/en/02.lexical_structure.md"
-section = "2.5.3 Dot Disambiguation"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass"
-tests = [
-  "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
 ]
 
 [[requirement]]
@@ -953,42 +959,30 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.13.choice_operator.parser"
+id = "spec.en.13.structure_expressions.parser"
 source = "doc/spec/en/13.term_expression.md"
-section = "13.5 The Choice Operator"
+section = "13.3 Structure Expressions"
 stage = "parse_only"
 status = "covered"
 required = true
 coverage = "pass"
 tests = [
   "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
 ]
 
 [[requirement]]
-id = "spec.en.13.qua_qualification.parser"
+id = "spec.en.13.structure_update.parser"
 source = "doc/spec/en/13.term_expression.md"
-section = "13.6 Type Qualification (qua)"
+section = "13.3.3 Structure Update"
 stage = "parse_only"
 status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
-  "tests/miz/pass/parser/pass_parser_qua_terms_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_qua_missing_type_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.13.operator_precedence.parser"
-source = "doc/spec/en/13.term_expression.md"
-section = "13.7 Operator Precedence and Associativity; Appendix B.2 Term Operators"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_operator_terms_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_operator_dangling_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_operator_nonassoc_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_selector_updates_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_structure_update_missing_close_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_structure_update_missing_value_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1025,32 +1019,6 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.06.attribute_definitions.parser"
-source = "doc/spec/en/06.attributes.md"
-section = "6.2 Syntax; 6.9 Complete Syntax; Appendix A.6 Attributes"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_definition_attributes_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_definition_attributes_recovery_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.09.predicate_definitions.parser"
-source = "doc/spec/en/09.predicates.md"
-section = "9.1 Overview and Syntax; 9.3 Definition Styles; 9.4 Dependent and Typed Parameters; 9.5 Correctness Conditions; 9.10 Complete Syntax"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_predicate_definitions_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_predicate_definitions_recovery_001.expect.toml",
-]
-
-[[requirement]]
 id = "spec.en.15.statements.syntax"
 source = "doc/spec/en/15.statements.md"
 section = "15.2.1 Generalization Statement; 15.2.2 Constant Definition; 15.2.3 Inline Function Definition (`deffunc`); 15.2.4 Inline Predicate Definition (`defpred`); 15.3.1 Single Assumption; 15.3.2 Collective Assumption; 15.3.3 Existential Assumption; 15.3.4 Choice Statement (`consider`); 15.4.1 Conclusion Statement (`thus`/`hence`); 15.4.2 Hence Statement; 15.4.3 Block Conclusion (`hereby`); 15.4.4 Witness Introduction; 15.5.1 Type Reconsideration (`reconsider`); 15.6.1 Labeled Reasoning Block (`now`); 15.6.2 Case Analysis (`case`); 15.6.3 Supposition (`suppose`); 15.7 Iterative Equality; 15.8 Justification Forms; 15.9.1 Sequential Link (`then`)"
@@ -1071,20 +1039,6 @@ tests = [
   "tests/miz/fail/parser/fail_parser_conclusions_iterative_recovery_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_block_statements_recovery_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_inline_definitions_recovery_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.16.theorem_proof_items.parser"
-source = "doc/spec/en/16.theorems_and_proofs.md"
-section = "16.2 Syntax of Theorem Declarations; 16.4.1 Proof Blocks"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_definition_attributes_001.expect.toml",
-  "tests/miz/pass/parser/pass_parser_theorems_proofs_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_theorems_proofs_recovery_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1115,9 +1069,9 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.20.computation_proof.parser"
-source = "doc/spec/en/20.algorithm_and_verification.md"
-section = "20.9.2 `by computation` Proof Step"
+id = "spec.en.16.theorem_proof_items.parser"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.2 Syntax of Theorem Declarations; 16.4.1 Proof Blocks"
 stage = "parse_only"
 status = "covered"
 required = true
@@ -1125,109 +1079,53 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_definition_attributes_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_theorems_proofs_001.expect.toml",
-  "tests/miz/pass/parser/pass_parser_justifications_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_justifications_recovery_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_theorems_proofs_recovery_001.expect.toml",
 ]
 
 [[requirement]]
-id = "spec.en.syntax.parser_recovery.missing_end"
-source = "doc/design/mizar-parser/en/recovery.md"
-section = "Current behavior"
-stage = "parse_only"
+id = "spec.en.16.theorems_and_proofs.blocks.lexical_ranges"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16 Theorems and Proofs"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/lexical/pass/pass_lexical_scope_skeleton_basic_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_002.expect.toml",
+  "tests/lexical/fail/fail_lexical_scope_skeleton_complete_003.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_complete_004.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_algorithm_do_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_scope_override_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_disambiguator_nested_shadowing_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_lifetimes_001.expect.toml",
+  "tests/lexical/pass/pass_lexical_scope_skeleton_shadowing_001.expect.toml",
+  "tests/property/scope_skeleton_phase5_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems_and_proofs.labels.declaration_symbols"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.2 Syntax of Theorem Declarations"
+stage = "declaration_symbol"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/miz/pass/resolve/pass_resolve_declaration_symbol_smoke_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems_and_proofs.labels.same_scope_uniqueness"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.4.2 Scope and Visibility"
+stage = "declaration_symbol"
 status = "covered"
 required = true
 coverage = "fail"
 tests = [
-  "tests/miz/fail/parser/fail_parser_missing_definition_end_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.syntax.parser_recovery.stray_end"
-source = "doc/design/mizar-parser/en/recovery.md"
-section = "Current behavior"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "fail"
-tests = [
-  "tests/miz/fail/parser/fail_parser_stray_end_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.syntax.parser_recovery.annotation_sync"
-source = "doc/design/mizar-parser/en/recovery.md"
-section = "Current behavior"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "fail"
-tests = [
-  "tests/miz/fail/parser/fail_parser_recovery_consolidation_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.10.functor_definitions.parser"
-source = "doc/spec/en/10.functors.md"
-section = "10.1 Functor Definitions; 10.3 Definition Styles: `equals` vs `means`; 10.5 Conditional Functor Definitions; 10.6 Correctness Conditions for Functors; 10.8 Functor Patterns and Notation; 10.13 Grammar"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_functor_definitions_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_functor_definitions_recovery_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.07.mode_definitions.parser"
-source = "doc/spec/en/07.modes.md"
-section = "7.2 Syntax for Declaring and Using Modes; 7.6 Unified Mode Syntax; 7.7 Dependent Modes; 7.8 Correctness Conditions; 7.8.1 Mode Property: `sethood`; 7.10 Complete Syntax"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_mode_definitions_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_mode_definitions_recovery_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.syntax.redefinition_notation.parser"
-source = "doc/spec/en/appendix_a.grammar_summary.md"
-section = "A.6 Attributes; A.9 Predicates; A.10 Functors; A.11 Symbol Management and Notation; A.12 Top-Level Items"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_redefinition_notation_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_redefinition_notation_recovery_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.syntax.property_clauses.parser"
-source = "doc/spec/en/appendix_a.grammar_summary.md"
-section = "A.7 Modes; A.9 Predicates; A.10 Functors; A.12 Top-Level Items"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_property_clauses_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_property_clauses_recovery_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.05.structures.parser"
-source = "doc/spec/en/05.structures.md"
-section = "5.2 Syntax; 5.3 Inheritance; 5.3.1 Syntax (EBNF); 5.3.2 Coherence (Type Specialization); 5.6 Dependent Structures; 5.9 Complete Syntax (EBNF)"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_structures_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_structures_recovery_001.expect.toml",
+  "tests/miz/fail/resolve/fail_resolve_duplicate_theorem_symbol_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1241,33 +1139,6 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_registrations_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_registrations_recovery_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.syntax.template_arguments.parser"
-source = "doc/spec/en/appendix_a.grammar_summary.md"
-section = "A.9 Predicates; A.10 Functors; A.15 References; A.18 Templates"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_template_arguments_001.expect.toml",
-  "tests/miz/pass/parser/pass_parser_template_references_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.expect.toml",
-]
-
-[[requirement]]
-id = "spec.en.20.algorithms_claims.parser"
-source = "doc/spec/en/20.algorithm_and_verification.md"
-section = "20.1 Algorithm Syntax; 20.1.1 Algorithm Definition Block; 20.1.2 Parameters and Return Type; 20.1.3 Variable Declarations; 20.1.4 Assignment; 20.2.6 return statements; 20.6 Snapshot and Claim; 20.11 Complete Syntax (EBNF) excluding control-flow statements covered separately by parser task 33 and verification clauses covered by parser task 34; annotation prefixes are covered separately by spec.en.21.annotations.parser"
-stage = "parse_only"
-status = "covered"
-required = true
-coverage = "pass_and_fail"
-tests = [
-  "tests/miz/pass/parser/pass_parser_algorithms_claims_001.expect.toml",
-  "tests/miz/fail/parser/fail_parser_algorithms_claims_recovery_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1297,6 +1168,34 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.20.algorithms_claims.parser"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.1 Algorithm Syntax; 20.1.1 Algorithm Definition Block; 20.1.2 Parameters and Return Type; 20.1.3 Variable Declarations; 20.1.4 Assignment; 20.2.6 return statements; 20.6 Snapshot and Claim; 20.11 Complete Syntax (EBNF) excluding control-flow statements covered separately by parser task 33 and verification clauses covered by parser task 34; annotation prefixes are covered separately by spec.en.21.annotations.parser"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_algorithms_claims_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_algorithms_claims_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.20.computation_proof.parser"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.9.2 `by computation` Proof Step"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_definition_attributes_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_theorems_proofs_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_justifications_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_justifications_recovery_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.21.annotations.parser"
 source = "doc/spec/en/21.source_code_annotation_and_atp.md"
 section = "21.2 Library Annotations; 21.3 LaTeX Annotation; 21.4 Proof Hint; 21.5 Proof Debugging; 21.6 Evaluation Directives; Appendix A.21 Annotations"
@@ -1308,6 +1207,61 @@ tests = [
   "tests/miz/pass/parser/pass_parser_annotations_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_annotations_recovery_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.algorithm.vc.assignment_loop_exits"
+source = "doc/spec/en/20.algorithm_and_verification.md"
+section = "20.13.3 Verification Condition Schema"
+stage = "proof_verification"
+status = "deferred"
+required = true
+coverage = "property"
+deferred_reason = "Task 15 records this as an external_dependency_gap rather than adding fake active fixtures: mizar-test has no active proof_verification runner/tag gate, source-to-core and source-to-VC extraction seams are not available from `.miz` corpus inputs, and task-7 audit payload families are not all exposed by upstream ControlFlowIr/obligation handoff data. Add active proof_verification coverage for call-precondition, branch, match, range-loop, collection-loop, term-only termination, partial termination, Pick non-emptiness, ghost-erasure, old-state assignment, field-update alias identity, break exits that do not gain `not C`, continue/decreasing checks, `downto`/`step` range loops, and ghost-only Pick erasure only after the runner, extraction seams, and upstream payload families exist."
+tests = []
+
+[[requirement]]
+id = "spec.en.binding.substitution.capture_avoidance"
+source = "doc/design/architecture/en/16.substitution_and_binding.md"
+section = "Definition-Time Closures"
+stage = "advanced_semantics"
+status = "deferred"
+required = true
+coverage = "pass_and_fail"
+deferred_reason = "Substitution replay and proof-local abbreviation expansion are not implemented yet. Add regression coverage for the `defpred P(n be Nat) means n < m` shadowing example and malformed capture-producing substitutions."
+tests = []
+
+[[requirement]]
+id = "spec.en.checker.advanced_semantics.overload_resolution_corpus"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Task 29; MC-G027 overload and resolved typed AST corpus gaps"
+stage = "advanced_semantics"
+status = "deferred"
+required = true
+coverage = "pass_and_fail"
+deferred_reason = "Task 29 cannot add active overload `.miz` semantic cases yet: mizar-test has no active advanced_semantics runner/tag gate, and source-to-checker extraction for overload sites, candidate groups, template payloads, source qua evidence, viability evidence, specificity comparisons, selection/refinement payloads, inserted views, and expression metadata remains unavailable. Add ambiguity, no-match, refinement-join, invalid narrowing, and successful overload corpus cases after MC-G020/MC-G027 prerequisites exist."
+tests = []
+
+[[requirement]]
+id = "spec.en.checker.advanced_semantics.registration_cluster_reduction_corpus"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Task 29; MC-G021 and MC-G023 registration, cluster, and reduction corpus gaps"
+stage = "advanced_semantics"
+status = "deferred"
+required = true
+coverage = "pass_and_fail"
+deferred_reason = "Task 29 cannot add active cluster/reduction `.miz` semantic cases yet: mizar-test has no active advanced_semantics runner/tag gate, checker-ready registration payload extraction is missing, accepted verifier/artifact status is not wired, source-derived cluster/reduction trace extraction is unavailable, and artifact emission/reuse remains deferred. Add cluster activation, loop/bound/contradiction, reduction trace, and registration guard corpus cases after MC-G020/MC-G021/MC-G023 prerequisites exist."
+tests = []
+
+[[requirement]]
+id = "spec.en.checker.formula_statement.source_payloads"
+source = "doc/design/mizar-checker/en/00.crate_plan.md"
+section = "Task 29; MC-G019 and MC-G020 statement/formula source-to-checker gaps"
+stage = "formula_statement"
+status = "deferred"
+required = true
+coverage = "pass_and_fail"
+deferred_reason = "Task 29 cannot add active formula_statement `.miz` cases yet: mizar-test has no active formula_statement runner/tag gate, and mizar-checker still lacks AST-wide source-to-checker extraction for statement assumptions, formula payloads, local proof contexts, and recorded facts. Add equality, predicate, quantifier, assumption, label, and statement-failure corpus cases only after MC-G019/MC-G020 and runner support are implemented."
+tests = []
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction"
@@ -1333,15 +1287,16 @@ deferred_reason = "Core elaboration is not implemented yet. Add semantic tests t
 tests = []
 
 [[requirement]]
-id = "spec.en.mizar_core.core_ir.type_elaboration_snapshots"
-source = "doc/design/mizar-core/en/00.crate_plan.md"
-section = "Task 19; CoreIr corpus snapshot baselines at type_elaboration"
-stage = "type_elaboration"
-status = "deferred"
+id = "spec.en.mizar_atp.advanced_semantics.mock_backend_integration"
+source = "doc/design/mizar-atp/en/00.crate_plan.md"
+section = "Task 20; Corpus And Mock-Backend Integration Suite"
+stage = "advanced_semantics"
+status = "covered"
 required = true
-coverage = "snapshot"
-deferred_reason = "Task 19 records this as an external_dependency_gap rather than adding fake active baselines: mizar-test currently compares committed snapshots only for parse-only SurfaceAst output, the active type_elaboration runner stops at the source-to-checker payload extraction gap instead of producing CoreIr, and source-derived checker payload extraction is still unavailable. Add CoreIr corpus snapshots only after mizar-test supports type_elaboration snapshot comparison and source-to-core payload seams exist."
-tests = []
+coverage = "property"
+tests = [
+  "tests/property/atp_mock_backend_integration_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.mizar_core.control_flow.proof_verification_snapshots"
@@ -1355,58 +1310,14 @@ deferred_reason = "Task 19 records this as an external_dependency_gap rather tha
 tests = []
 
 [[requirement]]
-id = "spec.en.binding.substitution.capture_avoidance"
-source = "doc/design/architecture/en/16.substitution_and_binding.md"
-section = "Definition-Time Closures"
-stage = "advanced_semantics"
+id = "spec.en.mizar_core.core_ir.type_elaboration_snapshots"
+source = "doc/design/mizar-core/en/00.crate_plan.md"
+section = "Task 19; CoreIr corpus snapshot baselines at type_elaboration"
+stage = "type_elaboration"
 status = "deferred"
 required = true
-coverage = "pass_and_fail"
-deferred_reason = "Substitution replay and proof-local abbreviation expansion are not implemented yet. Add regression coverage for the `defpred P(n be Nat) means n < m` shadowing example and malformed capture-producing substitutions."
-tests = []
-
-[[requirement]]
-id = "spec.en.checker.formula_statement.source_payloads"
-source = "doc/design/mizar-checker/en/00.crate_plan.md"
-section = "Task 29; MC-G019 and MC-G020 statement/formula source-to-checker gaps"
-stage = "formula_statement"
-status = "deferred"
-required = true
-coverage = "pass_and_fail"
-deferred_reason = "Task 29 cannot add active formula_statement `.miz` cases yet: mizar-test has no active formula_statement runner/tag gate, and mizar-checker still lacks AST-wide source-to-checker extraction for statement assumptions, formula payloads, local proof contexts, and recorded facts. Add equality, predicate, quantifier, assumption, label, and statement-failure corpus cases only after MC-G019/MC-G020 and runner support are implemented."
-tests = []
-
-[[requirement]]
-id = "spec.en.checker.advanced_semantics.registration_cluster_reduction_corpus"
-source = "doc/design/mizar-checker/en/00.crate_plan.md"
-section = "Task 29; MC-G021 and MC-G023 registration, cluster, and reduction corpus gaps"
-stage = "advanced_semantics"
-status = "deferred"
-required = true
-coverage = "pass_and_fail"
-deferred_reason = "Task 29 cannot add active cluster/reduction `.miz` semantic cases yet: mizar-test has no active advanced_semantics runner/tag gate, checker-ready registration payload extraction is missing, accepted verifier/artifact status is not wired, source-derived cluster/reduction trace extraction is unavailable, and artifact emission/reuse remains deferred. Add cluster activation, loop/bound/contradiction, reduction trace, and registration guard corpus cases after MC-G020/MC-G021/MC-G023 prerequisites exist."
-tests = []
-
-[[requirement]]
-id = "spec.en.checker.advanced_semantics.overload_resolution_corpus"
-source = "doc/design/mizar-checker/en/00.crate_plan.md"
-section = "Task 29; MC-G027 overload and resolved typed AST corpus gaps"
-stage = "advanced_semantics"
-status = "deferred"
-required = true
-coverage = "pass_and_fail"
-deferred_reason = "Task 29 cannot add active overload `.miz` semantic cases yet: mizar-test has no active advanced_semantics runner/tag gate, and source-to-checker extraction for overload sites, candidate groups, template payloads, source qua evidence, viability evidence, specificity comparisons, selection/refinement payloads, inserted views, and expression metadata remains unavailable. Add ambiguity, no-match, refinement-join, invalid narrowing, and successful overload corpus cases after MC-G020/MC-G027 prerequisites exist."
-tests = []
-
-[[requirement]]
-id = "spec.en.algorithm.vc.assignment_loop_exits"
-source = "doc/spec/en/20.algorithm_and_verification.md"
-section = "20.13.3 Verification Condition Schema"
-stage = "proof_verification"
-status = "deferred"
-required = true
-coverage = "property"
-deferred_reason = "Task 15 records this as an external_dependency_gap rather than adding fake active fixtures: mizar-test has no active proof_verification runner/tag gate, source-to-core and source-to-VC extraction seams are not available from `.miz` corpus inputs, and task-7 audit payload families are not all exposed by upstream ControlFlowIr/obligation handoff data. Add active proof_verification coverage for call-precondition, branch, match, range-loop, collection-loop, term-only termination, partial termination, Pick non-emptiness, ghost-erasure, old-state assignment, field-update alias identity, break exits that do not gain `not C`, continue/decreasing checks, `downto`/`step` range loops, and ghost-only Pick erasure only after the runner, extraction seams, and upstream payload families exist."
+coverage = "snapshot"
+deferred_reason = "Task 19 records this as an external_dependency_gap rather than adding fake active baselines: mizar-test currently compares committed snapshots only for parse-only SurfaceAst output, the active type_elaboration runner stops at the source-to-checker payload extraction gap instead of producing CoreIr, and source-derived checker payload extraction is still unavailable. Add CoreIr corpus snapshots only after mizar-test supports type_elaboration snapshot comparison and source-to-core payload seams exist."
 tests = []
 
 [[requirement]]
@@ -1421,6 +1332,107 @@ deferred_reason = "Task 15 records this as an external_dependency_gap rather tha
 tests = []
 
 [[requirement]]
+id = "spec.en.syntax.parser_minimal_token_stream"
+source = "doc/design/mizar-parser/en/grammar.md"
+section = "Current behavior"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/parser/pass_parser_minimal_token_stream_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.syntax.parser_recovery.annotation_sync"
+source = "doc/design/mizar-parser/en/recovery.md"
+section = "Current behavior"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/parser/fail_parser_recovery_consolidation_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.syntax.parser_recovery.missing_end"
+source = "doc/design/mizar-parser/en/recovery.md"
+section = "Current behavior"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/parser/fail_parser_missing_definition_end_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.syntax.parser_recovery.stray_end"
+source = "doc/design/mizar-parser/en/recovery.md"
+section = "Current behavior"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/miz/fail/parser/fail_parser_stray_end_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.syntax.property_clauses.parser"
+source = "doc/spec/en/appendix_a.grammar_summary.md"
+section = "A.7 Modes; A.9 Predicates; A.10 Functors; A.12 Top-Level Items"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_property_clauses_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_property_clauses_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.syntax.redefinition_notation.parser"
+source = "doc/spec/en/appendix_a.grammar_summary.md"
+section = "A.6 Attributes; A.9 Predicates; A.10 Functors; A.11 Symbol Management and Notation; A.12 Top-Level Items"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_redefinition_notation_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_redefinition_notation_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.syntax.template_arguments.parser"
+source = "doc/spec/en/appendix_a.grammar_summary.md"
+section = "A.9 Predicates; A.10 Functors; A.15 References; A.18 Templates"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/miz/pass/parser/pass_parser_template_arguments_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_template_references_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_template_arguments_chained_iff_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.testing.surface_ast_snapshots"
+source = "doc/design/mizar-test/en/snapshot.md"
+section = "Update Policy"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "snapshot"
+tests = [
+  "tests/miz/pass/parser/pass_parser_minimal_token_stream_001.expect.toml",
+  "tests/miz/fail/parser/fail_parser_unexpected_top_level_token_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.type_soundness.escape_and_guard_failures"
 source = "doc/spec/en/16.theorems_and_proofs.md"
 section = "16.3.3 Skeleton Decomposition Rules"
@@ -1430,15 +1442,3 @@ required = true
 coverage = "fail"
 deferred_reason = "Task 29 records this review-audit negative suite as deferred rather than adding fake active fixtures: mizar-test has no active advanced_semantics runner/tag gate, statement/proof assumption payload extraction and proof-owned acceptance inputs are missing, source-derived sethood evidence is unavailable, and overload source qua evidence is not extracted. Add fail coverage for witness leakage from now/proof blocks, unmet deffunc/defpred guards, missing sethood for comprehension, and invalid qua narrowing after MC-G019/MC-G020/MC-G021/MC-G027 and runner support exist."
 tests = []
-
-[[requirement]]
-id = "spec.en.mizar_atp.advanced_semantics.mock_backend_integration"
-source = "doc/design/mizar-atp/en/00.crate_plan.md"
-section = "Task 20; Corpus And Mock-Backend Integration Suite"
-stage = "advanced_semantics"
-status = "covered"
-required = true
-coverage = "property"
-tests = [
-  "tests/property/atp_mock_backend_integration_001.expect.toml",
-]
