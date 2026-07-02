@@ -65,6 +65,7 @@ pub struct DiscoveryConfig {
 pub struct TestPlan {
     pub cases: Vec<TestCase>,
     pub manifest: TraceManifest,
+    pub coverage_report: CoverageReport,
     pub diagnostics: Vec<ValidationDiagnostic>,
 }
 
@@ -175,6 +176,8 @@ Minimal crate は次を errors として report する。
 - manifest requirements with duplicate ids
 - manifest requirement `source` files that do not exist
 - manifest test paths that do not point back to the requirement id
+- manifest `depends_on` entries が unknown、自分自身、または lower-stage requirement でない
+- sidecar stage が requirement stage を credit できない、または declared prerequisites が未充足の executable coverage links
 - invalid stage names
 - missing fail expectation identity fields
 - strict schema mode での unknown fields
@@ -189,8 +192,8 @@ Warnings must not hide errors.
 
 Coverage completeness は minimal crate の default `metadata` mode では error ではない。
 `development` と `release` selector は [traceability.md](./traceability.md) の
-mode-aware coverage/status gate を適用する。Stage-prerequisite gate は staged-model
-follow-up として残る。
+mode-aware coverage/status gate を適用する。Declared stage-prerequisite gate は
+すべての mode で適用され、mode-aware completeness check の前に coverage credit を止める。
 
 ## Determinism
 

@@ -156,6 +156,13 @@ For example, a cluster-cycle test maps to `17.clusters_and_registrations`, but
 it is not added at stage 2 merely because the syntax appears in that chapter.
 It belongs to stage 7 unless it is explicitly a parse-only fixture.
 
+Prerequisite enforcement is metadata-driven. A requirement that needs explicit
+lower-stage credit lists lower-stage requirement ids in `depends_on`; a
+requirement supplied by compiler built-ins can be declared with `built_in =
+true`. The harness validates those declarations and withholds executable
+coverage credit when they are not satisfied. It does not infer semantic
+prerequisites from source text or specification prose.
+
 ## Admission Checklist
 
 A `.miz` test can enter the committed corpus only when:

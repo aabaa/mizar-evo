@@ -134,6 +134,13 @@ Mapping は many-to-many である。
 
 例えば cluster-cycle test は `17.clusters_and_registrations` に map されるが、その chapter に syntax が現れるというだけで stage 2 に追加しない。Explicitly parse-only fixture でない限り、stage 7 に属する。
 
+Prerequisite enforcement は metadata-driven である。Explicit な lower-stage credit
+を必要とする requirement は `depends_on` に lower-stage requirement ids を列挙する。
+Compiler built-ins によって提供される requirement は `built_in = true` で宣言できる。
+Harness はこれらの宣言を validate し、満たされていない場合は executable coverage
+credit を与えない。Source text や specification prose から semantic prerequisites を
+推測しない。
+
 ## Admission Checklist
 
 `.miz` test が committed corpus に入る条件:

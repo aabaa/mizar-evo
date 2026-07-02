@@ -1328,6 +1328,272 @@ tests = ["tests/lexical/pass/bad.expect.toml"]
 }
 
 #[test]
+fn manifest_depends_on_validation_reports_error_paths() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.dep.bad_stage"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "parse_only"
+status = "planned"
+required = true
+coverage = "pass"
+depends_on = ["spec.en.dep.later"]
+tests = []
+
+[[requirement]]
+id = "spec.en.dep.duplicate"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "planned"
+required = true
+coverage = "pass"
+depends_on = ["spec.en.dep.later", "spec.en.dep.later"]
+tests = []
+
+[[requirement]]
+id = "spec.en.dep.empty"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "parse_only"
+status = "planned"
+required = true
+coverage = "pass"
+depends_on = [""]
+tests = []
+
+[[requirement]]
+id = "spec.en.dep.later"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "declaration_symbol"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.dep.self"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "parse_only"
+status = "planned"
+required = true
+coverage = "pass"
+depends_on = ["spec.en.dep.self"]
+tests = []
+
+[[requirement]]
+id = "spec.en.dep.unknown"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "parse_only"
+status = "planned"
+required = true
+coverage = "pass"
+depends_on = ["spec.en.dep.missing"]
+tests = []
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-MANIFEST-DEPENDS-ON-STAGE");
+    assert_has_code(&plan, "E-MANIFEST-DEPENDS-ON");
+    assert_has_code(&plan, "E-MANIFEST-DUP-DEPENDS-ON");
+    assert_has_code(&plan, "E-MANIFEST-SELF-DEPENDS-ON");
+    assert_has_code(&plan, "E-MANIFEST-UNKNOWN-DEPENDS-ON");
+}
+
+#[test]
+fn stage_prerequisites_allow_covered_and_built_in_dependencies() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.prereq.builtin"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "none"
+built_in = true
+tests = []
+
+[[requirement]]
+id = "spec.en.prereq.lexical"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = ["tests/lexical/pass/prereq_lexical.expect.toml"]
+
+[[requirement]]
+id = "spec.en.prereq.parse_builtin"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+depends_on = ["spec.en.prereq.builtin"]
+tests = ["tests/miz/pass/parser/prereq_parse_builtin.expect.toml"]
+
+[[requirement]]
+id = "spec.en.prereq.parse_covered"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+depends_on = ["spec.en.prereq.lexical"]
+tests = ["tests/miz/pass/parser/prereq_parse_covered.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write("tests/lexical/pass/prereq_lexical.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/prereq_lexical.expect.toml",
+        pass_expectation(
+            "prereq_lexical",
+            "prereq_lexical.src",
+            "spec.en.prereq.lexical",
+        ),
+    );
+    corpus.write("tests/miz/pass/parser/prereq_parse_builtin.miz", "alpha;");
+    corpus.write(
+        "tests/miz/pass/parser/prereq_parse_builtin.expect.toml",
+        parse_pass_expectation(
+            "prereq_parse_builtin",
+            "prereq_parse_builtin.miz",
+            "spec.en.prereq.parse_builtin",
+        ),
+    );
+    corpus.write("tests/miz/pass/parser/prereq_parse_covered.miz", "beta;");
+    corpus.write(
+        "tests/miz/pass/parser/prereq_parse_covered.expect.toml",
+        parse_pass_expectation(
+            "prereq_parse_covered",
+            "prereq_parse_covered.miz",
+            "spec.en.prereq.parse_covered",
+        ),
+    );
+
+    let plan = corpus.plan();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    for requirement_id in [
+        "spec.en.prereq.parse_builtin",
+        "spec.en.prereq.parse_covered",
+    ] {
+        let coverage = plan
+            .coverage_report
+            .requirements
+            .iter()
+            .find(|coverage| coverage.id.0 == requirement_id)
+            .unwrap_or_else(|| panic!("coverage for {requirement_id} should exist"));
+        assert_eq!(coverage.computed_status, RequirementStatus::Covered);
+    }
+}
+
+#[test]
+fn unsatisfied_stage_prerequisite_blocks_coverage_credit() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.prereq.lower"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.prereq.upper"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "pass"
+depends_on = ["spec.en.prereq.lower"]
+tests = ["tests/miz/pass/parser/prereq_upper.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write("tests/miz/pass/parser/prereq_upper.miz", "alpha;");
+    corpus.write(
+        "tests/miz/pass/parser/prereq_upper.expect.toml",
+        parse_pass_expectation("prereq_upper", "prereq_upper.miz", "spec.en.prereq.upper"),
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-TRACE-PREREQUISITE");
+    let coverage = plan
+        .coverage_report
+        .requirements
+        .iter()
+        .find(|coverage| coverage.id.0 == "spec.en.prereq.upper")
+        .expect("upper requirement coverage should exist");
+    assert_eq!(coverage.computed_status, RequirementStatus::Planned);
+}
+
+#[test]
+fn stage_mismatch_blocks_coverage_credit() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.stage.lexical"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = ["tests/miz/pass/parser/stage_mismatch.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write("tests/miz/pass/parser/stage_mismatch.miz", "alpha;");
+    corpus.write(
+        "tests/miz/pass/parser/stage_mismatch.expect.toml",
+        parse_pass_expectation(
+            "stage_mismatch",
+            "stage_mismatch.miz",
+            "spec.en.stage.lexical",
+        ),
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-TRACE-STAGE-MISMATCH");
+    let coverage = plan
+        .coverage_report
+        .requirements
+        .iter()
+        .find(|coverage| coverage.id.0 == "spec.en.stage.lexical")
+        .expect("lexical requirement coverage should exist");
+    assert_eq!(coverage.computed_status, RequirementStatus::Planned);
+}
+
+#[test]
 fn plan_order_is_deterministic_by_expectation_path() {
     let corpus = Corpus::new();
     corpus.add_requirement("spec.en.test.basic", &[]);
@@ -3942,6 +4208,22 @@ expected_outcome = "fail"
 expected_phase = "lex"
 failure_category = "lex_error"
 stable_detail_key = "lexical.synthetic"
+diagnostic_codes = []
+spec_refs = ["{spec_ref}"]
+"#
+    )
+}
+
+fn parse_pass_expectation(id: &str, source: &str, spec_ref: &str) -> String {
+    format!(
+        r#"schema_version = 1
+id = "{id}"
+kind = "pass"
+stage = "parse_only"
+domain = "parser"
+source = "{source}"
+expected_outcome = "pass"
+expected_phase = "parse"
 diagnostic_codes = []
 spec_refs = ["{spec_ref}"]
 "#

@@ -227,6 +227,25 @@ pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessErro
     );
     validate_obsolete_spec_refs(&manifest, &all_cases, &mut diagnostics);
 
+    let base_invalid_expectation_paths = invalid_expectation_paths(&diagnostics);
+    let base_coverage_evidence = coverage_evidence(
+        &config.workspace_root,
+        &manifest,
+        &all_cases,
+        &base_invalid_expectation_paths,
+    );
+    let base_coverage_report = manifest.coverage_report(
+        &base_coverage_evidence,
+        corpus_pass_fail_mix(&all_cases, &base_invalid_expectation_paths),
+    );
+    diagnostics.extend(validate_stage_prerequisite_links(
+        &config.workspace_root,
+        &manifest,
+        &all_cases,
+        &base_invalid_expectation_paths,
+        &base_coverage_report,
+    ));
+
     let invalid_expectation_paths = invalid_expectation_paths(&diagnostics);
     let coverage_evidence = coverage_evidence(
         &config.workspace_root,
@@ -403,6 +422,65 @@ fn validate_obsolete_spec_refs(
             }
         }
     }
+}
+
+fn validate_stage_prerequisite_links(
+    workspace_root: &Path,
+    manifest: &TraceManifest,
+    cases: &[TestCase],
+    invalid_expectation_paths: &BTreeSet<PathBuf>,
+    report: &CoverageReport,
+) -> Vec<ValidationDiagnostic> {
+    let requirements = manifest.by_id();
+    let mut diagnostics = Vec::new();
+    for case in cases {
+        if invalid_expectation_paths.contains(&case.expectation_path) {
+            continue;
+        }
+        let Ok(relative_path) = case.expectation_path.strip_prefix(workspace_root) else {
+            continue;
+        };
+        let relative_path = relative_path.to_path_buf();
+        for spec_ref in &case.expectation.spec_refs {
+            let Some(requirement) = requirements.get(spec_ref) else {
+                continue;
+            };
+            if !requirement.tests.iter().any(|test| test == &relative_path) {
+                continue;
+            }
+            if manifest.evidence_stage_can_credit(requirement, case.expectation.stage, report) {
+                continue;
+            }
+            let missing_prerequisites = manifest.unsatisfied_prerequisites(requirement, report);
+            if !missing_prerequisites.is_empty() {
+                diagnostics.push(ValidationDiagnostic::error(
+                    &case.expectation_path,
+                    "traceability",
+                    "E-TRACE-PREREQUISITE",
+                    format!("trace.prerequisite.{}", spec_ref.0),
+                    format!(
+                        "test cannot credit requirement `{}` before prerequisite coverage is satisfied: {}",
+                        spec_ref.0,
+                        requirement_id_list(&missing_prerequisites)
+                    ),
+                ));
+            } else {
+                diagnostics.push(ValidationDiagnostic::error(
+                    &case.expectation_path,
+                    "traceability",
+                    "E-TRACE-STAGE-MISMATCH",
+                    format!("trace.stage.{}", spec_ref.0),
+                    format!(
+                        "test stage `{}` cannot credit requirement `{}` at stage `{}`",
+                        case.expectation.stage.as_str(),
+                        spec_ref.0,
+                        requirement.stage.as_str()
+                    ),
+                ));
+            }
+        }
+    }
+    diagnostics
 }
 
 fn invalid_expectation_paths(diagnostics: &[ValidationDiagnostic]) -> BTreeSet<PathBuf> {
@@ -597,6 +675,14 @@ fn coverage_shape_list(shapes: &[CoverageShape]) -> String {
     shapes
         .iter()
         .map(|shape| shape.as_str())
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn requirement_id_list(requirements: &[crate::SpecRequirementId]) -> String {
+    requirements
+        .iter()
+        .map(|requirement| requirement.0.as_str())
         .collect::<Vec<_>>()
         .join(", ")
 }

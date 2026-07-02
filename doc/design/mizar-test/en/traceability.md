@@ -75,7 +75,8 @@ Optional fields:
 |---|---|
 | `anchors` | Stable heading anchors when available. |
 | `notes` | Short human review notes. |
-| `depends_on` | Other requirement ids that must be covered first. |
+| `depends_on` | Other lower-stage requirement ids that must be covered first. |
+| `built_in` | `true` when the requirement is supplied by built-ins and may satisfy another requirement's `depends_on` without executable coverage. |
 | `deferred_reason` | Required when `status = "deferred"`. |
 | `issue` | Tracking issue or design discussion reference. |
 
@@ -112,8 +113,12 @@ spec_refs = [
 ]
 ```
 
-The sidecar `stage` must match the requirement `stage`, unless the requirement
-explicitly allows coverage from a later stage through a `depends_on` chain.
+Executable sidecar `stage` must match the requirement `stage`, unless the
+requirement explicitly allows coverage from a later stage through a satisfied
+`depends_on` chain. Earlier-stage executable sidecars cannot credit later-stage
+requirements. `manual_review` entries are metadata anchors rather than
+executable coverage, so they may record cross-stage handoff notes when any
+declared prerequisites are satisfied.
 
 ## Validation
 
@@ -130,6 +135,11 @@ The harness validates:
 8. Deferred required items include a `deferred_reason`.
 9. Obsolete items are not referenced by active tests.
 10. Manifest records are sorted deterministically by `id`.
+11. `depends_on` ids exist, do not point to the same requirement, and point only
+    to lower-stage requirements.
+12. Linked sidecars do not receive coverage credit when their declared stage
+    prerequisites are unsatisfied or their executable stage does not match the
+    credited requirement.
 
 Validation must not parse `doc/spec/` prose beyond checking that referenced
 files exist. The manifest owns the granularity of requirements.
@@ -181,8 +191,9 @@ severity of that disagreement is determined by validation mode.
 
 The implemented coverage report derives evidence from valid bidirectional
 links only: the manifest must list the sidecar path, and the parsed sidecar
-must point back to the requirement id. Invalid sidecars and one-way links do
-not receive coverage credit. Coverage evidence is computed as follows:
+must point back to the requirement id. Invalid sidecars, one-way links,
+unsatisfied prerequisites, and invalid executable stage mismatches do not
+receive coverage credit. Coverage evidence is computed as follows:
 
 - `pass`: at least one linked sidecar with `expected_outcome = "pass"`;
 - `fail`: at least one linked sidecar with `expected_outcome = "fail"`;
@@ -207,9 +218,10 @@ Coverage credit is assigned only when lower-stage prerequisites are already
 covered, declared as built-ins, or listed in `depends_on` with acceptable
 status.
 
-Task 6 computes coverage shape/status and reports missing evidence. The
-stage-prerequisite and `depends_on` credit rules above are enforced by the
-task 7 follow-up.
+Task 7 enforces declared stage-prerequisite and `depends_on` credit rules. The
+harness does not infer prerequisites from `doc/spec/` prose or source contents:
+requirements that need explicit lower-stage credit list it in `depends_on`, and
+built-in prerequisites use `built_in = true`.
 
 For example, a parser fixture can cover the syntax of a cluster declaration,
 but it does not cover cluster expansion semantics. The semantic requirement

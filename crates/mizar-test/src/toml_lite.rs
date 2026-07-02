@@ -178,6 +178,14 @@ pub fn required_bool(table: &TomlTable, key: &str) -> Result<bool, String> {
     }
 }
 
+pub fn optional_bool(table: &TomlTable, key: &str) -> Result<Option<bool>, String> {
+    match table.get(key) {
+        Some(TomlValue::Boolean(value)) => Ok(Some(*value)),
+        Some(_) => Err(format!("`{key}` must be a boolean")),
+        None => Ok(None),
+    }
+}
+
 pub fn string_array(table: &TomlTable, key: &str) -> Result<Vec<String>, String> {
     match table.get(key) {
         Some(TomlValue::Array(values)) => values

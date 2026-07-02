@@ -20,13 +20,13 @@
 |---|---|---|---|
 | layout | [layout.md](./layout.md) | `src/layout.rs`、`src/path_rules.rs` | [~] discovery/pairing と validation-mode unknown-root policy は実装済み。Public API 同期は未完 |
 | expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema と profile metadata retention は実装済み。provenance/general snapshot 強化は未完 |
-| staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage id 実装済み。prerequisite validation は未完 |
-| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backref、coverage report/status gate、manifest ordering、obsolete-ref check は実装済み。prerequisite は未完 |
+| staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage id と declared prerequisite validation は実装済み。より広い admission policy は未完 |
+| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backref、coverage report/status gate、manifest ordering、obsolete-ref check、prerequisite credit gate は実装済み |
 | harness | [harness.md](./harness.md) | `src/harness.rs`、`src/main.rs`、`src/runner.rs` | [~] metadata plan、validation-mode CLI、profile filtering、coverage/pass-fail report、active parse/declaration/type runner |
 | miz_corpus | [miz_corpus.md](./miz_corpus.md) | `tests/` 配下のコーパスツリー | [~] root discovery と pass/fail mix reporting は実装済み。provenance/profile policy rules は未完 |
 | snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs`、`src/expectation.rs`、`src/runner.rs` | [~] general snapshot record API/hash/update/determinism helpers は実装済み。sidecar/runner integration は未完 |
 | fail_soundness | [fail_soundness.md](./fail_soundness.md) | 将来の `src/fail_soundness.rs`、ハーネス規則＋コーパスケース | [ ] |
-| minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate 境界＋CLI | [~] metadata plan、validation mode、CLI fixture、coverage gate は実装済み。prerequisite gate は未完 |
+| minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate 境界＋CLI | [~] metadata plan、validation mode、CLI fixture、coverage gate、prerequisite gate は実装済み |
 
 `mizar-test` はコーパスとハーネスの crate である: テスト発見、
 `.expect.toml` の expectation 構文解析、staged model、仕様カバレッジの
@@ -81,10 +81,10 @@ regression test を追加した。
 - `expectation_schema`: generated origin table、certificate/kernel
   `rejection_reason`、diagnostic ordering、将来の general `[[snapshots]]`
   hash registry を検証する。
-- `traceability`: stage/`depends_on` prerequisite validation を追加し、
-  新しい evidence kind が入るたび coverage/status reporting を同期する。
+- `traceability`: 新しい evidence kind が入るたび coverage/status reporting を同期する。
   Manifest order validation、mode-aware coverage/status computation、
-  obsolete-reference checks、既存 link-validator error fixtures は実装済み。
+  obsolete-reference checks、declared prerequisite gates、既存 link-validator error fixtures
+  は実装済み。
 - `harness`: 後続で generic outcome/reporting surface が入るたび、
   runner-specific report docs と exported API の同期を保つ。
 - `miz_corpus`: generated/fuzz/stress metadata、corpus-policy profile
@@ -174,7 +174,7 @@ regression test を追加した。
    - 依存: 3。仕様: [traceability.md](./traceability.md)、
      [architecture/ja/20.test_strategy.md](../../architecture/ja/20.test_strategy.md)。
 
-7. **stage 前提条件の検証。** [ ]
+7. **stage 前提条件の検証。** [x]
    - staged model の規則を強制する: ケースの stage 前提条件がカバー済み
      または built-in 宣言済みになるまで、カバレッジのクレジットを
      与えない。

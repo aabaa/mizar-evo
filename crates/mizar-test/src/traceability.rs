@@ -42,6 +42,8 @@ pub struct SpecRequirement {
     pub coverage: CoverageShape,
     pub tests: Vec<PathBuf>,
     pub deferred_reason: Option<String>,
+    pub depends_on: Vec<SpecRequirementId>,
+    pub built_in: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -138,7 +140,7 @@ impl TraceManifest {
             },
         );
 
-        let requirements = self
+        let mut requirements = self
             .requirements
             .iter()
             .map(|requirement| {
@@ -149,12 +151,146 @@ impl TraceManifest {
                 requirement_coverage(requirement, evidence)
             })
             .collect::<Vec<_>>();
+
+        for _ in 0..=self.requirements.len() {
+            let computed_statuses = requirements
+                .iter()
+                .map(|coverage| (coverage.id.clone(), coverage.computed_status))
+                .collect::<BTreeMap<_, _>>();
+            let next_requirements = self
+                .requirements
+                .iter()
+                .map(|requirement| {
+                    let evidence = evidence_by_requirement
+                        .get(&requirement.id)
+                        .map(Vec::as_slice)
+                        .unwrap_or(&[]);
+                    let credited_evidence = evidence
+                        .iter()
+                        .copied()
+                        .filter(|item| {
+                            self.evidence_stage_can_credit_with_statuses(
+                                requirement,
+                                item.stage,
+                                &computed_statuses,
+                            )
+                        })
+                        .collect::<Vec<_>>();
+                    requirement_coverage(requirement, &credited_evidence)
+                })
+                .collect::<Vec<_>>();
+            if next_requirements == requirements {
+                break;
+            }
+            requirements = next_requirements;
+        }
         let stages = stage_coverage(&requirements);
         CoverageReport {
             requirements,
             stages,
             pass_fail_mix,
         }
+    }
+
+    pub fn prerequisites_satisfied(
+        &self,
+        requirement: &SpecRequirement,
+        report: &CoverageReport,
+    ) -> bool {
+        let computed_statuses = report
+            .requirements
+            .iter()
+            .map(|coverage| (coverage.id.clone(), coverage.computed_status))
+            .collect::<BTreeMap<_, _>>();
+        self.prerequisites_satisfied_with_statuses(requirement, &computed_statuses)
+    }
+
+    pub fn unsatisfied_prerequisites(
+        &self,
+        requirement: &SpecRequirement,
+        report: &CoverageReport,
+    ) -> Vec<SpecRequirementId> {
+        let computed_statuses = report
+            .requirements
+            .iter()
+            .map(|coverage| (coverage.id.clone(), coverage.computed_status))
+            .collect::<BTreeMap<_, _>>();
+        requirement
+            .depends_on
+            .iter()
+            .filter(|dependency| {
+                !self.dependency_satisfied(requirement, dependency, &computed_statuses)
+            })
+            .cloned()
+            .collect()
+    }
+
+    pub fn evidence_stage_can_credit(
+        &self,
+        requirement: &SpecRequirement,
+        evidence_stage: Stage,
+        report: &CoverageReport,
+    ) -> bool {
+        let computed_statuses = report
+            .requirements
+            .iter()
+            .map(|coverage| (coverage.id.clone(), coverage.computed_status))
+            .collect::<BTreeMap<_, _>>();
+        self.evidence_stage_can_credit_with_statuses(
+            requirement,
+            evidence_stage,
+            &computed_statuses,
+        )
+    }
+
+    fn evidence_stage_can_credit_with_statuses(
+        &self,
+        requirement: &SpecRequirement,
+        evidence_stage: Stage,
+        computed_statuses: &BTreeMap<SpecRequirementId, RequirementStatus>,
+    ) -> bool {
+        if !self.prerequisites_satisfied_with_statuses(requirement, computed_statuses) {
+            return false;
+        }
+        if requirement.coverage == CoverageShape::ManualReview {
+            return true;
+        }
+        if evidence_stage == requirement.stage {
+            return true;
+        }
+        evidence_stage > requirement.stage && !requirement.depends_on.is_empty()
+    }
+
+    fn prerequisites_satisfied_with_statuses(
+        &self,
+        requirement: &SpecRequirement,
+        computed_statuses: &BTreeMap<SpecRequirementId, RequirementStatus>,
+    ) -> bool {
+        requirement
+            .depends_on
+            .iter()
+            .all(|dependency| self.dependency_satisfied(requirement, dependency, computed_statuses))
+    }
+
+    fn dependency_satisfied(
+        &self,
+        requirement: &SpecRequirement,
+        dependency: &SpecRequirementId,
+        computed_statuses: &BTreeMap<SpecRequirementId, RequirementStatus>,
+    ) -> bool {
+        let requirements = self.by_id();
+        let Some(dependency_requirement) = requirements.get(dependency) else {
+            return false;
+        };
+        if dependency_requirement.id == requirement.id
+            || dependency_requirement.stage >= requirement.stage
+        {
+            return false;
+        }
+        dependency_requirement.built_in
+            || computed_statuses
+                .get(dependency)
+                .is_some_and(|status| *status == RequirementStatus::Covered)
     }
 }
 
@@ -197,6 +333,7 @@ pub fn validate_manifest(
     let mut diagnostics = Vec::new();
     let mut ids = BTreeSet::new();
     let mut previous_id: Option<&SpecRequirementId> = None;
+    let requirements = manifest.by_id();
 
     for requirement in &manifest.requirements {
         if !ids.insert(requirement.id.clone()) {
@@ -261,6 +398,71 @@ pub fn validate_manifest(
                         "requirement `{}` test `{}` must be a clean relative path",
                         requirement.id.0,
                         test.display()
+                    ),
+                ));
+            }
+        }
+
+        let mut dependencies = BTreeSet::new();
+        for dependency in &requirement.depends_on {
+            if dependency.0.is_empty() {
+                diagnostics.push(ValidationDiagnostic::error(
+                    manifest_path,
+                    "manifest",
+                    "E-MANIFEST-DEPENDS-ON",
+                    format!("manifest.depends_on.{}", requirement.id.0),
+                    format!(
+                        "requirement `{}` has an empty depends_on entry",
+                        requirement.id.0
+                    ),
+                ));
+                continue;
+            }
+            if !dependencies.insert(dependency.clone()) {
+                diagnostics.push(ValidationDiagnostic::error(
+                    manifest_path,
+                    "manifest",
+                    "E-MANIFEST-DUP-DEPENDS-ON",
+                    format!("manifest.depends_on.{}.{}", requirement.id.0, dependency.0),
+                    format!(
+                        "requirement `{}` lists duplicate depends_on `{}`",
+                        requirement.id.0, dependency.0
+                    ),
+                ));
+            }
+            let Some(dependency_requirement) = requirements.get(dependency) else {
+                diagnostics.push(ValidationDiagnostic::error(
+                    manifest_path,
+                    "manifest",
+                    "E-MANIFEST-UNKNOWN-DEPENDS-ON",
+                    format!("manifest.depends_on.{}.{}", requirement.id.0, dependency.0),
+                    format!(
+                        "requirement `{}` depends on unknown requirement `{}`",
+                        requirement.id.0, dependency.0
+                    ),
+                ));
+                continue;
+            };
+            if dependency == &requirement.id {
+                diagnostics.push(ValidationDiagnostic::error(
+                    manifest_path,
+                    "manifest",
+                    "E-MANIFEST-SELF-DEPENDS-ON",
+                    format!("manifest.depends_on.{}.{}", requirement.id.0, dependency.0),
+                    format!(
+                        "requirement `{}` must not depend on itself",
+                        requirement.id.0
+                    ),
+                ));
+            } else if dependency_requirement.stage >= requirement.stage {
+                diagnostics.push(ValidationDiagnostic::error(
+                    manifest_path,
+                    "manifest",
+                    "E-MANIFEST-DEPENDS-ON-STAGE",
+                    format!("manifest.depends_on.{}.{}", requirement.id.0, dependency.0),
+                    format!(
+                        "requirement `{}` depends on `{}` which is not a lower stage",
+                        requirement.id.0, dependency.0
                     ),
                 ));
             }
@@ -448,6 +650,11 @@ fn requirement_from_table(table: &TomlTable) -> Result<SpecRequirement, String> 
         .map(PathBuf::from)
         .collect();
     let deferred_reason = toml_lite::optional_string(table, "deferred_reason")?;
+    let depends_on = optional_string_array(table, "depends_on")?
+        .into_iter()
+        .map(SpecRequirementId)
+        .collect();
+    let built_in = toml_lite::optional_bool(table, "built_in")?.unwrap_or(false);
 
     Ok(SpecRequirement {
         id,
@@ -459,7 +666,17 @@ fn requirement_from_table(table: &TomlTable) -> Result<SpecRequirement, String> 
         coverage,
         tests,
         deferred_reason,
+        depends_on,
+        built_in,
     })
+}
+
+fn optional_string_array(table: &TomlTable, key: &str) -> Result<Vec<String>, String> {
+    if table.contains_key(key) {
+        toml_lite::string_array(table, key)
+    } else {
+        Ok(Vec::new())
+    }
 }
 
 impl FromStr for RequirementStatus {

@@ -69,6 +69,7 @@ pub struct DiscoveryConfig {
 pub struct TestPlan {
     pub cases: Vec<TestCase>,
     pub manifest: TraceManifest,
+    pub coverage_report: CoverageReport,
     pub diagnostics: Vec<ValidationDiagnostic>,
 }
 
@@ -187,6 +188,10 @@ The minimal crate reports errors for:
 - manifest requirements with duplicate ids;
 - manifest requirement `source` files that do not exist;
 - manifest test paths that do not point back to the requirement id;
+- manifest `depends_on` entries that are unknown, self-referential, or not
+  lower-stage requirements;
+- executable coverage links whose sidecar stage cannot credit the requirement
+  stage or whose declared prerequisites are unsatisfied;
 - invalid stage names;
 - missing fail expectation identity fields;
 - unknown fields in strict schema mode.
@@ -202,7 +207,8 @@ Warnings must not hide errors.
 Coverage completeness is not an error in the minimal crate's default
 `metadata` mode. The `development` and `release` selectors apply the
 mode-aware coverage/status gates from [traceability.md](./traceability.md).
-Stage-prerequisite gates remain the staged-model follow-up.
+Declared stage-prerequisite gates apply in every mode and withhold coverage
+credit before mode-aware completeness checks run.
 
 ## Determinism
 

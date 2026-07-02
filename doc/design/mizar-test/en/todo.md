@@ -19,13 +19,13 @@ per [internal 07](../../internal/en/07.crate_module_layout.md).
 |---|---|---|---|
 | layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery/pairing and validation-mode unknown-root policy implemented; public API sync pending |
 | expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema and profile metadata retention implemented; provenance/general snapshot hardening pending |
-| staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage ids implemented; prerequisite validation pending |
-| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs, coverage report/status gates, manifest ordering, and obsolete-ref checks implemented; prerequisites pending |
+| staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage ids and declared prerequisite validation implemented; richer admission policy pending |
+| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs, coverage report/status gates, manifest ordering, obsolete-ref checks, and prerequisite credit gates implemented |
 | harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs`, `src/runner.rs` | [~] metadata plan, validation-mode CLI, profile filtering, coverage/pass-fail report, and active parse/declaration/type runners |
 | miz_corpus | [miz_corpus.md](./miz_corpus.md) | corpus tree under `tests/` | [~] roots discovered and pass/fail mix reported; provenance/profile policy rules pending |
 | snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs`, `src/expectation.rs`, `src/runner.rs` | [~] general snapshot record API/hash/update/determinism helpers implemented; sidecar/runner integration pending |
 | fail_soundness | [fail_soundness.md](./fail_soundness.md) | future `src/fail_soundness.rs`, harness rules + corpus cases | [ ] |
-| minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate boundary + CLI | [~] metadata plan, validation modes, CLI fixtures, and coverage gates implemented; prerequisite gates pending |
+| minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate boundary + CLI | [~] metadata plan, validation modes, CLI fixtures, coverage gates, and prerequisite gates implemented |
 
 `mizar-test` is the corpus and harness crate: test discovery, `.expect.toml`
 expectation parsing, the staged model, spec-coverage traceability, snapshot
@@ -80,10 +80,10 @@ Follow-up ownership from the audit:
 - `expectation_schema`: validate generated origin tables, certificate/kernel
   `rejection_reason`, diagnostic ordering, and the future general
   `[[snapshots]]` hash registry.
-- `traceability`: add stage/`depends_on` prerequisite validation and keep
-  coverage/status reporting synchronized as new evidence kinds land. Manifest
-  order validation, mode-aware coverage/status computation, obsolete-reference
-  checks, and existing link-validator error fixtures are implemented.
+- `traceability`: keep coverage/status reporting synchronized as new evidence
+  kinds land. Manifest order validation, mode-aware coverage/status
+  computation, obsolete-reference checks, declared prerequisite gates, and
+  existing link-validator error fixtures are implemented.
 - `harness`: keep runner-specific report docs synchronized with exported APIs
   as later generic outcome/reporting surfaces land.
 - `miz_corpus`: add enforceable generated/fuzz/stress metadata,
@@ -174,7 +174,7 @@ Keep `cargo test -p mizar-test` green after each task (see
    - Deps: 3. Spec: [traceability.md](./traceability.md),
      [architecture/en/20.test_strategy.md](../../architecture/en/20.test_strategy.md).
 
-7. **Stage-prerequisite validation.** [ ]
+7. **Stage-prerequisite validation.** [x]
    - Enforce the staged-model rules: a case's stage prerequisites must be
      covered or declared built-in before coverage credit is granted.
    - Close task-2 gaps for `depends_on` handling, built-in declarations,
