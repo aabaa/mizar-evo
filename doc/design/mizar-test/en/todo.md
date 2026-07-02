@@ -17,15 +17,15 @@ per [internal 07](../../internal/en/07.crate_module_layout.md).
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] |
-| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] |
-| staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] |
-| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] |
-| harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs` | [~] discovery + `plan` mode |
-| miz_corpus | [miz_corpus.md](./miz_corpus.md) | corpus tree under `tests/` | [~] |
-| snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs` | [ ] |
-| fail_soundness | [fail_soundness.md](./fail_soundness.md) | harness rules + corpus cases | [ ] |
-| minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate boundary + CLI | [~] |
+| layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery/pairing implemented; public API sync and unknown-root policy pending |
+| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema implemented; provenance/profile/general snapshot hardening pending |
+| staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage ids implemented; prerequisite validation pending |
+| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs implemented; coverage modes/status/prerequisites pending |
+| harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs`, `src/runner.rs` | [~] metadata plan + active parse/declaration/type runners |
+| miz_corpus | [miz_corpus.md](./miz_corpus.md) | corpus tree under `tests/` | [~] roots discovered; provenance/profile/reporting rules pending |
+| snapshot | [snapshot.md](./snapshot.md) | `src/expectation.rs`, `src/runner.rs`, future `src/snapshot.rs` | [~] transitional parse-only `SurfaceAst`; general API/hash/update/determinism pending |
+| fail_soundness | [fail_soundness.md](./fail_soundness.md) | future `src/fail_soundness.rs`, harness rules + corpus cases | [ ] |
+| minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate boundary + CLI | [~] metadata plan implemented; validation-mode/CLI fixtures pending |
 
 `mizar-test` is the corpus and harness crate: test discovery, `.expect.toml`
 expectation parsing, the staged model, spec-coverage traceability, snapshot
@@ -65,6 +65,36 @@ runner tasks (`mizar-parser` task 3, `mizar-resolve` task 23,
   flag — within the update policy of [snapshot.md](./snapshot.md), and
   record the decision there.
 
+## Task 2 Audit Baseline
+
+Task 2 recorded the crate-wide source/spec audit in
+[00.crate_plan.md](./00.crate_plan.md). The audit did not identify a blocking
+`spec_gap`, accepted `repo_metadata_conflict`, or required language behavior
+change. The prior trace manifest ordering conflict was repaired by
+`897d549`; the remaining task-2 traceability gap is `source_drift`/`test_gap`
+for the missing manifest-order validator and regression test.
+
+Follow-up ownership from the audit:
+
+- `layout`: sync the documented Public API with `DiscoveredLayout` and the
+  harness-owned `TestCase`; define strict/permissive unknown-root behavior.
+- `expectation_schema`: retain/profile-filter metadata, validate generated
+  origin tables, certificate/kernel `rejection_reason`, diagnostic ordering,
+  and the future general `[[snapshots]]` hash registry.
+- `traceability`: add manifest order validation, mode-aware coverage/status
+  computation, stage/`depends_on`/obsolete validation, and regression tests for
+  existing link-validator errors.
+- `harness`: reconcile generic documented outcome/reporting APIs with the
+  exported runner-specific reports; document or remove the
+  `parser.type_fixtures` import-summary exception.
+- `miz_corpus`: add enforceable generated/fuzz/stress metadata, profile
+  filtering, pass/fail ratio reporting, and stress exclusion checks.
+- `snapshot`: implement the general snapshot module, canonical hashing,
+  explicit update flow, and determinism checks beyond the transitional
+  parse-only `SurfaceAst` baseline path.
+- `fail_soundness`: add fail/soundness bookkeeping, required-domain checks,
+  false-arithmetic coverage, and weakening/deletion regression rules.
+
 ## Ordered Task List
 
 Keep `cargo test -p mizar-test` green after each task (see
@@ -78,10 +108,12 @@ Keep `cargo test -p mizar-test` green after each task (see
    - Tests: lint-policy guard passes.
    - Deps: none. Spec: repository conventions.
 
-2. **Source/spec gap audit and status sync.** [ ]
+2. **Source/spec gap audit and status sync.** [x]
    - Trace every Public API and Tests promise of the nine module specs to
      the current implementation; record gaps as follow-up tasks in this
      TODO and set the module-table statuses accordingly.
+   - Audit record: [00.crate_plan.md](./00.crate_plan.md) "Known Gaps And
+     Drift" and [Task 2 Audit Baseline](#task-2-audit-baseline).
    - Deps: 1. Spec: all module specs.
 
 3. **Runner modes and CLI completion.** [ ]
@@ -89,6 +121,18 @@ Keep `cargo test -p mizar-test` green after each task (see
      [minimal_crate.md](./minimal_crate.md) "CLI"/"Exit Codes" and
      [harness.md](./harness.md) "Runner Modes": validation mode over the
      corpus tree and coverage manifest with documented exit codes.
+   - Close task-2 gaps for `ValidationMode` use, strict/permissive
+     unknown-root policy, plan-mode CLI output/exit-code fixtures, and the
+     documented/public reporting API shape.
+   - Retain optional sidecar metadata that is currently type-checked and
+     discarded (`profiles`, `notes`, `ast_profile`, `snapshot_profiles`) and
+     apply profile filtering to plan construction.
+   - Reconcile the `parser.type_fixtures` import-summary exception with
+     [harness.md](./harness.md): document it explicitly or remove the fixture
+     symbol injection.
+   - Add focused expectation-schema regression fixtures for unsupported schema
+     versions, id/source-stem mismatches, invalid enum/outcome pairs, and
+     duplicate sidecar `spec_refs`.
    - Tests: CLI fixtures per mode; exit codes match the spec table;
      deterministic output.
    - Deps: 2. Spec: `minimal_crate.md`, `harness.md`.
@@ -119,6 +163,12 @@ Keep `cargo test -p mizar-test` green after each task (see
    - Report spec-trace coverage per stage and the corpus pass/fail mix
      against the 40/60 target of the test strategy, from the existing
      traceability and discovery data.
+   - Close task-2 traceability gaps for coverage-shape computation,
+     manifest stored-status comparison, manifest order validation, obsolete
+     references, missing manifest source files, missing listed tests, and
+     existing link-validator error-path tests, including duplicate manifest
+     test paths, missing backrefs, unparsed listed tests, deferred required
+     reasons, and planned-without-tests warnings.
    - Tests: report fixtures over synthetic corpora; deterministic report
      bytes.
    - Deps: 3. Spec: [traceability.md](./traceability.md),
@@ -127,6 +177,9 @@ Keep `cargo test -p mizar-test` green after each task (see
 7. **Stage-prerequisite validation.** [ ]
    - Enforce the staged-model rules: a case's stage prerequisites must be
      covered or declared built-in before coverage credit is granted.
+   - Close task-2 gaps for `depends_on` handling, built-in declarations,
+     stage mismatch diagnostics, and higher-stage coverage not being credited
+     before prerequisites are satisfied.
    - Tests: prerequisite-violation fixtures fail validation with stable
      diagnostics.
    - Deps: 6. Spec: [staged_model.md](./staged_model.md) "Stage Rules".
@@ -137,6 +190,9 @@ Keep `cargo test -p mizar-test` green after each task (see
      per domain, expected-failure assertions (diagnostic code and stage),
      and the regression rule that soundness cases never get deleted or
      weakened silently.
+   - Close task-2 gaps for certificate/kernel `rejection_reason`, typed fail
+     identity or equivalent validation, false-arithmetic coverage, and
+     domain-required case bookkeeping.
    - Tests: contract fixtures; weakening attempts flagged.
    - Deps: 6. Spec: [fail_soundness.md](./fail_soundness.md).
 
@@ -144,6 +200,10 @@ Keep `cargo test -p mizar-test` green after each task (see
    - Validate the corpus-growth rules of [miz_corpus.md](./miz_corpus.md):
      file-size guidelines, naming, corpus-class placement, and
      generation-policy markers.
+   - Close task-2 gaps for generated/fuzz/property origin metadata,
+     reproducibility metadata, optional metadata retention that belongs to
+     corpus policy, profile filtering, stress exclusion, and fuzz-category
+     preservation.
    - Tests: violation fixtures per rule; clean corpus passes.
    - Deps: 3. Spec: [miz_corpus.md](./miz_corpus.md).
 
@@ -172,6 +232,9 @@ Keep `cargo test -p mizar-test` green after each task (see
     - Property coverage that discovery order, plans, validation
       diagnostics, reports, and snapshot comparisons are byte-stable across
       runs and platforms.
+    - Close task-2 gaps for general snapshot hash determinism,
+      parallel-equivalence modes, and nondeterminism diagnostics outside the
+      transitional parse-only `SurfaceAst` path.
     - Deps: 6. Spec: [harness.md](./harness.md) "Determinism Requirements".
 
 12. **Public-enum forward-compatibility policy.** [ ]
@@ -221,6 +284,7 @@ Keep `cargo test -p mizar-test` green after each task (see
 Run after each task:
 
 ```text
+cargo fmt --check
 cargo test -p mizar-test
 cargo clippy -p mizar-test --all-targets -- -D warnings
 ```
