@@ -30,8 +30,8 @@ Included:
 
 Excluded:
 
-- real `mizar-driver` build sessions, event streams, phase registry, and
-  driver-owned `salsa` cache-query integration;
+- real driver-owned build sessions, event streams, phase registry semantics,
+  and driver-owned `salsa` cache-query integration;
 - real `mizar-ir` sealed output handles, output storage, and snapshot-handle
   rehydration;
 - real producer artifact projection and publication tokens;
@@ -46,7 +46,7 @@ Excluded:
 | Test contract | Pass with deferred low item | Focused unit/integration tests cover planning, module index, task graph, scheduler, resource, cancellation, failure, cache seam, artifact commit, batch integration, determinism, and architecture-22 implemented-seam equivalence. BUILD-G-016 remains a documented non-blocking direct-helper `test_gap`. |
 | Traceability | Pass | TODO task records, source/spec audit tables, bilingual audit tables, and task-specific reports trace implemented behavior to specs and tests. No `.miz` tests or expectations were changed for `mizar-build`. |
 | Design/source sync | Pass | Task 22/25/26 audits synchronize source, tests, English design docs, and Japanese companion docs. |
-| Boundary discipline | Pass | `mizar-build` has no `mizar-driver` dependency; unavailable driver/IR/producer-token integrations are `external_dependency_gap`; cache hits remain execution skips and never proof or semantic authority. |
+| Boundary discipline | Pass | `mizar-build` has no `mizar-driver` dependency; unavailable driver-owned session/query inputs, IR handles, producer-token integrations, and owner-provided dispatch inputs are `external_dependency_gap`; cache hits remain execution skips and never proof or semantic authority. |
 | Verification | Pass | Closeout verification passed `cargo fmt --check`, `cargo clippy --all-targets --all-features -- -D warnings`, and `cargo test`. Task 26 also passed `cargo test -p mizar-build`, `cargo clippy -p mizar-build --all-targets -- -D warnings`, adjacent cache/artifact/VC/proof tests, and `git diff --check`. |
 | Residual risk | Pass with classified deferrals | Remaining risks are classified as BUILD-G-016 `test_gap` and external dependency gaps for real driver, IR, producer-token, and full real clean/incremental integration. |
 
@@ -66,11 +66,15 @@ Excluded:
 
 ## Deferred Items
 
+This table preserves the original closeout result and adds post-closeout task-27
+annotations where later driver availability changes the wording. It does not
+re-score the closeout gates above.
+
 | ID | Reason | Owner | Unblock condition |
 |---|---|---|---|
 | BUILD-G-016 | `sorted_manifest_updates` is covered indirectly through `commit_manifest_updates`, but lacks a direct focused standalone-ordering test. | Future artifact-commit hardening task. | Add a direct focused test before claiming method-level helper coverage. |
-| BUILD-G-002 / BUILD-G-011 | `mizar-driver` is absent, so real requests, sessions, event streams, phase registry, cache-query adapter, and driver-owned `salsa` boundary cannot be consumed. | Future `mizar-driver` integration phase. | Add real driver crate/integration; consume it from driver-to-build direction only. |
-| BUILD-G-003 / BUILD-G-012 | `mizar-ir` sealed output handles, output storage, and snapshot rehydration are absent. | Future `mizar-ir` integration phase. | Expose real IR output handles and rehydration boundary. |
+| BUILD-G-002 / BUILD-G-011 | Closeout originally recorded `mizar-driver` absence. Task 27 implements the remaining build-owned portion as the scheduler-selected dispatch callback; driver-owned requests, sessions, event streams, phase registry semantics, cache-query adapter, and `salsa` boundary remain outside `mizar-build`. | Completed task-27 dispatch seam plus future driver-owned integration phases. | The scheduler-selected callback is exposed from `mizar-build`; remaining owner inputs, producer outputs, publisher handles, and artifact tokens must come from their owning crates without adding a `mizar-driver` dependency to `mizar-build`. |
+| BUILD-G-003 / BUILD-G-012 | Real IR sealed output handles, output storage, and snapshot rehydration are not available through a build-owned seam. | Future `mizar-ir` integration phase. | Expose real IR output handles and rehydration boundary from the owning crate without placeholder handles in `mizar-build`. |
 | BUILD-G-004 / BUILD-G-013 | Real producer artifact publication tokens and full phase-15 emission inputs are unavailable. | Future producer/artifact integration phase. | Provide real producer publication authority; `mizar-build` must consume it without minting tokens. |
 | BUILD-G-006 / BUILD-G-015 / BUILD-G-017 | Full real resolver/checker/VC/proof/kernel/driver clean/incremental/parallel equivalence is unavailable until external seams exist. | Future external integration phase. | Wire real driver sessions, IR rehydration, producer projection, and publication tokens. |
 | BUILD-G-009 | Driver-owned cache query integration, IR output rehydration, and producer publication tokens remain absent. | Future driver/cache/artifact integration phase. | Driver-owned cache lookup calls `mizar-cache`; `mizar-build` continues to consume decisions only. |
@@ -120,8 +124,10 @@ cargo test -p mizar-vc
 cargo test -p mizar-proof
 ```
 
-`mizar-driver` is absent in this checkout, so `cargo test -p mizar-driver` is
-not a runnable verification command and remains an `external_dependency_gap`.
+At the original closeout, `mizar-driver` was absent and `cargo test -p
+mizar-driver` was not runnable. Task 27 ran the now-available driver checks and
+full workspace verification for the dispatch-seam contract while keeping
+driver-owned runtime/session authority outside `mizar-build`.
 
 The staged documentation check is run at the closeout commit boundary after
 explicitly staging only closeout-related paths.

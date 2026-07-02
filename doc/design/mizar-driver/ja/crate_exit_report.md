@@ -181,7 +181,7 @@ Quality score: **94/100**。
 | `DRIVER-G-007` | `deferred` | full real clean / incremental / parallel equivalence は real cache、producer、artifact、proof、worker-race、multi-task dispatch seam を要求する。 |
 | `DRIVER-G-009` | `repo_metadata_conflict` | `mizar-proof` に関する既存 artifact metadata drift は report-only。 |
 | `DRIVER-G-010` | `external_dependency_gap` | frontend canonical producer payload と diagnostics bridge readiness は unavailable。 |
-| `DRIVER-G-011` | `external_dependency_gap` | scheduler-selected real phase dispatch callback は `mizar-build` から公開されていない。 |
+| `DRIVER-G-011` | resolved build callback seam; remaining `external_dependency_gap` for owner inputs | post-closeout task 27 は `mizar-build` scheduler-selected dispatch callback を公開し、driver は registry 経由でそれを消費する。owner-provided phase input identities、producer outputs、diagnostics/output publisher handles、artifact tokens は、欠ける場合 external gaps のままである。 |
 | `DRIVER-G-012` | `external_dependency_gap` / `deferred` | real file watcher / coalescing owner と LSP build bridge は driver の外に残る。 |
 | `DRIVER-G-013` | `external_dependency_gap` | semantic/proof/artifact phase adapter は complete owner-provided driver-callable seam を欠く。 |
 | `DRIVER-G-014` | `deferred` | documentation extraction は `mizar-doc` owner crate / surface を待つ。 |
@@ -235,9 +235,8 @@ Suggested prompt:
 
 ```text
 Continue from the completed mizar-driver closeout. Pick one remaining
-classified owner seam, preferably DRIVER-G-011 scheduler-selected real phase
-dispatch or DRIVER-G-013 one real phase adapter whose owner crate now exposes a
-complete driver-callable seam. Follow AGENTS.md. Do not create fake adapters,
+classified owner seam, preferably DRIVER-G-013 one real phase adapter whose
+owner crate now exposes a complete driver-callable seam. Follow AGENTS.md. Do not create fake adapters,
 provisional publication tokens, stub producer outputs, cache/proof authority,
 artifact serialization, or LSP protocol conversion in mizar-driver. Update
 paired EN/JA docs, add focused tests, run required verification, and commit one

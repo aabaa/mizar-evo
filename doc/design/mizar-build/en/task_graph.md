@@ -53,8 +53,8 @@ or artifact publication trust.
 |---|---|---|---|
 | TG-G001 | `design_drift` | `todo.md` required `task_graph.md`, but no module spec existed before task 7. | Task 7 adds this spec and its Japanese companion. |
 | TG-G002 | resolved `source_drift` / `test_gap` | `src/task_graph.rs` and focused task-graph tests were absent before task 8. | Task 8 implements source/tests against this spec. |
-| TG-G003 | `external_dependency_gap` | `mizar-driver` request/session/registry/salsa work is open and the crate is absent. | Use caller-supplied snapshot tokens in the graph model; do not add a driver dependency, session model, or placeholder driver APIs. |
-| TG-G004 | `external_dependency_gap` | `mizar-ir` output handles and storage adapters are absent. | Model output requirements as opaque phase-output requirements only; do not invent IR storage APIs. |
+| TG-G003 | `external_dependency_gap` | Driver request/session/registry/salsa authority is outside `mizar-build` even though `mizar-driver` now exists. | Use caller-supplied snapshot tokens in the graph model; do not add a driver dependency, session model, or placeholder driver APIs. |
+| TG-G004 | `external_dependency_gap` | Real IR output handles and storage adapters are not available through a build-owned seam. | Model output requirements as opaque phase-output requirements only; do not invent IR storage APIs. |
 | TG-G005 | `external_dependency_gap` / `deferred` | Real VC descriptors are produced by later `mizar-vc` integration. | Support explicit/synthetic VC descriptors for tests; do not fabricate VCs from source text. |
 | TG-G006 | `deferred` | Cache-aware scheduling is task 18. | Keep task graph identity separate from cache keys and do not add cache lookup here. |
 

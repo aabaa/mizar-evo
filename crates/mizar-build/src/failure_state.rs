@@ -26,6 +26,7 @@ pub enum BlockReason {
     DependencyCancelled,
     MissingDependencyCoverage,
     ImpossibleResourceRequest,
+    PhaseDispatchBlocked,
     NoSchedulablePath,
 }
 

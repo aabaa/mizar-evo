@@ -55,8 +55,8 @@ The build-side commit boundary does not own:
 |---|---|---|---|
 | COMMIT-G001 | `source_drift` / `test_gap` | `artifact_commit.md` did not exist before task 17, and `mizar-build` had only modeled scheduler `ArtifactCommit` tasks. | Task 17 adds the build-side manifest-transaction consumer boundary and focused tests. |
 | COMMIT-G002 | `external_dependency_gap` | Real producer phase-15 artifact projection and publication tokens are not available to `mizar-build`. | Accept already-written `mizar-artifact` module entries from the caller; do not invent producer payloads or publication tokens. |
-| COMMIT-G003 | `external_dependency_gap` | `mizar-driver` sessions, event streams, and `salsa` freshness state are absent in this checkout. | Accept an opaque freshness guard/check; do not depend on `mizar-driver` or add driver-owned APIs. |
-| COMMIT-G004 | `external_dependency_gap` | `mizar-ir` sealed output handles and snapshot rehydration are absent. | Do not add IR handle placeholders; tests use already-published artifact files and manifest entries. |
+| COMMIT-G003 | `external_dependency_gap` | Driver sessions, event streams, and `salsa` freshness state are outside `mizar-build`. | Accept an opaque freshness guard/check; do not depend on `mizar-driver` or add driver-owned APIs. |
+| COMMIT-G004 | `external_dependency_gap` | Real IR sealed output handles and snapshot rehydration are not available through a build-owned seam. | Do not add IR handle placeholders; tests use already-published artifact files and manifest entries. |
 
 ## Data Model
 

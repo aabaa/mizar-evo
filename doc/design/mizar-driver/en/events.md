@@ -21,7 +21,8 @@ The event stream may report:
 - snapshot capture and request freshness decisions;
 - task/phase progress using `mizar-build` task graph and scheduler identities;
 - phase-service availability gaps classified by the registry;
-- scheduler-to-registry dispatch gaps such as DRIVER-G-011;
+- scheduler-to-registry dispatch input gaps such as missing owner-provided
+  phase input identities for DRIVER-G-011;
 - diagnostics readiness by referencing `mizar-diagnostics` owner records or
   batches when that owner seam provides them;
 - artifact-boundary readiness only when the artifact owner reports a real
@@ -81,7 +82,7 @@ Event kinds are grouped as follows:
 | `PlanningReady` | phase-0 plan/index/task graph data is available, or a structured planning/index/graph error exists | `mizar-build` |
 | `TaskProgress` | scheduler/task state changed or a task became blocked/cancelled | `mizar-build` |
 | `PhaseServiceGap` | required phase owner seam is missing, deferred, or unavailable | `PhaseRegistry` |
-| `DispatchGap` | task graph contains work that cannot be dispatched because the scheduler-to-registry owner seam is unavailable | `mizar-driver` classification of DRIVER-G-011 |
+| `DispatchGap` | a scheduler-selected task reached the registry dispatcher but owner-provided dispatch inputs were unavailable | `mizar-driver` classification of DRIVER-G-011 / owner input gaps |
 | `OwnerReadinessGap` | diagnostics, artifact, producer, or bridge owner seam needed for a readiness event is missing, deferred, or unavailable | owning crate closeout/gap classification |
 | `PhaseReady` | a real phase owner reports a completed/recoverable/blocking/fatal/cancelled phase result | phase owner via registry |
 | `DiagnosticsReady` | diagnostics owner has records or batches ready for consumers | `mizar-diagnostics` |
@@ -93,9 +94,10 @@ Event kinds are grouped as follows:
 not ownership transfers. Their payloads must reference owner-provided records,
 indexes, or committed results. If the relevant owner seam is missing, the
 driver emits a classified gap event instead of a placeholder payload.
-`PhaseServiceGap` is for missing phase adapters, `DispatchGap` is for the
-scheduler-to-registry dispatch seam, and `OwnerReadinessGap` is for missing
-diagnostics, artifact, producer-output, or protocol bridge seams.
+`PhaseServiceGap` is for missing phase adapters, `DispatchGap` is for missing
+owner inputs observed at the scheduler-selected registry dispatch callback, and
+`OwnerReadinessGap` is for missing diagnostics, artifact, producer-output, or
+protocol bridge seams.
 
 The internal architecture sketch includes a `SnapshotPublished(BuildSnapshotId)`
 event. In `mizar-driver`, positive snapshot publication is represented by
@@ -209,8 +211,9 @@ Task D-010 tests must cover:
   diagnostics/artifact events;
 - missing phase services and missing artifact publication seams produce
   classified gap events, not placeholder phase outputs or publication tokens;
-- DRIVER-G-011 dispatch-gap blocking produces a classified `DispatchGap` event
-  and never submits non-phase-0 synthetic scheduler output as current progress;
+- DRIVER-G-011 owner-input dispatch-gap blocking produces a classified
+  `DispatchGap` event and never submits non-phase-0 synthetic scheduler output
+  as current progress;
 - missing diagnostics, artifact, producer-output, or bridge readiness seams
   produce `OwnerReadinessGap` events rather than fake readiness payloads;
 - scheduler `TaskState::Completed`, scheduler synthetic outputs, and retained

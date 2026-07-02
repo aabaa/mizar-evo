@@ -20,7 +20,8 @@ event stream は次を報告してよい:
 - snapshot capture と request freshness decision;
 - `mizar-build` の task graph / scheduler identity を使った task / phase progress;
 - registry が分類した phase-service availability gap;
-- DRIVER-G-011 のような scheduler-to-registry dispatch gap;
+- DRIVER-G-011 の owner-provided phase input identities 欠落のような
+  scheduler-to-registry dispatch input gap;
 - owner seam が提供する場合の `mizar-diagnostics` owner record または batch への参照による
   diagnostics readiness;
 - artifact owner が real committed result を報告した場合に限る artifact-boundary readiness;
@@ -73,7 +74,7 @@ event kind は次のグループに分かれる:
 | `PlanningReady` | phase-0 plan / index / task graph data、または structured planning / index / graph error が存在する | `mizar-build` |
 | `TaskProgress` | scheduler / task state が変化した、または task が blocked / cancelled になった | `mizar-build` |
 | `PhaseServiceGap` | required phase owner seam が missing / deferred / unavailable である | `PhaseRegistry` |
-| `DispatchGap` | scheduler-to-registry owner seam が未利用のため task graph の work を dispatch できない | DRIVER-G-011 に対する `mizar-driver` の分類 |
+| `DispatchGap` | scheduler-selected task が registry dispatcher に到達したが owner-provided dispatch inputs が利用できない | DRIVER-G-011 / owner input gaps に対する `mizar-driver` の分類 |
 | `OwnerReadinessGap` | readiness event に必要な diagnostics、artifact、producer、bridge owner seam が missing / deferred / unavailable である | owner crate closeout / gap classification |
 | `PhaseReady` | real phase owner が completed / recoverable / blocking / fatal / cancelled phase result を報告した | registry 経由の phase owner |
 | `DiagnosticsReady` | diagnostics owner が consumer 用 record または batch を用意した | `mizar-diagnostics` |
@@ -85,8 +86,9 @@ event kind は次のグループに分かれる:
 transfer ではない。payload は owner-provided record、index、committed result を参照しなければ
 ならない。該当 owner seam がない場合、driver は placeholder payload ではなく classified gap
 event を emit する。`PhaseServiceGap` は missing phase adapter 用、`DispatchGap` は
-scheduler-to-registry dispatch seam 用、`OwnerReadinessGap` は missing diagnostics、artifact、
-producer-output、protocol bridge seam 用である。
+scheduler-selected registry dispatch callback で観測された missing owner inputs 用、
+`OwnerReadinessGap` は missing diagnostics、artifact、producer-output、protocol bridge seam
+用である。
 
 internal architecture sketch には `SnapshotPublished(BuildSnapshotId)` event が含まれる。
 `mizar-driver` では、positive snapshot publication は combined request guard 通過後に
@@ -190,8 +192,8 @@ task D-010 のテストは次を cover しなければならない:
   emit する;
 - missing phase service と missing artifact publication seam は placeholder phase output や
   publication token ではなく classified gap event を生成する;
-- DRIVER-G-011 dispatch-gap blocking は classified `DispatchGap` event を生成し、non-phase-0
-  synthetic scheduler output を current progress として submit しない;
+- DRIVER-G-011 owner-input dispatch-gap blocking は classified `DispatchGap` event を生成し、
+  non-phase-0 synthetic scheduler output を current progress として submit しない;
 - missing diagnostics、artifact、producer-output、bridge readiness seam は fake readiness payload
   ではなく `OwnerReadinessGap` event を生成する;
 - scheduler `TaskState::Completed`、scheduler synthetic output、artifact / proof / kernel

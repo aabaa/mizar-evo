@@ -31,6 +31,7 @@ architecture 14 and 19 and internal 01.
 | failure_state | `failure_state.md` (task 15) | `src/failure_state.rs` | [x] |
 | artifact_commit | `artifact_commit.md` (task 17) | `src/artifact_commit.rs` | [x] |
 | cache_seam | `cache_seam.md` (task 18) | `src/cache_seam.rs` | [x] |
+| phase_dispatch | `phase_dispatch.md` (task 27) | `src/scheduler.rs` dispatcher API + driver consumption contract | [x] |
 
 `mizar-build` currently implements pipeline phase 0 (workspace planning:
 manifests, lockfile, dependency graph, `BuildPlan`, module index) and owns the
@@ -316,9 +317,10 @@ Keep `cargo test -p mizar-build` green after each task (see
       Frontend-shaped tasks are scheduled with synthetic outcomes until a real
       driver-owned phase-service boundary is available to consume.
     - Task 19 scope: the fixture covers the public `mizar-build` boundaries
-      available now and records absent driver, IR, and producer-token
-      integration as `external_dependency_gap`; it must not add fake driver
-      APIs, IR handles, producer publication tokens, or proof authority.
+      available at that time and records driver/IR/producer-token owner seams
+      that were not consumable by `mizar-build` as `external_dependency_gap`;
+      it must not add fake driver APIs, IR handles, producer publication
+      tokens, or proof authority.
     - Deps: 6, 17. Spec: [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
       "Batch Build"; `batch_integration.md`.
     - Completed by task 19: `tests/batch_integration.rs` exercises plan,
@@ -332,8 +334,9 @@ Keep `cargo test -p mizar-build` green after each task (see
     - Property coverage that plans, graphs, schedules, events, and commits
       are identical for identical inputs across worker counts.
     - Task 20 scope: cover implemented `mizar-build` seams with table-driven
-      fixtures; record absent driver, IR, and producer-token clean/incremental
-      integration as `external_dependency_gap` and do not add placeholders.
+      fixtures; record driver/IR/producer-token clean/incremental owner seams
+      that were not consumable by `mizar-build` as `external_dependency_gap`
+      and do not add placeholders.
     - Deps: 17, 18, 19. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md);
       `determinism_suite.md`.
     - Completed by task 20: `tests/determinism_suite.rs` compares deterministic
@@ -429,6 +432,29 @@ Keep `cargo test -p mizar-build` green after each task (see
       bodies for `planner`, `module_index`, `task_graph`, and `scheduler`
       moved into private child modules without changing public exports,
       diagnostics, deterministic renderings, schemas, or behavior.
+
+27. **Scheduler-selected real phase dispatch callback seam.** [x]
+    - Expose a `mizar-build` scheduler-selected dispatch callback API that is
+      separate from `SchedulerInput`, so scheduler input remains deterministic
+      build data while an external dispatcher can execute the selected task.
+    - `mizar-build` keeps readiness, dependency ordering, resource admission,
+      cancellation checkpoints, cache-aware decision consumption, and
+      deterministic collation. `mizar-driver` consumes the seam by invoking the
+      phase registry only from the scheduler-selected callback.
+    - Tests: focused scheduler callback tests for deterministic dispatch order,
+      cache-hit skip, blocked callback propagation, and cancellation; driver
+      contract tests showing registry-backed consumption without duplicating
+      scheduler semantics.
+    - Deps: completed `mizar-driver` closeout through D-022, existing
+      registry/query boundary, and task 18 cache seam. Spec:
+      `phase_dispatch.md`, `scheduler.md`, internal 01, architecture 14/22,
+      mizar-driver `driver.md` and `registry.md`.
+    - Forbidden: no `mizar-driver` dependency in `mizar-build`; no fake phase
+      adapter, stub producer output, provisional artifact token, cache/proof
+      authority, artifact serialization, diagnostics identity allocation, or
+      LSP protocol conversion. Missing owner-provided phase inputs, producer
+      outputs, artifact tokens, diagnostics bridge, or LSP bridge remain
+      `external_dependency_gap` / `deferred`.
 
 ## Recommended Verification
 

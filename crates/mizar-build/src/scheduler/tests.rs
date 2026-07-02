@@ -825,6 +825,263 @@ fn cache_fallback_decisions_execute_normally() {
 }
 
 #[test]
+fn dispatcher_runs_only_for_scheduler_started_tasks_in_deterministic_order() {
+    let graph = sample_graph();
+    let snapshot = graph.snapshot;
+    let mut calls = Vec::new();
+    let run = {
+        let mut dispatcher = |task: SchedulerDispatchTask<'_>| {
+            assert_eq!(task.snapshot, snapshot);
+            calls.push(task.task.id.clone());
+            SchedulerDispatchOutcome::complete()
+        };
+        run_scheduler_with_dispatcher(SchedulerInput::new(graph.clone()), &mut dispatcher)
+            .expect("dispatcher run succeeds")
+    };
+
+    let started = run
+        .events
+        .iter()
+        .filter(|event| event.kind == SchedulerEventKind::TaskStarted)
+        .map(|event| event.task_id.clone().expect("started event has task id"))
+        .collect::<Vec<_>>();
+    assert_eq!(calls, started);
+    assert!(!calls.contains(&task_id_for_kind(&graph, TaskKind::PackageResolve)));
+    assert!(
+        run.task_states
+            .iter()
+            .all(|record| record.state == TaskState::Completed)
+    );
+    assert!(
+        run.results
+            .iter()
+            .filter(|result| result.task_id != task_id_for_kind(&graph, TaskKind::PackageResolve))
+            .all(|result| result.output_refs.is_empty())
+    );
+}
+
+#[test]
+fn dispatcher_callback_order_ignores_reverse_completion_order() {
+    let graph = multi_module_graph();
+    let mut canonical_calls = Vec::new();
+    {
+        let mut dispatcher = |task: SchedulerDispatchTask<'_>| {
+            canonical_calls.push(task.task.id.clone());
+            SchedulerDispatchOutcome::complete()
+        };
+        run_scheduler_with_dispatcher(
+            SchedulerInput {
+                graph: graph.clone(),
+                worker_count: 4,
+                completion_order: CompletionOrder::Canonical,
+                ..SchedulerInput::new(graph.clone())
+            },
+            &mut dispatcher,
+        )
+        .expect("canonical dispatcher run succeeds");
+    }
+
+    let mut reverse_calls = Vec::new();
+    {
+        let mut dispatcher = |task: SchedulerDispatchTask<'_>| {
+            reverse_calls.push(task.task.id.clone());
+            SchedulerDispatchOutcome::complete()
+        };
+        run_scheduler_with_dispatcher(
+            SchedulerInput {
+                graph: graph.clone(),
+                worker_count: 4,
+                completion_order: CompletionOrder::Reverse,
+                ..SchedulerInput::new(graph.clone())
+            },
+            &mut dispatcher,
+        )
+        .expect("reverse dispatcher run succeeds");
+    }
+
+    let (_run, selected_batches) = run_scheduler_with_dispatch_batches(SchedulerInput {
+        graph: graph.clone(),
+        worker_count: 4,
+        completion_order: CompletionOrder::Canonical,
+        ..SchedulerInput::new(graph)
+    })
+    .expect("scheduler dispatch batch run succeeds");
+    let expected_calls = selected_batches.into_iter().flatten().collect::<Vec<_>>();
+
+    assert_eq!(canonical_calls, expected_calls);
+    assert_eq!(reverse_calls, expected_calls);
+}
+
+#[test]
+fn validated_cache_hit_skips_dispatcher_callback() {
+    let graph = sample_graph();
+    let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+    let mut calls = Vec::new();
+    let run = {
+        let mut dispatcher = |task: SchedulerDispatchTask<'_>| {
+            calls.push(task.task.id.clone());
+            SchedulerDispatchOutcome::complete()
+        };
+        run_scheduler_with_dispatcher(
+            SchedulerInput {
+                graph: graph.clone(),
+                cache: CacheSchedulingPolicy::Enabled,
+                cache_decisions: CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+                    frontend.clone(),
+                    CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+                        vec![CacheOutputRef::new("frontend", "cached")],
+                        Vec::new(),
+                    )),
+                )]),
+                ..SchedulerInput::new(graph.clone())
+            },
+            &mut dispatcher,
+        )
+        .expect("dispatcher cache-hit run succeeds")
+    };
+
+    assert_eq!(state_for(&run, &frontend), TaskState::CacheHit);
+    assert!(!calls.contains(&frontend));
+    assert!(run.events.iter().all(|event| {
+        event.task_id.as_ref() != Some(&frontend) || event.kind != SchedulerEventKind::TaskStarted
+    }));
+}
+
+#[test]
+fn impossible_resource_request_prevents_dispatcher_callback() {
+    let graph = sample_graph();
+    let source = task_id_for_kind(&graph, TaskKind::SourceLoad);
+    let mut budget = ResourceBudget::unbounded();
+    budget.source_workers = 0;
+    let mut calls = Vec::new();
+    let run = {
+        let mut dispatcher = |task: SchedulerDispatchTask<'_>| {
+            calls.push(task.task.id.clone());
+            SchedulerDispatchOutcome::complete()
+        };
+        run_scheduler_with_dispatcher(
+            SchedulerInput {
+                graph: graph.clone(),
+                resource_budget: budget,
+                ..SchedulerInput::new(graph.clone())
+            },
+            &mut dispatcher,
+        )
+        .expect("resource-blocked dispatcher run succeeds")
+    };
+
+    assert_eq!(state_for(&run, &source), TaskState::Blocked);
+    assert!(calls.is_empty());
+    assert!(run.resource_telemetry.iter().any(|telemetry| {
+        telemetry.task_id == source
+            && telemetry.status == ResourceAdmissionStatus::Impossible
+            && telemetry.blocking_scope == Some(ResourceScope::SourceWorkers)
+    }));
+}
+
+#[test]
+fn dispatcher_mode_preserves_skipped_dependency_scheduler_semantics() {
+    let graph = sample_graph();
+    let atp = task_id_for_kind(&graph, TaskKind::AtpSolve);
+    let backend = task_id_for_kind(&graph, TaskKind::BackendRun);
+    let kernel = task_id_for_kind(&graph, TaskKind::KernelCheck);
+    let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
+    let mut calls = Vec::new();
+    let run = {
+        let mut dispatcher = |task: SchedulerDispatchTask<'_>| {
+            if task.task.id == atp {
+                SchedulerDispatchOutcome::skipped()
+            } else {
+                calls.push(task.task.id.clone());
+                SchedulerDispatchOutcome::complete()
+            }
+        };
+        run_scheduler_with_dispatcher(SchedulerInput::new(graph.clone()), &mut dispatcher)
+            .expect("skipped dependency dispatcher run succeeds")
+    };
+
+    assert_eq!(state_for(&run, &atp), TaskState::Skipped);
+    assert_eq!(state_for(&run, &backend), TaskState::Skipped);
+    assert_eq!(state_for(&run, &kernel), TaskState::Skipped);
+    assert_eq!(state_for(&run, &artifact), TaskState::Completed);
+    assert!(!calls.contains(&backend));
+    assert!(!calls.contains(&kernel));
+    assert!(result_for(&run, &backend).output_refs.is_empty());
+}
+
+#[test]
+fn dispatcher_blocked_outcome_blocks_dependents_without_outputs() {
+    let graph = sample_graph();
+    let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+    let artifact = task_id_for_kind(&graph, TaskKind::ArtifactCommit);
+    let diagnostic = SchedulerDiagnosticRef::new(
+        "phase-registry",
+        "DRIVER_G_011",
+        "phase dispatch inputs unavailable",
+    );
+    let run = {
+        let mut dispatcher = |task: SchedulerDispatchTask<'_>| {
+            if task.task.id == frontend {
+                SchedulerDispatchOutcome::blocked(vec![diagnostic.clone()])
+            } else {
+                SchedulerDispatchOutcome::complete()
+            }
+        };
+        run_scheduler_with_dispatcher(SchedulerInput::new(graph.clone()), &mut dispatcher)
+            .expect("dispatcher blocked run succeeds")
+    };
+
+    assert_eq!(state_for(&run, &frontend), TaskState::Blocked);
+    assert_eq!(state_for(&run, &artifact), TaskState::Blocked);
+    let frontend_result = result_for(&run, &frontend);
+    assert!(frontend_result.output_refs.is_empty());
+    assert_eq!(frontend_result.diagnostics, vec![diagnostic]);
+    assert!(run.failure_records.is_empty());
+    assert!(run.blocked_records.iter().any(|record| {
+        record.task_id == frontend
+            && record.reason == BlockReason::PhaseDispatchBlocked
+            && record.blocked_by.is_empty()
+    }));
+    assert!(run.blocked_records.iter().any(|record| {
+        record.blocked_by.contains(&frontend) && record.reason == BlockReason::DependencyBlocked
+    }));
+}
+
+#[test]
+fn running_checkpoint_cancellation_prevents_dispatcher_callback() {
+    let graph = sample_graph();
+    let frontend = task_id_for_kind(&graph, TaskKind::Frontend);
+    let mut calls = Vec::new();
+    let run = {
+        let mut dispatcher = |task: SchedulerDispatchTask<'_>| {
+            assert_ne!(task.task.id, frontend);
+            calls.push(task.task.id.clone());
+            SchedulerDispatchOutcome::complete()
+        };
+        run_scheduler_with_dispatcher(
+            SchedulerInput {
+                graph: graph.clone(),
+                cancellation: CancellationPolicy::default()
+                    .with_checkpoint_cancelled_task(frontend.clone()),
+                ..SchedulerInput::new(graph.clone())
+            },
+            &mut dispatcher,
+        )
+        .expect("checkpoint-cancelled dispatcher run succeeds")
+    };
+
+    assert_eq!(state_for(&run, &frontend), TaskState::Cancelled);
+    assert!(!calls.contains(&frontend));
+    assert!(run.events.iter().any(|event| {
+        event.kind == SchedulerEventKind::TaskStarted && event.task_id.as_ref() == Some(&frontend)
+    }));
+    assert_eq!(
+        telemetry_counts(&run, ResourceAdmissionStatus::Released).get(&frontend),
+        Some(&1)
+    );
+}
+
+#[test]
 fn disabled_cache_scheduling_ignores_validated_hits() {
     let graph = sample_graph();
     let frontend = task_id_for_kind(&graph, TaskKind::Frontend);

@@ -52,8 +52,8 @@ publication trust は決定しない。
 |---|---|---|---|
 | TG-G001 | `design_drift` | `todo.md` は `task_graph.md` を要求していたが、task 7 の前には module spec が存在しなかった。 | task 7 でこの spec と Japanese companion を追加する。 |
 | TG-G002 | resolved `source_drift` / `test_gap` | `src/task_graph.rs` と focused task-graph tests は task 8 の前には存在しなかった。 | task 8 でこの spec に沿って source/tests を実装する。 |
-| TG-G003 | `external_dependency_gap` | `mizar-driver` request/session/registry/salsa work は open で、crate も存在しない。 | graph model では caller-supplied snapshot token を使い、driver dependency、session model、placeholder driver API を追加しない。 |
-| TG-G004 | `external_dependency_gap` | `mizar-ir` output handle と storage adapter が存在しない。 | output requirements は opaque phase-output requirements としてのみ model し、IR storage API を創作しない。 |
+| TG-G003 | `external_dependency_gap` | `mizar-driver` は存在するが、driver request/session/registry/salsa authority は `mizar-build` の外側にある。 | graph model では caller-supplied snapshot token を使い、driver dependency、session model、placeholder driver API を追加しない。 |
+| TG-G004 | `external_dependency_gap` | real IR output handles と storage adapters は build-owned seam 経由では利用できない。 | output requirements は opaque phase-output requirements としてのみ model し、IR storage API を創作しない。 |
 | TG-G005 | `external_dependency_gap` / `deferred` | real VC descriptor は後続の `mizar-vc` integration が生成する。 | tests では explicit/synthetic VC descriptors を支援し、source text から VC を捏造しない。 |
 | TG-G006 | `deferred` | cache-aware scheduling は task 18 である。 | task graph identity を cache key から分離し、この module で cache lookup を追加しない。 |
 

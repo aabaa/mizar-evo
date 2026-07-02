@@ -51,8 +51,8 @@ build-side commit boundary が所有しないもの:
 |---|---|---|---|
 | COMMIT-G001 | `source_drift` / `test_gap` | task 17 以前は `artifact_commit.md` が存在せず、`mizar-build` には modeled scheduler `ArtifactCommit` tasks だけがあった。 | task 17 で build-side manifest-transaction consumer boundary と focused tests を追加する。 |
 | COMMIT-G002 | `external_dependency_gap` | real producer phase-15 artifact projection と publication token は `mizar-build` から利用できない。 | caller から already-written `mizar-artifact` module entries を受け取り、producer payload や publication token を創作しない。 |
-| COMMIT-G003 | `external_dependency_gap` | この checkout には `mizar-driver` session、event stream、`salsa` freshness state が存在しない。 | opaque freshness guard / check を受け取り、`mizar-driver` に依存せず driver-owned API を追加しない。 |
-| COMMIT-G004 | `external_dependency_gap` | `mizar-ir` sealed output handle と snapshot rehydration が存在しない。 | IR handle placeholder を追加しない。tests は already-published artifact files と manifest entries を使う。 |
+| COMMIT-G003 | `external_dependency_gap` | driver sessions、event streams、`salsa` freshness state は `mizar-build` の外側にある。 | opaque freshness guard / check を受け取り、`mizar-driver` に依存せず driver-owned API を追加しない。 |
+| COMMIT-G004 | `external_dependency_gap` | real IR sealed output handles と snapshot rehydration は build-owned seam 経由では利用できない。 | IR handle placeholder を追加しない。tests は already-published artifact files と manifest entries を使う。 |
 
 ## Data Model
 

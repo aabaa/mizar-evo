@@ -1,19 +1,28 @@
+use std::sync::{Arc, Mutex};
+
 use mizar_build::{
+    cache_seam::{
+        CacheOutputRef, CacheSchedulingOutcome, CacheSchedulingPlan, CacheTaskDecision,
+        ValidatedCacheHit,
+    },
     cancel::CancellationPolicy,
     module_index::{StaticSourceLayout, WorkspaceSourceFile, WorkspaceSourcePackage},
     planner::{
         DependencySelection, PlanRequest, WorkspacePackage, parse_lockfile, parse_package_manifest,
     },
-    scheduler::{CacheSchedulingPolicy, CompletionOrder, SchedulerInput, run_scheduler},
-    task_graph::{ModuleDependencyOverlay, PipelinePhase},
+    scheduler::{CacheSchedulingPolicy, CompletionOrder, SchedulerInput, TaskState, run_scheduler},
+    task_graph::{BuildTask, ModuleDependencyOverlay, PipelinePhase, TaskId},
 };
 use mizar_driver::{
-    driver::{BuildSubmission, CompilerDriver, DriverSubmissionStatus, DriverSubmitInput},
+    driver::{
+        BuildSubmission, CompilerDriver, DriverSubmissionStatus, DriverSubmitInput,
+        PhaseDispatchInputProvider,
+    },
     events::BuildEventKind,
     registry::{
         PhaseCacheContext, PhaseCacheIntent, PhaseDescriptor, PhaseExecutionContext, PhaseInput,
-        PhaseRegistry, PhaseRegistryBuilder, PhaseResult, PhaseService, PhaseServiceAvailability,
-        required_phase_services,
+        PhaseInputIdentities, PhaseRegistry, PhaseRegistryBuilder, PhaseResult, PhaseService,
+        PhaseServiceAvailability, PhaseStatus, required_phase_services,
     },
     request::{
         BatchInvocation, BatchRequest, BuildLaneId, BuildProfile, BuildRequestDraft,
@@ -119,19 +128,14 @@ fn non_phase_zero_descriptor_fixtures_block_on_dispatch_gap() {
         DriverSubmissionStatus::BlockedByPhaseDispatchGap
     );
     assert!(submission.missing_services.is_empty());
-    assert!(submission.scheduler_run.is_none());
+    assert!(submission.scheduler_run.is_some());
     assert!(
         submission.task_graph.as_ref().unwrap().tasks().len() > 1,
         "fixture must exercise more than a package root task"
     );
-    assert!(
-        [
-            PipelinePhase::SourceLoad,
-            PipelinePhase::Frontend,
-            PipelinePhase::ArtifactCommit,
-        ]
-        .into_iter()
-        .all(|phase| submission.dispatch_gap_phases.contains(&phase))
+    assert_eq!(
+        submission.dispatch_gap_phases,
+        vec![PipelinePhase::SourceLoad]
     );
     assert_eq!(
         submission.session.state,
@@ -140,14 +144,203 @@ fn non_phase_zero_descriptor_fixtures_block_on_dispatch_gap() {
     assert_event(&driver, submission.session.id, |kind| {
         matches!(kind, BuildEventKind::DispatchGap { .. })
     });
+    assert_event(&driver, submission.session.id, |kind| {
+        matches!(kind, BuildEventKind::TaskProgress { .. })
+    });
     assert_no_event(&driver, submission.session.id, |kind| {
         matches!(
             kind,
-            BuildEventKind::TaskProgress { .. }
-                | BuildEventKind::DiagnosticsReady { .. }
-                | BuildEventKind::ArtifactBoundary { .. }
+            BuildEventKind::DiagnosticsReady { .. } | BuildEventKind::ArtifactBoundary { .. }
         )
     });
+}
+
+#[test]
+fn registered_services_execute_from_scheduler_selected_dispatch() {
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let calls = Arc::new(Mutex::new(Vec::new()));
+    let mut driver = CompilerDriver::new(executable_scheduler_fixture_registry(calls.clone()));
+    let mut input = submit_input(vec![
+        WorkspaceSourceFile::new("src/main.miz", "main.miz"),
+        WorkspaceSourceFile::new("src/util.miz", "util.miz"),
+    ]);
+    input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
+
+    let submission = driver
+        .submit(request(4), &ids, &snapshots, input)
+        .expect("registered services dispatch from scheduler callback");
+
+    assert_eq!(
+        submission.status,
+        DriverSubmissionStatus::SchedulerValidated
+    );
+    assert_eq!(
+        submission.session.state,
+        BuildSessionState::Finished(BuildSessionOutcome::Succeeded)
+    );
+    assert!(submission.missing_services.is_empty());
+    assert!(submission.dispatch_gap_phases.is_empty());
+    assert!(submission.scheduler_run.is_some());
+    assert!(
+        submission
+            .scheduler_run
+            .as_ref()
+            .unwrap()
+            .task_states
+            .iter()
+            .all(|record| record.state == mizar_build::scheduler::TaskState::Completed)
+    );
+    let calls = calls.lock().expect("calls lock is not poisoned");
+    assert!(
+        calls.iter().any(|service| service == "SourceFrontend"),
+        "source/frontend service should execute from scheduler-selected callback"
+    );
+    assert!(
+        calls.iter().any(|service| service == "ArtifactService"),
+        "artifact service should execute from scheduler-selected callback"
+    );
+    let module_count = submission
+        .module_index
+        .as_ref()
+        .expect("submission has module index")
+        .modules
+        .len();
+    assert_eq!(
+        calls
+            .iter()
+            .filter(|service| service.as_str() == "SemanticChecker")
+            .count(),
+        module_count,
+        "check-and-elaborate task must dispatch the semantic service span"
+    );
+    assert_eq!(
+        calls
+            .iter()
+            .filter(|service| service.as_str() == "Elaborator")
+            .count(),
+        module_count,
+        "check-and-elaborate task must dispatch the elaboration service span"
+    );
+    assert_event(&driver, submission.session.id, |kind| {
+        matches!(kind, BuildEventKind::TaskProgress { .. })
+    });
+    assert_no_event(&driver, submission.session.id, |kind| {
+        matches!(kind, BuildEventKind::DispatchGap { .. })
+    });
+}
+
+#[test]
+fn cache_hit_tasks_do_not_require_phase_dispatch_inputs() {
+    let source = {
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let mut driver = CompilerDriver::new(executable_scheduler_fixture_registry(calls));
+        let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
+        input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
+        let submission = driver
+            .submit(request(41), &ids, &snapshots, input)
+            .expect("probe run builds task graph");
+        task_id_for_phase(&submission, PipelinePhase::SourceLoad)
+    };
+
+    let ids = InMemorySessionIdAllocator::new();
+    let snapshots = SnapshotRegistry::new();
+    let mut driver = CompilerDriver::new(scheduler_fixture_registry());
+    let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
+    input.cache_policy = CacheSchedulingPolicy::Enabled;
+    input.cache_decisions = CacheSchedulingPlan::new(vec![CacheTaskDecision::new(
+        source.clone(),
+        CacheSchedulingOutcome::ValidatedHit(ValidatedCacheHit::new(
+            vec![CacheOutputRef::new("source", "cached")],
+            Vec::new(),
+        )),
+    )]);
+
+    let submission = driver
+        .submit(request(41), &ids, &snapshots, input)
+        .expect("cache hit skips dispatch input gap for source task");
+
+    assert_eq!(
+        submission.status,
+        DriverSubmissionStatus::BlockedByPhaseDispatchGap
+    );
+    assert!(submission.scheduler_run.is_some());
+    assert_eq!(state_for_task(&submission, &source), TaskState::CacheHit);
+    assert!(
+        !submission
+            .dispatch_gap_phases
+            .contains(&PipelinePhase::SourceLoad)
+    );
+    assert!(
+        submission
+            .dispatch_gap_phases
+            .contains(&PipelinePhase::Frontend)
+    );
+    assert_event(&driver, submission.session.id, |kind| {
+        matches!(kind, BuildEventKind::DispatchGap { .. })
+    });
+}
+
+#[test]
+fn registry_dispatch_statuses_map_to_scheduler_outcomes_without_publication() {
+    for (status, expected_state, expected_outcome) in [
+        (
+            PhaseStatus::Recoverable,
+            TaskState::Failed,
+            BuildSessionOutcome::Failed,
+        ),
+        (
+            PhaseStatus::Blocking,
+            TaskState::Blocked,
+            BuildSessionOutcome::Blocked,
+        ),
+        (
+            PhaseStatus::Fatal,
+            TaskState::Failed,
+            BuildSessionOutcome::Failed,
+        ),
+        (
+            PhaseStatus::Cancelled,
+            TaskState::Cancelled,
+            BuildSessionOutcome::Cancelled,
+        ),
+    ] {
+        let ids = InMemorySessionIdAllocator::new();
+        let snapshots = SnapshotRegistry::new();
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let mut driver = CompilerDriver::new(executable_scheduler_fixture_registry_with_statuses(
+            calls,
+            &[(PipelinePhase::ArtifactCommit, status)],
+        ));
+        let mut input = submit_input(vec![WorkspaceSourceFile::new("src/main.miz", "main.miz")]);
+        input.phase_dispatch_inputs = Some(Box::new(FixturePhaseInputs));
+
+        let submission = driver
+            .submit(request(42), &ids, &snapshots, input)
+            .expect("terminal registry status maps through scheduler callback");
+
+        let artifact = task_id_for_phase(&submission, PipelinePhase::ArtifactCommit);
+        assert_eq!(state_for_task(&submission, &artifact), expected_state);
+        assert_eq!(
+            submission.session.state,
+            BuildSessionState::Finished(expected_outcome)
+        );
+        assert_eq!(
+            submission.status,
+            DriverSubmissionStatus::SchedulerValidated
+        );
+        assert!(submission.dispatch_gap_phases.is_empty());
+        assert_no_event(&driver, submission.session.id, |kind| {
+            matches!(
+                kind,
+                BuildEventKind::DiagnosticsReady { .. }
+                    | BuildEventKind::ArtifactBoundary { .. }
+                    | BuildEventKind::DispatchGap { .. }
+            )
+        });
+    }
 }
 
 #[test]
@@ -401,11 +594,77 @@ fn driver_source_does_not_claim_diagnostics_artifact_or_lsp_authority() {
     }
 }
 
+#[test]
+fn driver_scheduler_helper_does_not_claim_phase_output_or_cache_authority() {
+    let source = std::fs::read_to_string(
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("src/driver/scheduler.rs"),
+    )
+    .unwrap();
+
+    assert!(
+        source.contains("execute_phase_with_resources"),
+        "scheduler helper must consume the registry execution boundary"
+    );
+    for forbidden in [
+        "DiagnosticRegistry",
+        "DiagnosticCode",
+        "DiagnosticRecord",
+        "DiagnosticAggregator",
+        "JsonRpc",
+        "LspDiagnostic",
+        "DiagnosticSeverity",
+        "CodeAction",
+        "DocumentUri",
+        "DocumentVersion",
+        "ProgressToken",
+        "PublicationToken",
+        "commit_manifest_updates",
+        "VerifiedArtifact",
+        "mizar_frontend",
+        "SyntheticOutputRef",
+        ".output_refs",
+        "AnyPhaseOutputRef",
+        "cache_key_for_phase",
+        "PhaseCacheIntent",
+        "Proof",
+        "Trusted",
+    ] {
+        assert!(
+            !source.contains(forbidden),
+            "driver scheduler helper must not own forbidden authority term {forbidden}"
+        );
+    }
+}
+
 fn assert_missing(submission: &BuildSubmission, phase: PipelinePhase) {
     assert!(submission.missing_services.iter().any(|missing| {
         missing.phase == phase
             && missing.availability == PhaseServiceAvailability::ExternalDependencyGap
     }));
+}
+
+fn task_id_for_phase(submission: &BuildSubmission, phase: PipelinePhase) -> TaskId {
+    submission
+        .task_graph
+        .as_ref()
+        .expect("submission has task graph")
+        .tasks()
+        .iter()
+        .find(|task| task.phases.contains(&phase))
+        .map(|task| task.id.clone())
+        .expect("task for phase exists")
+}
+
+fn state_for_task(submission: &BuildSubmission, task: &TaskId) -> TaskState {
+    submission
+        .scheduler_run
+        .as_ref()
+        .expect("submission has scheduler run")
+        .task_states
+        .iter()
+        .find(|record| record.task_id == *task)
+        .map(|record| record.state)
+        .expect("task state exists")
 }
 
 fn assert_event(
@@ -448,6 +707,41 @@ fn scheduler_fixture_registry() -> PhaseRegistry {
                 format!("driver-fixture-output-{index}"),
             )
             .unwrap(),
+        });
+    }
+    builder.build().unwrap()
+}
+
+fn executable_scheduler_fixture_registry(calls: Arc<Mutex<Vec<String>>>) -> PhaseRegistry {
+    executable_scheduler_fixture_registry_with_statuses(calls, &[])
+}
+
+fn executable_scheduler_fixture_registry_with_statuses(
+    calls: Arc<Mutex<Vec<String>>>,
+    statuses: &[(PipelinePhase, PhaseStatus)],
+) -> PhaseRegistry {
+    let mut builder = PhaseRegistryBuilder::new();
+    for (index, requirement) in required_phase_services().iter().enumerate() {
+        let status = requirement
+            .phases
+            .iter()
+            .find_map(|phase| {
+                statuses.iter().find_map(|(configured_phase, status)| {
+                    (*configured_phase == *phase).then_some(*status)
+                })
+            })
+            .unwrap_or(PhaseStatus::Complete);
+        builder.register(ExecutableFixtureService {
+            descriptor: PhaseDescriptor::new(
+                requirement.service_name,
+                requirement.owner,
+                requirement.phases.to_vec(),
+                "driver-fixture-v1",
+                format!("driver-fixture-output-{index}"),
+            )
+            .unwrap(),
+            calls: calls.clone(),
+            status,
         });
     }
     builder.build().unwrap()
@@ -559,5 +853,50 @@ impl PhaseService for DescriptorOnlyFixtureService {
 
     fn execute(&self, _input: PhaseInput, _context: PhaseExecutionContext) -> PhaseResult {
         panic!("driver core must not execute phase fixtures")
+    }
+}
+
+struct FixturePhaseInputs;
+
+impl PhaseDispatchInputProvider for FixturePhaseInputs {
+    fn input_identities_for_task(&self, task: &BuildTask) -> Option<PhaseInputIdentities> {
+        let seed = task
+            .id
+            .as_str()
+            .bytes()
+            .fold(0_u8, |accumulator, byte| accumulator.wrapping_add(byte));
+        Some(PhaseInputIdentities::new(
+            Hash::from_bytes([seed; Hash::BYTE_LEN]),
+            Vec::new(),
+            Vec::new(),
+        ))
+    }
+}
+
+#[derive(Debug)]
+struct ExecutableFixtureService {
+    descriptor: PhaseDescriptor,
+    calls: Arc<Mutex<Vec<String>>>,
+    status: PhaseStatus,
+}
+
+impl PhaseService for ExecutableFixtureService {
+    fn phase(&self) -> PhaseDescriptor {
+        self.descriptor.clone()
+    }
+
+    fn cache_key(&self, _input: &PhaseInput, _context: &PhaseCacheContext) -> PhaseCacheIntent {
+        panic!("driver scheduler dispatch must not request phase fixture cache keys")
+    }
+
+    fn execute(&self, _input: PhaseInput, _context: PhaseExecutionContext) -> PhaseResult {
+        self.calls
+            .lock()
+            .expect("calls lock is not poisoned")
+            .push(self.descriptor.service_name.clone());
+        PhaseResult {
+            status: self.status,
+            ..PhaseResult::complete()
+        }
     }
 }

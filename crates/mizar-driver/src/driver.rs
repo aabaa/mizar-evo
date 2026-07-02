@@ -14,11 +14,11 @@ use mizar_build::{
     scheduler::{
         CacheSchedulingPolicy, CompletionOrder, PriorityHints, SchedulerDiagnostic,
         SchedulerDiagnostics, SchedulerEvent, SchedulerInput, SchedulerMode, TaskStateRecord,
-        run_scheduler,
+        run_scheduler_with_dispatcher,
     },
     task_graph::{
-        ModuleDependencyOverlay, PipelinePhase, TaskGraph, TaskGraphDiagnostics, TaskGraphInput,
-        TaskGraphProfile, VcTaskDescriptor, build_task_graph,
+        BuildTask, ModuleDependencyOverlay, PipelinePhase, TaskGraph, TaskGraphDiagnostics,
+        TaskGraphInput, TaskGraphProfile, VcTaskDescriptor, build_task_graph,
     },
 };
 use mizar_ir::publisher::{PhaseOutputPublisher, PublishError};
@@ -28,7 +28,7 @@ use mizar_session::{
 
 use crate::{
     events::{BuildEventStream, OwnerGapClassification, PlanningEventStatus},
-    registry::{PhaseRegistry, PhaseRegistryError, PhaseServiceAvailability},
+    registry::{PhaseInputIdentities, PhaseRegistry, PhaseRegistryError, PhaseServiceAvailability},
     request::{
         BuildRequestDraft, BuildRequestOrigin, BuildSession, BuildSessionOutcome,
         BuildSessionState, CaptureSnapshotError, DriverLanes, PublicationDecision,
@@ -44,7 +44,7 @@ mod watch;
 use event_log::{
     DriverEventDetails, append_terminal_events, submission_events, suppress_watch_replay_events,
 };
-use scheduler::{dispatch_gap_phases, scheduler_outcome};
+use scheduler::{RegistrySchedulerDispatcher, dispatch_gap_phases, scheduler_outcome};
 use watch::{
     cancellation_outcome, replace_watch_snapshot, request_origin_name, submit_error_session,
     watch_mode_gaps,
@@ -81,8 +81,13 @@ where
     pub cache_decisions: CacheSchedulingPlan,
     pub resource_budget: ResourceBudget,
     pub cancellation: CancellationPolicy,
+    pub phase_dispatch_inputs: Option<Box<dyn PhaseDispatchInputProvider>>,
     pub worker_count: usize,
     pub completion_order: CompletionOrder,
+}
+
+pub trait PhaseDispatchInputProvider {
+    fn input_identities_for_task(&self, task: &BuildTask) -> Option<PhaseInputIdentities>;
 }
 
 pub struct CompilerDriver {
@@ -407,6 +412,7 @@ impl CompilerDriver {
             cache_decisions,
             resource_budget,
             cancellation,
+            phase_dispatch_inputs,
             worker_count,
             completion_order,
         } = input;
@@ -533,33 +539,6 @@ impl CompilerDriver {
             });
         }
 
-        let dispatch_gap_phases = dispatch_gap_phases(&task_graph);
-        if !dispatch_gap_phases.is_empty() {
-            session.finish(BuildSessionOutcome::Blocked);
-            let publication_decision = self.lanes.publication_decision(snapshots, &session);
-            let events = submission_events(
-                &session,
-                publication_decision,
-                DriverEventDetails {
-                    planning: Some(PlanningEventStatus::Ready),
-                    dispatch_gap_phases: &dispatch_gap_phases,
-                    ..DriverEventDetails::default()
-                },
-            );
-            self.store_session(session.clone(), cancellation, events);
-            return Ok(BuildSubmission {
-                session,
-                build_plan: Some(build_plan),
-                module_index: Some(module_index),
-                task_graph: Some(task_graph),
-                scheduler_run: None,
-                missing_services: Vec::new(),
-                dispatch_gap_phases,
-                status: DriverSubmissionStatus::BlockedByPhaseDispatchGap,
-                publication_decision,
-            });
-        }
-
         session.mark_running();
         let mut scheduler_input = SchedulerInput::new(task_graph.clone());
         scheduler_input.mode = scheduler_mode;
@@ -570,7 +549,9 @@ impl CompilerDriver {
         scheduler_input.cancellation = cancellation.clone();
         scheduler_input.worker_count = worker_count.max(1);
         scheduler_input.completion_order = completion_order;
-        let scheduler_run = match run_scheduler(scheduler_input) {
+        let mut dispatcher =
+            RegistrySchedulerDispatcher::new(&self.registry, phase_dispatch_inputs.as_deref());
+        let scheduler_run = match run_scheduler_with_dispatcher(scheduler_input, &mut dispatcher) {
             Ok(scheduler_run) => scheduler_run,
             Err(diagnostics) => {
                 session.finish(BuildSessionOutcome::Failed);
@@ -593,6 +574,13 @@ impl CompilerDriver {
         };
 
         let outcome = scheduler_outcome(&scheduler_run);
+        let dispatch_gap_phases = dispatch_gap_phases(&task_graph, &scheduler_run);
+        let status =
+            if matches!(outcome, BuildSessionOutcome::Blocked) && !dispatch_gap_phases.is_empty() {
+                DriverSubmissionStatus::BlockedByPhaseDispatchGap
+            } else {
+                DriverSubmissionStatus::SchedulerValidated
+            };
         let driver_scheduler_run = DriverSchedulerRun::from_scheduler_run(scheduler_run);
         session.finish(outcome);
         let publication_decision = self.lanes.publication_decision(snapshots, &session);
@@ -601,6 +589,7 @@ impl CompilerDriver {
             publication_decision,
             DriverEventDetails {
                 planning: Some(PlanningEventStatus::Ready),
+                dispatch_gap_phases: &dispatch_gap_phases,
                 scheduler_events: &driver_scheduler_run.events,
                 scheduler_task_states: &driver_scheduler_run.task_states,
                 ..DriverEventDetails::default()
@@ -614,8 +603,8 @@ impl CompilerDriver {
             task_graph: Some(task_graph),
             scheduler_run: Some(driver_scheduler_run),
             missing_services: Vec::new(),
-            dispatch_gap_phases: Vec::new(),
-            status: DriverSubmissionStatus::SchedulerValidated,
+            dispatch_gap_phases,
+            status,
             publication_decision,
         })
     }
@@ -828,6 +817,7 @@ where
             cache_decisions: CacheSchedulingPlan::empty(),
             resource_budget: ResourceBudget::default(),
             cancellation: CancellationPolicy::default(),
+            phase_dispatch_inputs: None,
             worker_count: 1,
             completion_order: CompletionOrder::Canonical,
         }

@@ -188,7 +188,7 @@ The score is invalid if any hard gate above later fails.
 | `DRIVER-G-007` | `deferred` | Full real clean/incremental/parallel equivalence requires real cache, producer, artifact, proof, worker-race, and multi-task dispatch seams. |
 | `DRIVER-G-009` | `repo_metadata_conflict` | Existing artifact metadata drift around `mizar-proof` remains report-only. |
 | `DRIVER-G-010` | `external_dependency_gap` | Frontend canonical producer payload and diagnostics bridge readiness remain unavailable. |
-| `DRIVER-G-011` | `external_dependency_gap` | Scheduler-selected real phase dispatch callback is not exposed by `mizar-build`. |
+| `DRIVER-G-011` | resolved build callback seam; remaining `external_dependency_gap` for owner inputs | Post-closeout task 27 exposes the `mizar-build` scheduler-selected dispatch callback and driver consumes it through the registry. Owner-provided phase input identities, producer outputs, diagnostics/output publisher handles, and artifact tokens remain external gaps when absent. |
 | `DRIVER-G-012` | `external_dependency_gap` / `deferred` | Real file watcher/coalescing owner and LSP build bridge remain outside the driver. |
 | `DRIVER-G-013` | `external_dependency_gap` | Semantic/proof/artifact phase adapters lack complete owner-provided driver-callable seams. |
 | `DRIVER-G-014` | `deferred` | Documentation extraction waits for a `mizar-doc` owner crate/surface. |
@@ -247,9 +247,8 @@ Suggested prompt:
 
 ```text
 Continue from the completed mizar-driver closeout. Pick one remaining
-classified owner seam, preferably DRIVER-G-011 scheduler-selected real phase
-dispatch or DRIVER-G-013 one real phase adapter whose owner crate now exposes a
-complete driver-callable seam. Follow AGENTS.md. Do not create fake adapters,
+classified owner seam, preferably DRIVER-G-013 one real phase adapter whose
+owner crate now exposes a complete driver-callable seam. Follow AGENTS.md. Do not create fake adapters,
 provisional publication tokens, stub producer outputs, cache/proof authority,
 artifact serialization, or LSP protocol conversion in mizar-driver. Update
 paired EN/JA docs, add focused tests, run required verification, and commit one

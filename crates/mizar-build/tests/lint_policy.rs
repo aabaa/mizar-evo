@@ -186,6 +186,7 @@ const PUBLIC_ENUM_POLICY: &[PublicEnumPolicy] = &[
     scheduler_enum("SchedulerQueue"),
     scheduler_enum("SchedulerEventKind"),
     scheduler_enum("SchedulerDiagnosticKind"),
+    scheduler_enum("SchedulerDispatchStatus"),
     resource_enum("ResourceAdmissionStatus"),
     resource_enum("ResourceScope"),
     cancel_enum("CancellationReason"),

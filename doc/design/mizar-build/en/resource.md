@@ -52,7 +52,7 @@ or cache behavior. It consumes the `TaskGraph` and scheduler queues defined by
 | RES-G001 | `design_drift` | `todo.md` required `resource.md`, but no module spec existed before task 11. | Task 11 adds this spec and its Japanese companion. |
 | RES-G002 | `source_drift` / `test_gap` | Before task 12, `src/resource.rs` and resource-budget tests did not exist. Task 12 adds the accounting/admission source and focused tests against this spec. | Keep scheduler/resource source, tests, and this spec synchronized as budget scopes evolve. |
 | RES-G003 | `external_dependency_gap` | Real ATP backend process managers and capture adapters are outside `mizar-build`. | Model backend limits and handoff values only; do not spawn or supervise OS processes here. |
-| RES-G004 | `external_dependency_gap` | `mizar-driver` request/session/watch integration is absent in this checkout. | Keep budgets input-driven and session-agnostic; do not add a driver dependency or placeholder driver API. |
+| RES-G004 | `external_dependency_gap` | Driver request/session/watch integration is outside `mizar-build`. | Keep budgets input-driven and session-agnostic; do not add a driver dependency or placeholder driver API. |
 | RES-G005 | `deferred` | Cache-aware scheduling remains task 18 and `mizar-cache` owns validation. | Resource decisions may prioritize cache-ready work but must not construct cache keys or promote cache hits. |
 | RES-G006 | `deferred` | Cancellation and failure-state policies are tasks 13-16. | Resource release on terminal states is specified here; cancellation tokens and failure categories remain in their modules. |
 

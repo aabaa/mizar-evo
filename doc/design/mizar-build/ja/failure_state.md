@@ -58,9 +58,9 @@ validation、artifact publication authority は変えない。
 |---|---|---|---|
 | FAIL-G001 | `design_drift` | `todo.md` は `failure_state.md` を要求していたが、task 15 以前には module spec がなかった。 | task 15 でこの仕様と日本語 companion を追加する。 |
 | FAIL-G002 | `source_drift` / `test_gap` | `src/failure_state.rs` と focused failure-state tests は task 16 以前には存在しなかった。 | task 16 で build-side record、有界 propagation helper、決定的 ordering、scheduler integration、focused tests を追加する。 |
-| FAIL-G003 | `external_dependency_gap` | この checkout には stable diagnostic registry や rendered failure snapshot を担う `mizar-diagnostics` crate がない。 | failure record は synthetic / build-side に保ち、diagnostic-registry API を `mizar-build` 内で創作しない。 |
-| FAIL-G004 | `external_dependency_gap` | この checkout には `mizar-driver` と real phase-service failure emission が存在しない。 | 将来の phase failure record は値として消費し、driver dependency や placeholder phase-service API を追加しない。 |
-| FAIL-G005 | `external_dependency_gap` | `mizar-ir` output storage と phase output handle が存在しない。 | failed / blocked output handle を publish せず、real output handle が存在するまで tests は synthetic に保つ。 |
+| FAIL-G003 | `external_dependency_gap` | stable diagnostic records/indexes は `mizar-diagnostics` が所有し、`mizar-build` は所有しない。 | 提供された diagnostic refs/records は値として消費し、diagnostic-registry API を `mizar-build` 内で創作しない。 |
+| FAIL-G004 | `external_dependency_gap` | driver registry failure emission は `mizar-build` の外側にある。 | 将来の phase failure record は値として消費し、driver dependency や placeholder phase-service API を追加しない。 |
+| FAIL-G005 | `external_dependency_gap` | real IR output storage と phase output handles は build-owned seam 経由では利用できない。 | failed / blocked output handle を publish せず、real output handle が存在するまで tests は synthetic に保つ。 |
 | FAIL-G006 | `deferred` | non-semantic follow-up work の細かな degraded-mode permission は task 16 以前には実装しない。 | この文書では permission boundary を定義し、task 16 は tests が覆う明示的な場合だけ実装してよい。 |
 | FAIL-G007 | `deferred` | cache-aware scheduling は task 18 であり、cache validation は `mizar-cache` が所有する。 | cache miss または default cache error handling は semantic failure ではない。explicit cache-required failure は将来 work に残す。 |
 
@@ -87,6 +87,7 @@ enum BlockReason {
     DependencyCancelled,
     MissingDependencyCoverage,
     ImpossibleResourceRequest,
+    PhaseDispatchBlocked,
     NoSchedulablePath,
 }
 
@@ -137,9 +138,9 @@ Direct failure は、task が実行された、または所有 phase がその t
 Blocked work は、少なくとも 1 つの required correctness dependency が current run の
 output を提供できないか、scheduler がその task はこの run で valid result を生成できないと
 直接判断したため、その task が実行されなかったことを意味する。Direct scheduler block には
-missing dependency coverage、impossible resource request、remaining pending task に
-schedulable path がない場合が含まれる。Dependency 起因の blocked work は predecessor
-failure の二重記録ではない。
+missing dependency coverage、impossible resource request、scheduler-selected dispatch
+blockage、remaining pending task に schedulable path がない場合が含まれる。Dependency 起因の
+blocked work は predecessor failure の二重記録ではない。
 
 規則:
 
@@ -165,8 +166,9 @@ Failure propagation は task-graph correctness edge のみに従う。
   dependent を block する場合、dependent の block reason は `DependencyCancelled` である。
 - blocked task は自身の dependents を block してよいが、各 blocked record は upstream
   chain 全体を複製せず、最も近い blocking predecessor set を保持する。
-- missing dependency coverage、impossible resource request、remaining schedulable
-  path なしなどの direct scheduler block は、predecessor failure を創作せず
+- missing dependency coverage、impossible resource request、scheduler-selected dispatch
+  blockage、remaining schedulable path なしなどの direct scheduler block は、
+  predecessor failure を創作せず
   `BlockReason` を記録する。
 - required dependencies が successful、validated cache hits、または明示的に
   unblocking skips のままである independent tasks は継続する。

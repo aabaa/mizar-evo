@@ -50,8 +50,8 @@ caller is prepared to publish for the current snapshot.
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | CACHE-SEAM-G001 | `source_drift` / `test_gap` | Before task 18, `scheduler.rs` had a disabled cache policy placeholder and `TaskState::CacheHit`, but no validated-hit input surface or hit-result publication. | Task 18 adds the consumer seam, scheduler integration, and focused tests. |
-| CACHE-SEAM-G002 | `external_dependency_gap` | The driver-owned `salsa` query boundary that will call `mizar-cache` is absent because `mizar-driver` is absent. | Accept caller-supplied decisions and do not add a driver dependency or placeholder driver API. |
-| CACHE-SEAM-G003 | `external_dependency_gap` | Real sealed output handles and cache-to-IR rehydration are unavailable because `mizar-ir` is absent. | Use synthetic immutable output references in build tests; do not invent IR storage APIs. |
+| CACHE-SEAM-G002 | `external_dependency_gap` | The driver-owned `salsa` query boundary that will call `mizar-cache` remains outside `mizar-build`. | Accept caller-supplied decisions and do not add a driver dependency or placeholder driver API. |
+| CACHE-SEAM-G003 | `external_dependency_gap` | Real sealed output handles and cache-to-IR rehydration are unavailable through a build-owned seam. | Use synthetic immutable output references in build tests; do not invent IR storage APIs. |
 | CACHE-SEAM-G004 | `external_dependency_gap` | Real producer artifact publication tokens are unavailable to `mizar-build`. | A cache hit may record scheduler-visible outputs only; it does not mint publication authority or write artifacts. |
 
 ## Data Model

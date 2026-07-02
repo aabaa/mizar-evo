@@ -49,8 +49,8 @@ output references だけを受け取る。
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | CACHE-SEAM-G001 | `source_drift` / `test_gap` | task 18 以前の `scheduler.rs` には disabled cache policy placeholder と `TaskState::CacheHit` があったが、validated-hit input surface や hit-result publication はなかった。 | task 18 が consumer seam、scheduler integration、focused tests を追加する。 |
-| CACHE-SEAM-G002 | `external_dependency_gap` | `mizar-cache` を呼ぶ driver-owned `salsa` query boundary は `mizar-driver` がないため存在しない。 | caller-supplied decisions を受け取り、driver dependency や placeholder driver API を追加しない。 |
-| CACHE-SEAM-G003 | `external_dependency_gap` | `mizar-ir` がないため、real sealed output handles と cache-to-IR rehydration は利用できない。 | build tests では synthetic immutable output references を使い、IR storage API を創作しない。 |
+| CACHE-SEAM-G002 | `external_dependency_gap` | `mizar-cache` を呼ぶ driver-owned `salsa` query boundary は `mizar-build` の外側に残る。 | caller-supplied decisions を受け取り、driver dependency や placeholder driver API を追加しない。 |
+| CACHE-SEAM-G003 | `external_dependency_gap` | real sealed output handles と cache-to-IR rehydration は build-owned seam 経由では利用できない。 | build tests では synthetic immutable output references を使い、IR storage API を創作しない。 |
 | CACHE-SEAM-G004 | `external_dependency_gap` | real producer artifact publication tokens は `mizar-build` から利用できない。 | cache hit は scheduler-visible outputs だけを記録してよく、publication authority を mint したり artifact を書いたりしない。 |
 
 ## Data Model

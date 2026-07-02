@@ -29,7 +29,8 @@ acceptance, artifact serialization, or LSP protocol conversion.
 - constructing `mizar-build::task_graph::TaskGraphInput` and handing it to
   `mizar-build::task_graph::build_task_graph`;
 - constructing `mizar-build::scheduler::SchedulerInput` and consuming
-  `mizar-build::scheduler::run_scheduler` results;
+  `mizar-build::scheduler::run_scheduler_with_dispatcher` /
+  `run_scheduler` results;
 - dispatching registered phase services only through `PhaseRegistry`;
 - translating owner-provided phase results, diagnostics batches, and sealed
   output handles into driver/scheduler/session outcomes;
@@ -81,7 +82,7 @@ cache, artifact, or LSP authority.
 | Semantic/proof/artifact/doc phase adapters are not all available. | `external_dependency_gap` / `deferred` | A submit call may report the missing owner seam as blocked or unavailable; it must not mark the phase complete. |
 | Real cache lookup/compatibility is not wired through `mizar-cache` yet. | `external_dependency_gap` | Use disabled/unavailable cache scheduling unless a real cache decision is supplied by the owner seam. |
 | Real artifact publication tokens and phase-15 producer emission are unavailable. | `external_dependency_gap` | Do not emit committed-artifact events or manifest publication records from driver-owned code. |
-| The current `mizar-build` scheduler accepts precomputed modeled outcomes rather than a public registry-dispatch callback. | `external_dependency_gap` | D-008 may validate scheduler submission and result consumption, but real scheduler-driven phase execution waits for an owner dispatch seam. |
+| Owner-provided phase input identities, parent output handles, diagnostics/output publisher handles, and producer publication tokens are not always available for real scheduler-selected dispatch. | `external_dependency_gap` / `deferred` | If scheduler-selected dispatch reaches a task whose owner inputs are absent, block with `BlockedByPhaseDispatchGap`; when supplied, consume the `mizar-build` scheduler-selected dispatcher seam and execute phase services only through `PhaseRegistry`. |
 | External file watcher/coalescing owner and LSP build bridge are not available. | `external_dependency_gap` / `deferred` | D-014 may accept owner-provided changed paths and snapshot inputs, but it must not create fake file watcher APIs, source-loading rules, LSP document payloads, or editor snapshot conversion. |
 | `mizar-ir` snapshot replacement is available only through `PhaseOutputPublisher`. | real owner seam when supplied; otherwise `external_dependency_gap` | D-014 registers the first watch snapshot as current and calls `replace_current_snapshot(old, new)` only when a real publisher is supplied and the snapshot id changes. Same-snapshot replacement is a no-op. Missing publisher input is a classified gap, not a provisional output handle. |
 | Later event consumers such as CLI rendering and LSP protocol conversion are not implemented yet. | `deferred` to entry-point tasks | `events.md` / `src/events.rs` define protocol-agnostic event payloads and replay. Consumers must not pull CLI/LSP authority into the driver. |
@@ -162,8 +163,9 @@ origin. `BuildRequestId` is allocated only when the draft is accepted into a
   classified unavailable coverage when those seams are absent;
 - task graph profile, scheduler mode, priority hints, resource budget,
   cancellation policy, and cache scheduling plan/policy;
-- diagnostics and IR publisher handles supplied by their owner crates when a
-  real phase service requires them.
+- optional `PhaseDispatchInputProvider` identities for scheduler-selected
+  registry dispatch. Missing identities are reported only for tasks that reach
+  the scheduler-selected dispatch callback.
 
 The driver may validate that these inputs are present and well classified. It
 must not parse manifests with local rules, derive module dependencies by
@@ -192,34 +194,32 @@ publication tokens.
 7. Build `SchedulerInput` from the `TaskGraph` and the owner-provided
    scheduling controls. Cache decisions may be `Disabled`, `Unavailable`, or a
    real owner-provided plan; the driver must not decide compatibility itself.
-8. For task D-008, do not execute phase services before scheduler submission.
-   The current `mizar-build` scheduler is a modeled/synthetic scheduler input
-   surface: it accepts precomputed `SyntheticTaskOutcome` values and has no
-   public callback that asks the driver to run a `PhaseService` at scheduler
-   dispatch time. Real scheduler-driven phase execution is therefore an
-   `external_dependency_gap`. If the task graph contains any phase beyond
-   `PackageResolve`, D-008 blocks the session with `BlockedByPhaseDispatchGap`
-   and records the affected phases instead of submitting a modeled scheduler
-   run that would synthesize successful phase outputs.
-9. Pass the resulting `SchedulerInput` to `mizar-build::scheduler::run_scheduler`
-   only for phase-0 scheduler submission validation and consumption of
-   authoritative scheduler state. The driver must not treat scheduler synthetic
-   outputs, including default completed outputs, as real `mizar-ir` phase
-   outputs.
-10. When a future `mizar-build` owner seam exposes real scheduler dispatch, the
-    driver will execute available phase services only through the registry query
-    boundary at scheduler-selected execution points and will convert only real
-    `PhaseResult` output references into session outcomes.
+8. Do not execute phase services before scheduler submission, and do not replay
+   scheduler readiness, cache-hit, cancellation, or resource-admission logic as
+   a dispatch preflight. If a scheduler-selected task lacks owner-provided
+   dispatch inputs, the registry-backed dispatcher returns a blocked scheduler
+   outcome; the driver records `BlockedByPhaseDispatchGap` and the affected
+   phases from that scheduler result.
+9. Pass the resulting `SchedulerInput` to
+   `mizar-build::scheduler::run_scheduler_with_dispatcher` with a
+   registry-backed dispatcher. The dispatcher calls `PhaseRegistry` only at
+   scheduler-selected execution points, covers every phase listed on the
+   selected task by invoking each owning registry service span once in
+   task-graph phase order, and maps `PhaseStatus` into scheduler outcomes. The
+   driver must not duplicate readiness, dependency ordering, resource
+   admission, cache-decision consumption, or cancellation semantics.
+10. The driver must not treat scheduler synthetic outputs, including default
+    completed outputs, as real `mizar-ir` phase outputs. Real `PhaseResult`
+    output references, producer outputs, and artifact tokens remain owner seams.
 11. Before any result, diagnostic, or artifact-boundary handoff is exposed as
     current, call the combined request publication guard from `request.md`.
 12. Finish the session as succeeded, failed, blocked, cancelled, or superseded
     from the structured scheduler/session outcomes.
 
 The driver may choose fail-fast behavior when a required real owner seam is
-missing. Until the real scheduler-dispatch owner seam exists, D-008 may only
-run scheduler validation for phase-0 bootstrap graphs. It must not use
-`mizar-build` synthetic output types to pretend that an absent phase produced
-output.
+missing. Missing phase input identities or publisher/producer seams remain
+classified owner gaps. The driver must not use `mizar-build` synthetic output
+types to pretend that an absent phase produced output.
 
 ## Scheduler Boundary
 
@@ -341,8 +341,9 @@ Task D-008 and D-011 source tests must cover:
   synthetic outputs;
 - scheduler submission consumes `SchedulerInput`/`SchedulerRun` rather than
   duplicating ready-queue semantics;
-- D-008 treats current `mizar-build` synthetic outcomes as modeled scheduler
-  fixtures only and never as real phase output handles;
+- scheduler-selected registry dispatch is consumed only through
+  `run_scheduler_with_dispatcher`, and missing owner dispatch inputs remain
+  classified dispatch gaps;
 - stale or superseded sessions cannot publish current diagnostics or
   artifact-boundary events;
 - source/lint guards prove D-008 does not allocate diagnostic codes, deduplicate

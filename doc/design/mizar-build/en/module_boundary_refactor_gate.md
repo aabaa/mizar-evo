@@ -81,6 +81,6 @@ Because task 26 changes Rust source layout, the required verification is:
 
 Task 26 verification passed those commands. Additional regression checks also
 passed for `cargo test -p mizar-cache`, `cargo test -p mizar-artifact`, `cargo
-test -p mizar-vc`, and `cargo test -p mizar-proof`. `mizar-driver` is absent in
-this checkout, so driver integration remains an `external_dependency_gap`
-rather than a stubbed dependency.
+test -p mizar-vc`, and `cargo test -p mizar-proof`. At the time of task 26,
+driver integration remained an `external_dependency_gap`; task 27 handles the
+build-owned dispatch seam without adding a stubbed driver dependency.

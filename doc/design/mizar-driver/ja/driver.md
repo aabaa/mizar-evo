@@ -28,7 +28,8 @@ artifact serialization、LSP protocol conversion は所有しない。
 - `mizar-build::task_graph::TaskGraphInput` を構築し、
   `mizar-build::task_graph::build_task_graph` へ渡す;
 - `mizar-build::scheduler::SchedulerInput` を構築し、
-  `mizar-build::scheduler::run_scheduler` result を消費する;
+  `mizar-build::scheduler::run_scheduler_with_dispatcher` / `run_scheduler`
+  result を消費する;
 - registered phase service を `PhaseRegistry` 経由でのみ dispatch する;
 - owner-provided phase result、diagnostic batch、sealed output handle を
   driver / scheduler / session outcome へ変換する;
@@ -79,7 +80,7 @@ Downstream crate はこれらの enum を match するとき wildcard arm を持
 | semantic / proof / artifact / doc phase adapter がすべて利用可能ではない。 | `external_dependency_gap` / `deferred` | submit call は missing owner seam を blocked または unavailable として報告してよい。phase complete と mark してはならない。 |
 | real cache lookup / compatibility はまだ `mizar-cache` 経由で結線されていない。 | `external_dependency_gap` | real cache decision が owner seam から供給されるまで、disabled / unavailable cache scheduling を使う。 |
 | real artifact publication token と phase-15 producer emission が利用できない。 | `external_dependency_gap` | driver-owned code から committed-artifact event や manifest publication record を emit しない。 |
-| 現在の `mizar-build` scheduler は public registry-dispatch callback ではなく precomputed modeled outcome を受け取る。 | `external_dependency_gap` | D-008 は scheduler submission と result consumption を validate してよいが、real scheduler-driven phase execution は owner dispatch seam を待つ。 |
+| owner-provided phase input identities、parent output handles、diagnostics/output publisher handles、producer publication tokens が real scheduler-selected dispatch に常に利用できるわけではない。 | `external_dependency_gap` / `deferred` | scheduler-selected dispatch が owner inputs のない task に到達した場合は `BlockedByPhaseDispatchGap` で block する。供給された場合は `mizar-build` の scheduler-selected dispatcher seam を消費し、phase service は `PhaseRegistry` 経由でのみ実行する。 |
 | external file watcher / coalescing owner と LSP build bridge が利用できない。 | `external_dependency_gap` / `deferred` | D-014 は owner-provided changed path と snapshot input を受け取ってよいが、fake file watcher API、source-loading rule、LSP document payload、editor snapshot conversion は作らない。 |
 | `mizar-ir` snapshot replacement は `PhaseOutputPublisher` 経由でのみ利用できる。 | real owner seam が供給された場合のみ real、それ以外は `external_dependency_gap` | D-014 は最初の watch snapshot を current として register し、real publisher が供給され snapshot id が変わる場合だけ `replace_current_snapshot(old, new)` を呼ぶ。same-snapshot replacement は no-op。publisher input がない場合は provisional output handle ではなく分類済み gap。 |
 | CLI rendering や LSP protocol conversion などの後続 event consumer はまだ実装されていない。 | entry-point task へ `deferred` | `events.md` / `src/events.rs` は protocol-agnostic event payload と replay を定義する。consumer は CLI / LSP authority を driver へ持ち込んではならない。 |
@@ -157,8 +158,9 @@ lockfile / toolchain identity、verifier-config identity、target、profile、or
   seam がない場合の classified unavailable coverage;
 - task graph profile、scheduler mode、priority hint、resource budget、
   cancellation policy、cache scheduling plan / policy;
-- real phase service が要求する場合に owner crate から供給される diagnostics と IR
-  publisher handle。
+- scheduler-selected registry dispatch 用の任意の `PhaseDispatchInputProvider`
+  identities。欠落した identities は、task が scheduler-selected dispatch callback に到達した
+  場合にだけ報告される。
 
 driver はこれらの input が存在し適切に分類されていることを validate してよい。
 local rule で manifest を parse したり、semantics を推測して module dependency を導出したり、
@@ -185,30 +187,30 @@ cache key を構築したり、output handle を mint したり、publication to
 7. `TaskGraph` と owner-provided scheduling controls から `SchedulerInput` を構築する。
    cache decision は `Disabled`、`Unavailable`、または owner-provided real plan である。
    driver は compatibility を決定してはならない。
-8. Task D-008 では scheduler submission の前に phase service を実行しない。現在の
-   `mizar-build` scheduler は modeled / synthetic scheduler input surface であり、
-   precomputed `SyntheticTaskOutcome` を受け取るが、scheduler dispatch 時に driver へ
-   `PhaseService` 実行を依頼する public callback を持たない。したがって real
-   scheduler-driven phase execution は `external_dependency_gap` である。task graph が
-   `PackageResolve` を超える phase を含む場合、D-008 は modeled scheduler run を投入して
-   successful phase output を synthetic に作らせるのではなく、session を
-   `BlockedByPhaseDispatchGap` で block し、影響する phase を記録する。
-9. 得られた `SchedulerInput` は phase-0 scheduler submission validation と authoritative
-   scheduler state の消費のためだけに `mizar-build::scheduler::run_scheduler` へ渡す。
-   driver は、default completed output を含む scheduler synthetic output を real
-   `mizar-ir` phase output と扱ってはならない。
-10. 将来 `mizar-build` owner seam が real scheduler dispatch を公開したら、driver は
-    scheduler-selected execution point でのみ registry query boundary 経由の phase service を
-    実行し、real `PhaseResult` の output reference だけを session outcome へ変換する。
+8. scheduler submission の前に phase service を実行せず、scheduler readiness、cache hit、
+   cancellation、resource admission logic を dispatch preflight として replay しない。
+   scheduler-selected task が owner-provided dispatch inputs を欠く場合、
+   registry-backed dispatcher は blocked scheduler outcome を返す。driver はその scheduler
+   result から `BlockedByPhaseDispatchGap` と affected phases を記録する。
+9. 得られた `SchedulerInput` は registry-backed dispatcher 付きで
+   `mizar-build::scheduler::run_scheduler_with_dispatcher` へ渡す。dispatcher は
+   scheduler-selected execution point でだけ `PhaseRegistry` を呼び、selected task に listed
+   された全 phase を、owning registry service span ごとに 1 回だけ task-graph phase order で
+   invoke することで cover し、`PhaseStatus` を scheduler outcomes へ写す。driver は
+   readiness、dependency ordering、resource admission、cache-decision consumption、
+   cancellation semantics を複製してはならない。
+10. driver は default completed output を含む scheduler synthetic output を real
+    `mizar-ir` phase output と扱ってはならない。real `PhaseResult` output references、
+    producer outputs、artifact tokens は owner seams のままである。
 11. result、diagnostic、artifact-boundary handoff を current として公開する前に、
     `request.md` の combined request publication guard を呼ぶ。
 12. structured scheduler / session outcome から、session を succeeded、failed、blocked、
     cancelled、superseded のいずれかとして finish する。
 
-required real owner seam がない場合、driver は fail-fast を選んでよい。real scheduler-dispatch
-owner seam が存在するまで、D-008 は phase-0 bootstrap graph に限って scheduler validation を
-実行してよい。存在しない phase が output を生成したように見せるために、`mizar-build`
-synthetic output type を使ってはならない。
+required real owner seam がない場合、driver は fail-fast を選んでよい。phase input
+identities や publisher/producer seams がない場合は classified owner gaps のままである。
+存在しない phase が output を生成したように見せるために、`mizar-build` synthetic output
+type を使ってはならない。
 
 ## Scheduler Boundary
 
@@ -320,8 +322,8 @@ Task D-008 と D-011 の source test は次を cover しなければならない
 - missing real phase service は synthetic output なしで classified gap として報告される;
 - scheduler submission は ready-queue semantics を複製せず `SchedulerInput` /
   `SchedulerRun` を消費する;
-- D-008 は現在の `mizar-build` synthetic outcome を modeled scheduler fixture としてのみ扱い、
-  real phase output handle としては扱わない;
+- scheduler-selected registry dispatch は `run_scheduler_with_dispatcher` を通じてだけ
+  消費され、missing owner dispatch inputs は classified dispatch gaps のままである;
 - stale または superseded session は current diagnostic や artifact-boundary event を
   publish できない;
 - source / lint guard は、D-008 が diagnostic code allocation、diagnostic record

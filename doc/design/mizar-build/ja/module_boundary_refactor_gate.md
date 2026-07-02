@@ -80,6 +80,6 @@ task 26 は Rust source layout を変更するため、required verification は
 
 task 26 verification はこれらの commands に合格した。追加の regression checks として
 `cargo test -p mizar-cache`、`cargo test -p mizar-artifact`、`cargo test -p
-mizar-vc`、`cargo test -p mizar-proof` も合格した。`mizar-driver` はこの checkout
-には存在しないため、driver integration は stubbed dependency ではなく
-`external_dependency_gap` のまま残る。
+mizar-vc`、`cargo test -p mizar-proof` も合格した。task 26 時点では driver
+integration は `external_dependency_gap` のままだった。task 27 は stubbed driver
+dependency を追加せず、build-owned dispatch seam を扱う。

@@ -53,8 +53,8 @@ publication 禁止規則を保たなければならない。
 |---|---|---|---|
 | CAN-G001 | `design_drift` | `todo.md` は `cancel.md` を要求していたが、task 13 以前には module spec がなかった。 | task 13 でこの仕様と日本語 companion を追加する。 |
 | CAN-G002 | `source_drift` / `test_gap` | `src/cancel.rs` と cancellation tests は task 14 以前には存在しなかった。 | task 14 で versioned token、snapshot invalidation、publication guard、scheduler integration、focused tests を追加する。 |
-| CAN-G003 | `external_dependency_gap` | この checkout には `mizar-driver` request/session/watch/LSP integration が存在しない。 | cancellation を input-driven かつ snapshot-oriented に保ち、driver dependency や placeholder driver API を追加しない。 |
-| CAN-G004 | `external_dependency_gap` | この checkout には `mizar-ir` output storage と snapshot-handle rehydration が存在しない。 | real IR seam が存在するまで cancelled/obsolete output handling は synthetic に保ち、IR handle や storage API を創作しない。 |
+| CAN-G003 | `external_dependency_gap` | driver request/session/watch/LSP integration は `mizar-build` の外側にある。 | cancellation を input-driven かつ snapshot-oriented に保ち、driver dependency や placeholder driver API を追加しない。 |
+| CAN-G004 | `external_dependency_gap` | real IR output storage と snapshot-handle rehydration は build-owned seam 経由では利用できない。 | real IR seam が存在するまで cancelled/obsolete output handling は synthetic に保ち、IR handle や storage API を創作しない。 |
 | CAN-G005 | `external_dependency_gap` | ATP/backend process manager は `mizar-build` の外側にある。 | cooperative cancellation と backend cancellation outcome だけを model 化し、OS process を spawn、kill、supervise しない。 |
 | CAN-G006 | `external_dependency_gap` | real producer artifact publication token は `mizar-build` が利用できる状態ではない。 | freshness と partial-publication 禁止 guard を仕様化し、fake publication token を作らない。 |
 | CAN-G007 | `deferred` | cache-aware scheduling は task 18 であり、cache key、fingerprint、proof-reuse validation は `mizar-cache` が所有する。 | obsolete work の再利用は将来の external cache validation を通じてのみ行う。ここで cache internals を再実装しない。 |

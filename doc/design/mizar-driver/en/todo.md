@@ -404,8 +404,8 @@ Keep `cargo test -p mizar-driver` green after each task (see
       repeated runs, worker counts, and scheduler completion orders; checks
       byte-stable CLI human/JSON output and exit codes for successful builds,
       manifest diagnostics owner gaps, and unavailable phase-service owner
-      gaps; verifies that multi-task source/module work is deterministically
-      blocked before scheduler submission while real phase dispatch remains an
+      gaps; records the historical pre-task-27 deterministic blocking behavior
+      for multi-task source/module work while real phase dispatch remained an
       owner gap; and verifies that superseded watch replay deterministically
       emits suppressed publications without `diagnostics_ready` or
       `artifact_boundary` events. The suite does not invent semantic/proof

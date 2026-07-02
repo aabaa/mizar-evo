@@ -59,9 +59,9 @@ cache validation, or artifact publication authority.
 |---|---|---|---|
 | FAIL-G001 | `design_drift` | `todo.md` required `failure_state.md`, but no module spec existed before task 15. | Task 15 adds this spec and its Japanese companion. |
 | FAIL-G002 | `source_drift` / `test_gap` | `src/failure_state.rs` and focused failure-state tests were absent before task 16. | Task 16 adds build-side records, bounded propagation helpers, deterministic ordering, scheduler integration, and focused tests. |
-| FAIL-G003 | `external_dependency_gap` | This checkout has no `mizar-diagnostics` crate for the stable diagnostic registry or rendered failure snapshots. | Keep failure records synthetic/build-side; do not invent diagnostic-registry APIs in `mizar-build`. |
-| FAIL-G004 | `external_dependency_gap` | `mizar-driver` and real phase-service failure emission are absent in this checkout. | Consume future phase failure records by value; do not add driver dependencies or placeholder phase-service APIs. |
-| FAIL-G005 | `external_dependency_gap` | `mizar-ir` output storage and phase output handles are absent. | Do not publish failed or blocked output handles; keep tests synthetic until real output handles exist. |
+| FAIL-G003 | `external_dependency_gap` | Stable diagnostic records/indexes are owned by `mizar-diagnostics`, not by `mizar-build`. | Consume diagnostic refs/records by value where provided; do not invent diagnostic-registry APIs in `mizar-build`. |
+| FAIL-G004 | `external_dependency_gap` | Driver registry failure emission is outside `mizar-build`. | Consume future phase failure records by value; do not add driver dependencies or placeholder phase-service APIs. |
+| FAIL-G005 | `external_dependency_gap` | Real IR output storage and phase output handles are not available through a build-owned seam. | Do not publish failed or blocked output handles; keep tests synthetic until real output handles exist. |
 | FAIL-G006 | `deferred` | Fine-grained degraded-mode permissions for non-semantic follow-up work are not implemented before task 16. | Specify the permission boundary here; task 16 may implement only the explicit cases covered by tests. |
 | FAIL-G007 | `deferred` | Cache-aware scheduling is task 18 and `mizar-cache` owns cache validation. | Cache miss or default cache error handling is not a semantic failure; explicit cache-required failure remains future work. |
 
@@ -88,6 +88,7 @@ enum BlockReason {
     DependencyCancelled,
     MissingDependencyCoverage,
     ImpossibleResourceRequest,
+    PhaseDispatchBlocked,
     NoSchedulablePath,
 }
 
@@ -140,9 +141,9 @@ Blocked work means the task did not run because either at least one required
 correctness dependency could not provide an output for the current run, or the
 scheduler determined directly that the task cannot produce a valid result in
 this run. Direct scheduler blocks include missing dependency coverage,
-impossible resource requests, and a remaining pending task with no schedulable
-path. Dependency-caused blocked work is not a second copy of the predecessor
-failure.
+impossible resource requests, scheduler-selected dispatch blockage, and a
+remaining pending task with no schedulable path. Dependency-caused blocked work
+is not a second copy of the predecessor failure.
 
 Rules:
 
@@ -172,7 +173,8 @@ Failure propagation follows task-graph correctness edges only.
   the nearest blocking predecessor set rather than duplicating the whole
   upstream chain.
 - Direct scheduler blocks, such as missing dependency coverage, impossible
-  resource requests, or no remaining schedulable path, record their
+  resource requests, scheduler-selected dispatch blockage, or no remaining
+  schedulable path, record their
   `BlockReason` without inventing a predecessor failure.
 - Independent tasks continue whenever their required dependencies remain
   successful, validated cache hits, or explicitly unblocking skips.

@@ -5,7 +5,7 @@ use crate::{
         CacheSchedulingOutcome, CacheSchedulingPlan, CacheSchedulingPlanDiagnosticKind,
         ValidatedCacheHit,
     },
-    cancel::{CancellationCheckpoint, CancellationDecision, CancellationState},
+    cancel::{CancellationCheckpoint, CancellationDecision, CancellationState, CancellationToken},
     failure_state::{BlockReason, BlockedTaskRecord, BuildFailureRecord},
     resource::{
         ResourceAdmissionStatus, ResourceBudget, ResourceManager, ResourceTelemetry,
@@ -126,6 +126,42 @@ pub enum SyntheticTaskStatus {
     Skip,
 }
 
+pub trait SchedulerTaskDispatcher {
+    fn dispatch(&mut self, task: SchedulerDispatchTask<'_>) -> SchedulerDispatchOutcome;
+}
+
+impl<F> SchedulerTaskDispatcher for F
+where
+    F: FnMut(SchedulerDispatchTask<'_>) -> SchedulerDispatchOutcome,
+{
+    fn dispatch(&mut self, task: SchedulerDispatchTask<'_>) -> SchedulerDispatchOutcome {
+        self(task)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct SchedulerDispatchTask<'a> {
+    pub task: &'a BuildTask,
+    pub snapshot: BuildSnapshotId,
+    pub cancellation: Option<CancellationToken>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SchedulerDispatchOutcome {
+    pub status: SchedulerDispatchStatus,
+    pub diagnostics: Vec<SchedulerDiagnosticRef>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum SchedulerDispatchStatus {
+    Complete,
+    Failed,
+    Blocked,
+    Skipped,
+    Cancelled,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SyntheticOutputRef {
     pub identity: String,
@@ -137,6 +173,13 @@ pub struct SchedulerDiagnosticRef {
     pub source: String,
     pub code: String,
     pub message: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ExecutedTaskOutcome {
+    state: TaskState,
+    output_refs: Vec<SyntheticOutputRef>,
+    diagnostics: Vec<SchedulerDiagnosticRef>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -271,6 +314,62 @@ impl SyntheticTaskOutcome {
     }
 }
 
+impl SchedulerDispatchOutcome {
+    #[must_use]
+    pub fn complete() -> Self {
+        Self {
+            status: SchedulerDispatchStatus::Complete,
+            diagnostics: Vec::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn failed(diagnostics: Vec<SchedulerDiagnosticRef>) -> Self {
+        Self {
+            status: SchedulerDispatchStatus::Failed,
+            diagnostics,
+        }
+    }
+
+    #[must_use]
+    pub fn blocked(diagnostics: Vec<SchedulerDiagnosticRef>) -> Self {
+        Self {
+            status: SchedulerDispatchStatus::Blocked,
+            diagnostics,
+        }
+    }
+
+    #[must_use]
+    pub fn skipped() -> Self {
+        Self {
+            status: SchedulerDispatchStatus::Skipped,
+            diagnostics: Vec::new(),
+        }
+    }
+
+    #[must_use]
+    pub fn cancelled() -> Self {
+        Self {
+            status: SchedulerDispatchStatus::Cancelled,
+            diagnostics: Vec::new(),
+        }
+    }
+}
+
+impl ExecutedTaskOutcome {
+    fn new(
+        state: TaskState,
+        output_refs: Vec<SyntheticOutputRef>,
+        diagnostics: Vec<SchedulerDiagnosticRef>,
+    ) -> Self {
+        Self {
+            state,
+            output_refs,
+            diagnostics,
+        }
+    }
+}
+
 impl SyntheticOutputRef {
     #[must_use]
     pub fn new(identity: impl Into<String>, content: impl Into<String>) -> Self {
@@ -318,6 +417,19 @@ pub fn run_scheduler(input: SchedulerInput) -> Result<SchedulerRun, SchedulerDia
     run_scheduler_with_dispatch_batches(input).map(|(run, _dispatch_batches)| run)
 }
 
+pub fn run_scheduler_with_dispatcher<D>(
+    input: SchedulerInput,
+    dispatcher: &mut D,
+) -> Result<SchedulerRun, SchedulerDiagnostics>
+where
+    D: SchedulerTaskDispatcher,
+{
+    let dispatcher: &mut dyn SchedulerTaskDispatcher = dispatcher;
+    SchedulerBuilder::new(input)
+        .run(Some(dispatcher))
+        .map(|(run, _dispatch_batches)| run)
+}
+
 impl SchedulerBuilder {
     fn new(input: SchedulerInput) -> Self {
         let graph_order = input
@@ -357,7 +469,10 @@ impl SchedulerBuilder {
         }
     }
 
-    fn run(mut self) -> Result<(SchedulerRun, Vec<Vec<TaskId>>), SchedulerDiagnostics> {
+    fn run(
+        mut self,
+        dispatcher: Option<&mut dyn SchedulerTaskDispatcher>,
+    ) -> Result<(SchedulerRun, Vec<Vec<TaskId>>), SchedulerDiagnostics> {
         self.validate_outcomes();
         self.validate_cache_decisions();
         if !self.diagnostics.is_empty() {
@@ -379,7 +494,7 @@ impl SchedulerBuilder {
             });
         }
 
-        self.process_ready_queue();
+        self.process_ready_queue(dispatcher);
         self.block_remaining_pending_tasks();
         self.events.push(SchedulerEvent {
             kind: SchedulerEventKind::RunFinished,
@@ -547,7 +662,8 @@ impl SchedulerBuilder {
         }
     }
 
-    fn process_ready_queue(&mut self) {
+    fn process_ready_queue(&mut self, mut dispatcher: Option<&mut dyn SchedulerTaskDispatcher>) {
+        let uses_real_dispatcher = dispatcher.is_some();
         loop {
             let mut ready = self.new_ready_tasks();
             if ready.is_empty() {
@@ -612,7 +728,7 @@ impl SchedulerBuilder {
             }
 
             self.dispatch_batches.push(batch.clone());
-            if self.input.completion_order == CompletionOrder::Reverse {
+            if !uses_real_dispatcher && self.input.completion_order == CompletionOrder::Reverse {
                 batch.reverse();
             }
 
@@ -630,10 +746,20 @@ impl SchedulerBuilder {
                     .expect("running task has task metadata")
                     .clone();
 
-                let final_state = self.execute_task(&task);
-                let final_state = self.apply_publication_freshness(&task, final_state);
+                let mut execution = match dispatcher.as_deref_mut() {
+                    Some(dispatcher) => self.dispatch_task(&task, dispatcher),
+                    None => self.execute_task(&task),
+                };
+                execution.state = self.apply_publication_freshness(&task, execution.state);
+                if execution.state == TaskState::Blocked {
+                    self.record_dispatch_block(&task, execution.diagnostics);
+                    self.release_task_resources(&task_id);
+                    self.block_dependents(&task_id);
+                    continue;
+                }
+                let final_state = execution.state;
                 self.set_state(&task_id, final_state);
-                self.record_result(&task, final_state);
+                self.record_execution_result(&task, execution);
                 self.events.push(event_for_task(
                     if final_state == TaskState::Skipped {
                         SchedulerEventKind::TaskSkipped
@@ -652,7 +778,7 @@ impl SchedulerBuilder {
         }
     }
 
-    fn execute_task(&self, task: &BuildTask) -> TaskState {
+    fn execute_task(&self, task: &BuildTask) -> ExecutedTaskOutcome {
         match self.input.cache {
             CacheSchedulingPolicy::Disabled
             | CacheSchedulingPolicy::Enabled
@@ -664,10 +790,10 @@ impl SchedulerBuilder {
         if self.cancellation_decision(task, CancellationCheckpoint::RunningSafeCheckpoint)
             == CancellationDecision::CancelAtCheckpoint
         {
-            return TaskState::Cancelled;
+            return ExecutedTaskOutcome::new(TaskState::Cancelled, Vec::new(), Vec::new());
         }
 
-        match self
+        let state = match self
             .outcomes_by_task
             .get(&task.id)
             .map(|outcome| outcome.status)
@@ -678,7 +804,41 @@ impl SchedulerBuilder {
                 TaskState::Skipped
             }
             Some(SyntheticTaskStatus::Complete) | None => TaskState::Completed,
+        };
+        let (output_refs, diagnostics) = self.synthetic_payload_for_task(task, state);
+        ExecutedTaskOutcome::new(state, output_refs, diagnostics)
+    }
+
+    fn dispatch_task(
+        &self,
+        task: &BuildTask,
+        dispatcher: &mut dyn SchedulerTaskDispatcher,
+    ) -> ExecutedTaskOutcome {
+        if self.cancellation_decision(task, CancellationCheckpoint::RunningSafeCheckpoint)
+            == CancellationDecision::CancelAtCheckpoint
+        {
+            return ExecutedTaskOutcome::new(TaskState::Cancelled, Vec::new(), Vec::new());
         }
+        if self.skip_due_to_dependency(task) {
+            return ExecutedTaskOutcome::new(TaskState::Skipped, Vec::new(), Vec::new());
+        }
+
+        let outcome = dispatcher.dispatch(SchedulerDispatchTask {
+            task,
+            snapshot: self.input.graph.snapshot,
+            cancellation: self.cancellation_state.token_for_task(&task.id),
+        });
+        let state = match outcome.status {
+            SchedulerDispatchStatus::Complete => TaskState::Completed,
+            SchedulerDispatchStatus::Failed => TaskState::Failed,
+            SchedulerDispatchStatus::Blocked => TaskState::Blocked,
+            SchedulerDispatchStatus::Skipped => TaskState::Skipped,
+            SchedulerDispatchStatus::Cancelled => TaskState::Cancelled,
+        };
+        let mut diagnostics = outcome.diagnostics;
+        diagnostics.sort();
+        diagnostics.dedup();
+        ExecutedTaskOutcome::new(state, Vec::new(), diagnostics)
     }
 
     fn apply_cache_decision_if_hit(&mut self, task: &BuildTask) -> bool {
@@ -1048,6 +1208,15 @@ impl SchedulerBuilder {
     }
 
     fn record_result(&mut self, task: &BuildTask, state: TaskState) {
+        let (output_refs, diagnostics) = self.synthetic_payload_for_task(task, state);
+        self.insert_result(task, state, output_refs, diagnostics);
+    }
+
+    fn synthetic_payload_for_task(
+        &self,
+        task: &BuildTask,
+        state: TaskState,
+    ) -> (Vec<SyntheticOutputRef>, Vec<SchedulerDiagnosticRef>) {
         let outcome = self.outcomes_by_task.get(&task.id);
         let mut outputs = outcome
             .map(|outcome| outcome.outputs.clone())
@@ -1059,7 +1228,7 @@ impl SchedulerBuilder {
             .unwrap_or_default();
         diagnostics.sort();
         diagnostics.dedup();
-        let (output_refs, diagnostics) = match state {
+        match state {
             TaskState::Completed => (outputs, diagnostics),
             TaskState::Failed => (Vec::new(), diagnostics),
             TaskState::Pending
@@ -1069,7 +1238,54 @@ impl SchedulerBuilder {
             | TaskState::Skipped
             | TaskState::Blocked
             | TaskState::Cancelled => (Vec::new(), Vec::new()),
+        }
+    }
+
+    fn record_execution_result(&mut self, task: &BuildTask, execution: ExecutedTaskOutcome) {
+        self.insert_result(
+            task,
+            execution.state,
+            execution.output_refs,
+            execution.diagnostics,
+        );
+    }
+
+    fn record_dispatch_block(
+        &mut self,
+        task: &BuildTask,
+        diagnostics: Vec<SchedulerDiagnosticRef>,
+    ) {
+        if self.block_task(
+            &task.id,
+            Vec::new(),
+            BlockReason::PhaseDispatchBlocked,
+            None,
+        ) {
+            self.insert_result(task, TaskState::Blocked, Vec::new(), diagnostics);
+        }
+    }
+
+    fn insert_result(
+        &mut self,
+        task: &BuildTask,
+        state: TaskState,
+        output_refs: Vec<SyntheticOutputRef>,
+        diagnostics: Vec<SchedulerDiagnosticRef>,
+    ) {
+        let (mut output_refs, mut diagnostics) = match state {
+            TaskState::Completed => (output_refs, diagnostics),
+            TaskState::Failed | TaskState::Blocked => (Vec::new(), diagnostics),
+            TaskState::Pending
+            | TaskState::Ready
+            | TaskState::Running
+            | TaskState::CacheHit
+            | TaskState::Skipped
+            | TaskState::Cancelled => (Vec::new(), Vec::new()),
         };
+        output_refs.sort();
+        output_refs.dedup();
+        diagnostics.sort();
+        diagnostics.dedup();
         let canonical_order = SchedulerOrderKey {
             graph_index: self.graph_index(&task.id),
             lifecycle_rank: lifecycle_rank(SchedulerEventKind::TaskFinished),
@@ -1223,7 +1439,7 @@ impl SchedulerBuilder {
 fn run_scheduler_with_dispatch_batches(
     input: SchedulerInput,
 ) -> Result<(SchedulerRun, Vec<Vec<TaskId>>), SchedulerDiagnostics> {
-    SchedulerBuilder::new(input).run()
+    SchedulerBuilder::new(input).run(None)
 }
 
 fn dependents_by_task(graph: &TaskGraph) -> BTreeMap<TaskId, Vec<TaskId>> {

@@ -18,6 +18,7 @@ It is an execution-order component, not a semantic authority.
 - [architecture 22](../../architecture/en/22.incremental_verification_contract.md)
 - [internal 01](../../internal/en/01.compiler_driver_and_pipeline_scheduler.md)
 - [cache_seam.md](./cache_seam.md)
+- [phase_dispatch.md](./phase_dispatch.md)
 - [task_graph.md](./task_graph.md)
 
 ## Scope
@@ -53,13 +54,14 @@ It is an execution-order component, not a semantic authority.
 |---|---|---|---|
 | SCH-G001 | `design_drift` | `todo.md` required `scheduler.md`, but no module spec existed before task 9. | Task 9 adds this spec and its Japanese companion. |
 | SCH-G002 | `source_drift` / `test_gap` | Before task 10, `src/scheduler.rs` and scheduler tests were absent; task 10 now provides the synthetic scheduler core and focused unit tests. | Keep this spec, the Rust surface, and tests synchronized as later resource/cancel/failure/cache tasks extend the module. |
-| SCH-G003 | `external_dependency_gap` | `mizar-driver` request/session/registry/event integration is absent in this checkout. | Accept caller-supplied graph/session-like inputs in later source; do not add a driver dependency or placeholder driver API. |
-| SCH-G004 | `external_dependency_gap` | `mizar-ir` sealed output handles and storage adapters are absent. | Use synthetic in-memory task outputs in scheduler tests; do not invent IR storage APIs. |
+| SCH-G003 | `external_dependency_gap` | `mizar-driver` request/session/registry/event authority is outside `mizar-build` even though the driver crate now exists. | Accept caller-supplied graph/session-like inputs and dispatcher callbacks; do not add a driver dependency or placeholder driver API. |
+| SCH-G004 | `external_dependency_gap` | Real IR sealed output handles and storage adapters are not available through a build-owned seam. | Use synthetic in-memory task outputs in scheduler tests; do not invent IR storage APIs. |
 | SCH-G005 | `source_drift` / `test_gap` | Before tasks 11-12, resource-budget accounting existed only in architecture notes. Task 12 adds `src/resource.rs`, scheduler admission integration, and focused tests. | Keep this spec, `resource.md`, and the scheduler/resource Rust surface synchronized as budget scopes evolve. |
 | SCH-G006 | `source_drift` / `test_gap` | Cancellation state was absent before tasks 13-14. Task 14 adds `src/cancel.rs`, scheduler checkpoint integration, and focused tests. | Keep scheduler cancellation checkpoints synchronized with `cancel.md`; snapshot-token ownership remains there. |
 | SCH-G007 | `source_drift` / `test_gap` | Failure-state propagation was absent before task 16. Task 16 adds deterministic `failure_records` / `blocked_records`, bounded propagation, scheduler integration, and focused tests. | Keep the scheduler record surface synchronized with `failure_state.md`; detailed taxonomy belongs there. |
 | SCH-G008 | `source_drift` / `test_gap` | Before task 18, cache-aware scheduling had only disabled/miss placeholders while `mizar-cache` already owned validation. | Task 18 models cache hits as validated execution-skip outcomes only; do not construct cache keys or proof-reuse decisions here. |
 | SCH-G009 | `external_dependency_gap` | Real producer artifact publication tokens are not available to `mizar-build`. | Order commit tasks deterministically and hand caller-supplied manifest entries to `mizar-artifact`; do not mint publication authority. |
+| SCH-G010 | `source_drift` / `test_gap` | The scheduler previously exposed only modeled synthetic outcomes and no scheduler-selected callback for real phase execution through the driver registry boundary. | Task 27 adds the callback seam and focused tests specified in [phase_dispatch.md](./phase_dispatch.md). Missing phase input identities, producer outputs, diagnostics bridges, artifact tokens, or LSP bridges remain external owner gaps rather than placeholders. |
 
 ## Data Model
 
@@ -339,7 +341,7 @@ work is completed, skipped, failed, blocked, or cancelled.
 Watch mode uses the same graph and state transitions, but a newer snapshot may
 supersede pending or running work. Scheduler tests use explicit synthetic
 cancellation seam responses instead of driver watch APIs because driver watch
-integration is not available in this checkout.
+integration is not build-owned.
 
 ### LSP
 
@@ -392,6 +394,26 @@ The Rust surface exposes only scheduler decisions and synthetic output
 references. It does not expose a cache key, compute dependency fingerprints,
 read cache records, or perform proof-reuse validation.
 
+## Scheduler-Selected Phase Dispatch Seam
+
+The dispatch callback seam is specified in
+[phase_dispatch.md](./phase_dispatch.md). It exposes
+`run_scheduler_with_dispatcher` and `SchedulerTaskDispatcher` as a separate API
+from `SchedulerInput`.
+
+The scheduler calls the dispatcher only after a ready task has missed or
+declined the cache seam, passed cancellation-before-start, and been admitted by
+worker/resource limits. Validated cache hits do not call the dispatcher.
+Running-checkpoint cancellation still prevents callback execution, and
+completed-before-publication freshness still suppresses stale callback results.
+
+The callback returns scheduler outcomes (`Complete`, `Failed`, `Blocked`,
+`Skipped`, or `Cancelled`) rather than phase semantics. `mizar-build` maps those
+outcomes to task states, failure/block records, resource releases, and
+deterministic events/results. `mizar-build` does not convert registry phase
+outputs into IR handles, artifact publication tokens, proof status, cache
+compatibility, diagnostics identity, or LSP payloads.
+
 ## Failure, Cancellation, and Commit Seams
 
 Failure propagation is bounded. A failed task blocks only correctness
@@ -438,6 +460,10 @@ Task 9 is documentation-only. Task 10 adds focused Rust tests for:
   canonical scheduler-visible output references, unblock dependents, and do
   not create proof authority; duplicate cache decisions and decisions for task
   ids absent from the graph fail the scheduler input boundary;
+- task-27 dispatch seam behavior: scheduler-selected callbacks run only after
+  readiness, cache fallback, cancellation-before-start, and resource admission;
+  cache hits skip callbacks; callback blocks propagate without synthetic
+  outputs; running-checkpoint cancellation prevents callback execution;
 - missing or failed dependencies producing bounded `Blocked` states;
 - synthetic cancellation preventing current publication;
 - absence of `mizar-driver`, `mizar-ir`, cache-key construction,
@@ -467,3 +493,4 @@ No exhaustive public enum exceptions are owned by this module.
 | `SchedulerQueue` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
 | `SchedulerEventKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
 | `SchedulerDiagnosticKind` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |
+| `SchedulerDispatchStatus` | `#[non_exhaustive]`; downstream callers must include wildcard match arms. |

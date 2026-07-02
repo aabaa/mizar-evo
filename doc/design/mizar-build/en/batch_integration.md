@@ -5,8 +5,9 @@
 
 ## Purpose
 
-Task 19 covers the build-side integration path that is available before
-`mizar-driver`, `mizar-ir`, and real producer publication tokens exist:
+Task 19 covers the build-side integration path that was available before
+driver/IR owner seams and real producer publication tokens were consumable by
+`mizar-build`:
 
 1. produce a deterministic `BuildPlan`;
 2. build a `ModuleIndex` from the plan and a source-layout provider;
@@ -24,8 +25,8 @@ publication integration.
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 | BUILD-G-010 | `source_drift` / `test_gap` | Before task 19, planner, module-index, task-graph, scheduler, cache seam, and artifact-commit behavior had focused tests but no single batch fixture covered plan -> graph -> schedule -> commit. | Add an integration test that exercises the available public APIs together. |
-| BUILD-G-011 | `external_dependency_gap` | `mizar-driver` is absent, so there is no real `BuildRequest`, build session, phase registry, event stream, or driver-owned salsa boundary to consume. | Keep the integration test entry-point agnostic. Do not add driver-owned APIs or a `mizar-driver` dependency. |
-| BUILD-G-012 | `external_dependency_gap` | `mizar-ir` is absent, so real phase output handles and snapshot-handle rehydration are unavailable. | Use scheduler-owned synthetic output refs only for scheduler integration. Do not create placeholder IR handles. |
+| BUILD-G-011 | historical `external_dependency_gap`; task-27 `source_drift` / `test_gap` | Earlier batch integration was entry-point agnostic because driver-owned requests, sessions, phase registry, event stream, and salsa boundaries were outside `mizar-build`. Task 27 adds only the scheduler-selected callback seam for driver consumption. | Keep batch integration entry-point agnostic. Do not add driver-owned APIs or a `mizar-driver` dependency. |
+| BUILD-G-012 | `external_dependency_gap` | Real phase output handles and snapshot-handle rehydration are unavailable through a build-owned seam. | Use scheduler-owned synthetic output refs only for scheduler integration. Do not create placeholder IR handles. |
 | BUILD-G-013 | `external_dependency_gap` | Real producer artifact publication tokens and full phase-15 emission inputs are not exposed to `mizar-build`. | Commit only caller-supplied `ModuleArtifactEntry` values through `mizar-artifact`; do not mint tokens or fabricate producer authority. |
 
 ## Boundary Rules

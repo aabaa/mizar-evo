@@ -54,8 +54,8 @@ boundaries, and the no-partial-publication rule.
 |---|---|---|---|
 | CAN-G001 | `design_drift` | `todo.md` required `cancel.md`, but no module spec existed before task 13. | Task 13 adds this spec and its Japanese companion. |
 | CAN-G002 | `source_drift` / `test_gap` | `src/cancel.rs` and cancellation tests were absent before task 14. | Task 14 adds versioned tokens, snapshot invalidation, publication guards, scheduler integration, and focused tests. |
-| CAN-G003 | `external_dependency_gap` | `mizar-driver` request/session/watch/LSP integration is absent in this checkout. | Keep cancellation input-driven and snapshot-oriented; do not add a driver dependency or placeholder driver API. |
-| CAN-G004 | `external_dependency_gap` | `mizar-ir` output storage and snapshot-handle rehydration are absent in this checkout. | Keep cancelled/obsolete output handling synthetic until a real IR seam exists; do not invent IR handles or storage APIs. |
+| CAN-G003 | `external_dependency_gap` | Driver request/session/watch/LSP integration is outside `mizar-build`. | Keep cancellation input-driven and snapshot-oriented; do not add a driver dependency or placeholder driver API. |
+| CAN-G004 | `external_dependency_gap` | Real IR output storage and snapshot-handle rehydration are not available through a build-owned seam. | Keep cancelled/obsolete output handling synthetic until a real IR seam exists; do not invent IR handles or storage APIs. |
 | CAN-G005 | `external_dependency_gap` | ATP/backend process managers are outside `mizar-build`. | Model cooperative cancellation and backend cancellation outcomes only; do not spawn, kill, or supervise OS processes. |
 | CAN-G006 | `external_dependency_gap` | Real producer artifact publication tokens are not available to `mizar-build`. | Specify freshness and no-partial-publication guards; do not mint fake publication tokens. |
 | CAN-G007 | `deferred` | Cache-aware scheduling is task 18 and `mizar-cache` owns cache keys, fingerprints, and proof-reuse validation. | Obsolete work may be reused only through future external cache validation; do not reimplement cache internals here. |

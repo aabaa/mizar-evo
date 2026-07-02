@@ -5,7 +5,8 @@
 
 Status: task 23 audit complete; task 24 paired-file addition recorded; task 25
 re-run complete; task 26 paired-file addition and source-layout split recorded;
-closeout paired-file addition recorded.
+closeout paired-file addition recorded; task 27 phase-dispatch paired-file
+addition and audit re-run recorded.
 
 ## Scope
 
@@ -22,7 +23,9 @@ update records the new paired incremental/parallel equivalence note and task
 status. The task-25 update records the post-task-24 source/spec and bilingual
 audit re-run. The task-26 update records the paired module-boundary report and
 the private unit-test module split. The closeout update records the paired crate
-exit report. This document does not replace
+exit report. The task-27 update records the paired scheduler-selected phase
+dispatch design, source/spec audit re-run, and driver-consumption boundary
+notes. This document does not replace
 [source_spec_correspondence.md](./source_spec_correspondence.md), and it does
 not change `doc/spec`, `.miz` sources, or expectations.
 
@@ -33,15 +36,17 @@ not change `doc/spec`, `.miz` sources, or expectations.
 - No remaining English/Japanese mismatch was found in module boundaries, public
   API families, public enum forward-compatibility decisions, task completion
   states, boundary invariants, or milestone handoff wording.
-- Task status is synchronized as crate-plan task 0, ordered tasks 1 through 26,
-  and close-out complete.
+- Task status is synchronized as crate-plan task 0, ordered tasks 1 through 27,
+  close-out complete, and task-27 dispatch seam implemented and verified in
+  the worktree pending commit.
 - Follow-up classifications remain synchronized: BUILD-G-016 is a non-blocking
   `test_gap` for direct `sorted_manifest_updates` helper coverage; BUILD-G-017
   is the task-24 implemented-seam equivalence `external_dependency_gap`;
-  BUILD-G-018 is a resolved layout-only `source_drift`; and
-  BUILD-G-002, BUILD-G-003, BUILD-G-004, BUILD-G-006, BUILD-G-009,
-  BUILD-G-011, BUILD-G-012, BUILD-G-013, and BUILD-G-015 remain
-  `external_dependency_gap` records.
+  BUILD-G-018 is a resolved layout-only `source_drift`; DISPATCH-G001 /
+  BUILD-G-011 is the task-27 build-owned scheduler callback source/test item;
+  and BUILD-G-002, BUILD-G-003, BUILD-G-004, BUILD-G-006, BUILD-G-009,
+  BUILD-G-012, BUILD-G-013, BUILD-G-015, BUILD-G-019, DISPATCH-G002, and
+  DISPATCH-G003 remain `external_dependency_gap` records.
 - No new `spec_gap`, `test_gap`, `design_drift`, `source_drift`,
   `source_undocumented_behavior`, `test_expectation_drift`,
   `boundary_violation`, `repo_metadata_conflict`, or
@@ -52,7 +57,7 @@ not change `doc/spec`, `.miz` sources, or expectations.
 
 | English canonical document | Japanese companion | Synchronization result |
 |---|---|---|
-| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Responsibility, spec/test inventory, design/source inventory, observed behavior, gap table, boundary invariants, task decomposition, and audit results through task 26 are synchronized. |
+| [00.crate_plan.md](./00.crate_plan.md) | [../ja/00.crate_plan.md](../ja/00.crate_plan.md) | Responsibility, spec/test inventory, design/source inventory, observed behavior, gap table, boundary invariants, task decomposition, and audit results through task 27 are synchronized. |
 | [architecture_22_follow_up_audit.md](./architecture_22_follow_up_audit.md) | [../ja/architecture_22_follow_up_audit.md](../ja/architecture_22_follow_up_audit.md) | Task-25 source/spec and bilingual follow-up audit scope, classification, source/spec result, boundary result, and handoff notes are synchronized. |
 | [artifact_commit.md](./artifact_commit.md) | [../ja/artifact_commit.md](../ja/artifact_commit.md) | Commit ordering, manifest transaction consumption, freshness forwarding, publication-token absence, non-authority rules, public enum policy, and tests are synchronized. |
 | [batch_integration.md](./batch_integration.md) | [../ja/batch_integration.md](../ja/batch_integration.md) | Batch integration scope, implemented-seam path, deterministic projections, placeholder prohibitions, validated-cache-hit non-authority rule, and tests are synchronized. |
@@ -65,12 +70,13 @@ not change `doc/spec`, `.miz` sources, or expectations.
 | [module_boundary_refactor_gate.md](./module_boundary_refactor_gate.md) | [../ja/module_boundary_refactor_gate.md](../ja/module_boundary_refactor_gate.md) | Task-26 module-boundary scope, BUILD-G-018 classification, private unit-test module split, non-behavior-change rule, and verification results are synchronized. |
 | [module_index.md](./module_index.md) | [../ja/module_index.md](../ja/module_index.md) | Package/module identity, namespace roots, source layout provider, diagnostics, resolver-facing provider boundary, public enum policy, and tests are synchronized. |
 | [planner.md](./planner.md) | [../ja/planner.md](../ja/planner.md) | Manifest and lockfile models, dependency graph resolution, deterministic planning, diagnostics, public enum policy, and tests are synchronized. |
+| [phase_dispatch.md](./phase_dispatch.md) | [../ja/phase_dispatch.md](../ja/phase_dispatch.md) | Scheduler-selected callback ownership, driver-consumption contract, dispatch gap classification, no-placeholder rules, public enum policy, and tests are synchronized. |
 | [resource.md](./resource.md) | [../ja/resource.md](../ja/resource.md) | Hierarchical budgets, admission and release accounting, worker pools, external-process limits, telemetry, non-authority boundaries, public enum policy, and tests are synchronized. |
-| [scheduler.md](./scheduler.md) | [../ja/scheduler.md](../ja/scheduler.md) | Task states, work queues, priority and collation policy, event ordering, cache-aware seam boundaries, non-authority rules, public enum policy, and tests are synchronized. |
-| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Public API correspondence, behavior-boundary correspondence, task-25 architecture-22 re-run, task-26 source-layout re-run, test/follow-up records, BUILD-G-016, BUILD-G-017, BUILD-G-018, and unchanged external dependency gaps are synchronized. |
+| [scheduler.md](./scheduler.md) | [../ja/scheduler.md](../ja/scheduler.md) | Task states, work queues, priority and collation policy, event ordering, cache-aware seam boundaries, scheduler-selected dispatch callback, non-authority rules, public enum policy, and tests are synchronized. |
+| [source_spec_correspondence.md](./source_spec_correspondence.md) | [../ja/source_spec_correspondence.md](../ja/source_spec_correspondence.md) | Public API correspondence, behavior-boundary correspondence, task-25 architecture-22 re-run, task-26 source-layout re-run, task-27 dispatch audit, test/follow-up records, BUILD-G-016, BUILD-G-017, BUILD-G-018, BUILD-G-019, DISPATCH-G001, DISPATCH-G002, DISPATCH-G003, and external dependency gaps are synchronized. |
 | [task_graph.md](./task_graph.md) | [../ja/task_graph.md](../ja/task_graph.md) | Task identity, phase/work-unit mapping, dependency edges, VC descriptor policy, resource classes, deterministic expansion, public enum policy, and tests are synchronized. |
-| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Module implementation table, ordered task states through task 26, closeout scope, recommended verification, and boundary notes are synchronized. |
-| [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This audit baseline and its task-24/task-25/task-26/closeout updates are recorded in both languages with the same scope, result, pair checklist, and handoff notes. |
+| [todo.md](./todo.md) | [../ja/todo.md](../ja/todo.md) | Module implementation table, ordered task states through task 27, closeout scope, recommended verification, and boundary notes are synchronized. |
+| [bilingual_documentation_synchronization.md](./bilingual_documentation_synchronization.md) | [../ja/bilingual_documentation_synchronization.md](../ja/bilingual_documentation_synchronization.md) | This audit baseline and its task-24/task-25/task-26/closeout/task-27 updates are recorded in both languages with the same scope, result, pair checklist, and handoff notes. |
 
 ## Handoff
 
