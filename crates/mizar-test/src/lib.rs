@@ -4,6 +4,7 @@ pub mod harness;
 pub mod layout;
 pub mod path_rules;
 pub mod runner;
+pub mod snapshot;
 pub mod staged_model;
 pub mod toml_lite;
 pub mod traceability;
@@ -21,6 +22,10 @@ pub use runner::{
     TypeElaborationCaseStatus, TypeElaborationRunReport, active_declaration_symbol_cases,
     active_parse_only_cases, active_type_elaboration_cases, run_declaration_symbol_corpus,
     run_parse_only_corpus, run_type_elaboration_corpus,
+};
+pub use snapshot::{
+    ParallelismProfile, SchemaVersion, SnapshotBody, SnapshotError, SnapshotKind, SnapshotMismatch,
+    SnapshotProfile, SnapshotRecord, SnapshotTextDiff, ToolchainInfo, compare_snapshot_records,
 };
 pub use staged_model::Stage;
 pub use traceability::{SpecRequirement, SpecRequirementId, TraceManifest, parse_trace_manifest};
