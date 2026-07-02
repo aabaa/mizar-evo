@@ -31,4 +31,8 @@ pub use snapshot::{
     compare_snapshot_records, verify_or_update_snapshot_baseline, verify_snapshot_determinism,
 };
 pub use staged_model::Stage;
-pub use traceability::{SpecRequirement, SpecRequirementId, TraceManifest, parse_trace_manifest};
+pub use traceability::{
+    CoverageEvidence, CoverageEvidenceSummary, CoverageReport, CoverageShape, PassFailMix,
+    RequirementCoverage, RequirementStatus, SpecRequirement, SpecRequirementId, StageCoverage,
+    TraceManifest, parse_trace_manifest,
+};

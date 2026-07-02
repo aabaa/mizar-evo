@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::ExitCode;
 
 use mizar_test::{
-    DiscoveryConfig, TestProfile, ValidationMode, ValidationSeverity, build_test_plan,
+    DiscoveryConfig, TestPlan, TestProfile, ValidationMode, ValidationSeverity, build_test_plan,
     run_declaration_symbol_corpus, run_parse_only_corpus, run_type_elaboration_corpus,
 };
 
@@ -81,10 +81,7 @@ fn run_plan(config: &DiscoveryConfig) -> Result<ExitCode, String> {
         eprintln!("{diagnostic}");
     }
 
-    println!("test cases: {}", plan.cases.len());
-    println!("requirements: {}", plan.manifest.requirements.len());
-    println!("errors: {}", plan.error_count());
-    println!("warnings: {}", plan.warning_count());
+    print_plan_report(&plan);
 
     if plan
         .diagnostics
@@ -95,6 +92,32 @@ fn run_plan(config: &DiscoveryConfig) -> Result<ExitCode, String> {
     } else {
         Ok(ExitCode::SUCCESS)
     }
+}
+
+fn print_plan_report(plan: &TestPlan) {
+    println!("test cases: {}", plan.cases.len());
+    println!("requirements: {}", plan.manifest.requirements.len());
+    println!("errors: {}", plan.error_count());
+    println!("warnings: {}", plan.warning_count());
+    println!("coverage stages: {}", plan.coverage_report.stages.len());
+    for stage in &plan.coverage_report.stages {
+        println!(
+            "coverage stage {}: requirements={} covered={} partial={} planned={} deferred={} obsolete={} missing_shapes={}",
+            stage.stage.as_str(),
+            stage.requirements,
+            stage.covered,
+            stage.partial,
+            stage.planned,
+            stage.deferred,
+            stage.obsolete,
+            stage.missing_shapes
+        );
+    }
+    let mix = &plan.coverage_report.pass_fail_mix;
+    println!(
+        "pass/fail mix: pass={} fail={} total={} target_pass={} target_fail={}",
+        mix.pass, mix.fail, mix.total, mix.target_pass_percent, mix.target_fail_percent
+    );
 }
 
 fn run_parse_only(config: &DiscoveryConfig) -> Result<ExitCode, String> {

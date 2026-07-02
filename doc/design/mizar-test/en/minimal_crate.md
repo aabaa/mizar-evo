@@ -125,6 +125,8 @@ test cases: 0
 requirements: 0
 errors: 0
 warnings: 0
+coverage stages: 0
+pass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60
 ```
 
 Output must be stable across filesystems. Human-readable output is sufficient
@@ -198,10 +200,9 @@ Warnings may be used for:
 Warnings must not hide errors.
 
 Coverage completeness is not an error in the minimal crate's default
-`metadata` mode. The `development` and `release` selectors are accepted so the
-strict layout policy can be exercised now; mode-aware coverage/status gates
-remain traceability/reporting follow-up work and use the rules in
-[traceability.md](./traceability.md).
+`metadata` mode. The `development` and `release` selectors apply the
+mode-aware coverage/status gates from [traceability.md](./traceability.md).
+Stage-prerequisite gates remain the staged-model follow-up.
 
 ## Determinism
 

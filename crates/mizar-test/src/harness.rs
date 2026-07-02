@@ -5,11 +5,14 @@ use std::str::FromStr;
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
 use crate::expectation::{
-    Expectation, TestCaseId, parse_expectation_file, validate_expectation_path,
+    Expectation, ExpectedOutcome, TestCaseId, parse_expectation_file, validate_expectation_path,
 };
 use crate::layout;
 use crate::path_rules::{absolute_from, clean_relative_path};
-use crate::traceability::{TraceManifest, parse_trace_manifest, validate_manifest};
+use crate::traceability::{
+    CoverageEvidence, CoverageReport, CoverageShape, PassFailMix, RequirementCoverage,
+    RequirementStatus, TraceManifest, parse_trace_manifest, validate_manifest,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DiscoveryConfig {
@@ -85,6 +88,7 @@ impl ValidationMode {
 pub struct TestPlan {
     pub cases: Vec<TestCase>,
     pub manifest: TraceManifest,
+    pub coverage_report: CoverageReport,
     pub diagnostics: Vec<ValidationDiagnostic>,
 }
 
@@ -221,6 +225,24 @@ pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessErro
         &all_cases,
         &mut diagnostics,
     );
+    validate_obsolete_spec_refs(&manifest, &all_cases, &mut diagnostics);
+
+    let invalid_expectation_paths = invalid_expectation_paths(&diagnostics);
+    let coverage_evidence = coverage_evidence(
+        &config.workspace_root,
+        &manifest,
+        &all_cases,
+        &invalid_expectation_paths,
+    );
+    let coverage_report = manifest.coverage_report(
+        &coverage_evidence,
+        corpus_pass_fail_mix(&all_cases, &invalid_expectation_paths),
+    );
+    diagnostics.extend(validate_coverage_report(
+        &config.manifest_path,
+        config.validation_mode,
+        &coverage_report,
+    ));
 
     cases.sort_by(|left, right| left.expectation_path.cmp(&right.expectation_path));
     diagnostics.sort();
@@ -228,6 +250,7 @@ pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessErro
     Ok(TestPlan {
         cases,
         manifest,
+        coverage_report,
         diagnostics,
     })
 }
@@ -356,6 +379,226 @@ fn validate_manifest_test_links(
             }
         }
     }
+}
+
+fn validate_obsolete_spec_refs(
+    manifest: &TraceManifest,
+    cases: &[TestCase],
+    diagnostics: &mut Vec<ValidationDiagnostic>,
+) {
+    let requirements = manifest.by_id();
+    for case in cases {
+        for spec_ref in &case.expectation.spec_refs {
+            let Some(requirement) = requirements.get(spec_ref) else {
+                continue;
+            };
+            if requirement.status == RequirementStatus::Obsolete {
+                diagnostics.push(ValidationDiagnostic::error(
+                    &case.expectation_path,
+                    "traceability",
+                    "E-TRACE-OBSOLETE-SPEC-REF",
+                    format!("trace.obsolete.{}", spec_ref.0),
+                    format!("test points to obsolete requirement `{}`", spec_ref.0),
+                ));
+            }
+        }
+    }
+}
+
+fn invalid_expectation_paths(diagnostics: &[ValidationDiagnostic]) -> BTreeSet<PathBuf> {
+    diagnostics
+        .iter()
+        .filter(|diagnostic| {
+            diagnostic.severity == ValidationSeverity::Error
+                && matches!(diagnostic.record_kind, "expectation" | "traceability")
+        })
+        .map(|diagnostic| diagnostic.path.clone())
+        .collect()
+}
+
+fn coverage_evidence(
+    workspace_root: &Path,
+    manifest: &TraceManifest,
+    cases: &[TestCase],
+    invalid_expectation_paths: &BTreeSet<PathBuf>,
+) -> Vec<CoverageEvidence> {
+    let requirements = manifest.by_id();
+    let mut evidence = Vec::new();
+    for case in cases {
+        if invalid_expectation_paths.contains(&case.expectation_path) {
+            continue;
+        }
+        let Ok(relative_path) = case.expectation_path.strip_prefix(workspace_root) else {
+            continue;
+        };
+        let relative_path = relative_path.to_path_buf();
+        for spec_ref in &case.expectation.spec_refs {
+            let Some(requirement) = requirements.get(spec_ref) else {
+                continue;
+            };
+            if !requirement.tests.iter().any(|test| test == &relative_path) {
+                continue;
+            }
+            evidence.push(CoverageEvidence {
+                requirement_id: spec_ref.clone(),
+                test_path: relative_path.clone(),
+                stage: case.expectation.stage,
+                kind: case.expectation.kind,
+                expected_outcome: case.expectation.expected_outcome,
+                has_diagnostic_evidence: has_diagnostic_evidence(&case.expectation),
+                has_snapshot: case.expectation.snapshots.is_some(),
+            });
+        }
+    }
+    evidence.sort_by(|left, right| {
+        left.requirement_id
+            .cmp(&right.requirement_id)
+            .then(left.test_path.cmp(&right.test_path))
+    });
+    evidence
+}
+
+fn has_diagnostic_evidence(expectation: &Expectation) -> bool {
+    expectation.expected_outcome == ExpectedOutcome::Fail
+        && (expectation.failure_category.is_some()
+            || expectation.rejection_reason.is_some()
+            || !expectation.diagnostic_codes.is_empty()
+            || !expectation.diagnostic_payloads.is_empty()
+            || expectation.stable_detail_key.is_some())
+}
+
+fn corpus_pass_fail_mix(
+    cases: &[TestCase],
+    invalid_expectation_paths: &BTreeSet<PathBuf>,
+) -> PassFailMix {
+    let pass = cases
+        .iter()
+        .filter(|case| !invalid_expectation_paths.contains(&case.expectation_path))
+        .filter(|case| case.expectation.expected_outcome == ExpectedOutcome::Pass)
+        .count();
+    let fail = cases
+        .iter()
+        .filter(|case| !invalid_expectation_paths.contains(&case.expectation_path))
+        .filter(|case| case.expectation.expected_outcome == ExpectedOutcome::Fail)
+        .count();
+    PassFailMix {
+        pass,
+        fail,
+        total: pass + fail,
+        target_pass_percent: 40,
+        target_fail_percent: 60,
+    }
+}
+
+fn validate_coverage_report(
+    manifest_path: &Path,
+    validation_mode: ValidationMode,
+    report: &CoverageReport,
+) -> Vec<ValidationDiagnostic> {
+    let mut diagnostics = Vec::new();
+    for requirement in &report.requirements {
+        if requirement.stored_status != requirement.computed_status {
+            diagnostics.push(status_drift_diagnostic(
+                manifest_path,
+                validation_mode,
+                requirement,
+            ));
+        }
+        if !requirement.missing_shapes.is_empty()
+            && missing_coverage_is_error(validation_mode, requirement)
+        {
+            diagnostics.push(ValidationDiagnostic::error(
+                manifest_path,
+                "traceability",
+                "E-TRACE-MISSING-COVERAGE",
+                format!("trace.coverage.{}", requirement.id.0),
+                format!(
+                    "requirement `{}` is missing {} coverage",
+                    requirement.id.0,
+                    coverage_shape_list(&requirement.missing_shapes)
+                ),
+            ));
+        }
+    }
+    diagnostics
+}
+
+fn status_drift_diagnostic(
+    manifest_path: &Path,
+    validation_mode: ValidationMode,
+    requirement: &RequirementCoverage,
+) -> ValidationDiagnostic {
+    let message = format!(
+        "requirement `{}` stored status `{}` differs from computed status `{}`",
+        requirement.id.0,
+        requirement.stored_status.as_str(),
+        requirement.computed_status.as_str()
+    );
+    if status_drift_is_error(validation_mode, requirement) {
+        ValidationDiagnostic::error(
+            manifest_path,
+            "traceability",
+            "E-TRACE-STATUS-DRIFT",
+            format!("trace.status.{}", requirement.id.0),
+            message,
+        )
+    } else {
+        ValidationDiagnostic::warning(
+            manifest_path,
+            "traceability",
+            "W-TRACE-STATUS-DRIFT",
+            format!("trace.status.{}", requirement.id.0),
+            message,
+        )
+    }
+}
+
+fn status_drift_is_error(
+    validation_mode: ValidationMode,
+    requirement: &RequirementCoverage,
+) -> bool {
+    match validation_mode {
+        ValidationMode::Metadata => false,
+        ValidationMode::Development => matches!(
+            requirement.stored_status,
+            RequirementStatus::Covered | RequirementStatus::Partial
+        ),
+        ValidationMode::Release => {
+            requirement.required
+                && !matches!(
+                    requirement.stored_status,
+                    RequirementStatus::Deferred | RequirementStatus::Obsolete
+                )
+        }
+    }
+}
+
+fn missing_coverage_is_error(
+    validation_mode: ValidationMode,
+    requirement: &RequirementCoverage,
+) -> bool {
+    match validation_mode {
+        ValidationMode::Metadata => false,
+        ValidationMode::Development => matches!(
+            requirement.stored_status,
+            RequirementStatus::Covered | RequirementStatus::Partial
+        ),
+        ValidationMode::Release => {
+            requirement.required
+                && !matches!(
+                    requirement.stored_status,
+                    RequirementStatus::Deferred | RequirementStatus::Obsolete
+                )
+        }
+    }
+}
+
+fn coverage_shape_list(shapes: &[CoverageShape]) -> String {
+    shapes
+        .iter()
+        .map(|shape| shape.as_str())
+        .collect::<Vec<_>>()
+        .join(", ")
 }
 
 fn normalized_config(config: &DiscoveryConfig) -> Result<DiscoveryConfig, HarnessError> {

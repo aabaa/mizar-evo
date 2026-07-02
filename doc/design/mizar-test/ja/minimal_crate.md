@@ -121,6 +121,8 @@ test cases: 0
 requirements: 0
 errors: 0
 warnings: 0
+coverage stages: 0
+pass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60
 ```
 
 Output は filesystems 間で stable でなければならない。First implementation では human-readable output で十分だが、後から JSON reporter を追加できるよう internal result は structured でなければならない。
@@ -186,9 +188,9 @@ Warnings may be used for:
 Warnings must not hide errors.
 
 Coverage completeness は minimal crate の default `metadata` mode では error ではない。
-`development` と `release` selector は strict layout policy を今から exercise できるよう
-受け付ける。mode-aware coverage/status gate は traceability/reporting の follow-up work として残り、
-[traceability.md](./traceability.md) の rules を使う。
+`development` と `release` selector は [traceability.md](./traceability.md) の
+mode-aware coverage/status gate を適用する。Stage-prerequisite gate は staged-model
+follow-up として残る。
 
 ## Determinism
 

@@ -17,9 +17,9 @@ use mizar_session::{
     SessionIdAllocator, SourceOrigin, hash_text, normalize_path,
 };
 use mizar_test::{
-    DiscoveryConfig, ExpectedOutcome, PipelinePhase, Stage, TestKind, TestPlan, TestProfile,
-    ValidationMode, active_parse_only_cases, build_test_plan, run_declaration_symbol_corpus,
-    run_parse_only_corpus, run_type_elaboration_corpus,
+    CoverageShape, DiscoveryConfig, ExpectedOutcome, PipelinePhase, RequirementStatus, Stage,
+    TestKind, TestPlan, TestProfile, ValidationMode, active_parse_only_cases, build_test_plan,
+    run_declaration_symbol_corpus, run_parse_only_corpus, run_type_elaboration_corpus,
 };
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
@@ -857,6 +857,474 @@ tests = []
     let plan = corpus.plan();
 
     assert_has_code(&plan, "E-MANIFEST-DUP-ID");
+}
+
+#[test]
+fn manifest_requirement_ids_must_be_sorted() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.z"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.test.a"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-MANIFEST-ID-ORDER");
+}
+
+#[test]
+fn coverage_report_computes_shapes_status_and_pass_fail_mix() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.coverage.diagnostic"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = ["tests/lexical/fail/diagnostic_case.expect.toml"]
+
+[[requirement]]
+id = "spec.en.coverage.pass_and_fail"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/lexical/pass/pass_case.expect.toml",
+  "tests/lexical/fail/fail_case.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.coverage.property"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "property"
+tests = ["tests/property/property_case.expect.toml"]
+
+[[requirement]]
+id = "spec.en.coverage.snapshot"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "snapshot"
+tests = ["tests/miz/pass/parser/snapshot_case.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write("tests/lexical/pass/pass_case.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/pass_case.expect.toml",
+        pass_expectation(
+            "pass_case",
+            "pass_case.src",
+            "spec.en.coverage.pass_and_fail",
+        ),
+    );
+    corpus.write("tests/lexical/fail/fail_case.src", "bad");
+    corpus.write(
+        "tests/lexical/fail/fail_case.expect.toml",
+        fail_expectation(
+            "fail_case",
+            "fail_case.src",
+            "spec.en.coverage.pass_and_fail",
+        ),
+    );
+    corpus.write("tests/lexical/fail/diagnostic_case.src", "bad");
+    corpus.write(
+        "tests/lexical/fail/diagnostic_case.expect.toml",
+        fail_expectation(
+            "diagnostic_case",
+            "diagnostic_case.src",
+            "spec.en.coverage.diagnostic",
+        ),
+    );
+    corpus.write(
+        "tests/property/property_case.fixture.toml",
+        "seed = \"1\"\n",
+    );
+    corpus.write(
+        "tests/property/property_case.expect.toml",
+        r#"schema_version = 1
+id = "property_case"
+kind = "property_seed"
+stage = "lexical"
+domain = "property"
+source = "property_case.fixture.toml"
+expected_outcome = "metadata_only"
+diagnostic_codes = []
+spec_refs = ["spec.en.coverage.property"]
+"#,
+    );
+    corpus.write("tests/miz/pass/parser/snapshot_case.miz", "alpha;\n");
+    corpus.write(
+        "tests/miz/pass/parser/snapshot_case.expect.toml",
+        r#"schema_version = 1
+id = "snapshot_case"
+kind = "pass"
+stage = "parse_only"
+domain = "parser"
+source = "snapshot_case.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+snapshots = "snapshots/parser/snapshot_case.surface_ast.snap"
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.coverage.snapshot"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    assert_eq!(plan.coverage_report.pass_fail_mix.pass, 2);
+    assert_eq!(plan.coverage_report.pass_fail_mix.fail, 2);
+    assert_eq!(plan.coverage_report.pass_fail_mix.total, 4);
+    let pass_and_fail = plan
+        .coverage_report
+        .requirements
+        .iter()
+        .find(|coverage| coverage.id.0 == "spec.en.coverage.pass_and_fail")
+        .unwrap();
+    assert_eq!(pass_and_fail.computed_status, RequirementStatus::Covered);
+    assert!(pass_and_fail.missing_shapes.is_empty());
+    let snapshot = plan
+        .coverage_report
+        .requirements
+        .iter()
+        .find(|coverage| coverage.id.0 == "spec.en.coverage.snapshot")
+        .unwrap();
+    assert_eq!(snapshot.coverage, CoverageShape::Snapshot);
+    assert_eq!(snapshot.evidence.snapshot, 1);
+
+    let lexical = plan
+        .coverage_report
+        .stages
+        .iter()
+        .find(|stage| stage.stage == Stage::Lexical)
+        .unwrap();
+    assert_eq!(lexical.requirements, 3);
+    assert_eq!(lexical.covered, 3);
+    assert_eq!(lexical.missing_shapes, 0);
+    let parse_only = plan
+        .coverage_report
+        .stages
+        .iter()
+        .find(|stage| stage.stage == Stage::ParseOnly)
+        .unwrap();
+    assert_eq!(parse_only.requirements, 1);
+    assert_eq!(parse_only.covered, 1);
+}
+
+#[test]
+fn coverage_status_drift_is_warning_in_metadata_and_error_in_development() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.coverage.pass_and_fail"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = ["tests/lexical/pass/pass_only.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write("tests/lexical/pass/pass_only.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/pass_only.expect.toml",
+        pass_expectation(
+            "pass_only",
+            "pass_only.src",
+            "spec.en.coverage.pass_and_fail",
+        ),
+    );
+
+    let metadata_plan = corpus.plan();
+
+    assert_eq!(
+        metadata_plan.error_count(),
+        0,
+        "{:#?}",
+        metadata_plan.diagnostics
+    );
+    assert_has_code(&metadata_plan, "W-TRACE-STATUS-DRIFT");
+    let coverage = &metadata_plan.coverage_report.requirements[0];
+    assert_eq!(coverage.computed_status, RequirementStatus::Partial);
+    assert_eq!(coverage.missing_shapes, vec![CoverageShape::Fail]);
+
+    let mut development_config = corpus.config();
+    development_config.validation_mode = ValidationMode::Development;
+    let development_plan = build_test_plan(&development_config).unwrap();
+
+    assert_has_code(&development_plan, "E-TRACE-STATUS-DRIFT");
+    assert_has_code(&development_plan, "E-TRACE-MISSING-COVERAGE");
+}
+
+#[test]
+fn release_requires_required_coverage_but_accepts_deferred_reason() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.coverage.deferred"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "deferred"
+required = true
+coverage = "pass"
+deferred_reason = "blocked until the owning runner exists"
+tests = []
+
+[[requirement]]
+id = "spec.en.coverage.planned"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    let mut release_config = corpus.config();
+    release_config.validation_mode = ValidationMode::Release;
+
+    let release_plan = build_test_plan(&release_config).unwrap();
+
+    assert_has_code(&release_plan, "E-TRACE-MISSING-COVERAGE");
+    assert!(
+        release_plan.diagnostics.iter().all(|diagnostic| {
+            diagnostic.detail_key != "trace.coverage.spec.en.coverage.deferred"
+        }),
+        "{:#?}",
+        release_plan.diagnostics
+    );
+}
+
+#[test]
+fn release_reports_required_status_drift() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.coverage.release_drift"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = ["tests/lexical/pass/pass_only.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write("tests/lexical/pass/pass_only.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/pass_only.expect.toml",
+        pass_expectation(
+            "pass_only",
+            "pass_only.src",
+            "spec.en.coverage.release_drift",
+        ),
+    );
+    let mut release_config = corpus.config();
+    release_config.validation_mode = ValidationMode::Release;
+
+    let release_plan = build_test_plan(&release_config).unwrap();
+
+    assert_has_code(&release_plan, "E-TRACE-STATUS-DRIFT");
+    assert_has_code(&release_plan, "E-TRACE-MISSING-COVERAGE");
+}
+
+#[test]
+fn obsolete_requirements_reject_sidecar_refs() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.coverage.obsolete"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "obsolete"
+required = false
+coverage = "none"
+tests = []
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write("tests/lexical/pass/obsolete_ref.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/obsolete_ref.expect.toml",
+        pass_expectation(
+            "obsolete_ref",
+            "obsolete_ref.src",
+            "spec.en.coverage.obsolete",
+        ),
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-TRACE-OBSOLETE-SPEC-REF");
+}
+
+#[test]
+fn manifest_link_validator_reports_error_paths() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.link.backref"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = ["tests/lexical/pass/wrong_ref.expect.toml"]
+
+[[requirement]]
+id = "spec.en.link.deferred"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "deferred"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.link.duplicate"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/duplicate.expect.toml",
+  "tests/lexical/pass/duplicate.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.link.missing_source"
+source = "doc/spec/en/missing.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.link.missing_test"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = ["tests/lexical/pass/missing.expect.toml"]
+
+[[requirement]]
+id = "spec.en.link.other"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = ["tests/lexical/pass/wrong_ref.expect.toml"]
+
+[[requirement]]
+id = "spec.en.link.planned"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+
+[[requirement]]
+id = "spec.en.link.unparsed"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = ["tests/lexical/pass/bad.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write("tests/lexical/pass/duplicate.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/duplicate.expect.toml",
+        pass_expectation("duplicate", "duplicate.src", "spec.en.link.duplicate"),
+    );
+    corpus.write("tests/lexical/pass/wrong_ref.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/wrong_ref.expect.toml",
+        pass_expectation("wrong_ref", "wrong_ref.src", "spec.en.link.other"),
+    );
+    corpus.write(
+        "tests/lexical/pass/bad.expect.toml",
+        "schema_version = \"one\"\n",
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-MANIFEST-MISSING-SOURCE");
+    assert_has_code(&plan, "E-MANIFEST-DUP-TEST");
+    assert_has_code(&plan, "E-MANIFEST-MISSING-TEST");
+    assert_has_code(&plan, "E-TRACE-MISSING-BACKREF");
+    assert_has_code(&plan, "E-TRACE-UNPARSED-TEST");
+    assert_has_code(&plan, "E-MANIFEST-DEFERRED-REASON");
+    assert_has_code(&plan, "W-MANIFEST-PLANNED-NO-TESTS");
 }
 
 #[test]
@@ -2752,7 +3220,7 @@ fn plan_cli_reports_deterministic_metadata_summary() {
     );
     assert_eq!(
         String::from_utf8_lossy(&output.stdout),
-        "test cases: 0\nrequirements: 0\nerrors: 0\nwarnings: 0\n"
+        "test cases: 0\nrequirements: 0\nerrors: 0\nwarnings: 0\ncoverage stages: 0\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\n"
     );
     assert_eq!(String::from_utf8_lossy(&output.stderr), "");
 }
@@ -2789,9 +3257,53 @@ fn plan_cli_warnings_exit_success() {
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(
         String::from_utf8_lossy(&output.stdout),
-        "test cases: 0\nrequirements: 1\nerrors: 0\nwarnings: 1\n"
+        "test cases: 0\nrequirements: 1\nerrors: 0\nwarnings: 1\ncoverage stages: 1\ncoverage stage lexical: requirements=1 covered=0 partial=0 planned=1 deferred=0 obsolete=0 missing_shapes=1\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\n"
     );
     assert!(String::from_utf8_lossy(&output.stderr).contains("W-MANIFEST-PLANNED-NO-TESTS"));
+}
+
+#[test]
+fn plan_cli_reports_deterministic_coverage_and_pass_fail_mix() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.cli.pass_fail"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass_and_fail"
+tests = [
+  "tests/lexical/pass/pass_cli.expect.toml",
+  "tests/lexical/fail/fail_cli.expect.toml",
+]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write("tests/lexical/pass/pass_cli.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/pass_cli.expect.toml",
+        pass_expectation("pass_cli", "pass_cli.src", "spec.en.cli.pass_fail"),
+    );
+    corpus.write("tests/lexical/fail/fail_cli.src", "bad");
+    corpus.write(
+        "tests/lexical/fail/fail_cli.expect.toml",
+        fail_expectation("fail_cli", "fail_cli.src", "spec.en.cli.pass_fail"),
+    );
+
+    let output = plan_cli(&corpus)
+        .output()
+        .expect("mizar-test plan with coverage report should run");
+
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        "test cases: 2\nrequirements: 1\nerrors: 0\nwarnings: 0\ncoverage stages: 1\ncoverage stage lexical: requirements=1 covered=1 partial=0 planned=0 deferred=0 obsolete=0 missing_shapes=0\npass/fail mix: pass=1 fail=1 total=2 target_pass=40 target_fail=60\n"
+    );
+    assert_eq!(String::from_utf8_lossy(&output.stderr), "");
 }
 
 #[test]
@@ -2806,7 +3318,7 @@ fn plan_cli_validation_errors_exit_one() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         String::from_utf8_lossy(&output.stdout),
-        "test cases: 0\nrequirements: 0\nerrors: 1\nwarnings: 0\n"
+        "test cases: 0\nrequirements: 0\nerrors: 1\nwarnings: 0\ncoverage stages: 0\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\n"
     );
     assert!(String::from_utf8_lossy(&output.stderr).contains("E-LAYOUT-MISSING-SIDECAR"));
 }
@@ -2825,7 +3337,7 @@ fn plan_cli_release_unknown_roots_exit_one() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         String::from_utf8_lossy(&output.stdout),
-        "test cases: 0\nrequirements: 0\nerrors: 1\nwarnings: 0\n"
+        "test cases: 0\nrequirements: 0\nerrors: 1\nwarnings: 0\ncoverage stages: 0\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\n"
     );
     assert!(String::from_utf8_lossy(&output.stderr).contains("E-LAYOUT-UNKNOWN-ROOT"));
 }
@@ -3399,6 +3911,10 @@ impl Drop for Corpus {
 }
 
 fn expectation(id: &str, source: &str, spec_ref: &str) -> String {
+    pass_expectation(id, source, spec_ref)
+}
+
+fn pass_expectation(id: &str, source: &str, spec_ref: &str) -> String {
     format!(
         r#"schema_version = 1
 id = "{id}"
@@ -3408,6 +3924,24 @@ domain = "lexical"
 source = "{source}"
 expected_outcome = "pass"
 expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["{spec_ref}"]
+"#
+    )
+}
+
+fn fail_expectation(id: &str, source: &str, spec_ref: &str) -> String {
+    format!(
+        r#"schema_version = 1
+id = "{id}"
+kind = "fail"
+stage = "lexical"
+domain = "lexical"
+source = "{source}"
+expected_outcome = "fail"
+expected_phase = "lex"
+failure_category = "lex_error"
+stable_detail_key = "lexical.synthetic"
 diagnostic_codes = []
 spec_refs = ["{spec_ref}"]
 "#

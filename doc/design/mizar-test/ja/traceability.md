@@ -137,7 +137,20 @@ Traceability validation は modes を持つ。
 
 All modes は manifest syntax、unique ids、source file existence、known stage ids、known sidecar references、sidecar back-references を validate する。
 
-Missing required coverage を error にするのは `release` mode だけである。これにより compiler pipeline が存在する前から complete planned coverage map を維持できる。
+`required = true` であることだけを理由に missing coverage を error にするのは
+`release` mode だけである。`development` mode は `metadata` より厳しく、
+manifest 上 `covered` または `partial` の item には gate を適用するが、compiler
+pipeline が存在する前の planned coverage map entries は引き続き許容する。
+
+現在の mode behavior:
+
+- `metadata` は stored-status drift を warning として emit し、missing
+  coverage shape では fail しない。
+- `development` は manifest 上 `covered` または `partial` の requirement
+  に対する missing coverage と status drift を fail させる。
+- `release` は `deferred` かつ reason 付きでない限り、すべての
+  `required = true` requirement の missing coverage と status drift を
+  fail させる。
 
 ## Coverage Status
 
@@ -153,11 +166,35 @@ Rules:
 
 Report は stored status と computed status が一致しない場合に flag する。その severity は validation mode によって決まる。
 
+実装済み coverage report は valid bidirectional link だけから evidence を
+derive する。Manifest が sidecar path を list し、parse 済み sidecar が
+requirement id を backref している必要がある。Invalid sidecar と one-way link
+には coverage credit を与えない。Coverage evidence は次のように計算する。
+
+- `pass`: `expected_outcome = "pass"` の linked sidecar が少なくとも 1 件ある。
+- `fail`: `expected_outcome = "fail"` の linked sidecar が少なくとも 1 件ある。
+- `pass_and_fail`: pass evidence と fail evidence の両方が存在する。
+- `diagnostic`: linked fail sidecar が diagnostic/failure identity metadata
+  を持つ。
+- `snapshot`: linked sidecar が snapshot output、snapshot outcome、または
+  snapshot kind を持つ。
+- `property`: linked sidecar が `kind = "property_seed"` を持つ。
+- `manual_review`: linked sidecar が存在する。ただし executable evidence
+  だけでは十分ではないため、stored status は human-reviewed status のまま扱う。
+
+`none` と `manual_review` の status は linked metadata がある場合、manifest
+から推論で変更しない。これらは review workflow state のままである。
+`manual_review` に linked metadata がない場合は `planned` として計算する。
+
 ## Stage Interaction
 
 Traceability は [staged_model.md](./staged_model.md) の staged model を使う。
 
 Coverage credit は lower-stage prerequisites が既に covered、built-ins として declared、または acceptable status を持つ `depends_on` に listed されている場合にのみ与える。
+
+task 6 は coverage shape/status を計算し、missing evidence を report する。
+上記の stage-prerequisite と `depends_on` credit rules は task 7 follow-up が
+enforce する。
 
 例えば parser fixture は cluster declaration の syntax を cover できるが、cluster expansion semantics は cover しない。Semantic requirement は advanced semantic tests が存在するまで planned のままである。
 
@@ -189,6 +226,12 @@ Default report は次で group する。
 - tests that cover obsolete requirements
 
 Reports は deterministic で CI output に適していなければならない。
+
+現在の `plan` CLI report は deterministic totals、stage ごとの coverage status
+count、missing-shape count、architecture test strategy の 40% pass / 60% fail
+target に対する corpus-wide pass/fail mix を出力する。Pass/fail mix は unique
+valid sidecar を数えるため、複数 requirement を cover する sidecar も重複計上
+しない。
 
 ## Constraints and Assumptions
 

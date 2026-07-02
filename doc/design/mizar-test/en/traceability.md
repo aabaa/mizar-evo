@@ -147,9 +147,19 @@ Traceability validation has modes:
 All modes validate manifest syntax, unique ids, source file existence, known
 stage ids, known sidecar references, and sidecar back-references.
 
-Only `release` mode turns missing required coverage into an error. This allows
-the project to maintain a complete planned coverage map before the compiler
-pipeline exists.
+Only `release` mode turns `required = true` coverage into an error solely
+because it is required. `development` mode is stricter than `metadata` for
+items already stored as `covered` or `partial`, but still allows planned
+coverage map entries before the compiler pipeline exists.
+
+Current mode behavior:
+
+- `metadata` emits stored-status drift as warnings and does not fail missing
+  coverage shapes.
+- `development` fails missing coverage and status drift for requirements stored
+  as `covered` or `partial`.
+- `release` fails missing coverage and status drift for every
+  `required = true` requirement unless it is `deferred` with a reason.
 
 ## Coverage Status
 
@@ -169,6 +179,26 @@ Rules:
 The report flags stored status when it disagrees with computed status. The
 severity of that disagreement is determined by validation mode.
 
+The implemented coverage report derives evidence from valid bidirectional
+links only: the manifest must list the sidecar path, and the parsed sidecar
+must point back to the requirement id. Invalid sidecars and one-way links do
+not receive coverage credit. Coverage evidence is computed as follows:
+
+- `pass`: at least one linked sidecar with `expected_outcome = "pass"`;
+- `fail`: at least one linked sidecar with `expected_outcome = "fail"`;
+- `pass_and_fail`: both pass and fail evidence are present;
+- `diagnostic`: a linked fail sidecar carries diagnostic/failure identity
+  metadata;
+- `snapshot`: a linked sidecar has snapshot output or snapshot outcome/kind;
+- `property`: a linked sidecar has `kind = "property_seed"`;
+- `manual_review`: a linked sidecar exists, while the stored status remains
+  the human-reviewed status because executable evidence alone is not
+  sufficient.
+
+`none` and `manual_review` statuses are not inferred away from the manifest
+when linked metadata exists. They remain review workflow states. Missing
+linked metadata for `manual_review` computes as `planned`.
+
 ## Stage Interaction
 
 Traceability uses the staged model from [staged_model.md](./staged_model.md).
@@ -176,6 +206,10 @@ Traceability uses the staged model from [staged_model.md](./staged_model.md).
 Coverage credit is assigned only when lower-stage prerequisites are already
 covered, declared as built-ins, or listed in `depends_on` with acceptable
 status.
+
+Task 6 computes coverage shape/status and reports missing evidence. The
+stage-prerequisite and `depends_on` credit rules above are enforced by the
+task 7 follow-up.
 
 For example, a parser fixture can cover the syntax of a cluster declaration,
 but it does not cover cluster expansion semantics. The semantic requirement
@@ -211,6 +245,12 @@ The default report groups results by:
 - tests that cover obsolete requirements.
 
 Reports must be deterministic and suitable for CI output.
+
+The current `plan` CLI report prints deterministic totals, per-stage coverage
+status counts, missing-shape counts, and the corpus-wide pass/fail mix against
+the architecture test-strategy target of 40% pass and 60% fail. The pass/fail
+mix counts unique valid sidecars, so a sidecar covering multiple requirements
+is not counted multiple times.
 
 ## Constraints and Assumptions
 

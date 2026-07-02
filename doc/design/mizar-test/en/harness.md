@@ -20,7 +20,44 @@ pub struct DiscoveryConfig {
 pub struct TestPlan {
     pub cases: Vec<TestCase>,
     pub manifest: TraceManifest,
+    pub coverage_report: CoverageReport,
     pub diagnostics: Vec<ValidationDiagnostic>,
+}
+
+pub struct CoverageReport {
+    pub requirements: Vec<RequirementCoverage>,
+    pub stages: Vec<StageCoverage>,
+    pub pass_fail_mix: PassFailMix,
+}
+
+pub struct RequirementCoverage {
+    pub id: SpecRequirementId,
+    pub stage: Stage,
+    pub coverage: CoverageShape,
+    pub required: bool,
+    pub stored_status: RequirementStatus,
+    pub computed_status: RequirementStatus,
+    pub evidence: CoverageEvidenceSummary,
+    pub missing_shapes: Vec<CoverageShape>,
+}
+
+pub struct StageCoverage {
+    pub stage: Stage,
+    pub requirements: usize,
+    pub covered: usize,
+    pub partial: usize,
+    pub planned: usize,
+    pub deferred: usize,
+    pub obsolete: usize,
+    pub missing_shapes: usize,
+}
+
+pub struct PassFailMix {
+    pub pass: usize,
+    pub fail: usize,
+    pub total: usize,
+    pub target_pass_percent: u8,
+    pub target_fail_percent: u8,
 }
 
 pub struct TestCase {

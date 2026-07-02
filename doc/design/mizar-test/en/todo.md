@@ -20,12 +20,12 @@ per [internal 07](../../internal/en/07.crate_module_layout.md).
 | layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery/pairing and validation-mode unknown-root policy implemented; public API sync pending |
 | expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema and profile metadata retention implemented; provenance/general snapshot hardening pending |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage ids implemented; prerequisite validation pending |
-| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs implemented; coverage modes/status/prerequisites pending |
-| harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs`, `src/runner.rs` | [~] metadata plan, validation-mode CLI, profile filtering, and active parse/declaration/type runners |
-| miz_corpus | [miz_corpus.md](./miz_corpus.md) | corpus tree under `tests/` | [~] roots discovered; provenance/profile/reporting rules pending |
+| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs, coverage report/status gates, manifest ordering, and obsolete-ref checks implemented; prerequisites pending |
+| harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs`, `src/runner.rs` | [~] metadata plan, validation-mode CLI, profile filtering, coverage/pass-fail report, and active parse/declaration/type runners |
+| miz_corpus | [miz_corpus.md](./miz_corpus.md) | corpus tree under `tests/` | [~] roots discovered and pass/fail mix reported; provenance/profile policy rules pending |
 | snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs`, `src/expectation.rs`, `src/runner.rs` | [~] general snapshot record API/hash/update/determinism helpers implemented; sidecar/runner integration pending |
 | fail_soundness | [fail_soundness.md](./fail_soundness.md) | future `src/fail_soundness.rs`, harness rules + corpus cases | [ ] |
-| minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate boundary + CLI | [~] metadata plan, validation modes, and CLI fixtures implemented; coverage gates pending |
+| minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate boundary + CLI | [~] metadata plan, validation modes, CLI fixtures, and coverage gates implemented; prerequisite gates pending |
 
 `mizar-test` is the corpus and harness crate: test discovery, `.expect.toml`
 expectation parsing, the staged model, spec-coverage traceability, snapshot
@@ -71,8 +71,7 @@ Task 2 recorded the crate-wide source/spec audit in
 [00.crate_plan.md](./00.crate_plan.md). The audit did not identify a blocking
 `spec_gap`, accepted `repo_metadata_conflict`, or required language behavior
 change. The prior trace manifest ordering conflict was repaired by
-`897d549`; the remaining task-2 traceability gap is `source_drift`/`test_gap`
-for the missing manifest-order validator and regression test.
+`897d549`; task 6 added the manifest-order validator and regression test.
 
 Follow-up ownership from the audit:
 
@@ -81,14 +80,15 @@ Follow-up ownership from the audit:
 - `expectation_schema`: validate generated origin tables, certificate/kernel
   `rejection_reason`, diagnostic ordering, and the future general
   `[[snapshots]]` hash registry.
-- `traceability`: add manifest order validation, mode-aware coverage/status
-  computation, stage/`depends_on`/obsolete validation, and regression tests for
-  existing link-validator errors.
+- `traceability`: add stage/`depends_on` prerequisite validation and keep
+  coverage/status reporting synchronized as new evidence kinds land. Manifest
+  order validation, mode-aware coverage/status computation, obsolete-reference
+  checks, and existing link-validator error fixtures are implemented.
 - `harness`: keep runner-specific report docs synchronized with exported APIs
   as later generic outcome/reporting surfaces land.
 - `miz_corpus`: add enforceable generated/fuzz/stress metadata,
-  corpus-policy profile constraints, pass/fail ratio reporting, and stress
-  exclusion checks.
+  corpus-policy profile constraints, and stress exclusion checks. Corpus-wide
+  pass/fail mix reporting is implemented.
 - `snapshot`: implement the general snapshot module, canonical hashing,
   explicit update flow, and determinism checks beyond the transitional
   parse-only `SurfaceAst` baseline path.
@@ -159,7 +159,7 @@ Keep `cargo test -p mizar-test` green after each task (see
 
 ### Coverage and soundness contracts
 
-6. **Coverage and pass/fail-mix reporting.** [ ]
+6. **Coverage and pass/fail-mix reporting.** [x]
    - Report spec-trace coverage per stage and the corpus pass/fail mix
      against the 40/60 target of the test strategy, from the existing
      traceability and discovery data.
