@@ -17,15 +17,15 @@ per [internal 07](../../internal/en/07.crate_module_layout.md).
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery/pairing implemented; public API sync and unknown-root policy pending |
-| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema implemented; provenance/profile/general snapshot hardening pending |
+| layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery/pairing and validation-mode unknown-root policy implemented; public API sync pending |
+| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema and profile metadata retention implemented; provenance/general snapshot hardening pending |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage ids implemented; prerequisite validation pending |
 | traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs implemented; coverage modes/status/prerequisites pending |
-| harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs`, `src/runner.rs` | [~] metadata plan + active parse/declaration/type runners |
+| harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs`, `src/runner.rs` | [~] metadata plan, validation-mode CLI, profile filtering, and active parse/declaration/type runners |
 | miz_corpus | [miz_corpus.md](./miz_corpus.md) | corpus tree under `tests/` | [~] roots discovered; provenance/profile/reporting rules pending |
 | snapshot | [snapshot.md](./snapshot.md) | `src/expectation.rs`, `src/runner.rs`, future `src/snapshot.rs` | [~] transitional parse-only `SurfaceAst`; general API/hash/update/determinism pending |
 | fail_soundness | [fail_soundness.md](./fail_soundness.md) | future `src/fail_soundness.rs`, harness rules + corpus cases | [ ] |
-| minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate boundary + CLI | [~] metadata plan implemented; validation-mode/CLI fixtures pending |
+| minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate boundary + CLI | [~] metadata plan, validation modes, and CLI fixtures implemented; coverage gates pending |
 
 `mizar-test` is the corpus and harness crate: test discovery, `.expect.toml`
 expectation parsing, the staged model, spec-coverage traceability, snapshot
@@ -77,18 +77,18 @@ for the missing manifest-order validator and regression test.
 Follow-up ownership from the audit:
 
 - `layout`: sync the documented Public API with `DiscoveredLayout` and the
-  harness-owned `TestCase`; define strict/permissive unknown-root behavior.
-- `expectation_schema`: retain/profile-filter metadata, validate generated
-  origin tables, certificate/kernel `rejection_reason`, diagnostic ordering,
-  and the future general `[[snapshots]]` hash registry.
+  harness-owned `TestCase`; keep unknown-root policy covered as new roots land.
+- `expectation_schema`: validate generated origin tables, certificate/kernel
+  `rejection_reason`, diagnostic ordering, and the future general
+  `[[snapshots]]` hash registry.
 - `traceability`: add manifest order validation, mode-aware coverage/status
   computation, stage/`depends_on`/obsolete validation, and regression tests for
   existing link-validator errors.
-- `harness`: reconcile generic documented outcome/reporting APIs with the
-  exported runner-specific reports; document or remove the
-  `parser.type_fixtures` import-summary exception.
-- `miz_corpus`: add enforceable generated/fuzz/stress metadata, profile
-  filtering, pass/fail ratio reporting, and stress exclusion checks.
+- `harness`: keep runner-specific report docs synchronized with exported APIs
+  as later generic outcome/reporting surfaces land.
+- `miz_corpus`: add enforceable generated/fuzz/stress metadata,
+  corpus-policy profile constraints, pass/fail ratio reporting, and stress
+  exclusion checks.
 - `snapshot`: implement the general snapshot module, canonical hashing,
   explicit update flow, and determinism checks beyond the transitional
   parse-only `SurfaceAst` baseline path.
@@ -116,7 +116,7 @@ Keep `cargo test -p mizar-test` green after each task (see
      Drift" and [Task 2 Audit Baseline](#task-2-audit-baseline).
    - Deps: 1. Spec: all module specs.
 
-3. **Runner modes and CLI completion.** [ ]
+3. **Runner modes and CLI completion.** [x]
    - Complete the CLI beyond `plan` per
      [minimal_crate.md](./minimal_crate.md) "CLI"/"Exit Codes" and
      [harness.md](./harness.md) "Runner Modes": validation mode over the
@@ -202,8 +202,8 @@ Keep `cargo test -p mizar-test` green after each task (see
      generation-policy markers.
    - Close task-2 gaps for generated/fuzz/property origin metadata,
      reproducibility metadata, optional metadata retention that belongs to
-     corpus policy, profile filtering, stress exclusion, and fuzz-category
-     preservation.
+     corpus policy, corpus-policy profile constraints, stress exclusion, and
+     fuzz-category preservation.
    - Tests: violation fixtures per rule; clean corpus passes.
    - Deps: 3. Spec: [miz_corpus.md](./miz_corpus.md).
 

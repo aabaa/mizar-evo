@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
 use crate::expectation::{
@@ -35,6 +36,49 @@ pub enum ValidationMode {
     Metadata,
     Development,
     Release,
+}
+
+impl TestProfile {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Fast => "fast",
+            Self::Full => "full",
+            Self::Stress => "stress",
+            Self::FuzzRegression => "fuzz_regression",
+            Self::SnapshotUpdate => "snapshot_update",
+        }
+    }
+
+    fn includes(self, profiles: &[String]) -> bool {
+        if self == Self::Full {
+            return true;
+        }
+        profiles
+            .iter()
+            .any(|profile| profile == self.as_str() || profile == self.hyphenated_str())
+    }
+
+    fn hyphenated_str(self) -> &'static str {
+        match self {
+            Self::FuzzRegression => "fuzz-regression",
+            Self::SnapshotUpdate => "snapshot-update",
+            _ => self.as_str(),
+        }
+    }
+}
+
+impl ValidationMode {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Metadata => "metadata",
+            Self::Development => "development",
+            Self::Release => "release",
+        }
+    }
+
+    fn is_strict_layout(self) -> bool {
+        matches!(self, Self::Development | Self::Release)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -106,7 +150,9 @@ pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessErro
         ))
     })?;
     diagnostics.extend(discovered.diagnostics);
+    diagnostics.extend(validate_unknown_roots(&config)?);
 
+    let mut all_cases = Vec::new();
     let mut cases = Vec::new();
     let mut id_paths: BTreeMap<TestCaseId, Vec<PathBuf>> = BTreeMap::new();
     let manifest_ids = manifest.requirement_ids();
@@ -142,12 +188,16 @@ pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessErro
             .entry(expectation.id.clone())
             .or_default()
             .push(sidecar.clone());
-        cases.push(TestCase {
+        let case = TestCase {
             id: expectation.id.clone(),
             source_path,
             expectation_path: sidecar,
             expectation,
-        });
+        };
+        if config.profile.includes(&case.expectation.profiles) {
+            cases.push(case.clone());
+        }
+        all_cases.push(case);
     }
 
     for (id, paths) in id_paths {
@@ -168,7 +218,7 @@ pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessErro
         &config.workspace_root,
         &config.manifest_path,
         &manifest,
-        &cases,
+        &all_cases,
         &mut diagnostics,
     );
 
@@ -180,6 +230,41 @@ pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessErro
         manifest,
         diagnostics,
     })
+}
+
+fn validate_unknown_roots(
+    config: &DiscoveryConfig,
+) -> Result<Vec<ValidationDiagnostic>, HarnessError> {
+    if !config.validation_mode.is_strict_layout() {
+        return Ok(Vec::new());
+    }
+
+    let unknown_roots = layout::unknown_roots(&config.tests_root).map_err(|error| {
+        HarnessError::Infrastructure(format!(
+            "failed to inspect test roots under `{}`: {error}",
+            config.tests_root.display()
+        ))
+    })?;
+    Ok(unknown_roots
+        .into_iter()
+        .map(|path| {
+            let root_name = path
+                .file_name()
+                .and_then(|name| name.to_str())
+                .unwrap_or("<non-utf8>")
+                .to_owned();
+            ValidationDiagnostic::error(
+                path,
+                "layout",
+                "E-LAYOUT-UNKNOWN-ROOT",
+                format!("layout.root.{root_name}"),
+                format!(
+                    "unknown test root `{root_name}` is not allowed in `{}` validation mode",
+                    config.validation_mode.as_str()
+                ),
+            )
+        })
+        .collect())
 }
 
 fn validate_manifest_test_links(
@@ -296,3 +381,31 @@ impl fmt::Display for HarnessError {
 }
 
 impl std::error::Error for HarnessError {}
+
+impl FromStr for TestProfile {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "fast" => Ok(Self::Fast),
+            "full" => Ok(Self::Full),
+            "stress" => Ok(Self::Stress),
+            "fuzz_regression" | "fuzz-regression" => Ok(Self::FuzzRegression),
+            "snapshot_update" | "snapshot-update" => Ok(Self::SnapshotUpdate),
+            other => Err(format!("unknown test profile `{other}`")),
+        }
+    }
+}
+
+impl FromStr for ValidationMode {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "metadata" => Ok(Self::Metadata),
+            "development" => Ok(Self::Development),
+            "release" => Ok(Self::Release),
+            other => Err(format!("unknown validation mode `{other}`")),
+        }
+    }
+}

@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -21,6 +22,8 @@ const KNOWN_ROOTS: &[&str] = &[
     "property",
     "snapshots",
 ];
+
+const KNOWN_METADATA_ROOTS: &[&str] = &["coverage"];
 
 pub fn discover(tests_root: &Path) -> Result<DiscoveredLayout, std::io::Error> {
     let mut payloads = Vec::new();
@@ -81,6 +84,33 @@ pub fn discover(tests_root: &Path) -> Result<DiscoveredLayout, std::io::Error> {
         sidecars,
         diagnostics,
     })
+}
+
+pub fn unknown_roots(tests_root: &Path) -> Result<Vec<PathBuf>, std::io::Error> {
+    let allowed_roots = KNOWN_ROOTS
+        .iter()
+        .chain(KNOWN_METADATA_ROOTS.iter())
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let mut entries = fs::read_dir(tests_root)?.collect::<Result<Vec<_>, _>>()?;
+    entries.sort_by_key(|entry| entry.path());
+
+    let mut unknown = Vec::new();
+    for entry in entries {
+        if !entry.file_type()?.is_dir() {
+            continue;
+        }
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else {
+            unknown.push(entry.path());
+            continue;
+        };
+        if !allowed_roots.contains(name) {
+            unknown.push(entry.path());
+        }
+    }
+
+    Ok(unknown)
 }
 
 fn walk(

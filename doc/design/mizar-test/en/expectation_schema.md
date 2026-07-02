@@ -73,9 +73,11 @@ Fields:
 | `source` | string | yes | Input file path relative to the sidecar directory. |
 | `expected_outcome` | string | yes | `pass`, `fail`, `snapshot`, or `metadata_only`. |
 | `spec_refs` | array of strings | yes | Requirement ids from `tests/coverage/spec_trace.toml`. |
-| `profiles` | array of strings | no | Harness profiles that include this test. Defaults to `["fast"]`. |
+| `profiles` | non-empty array of strings | no | Harness profiles that include this test. Values are `fast`, `full`, `stress`, `fuzz_regression`/`fuzz-regression`, or `snapshot_update`/`snapshot-update`. Defaults to `["fast"]`. |
 | `tags` | array of strings | no | Non-authoritative grouping tags. |
 | `notes` | string | no | Short review note. Not used for matching. |
+| `ast_profile` | string | no | AST rendering profile requested by parser-facing snapshot tests. |
+| `snapshot_profiles` | non-empty array of strings | no | Snapshot profile ids that should be retained with the sidecar metadata. |
 
 Allowed `stage` values:
 

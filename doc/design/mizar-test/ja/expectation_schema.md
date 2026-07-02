@@ -69,9 +69,11 @@ Fields:
 | `source` | string | yes | Sidecar directory からの relative input file path. |
 | `expected_outcome` | string | yes | `pass`, `fail`, `snapshot`, or `metadata_only`. |
 | `spec_refs` | array of strings | yes | `tests/coverage/spec_trace.toml` の requirement ids. |
-| `profiles` | array of strings | no | この test を含める harness profiles。Default は `["fast"]`。 |
+| `profiles` | non-empty array of strings | no | この test を含める harness profiles。値は `fast`、`full`、`stress`、`fuzz_regression`/`fuzz-regression`、`snapshot_update`/`snapshot-update`。Default は `["fast"]`。 |
 | `tags` | array of strings | no | Non-authoritative grouping tags. |
 | `notes` | string | no | Short review note. Matching には使わない。 |
+| `ast_profile` | string | no | Parser-facing snapshot tests が要求する AST rendering profile。 |
+| `snapshot_profiles` | non-empty array of strings | no | Sidecar metadata として保持する snapshot profile ids。 |
 
 Allowed `stage` values:
 

@@ -59,6 +59,7 @@ pub struct Expectation {
     pub source: PathBuf,
     pub expected_outcome: ExpectedOutcome,
     pub spec_refs: Vec<SpecRequirementId>,
+    pub profiles: Vec<String>,
     pub expected_phase: Option<PipelinePhase>,
     pub failure_category: Option<String>,
     pub rejection_reason: Option<String>,
@@ -66,7 +67,10 @@ pub struct Expectation {
     pub diagnostic_payloads: Vec<String>,
     pub stable_detail_key: Option<String>,
     pub tags: Vec<String>,
+    pub notes: Option<String>,
     pub snapshots: Option<PathBuf>,
+    pub ast_profile: Option<String>,
+    pub snapshot_profiles: Vec<String>,
     pub tokens: Vec<TokenExpectation>,
 }
 
@@ -143,6 +147,12 @@ fn expectation_from_table(
             }
         })
         .collect::<Result<Vec<_>, _>>()?;
+    let profiles = if table.contains_key("profiles") {
+        parse_non_empty_string_array(table, "profiles")?
+    } else {
+        vec!["fast".to_owned()]
+    };
+    validate_profile_ids(&profiles)?;
     let expected_phase = toml_lite::optional_string(table, "expected_phase")?
         .map(|phase| {
             if phase.is_empty() {
@@ -175,6 +185,7 @@ fn expectation_from_table(
         })
         .collect::<Result<Vec<_>, _>>()?;
     let stable_detail_key = toml_lite::optional_string(table, "stable_detail_key")?;
+    let notes = toml_lite::optional_string(table, "notes")?;
     let snapshots = toml_lite::optional_string(table, "snapshots")?
         .map(PathBuf::from)
         .map(|path| {
@@ -185,6 +196,8 @@ fn expectation_from_table(
             }
         })
         .transpose()?;
+    let ast_profile = toml_lite::optional_string(table, "ast_profile")?;
+    let snapshot_profiles = parse_optional_non_empty_string_array(table, "snapshot_profiles")?;
     let tags = optional_string_array(table, "tags")?
         .into_iter()
         .map(|tag| {
@@ -199,12 +212,13 @@ fn expectation_from_table(
         ("failure_category", failure_category.as_deref()),
         ("rejection_reason", rejection_reason.as_deref()),
         ("stable_detail_key", stable_detail_key.as_deref()),
+        ("notes", notes.as_deref()),
+        ("ast_profile", ast_profile.as_deref()),
     ] {
         if value.is_some_and(str::is_empty) {
             return Err(format!("`{field}` must not be empty when present"));
         }
     }
-    validate_optional_metadata_fields(table)?;
 
     validate_kind_outcome(kind, expected_outcome)?;
     if !tokens.is_empty() && stage != Stage::Lexical {
@@ -247,6 +261,7 @@ fn expectation_from_table(
         source,
         expected_outcome,
         spec_refs,
+        profiles,
         expected_phase,
         failure_category,
         rejection_reason,
@@ -254,7 +269,10 @@ fn expectation_from_table(
         diagnostic_payloads,
         stable_detail_key,
         tags,
+        notes,
         snapshots,
+        ast_profile,
+        snapshot_profiles,
         tokens,
     })
 }
@@ -262,6 +280,52 @@ fn expectation_from_table(
 fn optional_string_array(table: &TomlTable, key: &str) -> Result<Vec<String>, String> {
     if table.contains_key(key) {
         toml_lite::string_array(table, key)
+    } else {
+        Ok(Vec::new())
+    }
+}
+
+fn parse_non_empty_string_array(table: &TomlTable, key: &str) -> Result<Vec<String>, String> {
+    let values = toml_lite::string_array(table, key)?;
+    if values.is_empty() {
+        return Err(format!("`{key}` must not be empty when present"));
+    }
+    values
+        .into_iter()
+        .map(|value| {
+            if value.is_empty() {
+                Err(format!("`{key}` entries must not be empty"))
+            } else {
+                Ok(value)
+            }
+        })
+        .collect()
+}
+
+fn validate_profile_ids(profiles: &[String]) -> Result<(), String> {
+    for profile in profiles {
+        if !matches!(
+            profile.as_str(),
+            "fast"
+                | "full"
+                | "stress"
+                | "fuzz_regression"
+                | "fuzz-regression"
+                | "snapshot_update"
+                | "snapshot-update"
+        ) {
+            return Err(format!("unknown profile `{profile}`"));
+        }
+    }
+    Ok(())
+}
+
+fn parse_optional_non_empty_string_array(
+    table: &TomlTable,
+    key: &str,
+) -> Result<Vec<String>, String> {
+    if table.contains_key(key) {
+        parse_non_empty_string_array(table, key)
     } else {
         Ok(Vec::new())
     }
@@ -383,20 +447,6 @@ fn validate_known_fields(table: &TomlTable) -> Result<(), String> {
     for key in table.keys() {
         if !KNOWN_FIELDS.contains(&key.as_str()) {
             return Err(format!("unknown expectation field `{key}`"));
-        }
-    }
-    Ok(())
-}
-
-fn validate_optional_metadata_fields(table: &TomlTable) -> Result<(), String> {
-    for key in ["profiles", "snapshot_profiles"] {
-        if table.contains_key(key) {
-            toml_lite::string_array(table, key)?;
-        }
-    }
-    for key in ["notes", "ast_profile"] {
-        if table.contains_key(key) {
-            toml_lite::optional_string(table, key)?;
         }
     }
     Ok(())

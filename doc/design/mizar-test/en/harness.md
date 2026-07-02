@@ -9,9 +9,25 @@ This module defines the test harness that discovers cases, runs compiler profile
 ## Public API
 
 ```rust
+pub struct DiscoveryConfig {
+    pub workspace_root: PathBuf,
+    pub tests_root: PathBuf,
+    pub manifest_path: PathBuf,
+    pub profile: TestProfile,
+    pub validation_mode: ValidationMode,
+}
+
 pub struct TestPlan {
     pub cases: Vec<TestCase>,
-    pub profile: TestProfile,
+    pub manifest: TraceManifest,
+    pub diagnostics: Vec<ValidationDiagnostic>,
+}
+
+pub struct TestCase {
+    pub id: TestCaseId,
+    pub source_path: PathBuf,
+    pub expectation_path: PathBuf,
+    pub expectation: Expectation,
 }
 
 pub enum TestProfile {
@@ -22,11 +38,10 @@ pub enum TestProfile {
     SnapshotUpdate,
 }
 
-pub struct TestOutcome {
-    pub case: TestCaseId,
-    pub status: TestStatus,
-    pub diagnostics: Vec<Diagnostic>,
-    pub snapshots: Vec<SnapshotRecord>,
+pub enum ValidationMode {
+    Metadata,
+    Development,
+    Release,
 }
 
 pub struct ParseOnlyRunReport {
@@ -44,6 +59,10 @@ pub struct TypeElaborationRunReport {
     pub diagnostics: Vec<ValidationDiagnostic>,
 }
 ```
+
+The generic `TestOutcome`/snapshot-reporting surface is future API. Current
+active runners expose stage-specific report records while sharing the metadata
+plan and validation diagnostics shown above.
 
 ## Runner Modes
 
@@ -63,7 +82,11 @@ pub struct TypeElaborationRunReport {
 ## Algorithm / Logic
 
 1. Discover tests through `layout`.
-2. Build a canonical `TestPlan`.
+2. Parse and validate every discovered sidecar, then build a canonical
+   `TestPlan` whose returned `cases` are filtered by `DiscoveryConfig.profile`.
+   Missing `profiles` defaults to `["fast"]`; `Full` includes every valid
+   parsed case. Duplicate ids, traceability links, and diagnostics are checked
+   across all parsed sidecars, not only the filtered cases.
 3. For `parse-only`, select only cases with `stage = "parse_only"`,
    `expected_phase = "parse"`, `.miz` payloads, pass/fail outcomes, and
    `tags = ["active_parse_only"]`. Untagged parse-only sidecars remain
@@ -92,9 +115,12 @@ produce an AST with no assertion diagnostics, and compares fail cases against
 the expected bare syntax diagnostic keys. For this syntax-only mode, the runner
 uses a harness provider that resolves every frontend import stub to a
 `ResolvedImportEntry` with matching `stub_ordinal` and `stub_span`, plus one
-empty `ModuleLexicalSummary` per distinct module id. The summaries contain no
-exported symbols and exist only to keep import syntax cases from depending on
-semantic module availability. If parser syntax diagnostics and non-syntax
+`ModuleLexicalSummary` per distinct module id. Summaries contain no exported
+symbols except for the narrow `parser.type_fixtures` fixture module, which
+injects parser-owned attribute, mode, structure, predicate, and functor shapes
+needed by type-expression and operator syntax fixtures. No other import summary
+exports symbols; the summaries exist only to keep import syntax cases from
+depending on semantic module availability. If parser syntax diagnostics and non-syntax
 frontend recovery diagnostics both appear, the runner reports all diagnostic
 codes unless the sidecar explicitly includes
 `allow_frontend_recovery_diagnostics`. Active parse-only pass/fail sidecars may

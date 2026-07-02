@@ -88,6 +88,10 @@ pub struct Expectation {
     pub source: Utf8PathBuf,
     pub expected_outcome: ExpectedOutcome,
     pub spec_refs: Vec<SpecRequirementId>,
+    pub profiles: Vec<String>,
+    pub notes: Option<String>,
+    pub ast_profile: Option<String>,
+    pub snapshot_profiles: Vec<String>,
 }
 
 pub struct TraceManifest {
@@ -108,11 +112,13 @@ The exact Rust types may evolve, but the ownership boundaries must remain:
 The initial CLI command is:
 
 ```text
-mizar-test plan --tests-root tests --manifest tests/coverage/spec_trace.toml
+mizar-test plan --tests-root tests --manifest tests/coverage/spec_trace.toml \
+  --validation-mode metadata
 ```
 
-The default validation mode is `metadata`. It performs discovery and validation,
-then prints a deterministic summary:
+The default validation mode is `metadata`; the CLI also accepts `development`
+and `release`. All modes perform discovery and validation, then print a
+deterministic summary:
 
 ```text
 test cases: 0
@@ -139,8 +145,10 @@ tests/property/
 tests/snapshots/
 ```
 
-Missing optional roots are allowed. Unknown roots are ignored in permissive
-mode and reported in strict mode.
+Missing optional roots are allowed. Unknown roots are ignored in `metadata`
+mode and reported in `development` and `release` mode. The `tests/coverage/`
+directory is a metadata root for the trace manifest; it is allowed at the top
+level but is not walked as a payload corpus root.
 
 Files are sorted by canonical relative path before validation. Directory
 iteration order must never affect the plan.
@@ -190,8 +198,10 @@ Warnings may be used for:
 Warnings must not hide errors.
 
 Coverage completeness is not an error in the minimal crate's default
-`metadata` mode. Release coverage gating is a later harness mode and uses the
-rules in [traceability.md](./traceability.md).
+`metadata` mode. The `development` and `release` selectors are accepted so the
+strict layout policy can be exercised now; mode-aware coverage/status gates
+remain traceability/reporting follow-up work and use the rules in
+[traceability.md](./traceability.md).
 
 ## Determinism
 

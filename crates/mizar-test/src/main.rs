@@ -32,6 +32,7 @@ fn run() -> Result<ExitCode, String> {
     let mut workspace_root = PathBuf::from(".");
     let mut tests_root = PathBuf::from("tests");
     let mut manifest_path = PathBuf::from("tests/coverage/spec_trace.toml");
+    let mut validation_mode = ValidationMode::Metadata;
     let mut idx = 1;
     while idx < args.len() {
         match args[idx].as_str() {
@@ -50,12 +51,7 @@ fn run() -> Result<ExitCode, String> {
             "--validation-mode" => {
                 idx += 1;
                 let value = next_value(&args, idx, "--validation-mode")?;
-                if value != "metadata" {
-                    return Err(
-                        "only `--validation-mode metadata` is implemented in the minimal crate"
-                            .to_owned(),
-                    );
-                }
+                validation_mode = value.parse::<ValidationMode>()?;
             }
             other => return Err(format!("unknown argument `{other}`")),
         }
@@ -67,7 +63,7 @@ fn run() -> Result<ExitCode, String> {
         tests_root,
         manifest_path,
         profile: TestProfile::Fast,
-        validation_mode: ValidationMode::Metadata,
+        validation_mode,
     };
     match command.as_str() {
         "plan" => run_plan(&config),
@@ -162,7 +158,7 @@ fn run_type_elaboration(config: &DiscoveryConfig) -> Result<ExitCode, String> {
 }
 
 fn usage() -> String {
-    "usage: mizar-test <plan|parse-only|declaration-symbol|type-elaboration> [--tests-root tests] [--manifest tests/coverage/spec_trace.toml] [--workspace-root .]".to_owned()
+    "usage: mizar-test <plan|parse-only|declaration-symbol|type-elaboration> [--tests-root tests] [--manifest tests/coverage/spec_trace.toml] [--workspace-root .] [--validation-mode metadata|development|release]".to_owned()
 }
 
 fn next_value(args: &[String], idx: usize, name: &str) -> Result<String, String> {

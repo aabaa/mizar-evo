@@ -78,6 +78,30 @@ fn malformed_toml_fails() {
 }
 
 #[test]
+fn unsupported_schema_versions_fail() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/new_schema.src", "");
+    corpus.write(
+        "tests/lexical/pass/new_schema.expect.toml",
+        r#"schema_version = 2
+id = "new_schema"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "new_schema.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+}
+
+#[test]
 fn duplicate_expectation_ids_fail() {
     let corpus = Corpus::new();
     corpus.add_requirement("spec.en.test.basic", &[]);
@@ -133,6 +157,336 @@ fn unknown_spec_refs_fail() {
     let plan = corpus.plan();
 
     assert_has_code(&plan, "E-TRACE-UNKNOWN-SPEC-REF");
+}
+
+#[test]
+fn expectation_stems_must_match_sidecar_and_source() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/lexical/pass/nested/other.src", "");
+    corpus.write(
+        "tests/lexical/pass/nested/other.expect.toml",
+        expectation("other", "other.src", "spec.en.test.basic"),
+    );
+    corpus.write("tests/lexical/pass/actual.src", "");
+    corpus.write(
+        "tests/lexical/pass/actual.expect.toml",
+        r#"schema_version = 1
+id = "different"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "nested/other.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-ID-MISMATCH");
+    assert_has_code(&plan, "E-EXPECT-SOURCE-STEM");
+}
+
+#[test]
+fn invalid_enum_and_kind_outcome_pairs_fail() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/bad_kind.src", "");
+    corpus.write(
+        "tests/lexical/pass/bad_kind.expect.toml",
+        r#"schema_version = 1
+id = "bad_kind"
+kind = "surprise"
+stage = "lexical"
+domain = "lexical"
+source = "bad_kind.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/lexical/pass/bad_stage.src", "");
+    corpus.write(
+        "tests/lexical/pass/bad_stage.expect.toml",
+        r#"schema_version = 1
+id = "bad_stage"
+kind = "pass"
+stage = "surprise"
+domain = "lexical"
+source = "bad_stage.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/lexical/pass/bad_outcome.src", "");
+    corpus.write(
+        "tests/lexical/pass/bad_outcome.expect.toml",
+        r#"schema_version = 1
+id = "bad_outcome"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "bad_outcome.src"
+expected_outcome = "surprise"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/lexical/pass/bad_pair.src", "");
+    corpus.write(
+        "tests/lexical/pass/bad_pair.expect.toml",
+        r#"schema_version = 1
+id = "bad_pair"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "bad_pair.src"
+expected_outcome = "fail"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+    let schema_errors = plan
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code.0 == "E-EXPECT-SCHEMA")
+        .count();
+
+    assert_eq!(schema_errors, 4, "{:#?}", plan.diagnostics);
+}
+
+#[test]
+fn duplicate_sidecar_spec_refs_fail() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/lexical/pass/duplicate_spec_ref.src", "");
+    corpus.write(
+        "tests/lexical/pass/duplicate_spec_ref.expect.toml",
+        r#"schema_version = 1
+id = "duplicate_spec_ref"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "duplicate_spec_ref.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic", "spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-DUP-SPEC-REF");
+}
+
+#[test]
+fn optional_metadata_is_retained_and_profiles_filter_cases() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/lexical/pass/fast_case.src", "");
+    corpus.write(
+        "tests/lexical/pass/fast_case.expect.toml",
+        r#"schema_version = 1
+id = "fast_case"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "fast_case.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+notes = "retained review note"
+ast_profile = "surface"
+snapshot_profiles = ["surface_ast"]
+"#,
+    );
+    corpus.write("tests/lexical/pass/stress_case.src", "");
+    corpus.write(
+        "tests/lexical/pass/stress_case.expect.toml",
+        r#"schema_version = 1
+id = "stress_case"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "stress_case.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = ["stress"]
+"#,
+    );
+
+    let fast_plan = corpus.plan();
+
+    assert_eq!(fast_plan.error_count(), 0, "{:#?}", fast_plan.diagnostics);
+    assert_eq!(fast_plan.cases.len(), 1);
+    let fast_case = &fast_plan.cases[0].expectation;
+    assert_eq!(fast_case.profiles, vec!["fast".to_owned()]);
+    assert_eq!(fast_case.notes.as_deref(), Some("retained review note"));
+    assert_eq!(fast_case.ast_profile.as_deref(), Some("surface"));
+    assert_eq!(fast_case.snapshot_profiles, vec!["surface_ast".to_owned()]);
+
+    let mut stress_config = corpus.config();
+    stress_config.profile = TestProfile::Stress;
+    let stress_plan = build_test_plan(&stress_config).unwrap();
+
+    assert_eq!(
+        stress_plan.error_count(),
+        0,
+        "{:#?}",
+        stress_plan.diagnostics
+    );
+    assert_eq!(stress_plan.cases.len(), 1);
+    assert_eq!(stress_plan.cases[0].id.0, "stress_case");
+
+    let mut full_config = corpus.config();
+    full_config.profile = TestProfile::Full;
+    let full_plan = build_test_plan(&full_config).unwrap();
+
+    assert_eq!(full_plan.error_count(), 0, "{:#?}", full_plan.diagnostics);
+    let full_ids = full_plan
+        .cases
+        .iter()
+        .map(|case| case.id.0.as_str())
+        .collect::<Vec<_>>();
+    assert_eq!(full_ids, vec!["fast_case", "stress_case"]);
+}
+
+#[test]
+fn invalid_profiles_metadata_fails() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/empty_profiles.src", "");
+    corpus.write(
+        "tests/lexical/pass/empty_profiles.expect.toml",
+        r#"schema_version = 1
+id = "empty_profiles"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "empty_profiles.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = []
+"#,
+    );
+    corpus.write("tests/lexical/pass/unknown_profile.src", "");
+    corpus.write(
+        "tests/lexical/pass/unknown_profile.expect.toml",
+        r#"schema_version = 1
+id = "unknown_profile"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "unknown_profile.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = ["fasst"]
+"#,
+    );
+
+    let plan = corpus.plan();
+    let schema_errors = plan
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code.0 == "E-EXPECT-SCHEMA")
+        .count();
+
+    assert_eq!(schema_errors, 2, "{:#?}", plan.diagnostics);
+}
+
+#[test]
+fn filtered_sidecars_still_satisfy_manifest_backrefs() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/stress_linked.src", "");
+    corpus.write(
+        "tests/lexical/pass/stress_linked.expect.toml",
+        r#"schema_version = 1
+id = "stress_linked"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "stress_linked.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = ["stress"]
+"#,
+    );
+    corpus.add_requirement(
+        "spec.en.test.basic",
+        &["tests/lexical/pass/stress_linked.expect.toml"],
+    );
+
+    let fast_plan = corpus.plan();
+
+    assert_eq!(fast_plan.cases.len(), 0);
+    assert_lacks_code(&fast_plan, "E-TRACE-UNPARSED-TEST");
+    assert_lacks_code(&fast_plan, "E-TRACE-MISSING-BACKREF");
+}
+
+#[test]
+fn profile_filtering_does_not_hide_sidecar_errors() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/stress_unknown.src", "");
+    corpus.write(
+        "tests/lexical/pass/stress_unknown.expect.toml",
+        r#"schema_version = 1
+id = "stress_unknown"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "stress_unknown.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.unknown"]
+profiles = ["stress"]
+"#,
+    );
+
+    let fast_plan = corpus.plan();
+
+    assert_eq!(fast_plan.cases.len(), 0);
+    assert_has_code(&fast_plan, "E-TRACE-UNKNOWN-SPEC-REF");
+}
+
+#[test]
+fn unknown_roots_are_permissive_in_metadata_and_strict_in_development() {
+    let corpus = Corpus::new();
+    corpus.write("tests/experimental/README.md", "not a corpus root\n");
+
+    let metadata_plan = corpus.plan();
+
+    assert_lacks_code(&metadata_plan, "E-LAYOUT-UNKNOWN-ROOT");
+
+    let mut development_config = corpus.config();
+    development_config.validation_mode = ValidationMode::Development;
+    let development_plan = build_test_plan(&development_config).unwrap();
+
+    assert_has_code(&development_plan, "E-LAYOUT-UNKNOWN-ROOT");
+
+    let mut release_config = corpus.config();
+    release_config.validation_mode = ValidationMode::Release;
+    let release_plan = build_test_plan(&release_config).unwrap();
+
+    assert_has_code(&release_plan, "E-LAYOUT-UNKNOWN-ROOT");
 }
 
 #[test]
@@ -2383,6 +2737,125 @@ tests = ["tests/miz/fail/resolve/fail_duplicate_theorem.expect.toml"]
 }
 
 #[test]
+fn plan_cli_reports_deterministic_metadata_summary() {
+    let corpus = Corpus::new();
+
+    let output = plan_cli(&corpus)
+        .output()
+        .expect("mizar-test plan should run");
+
+    assert!(
+        output.status.success(),
+        "plan CLI failed: stdout={} stderr={}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        "test cases: 0\nrequirements: 0\nerrors: 0\nwarnings: 0\n"
+    );
+    assert_eq!(String::from_utf8_lossy(&output.stderr), "");
+}
+
+#[test]
+fn plan_cli_accepts_validation_modes() {
+    for mode in ["metadata", "development", "release"] {
+        let corpus = Corpus::new();
+
+        let output = plan_cli(&corpus)
+            .arg("--validation-mode")
+            .arg(mode)
+            .output()
+            .unwrap_or_else(|error| panic!("mizar-test plan {mode} should run: {error}"));
+
+        assert!(
+            output.status.success(),
+            "plan CLI mode {mode} failed: stdout={} stderr={}",
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+}
+
+#[test]
+fn plan_cli_warnings_exit_success() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.planned", &[]);
+
+    let output = plan_cli(&corpus)
+        .output()
+        .expect("mizar-test plan with warnings should run");
+
+    assert_eq!(output.status.code(), Some(0));
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        "test cases: 0\nrequirements: 1\nerrors: 0\nwarnings: 1\n"
+    );
+    assert!(String::from_utf8_lossy(&output.stderr).contains("W-MANIFEST-PLANNED-NO-TESTS"));
+}
+
+#[test]
+fn plan_cli_validation_errors_exit_one() {
+    let corpus = Corpus::new();
+    corpus.write("tests/lexical/pass/orphan.src", "");
+
+    let output = plan_cli(&corpus)
+        .output()
+        .expect("mizar-test plan with validation errors should run");
+
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        "test cases: 0\nrequirements: 0\nerrors: 1\nwarnings: 0\n"
+    );
+    assert!(String::from_utf8_lossy(&output.stderr).contains("E-LAYOUT-MISSING-SIDECAR"));
+}
+
+#[test]
+fn plan_cli_release_unknown_roots_exit_one() {
+    let corpus = Corpus::new();
+    corpus.write("tests/experimental/README.md", "not a corpus root\n");
+
+    let output = plan_cli(&corpus)
+        .arg("--validation-mode")
+        .arg("release")
+        .output()
+        .expect("mizar-test plan release with unknown root should run");
+
+    assert_eq!(output.status.code(), Some(1));
+    assert_eq!(
+        String::from_utf8_lossy(&output.stdout),
+        "test cases: 0\nrequirements: 0\nerrors: 1\nwarnings: 0\n"
+    );
+    assert!(String::from_utf8_lossy(&output.stderr).contains("E-LAYOUT-UNKNOWN-ROOT"));
+}
+
+#[test]
+fn plan_cli_usage_and_infrastructure_errors_exit_two() {
+    let corpus = Corpus::new();
+
+    let bad_mode = plan_cli(&corpus)
+        .arg("--validation-mode")
+        .arg("strict")
+        .output()
+        .expect("mizar-test plan with bad validation mode should run");
+    assert_eq!(bad_mode.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&bad_mode.stderr).contains("unknown validation mode `strict`"));
+
+    let missing_root = plan_cli(&corpus)
+        .arg("--tests-root")
+        .arg("missing-tests")
+        .output()
+        .expect("mizar-test plan with missing root should run");
+    assert_eq!(missing_root.status.code(), Some(2));
+    assert!(
+        String::from_utf8_lossy(&missing_root.stderr).contains("is not a directory"),
+        "stderr={}",
+        String::from_utf8_lossy(&missing_root.stderr)
+    );
+}
+
+#[test]
 fn parse_only_cli_reports_active_runner_summary() {
     let output = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"))
         .arg("parse-only")
@@ -2951,6 +3424,17 @@ fn assert_has_code(plan: &mizar_test::TestPlan, code: &str) {
     );
 }
 
+fn assert_lacks_code(plan: &mizar_test::TestPlan, code: &str) {
+    assert!(
+        !plan
+            .diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.code.0 == code),
+        "unexpected diagnostic {code}, got {:#?}",
+        plan.diagnostics
+    );
+}
+
 fn assert_has_report_code(report: &mizar_test::ParseOnlyRunReport, code: &str) {
     assert!(
         report
@@ -3007,6 +3491,15 @@ fn repository_config() -> DiscoveryConfig {
         profile: TestProfile::Fast,
         validation_mode: ValidationMode::Metadata,
     }
+}
+
+fn plan_cli(corpus: &Corpus) -> std::process::Command {
+    let mut command = std::process::Command::new(env!("CARGO_BIN_EXE_mizar-test"));
+    command
+        .arg("plan")
+        .arg("--workspace-root")
+        .arg(&corpus.root);
+    command
 }
 
 fn reserved_words_from_appendix_a(workspace_root: &Path) -> BTreeSet<String> {
