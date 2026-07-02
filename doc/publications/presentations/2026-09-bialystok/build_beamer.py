@@ -18,16 +18,22 @@ DEFAULT_INPUT = ROOT / "draft.md"
 DEFAULT_OUTPUT = ROOT / "bialystok_detail.tex"
 
 PART_REMAP = {
-    "Part 2. Design Concept": "Part 1. Concept",
-    "Part 4. Language Changes And Migration Examples": "Part 2. Language Specification",
-    "Part 5. Architecture": "Part 3. Architecture",
-    "Part 6. MML Migration Roadmap": "Part 4. Roadmap",
-    "Part 7. Formalized Mathematics": "Part 5. Formalized Mathematics",
+    "Part 0. Opening": "Part 0. Opening",
+    "Part 1. Why Now": "Part 1. Why Now",
+    "Part 2. Story 1: Dependencies You Can See": "Part 2. Story 1: Dependencies You Can See",
+    "Part 3. Story 2: Structures Without Hidden Merges": "Part 3. Story 2: Structures Without Hidden Merges",
+    "Part 4. Story 3: Automation You Can Audit": "Part 4. Story 3: Automation You Can Audit",
+    "Part 5. Story 4: Powerful Search, Small Trust": "Part 5. Story 4: Powerful Search, Small Trust",
+    "Part 6. Story 5: Verification That Scales": "Part 6. Story 5: Verification That Scales",
+    "Part 7. Story 6: Templates For Generic Mathematics": "Part 7. Story 6: Templates For Generic Mathematics",
+    "Part 8. Story 7: Verified Computation With Algorithms": "Part 8. Story 7: Verified Computation With Algorithms",
+    "Part 9. Story 8: A Library You Can Cite": "Part 9. Story 8: A Library You Can Cite",
+    "Part 10. Architecture In One Picture": "Part 10. Architecture In One Picture",
+    "Part 11. Roadmap And Collaboration": "Part 11. Roadmap And Collaboration",
+    "Part 12. Closing": "Part 12. Closing",
 }
 
-PART_APPEND_TO = {
-    "Part 8. Discussion And Requests": "5",
-}
+PART_APPEND_TO: dict[str, str] = {}
 
 LABEL_REWRITES = {
     "Bullets": "Key Points",
@@ -40,8 +46,8 @@ LABEL_REWRITES = {
 }
 
 SECTION_LABEL_RE = re.compile(r"^[A-Za-z][A-Za-z0-9 `/'()&.,-]{0,80}:$")
-FRAME_WEIGHT_LIMIT = 17.0
-MAX_CODE_LINES_PER_BLOCK = 10
+FRAME_WEIGHT_LIMIT = 18.5
+MAX_CODE_LINES_PER_BLOCK = 15
 MAX_LIST_ITEMS_PER_BLOCK = 7
 
 
