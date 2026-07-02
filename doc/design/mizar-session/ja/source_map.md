@@ -273,7 +273,9 @@ impl RetainedSourceMapService {
 - 内部: `SourceId` とソースバージョンの同一性のための `snapshot`
 - 外部: ハッシュ計算、UTF-8 テキストユーティリティ、LSP の範囲型
 
-このモジュールは、フロントエンドの各フェーズ、`mizar-ir` のサイドテーブル、`mizar-diagnostics`、`mizar-lsp`、`mizar-artifact`、`mizar-doc`、`mizar-extract` から利用されます。
+このモジュールは、フロントエンドの各フェーズ、`mizar-ir` のサイドテーブル、
+`mizar-diagnostics`、`mizar-lsp`、`mizar-artifact`、および `mizar-doc`
+のドキュメント/抽出から利用されます。
 
 ## データ構造
 

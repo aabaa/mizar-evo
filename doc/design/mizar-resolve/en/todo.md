@@ -512,12 +512,30 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       bilingual documentation audit scopes were re-run for the moved APIs with
       no new drift.
 
+30. **Public resolver diagnostic adoption gate.** [ ]
+    - Map resolver name/import/label diagnostics into public
+      `mizar-diagnostics` descriptors only when a real user-facing producer
+      adoption task starts. The shared registry already reserves the
+      `Resolution` family, but this task must define concrete semantic names,
+      numeric codes or aliases, migration behavior for crate-local diagnostics,
+      corpus/expectation coverage, and LSP/artifact projection boundaries.
+    - Deps: R-024 and the first downstream consumer that needs user-facing
+      resolver diagnostics. Spec:
+      [22.error_handling_and_diagnostics.md](../../../spec/en/22.error_handling_and_diagnostics.md),
+      [mizar-diagnostics consumer adoption](../../mizar-diagnostics/en/consumer_adoption_decision.md),
+      [spec_coverage_audit.md](../../spec_coverage_audit.md).
+    - Forbidden behavior: no placeholder adapters, no invented public codes
+      without registry/spec alignment, and no rebaselining existing expectation
+      sidecars merely to match current crate-local diagnostics.
+
 ## Crate Close-Out
 
 - Completed: [crate_exit_report.md](./crate_exit_report.md) records
   non-deferred task completion, the original R-024 deferral and current
   resume-ready status, milestone gates, quality score 94/100, full
   verification, human-review surface, task commits, and next-task handoff.
+  R-030 is a later integration follow-up opened by the spec-coverage audit; it
+  does not reopen the completed R-001 through R-029 milestone.
 
 ## Recommended Verification
 

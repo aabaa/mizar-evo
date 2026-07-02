@@ -236,6 +236,18 @@ Keep `cargo test -p mizar-lsp` green after each task (see
       synchronize content.
     - Deps: 22. Spec: repository documentation policy.
 
+24. **Annotation display and evaluation projection audit.** [ ]
+    - Before claiming chapter-21 display/evaluation coverage, audit how
+      `@show_type`, `@show_resolution`, `@show_thesis`, and `@eval` flow from
+      parser/syntax nodes through diagnostics, metadata artifacts, and LSP
+      presentation. Record whether each output is a diagnostic, inline hint,
+      explicit information response, or unavailable/deferred result; preserve
+      snapshot freshness and never evaluate terms inside the LSP server.
+    - Deps: 13, 18, 23. Spec:
+      [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md),
+      [12.diagnostics_and_lsp.md](../../architecture/en/12.diagnostics_and_lsp.md),
+      [spec_coverage_audit.md](../../spec_coverage_audit.md).
+
 ## Recommended Verification
 
 Run after each task:

@@ -273,7 +273,9 @@ Offsets are byte offsets into validated UTF-8 `LoadedSource.text`. For disk and 
 - Internal: `snapshot` for `SourceId` and source-version identity
 - External: hashing, UTF-8 text utilities, LSP range types
 
-This module is consumed by frontend phases, `mizar-ir` side tables, `mizar-diagnostics`, `mizar-lsp`, `mizar-artifact`, `mizar-doc`, and `mizar-extract`.
+This module is consumed by frontend phases, `mizar-ir` side tables,
+`mizar-diagnostics`, `mizar-lsp`, `mizar-artifact`, and `mizar-doc`
+documentation/extraction.
 
 ## Data Structures
 

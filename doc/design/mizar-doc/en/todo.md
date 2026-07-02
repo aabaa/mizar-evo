@@ -13,8 +13,9 @@
 Module specs do not exist yet; each is written by its own spec task (English
 and Japanese in the same change) before the implementation tasks that cite it.
 Per [internal 07](../../internal/en/07.crate_module_layout.md) this crate owns
-both documentation rendering **and** extraction (the architecture-13 module
-list predates that consolidation and named a separate `mizar-extract`); the
+both documentation rendering **and** extraction (earlier phase-16 drafts named
+a separate `mizar-extract`, but architecture/internal docs now use the
+`mizar-doc` module names); the
 crate refines architecture 13 and internal 05.
 
 | Module | Spec | Source | Status |
@@ -56,10 +57,11 @@ internal: [05](../../internal/en/05.documentation_extraction.md).
 
 ## Resolved And Open Decisions
 
-- **Extraction lives in this crate: resolved by internal 07.** The
-  architecture-13 module list named `mizar-extract`; internal 07
-  consolidates rendering and extraction here. If extraction grows large, a
-  split decision will be raised and registered at the top level then.
+- **Extraction lives in this crate: resolved by internal 07.** Earlier
+  phase-16 drafts named `mizar-extract`; internal 07 consolidates rendering
+  and extraction here, and architecture/internal docs now use `mizar-doc`
+  module names. If extraction grows large, a split decision will be raised and
+  registered at the top level then.
 - **Doc-comment source: open, resolved by task 6.** Decide how doc comments
   reach phase 16: projected into artifacts at emission (default candidate,
   honoring the consumer-phase rule) or re-read from `PreprocessedSource`
@@ -269,6 +271,21 @@ Keep `cargo test -p mizar-doc` green after each task (see
     - Deps: 27. Spec: this TODO,
       [internal 07](../../internal/en/07.crate_module_layout.md), all module
       specs.
+
+29. **Spec-coverage closure audit.** [ ]
+    - After the module specs and implementation strands exist, compare
+      `mizar-doc` behavior against spec chapters 20, 21, and 24 and
+      [spec_coverage_audit.md](../../spec_coverage_audit.md). Confirm that
+      documentation comments, cross references, formula rendering, HTML output,
+      `@latex`, `@eval` presentation boundaries, extractable algorithm
+      selection, `RuntimeIr`, ghost/proof erasure, target backends, and
+      generated-output manifests are either covered by module specs/tests or
+      explicitly deferred with owner links.
+    - Deps: 28. Spec:
+      [20.algorithm_and_verification.md](../../../spec/en/20.algorithm_and_verification.md),
+      [21.source_code_annotation_and_atp.md](../../../spec/en/21.source_code_annotation_and_atp.md),
+      [24.documentation_generation.md](../../../spec/en/24.documentation_generation.md),
+      this TODO, and all `mizar-doc` module specs.
 
 ## Recommended Verification
 

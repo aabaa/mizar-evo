@@ -484,12 +484,30 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       `names/diagnostics.rs` へ移した。移動した API について source/spec と二言語
       ドキュメント監査 scope を再実行し、新しい drift は見つからなかった。
 
+30. **public resolver diagnostic adoption gate。** [ ]
+    - 実際の user-facing producer adoption task が始まる場合に限り、resolver
+      の name/import/label diagnostics を public `mizar-diagnostics`
+      descriptor へ写像する。共有 registry はすでに `Resolution` family を
+      reserve しているが、この task では具体的な semantic name、numeric code
+      または alias、crate-local diagnostics からの migration behavior、
+      corpus / expectation coverage、LSP / artifact projection boundary を定義する。
+    - 依存: R-024、および user-facing resolver diagnostics を必要とする最初の
+      downstream consumer。仕様:
+      [22.error_handling_and_diagnostics.md](../../../spec/ja/22.error_handling_and_diagnostics.md),
+      [mizar-diagnostics consumer adoption](../../mizar-diagnostics/ja/consumer_adoption_decision.md),
+      [spec_coverage_audit.md](../../spec_coverage_audit.md)。
+    - 禁止事項: placeholder adapter を作らない。registry/spec alignment なしに
+      public code を創作しない。現在の crate-local diagnostics に合わせるためだけに
+      既存 expectation sidecar を rebaseline しない。
+
 ## crate close-out
 
 - 完了: [crate_exit_report.md](./crate_exit_report.md) に、non-deferred task completion、
   当初の R-024 deferral と現在の resume-ready status、milestone gate、quality
   score 94/100、full verification、human-review surface、task commit、
-  next-task handoff を記録した。
+  next-task handoff を記録した。R-030 は spec coverage audit により開かれた
+  後続 integration follow-up であり、完了済みの R-001 から R-029 milestone を
+  再オープンしない。
 
 ## 推奨検証
 

@@ -236,6 +236,18 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       同期する。
     - 依存: 22。仕様: リポジトリのドキュメント方針。
 
+24. **annotation 表示と評価 projection の監査。** [ ]
+    - chapter 21 の表示/評価 coverage を主張する前に、`@show_type`、
+      `@show_resolution`、`@show_thesis`、`@eval` が parser/syntax node から
+      diagnostics、metadata artifact、LSP 表示へどう流れるかを監査する。
+      各出力が diagnostic、inline hint、明示的な information response、
+      unavailable/deferred result のどれであるかを記録する。snapshot の
+      鮮度を保持し、LSP server 内で term を評価しない。
+    - 依存: 13、18、23。仕様:
+      [21.source_code_annotation_and_atp.md](../../../spec/ja/21.source_code_annotation_and_atp.md),
+      [12.diagnostics_and_lsp.md](../../architecture/ja/12.diagnostics_and_lsp.md),
+      [spec_coverage_audit.md](../../spec_coverage_audit.md)。
+
 ## 推奨検証
 
 各タスクの後で実行する:

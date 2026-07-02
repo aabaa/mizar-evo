@@ -82,6 +82,21 @@ bundle/source-level language edition. Keep this covered by
 [mizar-frontend task 19](./mizar-frontend/en/todo.md) and later source/spec
 audits; no new architecture-22 task is needed for that slice.
 
+## Specification Coverage Audit Follow-Ups
+
+[spec_coverage_audit.md](./spec_coverage_audit.md) tracks coverage from each
+`doc/spec/en/` chapter to implementation-facing design docs. The table below
+keeps the non-closed follow-ups visible in roadmap order.
+
+| ID | Classification | Coverage gap | Owning TODO task |
+|---|---|---|---|
+| SCA-001 | `design_drift` | The top-level design index must stay aligned with this roadmap's workspace-crate statuses. | This docs-only sync updates [README.md](./README.md). Future roadmap sync tasks must re-check it. |
+| SCA-002 | `todo` | Spec 24 documentation generation has only architecture/internal boundaries and `mizar-doc` TODOs; focused module specs are still unwritten. | [mizar-doc tasks 2, 4, 6, 9, 11, 13, 16, 18, 21, 23, and 29](./mizar-doc/en/todo.md) |
+| SCA-003 | `todo` | `@show_*` and `@eval` have parser/syntax coverage but need end-to-end display/evaluation projection boundaries. | [mizar-lsp task 24](./mizar-lsp/en/todo.md), plus `mizar-doc` and VC producer tasks as they expose data |
+| SCA-004 | `external_dependency_gap` | Resolver name/import/label diagnostics remain crate-local/internal until a real public diagnostic adoption task maps them into stable descriptors. | [mizar-resolve task 30](./mizar-resolve/en/todo.md), [mizar-diagnostics consumer adoption](./mizar-diagnostics/en/consumer_adoption_decision.md) |
+| SCA-005 | `external_dependency_gap` | Algorithm VC coverage still lacks several source-derived payload families such as branch/match/range/collection loops, term-only termination, Pick non-emptiness, and ghost-erasure traces. | [mizar-vc source/spec audit](./mizar-vc/en/source_spec_audit.md) and future producer integration tasks |
+| SCA-006 | `design_drift` | Phase-16 architecture/internal docs still referenced the historical `mizar-extract` split instead of the current `mizar-doc` module names. | This docs-only sync updates architecture 13 and internal 05 EN/JA. |
+
 ## Recommended Order
 
 ### Completed Foundation

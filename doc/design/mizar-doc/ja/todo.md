@@ -14,8 +14,8 @@
 専用の仕様タスクが（英語と日本語を同じ変更で）執筆する。
 [internal 07](../../internal/ja/07.crate_module_layout.md) により、この
 crate はドキュメントのレンダリングと抽出の**両方**を所有する
-（アーキテクチャ 13 のモジュール一覧はこの統合より古く、別 crate
-`mizar-extract` を挙げていた）。この crate はアーキテクチャ 13 と
+（以前の phase-16 draft は別 crate `mizar-extract` を挙げていたが、現在の
+architecture/internal docs は `mizar-doc` module 名を使う）。この crate はアーキテクチャ 13 と
 internal 05 を精緻化する。
 
 | モジュール | 仕様 | ソース | 状態 |
@@ -59,9 +59,10 @@ internal: [05](../../internal/ja/05.documentation_extraction.md)。
 ## 解決済みおよび保留中の決定
 
 - **抽出はこの crate に属する: internal 07 により解決済み。**
-  アーキテクチャ 13 のモジュール一覧は `mizar-extract` を挙げていたが、
-  internal 07 がレンダリングと抽出をここに統合した。抽出が大きく育った
-  場合は、その時点で分割判断を提起しトップレベルに登録する。
+  以前の phase-16 draft は `mizar-extract` を挙げていたが、internal 07 が
+  レンダリングと抽出をここに統合し、現在の architecture/internal docs は
+  `mizar-doc` module 名を使う。抽出が大きく育った場合は、その時点で
+  分割判断を提起しトップレベルに登録する。
 - **ドキュメントコメントの供給源: 未解決。task 6 で解決する。**
   ドキュメントコメントが phase 16 に届く方法を決める: emission 時に
   artifact へ射影する（既定候補。消費 phase の規則に忠実）か、
@@ -265,6 +266,21 @@ internal: [05](../../internal/ja/05.documentation_extraction.md)。
       spec task を要求する。
     - 依存: 27。仕様: 本 TODO、
       [internal 07](../../internal/ja/07.crate_module_layout.md)、全モジュール仕様。
+
+29. **仕様 coverage closure 監査。** [ ]
+    - module spec と実装 strand が揃った後、`mizar-doc` の挙動を spec
+      chapters 20、21、24 と [spec_coverage_audit.md](../../spec_coverage_audit.md)
+      に照らして比較する。ドキュメントコメント、相互参照、数式
+      レンダリング、HTML 出力、`@latex`、`@eval` の表示境界、抽出可能
+      algorithm の選択、`RuntimeIr`、ghost/証明専用の消去、ターゲット
+      backend、生成出力 manifest が、module spec / test で cover されて
+      いるか、または owner link 付きで明示的に deferred と分類されている
+      ことを確認する。
+    - 依存: 28。仕様:
+      [20.algorithm_and_verification.md](../../../spec/ja/20.algorithm_and_verification.md),
+      [21.source_code_annotation_and_atp.md](../../../spec/ja/21.source_code_annotation_and_atp.md),
+      [24.documentation_generation.md](../../../spec/ja/24.documentation_generation.md),
+      本 TODO、および全 `mizar-doc` module spec。
 
 ## 推奨検証
 

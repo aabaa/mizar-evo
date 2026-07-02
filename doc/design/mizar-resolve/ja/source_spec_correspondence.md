@@ -114,7 +114,7 @@ deferred であり、deferral record と resolver-owned artifact schema / reader
 
 | ID | Classification | Follow-up | Status |
 |---|---|---|---|
-| R-G001 | `spec_gap` | public resolver diagnostic code range と将来の `mizar-diagnostics` adoption。 | deferred。現在の resolver diagnostics は crate-local/internal のままにする。spec が ownership を割り当てるまで public numeric code を追加しない。 |
+| R-G001 | `spec_gap` から `external_dependency_gap` / deferred adoption へ精緻化 | public resolver diagnostic descriptor と将来の `mizar-diagnostics` adoption。共有 registry は広い `Resolution` family を reserve しているが、resolver の name/import/label descriptor は未採用。 | R-030 へ deferred。現在の resolver diagnostics は crate-local/internal のままにする。real adoption task が registry/spec ownership と coverage をそろえるまで、public numeric code、alias、placeholder adapter を追加しない。 |
 | R-G002 | `test_gap` | lexical/parser の import/export syntax を超える semantic resolver corpus coverage が歴史的に不足していたこと。 | R-023 の active declaration-symbol smoke/fail fixture により部分的に解消済み。残る具体的な corpus assertion work は R-G007 が精緻化し、implemented behavior は unit tests が cover しているため R-027 には non-blocking。 |
 | R-G003 | resolved `external_dependency_gap`; open R-024 integration | canonical `ModuleSummary` artifact から dependency module を消費する経路。 | artifact 側 unblock condition は schema、writer、validating reader、version compatibility policy を提供する `mizar-artifact` task 5 により満たされた。resolver-owned schema や artifact shim を作らず、R-024 を `mizar-resolve` 側で再開する。 |
 | R-G006 | `external_dependency_gap` | parser/syntax が owning source role を公開した後の module-level scheme/template declaration shell。 | represented source role については non-blocking。現 resolver は direct template role を owning signature payload に保持し、scheme/template module symbol を創作しない。 |

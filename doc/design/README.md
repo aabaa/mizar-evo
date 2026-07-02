@@ -91,43 +91,54 @@ are companions when both are present.
   staged model, traceability, snapshots, and harness behavior; implementation
   exists and the TODO tracks formal gap-closing work.
 - [mizar-build](./mizar-build/en/todo.md) - workspace planning and scheduling;
-  crate scaffold and the package-name validation slice exist, while full
-  planner/module-index/scheduler specs and implementation remain pending.
+  current milestone complete; full real clean/incremental/parallel equivalence
+  remains an integration gap.
 - [mizar-lsp](./mizar-lsp/en/todo.md) - editor-facing range mapping and future
   server, snapshot, diagnostics, metadata, navigation, code-action, and
   explanation features; range conversion exists and the broader design remains
   planned.
+- [mizar-resolve](./mizar-resolve/en/todo.md) - module graph, namespaces,
+  symbols, labels, signatures, and resolver diagnostics; non-deferred tasks are
+  complete except the resumed R-024 summary-backed reuse integration.
+- [mizar-checker](./mizar-checker/en/todo.md) - type checking,
+  cluster/registration resolution, and overload resolution; current
+  explicit-payload semantic milestone complete.
+- [mizar-core](./mizar-core/en/todo.md) - elaboration, binder-normalized core
+  logic, and control-flow preparation; current core/control-flow milestone
+  complete.
+- [mizar-vc](./mizar-vc/en/todo.md) - VC IR, VC generation, deterministic
+  pre-ATP discharge, dependency slices, and kernel-evidence handoff; current
+  milestone complete.
+- [mizar-kernel](./mizar-kernel/en/todo.md) - trusted kernel evidence parsing,
+  SAT-backed checking, and legacy certificate migration/audit handling; current
+  milestone complete.
+- [mizar-atp](./mizar-atp/en/todo.md) - ATP encoding, backend execution, and
+  portfolio candidates; current candidate-evidence producer milestone
+  complete.
+- [mizar-artifact](./mizar-artifact/en/todo.md) - artifact schemas, store,
+  summaries, and manifest transactions; schemas, store, manifest, and witness
+  updates exist, while real phase-15 emission remains deferred.
+- [mizar-driver](./mizar-driver/en/todo.md) - build requests, phase registry,
+  CLI/watch/LSP entry points, and query orchestration; current driver/session
+  milestone complete.
+- [mizar-ir](./mizar-ir/en/todo.md) - IR storage, snapshot handles, publishers,
+  cache adapters, and artifact projections; current milestone complete.
+- [mizar-proof](./mizar-proof/en/todo.md) - proof policy evaluation, status
+  projection, witness selection, and evidence reuse metadata; current
+  milestone complete.
+- [mizar-cache](./mizar-cache/en/todo.md) - cache keys, fingerprints, proof
+  reuse, and cluster-database storage; current internal-cache milestone
+  complete.
+- [mizar-diagnostics](./mizar-diagnostics/en/todo.md) - diagnostic registry,
+  failure records, deterministic ordering, and rendering; current internal
+  diagnostics milestone complete.
 
 ### Planned Crate Roots
 
-These directories currently carry crate-level TODOs and design intent before
-their Rust crates are added to the workspace:
+These directories carry crate-level TODOs and design intent before their Rust
+crates are added to the workspace:
 
-- [mizar-resolve](./mizar-resolve/en/todo.md) - module graph, namespaces,
-  symbols, labels, signatures, and resolver diagnostics.
-- [mizar-checker](./mizar-checker/en/todo.md) - type checking,
-  cluster/registration resolution, and overload resolution.
-- [mizar-core](./mizar-core/en/todo.md) - elaboration, binder-normalized core
-  logic, and control-flow preparation.
-- [mizar-vc](./mizar-vc/en/todo.md) - VC IR, VC generation, deterministic
-  pre-ATP discharge, and dependency slices.
-- [mizar-kernel](./mizar-kernel/en/todo.md) - trusted kernel evidence parsing,
-  SAT-backed checking, and legacy certificate migration/audit handling.
-- [mizar-atp](./mizar-atp/en/todo.md) - ATP encoding, backend execution, and
-  portfolio candidates.
-- [mizar-artifact](./mizar-artifact/en/todo.md) - artifact schemas, store,
-  summaries, and manifest transactions.
 - [mizar-doc](./mizar-doc/en/todo.md) - documentation rendering and extraction.
-- [mizar-driver](./mizar-driver/en/todo.md) - build requests, phase registry,
-  CLI/watch/LSP entry points, and query orchestration.
-- [mizar-ir](./mizar-ir/en/todo.md) - IR storage, snapshot handles, publishers,
-  cache adapters, and artifact projections.
-- [mizar-proof](./mizar-proof/en/todo.md) - proof policy evaluation, status
-  projection, witness selection, and evidence reuse metadata.
-- [mizar-cache](./mizar-cache/en/todo.md) - cache keys, fingerprints, proof
-  reuse, and cluster-database storage.
-- [mizar-diagnostics](./mizar-diagnostics/en/todo.md) - diagnostic registry,
-  failure records, deterministic ordering, and rendering.
 
 ## Focused Design Document Template
 
