@@ -36,6 +36,7 @@ pub struct SnapshotRecord {
     pub body: SnapshotBody,
 }
 
+#[non_exhaustive]
 pub enum SnapshotKind {
     SurfaceAst,
     TypedAst,
@@ -63,6 +64,7 @@ pub struct ToolchainInfo {
     pub metadata: BTreeMap<String, String>,
 }
 
+#[non_exhaustive]
 pub enum ParallelismProfile {
     Sequential,
     Parallel { workers: u32 },
@@ -84,6 +86,7 @@ pub struct SnapshotTextDiff {
     pub actual: Option<String>,
 }
 
+#[non_exhaustive]
 pub enum SnapshotUpdateReason {
     SchemaChange,
     DiagnosticContractChange,
@@ -91,11 +94,13 @@ pub enum SnapshotUpdateReason {
     FuzzPropertyReproducer,
 }
 
+#[non_exhaustive]
 pub enum SnapshotUpdateMode {
     VerifyOnly,
     Update { reason: SnapshotUpdateReason },
 }
 
+#[non_exhaustive]
 pub enum SnapshotBaselineStatus {
     Matched,
     Created,
@@ -114,6 +119,7 @@ pub struct SnapshotBaselineMismatch {
     pub first_difference: Option<SnapshotTextDiff>,
 }
 
+#[non_exhaustive]
 pub enum SnapshotBaselineError {
     Snapshot(SnapshotError),
     InvalidBaselinePath { path: PathBuf },
@@ -131,6 +137,7 @@ pub struct SnapshotDeterminismFailure {
     pub mismatch: Box<SnapshotMismatch>,
 }
 
+#[non_exhaustive]
 pub enum SnapshotError {
     EmptyTestId,
     EmptyToolchainName,
@@ -197,6 +204,26 @@ pub fn verify_snapshot_parallel_equivalence(
     parallel: &SnapshotRecord,
 ) -> Result<(), SnapshotMismatch>;
 ```
+
+## Public Enum Forward Compatibility
+
+task 12 は `mizar-frontend` task 25 の手続きを snapshot enum に適用する。
+これらの enum は downstream-visible artifact identity、update policy、failure surface
+を表すため、`#[non_exhaustive]` を維持しなければならない。downstream caller は
+wildcard match arm を保つ必要がある。crate 内部の match は現在知られている variant
+に対して exhaustive のままでよい。
+
+| Public enum | Decision |
+|---|---|
+| `SnapshotKind` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ParallelismProfile` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SnapshotUpdateReason` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SnapshotUpdateMode` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SnapshotBaselineStatus` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SnapshotBaselineError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `SnapshotError` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+
+この module が所有する exhaustive public enum exception はない。
 
 ## Canonicalization
 

@@ -155,6 +155,23 @@ Allowed `expected_phase` values:
 Later compiler crates may refine internal phases, but expectation files use
 these stable external phase ids.
 
+## Public Enum Forward Compatibility
+
+Task 12 applies the `mizar-frontend` task-25 procedure to expectation-schema
+enums and the crate-local TOML support enum exposed through the public module
+tree. They are downstream-facing metadata surfaces and must remain
+`#[non_exhaustive]`; downstream callers must keep wildcard match arms, while
+`mizar-test` may keep internal matches exhaustive for currently known variants.
+
+| Public enum | Owner | Decision |
+|---|---|---|
+| `TestKind` | `expectation` corpus role and layout surface | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ExpectedOutcome` | `expectation` result contract | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `PipelinePhase` | `expectation` phase boundary ids | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TomlValue` | `toml_lite` parser support for expectation and manifest metadata | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Pass Expectations
 
 Pass expectations require no failure identity.

@@ -19,6 +19,7 @@ pub struct TestCase {
     pub metadata: TestMetadata,
 }
 
+#[non_exhaustive]
 pub enum TestKind {
     Pass,
     Fail,
@@ -38,6 +39,11 @@ pub struct TestMetadata {
 ```
 
 Authoritative expectations live in sidecar files. Fail, soundness, certificate, and snapshot expectations must use sidecars because they must be parsed without depending on `.miz` frontend correctness. Inline metadata is allowed only for non-authoritative tags that the parser can ignore safely.
+
+`TestKind` is the expectation-owned corpus role enum surfaced in this layout
+API. It follows the public enum policy in
+[expectation_schema.md](./expectation_schema.md) and remains
+`#[non_exhaustive]` for downstream callers.
 
 ## Directory Layout
 

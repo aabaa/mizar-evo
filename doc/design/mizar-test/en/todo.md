@@ -258,10 +258,14 @@ Keep `cargo test -p mizar-test` green after each task (see
       `verify_snapshot_parallel_equivalence`.
     - Deps: 6. Spec: [harness.md](./harness.md) "Determinism Requirements".
 
-12. **Public-enum forward-compatibility policy.** [ ]
+12. **Public-enum forward-compatibility policy.** [x]
     - Apply the `mizar-frontend` task-25 procedure to each public enum
       (`Stage`, `ExpectedOutcome`, `ValidationSeverity`, …); record
       decisions in the owning module specs.
+    - Completion: all public enums in `crates/mizar-test/src` are
+      downstream `#[non_exhaustive]`, owning EN/JA module specs record the
+      inventory and decision, and lint coverage guards source attributes plus
+      EN/JA inventory entries.
     - Deps: 2. Spec: all module specs.
 
 13. **Bilingual documentation sync audit.** [ ]

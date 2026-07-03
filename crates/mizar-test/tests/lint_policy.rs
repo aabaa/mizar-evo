@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeSet,
     fs,
     path::{Path, PathBuf},
 };
@@ -56,6 +57,59 @@ fn mizar_test_allow_exceptions_are_documented_inline() {
         "intentional lint allow exceptions need an adjacent reason:\n{}",
         violations.join("\n")
     );
+}
+
+#[test]
+fn public_enums_are_non_exhaustive_and_documented() {
+    let root = crate_root();
+    let workspace = workspace_root();
+    let policies = public_enum_policies();
+    let expected = policies
+        .iter()
+        .map(|policy| (policy.module.to_owned(), policy.name.to_owned()))
+        .collect::<BTreeSet<_>>();
+    let mut observed = BTreeSet::new();
+
+    let mut source_paths = Vec::new();
+    collect_rust_files(&root.join("src"), &mut source_paths);
+    source_paths.sort();
+
+    for source_path in source_paths {
+        let Some(module) = source_path.file_stem().and_then(|stem| stem.to_str()) else {
+            continue;
+        };
+        let source = read_to_string(&source_path);
+        for enum_name in public_enum_names(&source) {
+            observed.insert((module.to_owned(), enum_name));
+        }
+    }
+
+    assert_eq!(
+        observed, expected,
+        "public enum policy inventory must match crates/mizar-test/src"
+    );
+
+    for policy in policies {
+        let source_path = root.join("src").join(format!("{}.rs", policy.module));
+        let source = read_to_string(&source_path);
+        assert!(
+            public_enum_has_non_exhaustive(&source, policy.name),
+            "{} must mark public enum {} as #[non_exhaustive]",
+            source_path.display(),
+            policy.name
+        );
+
+        for doc_path in [policy.en_doc, policy.ja_doc] {
+            let doc_path = workspace.join(doc_path);
+            let doc = read_to_string(&doc_path);
+            assert!(
+                doc_has_public_enum_policy(&doc, policy.name),
+                "{} must document {} as #[non_exhaustive]",
+                doc_path.display(),
+                policy.name
+            );
+        }
+    }
 }
 
 #[test]
@@ -236,6 +290,183 @@ fn assignment_is(line: &str, key: &str, value: &str) -> bool {
     };
 
     lhs.trim() == key && rhs.trim().trim_matches('"') == value
+}
+
+#[derive(Clone, Copy)]
+struct PublicEnumPolicy {
+    module: &'static str,
+    name: &'static str,
+    en_doc: &'static str,
+    ja_doc: &'static str,
+}
+
+fn public_enum_policies() -> Vec<PublicEnumPolicy> {
+    vec![
+        PublicEnumPolicy {
+            module: "diagnostic",
+            name: "ValidationSeverity",
+            en_doc: "doc/design/mizar-test/en/harness.md",
+            ja_doc: "doc/design/mizar-test/ja/harness.md",
+        },
+        PublicEnumPolicy {
+            module: "expectation",
+            name: "TestKind",
+            en_doc: "doc/design/mizar-test/en/expectation_schema.md",
+            ja_doc: "doc/design/mizar-test/ja/expectation_schema.md",
+        },
+        PublicEnumPolicy {
+            module: "expectation",
+            name: "ExpectedOutcome",
+            en_doc: "doc/design/mizar-test/en/expectation_schema.md",
+            ja_doc: "doc/design/mizar-test/ja/expectation_schema.md",
+        },
+        PublicEnumPolicy {
+            module: "expectation",
+            name: "PipelinePhase",
+            en_doc: "doc/design/mizar-test/en/expectation_schema.md",
+            ja_doc: "doc/design/mizar-test/ja/expectation_schema.md",
+        },
+        PublicEnumPolicy {
+            module: "harness",
+            name: "TestProfile",
+            en_doc: "doc/design/mizar-test/en/harness.md",
+            ja_doc: "doc/design/mizar-test/ja/harness.md",
+        },
+        PublicEnumPolicy {
+            module: "harness",
+            name: "ValidationMode",
+            en_doc: "doc/design/mizar-test/en/harness.md",
+            ja_doc: "doc/design/mizar-test/ja/harness.md",
+        },
+        PublicEnumPolicy {
+            module: "harness",
+            name: "HarnessError",
+            en_doc: "doc/design/mizar-test/en/harness.md",
+            ja_doc: "doc/design/mizar-test/ja/harness.md",
+        },
+        PublicEnumPolicy {
+            module: "runner",
+            name: "ParseOnlyCaseStatus",
+            en_doc: "doc/design/mizar-test/en/harness.md",
+            ja_doc: "doc/design/mizar-test/ja/harness.md",
+        },
+        PublicEnumPolicy {
+            module: "runner",
+            name: "DeclarationSymbolCaseStatus",
+            en_doc: "doc/design/mizar-test/en/harness.md",
+            ja_doc: "doc/design/mizar-test/ja/harness.md",
+        },
+        PublicEnumPolicy {
+            module: "runner",
+            name: "TypeElaborationCaseStatus",
+            en_doc: "doc/design/mizar-test/en/harness.md",
+            ja_doc: "doc/design/mizar-test/ja/harness.md",
+        },
+        PublicEnumPolicy {
+            module: "snapshot",
+            name: "SnapshotKind",
+            en_doc: "doc/design/mizar-test/en/snapshot.md",
+            ja_doc: "doc/design/mizar-test/ja/snapshot.md",
+        },
+        PublicEnumPolicy {
+            module: "snapshot",
+            name: "ParallelismProfile",
+            en_doc: "doc/design/mizar-test/en/snapshot.md",
+            ja_doc: "doc/design/mizar-test/ja/snapshot.md",
+        },
+        PublicEnumPolicy {
+            module: "snapshot",
+            name: "SnapshotUpdateReason",
+            en_doc: "doc/design/mizar-test/en/snapshot.md",
+            ja_doc: "doc/design/mizar-test/ja/snapshot.md",
+        },
+        PublicEnumPolicy {
+            module: "snapshot",
+            name: "SnapshotUpdateMode",
+            en_doc: "doc/design/mizar-test/en/snapshot.md",
+            ja_doc: "doc/design/mizar-test/ja/snapshot.md",
+        },
+        PublicEnumPolicy {
+            module: "snapshot",
+            name: "SnapshotBaselineStatus",
+            en_doc: "doc/design/mizar-test/en/snapshot.md",
+            ja_doc: "doc/design/mizar-test/ja/snapshot.md",
+        },
+        PublicEnumPolicy {
+            module: "snapshot",
+            name: "SnapshotBaselineError",
+            en_doc: "doc/design/mizar-test/en/snapshot.md",
+            ja_doc: "doc/design/mizar-test/ja/snapshot.md",
+        },
+        PublicEnumPolicy {
+            module: "snapshot",
+            name: "SnapshotError",
+            en_doc: "doc/design/mizar-test/en/snapshot.md",
+            ja_doc: "doc/design/mizar-test/ja/snapshot.md",
+        },
+        PublicEnumPolicy {
+            module: "staged_model",
+            name: "Stage",
+            en_doc: "doc/design/mizar-test/en/staged_model.md",
+            ja_doc: "doc/design/mizar-test/ja/staged_model.md",
+        },
+        PublicEnumPolicy {
+            module: "toml_lite",
+            name: "TomlValue",
+            en_doc: "doc/design/mizar-test/en/expectation_schema.md",
+            ja_doc: "doc/design/mizar-test/ja/expectation_schema.md",
+        },
+        PublicEnumPolicy {
+            module: "traceability",
+            name: "RequirementStatus",
+            en_doc: "doc/design/mizar-test/en/traceability.md",
+            ja_doc: "doc/design/mizar-test/ja/traceability.md",
+        },
+        PublicEnumPolicy {
+            module: "traceability",
+            name: "CoverageShape",
+            en_doc: "doc/design/mizar-test/en/traceability.md",
+            ja_doc: "doc/design/mizar-test/ja/traceability.md",
+        },
+    ]
+}
+
+fn public_enum_names(source: &str) -> Vec<String> {
+    source
+        .lines()
+        .filter_map(|line| line.trim_start().strip_prefix("pub enum "))
+        .filter_map(|rest| {
+            rest.split(|ch: char| !ch.is_ascii_alphanumeric() && ch != '_')
+                .next()
+        })
+        .filter(|name| !name.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+fn public_enum_has_non_exhaustive(source: &str, name: &str) -> bool {
+    let Some(position) = source.find(&format!("pub enum {name}")) else {
+        return false;
+    };
+    for line in source[..position].lines().rev() {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if !trimmed.starts_with("#[") {
+            return false;
+        }
+        if trimmed == "#[non_exhaustive]" {
+            return true;
+        }
+    }
+    false
+}
+
+fn doc_has_public_enum_policy(doc: &str, name: &str) -> bool {
+    let row_prefix = format!("| `{name}` |");
+    doc.lines()
+        .any(|line| line.contains(&row_prefix) && line.contains("`#[non_exhaustive]`"))
 }
 
 fn collect_undocumented_allows(root: &Path, path: &Path, violations: &mut Vec<String>) {

@@ -56,6 +56,7 @@ pub struct ParseOnlyCaseResult {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ParseOnlyCaseStatus {
     Passed,
     Failed,
@@ -76,6 +77,7 @@ pub struct DeclarationSymbolCaseResult {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DeclarationSymbolCaseStatus {
     Passed,
     Failed,
@@ -96,6 +98,7 @@ pub struct TypeElaborationCaseResult {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TypeElaborationCaseStatus {
     Passed,
     Failed,

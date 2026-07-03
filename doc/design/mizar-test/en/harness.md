@@ -67,6 +67,7 @@ pub struct TestCase {
     pub expectation: Expectation,
 }
 
+#[non_exhaustive]
 pub enum TestProfile {
     Fast,
     Full,
@@ -75,6 +76,7 @@ pub enum TestProfile {
     SnapshotUpdate,
 }
 
+#[non_exhaustive]
 pub enum ValidationMode {
     Metadata,
     Development,
@@ -100,6 +102,26 @@ pub struct TypeElaborationRunReport {
 The generic `TestOutcome`/snapshot-reporting surface is future API. Current
 active runners expose stage-specific report records while sharing the metadata
 plan and validation diagnostics shown above.
+
+## Public Enum Forward Compatibility
+
+Task 12 applies the `mizar-frontend` task-25 procedure to the harness-facing
+enum surface. These enums are downstream API and must remain
+`#[non_exhaustive]`; downstream callers must keep wildcard match arms, while
+`mizar-test` may keep crate-internal matches exhaustive for the currently known
+variants.
+
+| Public enum | Owner | Decision |
+|---|---|---|
+| `ValidationSeverity` | `diagnostic` reporting used by harness plans and runner reports | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TestProfile` | `harness` profile selection | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ValidationMode` | `harness` validation strictness | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `HarnessError` | `harness` infrastructure failure boundary | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `ParseOnlyCaseStatus` | `runner` parse-only report status | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `DeclarationSymbolCaseStatus` | `runner` declaration-symbol report status | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TypeElaborationCaseStatus` | `runner` type-elaboration report status | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module.
 
 ## Runner Modes
 

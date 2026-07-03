@@ -19,6 +19,7 @@ pub struct TestCase {
     pub metadata: TestMetadata,
 }
 
+#[non_exhaustive]
 pub enum TestKind {
     Pass,
     Fail,
@@ -38,6 +39,10 @@ pub struct TestMetadata {
 ```
 
 authoritative expectations は sidecar files に置く。fail、soundness、certificate、snapshot expectations は `.miz` frontend correctness に依存せず parse できなければならないため、sidecar を必須とする。inline metadata は parser が安全に無視できる non-authoritative tags に限って許可する。
+
+`TestKind` はこの layout API に現れる expectation-owned corpus role enum である。
+[expectation_schema.md](./expectation_schema.md) の public enum policy に従い、
+downstream caller 向けに `#[non_exhaustive]` のままとする。
 
 ## Directory Layout
 

@@ -3,6 +3,7 @@ use std::iter::Peekable;
 use std::str::Lines;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TomlValue {
     String(String),
     Integer(i64),

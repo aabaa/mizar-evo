@@ -5794,6 +5794,7 @@ fn severity(severity: mizar_test::ValidationSeverity) -> &'static str {
     match severity {
         mizar_test::ValidationSeverity::Error => "error",
         mizar_test::ValidationSeverity::Warning => "warning",
+        _ => "unknown",
     }
 }
 
@@ -5801,6 +5802,7 @@ fn parse_only_status(status: mizar_test::ParseOnlyCaseStatus) -> &'static str {
     match status {
         mizar_test::ParseOnlyCaseStatus::Passed => "passed",
         mizar_test::ParseOnlyCaseStatus::Failed => "failed",
+        _ => "unknown",
     }
 }
 
@@ -5808,6 +5810,7 @@ fn declaration_symbol_status(status: mizar_test::DeclarationSymbolCaseStatus) ->
     match status {
         mizar_test::DeclarationSymbolCaseStatus::Passed => "passed",
         mizar_test::DeclarationSymbolCaseStatus::Failed => "failed",
+        _ => "unknown",
     }
 }
 
@@ -5815,6 +5818,7 @@ fn type_elaboration_status(status: mizar_test::TypeElaborationCaseStatus) -> &'s
     match status {
         mizar_test::TypeElaborationCaseStatus::Passed => "passed",
         mizar_test::TypeElaborationCaseStatus::Failed => "failed",
+        _ => "unknown",
     }
 }
 

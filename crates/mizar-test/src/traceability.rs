@@ -11,6 +11,7 @@ use crate::staged_model::Stage;
 use crate::toml_lite::{self, TomlTable};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum RequirementStatus {
     Planned,
     Covered,
@@ -20,6 +21,7 @@ pub enum RequirementStatus {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum CoverageShape {
     None,
     Pass,

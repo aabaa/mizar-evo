@@ -33,6 +33,20 @@ Coverage mapping:  doc/spec chapter and section
 
 `Stage Id` は `.expect.toml`、`tests/coverage/spec_trace.toml`、reports、Rust enums で使う canonical value である。Display names は localize してよいが、stage ids は localize してはならない。
 
+## Public Enum Forward Compatibility
+
+task 12 は `mizar-frontend` task 25 の手続きを `Stage` に適用する。`Stage` は sidecar、
+trace manifest、report、downstream runner consumer で共有されるため、
+`#[non_exhaustive]` を維持しなければならない。downstream caller は wildcard match
+arm を保つ必要がある。crate 内部の match は現在知られている stage id に対して
+exhaustive のままでよい。
+
+| Public enum | Decision |
+|---|---|
+| `Stage` | `#[non_exhaustive]` downstream forward-compatible surface。 |
+
+この module が所有する exhaustive public enum exception はない。
+
 ## Stage Rules
 
 ### 1. Lexical

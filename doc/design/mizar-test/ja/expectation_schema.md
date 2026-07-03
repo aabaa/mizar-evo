@@ -147,6 +147,23 @@ Allowed `expected_phase` values:
 
 Later compiler crates は internal phases を refine してよいが、expectation files はこれら stable external phase ids を使う。
 
+## Public Enum Forward Compatibility
+
+task 12 は `mizar-frontend` task 25 の手続きを expectation-schema enum と、public
+module tree から見える crate-local TOML support enum に適用する。これらは downstream-facing
+metadata surface であり、`#[non_exhaustive]` を維持しなければならない。downstream
+caller は wildcard match arm を保つ必要がある。一方、`mizar-test` 内部の match は現在
+知られている variant に対して exhaustive のままでよい。
+
+| Public enum | Owner | Decision |
+|---|---|---|
+| `TestKind` | `expectation` corpus role と layout surface | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `ExpectedOutcome` | `expectation` result contract | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `PipelinePhase` | `expectation` phase boundary ids | `#[non_exhaustive]` downstream forward-compatible surface。 |
+| `TomlValue` | expectation と manifest metadata 用の `toml_lite` parser support | `#[non_exhaustive]` downstream forward-compatible surface。 |
+
+この module が所有する exhaustive public enum exception はない。
+
 ## Pass Expectations
 
 Pass expectations は failure identity を必要としない。

@@ -25,6 +25,7 @@ pub struct DiscoveryConfig {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TestProfile {
     #[default]
     Fast,
@@ -35,6 +36,7 @@ pub enum TestProfile {
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ValidationMode {
     #[default]
     Metadata,
@@ -102,6 +104,7 @@ pub struct TestCase {
 }
 
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum HarnessError {
     Infrastructure(String),
 }

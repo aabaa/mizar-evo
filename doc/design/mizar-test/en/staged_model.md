@@ -39,6 +39,20 @@ Coverage mapping:  doc/spec chapter and section
 `tests/coverage/spec_trace.toml`, reports, and Rust enums. Display names may be
 localized; stage ids must not be localized.
 
+## Public Enum Forward Compatibility
+
+Task 12 applies the `mizar-frontend` task-25 procedure to `Stage`. `Stage` is
+shared by sidecars, trace manifests, reports, and downstream runner consumers,
+so it must remain `#[non_exhaustive]`; downstream callers must keep wildcard
+match arms. Crate-internal matches may stay exhaustive for the currently known
+stage ids.
+
+| Public enum | Decision |
+|---|---|
+| `Stage` | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Stage Rules
 
 ### 1. Lexical

@@ -100,6 +100,21 @@ Allowed values:
 Multiple shapes may be required by splitting a specification section into
 several requirement records.
 
+## Public Enum Forward Compatibility
+
+Task 12 applies the `mizar-frontend` task-25 procedure to traceability enums.
+These enums are stored in `spec_trace.toml`, reported by the harness, and
+consumed by downstream tooling, so they must remain `#[non_exhaustive]`;
+downstream callers must keep wildcard match arms. Crate-internal matches may
+stay exhaustive for currently known variants.
+
+| Public enum | Decision |
+|---|---|
+| `RequirementStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `CoverageShape` | `#[non_exhaustive]` downstream forward-compatible surface. |
+
+No exhaustive public enum exceptions are owned by this module.
+
 ## Test Sidecar Reference
 
 Each expectation sidecar records the spec requirements it covers.

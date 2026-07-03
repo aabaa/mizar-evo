@@ -2,6 +2,7 @@ use std::fmt;
 use std::str::FromStr;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
 pub enum Stage {
     Lexical,
     ParseOnly,

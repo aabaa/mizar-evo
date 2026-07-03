@@ -17,6 +17,7 @@ impl SchemaVersion {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[non_exhaustive]
 pub enum SnapshotKind {
     SurfaceAst,
     TypedAst,
@@ -38,6 +39,7 @@ pub struct ToolchainInfo {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ParallelismProfile {
     Sequential,
     Parallel { workers: u32 },
@@ -82,6 +84,7 @@ pub struct SnapshotTextDiff {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SnapshotUpdateReason {
     SchemaChange,
     DiagnosticContractChange,
@@ -90,12 +93,14 @@ pub enum SnapshotUpdateReason {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SnapshotUpdateMode {
     VerifyOnly,
     Update { reason: SnapshotUpdateReason },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SnapshotBaselineStatus {
     Matched,
     Created,
@@ -117,6 +122,7 @@ pub struct SnapshotBaselineMismatch {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SnapshotBaselineError {
     Snapshot(SnapshotError),
     InvalidBaselinePath {
@@ -143,6 +149,7 @@ pub struct SnapshotDeterminismFailure {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum SnapshotError {
     EmptyTestId,
     EmptyToolchainName,

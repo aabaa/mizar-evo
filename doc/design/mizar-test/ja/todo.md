@@ -255,10 +255,14 @@ regression test を追加した。
     - 依存: 6。仕様: [harness.md](./harness.md)「Determinism
       Requirements」。
 
-12. **公開 enum の前方互換性ポリシー。** [ ]
+12. **公開 enum の前方互換性ポリシー。** [x]
     - 各公開 enum（`Stage`、`ExpectedOutcome`、`ValidationSeverity`、…）に
       `mizar-frontend` task 25 の手続きを適用し、所有モジュール仕様に
       決定を記録する。
+    - 完了: `crates/mizar-test/src` のすべての public enum は downstream
+      `#[non_exhaustive]` であり、所有する EN/JA module spec は inventory と
+      decision を記録する。lint coverage は source attributes と EN/JA inventory
+      entries を guard する。
     - 依存: 2。仕様: 全モジュール仕様。
 
 13. **二言語ドキュメント同期監査。** [ ]

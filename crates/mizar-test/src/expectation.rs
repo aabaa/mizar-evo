@@ -16,6 +16,7 @@ pub struct TestCaseId(pub String);
 pub struct SpecRequirementId(pub String);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum TestKind {
     Pass,
     Fail,
@@ -26,6 +27,7 @@ pub enum TestKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum ExpectedOutcome {
     Pass,
     Fail,
@@ -34,6 +36,7 @@ pub enum ExpectedOutcome {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum PipelinePhase {
     Lex,
     Parse,
