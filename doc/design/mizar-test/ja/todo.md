@@ -265,9 +265,11 @@ regression test を追加した。
       entries を guard する。
     - 依存: 2。仕様: 全モジュール仕様。
 
-13. **二言語ドキュメント同期監査。** [ ]
+13. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-test/en/` の各英語正本と日本語版を比較し、内容を
       同期する。
+    - 完了: [bilingual_sync_audit.md](./bilingual_sync_audit.md) は paired-file
+      audit を記録し、task 14 が open かつ未開始であることを確認する。
     - 依存: 12。仕様: リポジトリのドキュメント方針。
 
 14. **増分/並列検証 regression matrix。** [ ]

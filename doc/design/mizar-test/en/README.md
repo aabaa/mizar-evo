@@ -30,6 +30,7 @@ It does not own compiler semantics. It encodes expected behavior so implementati
 | [fail_soundness.md](./fail_soundness.md) | `crates/mizar-test/src/expectation.rs`, `crates/mizar-test/src/harness.rs` | Negative tests that must not pass, expected failure categories, and rejection reasons | Draft |
 | [snapshot.md](./snapshot.md) | `crates/mizar-test/src/snapshot.rs` | Snapshot artifact format, canonical hashing, and update policy | Draft |
 | [harness.md](./harness.md) | `crates/mizar-test/src/harness.rs` | Pass/fail runner, snapshot runner, determinism checks, and reporting | Draft |
+| [bilingual_sync_audit.md](./bilingual_sync_audit.md) | `doc/design/mizar-test/en`, `doc/design/mizar-test/ja` | Task 13 EN/JA documentation synchronization audit | Draft |
 
 ## Crate Boundary
 

@@ -268,10 +268,13 @@ Keep `cargo test -p mizar-test` green after each task (see
       EN/JA inventory entries.
     - Deps: 2. Spec: all module specs.
 
-13. **Bilingual documentation sync audit.** [ ]
+13. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under
       `doc/design/mizar-test/en/` with its Japanese companion and
       synchronize content.
+    - Completion: [bilingual_sync_audit.md](./bilingual_sync_audit.md)
+      records the paired-file audit and confirms task 14 remains open and
+      unstarted.
     - Deps: 12. Spec: repository documentation policy.
 
 14. **Incremental/parallel verification regression matrix.** [ ]
