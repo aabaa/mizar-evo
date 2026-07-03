@@ -578,8 +578,8 @@ deferred のままである。`mizar-proof` は現在 workspace crate だが、A
       placeholder metadata は proof crate milestone 後に補正された。`mizar-cache` は
       現在存在し cache validation を所有するが、この ATP milestone は proof/cache API を
       まだ消費しない。`mizar-proof` は正式だがこの ATP milestone からは消費しないため、
-      未実装連携は local proof-policy placeholder ではなく external_dependency_gap /
-      deferred に残る。
+      未実装連携は local proof-policy placeholder ではなく
+      external_dependency_gap / deferred に残る。
 
 ## 推奨検証
 
