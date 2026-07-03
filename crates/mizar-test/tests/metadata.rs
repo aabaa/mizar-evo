@@ -411,6 +411,682 @@ profiles = ["fasst"]
 }
 
 #[test]
+fn corpus_origin_metadata_is_retained_for_generated_fuzz_and_property_cases() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write(
+        "tests/generated/generated_parser_001.miz",
+        "reserve x for set;\nreserve y for set;\ntheorem x = x;\nproof\nend;\n",
+    );
+    corpus.write(
+        "tests/generated/generated_parser_001.expect.toml",
+        generated_expectation(
+            "generated_parser_001",
+            "generated_parser_001.miz",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            false,
+        ),
+    );
+    corpus.write("tests/fuzz/fuzz_lexer_001.fixture.toml", "seed = \"abc\"\n");
+    corpus.write(
+        "tests/fuzz/fuzz_lexer_001.expect.toml",
+        fuzz_seed_expectation(
+            "fuzz_lexer_001",
+            "fuzz_lexer_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["fuzz_regression"]"#,
+            Some("lex_error"),
+        ),
+    );
+    corpus.write(
+        "tests/property/property_lexer_001.fixture.toml",
+        "seed = \"def\"\n",
+    );
+    corpus.write(
+        "tests/property/property_lexer_001.expect.toml",
+        property_seed_expectation(
+            "property_lexer_001",
+            "property_lexer_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            false,
+        ),
+    );
+
+    let mut config = corpus.config();
+    config.profile = TestProfile::Full;
+    let plan = build_test_plan(&config).unwrap();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    let generated = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "generated_parser_001")
+        .unwrap();
+    let generated_origin = generated.expectation.origin.as_ref().unwrap();
+    assert_eq!(generated_origin.kind, TestKind::Generated);
+    assert_eq!(generated_origin.generator, "grammar-smoke");
+    assert_eq!(generated_origin.generator_version, "0.1.0");
+    assert_eq!(generated_origin.seed, "generated_parser_001");
+    assert_eq!(generated_origin.profile, "parser");
+    assert_eq!(generated_origin.expected_outcome, ExpectedOutcome::Pass);
+    assert!(!generated_origin.minimized);
+
+    let fuzz = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "fuzz_lexer_001")
+        .unwrap();
+    let fuzz_origin = fuzz.expectation.origin.as_ref().unwrap();
+    assert_eq!(fuzz_origin.kind, TestKind::FuzzSeed);
+    assert_eq!(fuzz_origin.generator, "cargo-fuzz");
+    assert_eq!(fuzz_origin.generator_version, "0.1.0");
+    assert_eq!(fuzz_origin.seed, "fuzz_lexer_001");
+    assert_eq!(fuzz_origin.profile, "lexical");
+    assert_eq!(fuzz_origin.expected_outcome, ExpectedOutcome::MetadataOnly);
+    assert_eq!(
+        fuzz_origin.original_failure_category.as_deref(),
+        Some("lex_error")
+    );
+
+    let property = plan
+        .cases
+        .iter()
+        .find(|case| case.id.0 == "property_lexer_001")
+        .unwrap();
+    let property_origin = property.expectation.origin.as_ref().unwrap();
+    assert_eq!(property_origin.kind, TestKind::PropertySeed);
+    assert_eq!(property_origin.generator, "proptest");
+    assert_eq!(property_origin.generator_version, "0.1.0");
+    assert_eq!(property_origin.seed, "property_lexer_001");
+    assert_eq!(property_origin.profile, "lexical");
+    assert_eq!(
+        property_origin.expected_outcome,
+        ExpectedOutcome::MetadataOnly
+    );
+}
+
+#[test]
+fn corpus_policy_violations_are_reported() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/generated/missing_origin.miz", "theorem x = x;\n");
+    corpus.write(
+        "tests/generated/missing_origin.expect.toml",
+        r#"schema_version = 1
+id = "missing_origin"
+kind = "generated"
+stage = "parse_only"
+domain = "parser"
+source = "missing_origin.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = ["full"]
+"#,
+    );
+    corpus.write(
+        "tests/fuzz/misplaced_property.fixture.toml",
+        "seed = \"abc\"\n",
+    );
+    corpus.write(
+        "tests/fuzz/misplaced_property.expect.toml",
+        property_seed_expectation(
+            "misplaced_property",
+            "misplaced_property.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            false,
+        ),
+    );
+    corpus.write("tests/generated/unminimized_fast.miz", five_line_miz());
+    corpus.write(
+        "tests/generated/unminimized_fast.expect.toml",
+        generated_expectation(
+            "unminimized_fast",
+            "unminimized_fast.miz",
+            "spec.en.test.basic",
+            "",
+            false,
+        ),
+    );
+    corpus.write("tests/generated/stress_fast_profile.miz", five_line_miz());
+    corpus.write(
+        "tests/generated/stress_fast_profile.expect.toml",
+        generated_expectation(
+            "stress_fast_profile",
+            "stress_fast_profile.miz",
+            "spec.en.test.basic",
+            r#"profiles = ["fast", "stress"]"#,
+            true,
+        ),
+    );
+    corpus.write(
+        "tests/fuzz/fuzz_missing_category.fixture.toml",
+        "seed = \"abc\"\n",
+    );
+    corpus.write(
+        "tests/fuzz/fuzz_missing_category.expect.toml",
+        fuzz_seed_expectation(
+            "fuzz_missing_category",
+            "fuzz_missing_category.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            None,
+        ),
+    );
+    corpus.write("tests/stress/stress_without_profile.miz", five_line_miz());
+    corpus.write(
+        "tests/stress/stress_without_profile.expect.toml",
+        generated_expectation(
+            "stress_without_profile",
+            "stress_without_profile.miz",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            false,
+        ),
+    );
+    corpus.write(
+        "tests/generated/generated_too_large.miz",
+        "theorem x = x;\n".repeat(31),
+    );
+    corpus.write(
+        "tests/generated/generated_too_large.expect.toml",
+        generated_expectation(
+            "generated_too_large",
+            "generated_too_large.miz",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            false,
+        ),
+    );
+    corpus.write("tests/miz/pass/parser/short_name.src", "");
+    corpus.write(
+        "tests/miz/pass/parser/short_name.expect.toml",
+        parse_pass_expectation("short_name", "short_name.src", "spec.en.test.basic"),
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+    assert_has_code(&plan, "E-CORPUS-PLACEMENT");
+    assert_has_code(&plan, "E-CORPUS-UNMINIMIZED-FAST");
+    assert_has_code(&plan, "E-CORPUS-STRESS-FAST-PROFILE");
+    assert_has_code(&plan, "E-CORPUS-FUZZ-PROFILE");
+    assert_has_code(&plan, "E-CORPUS-FUZZ-CATEGORY");
+    assert_has_code(&plan, "E-CORPUS-STRESS-PROFILE");
+    assert_has_code(&plan, "E-CORPUS-GENERATED-SIZE");
+    assert_has_code(&plan, "W-CORPUS-NAMING");
+}
+
+#[test]
+fn origin_metadata_schema_errors_fail() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/generated/origin_bad_schema_001.miz", five_line_miz());
+    corpus.write(
+        "tests/generated/origin_bad_schema_001.expect.toml",
+        r#"schema_version = 1
+id = "origin_bad_schema_001"
+kind = "generated"
+stage = "parse_only"
+domain = "parser"
+source = "origin_bad_schema_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = ["full"]
+
+[origin]
+schema_version = 2
+kind = "generated"
+generator = "grammar-smoke"
+generator_version = "0.1.0"
+seed = "origin_bad_schema_001"
+profile = "parser"
+expected_outcome = "pass"
+minimized = false
+"#,
+    );
+    corpus.write(
+        "tests/generated/origin_unknown_field_001.miz",
+        five_line_miz(),
+    );
+    corpus.write(
+        "tests/generated/origin_unknown_field_001.expect.toml",
+        r#"schema_version = 1
+id = "origin_unknown_field_001"
+kind = "generated"
+stage = "parse_only"
+domain = "parser"
+source = "origin_unknown_field_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = ["full"]
+
+[origin]
+schema_version = 1
+kind = "generated"
+generator = "grammar-smoke"
+generator_version = "0.1.0"
+seed = "origin_unknown_field_001"
+profile = "parser"
+expected_outcome = "pass"
+minimized = false
+surprise = "nope"
+"#,
+    );
+    corpus.write("tests/generated/origin_wrong_kind_001.miz", five_line_miz());
+    corpus.write(
+        "tests/generated/origin_wrong_kind_001.expect.toml",
+        r#"schema_version = 1
+id = "origin_wrong_kind_001"
+kind = "generated"
+stage = "parse_only"
+domain = "parser"
+source = "origin_wrong_kind_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = ["full"]
+
+[origin]
+schema_version = 1
+kind = "property_seed"
+generator = "grammar-smoke"
+generator_version = "0.1.0"
+seed = "origin_wrong_kind_001"
+profile = "parser"
+expected_outcome = "pass"
+minimized = false
+"#,
+    );
+    corpus.write(
+        "tests/generated/origin_wrong_outcome_001.miz",
+        five_line_miz(),
+    );
+    corpus.write(
+        "tests/generated/origin_wrong_outcome_001.expect.toml",
+        r#"schema_version = 1
+id = "origin_wrong_outcome_001"
+kind = "generated"
+stage = "parse_only"
+domain = "parser"
+source = "origin_wrong_outcome_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = ["full"]
+
+[origin]
+schema_version = 1
+kind = "generated"
+generator = "grammar-smoke"
+generator_version = "0.1.0"
+seed = "origin_wrong_outcome_001"
+profile = "parser"
+expected_outcome = "fail"
+minimized = false
+"#,
+    );
+    corpus.write(
+        "tests/generated/origin_missing_seed_001.miz",
+        five_line_miz(),
+    );
+    corpus.write(
+        "tests/generated/origin_missing_seed_001.expect.toml",
+        r#"schema_version = 1
+id = "origin_missing_seed_001"
+kind = "generated"
+stage = "parse_only"
+domain = "parser"
+source = "origin_missing_seed_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = ["full"]
+
+[origin]
+schema_version = 1
+kind = "generated"
+generator = "grammar-smoke"
+generator_version = "0.1.0"
+profile = "parser"
+expected_outcome = "pass"
+minimized = false
+"#,
+    );
+    corpus.write(
+        "tests/generated/origin_empty_generator_001.miz",
+        five_line_miz(),
+    );
+    corpus.write(
+        "tests/generated/origin_empty_generator_001.expect.toml",
+        r#"schema_version = 1
+id = "origin_empty_generator_001"
+kind = "generated"
+stage = "parse_only"
+domain = "parser"
+source = "origin_empty_generator_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = ["full"]
+
+[origin]
+schema_version = 1
+kind = "generated"
+generator = ""
+generator_version = "0.1.0"
+seed = "origin_empty_generator_001"
+profile = "parser"
+expected_outcome = "pass"
+minimized = false
+"#,
+    );
+
+    let plan = corpus.plan();
+    let schema_errors = plan
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code.0 == "E-EXPECT-SCHEMA")
+        .count();
+
+    assert_eq!(schema_errors, 6, "{:#?}", plan.diagnostics);
+}
+
+#[test]
+fn stress_generated_cases_are_valid_outside_fast_profile() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write(
+        "tests/stress/generated_parser_stress_001.miz",
+        "theorem x = x;\n".repeat(40),
+    );
+    corpus.write(
+        "tests/stress/generated_parser_stress_001.expect.toml",
+        generated_expectation(
+            "generated_parser_stress_001",
+            "generated_parser_stress_001.miz",
+            "spec.en.test.basic",
+            r#"profiles = ["stress"]"#,
+            false,
+        ),
+    );
+
+    let fast_plan = corpus.plan();
+
+    assert_eq!(fast_plan.error_count(), 0, "{:#?}", fast_plan.diagnostics);
+    assert_eq!(fast_plan.cases.len(), 0);
+
+    let mut stress_config = corpus.config();
+    stress_config.profile = TestProfile::Stress;
+    let stress_plan = build_test_plan(&stress_config).unwrap();
+
+    assert_eq!(
+        stress_plan.error_count(),
+        0,
+        "{:#?}",
+        stress_plan.diagnostics
+    );
+    assert_eq!(stress_plan.cases.len(), 1);
+    assert_eq!(stress_plan.cases[0].id.0, "generated_parser_stress_001");
+}
+
+#[test]
+fn generated_stress_profile_does_not_bypass_stress_root_size_gate() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write(
+        "tests/generated/generated_profile_stress_large_001.miz",
+        "theorem x = x;\n".repeat(40),
+    );
+    corpus.write(
+        "tests/generated/generated_profile_stress_large_001.expect.toml",
+        generated_expectation(
+            "generated_profile_stress_large_001",
+            "generated_profile_stress_large_001.miz",
+            "spec.en.test.basic",
+            r#"profiles = ["stress"]"#,
+            true,
+        ),
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-CORPUS-GENERATED-SIZE");
+}
+
+#[test]
+fn promoted_fuzz_failure_category_must_match_origin() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write(
+        "tests/fuzz/fail_fuzz_lexer_mismatch_001.fixture.toml",
+        "seed = \"abc\"\n",
+    );
+    corpus.write(
+        "tests/fuzz/fail_fuzz_lexer_mismatch_001.expect.toml",
+        r#"schema_version = 1
+id = "fail_fuzz_lexer_mismatch_001"
+kind = "fuzz_seed"
+stage = "lexical"
+domain = "lexical"
+source = "fail_fuzz_lexer_mismatch_001.fixture.toml"
+expected_outcome = "fail"
+expected_phase = "lex"
+failure_category = "lex_error"
+stable_detail_key = "lexical.fuzz_mismatch"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+profiles = ["fuzz_regression"]
+
+[origin]
+schema_version = 1
+kind = "fuzz_seed"
+generator = "cargo-fuzz"
+generator_version = "0.1.0"
+seed = "fail_fuzz_lexer_mismatch_001"
+profile = "lexical"
+expected_outcome = "fail"
+minimized = true
+original_failure_category = "different_lex_error"
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-CORPUS-FUZZ-CATEGORY");
+}
+
+#[test]
+fn corpus_naming_rules_cover_snake_case_prefix_and_suffix() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write("tests/lexical/pass/PassCase001.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/PassCase001.expect.toml",
+        r#"schema_version = 1
+id = "PassCase001"
+kind = "pass"
+stage = "lexical"
+domain = "lexical"
+source = "PassCase001.src"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/lexical/pass/missing_prefix_001.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/missing_prefix_001.expect.toml",
+        pass_expectation(
+            "missing_prefix_001",
+            "missing_prefix_001.src",
+            "spec.en.test.basic",
+        ),
+    );
+    corpus.write("tests/lexical/pass/pass_missing_suffix.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/pass_missing_suffix.expect.toml",
+        pass_expectation(
+            "pass_missing_suffix",
+            "pass_missing_suffix.src",
+            "spec.en.test.basic",
+        ),
+    );
+
+    let plan = corpus.plan();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    let naming_warnings = plan
+        .diagnostics
+        .iter()
+        .filter(|diagnostic| diagnostic.code.0 == "W-CORPUS-NAMING")
+        .count();
+    assert_eq!(naming_warnings, 5, "{:#?}", plan.diagnostics);
+    assert!(
+        plan.diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.message.contains("stable snake_case stems"))
+    );
+    assert!(
+        plan.diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.message.contains("`pass_` name prefix"))
+    );
+    assert!(
+        plan.diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.message.contains("stable numeric suffix"))
+    );
+}
+
+#[test]
+fn corpus_size_guidelines_warn_for_oversized_handwritten_miz_without_failing() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write(
+        "tests/miz/pass/parser/pass_large_parser_001.miz",
+        "theorem x = x;\n".repeat(31),
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_large_parser_001.expect.toml",
+        parse_pass_expectation(
+            "pass_large_parser_001",
+            "pass_large_parser_001.miz",
+            "spec.en.test.basic",
+        ),
+    );
+
+    let plan = corpus.plan();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    assert_has_code(&plan, "W-CORPUS-SIZE");
+}
+
+#[test]
+fn corpus_pass_fail_directory_mismatches_are_errors() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write(
+        "tests/miz/pass/parser/pass_dir_fail_case_001.miz",
+        five_line_miz(),
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_dir_fail_case_001.expect.toml",
+        r#"schema_version = 1
+id = "pass_dir_fail_case_001"
+kind = "fail"
+stage = "parse_only"
+domain = "parser"
+source = "pass_dir_fail_case_001.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+stable_detail_key = "parser.synthetic"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write(
+        "tests/miz/fail/parser/fail_dir_pass_case_001.miz",
+        five_line_miz(),
+    );
+    corpus.write(
+        "tests/miz/fail/parser/fail_dir_pass_case_001.expect.toml",
+        parse_pass_expectation(
+            "fail_dir_pass_case_001",
+            "fail_dir_pass_case_001.miz",
+            "spec.en.test.basic",
+        ),
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-CORPUS-OUTCOME-PLACEMENT");
+}
+
+#[test]
+fn corpus_policy_uses_configured_tests_root_for_path_classes() {
+    let id = NEXT_ID.fetch_add(1, Ordering::SeqCst);
+    let root = std::env::temp_dir().join("tests").join(format!(
+        "pass-parent-mizar-test-{}-{id}",
+        std::process::id()
+    ));
+    if root.exists() {
+        fs::remove_dir_all(&root).unwrap();
+    }
+    fs::create_dir_all(&root).unwrap();
+    let corpus = Corpus { root };
+    corpus.create_standard_roots();
+    corpus.write("tests/coverage/spec_trace.toml", "");
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write(
+        "tests/generated/generated_root_anchor_001.miz",
+        five_line_miz(),
+    );
+    corpus.write(
+        "tests/generated/generated_root_anchor_001.expect.toml",
+        generated_expectation(
+            "generated_root_anchor_001",
+            "generated_root_anchor_001.miz",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            false,
+        ),
+    );
+    corpus.write("tests/lexical/pass/pass_root_anchor_001.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/pass_root_anchor_001.expect.toml",
+        pass_expectation(
+            "pass_root_anchor_001",
+            "pass_root_anchor_001.src",
+            "spec.en.test.basic",
+        ),
+    );
+
+    let mut config = corpus.config();
+    config.profile = TestProfile::Full;
+    let plan = build_test_plan(&config).unwrap();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    assert_lacks_code(&plan, "E-CORPUS-PLACEMENT");
+    assert_lacks_code(&plan, "E-CORPUS-OUTCOME-PLACEMENT");
+    assert_lacks_code(&plan, "W-CORPUS-NAMING");
+}
+
+#[test]
 fn filtered_sidecars_still_satisfy_manifest_backrefs() {
     let corpus = Corpus::new();
     corpus.write("tests/lexical/pass/stress_linked.src", "");
@@ -1239,7 +1915,7 @@ stage = "lexical"
 status = "covered"
 required = true
 coverage = "diagnostic"
-tests = ["tests/lexical/fail/diagnostic_case.expect.toml"]
+tests = ["tests/lexical/fail/fail_diagnostic_case_001.expect.toml"]
 
 [[requirement]]
 id = "spec.en.coverage.pass_and_fail"
@@ -1250,8 +1926,8 @@ status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
-  "tests/lexical/pass/pass_case.expect.toml",
-  "tests/lexical/fail/fail_case.expect.toml",
+  "tests/lexical/pass/pass_case_001.expect.toml",
+  "tests/lexical/fail/fail_case_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1262,7 +1938,7 @@ stage = "lexical"
 status = "covered"
 required = true
 coverage = "property"
-tests = ["tests/property/property_case.expect.toml"]
+tests = ["tests/property/property_case_001.expect.toml"]
 
 [[requirement]]
 id = "spec.en.coverage.snapshot"
@@ -1272,67 +1948,67 @@ stage = "parse_only"
 status = "covered"
 required = true
 coverage = "snapshot"
-tests = ["tests/miz/pass/parser/snapshot_case.expect.toml"]
+tests = ["tests/miz/pass/parser/pass_snapshot_case_001.expect.toml"]
 "#,
     );
     corpus.write("doc/spec/en/test.md", "# Test\n");
-    corpus.write("tests/lexical/pass/pass_case.src", "alpha");
+    corpus.write("tests/lexical/pass/pass_case_001.src", "alpha");
     corpus.write(
-        "tests/lexical/pass/pass_case.expect.toml",
+        "tests/lexical/pass/pass_case_001.expect.toml",
         pass_expectation(
-            "pass_case",
-            "pass_case.src",
+            "pass_case_001",
+            "pass_case_001.src",
             "spec.en.coverage.pass_and_fail",
         ),
     );
-    corpus.write("tests/lexical/fail/fail_case.src", "bad");
+    corpus.write("tests/lexical/fail/fail_case_001.src", "bad");
     corpus.write(
-        "tests/lexical/fail/fail_case.expect.toml",
+        "tests/lexical/fail/fail_case_001.expect.toml",
         fail_expectation(
-            "fail_case",
-            "fail_case.src",
+            "fail_case_001",
+            "fail_case_001.src",
             "spec.en.coverage.pass_and_fail",
         ),
     );
-    corpus.write("tests/lexical/fail/diagnostic_case.src", "bad");
+    corpus.write("tests/lexical/fail/fail_diagnostic_case_001.src", "bad");
     corpus.write(
-        "tests/lexical/fail/diagnostic_case.expect.toml",
+        "tests/lexical/fail/fail_diagnostic_case_001.expect.toml",
         fail_expectation(
-            "diagnostic_case",
-            "diagnostic_case.src",
+            "fail_diagnostic_case_001",
+            "fail_diagnostic_case_001.src",
             "spec.en.coverage.diagnostic",
         ),
     );
     corpus.write(
-        "tests/property/property_case.fixture.toml",
+        "tests/property/property_case_001.fixture.toml",
         "seed = \"1\"\n",
     );
     corpus.write(
-        "tests/property/property_case.expect.toml",
-        r#"schema_version = 1
-id = "property_case"
-kind = "property_seed"
-stage = "lexical"
-domain = "property"
-source = "property_case.fixture.toml"
-expected_outcome = "metadata_only"
-diagnostic_codes = []
-spec_refs = ["spec.en.coverage.property"]
-"#,
+        "tests/property/property_case_001.expect.toml",
+        property_seed_expectation(
+            "property_case_001",
+            "property_case_001.fixture.toml",
+            "spec.en.coverage.property",
+            r#"profiles = ["full"]"#,
+            false,
+        ),
     );
-    corpus.write("tests/miz/pass/parser/snapshot_case.miz", "alpha;\n");
     corpus.write(
-        "tests/miz/pass/parser/snapshot_case.expect.toml",
+        "tests/miz/pass/parser/pass_snapshot_case_001.miz",
+        "alpha;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_snapshot_case_001.expect.toml",
         r#"schema_version = 1
-id = "snapshot_case"
+id = "pass_snapshot_case_001"
 kind = "pass"
 stage = "parse_only"
 domain = "parser"
-source = "snapshot_case.miz"
+source = "pass_snapshot_case_001.miz"
 expected_outcome = "pass"
 expected_phase = "parse"
 diagnostic_codes = []
-snapshots = "snapshots/parser/snapshot_case.surface_ast.snap"
+snapshots = "snapshots/parser/pass_snapshot_case_001.surface_ast.snap"
 tags = ["active_parse_only"]
 spec_refs = ["spec.en.coverage.snapshot"]
 "#,
@@ -3875,21 +4551,21 @@ status = "covered"
 required = true
 coverage = "pass_and_fail"
 tests = [
-  "tests/lexical/pass/pass_cli.expect.toml",
-  "tests/lexical/fail/fail_cli.expect.toml",
+  "tests/lexical/pass/pass_cli_001.expect.toml",
+  "tests/lexical/fail/fail_cli_001.expect.toml",
 ]
 "#,
     );
     corpus.write("doc/spec/en/test.md", "# Test\n");
-    corpus.write("tests/lexical/pass/pass_cli.src", "alpha");
+    corpus.write("tests/lexical/pass/pass_cli_001.src", "alpha");
     corpus.write(
-        "tests/lexical/pass/pass_cli.expect.toml",
-        pass_expectation("pass_cli", "pass_cli.src", "spec.en.cli.pass_fail"),
+        "tests/lexical/pass/pass_cli_001.expect.toml",
+        pass_expectation("pass_cli_001", "pass_cli_001.src", "spec.en.cli.pass_fail"),
     );
-    corpus.write("tests/lexical/fail/fail_cli.src", "bad");
+    corpus.write("tests/lexical/fail/fail_cli_001.src", "bad");
     corpus.write(
-        "tests/lexical/fail/fail_cli.expect.toml",
-        fail_expectation("fail_cli", "fail_cli.src", "spec.en.cli.pass_fail"),
+        "tests/lexical/fail/fail_cli_001.expect.toml",
+        fail_expectation("fail_cli_001", "fail_cli_001.src", "spec.en.cli.pass_fail"),
     );
 
     let output = plan_cli(&corpus)
@@ -4431,6 +5107,7 @@ impl Corpus {
             "tests/generated",
             "tests/fuzz",
             "tests/property",
+            "tests/stress",
             "tests/snapshots",
             "tests/coverage",
             "doc/spec/en",
@@ -4561,6 +5238,118 @@ diagnostic_codes = []
 spec_refs = ["{spec_ref}"]
 "#
     )
+}
+
+fn generated_expectation(
+    id: &str,
+    source: &str,
+    spec_ref: &str,
+    profile_line: &str,
+    minimized: bool,
+) -> String {
+    let profile_line = optional_line(profile_line);
+    format!(
+        r#"schema_version = 1
+id = "{id}"
+kind = "generated"
+stage = "parse_only"
+domain = "parser"
+source = "{source}"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+spec_refs = ["{spec_ref}"]
+{profile_line}
+[origin]
+schema_version = 1
+kind = "generated"
+generator = "grammar-smoke"
+generator_version = "0.1.0"
+seed = "{id}"
+profile = "parser"
+expected_outcome = "pass"
+minimized = {minimized}
+"#
+    )
+}
+
+fn fuzz_seed_expectation(
+    id: &str,
+    source: &str,
+    spec_ref: &str,
+    profile_line: &str,
+    original_failure_category: Option<&str>,
+) -> String {
+    let profile_line = optional_line(profile_line);
+    let original_failure_category = original_failure_category
+        .map(|category| format!("original_failure_category = \"{category}\"\n"))
+        .unwrap_or_default();
+    format!(
+        r#"schema_version = 1
+id = "{id}"
+kind = "fuzz_seed"
+stage = "lexical"
+domain = "lexical"
+source = "{source}"
+expected_outcome = "metadata_only"
+diagnostic_codes = []
+spec_refs = ["{spec_ref}"]
+{profile_line}
+[origin]
+schema_version = 1
+kind = "fuzz_seed"
+generator = "cargo-fuzz"
+generator_version = "0.1.0"
+seed = "{id}"
+profile = "lexical"
+expected_outcome = "metadata_only"
+minimized = true
+{original_failure_category}"#
+    )
+}
+
+fn property_seed_expectation(
+    id: &str,
+    source: &str,
+    spec_ref: &str,
+    profile_line: &str,
+    minimized: bool,
+) -> String {
+    let profile_line = optional_line(profile_line);
+    format!(
+        r#"schema_version = 1
+id = "{id}"
+kind = "property_seed"
+stage = "lexical"
+domain = "lexical"
+source = "{source}"
+expected_outcome = "metadata_only"
+diagnostic_codes = []
+spec_refs = ["{spec_ref}"]
+{profile_line}
+[origin]
+schema_version = 1
+kind = "property_seed"
+generator = "proptest"
+generator_version = "0.1.0"
+seed = "{id}"
+profile = "lexical"
+expected_outcome = "metadata_only"
+minimized = {minimized}
+"#
+    )
+}
+
+fn optional_line(line: &str) -> String {
+    if line.is_empty() {
+        String::new()
+    } else {
+        format!("{line}\n")
+    }
+}
+
+fn five_line_miz() -> &'static str {
+    "reserve x for set;\nreserve y for set;\ntheorem x = x;\nproof\nend;\n"
 }
 
 fn assert_has_code(plan: &mizar_test::TestPlan, code: &str) {

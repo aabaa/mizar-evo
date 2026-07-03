@@ -63,6 +63,7 @@ tests/miz/fail/soundness/
 tests/generated/
 tests/fuzz/
 tests/property/
+tests/stress/
 
 tests/certificates/
 tests/snapshots/
@@ -120,10 +121,11 @@ snapshot_vc_simple_theorem_001.miz
 
 rules:
 
-- name は expected high-level outcome で始める
+- executable pass/fail/snapshot names は pass/fail/snapshot split 配下にある場合、expected high-level outcome で始める
 - name は semantic domain を含める
 - numeric suffixes は stable であり unrelated cases に再利用しない
 - minimized fuzz regressions は短い human-readable name と original seed metadata を保持する
+- oversized generated `.miz` files は default fast corpus ではなく `tests/stress/` と `stress` profile を使う
 
 ## Expected Result Files
 

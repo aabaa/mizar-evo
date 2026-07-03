@@ -20,6 +20,7 @@ const KNOWN_ROOTS: &[&str] = &[
     "generated",
     "fuzz",
     "property",
+    "stress",
     "snapshots",
 ];
 

@@ -44,6 +44,8 @@ should start from the earliest applicable spec chapter and grow forward.
   parsing.
 - `generated/`, `fuzz/`, and `property/` are reserved for generated,
   minimized fuzz, and property-test seeds.
+- `stress/` is reserved for stress and integration articles, including
+  oversized generated `.miz` cases outside the default fast profile.
 - `snapshots/` contains deterministic snapshot baselines, including parse-only
   `SurfaceAst` baselines referenced from `.expect.toml` sidecars.
 

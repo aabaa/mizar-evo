@@ -41,7 +41,10 @@ Growth should favor high-signal fail/soundness tests near the kernel over large 
 | integration test | 100-300 |
 | stress test | 500-1,000 |
 
-Generated corpora may exceed these ranges only in stress directories.
+Validation treats these ranges as upper-bound review gates. Short minimal
+regressions are allowed without diagnostics because many fail/soundness cases
+are intentionally tiny. Oversized generated `.miz` files are errors unless they
+live under `tests/stress/`; oversized handwritten `.miz` files are warnings.
 
 ## Generation Policy
 
@@ -54,6 +57,14 @@ Generated `.miz` files must record:
 - minimization status;
 - schema version for metadata.
 
+Generated, fuzz, and property sidecars record this provenance in `[origin]`.
+Metadata-only handoff anchors may use the crate-local test family or harness
+handoff as the generator, `generator_version = "handoff"`, and the fixture's
+stable phase/name as the seed. `origin.expected_outcome` mirrors the harness
+sidecar outcome. All fuzz seeds record `origin.original_failure_category`; for
+promoted fuzz failures, that original fuzz failure class must match the
+executable `failure_category`.
+
 Generated tests are committed only when they add coverage, reproduce a bug, or serve as stable stress cases. Bulk generated corpora may live outside the default fast test set until they are minimized or promoted.
 
 ## Review Rules
@@ -65,6 +76,13 @@ Corpus additions are reviewed for:
 - absence of hidden reliance on test execution order;
 - minimality for fail/soundness regressions;
 - clear domain placement and naming.
+
+Generated sidecars live under `tests/generated/` unless they are stress cases
+under `tests/stress/`. Fuzz seeds live under `tests/fuzz/`; property seeds live
+under `tests/property/`. Unminimized generated/fuzz/property seeds stay outside
+the default `fast` profile. Metadata-only fuzz handoff seeds use the
+`fuzz_regression` profile. Stress cases use `profiles = ["stress"]` and do not
+also opt into `fast`.
 
 ## Tests
 

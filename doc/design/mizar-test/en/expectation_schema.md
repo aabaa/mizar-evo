@@ -424,16 +424,29 @@ Generated and fuzz/property regression tests record provenance.
 
 ```toml
 [origin]
+schema_version = 1
 kind = "generated"
 generator = "grammar-smoke"
 generator_version = "0.1.0"
 seed = "0000000000000001"
 profile = "lexical-identifiers"
+expected_outcome = "pass"
 minimized = false
 ```
 
-Promoted fuzz regressions must preserve their original failure category and
-seed metadata.
+`[origin]` is required for `kind = "generated"`, `kind = "fuzz_seed"`, and
+`kind = "property_seed"` sidecars. `origin.kind` and `origin.expected_outcome`
+match the sidecar's top-level `kind` and `expected_outcome`; metadata-only
+handoff anchors therefore use `expected_outcome = "metadata_only"` in both
+places. `origin.schema_version` is `1`; `generator`, `generator_version`,
+`seed`, and `profile` are required non-empty strings; `minimized` is a boolean.
+Unknown origin fields are rejected. Promoted fuzz failures remain `kind =
+"fuzz_seed"` with `expected_outcome = "fail"` and keep executable fail identity
+at the top level.
+
+All fuzz seed sidecars preserve their original failure category family through
+`origin.original_failure_category`. For promoted executable fuzz failures, that
+origin category must match the top-level `failure_category`.
 
 ## Validation
 

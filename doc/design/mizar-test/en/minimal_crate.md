@@ -145,6 +145,7 @@ tests/certificates/
 tests/generated/
 tests/fuzz/
 tests/property/
+tests/stress/
 tests/snapshots/
 ```
 

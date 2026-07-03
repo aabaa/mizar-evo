@@ -6,9 +6,20 @@ domain = "scope_skeleton"
 source = "scope_skeleton_phase5_001.fixture.toml"
 expected_outcome = "metadata_only"
 diagnostic_codes = []
+profiles = ["full"]
 notes = "Traceability anchor for Phase 5 crate-local scope skeleton unit tests in crates/mizar-lexer/src/lib.rs."
 spec_refs = [
   "spec.en.02.lexical.scope_override.skeleton",
   "spec.en.04.variables_and_constants.binders.lexical_shapes",
   "spec.en.16.theorems_and_proofs.blocks.lexical_ranges",
 ]
+
+[origin]
+schema_version = 1
+kind = "property_seed"
+generator = "crate-local-rust-tests"
+generator_version = "handoff"
+seed = "mizar-lexer-phase-5-scope-skeleton"
+profile = "scope_skeleton_phase5"
+expected_outcome = "metadata_only"
+minimized = false

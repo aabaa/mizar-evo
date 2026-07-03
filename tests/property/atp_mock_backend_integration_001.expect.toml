@@ -6,7 +6,18 @@ domain = "mizar_atp.mock_backend"
 source = "atp_mock_backend_integration_001.fixture.toml"
 expected_outcome = "metadata_only"
 diagnostic_codes = []
+profiles = ["full"]
 notes = "Metadata-only task-20 corpus anchor for mizar-atp mock backend integration tests. The fixture is inert until an active advanced_semantics runner exists."
 spec_refs = [
   "spec.en.mizar_atp.advanced_semantics.mock_backend_integration",
 ]
+
+[origin]
+schema_version = 1
+kind = "property_seed"
+generator = "crate-local-rust-tests"
+generator_version = "handoff"
+seed = "mizar-atp-task-20-mock-backend-integration"
+profile = "mock_backend_integration"
+expected_outcome = "metadata_only"
+minimized = false

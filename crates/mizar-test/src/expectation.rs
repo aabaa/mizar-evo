@@ -72,6 +72,20 @@ pub struct Expectation {
     pub ast_profile: Option<String>,
     pub snapshot_profiles: Vec<String>,
     pub tokens: Vec<TokenExpectation>,
+    pub origin: Option<OriginMetadata>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct OriginMetadata {
+    pub schema_version: u32,
+    pub kind: TestKind,
+    pub generator: String,
+    pub generator_version: String,
+    pub seed: String,
+    pub profile: String,
+    pub expected_outcome: ExpectedOutcome,
+    pub minimized: bool,
+    pub original_failure_category: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -361,13 +375,14 @@ pub fn parse_expectation_file(path: &Path) -> Result<Expectation, ValidationDiag
 }
 
 pub fn parse_expectation_str(content: &str) -> Result<Expectation, String> {
-    let (table, token_tables) = toml_lite::parse_expectation_tables(content)
+    let (table, origin_table, token_tables) = toml_lite::parse_expectation_tables(content)
         .map_err(|error| format!("TOML parse error on line {}: {}", error.line, error.message))?;
-    expectation_from_table(&table, &token_tables)
+    expectation_from_table(&table, origin_table.as_ref(), &token_tables)
 }
 
 fn expectation_from_table(
     table: &TomlTable,
+    origin_table: Option<&TomlTable>,
     token_tables: &[TomlTable],
 ) -> Result<Expectation, String> {
     validate_known_fields(table)?;
@@ -474,6 +489,8 @@ fn expectation_from_table(
     }
 
     validate_kind_outcome(kind, expected_outcome)?;
+    let origin = origin_table.map(parse_origin_metadata).transpose()?;
+    validate_origin_metadata(kind, expected_outcome, origin.as_ref())?;
     if !tokens.is_empty() && stage != Stage::Lexical {
         return Err("token expectations are only valid for `stage = \"lexical\"`".to_owned());
     }
@@ -527,7 +544,92 @@ fn expectation_from_table(
         ast_profile,
         snapshot_profiles,
         tokens,
+        origin,
     })
+}
+
+fn parse_origin_metadata(table: &TomlTable) -> Result<OriginMetadata, String> {
+    validate_origin_fields(table)?;
+    let schema_version = toml_lite::required_u32(table, "schema_version")?;
+    if schema_version != 1 {
+        return Err(format!(
+            "unsupported origin.schema_version `{schema_version}`"
+        ));
+    }
+    let kind: TestKind = toml_lite::required_string(table, "kind")?.parse()?;
+    if !matches!(
+        kind,
+        TestKind::Generated | TestKind::FuzzSeed | TestKind::PropertySeed
+    ) {
+        return Err("`origin.kind` must be generated, fuzz_seed, or property_seed".to_owned());
+    }
+    let generator = required_non_empty_string(table, "generator")?;
+    let generator_version = required_non_empty_string(table, "generator_version")?;
+    let seed = required_non_empty_string(table, "seed")?;
+    let profile = required_non_empty_string(table, "profile")?;
+    let expected_outcome = toml_lite::required_string(table, "expected_outcome")?.parse()?;
+    let minimized = toml_lite::required_bool(table, "minimized")?;
+    let original_failure_category = toml_lite::optional_string(table, "original_failure_category")?;
+    if original_failure_category
+        .as_deref()
+        .is_some_and(str::is_empty)
+    {
+        return Err("`origin.original_failure_category` must not be empty when present".to_owned());
+    }
+    Ok(OriginMetadata {
+        schema_version,
+        kind,
+        generator,
+        generator_version,
+        seed,
+        profile,
+        expected_outcome,
+        minimized,
+        original_failure_category,
+    })
+}
+
+fn required_non_empty_string(table: &TomlTable, key: &str) -> Result<String, String> {
+    let value = toml_lite::required_string(table, key)?;
+    if value.is_empty() {
+        Err(format!("`origin.{key}` must not be empty"))
+    } else {
+        Ok(value)
+    }
+}
+
+fn validate_origin_metadata(
+    kind: TestKind,
+    expected_outcome: ExpectedOutcome,
+    origin: Option<&OriginMetadata>,
+) -> Result<(), String> {
+    match kind {
+        TestKind::Generated | TestKind::FuzzSeed | TestKind::PropertySeed => {
+            let Some(origin) = origin else {
+                return Err(format!("kind `{kind}` requires `[origin]` metadata"));
+            };
+            if origin.kind != kind {
+                return Err(format!(
+                    "`origin.kind` `{}` must match sidecar kind `{kind}`",
+                    origin.kind
+                ));
+            }
+            if origin.expected_outcome != expected_outcome {
+                return Err(format!(
+                    "`origin.expected_outcome` `{}` must match sidecar expected_outcome `{expected_outcome}`",
+                    origin.expected_outcome
+                ));
+            }
+            Ok(())
+        }
+        TestKind::Pass | TestKind::Fail | TestKind::Snapshot => {
+            if origin.is_some() {
+                Err("`[origin]` metadata is only valid for generated, fuzz_seed, or property_seed cases".to_owned())
+            } else {
+                Ok(())
+            }
+        }
+    }
 }
 
 fn optional_string_array(table: &TomlTable, key: &str) -> Result<Vec<String>, String> {
@@ -673,6 +775,27 @@ fn validate_token_fields(table: &TomlTable) -> Result<(), String> {
     Ok(())
 }
 
+fn validate_origin_fields(table: &TomlTable) -> Result<(), String> {
+    const KNOWN_ORIGIN_FIELDS: &[&str] = &[
+        "schema_version",
+        "kind",
+        "generator",
+        "generator_version",
+        "seed",
+        "profile",
+        "expected_outcome",
+        "minimized",
+        "original_failure_category",
+    ];
+
+    for key in table.keys() {
+        if !KNOWN_ORIGIN_FIELDS.contains(&key.as_str()) {
+            return Err(format!("unknown origin field `{key}`"));
+        }
+    }
+    Ok(())
+}
+
 fn validate_known_fields(table: &TomlTable) -> Result<(), String> {
     const KNOWN_FIELDS: &[&str] = &[
         "schema_version",
@@ -708,6 +831,7 @@ fn validate_known_fields(table: &TomlTable) -> Result<(), String> {
 pub fn validate_expectation_path(
     path: &Path,
     expectation: &Expectation,
+    tests_root: &Path,
 ) -> Vec<ValidationDiagnostic> {
     let mut diagnostics = Vec::new();
     let sidecar_stem = expectation_stem(path).unwrap_or_default();
@@ -846,8 +970,395 @@ pub fn validate_expectation_path(
     }
 
     validate_fail_soundness_contract(path, expectation, &mut diagnostics);
+    validate_corpus_policy(path, expectation, tests_root, &mut diagnostics);
 
     diagnostics
+}
+
+fn validate_corpus_policy(
+    path: &Path,
+    expectation: &Expectation,
+    tests_root: &Path,
+    diagnostics: &mut Vec<ValidationDiagnostic>,
+) {
+    let relative_path = path.strip_prefix(tests_root).ok();
+    let root = relative_path.and_then(test_root_class);
+    validate_corpus_class_placement(path, expectation, root, diagnostics);
+    validate_corpus_profiles(path, expectation, root, diagnostics);
+    validate_corpus_naming(path, expectation, relative_path, diagnostics);
+    validate_corpus_file_size(path, expectation, root, diagnostics);
+}
+
+fn validate_corpus_class_placement(
+    path: &Path,
+    expectation: &Expectation,
+    root: Option<&str>,
+    diagnostics: &mut Vec<ValidationDiagnostic>,
+) {
+    let expected_root = match expectation.kind {
+        TestKind::Generated => Some("generated"),
+        TestKind::FuzzSeed => Some("fuzz"),
+        TestKind::PropertySeed => Some("property"),
+        TestKind::Pass | TestKind::Fail | TestKind::Snapshot => None,
+    };
+
+    if let Some(expected_root) = expected_root {
+        let placed = root == Some(expected_root)
+            || (expectation.kind == TestKind::Generated && root == Some("stress"));
+        if !placed {
+            diagnostics.push(ValidationDiagnostic::error(
+                path,
+                "corpus",
+                "E-CORPUS-PLACEMENT",
+                format!("corpus.placement.{}", expectation.id.0),
+                format!(
+                    "kind `{}` must be placed under tests/{expected_root}/{}",
+                    expectation.kind,
+                    if expectation.kind == TestKind::Generated {
+                        " or tests/stress/"
+                    } else {
+                        ""
+                    }
+                ),
+            ));
+        }
+    }
+
+    for (root_name, expected_kind) in [
+        ("generated", TestKind::Generated),
+        ("fuzz", TestKind::FuzzSeed),
+        ("property", TestKind::PropertySeed),
+    ] {
+        if root == Some(root_name) && expectation.kind != expected_kind {
+            diagnostics.push(ValidationDiagnostic::error(
+                path,
+                "corpus",
+                "E-CORPUS-PLACEMENT",
+                format!("corpus.placement.{}", expectation.id.0),
+                format!("tests/{root_name}/ sidecars must use kind `{expected_kind}`"),
+            ));
+        }
+    }
+}
+
+fn validate_corpus_profiles(
+    path: &Path,
+    expectation: &Expectation,
+    root: Option<&str>,
+    diagnostics: &mut Vec<ValidationDiagnostic>,
+) {
+    let has_fast = has_profile(&expectation.profiles, "fast");
+    let has_stress = has_profile(&expectation.profiles, "stress");
+    if has_fast && has_stress {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "corpus",
+            "E-CORPUS-STRESS-FAST-PROFILE",
+            format!("corpus.profile.{}", expectation.id.0),
+            "stress cases must stay outside the default fast profile",
+        ));
+    }
+    if root == Some("stress") && !has_stress {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "corpus",
+            "E-CORPUS-STRESS-PROFILE",
+            format!("corpus.profile.{}", expectation.id.0),
+            "tests/stress/ sidecars must include the stress profile",
+        ));
+    }
+
+    let Some(origin) = expectation.origin.as_ref() else {
+        return;
+    };
+    if !origin.minimized && has_fast {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "corpus",
+            "E-CORPUS-UNMINIMIZED-FAST",
+            format!("corpus.profile.{}", expectation.id.0),
+            "unminimized generated, fuzz, and property seeds must stay outside the default fast profile",
+        ));
+    }
+    if expectation.kind == TestKind::FuzzSeed
+        && expectation.expected_outcome == ExpectedOutcome::MetadataOnly
+        && !has_profile(&expectation.profiles, "fuzz_regression")
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "corpus",
+            "E-CORPUS-FUZZ-PROFILE",
+            format!("corpus.profile.{}", expectation.id.0),
+            "metadata-only fuzz seeds must be gated by the fuzz_regression profile",
+        ));
+    }
+    if expectation.kind == TestKind::FuzzSeed {
+        match (
+            origin.original_failure_category.as_deref(),
+            expectation.failure_category.as_deref(),
+        ) {
+            (None, _) => diagnostics.push(ValidationDiagnostic::error(
+                path,
+                "corpus",
+                "E-CORPUS-FUZZ-CATEGORY",
+                format!("corpus.fuzz_category.{}", expectation.id.0),
+                "fuzz seeds must preserve origin.original_failure_category",
+            )),
+            (Some(original), Some(current)) if original != current => {
+                diagnostics.push(ValidationDiagnostic::error(
+                    path,
+                    "corpus",
+                    "E-CORPUS-FUZZ-CATEGORY",
+                    format!("corpus.fuzz_category.{}", expectation.id.0),
+                    format!(
+                        "fuzz failure_category `{current}` must match original failure category `{original}`"
+                    ),
+                ));
+            }
+            _ => {}
+        }
+    }
+}
+
+fn validate_corpus_naming(
+    path: &Path,
+    expectation: &Expectation,
+    relative_path: Option<&Path>,
+    diagnostics: &mut Vec<ValidationDiagnostic>,
+) {
+    let stem = expectation_stem(path).unwrap_or_default();
+    if !is_snake_case_stem(&stem) {
+        diagnostics.push(ValidationDiagnostic::warning(
+            path,
+            "corpus",
+            "W-CORPUS-NAMING",
+            format!("corpus.naming.{}", expectation.id.0),
+            "corpus sidecar names should use stable snake_case stems",
+        ));
+    }
+    if matches!(
+        expectation.expected_outcome,
+        ExpectedOutcome::Pass | ExpectedOutcome::Fail | ExpectedOutcome::Snapshot
+    ) && !has_numeric_suffix(&stem)
+    {
+        diagnostics.push(ValidationDiagnostic::warning(
+            path,
+            "corpus",
+            "W-CORPUS-NAMING",
+            format!("corpus.naming.{}", expectation.id.0),
+            "executable corpus sidecars should end with a stable numeric suffix",
+        ));
+    }
+    if relative_path.is_some_and(|path| path_has_component(path, "pass"))
+        && expectation.expected_outcome == ExpectedOutcome::Fail
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "corpus",
+            "E-CORPUS-OUTCOME-PLACEMENT",
+            format!("corpus.placement.{}", expectation.id.0),
+            "fail expectations must not be placed under a pass corpus directory",
+        ));
+    }
+    if relative_path.is_some_and(|path| path_has_component(path, "fail"))
+        && expectation.expected_outcome == ExpectedOutcome::Pass
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "corpus",
+            "E-CORPUS-OUTCOME-PLACEMENT",
+            format!("corpus.placement.{}", expectation.id.0),
+            "pass expectations must not be placed under a fail corpus directory",
+        ));
+    }
+    let expected_prefix = match expectation.expected_outcome {
+        ExpectedOutcome::Pass => Some("pass_"),
+        ExpectedOutcome::Fail => Some("fail_"),
+        ExpectedOutcome::Snapshot | ExpectedOutcome::MetadataOnly => None,
+    };
+    let Some(expected_prefix) = expected_prefix else {
+        return;
+    };
+    if !stem.starts_with(expected_prefix)
+        && relative_path
+            .is_some_and(|path| path_has_component(path, expected_prefix.trim_end_matches('_')))
+    {
+        diagnostics.push(ValidationDiagnostic::warning(
+            path,
+            "corpus",
+            "W-CORPUS-NAMING",
+            format!("corpus.naming.{}", expectation.id.0),
+            format!(
+                "sidecars under a `{}` corpus directory should use the `{expected_prefix}` name prefix",
+                expected_prefix.trim_end_matches('_')
+            ),
+        ));
+    }
+}
+
+fn validate_corpus_file_size(
+    path: &Path,
+    expectation: &Expectation,
+    root: Option<&str>,
+    diagnostics: &mut Vec<ValidationDiagnostic>,
+) {
+    if expectation
+        .source
+        .extension()
+        .and_then(|extension| extension.to_str())
+        != Some("miz")
+    {
+        return;
+    }
+    let source_path = path
+        .parent()
+        .unwrap_or_else(|| Path::new(""))
+        .join(&expectation.source);
+    let Ok(content) = fs::read_to_string(&source_path) else {
+        return;
+    };
+    let Some(guideline) = corpus_size_guideline(expectation, root) else {
+        return;
+    };
+    let line_count = content.lines().count();
+    if line_count >= guideline.min_lines && line_count <= guideline.max_lines {
+        return;
+    }
+    if line_count <= guideline.max_lines {
+        return;
+    }
+
+    if expectation.kind == TestKind::Generated && root != Some("stress") {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "corpus",
+            "E-CORPUS-GENERATED-SIZE",
+            format!("corpus.size.{}", expectation.id.0),
+            format!(
+                "generated .miz source has {line_count} lines, above the {} guideline of {}-{} lines; oversized generated cases must live under tests/stress/",
+                guideline.label, guideline.min_lines, guideline.max_lines
+            ),
+        ));
+    } else {
+        diagnostics.push(ValidationDiagnostic::warning(
+            path,
+            "corpus",
+            "W-CORPUS-SIZE",
+            format!("corpus.size.{}", expectation.id.0),
+            format!(
+                ".miz source has {line_count} lines, above the {} guideline of {}-{} lines",
+                guideline.label, guideline.min_lines, guideline.max_lines
+            ),
+        ));
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct CorpusSizeGuideline {
+    label: &'static str,
+    min_lines: usize,
+    max_lines: usize,
+}
+
+fn corpus_size_guideline(
+    expectation: &Expectation,
+    root: Option<&str>,
+) -> Option<CorpusSizeGuideline> {
+    if root == Some("stress") {
+        return Some(CorpusSizeGuideline {
+            label: "stress test",
+            min_lines: 500,
+            max_lines: 1000,
+        });
+    }
+    if expectation.domain.contains("integration") {
+        return Some(CorpusSizeGuideline {
+            label: "integration test",
+            min_lines: 100,
+            max_lines: 300,
+        });
+    }
+    if expectation.domain.contains("cluster")
+        || expectation.expected_phase == Some(PipelinePhase::ClusterResolution)
+    {
+        return Some(CorpusSizeGuideline {
+            label: "cluster test",
+            min_lines: 20,
+            max_lines: 80,
+        });
+    }
+    if matches!(
+        expectation.expected_phase,
+        Some(PipelinePhase::TypeCheck | PipelinePhase::Elaboration)
+    ) {
+        return Some(CorpusSizeGuideline {
+            label: "type test",
+            min_lines: 10,
+            max_lines: 50,
+        });
+    }
+    if matches!(
+        expectation.stage,
+        Stage::ProofVerification | Stage::AdvancedSemantics
+    ) || matches!(
+        expectation.expected_phase,
+        Some(
+            PipelinePhase::StatementCheck
+                | PipelinePhase::VcGeneration
+                | PipelinePhase::Verification
+                | PipelinePhase::CertificateCheck
+                | PipelinePhase::KernelCheck
+        )
+    ) {
+        return Some(CorpusSizeGuideline {
+            label: "theorem test",
+            min_lines: 30,
+            max_lines: 150,
+        });
+    }
+    if expectation.stage == Stage::ParseOnly
+        || expectation.expected_phase == Some(PipelinePhase::Parse)
+    {
+        return Some(CorpusSizeGuideline {
+            label: "parser test",
+            min_lines: 5,
+            max_lines: 30,
+        });
+    }
+    None
+}
+
+fn test_root_class(path: &Path) -> Option<&str> {
+    path.components().next()?.as_os_str().to_str()
+}
+
+fn path_has_component(path: &Path, needle: &str) -> bool {
+    path.components()
+        .any(|component| component.as_os_str() == needle)
+}
+
+fn is_snake_case_stem(stem: &str) -> bool {
+    !stem.is_empty()
+        && !stem.starts_with('_')
+        && !stem.ends_with('_')
+        && !stem.contains("__")
+        && stem
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_')
+}
+
+fn has_numeric_suffix(stem: &str) -> bool {
+    stem.rsplit_once('_').is_some_and(|(_, suffix)| {
+        !suffix.is_empty() && suffix.bytes().all(|byte| byte.is_ascii_digit())
+    })
+}
+
+fn has_profile(profiles: &[String], profile: &str) -> bool {
+    profiles.iter().any(|candidate| {
+        candidate == profile
+            || (profile == "fuzz_regression" && candidate == "fuzz-regression")
+            || (profile == "snapshot_update" && candidate == "snapshot-update")
+    })
 }
 
 pub(crate) fn required_soundness_case_for(

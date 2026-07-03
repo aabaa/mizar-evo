@@ -11,7 +11,8 @@ pub mod traceability;
 
 pub use diagnostic::{DiagnosticCode, ValidationDiagnostic, ValidationSeverity};
 pub use expectation::{
-    Expectation, ExpectedOutcome, PipelinePhase, TestCaseId, TestKind, parse_expectation_file,
+    Expectation, ExpectedOutcome, OriginMetadata, PipelinePhase, TestCaseId, TestKind,
+    parse_expectation_file,
 };
 pub use harness::{
     DiscoveryConfig, HarnessError, TestCase, TestPlan, TestProfile, ValidationMode, build_test_plan,

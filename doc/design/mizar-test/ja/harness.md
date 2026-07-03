@@ -118,7 +118,9 @@ plan と validation diagnostics を共有する。
 
 ## Algorithm / Logic
 
-1. `layout` を通して tests を discover する。
+1. `layout` を通して、known payload roots `miz`、`lexical`、
+   `certificates`、`generated`、`fuzz`、`property`、`stress`、`snapshots`
+   配下の tests を discover する。
 2. 発見したすべての sidecar を parse/validate したうえで、
    `DiscoveryConfig.profile` で filter された `cases` を持つ canonical
    `TestPlan` を構築する。`profiles` が無い場合は `["fast"]` が default で、

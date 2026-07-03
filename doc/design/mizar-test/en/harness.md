@@ -118,7 +118,9 @@ plan and validation diagnostics shown above.
 
 ## Algorithm / Logic
 
-1. Discover tests through `layout`.
+1. Discover tests through `layout` under the known payload roots
+   `miz`, `lexical`, `certificates`, `generated`, `fuzz`, `property`,
+   `stress`, and `snapshots`.
 2. Parse and validate every discovered sidecar, then build a canonical
    `TestPlan` whose returned `cases` are filtered by `DiscoveryConfig.profile`.
    Missing `profiles` defaults to `["fast"]`; `Full` includes every valid

@@ -171,7 +171,11 @@ pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessErro
             }
         };
 
-        diagnostics.extend(validate_expectation_path(&sidecar, &expectation));
+        diagnostics.extend(validate_expectation_path(
+            &sidecar,
+            &expectation,
+            &config.tests_root,
+        ));
 
         for spec_ref in &expectation.spec_refs {
             if !manifest_ids.contains(spec_ref) {

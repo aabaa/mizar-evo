@@ -6,6 +6,7 @@ domain = "lexer_phase7"
 source = "lexer_phase7_spec_boundary_001.fixture.toml"
 expected_outcome = "metadata_only"
 diagnostic_codes = []
+profiles = ["full"]
 notes = "Traceability anchor for Chapter 2 lexical-structure requirements whose executable checks are crate-local property tests or upstream source/package handoff contracts."
 spec_refs = [
   "spec.en.02.lexical.character_set.utf8_ascii_code",
@@ -18,3 +19,13 @@ spec_refs = [
   "spec.en.02.lexical.preprocessing.comments_removed",
   "spec.en.02.lexical.tokens.lexicon_classes",
 ]
+
+[origin]
+schema_version = 1
+kind = "property_seed"
+generator = "crate-local-rust-tests"
+generator_version = "handoff"
+seed = "mizar-lexer-phase-7-spec-boundary"
+profile = "lexer_phase7_spec_boundary"
+expected_outcome = "metadata_only"
+minimized = false

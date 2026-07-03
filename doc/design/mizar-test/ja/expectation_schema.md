@@ -399,15 +399,28 @@ Generated and fuzz/property regression tests は provenance を記録する。
 
 ```toml
 [origin]
+schema_version = 1
 kind = "generated"
 generator = "grammar-smoke"
 generator_version = "0.1.0"
 seed = "0000000000000001"
 profile = "lexical-identifiers"
+expected_outcome = "pass"
 minimized = false
 ```
 
-Promoted fuzz regressions は original failure category and seed metadata を preserve しなければならない。
+`[origin]` は `kind = "generated"`、`kind = "fuzz_seed"`、`kind = "property_seed"` の
+sidecars で必須である。`origin.kind` と `origin.expected_outcome` は sidecar の
+top-level `kind` と `expected_outcome` に一致する。したがって metadata-only handoff
+anchors は両方で `expected_outcome = "metadata_only"` を使う。Unknown origin fields
+は reject される。`origin.schema_version` は `1`、`generator`、
+`generator_version`、`seed`、`profile` は required non-empty strings、
+`minimized` は boolean である。Promoted fuzz failures は `kind = "fuzz_seed"` と
+`expected_outcome = "fail"` のまま、top level に executable fail identity を保持する。
+
+すべての fuzz seed sidecars は `origin.original_failure_category` を通して original
+failure category family を preserve する。Promoted executable fuzz failures では、その
+origin category が top-level `failure_category` と一致しなければならない。
 
 ## Validation
 

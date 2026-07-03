@@ -51,10 +51,14 @@ pub fn parse_table(input: &str) -> Result<TomlTable, TomlError> {
     Ok(table)
 }
 
-pub fn parse_expectation_tables(input: &str) -> Result<(TomlTable, Vec<TomlTable>), TomlError> {
+pub fn parse_expectation_tables(
+    input: &str,
+) -> Result<(TomlTable, Option<TomlTable>, Vec<TomlTable>), TomlError> {
     let mut root = TomlTable::new();
+    let mut origin = None;
     let mut tokens = Vec::new();
     let mut current_token: Option<TomlTable> = None;
+    let mut current_table = ExpectationTable::Root;
     let mut lines = input.lines().enumerate().peekable();
 
     while let Some((line_idx, raw_line)) = lines.next() {
@@ -68,6 +72,21 @@ pub fn parse_expectation_tables(input: &str) -> Result<(TomlTable, Vec<TomlTable
                 tokens.push(token);
             }
             current_token = Some(TomlTable::new());
+            current_table = ExpectationTable::Token;
+            continue;
+        }
+        if line == "[origin]" {
+            if origin.is_some() {
+                return Err(TomlError::new(
+                    line_no,
+                    "duplicate expectation table `[origin]`",
+                ));
+            }
+            if let Some(token) = current_token.take() {
+                tokens.push(token);
+            }
+            origin = Some(TomlTable::new());
+            current_table = ExpectationTable::Origin;
             continue;
         }
         if line.starts_with('[') {
@@ -79,7 +98,13 @@ pub fn parse_expectation_tables(input: &str) -> Result<(TomlTable, Vec<TomlTable
 
         let (key, raw_value) = split_key_value(line, line_no)?;
         let value = parse_value_with_continuation(raw_value, line_no, &mut lines)?;
-        let table = current_token.as_mut().unwrap_or(&mut root);
+        let table = match current_table {
+            ExpectationTable::Root => &mut root,
+            ExpectationTable::Origin => origin.as_mut().expect("origin table exists when selected"),
+            ExpectationTable::Token => current_token
+                .as_mut()
+                .expect("token table exists when selected"),
+        };
         if table.insert(key.to_owned(), value).is_some() {
             return Err(TomlError::new(line_no, format!("duplicate key `{key}`")));
         }
@@ -88,7 +113,14 @@ pub fn parse_expectation_tables(input: &str) -> Result<(TomlTable, Vec<TomlTable
     if let Some(token) = current_token {
         tokens.push(token);
     }
-    Ok((root, tokens))
+    Ok((root, origin, tokens))
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ExpectationTable {
+    Root,
+    Origin,
+    Token,
 }
 
 pub fn parse_requirement_tables(input: &str) -> Result<Vec<TomlTable>, TomlError> {

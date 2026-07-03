@@ -18,11 +18,11 @@ per [internal 07](../../internal/en/07.crate_module_layout.md).
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery/pairing and validation-mode unknown-root policy implemented; public API sync pending |
-| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema, profile metadata retention, and fail/soundness rejection gates implemented; provenance/general snapshot hardening pending |
+| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema, profile/provenance metadata retention, and fail/soundness rejection gates implemented; general snapshot hardening pending |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage ids and declared prerequisite validation implemented; richer admission policy pending |
 | traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs, coverage report/status gates, manifest ordering, obsolete-ref checks, and prerequisite credit gates implemented |
 | harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs`, `src/runner.rs` | [~] metadata plan, validation-mode CLI, profile filtering, coverage/pass-fail report, and active parse/declaration/type runners |
-| miz_corpus | [miz_corpus.md](./miz_corpus.md) | corpus tree under `tests/` | [~] roots discovered and pass/fail mix reported; provenance/profile policy rules pending |
+| miz_corpus | [miz_corpus.md](./miz_corpus.md) | corpus tree under `tests/` | [~] roots discovered, pass/fail mix reported, provenance/profile policy rules validated; future corpus classes pending |
 | snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs`, `src/expectation.rs`, `src/runner.rs` | [~] general snapshot record API/hash/update/determinism helpers implemented; sidecar/runner integration pending |
 | fail_soundness | [fail_soundness.md](./fail_soundness.md) | `src/expectation.rs`, `src/harness.rs`, future runner cases | [~] metadata contract gates implemented; active proof/certificate/kernel execution paced by future runners |
 | minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate boundary + CLI | [~] metadata plan, validation modes, CLI fixtures, coverage gates, and prerequisite gates implemented |
@@ -203,7 +203,7 @@ Keep `cargo test -p mizar-test` green after each task (see
      consumer runners exist.
    - Deps: 6. Spec: [fail_soundness.md](./fail_soundness.md).
 
-9. **Corpus size and review-rule validation.** [ ]
+9. **Corpus size and review-rule validation.** [x]
    - Validate the corpus-growth rules of [miz_corpus.md](./miz_corpus.md):
      file-size guidelines, naming, corpus-class placement, and
      generation-policy markers.
@@ -212,6 +212,10 @@ Keep `cargo test -p mizar-test` green after each task (see
      corpus policy, corpus-policy profile constraints, stress exclusion, and
      fuzz-category preservation.
    - Tests: violation fixtures per rule; clean corpus passes.
+   - Completion: task 9 implements `[origin]` provenance parsing/retention,
+     corpus placement/profile gates, stress exclusion, fuzz-category
+     preservation, upper-bound `.miz` size diagnostics, naming diagnostics, and
+     metadata fixtures for clean and violating corpora.
    - Deps: 3. Spec: [miz_corpus.md](./miz_corpus.md).
 
 ### Consumer pacing and follow-ups

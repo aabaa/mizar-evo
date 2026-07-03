@@ -6,8 +6,20 @@ domain = "lexer_phase7"
 source = "lexer_phase7_fuzz_handoff_001.fixture.toml"
 expected_outcome = "metadata_only"
 diagnostic_codes = []
+profiles = ["fuzz_regression"]
 notes = "Metadata-only handoff anchor for minimized Phase 7 lexer fuzz regressions."
 spec_refs = [
   "spec.en.02.lexical.raw.span_preservation",
   "spec.en.02.lexical.phase7.fuzz_handoff",
 ]
+
+[origin]
+schema_version = 1
+kind = "fuzz_seed"
+generator = "cargo-fuzz"
+generator_version = "handoff"
+seed = "mizar-lexer-phase-7-fuzz-handoff"
+profile = "lexer_phase7"
+expected_outcome = "metadata_only"
+minimized = true
+original_failure_category = "lexer_phase7_regression"

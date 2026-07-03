@@ -6,6 +6,7 @@ domain = "lexical_environment"
 source = "lexical_environment_phase4_001.fixture.toml"
 expected_outcome = "metadata_only"
 diagnostic_codes = []
+profiles = ["full"]
 notes = "Traceability anchor for Phase 4 crate-local lexical environment unit tests in crates/mizar-lexer/src/lib.rs."
 spec_refs = [
   "spec.en.02.lexical.preprocessing.active_lexicon",
@@ -14,3 +15,13 @@ spec_refs = [
   "spec.en.11.symbol_management.active_lexicon.reserved_collisions",
   "spec.en.11.symbol_management.active_lexicon.fingerprint",
 ]
+
+[origin]
+schema_version = 1
+kind = "property_seed"
+generator = "crate-local-rust-tests"
+generator_version = "handoff"
+seed = "lexical-environment-phase-4"
+profile = "lexical_environment_phase4"
+expected_outcome = "metadata_only"
+minimized = false

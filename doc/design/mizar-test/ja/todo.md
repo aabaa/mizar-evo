@@ -19,11 +19,11 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | layout | [layout.md](./layout.md) | `src/layout.rs`、`src/path_rules.rs` | [~] discovery/pairing と validation-mode unknown-root policy は実装済み。Public API 同期は未完 |
-| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema、profile metadata retention、fail/soundness rejection gate は実装済み。provenance/general snapshot 強化は未完 |
+| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema、profile/provenance metadata retention、fail/soundness rejection gate は実装済み。general snapshot 強化は未完 |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage id と declared prerequisite validation は実装済み。より広い admission policy は未完 |
 | traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backref、coverage report/status gate、manifest ordering、obsolete-ref check、prerequisite credit gate は実装済み |
 | harness | [harness.md](./harness.md) | `src/harness.rs`、`src/main.rs`、`src/runner.rs` | [~] metadata plan、validation-mode CLI、profile filtering、coverage/pass-fail report、active parse/declaration/type runner |
-| miz_corpus | [miz_corpus.md](./miz_corpus.md) | `tests/` 配下のコーパスツリー | [~] root discovery と pass/fail mix reporting は実装済み。provenance/profile policy rules は未完 |
+| miz_corpus | [miz_corpus.md](./miz_corpus.md) | `tests/` 配下のコーパスツリー | [~] root discovery、pass/fail mix reporting、provenance/profile policy rules validation は実装済み。future corpus classes は未完 |
 | snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs`、`src/expectation.rs`、`src/runner.rs` | [~] general snapshot record API/hash/update/determinism helpers は実装済み。sidecar/runner integration は未完 |
 | fail_soundness | [fail_soundness.md](./fail_soundness.md) | `src/expectation.rs`、`src/harness.rs`、将来の runner case | [~] metadata contract gate は実装済み。active proof/certificate/kernel execution は将来の runner が律速 |
 | minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate 境界＋CLI | [~] metadata plan、validation mode、CLI fixture、coverage gate、prerequisite gate は実装済み |
@@ -201,7 +201,7 @@ regression test を追加した。
      存在する前に real proof/certificate/kernel execution は捏造しない。
    - 依存: 6。仕様: [fail_soundness.md](./fail_soundness.md)。
 
-9. **コーパスサイズとレビュー規則の検証。** [ ]
+9. **コーパスサイズとレビュー規則の検証。** [x]
    - [miz_corpus.md](./miz_corpus.md) のコーパス成長規則を検証する:
      ファイルサイズ指針、命名、コーパスクラスの配置、生成ポリシーの
      マーカー。
@@ -210,6 +210,10 @@ regression test を追加した。
      retention、corpus-policy profile constraints、stress exclusion、fuzz-category
      preservation を閉じる。
    - テスト: 規則ごとの違反フィクスチャ。クリーンなコーパスは通る。
+   - 完了: task 9 は `[origin]` provenance parsing/retention、corpus
+     placement/profile gates、stress exclusion、fuzz-category preservation、
+     upper-bound `.miz` size diagnostics、naming diagnostics、clean / violating
+     corpora の metadata fixtures を実装した。
    - 依存: 3。仕様: [miz_corpus.md](./miz_corpus.md)。
 
 ### 消費側との歩調とフォローアップ

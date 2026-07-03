@@ -6,6 +6,7 @@ domain = "lexer_phase7"
 source = "lexer_phase7_regression_001.fixture.toml"
 expected_outcome = "metadata_only"
 diagnostic_codes = []
+profiles = ["full"]
 notes = "Traceability anchor for Phase 7 regression/property unit tests in crates/mizar-lexer/src/lib.rs."
 spec_refs = [
   "spec.en.02.lexical.raw.span_preservation",
@@ -16,3 +17,13 @@ spec_refs = [
   "spec.en.02.lexical.user_symbols.identifier_shaped",
   "spec.en.02.lexical.user_symbols.punctuation_shaped",
 ]
+
+[origin]
+schema_version = 1
+kind = "property_seed"
+generator = "crate-local-rust-tests"
+generator_version = "handoff"
+seed = "mizar-lexer-phase-7-regression-property"
+profile = "lexer_phase7_regression"
+expected_outcome = "metadata_only"
+minimized = false
