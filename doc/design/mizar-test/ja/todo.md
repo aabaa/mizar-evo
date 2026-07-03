@@ -19,13 +19,13 @@
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
 | layout | [layout.md](./layout.md) | `src/layout.rs`、`src/path_rules.rs` | [~] discovery/pairing と validation-mode unknown-root policy は実装済み。Public API 同期は未完 |
-| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema と profile metadata retention は実装済み。provenance/general snapshot 強化は未完 |
+| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema、profile metadata retention、fail/soundness rejection gate は実装済み。provenance/general snapshot 強化は未完 |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage id と declared prerequisite validation は実装済み。より広い admission policy は未完 |
 | traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backref、coverage report/status gate、manifest ordering、obsolete-ref check、prerequisite credit gate は実装済み |
 | harness | [harness.md](./harness.md) | `src/harness.rs`、`src/main.rs`、`src/runner.rs` | [~] metadata plan、validation-mode CLI、profile filtering、coverage/pass-fail report、active parse/declaration/type runner |
 | miz_corpus | [miz_corpus.md](./miz_corpus.md) | `tests/` 配下のコーパスツリー | [~] root discovery と pass/fail mix reporting は実装済み。provenance/profile policy rules は未完 |
 | snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs`、`src/expectation.rs`、`src/runner.rs` | [~] general snapshot record API/hash/update/determinism helpers は実装済み。sidecar/runner integration は未完 |
-| fail_soundness | [fail_soundness.md](./fail_soundness.md) | 将来の `src/fail_soundness.rs`、ハーネス規則＋コーパスケース | [ ] |
+| fail_soundness | [fail_soundness.md](./fail_soundness.md) | `src/expectation.rs`、`src/harness.rs`、将来の runner case | [~] metadata contract gate は実装済み。active proof/certificate/kernel execution は将来の runner が律速 |
 | minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate 境界＋CLI | [~] metadata plan、validation mode、CLI fixture、coverage gate、prerequisite gate は実装済み |
 
 `mizar-test` はコーパスとハーネスの crate である: テスト発見、
@@ -93,8 +93,10 @@ regression test を追加した。
 - `snapshot`: transitional parse-only `SurfaceAst` baseline path を超えて、
   general snapshot module、canonical hashing、explicit update flow、
   determinism checks を実装する。
-- `fail_soundness`: fail/soundness bookkeeping、required-domain checks、
-  false-arithmetic coverage、weakening/deletion regression rules を追加する。
+- `fail_soundness`: task 8 は fail/soundness metadata bookkeeping、
+  case-level required checks、false-arithmetic stable-key gating、
+  weakening/deletion diagnostics を実装した。active proof/certificate/kernel
+  execution は将来の consumer runner が律速する。
 
 ## 順序付きタスク一覧
 
@@ -184,7 +186,7 @@ regression test を追加した。
    - テスト: 前提条件違反のフィクスチャが安定した診断で検証に失敗する。
    - 依存: 6。仕様: [staged_model.md](./staged_model.md)「Stage Rules」。
 
-8. **fail/健全性契約の対応。** [ ]
+8. **fail/健全性契約の対応。** [x]
    - [fail_soundness.md](./fail_soundness.md) の期待失敗契約を実装する:
      ドメインごとの必須ケースの記録、期待失敗のアサーション（diagnostic
      コードと stage）、健全性ケースが黙って削除・弱体化されない
@@ -193,6 +195,10 @@ regression test を追加した。
      identity または同等の validation、false-arithmetic coverage、
      domain-required case bookkeeping を閉じる。
    - テスト: 契約のフィクスチャ。弱体化の試みの検出。
+   - 完了: certificate/kernel `rejection_reason` validation、認識済み
+     `soundness.*` case の shape/profile/phase gate、mode-aware missing-case
+     diagnostics、false-arithmetic stable-key gating。所有する consumer runner が
+     存在する前に real proof/certificate/kernel execution は捏造しない。
    - 依存: 6。仕様: [fail_soundness.md](./fail_soundness.md)。
 
 9. **コーパスサイズとレビュー規則の検証。** [ ]

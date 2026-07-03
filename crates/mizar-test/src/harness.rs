@@ -5,7 +5,8 @@ use std::str::FromStr;
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
 use crate::expectation::{
-    Expectation, ExpectedOutcome, TestCaseId, parse_expectation_file, validate_expectation_path,
+    Expectation, ExpectedOutcome, REQUIRED_SOUNDNESS_CASES, TestCaseId, parse_expectation_file,
+    required_soundness_case_for, validate_expectation_path,
 };
 use crate::layout;
 use crate::path_rules::{absolute_from, clean_relative_path};
@@ -226,6 +227,13 @@ pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessErro
         &mut diagnostics,
     );
     validate_obsolete_spec_refs(&manifest, &all_cases, &mut diagnostics);
+    diagnostics.extend(validate_required_soundness_cases(
+        &config.manifest_path,
+        config.validation_mode,
+        &manifest,
+        &all_cases,
+        &invalid_expectation_paths(&diagnostics),
+    ));
 
     let base_invalid_expectation_paths = invalid_expectation_paths(&diagnostics);
     let base_coverage_evidence = coverage_evidence(
@@ -422,6 +430,67 @@ fn validate_obsolete_spec_refs(
             }
         }
     }
+}
+
+fn validate_required_soundness_cases(
+    manifest_path: &Path,
+    validation_mode: ValidationMode,
+    manifest: &TraceManifest,
+    cases: &[TestCase],
+    invalid_expectation_paths: &BTreeSet<PathBuf>,
+) -> Vec<ValidationDiagnostic> {
+    if !fail_soundness_bookkeeping_is_active(manifest, cases) {
+        return Vec::new();
+    }
+
+    let present = cases
+        .iter()
+        .filter(|case| !invalid_expectation_paths.contains(&case.expectation_path))
+        .filter_map(|case| required_soundness_case_for(&case.expectation))
+        .map(|required_case| required_case.key)
+        .collect::<BTreeSet<_>>();
+
+    REQUIRED_SOUNDNESS_CASES
+        .iter()
+        .filter(|required_case| !present.contains(required_case.key))
+        .map(|required_case| {
+            let message = format!(
+                "required fail/soundness case `{}` is not covered by expectation metadata",
+                required_case.key
+            );
+            match validation_mode {
+                ValidationMode::Metadata => ValidationDiagnostic::warning(
+                    manifest_path,
+                    "fail_soundness",
+                    "W-SOUNDNESS-MISSING-CASE",
+                    format!("fail_soundness.required_case.{}", required_case.key),
+                    message,
+                ),
+                ValidationMode::Development | ValidationMode::Release => {
+                    ValidationDiagnostic::error(
+                        manifest_path,
+                        "fail_soundness",
+                        "E-SOUNDNESS-MISSING-CASE",
+                        format!("fail_soundness.required_case.{}", required_case.key),
+                        message,
+                    )
+                }
+            }
+        })
+        .collect()
+}
+
+fn fail_soundness_bookkeeping_is_active(manifest: &TraceManifest, cases: &[TestCase]) -> bool {
+    manifest.requirements.iter().any(|requirement| {
+        requirement
+            .source
+            .to_string_lossy()
+            .ends_with("doc/design/mizar-test/en/fail_soundness.md")
+            || requirement.id.0.starts_with("spec.en.fail_soundness.")
+            || requirement.id.0.starts_with("spec.en.soundness.")
+    }) || cases
+        .iter()
+        .any(|case| required_soundness_case_for(&case.expectation).is_some())
 }
 
 fn validate_stage_prerequisite_links(

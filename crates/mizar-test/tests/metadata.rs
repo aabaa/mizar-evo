@@ -778,6 +778,338 @@ spec_refs = ["spec.en.test.basic"]
 }
 
 #[test]
+fn fail_contract_requires_certificate_and_kernel_rejection_reason() {
+    let corpus = Corpus::new();
+    corpus.write("tests/certificates/fail/phase_certificate.cert.json", "{}");
+    corpus.write(
+        "tests/certificates/fail/phase_certificate.expect.toml",
+        r#"schema_version = 1
+id = "phase_certificate"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "phase_certificate.cert.json"
+expected_outcome = "fail"
+expected_phase = "certificate_check"
+failure_category = "proof_failure"
+stable_detail_key = "certificate.phase_certificate"
+diagnostic_codes = ["E-KERNEL-TEST"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write(
+        "tests/certificates/fail/category_certificate.cert.json",
+        "{}",
+    );
+    corpus.write(
+        "tests/certificates/fail/category_certificate.expect.toml",
+        r#"schema_version = 1
+id = "category_certificate"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "category_certificate.cert.json"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "certificate_rejection"
+stable_detail_key = "certificate.category_certificate"
+diagnostic_codes = ["E-CERT-TEST"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/certificates/fail/phase_kernel.cert.json", "{}");
+    corpus.write(
+        "tests/certificates/fail/phase_kernel.expect.toml",
+        r#"schema_version = 1
+id = "phase_kernel"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "phase_kernel.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "proof_failure"
+stable_detail_key = "certificate.phase_kernel"
+diagnostic_codes = ["E-KERNEL-TEST"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/certificates/fail/category_kernel.cert.json", "{}");
+    corpus.write(
+        "tests/certificates/fail/category_kernel.expect.toml",
+        r#"schema_version = 1
+id = "category_kernel"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "category_kernel.cert.json"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "kernel_rejection"
+stable_detail_key = "certificate.category_kernel"
+diagnostic_codes = ["E-KERNEL-TEST"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write("tests/certificates/fail/proof_failure.cert.json", "{}");
+    corpus.write(
+        "tests/certificates/fail/proof_failure.expect.toml",
+        r#"schema_version = 1
+id = "proof_failure"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "proof_failure.cert.json"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "proof_failure"
+stable_detail_key = "certificate.proof_failure"
+diagnostic_codes = ["E-PROOF-TEST"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-REJECTION-REASON");
+    assert_eq!(
+        plan.diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.code.0 == "E-EXPECT-REJECTION-REASON")
+            .count(),
+        4,
+        "{:#?}",
+        plan.diagnostics
+    );
+}
+
+#[test]
+fn required_soundness_cases_validate_shape_and_profile() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/parser/weak_false_arithmetic.miz",
+        "theorem 1 = 0;",
+    );
+    corpus.write(
+        "tests/miz/fail/parser/weak_false_arithmetic.expect.toml",
+        r#"schema_version = 1
+id = "weak_false_arithmetic"
+kind = "fail"
+stage = "parse_only"
+domain = "false_arithmetic"
+source = "weak_false_arithmetic.miz"
+expected_outcome = "fail"
+expected_phase = "parse"
+failure_category = "syntax_error"
+rejection_reason = "syntax"
+stable_detail_key = "soundness.false_arithmetic.one_eq_zero"
+diagnostic_codes = ["missing_end"]
+profiles = ["stress"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SOUNDNESS-DOMAIN");
+    assert_has_code(&plan, "E-EXPECT-SOUNDNESS-STAGE");
+    assert_has_code(&plan, "E-EXPECT-SOUNDNESS-PHASE");
+    assert_has_code(&plan, "E-EXPECT-SOUNDNESS-PROFILE");
+}
+
+#[test]
+fn required_soundness_cases_reject_unknown_keys_and_wrong_outcomes() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/proof/unknown_soundness.miz",
+        "theorem 1 = 0;",
+    );
+    corpus.write(
+        "tests/miz/fail/proof/unknown_soundness.expect.toml",
+        r#"schema_version = 1
+id = "unknown_soundness"
+kind = "fail"
+stage = "proof_verification"
+domain = "soundness"
+source = "unknown_soundness.miz"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "proof_failure"
+stable_detail_key = "soundness.typo.case"
+diagnostic_codes = ["E-PROOF-TEST"]
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+    corpus.write(
+        "tests/miz/pass/proof/pass_false_arithmetic.miz",
+        "theorem 1 = 0;",
+    );
+    corpus.write(
+        "tests/miz/pass/proof/pass_false_arithmetic.expect.toml",
+        r#"schema_version = 1
+id = "pass_false_arithmetic"
+kind = "pass"
+stage = "proof_verification"
+domain = "soundness"
+source = "pass_false_arithmetic.miz"
+expected_outcome = "pass"
+expected_phase = "verification"
+stable_detail_key = "soundness.false_arithmetic.one_eq_zero"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SOUNDNESS-CASE");
+    assert_has_code(&plan, "E-EXPECT-SOUNDNESS-OUTCOME");
+}
+
+#[test]
+fn required_soundness_missing_cases_are_mode_aware() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.soundness.contract"
+source = "doc/design/mizar-test/en/fail_soundness.md"
+section = "Required Soundness Cases"
+stage = "advanced_semantics"
+status = "planned"
+required = true
+coverage = "fail"
+tests = []
+"#,
+    );
+    corpus.write(
+        "doc/design/mizar-test/en/fail_soundness.md",
+        "# Fail Soundness\n",
+    );
+    let metadata_plan = corpus.plan();
+
+    assert_has_code(&metadata_plan, "W-SOUNDNESS-MISSING-CASE");
+
+    let mut development_config = corpus.config();
+    development_config.validation_mode = ValidationMode::Development;
+    let development_plan = build_test_plan(&development_config).unwrap();
+
+    assert_has_code(&development_plan, "E-SOUNDNESS-MISSING-CASE");
+    assert!(development_plan.diagnostics.iter().any(|diagnostic| {
+        diagnostic.detail_key
+            == "fail_soundness.required_case.soundness.false_arithmetic.one_eq_zero"
+    }));
+    assert!(development_plan.diagnostics.iter().any(|diagnostic| {
+        diagnostic.detail_key
+            == "fail_soundness.required_case.soundness.certificate.invalid_sat_proof"
+    }));
+
+    let mut release_config = corpus.config();
+    release_config.validation_mode = ValidationMode::Release;
+    let release_plan = build_test_plan(&release_config).unwrap();
+
+    assert_has_code(&release_plan, "E-SOUNDNESS-MISSING-CASE");
+}
+
+#[test]
+fn recognized_soundness_sidecars_activate_missing_case_bookkeeping() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.proof"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "proof_verification"
+status = "planned"
+required = true
+coverage = "fail"
+tests = []
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write(
+        "tests/miz/fail/proof/false_arithmetic.miz",
+        "theorem 1 = 0;",
+    );
+    corpus.write(
+        "tests/miz/fail/proof/false_arithmetic.expect.toml",
+        r#"schema_version = 1
+id = "false_arithmetic"
+kind = "fail"
+stage = "proof_verification"
+domain = "soundness"
+source = "false_arithmetic.miz"
+expected_outcome = "fail"
+expected_phase = "verification"
+failure_category = "proof_failure"
+stable_detail_key = "soundness.false_arithmetic.one_eq_zero"
+diagnostic_codes = ["E-PROOF-TEST"]
+spec_refs = ["spec.en.test.proof"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "W-SOUNDNESS-MISSING-CASE");
+    assert!(plan.diagnostics.iter().all(|diagnostic| {
+        diagnostic.detail_key
+            != "fail_soundness.required_case.soundness.false_arithmetic.one_eq_zero"
+    }));
+}
+
+#[test]
+fn invalid_soundness_identity_does_not_satisfy_required_case_bookkeeping() {
+    let corpus = Corpus::new();
+    corpus.write("tests/certificates/fail/invalid_sat_proof.cert.json", "{}");
+    corpus.write(
+        "tests/certificates/fail/invalid_sat_proof.expect.toml",
+        r#"schema_version = 1
+id = "invalid_sat_proof"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "invalid_sat_proof.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "certificate_rejection"
+rejection_reason = "malformed_certificate"
+stable_detail_key = "soundness.certificate.invalid_sat_proof"
+diagnostic_codes = ["E-KERNEL-TEST"]
+spec_refs = ["spec.en.test.certificate"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.certificate"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "advanced_semantics"
+status = "planned"
+required = true
+coverage = "fail"
+tests = []
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    let mut development_config = corpus.config();
+    development_config.validation_mode = ValidationMode::Development;
+
+    let plan = build_test_plan(&development_config).unwrap();
+
+    assert_has_code(&plan, "E-EXPECT-SOUNDNESS-CATEGORY");
+    assert_has_code(&plan, "E-EXPECT-SOUNDNESS-REJECTION-REASON");
+    assert!(plan.diagnostics.iter().any(|diagnostic| {
+        diagnostic.detail_key
+            == "fail_soundness.required_case.soundness.certificate.invalid_sat_proof"
+    }));
+}
+
+#[test]
 fn manifest_paths_must_be_clean_relative_paths() {
     let corpus = Corpus::new();
     corpus.write(
@@ -4209,6 +4541,7 @@ expected_phase = "lex"
 failure_category = "lex_error"
 stable_detail_key = "lexical.synthetic"
 diagnostic_codes = []
+diagnostic_payloads = ["lexical.synthetic"]
 spec_refs = ["{spec_ref}"]
 "#
     )

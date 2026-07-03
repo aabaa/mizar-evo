@@ -18,13 +18,13 @@ per [internal 07](../../internal/en/07.crate_module_layout.md).
 | Module | Spec | Source | Status |
 |---|---|---|---|
 | layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery/pairing and validation-mode unknown-root policy implemented; public API sync pending |
-| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema and profile metadata retention implemented; provenance/general snapshot hardening pending |
+| expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema, profile metadata retention, and fail/soundness rejection gates implemented; provenance/general snapshot hardening pending |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage ids and declared prerequisite validation implemented; richer admission policy pending |
 | traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs, coverage report/status gates, manifest ordering, obsolete-ref checks, and prerequisite credit gates implemented |
 | harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs`, `src/runner.rs` | [~] metadata plan, validation-mode CLI, profile filtering, coverage/pass-fail report, and active parse/declaration/type runners |
 | miz_corpus | [miz_corpus.md](./miz_corpus.md) | corpus tree under `tests/` | [~] roots discovered and pass/fail mix reported; provenance/profile policy rules pending |
 | snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs`, `src/expectation.rs`, `src/runner.rs` | [~] general snapshot record API/hash/update/determinism helpers implemented; sidecar/runner integration pending |
-| fail_soundness | [fail_soundness.md](./fail_soundness.md) | future `src/fail_soundness.rs`, harness rules + corpus cases | [ ] |
+| fail_soundness | [fail_soundness.md](./fail_soundness.md) | `src/expectation.rs`, `src/harness.rs`, future runner cases | [~] metadata contract gates implemented; active proof/certificate/kernel execution paced by future runners |
 | minimal_crate | [minimal_crate.md](./minimal_crate.md) | crate boundary + CLI | [~] metadata plan, validation modes, CLI fixtures, coverage gates, and prerequisite gates implemented |
 
 `mizar-test` is the corpus and harness crate: test discovery, `.expect.toml`
@@ -92,8 +92,10 @@ Follow-up ownership from the audit:
 - `snapshot`: implement the general snapshot module, canonical hashing,
   explicit update flow, and determinism checks beyond the transitional
   parse-only `SurfaceAst` baseline path.
-- `fail_soundness`: add fail/soundness bookkeeping, required-domain checks,
-  false-arithmetic coverage, and weakening/deletion regression rules.
+- `fail_soundness`: task 8 implements fail/soundness metadata bookkeeping,
+  case-level required checks, false-arithmetic stable-key gating, and
+  weakening/deletion diagnostics. Active proof/certificate/kernel execution
+  remains paced by future consumer runners.
 
 ## Ordered Task List
 
@@ -184,7 +186,7 @@ Keep `cargo test -p mizar-test` green after each task (see
      diagnostics.
    - Deps: 6. Spec: [staged_model.md](./staged_model.md) "Stage Rules".
 
-8. **Fail/soundness contract support.** [ ]
+8. **Fail/soundness contract support.** [x]
    - Implement the expected-failure contract of
      [fail_soundness.md](./fail_soundness.md): required-case bookkeeping
      per domain, expected-failure assertions (diagnostic code and stage),
@@ -194,6 +196,11 @@ Keep `cargo test -p mizar-test` green after each task (see
      identity or equivalent validation, false-arithmetic coverage, and
      domain-required case bookkeeping.
    - Tests: contract fixtures; weakening attempts flagged.
+   - Completed: certificate/kernel `rejection_reason` validation, recognized
+     `soundness.*` case shape/profile/phase gates, mode-aware missing-case
+     diagnostics, and false-arithmetic stable-key gating. Real
+     proof/certificate/kernel execution is not fabricated before the owning
+     consumer runners exist.
    - Deps: 6. Spec: [fail_soundness.md](./fail_soundness.md).
 
 9. **Corpus size and review-rule validation.** [ ]

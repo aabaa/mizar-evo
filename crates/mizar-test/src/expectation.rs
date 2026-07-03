@@ -86,6 +86,259 @@ pub struct TokenExpectation {
     pub span_end_col: Option<u32>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct RequiredSoundnessCase {
+    pub key: &'static str,
+    pub domain: &'static str,
+    pub expected_outcome: ExpectedOutcome,
+    pub allowed_failure_categories: &'static [&'static str],
+    pub allowed_rejection_reasons: &'static [&'static str],
+    pub allowed_stages: &'static [Stage],
+    pub allowed_phases: &'static [PipelinePhase],
+    pub requires_fast_profile: bool,
+}
+
+const PROOF_OR_KERNEL_PHASES: &[PipelinePhase] = &[
+    PipelinePhase::Verification,
+    PipelinePhase::CertificateCheck,
+    PipelinePhase::KernelCheck,
+];
+
+const CERTIFICATE_PHASES: &[PipelinePhase] =
+    &[PipelinePhase::CertificateCheck, PipelinePhase::KernelCheck];
+
+const ADVANCED_STAGES: &[Stage] = &[Stage::AdvancedSemantics];
+const PROOF_OR_ADVANCED_STAGES: &[Stage] = &[Stage::ProofVerification, Stage::AdvancedSemantics];
+const PROOF_CERT_OR_KERNEL_CATEGORIES: &[&str] =
+    &["proof_failure", "certificate_rejection", "kernel_rejection"];
+const CERTIFICATE_OR_KERNEL_CATEGORIES: &[&str] = &["certificate_rejection", "kernel_rejection"];
+const KERNEL_REJECTION_CATEGORY: &[&str] = &["kernel_rejection"];
+const CLUSTER_ERROR_CATEGORY: &[&str] = &["cluster_error"];
+const OVERLOAD_ERROR_CATEGORY: &[&str] = &["overload_error"];
+
+pub(crate) const REQUIRED_SOUNDNESS_CASES: &[RequiredSoundnessCase] = &[
+    RequiredSoundnessCase {
+        key: "soundness.false_arithmetic.one_eq_zero",
+        domain: "soundness",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: PROOF_CERT_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &[],
+        allowed_stages: PROOF_OR_ADVANCED_STAGES,
+        allowed_phases: PROOF_OR_KERNEL_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.substitution.variable_capture",
+        domain: "substitution",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: PROOF_CERT_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &["invalid_substitution"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: PROOF_OR_KERNEL_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.substitution.binder_collision",
+        domain: "substitution",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: PROOF_CERT_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &["invalid_substitution"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: PROOF_OR_KERNEL_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.substitution.malformed_substitution",
+        domain: "substitution",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: PROOF_CERT_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &["invalid_substitution"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: PROOF_OR_KERNEL_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.substitution.alpha_conversion_failure",
+        domain: "substitution",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: PROOF_CERT_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &["invalid_substitution"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: PROOF_OR_KERNEL_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.certificate.malformed_certificate",
+        domain: "certificate",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: &["certificate_rejection"],
+        allowed_rejection_reasons: &["malformed_certificate"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: CERTIFICATE_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.certificate.invalid_substitution",
+        domain: "certificate",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: KERNEL_REJECTION_CATEGORY,
+        allowed_rejection_reasons: &["invalid_substitution"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: CERTIFICATE_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.certificate.invalid_sat_proof",
+        domain: "certificate",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: KERNEL_REJECTION_CATEGORY,
+        allowed_rejection_reasons: &["invalid_sat_proof"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: CERTIFICATE_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.certificate.unresolved_symbol",
+        domain: "certificate",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: CERTIFICATE_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &["unresolved_symbol"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: CERTIFICATE_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.certificate.timeout",
+        domain: "certificate",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: CERTIFICATE_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &["timeout"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: CERTIFICATE_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.certificate.resource_exhaustion",
+        domain: "certificate",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: CERTIFICATE_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &["resource_exhaustion"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: CERTIFICATE_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.cluster.infinite_chain",
+        domain: "cluster",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: CLUSTER_ERROR_CATEGORY,
+        allowed_rejection_reasons: &["cluster_loop"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: &[PipelinePhase::ClusterResolution],
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.cluster.cyclic_registration",
+        domain: "cluster",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: CLUSTER_ERROR_CATEGORY,
+        allowed_rejection_reasons: &["cluster_loop"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: &[PipelinePhase::ClusterResolution],
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.cluster.unintended_coercion",
+        domain: "cluster",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: CLUSTER_ERROR_CATEGORY,
+        allowed_rejection_reasons: &["unintended_coercion"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: &[PipelinePhase::ClusterResolution],
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.cluster.hidden_transitive_expansion",
+        domain: "cluster",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: CLUSTER_ERROR_CATEGORY,
+        allowed_rejection_reasons: &["hidden_transitive_expansion"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: &[PipelinePhase::ClusterResolution],
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.overload.ambiguous_notation",
+        domain: "overload",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: OVERLOAD_ERROR_CATEGORY,
+        allowed_rejection_reasons: &["ambiguous_notation"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: &[PipelinePhase::OverloadResolution],
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.overload.hidden_coercion",
+        domain: "overload",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: OVERLOAD_ERROR_CATEGORY,
+        allowed_rejection_reasons: &["hidden_coercion"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: &[PipelinePhase::OverloadResolution],
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.overload.unstable_resolution_order",
+        domain: "overload",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: OVERLOAD_ERROR_CATEGORY,
+        allowed_rejection_reasons: &["unstable_resolution_order"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: &[PipelinePhase::OverloadResolution],
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.dependency.stale_theorem_statement_fingerprint",
+        domain: "dependency",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: PROOF_CERT_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &["stale_theorem_statement_fingerprint"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: PROOF_OR_KERNEL_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.dependency.stale_cluster_semantics",
+        domain: "dependency",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: PROOF_CERT_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &["stale_cluster_semantics"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: PROOF_OR_KERNEL_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.dependency.stale_notation_parse_result",
+        domain: "dependency",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: PROOF_CERT_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &["stale_notation_parse_result"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: PROOF_OR_KERNEL_PHASES,
+        requires_fast_profile: true,
+    },
+    RequiredSoundnessCase {
+        key: "soundness.policy.externally_attested_evidence_rejected",
+        domain: "policy",
+        expected_outcome: ExpectedOutcome::Fail,
+        allowed_failure_categories: PROOF_CERT_OR_KERNEL_CATEGORIES,
+        allowed_rejection_reasons: &["externally_attested_evidence_rejected"],
+        allowed_stages: ADVANCED_STAGES,
+        allowed_phases: PROOF_OR_KERNEL_PHASES,
+        requires_fast_profile: true,
+    },
+];
+
 pub fn parse_expectation_file(path: &Path) -> Result<Expectation, ValidationDiagnostic> {
     let content = fs::read_to_string(path).map_err(|error| {
         ValidationDiagnostic::error(
@@ -592,7 +845,205 @@ pub fn validate_expectation_path(
         }
     }
 
+    validate_fail_soundness_contract(path, expectation, &mut diagnostics);
+
     diagnostics
+}
+
+pub(crate) fn required_soundness_case_for(
+    expectation: &Expectation,
+) -> Option<&'static RequiredSoundnessCase> {
+    expectation
+        .stable_detail_key
+        .as_deref()
+        .and_then(required_soundness_case_by_key)
+}
+
+pub(crate) fn required_soundness_case_by_key(key: &str) -> Option<&'static RequiredSoundnessCase> {
+    REQUIRED_SOUNDNESS_CASES
+        .iter()
+        .find(|required_case| required_case.key == key)
+}
+
+fn validate_fail_soundness_contract(
+    path: &Path,
+    expectation: &Expectation,
+    diagnostics: &mut Vec<ValidationDiagnostic>,
+) {
+    if expectation.expected_outcome == ExpectedOutcome::Fail
+        && certificate_or_kernel_rejection(expectation)
+        && expectation.rejection_reason.is_none()
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "expectation",
+            "E-EXPECT-REJECTION-REASON",
+            "expectation.rejection_reason",
+            "certificate and kernel rejections require `rejection_reason`",
+        ));
+    }
+
+    let Some(stable_detail_key) = expectation.stable_detail_key.as_deref() else {
+        return;
+    };
+    if stable_detail_key.starts_with("soundness.")
+        && required_soundness_case_by_key(stable_detail_key).is_none()
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "expectation",
+            "E-EXPECT-SOUNDNESS-CASE",
+            format!("expectation.soundness_case.{stable_detail_key}"),
+            format!(
+                "soundness stable_detail_key `{stable_detail_key}` is not a required fail/soundness case"
+            ),
+        ));
+        return;
+    }
+
+    let Some(required_case) = required_soundness_case_by_key(stable_detail_key) else {
+        return;
+    };
+    if expectation.domain != required_case.domain {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "expectation",
+            "E-EXPECT-SOUNDNESS-DOMAIN",
+            format!("expectation.soundness_domain.{}", required_case.key),
+            format!(
+                "soundness case `{}` must use domain `{}`",
+                required_case.key, required_case.domain
+            ),
+        ));
+    }
+    if expectation.expected_outcome != required_case.expected_outcome {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "expectation",
+            "E-EXPECT-SOUNDNESS-OUTCOME",
+            format!("expectation.soundness_outcome.{}", required_case.key),
+            format!(
+                "soundness case `{}` must expect `{}`",
+                required_case.key, required_case.expected_outcome
+            ),
+        ));
+    }
+    if expectation.expected_outcome == ExpectedOutcome::Fail {
+        if !required_case.allowed_failure_categories.is_empty()
+            && !expectation
+                .failure_category
+                .as_deref()
+                .is_some_and(|category| {
+                    required_case.allowed_failure_categories.contains(&category)
+                })
+        {
+            diagnostics.push(ValidationDiagnostic::error(
+                path,
+                "expectation",
+                "E-EXPECT-SOUNDNESS-CATEGORY",
+                format!("expectation.soundness_category.{}", required_case.key),
+                format!(
+                    "soundness case `{}` must use one of these failure categories: {}",
+                    required_case.key,
+                    string_list(required_case.allowed_failure_categories)
+                ),
+            ));
+        }
+        if !required_case.allowed_rejection_reasons.is_empty()
+            && !expectation
+                .rejection_reason
+                .as_deref()
+                .is_some_and(|reason| required_case.allowed_rejection_reasons.contains(&reason))
+        {
+            diagnostics.push(ValidationDiagnostic::error(
+                path,
+                "expectation",
+                "E-EXPECT-SOUNDNESS-REJECTION-REASON",
+                format!(
+                    "expectation.soundness_rejection_reason.{}",
+                    required_case.key
+                ),
+                format!(
+                    "soundness case `{}` must use one of these rejection reasons: {}",
+                    required_case.key,
+                    string_list(required_case.allowed_rejection_reasons)
+                ),
+            ));
+        }
+    }
+    if !required_case.allowed_stages.contains(&expectation.stage) {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "expectation",
+            "E-EXPECT-SOUNDNESS-STAGE",
+            format!("expectation.soundness_stage.{}", required_case.key),
+            format!(
+                "soundness case `{}` must use one of these stages: {}",
+                required_case.key,
+                stage_list(required_case.allowed_stages)
+            ),
+        ));
+    }
+    if !expectation
+        .expected_phase
+        .is_some_and(|phase| required_case.allowed_phases.contains(&phase))
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "expectation",
+            "E-EXPECT-SOUNDNESS-PHASE",
+            format!("expectation.soundness_phase.{}", required_case.key),
+            format!(
+                "soundness case `{}` must use one of these expected phases: {}",
+                required_case.key,
+                phase_list(required_case.allowed_phases)
+            ),
+        ));
+    }
+    if required_case.requires_fast_profile
+        && !expectation.profiles.iter().any(|profile| profile == "fast")
+    {
+        diagnostics.push(ValidationDiagnostic::error(
+            path,
+            "expectation",
+            "E-EXPECT-SOUNDNESS-PROFILE",
+            format!("expectation.soundness_profile.{}", required_case.key),
+            format!(
+                "soundness case `{}` must stay in the default fast profile",
+                required_case.key
+            ),
+        ));
+    }
+}
+
+fn certificate_or_kernel_rejection(expectation: &Expectation) -> bool {
+    matches!(
+        expectation.expected_phase,
+        Some(PipelinePhase::CertificateCheck | PipelinePhase::KernelCheck)
+    ) || matches!(
+        expectation.failure_category.as_deref(),
+        Some("certificate_rejection" | "kernel_rejection")
+    )
+}
+
+fn stage_list(stages: &[Stage]) -> String {
+    stages
+        .iter()
+        .map(|stage| stage.as_str())
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn phase_list(phases: &[PipelinePhase]) -> String {
+    phases
+        .iter()
+        .map(|phase| phase.as_str())
+        .collect::<Vec<_>>()
+        .join(", ")
+}
+
+fn string_list(values: &[&str]) -> String {
+    values.join(", ")
 }
 
 pub fn expectation_stem(path: &Path) -> Option<String> {
@@ -715,6 +1166,25 @@ impl FromStr for PipelinePhase {
             "certificate_check" => Ok(Self::CertificateCheck),
             "kernel_check" => Ok(Self::KernelCheck),
             other => Err(format!("unknown expected_phase `{other}`")),
+        }
+    }
+}
+
+impl PipelinePhase {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Lex => "lex",
+            Self::Parse => "parse",
+            Self::Resolve => "resolve",
+            Self::TypeCheck => "type_check",
+            Self::Elaboration => "elaboration",
+            Self::ClusterResolution => "cluster_resolution",
+            Self::OverloadResolution => "overload_resolution",
+            Self::StatementCheck => "statement_check",
+            Self::VcGeneration => "vc_generation",
+            Self::Verification => "verification",
+            Self::CertificateCheck => "certificate_check",
+            Self::KernelCheck => "kernel_check",
         }
     }
 }
