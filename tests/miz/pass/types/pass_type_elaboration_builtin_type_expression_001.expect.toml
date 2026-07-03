@@ -12,4 +12,4 @@ tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.checker.type_elaboration.builtin_type_expression_source_bridge",
 ]
-notes = "Active type_elaboration runner pass coverage for task 16: source-derived builtin set/object TypeExpression payloads are extracted into checker-owned TypeExpressionInput, normalized by TypeNormalizer, and assembled into a minimal TypedAst shell."
+notes = "Active type_elaboration runner pass coverage for task 16 and Campaign II task 17: source-derived builtin set/object TypeExpression payloads are extracted into checker-owned TypeExpressionInput, normalized by TypeNormalizer, assembled into a minimal TypedAst shell, and projected to checker-owned ResolvedTypedAst."

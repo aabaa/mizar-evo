@@ -407,9 +407,10 @@ and resolver symbol collection before checker work.
 The supported source-derived pass slice is limited to builtin `set` and
 `object` type-expression payloads with no attributes, arguments, parameter
 prefixes, or non-builtin symbol heads. Such pass cases must contain at least
-one source site that the runner extracts and normalizes through
-`TypeNormalizer`, must be covered by a pass-slice traceability row, and assert
-empty `diagnostic_codes` with no internal detail payloads:
+one source site that the runner extracts, normalizes through `TypeNormalizer`,
+assembles into `TypedAst`, and projects through `ResolvedTypedAst`; it must be
+covered by a pass-slice traceability row and assert empty `diagnostic_codes`
+with no internal detail payloads:
 
 ```toml
 expected_outcome = "pass"

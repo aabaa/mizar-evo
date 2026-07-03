@@ -385,9 +385,10 @@ resolver symbol collection を実行する。
 
 対応済み source-derived pass slice は、attributes、arguments、parameter prefix、
 non-builtin symbol head を持たない builtin `set` / `object` type-expression payload に
-限定する。この pass case は runner が抽出して `TypeNormalizer` で normalize する
-source site を少なくとも 1 つ含み、pass-slice traceability row に cover され、
-empty `diagnostic_codes` と internal detail payload なしを assert しなければならない。
+限定する。この pass case は runner が抽出して `TypeNormalizer` で normalize し、
+`TypedAst` に組み立て、`ResolvedTypedAst` へ投影する source site を少なくとも 1 つ
+含み、pass-slice traceability row に cover され、empty `diagnostic_codes` と
+internal detail payload なしを assert しなければならない。
 
 ```toml
 expected_outcome = "pass"

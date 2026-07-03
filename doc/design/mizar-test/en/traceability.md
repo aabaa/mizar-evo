@@ -253,14 +253,15 @@ range exists.
 For the type-elaboration stage, coverage is executable only for `.miz`
 sidecars admitted by the active runner gate (`active_type_elaboration`,
 `stage = "type_elaboration"`, `expected_phase = "type_check"`, and pass/fail
-outcome). Task 16 may credit only the narrow builtin type-expression slice:
+outcome). Tasks 16 and 17 may credit only the narrow builtin type-expression slice:
 unrecovered source `TypeExpression` nodes headed by
 `set` or `object` with no attributes, arguments, parameter prefixes, or
 non-builtin symbol heads are converted into checker-owned `TypeExpressionInput`
-payloads, normalized by `mizar-checker`, and assembled into a minimal typed AST
-shell. Active pass tests may cover that slice only when the listed source has
-at least one extracted builtin type-expression site and runner regression
-evidence confirms the `TypeNormalizer` plus minimal `TypedAst` path was
+payloads, normalized by `mizar-checker`, assembled into a minimal typed AST
+shell, and projected into checker-owned `ResolvedTypedAst`. Active pass tests
+may cover that slice only when the listed source has at least one extracted
+builtin type-expression site and runner regression evidence confirms the
+`TypeNormalizer`, minimal `TypedAst`, and `ResolvedTypedAst` paths were
 exercised. The pass slice must have its own traceability row/test instead of
 being credited from the diagnostic external-gap row.
 

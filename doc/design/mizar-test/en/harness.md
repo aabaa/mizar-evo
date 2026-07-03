@@ -143,7 +143,7 @@ No exhaustive public enum exceptions are owned by this module.
 | metadata plan | discover sidecars and validate layout, expectation schema, and traceability without executing payloads |
 | parse-only | run active `.miz` parse-only cases through `mizar-frontend` and `MizarParserSeam` |
 | declaration-symbol | run active `.miz` declaration-symbol cases through frontend parsing and resolver declaration/symbol collection |
-| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, execute the supported source-derived builtin type-expression bridge, and surface unsupported checker payload families as stable external dependency gaps |
+| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, execute the supported source-derived builtin type-expression bridge through checker-owned `ResolvedTypedAst`, and surface unsupported checker payload families as stable external dependency gaps |
 | pass/fail | run `.miz` cases and match expected outcome |
 | snapshot | compare canonical snapshot hashes |
 | determinism | repeat runs and compare artifacts, diagnostics, and hashes |
@@ -162,7 +162,7 @@ fabricated coverage.
 |---|---|---|---|
 | `mizar-parser` task 3 | `parse_only` / `parse-only` | prepared/implemented; active `.miz` pass/fail sidecars use `active_parse_only`, and untagged parse-only metadata stays planned | Keep the transitional `SurfaceAst` snapshot shortcut until the general snapshot runner lands. |
 | `mizar-resolve` task 23 | `declaration_symbol` / `declaration-symbol` | prepared/implemented; active sidecars use `active_declaration_symbol`, public resolver diagnostic-code matching remains gated | Open public diagnostic-code assertions only after resolver diagnostic ranges are specified. |
-| `mizar-checker` task 12 plus task 16 source bridge | `type_elaboration` / `type-elaboration` | prepared/implemented; active sidecars use `active_type_elaboration`, lower stages run first, reserve-only builtin `set`/`object` type expressions are normalized through `mizar-checker`, and unsupported checker payload families stay on `type_elaboration.external_dependency.ast_payload_extraction` | Broader type pass/fail semantic assertions wait for AST-wide source-to-checker payload extraction. |
+| `mizar-checker` task 12 plus task 16 source bridge and Campaign II task 17 | `type_elaboration` / `type-elaboration` | prepared/implemented; active sidecars use `active_type_elaboration`, lower stages run first, reserve-only builtin `set`/`object` type expressions are normalized through `mizar-checker`, assembled into `TypedAst`, projected to checker-owned `ResolvedTypedAst`, and unsupported checker payload families stay on `type_elaboration.external_dependency.ast_payload_extraction` | Broader type pass/fail semantic assertions wait for AST-wide source-to-checker payload extraction. |
 | `mizar-checker` task 29 | `formula_statement` / `advanced_semantics` | paced/open; trace rows are deferred and no active fixture is fabricated | Add runner support only after statement/formula and advanced-semantics source payload seams exist. |
 | `mizar-vc` task 15 | `proof_verification` | paced/open; VC/proof-verification obligations are deferred | Add runner support only after source-to-core/source-to-VC extraction and downstream verification seams exist. |
 | `mizar-atp` task 20 | `advanced_semantics` metadata handoff | paced/open in `mizar-test`; metadata-only property fixtures may be consumed by `mizar-atp` Rust tests | Add active `.miz` ATP runner support only after source-derived ATP extraction and proof-policy/kernel handoff seams exist. |
@@ -250,12 +250,14 @@ After lower stages pass, the runner extracts checker-owned
 nodes in reserve-only sources whose head is the builtin `set` or `object` and
 which have no attributes, arguments, parameter prefixes, or non-builtin symbol
 heads. Those payloads are normalized by `mizar-checker`'s `TypeNormalizer`
-against the collected `SymbolEnv` and assembled into a minimal checker-owned
-`TypedAst` shell with type-entry links. Active pass cases may assert this
-supported source-derived slice with empty detail keys only when the source
-contains at least one supported builtin `TypeExpression` site and runner
-regression evidence confirms that normalization and minimal `TypedAst` assembly
-were exercised.
+against the collected `SymbolEnv`, assembled into a minimal checker-owned
+`TypedAst` shell with type-entry links, and projected into checker-owned
+`ResolvedTypedAst` using empty-but-real cluster/overload predecessor outputs
+plus source-preserved node hints and expression metadata. Active pass cases may
+assert this supported source-derived slice with empty detail keys only when the
+source contains at least one supported builtin `TypeExpression` site and runner
+regression evidence confirms that normalization, `TypedAst` assembly, and
+`ResolvedTypedAst` assembly were exercised.
 
 The runner still does not fabricate the missing AST-wide source-to-checker
 bridge. Parsed/resolved `.miz` declarations, terms, formulas, coercion sites,

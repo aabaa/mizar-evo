@@ -239,8 +239,9 @@ Keep `cargo test -p mizar-test` green after each task (see
       all planned consumer runners land.
     - Current task-10 ledger records `mizar-parser` task 3 (`parse-only`),
       `mizar-resolve` task 23 (`declaration-symbol`), `mizar-checker` task 12
-      (`type-elaboration` external-gap runner), and task 16
-      (source-derived builtin type-expression normalization) as
+      (`type-elaboration` external-gap runner), task 16
+      (source-derived builtin type-expression normalization), and task 17
+      (source-derived builtin type-expression projection to `ResolvedTypedAst`) as
       prepared/implemented increments. Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
       `paced/open`; no placeholder runner or fake active fixture is created for
@@ -340,6 +341,23 @@ Keep `cargo test -p mizar-test` green after each task (see
     - Deps: 10, `mizar-checker` task 12. Spec: [harness.md](./harness.md),
       [expectation_schema.md](./expectation_schema.md),
       [traceability.md](./traceability.md), checker MC-G020.
+
+17. **Source-derived builtin `ResolvedTypedAst` bridge.** [x]
+    - Completed: extends the task-16 active `type_elaboration` source bridge
+      so the normalized builtin `set`/`object` type-expression payloads are
+      assembled into `TypedAst` and then projected through
+      `ResolvedTypedAst::assemble` with real checker-owned expression metadata,
+      source-preserved node hints, and empty cluster/overload predecessor
+      outputs. The runner verifies that every supported source type site
+      reaches a resolved node, expression metadata, and a final type without
+      diagnostics.
+    - Keep declaration extraction, non-builtin type heads, attributes, terms,
+      formulas, overload candidates, cluster facts, proof evidence, CoreIr,
+      ControlFlowIr, VC seeds, and `proof_verification` rows deferred until
+      their producer/consumer seams are executable. Do not add fake active
+      fixtures, public checker diagnostic codes, or Core/VC payloads.
+    - Deps: 16, `mizar-checker` task 28. Spec: [harness.md](./harness.md),
+      checker `resolved_typed_ast.md`, checker MC-G020/MC-G027.
 
 ## Recommended Verification
 

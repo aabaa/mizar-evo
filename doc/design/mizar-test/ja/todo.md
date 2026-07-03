@@ -238,7 +238,8 @@ regression test を追加した。
     - 現在の task-10 ledger は、`mizar-parser` task 3（`parse-only`）、
       `mizar-resolve` task 23（`declaration-symbol`）、`mizar-checker` task 12
       （`type-elaboration` external-gap runner）、task 16（source-derived
-      builtin type-expression normalization）を prepared/implemented increments
+      builtin type-expression normalization）、task 17（source-derived
+      builtin type-expression projection to `ResolvedTypedAst`）を prepared/implemented increments
       として記録する。checker task 29、`mizar-vc` task 15、`mizar-atp` task 20、
       `mizar-kernel` task 17 は `paced/open` として記録し、placeholder runner や
       fake active fixture は作らない。
@@ -331,6 +332,21 @@ regression test を追加した。
     - 依存: 10、`mizar-checker` task 12。仕様: [harness.md](./harness.md),
       [expectation_schema.md](./expectation_schema.md),
       [traceability.md](./traceability.md)、checker MC-G020。
+
+17. **Source-derived builtin `ResolvedTypedAst` bridge。** [x]
+    - 完了: task 16 の active `type_elaboration` source bridge を拡張し、
+      normalized builtin `set` / `object` type-expression payload を `TypedAst` に
+      組み立てた後、real checker-owned expression metadata、source-preserved node hint、
+      empty cluster/overload predecessor output により `ResolvedTypedAst::assemble` へ
+      投影する。runner は対応済み source type site がすべて resolved node、
+      expression metadata、final type に diagnostic なしで到達することを確認する。
+    - declaration extraction、non-builtin type head、attribute、term、formula、
+      overload candidate、cluster fact、proof evidence、CoreIr、ControlFlowIr、
+      VC seed、`proof_verification` row は producer/consumer seam が実行可能になるまで
+      deferred のままにする。fake active fixture、public checker diagnostic code、
+      Core/VC payload を追加しない。
+    - 依存: 16、`mizar-checker` task 28。仕様: [harness.md](./harness.md)、
+      checker `resolved_typed_ast.md`、checker MC-G020/MC-G027。
 
 ## 推奨検証
 

@@ -232,14 +232,15 @@ diagnostic code が未仕様の間、fail coverage は resolver internal detail 
 
 type-elaboration stage では、active runner gate（`active_type_elaboration`、
 `stage = "type_elaboration"`、`expected_phase = "type_check"`、pass/fail outcome）
-を満たす `.miz` sidecar だけが executable coverage になる。task 16 が credit して
-よいのは狭い builtin type-expression slice だけである。
+を満たす `.miz` sidecar だけが executable coverage になる。task 16 と task 17 が
+credit してよいのは狭い builtin type-expression slice だけである。
 つまり unrecovered な source `TypeExpression` node のうち、`set` または `object`
 を head とし、attributes、arguments、parameter prefix、non-builtin symbol head を
 持たないものを checker-owned `TypeExpressionInput` payload に変換し、
-`mizar-checker` で normalize し、最小の typed AST shell に組み立てる。active pass
-test は、listed source が少なくとも 1 個の抽出済み builtin type-expression site を
-持ち、runner regression evidence が `TypeNormalizer` と最小 `TypedAst` path の実行を
+`mizar-checker` で normalize し、最小の typed AST shell に組み立てたうえで
+checker-owned `ResolvedTypedAst` へ投影する。active pass test は、listed source が
+少なくとも 1 個の抽出済み builtin type-expression site を持ち、runner regression
+evidence が `TypeNormalizer`、最小 `TypedAst`、`ResolvedTypedAst` path の実行を
 確認する場合だけ、この slice を cover してよい。pass slice は diagnostic
 external-gap row から credit せず、専用の traceability row/test を持たなければならない。
 

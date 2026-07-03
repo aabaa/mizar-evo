@@ -5,6 +5,18 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use mizar_checker::cluster_trace::ClusterFactTable;
+use mizar_checker::overload_resolution::{
+    CandidateViabilityInput, CandidateViabilityOutput, OverloadCandidateInput,
+    OverloadCollectionOutput, OverloadSelectionOutput, OverloadSiteInput,
+    OverloadSiteResolutionInput, SpecificityComparisonInput, SpecificityGraphOutput,
+    TemplateExpansionOutput,
+};
+use mizar_checker::resolved_typed_ast::{
+    ExprId, ExpressionMetadataInput, ResolvedNodeKindHint, ResolvedNodeKindHintKind,
+    ResolvedTypedAst, ResolvedTypedAstInputs, ResolvedTypedNodeId, ResolvedTypedNodeKind,
+    SourceNodeRole,
+};
 use mizar_checker::type_checker::{TypeExpressionInput, TypeHeadInput, TypeNormalizer};
 use mizar_checker::typed_ast::{
     CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState, TypeFactTable,
@@ -699,8 +711,27 @@ fn source_type_elaboration_detail_keys(
     if output.type_entries().len() != source_types.len() {
         return vec!["type_elaboration.checker.type_entry_count_mismatch".to_owned()];
     }
-    if assemble_source_typed_ast(ast.source_id, module, &source_types, &output).is_err() {
-        return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()];
+    let typed_ast = match assemble_source_typed_ast(ast.source_id, module, &source_types, &output) {
+        Ok(typed_ast) => typed_ast,
+        Err(_) => return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()],
+    };
+    let resolved = match assemble_source_resolved_typed_ast(&typed_ast, &source_types) {
+        Ok(resolved) => resolved,
+        Err(_) => {
+            return vec!["type_elaboration.checker.resolved_typed_ast_invalid".to_owned()];
+        }
+    };
+    if let Err(error) = assert_source_resolved_typed_ast_handoff(&resolved, &source_types) {
+        let detail_key = match error.as_str() {
+            "resolved source type count mismatch" => {
+                "type_elaboration.checker.resolved_typed_ast_count_mismatch"
+            }
+            "resolved typed AST produced diagnostics" => {
+                "type_elaboration.checker.resolved_typed_ast_diagnostics"
+            }
+            _ => "type_elaboration.checker.resolved_typed_ast_invalid",
+        };
+        return vec![detail_key.to_owned()];
     }
     Vec::new()
 }
@@ -783,12 +814,127 @@ fn subtree_has_recovery(ast: &SurfaceAst, node: &SurfaceNode) -> bool {
             .any(|child| subtree_has_recovery(ast, child))
 }
 
+fn assemble_source_resolved_typed_ast(
+    typed_ast: &TypedAst,
+    source_types: &[SourceTypeExpression],
+) -> Result<ResolvedTypedAst, String> {
+    let cluster_facts = ClusterFactTable::new();
+    let overload_collection = OverloadCollectionOutput::collect(
+        Vec::<OverloadSiteInput>::new(),
+        Vec::<OverloadCandidateInput>::new(),
+    );
+    let template_expansion = TemplateExpansionOutput::expand(&overload_collection);
+    let viability = CandidateViabilityOutput::filter(
+        &template_expansion,
+        Vec::<CandidateViabilityInput>::new(),
+    );
+    let specificity =
+        SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
+    let overload_selection =
+        OverloadSelectionOutput::resolve(&specificity, Vec::<OverloadSiteResolutionInput>::new());
+    let expressions = source_types
+        .iter()
+        .enumerate()
+        .map(|(index, _)| ExpressionMetadataInput {
+            expr: ExprId::new(format!("source.type_expression.{index}")),
+            typed_site: TypedSiteRef::Node(TypedNodeId::new(index)),
+            local_context: None,
+            cluster_facts: Vec::new(),
+        })
+        .collect();
+    let node_hints = source_types
+        .iter()
+        .enumerate()
+        .map(|(index, _)| ResolvedNodeKindHint {
+            typed_node: TypedNodeId::new(index),
+            kind: ResolvedNodeKindHintKind::SourcePreserved {
+                role: SourceNodeRole::new("source.type_expression"),
+            },
+        })
+        .collect();
+
+    ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
+        typed_ast,
+        cluster_facts: &cluster_facts,
+        overload_collection: &overload_collection,
+        template_expansion: &template_expansion,
+        viability: &viability,
+        specificity: &specificity,
+        overload_selection: &overload_selection,
+        expressions,
+        node_hints,
+    })
+    .map_err(|error| error.to_string())
+}
+
+fn assert_source_resolved_typed_ast_handoff(
+    resolved: &ResolvedTypedAst,
+    source_types: &[SourceTypeExpression],
+) -> Result<(), String> {
+    if resolved.nodes().len() != source_types.len()
+        || resolved.expr_metadata().len() != source_types.len()
+    {
+        return Err("resolved source type count mismatch".to_owned());
+    }
+    for (index, source_type) in source_types.iter().enumerate() {
+        let node = resolved
+            .nodes()
+            .node(ResolvedTypedNodeId::new(index))
+            .ok_or_else(|| format!("missing resolved node {index}"))?;
+        if node.source_range != source_type.range {
+            return Err(format!("resolved node {index} source range mismatch"));
+        }
+        match &node.kind {
+            ResolvedTypedNodeKind::SourcePreserved { role }
+                if role.as_str() == "source.type_expression" => {}
+            _ => return Err(format!("resolved node {index} source role mismatch")),
+        }
+        let expr = ExprId::new(format!("source.type_expression.{index}"));
+        let metadata = resolved
+            .expr_metadata()
+            .get_by_expr(&expr)
+            .ok_or_else(|| format!("missing expression metadata {}", expr.as_str()))?;
+        if metadata.source_range != source_type.range {
+            return Err(format!(
+                "expression metadata {} source range mismatch",
+                expr.as_str()
+            ));
+        }
+        if metadata.final_type.is_none() {
+            return Err(format!(
+                "expression metadata {} is missing a final type",
+                expr.as_str()
+            ));
+        }
+    }
+    if !resolved.diagnostics().is_empty() {
+        return Err("resolved typed AST produced diagnostics".to_owned());
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+fn assemble_source_checker_handoff(
+    source_id: mizar_session::SourceId,
+    module: ResolverModuleId,
+    source_types: &[SourceTypeExpression],
+    output: &mizar_checker::type_checker::TypeNormalizationOutput,
+) -> Result<(TypedAst, ResolvedTypedAst), String> {
+    let typed_ast = assemble_source_typed_ast(source_id, module, source_types, output)?;
+    let resolved = assemble_source_resolved_typed_ast(&typed_ast, source_types)?;
+    assert_source_resolved_typed_ast_handoff(&resolved, source_types)?;
+    Ok((typed_ast, resolved))
+}
+
 fn assemble_source_typed_ast(
     source_id: mizar_session::SourceId,
     module: ResolverModuleId,
     source_types: &[SourceTypeExpression],
     output: &mizar_checker::type_checker::TypeNormalizationOutput,
 ) -> Result<TypedAst, String> {
+    if source_types.is_empty() {
+        return Err("source type bridge produced no type expressions".to_owned());
+    }
     let mut type_entries_by_node = BTreeMap::new();
     for (entry_id, entry) in output.type_entries().iter() {
         if let TypedSiteRef::Node(node_id) = &entry.owner {
@@ -1302,16 +1448,23 @@ impl fmt::Display for TypeElaborationCaseStatus {
 
 #[cfg(test)]
 mod tests {
-    use super::{ParseOnlyImportProvider, extract_builtin_source_type_expressions};
-    use mizar_checker::type_checker::TypeHeadInput;
+    use super::{
+        ParseOnlyImportProvider, assemble_source_checker_handoff,
+        extract_builtin_source_type_expressions,
+    };
+    use mizar_checker::resolved_typed_ast::{ResolvedTypedNodeId, ResolvedTypedNodeKind};
+    use mizar_checker::type_checker::{TypeExpressionInput, TypeHeadInput, TypeNormalizer};
+    use mizar_checker::typed_ast::{TypedNodeId, TypedSiteRef};
     use mizar_frontend::lexical_env::{
         ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
         LexicalEnvironmentRequest, LexicalSummaryProvider, UserSymbolKind,
     };
     use mizar_frontend::preprocess::{ImportStub, ImportStubPath};
+    use mizar_resolve::env::{SymbolEnv, SymbolEnvIndexes};
+    use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
     use mizar_session::{
-        BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
-        SourceRange,
+        BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, ModulePath, PackageId,
+        SessionIdAllocator, SourceId, SourceRange,
     };
     use mizar_syntax::{SurfaceAst, SurfaceAstBuilder, SurfaceNodeKind, SurfaceTokenKind};
     use std::sync::Arc;
@@ -1478,6 +1631,64 @@ mod tests {
             extract_builtin_source_type_expressions(&unsupported).is_err(),
             "attribute-bearing type expressions must stay on the external gap"
         );
+    }
+
+    #[test]
+    fn source_type_bridge_assembles_resolved_typed_ast_handoff() {
+        let source_id = source_id(94);
+        let ast = simple_type_ast(
+            source_id,
+            &[
+                ("set", SurfaceTokenKind::ReservedWord),
+                ("object", SurfaceTokenKind::ReservedWord),
+            ],
+        );
+        let source_types =
+            extract_builtin_source_type_expressions(&ast).expect("builtin type AST should extract");
+        let inputs = source_types
+            .iter()
+            .enumerate()
+            .map(|(index, source_type)| {
+                TypeExpressionInput::new(
+                    TypedSiteRef::Node(TypedNodeId::new(index)),
+                    source_type.range,
+                    source_type.spelling.clone(),
+                    source_type.head.clone(),
+                )
+            })
+            .collect::<Vec<_>>();
+        let module = ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let output = TypeNormalizer::default().normalize(&symbols, inputs);
+
+        let (_typed_ast, resolved) =
+            assemble_source_checker_handoff(source_id, module, &source_types, &output)
+                .expect("source-derived checker handoff should reach ResolvedTypedAst");
+
+        assert_eq!(resolved.nodes().len(), 2);
+        assert_eq!(resolved.expr_metadata().len(), 2);
+        assert!(resolved.diagnostics().is_empty());
+        for index in 0..source_types.len() {
+            let node = resolved
+                .nodes()
+                .node(ResolvedTypedNodeId::new(index))
+                .expect("resolved node should be present");
+            match &node.kind {
+                ResolvedTypedNodeKind::SourcePreserved { role } => {
+                    assert_eq!(role.as_str(), "source.type_expression");
+                }
+                other => panic!("unexpected resolved node kind: {other:?}"),
+            }
+            let expr = mizar_checker::resolved_typed_ast::ExprId::new(format!(
+                "source.type_expression.{index}"
+            ));
+            let metadata = resolved
+                .expr_metadata()
+                .get_by_expr(&expr)
+                .expect("expression metadata should be present");
+            assert!(metadata.final_type.is_some());
+        }
+        assert!(resolved.debug_text().contains("source.type_expression"));
     }
 
     fn import_stub(source_id: SourceId, spelling: &str, start: usize, end: usize) -> ImportStub {
