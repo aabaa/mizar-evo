@@ -116,6 +116,22 @@ plan と validation diagnostics を共有する。
 | fuzz-regression | minimized fuzz cases を ordinary committed tests として run |
 | update | 明示要求された場合のみ snapshots を rewrite |
 
+## Consumer Runner Pacing
+
+task 10 は consumer crate と runner support を 1 increment ずつ同期する。
+prepared increments は実装・検証済みにし、未準備 consumer は placeholder runner
+mode、fake active fixture、fabricated coverage を作らず `paced/open` のままにする。
+
+| Consumer task | Stage / runner | mizar-test status | Next condition |
+|---|---|---|---|
+| `mizar-parser` task 3 | `parse_only` / `parse-only` | prepared/implemented。active `.miz` pass/fail sidecars は `active_parse_only` を使い、tag のない parse-only metadata は planned のまま | general snapshot runner が着地するまで transitional `SurfaceAst` snapshot shortcut を保つ。 |
+| `mizar-resolve` task 23 | `declaration_symbol` / `declaration-symbol` | prepared/implemented。active sidecars は `active_declaration_symbol` を使い、public resolver diagnostic-code matching は gate されたまま | resolver diagnostic range が仕様化された後に public diagnostic-code assertions を開く。 |
+| `mizar-checker` task 12 | `type_elaboration` / `type-elaboration` | external-gap runner として prepared/implemented。active sidecars は `active_type_elaboration` を使い、lower stages が pass した後に `type_elaboration.external_dependency.ast_payload_extraction` を report する | real type pass/fail semantic assertions は source-to-checker payload extraction を待つ。 |
+| `mizar-checker` task 29 | `formula_statement` / `advanced_semantics` | paced/open。trace rows は deferred であり、active fixture は捏造しない | statement/formula と advanced-semantics source payload seams が存在した後に runner support を追加する。 |
+| `mizar-vc` task 15 | `proof_verification` | paced/open。VC/proof-verification obligations は deferred | source-to-core/source-to-VC extraction と downstream verification seams が存在した後に runner support を追加する。 |
+| `mizar-atp` task 20 | `advanced_semantics` metadata handoff | `mizar-test` では paced/open。metadata-only property fixtures は `mizar-atp` Rust tests が消費してよい | source-derived ATP extraction と proof-policy/kernel handoff seams が存在した後に active `.miz` ATP runner support を追加する。 |
+| `mizar-kernel` task 17 | proof/certificate/kernel evidence | paced/open。fail/soundness metadata は active proof/certificate/kernel execution なしで検証する | source-to-evidence または certificate execution seams が存在した後に runner support を追加する。 |
+
 ## Algorithm / Logic
 
 1. `layout` を通して、known payload roots `miz`、`lexical`、

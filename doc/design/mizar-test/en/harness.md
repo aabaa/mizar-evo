@@ -116,6 +116,23 @@ plan and validation diagnostics shown above.
 | fuzz-regression | run minimized fuzz cases as ordinary committed tests |
 | update | rewrite snapshots only when explicitly requested |
 
+## Consumer Runner Pacing
+
+Task 10 keeps runner support synchronized with consumer crates one increment at
+a time. Prepared increments are implemented and verified; unprepared consumers
+stay `paced/open` without placeholder runner modes, fake active fixtures, or
+fabricated coverage.
+
+| Consumer task | Stage / runner | mizar-test status | Next condition |
+|---|---|---|---|
+| `mizar-parser` task 3 | `parse_only` / `parse-only` | prepared/implemented; active `.miz` pass/fail sidecars use `active_parse_only`, and untagged parse-only metadata stays planned | Keep the transitional `SurfaceAst` snapshot shortcut until the general snapshot runner lands. |
+| `mizar-resolve` task 23 | `declaration_symbol` / `declaration-symbol` | prepared/implemented; active sidecars use `active_declaration_symbol`, public resolver diagnostic-code matching remains gated | Open public diagnostic-code assertions only after resolver diagnostic ranges are specified. |
+| `mizar-checker` task 12 | `type_elaboration` / `type-elaboration` | prepared/implemented as an external-gap runner; active sidecars use `active_type_elaboration` and report `type_elaboration.external_dependency.ast_payload_extraction` after lower stages pass | Real type pass/fail semantic assertions wait for source-to-checker payload extraction. |
+| `mizar-checker` task 29 | `formula_statement` / `advanced_semantics` | paced/open; trace rows are deferred and no active fixture is fabricated | Add runner support only after statement/formula and advanced-semantics source payload seams exist. |
+| `mizar-vc` task 15 | `proof_verification` | paced/open; VC/proof-verification obligations are deferred | Add runner support only after source-to-core/source-to-VC extraction and downstream verification seams exist. |
+| `mizar-atp` task 20 | `advanced_semantics` metadata handoff | paced/open in `mizar-test`; metadata-only property fixtures may be consumed by `mizar-atp` Rust tests | Add active `.miz` ATP runner support only after source-derived ATP extraction and proof-policy/kernel handoff seams exist. |
+| `mizar-kernel` task 17 | proof/certificate/kernel evidence | paced/open; fail/soundness metadata is validated without active proof/certificate/kernel execution | Add runner support only after source-to-evidence or certificate execution seams exist. |
+
 ## Algorithm / Logic
 
 1. Discover tests through `layout` under the known payload roots

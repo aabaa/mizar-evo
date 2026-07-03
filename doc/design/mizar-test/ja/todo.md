@@ -235,6 +235,12 @@ regression test を追加した。
       diagnostic range が未仕様の間の public-code gate、summary reporting、
       traceable seed fixture 2 件を追加した。この task は予定されたすべての
       消費側 runner が着地するまで open のままにする。
+    - 現在の task-10 ledger は、`mizar-parser` task 3（`parse-only`）、
+      `mizar-resolve` task 23（`declaration-symbol`）、`mizar-checker` task 12
+      （`type-elaboration`）を prepared/implemented increments として記録する。
+      checker task 29、`mizar-vc` task 15、`mizar-atp` task 20、`mizar-kernel`
+      task 17 は `paced/open` として記録し、placeholder runner や fake active
+      fixture は作らない。
     - 依存: 5、8。仕様: [harness.md](./harness.md)。
 
 11. **決定性スイート。** [ ]

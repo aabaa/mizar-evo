@@ -237,6 +237,12 @@ Keep `cargo test -p mizar-test` green after each task (see
       gating while resolver diagnostic ranges are unspecified, summary
       reporting, and two traceable seed fixtures. This task stays open until
       all planned consumer runners land.
+    - Current task-10 ledger records `mizar-parser` task 3 (`parse-only`),
+      `mizar-resolve` task 23 (`declaration-symbol`), and `mizar-checker` task
+      12 (`type-elaboration`) as prepared/implemented increments. Checker task
+      29, `mizar-vc` task 15, `mizar-atp` task 20, and `mizar-kernel` task 17
+      are recorded as `paced/open`; no placeholder runner or fake active
+      fixture is created for them.
     - Deps: 5, 8. Spec: [harness.md](./harness.md).
 
 11. **Determinism suite.** [ ]
