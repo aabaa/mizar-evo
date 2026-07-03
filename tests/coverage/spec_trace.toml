@@ -1358,6 +1358,18 @@ deferred_reason = "Task 15 records this as an external_dependency_gap rather tha
 tests = []
 
 [[requirement]]
+id = "spec.en.architecture_22.regression_matrix.metadata"
+source = "doc/design/architecture/en/22.incremental_verification_contract.md"
+section = "Architecture-22 incremental/parallel verification regression matrix metadata"
+stage = "advanced_semantics"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/property/architecture22_matrix_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.binding.substitution.capture_avoidance"
 source = "doc/design/architecture/en/16.substitution_and_binding.md"
 section = "Definition-Time Closures"

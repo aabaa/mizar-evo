@@ -118,6 +118,33 @@ fn print_plan_report(plan: &TestPlan) {
         "pass/fail mix: pass={} fail={} total={} target_pass={} target_fail={}",
         mix.pass, mix.fail, mix.total, mix.target_pass_percent, mix.target_fail_percent
     );
+    let matrix = &plan.coverage_report.architecture22_matrix;
+    let planned = matrix
+        .scenarios
+        .iter()
+        .map(|scenario| scenario.planned)
+        .sum::<usize>();
+    let active = matrix
+        .scenarios
+        .iter()
+        .map(|scenario| scenario.active)
+        .sum::<usize>();
+    println!(
+        "architecture22 matrix: scenarios={} planned={} active={} missing={}",
+        matrix.scenarios.len(),
+        planned,
+        active,
+        matrix.missing_scenarios.len()
+    );
+    for scenario in &matrix.scenarios {
+        if scenario.planned == 0 && scenario.active == 0 {
+            continue;
+        }
+        println!(
+            "architecture22 scenario {}: class={} planned={} active={}",
+            scenario.scenario_id, scenario.equivalence_class, scenario.planned, scenario.active
+        );
+    }
 }
 
 fn run_parse_only(config: &DiscoveryConfig) -> Result<ExitCode, String> {

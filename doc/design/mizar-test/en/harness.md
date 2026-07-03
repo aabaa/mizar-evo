@@ -28,6 +28,7 @@ pub struct CoverageReport {
     pub requirements: Vec<RequirementCoverage>,
     pub stages: Vec<StageCoverage>,
     pub pass_fail_mix: PassFailMix,
+    pub architecture22_matrix: Architecture22MatrixReport,
 }
 
 pub struct RequirementCoverage {
@@ -58,6 +59,18 @@ pub struct PassFailMix {
     pub total: usize,
     pub target_pass_percent: u8,
     pub target_fail_percent: u8,
+}
+
+pub struct Architecture22MatrixReport {
+    pub scenarios: Vec<Architecture22ScenarioReport>,
+    pub missing_scenarios: Vec<String>,
+}
+
+pub struct Architecture22ScenarioReport {
+    pub scenario_id: String,
+    pub equivalence_class: String,
+    pub planned: usize,
+    pub active: usize,
 }
 
 pub struct TestCase {
@@ -253,6 +266,14 @@ parse general `[[snapshots]]` sidecar entries or run a general snapshot/update
 subcommand. The active parse-only `SurfaceAst` shortcut remains the only
 snapshot path wired into runner execution.
 
+Architecture-22 matrix support is metadata/reporting-only in task 14. The
+metadata plan validates `architecture22_scenarios`,
+`architecture22_equivalence_class`, and `architecture22_gate`, then reports the
+registry class plus planned/active counts for each required scenario. All
+task-14 scenario rows have no active eligibility, so `architecture22_gate =
+"active"` is rejected until a future consumer-specific increment wires real
+clean/incremental/parallel/cache-race execution.
+
 ## Determinism Requirements
 
 The harness checks that identical inputs produce:
@@ -297,6 +318,8 @@ Key scenarios:
 - repeated run produces a different diagnostic order;
 - generic snapshot parallel equivalence produces the same observable artifact
   as sequential snapshot generation.
+- architecture-22 matrix metadata reports all required scenario ids as planned
+  and rejects fake active rows before an owning consumer runner exists.
 
 ## Constraints and Assumptions
 

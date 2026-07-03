@@ -5,14 +5,16 @@ use std::str::FromStr;
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
 use crate::expectation::{
-    Expectation, ExpectedOutcome, REQUIRED_SOUNDNESS_CASES, TestCaseId, parse_expectation_file,
-    required_soundness_case_for, validate_expectation_path,
+    Architecture22Gate, Expectation, ExpectedOutcome, REQUIRED_SOUNDNESS_CASES, TestCaseId,
+    architecture22_scenario_specs, parse_expectation_file, required_soundness_case_for,
+    validate_expectation_path,
 };
 use crate::layout;
 use crate::path_rules::{absolute_from, clean_relative_path};
 use crate::traceability::{
-    CoverageEvidence, CoverageReport, CoverageShape, PassFailMix, RequirementCoverage,
-    RequirementStatus, TraceManifest, parse_trace_manifest, validate_manifest,
+    Architecture22MatrixReport, Architecture22ScenarioReport, CoverageEvidence, CoverageReport,
+    CoverageShape, PassFailMix, RequirementCoverage, RequirementStatus, TraceManifest,
+    parse_trace_manifest, validate_manifest,
 };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -252,6 +254,7 @@ pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessErro
     let base_coverage_report = manifest.coverage_report(
         &base_coverage_evidence,
         corpus_pass_fail_mix(&all_cases, &base_invalid_expectation_paths),
+        architecture22_matrix_report(&all_cases, &base_invalid_expectation_paths),
     );
     diagnostics.extend(validate_stage_prerequisite_links(
         &config.workspace_root,
@@ -271,6 +274,7 @@ pub fn build_test_plan(config: &DiscoveryConfig) -> Result<TestPlan, HarnessErro
     let coverage_report = manifest.coverage_report(
         &coverage_evidence,
         corpus_pass_fail_mix(&all_cases, &invalid_expectation_paths),
+        architecture22_matrix_report(&all_cases, &invalid_expectation_paths),
     );
     diagnostics.extend(validate_coverage_report(
         &config.manifest_path,
@@ -641,6 +645,56 @@ fn corpus_pass_fail_mix(
         total: pass + fail,
         target_pass_percent: 40,
         target_fail_percent: 60,
+    }
+}
+
+fn architecture22_matrix_report(
+    cases: &[TestCase],
+    invalid_expectation_paths: &BTreeSet<PathBuf>,
+) -> Architecture22MatrixReport {
+    let mut by_scenario = architecture22_scenario_specs()
+        .iter()
+        .map(|scenario| {
+            (
+                scenario.id.to_owned(),
+                Architecture22ScenarioReport {
+                    scenario_id: scenario.id.to_owned(),
+                    equivalence_class: scenario.equivalence_class.to_owned(),
+                    planned: 0,
+                    active: 0,
+                },
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+
+    for case in cases {
+        if invalid_expectation_paths.contains(&case.expectation_path) {
+            continue;
+        }
+        let Some(metadata) = &case.expectation.architecture22 else {
+            continue;
+        };
+        for scenario in &metadata.scenarios {
+            let Some(row) = by_scenario.get_mut(scenario) else {
+                continue;
+            };
+            match metadata.gate {
+                Architecture22Gate::Planned => row.planned += 1,
+                Architecture22Gate::Active => row.active += 1,
+            }
+        }
+    }
+
+    let scenarios = by_scenario.into_values().collect::<Vec<_>>();
+    let missing_scenarios = scenarios
+        .iter()
+        .filter(|scenario| scenario.planned == 0 && scenario.active == 0)
+        .map(|scenario| scenario.scenario_id.clone())
+        .collect();
+
+    Architecture22MatrixReport {
+        scenarios,
+        missing_scenarios,
     }
 }
 

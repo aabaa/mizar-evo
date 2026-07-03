@@ -20,8 +20,8 @@ per [internal 07](../../internal/en/07.crate_module_layout.md).
 | layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery/pairing and validation-mode unknown-root policy implemented; public API sync pending |
 | expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema, profile/provenance metadata retention, and fail/soundness rejection gates implemented; general snapshot hardening pending |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage ids and declared prerequisite validation implemented; richer admission policy pending |
-| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs, coverage report/status gates, manifest ordering, obsolete-ref checks, and prerequisite credit gates implemented |
-| harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs`, `src/runner.rs` | [~] metadata plan, validation-mode CLI, profile filtering, coverage/pass-fail report, and active parse/declaration/type runners |
+| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs, coverage report/status gates, manifest ordering, obsolete-ref checks, prerequisite credit gates, and architecture-22 matrix summary implemented |
+| harness | [harness.md](./harness.md) | `src/harness.rs`, `src/main.rs`, `src/runner.rs` | [~] metadata plan, validation-mode CLI, profile filtering, coverage/pass-fail/matrix report, and active parse/declaration/type runners |
 | miz_corpus | [miz_corpus.md](./miz_corpus.md) | corpus tree under `tests/` | [~] roots discovered, pass/fail mix reported, provenance/profile policy rules validated; future corpus classes pending |
 | snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs`, `src/expectation.rs`, `src/runner.rs` | [~] general snapshot record API/hash/update/determinism helpers implemented; sidecar/runner integration pending |
 | fail_soundness | [fail_soundness.md](./fail_soundness.md) | `src/expectation.rs`, `src/harness.rs`, future runner cases | [~] metadata contract gates implemented; active proof/certificate/kernel execution paced by future runners |
@@ -273,11 +273,11 @@ Keep `cargo test -p mizar-test` green after each task (see
       `doc/design/mizar-test/en/` with its Japanese companion and
       synchronize content.
     - Completion: [bilingual_sync_audit.md](./bilingual_sync_audit.md)
-      records the paired-file audit and confirms task 14 remains open and
-      unstarted.
+      records the task-13 paired-file audit; task 14 completion is recorded
+      below.
     - Deps: 12. Spec: repository documentation policy.
 
-14. **Incremental/parallel verification regression matrix.** [ ]
+14. **Incremental/parallel verification regression matrix.** [x]
     - Add corpus/harness metadata and reporting support for the architecture-22
       regression matrix, while keeping this crate pipeline-free. Consumer
       crates execute the cases, but `mizar-test` owns the scenario ids,
@@ -297,6 +297,13 @@ Keep `cargo test -p mizar-test` green after each task (see
     - Deps: 10, 11. Spec:
       [20.test_strategy.md](../../architecture/en/20.test_strategy.md),
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md).
+    - Completion: task 14 adds the architecture-22 scenario registry,
+      sidecar metadata validation, deterministic plan/report summary, and the
+      metadata-only `tests/property/architecture22_matrix_001` anchor covering
+      all 18 required scenario ids as `planned`. All rows remain inactive
+      because no scenario-specific clean/incremental/parallel/cache-race
+      consumer runner is prepared; `active` gates are rejected rather than
+      fabricating execution.
 
 15. **Architecture-22 follow-up audit.** [ ]
     - Re-run the source/spec gap and bilingual documentation sync audits, and

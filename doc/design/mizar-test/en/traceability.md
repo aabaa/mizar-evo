@@ -279,6 +279,24 @@ the architecture test-strategy target of 40% pass and 60% fail. The pass/fail
 mix counts unique valid sidecars, so a sidecar covering multiple requirements
 is not counted multiple times.
 
+Task 14 extends the report with an architecture-22 matrix summary. The summary
+uses validated sidecar metadata rather than executing consumer crates. For each
+required scenario id from the registry in
+[expectation_schema.md](./expectation_schema.md), the report records the
+registry equivalence class, planned metadata count, active execution count, and
+whether the scenario is missing. The committed task-14 anchor is:
+
+```text
+tests/property/architecture22_matrix_001.expect.toml
+```
+
+It is a `property_seed` metadata-only sidecar at `stage =
+"advanced_semantics"` and `domain = "incremental_verification"`, linked to the
+manual-review requirement
+`spec.en.architecture_22.regression_matrix.metadata`. This keeps all matrix
+rows visible as planned metadata while every row stays inactive until a future
+consumer-specific runner or integration test owns real execution.
+
 ## Constraints and Assumptions
 
 - `doc/spec/` remains free of per-test links.

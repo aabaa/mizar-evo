@@ -19,8 +19,9 @@ use mizar_session::{
 };
 use mizar_test::{
     CoverageShape, DiscoveryConfig, ExpectedOutcome, PipelinePhase, RequirementStatus, Stage,
-    TestKind, TestPlan, TestProfile, ValidationMode, active_parse_only_cases, build_test_plan,
-    run_declaration_symbol_corpus, run_parse_only_corpus, run_type_elaboration_corpus,
+    TestKind, TestPlan, TestProfile, ValidationMode, active_parse_only_cases,
+    architecture22_scenario_specs, build_test_plan, run_declaration_symbol_corpus,
+    run_parse_only_corpus, run_type_elaboration_corpus,
 };
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
@@ -2058,6 +2059,325 @@ spec_refs = ["spec.en.coverage.snapshot"]
 }
 
 #[test]
+fn architecture22_matrix_metadata_reports_planned_rows() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.architecture_22.regression_matrix.metadata"
+source = "doc/design/architecture/en/22.incremental_verification_contract.md"
+section = "Regression matrix metadata"
+stage = "advanced_semantics"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = ["tests/property/architecture22_matrix_001.expect.toml"]
+"#,
+    );
+    corpus.write(
+        "doc/design/architecture/en/22.incremental_verification_contract.md",
+        "# Incremental Verification Contract\n",
+    );
+    corpus.write(
+        "tests/property/architecture22_matrix_001.fixture.toml",
+        "matrix = \"architecture22\"\n",
+    );
+    corpus.write(
+        "tests/property/architecture22_matrix_001.expect.toml",
+        architecture22_matrix_expectation(),
+    );
+
+    let plan = corpus.plan();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    let matrix = &plan.coverage_report.architecture22_matrix;
+    assert!(matrix.missing_scenarios.is_empty());
+    assert_eq!(
+        matrix.scenarios.len(),
+        architecture22_scenario_specs().len()
+    );
+    assert!(
+        matrix
+            .scenarios
+            .iter()
+            .all(|scenario| scenario.planned == 1)
+    );
+    assert!(matrix.scenarios.iter().all(|scenario| scenario.active == 0));
+    let theorem_proof_body = matrix
+        .scenarios
+        .iter()
+        .find(|scenario| scenario.scenario_id == "theorem_proof_body_invalidation")
+        .unwrap();
+    assert_eq!(theorem_proof_body.equivalence_class, "local_refresh_only");
+    let coverage = plan
+        .coverage_report
+        .requirements
+        .iter()
+        .find(|coverage| coverage.id.0 == "spec.en.architecture_22.regression_matrix.metadata")
+        .unwrap();
+    assert_eq!(coverage.computed_status, RequirementStatus::Partial);
+    assert_eq!(coverage.evidence.manual_review, 1);
+}
+
+#[test]
+fn architecture22_matrix_defaults_gate_to_planned() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.basic", &[]);
+    corpus.write(
+        "tests/property/default_gate_001.fixture.toml",
+        "seed = \"1\"\n",
+    );
+    corpus.write(
+        "tests/property/default_gate_001.expect.toml",
+        property_seed_expectation_with_extra(
+            "default_gate_001",
+            "default_gate_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            true,
+            r#"diagnostic_codes = []
+architecture22_scenarios = ["cache_hit_miss_timing"]
+architecture22_equivalence_class = "observable_outputs_equal""#,
+        ),
+    );
+
+    let plan = corpus.plan();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    let cache_timing = plan
+        .coverage_report
+        .architecture22_matrix
+        .scenarios
+        .iter()
+        .find(|scenario| scenario.scenario_id == "cache_hit_miss_timing")
+        .unwrap();
+    assert_eq!(cache_timing.planned, 1);
+    assert_eq!(cache_timing.active, 0);
+}
+
+#[test]
+fn architecture22_matrix_reports_missing_scenarios() {
+    let corpus = Corpus::new();
+    corpus.write("tests/coverage/spec_trace.toml", "");
+
+    let plan = corpus.plan();
+
+    let matrix = &plan.coverage_report.architecture22_matrix;
+    assert_eq!(
+        matrix.scenarios.len(),
+        architecture22_scenario_specs().len()
+    );
+    assert_eq!(
+        matrix.missing_scenarios.len(),
+        architecture22_scenario_specs().len()
+    );
+    assert_eq!(
+        matrix.missing_scenarios.first().map(String::as_str),
+        Some("artifact_manifest_atomicity")
+    );
+}
+
+#[test]
+fn architecture22_matrix_rejects_unknown_or_orphan_metadata() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/property/unknown_scenario_001.fixture.toml",
+        "seed = \"1\"\n",
+    );
+    corpus.write(
+        "tests/property/unknown_scenario_001.expect.toml",
+        property_seed_expectation_with_extra(
+            "unknown_scenario_001",
+            "unknown_scenario_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            true,
+            r#"diagnostic_codes = []
+architecture22_scenarios = ["unknown_scenario"]
+architecture22_gate = "planned""#,
+        ),
+    );
+    corpus.write(
+        "tests/property/orphan_gate_001.fixture.toml",
+        "seed = \"2\"\n",
+    );
+    corpus.write(
+        "tests/property/orphan_gate_001.expect.toml",
+        property_seed_expectation_with_extra(
+            "orphan_gate_001",
+            "orphan_gate_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            true,
+            r#"diagnostic_codes = []
+architecture22_gate = "planned""#,
+        ),
+    );
+    corpus.write(
+        "tests/property/orphan_class_001.fixture.toml",
+        "seed = \"3\"\n",
+    );
+    corpus.write(
+        "tests/property/orphan_class_001.expect.toml",
+        property_seed_expectation_with_extra(
+            "orphan_class_001",
+            "orphan_class_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            true,
+            r#"diagnostic_codes = []
+architecture22_equivalence_class = "cache_miss_only""#,
+        ),
+    );
+    corpus.write(
+        "tests/property/unknown_class_001.fixture.toml",
+        "seed = \"4\"\n",
+    );
+    corpus.write(
+        "tests/property/unknown_class_001.expect.toml",
+        property_seed_expectation_with_extra(
+            "unknown_class_001",
+            "unknown_class_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            true,
+            r#"diagnostic_codes = []
+architecture22_scenarios = ["cache_hit_miss_timing"]
+architecture22_equivalence_class = "not_a_class"
+architecture22_gate = "planned""#,
+        ),
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_message(
+        &plan,
+        "unknown architecture22_scenarios entry `unknown_scenario`",
+    );
+    assert_has_message(
+        &plan,
+        "`architecture22_gate` requires `architecture22_scenarios`",
+    );
+    assert_has_message(
+        &plan,
+        "`architecture22_equivalence_class` requires `architecture22_scenarios`",
+    );
+    assert_has_message(
+        &plan,
+        "unknown architecture22_equivalence_class `not_a_class`",
+    );
+}
+
+#[test]
+fn architecture22_matrix_rejects_noncanonical_or_active_metadata() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/property/duplicate_scenario_001.fixture.toml",
+        "seed = \"1\"\n",
+    );
+    corpus.write(
+        "tests/property/duplicate_scenario_001.expect.toml",
+        property_seed_expectation_with_extra(
+            "duplicate_scenario_001",
+            "duplicate_scenario_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            true,
+            r#"diagnostic_codes = []
+architecture22_scenarios = ["cache_hit_miss_timing", "cache_hit_miss_timing"]
+architecture22_gate = "planned""#,
+        ),
+    );
+    corpus.write(
+        "tests/property/unsorted_scenario_001.fixture.toml",
+        "seed = \"2\"\n",
+    );
+    corpus.write(
+        "tests/property/unsorted_scenario_001.expect.toml",
+        property_seed_expectation_with_extra(
+            "unsorted_scenario_001",
+            "unsorted_scenario_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            true,
+            r#"diagnostic_codes = []
+architecture22_scenarios = ["cache_hit_miss_timing", "artifact_manifest_atomicity"]
+architecture22_gate = "planned""#,
+        ),
+    );
+    corpus.write(
+        "tests/property/class_mismatch_001.fixture.toml",
+        "seed = \"3\"\n",
+    );
+    corpus.write(
+        "tests/property/class_mismatch_001.expect.toml",
+        property_seed_expectation_with_extra(
+            "class_mismatch_001",
+            "class_mismatch_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            true,
+            r#"diagnostic_codes = []
+architecture22_scenarios = ["cache_hit_miss_timing"]
+architecture22_equivalence_class = "cache_miss_only"
+architecture22_gate = "planned""#,
+        ),
+    );
+    corpus.write("tests/property/bad_gate_001.fixture.toml", "seed = \"4\"\n");
+    corpus.write(
+        "tests/property/bad_gate_001.expect.toml",
+        property_seed_expectation_with_extra(
+            "bad_gate_001",
+            "bad_gate_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            true,
+            r#"diagnostic_codes = []
+architecture22_scenarios = ["cache_hit_miss_timing"]
+architecture22_gate = "ready""#,
+        ),
+    );
+    corpus.write(
+        "tests/property/active_gate_001.fixture.toml",
+        "seed = \"5\"\n",
+    );
+    corpus.write(
+        "tests/property/active_gate_001.expect.toml",
+        property_seed_expectation_with_extra(
+            "active_gate_001",
+            "active_gate_001.fixture.toml",
+            "spec.en.test.basic",
+            r#"profiles = ["full"]"#,
+            true,
+            r#"diagnostic_codes = []
+architecture22_scenarios = ["cache_hit_miss_timing"]
+architecture22_gate = "active""#,
+        ),
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_message(
+        &plan,
+        "duplicate architecture22_scenarios entry `cache_hit_miss_timing`",
+    );
+    assert_has_message(
+        &plan,
+        "architecture22_scenarios entry `artifact_manifest_atomicity` must be sorted after `cache_hit_miss_timing`",
+    );
+    assert_has_message(
+        &plan,
+        "`architecture22_equivalence_class` `cache_miss_only` does not match scenario `cache_hit_miss_timing` registry class `observable_outputs_equal`",
+    );
+    assert_has_message(&plan, "unknown architecture22_gate `ready`");
+    assert_has_message(
+        &plan,
+        "`architecture22_gate = \"active\"` is not allowed for scenarios without active eligibility: cache_hit_miss_timing",
+    );
+}
+
+#[test]
 fn coverage_status_drift_is_warning_in_metadata_and_error_in_development() {
     let corpus = Corpus::new();
     corpus.write(
@@ -2831,6 +3151,35 @@ fn repository_corpus_plan_succeeds() {
                 .iter()
                 .any(|spec_ref| spec_ref.0 == "spec.en.02.lexical.identifiers.basic")
     }));
+    let matrix = &plan.coverage_report.architecture22_matrix;
+    assert_eq!(
+        matrix.scenarios.len(),
+        architecture22_scenario_specs().len()
+    );
+    assert!(
+        matrix.missing_scenarios.is_empty(),
+        "{:?}",
+        matrix.missing_scenarios
+    );
+    assert!(
+        matrix
+            .scenarios
+            .iter()
+            .all(|scenario| scenario.planned == 1 && scenario.active == 0),
+        "{:?}",
+        matrix.scenarios
+    );
+    let matrix_requirement = plan
+        .coverage_report
+        .requirements
+        .iter()
+        .find(|coverage| coverage.id.0 == "spec.en.architecture_22.regression_matrix.metadata")
+        .expect("repository should include architecture-22 matrix trace row");
+    assert_eq!(
+        matrix_requirement.computed_status,
+        RequirementStatus::Partial
+    );
+    assert_eq!(matrix_requirement.evidence.manual_review, 1);
 }
 
 #[test]
@@ -4683,7 +5032,7 @@ fn plan_cli_reports_deterministic_metadata_summary() {
     );
     assert_eq!(
         String::from_utf8_lossy(&output.stdout),
-        "test cases: 0\nrequirements: 0\nerrors: 0\nwarnings: 0\ncoverage stages: 0\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\n"
+        "test cases: 0\nrequirements: 0\nerrors: 0\nwarnings: 0\ncoverage stages: 0\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\narchitecture22 matrix: scenarios=18 planned=0 active=0 missing=18\n"
     );
     assert_eq!(String::from_utf8_lossy(&output.stderr), "");
 }
@@ -4720,7 +5069,7 @@ fn plan_cli_warnings_exit_success() {
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(
         String::from_utf8_lossy(&output.stdout),
-        "test cases: 0\nrequirements: 1\nerrors: 0\nwarnings: 1\ncoverage stages: 1\ncoverage stage lexical: requirements=1 covered=0 partial=0 planned=1 deferred=0 obsolete=0 missing_shapes=1\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\n"
+        "test cases: 0\nrequirements: 1\nerrors: 0\nwarnings: 1\ncoverage stages: 1\ncoverage stage lexical: requirements=1 covered=0 partial=0 planned=1 deferred=0 obsolete=0 missing_shapes=1\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\narchitecture22 matrix: scenarios=18 planned=0 active=0 missing=18\n"
     );
     assert!(String::from_utf8_lossy(&output.stderr).contains("W-MANIFEST-PLANNED-NO-TESTS"));
 }
@@ -4764,8 +5113,58 @@ tests = [
     assert_eq!(output.status.code(), Some(0));
     assert_eq!(
         String::from_utf8_lossy(&output.stdout),
-        "test cases: 2\nrequirements: 1\nerrors: 0\nwarnings: 0\ncoverage stages: 1\ncoverage stage lexical: requirements=1 covered=1 partial=0 planned=0 deferred=0 obsolete=0 missing_shapes=0\npass/fail mix: pass=1 fail=1 total=2 target_pass=40 target_fail=60\n"
+        "test cases: 2\nrequirements: 1\nerrors: 0\nwarnings: 0\ncoverage stages: 1\ncoverage stage lexical: requirements=1 covered=1 partial=0 planned=0 deferred=0 obsolete=0 missing_shapes=0\npass/fail mix: pass=1 fail=1 total=2 target_pass=40 target_fail=60\narchitecture22 matrix: scenarios=18 planned=0 active=0 missing=18\n"
     );
+    assert_eq!(String::from_utf8_lossy(&output.stderr), "");
+}
+
+#[test]
+fn plan_cli_reports_architecture22_matrix_rows() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.architecture_22.regression_matrix.metadata"
+source = "doc/design/architecture/en/22.incremental_verification_contract.md"
+section = "Regression matrix metadata"
+stage = "advanced_semantics"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = ["tests/property/architecture22_matrix_001.expect.toml"]
+"#,
+    );
+    corpus.write(
+        "doc/design/architecture/en/22.incremental_verification_contract.md",
+        "# Incremental Verification Contract\n",
+    );
+    corpus.write(
+        "tests/property/architecture22_matrix_001.fixture.toml",
+        "matrix = \"architecture22\"\n",
+    );
+    corpus.write(
+        "tests/property/architecture22_matrix_001.expect.toml",
+        architecture22_matrix_expectation(),
+    );
+
+    let output = plan_cli(&corpus)
+        .output()
+        .expect("mizar-test plan with architecture22 matrix should run");
+
+    assert_eq!(output.status.code(), Some(0));
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("architecture22 matrix: scenarios=18 planned=18 active=0 missing=0\n"));
+    assert!(stdout.contains(
+        "architecture22 scenario artifact_manifest_atomicity: class=atomic_publication planned=1 active=0\n"
+    ));
+    assert!(stdout.contains(
+        "architecture22 scenario theorem_proof_body_invalidation: class=local_refresh_only planned=1 active=0\n"
+    ));
+    assert!(stdout.contains(
+        "architecture22 scenario vcid_reorder_anchor_reuse: class=reuse_requires_full_identity planned=1 active=0\n"
+    ));
+    assert_eq!(stdout.matches("architecture22 scenario ").count(), 18);
     assert_eq!(String::from_utf8_lossy(&output.stderr), "");
 }
 
@@ -4781,7 +5180,7 @@ fn plan_cli_validation_errors_exit_one() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         String::from_utf8_lossy(&output.stdout),
-        "test cases: 0\nrequirements: 0\nerrors: 1\nwarnings: 0\ncoverage stages: 0\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\n"
+        "test cases: 0\nrequirements: 0\nerrors: 1\nwarnings: 0\ncoverage stages: 0\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\narchitecture22 matrix: scenarios=18 planned=0 active=0 missing=18\n"
     );
     assert!(String::from_utf8_lossy(&output.stderr).contains("E-LAYOUT-MISSING-SIDECAR"));
 }
@@ -4800,7 +5199,7 @@ fn plan_cli_release_unknown_roots_exit_one() {
     assert_eq!(output.status.code(), Some(1));
     assert_eq!(
         String::from_utf8_lossy(&output.stdout),
-        "test cases: 0\nrequirements: 0\nerrors: 1\nwarnings: 0\ncoverage stages: 0\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\n"
+        "test cases: 0\nrequirements: 0\nerrors: 1\nwarnings: 0\ncoverage stages: 0\npass/fail mix: pass=0 fail=0 total=0 target_pass=40 target_fail=60\narchitecture22 matrix: scenarios=18 planned=0 active=0 missing=18\n"
     );
     assert!(String::from_utf8_lossy(&output.stderr).contains("E-LAYOUT-UNKNOWN-ROOT"));
 }
@@ -5504,7 +5903,26 @@ fn property_seed_expectation(
     profile_line: &str,
     minimized: bool,
 ) -> String {
+    property_seed_expectation_with_extra(
+        id,
+        source,
+        spec_ref,
+        profile_line,
+        minimized,
+        "diagnostic_codes = []",
+    )
+}
+
+fn property_seed_expectation_with_extra(
+    id: &str,
+    source: &str,
+    spec_ref: &str,
+    profile_line: &str,
+    minimized: bool,
+    extra: &str,
+) -> String {
     let profile_line = optional_line(profile_line);
+    let extra = optional_line(extra);
     format!(
         r#"schema_version = 1
 id = "{id}"
@@ -5513,10 +5931,8 @@ stage = "lexical"
 domain = "lexical"
 source = "{source}"
 expected_outcome = "metadata_only"
-diagnostic_codes = []
-spec_refs = ["{spec_ref}"]
-{profile_line}
-[origin]
+{extra}spec_refs = ["{spec_ref}"]
+{profile_line}[origin]
 schema_version = 1
 kind = "property_seed"
 generator = "proptest"
@@ -5526,6 +5942,42 @@ profile = "lexical"
 expected_outcome = "metadata_only"
 minimized = {minimized}
 "#
+    )
+}
+
+fn architecture22_matrix_expectation() -> String {
+    let scenarios = architecture22_scenario_specs()
+        .iter()
+        .map(|scenario| format!("  \"{}\",", scenario.id))
+        .collect::<Vec<_>>()
+        .join("\n");
+    format!(
+        r#"schema_version = 1
+id = "architecture22_matrix_001"
+kind = "property_seed"
+stage = "advanced_semantics"
+domain = "incremental_verification"
+source = "architecture22_matrix_001.fixture.toml"
+expected_outcome = "metadata_only"
+profiles = ["full"]
+diagnostic_codes = []
+spec_refs = ["{spec_ref}"]
+architecture22_gate = "planned"
+architecture22_scenarios = [
+{scenarios}
+]
+
+[origin]
+schema_version = 1
+kind = "property_seed"
+generator = "mizar-test-architecture22-matrix"
+generator_version = "1"
+seed = "architecture22_matrix_001"
+profile = "architecture22-regression-matrix"
+expected_outcome = "metadata_only"
+minimized = true
+"#,
+        spec_ref = "spec.en.architecture_22.regression_matrix.metadata"
     )
 }
 
@@ -5558,6 +6010,16 @@ fn assert_lacks_code(plan: &mizar_test::TestPlan, code: &str) {
             .iter()
             .any(|diagnostic| diagnostic.code.0 == code),
         "unexpected diagnostic {code}, got {:#?}",
+        plan.diagnostics
+    );
+}
+
+fn assert_has_message(plan: &mizar_test::TestPlan, needle: &str) {
+    assert!(
+        plan.diagnostics
+            .iter()
+            .any(|diagnostic| diagnostic.message.contains(needle)),
+        "expected diagnostic containing {needle:?}, got {:#?}",
         plan.diagnostics
     );
 }
@@ -5640,6 +6102,35 @@ fn canonical_test_plan(plan: &TestPlan, root: &Path) -> String {
         plan.coverage_report.pass_fail_mix.target_fail_percent
     )
     .unwrap();
+    let matrix = &plan.coverage_report.architecture22_matrix;
+    writeln!(
+        output,
+        "architecture22|scenarios={}|planned={}|active={}|missing={}",
+        matrix.scenarios.len(),
+        matrix
+            .scenarios
+            .iter()
+            .map(|scenario| scenario.planned)
+            .sum::<usize>(),
+        matrix
+            .scenarios
+            .iter()
+            .map(|scenario| scenario.active)
+            .sum::<usize>(),
+        matrix.missing_scenarios.len()
+    )
+    .unwrap();
+    for scenario in &matrix.scenarios {
+        if scenario.planned == 0 && scenario.active == 0 {
+            continue;
+        }
+        writeln!(
+            output,
+            "architecture22-row|{}|{}|{}|{}",
+            scenario.scenario_id, scenario.equivalence_class, scenario.planned, scenario.active
+        )
+        .unwrap();
+    }
     for requirement in &plan.coverage_report.requirements {
         writeln!(
             output,

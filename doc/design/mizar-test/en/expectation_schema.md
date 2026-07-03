@@ -78,6 +78,9 @@ Fields:
 | `notes` | string | no | Short review note. Not used for matching. |
 | `ast_profile` | string | no | AST rendering profile requested by parser-facing snapshot tests. |
 | `snapshot_profiles` | non-empty array of strings | no | Snapshot profile ids that should be retained with the sidecar metadata. |
+| `architecture22_scenarios` | non-empty sorted array of strings | no | Architecture-22 regression scenario ids covered by this metadata sidecar. |
+| `architecture22_equivalence_class` | string | no | Optional registry equivalence class; only valid when every listed scenario has that class. |
+| `architecture22_gate` | string | no | `planned` or `active`; defaults to `planned` when scenarios are present. |
 
 Allowed `stage` values:
 
@@ -155,6 +158,51 @@ Allowed `expected_phase` values:
 Later compiler crates may refine internal phases, but expectation files use
 these stable external phase ids.
 
+## Architecture-22 Matrix Metadata
+
+Task 14 records the architecture-22 incremental/parallel verification
+regression matrix without adding placeholder runners. Scenario metadata is
+validated during expectation parsing and the metadata `plan` command.
+
+`architecture22_scenarios` is optional. If it is absent,
+`architecture22_gate` and `architecture22_equivalence_class` must also be
+absent. If present, scenario ids must be known, non-empty, unique, and sorted
+lexicographically; duplicate or unsorted arrays are validation errors rather
+than silently normalized.
+
+`architecture22_equivalence_class`, when present, must be a known registry
+class and must match every listed scenario. Sidecars that cover multiple
+classes omit this field; reporting uses the registry class for each scenario.
+
+`architecture22_gate` defaults to `planned` when scenarios are present.
+`active` is accepted only after a future consumer-specific increment gives the
+listed scenario ids active eligibility. Existing active parse-only,
+declaration-symbol, or type-elaboration tags do not make architecture-22 matrix
+rows active.
+
+Task 14 registry:
+
+| Scenario id | Equivalence class | Active eligibility |
+|---|---|---|
+| `artifact_manifest_atomicity` | `atomic_publication` | none |
+| `cache_hit_miss_timing` | `observable_outputs_equal` | none |
+| `cache_key_race` | `single_canonical_publication` | none |
+| `clean_incremental_artifact_equivalence` | `observable_outputs_equal` | none |
+| `clean_parallel_equivalence` | `observable_outputs_equal` | none |
+| `externally_attested_non_upgrade` | `evidence_class_not_upgraded` | none |
+| `incremental_parallel_equivalence` | `observable_outputs_equal` | none |
+| `missing_dependency_slice_cache_miss` | `cache_miss_only` | none |
+| `notation_operator_invalidation` | `downstream_invalidation` | none |
+| `proof_witness_mismatch` | `cache_miss_only` | none |
+| `randomized_atp_completion_order` | `deterministic_policy_selection` | none |
+| `randomized_ready_task_scheduling` | `canonical_order_equal` | none |
+| `registration_cluster_invalidation` | `downstream_invalidation` | none |
+| `registration_origin_deletion` | `downstream_invalidation` | none |
+| `stale_snapshot_non_publication` | `stale_result_not_published` | none |
+| `theorem_proof_body_invalidation` | `local_refresh_only` | none |
+| `theorem_status_invalidation` | `downstream_invalidation` | none |
+| `vcid_reorder_anchor_reuse` | `reuse_requires_full_identity` | none |
+
 ## Public Enum Forward Compatibility
 
 Task 12 applies the `mizar-frontend` task-25 procedure to expectation-schema
@@ -168,6 +216,7 @@ tree. They are downstream-facing metadata surfaces and must remain
 | `TestKind` | `expectation` corpus role and layout surface | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `ExpectedOutcome` | `expectation` result contract | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `PipelinePhase` | `expectation` phase boundary ids | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `Architecture22Gate` | `expectation` architecture-22 planned/active metadata gate | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `TomlValue` | `toml_lite` parser support for expectation and manifest metadata | `#[non_exhaustive]` downstream forward-compatible surface. |
 
 No exhaustive public enum exceptions are owned by this module.
@@ -484,7 +533,10 @@ The harness validates:
     files; missing, unreadable, or mismatched baselines are harness failures.
 11. General snapshot entries use supported hash algorithms.
 12. Generated/fuzz/property tests include origin metadata.
-13. Unknown fields are rejected unless the schema version explicitly permits
+13. Architecture-22 matrix metadata uses known sorted scenario ids, known gate
+    values, and matching equivalence classes; orphan gate/class fields are
+    rejected.
+14. Unknown fields are rejected unless the schema version explicitly permits
     extensions.
 
 Validation of coverage completeness depends on the validation mode defined in

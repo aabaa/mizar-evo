@@ -1,11 +1,11 @@
 use mizar_session::Hash;
 use mizar_test::toml_lite::TomlValue;
 use mizar_test::{
-    CoverageShape, DeclarationSymbolCaseStatus, ExpectedOutcome, HarnessError, ParallelismProfile,
-    ParseOnlyCaseStatus, PipelinePhase, RequirementStatus, SnapshotBaselineError,
-    SnapshotBaselineMismatch, SnapshotBaselineStatus, SnapshotError, SnapshotKind,
-    SnapshotUpdateMode, SnapshotUpdateReason, Stage, TestKind, TestProfile, ToolchainInfo,
-    TypeElaborationCaseStatus, ValidationMode, ValidationSeverity,
+    Architecture22Gate, CoverageShape, DeclarationSymbolCaseStatus, ExpectedOutcome, HarnessError,
+    ParallelismProfile, ParseOnlyCaseStatus, PipelinePhase, RequirementStatus,
+    SnapshotBaselineError, SnapshotBaselineMismatch, SnapshotBaselineStatus, SnapshotError,
+    SnapshotKind, SnapshotUpdateMode, SnapshotUpdateReason, Stage, TestKind, TestProfile,
+    ToolchainInfo, TypeElaborationCaseStatus, ValidationMode, ValidationSeverity,
 };
 
 #[test]
@@ -14,6 +14,7 @@ fn public_enum_consumers_match_with_wildcards() {
     assert_eq!(test_kind(TestKind::Pass), "pass");
     assert_eq!(expected_outcome(ExpectedOutcome::Pass), "pass");
     assert_eq!(pipeline_phase(PipelinePhase::Parse), "parse");
+    assert_eq!(architecture22_gate(Architecture22Gate::Planned), "planned");
     assert_eq!(test_profile(TestProfile::Fast), "fast");
     assert_eq!(validation_mode(ValidationMode::Metadata), "metadata");
     assert_eq!(
@@ -105,6 +106,14 @@ fn pipeline_phase(value: PipelinePhase) -> &'static str {
         PipelinePhase::Verification => "verification",
         PipelinePhase::CertificateCheck => "certificate",
         PipelinePhase::KernelCheck => "kernel",
+        _ => "unknown",
+    }
+}
+
+fn architecture22_gate(value: Architecture22Gate) -> &'static str {
+    match value {
+        Architecture22Gate::Planned => "planned",
+        Architecture22Gate::Active => "active",
         _ => "unknown",
     }
 }

@@ -327,6 +327,12 @@ fn public_enum_policies() -> Vec<PublicEnumPolicy> {
             ja_doc: "doc/design/mizar-test/ja/expectation_schema.md",
         },
         PublicEnumPolicy {
+            module: "expectation",
+            name: "Architecture22Gate",
+            en_doc: "doc/design/mizar-test/en/expectation_schema.md",
+            ja_doc: "doc/design/mizar-test/ja/expectation_schema.md",
+        },
+        PublicEnumPolicy {
             module: "harness",
             name: "TestProfile",
             en_doc: "doc/design/mizar-test/en/harness.md",

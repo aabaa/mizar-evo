@@ -108,10 +108,25 @@ pub struct PassFailMix {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Architecture22MatrixReport {
+    pub scenarios: Vec<Architecture22ScenarioReport>,
+    pub missing_scenarios: Vec<String>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Architecture22ScenarioReport {
+    pub scenario_id: String,
+    pub equivalence_class: String,
+    pub planned: usize,
+    pub active: usize,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CoverageReport {
     pub requirements: Vec<RequirementCoverage>,
     pub stages: Vec<StageCoverage>,
     pub pass_fail_mix: PassFailMix,
+    pub architecture22_matrix: Architecture22MatrixReport,
 }
 
 impl TraceManifest {
@@ -130,6 +145,7 @@ impl TraceManifest {
         &self,
         evidence: &[CoverageEvidence],
         pass_fail_mix: PassFailMix,
+        architecture22_matrix: Architecture22MatrixReport,
     ) -> CoverageReport {
         let evidence_by_requirement = evidence.iter().fold(
             BTreeMap::<SpecRequirementId, Vec<&CoverageEvidence>>::new(),
@@ -191,6 +207,7 @@ impl TraceManifest {
             requirements,
             stages,
             pass_fail_mix,
+            architecture22_matrix,
         }
     }
 

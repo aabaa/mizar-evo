@@ -21,8 +21,8 @@
 | layout | [layout.md](./layout.md) | `src/layout.rs`、`src/path_rules.rs` | [~] discovery/pairing と validation-mode unknown-root policy は実装済み。Public API 同期は未完 |
 | expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema、profile/provenance metadata retention、fail/soundness rejection gate は実装済み。general snapshot 強化は未完 |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage id と declared prerequisite validation は実装済み。より広い admission policy は未完 |
-| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backref、coverage report/status gate、manifest ordering、obsolete-ref check、prerequisite credit gate は実装済み |
-| harness | [harness.md](./harness.md) | `src/harness.rs`、`src/main.rs`、`src/runner.rs` | [~] metadata plan、validation-mode CLI、profile filtering、coverage/pass-fail report、active parse/declaration/type runner |
+| traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backref、coverage report/status gate、manifest ordering、obsolete-ref check、prerequisite credit gate、architecture-22 matrix summary は実装済み |
+| harness | [harness.md](./harness.md) | `src/harness.rs`、`src/main.rs`、`src/runner.rs` | [~] metadata plan、validation-mode CLI、profile filtering、coverage/pass-fail/matrix report、active parse/declaration/type runner |
 | miz_corpus | [miz_corpus.md](./miz_corpus.md) | `tests/` 配下のコーパスツリー | [~] root discovery、pass/fail mix reporting、provenance/profile policy rules validation は実装済み。future corpus classes は未完 |
 | snapshot | [snapshot.md](./snapshot.md) | `src/snapshot.rs`、`src/expectation.rs`、`src/runner.rs` | [~] general snapshot record API/hash/update/determinism helpers は実装済み。sidecar/runner integration は未完 |
 | fail_soundness | [fail_soundness.md](./fail_soundness.md) | `src/expectation.rs`、`src/harness.rs`、将来の runner case | [~] metadata contract gate は実装済み。active proof/certificate/kernel execution は将来の runner が律速 |
@@ -269,10 +269,10 @@ regression test を追加した。
     - `doc/design/mizar-test/en/` の各英語正本と日本語版を比較し、内容を
       同期する。
     - 完了: [bilingual_sync_audit.md](./bilingual_sync_audit.md) は paired-file
-      audit を記録し、task 14 が open かつ未開始であることを確認する。
+      audit を記録した。task 14 の完了は下に記録する。
     - 依存: 12。仕様: リポジトリのドキュメント方針。
 
-14. **増分/並列検証 regression matrix。** [ ]
+14. **増分/並列検証 regression matrix。** [x]
     - architecture 22 の regression matrix のための corpus / harness metadata と
       reporting support を追加する。この crate は pipeline-free のままにする。
       case の実行は consumer crate が所有するが、`mizar-test` は scenario id、
@@ -292,6 +292,12 @@ regression test を追加した。
     - 依存: 10、11。仕様:
       [20.test_strategy.md](../../architecture/ja/20.test_strategy.md),
       [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md)。
+    - 完了: task 14 は architecture-22 scenario registry、sidecar metadata
+      validation、deterministic plan/report summary、18 個すべての required scenario id
+      を `planned` として覆う metadata-only `tests/property/architecture22_matrix_001`
+      anchor を追加した。scenario-specific な clean/incremental/parallel/cache-race
+      consumer runner はまだ準備されていないため、すべての row は inactive のままで、
+      execution を捏造せず `active` gate は reject する。
 
 15. **architecture-22 フォローアップ監査。** [ ]
     - ソース/仕様ギャップ監査と二言語ドキュメント同期監査を再実行し、

@@ -52,6 +52,28 @@ pub enum PipelinePhase {
     KernelCheck,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum Architecture22Gate {
+    Planned,
+    Active,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Architecture22ScenarioSpec {
+    pub id: &'static str,
+    pub summary: &'static str,
+    pub equivalence_class: &'static str,
+    pub active_eligibility: Option<&'static str>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Architecture22Metadata {
+    pub scenarios: Vec<String>,
+    pub equivalence_class: Option<String>,
+    pub gate: Architecture22Gate,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Expectation {
     pub schema_version: u32,
@@ -76,6 +98,7 @@ pub struct Expectation {
     pub snapshot_profiles: Vec<String>,
     pub tokens: Vec<TokenExpectation>,
     pub origin: Option<OriginMetadata>,
+    pub architecture22: Option<Architecture22Metadata>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -132,6 +155,127 @@ const CERTIFICATE_OR_KERNEL_CATEGORIES: &[&str] = &["certificate_rejection", "ke
 const KERNEL_REJECTION_CATEGORY: &[&str] = &["kernel_rejection"];
 const CLUSTER_ERROR_CATEGORY: &[&str] = &["cluster_error"];
 const OVERLOAD_ERROR_CATEGORY: &[&str] = &["overload_error"];
+
+pub const ARCHITECTURE22_SCENARIOS: &[Architecture22ScenarioSpec] = &[
+    Architecture22ScenarioSpec {
+        id: "artifact_manifest_atomicity",
+        summary: "artifact manifest commit remains atomic and deterministic",
+        equivalence_class: "atomic_publication",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "cache_hit_miss_timing",
+        summary: "cache hit/miss timing does not affect diagnostics, proof acceptance, or artifact order",
+        equivalence_class: "observable_outputs_equal",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "cache_key_race",
+        summary: "two workers racing on the same cache key cannot publish divergent contents",
+        equivalence_class: "single_canonical_publication",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "clean_incremental_artifact_equivalence",
+        summary: "clean build equals incremental build for externally visible artifacts",
+        equivalence_class: "observable_outputs_equal",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "clean_parallel_equivalence",
+        summary: "clean sequential build equals clean parallel build",
+        equivalence_class: "observable_outputs_equal",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "externally_attested_non_upgrade",
+        summary: "externally attested evidence is never upgraded to kernel-verified by cache reuse",
+        equivalence_class: "evidence_class_not_upgraded",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "incremental_parallel_equivalence",
+        summary: "sequential incremental build equals parallel incremental build",
+        equivalence_class: "observable_outputs_equal",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "missing_dependency_slice_cache_miss",
+        summary: "missing dependency slice forces cache miss",
+        equivalence_class: "cache_miss_only",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "notation_operator_invalidation",
+        summary: "notation/operator metadata edits invalidate affected token/AST views",
+        equivalence_class: "downstream_invalidation",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "proof_witness_mismatch",
+        summary: "proof witness hash mismatch causes proof cache miss",
+        equivalence_class: "cache_miss_only",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "randomized_atp_completion_order",
+        summary: "randomized ATP backend completion order does not change accepted proof status",
+        equivalence_class: "deterministic_policy_selection",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "randomized_ready_task_scheduling",
+        summary: "randomized ready-task scheduling produces identical artifacts and canonical ordering",
+        equivalence_class: "canonical_order_equal",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "registration_cluster_invalidation",
+        summary: "registration/coherence/reducibility/cluster changes invalidate active views and dependent VCs",
+        equivalence_class: "downstream_invalidation",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "registration_origin_deletion",
+        summary: "deleting or renaming a registration removes stale cluster-db origins before cache hits",
+        equivalence_class: "downstream_invalidation",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "stale_snapshot_non_publication",
+        summary: "stale snapshot diagnostics and obsolete results are not published as current",
+        equivalence_class: "stale_result_not_published",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "theorem_proof_body_invalidation",
+        summary: "theorem proof-body-only edit refreshes local artifacts without downstream semantic rebuild when statement/status are unchanged",
+        equivalence_class: "local_refresh_only",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "theorem_status_invalidation",
+        summary: "theorem accepted/open/failing status change invalidates visible importers",
+        equivalence_class: "downstream_invalidation",
+        active_eligibility: None,
+    },
+    Architecture22ScenarioSpec {
+        id: "vcid_reorder_anchor_reuse",
+        summary: "VcId reordering reuses only obligations matching anchor, VC/context/dependency/policy, and witness/discharge hashes",
+        equivalence_class: "reuse_requires_full_identity",
+        active_eligibility: None,
+    },
+];
+
+pub fn architecture22_scenario_specs() -> &'static [Architecture22ScenarioSpec] {
+    ARCHITECTURE22_SCENARIOS
+}
+
+pub fn architecture22_scenario_spec(id: &str) -> Option<&'static Architecture22ScenarioSpec> {
+    ARCHITECTURE22_SCENARIOS
+        .iter()
+        .find(|scenario| scenario.id == id)
+}
 
 pub(crate) const REQUIRED_SOUNDNESS_CASES: &[RequiredSoundnessCase] = &[
     RequiredSoundnessCase {
@@ -524,6 +668,7 @@ fn expectation_from_table(
             "`metadata_only` is not valid for .miz, .src, or .cert.json payloads".to_owned(),
         );
     }
+    let architecture22 = parse_architecture22_metadata(table)?;
 
     Ok(Expectation {
         schema_version,
@@ -548,7 +693,133 @@ fn expectation_from_table(
         snapshot_profiles,
         tokens,
         origin,
+        architecture22,
     })
+}
+
+fn parse_architecture22_metadata(
+    table: &TomlTable,
+) -> Result<Option<Architecture22Metadata>, String> {
+    let has_scenarios = table.contains_key("architecture22_scenarios");
+    let has_equivalence_class = table.contains_key("architecture22_equivalence_class");
+    let has_gate = table.contains_key("architecture22_gate");
+
+    if !has_scenarios {
+        if has_equivalence_class {
+            return Err(
+                "`architecture22_equivalence_class` requires `architecture22_scenarios`".to_owned(),
+            );
+        }
+        if has_gate {
+            return Err("`architecture22_gate` requires `architecture22_scenarios`".to_owned());
+        }
+        return Ok(None);
+    }
+
+    let scenarios = parse_non_empty_string_array(table, "architecture22_scenarios")?;
+    validate_architecture22_scenarios(&scenarios)?;
+
+    let equivalence_class = toml_lite::optional_string(table, "architecture22_equivalence_class")?;
+    if let Some(equivalence_class) = &equivalence_class {
+        if equivalence_class.is_empty() {
+            return Err(
+                "`architecture22_equivalence_class` must not be empty when present".to_owned(),
+            );
+        }
+        if !architecture22_equivalence_class_is_known(equivalence_class) {
+            return Err(format!(
+                "unknown architecture22_equivalence_class `{equivalence_class}`"
+            ));
+        }
+        for scenario in &scenarios {
+            let spec = architecture22_scenario_spec(scenario)
+                .expect("architecture22 scenario was validated as known");
+            if spec.equivalence_class != equivalence_class {
+                return Err(format!(
+                    "`architecture22_equivalence_class` `{equivalence_class}` does not match scenario `{}` registry class `{}`",
+                    spec.id, spec.equivalence_class
+                ));
+            }
+        }
+    }
+
+    let gate = toml_lite::optional_string(table, "architecture22_gate")?
+        .map(|gate| {
+            if gate.is_empty() {
+                Err("`architecture22_gate` must not be empty when present".to_owned())
+            } else {
+                gate.parse()
+            }
+        })
+        .transpose()?
+        .unwrap_or(Architecture22Gate::Planned);
+    validate_architecture22_gate(gate, &scenarios)?;
+
+    Ok(Some(Architecture22Metadata {
+        scenarios,
+        equivalence_class,
+        gate,
+    }))
+}
+
+fn validate_architecture22_scenarios(scenarios: &[String]) -> Result<(), String> {
+    let mut seen = BTreeSet::new();
+    let mut previous: Option<&str> = None;
+    for scenario in scenarios {
+        if architecture22_scenario_spec(scenario).is_none() {
+            return Err(format!(
+                "unknown architecture22_scenarios entry `{scenario}`"
+            ));
+        }
+        if !seen.insert(scenario.as_str()) {
+            return Err(format!(
+                "duplicate architecture22_scenarios entry `{scenario}`"
+            ));
+        }
+        if let Some(previous) = previous
+            && previous > scenario.as_str()
+        {
+            return Err(format!(
+                "architecture22_scenarios entry `{scenario}` must be sorted after `{previous}`"
+            ));
+        }
+        previous = Some(scenario);
+    }
+    Ok(())
+}
+
+fn architecture22_equivalence_class_is_known(equivalence_class: &str) -> bool {
+    ARCHITECTURE22_SCENARIOS
+        .iter()
+        .any(|scenario| scenario.equivalence_class == equivalence_class)
+}
+
+fn validate_architecture22_gate(
+    gate: Architecture22Gate,
+    scenarios: &[String],
+) -> Result<(), String> {
+    if gate == Architecture22Gate::Planned {
+        return Ok(());
+    }
+
+    let ineligible = scenarios
+        .iter()
+        .filter(|scenario| {
+            architecture22_scenario_spec(scenario)
+                .expect("architecture22 scenario was validated as known")
+                .active_eligibility
+                .is_none()
+        })
+        .map(String::as_str)
+        .collect::<Vec<_>>();
+    if ineligible.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "`architecture22_gate = \"active\"` is not allowed for scenarios without active eligibility: {}",
+            ineligible.join(", ")
+        ))
+    }
 }
 
 fn parse_origin_metadata(table: &TomlTable) -> Result<OriginMetadata, String> {
@@ -821,6 +1092,9 @@ fn validate_known_fields(table: &TomlTable) -> Result<(), String> {
         "stable_detail_key",
         "ast_profile",
         "snapshot_profiles",
+        "architecture22_scenarios",
+        "architecture22_equivalence_class",
+        "architecture22_gate",
     ];
 
     for key in table.keys() {
@@ -1632,6 +1906,12 @@ impl fmt::Display for ExpectedOutcome {
     }
 }
 
+impl fmt::Display for Architecture22Gate {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
 impl FromStr for TestKind {
     type Err = String;
 
@@ -1658,6 +1938,27 @@ impl FromStr for ExpectedOutcome {
             "snapshot" => Ok(Self::Snapshot),
             "metadata_only" => Ok(Self::MetadataOnly),
             other => Err(format!("unknown expected_outcome `{other}`")),
+        }
+    }
+}
+
+impl FromStr for Architecture22Gate {
+    type Err = String;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        match value {
+            "planned" => Ok(Self::Planned),
+            "active" => Ok(Self::Active),
+            other => Err(format!("unknown architecture22_gate `{other}`")),
+        }
+    }
+}
+
+impl Architecture22Gate {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Planned => "planned",
+            Self::Active => "active",
         }
     }
 }

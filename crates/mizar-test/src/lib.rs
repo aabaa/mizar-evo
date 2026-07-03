@@ -11,8 +11,9 @@ pub mod traceability;
 
 pub use diagnostic::{DiagnosticCode, ValidationDiagnostic, ValidationSeverity};
 pub use expectation::{
-    Expectation, ExpectedOutcome, OriginMetadata, PipelinePhase, TestCaseId, TestKind,
-    parse_expectation_file,
+    Architecture22Gate, Architecture22Metadata, Architecture22ScenarioSpec, Expectation,
+    ExpectedOutcome, OriginMetadata, PipelinePhase, TestCaseId, TestKind,
+    architecture22_scenario_spec, architecture22_scenario_specs, parse_expectation_file,
 };
 pub use harness::{
     DiscoveryConfig, HarnessError, TestCase, TestPlan, TestProfile, ValidationMode, build_test_plan,
@@ -34,7 +35,8 @@ pub use snapshot::{
 };
 pub use staged_model::Stage;
 pub use traceability::{
-    CoverageEvidence, CoverageEvidenceSummary, CoverageReport, CoverageShape, PassFailMix,
-    RequirementCoverage, RequirementStatus, SpecRequirement, SpecRequirementId, StageCoverage,
-    TraceManifest, parse_trace_manifest,
+    Architecture22MatrixReport, Architecture22ScenarioReport, CoverageEvidence,
+    CoverageEvidenceSummary, CoverageReport, CoverageShape, PassFailMix, RequirementCoverage,
+    RequirementStatus, SpecRequirement, SpecRequirementId, StageCoverage, TraceManifest,
+    parse_trace_manifest,
 };

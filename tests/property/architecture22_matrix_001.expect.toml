@@ -1,0 +1,43 @@
+schema_version = 1
+id = "architecture22_matrix_001"
+kind = "property_seed"
+stage = "advanced_semantics"
+domain = "incremental_verification"
+source = "architecture22_matrix_001.fixture.toml"
+expected_outcome = "metadata_only"
+profiles = ["full"]
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_22.regression_matrix.metadata",
+]
+architecture22_gate = "planned"
+architecture22_scenarios = [
+  "artifact_manifest_atomicity",
+  "cache_hit_miss_timing",
+  "cache_key_race",
+  "clean_incremental_artifact_equivalence",
+  "clean_parallel_equivalence",
+  "externally_attested_non_upgrade",
+  "incremental_parallel_equivalence",
+  "missing_dependency_slice_cache_miss",
+  "notation_operator_invalidation",
+  "proof_witness_mismatch",
+  "randomized_atp_completion_order",
+  "randomized_ready_task_scheduling",
+  "registration_cluster_invalidation",
+  "registration_origin_deletion",
+  "stale_snapshot_non_publication",
+  "theorem_proof_body_invalidation",
+  "theorem_status_invalidation",
+  "vcid_reorder_anchor_reuse",
+]
+
+[origin]
+schema_version = 1
+kind = "property_seed"
+generator = "mizar-test-architecture22-matrix"
+generator_version = "1"
+seed = "architecture22_matrix_001"
+profile = "architecture22-regression-matrix"
+expected_outcome = "metadata_only"
+minimized = true

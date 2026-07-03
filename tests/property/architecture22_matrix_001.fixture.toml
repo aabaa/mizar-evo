@@ -1,0 +1,2 @@
+matrix = "architecture22"
+source = "doc/design/architecture/en/22.incremental_verification_contract.md"

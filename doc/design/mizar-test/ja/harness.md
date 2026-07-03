@@ -28,6 +28,7 @@ pub struct CoverageReport {
     pub requirements: Vec<RequirementCoverage>,
     pub stages: Vec<StageCoverage>,
     pub pass_fail_mix: PassFailMix,
+    pub architecture22_matrix: Architecture22MatrixReport,
 }
 
 pub struct RequirementCoverage {
@@ -58,6 +59,18 @@ pub struct PassFailMix {
     pub total: usize,
     pub target_pass_percent: u8,
     pub target_fail_percent: u8,
+}
+
+pub struct Architecture22MatrixReport {
+    pub scenarios: Vec<Architecture22ScenarioReport>,
+    pub missing_scenarios: Vec<String>,
+}
+
+pub struct Architecture22ScenarioReport {
+    pub scenario_id: String,
+    pub equivalence_class: String,
+    pub planned: usize,
+    pub active: usize,
 }
 
 pub struct TestCase {
@@ -249,6 +262,14 @@ repeat-render comparison API を提供するが、この harness はまだ gener
 実行しない。active parse-only `SurfaceAst` shortcut が runner execution に接続済みの
 唯一の snapshot path である。
 
+architecture-22 matrix support は task 14 では metadata/reporting-only である。
+metadata plan は `architecture22_scenarios`、
+`architecture22_equivalence_class`、`architecture22_gate` を validate し、
+required scenario ごとに registry class と planned/active count を report する。
+task 14 の scenario row はすべて active eligibility を持たないため、将来の
+consumer-specific increment が real clean/incremental/parallel/cache-race execution を
+配線するまで、`architecture22_gate = "active"` は reject される。
+
 ## Determinism Requirements
 
 harness は identical inputs が次を生成することを check する。
@@ -293,6 +314,8 @@ key scenarios:
 - repeated run が異なる diagnostic order を生成する
 - generic snapshot parallel equivalence が sequential snapshot generation と同じ
   observable artifact を生成する
+- architecture-22 matrix metadata が required scenario ids をすべて planned として
+  report し、owning consumer runner が存在する前の fake active row を reject する
 
 ## Constraints and Assumptions
 
