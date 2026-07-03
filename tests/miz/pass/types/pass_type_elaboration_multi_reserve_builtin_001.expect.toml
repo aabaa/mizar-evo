@@ -1,0 +1,15 @@
+schema_version = 1
+id = "pass_type_elaboration_multi_reserve_builtin_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_multi_reserve_builtin_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.builtin_type_expression_source_bridge",
+]
+notes = "Active type_elaboration runner pass coverage for task 18: a multi-variable reserve segment shares one builtin set source type range while the bridge creates distinct checker-owned bindings, declaration inputs, type sites, TypedAst nodes, and ResolvedTypedAst nodes."

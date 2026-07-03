@@ -239,10 +239,11 @@ regression test を追加した。
       `mizar-resolve` task 23（`declaration-symbol`）、`mizar-checker` task 12
       （`type-elaboration` external-gap runner）、task 16（source-derived
       builtin type-expression normalization）、task 17（source-derived
-      builtin type-expression projection to `ResolvedTypedAst`）を prepared/implemented increments
-      として記録する。checker task 29、`mizar-vc` task 15、`mizar-atp` task 20、
-      `mizar-kernel` task 17 は `paced/open` として記録し、placeholder runner や
-      fake active fixture は作らない。
+      builtin type-expression projection to `ResolvedTypedAst`）、task 18
+      （source-derived reserve declaration semantic bridge）を prepared/implemented
+      increments として記録する。checker task 29、`mizar-vc` task 15、`mizar-atp`
+      task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
+      runner や fake active fixture は作らない。
     - 依存: 5、8。仕様: [harness.md](./harness.md)。
 
 11. **決定性スイート。** [x]
@@ -347,6 +348,24 @@ regression test を追加した。
       Core/VC payload を追加しない。
     - 依存: 16、`mizar-checker` task 28。仕様: [harness.md](./harness.md)、
       checker `resolved_typed_ast.md`、checker MC-G020/MC-G027。
+
+18. **Source-derived reserve declaration semantic bridge。** [x]
+    - 完了: active `type_elaboration` source bridge を builtin type-expression
+      site から reserve-only builtin declaration payload へ拡張した。runner は
+      bare builtin `set` / `object` head を持つ unrecovered top-level `reserve`
+      item を、checker-owned module `BindingEnv`、binding ごとの
+      `DeclarationInput`、binding 固有の `TypeExpressionInput` site、
+      `DeclarationChecker` output、`TypedAst`、`ResolvedTypedAst` へ抽出する。
+      `reserve x, y for set` のように source type range を共有する場合も、binding
+      ごとに distinct typed site を持つ。
+    - 未対応の non-builtin declaration、attribute、mode / structure payload、
+      term、formula、coercion、overload payload、fact、Core / VC payload、proof
+      evidence は明示的な `type_elaboration.external_dependency.ast_payload_extraction`
+      gap のままにする。real source-derived payload がまだ downstream consumer へ
+      lower されていないため、CoreIr / ControlFlowIr / VC / proof row は昇格しない。
+    - 依存: 16、17、checker MC-G011/MC-G016/MC-G020。仕様:
+      [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
+      [traceability.md](./traceability.md)。
 
 ## 推奨検証
 

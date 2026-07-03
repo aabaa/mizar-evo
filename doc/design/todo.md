@@ -49,7 +49,7 @@ The current TODO stream should be read as targeting these completion gates:
 
 | Gate | Completion condition | Primary roadmap owners |
 |---|---|---|
-| Source-to-semantics bridge | Real `.miz` inputs can pass from frontend output through resolver and checker-owned payload extraction into `ResolvedTypedAst`, with active semantic corpus coverage instead of extraction-gap sentinels. The first builtin type-expression slice is active; AST-wide declaration, term, formula, proof, and checker payload extraction remains open. | `mizar-test`, `mizar-resolve`, `mizar-checker` |
+| Source-to-semantics bridge | Real `.miz` inputs can pass from frontend output through resolver and checker-owned payload extraction into `ResolvedTypedAst`, with active semantic corpus coverage instead of extraction-gap sentinels. The reserve-only builtin declaration slice is active; AST-wide non-builtin declarations, attributes, terms, formulas, proof, and broader checker payload extraction remains open. | `mizar-test`, `mizar-resolve`, `mizar-checker` |
 | Core and VC bridge | Checker-derived payloads lower into `CoreIr`, `ControlFlowIr`, and source-derived VC inputs without reconstructing missing source or fabricating registration/proof facts. | `mizar-checker`, `mizar-core`, `mizar-vc`, `mizar-test` |
 | Proof and algorithm verification | Source-derived proof and algorithm obligations can flow through VC generation, ATP candidate production, kernel checking, proof policy/status projection, and proof-reuse metadata with active `proof_verification` coverage. | `mizar-vc`, `mizar-atp`, `mizar-kernel`, `mizar-proof`, `mizar-cache`, `mizar-test` |
 | Artifact publication | Verified module, registration, proof-witness, and diagnostic projections are emitted through real `mizar-artifact` store/manifest transactions from producer-owned outputs. | `mizar-artifact`, `mizar-ir`, `mizar-driver`, producer crates |
@@ -79,7 +79,7 @@ convenient downstream crate.
 | mizar-syntax | yes | Rowan-backed `SurfaceAst`, syntax trivia, recovery, typed views, parser-facing syntax vocabulary | [x] current milestone complete; only deferred rustdoc summaries remain | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | yes | Grammar, Pratt parsing, syntax recovery, parse-only corpus execution | [x] current milestone complete through task 45; deferred operator-declaration follow-up task 46 remains recorded | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | yes | Source loading and phase 1-3 orchestration across session, lexer, syntax, and parser | [x] current milestone complete; future parser growth may open bounded follow-ups | [todo](./mizar-frontend/en/todo.md) |
-| mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] foundation complete through task 16; broader consumer-runner support remains paced by source-derived semantic/core/VC bridges | [todo](./mizar-test/en/todo.md) |
+| mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] foundation complete through task 18 reserve declaration bridge; broader consumer-runner support remains paced by source-derived semantic/core/VC bridges | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus task graph, scheduler, resources, cancellation, failure state, cache seam, artifact commit boundary, and scheduler-selected dispatch | [x] current milestone complete; full real clean/incremental/parallel equivalence remains an integration gap | [todo](./mizar-build/en/todo.md) |
 | mizar-lsp | yes | Editor range mapping now; future server, snapshots, diagnostics, metadata, navigation, actions, explanations | [~] range conversion slice exists; specs and server features remain planned | [todo](./mizar-lsp/en/todo.md) |
 | mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [x] current resolver milestone complete through R-024 and non-deferred tasks 1-29; R-030 remains future diagnostic consumer adoption | [todo](./mizar-resolve/en/todo.md) |
@@ -161,9 +161,10 @@ current parser hardening close-out.
 
 ### Immediate Next Work
 
-1. **Source-derived semantic bridge** - `mizar-test` task 16 has landed the
-   first active `.miz` source-to-checker slice for reserve-only builtin
-   type-expression normalization. Continue this bridge by widening real
+1. **Source-derived semantic bridge** - `mizar-test` tasks 16-18 have landed
+   active `.miz` source-to-checker coverage for reserve-only builtin
+   declaration payloads through checker-owned `BindingEnv`, `DeclarationInput`,
+   `TypedAst`, and `ResolvedTypedAst`. Continue this bridge by widening real
    source-derived payload extraction through `mizar-checker`, then lowering
    confirmed checker payloads through `mizar-core` and `mizar-vc`. This should
    retire the remaining source-to-checker, broader `type_elaboration`, `CoreIr`,
@@ -201,7 +202,7 @@ separate immediate ordering item.
 
 | Finding | Crate TODO evidence | Roadmap disposition |
 | ------- | ------------------- | ------------------- |
-| Source-derived semantic payloads remain the next bridge after the first builtin type-expression source slice. | `mizar-checker` now has active `.miz` coverage for reserve-only builtin `set`/`object` type-expression normalization, but broader semantic `.miz` assertions remain deferred behind AST-wide source-to-checker extraction; `mizar-core` defers source-derived `CoreIr`/`ControlFlowIr` snapshots; `mizar-vc` defers source-derived `proof_verification` families. | Keep Immediate Next Work step 1 focused on AST-wide checker payloads, then Core/VC handoff. |
+| Source-derived semantic payloads remain the next bridge after the reserve-only builtin declaration slice. | `mizar-checker` now has active `.miz` coverage for reserve-only builtin `set`/`object` declarations through checker-owned `BindingEnv`, `DeclarationInput`, `TypedAst`, and `ResolvedTypedAst`, but broader semantic `.miz` assertions remain deferred behind AST-wide source-to-checker extraction; `mizar-core` defers source-derived `CoreIr`/`ControlFlowIr` snapshots; `mizar-vc` defers source-derived `proof_verification` families. | Keep Immediate Next Work step 1 focused on AST-wide checker payloads, then Core/VC handoff. |
 | Publication/orchestration is distinct from evidence production. | `mizar-ir`, `mizar-driver`, and `mizar-build` keep real phase services, producer outputs, and clean/incremental publication classified as `external_dependency_gap`; `mizar-artifact` task 17 still waits for real producer projections. | Keep as Immediate Next Work step 2 after the semantic bridge. |
 | ATP/proof/cache/artifact integration depends on real VCs and publication seams. | `mizar-atp` concrete backend/evidence routes remain deferred; `mizar-kernel` producer/consumer integration waits for evidence producers; `mizar-proof` cache/witness handoffs remain external; `mizar-cache` proof-reuse consumers remain paced by `mizar-vc` and `mizar-proof`; `mizar-artifact` witness publication remains deferred until producer outputs exist. | Keep the evidence-pipeline wave after steps 1-2. |
 | User-facing consumers should not lead producer readiness. | `mizar-diagnostics` adoption is deferred to the first real consumer seam; `mizar-lsp` navigation/metadata work is paced by metadata producers; `mizar-doc` phase 16 consumes published artifacts and must not re-run semantic analysis. | Keep LSP/doc as Immediate Next Work step 4 after producer integration. |

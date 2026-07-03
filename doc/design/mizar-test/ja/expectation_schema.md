@@ -383,12 +383,17 @@ expected = "set"
 `diagnostic_codes = []` を保つ。runner は checker work の前に frontend parsing と
 resolver symbol collection を実行する。
 
-対応済み source-derived pass slice は、attributes、arguments、parameter prefix、
-non-builtin symbol head を持たない builtin `set` / `object` type-expression payload に
-限定する。この pass case は runner が抽出して `TypeNormalizer` で normalize し、
-`TypedAst` に組み立て、`ResolvedTypedAst` へ投影する source site を少なくとも 1 つ
-含み、pass-slice traceability row に cover され、empty `diagnostic_codes` と
-internal detail payload なしを assert しなければならない。
+対応済み source-derived pass slice は reserve-only builtin `set` / `object`
+declaration に限定する。対象は top-level の unrecovered reserve item で、segment が
+1 個以上の identifier と exactly one bare builtin type-expression head を持ち、
+attribute、argument、parameter prefix、non-builtin symbol head を含まないものだけである。
+この pass case は、runner が checker-owned module `BindingEnv`、binding ごとの
+`DeclarationInput`、binding 固有の `TypeExpressionInput` site へ抽出する reserve
+binding を少なくとも 1 つ含む必要がある。runner はその input を `TypeNormalizer`、
+`DeclarationChecker`、`TypedAst`、`ResolvedTypedAst` へ通す。同じ source
+type-expression range を共有する複数 identifier でも distinct typed site を使わなければならない。
+pass-slice traceability row に cover され、empty `diagnostic_codes` と internal detail
+payload なしを assert する。
 
 ```toml
 expected_outcome = "pass"
@@ -415,8 +420,9 @@ tags = ["active_type_elaboration"]
 ```
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
-から checker-owned payload を declaration、attribute、mode / structure expansion、term、
-formula、coercion、fact、overload evidence、proof evidence を捏造せず構築できるまで deferred のままにする。
+から checker-owned payload を non-builtin declaration、attribute、mode / structure
+expansion、term、formula、coercion、fact、overload evidence、Core / VC payload、proof
+evidence を捏造せず構築できるまで deferred のままにする。
 
 ## Formula, Statement, And Proof Expectations
 

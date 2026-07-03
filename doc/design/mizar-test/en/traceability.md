@@ -253,24 +253,27 @@ range exists.
 For the type-elaboration stage, coverage is executable only for `.miz`
 sidecars admitted by the active runner gate (`active_type_elaboration`,
 `stage = "type_elaboration"`, `expected_phase = "type_check"`, and pass/fail
-outcome). Tasks 16 and 17 may credit only the narrow builtin type-expression slice:
-unrecovered source `TypeExpression` nodes headed by
-`set` or `object` with no attributes, arguments, parameter prefixes, or
-non-builtin symbol heads are converted into checker-owned `TypeExpressionInput`
-payloads, normalized by `mizar-checker`, assembled into a minimal typed AST
-shell, and projected into checker-owned `ResolvedTypedAst`. Active pass tests
-may cover that slice only when the listed source has at least one extracted
-builtin type-expression site and runner regression evidence confirms the
-`TypeNormalizer`, minimal `TypedAst`, and `ResolvedTypedAst` paths were
-exercised. The pass slice must have its own traceability row/test instead of
-being credited from the diagnostic external-gap row.
+outcome). The task 16/17 bridge continuation may credit only the narrow
+reserve-only builtin declaration slice: unrecovered top-level reserve items
+whose segments contain one or more identifiers and exactly one bare builtin
+`set` or `object` type-expression, with no attributes, arguments, parameter
+prefixes, or non-builtin symbol heads. Those sources are converted into a
+checker-owned module `BindingEnv`, one `DeclarationInput` per binding,
+binding-specific `TypeExpressionInput` sites, a checker-owned `TypedAst`, and
+checker-owned `ResolvedTypedAst`. Active pass tests may cover that slice only
+when the listed source has at least one extracted reserve binding and runner
+regression evidence confirms the binding-env construction, `DeclarationChecker`,
+minimal `TypedAst`, and `ResolvedTypedAst` paths were exercised. The pass slice
+must have its own traceability row/test instead of being credited from the
+diagnostic external-gap row.
 
 Covered active fail tests may still assert the external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` when a case needs
-unsupported declaration, term, formula, coercion, attribute/mode/structure,
-overload, fact, or proof payload extraction. Those gap tests do not satisfy the
-broader task 7-11 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`,
-and `proof_verification` rows remain deferred until prepared consumer execution
+unsupported non-builtin declarations, attributes, mode/structure payloads,
+terms, formulas, coercions, overload payloads, facts, Core/VC payloads, or proof
+payload extraction. Those gap tests do not satisfy the broader task 7-11
+semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and
+`proof_verification` rows remain deferred until prepared consumer execution
 exists.
 
 ## Reporting

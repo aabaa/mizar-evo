@@ -33,6 +33,14 @@ Result: no blocking `source_drift`, `design_drift`, or
 APIs. Remaining uncovered source-derived behavior is intentionally deferred by
 the gap rows reconciled below.
 
+Post-audit source-derived bridge note: `mizar-test` now exercises a bounded
+reserve-only builtin declaration bridge by constructing explicit checker-owned
+`BindingEnv`, `DeclarationInput`, `TypedAst`, and `ResolvedTypedAst` payloads
+from supported `.miz` source. This is not a new checker raw-syntax dependency
+and does not close the AST-wide source-to-checker gaps for non-builtin
+declarations, attributes, modes/structures, terms, formulas, overloads,
+Core/VC payloads, or proof evidence.
+
 ## Crate Module Exports
 
 `src/lib.rs` exports exactly these checker-owned modules:
@@ -368,7 +376,7 @@ reconciles all crate-plan MC-G rows as follows.
 | MC-G017 | `external_dependency_gap` | Active for term/formula payload tables, built-in numeric payloads, candidate signatures, structure/selector payloads, source `qua` evidence, and sethood/non-emptiness evidence. |
 | MC-G018 | `external_dependency_gap` | Active for coercion request tables, dependency-summary facts, inheritance graphs, cluster evidence, sethood/non-emptiness evidence, and proof-query results. |
 | MC-G019 | `external_dependency_gap` | Active for statement/proof assumptions, theorem acceptance payloads, and phase-7 trace fact payloads. |
-| MC-G020 | `external_dependency_gap` / `deferred` | Active source-to-checker extraction blocker for semantic pass fixtures across tasks 7-11 and later consumers. The reserve-only builtin type-expression slice now reaches `ResolvedTypedAst`, but broader declaration, non-builtin type-head, attribute/mode/structure, term, formula, coercion, overload, recorded-fact, proof, Core, and VC payload extraction remains open. |
+| MC-G020 | `external_dependency_gap` / `deferred` | Active source-to-checker extraction blocker for semantic pass fixtures across tasks 7-11 and later consumers. The reserve-only builtin declaration slice now reaches `BindingEnv`, `DeclarationInput`, `DeclarationChecker`, `TypedAst`, and `ResolvedTypedAst`, but broader non-builtin declaration, attribute/mode/structure, term, formula, coercion, overload, recorded-fact, proof, Core, and VC payload extraction remains open. |
 | MC-G021 | `external_dependency_gap` / `deferred` | Active registration payload/accepted-status/source extraction blocker; registration code consumes explicit payload seams only. |
 | MC-G023 | `test_gap` / `external_dependency_gap` / `deferred` | Active for source-derived cluster/reduction fixtures, artifact/cache integration, and real trace extraction. |
 | MC-G025 | `external_dependency_gap` / `deferred` | Active for proof/artifact production or import of accepted registration status. |

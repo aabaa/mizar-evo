@@ -535,6 +535,14 @@ task 2 では実行可能な checker semantics がまだ存在しないため、
 checker-stage fixture は不要である。最初の active `type_elaboration` corpus runner
 と traceability entry は task 12 が所有する。
 
+現在の source-derived runner note: `mizar-test` type-elaboration runner は bounded
+reserve-only builtin declaration bridge のために explicit checker-owned `TypedAst`
+node を構築してよい。各 reserve binding は declaration node と binding 固有の
+type-expression node を持つ。複数 binding が同じ source type range を共有しても、
+distinct `TypedSiteRef` owner を使う。これは `TypedAst` を checker-owned payload
+surface のまま保つためのものであり、`mizar-checker` に raw syntax walking、general
+declaration extraction、Core / VC payload、proof evidence を許可しない。
+
 ## task 2 の分類
 
 | Class | Finding | Action |

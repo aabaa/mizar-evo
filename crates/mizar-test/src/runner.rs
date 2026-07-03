@@ -5,6 +5,12 @@ use std::io;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use mizar_checker::binding_env::{
+    BinderIdentity, BindingContextDraft, BindingContextId, BindingContextLayer,
+    BindingContextOwner, BindingContextRecovery, BindingContextTable, BindingDiagnosticTable,
+    BindingDraft, BindingEnv, BindingEnvParts, BindingId, BindingKind, BindingRecoveryState,
+    BindingStatus, BindingTable, BindingTypeSite, CapturedFreeVariables,
+};
 use mizar_checker::cluster_trace::ClusterFactTable;
 use mizar_checker::overload_resolution::{
     CandidateViabilityInput, CandidateViabilityOutput, OverloadCandidateInput,
@@ -17,11 +23,14 @@ use mizar_checker::resolved_typed_ast::{
     ResolvedTypedAst, ResolvedTypedAstInputs, ResolvedTypedNodeId, ResolvedTypedNodeKind,
     SourceNodeRole,
 };
-use mizar_checker::type_checker::{TypeExpressionInput, TypeHeadInput, TypeNormalizer};
+use mizar_checker::type_checker::{
+    DeclarationChecker, DeclarationCheckingOutput, DeclarationContextInput, DeclarationInput,
+    DeclarationKind, DeclarationStatus, ReservedDefaultPayload, TypeExpressionInput, TypeHeadInput,
+};
 use mizar_checker::typed_ast::{
-    CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState, TypeFactTable,
-    TypeStatus, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks,
-    TypedSiteRef, TypingState,
+    CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, TypeEntryId,
+    TypeStatus, TypeTable, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeId,
+    TypedNodeLinks, TypedSiteRef, TypingState,
 };
 use mizar_frontend::lexical_env::{
     ExportRank, ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
@@ -43,7 +52,7 @@ use mizar_session::{
     BuildSnapshotId, DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
     SourceAnchor, SourceInput, SourceOriginInput, SourceRange, normalize_path,
 };
-use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeKind};
+use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeKind, SurfaceTokenKind};
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
 use crate::expectation::{ExpectedOutcome, PipelinePhase};
@@ -57,6 +66,7 @@ const ACTIVE_TYPE_ELABORATION_TAG: &str = "active_type_elaboration";
 const ALLOW_FRONTEND_RECOVERY_DIAGNOSTICS_TAG: &str = "allow_frontend_recovery_diagnostics";
 const TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY: &str =
     "type_elaboration.external_dependency.ast_payload_extraction";
+const SOURCE_RESERVE_MODULE_CONTEXT: BindingContextId = BindingContextId::new(0);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseOnlyRunReport {
@@ -682,24 +692,21 @@ fn source_type_elaboration_detail_keys(
     module: ResolverModuleId,
     symbols: &SymbolEnv,
 ) -> Vec<String> {
-    let Ok(source_types) = extract_builtin_source_type_expressions(ast) else {
+    let Ok(source_reserve) = extract_builtin_source_reserve_declarations(ast) else {
         return vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()];
     };
-    let inputs = source_types
-        .iter()
-        .enumerate()
-        .map(|(index, source_type)| {
-            TypeExpressionInput::new(
-                TypedSiteRef::Node(TypedNodeId::new(index)),
-                source_type.range,
-                source_type.spelling.clone(),
-                source_type.head.clone(),
-            )
-        })
-        .collect::<Vec<_>>();
-    let output = TypeNormalizer::default().normalize(symbols, inputs);
-    if !output.diagnostics().is_empty() {
-        let mut keys = output
+    let handoff = match assemble_source_reserve_checker_handoff(
+        ast.source_id,
+        module,
+        symbols,
+        &source_reserve,
+    ) {
+        Ok(handoff) => handoff,
+        Err(_) => return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()],
+    };
+    if !handoff.declarations.diagnostics().is_empty() {
+        let mut keys = handoff
+            .declarations
             .diagnostics()
             .canonical_iter()
             .map(|(_, diagnostic)| format!("type_elaboration.checker.{}", diagnostic.message_key))
@@ -708,22 +715,9 @@ fn source_type_elaboration_detail_keys(
         keys.dedup();
         return keys;
     }
-    if output.type_entries().len() != source_types.len() {
-        return vec!["type_elaboration.checker.type_entry_count_mismatch".to_owned()];
-    }
-    let typed_ast = match assemble_source_typed_ast(ast.source_id, module, &source_types, &output) {
-        Ok(typed_ast) => typed_ast,
-        Err(_) => return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()],
-    };
-    let resolved = match assemble_source_resolved_typed_ast(&typed_ast, &source_types) {
-        Ok(resolved) => resolved,
-        Err(_) => {
-            return vec!["type_elaboration.checker.resolved_typed_ast_invalid".to_owned()];
-        }
-    };
-    if let Err(error) = assert_source_resolved_typed_ast_handoff(&resolved, &source_types) {
+    if let Err(error) = assert_source_reserve_handoff(&handoff, &source_reserve) {
         let detail_key = match error.as_str() {
-            "resolved source type count mismatch" => {
+            "resolved source reserve count mismatch" => {
                 "type_elaboration.checker.resolved_typed_ast_count_mismatch"
             }
             "resolved typed AST produced diagnostics" => {
@@ -737,37 +731,99 @@ fn source_type_elaboration_detail_keys(
 }
 
 #[derive(Debug, Clone)]
+struct SourceReserveBridge {
+    bindings: Vec<SourceReserveBinding>,
+    source_range: SourceRange,
+}
+
+impl SourceReserveBridge {
+    fn root_node(&self) -> TypedNodeId {
+        TypedNodeId::new(self.bindings.len() * 2)
+    }
+
+    fn type_node(&self, index: usize) -> TypedNodeId {
+        TypedNodeId::new(index * 2)
+    }
+
+    fn declaration_node(&self, index: usize) -> TypedNodeId {
+        TypedNodeId::new(index * 2 + 1)
+    }
+}
+
+#[derive(Debug, Clone)]
+struct SourceReserveBinding {
+    spelling: String,
+    binding_range: SourceRange,
+    type_range: SourceRange,
+    type_spelling: String,
+    type_head: TypeHeadInput,
+}
+
+#[derive(Debug)]
+struct SourceReserveHandoff {
+    binding_env: BindingEnv,
+    declarations: DeclarationCheckingOutput,
+    typed_ast: TypedAst,
+    resolved: ResolvedTypedAst,
+}
+
+#[derive(Debug, Clone)]
 struct SourceTypeExpression {
     range: SourceRange,
     spelling: String,
     head: TypeHeadInput,
 }
 
-fn extract_builtin_source_type_expressions(
+fn extract_builtin_source_reserve_declarations(
     ast: &SurfaceAst,
-) -> Result<Vec<SourceTypeExpression>, ()> {
+) -> Result<SourceReserveBridge, ()> {
     if ast
         .nodes()
         .iter()
-        .any(|node| !is_supported_builtin_type_bridge_node(node))
+        .any(|node| !is_supported_builtin_reserve_bridge_node(node))
     {
         return Err(());
     }
-    let mut source_types = Vec::new();
-    for node in ast
+    let reserve_items = ast
         .nodes()
         .iter()
-        .filter(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
-    {
-        source_types.push(extract_builtin_source_type_expression(ast, node)?);
-    }
-    if source_types.is_empty() {
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::ReserveItem))
+        .collect::<Vec<_>>();
+    if reserve_items.is_empty() {
         return Err(());
     }
-    Ok(source_types)
+
+    let mut bindings = Vec::new();
+    let mut source_range = None;
+    for item in reserve_items {
+        if subtree_has_recovery(ast, item) {
+            return Err(());
+        }
+        source_range = Some(merge_optional_range(source_range, item.range));
+        let segments = item
+            .children
+            .iter()
+            .filter_map(|child| ast.node(*child))
+            .filter(|child| matches!(child.kind, SurfaceNodeKind::ReserveSegment))
+            .collect::<Vec<_>>();
+        if segments.is_empty() {
+            return Err(());
+        }
+        for segment in segments {
+            bindings.extend(extract_builtin_reserve_segment(ast, segment)?);
+        }
+    }
+
+    if bindings.is_empty() {
+        return Err(());
+    }
+    Ok(SourceReserveBridge {
+        bindings,
+        source_range: source_range.expect("reserve_items was non-empty"),
+    })
 }
 
-fn is_supported_builtin_type_bridge_node(node: &SurfaceNode) -> bool {
+fn is_supported_builtin_reserve_bridge_node(node: &SurfaceNode) -> bool {
     matches!(
         node.kind,
         SurfaceNodeKind::Root
@@ -779,6 +835,60 @@ fn is_supported_builtin_type_bridge_node(node: &SurfaceNode) -> bool {
             | SurfaceNodeKind::TypeExpression
             | SurfaceNodeKind::TypeHead
     )
+}
+
+fn extract_builtin_reserve_segment(
+    ast: &SurfaceAst,
+    segment: &SurfaceNode,
+) -> Result<Vec<SourceReserveBinding>, ()> {
+    if subtree_has_recovery(ast, segment) {
+        return Err(());
+    }
+
+    let mut identifiers = Vec::new();
+    let mut saw_for = false;
+    let mut type_expression = None;
+    for child_id in &segment.children {
+        let child = ast.node(*child_id).ok_or(())?;
+        match &child.kind {
+            SurfaceNodeKind::Token(token)
+                if token.kind == SurfaceTokenKind::ReservedWord
+                    && token.text.as_ref() == "for"
+                    && !saw_for =>
+            {
+                saw_for = true;
+            }
+            SurfaceNodeKind::Token(token)
+                if token.kind == SurfaceTokenKind::Identifier && !saw_for =>
+            {
+                let spelling = token.text.to_string();
+                identifiers.push((spelling, child.range));
+            }
+            SurfaceNodeKind::Token(token)
+                if token.kind == SurfaceTokenKind::ReservedSymbol
+                    && token.text.as_ref() == ","
+                    && !saw_for => {}
+            SurfaceNodeKind::TypeExpression if saw_for && type_expression.is_none() => {
+                type_expression = Some(extract_builtin_source_type_expression(ast, child)?);
+            }
+            _ => return Err(()),
+        }
+    }
+
+    if !saw_for || identifiers.is_empty() {
+        return Err(());
+    }
+    let type_expression = type_expression.ok_or(())?;
+    Ok(identifiers
+        .into_iter()
+        .map(|(spelling, binding_range)| SourceReserveBinding {
+            spelling,
+            binding_range,
+            type_range: type_expression.range,
+            type_spelling: type_expression.spelling.clone(),
+            type_head: type_expression.head.clone(),
+        })
+        .collect())
 }
 
 fn extract_builtin_source_type_expression(
@@ -805,6 +915,17 @@ fn extract_builtin_source_type_expression(
     })
 }
 
+fn merge_optional_range(left: Option<SourceRange>, right: SourceRange) -> SourceRange {
+    match left {
+        Some(left) => SourceRange {
+            source_id: left.source_id,
+            start: left.start.min(right.start),
+            end: left.end.max(right.end),
+        },
+        None => right,
+    }
+}
+
 fn subtree_has_recovery(ast: &SurfaceAst, node: &SurfaceNode) -> bool {
     node.recovered
         || node
@@ -814,9 +935,112 @@ fn subtree_has_recovery(ast: &SurfaceAst, node: &SurfaceNode) -> bool {
             .any(|child| subtree_has_recovery(ast, child))
 }
 
-fn assemble_source_resolved_typed_ast(
+fn assemble_source_reserve_checker_handoff(
+    source_id: mizar_session::SourceId,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+    source_reserve: &SourceReserveBridge,
+) -> Result<SourceReserveHandoff, String> {
+    let binding_env =
+        assemble_source_reserve_binding_env(source_id, module.clone(), source_reserve)?;
+    let context_inputs = vec![DeclarationContextInput::new(
+        SOURCE_RESERVE_MODULE_CONTEXT,
+        TypedSiteRef::Node(source_reserve.root_node()),
+        source_reserve.source_range,
+    )];
+    let declaration_inputs = source_reserve
+        .bindings
+        .iter()
+        .enumerate()
+        .map(|(index, binding)| {
+            let type_site = TypedSiteRef::Node(source_reserve.type_node(index));
+            DeclarationInput::new(
+                BindingId::new(index),
+                SOURCE_RESERVE_MODULE_CONTEXT,
+                TypedSiteRef::Node(source_reserve.declaration_node(index)),
+                binding.binding_range,
+                DeclarationKind::ReservedVariable,
+            )
+            .with_type_expression(TypeExpressionInput::new(
+                type_site.clone(),
+                binding.type_range,
+                binding.type_spelling.clone(),
+                binding.type_head.clone(),
+            ))
+            .with_reserved_default(ReservedDefaultPayload::new(type_site, false))
+        })
+        .collect::<Vec<_>>();
+    let declarations = DeclarationChecker::default().check(
+        symbols,
+        &binding_env,
+        context_inputs,
+        declaration_inputs,
+    );
+    let typed_ast =
+        assemble_source_reserve_typed_ast(source_id, module, source_reserve, &declarations)?;
+    let resolved = assemble_source_reserve_resolved_typed_ast(&typed_ast, source_reserve)
+        .map_err(|error| error.to_string())?;
+
+    Ok(SourceReserveHandoff {
+        binding_env,
+        declarations,
+        typed_ast,
+        resolved,
+    })
+}
+
+fn assemble_source_reserve_binding_env(
+    source_id: mizar_session::SourceId,
+    module: ResolverModuleId,
+    source_reserve: &SourceReserveBridge,
+) -> Result<BindingEnv, String> {
+    let binding_ids = (0..source_reserve.bindings.len())
+        .map(BindingId::new)
+        .collect::<Vec<_>>();
+    let mut contexts = BindingContextTable::new();
+    contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::Module,
+        parent: None,
+        layer: BindingContextLayer::Module,
+        lexical_scope: None,
+        bindings: binding_ids.clone(),
+        visible_bindings: binding_ids,
+        recovery: BindingContextRecovery::Normal,
+    });
+
+    let mut bindings = BindingTable::new();
+    for (index, binding) in source_reserve.bindings.iter().enumerate() {
+        bindings.insert(BindingDraft {
+            spelling: binding.spelling.clone(),
+            kind: BindingKind::ReservedVariable,
+            identity: BinderIdentity::ReservedVariable {
+                spelling: binding.spelling.clone(),
+                declaration_range: binding.binding_range,
+            },
+            owner_context: SOURCE_RESERVE_MODULE_CONTEXT,
+            declaration_range: binding.binding_range,
+            visible_after_ordinal: index,
+            type_site: BindingTypeSite::Source(binding.type_range),
+            status: BindingStatus::Reserved,
+            captured: CapturedFreeVariables::default(),
+            diagnostics: Vec::new(),
+            recovery: BindingRecoveryState::Normal,
+        });
+    }
+
+    BindingEnv::try_new(BindingEnvParts {
+        source_id,
+        module_id: module,
+        contexts,
+        bindings,
+        diagnostics: BindingDiagnosticTable::new(),
+    })
+    .map_err(|error| error.to_string())
+}
+
+fn assemble_source_reserve_resolved_typed_ast(
     typed_ast: &TypedAst,
-    source_types: &[SourceTypeExpression],
+    source_reserve: &SourceReserveBridge,
 ) -> Result<ResolvedTypedAst, String> {
     let cluster_facts = ClusterFactTable::new();
     let overload_collection = OverloadCollectionOutput::collect(
@@ -832,26 +1056,38 @@ fn assemble_source_resolved_typed_ast(
         SpecificityGraphOutput::build(&viability, Vec::<SpecificityComparisonInput>::new());
     let overload_selection =
         OverloadSelectionOutput::resolve(&specificity, Vec::<OverloadSiteResolutionInput>::new());
-    let expressions = source_types
+    let expressions = source_reserve
+        .bindings
         .iter()
         .enumerate()
         .map(|(index, _)| ExpressionMetadataInput {
-            expr: ExprId::new(format!("source.type_expression.{index}")),
-            typed_site: TypedSiteRef::Node(TypedNodeId::new(index)),
-            local_context: None,
+            expr: ExprId::new(format!("source.reserve.declaration.{index}")),
+            typed_site: TypedSiteRef::Node(source_reserve.declaration_node(index)),
+            local_context: Some(LocalTypeContextId::new(0)),
             cluster_facts: Vec::new(),
         })
         .collect();
-    let node_hints = source_types
-        .iter()
-        .enumerate()
-        .map(|(index, _)| ResolvedNodeKindHint {
-            typed_node: TypedNodeId::new(index),
+    let mut node_hints = Vec::new();
+    for (index, _) in source_reserve.bindings.iter().enumerate() {
+        node_hints.push(ResolvedNodeKindHint {
+            typed_node: source_reserve.type_node(index),
             kind: ResolvedNodeKindHintKind::SourcePreserved {
-                role: SourceNodeRole::new("source.type_expression"),
+                role: SourceNodeRole::new("source.reserve.type_expression"),
             },
-        })
-        .collect();
+        });
+        node_hints.push(ResolvedNodeKindHint {
+            typed_node: source_reserve.declaration_node(index),
+            kind: ResolvedNodeKindHintKind::SourcePreserved {
+                role: SourceNodeRole::new("source.reserve.declaration"),
+            },
+        });
+    }
+    node_hints.push(ResolvedNodeKindHint {
+        typed_node: source_reserve.root_node(),
+        kind: ResolvedNodeKindHintKind::SourcePreserved {
+            role: SourceNodeRole::new("source.reserve.module"),
+        },
+    });
 
     ResolvedTypedAst::assemble(ResolvedTypedAstInputs {
         typed_ast,
@@ -867,34 +1103,142 @@ fn assemble_source_resolved_typed_ast(
     .map_err(|error| error.to_string())
 }
 
-fn assert_source_resolved_typed_ast_handoff(
-    resolved: &ResolvedTypedAst,
-    source_types: &[SourceTypeExpression],
+fn assert_source_reserve_handoff(
+    handoff: &SourceReserveHandoff,
+    source_reserve: &SourceReserveBridge,
 ) -> Result<(), String> {
-    if resolved.nodes().len() != source_types.len()
-        || resolved.expr_metadata().len() != source_types.len()
+    let expected_bindings = source_reserve.bindings.len();
+    let expected_nodes = expected_bindings * 2 + 1;
+    if handoff.resolved.nodes().len() != expected_nodes
+        || handoff.resolved.expr_metadata().len() != expected_bindings
+        || handoff.declarations.declarations().len() != expected_bindings
     {
-        return Err("resolved source type count mismatch".to_owned());
+        return Err("resolved source reserve count mismatch".to_owned());
     }
-    for (index, source_type) in source_types.iter().enumerate() {
-        let node = resolved
+    let module_context = handoff
+        .binding_env
+        .contexts()
+        .get(SOURCE_RESERVE_MODULE_CONTEXT)
+        .ok_or_else(|| "missing source reserve module binding context".to_owned())?;
+    let expected_binding_ids = (0..expected_bindings)
+        .map(BindingId::new)
+        .collect::<Vec<_>>();
+    if module_context.bindings != expected_binding_ids
+        || module_context.visible_bindings != expected_binding_ids
+    {
+        return Err("source reserve module binding context mismatch".to_owned());
+    }
+    if handoff.declarations.contexts().len() != 1
+        || handoff
+            .declarations
+            .contexts()
+            .get(LocalTypeContextId::new(0))
+            .is_none()
+    {
+        return Err("source reserve local context missing".to_owned());
+    }
+
+    for (index, source_binding) in source_reserve.bindings.iter().enumerate() {
+        let binding = handoff
+            .binding_env
+            .bindings()
+            .get(BindingId::new(index))
+            .ok_or_else(|| format!("missing source reserve binding {index}"))?;
+        if binding.spelling != source_binding.spelling
+            || binding.kind != BindingKind::ReservedVariable
+            || binding.owner_context != SOURCE_RESERVE_MODULE_CONTEXT
+            || binding.declaration_range != source_binding.binding_range
+            || binding.visible_after_ordinal != index
+            || binding.type_site != BindingTypeSite::Source(source_binding.type_range)
+            || binding.status != BindingStatus::Reserved
+        {
+            return Err(format!("source reserve binding {index} metadata mismatch"));
+        }
+        match &binding.identity {
+            BinderIdentity::ReservedVariable {
+                spelling,
+                declaration_range,
+            } if spelling == &source_binding.spelling
+                && *declaration_range == source_binding.binding_range => {}
+            _ => {
+                return Err(format!("source reserve binding {index} identity mismatch"));
+            }
+        }
+
+        let type_node_id = source_reserve.type_node(index);
+        let declaration_node_id = source_reserve.declaration_node(index);
+        let type_node = handoff
+            .resolved
             .nodes()
-            .node(ResolvedTypedNodeId::new(index))
-            .ok_or_else(|| format!("missing resolved node {index}"))?;
-        if node.source_range != source_type.range {
-            return Err(format!("resolved node {index} source range mismatch"));
+            .node(ResolvedTypedNodeId::new(type_node_id.index()))
+            .ok_or_else(|| format!("missing resolved type node {index}"))?;
+        if type_node.source_range != source_binding.type_range {
+            return Err(format!("resolved type node {index} source range mismatch"));
         }
-        match &node.kind {
+        match &type_node.kind {
             ResolvedTypedNodeKind::SourcePreserved { role }
-                if role.as_str() == "source.type_expression" => {}
-            _ => return Err(format!("resolved node {index} source role mismatch")),
+                if role.as_str() == "source.reserve.type_expression" => {}
+            _ => return Err(format!("resolved type node {index} source role mismatch")),
         }
-        let expr = ExprId::new(format!("source.type_expression.{index}"));
-        let metadata = resolved
+        if type_node.final_type.is_none() {
+            return Err(format!(
+                "resolved type node {index} is missing a final type"
+            ));
+        }
+
+        let declaration = handoff
+            .declarations
+            .declarations()
+            .iter()
+            .map(|(_, declaration)| declaration)
+            .find(|declaration| declaration.binding == BindingId::new(index))
+            .ok_or_else(|| format!("missing checked declaration {index}"))?;
+        if declaration.site != TypedSiteRef::Node(declaration_node_id)
+            || declaration.type_site != Some(TypedSiteRef::Node(type_node_id))
+            || declaration.type_entry.is_none()
+            || declaration.kind != DeclarationKind::ReservedVariable
+            || declaration.status != DeclarationStatus::Checked
+            || !declaration.deferred.is_empty()
+        {
+            return Err(format!("checked declaration {index} site mismatch"));
+        }
+        let typed_declaration = handoff
+            .typed_ast
+            .nodes()
+            .node(declaration_node_id)
+            .ok_or_else(|| format!("missing typed declaration node {index}"))?;
+        if typed_declaration.links.type_entry != declaration.type_entry
+            || typed_declaration.links.context != Some(LocalTypeContextId::new(0))
+        {
+            return Err(format!("typed declaration node {index} links mismatch"));
+        }
+        let declaration_node = handoff
+            .resolved
+            .nodes()
+            .node(ResolvedTypedNodeId::new(declaration_node_id.index()))
+            .ok_or_else(|| format!("missing resolved declaration node {index}"))?;
+        if declaration_node.source_range != source_binding.binding_range {
+            return Err(format!(
+                "resolved declaration node {index} source range mismatch"
+            ));
+        }
+        match &declaration_node.kind {
+            ResolvedTypedNodeKind::SourcePreserved { role }
+                if role.as_str() == "source.reserve.declaration" => {}
+            _ => return Err(format!("resolved declaration node {index} role mismatch")),
+        }
+        if declaration_node.final_type.is_none() {
+            return Err(format!(
+                "resolved declaration node {index} is missing a final type"
+            ));
+        }
+        let expr = ExprId::new(format!("source.reserve.declaration.{index}"));
+        let metadata = handoff
+            .resolved
             .expr_metadata()
             .get_by_expr(&expr)
             .ok_or_else(|| format!("missing expression metadata {}", expr.as_str()))?;
-        if metadata.source_range != source_type.range {
+        if metadata.source_range != source_binding.binding_range {
             return Err(format!(
                 "expression metadata {} source range mismatch",
                 expr.as_str()
@@ -907,7 +1251,7 @@ fn assert_source_resolved_typed_ast_handoff(
             ));
         }
     }
-    if !resolved.diagnostics().is_empty() {
+    if !handoff.resolved.diagnostics().is_empty() {
         return Err("resolved typed AST produced diagnostics".to_owned());
     }
     Ok(())
@@ -917,74 +1261,136 @@ fn assert_source_resolved_typed_ast_handoff(
 fn assemble_source_checker_handoff(
     source_id: mizar_session::SourceId,
     module: ResolverModuleId,
-    source_types: &[SourceTypeExpression],
-    output: &mizar_checker::type_checker::TypeNormalizationOutput,
-) -> Result<(TypedAst, ResolvedTypedAst), String> {
-    let typed_ast = assemble_source_typed_ast(source_id, module, source_types, output)?;
-    let resolved = assemble_source_resolved_typed_ast(&typed_ast, source_types)?;
-    assert_source_resolved_typed_ast_handoff(&resolved, source_types)?;
-    Ok((typed_ast, resolved))
+    symbols: &SymbolEnv,
+    source_reserve: &SourceReserveBridge,
+) -> Result<SourceReserveHandoff, String> {
+    let handoff =
+        assemble_source_reserve_checker_handoff(source_id, module, symbols, source_reserve)?;
+    assert_source_reserve_handoff(&handoff, source_reserve)?;
+    Ok(handoff)
 }
 
-fn assemble_source_typed_ast(
+fn assemble_source_reserve_typed_ast(
     source_id: mizar_session::SourceId,
     module: ResolverModuleId,
-    source_types: &[SourceTypeExpression],
-    output: &mizar_checker::type_checker::TypeNormalizationOutput,
+    source_reserve: &SourceReserveBridge,
+    output: &DeclarationCheckingOutput,
 ) -> Result<TypedAst, String> {
-    if source_types.is_empty() {
-        return Err("source type bridge produced no type expressions".to_owned());
+    if source_reserve.bindings.is_empty() {
+        return Err("source reserve bridge produced no bindings".to_owned());
     }
-    let mut type_entries_by_node = BTreeMap::new();
-    for (entry_id, entry) in output.type_entries().iter() {
-        if let TypedSiteRef::Node(node_id) = &entry.owner {
-            type_entries_by_node.insert(*node_id, entry_id);
-        }
-    }
+    let declarations_by_binding = output
+        .declarations()
+        .iter()
+        .map(|(_, declaration)| (declaration.binding, declaration))
+        .collect::<BTreeMap<_, _>>();
     let mut builder = TypedArenaBuilder::new();
-    for (index, source_type) in source_types.iter().enumerate() {
-        let node_id = TypedNodeId::new(index);
-        let type_entry = type_entries_by_node.get(&node_id).copied();
-        let typing = type_entry
-            .and_then(|entry_id| output.type_entries().get(entry_id))
-            .map_or(TypingState::Unknown, |entry| match entry.status {
-                TypeStatus::Known => TypingState::Successful,
-                TypeStatus::Assumed => TypingState::Assumed,
-                TypeStatus::Unknown => TypingState::Unknown,
-                TypeStatus::Error => TypingState::Error,
-                TypeStatus::Skipped => TypingState::Skipped,
-                _ => TypingState::Unknown,
-            });
-        builder
+    let mut declaration_nodes = Vec::new();
+    for (index, source_binding) in source_reserve.bindings.iter().enumerate() {
+        let type_node_id = source_reserve.type_node(index);
+        let type_site = TypedSiteRef::Node(type_node_id);
+        let type_entry = type_entry_for_site(output.type_entries(), &type_site);
+        let pushed = builder
             .push(
                 TypedNode::new(
-                    "source.type_expression",
-                    SourceAnchor::Range(source_type.range),
+                    "source.reserve.type_expression",
+                    SourceAnchor::Range(source_binding.type_range),
                 )
                 .with_recovery(NodeRecoveryState::Normal)
-                .with_typing(typing)
+                .with_typing(typing_for_type_entry(output.type_entries(), type_entry))
                 .with_links(TypedNodeLinks {
                     type_entry,
                     ..TypedNodeLinks::default()
                 }),
             )
             .map_err(|error| error.to_string())?;
+        if pushed != type_node_id {
+            return Err(format!("source reserve type node {index} id mismatch"));
+        }
+
+        let declaration = declarations_by_binding
+            .get(&BindingId::new(index))
+            .ok_or_else(|| format!("missing checked source reserve declaration {index}"))?;
+        let declaration_node_id = source_reserve.declaration_node(index);
+        let declaration_type_entry = declaration.type_entry;
+        let pushed = builder
+            .push(
+                TypedNode::new(
+                    "source.reserve.declaration",
+                    SourceAnchor::Range(source_binding.binding_range),
+                )
+                .with_children(vec![type_node_id])
+                .with_recovery(NodeRecoveryState::Normal)
+                .with_typing(typing_for_type_entry(
+                    output.type_entries(),
+                    declaration_type_entry,
+                ))
+                .with_links(TypedNodeLinks {
+                    context: Some(LocalTypeContextId::new(0)),
+                    type_entry: declaration_type_entry,
+                    facts: declaration.facts.clone(),
+                    ..TypedNodeLinks::default()
+                }),
+            )
+            .map_err(|error| error.to_string())?;
+        if pushed != declaration_node_id {
+            return Err(format!(
+                "source reserve declaration node {index} id mismatch"
+            ));
+        }
+        declaration_nodes.push(declaration_node_id);
     }
-    let root = (!source_types.is_empty()).then(|| TypedNodeId::new(0));
-    let nodes = builder.finish(root).map_err(|error| error.to_string())?;
+
+    let root = builder
+        .push(
+            TypedNode::new(
+                "source.reserve.module",
+                SourceAnchor::Range(source_reserve.source_range),
+            )
+            .with_children(declaration_nodes)
+            .with_recovery(NodeRecoveryState::Normal)
+            .with_typing(TypingState::Successful)
+            .with_links(TypedNodeLinks {
+                context: Some(LocalTypeContextId::new(0)),
+                ..TypedNodeLinks::default()
+            }),
+        )
+        .map_err(|error| error.to_string())?;
+    let nodes = builder
+        .finish(Some(root))
+        .map_err(|error| error.to_string())?;
     TypedAst::try_new(TypedAstParts {
         source_id,
         module_id: module,
         resolved_root: None,
         nodes,
-        contexts: LocalTypeContextTable::new(),
+        contexts: output.contexts().clone(),
         types: output.type_entries().clone(),
-        facts: TypeFactTable::new(),
+        facts: output.facts().clone(),
         coercions: CoercionTable::new(),
         initial_obligations: InitialObligationTable::new(),
         diagnostics: output.diagnostics().clone(),
     })
     .map_err(|error| error.to_string())
+}
+
+fn type_entry_for_site(types: &TypeTable, site: &TypedSiteRef) -> Option<TypeEntryId> {
+    types
+        .iter()
+        .find_map(|(entry_id, entry)| (&entry.owner == site).then_some(entry_id))
+}
+
+fn typing_for_type_entry(types: &TypeTable, type_entry: Option<TypeEntryId>) -> TypingState {
+    type_entry
+        .and_then(|entry_id| types.get(entry_id))
+        .map_or(TypingState::Unknown, |entry| match entry.status {
+            TypeStatus::Known => TypingState::Successful,
+            TypeStatus::Assumed => TypingState::Assumed,
+            TypeStatus::Unknown => TypingState::Unknown,
+            TypeStatus::Error => TypingState::Error,
+            TypeStatus::Skipped => TypingState::Skipped,
+            _ => TypingState::Unknown,
+        })
 }
 
 fn resolver_module_id(workspace_root: &Path, source_path: &Path) -> ResolverModuleId {
@@ -1449,12 +1855,14 @@ impl fmt::Display for TypeElaborationCaseStatus {
 #[cfg(test)]
 mod tests {
     use super::{
-        ParseOnlyImportProvider, assemble_source_checker_handoff,
-        extract_builtin_source_type_expressions,
+        ParseOnlyImportProvider, TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY,
+        assemble_source_checker_handoff, extract_builtin_source_reserve_declarations,
+        source_type_elaboration_detail_keys,
     };
+    use mizar_checker::binding_env::BindingId;
     use mizar_checker::resolved_typed_ast::{ResolvedTypedNodeId, ResolvedTypedNodeKind};
-    use mizar_checker::type_checker::{TypeExpressionInput, TypeHeadInput, TypeNormalizer};
-    use mizar_checker::typed_ast::{TypedNodeId, TypedSiteRef};
+    use mizar_checker::type_checker::TypeHeadInput;
+    use mizar_checker::typed_ast::LocalTypeContextId;
     use mizar_frontend::lexical_env::{
         ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
         LexicalEnvironmentRequest, LexicalSummaryProvider, UserSymbolKind,
@@ -1466,7 +1874,9 @@ mod tests {
         BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, ModulePath, PackageId,
         SessionIdAllocator, SourceId, SourceRange,
     };
-    use mizar_syntax::{SurfaceAst, SurfaceAstBuilder, SurfaceNodeKind, SurfaceTokenKind};
+    use mizar_syntax::{
+        SurfaceAst, SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceNodeKind, SurfaceTokenKind,
+    };
     use std::sync::Arc;
 
     #[test]
@@ -1582,113 +1992,186 @@ mod tests {
     }
 
     #[test]
-    fn source_type_extractor_preserves_builtin_heads_and_rejects_unsupported_shapes() {
+    fn source_reserve_extractor_preserves_builtin_declarations_and_rejects_gaps() {
         let builtin_source_id = source_id(91);
-        let ast = simple_type_ast(
+        let ast = reserve_ast(
             builtin_source_id,
-            &[
-                ("set", SurfaceTokenKind::ReservedWord),
-                ("object", SurfaceTokenKind::ReservedWord),
+            vec![
+                reserve_item(vec!["x", "y"], ReserveTypeShape::Builtin("set")),
+                reserve_item(vec!["z"], ReserveTypeShape::Builtin("object")),
             ],
         );
 
-        let source_types =
-            extract_builtin_source_type_expressions(&ast).expect("builtin type AST should extract");
+        let source_reserve = extract_builtin_source_reserve_declarations(&ast)
+            .expect("builtin reserve declarations should extract");
 
         assert_eq!(
-            source_types
+            source_reserve
+                .bindings
                 .iter()
-                .map(|source_type| (
-                    source_type.spelling.as_str(),
-                    &source_type.head,
-                    source_type.range
+                .map(|binding| (
+                    binding.spelling.as_str(),
+                    binding.type_spelling.as_str(),
+                    &binding.type_head,
+                    binding.type_range
                 ))
                 .collect::<Vec<_>>(),
             vec![
                 (
+                    "x",
                     "set",
                     &TypeHeadInput::BuiltinSet,
-                    range(builtin_source_id, 0, 3),
+                    range(builtin_source_id, 18, 21),
                 ),
                 (
+                    "y",
+                    "set",
+                    &TypeHeadInput::BuiltinSet,
+                    range(builtin_source_id, 18, 21),
+                ),
+                (
+                    "z",
                     "object",
                     &TypeHeadInput::BuiltinObject,
-                    range(builtin_source_id, 5, 11),
+                    range(builtin_source_id, 38, 44),
                 ),
             ]
         );
 
-        let non_builtin = simple_type_ast(source_id(92), &[("T", SurfaceTokenKind::UserSymbol)]);
+        let non_builtin = reserve_ast(
+            source_id(92),
+            vec![reserve_item(vec!["x"], ReserveTypeShape::NonBuiltin("T"))],
+        );
 
         assert!(
-            extract_builtin_source_type_expressions(&non_builtin).is_err(),
+            extract_builtin_source_reserve_declarations(&non_builtin).is_err(),
             "non-builtin type heads must stay on the external gap"
         );
 
-        let unsupported = attributed_type_ast(source_id(93));
+        let unsupported = reserve_ast(
+            source_id(93),
+            vec![reserve_item(vec!["x"], ReserveTypeShape::AttributedSet)],
+        );
 
         assert!(
-            extract_builtin_source_type_expressions(&unsupported).is_err(),
+            extract_builtin_source_reserve_declarations(&unsupported).is_err(),
             "attribute-bearing type expressions must stay on the external gap"
         );
     }
 
     #[test]
-    fn source_type_bridge_assembles_resolved_typed_ast_handoff() {
+    fn source_reserve_bridge_assembles_declaration_checked_resolved_typed_ast_handoff() {
         let source_id = source_id(94);
-        let ast = simple_type_ast(
+        let ast = reserve_ast(
             source_id,
-            &[
-                ("set", SurfaceTokenKind::ReservedWord),
-                ("object", SurfaceTokenKind::ReservedWord),
+            vec![
+                reserve_item(vec!["x", "y"], ReserveTypeShape::Builtin("set")),
+                reserve_item(vec!["z"], ReserveTypeShape::Builtin("object")),
             ],
         );
-        let source_types =
-            extract_builtin_source_type_expressions(&ast).expect("builtin type AST should extract");
-        let inputs = source_types
-            .iter()
-            .enumerate()
-            .map(|(index, source_type)| {
-                TypeExpressionInput::new(
-                    TypedSiteRef::Node(TypedNodeId::new(index)),
-                    source_type.range,
-                    source_type.spelling.clone(),
-                    source_type.head.clone(),
-                )
-            })
-            .collect::<Vec<_>>();
+        let source_reserve = extract_builtin_source_reserve_declarations(&ast)
+            .expect("builtin reserve declarations should extract");
         let module = ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
         let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
-        let output = TypeNormalizer::default().normalize(&symbols, inputs);
 
-        let (_typed_ast, resolved) =
-            assemble_source_checker_handoff(source_id, module, &source_types, &output)
-                .expect("source-derived checker handoff should reach ResolvedTypedAst");
+        let handoff = assemble_source_checker_handoff(source_id, module, &symbols, &source_reserve)
+            .expect("source-derived checker handoff should reach ResolvedTypedAst");
+        let resolved = &handoff.resolved;
 
-        assert_eq!(resolved.nodes().len(), 2);
-        assert_eq!(resolved.expr_metadata().len(), 2);
+        assert_eq!(handoff.binding_env.bindings().len(), 3);
+        let module_context = handoff
+            .binding_env
+            .contexts()
+            .get(super::SOURCE_RESERVE_MODULE_CONTEXT)
+            .expect("module binding context should exist");
+        assert_eq!(
+            module_context.bindings,
+            vec![BindingId::new(0), BindingId::new(1), BindingId::new(2)]
+        );
+        assert_eq!(module_context.visible_bindings, module_context.bindings);
+        assert_eq!(handoff.declarations.declarations().len(), 3);
+        assert_eq!(handoff.declarations.contexts().len(), 1);
+        assert!(handoff.declarations.diagnostics().is_empty());
+        assert_eq!(handoff.typed_ast.contexts().len(), 1);
+        assert_eq!(resolved.nodes().len(), 7);
+        assert_eq!(resolved.expr_metadata().len(), 3);
         assert!(resolved.diagnostics().is_empty());
-        for index in 0..source_types.len() {
-            let node = resolved
+        assert_ne!(source_reserve.type_node(0), source_reserve.type_node(1));
+        assert_eq!(
+            source_reserve.bindings[0].type_range,
+            source_reserve.bindings[1].type_range
+        );
+        for index in 0..source_reserve.bindings.len() {
+            let type_node = resolved
                 .nodes()
-                .node(ResolvedTypedNodeId::new(index))
-                .expect("resolved node should be present");
-            match &node.kind {
+                .node(ResolvedTypedNodeId::new(
+                    source_reserve.type_node(index).index(),
+                ))
+                .expect("resolved type node should be present");
+            match &type_node.kind {
                 ResolvedTypedNodeKind::SourcePreserved { role } => {
-                    assert_eq!(role.as_str(), "source.type_expression");
+                    assert_eq!(role.as_str(), "source.reserve.type_expression");
                 }
-                other => panic!("unexpected resolved node kind: {other:?}"),
+                other => panic!("unexpected resolved type node kind: {other:?}"),
             }
+            assert!(type_node.final_type.is_some());
+            let declaration_node = resolved
+                .nodes()
+                .node(ResolvedTypedNodeId::new(
+                    source_reserve.declaration_node(index).index(),
+                ))
+                .expect("resolved declaration node should be present");
+            match &declaration_node.kind {
+                ResolvedTypedNodeKind::SourcePreserved { role } => {
+                    assert_eq!(role.as_str(), "source.reserve.declaration");
+                }
+                other => panic!("unexpected resolved declaration node kind: {other:?}"),
+            }
+            assert_eq!(declaration_node.children.len(), 1);
+            assert!(declaration_node.final_type.is_some());
             let expr = mizar_checker::resolved_typed_ast::ExprId::new(format!(
-                "source.type_expression.{index}"
+                "source.reserve.declaration.{index}"
             ));
             let metadata = resolved
                 .expr_metadata()
                 .get_by_expr(&expr)
                 .expect("expression metadata should be present");
             assert!(metadata.final_type.is_some());
+            assert_eq!(metadata.local_context, Some(LocalTypeContextId::new(0)));
         }
-        assert!(resolved.debug_text().contains("source.type_expression"));
+        assert!(resolved.debug_text().contains("source.reserve.declaration"));
+        assert!(
+            resolved
+                .debug_text()
+                .contains("source.reserve.type_expression")
+        );
+    }
+
+    #[test]
+    fn source_reserve_bridge_reports_external_gap_detail_for_unsupported_and_mixed_shapes() {
+        let source_id = source_id(95);
+        let module = ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let non_builtin = reserve_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::NonBuiltin("T"))],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&non_builtin, module.clone(), &symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let mixed = reserve_ast(
+            source_id,
+            vec![
+                reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                reserve_item(vec!["y"], ReserveTypeShape::AttributedSet),
+            ],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&mixed, module, &symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
     }
 
     fn import_stub(source_id: SourceId, spelling: &str, start: usize, end: usize) -> ImportStub {
@@ -1706,28 +2189,92 @@ mod tests {
         }
     }
 
-    fn simple_type_ast(source_id: SourceId, heads: &[(&str, SurfaceTokenKind)]) -> SurfaceAst {
+    #[derive(Debug, Clone)]
+    struct ReserveItemSpec {
+        names: Vec<&'static str>,
+        type_shape: ReserveTypeShape,
+    }
+
+    #[derive(Debug, Clone, Copy)]
+    enum ReserveTypeShape {
+        Builtin(&'static str),
+        NonBuiltin(&'static str),
+        AttributedSet,
+    }
+
+    fn reserve_item(names: Vec<&'static str>, type_shape: ReserveTypeShape) -> ReserveItemSpec {
+        ReserveItemSpec { names, type_shape }
+    }
+
+    fn reserve_ast(source_id: SourceId, items: Vec<ReserveItemSpec>) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut root_children = Vec::new();
         let mut offset = 0;
-        for (head, token_kind) in heads {
-            let token = builder.add_token(
-                *token_kind,
-                *head,
-                range(source_id, offset, offset + head.len()),
+        for item in items {
+            let item_start = offset;
+            let reserve = add_token(
+                &mut builder,
+                source_id,
+                &mut offset,
+                SurfaceTokenKind::ReservedWord,
+                "reserve",
             );
-            let type_head = builder.add_node(
-                SurfaceNodeKind::TypeHead,
-                range(source_id, offset, offset + head.len()),
-                vec![token],
+            let segment_start = offset;
+            let mut segment_children = Vec::new();
+            for (index, name) in item.names.iter().enumerate() {
+                segment_children.push(add_token(
+                    &mut builder,
+                    source_id,
+                    &mut offset,
+                    SurfaceTokenKind::Identifier,
+                    name,
+                ));
+                if index + 1 != item.names.len() {
+                    segment_children.push(add_token(
+                        &mut builder,
+                        source_id,
+                        &mut offset,
+                        SurfaceTokenKind::ReservedSymbol,
+                        ",",
+                    ));
+                }
+            }
+            segment_children.push(add_token(
+                &mut builder,
+                source_id,
+                &mut offset,
+                SurfaceTokenKind::ReservedWord,
+                "for",
+            ));
+            let type_expression =
+                add_reserve_type_expression(&mut builder, source_id, &mut offset, item.type_shape);
+            segment_children.push(type_expression);
+            let segment_end = builder
+                .node_range(type_expression)
+                .expect("just-created type expression should exist")
+                .end;
+            let segment = builder.add_node(
+                SurfaceNodeKind::ReserveSegment,
+                range(source_id, segment_start, segment_end),
+                segment_children,
             );
-            let type_expression = builder.add_node(
-                SurfaceNodeKind::TypeExpression,
-                range(source_id, offset, offset + head.len()),
-                vec![type_head],
+            let semicolon = add_token(
+                &mut builder,
+                source_id,
+                &mut offset,
+                SurfaceTokenKind::ReservedSymbol,
+                ";",
             );
-            root_children.push(type_expression);
-            offset += head.len() + 2;
+            let item_end = builder
+                .node_range(semicolon)
+                .expect("just-created semicolon should exist")
+                .end;
+            let reserve_item = builder.add_node(
+                SurfaceNodeKind::ReserveItem,
+                range(source_id, item_start, item_end),
+                vec![reserve, segment, semicolon],
+            );
+            root_children.push(reserve_item);
         }
         let root = builder.add_node(
             SurfaceNodeKind::Root,
@@ -1737,59 +2284,127 @@ mod tests {
         builder.finish(Some(root), None)
     }
 
-    fn attributed_type_ast(source_id: SourceId) -> SurfaceAst {
-        let mut builder = SurfaceAstBuilder::new(source_id);
-        let non = builder.add_token(
+    fn add_reserve_type_expression(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        shape: ReserveTypeShape,
+    ) -> SurfaceBuilderNodeId {
+        match shape {
+            ReserveTypeShape::Builtin(head) => add_simple_type_expression(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                head,
+            ),
+            ReserveTypeShape::NonBuiltin(head) => add_simple_type_expression(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::UserSymbol,
+                head,
+            ),
+            ReserveTypeShape::AttributedSet => {
+                attributed_type_expression(builder, source_id, offset)
+            }
+        }
+    }
+
+    fn add_simple_type_expression(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        token_kind: SurfaceTokenKind,
+        head: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let token = add_token(builder, source_id, offset, token_kind, head);
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, start, start + head.len()),
+            vec![token],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, start, start + head.len()),
+            vec![type_head],
+        )
+    }
+
+    fn attributed_type_expression(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let non = add_token(
+            builder,
+            source_id,
+            offset,
             SurfaceTokenKind::ReservedWord,
             "non",
-            range(source_id, 0, 3),
         );
-        let empty = builder.add_token(
+        let empty_start = *offset;
+        let empty = add_token(
+            builder,
+            source_id,
+            offset,
             SurfaceTokenKind::UserSymbol,
             "empty",
-            range(source_id, 4, 9),
         );
-        let set = builder.add_token(
+        let set_start = *offset;
+        let set = add_token(
+            builder,
+            source_id,
+            offset,
             SurfaceTokenKind::ReservedWord,
             "set",
-            range(source_id, 10, 13),
         );
         let empty_segment = builder.add_node(
             SurfaceNodeKind::PathSegment,
-            range(source_id, 4, 9),
+            range(source_id, empty_start, empty_start + "empty".len()),
             vec![empty],
         );
         let empty_symbol = builder.add_node(
             SurfaceNodeKind::QualifiedSymbol,
-            range(source_id, 4, 9),
+            range(source_id, empty_start, empty_start + "empty".len()),
             vec![empty_segment],
         );
         let attribute = builder.add_node(
             SurfaceNodeKind::AttributeRef,
-            range(source_id, 0, 9),
+            range(source_id, start, empty_start + "empty".len()),
             vec![non, empty_symbol],
         );
         let attribute_chain = builder.add_node(
             SurfaceNodeKind::AttributeChain,
-            range(source_id, 0, 9),
+            range(source_id, start, empty_start + "empty".len()),
             vec![attribute],
         );
         let type_head = builder.add_node(
             SurfaceNodeKind::TypeHead,
-            range(source_id, 10, 13),
+            range(source_id, set_start, set_start + "set".len()),
             vec![set],
         );
-        let type_expression = builder.add_node(
+        builder.add_node(
             SurfaceNodeKind::TypeExpression,
-            range(source_id, 0, 13),
+            range(source_id, start, set_start + "set".len()),
             vec![attribute_chain, type_head],
-        );
-        let root = builder.add_node(
-            SurfaceNodeKind::Root,
-            range(source_id, 0, 13),
-            vec![type_expression],
-        );
-        builder.finish(Some(root), None)
+        )
+    }
+
+    fn add_token(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        kind: SurfaceTokenKind,
+        text: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let end = start + text.len();
+        let token = builder.add_token(kind, text, range(source_id, start, end));
+        *offset = end + 1;
+        token
     }
 
     const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {

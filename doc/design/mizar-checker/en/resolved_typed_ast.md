@@ -84,6 +84,15 @@ unambiguous. Sites without an `ExpressionMetadataInput` row simply have no
 expression metadata entry in task 28; AST-wide extraction of all source
 expression ids remains a deferred source-to-checker integration task.
 
+Current source-derived runner note: the `mizar-test` type-elaboration runner
+now supplies real `ExpressionMetadataInput` rows for the bounded reserve-only
+builtin declaration bridge. Reserve declaration nodes and binding-specific
+type-expression nodes are source-preserved `ResolvedTypedAst` nodes with final
+types when declaration checking succeeds. This provides a real supported
+checker payload shape for a future `ResolvedTypedAstSummary::from_ast` check,
+but it does not execute `mizar-core` lowering, publish artifacts, allocate
+public diagnostics, or promote Core/VC/proof corpus rows.
+
 ## Data Shape
 
 The public data layer should keep dense ids local to the assembled output:

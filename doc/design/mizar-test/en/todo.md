@@ -241,7 +241,8 @@ Keep `cargo test -p mizar-test` green after each task (see
       `mizar-resolve` task 23 (`declaration-symbol`), `mizar-checker` task 12
       (`type-elaboration` external-gap runner), task 16
       (source-derived builtin type-expression normalization), and task 17
-      (source-derived builtin type-expression projection to `ResolvedTypedAst`) as
+      (source-derived builtin type-expression projection to `ResolvedTypedAst`),
+      plus task 18 (source-derived reserve declaration semantic bridge), as
       prepared/implemented increments. Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
       `paced/open`; no placeholder runner or fake active fixture is created for
@@ -358,6 +359,25 @@ Keep `cargo test -p mizar-test` green after each task (see
       fixtures, public checker diagnostic codes, or Core/VC payloads.
     - Deps: 16, `mizar-checker` task 28. Spec: [harness.md](./harness.md),
       checker `resolved_typed_ast.md`, checker MC-G020/MC-G027.
+
+18. **Source-derived reserve declaration semantic bridge.** [x]
+    - Completed: extends the active `type_elaboration` source bridge from
+      builtin type-expression sites to reserve-only builtin declaration
+      payloads. The runner extracts unrecovered top-level `reserve` items with
+      bare builtin `set`/`object` heads into a checker-owned module
+      `BindingEnv`, one `DeclarationInput` per binding, binding-specific
+      `TypeExpressionInput` sites, `DeclarationChecker` output, `TypedAst`, and
+      `ResolvedTypedAst`. Shared source type ranges such as
+      `reserve x, y for set` keep distinct typed sites for each binding.
+    - Unsupported non-builtin declarations, attributes, mode/structure
+      payloads, terms, formulas, coercions, overload payloads, facts, Core/VC
+      payloads, and proof evidence remain on the explicit
+      `type_elaboration.external_dependency.ast_payload_extraction` gap. The
+      CoreIr/ControlFlowIr/VC/proof rows are not promoted because no real
+      source-derived payload is lowered into those consumers yet.
+    - Deps: 16, 17, checker MC-G011/MC-G016/MC-G020. Spec:
+      [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
+      [traceability.md](./traceability.md).
 
 ## Recommended Verification
 

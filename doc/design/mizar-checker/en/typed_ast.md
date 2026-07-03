@@ -544,6 +544,15 @@ No `.miz` checker-stage fixtures are required by task 2 because no executable
 checker semantics exist yet. Task 12 owns the first active `type_elaboration`
 corpus runner and traceability entries.
 
+Current source-derived runner note: the `mizar-test` type-elaboration runner may
+construct explicit checker-owned `TypedAst` nodes for the bounded reserve-only
+builtin declaration bridge. Each reserve binding gets a declaration node and a
+binding-specific type-expression node; multiple bindings may share the same
+source type range while still using distinct `TypedSiteRef` owners. This keeps
+`TypedAst` a checker-owned payload surface and does not authorize raw syntax
+walking, general declaration extraction, Core/VC payloads, or proof evidence in
+`mizar-checker`.
+
 ## Task 2 Classification
 
 | Class | Finding | Action |

@@ -77,6 +77,15 @@ expression id または duplicate `TypedSiteRef` owner は assembly error であ
 全 source expression id の AST-wide extraction は deferred の source-to-checker integration task
 のままである。
 
+現在の source-derived runner note: `mizar-test` type-elaboration runner は bounded
+reserve-only builtin declaration bridge のために real `ExpressionMetadataInput` row を
+供給する。Reserve declaration node と binding 固有の type-expression node は、declaration
+checking が成功した場合に final type を持つ source-preserved `ResolvedTypedAst` node になる。
+これは将来の `ResolvedTypedAstSummary::from_ast` check が消費できる real supported
+checker payload shape を提供するが、`mizar-core` lowering を実行したり、artifact を
+publish したり、public diagnostic を割り当てたり、Core / VC / proof corpus row を
+昇格したりするものではない。
+
 ## データ形状
 
 public data layer は assembled output 内で local な dense id を保つべきである。
