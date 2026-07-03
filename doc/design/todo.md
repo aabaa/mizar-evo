@@ -79,7 +79,7 @@ convenient downstream crate.
 | mizar-syntax | yes | Rowan-backed `SurfaceAst`, syntax trivia, recovery, typed views, parser-facing syntax vocabulary | [x] current milestone complete; only deferred rustdoc summaries remain | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | yes | Grammar, Pratt parsing, syntax recovery, parse-only corpus execution | [x] current milestone complete through task 45; deferred operator-declaration follow-up task 46 remains recorded | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | yes | Source loading and phase 1-3 orchestration across session, lexer, syntax, and parser | [x] current milestone complete; future parser growth may open bounded follow-ups | [todo](./mizar-frontend/en/todo.md) |
-| mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] implementation exists; formal lint/gap audit, runner validation, snapshots, and reporting remain | [todo](./mizar-test/en/todo.md) |
+| mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] foundation complete through task 15; consumer-runner support remains paced by source-derived semantic/core/VC bridges | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus task graph, scheduler, resources, cancellation, failure state, cache seam, artifact commit boundary, and scheduler-selected dispatch | [x] current milestone complete; full real clean/incremental/parallel equivalence remains an integration gap | [todo](./mizar-build/en/todo.md) |
 | mizar-lsp | yes | Editor range mapping now; future server, snapshots, diagnostics, metadata, navigation, actions, explanations | [~] range conversion slice exists; specs and server features remain planned | [todo](./mizar-lsp/en/todo.md) |
 | mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [x] current resolver milestone complete through R-024 and non-deferred tasks 1-29; R-030 remains future diagnostic consumer adoption | [todo](./mizar-resolve/en/todo.md) |
@@ -161,30 +161,28 @@ current parser hardening close-out.
 
 ### Immediate Next Work
 
-1. **mizar-test foundation cleanup** - run the lint-policy guard and
-   source/spec gap audit (tasks 1-2), then harden validation/reporting,
-   snapshots, and coverage reporting. The source crate already exists; the TODO
-   is the formal gap-closing plan.
-2. **Source-derived semantic bridge** - once the first `mizar-test`
-   validation/reporting tasks are in place, connect real
+1. **Source-derived semantic bridge** - now that `mizar-test` task 15 has
+   completed the foundation cleanup, validation/reporting, snapshot,
+   fail/soundness, consumer-ledger, and architecture-22 metadata baseline,
+   connect real
    source-derived payloads through `mizar-checker`, `mizar-core`, and
    `mizar-vc`. This retires the currently classified source-to-checker,
    `type_elaboration`, `CoreIr`, and `proof_verification` external gaps without
    fabricating semantic payloads.
-3. **Phase-output publication and orchestration slice** - after source-derived
+2. **Phase-output publication and orchestration slice** - after source-derived
    semantic outputs exist, wire real phase-service and publication seams among
    `mizar-ir`, `mizar-driver`, `mizar-build`, and `mizar-artifact`. This is the
    prerequisite for artifact task 17, build clean/incremental equivalence, and
    driver multi-phase dispatch; keep absent producer outputs classified rather
    than adding placeholder adapters.
-4. **Evidence-pipeline integration wave** - after source-derived VCs and
+3. **Evidence-pipeline integration wave** - after source-derived VCs and
    publication seams exist, wire only task-scoped owner seams among
    `mizar-atp`, `mizar-proof`, `mizar-cache`, and `mizar-artifact`, with
    `mizar-build`, `mizar-ir`, and `mizar-driver` consuming the published
    results. Keep proof policy in `mizar-proof`, cache validation in
    `mizar-cache`, artifact publication in `mizar-artifact`, and
    registry/orchestration in `mizar-driver`.
-5. **User-facing consumer wave** - defer broad `mizar-diagnostics`,
+4. **User-facing consumer wave** - defer broad `mizar-diagnostics`,
    `mizar-lsp`, and `mizar-doc` adoption until the owning producers publish
    stable diagnostics, metadata, artifacts, and semantic indexes. Resolver
    diagnostic adoption R-030 is the first narrow candidate once a real consumer
@@ -193,19 +191,20 @@ current parser hardening close-out.
 ### Crate TODO Scan Findings
 
 A crate TODO scan on 2026-07-02 found no lower-level task that should displace
-the `mizar-test` foundation work after R-024. It did find one missing top-level
-ordering layer: source-derived semantic payloads must land before the existing
-evidence-pipeline integration wave can be useful. The scan included the
-canonical English crate TODOs and their Japanese companions; the companion
-documents matched these dependency themes and did not introduce a separate
-immediate ordering item.
+the `mizar-test` foundation work after R-024. After `mizar-test` tasks 14-15,
+that foundation is complete through the architecture-22 metadata baseline, and
+the next missing top-level ordering layer is source-derived semantic payloads
+before the existing evidence-pipeline integration wave can be useful. The scan
+included the canonical English crate TODOs and their Japanese companions; the
+companion documents matched these dependency themes and did not introduce a
+separate immediate ordering item.
 
 | Finding | Crate TODO evidence | Roadmap disposition |
 | ------- | ------------------- | ------------------- |
-| Source-derived semantic payloads are the next missing bridge after completed resolver reuse and test-runner cleanup. | `mizar-checker` keeps active semantic `.miz` assertions deferred behind source-to-checker extraction; `mizar-core` defers source-derived `CoreIr`/`ControlFlowIr` snapshots; `mizar-vc` defers source-derived `proof_verification` families. | Keep after Immediate Next Work step 1. |
-| Publication/orchestration is distinct from evidence production. | `mizar-ir`, `mizar-driver`, and `mizar-build` keep real phase services, producer outputs, and clean/incremental publication classified as `external_dependency_gap`; `mizar-artifact` task 17 still waits for real producer projections. | Added Immediate Next Work step 4. |
-| ATP/proof/cache/artifact integration depends on real VCs and publication seams. | `mizar-atp` concrete backend/evidence routes remain deferred; `mizar-kernel` producer/consumer integration waits for evidence producers; `mizar-proof` cache/witness handoffs remain external; `mizar-cache` proof-reuse consumers remain paced by `mizar-vc` and `mizar-proof`; `mizar-artifact` witness publication remains deferred until producer outputs exist. | Kept the evidence-pipeline wave, but moved it after steps 3-4. |
-| User-facing consumers should not lead producer readiness. | `mizar-diagnostics` adoption is deferred to the first real consumer seam; `mizar-lsp` navigation/metadata work is paced by metadata producers; `mizar-doc` phase 16 consumes published artifacts and must not re-run semantic analysis. | Added Immediate Next Work step 5 and kept LSP/doc after producer integration. |
+| Source-derived semantic payloads are the next missing bridge after completed resolver reuse and test-runner cleanup. | `mizar-checker` keeps active semantic `.miz` assertions deferred behind source-to-checker extraction; `mizar-core` defers source-derived `CoreIr`/`ControlFlowIr` snapshots; `mizar-vc` defers source-derived `proof_verification` families. | Promote to Immediate Next Work step 1 after `mizar-test` task 15. |
+| Publication/orchestration is distinct from evidence production. | `mizar-ir`, `mizar-driver`, and `mizar-build` keep real phase services, producer outputs, and clean/incremental publication classified as `external_dependency_gap`; `mizar-artifact` task 17 still waits for real producer projections. | Keep as Immediate Next Work step 2 after the semantic bridge. |
+| ATP/proof/cache/artifact integration depends on real VCs and publication seams. | `mizar-atp` concrete backend/evidence routes remain deferred; `mizar-kernel` producer/consumer integration waits for evidence producers; `mizar-proof` cache/witness handoffs remain external; `mizar-cache` proof-reuse consumers remain paced by `mizar-vc` and `mizar-proof`; `mizar-artifact` witness publication remains deferred until producer outputs exist. | Keep the evidence-pipeline wave after steps 1-2. |
+| User-facing consumers should not lead producer readiness. | `mizar-diagnostics` adoption is deferred to the first real consumer seam; `mizar-lsp` navigation/metadata work is paced by metadata producers; `mizar-doc` phase 16 consumes published artifacts and must not re-run semantic analysis. | Keep LSP/doc as Immediate Next Work step 4 after producer integration. |
 | Parser operator declarations and syntax rustdoc summaries remain parked. | `mizar-parser` task 46 and `mizar-syntax` S-021 are explicitly deferred and do not unblock the semantic/evidence waves. | No new immediate step; keep as future parked work. |
 
 ### Semantic And Proof Layers
@@ -215,7 +214,7 @@ tasks 1-29. Summary-backed module reuse now consumes the canonical
 `mizar-artifact` `ModuleSummary` contract without adding resolver-owned
 artifact formats.
 
-After the immediate foundation work, proceed bottom-up by phase while pulling
+After the `mizar-test` foundation work, proceed bottom-up by phase while pulling
 leaf support crates forward when they unblock cross-module work:
 
 1. **Source-derived semantic bridge** - promote real source-derived semantic
@@ -253,11 +252,12 @@ leaf support crates forward when they unblock cross-module work:
 
 Two crates run as cross-cutting strands rather than strict steps:
 
-- **mizar-test** supports every stage from parser onward and should grow
-  lint-policy/source-spec audits first, then active/planned gating, snapshots,
+- **mizar-test** supports every stage from parser onward. Its foundation is
+  complete through task 15, including active/planned gating, snapshots,
   fail/soundness rules, coverage reporting, and incremental/parallel regression
-  metadata with each consumer. Its runner work should be paired with the
-  semantic bridge before the evidence-pipeline wave.
+  metadata. Its remaining runner work should be paired with prepared semantic,
+  core, VC, and later evidence consumers before rows or fixtures are promoted
+  to active coverage.
   [todo](./mizar-test/en/todo.md)
 - **mizar-lsp** keeps range mapping available now, then lands server,
   snapshot, diagnostics, metadata, navigation, actions, and explanation
