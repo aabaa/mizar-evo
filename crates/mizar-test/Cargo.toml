@@ -10,6 +10,7 @@ name = "mizar_test"
 path = "src/lib.rs"
 
 [dependencies]
+mizar-checker = { path = "../mizar-checker" }
 mizar-frontend = { path = "../mizar-frontend" }
 mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }

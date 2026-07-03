@@ -1414,6 +1414,18 @@ deferred_reason = "Task 29 cannot add active formula_statement `.miz` cases yet:
 tests = []
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.builtin_type_expression_source_bridge"
+source = "doc/design/mizar-test/en/harness.md"
+section = "Task 16 source-derived builtin type-expression bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_builtin_type_expression_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction"
 source = "doc/design/mizar-checker/en/00.crate_plan.md"
 section = "MC-G020 source-to-checker payload extraction gap"
@@ -1422,6 +1434,7 @@ status = "covered"
 required = true
 coverage = "diagnostic"
 tests = [
+  "tests/miz/fail/types/fail_type_elaboration_non_builtin_type_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_payload_extraction_gap_001.expect.toml",
 ]
 
@@ -1467,7 +1480,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "snapshot"
-deferred_reason = "Task 19 records this as an external_dependency_gap rather than adding fake active baselines: mizar-test currently compares committed snapshots only for parse-only SurfaceAst output, the active type_elaboration runner stops at the source-to-checker payload extraction gap instead of producing CoreIr, and source-derived checker payload extraction is still unavailable. Add CoreIr corpus snapshots only after mizar-test supports type_elaboration snapshot comparison and source-to-core payload seams exist."
+deferred_reason = "Task 19 records this as an external_dependency_gap rather than adding fake active baselines: mizar-test currently compares committed snapshots only for parse-only SurfaceAst output, the active type_elaboration runner has only a narrow builtin type-expression source-to-checker slice, and no source-derived checker payload is lowered into CoreIr yet. Add CoreIr corpus snapshots only after mizar-test supports type_elaboration snapshot comparison and source-to-core payload seams exist."
 tests = []
 
 [[requirement]]

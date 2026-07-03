@@ -143,7 +143,7 @@ No exhaustive public enum exceptions are owned by this module.
 | metadata plan | discover sidecars and validate layout, expectation schema, and traceability without executing payloads |
 | parse-only | run active `.miz` parse-only cases through `mizar-frontend` and `MizarParserSeam` |
 | declaration-symbol | run active `.miz` declaration-symbol cases through frontend parsing and resolver declaration/symbol collection |
-| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, then surface the missing checker payload-extraction bridge as a stable external dependency gap |
+| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, execute the supported source-derived builtin type-expression bridge, and surface unsupported checker payload families as stable external dependency gaps |
 | pass/fail | run `.miz` cases and match expected outcome |
 | snapshot | compare canonical snapshot hashes |
 | determinism | repeat runs and compare artifacts, diagnostics, and hashes |
@@ -162,7 +162,7 @@ fabricated coverage.
 |---|---|---|---|
 | `mizar-parser` task 3 | `parse_only` / `parse-only` | prepared/implemented; active `.miz` pass/fail sidecars use `active_parse_only`, and untagged parse-only metadata stays planned | Keep the transitional `SurfaceAst` snapshot shortcut until the general snapshot runner lands. |
 | `mizar-resolve` task 23 | `declaration_symbol` / `declaration-symbol` | prepared/implemented; active sidecars use `active_declaration_symbol`, public resolver diagnostic-code matching remains gated | Open public diagnostic-code assertions only after resolver diagnostic ranges are specified. |
-| `mizar-checker` task 12 | `type_elaboration` / `type-elaboration` | prepared/implemented as an external-gap runner; active sidecars use `active_type_elaboration` and report `type_elaboration.external_dependency.ast_payload_extraction` after lower stages pass | Real type pass/fail semantic assertions wait for source-to-checker payload extraction. |
+| `mizar-checker` task 12 plus task 16 source bridge | `type_elaboration` / `type-elaboration` | prepared/implemented; active sidecars use `active_type_elaboration`, lower stages run first, reserve-only builtin `set`/`object` type expressions are normalized through `mizar-checker`, and unsupported checker payload families stay on `type_elaboration.external_dependency.ast_payload_extraction` | Broader type pass/fail semantic assertions wait for AST-wide source-to-checker payload extraction. |
 | `mizar-checker` task 29 | `formula_statement` / `advanced_semantics` | paced/open; trace rows are deferred and no active fixture is fabricated | Add runner support only after statement/formula and advanced-semantics source payload seams exist. |
 | `mizar-vc` task 15 | `proof_verification` | paced/open; VC/proof-verification obligations are deferred | Add runner support only after source-to-core/source-to-VC extraction and downstream verification seams exist. |
 | `mizar-atp` task 20 | `advanced_semantics` metadata handoff | paced/open in `mizar-test`; metadata-only property fixtures may be consumed by `mizar-atp` Rust tests | Add active `.miz` ATP runner support only after source-derived ATP extraction and proof-policy/kernel handoff seams exist. |
@@ -243,16 +243,30 @@ the same temporary package shape, runs the real frontend, then feeds the
 resulting `SurfaceAst` through the resolver declaration-shell collector,
 parser-backed signature projection extractor, and symbol collector. This keeps
 type-elaboration cases honest about lower-stage prerequisites before checker
-payload extraction begins. Task 12 intentionally does not fabricate the missing
-source-to-checker bridge: the repository still lacks an AST-wide extraction API
-that turns parsed/resolved `.miz` declarations, type expressions, terms,
-formulas, coercion sites, and type facts into the checker-owned payloads exposed
-by `mizar-checker` tasks 7-11. When parsing and symbol collection succeed, the
-runner therefore reports the stable detail key
-`type_elaboration.external_dependency.ast_payload_extraction` until that bridge
-exists. Active fail cases may assert that key through `diagnostic_payloads` or
-`stable_detail_key`; active pass cases that require real checker semantics
-remain deferred rather than passing through a stub.
+payload extraction begins.
+
+After lower stages pass, the runner extracts checker-owned
+`TypeExpressionInput` payloads only for unrecovered source `TypeExpression`
+nodes in reserve-only sources whose head is the builtin `set` or `object` and
+which have no attributes, arguments, parameter prefixes, or non-builtin symbol
+heads. Those payloads are normalized by `mizar-checker`'s `TypeNormalizer`
+against the collected `SymbolEnv` and assembled into a minimal checker-owned
+`TypedAst` shell with type-entry links. Active pass cases may assert this
+supported source-derived slice with empty detail keys only when the source
+contains at least one supported builtin `TypeExpression` site and runner
+regression evidence confirms that normalization and minimal `TypedAst` assembly
+were exercised.
+
+The runner still does not fabricate the missing AST-wide source-to-checker
+bridge. Parsed/resolved `.miz` declarations, terms, formulas, coercion sites,
+attribute/mode/structure payloads, overload evidence, recorded facts, and proof
+evidence remain outside the supported extraction slice. When an active case
+needs one of those unsupported payload families, the runner reports the stable
+detail key `type_elaboration.external_dependency.ast_payload_extraction`.
+Active fail cases may assert that key through `diagnostic_payloads` or
+`stable_detail_key`; active pass cases outside the supported slice remain
+deferred rather than passing through a stub. This runner does not publish
+`CoreIr`, `ControlFlowIr`, VC seeds, or public checker diagnostic codes.
 
 Active type-elaboration expectations with non-empty `diagnostic_codes` are
 harness errors until public checker diagnostic codes are specified. An

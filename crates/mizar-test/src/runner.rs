@@ -1,10 +1,16 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
+use mizar_checker::type_checker::{TypeExpressionInput, TypeHeadInput, TypeNormalizer};
+use mizar_checker::typed_ast::{
+    CoercionTable, InitialObligationTable, LocalTypeContextTable, NodeRecoveryState, TypeFactTable,
+    TypeStatus, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeId, TypedNodeLinks,
+    TypedSiteRef, TypingState,
+};
 use mizar_frontend::lexical_env::{
     ExportRank, ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
     ExportedSymbolShape, FrontendLexicalEnvironmentError, LexicalEnvironmentRequest,
@@ -16,16 +22,16 @@ use mizar_frontend::orchestration::{DiagnosticCode, Frontend, FrontendDiagnostic
 use mizar_frontend::parsing::MizarParserSeam;
 use mizar_frontend::source::{FrontendSourceLoader, SourceUnitRequest};
 use mizar_resolve::declarations::DeclarationShellCollector;
-use mizar_resolve::env::NamespacePath;
+use mizar_resolve::env::{NamespacePath, SymbolEnv};
 use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
 use mizar_resolve::symbols::{
     SignatureProjectionExtractor, SymbolCollector, SymbolDiagnostic, SymbolDiagnosticClass,
 };
 use mizar_session::{
     BuildSnapshotId, DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
-    SourceInput, SourceOriginInput, normalize_path,
+    SourceAnchor, SourceInput, SourceOriginInput, SourceRange, normalize_path,
 };
-use mizar_syntax::SurfaceAst;
+use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeKind};
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
 use crate::expectation::{ExpectedOutcome, PipelinePhase};
@@ -583,10 +589,7 @@ fn declaration_symbol_detail_keys(
     case: &TestCase,
     output: FrontendRun,
 ) -> Vec<String> {
-    let frontend_diagnostic_keys = assertion_diagnostic_codes(case, &output.diagnostics)
-        .into_iter()
-        .map(|code| format!("frontend:{code}"))
-        .collect::<Vec<_>>();
+    let frontend_diagnostic_keys = frontend_detail_keys(case, &output.diagnostics);
     if !frontend_diagnostic_keys.is_empty() {
         return frontend_diagnostic_keys;
     }
@@ -594,7 +597,7 @@ fn declaration_symbol_detail_keys(
     let Some(ast) = output.ast else {
         return vec!["declaration_symbol.no_ast".to_owned()];
     };
-    resolver_symbol_detail_keys(workspace_root, case, ast)
+    resolver_symbol_collection(workspace_root, case, &ast).detail_keys
 }
 
 fn type_elaboration_detail_keys(
@@ -602,33 +605,240 @@ fn type_elaboration_detail_keys(
     case: &TestCase,
     output: FrontendRun,
 ) -> Vec<String> {
-    let lower_stage_detail_keys = declaration_symbol_detail_keys(workspace_root, case, output);
-    if !lower_stage_detail_keys.is_empty() {
-        return lower_stage_detail_keys
+    let frontend_diagnostic_keys = frontend_detail_keys(case, &output.diagnostics);
+    if !frontend_diagnostic_keys.is_empty() {
+        return frontend_diagnostic_keys
             .into_iter()
             .map(|key| format!("type_elaboration.lower_stage.{key}"))
             .collect();
     }
 
-    vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+    let Some(ast) = output.ast else {
+        return vec!["type_elaboration.lower_stage.declaration_symbol.no_ast".to_owned()];
+    };
+    let resolver = resolver_symbol_collection(workspace_root, case, &ast);
+    if !resolver.detail_keys.is_empty() {
+        return resolver
+            .detail_keys
+            .into_iter()
+            .map(|key| format!("type_elaboration.lower_stage.{key}"))
+            .collect();
+    }
+
+    source_type_elaboration_detail_keys(&ast, resolver.module, &resolver.env)
 }
 
-fn resolver_symbol_detail_keys(
+fn frontend_detail_keys(case: &TestCase, diagnostics: &[FrontendDiagnostic]) -> Vec<String> {
+    assertion_diagnostic_codes(case, diagnostics)
+        .into_iter()
+        .map(|code| format!("frontend:{code}"))
+        .collect()
+}
+
+#[derive(Debug)]
+struct ResolverSymbolCollection {
+    module: ResolverModuleId,
+    env: SymbolEnv,
+    detail_keys: Vec<String>,
+}
+
+fn resolver_symbol_collection(
     workspace_root: &Path,
     case: &TestCase,
-    ast: SurfaceAst,
-) -> Vec<String> {
+    ast: &SurfaceAst,
+) -> ResolverSymbolCollection {
     let module = resolver_module_id(workspace_root, &case.source_path);
     let namespace = NamespacePath::new(module.path().as_str());
-    let shells = DeclarationShellCollector::new(&ast, &module).collect();
-    let projections = SignatureProjectionExtractor::new(&ast, &shells, namespace).extract();
+    let shells = DeclarationShellCollector::new(ast, &module).collect();
+    let projections = SignatureProjectionExtractor::new(ast, &shells, namespace).extract();
     let result = SymbolCollector::new(ast.source_id, &module, &shells, &projections).collect();
 
-    result
+    let detail_keys = result
         .diagnostics()
         .iter()
         .map(symbol_diagnostic_detail_key)
-        .collect()
+        .collect();
+    ResolverSymbolCollection {
+        module,
+        env: result.into_env(),
+        detail_keys,
+    }
+}
+
+fn source_type_elaboration_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Vec<String> {
+    let Ok(source_types) = extract_builtin_source_type_expressions(ast) else {
+        return vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()];
+    };
+    let inputs = source_types
+        .iter()
+        .enumerate()
+        .map(|(index, source_type)| {
+            TypeExpressionInput::new(
+                TypedSiteRef::Node(TypedNodeId::new(index)),
+                source_type.range,
+                source_type.spelling.clone(),
+                source_type.head.clone(),
+            )
+        })
+        .collect::<Vec<_>>();
+    let output = TypeNormalizer::default().normalize(symbols, inputs);
+    if !output.diagnostics().is_empty() {
+        let mut keys = output
+            .diagnostics()
+            .canonical_iter()
+            .map(|(_, diagnostic)| format!("type_elaboration.checker.{}", diagnostic.message_key))
+            .collect::<Vec<_>>();
+        keys.sort();
+        keys.dedup();
+        return keys;
+    }
+    if output.type_entries().len() != source_types.len() {
+        return vec!["type_elaboration.checker.type_entry_count_mismatch".to_owned()];
+    }
+    if assemble_source_typed_ast(ast.source_id, module, &source_types, &output).is_err() {
+        return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()];
+    }
+    Vec::new()
+}
+
+#[derive(Debug, Clone)]
+struct SourceTypeExpression {
+    range: SourceRange,
+    spelling: String,
+    head: TypeHeadInput,
+}
+
+fn extract_builtin_source_type_expressions(
+    ast: &SurfaceAst,
+) -> Result<Vec<SourceTypeExpression>, ()> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_builtin_type_bridge_node(node))
+    {
+        return Err(());
+    }
+    let mut source_types = Vec::new();
+    for node in ast
+        .nodes()
+        .iter()
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::TypeExpression))
+    {
+        source_types.push(extract_builtin_source_type_expression(ast, node)?);
+    }
+    if source_types.is_empty() {
+        return Err(());
+    }
+    Ok(source_types)
+}
+
+fn is_supported_builtin_type_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::Token(_)
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::ReserveItem
+            | SurfaceNodeKind::ReserveSegment
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::TypeHead
+    )
+}
+
+fn extract_builtin_source_type_expression(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+) -> Result<SourceTypeExpression, ()> {
+    if subtree_has_recovery(ast, node) || node.children.len() != 1 {
+        return Err(());
+    }
+    let head = ast.node(node.children[0]).ok_or(())?;
+    if !matches!(head.kind, SurfaceNodeKind::TypeHead) || head.children.len() != 1 {
+        return Err(());
+    }
+    let token = ast.node(head.children[0]).and_then(SurfaceNode::token_text);
+    let head = match token {
+        Some("set") => TypeHeadInput::BuiltinSet,
+        Some("object") => TypeHeadInput::BuiltinObject,
+        _ => return Err(()),
+    };
+    Ok(SourceTypeExpression {
+        range: node.range,
+        spelling: token.expect("builtin token matched").to_owned(),
+        head,
+    })
+}
+
+fn subtree_has_recovery(ast: &SurfaceAst, node: &SurfaceNode) -> bool {
+    node.recovered
+        || node
+            .children
+            .iter()
+            .filter_map(|child| ast.node(*child))
+            .any(|child| subtree_has_recovery(ast, child))
+}
+
+fn assemble_source_typed_ast(
+    source_id: mizar_session::SourceId,
+    module: ResolverModuleId,
+    source_types: &[SourceTypeExpression],
+    output: &mizar_checker::type_checker::TypeNormalizationOutput,
+) -> Result<TypedAst, String> {
+    let mut type_entries_by_node = BTreeMap::new();
+    for (entry_id, entry) in output.type_entries().iter() {
+        if let TypedSiteRef::Node(node_id) = &entry.owner {
+            type_entries_by_node.insert(*node_id, entry_id);
+        }
+    }
+    let mut builder = TypedArenaBuilder::new();
+    for (index, source_type) in source_types.iter().enumerate() {
+        let node_id = TypedNodeId::new(index);
+        let type_entry = type_entries_by_node.get(&node_id).copied();
+        let typing = type_entry
+            .and_then(|entry_id| output.type_entries().get(entry_id))
+            .map_or(TypingState::Unknown, |entry| match entry.status {
+                TypeStatus::Known => TypingState::Successful,
+                TypeStatus::Assumed => TypingState::Assumed,
+                TypeStatus::Unknown => TypingState::Unknown,
+                TypeStatus::Error => TypingState::Error,
+                TypeStatus::Skipped => TypingState::Skipped,
+                _ => TypingState::Unknown,
+            });
+        builder
+            .push(
+                TypedNode::new(
+                    "source.type_expression",
+                    SourceAnchor::Range(source_type.range),
+                )
+                .with_recovery(NodeRecoveryState::Normal)
+                .with_typing(typing)
+                .with_links(TypedNodeLinks {
+                    type_entry,
+                    ..TypedNodeLinks::default()
+                }),
+            )
+            .map_err(|error| error.to_string())?;
+    }
+    let root = (!source_types.is_empty()).then(|| TypedNodeId::new(0));
+    let nodes = builder.finish(root).map_err(|error| error.to_string())?;
+    TypedAst::try_new(TypedAstParts {
+        source_id,
+        module_id: module,
+        resolved_root: None,
+        nodes,
+        contexts: LocalTypeContextTable::new(),
+        types: output.type_entries().clone(),
+        facts: TypeFactTable::new(),
+        coercions: CoercionTable::new(),
+        initial_obligations: InitialObligationTable::new(),
+        diagnostics: output.diagnostics().clone(),
+    })
+    .map_err(|error| error.to_string())
 }
 
 fn resolver_module_id(workspace_root: &Path, source_path: &Path) -> ResolverModuleId {
@@ -1092,7 +1302,8 @@ impl fmt::Display for TypeElaborationCaseStatus {
 
 #[cfg(test)]
 mod tests {
-    use super::ParseOnlyImportProvider;
+    use super::{ParseOnlyImportProvider, extract_builtin_source_type_expressions};
+    use mizar_checker::type_checker::TypeHeadInput;
     use mizar_frontend::lexical_env::{
         ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
         LexicalEnvironmentRequest, LexicalSummaryProvider, UserSymbolKind,
@@ -1102,6 +1313,7 @@ mod tests {
         BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, SessionIdAllocator, SourceId,
         SourceRange,
     };
+    use mizar_syntax::{SurfaceAst, SurfaceAstBuilder, SurfaceNodeKind, SurfaceTokenKind};
     use std::sync::Arc;
 
     #[test]
@@ -1216,6 +1428,58 @@ mod tests {
         assert!(resolved.diagnostics.is_empty());
     }
 
+    #[test]
+    fn source_type_extractor_preserves_builtin_heads_and_rejects_unsupported_shapes() {
+        let builtin_source_id = source_id(91);
+        let ast = simple_type_ast(
+            builtin_source_id,
+            &[
+                ("set", SurfaceTokenKind::ReservedWord),
+                ("object", SurfaceTokenKind::ReservedWord),
+            ],
+        );
+
+        let source_types =
+            extract_builtin_source_type_expressions(&ast).expect("builtin type AST should extract");
+
+        assert_eq!(
+            source_types
+                .iter()
+                .map(|source_type| (
+                    source_type.spelling.as_str(),
+                    &source_type.head,
+                    source_type.range
+                ))
+                .collect::<Vec<_>>(),
+            vec![
+                (
+                    "set",
+                    &TypeHeadInput::BuiltinSet,
+                    range(builtin_source_id, 0, 3),
+                ),
+                (
+                    "object",
+                    &TypeHeadInput::BuiltinObject,
+                    range(builtin_source_id, 5, 11),
+                ),
+            ]
+        );
+
+        let non_builtin = simple_type_ast(source_id(92), &[("T", SurfaceTokenKind::UserSymbol)]);
+
+        assert!(
+            extract_builtin_source_type_expressions(&non_builtin).is_err(),
+            "non-builtin type heads must stay on the external gap"
+        );
+
+        let unsupported = attributed_type_ast(source_id(93));
+
+        assert!(
+            extract_builtin_source_type_expressions(&unsupported).is_err(),
+            "attribute-bearing type expressions must stay on the external gap"
+        );
+    }
+
     fn import_stub(source_id: SourceId, spelling: &str, start: usize, end: usize) -> ImportStub {
         let span = range(source_id, start, end);
         ImportStub {
@@ -1229,6 +1493,92 @@ mod tests {
             alias: None,
             span,
         }
+    }
+
+    fn simple_type_ast(source_id: SourceId, heads: &[(&str, SurfaceTokenKind)]) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut root_children = Vec::new();
+        let mut offset = 0;
+        for (head, token_kind) in heads {
+            let token = builder.add_token(
+                *token_kind,
+                *head,
+                range(source_id, offset, offset + head.len()),
+            );
+            let type_head = builder.add_node(
+                SurfaceNodeKind::TypeHead,
+                range(source_id, offset, offset + head.len()),
+                vec![token],
+            );
+            let type_expression = builder.add_node(
+                SurfaceNodeKind::TypeExpression,
+                range(source_id, offset, offset + head.len()),
+                vec![type_head],
+            );
+            root_children.push(type_expression);
+            offset += head.len() + 2;
+        }
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn attributed_type_ast(source_id: SourceId) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let non = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "non",
+            range(source_id, 0, 3),
+        );
+        let empty = builder.add_token(
+            SurfaceTokenKind::UserSymbol,
+            "empty",
+            range(source_id, 4, 9),
+        );
+        let set = builder.add_token(
+            SurfaceTokenKind::ReservedWord,
+            "set",
+            range(source_id, 10, 13),
+        );
+        let empty_segment = builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, 4, 9),
+            vec![empty],
+        );
+        let empty_symbol = builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, 4, 9),
+            vec![empty_segment],
+        );
+        let attribute = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, 0, 9),
+            vec![non, empty_symbol],
+        );
+        let attribute_chain = builder.add_node(
+            SurfaceNodeKind::AttributeChain,
+            range(source_id, 0, 9),
+            vec![attribute],
+        );
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, 10, 13),
+            vec![set],
+        );
+        let type_expression = builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, 0, 13),
+            vec![attribute_chain, type_head],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, 13),
+            vec![type_expression],
+        );
+        builder.finish(Some(root), None)
     }
 
     const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {

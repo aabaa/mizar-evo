@@ -250,15 +250,27 @@ for resolver internal detail keys while public resolver diagnostic codes remain
 unspecified; active sidecars must leave `diagnostic_codes` empty until that
 range exists.
 
-For the initial type-elaboration stage, coverage is executable only for `.miz`
+For the type-elaboration stage, coverage is executable only for `.miz`
 sidecars admitted by the active runner gate (`active_type_elaboration`,
 `stage = "type_elaboration"`, `expected_phase = "type_check"`, and pass/fail
-outcome). Until source-to-checker payload extraction exists, covered active
-tests may assert the external-gap detail key
-`type_elaboration.external_dependency.ast_payload_extraction` for the MC-G020
-bridge gap only. Those tests do not satisfy task 7-11 semantic pass/fail
-coverage; semantic pass coverage remains deferred rather than credited from
-stubbed checker output.
+outcome). Task 16 may credit only the narrow builtin type-expression slice:
+unrecovered source `TypeExpression` nodes headed by
+`set` or `object` with no attributes, arguments, parameter prefixes, or
+non-builtin symbol heads are converted into checker-owned `TypeExpressionInput`
+payloads, normalized by `mizar-checker`, and assembled into a minimal typed AST
+shell. Active pass tests may cover that slice only when the listed source has
+at least one extracted builtin type-expression site and runner regression
+evidence confirms the `TypeNormalizer` plus minimal `TypedAst` path was
+exercised. The pass slice must have its own traceability row/test instead of
+being credited from the diagnostic external-gap row.
+
+Covered active fail tests may still assert the external-gap detail key
+`type_elaboration.external_dependency.ast_payload_extraction` when a case needs
+unsupported declaration, term, formula, coercion, attribute/mode/structure,
+overload, fact, or proof payload extraction. Those gap tests do not satisfy the
+broader task 7-11 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`,
+and `proof_verification` rows remain deferred until prepared consumer execution
+exists.
 
 ## Reporting
 

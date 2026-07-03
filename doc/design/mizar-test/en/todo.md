@@ -238,11 +238,13 @@ Keep `cargo test -p mizar-test` green after each task (see
       reporting, and two traceable seed fixtures. This task stays open until
       all planned consumer runners land.
     - Current task-10 ledger records `mizar-parser` task 3 (`parse-only`),
-      `mizar-resolve` task 23 (`declaration-symbol`), and `mizar-checker` task
-      12 (`type-elaboration`) as prepared/implemented increments. Checker task
-      29, `mizar-vc` task 15, `mizar-atp` task 20, and `mizar-kernel` task 17
-      are recorded as `paced/open`; no placeholder runner or fake active
-      fixture is created for them.
+      `mizar-resolve` task 23 (`declaration-symbol`), `mizar-checker` task 12
+      (`type-elaboration` external-gap runner), and task 16
+      (source-derived builtin type-expression normalization) as
+      prepared/implemented increments. Checker task 29, `mizar-vc` task 15,
+      `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
+      `paced/open`; no placeholder runner or fake active fixture is created for
+      them.
     - Deps: 5, 8. Spec: [harness.md](./harness.md).
 
 11. **Determinism suite.** [x]
@@ -322,6 +324,22 @@ Keep `cargo test -p mizar-test` green after each task (see
     - Deps: 14. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md),
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
       repository documentation policy.
+
+16. **Source-derived builtin type-expression bridge.** [x]
+    - Completed: adds the first real source-to-checker extraction slice for active
+      `type_elaboration`: after frontend parsing and resolver symbol
+      collection pass, extracts reserve-only unrecovered builtin `set`/`object`
+      `TypeExpression` nodes into checker-owned `TypeExpressionInput` payloads,
+      normalizes them through `mizar-checker`, and assembles a minimal `TypedAst`
+      shell.
+    - Keep unsupported declaration, term, formula, coercion, attribute,
+      mode/structure, overload, fact, proof, CoreIr, ControlFlowIr, and VC seed
+      payloads on explicit external gaps. Do not rebaseline existing `.miz` or
+      expectation semantics, and do not promote Architecture-22 rows without
+      prepared consumer execution.
+    - Deps: 10, `mizar-checker` task 12. Spec: [harness.md](./harness.md),
+      [expectation_schema.md](./expectation_schema.md),
+      [traceability.md](./traceability.md), checker MC-G020.
 
 ## Recommended Verification
 

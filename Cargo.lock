@@ -602,6 +602,7 @@ dependencies = [
 name = "mizar-test"
 version = "0.1.0"
 dependencies = [
+ "mizar-checker",
  "mizar-frontend",
  "mizar-resolve",
  "mizar-session",

@@ -398,15 +398,30 @@ expected = "set"
 These tests may use only built-ins and symbols admitted by lower stages unless
 the expectation explicitly targets a missing prerequisite.
 
-Task 12 introduces the active `type-elaboration` corpus runner before the
-source-to-checker payload extraction bridge exists. Active `.miz` sidecars for
-that runner must carry `tags = ["active_type_elaboration"]`, use
-`stage = "type_elaboration"` and `expected_phase = "type_check"`, and leave
-`diagnostic_codes = []` until public checker diagnostic codes are specified.
-The runner executes frontend parsing and resolver symbol collection, then
-reports the stable external-gap detail key
-`type_elaboration.external_dependency.ast_payload_extraction` when those lower
-stages succeed but checker payload extraction is unavailable:
+Active `.miz` sidecars for the `type-elaboration` runner must carry
+`tags = ["active_type_elaboration"]`, use `stage = "type_elaboration"` and
+`expected_phase = "type_check"`, and leave `diagnostic_codes = []` until public
+checker diagnostic codes are specified. The runner executes frontend parsing
+and resolver symbol collection before checker work.
+
+The supported source-derived pass slice is limited to builtin `set` and
+`object` type-expression payloads with no attributes, arguments, parameter
+prefixes, or non-builtin symbol heads. Such pass cases must contain at least
+one source site that the runner extracts and normalizes through
+`TypeNormalizer`, must be covered by a pass-slice traceability row, and assert
+empty `diagnostic_codes` with no internal detail payloads:
+
+```toml
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+```
+
+When lower stages succeed but a case needs unsupported source-to-checker
+payload families, the runner reports the stable external-gap detail key
+`type_elaboration.external_dependency.ast_payload_extraction`:
 
 ```toml
 expected_outcome = "fail"
@@ -420,9 +435,10 @@ diagnostic_payloads = [
 tags = ["active_type_elaboration"]
 ```
 
-Real type pass expectations and detailed type assertion tables remain deferred
-until the runner can build checker-owned payloads from `.miz` source without
-inventing declarations, terms, coercions, facts, or proof evidence.
+Detailed type assertion tables and broader type pass expectations remain
+deferred until the runner can build checker-owned payloads from `.miz` source
+without inventing declarations, attributes, mode/structure expansions, terms,
+formulas, coercions, facts, overload evidence, or proof evidence.
 
 ## Formula, Statement, And Proof Expectations
 

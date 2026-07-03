@@ -1,0 +1,20 @@
+schema_version = 1
+id = "fail_type_elaboration_non_builtin_type_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_non_builtin_type_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "unsupported_type_expression_shape"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction",
+]
+notes = "Active type_elaboration runner boundary coverage: an imported non-builtin type head remains unsupported and must report the source-to-checker payload extraction gap instead of being accepted by the builtin pass slice."

@@ -230,14 +230,26 @@ diagnostic code が未仕様の間、fail coverage は resolver internal detail 
 `diagnostic_payloads` または `stable_detail_key` で assert してよい。この range が
 存在するまで、active sidecar は `diagnostic_codes` を空にしなければならない。
 
-初期 type-elaboration stage では、active runner gate（`active_type_elaboration`、
+type-elaboration stage では、active runner gate（`active_type_elaboration`、
 `stage = "type_elaboration"`、`expected_phase = "type_check"`、pass/fail outcome）
-を満たす `.miz` sidecar だけが executable coverage になる。source-to-checker
-payload extraction が存在するまで、covered active test は external-gap detail key
-`type_elaboration.external_dependency.ast_payload_extraction` を MC-G020 bridge gap
-だけに対して assert してよい。これらの test は task 7-11 semantic pass/fail
-coverage を満たさない。semantic pass coverage は stubbed checker output から credit せず
-deferred のままにする。
+を満たす `.miz` sidecar だけが executable coverage になる。task 16 が credit して
+よいのは狭い builtin type-expression slice だけである。
+つまり unrecovered な source `TypeExpression` node のうち、`set` または `object`
+を head とし、attributes、arguments、parameter prefix、non-builtin symbol head を
+持たないものを checker-owned `TypeExpressionInput` payload に変換し、
+`mizar-checker` で normalize し、最小の typed AST shell に組み立てる。active pass
+test は、listed source が少なくとも 1 個の抽出済み builtin type-expression site を
+持ち、runner regression evidence が `TypeNormalizer` と最小 `TypedAst` path の実行を
+確認する場合だけ、この slice を cover してよい。pass slice は diagnostic
+external-gap row から credit せず、専用の traceability row/test を持たなければならない。
+
+case が未対応の declaration、term、formula、coercion、attribute / mode /
+structure、overload、fact、proof payload extraction を必要とする場合、covered
+active fail test は引き続き external-gap detail key
+`type_elaboration.external_dependency.ast_payload_extraction` を assert してよい。
+これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
+prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
+`proof_verification` row は deferred のままにする。
 
 ## Reporting
 

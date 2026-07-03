@@ -377,13 +377,28 @@ expected = "set"
 
 これらの tests は、expectation が missing prerequisite を明示的に target しない限り、built-ins と lower stages で admitted された symbols だけを使う。
 
-task 12 は source-to-checker payload extraction bridge が存在する前に、active
-`type-elaboration` corpus runner を導入する。この runner の active `.miz` sidecar は
+`type-elaboration` runner の active `.miz` sidecar は
 `tags = ["active_type_elaboration"]`、`stage = "type_elaboration"`、
 `expected_phase = "type_check"` を持ち、public checker diagnostic code が指定されるまで
-`diagnostic_codes = []` を保つ。runner は frontend parsing と resolver symbol collection を
-実行し、それら lower stage が成功したが checker payload extraction が使えない場合に、
-stable external-gap detail key
+`diagnostic_codes = []` を保つ。runner は checker work の前に frontend parsing と
+resolver symbol collection を実行する。
+
+対応済み source-derived pass slice は、attributes、arguments、parameter prefix、
+non-builtin symbol head を持たない builtin `set` / `object` type-expression payload に
+限定する。この pass case は runner が抽出して `TypeNormalizer` で normalize する
+source site を少なくとも 1 つ含み、pass-slice traceability row に cover され、
+empty `diagnostic_codes` と internal detail payload なしを assert しなければならない。
+
+```toml
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+```
+
+lower stages が成功したが、case が未対応 source-to-checker payload family を必要とする場合、
+runner は stable external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` を report する。
 
 ```toml
@@ -398,9 +413,9 @@ diagnostic_payloads = [
 tags = ["active_type_elaboration"]
 ```
 
-real type pass expectation と detailed type assertion table は、runner が `.miz` source から
-checker-owned payload を declaration、term、coercion、fact、proof evidence を捏造せず構築できるまで
-deferred のままにする。
+detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
+から checker-owned payload を declaration、attribute、mode / structure expansion、term、
+formula、coercion、fact、overload evidence、proof evidence を捏造せず構築できるまで deferred のままにする。
 
 ## Formula, Statement, And Proof Expectations
 
