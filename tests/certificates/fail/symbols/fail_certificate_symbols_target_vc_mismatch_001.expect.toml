@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_symbols_target_vc_mismatch_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.symbols"
+source = "fail_certificate_symbols_target_vc_mismatch_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "certificate_check"
+failure_category = "certificate_rejection"
+rejection_reason = "context_mismatch"
+stable_detail_key = "certificate.symbols.target_vc_mismatch"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.provenance_binding",
+]
+notes = "Evidence binds target_vc theorem_2#0042 while the caller expects theorem_1#0001: a valid certificate replayed against a different VC. Target binding mismatch must reject as context_mismatch, ordered by the caller-supplied expected target. Refs: architecture 15 legacy top level (target_vc binding) and 'Post-Closeout Correction'; rejection.md context_mismatch; soundness_argument.md invariant B1."

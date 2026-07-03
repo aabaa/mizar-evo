@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_sat_invalid_resolution_step_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "fail_certificate_sat_invalid_resolution_step_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "kernel_rejection"
+rejection_reason = "invalid_sat_proof"
+stable_detail_key = "soundness.certificate.invalid_sat_proof"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.sat_refutation",
+]
+notes = "Required soundness case (legacy audit surface). Resolution step claims resolvent q(x) although resolving p(x) against not-p(x) yields the empty clause. Audit-mode replay must recompute and reject the mismatched resolvent as invalid_sat_proof; under default policy the same bytes already reject as unsupported legacy evidence before replay. Refs: architecture 15 'Resolution Trace'; resolution_trace.md; rejection.md invalid_sat_proof; soundness_argument.md invariant L2/L3."

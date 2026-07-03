@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_legacy_resolution_trace_normal_policy_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.legacy"
+source = "fail_certificate_legacy_resolution_trace_normal_policy_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "certificate_check"
+failure_category = "certificate_rejection"
+rejection_reason = "unsupported_certificate_format"
+stable_detail_key = "certificate.legacy.unsupported_under_normal_policy"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.envelope_rejection",
+]
+notes = "A well-formed legacy resolution-trace certificate submitted under normal proof policy (allow_legacy_certificate_audit = false). Must reject as unsupported without replay; audit mode may replay but still returns Rejected and never populates used_axioms or kernel_verified. Refs: architecture 15 'Post-Closeout Correction'; checker.md 'Post-Closeout Correction'; architecture 20 'Required Fail and Soundness Tests'; soundness_argument.md invariants L1/L2."

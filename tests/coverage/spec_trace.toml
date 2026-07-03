@@ -1358,6 +1358,86 @@ deferred_reason = "Task 15 records this as an external_dependency_gap rather tha
 tests = []
 
 [[requirement]]
+id = "spec.en.architecture_15.kernel_evidence.envelope_rejection"
+source = "doc/design/architecture/en/15.kernel_certificate_format.md"
+section = "Post-Closeout Correction / Legacy Certificate Top Level / Kernel Rejection Semantics"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/certificates/fail/malformed/fail_certificate_malformed_truncated_envelope_001.expect.toml",
+  "tests/certificates/fail/malformed/fail_certificate_malformed_duplicate_formula_id_001.expect.toml",
+  "tests/certificates/fail/malformed/fail_certificate_malformed_unknown_schema_version_001.expect.toml",
+  "tests/certificates/fail/malformed/fail_certificate_malformed_section_order_001.expect.toml",
+  "tests/certificates/fail/malformed/fail_certificate_malformed_trailing_bytes_001.expect.toml",
+  "tests/certificates/fail/malformed/fail_certificate_malformed_kernel_profile_mismatch_001.expect.toml",
+  "tests/certificates/fail/malformed/fail_certificate_legacy_resolution_trace_normal_policy_001.expect.toml",
+  "tests/certificates/fail/malformed/fail_certificate_legacy_forward_resolution_reference_001.expect.toml",
+  "tests/certificates/fail/malformed/fail_certificate_legacy_duplicate_clause_literals_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.architecture_15.kernel_evidence.provenance_binding"
+source = "doc/design/architecture/en/15.kernel_certificate_format.md"
+section = "Imported Facts / Context Identity Covers Non-Imported Source Bindings"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/certificates/fail/symbols/fail_certificate_symbols_imported_fingerprint_mismatch_001.expect.toml",
+  "tests/certificates/fail/symbols/fail_certificate_symbols_weaker_proof_status_001.expect.toml",
+  "tests/certificates/fail/symbols/fail_certificate_symbols_unverifiable_local_hypothesis_001.expect.toml",
+  "tests/certificates/fail/symbols/fail_certificate_symbols_target_vc_mismatch_001.expect.toml",
+  "tests/certificates/fail/substitution/fail_certificate_substitution_missing_payload_001.expect.toml",
+  "tests/certificates/fail/substitution/fail_certificate_substitution_unknown_source_formula_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.architecture_15.kernel_evidence.resource_budgets"
+source = "doc/design/architecture/en/15.kernel_certificate_format.md"
+section = "Kernel Rejection Semantics (timeout / resource_exhaustion are non-acceptance)"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/certificates/fail/resources/fail_certificate_resources_formula_depth_limit_001.expect.toml",
+  "tests/certificates/fail/resources/fail_certificate_resources_checker_step_budget_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.architecture_15.kernel_evidence.sat_refutation"
+source = "doc/design/architecture/en/15.kernel_certificate_format.md"
+section = "Post-Closeout Correction / Goal Polarity Is Bound By The Target Obligation"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/certificates/fail/sat/fail_certificate_sat_satisfiable_refutation_001.expect.toml",
+  "tests/certificates/fail/sat/fail_certificate_sat_goal_polarity_mismatch_001.expect.toml",
+  "tests/certificates/fail/sat/fail_certificate_sat_invalid_resolution_step_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.architecture_16.substitution.kernel_replay_rejection"
+source = "doc/design/architecture/en/16.substitution_and_binding.md"
+section = "Capture Avoidance / Renaming Strategy / Substitution Replay"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+tests = [
+  "tests/certificates/fail/substitution/fail_certificate_substitution_capture_001.expect.toml",
+  "tests/certificates/fail/substitution/fail_certificate_substitution_missing_payload_001.expect.toml",
+  "tests/certificates/fail/substitution/fail_certificate_substitution_freshness_counter_mismatch_001.expect.toml",
+  "tests/certificates/fail/substitution/fail_certificate_substitution_stale_capture_set_001.expect.toml",
+  "tests/certificates/fail/substitution/fail_certificate_substitution_unknown_source_formula_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.architecture_22.regression_matrix.metadata"
 source = "doc/design/architecture/en/22.incremental_verification_contract.md"
 section = "Architecture-22 incremental/parallel verification regression matrix metadata"

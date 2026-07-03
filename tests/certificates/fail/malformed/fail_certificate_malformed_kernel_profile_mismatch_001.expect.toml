@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_malformed_kernel_profile_mismatch_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.envelope"
+source = "fail_certificate_malformed_kernel_profile_mismatch_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "certificate_check"
+failure_category = "certificate_rejection"
+rejection_reason = "unsupported_certificate_format"
+stable_detail_key = "certificate.malformed.unsupported_kernel_profile"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.envelope_rejection",
+]
+notes = "Evidence kernel_profile requests hash-input algorithm 77, which the checker profile does not support. Profile mismatch must reject before checking: accepting under a weaker or unknown profile is a downgrade attack. Refs: architecture 15 'Kernel Rejection Semantics'; rejection.md unsupported_certificate_format; soundness_argument.md invariant B2."

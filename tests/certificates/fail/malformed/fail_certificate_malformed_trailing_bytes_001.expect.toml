@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_malformed_trailing_bytes_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.envelope"
+source = "fail_certificate_malformed_trailing_bytes_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "certificate_check"
+failure_category = "certificate_rejection"
+rejection_reason = "malformed_certificate"
+stable_detail_key = "certificate.malformed.trailing_bytes"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.envelope_rejection",
+]
+notes = "Valid envelope followed by trailing bytes. Exact byte consumption is mandatory; trailing data could smuggle a second payload past hash binding. Refs: formula_evidence.md 'Canonical V1 Envelope' (trailing bytes reject); soundness_argument.md invariant E2/E5."

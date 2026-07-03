@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_resources_formula_depth_limit_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "fail_certificate_resources_formula_depth_limit_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "certificate_check"
+failure_category = "certificate_rejection"
+rejection_reason = "resource_exhaustion"
+stable_detail_key = "soundness.certificate.resource_exhaustion"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.resource_budgets",
+]
+notes = "Required soundness case. A formula whose nesting depth exceeds the deterministic parser limit must reject as resource_exhaustion before allocation or deep recursion, and the outcome is non-acceptance: the obligation stays unverified. Refs: formula_evidence.md 'Formula Grammar' (depth/node limits); architecture 15 rejection table; soundness_argument.md invariants E4/D3/R4."

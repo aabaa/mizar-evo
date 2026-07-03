@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_symbols_weaker_proof_status_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.symbols"
+source = "fail_certificate_symbols_weaker_proof_status_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "kernel_rejection"
+rejection_reason = "unresolved_symbol"
+stable_detail_key = "certificate.symbols.weaker_proof_status"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.provenance_binding",
+]
+notes = "The evidence requires the imported theorem at kernel_verified strength, but the immutable context records only externally_attested_policy_permitted. Proof-status strength is ordered and a weaker status must reject as unresolved_symbol: external attestation is never laundered into kernel-verified acceptance. Refs: checker.md 'Imported Fact Checking' (status order and policy gate); architecture 08 policy statuses; soundness_argument.md invariant P3."

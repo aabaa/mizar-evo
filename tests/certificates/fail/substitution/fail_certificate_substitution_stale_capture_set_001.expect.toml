@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_substitution_stale_capture_set_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.substitution"
+source = "fail_certificate_substitution_stale_capture_set_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "kernel_rejection"
+rejection_reason = "invalid_substitution"
+stable_detail_key = "certificate.substitution.stale_capture_set"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_16.substitution.kernel_replay_rejection",
+]
+notes = "Recorded free-variable capture set does not equal the set the kernel recomputes at the recorded target path. A recorded capture set is not self-attesting; exact equality is required before any constraint predicate is evaluated. Refs: architecture 16 'Renaming Strategy' (free-variable replay); substitution_checker.md 'Free-Variable Conditions'; soundness_argument.md invariant S6."

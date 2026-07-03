@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_legacy_forward_resolution_reference_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.legacy"
+source = "fail_certificate_legacy_forward_resolution_reference_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "certificate_check"
+failure_category = "certificate_rejection"
+rejection_reason = "malformed_certificate"
+stable_detail_key = "certificate.legacy.forward_resolution_reference"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.envelope_rejection",
+]
+notes = "Legacy trace where step 1 cites step 2 as a parent and step 2 cites step 1: a forward/cyclic derivation. Parent references may point only to imported clauses, generated clauses, or strictly earlier steps; forward references are malformed certificates. Refs: architecture 15 'Resolution Trace'; soundness_argument.md invariant L3."

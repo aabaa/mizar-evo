@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_malformed_unknown_schema_version_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.envelope"
+source = "fail_certificate_malformed_unknown_schema_version_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "certificate_check"
+failure_category = "certificate_rejection"
+rejection_reason = "unsupported_certificate_format"
+stable_detail_key = "certificate.malformed.unsupported_schema_version"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.envelope_rejection",
+]
+notes = "Unknown evidence schema_version 99. Version downgrade/upgrade confusion must reject as unsupported, never best-effort parse. Refs: formula_evidence.md 'Rejection Mapping' (schema failures use unsupported_certificate_format); soundness_argument.md invariant E1."

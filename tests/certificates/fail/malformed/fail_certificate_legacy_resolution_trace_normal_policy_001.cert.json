@@ -1,0 +1,87 @@
+{
+  "seed_schema": "mizar-kernel-legacy-certificate-json-seed/1",
+  "test_id": "fail_certificate_legacy_resolution_trace_normal_policy_001",
+  "expected_failure_category": "certificate_rejection",
+  "expected_rejection_reason": "unsupported_certificate_format",
+  "legacy_certificate": {
+    "version": 1,
+    "target_vc": "vc:pkg.demo/mod.core/theorem_1#0001",
+    "kernel_profile": {
+      "schema_version": 1,
+      "encoding_version": 1,
+      "clause_tautology_policy": "reject",
+      "hash_input_algorithm": 1,
+      "formula_fingerprint_algorithm": 2
+    },
+    "imported_axioms": [],
+    "imported_theorems": [],
+    "generated_clauses": [
+      {
+        "clause_id": 1,
+        "literals": [
+          {
+            "polarity": true,
+            "atom": {
+              "kind": "atom",
+              "symbol_id": 1,
+              "arguments": [
+                {
+                  "kind": "variable",
+                  "variable_id": 1
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "clause_id": 2,
+        "literals": [
+          {
+            "polarity": false,
+            "atom": {
+              "kind": "atom",
+              "symbol_id": 1,
+              "arguments": [
+                {
+                  "kind": "variable",
+                  "variable_id": 1
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ],
+    "substitutions": [],
+    "resolution_trace": [
+      {
+        "step_id": 1,
+        "parent_clause_a": 1,
+        "parent_clause_b": 2,
+        "pivot_literal": {
+          "polarity": true,
+          "atom": {
+            "kind": "atom",
+            "symbol_id": 1,
+            "arguments": [
+              {
+                "kind": "variable",
+                "variable_id": 1
+              }
+            ]
+          }
+        },
+        "generated_clause": {
+          "clause_id": 3,
+          "literals": []
+        }
+      }
+    ],
+    "derived_facts": [],
+    "final_goal": {
+      "kind": "resolution_step",
+      "step_id": 1
+    }
+  }
+}

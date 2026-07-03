@@ -1,0 +1,17 @@
+schema_version = 1
+id = "fail_certificate_substitution_missing_payload_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.substitution"
+source = "fail_certificate_substitution_missing_payload_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "kernel_rejection"
+rejection_reason = "missing_provenance"
+stable_detail_key = "certificate.substitution.missing_payload_provenance"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_16.substitution.kernel_replay_rejection",
+  "spec.en.architecture_15.kernel_evidence.provenance_binding",
+]
+notes = "Substitution entry references a payload that is absent from the explicit substitution context. The kernel must reject as missing_provenance and must not infer a payload by diffing source and target terms. Refs: substitution_checker.md 'Input And Context'; soundness_argument.md invariant S1."

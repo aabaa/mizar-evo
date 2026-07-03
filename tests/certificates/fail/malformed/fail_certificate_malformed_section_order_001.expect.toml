@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_malformed_section_order_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.envelope"
+source = "fail_certificate_malformed_section_order_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "certificate_check"
+failure_category = "certificate_rejection"
+rejection_reason = "unsupported_certificate_format"
+stable_detail_key = "certificate.malformed.noncanonical_section_order"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.envelope_rejection",
+]
+notes = "Sections serialized out of the fixed v1 order (formula_evidence before variable_manifest). Noncanonical order must reject so canonical hash input bytes stay unique per evidence content. Refs: formula_evidence.md 'Canonical V1 Envelope' (noncanonical section order rejects); soundness_argument.md invariant E2."

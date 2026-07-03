@@ -51,6 +51,7 @@ with the same file name.
 | `sat_checker.md` | EN -> JA and JA -> EN | 6 / 6 | 0 / 0 | Refreshed for task-27 wrapper API and unsupported step-budget policy. |
 | `sat_dependency_audit.md` | EN -> JA and JA -> EN | 13 / 13 | 32 / 32 | Refreshed for task-27 exact dependency and no-callback branch. |
 | `sat_encoding.md` | EN -> JA and JA -> EN | 8 / 8 | 0 / 0 | Refreshed for task-27 read-only encoded problem boundary. |
+| `soundness_argument.md` | EN -> JA and JA -> EN | 20 / 20 | 19 / 19 | Added by the pre-implementation soundness audit; synchronized at creation. |
 | `source_spec_audit.md` | EN -> JA and JA -> EN | 18 / 18 | 29 / 29 | Synchronized after task-29 legacy audit gate. |
 | `substitution_checker.md` | EN -> JA and JA -> EN | 15 / 15 | 17 / 17 | Synchronized. |
 | `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 33 / 33 | Synchronized after Task 28 hash backfill and Task 29 completion row. |

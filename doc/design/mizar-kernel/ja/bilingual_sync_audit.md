@@ -49,6 +49,7 @@ downstream ATP/proof/cache/artifact integration は変更しない。
 | `sat_checker.md` | EN -> JA and JA -> EN | 6 / 6 | 0 / 0 | task-27 wrapper API と unsupported step-budget policy 向けに refreshed. |
 | `sat_dependency_audit.md` | EN -> JA and JA -> EN | 13 / 13 | 32 / 32 | task-27 exact dependency と no-callback branch 向けに refreshed. |
 | `sat_encoding.md` | EN -> JA and JA -> EN | 8 / 8 | 0 / 0 | task-27 read-only encoded problem boundary 向けに refreshed. |
+| `soundness_argument.md` | EN -> JA and JA -> EN | 20 / 20 | 19 / 19 | 実装前健全性監査で追加; 作成時点で synchronized. |
 | `source_spec_audit.md` | EN -> JA and JA -> EN | 18 / 18 | 29 / 29 | task-29 legacy audit gate 後に synchronized. |
 | `substitution_checker.md` | EN -> JA and JA -> EN | 15 / 15 | 17 / 17 | Synchronized. |
 | `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 33 / 33 | Task 28 hash backfill と Task 29 completion row 後に synchronized. |
