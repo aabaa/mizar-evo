@@ -1,0 +1,45 @@
+:: Rejection target: `measure(g)` is ambiguous. The argument closure
+:: cl(giant set) = { giant, wide, tall } makes both ordinary roots
+:: measure(wide set) and measure(tall set) viable, and `wide set` and
+:: `tall set` are incomparable under the specificity order, so overload
+:: resolution must report an ambiguous overload instead of picking one
+:: (doc/spec/en/19.overload_resolution.md, sections 19.2.3 and 19.4.4).
+
+definition
+  let x be set;
+  attr WideDef: x is wide means x = x;
+  attr TallDef: x is tall means x = x;
+  attr GiantDef: x is giant means x = x;
+end;
+
+registration
+  cluster WideExists: wide set;
+  existence proof thus thesis; end;
+
+  cluster TallExists: tall set;
+  existence proof thus thesis; end;
+
+  cluster GiantExists: giant set;
+  existence proof thus thesis; end;
+
+  cluster GiantIsWide: giant -> wide for set;
+  coherence proof thus thesis; end;
+
+  cluster GiantIsTall: giant -> tall for set;
+  coherence proof thus thesis; end;
+end;
+
+definition
+  let x be wide set;
+  func MeasureWideDef: measure(x) -> set equals x;
+end;
+
+definition
+  let x be tall set;
+  func MeasureTallDef: measure(x) -> set equals x;
+end;
+
+definition
+  let g be giant set;
+  func ProbeDef: probe(g) -> set equals measure(g);
+end;

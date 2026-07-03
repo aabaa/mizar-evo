@@ -1,0 +1,20 @@
+:: Rejection target: `inherit AStr extends BStr` together with
+:: `inherit BStr extends AStr` creates a cyclic inheritance chain. The
+:: inheritance relation must stay well-founded: the qua-encoding axioms
+:: assume cycle freedom of the inherit closure, and a cycle would make the
+:: subsumption predicates mutually defining
+:: (doc/spec/en/05.structures.md, section 5.3;
+:: doc/spec/en/13.term_expression.md, section 13.8.7 cycle-freedom axioms).
+
+definition
+  struct AStr where
+    field carrier -> set;
+  end;
+
+  struct BStr where
+    field carrier -> set;
+  end;
+
+  inherit AStr extends BStr;
+  inherit BStr extends AStr;
+end;

@@ -1,0 +1,26 @@
+:: Rejection target: `s qua keen set` narrows a plain `set` to an attributed
+:: type. `keen` is not derivable from cl(set) by cluster closure, so the qua
+:: view claims an attribute the term's type does not provide. qua is
+:: widening-only; narrowing requires `reconsider` with a proof
+:: (doc/spec/en/13.term_expression.md, section 13.6.4;
+:: doc/spec/en/08.type_inference.md, section 8.2.2).
+
+definition
+  let x be set;
+  attr KeenDef: x is keen means x = x;
+end;
+
+registration
+  cluster KeenExists: keen set;
+  existence proof thus thesis; end;
+end;
+
+definition
+  let x be keen set;
+  func SharpenDef: sharpen(x) -> set equals x;
+end;
+
+definition
+  let s be set;
+  func MisuseDef: misuse(s) -> set equals sharpen(s qua keen set);
+end;

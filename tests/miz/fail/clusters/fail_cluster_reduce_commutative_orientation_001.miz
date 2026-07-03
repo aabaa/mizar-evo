@@ -1,0 +1,17 @@
+:: Rejection target: a commutativity-style orientation `join(x, y) -> join(y, x)`
+:: keeps the resolved term-AST node count unchanged, so it violates the strict
+:: size decrease required by the default simplification order. Same-size
+:: orientation is explicitly not accepted
+:: (doc/spec/en/17.clusters_and_registrations.md, section 17.6.4, rule 3).
+
+definition
+  let x, y be set;
+  func JoinDef: join(x, y) -> set equals x;
+end;
+
+registration
+  let x, y be set;
+
+  reduce JoinComm: join(x, y) to join(y, x);
+  reducibility proof thus thesis; end;
+end;

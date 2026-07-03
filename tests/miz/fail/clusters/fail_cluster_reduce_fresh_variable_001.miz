@@ -1,0 +1,16 @@
+:: Rejection target: the reduction right-hand side introduces the free pattern
+:: variable `y` that does not occur in the left-hand side. Spec 17.6.4 rule 1
+:: requires every free RHS pattern variable to occur free in the LHS
+:: (doc/spec/en/17.clusters_and_registrations.md, section 17.6.4, rule 1).
+
+definition
+  let x be set;
+  func TagDef: tag(x) -> set equals [x];
+end;
+
+registration
+  let x, y be set;
+
+  reduce TagFresh: tag(x) to [y];
+  reducibility proof thus thesis; end;
+end;

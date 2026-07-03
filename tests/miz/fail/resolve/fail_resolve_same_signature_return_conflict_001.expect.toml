@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_resolve_same_signature_return_conflict_001"
+kind = "fail"
+stage = "declaration_symbol"
+domain = "resolve.signature_conflict"
+source = "fail_resolve_same_signature_return_conflict_001.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+rejection_reason = "same_signature_return_conflict"
+stable_detail_key = "declaration_symbol.signature.same_signature_return_conflict"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.19.overload.definition_conflict.declaration",
+]
+notes = "Inactive declaration_symbol seed (untagged until the resolver collects functor signatures): two gauge definitions share one argument-type signature with different return types; this is a definition conflict at signature collection, not an overload pair (spec 19.1)."

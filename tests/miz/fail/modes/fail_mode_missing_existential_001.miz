@@ -1,0 +1,15 @@
+:: Rejection target: `let s be tinted set` uses an attributed type that has no
+:: existential cluster registration in scope. All attributed types must be
+:: known inhabited before values of that type may be introduced
+:: (doc/spec/en/17.clusters_and_registrations.md, section 17.3.4;
+:: doc/spec/en/07.modes.md, section 7.8).
+
+definition
+  let x be set;
+  attr TintedDef: x is tinted means x = x;
+end;
+
+definition
+  let s be tinted set;
+  func PickTintedDef: pick_tinted(s) -> set equals s;
+end;

@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_overload_inheritance_path_ambiguity_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "overload.resolution"
+source = "fail_overload_inheritance_path_ambiguity_001.miz"
+expected_outcome = "fail"
+expected_phase = "overload_resolution"
+failure_category = "overload_ambiguity"
+rejection_reason = "ambiguous_inheritance_path"
+stable_detail_key = "overload.inheritance_path.ambiguous"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.19.overload.ambiguity.semantic",
+]
+notes = "Inactive advanced_semantics seed: PairStr reaches RootStr through AddStr and MulStr; implicit upcast needs a unique inherit chain, so core(p) without qua must be rejected as an ambiguous inheritance path (spec 19.2.2, 19.6.2)."

@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_cluster_contradictory_consequent_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "clusters.pattern_consistency"
+source = "fail_cluster_contradictory_consequent_001.miz"
+expected_outcome = "fail"
+expected_phase = "cluster_resolution"
+failure_category = "type_error"
+rejection_reason = "contradictory_consequent_adjectives"
+stable_detail_key = "registration.cluster.contradictory_consequent"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.17.clusters.pattern_consistency.semantic",
+]
+notes = "Inactive advanced_semantics seed: a conditional cluster whose consequent lists both solid and non solid is statically contradictory and must be rejected before entering the active cluster database (spec 17.4, 17.7.3)."

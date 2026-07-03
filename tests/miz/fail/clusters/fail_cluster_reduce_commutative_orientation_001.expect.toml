@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_cluster_reduce_commutative_orientation_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "clusters.reduction_termination"
+source = "fail_cluster_reduce_commutative_orientation_001.miz"
+expected_outcome = "fail"
+expected_phase = "cluster_resolution"
+failure_category = "type_error"
+rejection_reason = "simplification_order_violation"
+stable_detail_key = "registration.reduction.simplification_order_violation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.17.reductions.termination_order.semantic",
+]
+notes = "Inactive advanced_semantics seed: commutativity orientation join(x,y) -> join(y,x) has equal LHS/RHS size; same-size orientation is not accepted by the default simplification order (spec 17.6.4 rule 3)."

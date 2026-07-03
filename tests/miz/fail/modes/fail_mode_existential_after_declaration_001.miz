@@ -1,0 +1,20 @@
+:: Rejection target: the mode `MarkedSet` is declared before the existential
+:: cluster for `marked set` exists. Mode existence checks are mandatory and
+:: fail at the point of mode declaration; registration activation is
+:: item-ordered and never retroactive, so the later cluster cannot repair the
+:: earlier declaration (doc/spec/en/07.modes.md, section 7.8;
+:: doc/spec/en/17.clusters_and_registrations.md, section 17.1).
+
+definition
+  let x be set;
+  attr MarkedDef: x is marked means x = x;
+end;
+
+definition
+  mode MarkedSetDef: MarkedSet is marked set;
+end;
+
+registration
+  cluster MarkedExists: marked set;
+  existence proof thus thesis; end;
+end;

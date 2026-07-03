@@ -37,6 +37,7 @@ task 33 で pair が同期済みであるとは、以下をすべて満たすこ
 | `overload_resolution.md` | `../ja/overload_resolution.md` | `../en/overload_resolution.md` | phase-8 boundary、site/candidate collection、template expansion、viability、specificity、selection/views、diagnostics、public enum policy、deferred gaps | none |
 | `registration_resolution.md` | `../ja/registration_resolution.md` | `../en/registration_resolution.md` | registration model、pending/activated database、validation、existential gates、cluster/reduction handoff、diagnostics、public enum policy、gap table | none |
 | `resolved_typed_ast.md` | `../ja/resolved_typed_ast.md` | `../en/resolved_typed_ast.md` | responsibility、inputs、data shape、metadata/summaries、overload/coercion/cluster tables、failure/recovery、public enum policy、deferred gaps | none |
+| `semantic_spec_audit.md` | `../ja/semantic_spec_audit.md` | `../en/semantic_spec_audit.md` | audit scope、severity legend、findings index/details、adversarial corpus table、traceability requirement ids、TODO impact | none |
 | `source_spec_audit.md` | `../ja/source_spec_audit.md` | `../en/source_spec_audit.md` | public surface inventory、behavior/test correspondence、MC-G reconciliation、task classification | none |
 | `todo.md` | `../ja/todo.md` | `../en/todo.md` | module implementation table、prerequisites、resolved decisions、ordered task list、task statuses、verification、notes | none |
 | `typed_ast.md` | `../ja/typed_ast.md` | `../en/typed_ast.md` | purpose/boundary、top-level shape、arena/context/type/fact/coercion/obligation/diagnostic tables、public enum policy、task classification | none |

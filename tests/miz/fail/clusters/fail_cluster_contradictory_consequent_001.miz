@@ -1,0 +1,18 @@
+:: Rejection target: a single conditional cluster whose consequent contains
+:: both `solid` and `non solid` is statically contradictory. Deriving an
+:: attribute and its negation for the same subject signals an unsound
+:: registration and must be rejected before it can enter the active cluster
+:: database (doc/spec/en/17.clusters_and_registrations.md, sections 17.4 and
+:: 17.7.3; architecture 04 lists contradictory attributes as a registration
+:: diagnostic).
+
+definition
+  let x be set;
+  attr HollowDef: x is hollow means x = x;
+  attr SolidDef: x is solid means x = x;
+end;
+
+registration
+  cluster HollowContradiction: hollow -> solid non solid for set;
+  coherence proof thus thesis; end;
+end;

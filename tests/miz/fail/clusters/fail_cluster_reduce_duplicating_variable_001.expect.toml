@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_cluster_reduce_duplicating_variable_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "clusters.reduction_termination"
+source = "fail_cluster_reduce_duplicating_variable_001.miz"
+expected_outcome = "fail"
+expected_phase = "cluster_resolution"
+failure_category = "type_error"
+rejection_reason = "variable_occurrence_increase"
+stable_detail_key = "registration.reduction.variable_occurrence_increase"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.17.reductions.termination_order.semantic",
+]
+notes = "Inactive advanced_semantics seed: reduce pack(join(x,y),y) to join(x,x) duplicates x (1 -> 2 free occurrences) despite shrinking node count, violating spec 17.6.4 rule 2; the order must stay substitution-stable."

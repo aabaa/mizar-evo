@@ -1,0 +1,39 @@
+:: Rejection target: `core(p)` upcasts PairStr to RootStr, but PairStr reaches
+:: RootStr through two inheritance paths (AddStr and MulStr). Implicit
+:: upcasting requires a unique inherit chain; with two or more paths the use
+:: site must be rejected as an ambiguous inheritance path until the source
+:: selects a path with `qua`
+:: (doc/spec/en/19.overload_resolution.md, sections 19.2.2 and 19.6.2).
+
+definition
+  struct RootStr where
+    field carrier -> set;
+  end;
+
+  struct AddStr where
+    field carrier -> set;
+  end;
+
+  struct MulStr where
+    field carrier -> set;
+  end;
+
+  struct PairStr where
+    field carrier -> set;
+  end;
+
+  inherit AddStr extends RootStr;
+  inherit MulStr extends RootStr;
+  inherit PairStr extends AddStr;
+  inherit PairStr extends MulStr;
+end;
+
+definition
+  let r be RootStr;
+  func CoreDef: core(r) -> set equals r.carrier;
+end;
+
+definition
+  let p be PairStr;
+  func UseCoreDef: use_core(p) -> set equals core(p);
+end;

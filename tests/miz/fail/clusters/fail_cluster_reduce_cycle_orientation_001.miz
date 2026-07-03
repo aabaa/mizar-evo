@@ -1,0 +1,21 @@
+:: Rejection target: a reduction cycle `wrap_a(x) -> wrap_b(x)` plus
+:: `wrap_b(x) -> wrap_a(x)` must be impossible to register, because each rule
+:: has size(LHS) = size(RHS) and spec 17.6.4 requires size(LHS) > size(RHS)
+:: under the fixed simplification order. Cycles are unregistrable by
+:: construction (doc/spec/en/17.clusters_and_registrations.md, section 17.6.4).
+
+definition
+  let x be set;
+  func WrapADef: wrap_a(x) -> set equals [x];
+  func WrapBDef: wrap_b(x) -> set equals [x];
+end;
+
+registration
+  let x be set;
+
+  reduce WrapAToB: wrap_a(x) to wrap_b(x);
+  reducibility proof thus thesis; end;
+
+  reduce WrapBToA: wrap_b(x) to wrap_a(x);
+  reducibility proof thus thesis; end;
+end;

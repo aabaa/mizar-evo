@@ -1,0 +1,19 @@
+:: Rejection target: the reduction duplicates the pattern variable `x` on the
+:: right-hand side (one free occurrence in the LHS, two in the RHS) even though
+:: the node count still shrinks. Spec 17.6.4 rule 2 requires per-variable free
+:: occurrence counts in the RHS to stay within the LHS counts, keeping the
+:: order substitution-stable
+:: (doc/spec/en/17.clusters_and_registrations.md, section 17.6.4, rule 2).
+
+definition
+  let x, y be set;
+  func JoinDef: join(x, y) -> set equals x;
+  func PackDef: pack(x, y) -> set equals [x];
+end;
+
+registration
+  let x, y be set;
+
+  reduce PackDup: pack(join(x, y), y) to join(x, x);
+  reducibility proof thus thesis; end;
+end;

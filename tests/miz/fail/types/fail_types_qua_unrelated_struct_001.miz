@@ -1,0 +1,20 @@
+:: Rejection target: `(a qua OtherStr)` views a OneStr value as OtherStr, but
+:: OneStr does not inherit from OtherStr, so the target type is not reachable
+:: by proof-free widening along any inherit chain. Structural similarity of
+:: the two declarations does not create a view; the qua expression must be
+:: rejected (doc/spec/en/13.term_expression.md, sections 13.6.1 and 13.6.4).
+
+definition
+  struct OneStr where
+    field carrier -> set;
+  end;
+
+  struct OtherStr where
+    field carrier -> set;
+  end;
+end;
+
+definition
+  let a be OneStr;
+  func LeakDef: leak(a) -> set equals (a qua OtherStr).carrier;
+end;

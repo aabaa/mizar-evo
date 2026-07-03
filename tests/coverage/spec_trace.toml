@@ -575,6 +575,24 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.05.structures.inheritance.semantic"
+source = "doc/spec/en/05.structures.md"
+section = "5.3 Inheritance; 5.3.1 Syntax (EBNF); 5.4 Multiple and Diamond Inheritance"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Adversarial checker seeds fixed test-first; inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020). Rejection contracts: diamond member-type conflicts, inheritance cycles, uncovered base members."
+depends_on = [
+  "spec.en.05.structures.parser",
+]
+tests = [
+  "tests/miz/fail/structures/fail_structure_diamond_member_type_conflict_001.expect.toml",
+  "tests/miz/fail/structures/fail_structure_inherit_cycle_001.expect.toml",
+  "tests/miz/fail/structures/fail_structure_inherit_uncovered_member_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.05.structures.parser"
 source = "doc/spec/en/05.structures.md"
 section = "5.2 Syntax; 5.3 Inheritance; 5.3.1 Syntax (EBNF); 5.3.2 Coherence (Type Specialization); 5.6 Dependent Structures; 5.9 Complete Syntax (EBNF)"
@@ -611,6 +629,24 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_mode_definitions_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_mode_definitions_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.07.modes.existential_gating.semantic"
+source = "doc/spec/en/07.modes.md"
+section = "7.8 Correctness Conditions; with 17.1 activation ordering and 17.3.4 required existential registrations"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Adversarial checker seeds fixed test-first; inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G021). Rejection contracts: attributed type use without existential evidence, and item-ordered (non-retroactive) registration activation."
+depends_on = [
+  "spec.en.07.mode_definitions.parser",
+  "spec.en.17.clusters_and_registrations.parser",
+]
+tests = [
+  "tests/miz/fail/modes/fail_mode_missing_existential_001.expect.toml",
+  "tests/miz/fail/modes/fail_mode_existential_after_declaration_001.expect.toml",
 ]
 
 [[requirement]]
@@ -914,6 +950,23 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.13.qua.widening_only.semantic"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.6 Type Qualification (qua); 13.6.4 Restrictions; with 8.2.2 explicit conversion"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Adversarial checker seeds fixed test-first; inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G027). Rejection contracts: qua narrowing and qua views onto unrelated structures."
+depends_on = [
+  "spec.en.13.qua_qualification.parser",
+]
+tests = [
+  "tests/miz/fail/types/fail_types_qua_narrowing_001.expect.toml",
+  "tests/miz/fail/types/fail_types_qua_unrelated_struct_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.13.qua_qualification.parser"
 source = "doc/spec/en/13.term_expression.md"
 section = "13.6 Type Qualification (qua)"
@@ -956,6 +1009,22 @@ tests = [
   "tests/miz/fail/parser/fail_parser_set_comprehension_missing_generator_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_set_comprehension_missing_is_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_set_comprehension_missing_type_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.13.sethood.comprehension.semantic"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.4.2 Set Comprehension (Fraenkel Operator); with 7.8.1 mode property sethood"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Adversarial checker seed fixed test-first; inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020). Rejection contract: Fraenkel generators over types without sethood evidence."
+depends_on = [
+  "spec.en.13.set_expressions.parser",
+]
+tests = [
+  "tests/miz/fail/types/fail_types_comprehension_missing_sethood_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1129,6 +1198,22 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.17.clusters.pattern_consistency.semantic"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.4 Conditional Clusters; 17.7.3 Conflict Resolution"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Adversarial checker seed fixed test-first; inactive until an advanced_semantics runner and checker-ready registration payload extraction exist (MC-G021/MC-G023). Rejection contract: statically contradictory cluster consequents never enter the active database."
+depends_on = [
+  "spec.en.17.clusters_and_registrations.parser",
+]
+tests = [
+  "tests/miz/fail/clusters/fail_cluster_contradictory_consequent_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.17.clusters_and_registrations.parser"
 source = "doc/spec/en/17.clusters_and_registrations.md"
 section = "17.2 Registration Blocks; 17.3 Existential Clusters; 17.4 Conditional Clusters; 17.5 Functorial Clusters; 17.6 Reduction Registrations; 17.10 Complete Syntax (EBNF); Appendix A.17 registration/cluster/reduction productions, with annotation prefixes covered separately by spec.en.21.annotations.parser"
@@ -1139,6 +1224,59 @@ coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_registrations_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_registrations_recovery_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.17.reductions.termination_order.semantic"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.6.4 Termination, Determinism, and Traceability"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Adversarial checker seeds fixed test-first; inactive until an advanced_semantics runner and checker-ready registration payload extraction exist (MC-G021/MC-G023). Rejection contracts: reduce cycles, same-size orientations, fresh RHS variables, and RHS variable duplication all violate the fixed simplification order at registration time."
+depends_on = [
+  "spec.en.17.clusters_and_registrations.parser",
+]
+tests = [
+  "tests/miz/fail/clusters/fail_cluster_reduce_cycle_orientation_001.expect.toml",
+  "tests/miz/fail/clusters/fail_cluster_reduce_commutative_orientation_001.expect.toml",
+  "tests/miz/fail/clusters/fail_cluster_reduce_fresh_variable_001.expect.toml",
+  "tests/miz/fail/clusters/fail_cluster_reduce_duplicating_variable_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.19.overload.ambiguity.semantic"
+source = "doc/spec/en/19.overload_resolution.md"
+section = "19.4.4 Ambiguity Errors; 19.2.2 Structure Inheritance Upcasting; 19.6.2 Multiple Inheritance Paths"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Adversarial checker seeds fixed test-first; inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G027). Rejection contracts: incomparable ordinary roots report ambiguous overload, and multiple inheritance paths block implicit upcasts without qua."
+depends_on = [
+  "spec.en.05.structures.parser",
+  "spec.en.10.functor_definitions.parser",
+]
+tests = [
+  "tests/miz/fail/overload/fail_overload_incomparable_roots_001.expect.toml",
+  "tests/miz/fail/overload/fail_overload_inheritance_path_ambiguity_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.19.overload.definition_conflict.declaration"
+source = "doc/spec/en/19.overload_resolution.md"
+section = "19.1 Overview, key restrictions (identical argument-type signatures with different return types are a definition conflict)"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Adversarial checker seed fixed test-first; untagged until the resolver collects functor signatures, so the active declaration_symbol runner does not execute it yet. Rejection contract: same-signature/different-return definitions conflict at signature collection."
+depends_on = [
+  "spec.en.10.functor_definitions.parser",
+]
+tests = [
+  "tests/miz/fail/resolve/fail_resolve_same_signature_return_conflict_001.expect.toml",
 ]
 
 [[requirement]]

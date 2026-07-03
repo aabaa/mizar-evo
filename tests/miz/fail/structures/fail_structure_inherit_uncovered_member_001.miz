@@ -1,0 +1,19 @@
+:: Rejection target: the explicit `inherit ... where ... end` block maps only
+:: `carrier` and leaves the base field `payload` uncovered. All base fields and
+:: properties must be covered by the shorthand or the explicit member list
+:: (doc/spec/en/05.structures.md, section 5.3.1).
+
+definition
+  struct BaseStr where
+    field carrier -> set;
+    field payload -> set;
+  end;
+
+  struct SubStr where
+    field carrier -> set;
+  end;
+
+  inherit SubStr extends BaseStr where
+    field carrier from carrier;
+  end;
+end;

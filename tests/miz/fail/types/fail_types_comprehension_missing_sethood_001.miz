@@ -1,0 +1,17 @@
+:: Rejection target: the Fraenkel comprehension ranges over the structure type
+:: BagStr, whose instances form a proper class: BagStr is neither an
+:: `Element of` domain nor a type with a proved sethood property. Without
+:: sethood evidence the comprehension result may not be a set and must be
+:: rejected (doc/spec/en/13.term_expression.md, section 13.4.2;
+:: doc/spec/en/07.modes.md, section 7.8.1).
+
+definition
+  struct BagStr where
+    field content -> set;
+  end;
+end;
+
+definition
+  let x be set;
+  func BagFamilyDef: bag_family(x) -> set equals { b where b is BagStr };
+end;

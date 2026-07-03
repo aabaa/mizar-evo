@@ -1,0 +1,30 @@
+:: Rejection target: DiamondStr inherits `payload` from two parents whose
+:: declared types are unrelated structures (LeftPayloadStr vs RightPayloadStr).
+:: The shorthand `inherit` form requires identical member types, and no
+:: coherence proof can witness the missing subtype inclusion, so the diamond
+:: join must be rejected (doc/spec/en/05.structures.md, sections 5.3.1 and 5.4).
+
+definition
+  struct LeftPayloadStr where
+    field value -> set;
+  end;
+
+  struct RightPayloadStr where
+    field value -> set;
+  end;
+
+  struct LeftStr where
+    field payload -> LeftPayloadStr;
+  end;
+
+  struct RightStr where
+    field payload -> RightPayloadStr;
+  end;
+
+  struct DiamondStr where
+    field payload -> LeftPayloadStr;
+  end;
+
+  inherit DiamondStr extends LeftStr;
+  inherit DiamondStr extends RightStr;
+end;

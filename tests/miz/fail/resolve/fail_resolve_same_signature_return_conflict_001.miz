@@ -1,0 +1,25 @@
+:: Rejection target: two ordinary definitions of `gauge` share the identical
+:: argument-type signature (one parameter of type `set`) but advertise
+:: different return types. This is a definition conflict detected during
+:: signature collection, not an overload pair
+:: (doc/spec/en/19.overload_resolution.md, section 19.1 key restrictions).
+
+definition
+  let x be set;
+  attr RoundDef: x is round means x = x;
+end;
+
+registration
+  cluster RoundExists: round set;
+  existence proof thus thesis; end;
+end;
+
+definition
+  let x be set;
+  func GaugeADef: gauge(x) -> set equals x;
+end;
+
+definition
+  let x be set;
+  func GaugeBDef: gauge(x) -> round set equals x;
+end;
