@@ -299,11 +299,19 @@ regression test を追加した。
       consumer runner はまだ準備されていないため、すべての row は inactive のままで、
       execution を捏造せず `active` gate は reject する。
 
-15. **architecture-22 フォローアップ監査。** [ ]
+15. **architecture-22 フォローアップ監査。** [x]
     - ソース/仕様ギャップ監査と二言語ドキュメント同期監査を再実行し、
       task 14 の scenario id、equivalence class、active/planned gating、
       traceability record を architecture 22 に照らしてレビューする。残る
       matrix gap をフォローアップタスクとして記録する。
+    - 完了: task 15 は [bilingual_sync_audit.md](./bilingual_sync_audit.md) と
+      [00.crate_plan.md](./00.crate_plan.md) に post-task-14 audit を記録した。
+      18 個の scenario id/class と metadata-only trace anchor は architecture 20/22
+      に一致する。新しく準備済みの consumer runner increment は確認できていないため、
+      すべての row は `planned` のままである。残る active matrix execution は
+      MT-AUDIT-014 として consumer-paced `test_gap` に分類する。`spec_gap`、
+      `repo_metadata_conflict`、language behavior change、既存 expectation の
+      semantic change は不要である。
     - 依存: 14。仕様: [20.test_strategy.md](../../architecture/ja/20.test_strategy.md),
       [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md),
       リポジトリのドキュメント方針。

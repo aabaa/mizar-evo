@@ -30,7 +30,7 @@ compiler semantics は所有しない。implementation crates が deterministic 
 | [fail_soundness.md](./fail_soundness.md) | `crates/mizar-test/src/expectation.rs`, `crates/mizar-test/src/harness.rs` | pass してはならない negative tests、expected failure categories、rejection reasons | Draft |
 | [snapshot.md](./snapshot.md) | `crates/mizar-test/src/snapshot.rs` | snapshot artifact format、canonical hashing、update policy | Draft |
 | [harness.md](./harness.md) | `crates/mizar-test/src/harness.rs` | pass/fail runner、snapshot runner、determinism checks、reporting | Draft |
-| [bilingual_sync_audit.md](./bilingual_sync_audit.md) | `doc/design/mizar-test/en`, `doc/design/mizar-test/ja` | task 13 EN/JA documentation synchronization audit | Draft |
+| [bilingual_sync_audit.md](./bilingual_sync_audit.md) | `doc/design/mizar-test/en`, `doc/design/mizar-test/ja` | task 13 EN/JA synchronization baseline と task 15 architecture-22 follow-up audit | Draft |
 
 ## Crate Boundary
 

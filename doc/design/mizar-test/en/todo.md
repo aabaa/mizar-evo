@@ -305,11 +305,20 @@ Keep `cargo test -p mizar-test` green after each task (see
       consumer runner is prepared; `active` gates are rejected rather than
       fabricating execution.
 
-15. **Architecture-22 follow-up audit.** [ ]
+15. **Architecture-22 follow-up audit.** [x]
     - Re-run the source/spec gap and bilingual documentation sync audits, and
       review the task-14 scenario ids, equivalence classes, active/planned
       gating, and traceability records against architecture 22; record any
       remaining matrix gaps as follow-up tasks.
+    - Completion: task 15 updates
+      [bilingual_sync_audit.md](./bilingual_sync_audit.md) and
+      [00.crate_plan.md](./00.crate_plan.md) with the post-task-14 audit.
+      The 18 scenario ids/classes and the metadata-only trace anchor match
+      architecture 20/22; every row remains `planned` because no prepared
+      consumer runner increment was newly confirmed. Remaining active matrix
+      execution is recorded as MT-AUDIT-014, a consumer-paced `test_gap`. No
+      `spec_gap`, `repo_metadata_conflict`, language behavior change, or
+      existing expectation semantic change is required.
     - Deps: 14. Spec: [20.test_strategy.md](../../architecture/en/20.test_strategy.md),
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
       repository documentation policy.
