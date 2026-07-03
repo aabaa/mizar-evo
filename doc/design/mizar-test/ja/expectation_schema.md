@@ -322,8 +322,8 @@ Parse-only expectations は type、resolver、proof、certificate、kernel failu
 
 ## Declaration And Symbol Expectations
 
-Declaration and symbol expectations は現在、clean resolver execution または resolver
-failures を assert する。詳細な symbol table effects は将来の runner work である。
+Declaration and symbol expectations は、clean resolver execution、選択された
+positive declaration-symbol fact、または resolver failures を assert する。
 
 ```toml
 stage = "declaration_symbol"
@@ -338,8 +338,23 @@ pass/fail sidecar だけを実行する。tag のない sidecar は発見と tra
 inactive seed metadata のままにする。
 
 現在の runner は、pass case が frontend assertion diagnostic と resolver symbol
-diagnostic を出さないことを check する。詳細な `[[symbols]]` table assertion は将来の
-runner work であり、sidecar は未実装の symbol assertion table を含めてはならない。
+diagnostic を出さないことを check する。pass sidecar は追加で
+`declaration_symbol_payloads` を設定し、SymbolEnv 由来の exact / sorted fact key を
+assert してよい。対応する fact key は、stable な symbol / definition data のみから
+作る: primary spelling（percent-escaped）、symbol kind、definition kind、visibility、
+export status。source range、id、signature、snapshot、import、name reference、
+label reference、Core IR、VC、proof payload は使わない。sidecar は未実装の
+`[[symbols]]` table assertion を含めてはならない。
+
+```toml
+declaration_symbol_payloads = [
+  "declaration_symbol.symbol.kind.VisibleTheorem.theorem",
+  "declaration_symbol.definition.kind.VisibleTheorem.theorem",
+]
+```
+
+`declaration_symbol_payloads` は active declaration-symbol pass expectation でのみ
+有効であり、各 entry は non-empty でなければならない。
 
 public resolver diagnostic code が仕様化されるまで、すべての active
 declaration-symbol case は `diagnostic_codes = []` とし、active gate は non-empty

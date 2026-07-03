@@ -91,7 +91,11 @@ subcommand. It executes only `.miz` pass/fail expectations tagged
 traceability metadata until their owning resolver behavior is executable. While
 public resolver diagnostic codes remain a specification gap, fail cases assert
 crate-local internal detail keys rather than user-facing codes, and non-empty
-`diagnostic_codes` are rejected by the active gate.
+`diagnostic_codes` are rejected by the active gate. Pass cases may assert
+exact SymbolEnv-derived declaration-symbol payload keys through
+`declaration_symbol_payloads`; these keys are limited to symbol/definition
+kind, visibility, and export facts and do not imply import/name/label-reference
+or later semantic execution.
 
 They cover:
 

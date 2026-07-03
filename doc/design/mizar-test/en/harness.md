@@ -228,11 +228,13 @@ The current declaration-symbol runner copies each active `.miz` corpus file
 into the same temporary package shape, runs the real frontend, then feeds the
 resulting `SurfaceAst` through the resolver declaration-shell collector,
 parser-backed signature projection extractor, and symbol collector. Pass cases
-require no frontend assertion diagnostics and no resolver symbol diagnostics.
-Fail cases compare the resolver's crate-local internal detail keys against
-`diagnostic_payloads` when present, or `stable_detail_key` otherwise. The runner
-does not require or invent public resolver diagnostic codes while the
-diagnostic-code ownership gap remains open; active declaration-symbol
+require no frontend assertion diagnostics and no resolver symbol diagnostics;
+when `declaration_symbol_payloads` is present, the runner also compares those
+expected keys against the exact sorted SymbolEnv-derived symbol/definition fact
+keys. Fail cases compare the resolver's crate-local internal detail keys
+against `diagnostic_payloads` when present, or `stable_detail_key` otherwise.
+The runner does not require or invent public resolver diagnostic codes while
+the diagnostic-code ownership gap remains open; active declaration-symbol
 expectations with non-empty `diagnostic_codes` are harness errors.
 
 An expectation tagged `active_declaration_symbol` but missing one of the

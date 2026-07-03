@@ -225,12 +225,14 @@ diagnostics が一致した後、runner は `SurfaceAst` を要求し、`Surface
 package 形状へ copy し、実際の frontend を実行したうえで、得られた
 `SurfaceAst` を resolver の declaration-shell collector、parser-backed signature
 projection extractor、symbol collector に渡す。pass case は frontend assertion
-diagnostic と resolver symbol diagnostic がどちらも無いことを要求する。fail case
-は、`diagnostic_payloads` が存在する場合はそれを、無い場合は
-`stable_detail_key` を使って、resolver の crate-local internal detail key と比較する。
-diagnostic-code ownership gap が open の間、この runner は public resolver
-diagnostic code を要求せず、創作もしない。non-empty `diagnostic_codes` を持つ
-active declaration-symbol expectation は harness error である。
+diagnostic と resolver symbol diagnostic がどちらも無いことを要求し、
+`declaration_symbol_payloads` が存在する場合は、期待 key と SymbolEnv 由来の
+symbol / definition fact key の exact sorted list も比較する。fail case は、
+`diagnostic_payloads` が存在する場合はそれを、無い場合は `stable_detail_key` を
+使って、resolver の crate-local internal detail key と比較する。diagnostic-code
+ownership gap が open の間、この runner は public resolver diagnostic code を要求せず、
+創作もしない。non-empty `diagnostic_codes` を持つ active declaration-symbol
+expectation は harness error である。
 
 `active_declaration_symbol` tag を持つ expectation が runnable case predicate の
 いずれかを満たさない場合、runner は silent skip ではなく harness error として扱う。

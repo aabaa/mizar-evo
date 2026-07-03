@@ -3201,6 +3201,7 @@ fn repository_declaration_symbol_runner_executes_active_resolver_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_resolve_declaration_symbol_smoke_001"
             && result.actual_detail_keys.is_empty()
+            && result.actual_payload_keys == expected_declaration_symbol_smoke_payloads()
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_resolve_duplicate_theorem_symbol_001"
@@ -3211,6 +3212,80 @@ fn repository_declaration_symbol_runner_executes_active_resolver_seeds() {
             && result.actual_detail_keys
                 == ["declaration_symbol.signature.same_signature_return_conflict"]
     }));
+}
+
+fn expected_declaration_symbol_smoke_payloads() -> Vec<String> {
+    [
+        "declaration_symbol.definition.kind.Carrier.structure",
+        "declaration_symbol.definition.kind.CarrierMode.mode",
+        "declaration_symbol.definition.kind.VisibleLemma.lemma",
+        "declaration_symbol.definition.kind.VisibleTheorem.theorem",
+        "declaration_symbol.definition.kind.carrier.selector",
+        "declaration_symbol.definition.kind.flagged.attribute",
+        "declaration_symbol.definition.kind.hidden_f%20x.functor",
+        "declaration_symbol.definition.kind.x%20R%20y.predicate",
+        "declaration_symbol.definition.visibility.Carrier.public",
+        "declaration_symbol.definition.visibility.CarrierMode.public",
+        "declaration_symbol.definition.visibility.VisibleLemma.public",
+        "declaration_symbol.definition.visibility.VisibleTheorem.public",
+        "declaration_symbol.definition.visibility.carrier.public",
+        "declaration_symbol.definition.visibility.flagged.public",
+        "declaration_symbol.definition.visibility.hidden_f%20x.private",
+        "declaration_symbol.definition.visibility.x%20R%20y.public",
+        "declaration_symbol.symbol.export.Carrier.exported",
+        "declaration_symbol.symbol.export.CarrierMode.exported",
+        "declaration_symbol.symbol.export.VisibleLemma.exported",
+        "declaration_symbol.symbol.export.VisibleTheorem.exported",
+        "declaration_symbol.symbol.export.carrier.exported",
+        "declaration_symbol.symbol.export.flagged.exported",
+        "declaration_symbol.symbol.export.hidden_f%20x.local_only",
+        "declaration_symbol.symbol.export.x%20R%20y.exported",
+        "declaration_symbol.symbol.kind.Carrier.structure",
+        "declaration_symbol.symbol.kind.CarrierMode.mode",
+        "declaration_symbol.symbol.kind.VisibleLemma.lemma",
+        "declaration_symbol.symbol.kind.VisibleTheorem.theorem",
+        "declaration_symbol.symbol.kind.carrier.selector",
+        "declaration_symbol.symbol.kind.flagged.attribute",
+        "declaration_symbol.symbol.kind.hidden_f%20x.functor",
+        "declaration_symbol.symbol.kind.x%20R%20y.predicate",
+        "declaration_symbol.symbol.visibility.Carrier.public",
+        "declaration_symbol.symbol.visibility.CarrierMode.public",
+        "declaration_symbol.symbol.visibility.VisibleLemma.public",
+        "declaration_symbol.symbol.visibility.VisibleTheorem.public",
+        "declaration_symbol.symbol.visibility.carrier.public",
+        "declaration_symbol.symbol.visibility.flagged.public",
+        "declaration_symbol.symbol.visibility.hidden_f%20x.private",
+        "declaration_symbol.symbol.visibility.x%20R%20y.public",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect()
+}
+
+fn visible_theorem_declaration_symbol_payloads() -> Vec<String> {
+    [
+        "declaration_symbol.definition.kind.VisibleTheorem.theorem",
+        "declaration_symbol.definition.visibility.VisibleTheorem.public",
+        "declaration_symbol.symbol.export.VisibleTheorem.exported",
+        "declaration_symbol.symbol.kind.VisibleTheorem.theorem",
+        "declaration_symbol.symbol.visibility.VisibleTheorem.public",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect()
+}
+
+fn plus_functor_declaration_symbol_payloads() -> Vec<String> {
+    [
+        "declaration_symbol.definition.kind.x%20%2B%2B%20y.functor",
+        "declaration_symbol.definition.visibility.x%20%2B%2B%20y.public",
+        "declaration_symbol.symbol.export.x%20%2B%2B%20y.exported",
+        "declaration_symbol.symbol.kind.x%20%2B%2B%20y.functor",
+        "declaration_symbol.symbol.visibility.x%20%2B%2B%20y.public",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect()
 }
 
 #[test]
@@ -5153,6 +5228,159 @@ tests = ["tests/miz/fail/resolve/fail_duplicate_theorem.expect.toml"]
 }
 
 #[test]
+fn declaration_symbol_runner_compares_payloads_exactly_and_sorts_expectations() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/pass/resolve/pass_payload_unsorted.miz",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/pass_payload_unsorted.expect.toml",
+        r#"schema_version = 1
+id = "pass_payload_unsorted"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "pass_payload_unsorted.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = [
+  "declaration_symbol.symbol.visibility.VisibleTheorem.public",
+  "declaration_symbol.symbol.kind.VisibleTheorem.theorem",
+  "declaration_symbol.symbol.export.VisibleTheorem.exported",
+  "declaration_symbol.definition.visibility.VisibleTheorem.public",
+  "declaration_symbol.definition.kind.VisibleTheorem.theorem",
+]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/pass_payload_mismatch.miz",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/pass_payload_mismatch.expect.toml",
+        r#"schema_version = 1
+id = "pass_payload_mismatch"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "pass_payload_mismatch.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = [
+  "declaration_symbol.symbol.kind.VisibleTheorem.theorem",
+]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/pass_payload_extra.miz",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/pass_payload_extra.expect.toml",
+        r#"schema_version = 1
+id = "pass_payload_extra"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "pass_payload_extra.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = [
+  "declaration_symbol.definition.kind.VisibleTheorem.theorem",
+  "declaration_symbol.definition.visibility.VisibleTheorem.public",
+  "declaration_symbol.symbol.export.VisibleTheorem.exported",
+  "declaration_symbol.symbol.kind.VisibleTheorem.theorem",
+  "declaration_symbol.symbol.kind.MissingTheorem.theorem",
+  "declaration_symbol.symbol.visibility.VisibleTheorem.public",
+]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/pass_payload_escaped.miz",
+        "import parser.type_fixtures;\n\ndefinition\n  let x, y be set;\n  func PlusDef: x ++ y -> set equals x;\nend;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/pass_payload_escaped.expect.toml",
+        r#"schema_version = 1
+id = "pass_payload_escaped"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "pass_payload_escaped.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = [
+  "declaration_symbol.definition.kind.x%20%2B%2B%20y.functor",
+  "declaration_symbol.definition.visibility.x%20%2B%2B%20y.public",
+  "declaration_symbol.symbol.export.x%20%2B%2B%20y.exported",
+  "declaration_symbol.symbol.kind.x%20%2B%2B%20y.functor",
+  "declaration_symbol.symbol.visibility.x%20%2B%2B%20y.public",
+]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.resolve"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "declaration_symbol"
+status = "partial"
+required = true
+coverage = "manual_review"
+tests = [
+  "tests/miz/pass/resolve/pass_payload_unsorted.expect.toml",
+  "tests/miz/pass/resolve/pass_payload_mismatch.expect.toml",
+  "tests/miz/pass/resolve/pass_payload_extra.expect.toml",
+  "tests/miz/pass/resolve/pass_payload_escaped.expect.toml",
+]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_declaration_symbol_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.results.len(), 4, "{report:#?}");
+    assert_eq!(report.passed_count(), 2, "{report:#?}");
+    assert_eq!(report.failed_count(), 2, "{report:#?}");
+    assert_has_declaration_symbol_report_code(&report, "E-DECLARATION-SYMBOL-ASSERT");
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_payload_unsorted"
+            && result.status == mizar_test::DeclarationSymbolCaseStatus::Passed
+            && result.actual_payload_keys == visible_theorem_declaration_symbol_payloads()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_payload_escaped"
+            && result.status == mizar_test::DeclarationSymbolCaseStatus::Passed
+            && result.actual_payload_keys == plus_functor_declaration_symbol_payloads()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_payload_mismatch"
+            && result.status == mizar_test::DeclarationSymbolCaseStatus::Failed
+            && result.actual_payload_keys == visible_theorem_declaration_symbol_payloads()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_payload_extra"
+            && result.status == mizar_test::DeclarationSymbolCaseStatus::Failed
+            && result.actual_payload_keys == visible_theorem_declaration_symbol_payloads()
+    }));
+}
+
+#[test]
 fn plan_cli_reports_deterministic_metadata_summary() {
     let corpus = Corpus::new();
 
@@ -5520,6 +5748,204 @@ stable_detail_key = "empty_diagnostic_payload"
 diagnostic_codes = ["parser_context_rejected_candidate"]
 diagnostic_payloads = [""]
 spec_refs = ["spec.en.test.basic"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+}
+
+#[test]
+fn declaration_symbol_payload_expectations_parse_and_validate_scope() {
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.resolve", &[]);
+    corpus.write(
+        "tests/miz/pass/resolve/pass_payloads.miz",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/pass_payloads.expect.toml",
+        r#"schema_version = 1
+id = "pass_payloads"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "pass_payloads.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = ["declaration_symbol.symbol.kind.VisibleTheorem.theorem"]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    assert_eq!(
+        plan.cases[0].expectation.declaration_symbol_payloads,
+        vec!["declaration_symbol.symbol.kind.VisibleTheorem.theorem"]
+    );
+
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.resolve", &[]);
+    corpus.write(
+        "tests/miz/pass/resolve/empty_payload.miz",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/empty_payload.expect.toml",
+        r#"schema_version = 1
+id = "empty_payload"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "empty_payload.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = [""]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.resolve", &[]);
+    corpus.write(
+        "tests/miz/pass/resolve/missing_active_tag_payload.miz",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/missing_active_tag_payload.expect.toml",
+        r#"schema_version = 1
+id = "missing_active_tag_payload"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "missing_active_tag_payload.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = ["declaration_symbol.symbol.kind.VisibleTheorem.theorem"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.resolve", &[]);
+    corpus.write(
+        "tests/miz/fail/resolve/fail_payload_scope.miz",
+        "theorem Clash: thesis;\ntheorem Clash: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/resolve/fail_payload_scope.expect.toml",
+        r#"schema_version = 1
+id = "fail_payload_scope"
+kind = "fail"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "fail_payload_scope.miz"
+expected_outcome = "fail"
+expected_phase = "resolve"
+failure_category = "resolve_error"
+rejection_reason = "duplicate_theorem_symbol"
+stable_detail_key = "declaration_symbol.symbol.duplicate_declaration"
+diagnostic_codes = []
+declaration_symbol_payloads = ["declaration_symbol.symbol.kind.Clash.theorem"]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.resolve", &[]);
+    corpus.write(
+        "tests/miz/pass/resolve/wrong_phase_payload.miz",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/wrong_phase_payload.expect.toml",
+        r#"schema_version = 1
+id = "wrong_phase_payload"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "wrong_phase_payload.miz"
+expected_outcome = "pass"
+expected_phase = "lex"
+diagnostic_codes = []
+declaration_symbol_payloads = ["declaration_symbol.symbol.kind.VisibleTheorem.theorem"]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.resolve", &[]);
+    corpus.write(
+        "tests/miz/pass/resolve/wrong_source_payload.src",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/wrong_source_payload.expect.toml",
+        r#"schema_version = 1
+id = "wrong_source_payload"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "wrong_source_payload.src"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = ["declaration_symbol.symbol.kind.VisibleTheorem.theorem"]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
+"#,
+    );
+
+    let plan = corpus.plan();
+
+    assert_has_code(&plan, "E-EXPECT-SCHEMA");
+
+    let corpus = Corpus::new();
+    corpus.add_requirement("spec.en.test.resolve", &[]);
+    corpus.write(
+        "tests/miz/pass/resolve/wrong_stage_payload.miz",
+        "theorem VisibleTheorem: thesis;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/wrong_stage_payload.expect.toml",
+        r#"schema_version = 1
+id = "wrong_stage_payload"
+kind = "pass"
+stage = "parse_only"
+domain = "resolve.declaration_symbol"
+source = "wrong_stage_payload.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = ["declaration_symbol.symbol.kind.VisibleTheorem.theorem"]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve"]
 "#,
     );
 
@@ -6355,11 +6781,12 @@ fn canonical_declaration_symbol_report(
     for result in &report.results {
         writeln!(
             output,
-            "declaration-symbol-result|{}|{}|{}|details={}",
+            "declaration-symbol-result|{}|{}|{}|details={}|payloads={}",
             result.id.0,
             rel_string(root, &result.expectation_path),
             declaration_symbol_status(result.status),
-            result.actual_detail_keys.join(",")
+            result.actual_detail_keys.join(","),
+            result.actual_payload_keys.join(",")
         )
         .unwrap();
     }

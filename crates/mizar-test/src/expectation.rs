@@ -90,6 +90,7 @@ pub struct Expectation {
     pub rejection_reason: Option<String>,
     pub diagnostic_codes: Vec<String>,
     pub diagnostic_payloads: Vec<String>,
+    pub declaration_symbol_payloads: Vec<String>,
     pub stable_detail_key: Option<String>,
     pub tags: Vec<String>,
     pub notes: Option<String>,
@@ -599,6 +600,16 @@ fn expectation_from_table(
             }
         })
         .collect::<Result<Vec<_>, _>>()?;
+    let declaration_symbol_payloads = optional_string_array(table, "declaration_symbol_payloads")?
+        .into_iter()
+        .map(|payload| {
+            if payload.is_empty() {
+                Err("`declaration_symbol_payloads` entries must not be empty".to_owned())
+            } else {
+                Ok(payload)
+            }
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     let stable_detail_key = toml_lite::optional_string(table, "stable_detail_key")?;
     let notes = toml_lite::optional_string(table, "notes")?;
     let snapshots = toml_lite::optional_string(table, "snapshots")?
@@ -640,6 +651,20 @@ fn expectation_from_table(
     validate_origin_metadata(kind, expected_outcome, origin.as_ref())?;
     if !tokens.is_empty() && stage != Stage::Lexical {
         return Err("token expectations are only valid for `stage = \"lexical\"`".to_owned());
+    }
+    let declaration_symbol_payloads_allowed = declaration_symbol_payloads.is_empty()
+        || (stage == Stage::DeclarationSymbol
+            && expected_outcome == ExpectedOutcome::Pass
+            && expected_phase == Some(PipelinePhase::Resolve)
+            && tags.iter().any(|tag| tag == "active_declaration_symbol")
+            && source
+                .extension()
+                .is_some_and(|extension| extension == "miz"));
+    if !declaration_symbol_payloads_allowed {
+        return Err(
+            "`declaration_symbol_payloads` is only valid for active declaration_symbol pass expectations"
+                .to_owned(),
+        );
     }
     if matches!(
         expected_outcome,
@@ -685,6 +710,7 @@ fn expectation_from_table(
         rejection_reason,
         diagnostic_codes,
         diagnostic_payloads,
+        declaration_symbol_payloads,
         stable_detail_key,
         tags,
         notes,
@@ -1086,6 +1112,7 @@ fn validate_known_fields(table: &TomlTable) -> Result<(), String> {
         "expected_phase",
         "diagnostic_codes",
         "diagnostic_payloads",
+        "declaration_symbol_payloads",
         "snapshots",
         "failure_category",
         "rejection_reason",

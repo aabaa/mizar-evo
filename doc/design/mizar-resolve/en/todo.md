@@ -428,6 +428,11 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       still recorded as R-G007 test-gap follow-up for future runner assertion
       expansions, but the executable declaration-symbol runner now has three
       traceable active cases.
+    - Post-task-20 R-G007 pass-payload increment: the active pass smoke
+      fixture exact-compares SymbolEnv-derived symbol and definition fact keys
+      for represented kind, visibility, and export status. It does not add
+      import graph, namespace/name resolution, dot-chain, label-reference,
+      checker, CoreIr, VC, or proof assertions.
 
 24. **ModuleSummary reuse.** [x]
     - Consume dependency modules as `ModuleSummary` artifacts (schema-version

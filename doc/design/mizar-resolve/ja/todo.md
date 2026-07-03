@@ -405,6 +405,11 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       より広い semantic import/name/label corpus の拡充は R-G007 test-gap
       follow-up として将来の runner assertion 拡張に記録するが、実行可能な
       declaration-symbol runner は traceable active case 3 件を持つ。
+    - post-task-20 R-G007 pass-payload increment: active pass smoke fixture は
+      表現済み kind、visibility、export status について SymbolEnv-derived
+      symbol / definition fact key を exact-compare する。import graph、
+      namespace/name resolution、dot-chain、label-reference、checker、CoreIr、
+      VC、proof assertion は追加しない。
 
 24. **ModuleSummary の再利用。** [x]
     - 依存モジュールを（schema-version を検証した）`ModuleSummary` artifact

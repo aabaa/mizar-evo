@@ -340,8 +340,8 @@ kernel failure identities.
 
 ## Declaration And Symbol Expectations
 
-Declaration and symbol expectations currently assert clean resolver execution
-or resolver failures. Detailed symbol table effects are future runner work.
+Declaration and symbol expectations assert clean resolver execution, selected
+positive declaration-symbol facts, or resolver failures.
 
 ```toml
 stage = "declaration_symbol"
@@ -356,9 +356,24 @@ that carry the `active_declaration_symbol` tag. Untagged sidecars are still
 discovered and traced, but remain inactive seed metadata.
 
 The current runner checks that pass cases produce no frontend assertion
-diagnostics and no resolver symbol diagnostics. Detailed `[[symbols]]` table
-assertions are future runner work; sidecars must not include unimplemented
-symbol assertion tables.
+diagnostics and no resolver symbol diagnostics. Pass sidecars may additionally
+set `declaration_symbol_payloads` to assert exact, sorted SymbolEnv-derived
+fact keys. The supported fact keys are built only from stable symbol and
+definition data: primary spelling (percent-escaped), symbol kind, definition
+kind, visibility, and export status. They do not use source ranges, ids,
+signatures, snapshots, imports, name references, label references, Core IR, VC,
+or proof payloads. Sidecars must not include unimplemented `[[symbols]]` table
+assertions.
+
+```toml
+declaration_symbol_payloads = [
+  "declaration_symbol.symbol.kind.VisibleTheorem.theorem",
+  "declaration_symbol.definition.kind.VisibleTheorem.theorem",
+]
+```
+
+`declaration_symbol_payloads` is valid only on active declaration-symbol pass
+expectations, and every entry must be non-empty.
 
 Until public resolver diagnostic codes are specified, all active
 declaration-symbol cases keep `diagnostic_codes = []`; the active gate rejects

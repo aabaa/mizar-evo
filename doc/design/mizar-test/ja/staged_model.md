@@ -81,7 +81,10 @@ Declaration and symbol tests は later stages に必要な最小の valid declar
 実行可能になるまで traceability metadata のままにする。public resolver diagnostic
 code が specification gap の間、fail case は user-facing code ではなく
 crate-local internal detail key を assert し、non-empty `diagnostic_codes` は active
-gate で拒否される。
+gate で拒否される。pass case は `declaration_symbol_payloads` により、SymbolEnv
+由来の declaration-symbol payload key の exact list を assert してよい。この key は
+symbol / definition の kind、visibility、export fact に限定され、import / name /
+label-reference や後続 semantic execution を意味しない。
 
 対象:
 

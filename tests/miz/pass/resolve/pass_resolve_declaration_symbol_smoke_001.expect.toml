@@ -7,6 +7,48 @@ source = "pass_resolve_declaration_symbol_smoke_001.miz"
 expected_outcome = "pass"
 expected_phase = "resolve"
 diagnostic_codes = []
+declaration_symbol_payloads = [
+  "declaration_symbol.definition.kind.Carrier.structure",
+  "declaration_symbol.definition.kind.CarrierMode.mode",
+  "declaration_symbol.definition.kind.VisibleLemma.lemma",
+  "declaration_symbol.definition.kind.VisibleTheorem.theorem",
+  "declaration_symbol.definition.kind.carrier.selector",
+  "declaration_symbol.definition.kind.flagged.attribute",
+  "declaration_symbol.definition.kind.hidden_f%20x.functor",
+  "declaration_symbol.definition.kind.x%20R%20y.predicate",
+  "declaration_symbol.definition.visibility.Carrier.public",
+  "declaration_symbol.definition.visibility.CarrierMode.public",
+  "declaration_symbol.definition.visibility.VisibleLemma.public",
+  "declaration_symbol.definition.visibility.VisibleTheorem.public",
+  "declaration_symbol.definition.visibility.carrier.public",
+  "declaration_symbol.definition.visibility.flagged.public",
+  "declaration_symbol.definition.visibility.hidden_f%20x.private",
+  "declaration_symbol.definition.visibility.x%20R%20y.public",
+  "declaration_symbol.symbol.export.Carrier.exported",
+  "declaration_symbol.symbol.export.CarrierMode.exported",
+  "declaration_symbol.symbol.export.VisibleLemma.exported",
+  "declaration_symbol.symbol.export.VisibleTheorem.exported",
+  "declaration_symbol.symbol.export.carrier.exported",
+  "declaration_symbol.symbol.export.flagged.exported",
+  "declaration_symbol.symbol.export.hidden_f%20x.local_only",
+  "declaration_symbol.symbol.export.x%20R%20y.exported",
+  "declaration_symbol.symbol.kind.Carrier.structure",
+  "declaration_symbol.symbol.kind.CarrierMode.mode",
+  "declaration_symbol.symbol.kind.VisibleLemma.lemma",
+  "declaration_symbol.symbol.kind.VisibleTheorem.theorem",
+  "declaration_symbol.symbol.kind.carrier.selector",
+  "declaration_symbol.symbol.kind.flagged.attribute",
+  "declaration_symbol.symbol.kind.hidden_f%20x.functor",
+  "declaration_symbol.symbol.kind.x%20R%20y.predicate",
+  "declaration_symbol.symbol.visibility.Carrier.public",
+  "declaration_symbol.symbol.visibility.CarrierMode.public",
+  "declaration_symbol.symbol.visibility.VisibleLemma.public",
+  "declaration_symbol.symbol.visibility.VisibleTheorem.public",
+  "declaration_symbol.symbol.visibility.carrier.public",
+  "declaration_symbol.symbol.visibility.flagged.public",
+  "declaration_symbol.symbol.visibility.hidden_f%20x.private",
+  "declaration_symbol.symbol.visibility.x%20R%20y.public",
+]
 tags = ["active_declaration_symbol"]
 spec_refs = [
   "spec.en.11.symbol_management.signatures",
@@ -14,4 +56,4 @@ spec_refs = [
   "spec.en.12.modules.visibility.semantic",
   "spec.en.16.theorems_and_proofs.labels.declaration_symbols",
 ]
-notes = "Active declaration_symbol runner smoke coverage that parser-backed declaration shells, visibility-bearing declarations, and theorem/lemma declarations reach symbol collection without internal diagnostics; detailed symbol/visibility fact assertions remain future corpus growth."
+notes = "Active declaration_symbol runner smoke coverage that parser-backed declaration shells, visibility-bearing declarations, and theorem/lemma declarations reach symbol collection without internal diagnostics, with exact SymbolEnv-derived symbol and definition fact assertions for represented kind, visibility, and export status."
