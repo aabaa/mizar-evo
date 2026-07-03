@@ -1,4 +1,5 @@
 use std::collections::BTreeSet;
+use std::fmt::Write as _;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -2622,6 +2623,194 @@ fn plan_order_is_deterministic_by_expectation_path() {
             PathBuf::from("tests/lexical/pass/z_case.expect.toml"),
         ]
     );
+}
+
+#[test]
+fn metadata_plans_diagnostics_and_coverage_are_byte_stable_across_repeated_builds() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.determinism.pass"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/lexical/pass/pass_determinism_a_001.expect.toml",
+  "tests/lexical/pass/pass_determinism_bad_name.expect.toml",
+  "tests/lexical/pass/pass_determinism_z_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.determinism.planned"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "lexical"
+status = "planned"
+required = true
+coverage = "pass"
+tests = []
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write("tests/lexical/pass/pass_determinism_z_001.src", "zeta");
+    corpus.write(
+        "tests/lexical/pass/pass_determinism_z_001.expect.toml",
+        pass_expectation(
+            "pass_determinism_z_001",
+            "pass_determinism_z_001.src",
+            "spec.en.determinism.pass",
+        ),
+    );
+    corpus.write("tests/lexical/pass/pass_determinism_a_001.src", "alpha");
+    corpus.write(
+        "tests/lexical/pass/pass_determinism_a_001.expect.toml",
+        pass_expectation(
+            "pass_determinism_a_001",
+            "pass_determinism_a_001.src",
+            "spec.en.determinism.pass",
+        ),
+    );
+    corpus.write("tests/lexical/pass/pass_determinism_bad_name.src", "naming");
+    corpus.write(
+        "tests/lexical/pass/pass_determinism_bad_name.expect.toml",
+        pass_expectation(
+            "pass_determinism_bad_name",
+            "pass_determinism_bad_name.src",
+            "spec.en.determinism.pass",
+        ),
+    );
+    corpus.write("tests/unknown_determinism/README.txt", "layout drift\n");
+
+    let config = DiscoveryConfig {
+        validation_mode: ValidationMode::Development,
+        ..corpus.config()
+    };
+    let first = canonical_test_plan(&build_test_plan(&config).unwrap(), &corpus.root);
+    let second = canonical_test_plan(&build_test_plan(&config).unwrap(), &corpus.root);
+    let third = canonical_test_plan(&build_test_plan(&config).unwrap(), &corpus.root);
+
+    assert_eq!(first, second);
+    assert_eq!(second, third);
+    assert!(first.contains("case|pass_determinism_a_001"));
+    assert!(first.contains("case|pass_determinism_z_001"));
+    assert!(
+        first.find("case|pass_determinism_a_001").unwrap()
+            < first.find("case|pass_determinism_z_001").unwrap()
+    );
+    let manifest_warning =
+        "diagnostic|warning|tests/coverage/spec_trace.toml|manifest|W-MANIFEST-PLANNED-NO-TESTS"
+            .to_owned();
+    let naming_warning = "diagnostic|warning|tests/lexical/pass/pass_determinism_bad_name.expect.toml|corpus|W-CORPUS-NAMING|corpus.naming.pass_determinism_bad_name".to_owned();
+    let layout_error =
+        "diagnostic|error|tests/unknown_determinism|layout|E-LAYOUT-UNKNOWN-ROOT".to_owned();
+    assert!(first.contains(&manifest_warning));
+    assert!(first.contains(&naming_warning));
+    assert!(first.contains(&layout_error));
+    assert!(
+        first.find(&manifest_warning).unwrap() < first.find(&naming_warning).unwrap()
+            && first.find(&naming_warning).unwrap() < first.find(&layout_error).unwrap()
+    );
+    assert!(first.contains("coverage|spec.en.determinism.pass|lexical|pass|true|covered|covered"));
+}
+
+#[test]
+fn active_runner_reports_are_byte_stable_across_repeated_runs() {
+    let config = repository_config();
+    let root = config.workspace_root.clone();
+
+    let parse_first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
+    let parse_second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
+    assert_eq!(parse_first, parse_second);
+    assert!(parse_first.contains("parse-only-result|pass_parser_template_arguments_001"));
+
+    let declaration_first = canonical_declaration_symbol_report(
+        &run_declaration_symbol_corpus(&config).unwrap(),
+        &root,
+    );
+    let declaration_second = canonical_declaration_symbol_report(
+        &run_declaration_symbol_corpus(&config).unwrap(),
+        &root,
+    );
+    assert_eq!(declaration_first, declaration_second);
+    assert!(
+        declaration_first
+            .contains("declaration-symbol-result|fail_resolve_duplicate_theorem_symbol_001")
+    );
+
+    let type_first =
+        canonical_type_elaboration_report(&run_type_elaboration_corpus(&config).unwrap(), &root);
+    let type_second =
+        canonical_type_elaboration_report(&run_type_elaboration_corpus(&config).unwrap(), &root);
+    assert_eq!(type_first, type_second);
+    assert!(
+        type_first
+            .contains("type-elaboration-result|fail_type_elaboration_payload_extraction_gap_001")
+    );
+}
+
+#[test]
+fn active_runner_failure_reports_are_byte_stable_across_repeated_runs() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.determinism.snapshot"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "snapshot"
+tests = ["tests/miz/pass/parser/pass_snapshot_failure_001.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    corpus.write(
+        "tests/miz/pass/parser/pass_snapshot_failure_001.miz",
+        "alpha;",
+    );
+    corpus.write(
+        "tests/snapshots/parser/pass_snapshot_failure_001.surface_ast.snap",
+        "intentionally stale snapshot\n",
+    );
+    corpus.write(
+        "tests/miz/pass/parser/pass_snapshot_failure_001.expect.toml",
+        r#"schema_version = 1
+id = "pass_snapshot_failure_001"
+kind = "pass"
+stage = "parse_only"
+domain = "parser"
+source = "pass_snapshot_failure_001.miz"
+expected_outcome = "pass"
+expected_phase = "parse"
+diagnostic_codes = []
+snapshots = "snapshots/parser/pass_snapshot_failure_001.surface_ast.snap"
+tags = ["active_parse_only"]
+spec_refs = ["spec.en.determinism.snapshot"]
+"#,
+    );
+
+    let config = corpus.config();
+    let root = config.workspace_root.clone();
+    let first = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
+    let second = canonical_parse_only_report(&run_parse_only_corpus(&config).unwrap(), &root);
+
+    assert_eq!(first, second);
+    assert!(first.contains("parse-only-counts|1|0|1|1"));
+    assert!(
+        first.contains(
+            "parse-only-result|pass_snapshot_failure_001|tests/miz/pass/parser/pass_snapshot_failure_001.expect.toml|failed|codes=|snapshot=SurfaceAst snapshot"
+        )
+    );
+    assert!(first.contains(
+        "diagnostic|error|tests/miz/pass/parser/pass_snapshot_failure_001.expect.toml|parse_only|E-PARSE-ONLY-SNAPSHOT"
+    ));
 }
 
 #[test]
@@ -5410,6 +5599,227 @@ fn assert_has_type_elaboration_report_code(
         "expected diagnostic {code}, got {:#?}",
         report.diagnostics
     );
+}
+
+fn canonical_test_plan(plan: &TestPlan, root: &Path) -> String {
+    let mut output = String::new();
+    writeln!(output, "cases={}", plan.cases.len()).unwrap();
+    for case in &plan.cases {
+        writeln!(
+            output,
+            "case|{}|{}|{}|{}|{}|{}|{}|profiles={}|tags={}|refs={}",
+            case.id.0,
+            rel_string(root, &case.expectation_path),
+            rel_string(root, &case.source_path),
+            case.expectation.kind,
+            case.expectation.stage.as_str(),
+            case.expectation.expected_outcome,
+            case.expectation
+                .expected_phase
+                .map(|phase| phase.as_str())
+                .unwrap_or("<none>"),
+            case.expectation.profiles.join(","),
+            case.expectation.tags.join(","),
+            case.expectation
+                .spec_refs
+                .iter()
+                .map(|spec_ref| spec_ref.0.as_str())
+                .collect::<Vec<_>>()
+                .join(",")
+        )
+        .unwrap();
+    }
+
+    writeln!(
+        output,
+        "pass-fail|{}|{}|{}|{}|{}",
+        plan.coverage_report.pass_fail_mix.pass,
+        plan.coverage_report.pass_fail_mix.fail,
+        plan.coverage_report.pass_fail_mix.total,
+        plan.coverage_report.pass_fail_mix.target_pass_percent,
+        plan.coverage_report.pass_fail_mix.target_fail_percent
+    )
+    .unwrap();
+    for requirement in &plan.coverage_report.requirements {
+        writeln!(
+            output,
+            "coverage|{}|{}|{}|{}|{}|{}|evidence={}/{}/{}/{}/{}/{}|missing={}",
+            requirement.id.0,
+            requirement.stage.as_str(),
+            requirement.coverage.as_str(),
+            requirement.required,
+            requirement.stored_status.as_str(),
+            requirement.computed_status.as_str(),
+            requirement.evidence.pass,
+            requirement.evidence.fail,
+            requirement.evidence.diagnostic,
+            requirement.evidence.snapshot,
+            requirement.evidence.property,
+            requirement.evidence.manual_review,
+            requirement
+                .missing_shapes
+                .iter()
+                .map(|shape| shape.as_str())
+                .collect::<Vec<_>>()
+                .join(",")
+        )
+        .unwrap();
+    }
+    for stage in &plan.coverage_report.stages {
+        writeln!(
+            output,
+            "stage|{}|{}|{}|{}|{}|{}|{}|{}",
+            stage.stage.as_str(),
+            stage.requirements,
+            stage.covered,
+            stage.partial,
+            stage.planned,
+            stage.deferred,
+            stage.obsolete,
+            stage.missing_shapes
+        )
+        .unwrap();
+    }
+    push_canonical_diagnostics(&mut output, root, &plan.diagnostics);
+    output
+}
+
+fn canonical_parse_only_report(report: &mizar_test::ParseOnlyRunReport, root: &Path) -> String {
+    let mut output = String::new();
+    writeln!(
+        output,
+        "parse-only-counts|{}|{}|{}|{}",
+        report.results.len(),
+        report.passed_count(),
+        report.failed_count(),
+        report.error_count()
+    )
+    .unwrap();
+    for result in &report.results {
+        writeln!(
+            output,
+            "parse-only-result|{}|{}|{}|codes={}|snapshot={}",
+            result.id.0,
+            rel_string(root, &result.expectation_path),
+            parse_only_status(result.status),
+            result.actual_diagnostic_codes.join(","),
+            result.snapshot_failure.as_deref().unwrap_or("<none>")
+        )
+        .unwrap();
+    }
+    push_canonical_diagnostics(&mut output, root, &report.diagnostics);
+    output
+}
+
+fn canonical_declaration_symbol_report(
+    report: &mizar_test::DeclarationSymbolRunReport,
+    root: &Path,
+) -> String {
+    let mut output = String::new();
+    writeln!(
+        output,
+        "declaration-symbol-counts|{}|{}|{}|{}",
+        report.results.len(),
+        report.passed_count(),
+        report.failed_count(),
+        report.error_count()
+    )
+    .unwrap();
+    for result in &report.results {
+        writeln!(
+            output,
+            "declaration-symbol-result|{}|{}|{}|details={}",
+            result.id.0,
+            rel_string(root, &result.expectation_path),
+            declaration_symbol_status(result.status),
+            result.actual_detail_keys.join(",")
+        )
+        .unwrap();
+    }
+    push_canonical_diagnostics(&mut output, root, &report.diagnostics);
+    output
+}
+
+fn canonical_type_elaboration_report(
+    report: &mizar_test::TypeElaborationRunReport,
+    root: &Path,
+) -> String {
+    let mut output = String::new();
+    writeln!(
+        output,
+        "type-elaboration-counts|{}|{}|{}|{}",
+        report.results.len(),
+        report.passed_count(),
+        report.failed_count(),
+        report.error_count()
+    )
+    .unwrap();
+    for result in &report.results {
+        writeln!(
+            output,
+            "type-elaboration-result|{}|{}|{}|details={}",
+            result.id.0,
+            rel_string(root, &result.expectation_path),
+            type_elaboration_status(result.status),
+            result.actual_detail_keys.join(",")
+        )
+        .unwrap();
+    }
+    push_canonical_diagnostics(&mut output, root, &report.diagnostics);
+    output
+}
+
+fn push_canonical_diagnostics(
+    output: &mut String,
+    root: &Path,
+    diagnostics: &[mizar_test::ValidationDiagnostic],
+) {
+    writeln!(output, "diagnostics={}", diagnostics.len()).unwrap();
+    for diagnostic in diagnostics {
+        writeln!(
+            output,
+            "diagnostic|{}|{}|{}|{}|{}|{}",
+            severity(diagnostic.severity),
+            rel_string(root, &diagnostic.path),
+            diagnostic.record_kind,
+            diagnostic.code.0,
+            diagnostic.detail_key,
+            diagnostic.message
+        )
+        .unwrap();
+    }
+}
+
+fn severity(severity: mizar_test::ValidationSeverity) -> &'static str {
+    match severity {
+        mizar_test::ValidationSeverity::Error => "error",
+        mizar_test::ValidationSeverity::Warning => "warning",
+    }
+}
+
+fn parse_only_status(status: mizar_test::ParseOnlyCaseStatus) -> &'static str {
+    match status {
+        mizar_test::ParseOnlyCaseStatus::Passed => "passed",
+        mizar_test::ParseOnlyCaseStatus::Failed => "failed",
+    }
+}
+
+fn declaration_symbol_status(status: mizar_test::DeclarationSymbolCaseStatus) -> &'static str {
+    match status {
+        mizar_test::DeclarationSymbolCaseStatus::Passed => "passed",
+        mizar_test::DeclarationSymbolCaseStatus::Failed => "failed",
+    }
+}
+
+fn type_elaboration_status(status: mizar_test::TypeElaborationCaseStatus) -> &'static str {
+    match status {
+        mizar_test::TypeElaborationCaseStatus::Passed => "passed",
+        mizar_test::TypeElaborationCaseStatus::Failed => "failed",
+    }
+}
+
+fn rel_string(root: &Path, path: &Path) -> String {
+    rel(root, path).to_string_lossy().replace('\\', "/")
 }
 
 fn repository_plan() -> TestPlan {

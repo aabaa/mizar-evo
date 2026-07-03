@@ -241,6 +241,12 @@ harness は identical inputs が次を生成することを check する。
 
 parallel execution は runtime を変えてよいが、observable results を変えてはならない。
 
+task 11 の implemented coverage は、metadata plan と active runner report を
+deterministic byte strings に render し、repeated build/run を比較する。
+snapshot-level determinism と parallel equivalence は general snapshot record helper
+で cover する。active parallel runner subcommands は、consumer crate が parallel
+execution を公開するまで future work のままである。
+
 ## Reporting
 
 reports は次を区別する。
@@ -261,8 +267,11 @@ key scenarios:
 - fail test が unexpected pass する
 - pass test が error diagnostic を emit する
 - snapshot hash が異なる
+- metadata plan bytes が repeated build 間で異なる
+- active runner report bytes が repeated run 間で異なる
 - repeated run が異なる diagnostic order を生成する
-- parallel run が sequential run と同じ artifacts を生成する
+- generic snapshot parallel equivalence が sequential snapshot generation と同じ
+  observable artifact を生成する
 
 ## Constraints and Assumptions
 

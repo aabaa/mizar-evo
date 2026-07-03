@@ -9,6 +9,7 @@ use mizar_test::{
     SnapshotError, SnapshotKind, SnapshotProfile, SnapshotRecord, SnapshotTextDiff,
     SnapshotUpdateMode, SnapshotUpdateReason, TestCaseId, ToolchainInfo, compare_snapshot_records,
     verify_or_update_snapshot_baseline, verify_snapshot_determinism,
+    verify_snapshot_parallel_equivalence,
 };
 
 static NEXT_ROOT: AtomicUsize = AtomicUsize::new(0);
@@ -664,6 +665,151 @@ fn snapshot_determinism_check_reports_first_injected_difference() {
             actual: Some("duration = 11".to_owned()),
         })
     );
+}
+
+#[test]
+fn snapshot_determinism_reports_failure_records_beyond_surface_ast() {
+    let first = record(
+        "failure_case",
+        SnapshotKind::FailureRecord,
+        profile(),
+        "diagnostic = E-ONE\n",
+    );
+    let nondeterministic = record(
+        "failure_case",
+        SnapshotKind::FailureRecord,
+        profile(),
+        "diagnostic = E-TWO\n",
+    );
+
+    let failure = verify_snapshot_determinism(&[first, nondeterministic]).unwrap_err();
+
+    assert_eq!(failure.baseline_index, 0);
+    assert_eq!(failure.candidate_index, 1);
+    assert_eq!(
+        failure.mismatch.first_difference,
+        Some(SnapshotTextDiff {
+            line: 1,
+            expected: Some("diagnostic = E-ONE".to_owned()),
+            actual: Some("diagnostic = E-TWO".to_owned()),
+        })
+    );
+}
+
+#[test]
+fn snapshot_parallel_equivalence_ignores_parallelism_profile_only() {
+    let sequential = record(
+        "vc_case",
+        SnapshotKind::VerifiedArtifact,
+        profile(),
+        "status = verified\n",
+    );
+    let parallel = record(
+        "vc_case",
+        SnapshotKind::VerifiedArtifact,
+        SnapshotProfile {
+            parallelism: ParallelismProfile::Parallel { workers: 4 },
+            ..profile()
+        },
+        "status = verified\n",
+    );
+
+    verify_snapshot_parallel_equivalence(&sequential, &parallel).unwrap();
+}
+
+#[test]
+fn snapshot_parallel_equivalence_reports_observable_differences() {
+    let sequential = record(
+        "vc_case",
+        SnapshotKind::VerifiedArtifact,
+        profile(),
+        "status = verified\n",
+    );
+    let parallel = record(
+        "vc_case",
+        SnapshotKind::VerifiedArtifact,
+        SnapshotProfile {
+            parallelism: ParallelismProfile::Parallel { workers: 4 },
+            ..profile()
+        },
+        "status = failed\n",
+    );
+
+    let mismatch = verify_snapshot_parallel_equivalence(&sequential, &parallel).unwrap_err();
+
+    assert_eq!(
+        mismatch.first_difference,
+        Some(SnapshotTextDiff {
+            line: 1,
+            expected: Some("status = verified".to_owned()),
+            actual: Some("status = failed".to_owned()),
+        })
+    );
+}
+
+#[test]
+fn snapshot_parallel_equivalence_preserves_non_parallel_identity_and_profile_fields() {
+    assert_parallel_mismatch(record(
+        "vc_case_other",
+        SnapshotKind::VerifiedArtifact,
+        SnapshotProfile {
+            parallelism: ParallelismProfile::Parallel { workers: 4 },
+            ..profile()
+        },
+        "status = verified\n",
+    ));
+    assert_parallel_mismatch(record(
+        "vc_case",
+        SnapshotKind::VerifiedArtifact,
+        SnapshotProfile {
+            toolchain: ToolchainInfo::new("other-toolchain", "task4"),
+            parallelism: ParallelismProfile::Parallel { workers: 4 },
+            ..profile()
+        },
+        "status = verified\n",
+    ));
+    assert_parallel_mismatch(record(
+        "vc_case",
+        SnapshotKind::VerifiedArtifact,
+        SnapshotProfile {
+            verifier_config_hash: hash(0x99),
+            parallelism: ParallelismProfile::Parallel { workers: 4 },
+            ..profile()
+        },
+        "status = verified\n",
+    ));
+    assert_parallel_mismatch(record(
+        "vc_case",
+        SnapshotKind::VerifiedArtifact,
+        SnapshotProfile {
+            normalize_paths: false,
+            parallelism: ParallelismProfile::Parallel { workers: 4 },
+            ..profile()
+        },
+        "status = verified\n",
+    ));
+    assert_parallel_mismatch(record(
+        "vc_case",
+        SnapshotKind::VerifiedArtifact,
+        SnapshotProfile {
+            allow_local_paths: true,
+            parallelism: ParallelismProfile::Parallel { workers: 4 },
+            ..profile()
+        },
+        "status = verified\n",
+    ));
+
+    fn assert_parallel_mismatch(parallel: SnapshotRecord) {
+        let sequential = record(
+            "vc_case",
+            SnapshotKind::VerifiedArtifact,
+            profile(),
+            "status = verified\n",
+        );
+        let mismatch = verify_snapshot_parallel_equivalence(&sequential, &parallel).unwrap_err();
+        assert_ne!(mismatch.expected_hash, mismatch.actual_hash);
+        assert!(mismatch.first_difference.is_some());
+    }
 }
 
 fn record(

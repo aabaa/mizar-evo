@@ -245,13 +245,17 @@ Keep `cargo test -p mizar-test` green after each task (see
       fixture is created for them.
     - Deps: 5, 8. Spec: [harness.md](./harness.md).
 
-11. **Determinism suite.** [ ]
+11. **Determinism suite.** [x]
     - Property coverage that discovery order, plans, validation
       diagnostics, reports, and snapshot comparisons are byte-stable across
       runs and platforms.
     - Close task-2 gaps for general snapshot hash determinism,
       parallel-equivalence modes, and nondeterminism diagnostics outside the
       transitional parse-only `SurfaceAst` path.
+    - Completion: task 11 adds canonical-byte stability tests for metadata
+      plans and active runner reports, generic snapshot nondeterminism
+      diagnostics outside `SurfaceAst`, and snapshot-level
+      `verify_snapshot_parallel_equivalence`.
     - Deps: 6. Spec: [harness.md](./harness.md) "Determinism Requirements".
 
 12. **Public-enum forward-compatibility policy.** [ ]

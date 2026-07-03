@@ -191,6 +191,11 @@ pub fn verify_or_update_snapshot_baseline(
 pub fn verify_snapshot_determinism(
     records: &[SnapshotRecord],
 ) -> Result<(), SnapshotDeterminismFailure>;
+
+pub fn verify_snapshot_parallel_equivalence(
+    sequential: &SnapshotRecord,
+    parallel: &SnapshotRecord,
+) -> Result<(), SnapshotMismatch>;
 ```
 
 ## Canonicalization
@@ -286,6 +291,12 @@ against the first record after recomputing hashes from current public fields.
 The first mismatch reports the baseline index, candidate index, and the
 underlying `SnapshotMismatch`.
 
+Task 11 also provides `verify_snapshot_parallel_equivalence(sequential,
+parallel)`. It normalizes only `ParallelismProfile` before comparing canonical
+snapshot records, so worker-count changes alone do not fail equivalence, while
+body, identity, toolchain, verifier-config, and path-policy differences still
+report ordinary snapshot mismatches.
+
 ## Tests
 
 Key scenarios:
@@ -293,7 +304,8 @@ Key scenarios:
 - identical input produces identical snapshot hash;
 - diagnostic wording-only change does not invalidate semantic snapshots;
 - dependency slice changes invalidate relevant cache/snapshot expectations;
-- parallel verification produces the same `VerifiedArtifact` snapshot as sequential verification.
+- parallel equivalence produces the same `VerifiedArtifact` snapshot as
+  sequential verification when only `ParallelismProfile` differs.
 
 ## Constraints and Assumptions
 

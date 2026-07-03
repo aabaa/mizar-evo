@@ -243,12 +243,15 @@ regression test を追加した。
       fixture は作らない。
     - 依存: 5、8。仕様: [harness.md](./harness.md)。
 
-11. **決定性スイート。** [ ]
+11. **決定性スイート。** [x]
     - 発見順、計画、検証診断、報告、snapshot 比較が実行と
       プラットフォームをまたいでバイト安定であることのプロパティ的検証。
     - task 2 gap として、general snapshot hash determinism、
       parallel-equivalence modes、transitional parse-only `SurfaceAst` path
       外の nondeterminism diagnostics を閉じる。
+    - 完了: task 11 は metadata plan と active runner report の canonical-byte
+      stability tests、`SurfaceAst` 外の generic snapshot nondeterminism diagnostics、
+      snapshot-level `verify_snapshot_parallel_equivalence` を追加した。
     - 依存: 6。仕様: [harness.md](./harness.md)「Determinism
       Requirements」。
 

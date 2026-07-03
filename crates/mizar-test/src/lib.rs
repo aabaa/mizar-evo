@@ -30,6 +30,7 @@ pub use snapshot::{
     SnapshotError, SnapshotKind, SnapshotMismatch, SnapshotProfile, SnapshotRecord,
     SnapshotTextDiff, SnapshotUpdateMode, SnapshotUpdateReason, ToolchainInfo,
     compare_snapshot_records, verify_or_update_snapshot_baseline, verify_snapshot_determinism,
+    verify_snapshot_parallel_equivalence,
 };
 pub use staged_model::Stage;
 pub use traceability::{

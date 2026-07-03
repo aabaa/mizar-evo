@@ -191,6 +191,11 @@ pub fn verify_or_update_snapshot_baseline(
 pub fn verify_snapshot_determinism(
     records: &[SnapshotRecord],
 ) -> Result<(), SnapshotDeterminismFailure>;
+
+pub fn verify_snapshot_parallel_equivalence(
+    sequential: &SnapshotRecord,
+    parallel: &SnapshotRecord,
+) -> Result<(), SnapshotMismatch>;
 ```
 
 ## Canonicalization
@@ -284,6 +289,11 @@ against the first record after recomputing hashes from current public fields.
 The first mismatch reports the baseline index, candidate index, and the
 underlying `SnapshotMismatch`.
 
+task 11 は `verify_snapshot_parallel_equivalence(sequential, parallel)` も提供する。
+これは比較前に `ParallelismProfile` だけを normalize するため、worker count の違い
+だけでは equivalence failure にならない。一方、body、identity、toolchain、
+verifier-config、path-policy の差分は通常の snapshot mismatch として report される。
+
 ## Tests
 
 key scenarios:
@@ -291,7 +301,8 @@ key scenarios:
 - identical input は identical snapshot hash を生成する
 - diagnostic wording-only change は semantic snapshots を invalidate しない
 - dependency slice changes は relevant cache/snapshot expectations を invalidate する
-- parallel verification は sequential verification と同じ `VerifiedArtifact` snapshot を生成する
+- parallel equivalence は `ParallelismProfile` だけが異なる場合、sequential
+  verification と同じ `VerifiedArtifact` snapshot を生成する
 
 ## Constraints and Assumptions
 

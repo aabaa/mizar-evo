@@ -334,6 +334,36 @@ pub fn verify_snapshot_determinism(
     Ok(())
 }
 
+pub fn verify_snapshot_parallel_equivalence(
+    sequential: &SnapshotRecord,
+    parallel: &SnapshotRecord,
+) -> Result<(), SnapshotMismatch> {
+    if sequential.recomputed_content_hash().is_err() || parallel.recomputed_content_hash().is_err()
+    {
+        return compare_snapshot_records(sequential, parallel);
+    }
+
+    let sequential = record_with_parallelism(sequential, ParallelismProfile::Sequential);
+    let parallel = record_with_parallelism(parallel, ParallelismProfile::Sequential);
+    compare_snapshot_records(&sequential, &parallel)
+}
+
+fn record_with_parallelism(
+    record: &SnapshotRecord,
+    parallelism: ParallelismProfile,
+) -> SnapshotRecord {
+    let mut normalized = record.clone();
+    normalized.profile.parallelism = parallelism;
+    normalized.content_hash = hash_text(&canonical_hash_input(
+        normalized.schema_version,
+        &normalized.test_id,
+        normalized.kind,
+        &normalized.profile,
+        &normalized.body,
+    ));
+    normalized
+}
+
 fn validate_record_parts(
     test_id: &TestCaseId,
     profile: &SnapshotProfile,

@@ -244,6 +244,12 @@ The harness checks that identical inputs produce:
 
 Parallel execution may change runtime, not observable results.
 
+Implemented task-11 coverage renders metadata plans and active runner reports
+to deterministic byte strings and compares repeated builds/runs. Snapshot-level
+determinism and parallel equivalence are covered by the general snapshot record
+helpers; active parallel runner subcommands remain future work until a consumer
+crate exposes parallel execution.
+
 ## Reporting
 
 Reports must separate:
@@ -264,8 +270,11 @@ Key scenarios:
 - fail test unexpectedly passes;
 - pass test emits an error diagnostic;
 - snapshot hash differs;
+- metadata plan bytes differ across repeated builds;
+- active runner report bytes differ across repeated runs;
 - repeated run produces a different diagnostic order;
-- parallel run produces the same artifacts as sequential run.
+- generic snapshot parallel equivalence produces the same observable artifact
+  as sequential snapshot generation.
 
 ## Constraints and Assumptions
 
