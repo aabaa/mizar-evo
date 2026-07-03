@@ -1514,10 +1514,15 @@ fn resolver_module_id(workspace_root: &Path, source_path: &Path) -> ResolverModu
 }
 
 fn symbol_diagnostic_detail_key(diagnostic: &SymbolDiagnostic) -> String {
-    format!(
-        "declaration_symbol.symbol.{}",
-        symbol_diagnostic_class_key(diagnostic.class())
-    )
+    match diagnostic.class() {
+        SymbolDiagnosticClass::SameSignatureReturnConflict => {
+            "declaration_symbol.signature.same_signature_return_conflict".to_owned()
+        }
+        class => format!(
+            "declaration_symbol.symbol.{}",
+            symbol_diagnostic_class_key(class)
+        ),
+    }
 }
 
 const fn symbol_diagnostic_class_key(class: SymbolDiagnosticClass) -> &'static str {

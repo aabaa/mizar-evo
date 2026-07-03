@@ -47,7 +47,35 @@ pub struct SymbolDeclarationProjection {
     overload_policy: SymbolOverloadPolicy,
     identity_slot: Option<String>,
     lexical_summary_kind: Option<LexicalSummaryKind>,
+    functor_signature_key: Option<FunctorSignatureKey>,
     signature: Option<SignatureShell>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct FunctorSignatureKey {
+    argument_context: String,
+    pattern: String,
+    arity: Option<u32>,
+    return_type: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct FunctorArgumentSignatureKey {
+    namespace: NamespacePath,
+    argument_context: String,
+    pattern: String,
+    arity: Option<u32>,
+}
+
+impl FunctorSignatureKey {
+    fn argument_key(&self, namespace: NamespacePath) -> FunctorArgumentSignatureKey {
+        FunctorArgumentSignatureKey {
+            namespace,
+            argument_context: self.argument_context.clone(),
+            pattern: self.pattern.clone(),
+            arity: self.arity,
+        }
+    }
 }
 
 impl SymbolDeclarationProjection {
@@ -71,6 +99,7 @@ impl SymbolDeclarationProjection {
             overload_policy: SymbolOverloadPolicy::NonOverloadable,
             identity_slot: None,
             lexical_summary_kind: None,
+            functor_signature_key: None,
             signature: None,
         }
     }
@@ -121,6 +150,11 @@ impl SymbolDeclarationProjection {
 
     fn with_parser_backed_lexical_summary_kind(mut self, kind: LexicalSummaryKind) -> Self {
         self.lexical_summary_kind = Some(kind);
+        self
+    }
+
+    fn with_functor_signature_key(mut self, key: FunctorSignatureKey) -> Self {
+        self.functor_signature_key = Some(key);
         self
     }
 
@@ -206,6 +240,9 @@ pub enum SymbolDiagnosticClass {
     DuplicateDeclaration,
     /// Illegal overload group.
     IllegalOverloadGroup,
+    /// Same argument-signature functor declarations with incompatible return
+    /// signatures.
+    SameSignatureReturnConflict,
 }
 
 /// Crate-local/internal symbol collection diagnostic.
@@ -461,6 +498,10 @@ impl<'a> SignatureProjectionExtractor<'a> {
             return None;
         }
         let notation = normalized_token_shape(pattern);
+        let functor_signature_key = (symbol_kind == SymbolKind::Functor
+            && definition_kind == DefinitionKind::Functor)
+            .then(|| self.functor_signature_key(shell, view, &notation, None))
+            .flatten();
         let mut projection = SymbolDeclarationProjection::new(
             shell.id(),
             self.namespace.clone(),
@@ -476,6 +517,9 @@ impl<'a> SignatureProjectionExtractor<'a> {
             Some(&notation),
             None,
         ));
+        if let Some(key) = functor_signature_key {
+            projection = projection.with_functor_signature_key(key);
+        }
         if !notation.is_empty() {
             projection = projection.with_notation_spelling(notation);
         }
@@ -484,6 +528,58 @@ impl<'a> SignatureProjectionExtractor<'a> {
                 projection.with_parser_backed_lexical_summary_kind(LexicalSummaryKind::Notation);
         }
         Some(projection)
+    }
+
+    fn functor_signature_key(
+        &self,
+        shell: &DeclarationShell,
+        view: SurfaceNodeView<'_>,
+        pattern: &str,
+        arity: Option<u32>,
+    ) -> Option<FunctorSignatureKey> {
+        let return_type = first_child_matching(view, is_type_expression)?;
+        Some(FunctorSignatureKey {
+            argument_context: self.definition_context_key(shell),
+            pattern: pattern.to_owned(),
+            arity,
+            return_type: normalized_token_shape(return_type),
+        })
+    }
+
+    fn definition_context_key(&self, shell: &DeclarationShell) -> String {
+        let Some(block) = self.definition_context_block(shell) else {
+            return "_".to_owned();
+        };
+        let Some(block_view) = self.ast.node_view(block.node_id()) else {
+            return "_".to_owned();
+        };
+        let excluded = self
+            .shells
+            .declarations()
+            .iter()
+            .filter(|candidate| candidate.id() != block.id())
+            .filter(|candidate| source_range_contains(block.range(), candidate.range()))
+            .filter(|candidate| excludes_from_definition_context(candidate.kind()))
+            .map(DeclarationShell::range)
+            .collect::<Vec<_>>();
+        let context = normalized_token_shape_excluding_ranges(block_view, &excluded);
+        if context.is_empty() {
+            "_".to_owned()
+        } else {
+            context
+        }
+    }
+
+    fn definition_context_block(&self, shell: &DeclarationShell) -> Option<&DeclarationShell> {
+        let mut current = shell.parent();
+        while let Some(id) = current {
+            let context = self.shells.declaration(id)?;
+            if context.kind() == DeclarationShellKind::DefinitionBlock {
+                return Some(context);
+            }
+            current = context.parent();
+        }
+        None
     }
 
     fn algorithm_projection(
@@ -966,10 +1062,13 @@ impl DiagnosticDraft {
         }
     }
 
-    fn illegal_overload(candidates: &[&CollectedProjection<'_>]) -> Self {
+    fn illegal_overload(
+        candidates: &[&CollectedProjection<'_>],
+        class: SymbolDiagnosticClass,
+    ) -> Self {
         let first = candidates[0];
         Self {
-            class: SymbolDiagnosticClass::IllegalOverloadGroup,
+            class,
             shell: Some(first.shell.id()),
             spelling: overload_spelling(first.projection),
             range: first.shell.range(),
@@ -984,6 +1083,10 @@ fn classify_conflicts(
     diagnostic_drafts: &mut Vec<DiagnosticDraft>,
 ) -> BTreeMap<SymbolId, DeclarationConflictClass> {
     let mut conflicts = classify_illegal_overload_groups(collected, diagnostic_drafts);
+    conflicts.extend(classify_same_signature_return_conflicts(
+        collected,
+        diagnostic_drafts,
+    ));
     let mut groups: BTreeMap<ConflictKey, Vec<&CollectedProjection<'_>>> = BTreeMap::new();
     for item in collected {
         if suppress_dependent_diagnostic_for_recovered_shell(item.recovered) {
@@ -1018,6 +1121,59 @@ fn classify_conflicts(
     conflicts
 }
 
+fn classify_same_signature_return_conflicts(
+    collected: &[CollectedProjection<'_>],
+    diagnostic_drafts: &mut Vec<DiagnosticDraft>,
+) -> BTreeMap<SymbolId, DeclarationConflictClass> {
+    let mut groups: BTreeMap<FunctorArgumentSignatureKey, Vec<&CollectedProjection<'_>>> =
+        BTreeMap::new();
+    for item in collected {
+        if suppress_dependent_diagnostic_for_recovered_shell(item.recovered) {
+            continue;
+        }
+        if item.projection.overload_policy() != SymbolOverloadPolicy::Overloadable {
+            continue;
+        }
+        let Some(key) = &item.projection.functor_signature_key else {
+            continue;
+        };
+        groups
+            .entry(key.argument_key(item.projection.namespace().clone()))
+            .or_default()
+            .push(item);
+    }
+
+    let mut conflicts = BTreeMap::new();
+    for mut candidates in groups.into_values() {
+        candidates.sort_by(collected_projection_cmp);
+        if candidates.len() < 2 {
+            continue;
+        }
+        let mut return_keys = candidates
+            .iter()
+            .filter_map(|candidate| candidate.projection.functor_signature_key.as_ref())
+            .map(|key| key.return_type.as_str())
+            .collect::<Vec<_>>();
+        return_keys.sort_unstable();
+        return_keys.dedup();
+        if return_keys.len() < 2 {
+            continue;
+        }
+
+        diagnostic_drafts.push(DiagnosticDraft::illegal_overload(
+            &candidates,
+            SymbolDiagnosticClass::SameSignatureReturnConflict,
+        ));
+        for candidate in candidates {
+            conflicts.insert(
+                candidate.symbol.clone(),
+                DeclarationConflictClass::SameSignatureReturnConflict,
+            );
+        }
+    }
+    conflicts
+}
+
 fn classify_illegal_overload_groups(
     collected: &[CollectedProjection<'_>],
     diagnostic_drafts: &mut Vec<DiagnosticDraft>,
@@ -1038,7 +1194,10 @@ fn classify_illegal_overload_groups(
         if candidates.len() < 2 {
             continue;
         }
-        diagnostic_drafts.push(DiagnosticDraft::illegal_overload(&candidates));
+        diagnostic_drafts.push(DiagnosticDraft::illegal_overload(
+            &candidates,
+            SymbolDiagnosticClass::IllegalOverloadGroup,
+        ));
         for candidate in candidates {
             conflicts.insert(
                 candidate.symbol.clone(),
@@ -1436,6 +1595,28 @@ fn normalized_token_shape(view: SurfaceNodeView<'_>) -> String {
         .join(" ")
 }
 
+fn normalized_token_shape_excluding_ranges(
+    view: SurfaceNodeView<'_>,
+    excluded_ranges: &[SourceRange],
+) -> String {
+    flattened_tokens_excluding_ranges(view, excluded_ranges)
+        .into_iter()
+        .filter(|(kind, _)| {
+            matches!(
+                *kind,
+                SurfaceTokenKind::Identifier
+                    | SurfaceTokenKind::ReservedWord
+                    | SurfaceTokenKind::ReservedSymbol
+                    | SurfaceTokenKind::UserSymbol
+                    | SurfaceTokenKind::LexemeRun
+                    | SurfaceTokenKind::Numeral
+            )
+        })
+        .map(|(_, text)| text)
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
 fn lexer_visible_pattern(view: SurfaceNodeView<'_>) -> bool {
     flattened_tokens(view).into_iter().any(|(kind, _)| {
         matches!(
@@ -1451,6 +1632,15 @@ fn flattened_tokens(view: SurfaceNodeView<'_>) -> Vec<(SurfaceTokenKind, &str)> 
     tokens
 }
 
+fn flattened_tokens_excluding_ranges<'a>(
+    view: SurfaceNodeView<'a>,
+    excluded_ranges: &[SourceRange],
+) -> Vec<(SurfaceTokenKind, &'a str)> {
+    let mut tokens = Vec::new();
+    collect_tokens_excluding_ranges(view, excluded_ranges, &mut tokens);
+    tokens
+}
+
 fn collect_tokens<'a>(view: SurfaceNodeView<'a>, tokens: &mut Vec<(SurfaceTokenKind, &'a str)>) {
     if let Some(token) = view.as_token() {
         tokens.push((token.kind, token.text.as_ref()));
@@ -1459,6 +1649,33 @@ fn collect_tokens<'a>(view: SurfaceNodeView<'a>, tokens: &mut Vec<(SurfaceTokenK
     for child in view.child_views() {
         collect_tokens(child, tokens);
     }
+}
+
+fn collect_tokens_excluding_ranges<'a>(
+    view: SurfaceNodeView<'a>,
+    excluded_ranges: &[SourceRange],
+    tokens: &mut Vec<(SurfaceTokenKind, &'a str)>,
+) {
+    if excludes_from_definition_context_node(view.kind()) {
+        return;
+    }
+    if excluded_ranges
+        .iter()
+        .any(|range| source_range_contains(*range, view.range()))
+    {
+        return;
+    }
+    if let Some(token) = view.as_token() {
+        tokens.push((token.kind, token.text.as_ref()));
+        return;
+    }
+    for child in view.child_views() {
+        collect_tokens_excluding_ranges(child, excluded_ranges, tokens);
+    }
+}
+
+fn source_range_contains(parent: SourceRange, child: SourceRange) -> bool {
+    parent.source_id == child.source_id && parent.start <= child.start && child.end <= parent.end
 }
 
 fn direct_structural_roles(view: SurfaceNodeView<'_>) -> String {
@@ -1481,6 +1698,10 @@ fn is_functor_pattern(kind: &SurfaceNodeKind) -> bool {
     matches!(kind, SurfaceNodeKind::FunctorPattern)
 }
 
+fn is_type_expression(kind: &SurfaceNodeKind) -> bool {
+    matches!(kind, SurfaceNodeKind::TypeExpression)
+}
+
 fn is_mode_pattern(kind: &SurfaceNodeKind) -> bool {
     matches!(kind, SurfaceNodeKind::ModePattern)
 }
@@ -1491,6 +1712,38 @@ fn is_structure_pattern(kind: &SurfaceNodeKind) -> bool {
 
 fn is_notation_pattern(kind: &SurfaceNodeKind) -> bool {
     matches!(kind, SurfaceNodeKind::NotationPattern)
+}
+
+fn excludes_from_definition_context(kind: DeclarationShellKind) -> bool {
+    matches!(
+        kind,
+        DeclarationShellKind::Theorem
+            | DeclarationShellKind::Lemma
+            | DeclarationShellKind::AttributeDefinition
+            | DeclarationShellKind::PredicateDefinition
+            | DeclarationShellKind::FunctorDefinition
+            | DeclarationShellKind::ModeDefinition
+            | DeclarationShellKind::StructureDefinition
+            | DeclarationShellKind::AlgorithmDefinition
+            | DeclarationShellKind::ExistentialRegistration
+            | DeclarationShellKind::ConditionalRegistration
+            | DeclarationShellKind::FunctorialRegistration
+            | DeclarationShellKind::ReductionRegistration
+            | DeclarationShellKind::AttributeRedefinition
+            | DeclarationShellKind::PredicateRedefinition
+            | DeclarationShellKind::FunctorRedefinition
+            | DeclarationShellKind::NotationAlias
+            | DeclarationShellKind::PropertyClause
+            | DeclarationShellKind::StructureField
+            | DeclarationShellKind::StructureProperty
+            | DeclarationShellKind::InheritanceDefinition
+            | DeclarationShellKind::FieldRedefinition
+            | DeclarationShellKind::PropertyRedefinition
+    )
+}
+
+fn excludes_from_definition_context_node(kind: &SurfaceNodeKind) -> bool {
+    matches!(kind, SurfaceNodeKind::VisibilityMarker)
 }
 
 fn structural_path(

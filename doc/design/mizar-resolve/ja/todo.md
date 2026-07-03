@@ -396,9 +396,15 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       corpus coverage は、parser-backed declaration、visibility、theorem/lemma
       symbol の pass smoke fixture 1 件と、same-scope label uniqueness 由来の
       duplicate-theorem fail fixture 1 件を `spec_trace.toml` requirement とともに
-      追加した。task 9〜19 のより広い semantic import/name/label corpus の拡充は
-      R-G007 test-gap follow-up として将来の runner assertion 拡張に記録するが、
-      実行可能な declaration-symbol runner と初期の traceable active set は揃った。
+      追加した。
+    - post-task-20 R-G007 increment: 同じ active runner は、resolver-owned
+      internal `SameSignatureReturnConflict` class と
+      `declaration_symbol.signature.same_signature_return_conflict` detail key
+      を使い、same argument-signature definition が異なる return signature を持つ
+      parser-backed functor signature-conflict seed も実行する。task 9〜19 の
+      より広い semantic import/name/label corpus の拡充は R-G007 test-gap
+      follow-up として将来の runner assertion 拡張に記録するが、実行可能な
+      declaration-symbol runner は traceable active case 3 件を持つ。
 
 24. **ModuleSummary の再利用。** [x]
     - 依存モジュールを（schema-version を検証した）`ModuleSummary` artifact
@@ -451,7 +457,9 @@ IR 所有権: [01.ir_layers.md](../../architecture/ja/01.ir_layers.md)。
       見つからなかった。既存の分類済み record として、R-G001 public resolver
       diagnostic code-space `spec_gap`、R-G007 が精緻化する R-G002 historical
       semantic corpus coverage `test_gap`、R-G006 parser/syntax scheme-role
-      dependency は残る。R-G003 deferred `ModuleSummary` reuse は R-024 で解消済みである。
+      dependency は残る。post-task-20 R-G007 signature-conflict slice は symbol
+      assertion increment の 1 つを閉じるが、import/name/dot-chain/label active
+      assertion は未完了である。R-G003 deferred `ModuleSummary` reuse は R-024 で解消済みである。
 
 28. **二言語ドキュメント同期監査。** [x]
     - `doc/design/mizar-resolve/en/` の各英語正本と日本語版を比較し、API

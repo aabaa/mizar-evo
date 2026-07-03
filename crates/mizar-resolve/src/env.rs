@@ -764,6 +764,9 @@ pub enum DeclarationConflictClass {
     DuplicateSpelling,
     /// Illegal overload group.
     IllegalOverloadGroup,
+    /// Same argument-signature functor declarations with incompatible return
+    /// signatures.
+    SameSignatureReturnConflict,
     /// Recovered declaration shell.
     RecoveredShell,
 }

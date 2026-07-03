@@ -235,7 +235,12 @@ overload group は、その family が overloadable で、利用可能な syntax
 - type checking なしで利用可能な syntactic arity または notation shape。
 
 illegal overload group は crate-local/internal diagnostic と `OverloadIndex` failure
-metadata として記録する。resolver は overload candidate を選択、順位付け、書き換えしない。
+metadata として記録する。表現済み parser-backed functor signature が同じ
+resolver-owned argument-signature grouping key を共有しながら異なる return signature を
+示す場合、diagnostic はより具体的な internal
+`SameSignatureReturnConflict` class を使う。これは syntactic signature-collection check
+に留まり、semantic type equivalence、overload ranking、winner selection は checker-owned
+である。resolver は overload candidate を選択、順位付け、書き換えしない。
 
 ## Visibility、Export、Summary、Lexical Contribution
 

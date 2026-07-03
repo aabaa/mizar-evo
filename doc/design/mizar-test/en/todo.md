@@ -242,9 +242,12 @@ Keep `cargo test -p mizar-test` green after each task (see
       (`type-elaboration` external-gap runner), task 16
       (source-derived builtin type-expression normalization), task 17
       (source-derived builtin type-expression projection to `ResolvedTypedAst`),
-      task 18 (source-derived reserve declaration semantic bridge), and task 19
+      task 18 (source-derived reserve declaration semantic bridge), task 19
       (reserve bridge `ResolvedTypedAstSummary::from_ast` readiness plus next
-      builtin declaration inventory), as prepared/implemented increments.
+      builtin declaration inventory), task 20 (reserve bridge binder-only
+      `CoreContext` readiness), and the post-task-20 resolver R-G007
+      parser-backed same-signature/different-return functor conflict active
+      declaration-symbol seed, as prepared/implemented increments.
       Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
       `paced/open`; no placeholder runner or fake active fixture is created for

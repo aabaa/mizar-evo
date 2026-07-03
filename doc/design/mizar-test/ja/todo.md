@@ -242,7 +242,10 @@ regression test を追加した。
       builtin type-expression projection to `ResolvedTypedAst`）、task 18
       （source-derived reserve declaration semantic bridge）、task 19
       （reserve bridge `ResolvedTypedAstSummary::from_ast` readiness と次の
-      builtin declaration inventory）を prepared/implemented increments として記録する。
+      builtin declaration inventory）、task 20（reserve bridge binder-only
+      `CoreContext` readiness）、post-task-20 resolver R-G007 の parser-backed
+      same-signature/different-return functor conflict active declaration-symbol seed
+      を prepared/implemented increments として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
       runner や fake active fixture は作らない。

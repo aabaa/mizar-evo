@@ -418,10 +418,16 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       includes one pass smoke fixture for parser-backed declarations,
       visibility, and theorem/lemma symbols, plus one duplicate-theorem fail
       fixture derived from same-scope label uniqueness, with `spec_trace.toml`
-      requirements. Broader semantic import/name/label corpus growth for
-      tasks 9-19 is recorded as R-G007 test-gap follow-up for a future runner
-      assertion expansion, but the executable declaration-symbol runner and
-      initial traceable active set are in place.
+      requirements.
+    - Post-task-20 R-G007 increment: the same active runner now also executes
+      the parser-backed functor signature-conflict seed for same
+      argument-signature definitions with different return signatures, using
+      the resolver-owned internal `SameSignatureReturnConflict` class and the
+      `declaration_symbol.signature.same_signature_return_conflict` detail
+      key. Broader semantic import/name/label corpus growth for tasks 9-19 is
+      still recorded as R-G007 test-gap follow-up for future runner assertion
+      expansions, but the executable declaration-symbol runner now has three
+      traceable active cases.
 
 24. **ModuleSummary reuse.** [x]
     - Consume dependency modules as `ModuleSummary` artifacts (schema-version
@@ -474,8 +480,10 @@ Keep `cargo test -p mizar-resolve` green after each task (see
       `repo_metadata_conflict`. Existing classified records remain: R-G001
       public resolver diagnostic code-space `spec_gap`, R-G002 historical
       semantic corpus coverage `test_gap` refined by R-G007, and R-G006
-      parser/syntax scheme-role dependency. R-G003 deferred `ModuleSummary`
-      reuse is resolved by R-024.
+      parser/syntax scheme-role dependency. The post-task-20 R-G007
+      signature-conflict slice closes one symbol assertion increment but leaves
+      import/name/dot-chain/label active assertions open. R-G003 deferred
+      `ModuleSummary` reuse is resolved by R-024.
 
 28. **Bilingual documentation sync audit.** [x]
     - Compare each English canonical document under

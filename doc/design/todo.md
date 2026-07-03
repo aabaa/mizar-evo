@@ -79,7 +79,7 @@ convenient downstream crate.
 | mizar-syntax | yes | Rowan-backed `SurfaceAst`, syntax trivia, recovery, typed views, parser-facing syntax vocabulary | [x] current milestone complete; only deferred rustdoc summaries remain | [todo](./mizar-syntax/en/todo.md) |
 | mizar-parser | yes | Grammar, Pratt parsing, syntax recovery, parse-only corpus execution | [x] current milestone complete through task 45; deferred operator-declaration follow-up task 46 remains recorded | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | yes | Source loading and phase 1-3 orchestration across session, lexer, syntax, and parser | [x] current milestone complete; future parser growth may open bounded follow-ups | [todo](./mizar-frontend/en/todo.md) |
-| mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] foundation complete through task 20 reserve binder-only core context readiness; broader consumer-runner support remains paced by source-derived semantic/CoreIr/ControlFlowIr/VC/proof bridges | [todo](./mizar-test/en/todo.md) |
+| mizar-test | yes | Corpus discovery, expectation sidecars, staged model, traceability, snapshots, harness behavior | [~] foundation complete through task 20 reserve binder-only core context readiness plus one post-task-20 resolver R-G007 active runner increment; broader consumer-runner support remains paced by source-derived semantic/CoreIr/ControlFlowIr/VC/proof bridges | [todo](./mizar-test/en/todo.md) |
 | mizar-build | yes | Phase 0 workspace planning plus task graph, scheduler, resources, cancellation, failure state, cache seam, artifact commit boundary, and scheduler-selected dispatch | [x] current milestone complete; full real clean/incremental/parallel equivalence remains an integration gap | [todo](./mizar-build/en/todo.md) |
 | mizar-lsp | yes | Editor range mapping now; future server, snapshots, diagnostics, metadata, navigation, actions, explanations | [~] range conversion slice exists; specs and server features remain planned | [todo](./mizar-lsp/en/todo.md) |
 | mizar-resolve | yes | Module graph, namespaces, symbols, labels, signature collection | [x] current resolver milestone complete through R-024 and non-deferred tasks 1-29; R-030 remains future diagnostic consumer adoption | [todo](./mizar-resolve/en/todo.md) |
@@ -166,7 +166,10 @@ current parser hardening close-out.
    declaration payloads through checker-owned `BindingEnv`, `DeclarationInput`,
    `TypedAst`, `ResolvedTypedAst`, and a summary-only
    `mizar-core` `ResolvedTypedAstSummary::from_ast` readiness read plus
-   binder-only `CoreContext` preparation. Continue
+   binder-only `CoreContext` preparation. The post-task-20 safe fallback also
+   promotes one payload-backed resolver R-G007 declaration-symbol seed for the
+   parser-backed same-signature/different-return functor conflict; this does
+   not promote checker/core/VC payload families. Continue
    this bridge by widening real source-derived payload extraction through
    `mizar-checker`, then lowering confirmed checker payloads through
    `mizar-core` and `mizar-vc`. This should retire the remaining

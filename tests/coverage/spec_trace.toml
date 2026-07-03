@@ -1271,7 +1271,7 @@ stage = "declaration_symbol"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Adversarial checker seed fixed test-first; untagged until the resolver collects functor signatures, so the active declaration_symbol runner does not execute it yet. Rejection contract: same-signature/different-return definitions conflict at signature collection."
+notes = "Active declaration_symbol fail coverage for the resolver-owned parser-backed slice: same argument-signature functor declarations with different return signatures conflict at declaration/signature collection. Checker-owned semantic type equivalence and overload winner selection remain out of scope."
 depends_on = [
   "spec.en.10.functor_definitions.parser",
 ]

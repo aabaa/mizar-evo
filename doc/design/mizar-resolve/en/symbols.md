@@ -249,7 +249,12 @@ available syntax provides a compatible resolver-owned grouping key:
 - syntactic arity or notation shape when available without type checking.
 
 Illegal overload groups are recorded as crate-local/internal diagnostics and
-`OverloadIndex` failure metadata. The resolver does not select, rank, or
+`OverloadIndex` failure metadata. When the represented parser-backed functor
+signatures share the same resolver-owned argument-signature grouping key but
+advertise different return signatures, the diagnostic uses the more specific
+internal `SameSignatureReturnConflict` class. This remains a syntactic
+signature-collection check: semantic type equivalence, overload ranking, and
+winner selection are checker-owned. The resolver does not select, rank, or
 rewrite overload candidates.
 
 ## Visibility, Exports, Summaries, And Lexical Contributions

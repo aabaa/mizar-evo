@@ -197,6 +197,127 @@ fn overloadable_candidates_form_groups_and_illegal_groups_get_diagnostics() {
 }
 
 #[test]
+fn same_signature_functor_conflicts_get_specific_internal_class() {
+    let source_id = source_id();
+    let shells = shells_for(
+        source_id,
+        vec![
+            test_item(0, SurfaceNodeKind::FunctorDefinition),
+            test_item(10, SurfaceNodeKind::FunctorDefinition),
+        ],
+    );
+    let namespace = NamespacePath::new("main");
+    let projections = vec![
+        projection(
+            shells.declarations()[0].id(),
+            namespace.clone(),
+            "GaugeA",
+            SymbolKind::Functor,
+            DefinitionKind::Functor,
+        )
+        .with_notation_spelling("gauge ( _ )")
+        .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+        .with_arity(1)
+        .with_functor_signature_key(functor_signature_key(
+            "let x be set",
+            "gauge ( _ )",
+            "set",
+        )),
+        projection(
+            shells.declarations()[1].id(),
+            namespace,
+            "GaugeB",
+            SymbolKind::Functor,
+            DefinitionKind::Functor,
+        )
+        .with_notation_spelling("gauge ( _ )")
+        .with_overload_policy(SymbolOverloadPolicy::Overloadable)
+        .with_arity(1)
+        .with_functor_signature_key(functor_signature_key(
+            "let x be set",
+            "gauge ( _ )",
+            "round set",
+        )),
+    ];
+
+    let result = collect(source_id, &shells, &projections);
+
+    assert_eq!(result.diagnostics().len(), 1);
+    assert_eq!(
+        result.diagnostics()[0].class(),
+        SymbolDiagnosticClass::SameSignatureReturnConflict
+    );
+    let conflicts = result
+        .env()
+        .definitions()
+        .iter()
+        .filter_map(|entry| entry.conflict())
+        .collect::<Vec<_>>();
+    assert_eq!(conflicts.len(), 2);
+    assert!(
+        conflicts
+            .iter()
+            .all(|conflict| **conflict == DeclarationConflictClass::SameSignatureReturnConflict)
+    );
+}
+
+#[test]
+fn parser_backed_functor_signature_conflict_uses_extracted_return_types() {
+    let source_id = source_id();
+    let ast = parser_backed_same_signature_return_conflict_ast(source_id);
+    let module = module_id();
+    let shells = DeclarationShellCollector::new(&ast, &module).collect();
+    let namespace = NamespacePath::new("main");
+    let projections = SignatureProjectionExtractor::new(&ast, &shells, namespace.clone()).extract();
+    let functor_keys = projections
+        .iter()
+        .filter(|projection| projection.symbol_kind() == SymbolKind::Functor)
+        .map(|projection| {
+            projection
+                .functor_signature_key
+                .as_ref()
+                .expect("parser-backed functor projection should carry a signature key")
+        })
+        .collect::<Vec<_>>();
+
+    assert_eq!(functor_keys.len(), 2);
+    assert!(
+        functor_keys
+            .iter()
+            .all(|key| key.argument_context == "definition let x be set end")
+    );
+    assert!(functor_keys.iter().all(|key| key.pattern == "gauge ( x )"));
+    assert!(functor_keys.iter().all(|key| key.arity.is_none()));
+    assert_eq!(
+        functor_keys
+            .iter()
+            .map(|key| key.return_type.as_str())
+            .collect::<Vec<_>>(),
+        vec!["set", "round set"]
+    );
+
+    let result = collect(source_id, &shells, &projections);
+
+    assert_eq!(result.diagnostics().len(), 1);
+    assert_eq!(
+        result.diagnostics()[0].class(),
+        SymbolDiagnosticClass::SameSignatureReturnConflict
+    );
+    let conflicts = result
+        .env()
+        .definitions()
+        .iter()
+        .filter_map(|entry| entry.conflict())
+        .collect::<Vec<_>>();
+    assert_eq!(conflicts.len(), 2);
+    assert!(
+        conflicts
+            .iter()
+            .all(|conflict| **conflict == DeclarationConflictClass::SameSignatureReturnConflict)
+    );
+}
+
+#[test]
 fn diagnostics_are_sorted_by_range_class_spelling_and_stable_ids() {
     let source_id = source_id();
     let shells = shells_for(
@@ -1182,6 +1303,219 @@ fn parser_backed_signature_ast(source_id: SourceId) -> mizar_syntax::SurfaceAst 
     builder.finish(Some(root), None)
 }
 
+fn parser_backed_same_signature_return_conflict_ast(
+    source_id: SourceId,
+) -> mizar_syntax::SurfaceAst {
+    let mut builder = SurfaceAstBuilder::new(source_id);
+    let items = vec![
+        definition_block_with_functor(
+            &mut builder,
+            source_id,
+            0,
+            Some("public"),
+            "GaugeADef",
+            &["set"],
+        ),
+        definition_block_with_functor(
+            &mut builder,
+            source_id,
+            80,
+            Some("private"),
+            "GaugeBDef",
+            &["round", "set"],
+        ),
+    ];
+    let root = finish_module(&mut builder, source_id, items);
+    builder.finish(Some(root), None)
+}
+
+fn definition_block_with_functor(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+    visibility: Option<&str>,
+    label: &str,
+    return_type: &[&str],
+) -> SurfaceBuilderNodeId {
+    let definition = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "definition",
+        range(source_id, start, start + 10),
+    );
+    let let_statement = let_statement(builder, source_id, start + 11);
+    let functor = visible_functor_definition_item(
+        builder,
+        source_id,
+        start + 30,
+        visibility,
+        label,
+        return_type,
+    );
+    let end_start = builder
+        .node_range(functor)
+        .expect("fresh definition content should have a source range")
+        .end
+        + 2;
+    let end = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "end",
+        range(source_id, end_start, end_start + 3),
+    );
+    node(
+        builder,
+        SurfaceNodeKind::DefinitionBlockItem,
+        source_id,
+        start,
+        end_start + 3,
+        vec![definition, let_statement, functor, end],
+    )
+}
+
+fn visible_functor_definition_item(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+    visibility: Option<&str>,
+    label: &str,
+    return_type: &[&str],
+) -> SurfaceBuilderNodeId {
+    let Some(visibility) = visibility else {
+        return functor_definition_item(builder, source_id, start, label, return_type);
+    };
+    let marker = visibility_marker(builder, source_id, start, visibility);
+    let target_start = start + visibility.len() + 1;
+    let target = functor_definition_item(builder, source_id, target_start, label, return_type);
+    let target_end = builder
+        .node_range(target)
+        .expect("fresh functor node should have a source range")
+        .end;
+    node(
+        builder,
+        SurfaceNodeKind::VisibleItem,
+        source_id,
+        start,
+        target_end,
+        vec![marker, target],
+    )
+}
+
+fn let_statement(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+) -> SurfaceBuilderNodeId {
+    let tokens = token_sequence(
+        builder,
+        source_id,
+        start,
+        &[
+            (SurfaceTokenKind::ReservedWord, "let"),
+            (SurfaceTokenKind::Identifier, "x"),
+            (SurfaceTokenKind::ReservedWord, "be"),
+            (SurfaceTokenKind::Identifier, "set"),
+        ],
+    );
+    node(
+        builder,
+        SurfaceNodeKind::LetStatement,
+        source_id,
+        start,
+        start + 12,
+        tokens,
+    )
+}
+
+fn functor_definition_item(
+    builder: &mut SurfaceAstBuilder,
+    source_id: SourceId,
+    start: usize,
+    label: &str,
+    return_type: &[&str],
+) -> SurfaceBuilderNodeId {
+    let func = builder.add_token(
+        SurfaceTokenKind::ReservedWord,
+        "func",
+        range(source_id, start, start + 4),
+    );
+    let label_start = start + 5;
+    let label = builder.add_token(
+        SurfaceTokenKind::Identifier,
+        label,
+        range(source_id, label_start, label_start + label.len()),
+    );
+    let colon_start = label_start + 10;
+    let colon = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        ":",
+        range(source_id, colon_start, colon_start + 1),
+    );
+    let pattern_start = colon_start + 2;
+    let pattern_tokens = token_sequence(
+        builder,
+        source_id,
+        pattern_start,
+        &[
+            (SurfaceTokenKind::Identifier, "gauge"),
+            (SurfaceTokenKind::ReservedSymbol, "("),
+            (SurfaceTokenKind::Identifier, "x"),
+            (SurfaceTokenKind::ReservedSymbol, ")"),
+        ],
+    );
+    let pattern = node(
+        builder,
+        SurfaceNodeKind::FunctorPattern,
+        source_id,
+        pattern_start,
+        pattern_start + 12,
+        pattern_tokens,
+    );
+    let arrow_start = pattern_start + 13;
+    let arrow = builder.add_token(
+        SurfaceTokenKind::ReservedSymbol,
+        "->",
+        range(source_id, arrow_start, arrow_start + 2),
+    );
+    let type_start = arrow_start + 3;
+    let type_tokens = return_type
+        .iter()
+        .scan(type_start, |cursor, text| {
+            let token_start = *cursor;
+            let token_end = token_start + text.len();
+            *cursor = token_end + 1;
+            Some(builder.add_token(
+                SurfaceTokenKind::Identifier,
+                *text,
+                range(source_id, token_start, token_end),
+            ))
+        })
+        .collect::<Vec<_>>();
+    let type_end = type_tokens
+        .last()
+        .map(|id| {
+            builder
+                .node_range(*id)
+                .expect("fresh token should have a source range")
+                .end
+        })
+        .unwrap_or(type_start);
+    let type_expression = node(
+        builder,
+        SurfaceNodeKind::TypeExpression,
+        source_id,
+        type_start,
+        type_end,
+        type_tokens,
+    );
+    node(
+        builder,
+        SurfaceNodeKind::FunctorDefinition,
+        source_id,
+        start,
+        type_end,
+        vec![func, label, colon, pattern, arrow, type_expression],
+    )
+}
+
 fn label_item(
     builder: &mut SurfaceAstBuilder,
     source_id: SourceId,
@@ -1613,6 +1947,19 @@ fn source_id() -> SourceId {
     InMemorySessionIdAllocator::new()
         .next_source_id(snapshot_id)
         .unwrap()
+}
+
+fn functor_signature_key(
+    argument_context: &str,
+    pattern: &str,
+    return_type: &str,
+) -> FunctorSignatureKey {
+    FunctorSignatureKey {
+        argument_context: argument_context.to_owned(),
+        pattern: pattern.to_owned(),
+        arity: Some(1),
+        return_type: return_type.to_owned(),
+    }
 }
 
 const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {

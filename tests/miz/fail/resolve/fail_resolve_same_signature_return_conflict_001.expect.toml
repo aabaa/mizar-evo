@@ -10,7 +10,11 @@ failure_category = "resolve_error"
 rejection_reason = "same_signature_return_conflict"
 stable_detail_key = "declaration_symbol.signature.same_signature_return_conflict"
 diagnostic_codes = []
+diagnostic_payloads = [
+  "declaration_symbol.signature.same_signature_return_conflict",
+]
+tags = ["active_declaration_symbol"]
 spec_refs = [
   "spec.en.19.overload.definition_conflict.declaration",
 ]
-notes = "Inactive declaration_symbol seed (untagged until the resolver collects functor signatures): two gauge definitions share one argument-type signature with different return types; this is a definition conflict at signature collection, not an overload pair (spec 19.1)."
+notes = "Active declaration_symbol fail coverage for a parser-backed functor signature conflict: two gauge definitions share the same resolver-owned argument signature key but advertise different return signatures. This is a declaration/signature collection conflict, not overload winner selection."

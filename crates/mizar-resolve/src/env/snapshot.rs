@@ -890,6 +890,7 @@ fn declaration_conflict_class_name(class: &DeclarationConflictClass) -> &'static
     match class {
         DeclarationConflictClass::DuplicateSpelling => "duplicate_spelling",
         DeclarationConflictClass::IllegalOverloadGroup => "illegal_overload_group",
+        DeclarationConflictClass::SameSignatureReturnConflict => "same_signature_return_conflict",
         DeclarationConflictClass::RecoveredShell => "recovered_shell",
     }
 }
