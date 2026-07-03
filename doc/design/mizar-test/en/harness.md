@@ -143,7 +143,7 @@ No exhaustive public enum exceptions are owned by this module.
 | metadata plan | discover sidecars and validate layout, expectation schema, and traceability without executing payloads |
 | parse-only | run active `.miz` parse-only cases through `mizar-frontend` and `MizarParserSeam` |
 | declaration-symbol | run active `.miz` declaration-symbol cases through frontend parsing and resolver declaration/symbol collection |
-| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, execute the supported reserve-only builtin declaration bridge through checker-owned `BindingEnv`, `DeclarationInput`, `TypedAst`, and `ResolvedTypedAst`, confirm `mizar-core` summary-readiness through `ResolvedTypedAstSummary::from_ast`, and surface unsupported checker payload families as stable external dependency gaps |
+| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, execute the supported reserve-only builtin declaration bridge through checker-owned `BindingEnv`, `DeclarationInput`, `TypedAst`, and `ResolvedTypedAst`, confirm `mizar-core` summary-readiness through `ResolvedTypedAstSummary::from_ast`, prepare binder-only `CoreContext` input from the same reserve bindings, and surface unsupported checker payload families as stable external dependency gaps |
 | pass/fail | run `.miz` cases and match expected outcome |
 | snapshot | compare canonical snapshot hashes |
 | determinism | repeat runs and compare artifacts, diagnostics, and hashes |
@@ -162,7 +162,7 @@ fabricated coverage.
 |---|---|---|---|
 | `mizar-parser` task 3 | `parse_only` / `parse-only` | prepared/implemented; active `.miz` pass/fail sidecars use `active_parse_only`, and untagged parse-only metadata stays planned | Keep the transitional `SurfaceAst` snapshot shortcut until the general snapshot runner lands. |
 | `mizar-resolve` task 23 | `declaration_symbol` / `declaration-symbol` | prepared/implemented; active sidecars use `active_declaration_symbol`, public resolver diagnostic-code matching remains gated | Open public diagnostic-code assertions only after resolver diagnostic ranges are specified. |
-| `mizar-checker` task 12 plus task 16-19 source bridge continuation and the reserve summary-readiness follow-up | `type_elaboration` / `type-elaboration` | prepared/implemented; active sidecars use `active_type_elaboration`, lower stages run first, reserve-only builtin `set`/`object` declarations are extracted into checker-owned `BindingEnv`, one `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites, `TypedAst`, checker-owned `ResolvedTypedAst`, and a summary-only `mizar-core` `ResolvedTypedAstSummary::from_ast` read; unsupported checker payload families stay on `type_elaboration.external_dependency.ast_payload_extraction` | Broader type pass/fail semantic assertions wait for AST-wide source-to-checker payload extraction. |
+| `mizar-checker` task 12 plus task 16-20 source bridge continuation, reserve summary-readiness, and binder-only core context follow-up | `type_elaboration` / `type-elaboration` | prepared/implemented; active sidecars use `active_type_elaboration`, lower stages run first, reserve-only builtin `set`/`object` declarations are extracted into checker-owned `BindingEnv`, one `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites, `TypedAst`, checker-owned `ResolvedTypedAst`, a `mizar-core` `ResolvedTypedAstSummary::from_ast` read, and binder-only `CoreContext` preparation; unsupported checker payload families stay on `type_elaboration.external_dependency.ast_payload_extraction` | Broader type pass/fail semantic assertions wait for AST-wide source-to-checker payload extraction. |
 | `mizar-checker` task 29 | `formula_statement` / `advanced_semantics` | paced/open; trace rows are deferred and no active fixture is fabricated | Add runner support only after statement/formula and advanced-semantics source payload seams exist. |
 | `mizar-vc` task 15 | `proof_verification` | paced/open; VC/proof-verification obligations are deferred | Add runner support only after source-to-core/source-to-VC extraction and downstream verification seams exist. |
 | `mizar-atp` task 20 | `advanced_semantics` metadata handoff | paced/open in `mizar-test`; metadata-only property fixtures may be consumed by `mizar-atp` Rust tests | Add active `.miz` ATP runner support only after source-derived ATP extraction and proof-policy/kernel handoff seams exist. |
@@ -261,13 +261,19 @@ predecessor outputs plus source-preserved node hints and declaration expression
 metadata. The runner then passes that real `ResolvedTypedAst` payload to
 `mizar-core`'s `ResolvedTypedAstSummary::from_ast` and checks that the summary
 preserves the source/module identity and has no checker recovery/diagnostic
-sites for the successful reserve-only slice. This is a summary-readiness check
-only: it does not construct a `CoreContext`, `CoreIr`, `ControlFlowIr`,
-obligation seed, VC, or proof row. Active pass cases may assert this supported
+sites for the successful reserve-only slice. It then prepares binder-only
+`CoreContextInput` from the same real reserve bindings, with one
+`CoreVariableSeed` and one `CoreBinderSeed` per extracted binding, no
+`CoreItemSeed`, and checks source/module identity, binder source ranges,
+checker provenance, empty item registry, empty core diagnostics, and an empty
+core worklist. This is a summary/context readiness check only: it does not
+construct `CoreIr`, `ControlFlowIr`, obligation seeds, VCs, or proof rows.
+Active pass cases may assert this supported
 source-derived slice with empty detail keys only when the source contains at
 least one supported reserve binding and runner regression evidence confirms
 that binding-env construction, declaration checking, `TypedAst` assembly,
-`ResolvedTypedAst` assembly, and summary-readiness were exercised.
+`ResolvedTypedAst` assembly, summary-readiness, and binder-only core context
+readiness were exercised.
 
 The runner still does not fabricate the missing AST-wide source-to-checker
 bridge. Non-builtin declarations, attributes, mode/structure payloads, terms,

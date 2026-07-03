@@ -32,7 +32,14 @@ use mizar_checker::typed_ast::{
     TypeStatus, TypeTable, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeId,
     TypedNodeLinks, TypedSiteRef, TypingState,
 };
-use mizar_core::elaborator::ResolvedTypedAstSummary;
+use mizar_core::{
+    binder_normalization::{NormalizedVarClass, NormalizedVarSort},
+    core_ir::{CoreSourceRef, CoreVarId, CoreVarRole},
+    elaborator::{
+        CheckerOwnedProvenance, CoreBinderSeed, CoreContextInput, CoreVariableSeed,
+        ResolvedTypedAstSummary, prepare_core_context,
+    },
+};
 use mizar_frontend::lexical_env::{
     ExportRank, ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
     ExportedSymbolShape, FrontendLexicalEnvironmentError, LexicalEnvironmentRequest,
@@ -731,6 +738,9 @@ fn source_type_elaboration_detail_keys(
     if assert_source_reserve_core_summary_readiness(&handoff).is_err() {
         return vec!["type_elaboration.core.resolved_typed_ast_summary_invalid".to_owned()];
     }
+    if assert_source_reserve_core_context_readiness(&handoff, &source_reserve).is_err() {
+        return vec!["type_elaboration.core.context_invalid".to_owned()];
+    }
     Vec::new()
 }
 
@@ -1277,6 +1287,87 @@ fn assert_source_reserve_core_summary_readiness(
     Ok(())
 }
 
+fn assert_source_reserve_core_context_readiness(
+    handoff: &SourceReserveHandoff,
+    source_reserve: &SourceReserveBridge,
+) -> Result<(), String> {
+    let summary = ResolvedTypedAstSummary::from_ast(&handoff.resolved);
+    let mut input = CoreContextInput::new(summary);
+
+    for (index, source_binding) in source_reserve.bindings.iter().enumerate() {
+        let binding_id = BindingId::new(index);
+        let binding = handoff
+            .binding_env
+            .bindings()
+            .get(binding_id)
+            .ok_or_else(|| format!("missing source reserve binding {index}"))?;
+        if binding.kind != BindingKind::ReservedVariable
+            || binding.declaration_range != source_binding.binding_range
+            || binding.status != BindingStatus::Reserved
+        {
+            return Err(format!("source reserve binding {index} is not core-ready"));
+        }
+
+        let var = CoreVarId::new(binding_id.index());
+        let provenance = CheckerOwnedProvenance::checker(format!("source.reserve.binding.{index}"));
+        let source = CoreSourceRef::direct(binding.declaration_range)
+            .with_provenance(provenance.as_slice().to_vec());
+        input.variable_seeds.push(CoreVariableSeed::new(
+            var,
+            NormalizedVarClass::Free,
+            CoreVarRole::new("reserved-variable"),
+            NormalizedVarSort::Term,
+            provenance.clone(),
+        ));
+        input
+            .binder_seeds
+            .push(CoreBinderSeed::new(var, source, provenance));
+    }
+
+    let context = prepare_core_context(input).map_err(|error| error.to_string())?;
+    if context.source_id() != handoff.resolved.source_id() {
+        return Err("core context source mismatch".to_owned());
+    }
+    if context.module_id() != handoff.resolved.module_id() {
+        return Err("core context module mismatch".to_owned());
+    }
+    if !context.item_registry().items().is_empty()
+        || !context.diagnostics().is_empty()
+        || !context.worklist().entries().is_empty()
+    {
+        return Err("core context promoted unsupported work".to_owned());
+    }
+    if context.binder_sources().iter().count() != source_reserve.bindings.len()
+        || context.binder_context().free_variables.len() != source_reserve.bindings.len()
+    {
+        return Err("core context binding count mismatch".to_owned());
+    }
+
+    for (index, source_binding) in source_reserve.bindings.iter().enumerate() {
+        let var = CoreVarId::new(index);
+        let binder_source = context
+            .binder_sources()
+            .get(var)
+            .ok_or_else(|| format!("missing core binder source {index}"))?;
+        if binder_source.source.anchor != CoreSourceRef::direct(source_binding.binding_range).anchor
+        {
+            return Err(format!("core binder source {index} range mismatch"));
+        }
+        if binder_source.provenance.as_slice().is_empty() {
+            return Err(format!("core binder source {index} provenance missing"));
+        }
+        if context.binder_context().variable_roles.get(&var)
+            != Some(&CoreVarRole::new("reserved-variable"))
+            || context.binder_context().variable_sorts.get(&var) != Some(&NormalizedVarSort::Term)
+            || !matches!(context.binder_type_facts().get(&var), Some(facts) if facts.is_empty())
+        {
+            return Err(format!("core binder {index} metadata mismatch"));
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 fn assemble_source_checker_handoff(
     source_id: mizar_session::SourceId,
@@ -1288,6 +1379,7 @@ fn assemble_source_checker_handoff(
         assemble_source_reserve_checker_handoff(source_id, module, symbols, source_reserve)?;
     assert_source_reserve_handoff(&handoff, source_reserve)?;
     assert_source_reserve_core_summary_readiness(&handoff)?;
+    assert_source_reserve_core_context_readiness(&handoff, source_reserve)?;
     Ok(handoff)
 }
 

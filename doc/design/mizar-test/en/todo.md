@@ -404,6 +404,24 @@ Keep `cargo test -p mizar-test` green after each task (see
       [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
       [traceability.md](./traceability.md), core `elaborator.md`.
 
+20. **Reserve bridge core context readiness.** [x]
+    - Completed: extends the active reserve-only builtin declaration bridge by
+      feeding the same real checker-owned `BindingEnv` and `ResolvedTypedAst`
+      handoff into `mizar-core` `CoreContextInput` with one
+      `CoreVariableSeed` and one `CoreBinderSeed` per extracted reserve
+      binding and no `CoreItemSeed`. The runner verifies source/module
+      identity, binder source ranges, checker provenance, empty item registry,
+      empty core diagnostics, and an empty core worklist for successful active
+      reserve pass cases.
+    - This is a binder/context readiness check only. Reserve declarations still
+      provide no owner item, term, formula, proof, algorithm, or obligation
+      payload, so this task does not construct or publish `CoreIr`,
+      `ControlFlowIr`, VC seeds, proof rows, public checker diagnostic codes,
+      new active fixtures, or expectation semantic changes.
+    - Deps: 19, `mizar-core` `prepare_core_context`. Spec:
+      [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
+      [traceability.md](./traceability.md), core `elaborator.md`.
+
 ## Recommended Verification
 
 Run after each task:

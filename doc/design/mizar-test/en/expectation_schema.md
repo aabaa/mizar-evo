@@ -413,11 +413,12 @@ binding that the runner extracts into a checker-owned module `BindingEnv`, one
 `DeclarationInput` per binding, and binding-specific `TypeExpressionInput`
 sites. The runner checks those inputs through `TypeNormalizer`,
 `DeclarationChecker`, `TypedAst`, `ResolvedTypedAst`, and a summary-only
-`mizar-core` `ResolvedTypedAstSummary::from_ast` readiness read; multiple
-identifiers sharing one source type-expression range must still use distinct
-typed sites. The summary read must not be treated as `CoreIr`, `ControlFlowIr`,
-VC, or proof execution. The case must be covered by a pass-slice traceability
-row and assert empty `diagnostic_codes` with no internal detail payloads:
+`mizar-core` `ResolvedTypedAstSummary::from_ast` readiness read plus
+binder-only `CoreContext` preparation; multiple identifiers sharing one source
+type-expression range must still use distinct typed sites. The summary/context
+readiness checks must not be treated as `CoreIr`, `ControlFlowIr`, VC, or proof
+execution. The case must be covered by a pass-slice traceability row and assert
+empty `diagnostic_codes` with no internal detail payloads:
 
 ```toml
 expected_outcome = "pass"

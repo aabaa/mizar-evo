@@ -12,4 +12,4 @@ tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.checker.type_elaboration.builtin_type_expression_source_bridge",
 ]
-notes = "Active type_elaboration runner pass coverage for tasks 16-19: source-derived reserve-only builtin set/object declarations are extracted into checker-owned BindingEnv, DeclarationInput, binding-specific TypeExpressionInput sites, DeclarationChecker output, TypedAst, ResolvedTypedAst, and summary-only ResolvedTypedAstSummary::from_ast readiness. CoreIr/ControlFlowIr/VC/proof payloads remain deferred."
+notes = "Active type_elaboration runner pass coverage for tasks 16-20: source-derived reserve-only builtin set/object declarations are extracted into checker-owned BindingEnv, DeclarationInput, binding-specific TypeExpressionInput sites, DeclarationChecker output, TypedAst, ResolvedTypedAst, ResolvedTypedAstSummary::from_ast readiness, and binder-only CoreContext readiness without CoreItemSeed promotion. CoreIr/ControlFlowIr/VC/proof payloads remain deferred."

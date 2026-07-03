@@ -390,6 +390,23 @@ regression test を追加した。
       [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
       [traceability.md](./traceability.md)、core `elaborator.md`。
 
+20. **Reserve bridge core context readiness。** [x]
+    - 完了: active reserve-only builtin declaration bridge を拡張し、同じ real
+      checker-owned `BindingEnv` と `ResolvedTypedAst` handoff を、抽出済み
+      reserve binding ごとに 1 個の `CoreVariableSeed` と `CoreBinderSeed` を持つ
+      `mizar-core` `CoreContextInput` へ渡し、`CoreItemSeed` は渡さない。runner は
+      successful active reserve pass case について、source/module identity、binder
+      source range、checker provenance、empty item registry、empty core diagnostics、
+      empty core worklist を確認する。
+    - これは binder/context readiness check のみである。reserve declaration は owner
+      item、term、formula、proof、algorithm、obligation payload をまだ提供しないため、
+      この task は `CoreIr`、`ControlFlowIr`、VC seed、proof row、public checker
+      diagnostic code、新しい active fixture、expectation semantic change を build /
+      publish しない。
+    - 依存: 19、`mizar-core` `prepare_core_context`。仕様:
+      [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
+      [traceability.md](./traceability.md)、core `elaborator.md`。
+
 ## 推奨検証
 
 各タスクの後で実行する:
