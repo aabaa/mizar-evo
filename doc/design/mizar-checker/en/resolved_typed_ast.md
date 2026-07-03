@@ -88,10 +88,11 @@ Current source-derived runner note: the `mizar-test` type-elaboration runner
 now supplies real `ExpressionMetadataInput` rows for the bounded reserve-only
 builtin declaration bridge. Reserve declaration nodes and binding-specific
 type-expression nodes are source-preserved `ResolvedTypedAst` nodes with final
-types when declaration checking succeeds. This provides a real supported
-checker payload shape for a future `ResolvedTypedAstSummary::from_ast` check,
-but it does not execute `mizar-core` lowering, publish artifacts, allocate
-public diagnostics, or promote Core/VC/proof corpus rows.
+types when declaration checking succeeds. The active runner now also passes
+that real `ResolvedTypedAst` payload to `mizar-core`'s
+`ResolvedTypedAstSummary::from_ast` and verifies summary-readiness. This does
+not execute `mizar-core` lowering, publish artifacts, allocate public
+diagnostics, or promote CoreIr/ControlFlowIr/VC/proof corpus rows.
 
 ## Data Shape
 

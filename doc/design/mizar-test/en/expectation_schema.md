@@ -412,10 +412,12 @@ non-builtin symbol heads. Such pass cases must contain at least one reserve
 binding that the runner extracts into a checker-owned module `BindingEnv`, one
 `DeclarationInput` per binding, and binding-specific `TypeExpressionInput`
 sites. The runner checks those inputs through `TypeNormalizer`,
-`DeclarationChecker`, `TypedAst`, and `ResolvedTypedAst`; multiple identifiers
-sharing one source type-expression range must still use distinct typed sites.
-The case must be covered by a pass-slice traceability row and assert empty
-`diagnostic_codes` with no internal detail payloads:
+`DeclarationChecker`, `TypedAst`, `ResolvedTypedAst`, and a summary-only
+`mizar-core` `ResolvedTypedAstSummary::from_ast` readiness read; multiple
+identifiers sharing one source type-expression range must still use distinct
+typed sites. The summary read must not be treated as `CoreIr`, `ControlFlowIr`,
+VC, or proof execution. The case must be covered by a pass-slice traceability
+row and assert empty `diagnostic_codes` with no internal detail payloads:
 
 ```toml
 expected_outcome = "pass"
@@ -444,8 +446,8 @@ tags = ["active_type_elaboration"]
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source
 without inventing non-builtin declarations, attributes, mode/structure
-expansions, terms, formulas, coercions, facts, overload evidence, Core/VC
-payloads, or proof evidence.
+expansions, terms, formulas, coercions, facts, overload evidence, CoreIr,
+ControlFlowIr, VC payloads, or proof evidence.
 
 ## Formula, Statement, And Proof Expectations
 

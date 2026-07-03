@@ -32,6 +32,7 @@ use mizar_checker::typed_ast::{
     TypeStatus, TypeTable, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeId,
     TypedNodeLinks, TypedSiteRef, TypingState,
 };
+use mizar_core::elaborator::ResolvedTypedAstSummary;
 use mizar_frontend::lexical_env::{
     ExportRank, ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
     ExportedSymbolShape, FrontendLexicalEnvironmentError, LexicalEnvironmentRequest,
@@ -727,6 +728,9 @@ fn source_type_elaboration_detail_keys(
         };
         return vec![detail_key.to_owned()];
     }
+    if assert_source_reserve_core_summary_readiness(&handoff).is_err() {
+        return vec!["type_elaboration.core.resolved_typed_ast_summary_invalid".to_owned()];
+    }
     Vec::new()
 }
 
@@ -1257,6 +1261,22 @@ fn assert_source_reserve_handoff(
     Ok(())
 }
 
+fn assert_source_reserve_core_summary_readiness(
+    handoff: &SourceReserveHandoff,
+) -> Result<(), String> {
+    let summary = ResolvedTypedAstSummary::from_ast(&handoff.resolved);
+    if summary.source_id() != handoff.resolved.source_id() {
+        return Err("resolved typed AST summary source mismatch".to_owned());
+    }
+    if summary.module_id() != handoff.resolved.module_id() {
+        return Err("resolved typed AST summary module mismatch".to_owned());
+    }
+    if !summary.checker_sites().is_empty() {
+        return Err("resolved typed AST summary produced checker sites".to_owned());
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 fn assemble_source_checker_handoff(
     source_id: mizar_session::SourceId,
@@ -1267,6 +1287,7 @@ fn assemble_source_checker_handoff(
     let handoff =
         assemble_source_reserve_checker_handoff(source_id, module, symbols, source_reserve)?;
     assert_source_reserve_handoff(&handoff, source_reserve)?;
+    assert_source_reserve_core_summary_readiness(&handoff)?;
     Ok(handoff)
 }
 
@@ -1863,6 +1884,7 @@ mod tests {
     use mizar_checker::resolved_typed_ast::{ResolvedTypedNodeId, ResolvedTypedNodeKind};
     use mizar_checker::type_checker::TypeHeadInput;
     use mizar_checker::typed_ast::LocalTypeContextId;
+    use mizar_core::elaborator::ResolvedTypedAstSummary;
     use mizar_frontend::lexical_env::{
         ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
         LexicalEnvironmentRequest, LexicalSummaryProvider, UserSymbolKind,
@@ -2096,6 +2118,13 @@ mod tests {
         assert_eq!(resolved.nodes().len(), 7);
         assert_eq!(resolved.expr_metadata().len(), 3);
         assert!(resolved.diagnostics().is_empty());
+        let summary = ResolvedTypedAstSummary::from_ast(resolved);
+        assert_eq!(summary.source_id(), source_id);
+        assert_eq!(summary.module_id(), resolved.module_id());
+        assert!(
+            summary.checker_sites().is_empty(),
+            "successful reserve-only source payload should be summary-readable without checker recovery sites"
+        );
         assert_ne!(source_reserve.type_node(0), source_reserve.type_node(1));
         assert_eq!(
             source_reserve.bindings[0].type_range,

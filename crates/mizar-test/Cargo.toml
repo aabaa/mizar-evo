@@ -11,6 +11,7 @@ path = "src/lib.rs"
 
 [dependencies]
 mizar-checker = { path = "../mizar-checker" }
+mizar-core = { path = "../mizar-core" }
 mizar-frontend = { path = "../mizar-frontend" }
 mizar-resolve = { path = "../mizar-resolve" }
 mizar-session = { path = "../mizar-session" }

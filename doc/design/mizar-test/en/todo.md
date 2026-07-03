@@ -240,10 +240,12 @@ Keep `cargo test -p mizar-test` green after each task (see
     - Current task-10 ledger records `mizar-parser` task 3 (`parse-only`),
       `mizar-resolve` task 23 (`declaration-symbol`), `mizar-checker` task 12
       (`type-elaboration` external-gap runner), task 16
-      (source-derived builtin type-expression normalization), and task 17
+      (source-derived builtin type-expression normalization), task 17
       (source-derived builtin type-expression projection to `ResolvedTypedAst`),
-      plus task 18 (source-derived reserve declaration semantic bridge), as
-      prepared/implemented increments. Checker task 29, `mizar-vc` task 15,
+      task 18 (source-derived reserve declaration semantic bridge), and task 19
+      (reserve bridge `ResolvedTypedAstSummary::from_ast` readiness plus next
+      builtin declaration inventory), as prepared/implemented increments.
+      Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
       `paced/open`; no placeholder runner or fake active fixture is created for
       them.
@@ -335,7 +337,7 @@ Keep `cargo test -p mizar-test` green after each task (see
       normalizes them through `mizar-checker`, and assembles a minimal `TypedAst`
       shell.
     - Keep unsupported declaration, term, formula, coercion, attribute,
-      mode/structure, overload, fact, proof, CoreIr, ControlFlowIr, and VC seed
+      mode/structure, overload, fact, CoreIr, ControlFlowIr, VC, and proof seed
       payloads on explicit external gaps. Do not rebaseline existing `.miz` or
       expectation semantics, and do not promote Architecture-22 rows without
       prepared consumer execution.
@@ -356,7 +358,8 @@ Keep `cargo test -p mizar-test` green after each task (see
       formulas, overload candidates, cluster facts, proof evidence, CoreIr,
       ControlFlowIr, VC seeds, and `proof_verification` rows deferred until
       their producer/consumer seams are executable. Do not add fake active
-      fixtures, public checker diagnostic codes, or Core/VC payloads.
+      fixtures, public checker diagnostic codes, or CoreIr/ControlFlowIr/VC
+      payloads.
     - Deps: 16, `mizar-checker` task 28. Spec: [harness.md](./harness.md),
       checker `resolved_typed_ast.md`, checker MC-G020/MC-G027.
 
@@ -370,14 +373,36 @@ Keep `cargo test -p mizar-test` green after each task (see
       `ResolvedTypedAst`. Shared source type ranges such as
       `reserve x, y for set` keep distinct typed sites for each binding.
     - Unsupported non-builtin declarations, attributes, mode/structure
-      payloads, terms, formulas, coercions, overload payloads, facts, Core/VC
-      payloads, and proof evidence remain on the explicit
+      payloads, terms, formulas, coercions, overload payloads, facts, CoreIr,
+      ControlFlowIr, VC payloads, and proof evidence remain on the explicit
       `type_elaboration.external_dependency.ast_payload_extraction` gap. The
       CoreIr/ControlFlowIr/VC/proof rows are not promoted because no real
       source-derived payload is lowered into those consumers yet.
     - Deps: 16, 17, checker MC-G011/MC-G016/MC-G020. Spec:
       [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
       [traceability.md](./traceability.md).
+
+19. **Reserve bridge core summary readiness and builtin declaration
+    inventory.** [x]
+    - Completed: extends the active reserve-only builtin declaration bridge by
+      passing the real checker-owned `ResolvedTypedAst` payload to
+      `mizar-core`'s `ResolvedTypedAstSummary::from_ast`. The runner verifies
+      that the summary preserves source/module identity and has no checker
+      recovery/diagnostic sites for successful active reserve pass cases.
+    - Inventory result: no next builtin declaration family is promoted in this
+      task. `let`, `given`, `consider`, and quantified declarations require
+      local scope, assumption, formula, or constraint-discharge payloads;
+      `set` requires RHS term inference payloads; `reconsider` requires
+      coercion/obligation evidence; `deffunc`/`defpred` require body/formal
+      payloads. Those families remain on the source-to-checker extraction gap
+      until a prepared active runner seam can execute them without raw
+      reconstruction or fake evidence.
+    - The `ResolvedTypedAstSummary` read is summary-only; it does not build or
+      publish `CoreIr`, `ControlFlowIr`, VC seeds, proof rows, or public
+      checker diagnostic codes.
+    - Deps: 18, `mizar-core` elaborator summary API. Spec:
+      [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
+      [traceability.md](./traceability.md), core `elaborator.md`.
 
 ## Recommended Verification
 

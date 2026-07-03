@@ -232,26 +232,28 @@ diagnostic code が未仕様の間、fail coverage は resolver internal detail 
 
 type-elaboration stage では、active runner gate（`active_type_elaboration`、
 `stage = "type_elaboration"`、`expected_phase = "type_check"`、pass/fail outcome）
-を満たす `.miz` sidecar だけが executable coverage になる。task 16/17 bridge
+を満たす `.miz` sidecar だけが executable coverage になる。task 16-19 bridge
 continuation が credit してよいのは狭い reserve-only builtin declaration slice だけである。
 つまり unrecovered な top-level reserve item のうち、segment が 1 個以上の identifier と
 exactly one bare builtin `set` / `object` type-expression を持ち、attribute、argument、
 parameter prefix、non-builtin symbol head を持たないものを checker-owned module
 `BindingEnv`、binding ごとの `DeclarationInput`、binding 固有の `TypeExpressionInput`
-site、checker-owned `TypedAst`、checker-owned `ResolvedTypedAst` へ変換する。
+site、checker-owned `TypedAst`、checker-owned `ResolvedTypedAst` へ変換し、その後
+`mizar-core` の `ResolvedTypedAstSummary::from_ast` で summary-readiness として読む。
 active pass test は、listed source が少なくとも 1 個の抽出済み reserve binding を持ち、
 runner regression evidence が binding-env construction、`DeclarationChecker`、
-最小 `TypedAst`、`ResolvedTypedAst` path の実行を確認する場合だけ、この slice を
-cover してよい。pass slice は diagnostic external-gap row から credit せず、専用の
-traceability row/test を持たなければならない。
+最小 `TypedAst`、`ResolvedTypedAst`、summary-readiness path の実行を確認する場合だけ、
+この slice を cover してよい。pass slice は diagnostic external-gap row から credit せず、
+専用の traceability row/test を持たなければならない。
 
 case が未対応の non-builtin declaration、attribute / mode / structure payload、
-term、formula、coercion、overload payload、fact、Core / VC payload、proof payload
+term、formula、coercion、overload payload、fact、CoreIr、ControlFlowIr、VC payload、proof payload
 extraction を必要とする場合、covered active fail test は引き続き external-gap
 detail key `type_elaboration.external_dependency.ast_payload_extraction` を assert してよい。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
-`proof_verification` row は deferred のままにする。
+`proof_verification` row は deferred のままにする。summary-readiness read は
+CoreIr / ControlFlowIr / VC / proof の昇格ではない。
 
 ## Reporting
 

@@ -550,8 +550,8 @@ builtin declaration bridge. Each reserve binding gets a declaration node and a
 binding-specific type-expression node; multiple bindings may share the same
 source type range while still using distinct `TypedSiteRef` owners. This keeps
 `TypedAst` a checker-owned payload surface and does not authorize raw syntax
-walking, general declaration extraction, Core/VC payloads, or proof evidence in
-`mizar-checker`.
+walking, general declaration extraction, CoreIr, ControlFlowIr, VC payloads, or
+proof evidence in `mizar-checker`.
 
 ## Task 2 Classification
 

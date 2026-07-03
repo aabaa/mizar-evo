@@ -17,8 +17,9 @@ Milestone scope:
 - phase 6-8 の explicit-payload type checking、registration / cluster trace data
   layer、overload resolution、final resolved typed AST assembly を所有する。
 - source-derived semantic corpus execution、proof / artifact acceptance、
-  public diagnostic code allocation、downstream core / VC / kernel / proof
-  integration は、owning crate と payload seam が存在するまで defer する。
+  public diagnostic code allocation、downstream CoreIr / ControlFlowIr / VC、
+  kernel、proof integration は、owning crate と payload seam が存在するまで
+  defer する。
 
 Included:
 

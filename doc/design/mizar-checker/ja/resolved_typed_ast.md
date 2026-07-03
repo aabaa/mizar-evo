@@ -81,10 +81,10 @@ expression id または duplicate `TypedSiteRef` owner は assembly error であ
 reserve-only builtin declaration bridge のために real `ExpressionMetadataInput` row を
 供給する。Reserve declaration node と binding 固有の type-expression node は、declaration
 checking が成功した場合に final type を持つ source-preserved `ResolvedTypedAst` node になる。
-これは将来の `ResolvedTypedAstSummary::from_ast` check が消費できる real supported
-checker payload shape を提供するが、`mizar-core` lowering を実行したり、artifact を
-publish したり、public diagnostic を割り当てたり、Core / VC / proof corpus row を
-昇格したりするものではない。
+active runner はさらに、その real `ResolvedTypedAst` payload を `mizar-core` の
+`ResolvedTypedAstSummary::from_ast` に渡し、summary-readiness を確認する。これは
+`mizar-core` lowering を実行したり、artifact を publish したり、public diagnostic を
+割り当てたり、CoreIr / ControlFlowIr / VC / proof corpus row を昇格したりするものではない。
 
 ## データ形状
 

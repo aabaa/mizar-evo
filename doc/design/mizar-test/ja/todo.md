@@ -240,8 +240,10 @@ regression test を追加した。
       （`type-elaboration` external-gap runner）、task 16（source-derived
       builtin type-expression normalization）、task 17（source-derived
       builtin type-expression projection to `ResolvedTypedAst`）、task 18
-      （source-derived reserve declaration semantic bridge）を prepared/implemented
-      increments として記録する。checker task 29、`mizar-vc` task 15、`mizar-atp`
+      （source-derived reserve declaration semantic bridge）、task 19
+      （reserve bridge `ResolvedTypedAstSummary::from_ast` readiness と次の
+      builtin declaration inventory）を prepared/implemented increments として記録する。
+      checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
       runner や fake active fixture は作らない。
     - 依存: 5、8。仕様: [harness.md](./harness.md)。
@@ -326,7 +328,7 @@ regression test を追加した。
       checker-owned `TypeExpressionInput` payload に抽出し、`mizar-checker` で
       normalize し、最小の `TypedAst` shell を組み立てる。
     - 未対応の declaration、term、formula、coercion、attribute、mode /
-      structure、overload、fact、proof、CoreIr、ControlFlowIr、VC seed payload は
+      structure、overload、fact、CoreIr、ControlFlowIr、VC、proof seed payload は
       explicit external gap のままにする。既存 `.miz` や expectation semantics を
       rebaseline せず、prepared consumer execution なしに Architecture-22 row を
       昇格しない。
@@ -345,7 +347,7 @@ regression test を追加した。
       overload candidate、cluster fact、proof evidence、CoreIr、ControlFlowIr、
       VC seed、`proof_verification` row は producer/consumer seam が実行可能になるまで
       deferred のままにする。fake active fixture、public checker diagnostic code、
-      Core/VC payload を追加しない。
+      CoreIr / ControlFlowIr / VC payload を追加しない。
     - 依存: 16、`mizar-checker` task 28。仕様: [harness.md](./harness.md)、
       checker `resolved_typed_ast.md`、checker MC-G020/MC-G027。
 
@@ -359,13 +361,34 @@ regression test を追加した。
       `reserve x, y for set` のように source type range を共有する場合も、binding
       ごとに distinct typed site を持つ。
     - 未対応の non-builtin declaration、attribute、mode / structure payload、
-      term、formula、coercion、overload payload、fact、Core / VC payload、proof
+      term、formula、coercion、overload payload、fact、CoreIr、ControlFlowIr、VC payload、proof
       evidence は明示的な `type_elaboration.external_dependency.ast_payload_extraction`
       gap のままにする。real source-derived payload がまだ downstream consumer へ
       lower されていないため、CoreIr / ControlFlowIr / VC / proof row は昇格しない。
     - 依存: 16、17、checker MC-G011/MC-G016/MC-G020。仕様:
       [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
       [traceability.md](./traceability.md)。
+
+19. **Reserve bridge core summary readiness and builtin declaration
+    inventory。** [x]
+    - 完了: active reserve-only builtin declaration bridge を拡張し、real
+      checker-owned `ResolvedTypedAst` payload を `mizar-core` の
+      `ResolvedTypedAstSummary::from_ast` に渡す。runner は successful active
+      reserve pass case について、summary が source/module identity を保ち、checker
+      recovery/diagnostic site を持たないことを確認する。
+    - inventory 結果: この task では次の builtin declaration family を昇格しない。
+      `let`、`given`、`consider`、quantified declaration は local scope、assumption、
+      formula、constraint-discharge payload を必要とする。`set` は RHS term inference
+      payload を必要とし、`reconsider` は coercion / obligation evidence を必要とし、
+      `deffunc` / `defpred` は body / formal payload を必要とする。これらは、raw
+      reconstruction や fake evidence なしに実行できる prepared active runner seam が
+      存在するまで source-to-checker extraction gap に残す。
+    - `ResolvedTypedAstSummary` read は summary-only であり、`CoreIr`、
+      `ControlFlowIr`、VC seed、proof row、public checker diagnostic code は build /
+      publish しない。
+    - 依存: 18、`mizar-core` elaborator summary API。仕様:
+      [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
+      [traceability.md](./traceability.md)、core `elaborator.md`。
 
 ## 推奨検証
 
