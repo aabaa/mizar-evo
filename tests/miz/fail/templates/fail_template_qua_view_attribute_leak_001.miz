@@ -1,0 +1,50 @@
+:: Rejection target: `PointEmpty[D qua RightPointStr qua PointedStr]` must
+:: discharge the `flagged` bound on the RIGHT PointedStr view of D, but the
+:: only evidence in scope is for the LEFT view; views over renamed inherit
+:: edges are distinct reduct terms, so attribute atoms are view-indexed
+:: (spec 5.8.3, 13.8.7, 18.10.2).
+definition
+  struct PointedStr where
+    field point -> set;
+  end;
+  struct LeftPointStr where
+    field left -> set;
+  end;
+  inherit LeftPointStr extends PointedStr where
+    field left from point;
+  end;
+  struct RightPointStr where
+    field right -> set;
+  end;
+  inherit RightPointStr extends PointedStr where
+    field right from point;
+  end;
+  struct BiPointStr where
+    field left -> set;
+    field right -> set;
+  end;
+  inherit BiPointStr extends LeftPointStr;
+  inherit BiPointStr extends RightPointStr;
+end;
+
+definition
+  let P be PointedStr;
+  attr FlaggedDef: P is flagged means P.point = {};
+end;
+
+definition
+  let T be type extends flagged PointedStr;
+  theorem PointEmpty[T]: T.point = {}
+  proof
+    thus thesis;
+  end;
+end;
+
+theorem Leak:
+  for D being BiPointStr st (D qua LeftPointStr qua PointedStr) is flagged
+  holds D.right = {}
+proof
+  let D be BiPointStr;
+  assume LC: (D qua LeftPointStr qua PointedStr) is flagged;
+  thus D.right = {} by PointEmpty[D qua RightPointStr qua PointedStr], LC;
+end;

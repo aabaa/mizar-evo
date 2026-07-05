@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_template_qua_view_attribute_leak_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "templates.view_identity"
+source = "fail_template_qua_view_attribute_leak_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "type_error"
+rejection_reason = "template_bound_not_satisfied"
+stable_detail_key = "types.template.qua_view_attribute_leak"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.18.templates.encoding_soundness.semantic",
+]
+notes = "Inactive advanced_semantics seed: attribute evidence for the left PointedStr view of a diamond-inheriting structure must not discharge the `flagged` bound for the right view; views over renamed/multi-path inherit edges are distinct reduct terms and attribute atoms are view-indexed (spec 5.8.3, 13.8.7, 18.10.2). Template-encoding audit finding F1."

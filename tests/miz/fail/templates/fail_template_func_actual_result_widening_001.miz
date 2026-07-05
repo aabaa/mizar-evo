@@ -1,0 +1,38 @@
+:: Rejection target: the deffunc actual `wrap` has declared result type
+:: `set`, which does not widen to the schema codomain `small set` required
+:: by `let F be func(set) -> small set;`. Signature compatibility for scheme
+:: actuals is contravariant in parameter types and covariant in the result
+:: type; the typing guard is a proof obligation discharged from the actual's
+:: signature at instantiation, never an assumed axiom — otherwise the
+:: instance would assert the false guard `for x holds {x} is small`
+:: (doc/spec/en/18.templates.md, sections 18.10.4 and 18.9).
+
+definition
+  let x be set;
+  attr SmallDef: x is small means x = {};
+end;
+
+registration
+  cluster SmallExists: small set;
+  existence
+  proof
+    take {};
+    thus {} is small;
+  end;
+end;
+
+definition
+  let F be func(set) -> small set;
+  theorem StaysSmall[F]: for x being set holds F(x) is small
+  proof
+    let x be set;
+    thus F(x) is small;
+  end;
+end;
+
+theorem Bad: for x being set holds {x} is small
+proof
+  deffunc wrap(x be set) -> set equals {x};
+  let x be set;
+  thus {x} is small by StaysSmall[wrap];
+end;

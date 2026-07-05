@@ -1246,6 +1246,27 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.18.templates.encoding_soundness.semantic"
+source = "doc/spec/en/18.templates.md"
+section = "18.10 Logic Encoding Details; with 17.3.4 template-actual inhabitation gating, 13.4.2 comprehension sethood gating, and 5.8.3/13.8.7 reduct-view encoding"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Adversarial checker seeds fixed test-first by the template-encoding soundness audit (doc/design/mizar-core/en/template_encoding_audit.md); inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G021). Rejection contracts: template type actuals without inhabitation evidence, Fraenkel comprehension over bare type parameters, scheme actuals with incompatible signatures, and cross-view attribute evidence leaks on diamond inherit paths."
+depends_on = [
+  "spec.en.05.structures.parser",
+  "spec.en.17.clusters_and_registrations.parser",
+  "spec.en.syntax.template_arguments.parser",
+]
+tests = [
+  "tests/miz/fail/templates/fail_template_type_actual_missing_existential_001.expect.toml",
+  "tests/miz/fail/templates/fail_template_fraenkel_over_type_param_001.expect.toml",
+  "tests/miz/fail/templates/fail_template_func_actual_result_widening_001.expect.toml",
+  "tests/miz/fail/templates/fail_template_qua_view_attribute_leak_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.19.overload.ambiguity.semantic"
 source = "doc/spec/en/19.overload_resolution.md"
 section = "19.4.4 Ambiguity Errors; 19.2.2 Structure Inheritance Upcasting; 19.6.2 Multiple Inheritance Paths"

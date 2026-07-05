@@ -1,0 +1,15 @@
+:: Rejection target: the Fraenkel comprehension generator ranges over the
+:: bare template type parameter T, which carries no sethood evidence. If the
+:: body were accepted symbolically, the instantiation `para[set]` would
+:: denote the Russell class ({ x where x is set : not x in x }), deriving a
+:: contradiction. Bare type parameters have no sethood; only a bound with a
+:: proved sethood property or a `such that` constraint can supply it
+:: (doc/spec/en/18.templates.md, section 18.10.2;
+:: doc/spec/en/13.term_expression.md, section 13.4.2;
+:: doc/spec/en/07.modes.md, section 7.8.1).
+
+definition
+  let T be type;
+  func ParaDef: para[T] -> set equals
+    { x where x is T : not x in x };
+end;

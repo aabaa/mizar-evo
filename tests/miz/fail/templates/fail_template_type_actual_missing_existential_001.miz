@@ -1,0 +1,26 @@
+:: Rejection target: `Inhab[hollow set]` instantiates a template type
+:: parameter with an attributed type expression that has no existential
+:: cluster registration in scope. The schema verification context assumes
+:: every type parameter is inhabited (it is what licenses `take the T;`),
+:: so template type actuals are gated on inhabitation evidence exactly like
+:: variable declarations; otherwise the generated instance
+:: `ex y being object st y is hollow set` is a false axiom
+:: (doc/spec/en/18.templates.md, section 18.10.2;
+:: doc/spec/en/17.clusters_and_registrations.md, section 17.3.4).
+
+definition
+  let x be set;
+  attr HollowDef: x is hollow means not x = x;
+end;
+
+definition
+  let T be type;
+  theorem Inhab[T]: ex y being object st y is T
+  proof
+    take the T;
+    thus thesis;
+  end;
+end;
+
+theorem Boom: ex y being object st y is hollow set
+  by Inhab[hollow set];
