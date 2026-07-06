@@ -341,8 +341,12 @@ section).
    determinism and mutation tests, not by evidence trust. `covered`.
 10. **Duplicate/unsorted clause literals, tautologies (legacy).** Canonical
     clause encoding rejects duplicates; tautology handling is profile-explicit
-    (marker or reject). Mislabeling a clause `tautology` weakens premises only
-    (incompleteness, not unsoundness). `covered` (legacy-only).
+    (marker or reject). Under task 34, a legacy marker-profile tautology may
+    appear only as audit replay data, is not the `empty` contradiction form,
+    and cannot satisfy final-goal checking. Mislabeling an ordinary replayed
+    clause as `tautology` weakens premises only (incompleteness, not
+    unsoundness); naming a tautology marker as final goal rejects as
+    `invalid_sat_proof`. `covered` (legacy audit-only).
 11. **Fingerprint collision.** Current algorithms are exact canonical bytes
     (identity), so collision-free. Any future digest algorithm must be
     collision-resistant or imported-fact identity could be spoofed; constraint
@@ -463,10 +467,13 @@ the trusted base; **Low** = documentation/consistency debt.
   and kernel-evidence corpus root, matching the implemented `mizar-test`
   layout and this corpus. The retired audit-draft name
   `tests/kernel_evidence/` is kept only as historical context where needed.
-- **F9 (Low, reported). Legacy tautology-marker semantics are profile-dependent
-  and thinly specified.** Mislabeling weakens premises only, so this is not a
-  soundness hole; it should still be pinned down or retired with the legacy
-  path in task-29 follow-ups.
+- **F9 (Low, resolved by `mizar-kernel` task 34). Legacy tautology-marker
+  semantics are pinned to audit-only replay.** The marker remains reachable
+  only under the explicit legacy migration/audit profile. It may be reported as
+  a zero-literal checked step, but it is not an `empty` contradiction, cannot
+  populate trusted `final_goal` or `used_axioms`, and a final goal that points
+  at the marker rejects as `invalid_sat_proof`. Mislabeling still weakens
+  premises only and cannot strengthen acceptance.
 
 ## Impact On Crate TODOs (report only; revisions are follow-up tasks)
 

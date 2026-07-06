@@ -328,7 +328,10 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
 10. **重複/未ソート節リテラル、恒真節(レガシー)。** 正準節エンコーディング
     は重複を拒否。恒真の扱いはプロファイル明示(marker か拒否)。節への
     `tautology` 誤ラベルは premise を弱めるだけ(不完全化であり不健全化では
-    ない)。`covered`(レガシーのみ)。
+    ない)。Task 34 により、legacy marker-profile の tautology は audit replay
+    data としてだけ現れ、`empty` contradiction form ではなく、final-goal checking
+    を満たせない。Tautology marker を final goal として名指しした場合は
+    `invalid_sat_proof` として拒否される。`covered`(legacy audit-only)。
 11. **フィンガープリント衝突。** 現行アルゴリズムは正準バイトそのもの
     (恒等)で衝突なし。将来の digest アルゴリズムは衝突耐性が必須で、
     さもなくば imported fact 同一性が偽装可能。制約を architecture 15 に
@@ -442,9 +445,13 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   の正準 root として `tests/certificates/` を列挙し、実装済み
   `mizar-test` レイアウトと本コーパスに一致している。退役済みの監査 draft 名
   `tests/kernel_evidence/` は、必要な場合の歴史的文脈に限って残す。
-- **F9(Low、報告)。レガシー恒真 marker の意味論がプロファイル依存かつ
-  希薄。** 誤ラベルは premise を弱めるだけで健全性の穴ではないが、タスク 29
-  後続でレガシー経路とともに確定または退役させるべき。
+- **F9(Low、`mizar-kernel` task 34 で解決済み)。レガシー恒真 marker の
+  意味論は audit-only replay に固定された。** Marker は明示的な legacy
+  migration/audit profile の下でだけ到達可能である。Zero-literal checked step として
+  報告されてよいが、`empty` contradiction ではなく、trusted `final_goal` や
+  `used_axioms` を populate できない。Marker を指す final goal は
+  `invalid_sat_proof` として拒否される。誤ラベルは引き続き premise を弱めるだけで、
+  acceptance を強められない。
 
 ## クレート TODO への影響(指摘のみ; 改訂は後続タスク)
 

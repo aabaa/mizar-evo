@@ -226,6 +226,31 @@ Checker は parent を黙って入れ替えてはならない。
 Rendered text、display name、source range、backend log、allocation address、
 hash-map iteration order、worker completion order を使ってはならない。
 
+## Legacy tautology marker semantics
+
+Legacy `tautology` clause form は、parsed kernel profile が明示的に
+`ClauseTautologyPolicy::Marker` を使う normalized certificate の migration/audit
+replay にだけ残す。通常 proof policy は
+`allow_legacy_certificate_audit = false` によりすべての legacy certificate を
+replay 前に拒否するため、tautology marker は通常の corrected
+formula/substitution evidence path で trusted acceptance material にはならない。
+
+明示的な migration/audit policy の下では、tautological resolvent を zero-literal
+`ClauseForm::Tautology` として `ResolutionReplayReport.checked_steps` に報告して
+よい。この report entry は replay が marker-enabled legacy profile に従ったことを
+記録するだけであり、`empty` contradiction ではなく、UNSAT の witness でもない。
+`KernelCheckResult` の `final_goal`、`used_axioms`、proof witness、cache promotion、
+artifact proof status、`kernel_verified` へ投影してはならない。
+
+Ordinary な generated または replayed clause を `tautology` と誤ラベルしても、
+後続 replay step が利用できる premise を弱めるだけである: checker は tautological
+literal payload を捨て、後続 step は記録された zero-literal marker から正確に
+replay しなければならない。これは replay failure または completeness loss を
+起こし得るが、acceptance を強めてはならない。Certificate が tautology marker を
+resolution final goal として名指しした場合、checked final goal は `empty`
+contradiction form でなければならないため、final-goal helper は final-goal location の
+`invalid_sat_proof` として拒否する。
+
 ## Final-goal interaction
 
 Resolution checker は replay 済み各 step の checked clause を後続の `checker`
@@ -258,8 +283,9 @@ Task 9 が `generated_clause` または `resolution_step` namespace の final go
 output である場合だけ checked である。Parsed `generated_clauses` section に存在するだけ
 では足りない。Checked final-goal clause は、後続の `checker.md` spec が別の
 final-goal rule を明示しない限り、profile の `empty` contradiction form でなければ
-ならない。Unchecked または non-empty resolution final goal は `invalid_sat_proof` で
-ある。
+ならない。Zero-literal `tautology` marker は empty clause ではなく、受理されない。
+Unchecked、tautology-marker、その他の non-empty resolution final goal は
+`invalid_sat_proof` である。
 
 `derived_fact` final goal はこの module の外であり、後続の checker orchestration と
 substitution/cluster-derived fact task に defer する。

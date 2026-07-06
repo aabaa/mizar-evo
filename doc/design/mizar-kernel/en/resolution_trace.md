@@ -233,6 +233,32 @@ Comparison is structural over normalized clause values and canonical bytes. It
 must not use rendered text, display names, source ranges, backend logs,
 allocation addresses, hash-map iteration order, or worker completion order.
 
+## Legacy Tautology Marker Semantics
+
+The legacy `tautology` clause form is retained only for migration/audit replay
+of normalized certificates whose parsed kernel profile explicitly uses
+`ClauseTautologyPolicy::Marker`. Normal proof policy rejects every legacy
+certificate before replay via `allow_legacy_certificate_audit = false`, so a
+tautology marker is never trusted acceptance material on the normal corrected
+formula/substitution evidence path.
+
+Under explicit migration/audit policy, a tautological resolvent may be reported
+as a zero-literal `ClauseForm::Tautology` in
+`ResolutionReplayReport.checked_steps`. This report entry records that replay
+followed the marker-enabled legacy profile; it is not an `empty` contradiction,
+does not witness UNSAT, and must not be projected to `KernelCheckResult`
+`final_goal`, `used_axioms`, proof witnesses, cache promotion, artifact proof
+status, or `kernel_verified`.
+
+Mislabeling an ordinary generated or replayed clause as `tautology` can only
+weaken the available premises for later replay steps: the checker removes the
+tautological literal payload and then later steps must still replay exactly
+from the recorded zero-literal marker. This may make a replay fail or lose
+completeness, but it must not strengthen acceptance. If a certificate names a
+tautology marker as the resolution final goal, the final-goal helper rejects it
+as `invalid_sat_proof` at the final-goal location because the checked final
+goal must be the `empty` contradiction form.
+
 ## Final-Goal Interaction
 
 The resolution checker may report the checked clause for every replayed step to
@@ -265,9 +291,10 @@ reference is checked only after that step has replayed successfully. A
 `generated_clause` reference is checked only when the generated clause id is the
 claimed output of at least one successfully replayed step. Merely existing in
 the parsed `generated_clauses` section is not enough. The checked final-goal
-clause must be the profile's `empty` contradiction form unless the later
-`checker.md` spec explicitly assigns a different final-goal rule. An unchecked
-or non-empty resolution final goal is `invalid_sat_proof`.
+clause must be the profile's `empty` contradiction form; a zero-literal
+`tautology` marker is not an empty clause and remains non-accepting. An
+unchecked, tautology-marker, or other non-empty resolution final goal is
+`invalid_sat_proof`.
 
 `derived_fact` final goals are outside this module and remain deferred to the
 later checker orchestration and substitution/cluster-derived fact tasks.

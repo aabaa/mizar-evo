@@ -184,7 +184,7 @@ on step 1.
    projection, producer side (F6), paired with:
 2. [x] [mizar-kernel task 33](./mizar-kernel/en/todo.md) — imported-statement
    projection specification and validation (F6).
-3. [ ] [mizar-kernel task 34](./mizar-kernel/en/todo.md) — legacy
+3. [x] [mizar-kernel task 34](./mizar-kernel/en/todo.md) — legacy
    tautology-marker semantics (F9, low).
 4. [ ] [mizar-proof task 21](./mizar-proof/en/todo.md) — policy alignment
    with the corrected kernel rejection taxonomy (F1/F2).

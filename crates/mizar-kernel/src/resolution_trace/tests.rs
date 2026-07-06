@@ -682,6 +682,11 @@ fn tautology_outcomes_follow_the_active_clause_profile() {
         report.checked_steps()[0].clause.form(),
         ClauseForm::Tautology
     );
+    let record =
+        checked_resolution_final_goal(input(&target, &marker_certificate, None, limits()), &report)
+            .expect_err("tautology marker is not an empty final goal");
+    assert_rejection_detail(&record, RejectionDetail::InvalidSatProof);
+    assert!(record.location().final_goal);
 
     let reject_certificate = certificate(
         vec![

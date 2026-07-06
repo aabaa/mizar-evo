@@ -406,7 +406,7 @@ Every finding maps to a task or a recorded disposition:
 | F6 (imported-statement projection) | implemented by task 33, paired with mizar-vc task 29 |
 | F7 (mizar-test soundness vocabulary) | resolved by [mizar-test task 21](../../mizar-test/en/todo.md) |
 | F8 (corpus directory naming) | resolved by [mizar-test task 22](../../mizar-test/en/todo.md) |
-| F9 (legacy tautology marker) | task 34 |
+| F9 (legacy tautology marker) | implemented by task 34 |
 
 30. **Goal-polarity binding in the check service (F1, invariant B4).** [x]
     - Implement architecture 15 "Goal Polarity Is Bound By The Target
@@ -481,16 +481,19 @@ Every finding maps to a task or a recorded disposition:
     - Deps: 31; paired: mizar-vc dependency-slice/import projection task.
       Spec: architecture 15, 18; soundness_argument.md F6.
 
-34. **Legacy tautology-marker semantics (F9, low).** [ ]
-    - Pin down or retire the legacy resolution-trace tautology marker: its
-      current meaning is profile-dependent and thinly specified. Preferred:
-      retire it together with the migration/audit-only legacy path; if kept
-      for the audit profile, specify its exact acceptance effect in
-      `resolution_trace.md` (en+ja).
-    - Acceptance: either the marker is unreachable under every policy and
-      documented as such, or its semantics have a spec section and
-      mutation-rejection tests. Mislabeling must remain premise-weakening
-      only (no acceptance strengthening).
+34. **Legacy tautology-marker semantics (F9, low).** [x]
+    - Task 34 pins down the legacy resolution-trace tautology marker instead
+      of retiring it. The marker remains reachable only under the explicit
+      migration/audit `ClauseTautologyPolicy::Marker` profile. It may appear
+      as a zero-literal checked step in audit replay data, but it is not the
+      `empty` contradiction clause, cannot satisfy final-goal checking, and is
+      never trusted acceptance material under the corrected
+      formula/substitution evidence path.
+    - Acceptance: the semantics now have a `resolution_trace.md` section and
+      mutation-rejection tests. Mislabeling an ordinary replayed clause as
+      `tautology` remains premise-weakening only; naming a tautology marker as
+      final goal rejects as `invalid_sat_proof` at the final-goal location
+      before the successful-audit wrapper can be produced.
     - Verify: `cargo test -p mizar-kernel`.
     - Deps: 29. Spec: `resolution_trace.md`; soundness_argument.md F9, L-class
       invariants.

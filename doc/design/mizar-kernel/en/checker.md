@@ -44,7 +44,11 @@ replay them for inspection, but it must still return `Rejected` with an
 `unsupported_certificate_format` audit record. The audit result may retain
 checked import/substitution/resolution/cluster records for debugging, but it
 must not populate trusted `final_goal`, trusted `used_axioms`, proof witnesses,
-cache promotion, or artifact `kernel_verified` status.
+cache promotion, or artifact `kernel_verified` status. A legacy tautology
+marker reported by resolution replay is audit data only; if such a marker is
+named as the final goal, the checker rejects that input as
+`kernel_rejection/invalid_sat_proof` at the final-goal location before it can
+produce the successful-audit `unsupported_certificate_format` wrapper record.
 In source, audit mode is explicit: `KernelCheckPolicy.allow_legacy_certificate_audit`
 must be `true` for `check_kernel_certificate` / `check_kernel_batch` to run
 the legacy checker. The default policy leaves this flag `false` and returns a
@@ -482,7 +486,9 @@ tasks 25-29 replace or gate this path behind an explicit migration/audit mode.
    Task 16 does not invent a derived-fact payload language.
 9. Validate `final_goal` by resolving the referenced generated clause,
    resolution step, or supported derived fact and checking that it is the
-   empty obligation or canonical final fact required by the target VC.
+   empty obligation or canonical final fact required by the target VC. A
+   legacy tautology marker is not an empty obligation and remains
+   non-accepting.
 10. In legacy migration/audit mode, replay successful legacy checks into
     deterministic checked-record audit data, then still emit a `Rejected`
     `KernelCheckResult` with one `unsupported_certificate_format` audit record.
@@ -595,6 +601,8 @@ certificate-owned derived-fact payload.
 - `generated_clause` and `resolution_step` goals must resolve to checked
   clauses and must be the canonical empty clause unless a later spec adds a
   different final-fact schema;
+- legacy `tautology` markers are not canonical empty clauses; a final goal that
+  points at a tautology marker rejects as `invalid_sat_proof`;
 - `derived_fact` goals are rejected by task 16 because no derived-fact payload
   schema is implemented yet;
 - a `generated_clause` final goal is accepted only when that generated clause

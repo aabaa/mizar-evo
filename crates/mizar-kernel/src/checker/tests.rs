@@ -1551,6 +1551,29 @@ fn kernel_service_reports_legacy_audit_pipeline_without_acceptance() {
 }
 
 #[test]
+fn kernel_service_rejects_legacy_tautology_marker_final_goal_in_audit_mode() {
+    let (certificate, context) = legacy_tautology_service_fixture(vec![42]);
+    let target = TargetVcFingerprint::from_certificate_fingerprint(&certificate.target_vc);
+
+    let result = check_kernel_certificate(service_input(
+        &target,
+        &certificate,
+        &context,
+        None,
+        &[],
+        KernelCheckPolicy::default(),
+        service_limits(),
+    ));
+
+    assert_service_rejection(
+        result,
+        RejectionCategory::KernelRejection,
+        RejectionDetail::InvalidSatProof,
+        RejectionLocation::new().with_final_goal(),
+    );
+}
+
+#[test]
 fn kernel_service_preserves_import_namespaces_and_checks_substitutions() {
     let (mut certificate, _) = resolution_service_fixture(vec![42]);
     certificate.substitutions = vec![simple_substitution(1, var(1), var(2))];
@@ -3646,6 +3669,72 @@ fn resolution_service_fixture_with_status_and_final(
     (certificate, context)
 }
 
+fn legacy_tautology_service_fixture(
+    target_digest: Vec<u8>,
+) -> (ParsedCertificate, ImportedFactContext) {
+    let imported_clause = ordinary_with_context(vec![neg_p(), pos_q()], marker_context());
+    let imported = imported_ref(
+        1,
+        b"pkg",
+        b"mod",
+        b"tautology",
+        clause_fingerprint(&imported_clause),
+        RequiredProofStatus::KernelVerified,
+    );
+    let certificate = ParsedCertificate::new_for_kernel_tests(ParsedCertificateTestParts {
+        schema_version: 1,
+        encoding_version: 1,
+        kernel_profile: KernelProfileRecord::v1(1, ClauseTautologyPolicy::Marker),
+        target_vc: Fingerprint::new(1, target_digest.clone()),
+        symbol_manifest: vec![
+            SymbolManifestEntry { symbol: p_symbol() },
+            SymbolManifestEntry { symbol: q_symbol() },
+        ],
+        variable_manifest: vec![VariableManifestEntry {
+            variable_id: VariableId(1),
+        }],
+        imported_axioms: vec![imported.clone()],
+        imported_theorems: Vec::new(),
+        generated_clauses: vec![
+            generated_clause(
+                2,
+                ordinary_with_context(vec![neg_q(), pos_p()], marker_context()),
+            ),
+            generated_clause(3, tautology_marker_clause()),
+        ],
+        substitutions: Vec::new(),
+        resolution_trace: vec![resolution_step(
+            1,
+            clause_ref(ClauseRefNamespace::ImportedAxiom, 1),
+            clause_ref(ClauseRefNamespace::GeneratedClause, 2),
+            neg_p(),
+            clause_ref(ClauseRefNamespace::GeneratedClause, 3),
+        )],
+        derived_facts: Vec::new(),
+        final_goal: FinalGoalRef {
+            namespace: FinalGoalNamespace::GeneratedClause,
+            id: 3,
+        },
+        canonical_hash_input: {
+            let mut bytes = target_digest;
+            bytes.extend_from_slice(&3u32.to_be_bytes());
+            bytes
+        },
+    });
+    let context = ImportedFactContext::new(
+        Some(vec![1]),
+        vec![evidence(
+            &imported,
+            AcceptedProofStatus::KernelVerified,
+            imported_clause,
+        )],
+        Vec::new(),
+        context_limits(),
+    )
+    .expect("imported fact context");
+    (certificate, context)
+}
+
 fn generated_clause(clause_id: u32, clause: Clause) -> GeneratedClause {
     GeneratedClause { clause_id, clause }
 }
@@ -3943,13 +4032,21 @@ fn context_limits() -> ImportedFactContextLimits {
 }
 
 fn ordinary(literals: Vec<Literal>) -> Clause {
-    Clause::from_canonical_parts(ClauseForm::Ordinary, literals, &base_context())
-        .expect("ordinary clause")
+    ordinary_with_context(literals, base_context())
+}
+
+fn ordinary_with_context(literals: Vec<Literal>, context: ClauseValidationContext) -> Clause {
+    Clause::from_canonical_parts(ClauseForm::Ordinary, literals, &context).expect("ordinary clause")
 }
 
 fn empty_clause() -> Clause {
     Clause::from_canonical_parts(ClauseForm::Empty, Vec::new(), &base_context())
         .expect("empty clause")
+}
+
+fn tautology_marker_clause() -> Clause {
+    Clause::from_canonical_parts(ClauseForm::Tautology, Vec::new(), &marker_context())
+        .expect("tautology marker")
 }
 
 fn var(id: u32) -> Term {
@@ -4005,7 +4102,15 @@ fn variable_clause(variable_id: u32) -> Clause {
 }
 
 fn base_context() -> ClauseValidationContext {
-    ClauseValidationContext::new(ClauseProfile::new(1, 1, TautologyPolicy::Reject))
+    context_with_policy(TautologyPolicy::Reject)
+}
+
+fn marker_context() -> ClauseValidationContext {
+    context_with_policy(TautologyPolicy::Marker)
+}
+
+fn context_with_policy(tautology_policy: TautologyPolicy) -> ClauseValidationContext {
+    ClauseValidationContext::new(ClauseProfile::new(1, 1, tautology_policy))
         .with_known_symbol(p_symbol())
         .with_known_symbol(q_symbol())
         .with_canonical_variable(VariableId(1))
@@ -4023,6 +4128,10 @@ fn pos_p() -> Literal {
 
 fn pos_q() -> Literal {
     Literal::new(Polarity::Positive, Atom::new(q_symbol(), Vec::new()))
+}
+
+fn neg_q() -> Literal {
+    Literal::new(Polarity::Negative, Atom::new(q_symbol(), Vec::new()))
 }
 
 const fn p_symbol() -> SymbolKey {
