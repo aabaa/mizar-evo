@@ -6,14 +6,17 @@
 
 use std::{collections::BTreeMap, error::Error, fmt};
 
-use mizar_kernel::checker::KernelCheckStatus;
+use mizar_kernel::{
+    checker::{KernelCheckStatus, KernelEvidenceCheckKind},
+    rejection::{RejectionCategory, RejectionDetail, RejectionRecord},
+};
 use mizar_session::Hash;
 use mizar_vc::vc_ir::VcId;
 
 use crate::policy::{
-    CandidatePolicyClass, ExternalEvidenceMode, ExternalEvidencePublicationStatus,
-    KernelEvidenceOrigin, KernelPolicyInput, OpenObligationMode, PolicyDecision, PolicyDiagnostic,
-    PolicyFingerprint, PolicyReasonCode, VerifierPolicy,
+    AcceptedGoalPolarity, CandidatePolicyClass, ExternalEvidenceMode,
+    ExternalEvidencePublicationStatus, KernelEvidenceOrigin, KernelPolicyInput, OpenObligationMode,
+    PolicyDecision, PolicyDiagnostic, PolicyFingerprint, PolicyReasonCode, VerifierPolicy,
 };
 
 const SELECTION_TIE_BREAK_HASH_DOMAIN: &str = "mizar-proof-selection-tie-break-v1";
@@ -103,6 +106,7 @@ impl Error for SelectionInputError {}
 pub struct TrustedKernelEvidence {
     selected_class: ProofWinnerClass,
     accepted_evidence_hash: Hash,
+    accepted_goal_polarity: AcceptedGoalPolarity,
 }
 
 impl TrustedKernelEvidence {
@@ -115,6 +119,7 @@ impl TrustedKernelEvidence {
             return None;
         }
         let accepted_evidence_hash = input.accepted_evidence_hash()?;
+        let accepted_goal_polarity = input.accepted_goal_polarity()?;
 
         let selected_class = match input.origin() {
             KernelEvidenceOrigin::AtpFormulaSubstitution => ProofWinnerClass::KernelVerified,
@@ -125,6 +130,7 @@ impl TrustedKernelEvidence {
         Some(Self {
             selected_class,
             accepted_evidence_hash,
+            accepted_goal_polarity,
         })
     }
 
@@ -136,6 +142,11 @@ impl TrustedKernelEvidence {
     #[must_use]
     pub const fn accepted_evidence_hash(&self) -> Hash {
         self.accepted_evidence_hash
+    }
+
+    #[must_use]
+    pub const fn accepted_goal_polarity(&self) -> AcceptedGoalPolarity {
+        self.accepted_goal_polarity
     }
 
     #[must_use]
@@ -199,6 +210,7 @@ impl ProofEvidenceCandidate {
                 can_schedule_kernel_check: false,
                 diagnostic: None,
                 kernel_rejections: Vec::new(),
+                kernel_evidence_check_kind: input.evidence_check_kind(),
                 external_admission: None,
             },
             trusted_kernel_evidence: Some(trusted_kernel_evidence.clone()),
@@ -436,6 +448,7 @@ pub struct SelectedReuseMetadata {
     selected_evidence_hash: Option<Hash>,
     selected_proof_witness_hash: Option<Hash>,
     deterministic_discharge_hash: Option<Hash>,
+    accepted_goal_polarity: Option<AcceptedGoalPolarity>,
     external_admission_status: Option<ExternalEvidencePublicationStatus>,
     proof_witness_publication: ProofWitnessPublication,
     selected_candidate_provenance_hash: Option<Hash>,
@@ -472,6 +485,11 @@ impl SelectedReuseMetadata {
     #[must_use]
     pub const fn deterministic_discharge_hash(&self) -> Option<Hash> {
         self.deterministic_discharge_hash
+    }
+
+    #[must_use]
+    pub const fn accepted_goal_polarity(&self) -> Option<AcceptedGoalPolarity> {
+        self.accepted_goal_polarity
     }
 
     #[must_use]
@@ -720,6 +738,19 @@ pub fn select_winner(evidence_set: &ProofEvidenceSet) -> ProofSelection {
     rejected.sort_by(|left, right| left.key.cmp(&right.key));
 
     if let Some(choice) = selectable.first() {
+        if choice.class == ProofWinnerClass::PolicyOpen
+            && let Some(terminal_rejection) = rejected
+                .iter()
+                .find(|candidate| is_corrected_terminal_kernel_rejection(candidate.candidate))
+        {
+            return selected_candidate(
+                evidence_set,
+                terminal_rejection.candidate,
+                ProofWinnerClass::Rejected,
+                terminal_rejection.key_hash,
+                &generated_diagnostic_refs,
+            );
+        }
         return selected_candidate(
             evidence_set,
             choice.candidate,
@@ -971,6 +1002,7 @@ fn selected_candidate(
         deterministic_discharge_hash: (selected_class == ProofWinnerClass::DischargedBuiltin)
             .then_some(candidate.deterministic_discharge_hash())
             .flatten(),
+        accepted_goal_polarity: accepted_goal_polarity(candidate, selected_class),
         external_admission_status: candidate
             .decision()
             .external_admission
@@ -1004,6 +1036,7 @@ fn no_selectable_evidence(
         selected_evidence_hash: None,
         selected_proof_witness_hash: None,
         deterministic_discharge_hash: None,
+        accepted_goal_polarity: None,
         external_admission_status: None,
         proof_witness_publication: ProofWitnessPublication::NotApplicable,
         selected_candidate_provenance_hash: None,
@@ -1088,6 +1121,46 @@ fn selected_evidence_hash(
         | ProofWinnerClass::Rejected => candidate
             .evidence_hash()
             .or_else(|| candidate.deterministic_discharge_hash()),
+    }
+}
+
+fn accepted_goal_polarity(
+    candidate: &ProofEvidenceCandidate,
+    selected_class: ProofWinnerClass,
+) -> Option<AcceptedGoalPolarity> {
+    selected_class.is_trusted().then_some(())?;
+    candidate
+        .trusted_kernel_evidence()
+        .map(TrustedKernelEvidence::accepted_goal_polarity)
+}
+
+fn is_corrected_terminal_kernel_rejection(candidate: &ProofEvidenceCandidate) -> bool {
+    let kernel_evidence_check_kind = candidate.decision().kernel_evidence_check_kind;
+    candidate.decision().class == CandidatePolicyClass::KernelRejected
+        && candidate.decision().kernel_rejections.iter().any(|record| {
+            is_corrected_terminal_kernel_rejection_record(record, kernel_evidence_check_kind)
+        })
+}
+
+fn is_corrected_terminal_kernel_rejection_record(
+    record: &RejectionRecord,
+    kernel_evidence_check_kind: Option<KernelEvidenceCheckKind>,
+) -> bool {
+    match record.detail() {
+        RejectionDetail::InvalidSatRefutation | RejectionDetail::MissingProvenance => {
+            record.category() == RejectionCategory::KernelRejection
+        }
+        RejectionDetail::ContextMismatch => {
+            kernel_evidence_check_kind
+                .is_some_and(|kind| kind == KernelEvidenceCheckKind::ProofObligation)
+                && record.category() == RejectionCategory::CertificateRejection
+                && record.location().final_goal
+                && record.location().field_path == Some("final_goal.polarity")
+        }
+        RejectionDetail::UnsupportedCertificateFormat => {
+            record.category() == RejectionCategory::CertificateRejection
+        }
+        _ => false,
     }
 }
 

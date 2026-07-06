@@ -401,23 +401,44 @@ The kernel acceptance-boundary audit
 corrected the kernel rejection vocabulary and evidence contract. The policy
 layer consumes both; one alignment task is owned here.
 
-21. **Policy alignment with the corrected kernel rejection taxonomy (kernel F1, F2).** [ ]
+21. **Policy alignment with the corrected kernel rejection taxonomy (kernel F1, F2).** [x]
     - Align proof-policy evaluation and status projection with the
       post-audit kernel contract: `invalid_sat_refutation`,
       `context_mismatch`, `missing_provenance`, and the legacy-path gate are
       terminal proof errors that policy must never upgrade, retry into
-      acceptance, or reclassify as policy-open; witness selection metadata
-      records the goal polarity of the accepted evidence so reuse consumers
-      can validate it. No evidence-class upgrades (IV-005 stays intact).
-    - Acceptance: Rust regressions cover each corrected rejection reason
-      flowing through policy evaluation to a failed status; a
-      polarity-bearing witness metadata fixture round-trips through the
-      task-17 reuse export.
+      acceptance, or reclassify as policy-open; selection/status reuse
+      metadata records the goal polarity of accepted proof-obligation evidence
+      so reuse consumers can validate it. No evidence-class upgrades (IV-005
+      stays intact).
+    - Acceptance: Rust regressions cover the source-backed corrected rejection
+      reasons available through the public kernel evidence API
+      (`invalid_sat_refutation`, goal-polarity `context_mismatch`, and
+      `missing_provenance`) flowing through policy evaluation to failed
+      status. The legacy unsupported-certificate gate must remain terminal
+      when a real kernel record is supplied, but proof-side real-payload
+      regression coverage is an `external_dependency_gap` until a public
+      kernel legacy-certificate fixture or source runner is available. A
+      polarity-bearing selection/status reuse metadata fixture round-trips
+      through the task-17 reuse export.
     - Verify: `cargo test -p mizar-proof`,
-      `cargo clippy -p mizar-proof --all-targets -- -D warnings`.
+      `cargo clippy -p mizar-proof --all-targets --all-features -- -D warnings`.
     - Deps: mizar-kernel tasks 30-31; coordinate with the mizar-test
       soundness-registry follow-up (kernel F7). Spec: architecture 15
       (post-audit), 19; soundness_argument.md rejection taxonomy.
+    - Status: complete. `KernelPolicyInput` exposes accepted goal polarity only
+      for accepted proof-obligation kernel results; policy decisions preserve
+      rejected kernel-evidence check kind; selection records accepted polarity
+      for trusted winners. Source-backed corrected terminal kernel rejections
+      can displace an otherwise-open fallback but cannot outrank trusted
+      accepted, policy-permitted external, or policy-assumed evidence.
+      Target-binding `context_mismatch` and consistency-check goal-polarity
+      mismatch remain ordinary rejected diagnostics and do not displace
+      policy-open fallback. Legacy unsupported-certificate real-payload
+      coverage is classified as an `external_dependency_gap`. Reviews reported
+      no findings after focused fixes, full workspace verification passed, and
+      `doc/design/spec_coverage_audit.md` remains unchanged because spec
+      coverage ownership, traceability metadata, owner crates, and deferred
+      coverage status did not change.
 
 ## Recommended Verification
 
@@ -425,7 +446,7 @@ Run after each task:
 
 ```text
 cargo test -p mizar-proof
-cargo clippy -p mizar-proof --all-targets -- -D warnings
+cargo clippy -p mizar-proof --all-targets --all-features -- -D warnings
 ```
 
 For tasks that touch kernel, ATP, or artifact boundaries, also run:

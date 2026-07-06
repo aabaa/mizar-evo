@@ -151,6 +151,8 @@ Status projection exports validation metadata for proof reuse:
 - dependency-slice fingerprint;
 - policy fingerprint;
 - selected evidence hash;
+- accepted proof-obligation goal polarity for trusted kernel selections, when
+  present;
 - selected proof witness payload artifact hash (`witness_artifact_hash`) when
   available for a `KernelVerified` candidate; this is not a committed
   `ProofWitnessPublishedRef`;
@@ -176,7 +178,8 @@ field above. `mizar-cache` may compare that hash and the structured fields as a
 future reuse predicate, but a match only avoids recomputation after cache
 validation. Missing dependency artifact/schema compatibility, policy
 incompatibility, witness hash mismatch, deterministic discharge mismatch, or
-proof-evidence identity mismatch is a miss. A match never upgrades
+proof-evidence identity mismatch, including an accepted-goal-polarity mismatch,
+is a miss. A match never upgrades
 `ExternallyAttested`, `PolicyAssumed`, `Open`, `Rejected`, or
 `NoSelectableEvidence` to `Accepted`, and never creates trusted
 `used_axioms`.

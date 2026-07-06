@@ -185,6 +185,7 @@ fn rejected_policy_decision() -> PolicyDecision {
             PolicyReasonCode::LegacyReplayRejected,
         )),
         kernel_rejections: Vec::new(),
+        kernel_evidence_check_kind: None,
         external_admission: None,
     }
 }

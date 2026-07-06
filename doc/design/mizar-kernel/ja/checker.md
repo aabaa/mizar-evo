@@ -420,15 +420,17 @@ aggregate result に policy taint を持つ。Policy layer はそのような re
 
 Task 28 は corrected normal path のために `check_kernel_evidence` と
 `check_kernel_evidence_batch` を提供する。Task 30 はこの path に明示的な
-`KernelEvidenceCheckKind` 束縛を追加する: accepted proof-obligation result は
-`ProofObligation` を運び、accepted consistency check は `ConsistencyCheck` を運ぶ。
+`KernelEvidenceCheckKind` 束縛を追加する: proof-obligation evidence result は
+`ProofObligation` を運び、consistency-check evidence result は `ConsistencyCheck` を運ぶ。
 Consistency check は downstream proof policy に対する proof-obligation acceptance
-material ではない。Task 31 はこの path に SAT encoding 前の非 import context identity
-verification を追加する。Batch checking は target VC fingerprint、同一 target では caller
-input order の順で results を sort する。Worker spawn や cancellation token read は行わない。
-External scheduler integration はこの crate の外に残る。Task 16 の legacy certificate batch
-helper は explicit audit gate の背後にある migration/audit inventory として残る。Task 29 は
-その surface を再レビューする。
+material ではない。Rejected evidence result も同じ明示 check kind を保持するため、
+downstream policy は rejection detail だけを見ずに proof-obligation polarity failure と
+consistency-check diagnostic を区別できる。Task 31 はこの path に SAT encoding 前の非
+import context identity verification を追加する。Batch checking は target VC fingerprint、
+同一 target では caller input order の順で results を sort する。Worker spawn や
+cancellation token read は行わない。External scheduler integration はこの crate の外に残る。
+Task 16 の legacy certificate batch helper は explicit audit gate の背後にある
+migration/audit inventory として残る。Task 29 はその surface を再レビューする。
 
 Corrected batch checking は single evidence checks の deterministic wrapper である:
 

@@ -9,6 +9,12 @@ Status: complete for the `mizar-proof` proof-policy milestone.
 Quality score: 94/100.
 Score caps applied: none.
 
+Post-closeout task 21 status: complete. Task 21 aligns proof policy, selection,
+and status reuse metadata with the corrected kernel rejection taxonomy,
+preserved rejected evidence check kind, and accepted proof-obligation goal
+polarity. It does not reopen the quality score for the original milestone; it
+records a focused follow-up needed by Step 3 cache/artifact/ATP consumers.
+
 Post-closeout metadata correction: task 20 found a stale `mizar-atp` task-28
 closeout guard that still treated formal `crates/mizar-proof` as a placeholder.
 The focused correction commit `36d1a9c` resolved that repository metadata drift
@@ -30,7 +36,8 @@ Milestone scope:
   from `mizar-kernel::checker::KernelCheckResult` values whose status is
   `Accepted` and whose evidence check kind is `ProofObligation`.
 - Own proof witness staging, manifest-gated publication references, and stable
-  proof-reuse metadata exported as validation predicates only.
+  proof-reuse metadata exported as validation predicates only, including
+  accepted proof-obligation goal polarity for trusted selections.
 - Own ATP early-stop policy queries that are class/rank based and never turn
   backend progress, diagnostics, cache records, or external attestations into
   trusted acceptance.
@@ -83,7 +90,8 @@ Excluded:
 | 17 | `f53d6e2e9adc4db740c94f480f49a064662bd190` | `feat(proof-task-17): export proof reuse metadata` |
 | 18 | `aaf14d6f83357691d01ea2ce60b8fda99e89ac9c` | `docs(proof-task-18): audit architecture 22 reuse metadata` |
 | 19 | `fe0735bc527935532a9ce6038f5597c7a03ecf57` | `refactor(proof-task-19): split private test modules` |
-| 20 | pending self-hash | `docs(proof-task-20): add crate exit report` |
+| 20 | `6decbd0c07d14e98076a1028d20d4e86ffdffabb` | `docs(proof-task-20): add crate exit report` |
+| 21 | pending self-hash | `fix(proof-task-21): align kernel rejection policy` |
 
 ## Final Owned Surfaces
 
@@ -94,7 +102,41 @@ Excluded:
 | Status projection | `project_status` maps selected proof evidence to artifact/diagnostic status and propagates trusted `used_axioms` only from accepted proof-obligation kernel evidence with matching hashes. External, backend diagnostic, cache, rejected, consistency-check, and open statuses stay distinguishable and non-trusted. |
 | Witness store | The `witness_store` module stages deterministic witness payload hashes with `stage`, provides unpublished `ProofWitnessRef` candidates for kernel-verified formula/substitution evidence, and returns committed publication refs only through `publish_ref` with opaque committed artifact-manifest reachability proof. `selected_proof_witness_hash` is selection/status metadata, not a committed publication ref. `DischargedBuiltin` witness publication remains unsupported until artifact schema support exists. |
 | ATP early stop | Early-stop decisions are policy/class based, require an observed selectable class, and are blocked by equal or higher pending selectable classes. They do not cancel based on time or backend partial diagnostics. Downstream `mizar-atp` adoption remains an `external_dependency_gap`. |
-| Proof-reuse metadata | Status metadata exports policy fingerprint compatibility, obligation/context/dependency fingerprints, selected witness or deterministic discharge hash, evidence identity, dependency artifact/schema compatibility, selected provenance, stable selection reason, and validation hash. The metadata is a cache validation predicate, not proof authority. |
+| Proof-reuse metadata | Status metadata exports policy fingerprint compatibility, obligation/context/dependency fingerprints, selected witness or deterministic discharge hash, accepted proof-obligation goal polarity for trusted selections, evidence identity, dependency artifact/schema compatibility, selected provenance, stable selection reason, and validation hash. The metadata is a cache validation predicate, not proof authority. |
+
+## Post-Closeout Task 21 Alignment
+
+Task 21 is a focused Step 3 follow-up to the kernel soundness audit. The
+current task-21 change:
+
+- exposes `AcceptedGoalPolarity::AssertFalseForRefutation` only for accepted,
+  untainted proof-obligation kernel inputs;
+- preserves explicit `KernelEvidenceCheckKind` on rejected kernel-evidence
+  results so proof policy can distinguish proof-obligation goal-polarity
+  failures from consistency-check diagnostics;
+- carries that polarity through trusted selection metadata, status reuse
+  metadata, proof-evidence identity, and the proof-reuse validation hash;
+- keeps source-backed corrected terminal kernel rejections from falling back to
+  policy-open status;
+- narrows goal-polarity `ContextMismatch` handling to the structured
+  `final_goal.polarity` rejection location and leaves target-binding
+  `ContextMismatch` as an ordinary rejected diagnostic;
+- preserves the rule that trusted accepted, policy-permitted external, and
+  policy-assumed winners outrank rejected diagnostics;
+- classifies proof-side real-payload coverage for the legacy
+  `unsupported_certificate_format` gate as an `external_dependency_gap` until a
+  public kernel legacy-certificate fixture or source runner exists.
+
+This follow-up does not add cache lookup, artifact witness publication, kernel
+acceptance, SAT solving, backend proof trust, proof search, fake proof payloads,
+placeholder runners, or expectation rebaselines.
+
+Task 21 reviews reported no findings after focused fixes: the spec/docs review,
+test-sufficiency review, full-implementation review, and source/documentation
+consistency review all completed cleanly. Final task-21 verification passed
+with workspace fmt, workspace clippy, workspace tests, focused proof/kernel
+tests, and `cargo test -p mizar-cache` as the next ordered Step 3 consumer
+boundary check.
 
 ## Hard Gates
 
@@ -142,6 +184,7 @@ clean.
 | Full implementation review | Task-20 review found witness metadata wording drift in docs but no required production API/behavior change; focused docs updates resolved it. |
 | Source/documentation consistency review | Task-20 review initially found stale closeout wording and a `ProofWitnessStore` type-name overclaim; focused re-review reported no findings after EN/JA docs were synchronized. |
 | Read-only crate quality review | Valid quality score: 94/100. Hard gates pass with no blocking/high findings and no unresolved repo metadata conflict. |
+| Post-closeout task 21 reviews | Initial task-21 reviews found fabricated legacy coverage, over-broad `ContextMismatch` selection, missing non-open boundary coverage, and check-kind preservation risk. Focused fixes resolved them; final spec/docs, test-sufficiency, full-implementation, and source/doc consistency reviews reported no findings. |
 
 ## Deferred Items
 
@@ -156,6 +199,7 @@ clean.
 | PROOF-CLOSEOUT-G007 | resolved `repo_metadata_conflict` | `mizar-atp` task-28 closeout guard previously rejected workspace member `crates/mizar-proof` and the `crates/mizar-proof` directory as forbidden placeholders. | Resolved by focused metadata correction commit `36d1a9c`; no proof policy moved into `mizar-atp`. |
 | PROOF-CLOSEOUT-G008 | `external_dependency_gap` | `TrustedKernelWitnessMetadata` remains opaque and has no production constructor until the kernel/artifact boundary exposes copied kernel acceptance metadata. | Keep trusted witness drafts blocked on artifact/kernel-owned metadata; do not accept caller-synthesized acceptance metadata. |
 | PROOF-CLOSEOUT-G009 | `deferred` | The witness store hashes exact payload bytes and schema identity, but byte-level canonicality validation remains producer-owned until concrete payload schemas expose validators. | Keep the hash/attestation contract stable; add validators only in producer-owned schema tasks. |
+| PROOF-CLOSEOUT-G010 | `external_dependency_gap` | Task 21 cannot add proof-side real-payload coverage for legacy `unsupported_certificate_format` without fabricating a legacy certificate payload. | Keep selection defensive for real kernel records and wait for a public kernel fixture or source-derived runner before adding proof-side real-payload coverage. |
 
 ## Human Review Surface
 
@@ -197,6 +241,7 @@ and runner gaps listed above.
 | `cargo test -p mizar-artifact` | passed |
 | `cargo test -p mizar-checker` | passed |
 | `cargo test -p mizar-atp` | passed after focused metadata correction commit `36d1a9c` |
+| `cargo test -p mizar-cache` | passed for the post-closeout task-21 downstream boundary check |
 | `cargo test` | passed after focused metadata correction commit `36d1a9c` |
 | `git diff --check` | passed |
 | `git diff --cached --check` | passed after explicit task-20 path staging |
@@ -204,9 +249,9 @@ and runner gaps listed above.
 Unrun deferred commands:
 
 - `cargo test -p mizar-cache` was not run in the original closeout because
-  `mizar-cache` was not yet a workspace crate. The roadmap sync records that
-  cache now exists; future proof/cache integration should run the dedicated
-  cache checks in that task.
+  `mizar-cache` was not yet a workspace crate. The post-closeout task-21
+  downstream boundary check now ran it successfully. Future proof/cache
+  integration should still run dedicated cache checks in that task.
 
 ## Next-Phase Handoff
 

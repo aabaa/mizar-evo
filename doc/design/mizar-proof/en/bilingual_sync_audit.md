@@ -13,15 +13,16 @@ Files audited:
 
 | English canonical | Japanese companion | Result |
 |---|---|---|
-| `00.crate_plan.md` | `00.crate_plan.md` | synchronized; task-16 metadata update required |
+| `00.crate_plan.md` | `00.crate_plan.md` | synchronized; task-21 alignment refresh required |
 | `policy.md` | `policy.md` | synchronized |
 | `selection.md` | `selection.md` | synchronized |
 | `status.md` | `status.md` | synchronized |
 | `witness_store.md` | `witness_store.md` | synchronized |
 | `source_spec_audit.md` | `source_spec_audit.md` | synchronized |
-| `todo.md` | `todo.md` | synchronized; task-16 status update required |
-| `task_ledger.md` | `task_ledger.md` | synchronized; task-15 hash backfill and task-17 handoff required |
+| `todo.md` | `todo.md` | synchronized; task-21 status update required |
+| `task_ledger.md` | `task_ledger.md` | synchronized; task-20 hash backfill and task-24 handoff required |
 | `bilingual_sync_audit.md` | `bilingual_sync_audit.md` | created by this task |
+| `crate_exit_report.md` | `crate_exit_report.md` | synchronized; task-21 post-closeout alignment refresh required |
 
 No file is missing its companion. No Japanese placeholder remains.
 
@@ -43,6 +44,16 @@ The audit checked:
 
 Japanese documents intentionally retain stable English identifiers, enum names,
 status strings, gap ids, and command names. That terminology is not drift.
+
+Task 21 refreshed the paired documentation after the kernel soundness-audit
+alignment work. The refresh covered `00.crate_plan.md`, `policy.md`,
+`selection.md`, `status.md`, `source_spec_audit.md`, `todo.md`,
+`task_ledger.md`, `bilingual_sync_audit.md`, and `crate_exit_report.md`.
+English and Japanese documents agree that source-backed corrected terminal
+kernel rejections are not policy-open fallback material, that legacy
+unsupported-certificate real-payload coverage is an `external_dependency_gap`,
+and that accepted goal polarity is exported only for trusted accepted
+proof-obligation selections.
 
 ## Findings
 
@@ -93,13 +104,17 @@ source/spec audit:
 | copied kernel acceptance metadata for witness drafts | `external_dependency_gap` | kernel/artifact boundary |
 | byte-level witness payload canonicality validators | `deferred` | concrete payload producers |
 | live ATP early-stop adoption/cancellation wiring | `external_dependency_gap` | `mizar-atp` |
+| downstream cache consumption of accepted goal polarity | `external_dependency_gap` | `mizar-cache` task 24 |
 
 No `repo_metadata_conflict` was observed during the task-16 bilingual sync
 audit. The later ATP closeout metadata conflict was recorded by tasks 18-20
 and resolved by focused correction commit `36d1a9c`.
 
+The task-21 refresh observed no new bilingual drift and no
+`repo_metadata_conflict`; it updates existing paired docs and Rust tests only.
+
 ## Conclusion
 
 The English canonical documentation and Japanese companions are synchronized
-for the current `mizar-proof` state. Task 16 is documentation-only and makes no
-source behavior change.
+for the current `mizar-proof` state, including the task-21 kernel-audit
+alignment refresh.

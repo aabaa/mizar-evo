@@ -439,6 +439,7 @@ const PUBLIC_ENUM_POLICY: &[PublicEnumPolicy] = &[
     policy_enum("PortfolioEarlyStopClass"),
     policy_enum("PortfolioEarlyStopReason"),
     policy_enum("KernelEvidenceOrigin"),
+    policy_enum("AcceptedGoalPolarity"),
     policy_enum("PolicyCandidate"),
     policy_enum("BackendProofPayloadKind"),
     policy_enum("ExternalEvidencePublicationStatus"),

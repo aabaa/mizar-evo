@@ -525,11 +525,17 @@ impl ProofPolicyEvaluator {
             PolicyCandidate::LegacyReplay => self.rejection(PolicyReasonCode::LegacyReplayRejected),
         };
 
+        let kernel_evidence_check_kind = match candidate {
+            PolicyCandidate::KernelResult(input) => input.evidence_check_kind(),
+            _ => None,
+        };
+
         PolicyDecision {
             class,
             can_schedule_kernel_check,
             diagnostic,
             kernel_rejections,
+            kernel_evidence_check_kind,
             external_admission,
         }
     }
@@ -1002,6 +1008,21 @@ impl KernelPolicyInput {
         self.accepted_evidence_hash
     }
 
+    #[must_use]
+    pub fn accepted_goal_polarity(&self) -> Option<AcceptedGoalPolarity> {
+        if self.status == KernelCheckStatus::Accepted
+            && !self.policy_taint
+            && matches!(
+                self.evidence_check_kind,
+                Some(KernelEvidenceCheckKind::ProofObligation)
+            )
+        {
+            Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+        } else {
+            None
+        }
+    }
+
     #[cfg(test)]
     pub(crate) fn for_test(
         status: KernelCheckStatus,
@@ -1041,6 +1062,22 @@ impl KernelPolicyInput {
             policy_taint,
             kernel_rejections: Vec::new(),
             accepted_evidence_hash,
+        }
+    }
+}
+
+/// Kernel-validated polarity for accepted proof-obligation evidence.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, std::hash::Hash)]
+#[non_exhaustive]
+pub enum AcceptedGoalPolarity {
+    AssertFalseForRefutation,
+}
+
+impl AcceptedGoalPolarity {
+    #[must_use]
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::AssertFalseForRefutation => "assert_false_for_refutation",
         }
     }
 }
@@ -1109,6 +1146,7 @@ pub struct PolicyDecision {
     pub can_schedule_kernel_check: bool,
     pub diagnostic: Option<PolicyDiagnostic>,
     pub kernel_rejections: Vec<RejectionRecord>,
+    pub kernel_evidence_check_kind: Option<KernelEvidenceCheckKind>,
     pub external_admission: Option<ExternalEvidenceAdmission>,
 }
 

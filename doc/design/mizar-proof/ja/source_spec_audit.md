@@ -31,7 +31,7 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 | crate root | `todo.md` は `mizar-proof` を policy/selection/status/witness owner と定義し、proof acceptor とはしない。 | `src/lib.rs` は trusted acceptance が accepted proof-obligation `mizar-kernel` `KernelCheckResult` だけに由来し、backend/external/cache/consistency-check material は昇格しないと記す。 | consistent |
 | policy | `policy.md` は evaluator が proof acceptor ではなく、trusted `used_axioms` は accepted proof-obligation kernel result だけに由来すると記す。Accepted consistency check は diagnostic-only である。 | `src/policy.rs` は normalized input の分類、kernel-checkable evidence の scheduling、non-trusted evidence の記録、accepted consistency check の `DiagnosticOnly` 扱い、policy-tainted proof-obligation kernel output の non-trusted external-policy 扱いだけを行う。 | consistent |
 | selection | `selection.md` は selection が分類済み evidence を順序付けるだけで、backend/kernel/status/witness/cache/artifact commit を実行しないと記す。 | `src/selection.rs` は deterministic selection と merge だけを公開し、trusted winner は proof-obligation `KernelPolicyInput` 由来の `TrustedKernelEvidence` を要求し、accepted consistency check は non-trusted に保つ。 | consistent |
-| status | `status.md` は projection が proof acceptance ではなく、trusted `used_axioms` は trusted class として選択された accepted proof-obligation kernel result だけに由来すると記す。 | `src/status.rs` は selected class を projection し、policy fingerprint を検証し、`TrustedUsedAxiomsRef` を proof-obligation `KernelCheckResult` からだけ導出する。 | consistent |
+| status | `status.md` は projection が proof acceptance ではなく、trusted `used_axioms` は trusted class として選択された accepted proof-obligation kernel result だけに由来すると記す。 | `src/status.rs` は selected class を projection し、policy fingerprint を検証し、accepted goal polarity を trusted proof-obligation selection からだけ記録し、`TrustedUsedAxiomsRef` を proof-obligation `KernelCheckResult` からだけ導出する。 | consistent |
 | witness store | `witness_store.md` は staging/publication が proof authority ではなく、accepted proof-obligation kernel metadata と committed artifact reachability を要求すると記す。 | `src/witness_store.rs` は trusted metadata と committed publication proof の production constructor を非公開にし、unsupported/non-trusted publication path を reject する。 | consistent |
 
 ## Public API Trace
@@ -44,18 +44,18 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 | `ProofPolicyEvaluator::{new, policy, policy_fingerprint, candidate_class, can_schedule_kernel_check, evaluate_candidate, external_evidence_admission}` | `policy.md` の candidate class、kernel scheduling policy、external admission matrix、open obligation、policy assumption、policy diagnostic。 | `src/policy.rs` の policy classification、scheduling、external admission matrix、rejection diagnostic、policy-tainted kernel result、negative scheduling tests。 | consistent |
 | `ProofPolicyEvaluator::{best_possible_early_stop_class, portfolio_early_stop_decision}`、`PortfolioEarlyStopInput`、`PortfolioEarlyStopDecision`、`PortfolioEarlyStopClass`、`PortfolioEarlyStopReason` | `policy.md` の early-stop policy query section。 | early-stop equivalence、equal/higher pending block、external/kernel-certificate、policy-tainted normalization、public API tests。 | consistent |
 | `PolicyFingerprint` | `policy.md` の stable policy fingerprint section。 | fingerprint unit tests と determinism suite。 | consistent |
-| `BuildMode`、`ExternalEvidenceMode`、`OpenObligationMode`、`PolicyAssumptionMode`、`KernelEvidenceFormat`、`CandidatePolicyClass`、`KernelEvidenceOrigin`、`PolicyCandidate`、`BackendProofPayloadKind`、`ExternalEvidencePublicationStatus`、`PolicyDiagnosticCategory`、`PolicyReasonCode` | `policy.md` の candidate class、input、diagnostic、public enum policy section。 | policy unit tests と `public_enums_are_forward_compatible_and_documented`。 | consistent |
-| `KernelPolicyInput::from_kernel_result` と accessors | `policy.md` の explicit kernel-origin wrapper requirement。 | kernel-origin classification、policy-taint、downstream trusted-marker tests。 | consistent |
-| `PolicyDecision`、`ExternalEvidenceAdmission`、`PolicyDiagnostic` | `policy.md` の external evidence admission と diagnostics section。 | external admission matrix と diagnostic stability tests。 | consistent |
+| `BuildMode`、`ExternalEvidenceMode`、`OpenObligationMode`、`PolicyAssumptionMode`、`KernelEvidenceFormat`、`CandidatePolicyClass`、`KernelEvidenceOrigin`、`AcceptedGoalPolarity`、`PolicyCandidate`、`BackendProofPayloadKind`、`ExternalEvidencePublicationStatus`、`PolicyDiagnosticCategory`、`PolicyReasonCode` | `policy.md` の candidate class、input、diagnostic、accepted-goal-polarity、public enum policy section。 | policy unit tests と `public_enums_are_forward_compatible_and_documented`。 | consistent |
+| `KernelPolicyInput::from_kernel_result` と accessors | `policy.md` の explicit kernel-origin wrapper と accepted-goal-polarity requirement。 | kernel-origin classification、policy-taint、accepted proof-obligation polarity、consistency-check exclusion、downstream trusted-marker tests。 | consistent |
+| `PolicyDecision`、`ExternalEvidenceAdmission`、`PolicyDiagnostic` | `policy.md` の external evidence admission、kernel-evidence check-kind preservation、diagnostics section。 | external admission matrix、rejected evidence check-kind routing、diagnostic stability tests。 | consistent |
 
 ### Selection
 
 | Public API group | Spec coverage | Test coverage | Result |
 |---|---|---|---|
 | `CandidateSourceId`、`SelectionInputError`、`DiagnosticRef` | `selection.md` の stable candidate id と diagnostic-ref requirement。 | empty id、duplicate/conflicting id、diagnostic ordering、lint public-enum coverage。 | consistent |
-| `TrustedKernelEvidence` | `selection.md` の accepted proof-obligation kernel evidence hash に bind された trusted marker。 | trusted marker spoofing、policy-tainted rejection、accepted-consistency diagnostic-only rejection、trusted class tests。 | consistent |
+| `TrustedKernelEvidence` | `selection.md` の accepted proof-obligation kernel evidence hash と accepted goal polarity に bind された trusted marker。 | trusted marker spoofing、policy-tainted rejection、accepted-consistency diagnostic-only rejection、accepted-polarity propagation、trusted class tests。 | consistent |
 | `ProofEvidenceCandidate`、`ProofEvidenceSet` | `selection.md` の normalized selection input、tie-break input、stable candidate id、optional proof witness/discharge hash。 | winner-order、tie-break、duplicate input、pending kernel-checkable、shuffled arrival tests。 | consistent |
-| `ProofWinnerClass`、`ProofSelection`、`ProofSelector`、`select_winner`、`SelectedReuseMetadata`、`ProofWitnessPublication` | `selection.md` の winner class、deterministic ordering、selected reuse metadata、no-selectable result shape、witness-publication gap rule。 | ordering fixtures、selector equivalence、no-selectable diagnostics、reuse metadata、determinism suite。 | consistent |
+| `ProofWinnerClass`、`ProofSelection`、`ProofSelector`、`select_winner`、`SelectedReuseMetadata`、`ProofWitnessPublication` | `selection.md` の winner class、deterministic ordering、accepted goal polarity を含む selected reuse metadata、no-selectable result shape、witness-publication gap rule。 | invalid SAT refutation、proof-obligation goal-polarity context mismatch、missing provenance に対する real-payload terminal kernel rejection fallback coverage、negative target-context-mismatch、consistency-check goal-polarity mismatch、non-open winner coverage、selector equivalence、no-selectable diagnostics、reuse metadata、determinism suite。 | consistent |
 | `VcProofSelection`、`ProofSelectionSource`、`ArtifactProofSelection`、`ArtifactProofSelectionError`、`merge_artifact_proof_selections` | `selection.md` の artifact proof selection merge section。 | merge canonical order、source/class compatibility、duplicate source、trusted precedence、same-class tie-break、non-trusted preservation tests。 | consistent |
 
 ### Status
@@ -66,7 +66,7 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 | `TrustedUsedAxiomsRef`、`TrustedUsedAxiomsError` | `status.md` の trusted `used_axioms` boundary。 | accepted proof-obligation kernel result constructor、non-accepted/policy-tainted/consistency-check rejection、missing/mismatched evidence hash、non-trusted status rejection tests。 | consistent |
 | `ProofStatusProjectionInput`、`project_status`、`ProofStatusProjection`、`StatusProjectionError` | `status.md` の projection input、stale/mismatched input rejection、final projection shape。 | projection class fixtures、policy-fingerprint mismatch、trusted-axiom validation、explanation/diagnostic metadata tests。 | consistent |
 | `ProjectedProofStatus`、`CurrentArtifactObligationStatus`、`ArtifactPublicationGap`、`ArtifactStatusPublication` | `status.md` の status model、artifact projection limits、public enum policy。 | status mapping、current artifact publication gaps、`KernelVerified` witness requirement、`DischargedBuiltin`/`PolicyAssumed` external dependency gaps、lint public-enum coverage。 | consistent |
-| `StatusReuseMetadata` | `status.md` の proof reuse metadata section。 | architecture-22 identity と reuse metadata coverage tests、determinism suite。 | current task scope では consistent。より広い cache-facing export contract は task 17 に残る。 |
+| `StatusReuseMetadata` | `status.md` の proof reuse metadata section。accepted goal polarity を proof-evidence identity に含む。 | architecture-22 identity と reuse metadata coverage tests、accepted-polarity hash invalidation、terminal rejection projection、determinism suite。 | current task scope では consistent。downstream cache consumer はこの crate の外側に残る。 |
 
 ### Witness Store
 
@@ -91,10 +91,17 @@ task 15 は未 exercise だった 3 つの validation path に focused unit cove
 | `PROOF15-G004` | `external_dependency_gap` | Kernel/artifact copied acceptance metadata | `TrustedKernelWitnessMetadata` は `mizar-proof` 内に production constructor を持たない。trusted witness draft は caller-synthesized metadata から作れない。 |
 | `PROOF15-G005` | `deferred` | Concrete witness payload producers | witness store は schema identity と exact bytes を hash し、canonical-byte payload の empty bytes を reject するが、byte-level canonicality validation は producer-owned のまま。 |
 | `PROOF15-G006` | `external_dependency_gap` | Downstream ATP portfolio integration | Early-stop API は stable かつ policy-owned。live backend cancellation/adoption wiring は `mizar-atp` 側に残り、ここでは stub しない。 |
+| `PROOF15-G007` | `external_dependency_gap` | public legacy-certificate proof payload / runner | `mizar-proof` は real `unsupported_certificate_format` kernel rejection record を policy-open fallback に対して terminal として扱うが、proof test で legacy certificate payload は fabricate しない。real-payload coverage は public kernel fixture または source runner を待つ。 |
 
 task-15 source/spec audit 中に `repo_metadata_conflict` は観測されなかった。
 後続の ATP closeout metadata conflict は tasks 18-20 で記録され、focused correction
 commit `36d1a9c` で解消済みである。
+
+task 21 はこの audit を訂正済み kernel rejection taxonomy へ拡張する。terminal
+kernel/certificate rejection は `KernelRejected` のまま、policy-open fallback は
+source-backed corrected rejection を隠さず、accepted goal polarity は trusted accepted
+proof-obligation selection に対してだけ export される。legacy
+unsupported-certificate gate の remaining real-payload coverage gap は上で分類する。
 
 ## Conclusion
 

@@ -92,6 +92,29 @@ Forward-compatible implementations may add classes only under a new schema
 version and must preserve the rule that non-kernel material cannot become
 trusted acceptance.
 
+Corrected kernel proof-obligation rejections remain terminal policy inputs.
+`invalid_sat_refutation`, kernel-evidence goal-polarity `context_mismatch`,
+`missing_provenance`, and real legacy unsupported-certificate gate records
+stay `KernelRejected` diagnostics and must not be retried into acceptance,
+reclassified as policy-open, or upgraded by external admission. Selection may
+prefer one of these rejections over an otherwise-open fallback so status
+projection records the failed proof result, but accepted trusted kernel
+evidence still outranks rejected diagnostics. The proof crate must not
+fabricate legacy certificate payloads to test that gate; real-payload coverage
+waits on a public kernel legacy-certificate fixture or runner.
+
+For accepted proof-obligation kernel inputs, `KernelPolicyInput` also exposes
+the kernel-validated accepted goal polarity used by proof-reuse metadata. The
+current public value is `AcceptedGoalPolarity::AssertFalseForRefutation`.
+Accepted consistency checks and all non-accepted or policy-tainted inputs
+expose no accepted goal polarity.
+
+For rejected kernel-evidence inputs, `PolicyDecision` preserves the kernel
+evidence check kind when the kernel result provides it. Selection uses that
+explicit kind to distinguish proof-obligation goal-polarity failures from
+consistency-check diagnostics; it must not infer the distinction from rejection
+detail text alone.
+
 ## Public Enum Policy
 
 Task 14 applies the public-enum forward-compatibility procedure to this
@@ -111,6 +134,7 @@ silently promoting evidence.
 | `PortfolioEarlyStopClass` | forward-compatible |
 | `PortfolioEarlyStopReason` | forward-compatible |
 | `KernelEvidenceOrigin` | forward-compatible |
+| `AcceptedGoalPolarity` | forward-compatible |
 | `PolicyCandidate` | forward-compatible |
 | `BackendProofPayloadKind` | forward-compatible |
 | `ExternalEvidencePublicationStatus` | forward-compatible |

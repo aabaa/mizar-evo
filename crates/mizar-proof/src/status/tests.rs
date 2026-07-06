@@ -1,8 +1,8 @@
 use crate::{
     policy::{
-        CandidatePolicyClass, ExternalEvidenceMode, KernelPolicyInput, PolicyCandidate,
-        PolicyDecision, PolicyDiagnostic, PolicyDiagnosticCategory, PolicyReasonCode,
-        ProofPolicyEvaluator,
+        AcceptedGoalPolarity, CandidatePolicyClass, ExternalEvidenceMode, KernelPolicyInput,
+        PolicyCandidate, PolicyDecision, PolicyDiagnostic, PolicyDiagnosticCategory,
+        PolicyReasonCode, ProofPolicyEvaluator,
     },
     selection::{
         ProofEvidenceCandidate, ProofEvidenceSet, VcProofSelection,
@@ -26,7 +26,7 @@ use mizar_kernel::{
         ParsedKernelEvidence, SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID,
         canonical_imported_statement_projection_payload, parse_formula_evidence,
     },
-    rejection::TargetVcFingerprint,
+    rejection::{RejectionCategory, RejectionDetail, TargetVcFingerprint},
 };
 
 use super::*;
@@ -62,6 +62,10 @@ fn projects_selection_classes_without_status_collapse() {
         kernel.accepted_witness_obligation_id(),
         Some("obligation-0")
     );
+    assert_eq!(
+        kernel.reuse_metadata().accepted_goal_polarity(),
+        Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+    );
     assert!(kernel.reuse_metadata().trusted_used_axioms_hash().is_none());
 
     let builtin = project(selection_for_builtin(), VerifierPolicy::release());
@@ -76,6 +80,10 @@ fn projects_selection_classes_without_status_collapse() {
         builtin.reuse_metadata().deterministic_discharge_hash(),
         Some(hash(11))
     );
+    assert_eq!(
+        builtin.reuse_metadata().accepted_goal_polarity(),
+        Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+    );
     assert_eq!(builtin.accepted_witness_obligation_id(), None);
 
     let external = project(selection_for_external(), external_policy());
@@ -87,6 +95,7 @@ fn projects_selection_classes_without_status_collapse() {
         external.artifact_publication(),
         ArtifactStatusPublication::Publishable(CurrentArtifactObligationStatus::ExternallyAttested)
     );
+    assert_eq!(external.reuse_metadata().accepted_goal_polarity(), None);
 
     let assumed = project(selection_for_assumed(), assumed_policy());
     assert_eq!(
@@ -99,6 +108,7 @@ fn projects_selection_classes_without_status_collapse() {
             ArtifactPublicationGap::PolicyAssumedStatusUnsupported
         )
     );
+    assert_eq!(assumed.reuse_metadata().accepted_goal_polarity(), None);
 
     let open = project(selection_for_open(), VerifierPolicy::interactive());
     assert_eq!(open.projected_status(), ProjectedProofStatus::Open);
@@ -106,6 +116,7 @@ fn projects_selection_classes_without_status_collapse() {
         open.artifact_publication(),
         ArtifactStatusPublication::Publishable(CurrentArtifactObligationStatus::Open)
     );
+    assert_eq!(open.reuse_metadata().accepted_goal_polarity(), None);
 
     let rejected = project(selection_for_rejected(), VerifierPolicy::release());
     assert_eq!(rejected.projected_status(), ProjectedProofStatus::Rejected);
@@ -113,6 +124,7 @@ fn projects_selection_classes_without_status_collapse() {
         rejected.artifact_publication(),
         ArtifactStatusPublication::Publishable(CurrentArtifactObligationStatus::Rejected)
     );
+    assert_eq!(rejected.reuse_metadata().accepted_goal_polarity(), None);
 }
 
 #[test]
@@ -382,6 +394,7 @@ fn reuse_metadata_exports_architecture_22_identity() {
         external_policy().policy_fingerprint()
     );
     assert_eq!(reuse.selected_evidence_hash(), Some(hash(30)));
+    assert_eq!(reuse.accepted_goal_polarity(), None);
     assert_eq!(reuse.explanation_ref(), Some(explanation));
     assert_eq!(
         reuse.external_admission_status(),
@@ -401,6 +414,7 @@ fn reuse_metadata_exports_architecture_22_identity() {
         evidence_identity.selected_candidate_provenance_hash(),
         Some(hash(33))
     );
+    assert_eq!(evidence_identity.accepted_goal_polarity(), None);
     assert_eq!(
         evidence_identity.selection_reason(),
         "deterministic_winner_class"
@@ -462,6 +476,9 @@ fn proof_reuse_validation_hash_changes_or_invalidates_for_exported_components() 
     });
     assert_hash_changed(&base, "deterministic_discharge_hash", |metadata| {
         metadata.deterministic_discharge_hash = Some(hash(47));
+    });
+    assert_hash_changed(&base, "accepted_goal_polarity", |metadata| {
+        metadata.accepted_goal_polarity = None;
     });
     assert_hash_changed(&base, "trusted_used_axioms_hash", |metadata| {
         metadata.trusted_used_axioms_hash = Some(hash(48));
@@ -603,6 +620,16 @@ fn reuse_metadata_covers_trusted_rejected_and_no_selectable_outcomes() {
     assert_eq!(kernel_reuse.selected_evidence_hash(), Some(hash(10)));
     assert_eq!(kernel_reuse.selected_proof_witness_hash(), Some(hash(50)));
     assert_eq!(kernel_reuse.deterministic_discharge_hash(), None);
+    assert_eq!(
+        kernel_reuse.accepted_goal_polarity(),
+        Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+    );
+    assert_eq!(
+        kernel_reuse
+            .proof_evidence_identity()
+            .accepted_goal_polarity(),
+        Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+    );
     assert_eq!(kernel_reuse.diagnostic_result_id(), None);
 
     let builtin = project(selection_for_builtin(), VerifierPolicy::release());
@@ -618,6 +645,10 @@ fn reuse_metadata_covers_trusted_rejected_and_no_selectable_outcomes() {
     assert_eq!(builtin_reuse.selected_evidence_hash(), Some(hash(10)));
     assert_eq!(builtin_reuse.selected_proof_witness_hash(), None);
     assert_eq!(builtin_reuse.deterministic_discharge_hash(), Some(hash(11)));
+    assert_eq!(
+        builtin_reuse.accepted_goal_polarity(),
+        Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+    );
     assert_eq!(builtin_reuse.diagnostic_result_id(), None);
 
     let rejected = project(selection_for_rejected(), VerifierPolicy::release());
@@ -628,6 +659,7 @@ fn reuse_metadata_covers_trusted_rejected_and_no_selectable_outcomes() {
         ProjectedProofStatus::Rejected
     );
     assert_eq!(rejected_reuse.selected_evidence_hash(), None);
+    assert_eq!(rejected_reuse.accepted_goal_polarity(), None);
     assert!(rejected_reuse.selected_candidate_id().is_some());
     assert_eq!(rejected_reuse.diagnostic_result_id(), None);
 
@@ -646,8 +678,245 @@ fn reuse_metadata_covers_trusted_rejected_and_no_selectable_outcomes() {
         ProjectedProofStatus::Rejected
     );
     assert_eq!(no_selectable_reuse.selected_evidence_hash(), None);
+    assert_eq!(no_selectable_reuse.accepted_goal_polarity(), None);
     assert!(no_selectable_reuse.selected_candidate_id().is_none());
     assert!(no_selectable_reuse.diagnostic_result_id().is_some());
+}
+
+#[test]
+fn corrected_terminal_kernel_rejections_do_not_fall_back_to_policy_open() {
+    for case in terminal_kernel_rejection_cases() {
+        let policy = VerifierPolicy::interactive();
+        let evaluator = ProofPolicyEvaluator::new(policy.clone());
+        let decision =
+            evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(case.input.clone()));
+
+        assert_eq!(decision.class, CandidatePolicyClass::KernelRejected);
+        assert_eq!(decision.kernel_rejections.len(), 1, "{}", case.label);
+        assert_eq!(decision.kernel_rejections[0].category(), case.category);
+        assert_eq!(decision.kernel_rejections[0].detail(), case.detail);
+
+        let rejected = candidate(case.label, decision).with_evidence_hash(hash(case.hash_tag));
+        let open = candidate(
+            "open",
+            evaluator.evaluate_candidate(&PolicyCandidate::OpenObligation),
+        )
+        .with_evidence_hash(hash(240));
+        let selection = artifact_selection(
+            [VcProofSelection::new(
+                VcId::new(0),
+                select_winner(&base_set(policy.clone()).with_candidates([open, rejected])),
+            )],
+            [],
+        );
+
+        assert_eq!(selection.selected_class(), ProofWinnerClass::Rejected);
+        assert_eq!(
+            selection
+                .selection()
+                .selected_candidate_id()
+                .map(CandidateSourceId::as_str),
+            Some(case.label)
+        );
+
+        let projection = project(selection, policy);
+        assert_eq!(
+            projection.projected_status(),
+            ProjectedProofStatus::Rejected
+        );
+        assert_eq!(
+            projection.artifact_publication(),
+            ArtifactStatusPublication::Publishable(CurrentArtifactObligationStatus::Rejected)
+        );
+        assert_eq!(projection.reuse_metadata().accepted_goal_polarity(), None);
+    }
+}
+
+#[test]
+fn terminal_kernel_rejections_only_displace_policy_open() {
+    let case = terminal_kernel_rejection_cases()
+        .into_iter()
+        .next()
+        .expect("terminal case");
+
+    let interactive = VerifierPolicy::interactive();
+    let evaluator = ProofPolicyEvaluator::new(interactive.clone());
+    let terminal = candidate(
+        case.label,
+        evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(case.input)),
+    )
+    .with_evidence_hash(hash(case.hash_tag));
+    let trusted = trusted_candidate(
+        "trusted",
+        KernelEvidenceOrigin::AtpFormulaSubstitution,
+        hash(10),
+    );
+
+    let trusted_selection = artifact_selection(
+        [VcProofSelection::new(
+            VcId::new(0),
+            select_winner(
+                &base_set(interactive.clone()).with_candidates([terminal.clone(), trusted]),
+            ),
+        )],
+        [],
+    );
+    assert_eq!(
+        trusted_selection.selected_class(),
+        ProofWinnerClass::KernelVerified
+    );
+
+    let external_policy = external_policy();
+    let external_evaluator = ProofPolicyEvaluator::new(external_policy.clone());
+    let external_selection = artifact_selection(
+        [VcProofSelection::new(
+            VcId::new(0),
+            select_winner(
+                &base_set(external_policy).with_candidates([
+                    terminal.clone(),
+                    candidate(
+                        "external",
+                        external_evaluator.evaluate_candidate(&PolicyCandidate::ExternallyAttested),
+                    )
+                    .with_evidence_hash(hash(30)),
+                ]),
+            ),
+        )],
+        [],
+    );
+    assert_eq!(
+        external_selection.selected_class(),
+        ProofWinnerClass::PolicyPermittedExternal
+    );
+
+    let assumed_policy = assumed_policy();
+    let assumed_evaluator = ProofPolicyEvaluator::new(assumed_policy.clone());
+    let assumed_selection = artifact_selection(
+        [VcProofSelection::new(
+            VcId::new(0),
+            select_winner(
+                &base_set(assumed_policy).with_candidates([
+                    terminal,
+                    candidate(
+                        "assumed",
+                        assumed_evaluator.evaluate_candidate(&PolicyCandidate::PolicyAssumption),
+                    )
+                    .with_evidence_hash(hash(31)),
+                ]),
+            ),
+        )],
+        [],
+    );
+    assert_eq!(
+        assumed_selection.selected_class(),
+        ProofWinnerClass::PolicyAssumed
+    );
+}
+
+#[test]
+fn target_context_mismatch_does_not_displace_policy_open() {
+    let policy = VerifierPolicy::interactive();
+    let evaluator = ProofPolicyEvaluator::new(policy.clone());
+    let input = KernelPolicyInput::from_kernel_result(
+        &target_context_mismatch_kernel_result(),
+        KernelEvidenceOrigin::AtpFormulaSubstitution,
+    );
+    let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
+
+    assert_eq!(decision.class, CandidatePolicyClass::KernelRejected);
+    assert_eq!(decision.kernel_rejections.len(), 1);
+    assert_eq!(
+        decision.kernel_rejections[0].detail(),
+        RejectionDetail::ContextMismatch
+    );
+    assert_eq!(
+        decision.kernel_rejections[0].location().field_path,
+        Some("target_vc")
+    );
+
+    let selection = artifact_selection(
+        [VcProofSelection::new(
+            VcId::new(0),
+            select_winner(
+                &base_set(policy).with_candidates([
+                    candidate("target-context-mismatch", decision).with_evidence_hash(hash(234)),
+                    candidate(
+                        "open",
+                        evaluator.evaluate_candidate(&PolicyCandidate::OpenObligation),
+                    )
+                    .with_evidence_hash(hash(240)),
+                ]),
+            ),
+        )],
+        [],
+    );
+
+    assert_eq!(selection.selected_class(), ProofWinnerClass::PolicyOpen);
+    assert_eq!(
+        selection
+            .selection()
+            .selected_candidate_id()
+            .map(CandidateSourceId::as_str),
+        Some("open")
+    );
+}
+
+#[test]
+fn consistency_goal_polarity_mismatch_does_not_displace_policy_open() {
+    let policy = VerifierPolicy::interactive();
+    let evaluator = ProofPolicyEvaluator::new(policy.clone());
+    let input = KernelPolicyInput::from_kernel_result(
+        &consistency_goal_polarity_mismatch_kernel_result(),
+        KernelEvidenceOrigin::AtpFormulaSubstitution,
+    );
+    assert_eq!(
+        input.evidence_check_kind(),
+        Some(KernelEvidenceCheckKind::ConsistencyCheck)
+    );
+    let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
+
+    assert_eq!(decision.class, CandidatePolicyClass::KernelRejected);
+    assert_eq!(
+        decision.kernel_evidence_check_kind,
+        Some(KernelEvidenceCheckKind::ConsistencyCheck)
+    );
+    assert_eq!(decision.kernel_rejections.len(), 1);
+    assert_eq!(
+        decision.kernel_rejections[0].detail(),
+        RejectionDetail::ContextMismatch
+    );
+    assert!(decision.kernel_rejections[0].location().final_goal);
+    assert_eq!(
+        decision.kernel_rejections[0].location().field_path,
+        Some("final_goal.polarity")
+    );
+
+    let selection = artifact_selection(
+        [VcProofSelection::new(
+            VcId::new(0),
+            select_winner(
+                &base_set(policy).with_candidates([
+                    candidate("consistency-polarity-mismatch", decision)
+                        .with_evidence_hash(hash(235)),
+                    candidate(
+                        "open",
+                        evaluator.evaluate_candidate(&PolicyCandidate::OpenObligation),
+                    )
+                    .with_evidence_hash(hash(240)),
+                ]),
+            ),
+        )],
+        [],
+    );
+
+    assert_eq!(selection.selected_class(), ProofWinnerClass::PolicyOpen);
+    assert_eq!(
+        selection
+            .selection()
+            .selected_candidate_id()
+            .map(CandidateSourceId::as_str),
+        Some("open")
+    );
 }
 
 fn project(selection: ArtifactProofSelection, policy: VerifierPolicy) -> ProofStatusProjection {
@@ -854,6 +1123,7 @@ fn rejected_policy_decision() -> PolicyDecision {
             PolicyReasonCode::OpenObligationRejected,
         )),
         kernel_rejections: Vec::new(),
+        kernel_evidence_check_kind: None,
         external_admission: None,
     }
 }
@@ -921,6 +1191,109 @@ fn accepted_consistency_kernel_result() -> KernelCheckResult {
     assert_eq!(result.status(), KernelCheckStatus::Accepted);
     assert!(!result.policy_taint());
     result
+}
+
+struct TerminalKernelRejectionCase {
+    label: &'static str,
+    input: KernelPolicyInput,
+    category: RejectionCategory,
+    detail: RejectionDetail,
+    hash_tag: u8,
+}
+
+fn terminal_kernel_rejection_cases() -> Vec<TerminalKernelRejectionCase> {
+    vec![
+        terminal_case(
+            "invalid-sat-refutation",
+            invalid_sat_refutation_kernel_result(),
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+            RejectionCategory::KernelRejection,
+            RejectionDetail::InvalidSatRefutation,
+            230,
+        ),
+        terminal_case(
+            "context-mismatch",
+            goal_polarity_mismatch_kernel_result(),
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+            RejectionCategory::CertificateRejection,
+            RejectionDetail::ContextMismatch,
+            231,
+        ),
+        terminal_case(
+            "missing-provenance",
+            rejected_kernel_result(),
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+            RejectionCategory::KernelRejection,
+            RejectionDetail::MissingProvenance,
+            232,
+        ),
+    ]
+}
+
+fn terminal_case(
+    label: &'static str,
+    result: KernelCheckResult,
+    origin: KernelEvidenceOrigin,
+    category: RejectionCategory,
+    detail: RejectionDetail,
+    hash_tag: u8,
+) -> TerminalKernelRejectionCase {
+    assert_eq!(result.status(), KernelCheckStatus::Rejected);
+    assert_eq!(result.rejections().len(), 1, "{label}");
+    assert_eq!(result.rejections()[0].category(), category, "{label}");
+    assert_eq!(result.rejections()[0].detail(), detail, "{label}");
+    TerminalKernelRejectionCase {
+        label,
+        input: KernelPolicyInput::from_kernel_result(&result, origin),
+        category,
+        detail,
+        hash_tag,
+    }
+}
+
+fn invalid_sat_refutation_kernel_result() -> KernelCheckResult {
+    let target = formula_target(11);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let parsed = parsed_formula_evidence(&target, Vec::new(), goal_item(20, &goal));
+
+    check_kernel_evidence(evidence_input(&target_vc, &parsed, None))
+}
+
+fn goal_polarity_mismatch_kernel_result() -> KernelCheckResult {
+    let target = formula_target(12);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let parsed = parsed_formula_evidence(
+        &target,
+        Vec::new(),
+        goal_item_with_polarity(20, GoalPolarity::AssertTrueForConsistency, &goal),
+    );
+
+    check_kernel_evidence(evidence_input(&target_vc, &parsed, None))
+}
+
+fn target_context_mismatch_kernel_result() -> KernelCheckResult {
+    let target = formula_target(13);
+    let target_vc = TargetVcFingerprint::new(1, vec![99]);
+    let goal = formula_atom(1);
+    let parsed = parsed_formula_evidence(&target, Vec::new(), goal_item(20, &goal));
+
+    check_kernel_evidence(evidence_input(&target_vc, &parsed, None))
+}
+
+fn consistency_goal_polarity_mismatch_kernel_result() -> KernelCheckResult {
+    let target = formula_target(14);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let parsed = parsed_formula_evidence(&target, Vec::new(), goal_item(20, &goal));
+
+    check_kernel_evidence(evidence_input_with_check_kind(
+        &target_vc,
+        &parsed,
+        None,
+        KernelEvidenceCheckKind::ConsistencyCheck,
+    ))
 }
 
 fn rejected_kernel_result() -> KernelCheckResult {

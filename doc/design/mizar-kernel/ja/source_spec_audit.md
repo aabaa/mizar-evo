@@ -164,7 +164,8 @@ Covered top-level public items:
   `KernelEvidenceCheckKind` は proof-obligation check を
   `AssertFalseForRefutation` に、consistency check を
   `AssertTrueForConsistency` に束縛する。不一致は `final_goal.polarity` の
-  `certificate_rejection/context_mismatch` として拒否される。
+  `certificate_rejection/context_mismatch` として拒否され、rejected evidence result は
+  明示 check kind を保持する。
   `KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION` と context-identity payload types は、
   local-hypothesis、cited-premise、generated-VC-fact formula entry を SAT encoding 前に
   immutable task-28 context row に bind する。

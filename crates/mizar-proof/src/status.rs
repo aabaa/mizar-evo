@@ -13,8 +13,8 @@ use mizar_vc::vc_ir::VcId;
 
 use crate::{
     policy::{
-        ExternalEvidencePublicationStatus, KernelEvidenceOrigin, KernelPolicyInput,
-        OpenObligationMode, PolicyFingerprint, VerifierPolicy,
+        AcceptedGoalPolarity, ExternalEvidencePublicationStatus, KernelEvidenceOrigin,
+        KernelPolicyInput, OpenObligationMode, PolicyFingerprint, VerifierPolicy,
     },
     selection::{
         ArtifactProofSelection, CandidateSourceId, DiagnosticRef, ProofWinnerClass,
@@ -390,6 +390,7 @@ pub struct ProofEvidenceReuseIdentity {
     selected_evidence_hash: Option<Hash>,
     selected_proof_witness_hash: Option<Hash>,
     deterministic_discharge_hash: Option<Hash>,
+    accepted_goal_polarity: Option<AcceptedGoalPolarity>,
     tie_break_key_hash: Hash,
     selection_reason: &'static str,
 }
@@ -421,6 +422,11 @@ impl ProofEvidenceReuseIdentity {
     }
 
     #[must_use]
+    pub const fn accepted_goal_polarity(&self) -> Option<AcceptedGoalPolarity> {
+        self.accepted_goal_polarity
+    }
+
+    #[must_use]
     pub const fn tie_break_key_hash(&self) -> Hash {
         self.tie_break_key_hash
     }
@@ -446,6 +452,7 @@ pub struct StatusReuseMetadata {
     selected_evidence_hash: Option<Hash>,
     selected_proof_witness_hash: Option<Hash>,
     deterministic_discharge_hash: Option<Hash>,
+    accepted_goal_polarity: Option<AcceptedGoalPolarity>,
     trusted_used_axioms_hash: Option<Hash>,
     external_admission_status: Option<ExternalEvidencePublicationStatus>,
     selected_candidate_provenance_hash: Option<Hash>,
@@ -519,6 +526,11 @@ impl StatusReuseMetadata {
     }
 
     #[must_use]
+    pub const fn accepted_goal_polarity(&self) -> Option<AcceptedGoalPolarity> {
+        self.accepted_goal_polarity
+    }
+
+    #[must_use]
     pub const fn trusted_used_axioms_hash(&self) -> Option<Hash> {
         self.trusted_used_axioms_hash
     }
@@ -566,6 +578,7 @@ impl StatusReuseMetadata {
             selected_evidence_hash: self.selected_evidence_hash,
             selected_proof_witness_hash: self.selected_proof_witness_hash,
             deterministic_discharge_hash: self.deterministic_discharge_hash,
+            accepted_goal_polarity: self.accepted_goal_polarity,
             tie_break_key_hash: self.tie_break_key_hash,
             selection_reason: self.selection_reason,
         }
@@ -761,6 +774,7 @@ pub fn project_status(
         selected_evidence_hash: selection_metadata.selected_evidence_hash(),
         selected_proof_witness_hash: selection_metadata.selected_proof_witness_hash(),
         deterministic_discharge_hash: selection_metadata.deterministic_discharge_hash(),
+        accepted_goal_polarity: selection_metadata.accepted_goal_polarity(),
         trusted_used_axioms_hash,
         external_admission_status: selection_metadata.external_admission_status(),
         selected_candidate_provenance_hash: selection_metadata.selected_candidate_provenance_hash(),
@@ -928,6 +942,12 @@ fn hash_status_reuse_metadata(metadata: &StatusReuseMetadata) -> Hash {
     hash.field_optional_hash(
         "deterministic_discharge_hash",
         metadata.deterministic_discharge_hash,
+    );
+    hash.field_optional_str(
+        "accepted_goal_polarity",
+        metadata
+            .accepted_goal_polarity
+            .map(AcceptedGoalPolarity::as_str),
     );
     hash.field_optional_hash(
         "trusted_used_axioms_hash",

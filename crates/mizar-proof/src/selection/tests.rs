@@ -427,6 +427,7 @@ fn rejected_candidates_use_diagnostic_order_not_arrival() {
             can_schedule_kernel_check: false,
             diagnostic: None,
             kernel_rejections: Vec::new(),
+            kernel_evidence_check_kind: None,
             external_admission: None,
         },
     )
@@ -466,6 +467,7 @@ fn rejected_order_covers_source_category_hash_and_id_ties() {
             can_schedule_kernel_check: true,
             diagnostic: None,
             kernel_rejections: Vec::new(),
+            kernel_evidence_check_kind: None,
             external_admission: None,
         },
     )
@@ -532,6 +534,7 @@ fn trusted_classes_require_kernel_derived_marker() {
             can_schedule_kernel_check: false,
             diagnostic: None,
             kernel_rejections: Vec::new(),
+            kernel_evidence_check_kind: None,
             external_admission: None,
         },
     );
@@ -560,6 +563,7 @@ fn trusted_classes_require_kernel_derived_marker() {
             can_schedule_kernel_check: false,
             diagnostic: None,
             kernel_rejections: Vec::new(),
+            kernel_evidence_check_kind: None,
             external_admission: None,
         },
     )
@@ -673,6 +677,7 @@ fn forged_external_admission_cannot_override_active_policy_mode() {
             can_schedule_kernel_check: false,
             diagnostic: None,
             kernel_rejections: Vec::new(),
+            kernel_evidence_check_kind: None,
             external_admission: Some(crate::policy::ExternalEvidenceAdmission::new(
                 true,
                 true,
@@ -1031,6 +1036,7 @@ fn rejected_policy_decision_with_reason(reason: PolicyReasonCode) -> PolicyDecis
             reason,
         )),
         kernel_rejections: Vec::new(),
+        kernel_evidence_check_kind: None,
         external_admission: None,
     }
 }
@@ -1041,6 +1047,7 @@ fn kernel_rejected_decision_with_record(record: RejectionRecord) -> PolicyDecisi
         can_schedule_kernel_check: false,
         diagnostic: None,
         kernel_rejections: vec![record],
+        kernel_evidence_check_kind: None,
         external_admission: None,
     }
 }

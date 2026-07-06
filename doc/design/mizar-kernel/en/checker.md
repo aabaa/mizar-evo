@@ -435,14 +435,17 @@ present the external status as satisfying the requirement.
 
 Task 28 provides `check_kernel_evidence` and `check_kernel_evidence_batch` for
 the corrected normal path. Task 30 extends that path with explicit
-`KernelEvidenceCheckKind` binding: accepted proof-obligation results carry
-`ProofObligation`, accepted consistency checks carry `ConsistencyCheck`, and
-consistency checks are not proof-obligation acceptance material for downstream
-proof policy. Task 31 extends the path with non-imported context identity
-verification before SAT encoding. Batch checking sorts results by target VC
-fingerprint, then by caller input order for equal targets. It does not spawn
-workers or read cancellation tokens; external scheduler integration remains
-outside this crate. Task 16's legacy certificate batch helper remains
+`KernelEvidenceCheckKind` binding: proof-obligation evidence results carry
+`ProofObligation`, consistency-check evidence results carry
+`ConsistencyCheck`, and consistency checks are not proof-obligation acceptance
+material for downstream proof policy. Rejected evidence results preserve the
+same explicit check kind so downstream policy can distinguish proof-obligation
+polarity failures from consistency-check diagnostics without inspecting only
+the rejection detail. Task 31 extends the path with non-imported context
+identity verification before SAT encoding. Batch checking sorts results by
+target VC fingerprint, then by caller input order for equal targets. It does
+not spawn workers or read cancellation tokens; external scheduler integration
+remains outside this crate. Task 16's legacy certificate batch helper remains
 migration/audit inventory behind the explicit audit gate; task 29 re-reviews
 that surface.
 

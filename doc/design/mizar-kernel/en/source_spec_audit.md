@@ -168,7 +168,8 @@ Correspondence summary:
   `KernelEvidenceCheckKind` binds proof-obligation checks to
   `AssertFalseForRefutation` and consistency checks to
   `AssertTrueForConsistency`; mismatches reject as
-  `certificate_rejection/context_mismatch` at `final_goal.polarity`.
+  `certificate_rejection/context_mismatch` at `final_goal.polarity`, with the
+  rejected evidence result preserving the explicit check kind.
   `KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION` and the context-identity payload
   types bind local-hypothesis, cited-premise, and generated-VC-fact formula
   entries to immutable task-28 context rows before SAT encoding.

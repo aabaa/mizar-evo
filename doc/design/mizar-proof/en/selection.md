@@ -70,6 +70,20 @@ The winner ordering is:
 `DiagnosticOnly` candidates are excluded from winner selection, but their
 diagnostics may be attached to the selected result.
 
+Corrected terminal kernel rejections have one narrow ordering override: when
+the best otherwise-selectable result is `PolicyOpen`, a `KernelRejected`
+candidate carrying `invalid_sat_refutation`, proof-obligation
+goal-polarity `context_mismatch`, `missing_provenance`, or a real legacy
+unsupported-certificate gate record is selected instead as the primary failed
+proof diagnostic. The `context_mismatch` branch is limited to the structured
+`final_goal.polarity` rejection location and an explicit preserved
+`ProofObligation` kernel evidence check kind; consistency-check polarity
+mismatch and target-binding context mismatch remain ordinary rejected
+diagnostics and do not displace policy-open output. This override does not
+outrank `KernelVerified`, `DischargedBuiltin`,
+`PolicyPermittedExternal`, or `PolicyAssumed` candidates that are otherwise
+eligible under the active policy.
+
 ## Tie-Break Keys
 
 Within the same winner class, candidates are sorted by this stable key tuple:
@@ -145,6 +159,7 @@ publication:
 | `policy_fingerprint` | Active `PolicyFingerprint`. |
 | `encoded_problem_hash` | Stable hash of the encoded obligation. |
 | `selected_evidence_hash` | Kernel evidence payload hash, external evidence hash, policy-assumption source hash, or open explanation hash, depending on class. |
+| `accepted_goal_polarity` | Kernel-validated accepted proof-obligation goal polarity for trusted kernel selections; currently `assert_false_for_refutation` and absent for non-trusted, rejected, open, policy-tainted, or consistency-check outcomes. |
 | `selected_proof_witness_hash` | Witness payload artifact hash (`witness_artifact_hash`) when the selected `KernelVerified` candidate carries witness metadata that the current artifact schema can reference. It is not a hash of the `ProofWitnessRef` metadata object and does not prove committed manifest reachability. |
 | `deterministic_discharge_hash` | Deterministic built-in discharge hash for `DischargedBuiltin`. |
 | `external_admission_status` | External publication status for `PolicyPermittedExternal`. |
@@ -160,8 +175,8 @@ built-in/kernel evidence path.
 For `PolicyPermittedExternal`, `PolicyAssumed`, and `PolicyOpen`, reuse
 metadata is a validation predicate only and does not become trusted acceptance.
 Changing the selected provenance hash, selection reason, tie-break key hash, or
-any selected witness/discharge/evidence hash must change downstream
-proof-reuse validation identity.
+any selected accepted goal polarity, witness/discharge/evidence hash must
+change downstream proof-reuse validation identity.
 
 Current artifact witness references do not yet support `discharged_builtin`
 publication. Until the artifact schema gap is closed, selection may export a
@@ -188,9 +203,9 @@ The selected result must not synthesize trusted `used_axioms`. It may carry
 trusted `used_axioms` only by referencing the accepted proof-obligation kernel
 result selected as `KernelVerified` or `DischargedBuiltin`. The trusted marker
 used by selection must be bound to the accepted proof-obligation kernel
-evidence hash and must match the selected candidate's evidence hash. Accepted
-consistency checks are non-selectable diagnostics and do not create trusted
-markers.
+evidence hash, carry the accepted proof-obligation goal polarity, and must
+match the selected candidate's evidence hash. Accepted consistency checks are
+non-selectable diagnostics and do not create trusted markers.
 
 ## Artifact Proof Selection Merge
 

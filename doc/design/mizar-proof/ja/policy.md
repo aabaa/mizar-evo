@@ -89,6 +89,28 @@ class の意味的な順序は selection task が定めるが、policy classific
 forward-compatible 実装は、新しい schema version の下でのみ class を追加してよい。
 non-kernel material が trusted acceptance になれない規則は維持しなければならない。
 
+訂正済み kernel proof-obligation rejection は terminal な policy input のままである。
+`invalid_sat_refutation`、kernel-evidence goal-polarity の
+`context_mismatch`、`missing_provenance`、real legacy unsupported-certificate
+gate record は `KernelRejected` diagnostic のままにし、受理へ retry したり、
+policy-open へ再分類したり、external admission で upgrade したりしてはならない。
+selection は otherwise-open fallback よりこれらの rejection を優先して、status
+projection が failed proof result を記録できるようにしてよい。ただし accepted
+trusted kernel evidence は rejected diagnostic より上位のままである。proof crate は
+この gate を test するために legacy certificate payload を fabricate してはならない。
+real-payload coverage は public kernel legacy-certificate fixture または runner を待つ。
+
+accepted proof-obligation kernel input について、`KernelPolicyInput` は
+proof-reuse metadata が使う kernel-validated accepted goal polarity も公開する。
+現在の public value は `AcceptedGoalPolarity::AssertFalseForRefutation` である。
+Accepted consistency check と non-accepted または policy-tainted input は accepted
+goal polarity を公開しない。
+
+rejected kernel-evidence input について、kernel result が提供する場合、
+`PolicyDecision` は kernel evidence check kind を保持する。selection はその明示 kind を
+使って proof-obligation goal-polarity failure と consistency-check diagnostic を区別する。
+rejection detail text だけからその区別を推測してはならない。
+
 ## Public Enum Policy
 
 task 14 は public-enum forward-compatibility procedure をこの module に適用する。
@@ -108,6 +130,7 @@ policy/spec review を要求するものとして扱う。
 | `PortfolioEarlyStopClass` | forward-compatible |
 | `PortfolioEarlyStopReason` | forward-compatible |
 | `KernelEvidenceOrigin` | forward-compatible |
+| `AcceptedGoalPolarity` | forward-compatible |
 | `PolicyCandidate` | forward-compatible |
 | `BackendProofPayloadKind` | forward-compatible |
 | `ExternalEvidencePublicationStatus` | forward-compatible |

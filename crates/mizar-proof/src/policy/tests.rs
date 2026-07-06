@@ -18,6 +18,15 @@ fn explicit_kernel_origin_controls_trusted_class() {
         CandidatePolicyClass::KernelVerified
     );
     assert_eq!(
+        kernel_input_for_test(
+            KernelCheckStatus::Accepted,
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+            false
+        )
+        .accepted_goal_polarity(),
+        Some(AcceptedGoalPolarity::AssertFalseForRefutation)
+    );
+    assert_eq!(
         evaluator.candidate_class(&PolicyCandidate::KernelResult(kernel_input_for_test(
             KernelCheckStatus::Accepted,
             KernelEvidenceOrigin::BuiltinDischarge,
@@ -101,6 +110,7 @@ fn accepted_consistency_kernel_results_are_diagnostic_only() {
             let candidate = PolicyCandidate::KernelResult(input.clone());
 
             assert_eq!(input.accepted_evidence_hash(), None);
+            assert_eq!(input.accepted_goal_polarity(), None);
             assert_eq!(TrustedKernelEvidence::from_policy_input(&input), None);
             assert_eq!(
                 evaluator.candidate_class(&candidate),
@@ -768,9 +778,10 @@ fn assert_policy_tainted_admission(
     expected_reason: PolicyReasonCode,
 ) {
     let evaluator = ProofPolicyEvaluator::new(policy);
-    let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(
-        kernel_input_for_test(KernelCheckStatus::Accepted, origin, true),
-    ));
+    let input = kernel_input_for_test(KernelCheckStatus::Accepted, origin, true);
+    assert_eq!(input.accepted_goal_polarity(), None);
+    assert_eq!(TrustedKernelEvidence::from_policy_input(&input), None);
+    let decision = evaluator.evaluate_candidate(&PolicyCandidate::KernelResult(input));
     let expected_diagnostic = Some(PolicyDiagnostic::new(expected_category, expected_reason));
 
     assert_eq!(decision.class, expected_class);

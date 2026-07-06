@@ -1181,7 +1181,7 @@ pub type KernelCheckServiceResult<T> = Result<T, Box<RejectionRecord>>;
 pub fn check_kernel_certificate(input: KernelCheckInput<'_>) -> KernelCheckResult {
     match check_kernel_certificate_inner(input) {
         Ok(result) => result,
-        Err(rejection) => rejected_kernel_result(input.target_vc_fingerprint, *rejection),
+        Err(rejection) => rejected_kernel_result(input.target_vc_fingerprint, None, *rejection),
     }
 }
 
@@ -1203,7 +1203,11 @@ pub fn check_kernel_batch(inputs: &[KernelCheckInput<'_>]) -> Vec<KernelCheckRes
 pub fn check_kernel_evidence(input: KernelEvidenceCheckInput<'_>) -> KernelCheckResult {
     match check_kernel_evidence_inner(input) {
         Ok(result) => result,
-        Err(rejection) => rejected_kernel_result(input.target_vc_fingerprint, *rejection),
+        Err(rejection) => rejected_kernel_result(
+            input.target_vc_fingerprint,
+            Some(input.check_kind),
+            *rejection,
+        ),
     }
 }
 
@@ -2052,6 +2056,7 @@ fn validate_report_record_total(
 
 fn rejected_kernel_result(
     target_vc_fingerprint: &TargetVcFingerprint,
+    evidence_check_kind: Option<KernelEvidenceCheckKind>,
     rejection: RejectionRecord,
 ) -> KernelCheckResult {
     KernelCheckResult {
@@ -2065,7 +2070,7 @@ fn rejected_kernel_result(
         checked_derived_facts: Vec::new(),
         sat_check_report: None,
         final_goal: None,
-        evidence_check_kind: None,
+        evidence_check_kind,
         used_axioms: Vec::new(),
         policy_taint: false,
         rejections: vec![rejection],

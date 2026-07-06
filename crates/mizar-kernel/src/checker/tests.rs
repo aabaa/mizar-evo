@@ -146,6 +146,10 @@ fn sat_backed_kernel_evidence_binds_goal_polarity_to_check_kind() {
         KernelEvidenceCheckKind::ProofObligation,
     ));
     assert_goal_polarity_mismatch(&proof_polarity_mismatch);
+    assert_eq!(
+        proof_polarity_mismatch.evidence_check_kind(),
+        Some(KernelEvidenceCheckKind::ProofObligation)
+    );
 
     let consistency_polarity_mismatch = check_kernel_evidence(evidence_input_with_check_kind(
         &target_vc,
@@ -154,6 +158,10 @@ fn sat_backed_kernel_evidence_binds_goal_polarity_to_check_kind() {
         KernelEvidenceCheckKind::ConsistencyCheck,
     ));
     assert_goal_polarity_mismatch(&consistency_polarity_mismatch);
+    assert_eq!(
+        consistency_polarity_mismatch.evidence_check_kind(),
+        Some(KernelEvidenceCheckKind::ConsistencyCheck)
+    );
 }
 
 #[test]
