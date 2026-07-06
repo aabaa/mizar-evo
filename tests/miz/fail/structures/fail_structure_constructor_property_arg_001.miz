@@ -1,0 +1,17 @@
+:: Rejection target: `unit` is a property, not a field. Default structure
+:: constructors accept declared fields only; property values are supplied by
+:: property implementations, so a constructor-property argument must be
+:: rejected (doc/spec/en/05.structures.md, sections 5.5.1 and 5.8.4;
+:: doc/spec/en/07.modes.md, section 7.4.1).
+
+definition
+  struct UnitalMagmaStr where
+    field carrier -> set;
+    field binop -> set;
+    property unit -> set;
+  end;
+end;
+
+reserve A, op, e for set;
+
+set bad = UnitalMagmaStr(carrier: A, binop: op, unit: e);

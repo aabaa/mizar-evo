@@ -38,7 +38,7 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 
 | Id | Severity | Area | Summary |
 |---|---|---|---|
-| SSA-001 | critical | 5.5/5.8 | Constructor-supplied property values plus fields-only extensionality collapse the logic |
+| SSA-001 | critical | 5.5/5.8 | Resolved by task 35: constructor-supplied property values plus fields-only extensionality collapsed the logic |
 | SSA-002 | high | 5.3/5.4 | Diamond member identity is name-based but renaming breaks name matching |
 | SSA-003 | high | 19.6.1 | Template inference Cases 2-3 contradict the ⊑-based selection of 19.4.3 |
 | SSA-004 | high | 17.5/17.9.3 | Functorial cluster `for T` clause has no semantics in the FOL encoding |
@@ -61,19 +61,19 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 
 ## Findings
 
-### SSA-001 (critical, `spec_gap`) — Constructor property arguments vs fields-only extensionality
+### SSA-001 (critical, resolved `spec_gap`) — Constructor property arguments vs fields-only extensionality
 
 **Where:** 05.structures.md §5.5.1, §5.8.4, §5.8.5; 07.modes.md §7.4.1.
 
-§5.5.1 lets the default constructor supply **property** values
-(`OneStr(carrier: A, one: b)`), and §5.8.4 emits projection axioms for them
-(`one(Agg_OneStr(A, b)) = b`). §5.8.5 states extensionality over **fields
-only**. Together these are inconsistent: for any `b1, b2` of the property
-type, `Agg_OneStr(A, b1)` and `Agg_OneStr(A, b2)` agree on all fields, so
-extensionality forces `Agg_OneStr(A, b1) = Agg_OneStr(A, b2)`, and the
-projection axioms then prove `b1 = b2` — every carrier collapses to at most
-one element, from which false statements become provable. Constructor
-property arguments also compete with §7.4.1 `means`/`equals` property
+Before task 35, §5.5.1 let the default constructor supply **property** values
+(`OneStr(carrier: A, one: b)`), and §5.8.4 emitted projection axioms for them
+(`one(Agg_OneStr(A, b)) = b`). §5.8.5 stated extensionality over **fields
+only**. Together these were inconsistent: for any `b1, b2` of the property
+type, `Agg_OneStr(A, b1)` and `Agg_OneStr(A, b2)` agreed on all fields, so
+extensionality forced `Agg_OneStr(A, b1) = Agg_OneStr(A, b2)`, and the
+projection axioms then proved `b1 = b2` — every carrier collapsed to at most
+one element, from which false statements became provable. Constructor
+property arguments also competed with §7.4.1 `means`/`equals` property
 implementations as a second, unreconciled source of the property value.
 
 **Impact:** any implementation that emits the three axiom families as written
@@ -91,6 +91,14 @@ checker needs to know which obligations a constructor call emits.
    by fields".
 
 Resolution 1 is recommended; it keeps the many-sorted-set reading intact.
+
+**Disposition:** task 35 adopts resolution 1. Spec 05 now makes default
+constructors fields-only and removes property projection axioms; spec 07
+states that property implementations are the only source of property values.
+The inactive reject-first seed
+`fail_structure_constructor_property_arg_001` pins the rejected
+constructor-property form until `advanced_semantics` runner and
+source-to-checker payload gaps close.
 
 ### SSA-002 (high, `spec_gap`) — Diamond member identity under renaming
 
@@ -370,10 +378,12 @@ with SSA-007 (admitting it into clusters breaks the termination argument).
 
 ## Adversarial Corpus
 
-Sixteen rejection fixtures were fixed test-first (sidecars + traceability
-entries; all are inactive seeds until an `advanced_semantics` runner and
-source-to-checker payload extraction exist — MC-G020/MC-G021/MC-G023/MC-G027).
-Existing tests and expectations were not modified.
+Sixteen rejection fixtures were fixed test-first by the audit (sidecars +
+traceability entries; all are inactive seeds until an `advanced_semantics`
+runner and source-to-checker payload extraction exist —
+MC-G020/MC-G021/MC-G023/MC-G027). Task 35 later adds the SSA-001
+constructor-property seed under the same inactive-seed rule. Existing tests
+and expectations were not rebaselined to match implementation behavior.
 
 | Fixture | Target behavior | Spec |
 |---|---|---|
@@ -393,8 +403,11 @@ Existing tests and expectations were not modified.
 | `fail/types/fail_types_qua_narrowing_001` | `qua` narrowing rejected | 13.6.4, 8.2.2 |
 | `fail/types/fail_types_qua_unrelated_struct_001` | `qua` to unrelated struct rejected | 13.6.1, 13.6.4 |
 | `fail/types/fail_types_comprehension_missing_sethood_001` | Fraenkel without sethood rejected | 13.4.2, 7.8.1 |
+| `fail/structures/fail_structure_constructor_property_arg_001` | constructor property argument rejected | 5.5.1, 5.8.4, 7.4.1 |
 
-New traceability requirements: `spec.en.05.structures.inheritance.semantic`,
+New traceability requirements: `spec.en.05.structures.constructor_fields_only.semantic`,
+`spec.en.05.structures.inheritance.semantic`,
+`spec.en.07.modes.property_implementation.not_constructor_source.semantic`,
 `spec.en.07.modes.existential_gating.semantic`,
 `spec.en.13.qua.widening_only.semantic`,
 `spec.en.13.sethood.comprehension.semantic`,
@@ -407,11 +420,14 @@ New traceability requirements: `spec.en.05.structures.inheritance.semantic`,
 
 Recommendations only; todo.md is revised by a follow-up task.
 
-- **New spec tasks (before further checker semantics):** one task each for
-  SSA-001 (constructor/extensionality), SSA-002+SSA-011+SSA-012 (inheritance
-  identity, path uniqueness, acyclicity), SSA-003 (template tie-break),
-  SSA-004 (functorial `for` semantics), SSA-005 (property implementation
-  coherence), each updating `doc/spec/en/` + `ja/` together.
+- **Resolved spec task:** SSA-001 (constructor/extensionality) is resolved by
+  task 35 with synchronized `doc/spec/en/` + `ja/` edits and an inactive
+  reject-first corpus seed.
+- **Remaining spec tasks (before further checker semantics):** one task each
+  for SSA-002+SSA-011+SSA-012 (inheritance identity, path uniqueness,
+  acyclicity), SSA-003 (template tie-break), SSA-004 (functorial `for`
+  semantics), SSA-005 (property implementation coherence), each updating
+  `doc/spec/en/` + `ja/` together.
 - **Task 19/20 (registration gating, existential gates):** revisit against
   SSA-006's activation contract and SSA-014's built-in inhabitation table
   once decided; the interim conservative policy should be recorded as such

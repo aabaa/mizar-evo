@@ -78,6 +78,11 @@ crate ownership: [internal 07](../../internal/en/07.crate_module_layout.md).
 - **Diagnostics record: follows the `mizar-resolve` decision** on
   `mizar-diagnostics` adoption timing; the checker uses whatever record the
   resolver adopted. Registered at the top level.
+- **Constructor property value source: resolved by task 35.** Default
+  structure constructors accept fields only; `property` values come only from
+  Chapter 7 property implementations. Task 35 updates spec 05/07 in English
+  and Japanese, adds a reject-first inactive `advanced_semantics` seed, and
+  records traceability without changing checker/core source semantics.
 
 ## Ordered Task List
 
@@ -640,9 +645,9 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | no task: the greedy `of`/`over` parse is deterministic and documented (spec 19.6.4); a scope-sensitivity lint belongs to the future diagnostics-adoption wave and is recorded in that wave, not here |
-| corpus seeds | task 48 activates the 16 audit fixtures when the `advanced_semantics` runner lands |
+| corpus seeds | task 48 activates the 16 audit fixtures plus the task-35 constructor-property seed when the `advanced_semantics` runner lands |
 
-35. **Spec decision: constructor property arguments vs extensionality (SSA-001).** [ ]
+35. **Spec decision: constructor property arguments vs extensionality (SSA-001).** [x]
     - Resolve the critical §5.5.1/§5.8.4/§5.8.5 inconsistency. Recommended
       resolution 1: constructors accept fields only; property values always
       come from §7.4.1 property implementations. Update spec 05 and 07
@@ -656,6 +661,14 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Verify: `cargo test -p mizar-test`; corpus JSON/TOML validity.
     - Deps: none (first of the spec wave). Refs: SSA-001;
       [template_encoding_audit.md](../../mizar-core/en/template_encoding_audit.md) F1.
+    - Completed by task 35: spec 05 now makes default constructors
+      fields-only and removes property projection axioms; spec 07 states that
+      property implementations are the sole property-value source. Added
+      `fail_structure_constructor_property_arg_001` as an inactive
+      `advanced_semantics` reject-first seed and traceability rows
+      `spec.en.05.structures.constructor_fields_only.semantic` and
+      `spec.en.07.modes.property_implementation.not_constructor_source.semantic`.
+      No checker/core source semantics changed.
 
 36. **Spec decision: structure member identity, upcast paths, acyclicity (SSA-002, SSA-011, SSA-012).** [ ]
     - Define diamond member identity as the root declaration reached by the

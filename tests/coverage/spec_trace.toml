@@ -575,6 +575,23 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.05.structures.constructor_fields_only.semantic"
+source = "doc/spec/en/05.structures.md"
+section = "5.5.1 Default Constructor; 5.8.4 Constructor Axioms; 5.8.5 Extensionality; with 7.4.1 Property Implementation"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Task 35 / SSA-001 decision: default constructors accept declared fields only; struct properties are virtual selector slots whose values come from property implementations. The seed is inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G030)."
+depends_on = [
+  "spec.en.05.structures.parser",
+  "spec.en.13.structure_expressions.parser",
+]
+tests = [
+  "tests/miz/fail/structures/fail_structure_constructor_property_arg_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.05.structures.inheritance.semantic"
 source = "doc/spec/en/05.structures.md"
 section = "5.3 Inheritance; 5.3.1 Syntax (EBNF); 5.4 Multiple and Diamond Inheritance"
@@ -647,6 +664,24 @@ depends_on = [
 tests = [
   "tests/miz/fail/modes/fail_mode_missing_existential_001.expect.toml",
   "tests/miz/fail/modes/fail_mode_existential_after_declaration_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.07.modes.property_implementation.not_constructor_source.semantic"
+source = "doc/spec/en/07.modes.md"
+section = "7.4.1 Property Implementation; with 5.5.1 fields-only constructors"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Task 35 / SSA-001 decision, negative half: constructor-supplied arguments are not a source of property values and must be rejected. Positive evaluation of property `means`/`equals` implementations remains blocked on property implementation payload extraction and future SSA-005 coherence decisions. The seed is inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G030)."
+depends_on = [
+  "spec.en.05.structures.parser",
+  "spec.en.07.mode_definitions.parser",
+  "spec.en.13.structure_expressions.parser",
+]
+tests = [
+  "tests/miz/fail/structures/fail_structure_constructor_property_arg_001.expect.toml",
 ]
 
 [[requirement]]

@@ -77,6 +77,11 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 - **diagnostics レコード: `mizar-resolve` の決定に従う**（`mizar-diagnostics`
   採用時期）。resolver が採用したレコードを checker も使う。トップレベルに
   登録済み。
+- **constructor の property 値供給源: task 35 で解決済み。** デフォルトの
+  構造体 constructor は field のみを受け取り、`property` 値は第 7 章の
+  property implementation からのみ来る。task 35 は spec 05/07 を英日で
+  更新し、reject-first の inactive `advanced_semantics` seed と traceability を
+  追加し、checker/core source semantics は変更しない。
 
 ## 順序付きタスク一覧
 
@@ -604,9 +609,9 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | タスク化しない: greedy `of`/`over` parse は決定的かつ文書化済み(spec 19.6.4)。scope 感度 lint は将来の diagnostics 採用 wave に属し、そこで記録する |
-| corpus seeds | task 48 が `advanced_semantics` runner 到着時に監査 fixture 16 件を活性化する |
+| corpus seeds | task 48 が `advanced_semantics` runner 到着時に監査 fixture 16 件と task-35 constructor-property seed を活性化する |
 
-35. **Spec 決定: constructor property 引数と extensionality(SSA-001)。** [ ]
+35. **Spec 決定: constructor property 引数と extensionality(SSA-001)。** [x]
     - critical な §5.5.1/§5.8.4/§5.8.5 の不整合を解決する。推奨は解決策 1:
       constructor は field のみを受け取り、property 値は常に §7.4.1 の
       property implementation から来る。spec 05 と 07 を(英日同一変更で)
@@ -619,6 +624,14 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-test`; corpus JSON/TOML の妥当性。
     - 依存: なし(spec wave の先頭)。参照: SSA-001;
       [template_encoding_audit.md](../../mizar-core/en/template_encoding_audit.md) F1。
+    - task 35 で完了: spec 05 はデフォルト constructor を field-only とし、
+      property projection axiom を削除した。spec 07 は property implementation が
+      property 値の唯一の供給源であると明記した。
+      `fail_structure_constructor_property_arg_001` を inactive
+      `advanced_semantics` reject-first seed として追加し、traceability row
+      `spec.en.05.structures.constructor_fields_only.semantic` と
+      `spec.en.07.modes.property_implementation.not_constructor_source.semantic` を記録した。
+      checker/core source semantics は変更していない。
 
 36. **Spec 決定: structure member 同一性・upcast path・非循環性(SSA-002, SSA-011, SSA-012)。** [ ]
     - diamond member 同一性を `from` chain で到達する root 宣言として定義

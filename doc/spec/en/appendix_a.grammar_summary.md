@@ -267,8 +267,8 @@ property_redef   ::= "property" identifier [ "->" type_expression ]
                      "from" identifier ";" ;
 
 struct_constructor ::= struct_ref_name [ type_args ]
-                       "(" [ named_arg { "," named_arg } ] ")" ;
-named_arg          ::= identifier ":" term_expression ;
+                       "(" [ field_arg { "," field_arg } ] ")" ;
+field_arg          ::= identifier ":" term_expression ;
 field_access       ::= term_expression "." field_name
                        [ "(" [ term_list ] ")" ] ;
 ```

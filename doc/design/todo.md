@@ -95,7 +95,7 @@ is its task 1). "Next work" points into the
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 (task 30) | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22 plus task 21 soundness vocabulary | step 5 (task 10) | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete | steps 2, 4, 5 (tasks 35-48) | [todo](./mizar-checker/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec wave in progress through task 35 | steps 2, 4, 5 (tasks 36-48) | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete | steps 2, 4 (tasks 26-30) | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | steps 3 (task 29), 5; tasks 27-28 resolved | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | steps 3, 4 (tasks 33-35); task 32 parked; tasks 30-31 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -141,14 +141,14 @@ Exit: audit F1/F2/F7/F8 closed; `soundness_argument.md` invariants B4 and the
 P-class rows are marked implemented/resolved; the 23-case certificate corpus
 stays rejecting.
 
-### Step 2 — Spec-decision wave [ ]
+### Step 2 — Spec-decision wave [~]
 
 Settle the audited semantic decisions as docs-plus-corpus work before any
 checker/core implementation that would preempt them. Per AGENTS.md these are
 specification-intent changes: update `doc/spec/en/` and `ja/` together. No
 checker code semantics change in this step.
 
-1. [ ] [mizar-checker task 35](./mizar-checker/en/todo.md) — constructor
+1. [x] [mizar-checker task 35](./mizar-checker/en/todo.md) — constructor
    property arguments vs extensionality (SSA-001, critical).
 2. [ ] [mizar-checker task 36](./mizar-checker/en/todo.md) — structure member
    identity, upcast paths, acyclicity (SSA-002/011/012).
