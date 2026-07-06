@@ -390,6 +390,67 @@ Keep `cargo test -p mizar-vc` green after each task (see
       [22.incremental_verification_contract.md](../../architecture/en/22.incremental_verification_contract.md),
       `dependency_slice.md`.
 
+### Kernel soundness-audit follow-ups (2026-07-03)
+
+The kernel acceptance-boundary audit
+([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md),
+findings F1, F2, F6) assigns this crate the producer side of three
+kernel-facing contracts. The full finding-to-task disposition table lives in
+the [mizar-kernel TODO](../../mizar-kernel/en/todo.md); the tasks below are
+the paired producer tasks.
+
+27. **Explicit goal polarity in the kernel evidence handoff (kernel F1).** [ ]
+    - Make the task-25 handoff builder state the goal polarity it emits and
+      forbid `AssertTrueForConsistency` for proof obligations: every
+      proof-obligation handoff declares refutation polarity explicitly, and
+      the builder rejects (fail-closed) any caller request that would pair a
+      proof obligation with consistency polarity. Update
+      `kernel_evidence_handoff.md` (en+ja) to state the polarity contract
+      and its binding to the target obligation's check kind (architecture 15
+      "Goal Polarity Is Bound By The Target Obligation").
+    - Acceptance: builder output always carries an explicit polarity; a Rust
+      regression shows a consistency-polarity request for a proof obligation
+      is rejected with a stable diagnostic; the spec names the polarity
+      field.
+    - Verify: `cargo test -p mizar-vc`,
+      `cargo clippy -p mizar-vc --all-targets -- -D warnings`;
+      `cargo test -p mizar-kernel` when the kernel-side task 30 exists.
+    - Deps: 25; paired: mizar-kernel task 30. Spec: architecture 15,
+      `kernel_evidence_handoff.md`; soundness_argument.md F1.
+
+28. **Context-identity payload for non-imported source bindings (kernel F2).** [ ]
+    - Produce the verification data the kernel needs to check that
+      local-hypothesis, cited-premise, and generated-VC-fact bindings really
+      belong to the target VC: bind the evidence's local/VC-fact sections to
+      the canonical task-25/26 kernel-evidence handoff hash (or a superior
+      recorded scheme) so the kernel can verify membership instead of
+      trusting producer labels. Update `kernel_evidence_handoff.md` and
+      `dependency_slice.md` (en+ja) in the same change as the schema.
+    - Acceptance: handoff output carries a context-identity payload covering
+      every non-imported source binding; mutating a binding (e.g. labeling
+      the goal a local hypothesis) breaks the payload check; the kernel-side
+      pass fixture of kernel task 31 can be built from this output.
+    - Verify: `cargo test -p mizar-vc`; joint fixture check with
+      `cargo test -p mizar-kernel` / `cargo test -p mizar-test` once kernel
+      task 31 lands.
+    - Deps: 26; paired: mizar-kernel task 31. Spec: architecture 15
+      "Context Identity Covers Non-Imported Source Bindings";
+      soundness_argument.md F2.
+
+29. **Imported-statement projection producer side (kernel F6).** [ ]
+    - Together with kernel task 33, specify and emit the projection from
+      arch-18 imported statement fingerprints to the formula-tree
+      fingerprints cited in kernel evidence, so imported facts become citable
+      without weakening the fingerprint-equality rule. Dependency slices must
+      carry whatever projection data the kernel validates.
+    - Acceptance: a projected imported-fact citation round-trips through the
+      handoff and is accepted by the kernel-side pass fixture; stale or
+      mismatched projections fail closed.
+    - Verify: `cargo test -p mizar-vc`, `cargo test -p mizar-kernel`,
+      `cargo test -p mizar-test`.
+    - Deps: 28; paired: mizar-kernel task 33. Spec: architecture 15, 18;
+      soundness_argument.md F6.
+
 ## Recommended Verification
 
 Run after each task:

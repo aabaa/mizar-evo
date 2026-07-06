@@ -636,6 +636,39 @@ Keep `cargo test -p mizar-atp` green after each task (see
       remain external_dependency_gap / deferred rather than local proof-policy
       placeholders.
 
+### Kernel soundness-audit alignment (2026-07-03)
+
+The kernel acceptance-boundary audit
+([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md))
+tightened the evidence contract this crate produces candidates for. Findings
+F1 (goal polarity), F2 (non-imported source bindings), and F6
+(imported-statement projection) each have kernel/vc owner tasks; the
+ATP-side conformance is one task here because this crate constructs
+candidate evidence through the kernel-owned schema and must not weaken it.
+
+29. **Candidate evidence conformance to the post-audit kernel contract (kernel F1, F2, F6).** [ ]
+    - Align candidate-evidence construction with the corrected architecture
+      15 contract: every proof-obligation candidate declares refutation
+      polarity bound to the target obligation's check kind (never
+      `AssertTrueForConsistency` for proof obligations); non-imported source
+      bindings (local hypotheses, cited premises, generated VC facts) carry
+      the `mizar-vc` context-identity payload unchanged rather than
+      producer-invented labels; imported-fact citations use the
+      kernel-validated statement projection once kernel task 33 lands.
+      Candidate production must remain fail-closed: candidates that cannot
+      satisfy the contract are classified, not patched up.
+    - Acceptance: Rust regressions show a consistency-polarity proof
+      candidate and a producer-relabeled local hypothesis are never emitted
+      (or are emitted only as classified non-candidates); joint fixtures
+      with the kernel corpus (`fail_certificate_sat_goal_polarity_mismatch_001`,
+      `fail_certificate_symbols_unverifiable_local_hypothesis_001`) stay
+      rejecting when driven through ATP-built candidates.
+    - Verify: `cargo test -p mizar-atp`, `cargo test -p mizar-kernel`,
+      `cargo clippy -p mizar-atp --all-targets -- -D warnings`.
+    - Deps: mizar-kernel tasks 30-31 and 33; mizar-vc tasks 27-29. Spec:
+      architecture 15 (post-audit), internal 04; soundness_argument.md F1,
+      F2, F6.
+
 ## Recommended Verification
 
 Run after each task:

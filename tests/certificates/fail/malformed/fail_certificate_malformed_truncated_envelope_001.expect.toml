@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_malformed_truncated_envelope_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "fail_certificate_malformed_truncated_envelope_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "certificate_check"
+failure_category = "certificate_rejection"
+rejection_reason = "malformed_certificate"
+stable_detail_key = "soundness.certificate.malformed_certificate"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.envelope_rejection",
+]
+notes = "Required soundness case. Truncated v1 envelope: section framing declares provenance and final_goal but the byte stream ends after formula_evidence. Parser must reject before any semantic checking; parsing never grants acceptance. Refs: architecture 15 'Constraints and Assumptions' (small, total, resource-bounded parser); mizar-kernel formula_evidence.md 'Canonical V1 Envelope'; soundness_argument.md invariant E2."

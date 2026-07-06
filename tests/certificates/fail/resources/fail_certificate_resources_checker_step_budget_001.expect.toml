@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_resources_checker_step_budget_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "fail_certificate_resources_checker_step_budget_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "kernel_rejection"
+rejection_reason = "timeout"
+stable_detail_key = "soundness.certificate.timeout"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.resource_budgets",
+]
+notes = "Required soundness case. The evidence parses within structural limits, but checking exceeds the deterministic checker step budget. A stopped check returns timeout, never partial acceptance, and pure parser failures never emit timeout. Refs: checker.md 'Determinism And Cost'; rejection.md timeout; architecture 19 (timeouts are non-acceptance); soundness_argument.md invariant R4."

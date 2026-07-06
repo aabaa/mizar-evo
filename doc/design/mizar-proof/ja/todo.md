@@ -375,6 +375,31 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
       `repo_metadata_conflict` は focused metadata correction commit `36d1a9c` で
       解消済みであり、その後の full-workspace verification は clean である。
 
+### kernel 健全性監査との整合(2026-07-03)
+
+kernel 受理境界の監査
+([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md))は
+kernel の拒否語彙と evidence 契約を訂正した。policy 層はその両方を消費する
+ため、整合タスク 1 件をここで所有する。
+
+21. **訂正済み kernel 拒否分類への policy 整合(kernel F1、F2)。** [ ]
+    - proof-policy 評価と status projection を監査後の kernel 契約に整合
+      させる: `invalid_sat_refutation`、`context_mismatch`、
+      `missing_provenance`、およびレガシー path gate は terminal な証明
+      エラーであり、policy はこれらを upgrade したり、受理へ retry したり、
+      policy-open へ再分類したりしてはならない。witness 選択メタデータは
+      受理された evidence の goal polarity を記録し、reuse consumer が
+      検証できるようにする。evidence class の upgrade は行わない
+      (IV-005 を維持)。
+    - 受け入れ条件: 訂正済み拒否理由それぞれが policy 評価を通って failed
+      status に至る Rust regression を持つ。polarity を運ぶ witness
+      メタデータ fixture が task-17 の reuse export を round-trip する。
+    - 検証: `cargo test -p mizar-proof`、
+      `cargo clippy -p mizar-proof --all-targets -- -D warnings`。
+    - 依存: mizar-kernel tasks 30-31; mizar-test の soundness registry
+      フォローアップ(kernel F7)と調整。仕様: architecture 15(監査後)、
+      19; soundness_argument.md の拒否分類。
+
 ## 推奨検証
 
 各タスクの後で実行する:

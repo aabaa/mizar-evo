@@ -1,0 +1,388 @@
+{
+  "seed_schema": "mizar-kernel-evidence-json-seed/1",
+  "test_id": "fail_certificate_resources_checker_step_budget_001",
+  "expected_failure_category": "kernel_rejection",
+  "expected_rejection_reason": "timeout",
+  "evidence": {
+    "schema_version": 1,
+    "encoding_version": 1,
+    "domain_separator": "MIZAR_KERNEL_EVIDENCE\\0",
+    "kernel_profile": {
+      "schema_version": 1,
+      "encoding_version": 1,
+      "clause_tautology_policy": "reject",
+      "hash_input_algorithm": 1,
+      "formula_fingerprint_algorithm": 2
+    },
+    "target_vc": "vc:pkg.demo/mod.core/theorem_1#0001",
+    "symbol_manifest": [
+      {
+        "symbol_id": 1,
+        "kind": "predicate",
+        "arity": 1,
+        "debug_name": "p"
+      },
+      {
+        "symbol_id": 2,
+        "kind": "predicate",
+        "arity": 1,
+        "debug_name": "q"
+      },
+      {
+        "symbol_id": 3,
+        "kind": "function",
+        "arity": 0,
+        "debug_name": "c"
+      }
+    ],
+    "variable_manifest": [
+      {
+        "variable_id": 1,
+        "role": "free",
+        "debug_name": "x"
+      },
+      {
+        "variable_id": 2,
+        "role": "bound",
+        "debug_name": "y"
+      },
+      {
+        "variable_id": 3,
+        "role": "generated_fresh",
+        "debug_name": "z"
+      }
+    ],
+    "formula_evidence": [
+      {
+        "formula_id": 1,
+        "source_class": "local_hypothesis",
+        "formula": {
+          "kind": "atom",
+          "symbol_id": 1,
+          "arguments": [
+            {
+              "kind": "variable",
+              "variable_id": 1
+            }
+          ]
+        },
+        "formula_fingerprint": "recomputed-by-kernel:formula:1",
+        "provenance_ref": 1,
+        "local_context_ref": 11
+      },
+      {
+        "formula_id": 2,
+        "source_class": "cited_premise",
+        "formula": {
+          "kind": "or",
+          "children": [
+            {
+              "kind": "not",
+              "child": {
+                "kind": "atom",
+                "symbol_id": 1,
+                "arguments": [
+                  {
+                    "kind": "variable",
+                    "variable_id": 1
+                  }
+                ]
+              }
+            },
+            {
+              "kind": "atom",
+              "symbol_id": 2,
+              "arguments": [
+                {
+                  "kind": "variable",
+                  "variable_id": 1
+                }
+              ]
+            }
+          ]
+        },
+        "formula_fingerprint": "recomputed-by-kernel:formula:2",
+        "provenance_ref": 2,
+        "local_context_ref": 12
+      }
+    ],
+    "substitutions": [
+      {
+        "substitution_id": 1,
+        "source_formula_id": 1,
+        "payload_ref": 1,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 2,
+        "source_formula_id": 1,
+        "payload_ref": 2,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 3,
+        "source_formula_id": 1,
+        "payload_ref": 3,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 4,
+        "source_formula_id": 1,
+        "payload_ref": 4,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 5,
+        "source_formula_id": 1,
+        "payload_ref": 5,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 6,
+        "source_formula_id": 1,
+        "payload_ref": 6,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 7,
+        "source_formula_id": 1,
+        "payload_ref": 7,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 8,
+        "source_formula_id": 1,
+        "payload_ref": 8,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 9,
+        "source_formula_id": 1,
+        "payload_ref": 9,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 10,
+        "source_formula_id": 1,
+        "payload_ref": 10,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 11,
+        "source_formula_id": 1,
+        "payload_ref": 11,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 12,
+        "source_formula_id": 1,
+        "payload_ref": 12,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 13,
+        "source_formula_id": 1,
+        "payload_ref": 13,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 14,
+        "source_formula_id": 1,
+        "payload_ref": 14,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 15,
+        "source_formula_id": 1,
+        "payload_ref": 15,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 16,
+        "source_formula_id": 1,
+        "payload_ref": 16,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 17,
+        "source_formula_id": 1,
+        "payload_ref": 17,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 18,
+        "source_formula_id": 1,
+        "payload_ref": 18,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 19,
+        "source_formula_id": 1,
+        "payload_ref": 19,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 20,
+        "source_formula_id": 1,
+        "payload_ref": 20,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 21,
+        "source_formula_id": 1,
+        "payload_ref": 21,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 22,
+        "source_formula_id": 1,
+        "payload_ref": 22,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 23,
+        "source_formula_id": 1,
+        "payload_ref": 23,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 24,
+        "source_formula_id": 1,
+        "payload_ref": 24,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 25,
+        "source_formula_id": 1,
+        "payload_ref": 25,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 26,
+        "source_formula_id": 1,
+        "payload_ref": 26,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 27,
+        "source_formula_id": 1,
+        "payload_ref": 27,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 28,
+        "source_formula_id": 1,
+        "payload_ref": 28,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 29,
+        "source_formula_id": 1,
+        "payload_ref": 29,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 30,
+        "source_formula_id": 1,
+        "payload_ref": 30,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 31,
+        "source_formula_id": 1,
+        "payload_ref": 31,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 32,
+        "source_formula_id": 1,
+        "payload_ref": 32,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 33,
+        "source_formula_id": 1,
+        "payload_ref": 33,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 34,
+        "source_formula_id": 1,
+        "payload_ref": 34,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 35,
+        "source_formula_id": 1,
+        "payload_ref": 35,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 36,
+        "source_formula_id": 1,
+        "payload_ref": 36,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 37,
+        "source_formula_id": 1,
+        "payload_ref": 37,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 38,
+        "source_formula_id": 1,
+        "payload_ref": 38,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 39,
+        "source_formula_id": 1,
+        "payload_ref": 39,
+        "note": "each entry is individually within limits"
+      },
+      {
+        "substitution_id": 40,
+        "source_formula_id": 1,
+        "payload_ref": 40,
+        "note": "each entry is individually within limits"
+      }
+    ],
+    "provenance": [
+      {
+        "provenance_id": 1,
+        "target_vc": "vc:pkg.demo/mod.core/theorem_1#0001",
+        "formula_fingerprint": "recomputed-by-kernel:formula:1",
+        "producer_payload": "producer-opaque-payload"
+      },
+      {
+        "provenance_id": 2,
+        "target_vc": "vc:pkg.demo/mod.core/theorem_1#0001",
+        "formula_fingerprint": "recomputed-by-kernel:formula:2",
+        "producer_payload": "producer-opaque-payload"
+      },
+      {
+        "provenance_id": 3,
+        "target_vc": "vc:pkg.demo/mod.core/theorem_1#0001",
+        "formula_fingerprint": "recomputed-by-kernel:goal",
+        "producer_payload": "producer-opaque-payload"
+      }
+    ],
+    "final_goal": {
+      "formula": {
+        "kind": "atom",
+        "symbol_id": 2,
+        "arguments": [
+          {
+            "kind": "variable",
+            "variable_id": 1
+          }
+        ]
+      },
+      "polarity": "assert_false_for_refutation",
+      "formula_fingerprint": "recomputed-by-kernel:goal",
+      "provenance_ref": 3
+    },
+    "checker_budget_note": "evidence is structurally within parser limits, but replaying all substitution entries exceeds the configured deterministic checker pipeline step budget (max_pipeline_steps)"
+  }
+}

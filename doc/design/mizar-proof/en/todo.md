@@ -390,6 +390,31 @@ Keep `cargo test -p mizar-proof` green after each task (see
       focused metadata correction commit `36d1a9c`; full-workspace verification
       is clean after that correction.
 
+### Kernel soundness-audit alignment (2026-07-03)
+
+The kernel acceptance-boundary audit
+([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md))
+corrected the kernel rejection vocabulary and evidence contract. The policy
+layer consumes both; one alignment task is owned here.
+
+21. **Policy alignment with the corrected kernel rejection taxonomy (kernel F1, F2).** [ ]
+    - Align proof-policy evaluation and status projection with the
+      post-audit kernel contract: `invalid_sat_refutation`,
+      `context_mismatch`, `missing_provenance`, and the legacy-path gate are
+      terminal proof errors that policy must never upgrade, retry into
+      acceptance, or reclassify as policy-open; witness selection metadata
+      records the goal polarity of the accepted evidence so reuse consumers
+      can validate it. No evidence-class upgrades (IV-005 stays intact).
+    - Acceptance: Rust regressions cover each corrected rejection reason
+      flowing through policy evaluation to a failed status; a
+      polarity-bearing witness metadata fixture round-trips through the
+      task-17 reuse export.
+    - Verify: `cargo test -p mizar-proof`,
+      `cargo clippy -p mizar-proof --all-targets -- -D warnings`.
+    - Deps: mizar-kernel tasks 30-31; coordinate with the mizar-test
+      soundness-registry follow-up (kernel F7). Spec: architecture 15
+      (post-audit), 19; soundness_argument.md rejection taxonomy.
+
 ## Recommended Verification
 
 Run after each task:

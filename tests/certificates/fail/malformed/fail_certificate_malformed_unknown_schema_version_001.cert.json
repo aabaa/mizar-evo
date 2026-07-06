@@ -1,0 +1,146 @@
+{
+  "seed_schema": "mizar-kernel-evidence-json-seed/1",
+  "test_id": "fail_certificate_malformed_unknown_schema_version_001",
+  "expected_failure_category": "certificate_rejection",
+  "expected_rejection_reason": "unsupported_certificate_format",
+  "evidence": {
+    "schema_version": 99,
+    "encoding_version": 1,
+    "domain_separator": "MIZAR_KERNEL_EVIDENCE\\0",
+    "kernel_profile": {
+      "schema_version": 1,
+      "encoding_version": 1,
+      "clause_tautology_policy": "reject",
+      "hash_input_algorithm": 1,
+      "formula_fingerprint_algorithm": 2
+    },
+    "target_vc": "vc:pkg.demo/mod.core/theorem_1#0001",
+    "symbol_manifest": [
+      {
+        "symbol_id": 1,
+        "kind": "predicate",
+        "arity": 1,
+        "debug_name": "p"
+      },
+      {
+        "symbol_id": 2,
+        "kind": "predicate",
+        "arity": 1,
+        "debug_name": "q"
+      },
+      {
+        "symbol_id": 3,
+        "kind": "function",
+        "arity": 0,
+        "debug_name": "c"
+      }
+    ],
+    "variable_manifest": [
+      {
+        "variable_id": 1,
+        "role": "free",
+        "debug_name": "x"
+      },
+      {
+        "variable_id": 2,
+        "role": "bound",
+        "debug_name": "y"
+      },
+      {
+        "variable_id": 3,
+        "role": "generated_fresh",
+        "debug_name": "z"
+      }
+    ],
+    "formula_evidence": [
+      {
+        "formula_id": 1,
+        "source_class": "local_hypothesis",
+        "formula": {
+          "kind": "atom",
+          "symbol_id": 1,
+          "arguments": [
+            {
+              "kind": "variable",
+              "variable_id": 1
+            }
+          ]
+        },
+        "formula_fingerprint": "recomputed-by-kernel:formula:1",
+        "provenance_ref": 1,
+        "local_context_ref": 11
+      },
+      {
+        "formula_id": 2,
+        "source_class": "cited_premise",
+        "formula": {
+          "kind": "or",
+          "children": [
+            {
+              "kind": "not",
+              "child": {
+                "kind": "atom",
+                "symbol_id": 1,
+                "arguments": [
+                  {
+                    "kind": "variable",
+                    "variable_id": 1
+                  }
+                ]
+              }
+            },
+            {
+              "kind": "atom",
+              "symbol_id": 2,
+              "arguments": [
+                {
+                  "kind": "variable",
+                  "variable_id": 1
+                }
+              ]
+            }
+          ]
+        },
+        "formula_fingerprint": "recomputed-by-kernel:formula:2",
+        "provenance_ref": 2,
+        "local_context_ref": 12
+      }
+    ],
+    "substitutions": [],
+    "provenance": [
+      {
+        "provenance_id": 1,
+        "target_vc": "vc:pkg.demo/mod.core/theorem_1#0001",
+        "formula_fingerprint": "recomputed-by-kernel:formula:1",
+        "producer_payload": "producer-opaque-payload"
+      },
+      {
+        "provenance_id": 2,
+        "target_vc": "vc:pkg.demo/mod.core/theorem_1#0001",
+        "formula_fingerprint": "recomputed-by-kernel:formula:2",
+        "producer_payload": "producer-opaque-payload"
+      },
+      {
+        "provenance_id": 3,
+        "target_vc": "vc:pkg.demo/mod.core/theorem_1#0001",
+        "formula_fingerprint": "recomputed-by-kernel:goal",
+        "producer_payload": "producer-opaque-payload"
+      }
+    ],
+    "final_goal": {
+      "formula": {
+        "kind": "atom",
+        "symbol_id": 2,
+        "arguments": [
+          {
+            "kind": "variable",
+            "variable_id": 1
+          }
+        ]
+      },
+      "polarity": "assert_false_for_refutation",
+      "formula_fingerprint": "recomputed-by-kernel:goal",
+      "provenance_ref": 3
+    }
+  }
+}

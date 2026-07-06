@@ -457,6 +457,19 @@ Keep `cargo test -p mizar-diagnostics` green after each task (see
       score, no score cap, passing hard gates, no-placeholder downstream gap
       classifications, closeout review results, and final verification.
 
+### Audit review note (2026-07-06)
+
+The July 2026 semantic, kernel-soundness, and template-encoding audits
+([mizar-checker semantic_spec_audit.md](../../mizar-checker/en/semantic_spec_audit.md),
+[mizar-kernel soundness_argument.md](../../mizar-kernel/en/soundness_argument.md),
+[mizar-core template_encoding_audit.md](../../mizar-core/en/template_encoding_audit.md))
+were reviewed against this crate's scope. No crate-owned task results: this
+crate carries no semantic or proof authority, and every audit finding is
+owned by the checker/kernel/vc/core/atp/proof/cache/artifact/test follow-up
+tasks recorded in those TODOs and in the top-level roadmap. Integration
+ordering for this crate is unchanged; consume the corrected contracts through
+the owning producers when the paired tasks land.
+
 ## Recommended Verification
 
 Run after each task:

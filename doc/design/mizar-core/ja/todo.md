@@ -297,6 +297,123 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       [autonomous_crate_development.md](../../autonomous_crate_development.md)、
       本 TODO、crate exit criteria。
 
+### テンプレートエンコーディング監査フォローアップ(2026-07-05)
+
+[template_encoding_audit.md](./template_encoding_audit.md) は spec 18.10 の
+テンプレート FOL エンコードを監査し、所見 F1-F8 と
+`tests/miz/fail/templates/` 配下の 4 seed の reject-first corpus
+(`spec.en.18.templates.encoding_soundness.semantic`)を記録した。F1-F6 と
+F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修正済み
+であり、ここに残るのは elaborator の実装と、未決の spec 決定 1 件である。
+全所見はタスクまたは記録済みの処置に対応する:
+
+| 所見 | 処置 |
+|---|---|
+| F1(structure-view 崩壊) | spec 修正済み。elaborator lowering は task 27。kernel 側再監査は [mizar-kernel task 35](../../mizar-kernel/en/todo.md)。member 同一性の調整は [mizar-checker task 36](../../mizar-checker/en/todo.md) |
+| F2(型実引数の inhabitation) | spec 修正済み(§17.3.4 gating 行)。elaborator gating は task 28。inhabitation 表の調整は [mizar-checker task 43](../../mizar-checker/en/todo.md) |
+| F3(`type extends M` の object/schema 混同) | spec 修正済み(§18.10.2)。task 27 で F1 とともに lowering |
+| F4(functor guard、実引数シグネチャ適合) | spec 修正済み(§18.10.4、§18.9)。実装は task 29 |
+| F5(型パラメータの sethood) | spec 修正済み(§18.10.2 sethood 段落)。plumbing は task 30 |
+| F6(テンプレート本体内の scheme 適用) | spec 修正済み(§18.10.3 の段落)。実装は task 29 |
+| F7(widening 上の推論決定性) | 未修正 — spec 決定は task 26 |
+| F8(部分 algorithm の functor 実引数) | spec 修正済み(§18.8.4)。拒否実装は task 29 に統合 |
+| corpus seed(4 件) | inactive な `advanced_semantics` seed。runner 到着時に [mizar-checker task 48](../../mizar-checker/en/todo.md) と mizar-test の runner 作業で活性化 |
+
+26. **Spec 決定: テンプレート引数推論の決定性(F7)。** [ ]
+    - widening 束上の §18.2.7 推論アルゴリズムを決定する。監査の推奨:
+      省略された `[T]` は mode unfolding 後の実引数の宣言型で推論し、残る
+      複数候補はインスタンスが論理的に等価でも ambiguity エラーとする。
+      決定性のみの問題 — F1-F5 修正後は well-formed な instance はすべて
+      健全。spec 18 §18.2.7 を(英日で)更新し、テンプレート推論と
+      オーバーロード選択が単一の比較ストーリーを使うよう、overload
+      tie-break 決定([mizar-checker task 37](../../mizar-checker/en/todo.md))
+      と調整する。
+    - 受け入れ条件: §18.2.7 が比較に使う型と ambiguity 診断を命名する。
+      残余候補ケースを固定する ambiguity `.miz` seed を sidecar と
+      `spec_trace.toml` エントリ付きで追加する。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: mizar-checker task 37 と調整。参照:
+      template_encoding_audit.md F7。
+
+27. **reduct/view lowering(F1、F3)。** [ ]
+    - elaboration に reduct-view エンコードを実装する: 改名または複数経路
+      の inherit 辺上の `qua` と bounded-type-parameter instantiation に
+      対して `view_{D→B}` 項を emit する。attribute atom と field
+      selection を flattened instance ではなく view 項に対して emit する。
+      extensionality の emission を exact-instance guard(§5.8.5)へ切り
+      替える。`type extends M` の object-level ストーリー(view 型の
+      schema パラメータ、`T.binop` の lowering、§18.10.2)をカバーする。
+      type/fact と term/formula lowering の surface(tasks 9-10)および
+      直近で landed した builtin type bridge / typed-AST elaboration の
+      seam に触れる。
+    - 受け入れ条件: diamond 例(Ring → AddGroup/MulMonoid → Magma、field
+      改名あり)が `add(R) = mul(R)` を導出せずに lower される。
+      `fail_template_qua_view_attribute_leak_001` seed の拒否が lowered
+      form から導出可能(一方の view 上の attribute evidence が他方の
+      view 上の bound を discharge しない)。改名辺・複数経路・
+      exact-instance extensionality の lowering を Rust fixture がカバー
+      する。
+    - 検証: `cargo test -p mizar-core`、
+      `cargo clippy -p mizar-core --all-targets -- -D warnings`;
+      共有境界には `cargo test -p mizar-checker`。
+    - 依存: 10、11; 同一性規則は mizar-checker task 36(member 同一性
+      決定)。landing 時に mizar-kernel task 35 へ通知。参照: spec 05
+      §5.8.3/§5.8.5、13 §13.8.7、18 §18.10.2;
+      template_encoding_audit.md F1、F3。
+
+28. **テンプレート型実引数の inhabitation gating(F2)。** [ ]
+    - 監査が追加した §17.3.4 gating 行に従い、テンプレートの
+      `type_expression` 実引数に existential-gating 検査を走らせる:
+      schema コンテキストは各型パラメータについて `∃x. is_T(x)` を仮定して
+      よく、その代わりすべての instantiation site が実引数の existential
+      evidence を供給しなければならない。lowering 中に per-parameter の
+      inhabitation fact を schema コンテキストへ emit する。
+    - 受け入れ条件: `fail_template_type_actual_missing_existential_001` の
+      拒否が導出可能(充足不能な属性連鎖の実引数が instantiation site で
+      拒否され、`ex y st y is hollow set` 型の公理が emit されない)。
+      evidence 付きの gated 実引数が正常に lower される pass fixture を
+      持つ。
+    - 検証: `cargo test -p mizar-core`、`cargo test -p mizar-checker`。
+    - 依存: 27; mizar-checker task 43(built-in inhabitation 表)と task 20
+      gate surface と調整。参照: spec 07 §7.8、17 §17.3.4、18 §18.10.2;
+      template_encoding_audit.md F2。
+
+29. **scheme 実引数のシグネチャ適合・guard 義務・functor 実引数検証(F4、F6、F8)。** [ ]
+    - `defpred`/`deffunc` 実引数に対する §18.10.4/§18.9 規則を実装する:
+      反変 domain / 共変 codomain の widening 検査。functor guard は
+      instantiation 時に discharge される証明義務であり、公理として assert
+      しない(`deffunc shrink(x be Nat) -> Integer` の偽公理を生まない)。
+      外側テンプレートのパラメータを実引数としてテンプレート本体内で
+      scheme を適用する §18.10.3 規則(F6)を実装する。`func(...)`
+      パラメータへの部分(未 promote)algorithm 実引数を拒否する —
+      FOL 関数記号を表すのは `deffunc`、テンプレート functor、promoted
+      `terminating` algorithm のみ(F8)。
+    - 受け入れ条件: `fail_template_func_actual_result_widening_001` の拒否
+      が導出可能。guard 義務が assert された公理ではなく obligation seed
+      (task 18 surface)として現れる。部分 algorithm 実引数が安定した
+      診断で拒否される。入れ子の scheme 適用が substitution-lemma の再構成
+      に従い外側パラメータを健全に使う。
+    - 検証: `cargo test -p mizar-core`、`cargo test -p mizar-vc`(seed
+      handoff)、`cargo test -p mizar-test`。
+    - 依存: 27; obligation seed は task 18 を通じて流れる。参照: spec 18
+      §18.9/§18.10.3/§18.10.4/§18.8.4; template_encoding_audit.md F4、F6、
+      F8。
+
+30. **型パラメータの sethood plumbing(F5)。** [ ]
+    - §18.10.2 の sethood 段落に従い、テンプレート本体内の Fraenkel
+      comprehension gating を bound 継承または constraint 供給の sethood
+      に keying する: 裸の型パラメータは sethood を持たないため、それを
+      range とする comprehension は bound または明示的 constraint が
+      sethood evidence を供給しない限り拒否される。
+    - 受け入れ条件: `fail_template_fraenkel_over_type_param_001` の拒否が
+      導出可能(`para[set]` 上の Russell 型 comprehension が生じない)。
+      bound 継承の sethood が comprehension gate へ流れる pass fixture を
+      持つ。
+    - 検証: `cargo test -p mizar-core`、`cargo test -p mizar-checker`。
+    - 依存: 28; mizar-checker task 43(パラメータ化 sethood 形、SSA-013)
+      と調整。参照: spec 13 §13.4.2、18 §18.10.2;
+      template_encoding_audit.md F5。
+
 ## 推奨検証
 
 各タスクの後で実行する:

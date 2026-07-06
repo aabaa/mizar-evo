@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_substitution_capture_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "fail_certificate_substitution_capture_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "kernel_rejection"
+rejection_reason = "invalid_substitution"
+stable_detail_key = "soundness.certificate.invalid_substitution"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_16.substitution.kernel_replay_rejection",
+]
+notes = "Required soundness case. The replacement inserts free variable y (variable_id 2) below a binder that binds variable_id 2: the inserted occurrence would be captured. No freshness witness justifies a rename, so replay must reject instead of silently alpha-renaming. Refs: architecture 16 'Capture Avoidance'; substitution_checker.md 'Substitution Replay'; soundness_argument.md invariant S3."

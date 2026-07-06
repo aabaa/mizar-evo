@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_sat_satisfiable_refutation_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.sat"
+source = "fail_certificate_sat_satisfiable_refutation_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "kernel_rejection"
+rejection_reason = "invalid_sat_refutation"
+stable_detail_key = "certificate.sat.satisfiable_refutation"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.sat_refutation",
+]
+notes = "Premise p(x) does not entail goal q(x): the kernel-derived SAT problem (premises plus negated goal) is satisfiable, so the trusted SAT checker returns Sat, which is non-acceptance evidence. The claimed refutation must reject as invalid_sat_refutation; a backend success report never substitutes for UNSAT. Refs: architecture 15 'Post-Closeout Correction'; sat_encoding.md 'Encoding Rules'; rejection.md invalid_sat_refutation; soundness_argument.md invariants I3/C1."

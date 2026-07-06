@@ -388,6 +388,25 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       dependency item、score cap なしの有効な 94/100 read-only quality score、
       next-phase handoff を記録する。
 
+### kernel 健全性監査との整合(2026-07-03)
+
+24. **拡張 kernel-evidence 契約をカバーする proof-reuse identity(kernel F1、F2)。** [ ]
+    - `mizar-vc` tasks 27-28 が kernel-evidence handoff を明示的 goal
+      polarity と context-identity payload で拡張し次第、拡張後の handoff
+      hash を proof-reuse 検証に含める: 監査前の handoff 形に対して構築
+      された reuse record は fail-closed(強制 miss)とし、cached な受理は
+      polarity と context identity が要求側義務と一致する場合にのみ再利用
+      可能とする。これは監査で訂正された契約
+      ([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md)
+      F1/F2)への IV-002/IV-005 fail-closed 規則の適用である。
+    - 受け入れ条件: 監査前 reuse record が miss すること、polarity または
+      context-identity 不一致が miss すること、完全一致 record が決定的に
+      hit することを Rust regression が示す。
+    - 検証: `cargo test -p mizar-cache`、
+      `cargo clippy -p mizar-cache --all-targets -- -D warnings`。
+    - 依存: mizar-vc tasks 27-28; mizar-proof task 21(witness polarity
+      メタデータ)。仕様: architecture 15(監査後)、18、22。
+
 ## 推奨検証
 
 各タスクの後で実行する:

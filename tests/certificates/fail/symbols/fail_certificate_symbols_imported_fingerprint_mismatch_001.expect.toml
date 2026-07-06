@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_symbols_imported_fingerprint_mismatch_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "fail_certificate_symbols_imported_fingerprint_mismatch_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "kernel_rejection"
+rejection_reason = "unresolved_symbol"
+stable_detail_key = "soundness.certificate.unresolved_symbol"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.provenance_binding",
+]
+notes = "Required soundness case. The cited imported theorem's statement fingerprint does not match the caller-supplied immutable dependency context (dependency-slice hash mismatch after an upstream edit). Identity or fingerprint mismatch is unresolved_symbol: a proof checked against a stale statement must never be accepted against the new one. Refs: architecture 15 'Imported Facts'; architecture 18 'Cache Validation'; checker.md 'Imported Fact Checking'; soundness_argument.md invariant P2."

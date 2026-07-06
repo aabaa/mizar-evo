@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_substitution_freshness_counter_mismatch_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.substitution"
+source = "fail_certificate_substitution_freshness_counter_mismatch_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "kernel_rejection"
+rejection_reason = "invalid_substitution"
+stable_detail_key = "certificate.substitution.freshness_counter_mismatch"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_16.substitution.kernel_replay_rejection",
+]
+notes = "Freshness witness claims deterministic_counter 7, but the architecture-16 strategy recomputes the candidate stream from the variable manifest minus the recomputed avoided set and yields position 0 for variable 3. Witnesses are evidence, not suggestions; a stale counter must reject. Refs: architecture 16 'Renaming Strategy'; substitution_checker.md 'Alpha-Conversion And Freshness'; soundness_argument.md invariant S5."

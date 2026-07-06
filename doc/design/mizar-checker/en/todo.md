@@ -611,6 +611,225 @@ Keep `cargo test -p mizar-checker` green after each task (see
       files are monitored ergonomics notes only, and `tests/lint_policy.rs`
       guards future source-layout audit drift.
 
+### Wave 4: semantic-audit follow-ups (2026-07-03)
+
+[semantic_spec_audit.md](./semantic_spec_audit.md) audited the checker-scoped
+specification chapters (03, 05-08, 13, 14, 17-19) and recorded findings
+SSA-001 through SSA-020 plus a 16-fixture adversarial rejection corpus. The
+tasks below convert every finding into either an owned task or an explicit
+disposition. Spec-decision tasks (35-44) come first because AGENTS.md places
+`doc/spec/en/` above design docs and code: the checker must not implement
+behavior the spec has not decided. Each spec task chooses among the audit's
+proposed resolutions (or records a superior one), updates `doc/spec/en/` and
+`doc/spec/ja/` in the same change, adds or activates reject-first corpus
+seeds where the decision creates new rejections, and updates
+`tests/coverage/spec_trace.toml`.
+
+Finding dispositions (every SSA id maps to a task or a recorded reason):
+
+| Finding | Disposition |
+|---|---|
+| SSA-001 | task 35 |
+| SSA-002, SSA-011, SSA-012 | task 36 |
+| SSA-003, SSA-010, SSA-016, SSA-019 | task 37 |
+| SSA-004 | task 38 |
+| SSA-005 | task 39 |
+| SSA-006 | task 40 |
+| SSA-007, SSA-008, SSA-020 | task 41 |
+| SSA-009 | task 42 |
+| SSA-013, SSA-014 | task 43 |
+| SSA-015, SSA-017 | task 44 |
+| SSA-018 | no task: the greedy `of`/`over` parse is deterministic and documented (spec 19.6.4); a scope-sensitivity lint belongs to the future diagnostics-adoption wave and is recorded in that wave, not here |
+| corpus seeds | task 48 activates the 16 audit fixtures when the `advanced_semantics` runner lands |
+
+35. **Spec decision: constructor property arguments vs extensionality (SSA-001).** [ ]
+    - Resolve the critical §5.5.1/§5.8.4/§5.8.5 inconsistency. Recommended
+      resolution 1: constructors accept fields only; property values always
+      come from §7.4.1 property implementations. Update spec 05 and 07
+      (English and Japanese, same change) and reconcile with the
+      exact-instance extensionality text already landed by the template audit
+      (spec 05 §5.8.5, commit `cef7e109`).
+    - Acceptance: the spec states exactly one source for property values; a
+      reject-first `.miz` seed pins the rejected constructor-property form
+      with a sidecar and `spec_trace.toml` entry; no axiom family in §5.8 can
+      derive `b1 = b2` for distinct property arguments.
+    - Verify: `cargo test -p mizar-test`; corpus JSON/TOML validity.
+    - Deps: none (first of the spec wave). Refs: SSA-001;
+      [template_encoding_audit.md](../../mizar-core/en/template_encoding_audit.md) F1.
+
+36. **Spec decision: structure member identity, upcast paths, acyclicity (SSA-002, SSA-011, SSA-012).** [ ]
+    - Define diamond member identity as the root declaration reached by the
+      `from` chain (or record a superior rule); require the child member type
+      to be `⊑` every parent's member type with per-parent coherence
+      obligations; state whether §19.2.2 path uniqueness is syntactic or
+      semantic; add an explicit inheritance-acyclicity rule and diagnostic to
+      §5.3. Update spec 05 and 19 (English and Japanese, same change) and
+      keep the rules consistent with the reduct-view encoding (`view_{D→B}`)
+      landed in §5.8.3/§13.8.7.
+    - Acceptance: existing seeds
+      `fail_structure_diamond_member_type_conflict_001`,
+      `fail_structure_inherit_uncovered_member_001`,
+      `fail_structure_inherit_cycle_001`,
+      `fail_overload_inheritance_path_ambiguity_001` remain valid under the
+      decided rule (revise sidecar notes only if the decision changes their
+      rationale); renamed-member identity cases have a decided outcome.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: 35. Refs: SSA-002, SSA-011, SSA-012; template audit F1.
+
+37. **Spec decision: overload tie-break and tie ambiguity (SSA-003, SSA-010, SSA-016, SSA-019).** [ ]
+    - Fix §19.6.1 Cases 2-3 against §19.4.3: either add explicit
+      constraint-strictness and non-template-beats-template rules, or keep
+      pure `⊑` selection and correct the case outcomes. Extend §19.4.4 to "no
+      unique maximal root" (covers equally specific distinct roots); extend
+      the §19.1 conflict rule to identical-signature declarations regardless
+      of return type; reword §19.2.3 antisymmetry to closure-equivalence
+      classes; drop the triplicated §19.6.1 sentence. Update architecture 05's
+      tie-breaker list and `overload_resolution.md` in the same change.
+    - Acceptance: §19.6.1 examples and §19.4.3/§19.4.4 rules agree; a
+      tie-ambiguity `.miz` seed joins
+      `fail_resolve_same_signature_return_conflict_001` with sidecar and
+      trace entries.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: none. Refs: SSA-003, SSA-010, SSA-016, SSA-019.
+
+38. **Spec decision: functorial cluster `for T` semantics (SSA-004).** [ ]
+    - Specify the applicability-guard reading (registration fires where the
+      result type's radix is `T` or a subtype, mirroring §17.7.2) and add
+      `is_T(F(args))` premises to the coherence obligation; update the
+      §17.9.3 encoding tables so `for T` is no longer dropped. Spec 17
+      English and Japanese in the same change.
+    - Acceptance: every §17.9.3 row involving `for T` shows the guard; a
+      reject-first seed pins a functorial registration applied outside its
+      `for` type.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: none. Refs: SSA-004.
+
+39. **Spec decision: property-implementation coherence (SSA-005).** [ ]
+    - Require any two `property S.p means/equals` implementations with
+      overlapping domains to be related by a coherence obligation, or
+      restrict each property to one implementation per `inherit`-connected
+      mode family; update spec 07 §7.4.1/§7.8.2 (English and Japanese).
+    - Acceptance: the chosen rule names the obligation form or the
+      restriction diagnostic; a reject-first seed pins the uncovered overlap.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: 35 (property-value source must be settled first). Refs: SSA-005.
+
+40. **Spec contract: registration activation timing (SSA-006).** [ ]
+    - Keep §17.1 item-ordered activation as the language contract and state
+      explicitly that correctness-condition acceptance may be asynchronous:
+      an implementation may hold a module pending but must not reject a use
+      site that a completed verification pass would accept. Record in
+      `registration_resolution.md` that the task-19 interim policy is a
+      conservative approximation to be lifted when `mizar-vc`/`mizar-proof`
+      integration lands.
+    - Acceptance: spec 17 (en+ja) states the asynchronous-acceptance
+      contract; `registration_resolution.md` (en+ja) names the interim policy
+      as such; `fail_mode_existential_after_declaration_001` remains the
+      user-visible ordering error.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: none. Refs: SSA-006, architecture 04.
+
+41. **Spec clarifications: closure termination, contradiction site, `attr(args)` (SSA-007, SSA-008, SSA-020).** [ ]
+    - State in §17.7.1 that closure termination follows from the restricted
+      adjective grammar and that extending adjectives to term arguments
+      requires a new termination argument; specify closure-time detection of
+      contradictory derived attributes as a fatal `cluster` diagnostic and
+      reword §17.7.3's ATP-time mention; resolve §3.3/§6.2/§17.10
+      `attr(args)`: either define its declaration/registration story or
+      remove it from `attribute_ref` (removal is recommended — admitting it
+      into clusters breaks the termination argument). Spec 03, 06, 17
+      English and Japanese in the same change.
+    - Acceptance: termination argument is stated as load-bearing;
+      `fail_cluster_contradictory_consequent_001` maps to the closure-time
+      diagnostic; `attribute_ref` grammar and declaration grammar agree.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: none. Refs: SSA-007, SSA-008, SSA-020.
+
+42. **Spec clarification: reduction determinism signature (SSA-009).** [ ]
+    - Restate §17.6.4 normalization determinism as a function of (term,
+      in-scope rules, discharged side-condition set); define combined
+      specificity as pattern subsumption first, then position-wise guard
+      comparison, remaining mixed cases incomparable with FQN tie-break.
+      Spec 17 English and Japanese; mirror in
+      `registration_resolution.md` (reduction section).
+    - Acceptance: the determinism statement's inputs match the matching
+      row's dependencies; task-18 behavior (`such` guards
+      applicability-only) is derivable from the spec text.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: none. Refs: SSA-009.
+
+43. **Spec clarification: sethood for dependent modes and built-in inhabitation (SSA-013, SSA-014).** [ ]
+    - Give the parameterized sethood obligation form
+      (`∀params. ∃S. ∀x. (is_T(x, params) → x ∈ S)`) in §7.8.1 and state
+      that §13.4.2 comprehension gates check sethood at the instantiated
+      parameters; reconcile §7.8 vs §17.3.4 on unattributed bases and add
+      the built-in inhabitation table (`object`, `set`, struct radixes).
+      Coordinate with the template-actual inhabitation gate added by the
+      template audit (§17.3.4). Spec 07, 13, 17 English and Japanese.
+    - Acceptance: the checker's existential gate (task 20) has a decidable
+      rule for every base-type shape; sethood export status (module
+      interface or not) is stated.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: none. Refs: SSA-013, SSA-014; template audit F2.
+
+44. **Spec clarification: `reconsider` discharge and ambiguous redefinition target (SSA-015, SSA-017).** [ ]
+    - State that omitted `reconsider` justification is legal iff the
+      narrowing obligation is discharged by widening/closure evidence alone,
+      otherwise a diagnostic requests a justification (§8.2); name an
+      "ambiguous redefinition target" diagnostic for `redefine` without
+      `coherence with` when several originals qualify (§19.4.1). Spec 08 and
+      19 English and Japanese.
+    - Acceptance: both behaviors have named diagnostics and one reject-first
+      seed each.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: 37 (shares chapter 19 edits). Refs: SSA-015, SSA-017.
+
+45. **Checker alignment: overload tie-break implementation.** [ ]
+    - Align `overload_resolution.md` and the wave-3 implementation (tasks
+      23-26 surfaces: template expansion priority, specificity comparisons,
+      root selection) with the task-37 decision; add Rust regressions for the
+      decided Case 2/3 outcomes and the tie-ambiguity rule.
+    - Acceptance: `cargo test -p mizar-checker` covers the decided outcomes;
+      no undocumented tie-breaker remains in code.
+    - Verify: `cargo test -p mizar-checker`,
+      `cargo clippy -p mizar-checker --all-targets -- -D warnings`.
+    - Deps: 37. Refs: SSA-003, SSA-010; architecture 05.
+
+46. **Checker alignment: closure contradiction and termination rules.** [ ]
+    - Encode the task-41/42 decisions in `cluster_trace.md` and
+      `registration_resolution.md` (en+ja) and align the task 16-18
+      implementation: closure-time contradiction as fatal diagnostic
+      (severity per §17.7.3), grammar-based termination note beside the
+      defensive saturation bound, corrected reduction-determinism signature.
+    - Acceptance: module specs cite the new spec text; existing determinism
+      suite (task 30) extended for side-condition-set dependence.
+    - Verify: `cargo test -p mizar-checker`,
+      `cargo clippy -p mizar-checker --all-targets -- -D warnings`.
+    - Deps: 41, 42. Refs: SSA-007, SSA-008, SSA-009.
+
+47. **Checker alignment: existential gate and activation contract.** [ ]
+    - Align the task-20 existential gate with the task-43 built-in
+      inhabitation table and parameterized sethood form, and record the
+      task-40 activation contract in `registration_resolution.md` as the
+      target behavior the interim policy approximates.
+    - Acceptance: gate behavior for `mode M is set`, built-ins, and struct
+      radixes matches the decided table with Rust regressions.
+    - Verify: `cargo test -p mizar-checker`,
+      `cargo clippy -p mizar-checker --all-targets -- -D warnings`.
+    - Deps: 40, 43. Refs: SSA-006, SSA-013, SSA-014.
+
+48. **Audit-corpus activation and task-29 record revision.** [ ]
+    - When the `advanced_semantics`/`formula_statement` runners and
+      source-to-checker payload extraction land (mizar-test runner growth +
+      MC-G020/MC-G021/MC-G023/MC-G027), activate the 16 semantic-audit
+      fixtures and revise the task-29 deferred corpus records to point at
+      (or be superseded by) the eight audit requirement ids.
+    - Acceptance: `mizar-test` plan shows the fixtures active with zero plan
+      errors; deferred records no longer double-count them.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: 35-44 decided; external: mizar-test runner support. Refs:
+      semantic_spec_audit.md "Adversarial Corpus".
+
 ## Recommended Verification
 
 Run after each task:

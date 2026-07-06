@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_sat_goal_polarity_mismatch_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.sat"
+source = "fail_certificate_sat_goal_polarity_mismatch_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "certificate_rejection"
+rejection_reason = "context_mismatch"
+stable_detail_key = "certificate.sat.goal_polarity_mismatch"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.sat_refutation",
+]
+notes = "Audit finding F1 regression seed. The target VC is a proof obligation (refutation polarity required by the caller's immutable context), but the evidence asserts the goal with consistency polarity over premises that entail the goal's negation. UNSAT here proves the premises refute the goal; accepting it as proof would be unsound. Polarity mismatch against the obligation's check kind must reject as context_mismatch. Refs: architecture 15 'Goal Polarity Is Bound By The Target Obligation'; soundness_argument.md invariant B4, finding F1."

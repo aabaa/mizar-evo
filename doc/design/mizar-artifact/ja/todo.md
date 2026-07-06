@@ -308,6 +308,28 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       concrete producer publication と phase 15 emission は、real proof/producer output
       が存在するまで `external_dependency_gap` として残る。
 
+### kernel 健全性監査との整合(2026-07-03)
+
+24. **kernel 監査フォローアップに対する proof-witness schema の再点検。** [ ]
+    - task-23 の `ProofWitnessRef` 2.0 schema は kernel 監査フォローアップ
+      より前のものである。mizar-kernel tasks 30-31(goal polarity 束縛、
+      非 import ソース束縛の context-identity)と mizar-vc tasks 27-28 が
+      入り次第、`proof_witness.md` / `verified_artifact.md` と schema
+      コードを再点検する: 公開された witness が別の check kind や context
+      に対して replay されないよう、witness ref は宣言された polarity と
+      context-identity payload を運べる(または hash に含める)必要が
+      ある。既存 hash が handoff hash 経由で既にカバーしている場合は、
+      フィールド追加の代わりにその分析を記録する。
+    - 受け入れ条件: 記録された schema 決定(英日 spec)。新フィールド +
+      round-trip/version テスト、または文書化された no-change 分析の
+      いずれか。レガシー 2.0 ref は version policy に従い読み取り可能な
+      まま。
+    - 検証: `cargo test -p mizar-artifact`、
+      `cargo clippy -p mizar-artifact --all-targets -- -D warnings`。
+    - 依存: 23; mizar-kernel tasks 30-31、mizar-vc tasks 27-28。仕様:
+      architecture 15(監査後);
+      [soundness_argument.md](../../mizar-kernel/en/soundness_argument.md)。
+
 ## 推奨検証
 
 各タスクの後で実行する:

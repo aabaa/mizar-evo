@@ -429,6 +429,19 @@ internal: [03](../../internal/ja/03.diagnostics_model_and_lsp_bridge.md)。
       score cap なし、passing hard gates、no-placeholder downstream gap
       classifications、closeout review results、final verification を記録する。
 
+### 監査レビュー注記(2026-07-06)
+
+2026 年 7 月の意味論・kernel 健全性・テンプレートエンコーディング監査
+([mizar-checker semantic_spec_audit.md](../../mizar-checker/en/semantic_spec_audit.md)、
+[mizar-kernel soundness_argument.md](../../mizar-kernel/en/soundness_argument.md)、
+[mizar-core template_encoding_audit.md](../../mizar-core/en/template_encoding_audit.md))
+を本 crate のスコープに対してレビューした。crate 所有のタスクは生じない:
+本 crate は意味論・証明の authority を持たず、全監査所見は各 TODO と
+トップレベル roadmap に記録された checker/kernel/vc/core/atp/proof/cache/
+artifact/test のフォローアップタスクが所有する。本 crate の統合順序は不変
+であり、対となるタスクが到着したら owning producer を通じて訂正済み契約を
+消費すること。
+
 ## 推奨検証
 
 各タスクの後で実行する:

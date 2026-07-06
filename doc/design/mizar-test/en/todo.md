@@ -426,6 +426,40 @@ Keep `cargo test -p mizar-test` green after each task (see
       [harness.md](./harness.md), [expectation_schema.md](./expectation_schema.md),
       [traceability.md](./traceability.md), core `elaborator.md`.
 
+### Kernel soundness-audit follow-ups (2026-07-03)
+
+The kernel acceptance-boundary audit
+([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md))
+reported two harness-owned findings, F7 and F8. These are minimal
+audit-driven additions; broader runner growth remains task 10 pacing.
+
+21. **Corrected-path soundness vocabulary in the required-case registry (kernel F7).** [ ]
+    - Extend `REQUIRED_SOUNDNESS_CASES` and the layout/expectation docs with
+      the corrected kernel rejection vocabulary: `invalid_sat_refutation`,
+      `context_mismatch`, `missing_provenance`, and an
+      unsupported-legacy-certificate-under-normal-policy case, per
+      architecture 20's required coverage. Re-key the certificate-corpus
+      sidecars that currently use non-`soundness.` stable keys for these
+      reasons onto the new `soundness.certificate.*` keys in the same
+      change, without changing any rejection behavior.
+    - Acceptance: registry rejects unknown `soundness.*` keys as before;
+      the 23-case audit corpus satisfies the extended registry;
+      `mizar-test` plan errors stay 0; the fail-soundness bookkeeping
+      reports the corrected cases as covered.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: 8; corpus from mizar-kernel audit (`f75af877`). Spec:
+      architecture 20; soundness_argument.md F7.
+
+22. **Certificate-corpus root naming reconciliation (kernel F8).** [ ]
+    - Reconcile architecture 20's `tests/kernel_evidence/` directory list
+      with the implemented `tests/certificates/` layout: rename one side or
+      cross-reference both (docs-only if cross-referencing). Update
+      architecture 20 (en+ja) and the corpus README in the same change.
+    - Acceptance: no document lists a corpus root that does not exist;
+      harness discovery matches the documented layout.
+    - Verify: `cargo test -p mizar-test`; `git diff --check`.
+    - Deps: none. Spec: architecture 20; soundness_argument.md F8.
+
 ## Recommended Verification
 
 Run after each task:

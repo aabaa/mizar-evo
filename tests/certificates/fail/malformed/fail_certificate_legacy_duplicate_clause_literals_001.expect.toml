@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_certificate_legacy_duplicate_clause_literals_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.legacy"
+source = "fail_certificate_legacy_duplicate_clause_literals_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "certificate_check"
+failure_category = "certificate_rejection"
+rejection_reason = "malformed_certificate"
+stable_detail_key = "certificate.legacy.noncanonical_clause_encoding"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_15.kernel_evidence.envelope_rejection",
+]
+notes = "Legacy clause carries a duplicate literal, violating canonical clause well-formedness (literals sorted, duplicates removed during normalization). Noncanonical clause bytes must reject so clause ids and hashes stay unique. Refs: architecture 15 'Clause Representation'; mizar-kernel clause.md; soundness_argument.md invariant L3."

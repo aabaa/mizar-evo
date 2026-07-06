@@ -576,6 +576,218 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       monitored ergonomics note のみであり、`tests/lint_policy.rs` が今後の
       source-layout audit drift を guard する。
 
+### 第 4 波: 意味論監査フォローアップ（2026-07-03）
+
+[semantic_spec_audit.md](./semantic_spec_audit.md) は checker が担当する仕様章
+(03、05-08、13、14、17-19)を監査し、所見 SSA-001 から SSA-020 と 16 件の
+adversarial rejection corpus を記録した。以下のタスクは全所見を、担当タスク
+か明示的な処置(disposition)のいずれかに変換する。AGENTS.md が
+`doc/spec/en/` を設計文書・コードより上位に置くため、spec 決定タスク
+(35-44)が先行する: 仕様が決めていない挙動を checker が実装してはならない。
+各 spec タスクは監査の提案解決策から選択し(またはより良い解決策を記録し)、
+`doc/spec/en/` と `doc/spec/ja/` を同一変更で更新し、決定が新しい拒否を
+生む場合は reject-first corpus seed を追加または活性化し、
+`tests/coverage/spec_trace.toml` を更新する。
+
+所見の処置(全 SSA id はタスクまたは記録済みの理由に対応する):
+
+| 所見 | 処置 |
+|---|---|
+| SSA-001 | task 35 |
+| SSA-002, SSA-011, SSA-012 | task 36 |
+| SSA-003, SSA-010, SSA-016, SSA-019 | task 37 |
+| SSA-004 | task 38 |
+| SSA-005 | task 39 |
+| SSA-006 | task 40 |
+| SSA-007, SSA-008, SSA-020 | task 41 |
+| SSA-009 | task 42 |
+| SSA-013, SSA-014 | task 43 |
+| SSA-015, SSA-017 | task 44 |
+| SSA-018 | タスク化しない: greedy `of`/`over` parse は決定的かつ文書化済み(spec 19.6.4)。scope 感度 lint は将来の diagnostics 採用 wave に属し、そこで記録する |
+| corpus seeds | task 48 が `advanced_semantics` runner 到着時に監査 fixture 16 件を活性化する |
+
+35. **Spec 決定: constructor property 引数と extensionality(SSA-001)。** [ ]
+    - critical な §5.5.1/§5.8.4/§5.8.5 の不整合を解決する。推奨は解決策 1:
+      constructor は field のみを受け取り、property 値は常に §7.4.1 の
+      property implementation から来る。spec 05 と 07 を(英日同一変更で)
+      更新し、テンプレート監査で導入済みの exact-instance extensionality
+      本文(spec 05 §5.8.5、commit `cef7e109`)と整合させる。
+    - 受け入れ条件: property 値の供給源が仕様上ちょうど 1 つになる。拒否
+      される constructor-property 形を固定する reject-first `.miz` seed を
+      sidecar と `spec_trace.toml` エントリ付きで追加する。§5.8 のいかなる
+      公理族も相異なる property 引数から `b1 = b2` を導出できない。
+    - 検証: `cargo test -p mizar-test`; corpus JSON/TOML の妥当性。
+    - 依存: なし(spec wave の先頭)。参照: SSA-001;
+      [template_encoding_audit.md](../../mizar-core/en/template_encoding_audit.md) F1。
+
+36. **Spec 決定: structure member 同一性・upcast path・非循環性(SSA-002, SSA-011, SSA-012)。** [ ]
+    - diamond member 同一性を `from` chain で到達する root 宣言として定義
+      する(またはより良い規則を記録する)。child member 型が全 parent の
+      member 型に対して `⊑` であることを parent ごとの coherence 義務付きで
+      要求する。§19.2.2 の path 一意性が syntactic か semantic かを明記する。
+      §5.3 に明示的な継承非循環規則と診断を追加する。spec 05 と 19 を
+      (英日同一変更で)更新し、§5.8.3/§13.8.7 に導入済みの reduct-view
+      エンコード(`view_{D→B}`)と整合させる。
+    - 受け入れ条件: 既存 seed
+      `fail_structure_diamond_member_type_conflict_001`、
+      `fail_structure_inherit_uncovered_member_001`、
+      `fail_structure_inherit_cycle_001`、
+      `fail_overload_inheritance_path_ambiguity_001` が決定後の規則の下でも
+      有効(決定が根拠を変える場合は sidecar note のみ改訂)。member 改名
+      時の同一性ケースに決定済みの結果がある。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: 35。参照: SSA-002, SSA-011, SSA-012; テンプレート監査 F1。
+
+37. **Spec 決定: オーバーロード tie-break と tie の曖昧性(SSA-003, SSA-010, SSA-016, SSA-019)。** [ ]
+    - §19.6.1 Cases 2-3 を §19.4.3 と整合させる: constraint-strictness と
+      non-template-beats-template 規則を明示的に追加するか、純粋な `⊑`
+      選択を維持して case の期待結果を訂正するかを決める。§19.4.4 を
+      「unique maximal root が無い」場合へ拡張する(equally specific な
+      相異なる root を含む)。§19.1 の conflict 規則を return 型に関わらず
+      同一シグネチャ宣言へ拡張する。§19.2.3 の antisymmetry 表現を
+      closure-equivalence class 上のものへ修正し、§19.6.1 の三重重複文を
+      削除する。architecture 05 の tie-breaker 一覧と
+      `overload_resolution.md` を同一変更で更新する。
+    - 受け入れ条件: §19.6.1 の例と §19.4.3/§19.4.4 の規則が一致する。
+      tie-ambiguity の `.miz` seed が
+      `fail_resolve_same_signature_return_conflict_001` に加わり、sidecar
+      と trace エントリを持つ。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: なし。参照: SSA-003, SSA-010, SSA-016, SSA-019。
+
+38. **Spec 決定: functorial cluster `for T` の意味論(SSA-004)。** [ ]
+    - applicability-guard 読み(registration は result 型の radix が `T`
+      またはその subtype の場所で発火する。§17.7.2 の conditional cluster
+      を鏡映)を仕様化し、coherence 義務に `is_T(F(args))` premise を追加
+      する。§17.9.3 のエンコード表で `for T` が脱落しないよう更新する。
+      spec 17 英日同一変更。
+    - 受け入れ条件: `for T` を含む §17.9.3 の全行に guard が現れる。`for`
+      型の外で適用された functorial registration を固定する reject-first
+      seed を追加する。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: なし。参照: SSA-004。
+
+39. **Spec 決定: property implementation の coherence(SSA-005)。** [ ]
+    - domain が重なる 2 つの `property S.p means/equals` 実装に coherence
+      義務で関係付けることを要求するか、各 property を `inherit` 連結な
+      mode family ごとに 1 実装へ制限する。spec 07 §7.4.1/§7.8.2 を英日で
+      更新する。
+    - 受け入れ条件: 選択した規則が義務の形または制限診断を命名する。
+      未カバーの重なりを固定する reject-first seed を追加する。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: 35(property 値の供給源が先に確定していること)。参照: SSA-005。
+
+40. **Spec 契約: registration activation のタイミング(SSA-006)。** [ ]
+    - §17.1 の item-ordered activation を言語契約として維持し、correctness
+      condition の受理が非同期でありうることを明記する: 実装は module を
+      pending に保持してよいが、完了した検証 pass が受理するはずの use site
+      を拒否してはならない。task-19 の暫定 policy が保守的近似であり
+      `mizar-vc`/`mizar-proof` 統合到着時に解除されることを
+      `registration_resolution.md` に記録する。
+    - 受け入れ条件: spec 17(英日)が非同期受理契約を述べる。
+      `registration_resolution.md`(英日)が暫定 policy をその名で記録する。
+      `fail_mode_existential_after_declaration_001` がユーザー可視の順序
+      エラーのままである。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: なし。参照: SSA-006、architecture 04。
+
+41. **Spec 明確化: closure 停止性・矛盾検出サイト・`attr(args)`(SSA-007, SSA-008, SSA-020)。** [ ]
+    - closure の停止性が制限された adjective 文法に依存すること、adjective
+      を term 引数へ拡張するには新しい停止性論証が必要であることを §17.7.1
+      に明記する。矛盾する導出属性の closure 時検出を fatal な `cluster`
+      診断として仕様化し、§17.7.3 の ATP 時の記述を書き分ける。
+      §3.3/§6.2/§17.10 の `attr(args)` を解決する: 宣言・registration の
+      story を定義するか、`attribute_ref` から除去する(除去を推奨 —
+      cluster への導入は停止性論証を壊す)。spec 03、06、17 英日同一変更。
+    - 受け入れ条件: 停止性論証が load-bearing として明記される。
+      `fail_cluster_contradictory_consequent_001` が closure 時診断に対応
+      する。`attribute_ref` 文法と宣言文法が一致する。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: なし。参照: SSA-007, SSA-008, SSA-020。
+
+42. **Spec 明確化: reduction 決定性のシグネチャ(SSA-009)。** [ ]
+    - §17.6.4 の正規化決定性を(term、in-scope rules、discharged
+      side-condition set)の関数として再記述する。複合 specificity を
+      pattern subsumption 優先、次に position ごとの guard 比較、残る混合
+      ケースは incomparable として FQN tie-break、と定義する。spec 17 英日。
+      `registration_resolution.md`(reduction 節)へ反映する。
+    - 受け入れ条件: 決定性言明の入力が matching 行の依存と一致する。
+      task-18 の挙動(`such` guard は applicability のみ)が仕様本文から
+      導出可能である。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: なし。参照: SSA-009。
+
+43. **Spec 明確化: 依存 mode の sethood と built-in inhabitation(SSA-013, SSA-014)。** [ ]
+    - パラメータ化された sethood 義務形
+      (`∀params. ∃S. ∀x. (is_T(x, params) → x ∈ S)`)を §7.8.1 に与え、
+      §13.4.2 の comprehension gate が instantiated parameters で sethood
+      を検査することを明記する。unattributed base について §7.8 と §17.3.4
+      を調停し、built-in inhabitation 表(`object`、`set`、struct radix)を
+      追加する。テンプレート監査が §17.3.4 に追加した template 実引数
+      inhabitation gate と整合させる。spec 07、13、17 英日。
+    - 受け入れ条件: checker の existential gate(task 20)が全 base-type
+      形状に対し決定可能な規則を持つ。sethood の export 状態(module
+      interface に含むか否か)が明記される。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: なし。参照: SSA-013, SSA-014; テンプレート監査 F2。
+
+44. **Spec 明確化: `reconsider` の discharge と曖昧な redefinition target(SSA-015, SSA-017)。** [ ]
+    - justification を省略した `reconsider` は、narrowing 義務が widening/
+      closure evidence のみで discharge される場合に限り合法で、それ以外は
+      justification を求める診断とすることを §8.2 に明記する。複数の元定義
+      が該当する `coherence with` 省略 `redefine` に対する「ambiguous
+      redefinition target」診断を §19.4.1 に命名する。spec 08 と 19 英日。
+    - 受け入れ条件: 両挙動が命名済み診断を持ち、それぞれ 1 件の
+      reject-first seed を持つ。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: 37(chapter 19 の編集を共有)。参照: SSA-015, SSA-017。
+
+45. **Checker 整合: オーバーロード tie-break の実装。** [ ]
+    - `overload_resolution.md` と第 3 波実装(tasks 23-26 の surface:
+      template expansion priority、specificity 比較、root selection)を
+      task-37 の決定に整合させ、決定された Case 2/3 の結果と tie-ambiguity
+      規則の Rust regression を追加する。
+    - 受け入れ条件: `cargo test -p mizar-checker` が決定済みの結果をカバー
+      する。文書化されていない tie-breaker がコードに残らない。
+    - 検証: `cargo test -p mizar-checker`、
+      `cargo clippy -p mizar-checker --all-targets -- -D warnings`。
+    - 依存: 37。参照: SSA-003, SSA-010; architecture 05。
+
+46. **Checker 整合: closure の矛盾検出と停止性規則。** [ ]
+    - task-41/42 の決定を `cluster_trace.md` と `registration_resolution.md`
+      (英日)にエンコードし、task 16-18 実装を整合させる: closure 時矛盾を
+      fatal 診断(severity は §17.7.3 準拠)とし、防御的 saturation bound の
+      傍らに文法ベース停止性 note を置き、訂正済み reduction 決定性
+      シグネチャを反映する。
+    - 受け入れ条件: module spec が新しい仕様本文を引用する。既存の
+      determinism suite(task 30)を side-condition-set 依存へ拡張する。
+    - 検証: `cargo test -p mizar-checker`、
+      `cargo clippy -p mizar-checker --all-targets -- -D warnings`。
+    - 依存: 41, 42。参照: SSA-007, SSA-008, SSA-009。
+
+47. **Checker 整合: existential gate と activation 契約。** [ ]
+    - task-20 の existential gate を task-43 の built-in inhabitation 表と
+      パラメータ化 sethood 形に整合させ、task-40 の activation 契約を暫定
+      policy が近似する目標挙動として `registration_resolution.md` に記録
+      する。
+    - 受け入れ条件: `mode M is set`、built-in、struct radix に対する gate
+      挙動が決定済みの表と一致し、Rust regression を持つ。
+    - 検証: `cargo test -p mizar-checker`、
+      `cargo clippy -p mizar-checker --all-targets -- -D warnings`。
+    - 依存: 40, 43。参照: SSA-006, SSA-013, SSA-014。
+
+48. **監査 corpus の活性化と task-29 record の改訂。** [ ]
+    - `advanced_semantics`/`formula_statement` runner と source-to-checker
+      payload 抽出(mizar-test runner 成長 +
+      MC-G020/MC-G021/MC-G023/MC-G027)が到着したら、意味論監査 fixture
+      16 件を活性化し、task-29 の deferred corpus record を監査由来の 8
+      requirement id を指す(または置き換えられる)よう改訂する。
+    - 受け入れ条件: `mizar-test` plan が fixture を active と表示し plan
+      error が 0 件。deferred record が二重計上されない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: 35-44 の決定; 外部: mizar-test の runner 対応。参照:
+      semantic_spec_audit.md「Adversarial Corpus」。
+
 ## 推奨検証
 
 各タスクの後で実行する:

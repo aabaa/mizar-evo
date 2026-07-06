@@ -1,0 +1,17 @@
+schema_version = 1
+id = "fail_certificate_substitution_unknown_source_formula_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate.substitution"
+source = "fail_certificate_substitution_unknown_source_formula_001.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "kernel_rejection"
+rejection_reason = "missing_provenance"
+stable_detail_key = "certificate.substitution.unknown_source_formula"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.architecture_16.substitution.kernel_replay_rejection",
+  "spec.en.architecture_15.kernel_evidence.provenance_binding",
+]
+notes = "Substitution names source_formula_id 42, which no formula evidence entry declares. Substitutions may apply only to declared evidence formulas; there is no derived-formula chaining, so an unknown source id means the provenance of the claimed instantiation cannot be verified. Refs: formula_evidence.md 'Substitutions'; soundness_argument.md invariant E3/S1 and edge case 4 (cyclic derivations)."

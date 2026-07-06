@@ -309,6 +309,123 @@ Keep `cargo test -p mizar-core` green after each task (see
       [autonomous_crate_development.md](../../autonomous_crate_development.md),
       this TODO, and the crate exit criteria.
 
+### Template-encoding audit follow-ups (2026-07-05)
+
+[template_encoding_audit.md](./template_encoding_audit.md) audited the spec
+18.10 FOL encoding of templates and recorded findings F1-F8 plus a 4-seed
+reject-first corpus under `tests/miz/fail/templates/`
+(`spec.en.18.templates.encoding_soundness.semantic`). The spec text for
+F1-F6 and F8 was patched in the same change (`cef7e109`: spec 03, 05, 13,
+17, 18); what remains here is the elaborator implementation and the one open
+spec decision. Every finding maps to a task or a recorded disposition:
+
+| Finding | Disposition |
+|---|---|
+| F1 (structure-view collapse) | spec patched; elaborator lowering is task 27; kernel-side re-audit is [mizar-kernel task 35](../../mizar-kernel/en/todo.md); member-identity coordination is [mizar-checker task 36](../../mizar-checker/en/todo.md) |
+| F2 (type-actual inhabitation) | spec patched (§17.3.4 gating row); elaborator gating is task 28; inhabitation-table coordination is [mizar-checker task 43](../../mizar-checker/en/todo.md) |
+| F3 (`type extends M` object/schema conflation) | spec patched (§18.10.2); lowered together with F1 in task 27 |
+| F4 (functor guards, actual signature compatibility) | spec patched (§18.10.4, §18.9); implementation is task 29 |
+| F5 (type-parameter sethood) | spec patched (§18.10.2 sethood paragraph); plumbing is task 30 |
+| F6 (schemes applied inside template bodies) | spec patched (§18.10.3 paragraph); implementation is task 29 |
+| F7 (inference determinism over widening) | not yet patched — spec decision is task 26 |
+| F8 (partial-algorithm functor actuals) | spec patched (§18.8.4); rejection implementation folded into task 29 |
+| corpus seeds (4) | inactive `advanced_semantics` seeds; activated with the runner via [mizar-checker task 48](../../mizar-checker/en/todo.md) and the mizar-test runner work |
+
+26. **Spec decision: template argument inference determinism (F7).** [ ]
+    - Decide the §18.2.7 inference algorithm over the widening lattice. The
+      audit's recommendation: infer omitted `[T]` at the arguments' declared
+      types after mode unfolding; residual multiple candidates are an
+      ambiguity error even when the instances would be logically equivalent.
+      Determinism only — any well-formed instance is sound post-F1-F5.
+      Update spec 18 §18.2.7 (English and Japanese) and coordinate with the
+      overload tie-break decision
+      ([mizar-checker task 37](../../mizar-checker/en/todo.md)) so template
+      inference and overload selection use one comparison story.
+    - Acceptance: §18.2.7 names the comparison type and the ambiguity
+      diagnostic; an ambiguity `.miz` seed with sidecar and
+      `spec_trace.toml` entry pins the residual-candidates case.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: coordinate with mizar-checker task 37. Refs:
+      template_encoding_audit.md F7.
+
+27. **Reduct/view lowering (F1, F3).** [ ]
+    - Implement the reduct-view encoding in elaboration: emit `view_{D→B}`
+      terms for `qua` on renamed or multi-path inherit edges and for
+      bounded-type-parameter instantiation; emit attribute atoms and field
+      selections against view terms, not the flattened instance; switch
+      extensionality emission to exact-instance guards (§5.8.5). Cover the
+      §18.10.2 object-level story for `type extends M` (view-typed schema
+      parameter, `T.binop` lowering). This touches the type/fact and
+      term/formula lowering surfaces (tasks 9-10) and the recently landed
+      builtin type bridge / typed-AST elaboration seams.
+    - Acceptance: the diamond example (Ring → AddGroup/MulMonoid → Magma
+      with renaming) lowers without deriving `add(R) = mul(R)`; the
+      `fail_template_qua_view_attribute_leak_001` seed's rejection is
+      derivable from the lowered forms (attribute evidence on one view does
+      not discharge a bound on another); Rust fixtures cover renamed-edge,
+      multi-path, and exact-instance extensionality lowering.
+    - Verify: `cargo test -p mizar-core`,
+      `cargo clippy -p mizar-core --all-targets -- -D warnings`;
+      `cargo test -p mizar-checker` for the shared boundary.
+    - Deps: 10, 11; mizar-checker task 36 (member-identity decision) for
+      the identity rule; notify mizar-kernel task 35 when landing. Refs:
+      spec 05 §5.8.3/§5.8.5, 13 §13.8.7, 18 §18.10.2;
+      template_encoding_audit.md F1, F3.
+
+28. **Template type-actual inhabitation gating (F2).** [ ]
+    - Run the existential-gating check for template `type_expression`
+      actuals per the §17.3.4 gating row added by the audit: a schema
+      context may assume `∃x. is_T(x)` for each type parameter, and in
+      exchange every instantiation site must supply existential evidence for
+      the actual. Emit the per-parameter inhabitation fact into the schema
+      context during lowering.
+    - Acceptance: `fail_template_type_actual_missing_existential_001`'s
+      rejection is derivable (unsatisfiable attribute-chain actual is
+      rejected at the instantiation site, and no `ex y st y is hollow set`
+      style axiom is ever emitted); pass fixtures show gated actuals with
+      evidence lowering cleanly.
+    - Verify: `cargo test -p mizar-core`, `cargo test -p mizar-checker`.
+    - Deps: 27; coordinate with mizar-checker task 43 (built-in
+      inhabitation table) and task 20 gate surface. Refs: spec 07 §7.8,
+      17 §17.3.4, 18 §18.10.2; template_encoding_audit.md F2.
+
+29. **Scheme-actual signature compatibility, guard obligations, and functor-actual validation (F4, F6, F8).** [ ]
+    - Implement the §18.10.4/§18.9 rules for `defpred`/`deffunc` actuals:
+      contravariant domain / covariant codomain widening checks; functor
+      guards are proof obligations discharged at instantiation, never
+      asserted as axioms (no `deffunc shrink(x be Nat) -> Integer` false
+      axiom). Implement the §18.10.3 rule for schemes applied inside
+      template bodies with the enclosing template's parameters as actuals
+      (F6). Reject partial (unpromoted) algorithm actuals for `func(...)`
+      parameters — only `deffunc`, template functors, and promoted
+      `terminating` algorithms denote FOL function symbols (F8).
+    - Acceptance: `fail_template_func_actual_result_widening_001`'s
+      rejection is derivable; guard obligations appear as obligation seeds
+      (task 18 surface), not asserted axioms; a partial-algorithm actual is
+      rejected with a stable diagnostic; nested scheme application uses the
+      enclosing parameters soundly per the substitution-lemma
+      reconstruction.
+    - Verify: `cargo test -p mizar-core`, `cargo test -p mizar-vc` (seed
+      handoff), `cargo test -p mizar-test`.
+    - Deps: 27; obligation seeds flow through task 18. Refs: spec 18
+      §18.9/§18.10.3/§18.10.4/§18.8.4; template_encoding_audit.md F4, F6,
+      F8.
+
+30. **Sethood plumbing for type parameters (F5).** [ ]
+    - Key Fraenkel-comprehension gating inside template bodies to
+      bound-inherited or constraint-supplied sethood per the §18.10.2
+      sethood paragraph: a bare type parameter carries no sethood, so a
+      comprehension ranging over it is rejected unless the bound or an
+      explicit constraint supplies sethood evidence.
+    - Acceptance: `fail_template_fraenkel_over_type_param_001`'s rejection
+      is derivable (no Russell-style comprehension over `para[set]`); pass
+      fixtures show bound-inherited sethood flowing into the comprehension
+      gate.
+    - Verify: `cargo test -p mizar-core`, `cargo test -p mizar-checker`.
+    - Deps: 28; coordinate with mizar-checker task 43 (parameterized
+      sethood form, SSA-013). Refs: spec 13 §13.4.2, 18 §18.10.2;
+      template_encoding_audit.md F5.
+
 ## Recommended Verification
 
 Run after each task:
