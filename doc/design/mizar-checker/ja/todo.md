@@ -739,7 +739,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       deferred parser row `spec.en.07.modes.property_implementation.parser` を
       追加した。checker/core source semantics は変更していない。
 
-40. **Spec 契約: registration activation のタイミング(SSA-006)。** [ ]
+40. **Spec 契約: registration activation のタイミング(SSA-006)。** [x]
     - §17.1 の item-ordered activation を言語契約として維持し、correctness
       condition の受理が非同期でありうることを明記する: 実装は module を
       pending に保持してよいが、完了した検証 pass が受理するはずの use site
@@ -752,6 +752,17 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       エラーのままである。
     - 検証: `cargo test -p mizar-test`。
     - 依存: なし。参照: SSA-006、architecture 04。
+    - task 40 で完了: spec 17.1 は item-ordered activation を言語契約として
+      維持し、correctness acceptance が proof/kernel/artifact phase から非同期に
+      到着してよいことを述べる。Architecture 04 と
+      `registration_resolution.md` は、task 19 の accepted input 不在時の動作を、
+      完了した pass なら受理する後続 source item への最終 rejection policy ではなく、
+      暫定的な保守近似として明記した。既存 inactive seed
+      `fail_mode_existential_after_declaration_001` は
+      `spec.en.17.clusters.registration_activation_timing.semantic` を通じて
+      negative non-retroactive slice を trace する。positive accepted-local
+      activation は MC-G020/MC-G021/MC-G025/MC-G026 により deferred のままである。
+      checker/core source semantics は変更していない。
 
 41. **Spec 明確化: closure 停止性・矛盾検出サイト・`attr(args)`(SSA-007, SSA-008, SSA-020)。** [ ]
     - closure の停止性が制限された adjective 文法に依存すること、adjective

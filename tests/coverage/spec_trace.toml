@@ -1299,6 +1299,23 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.17.clusters.registration_activation_timing.semantic"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.1 Overview"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Negative/non-retroactive slice covered by inactive advanced_semantics seed: a later existential registration does not license an earlier mode declaration. Positive accepted-local activation for later items remains deferred until source-to-checker registration payload extraction, accepted verifier/artifact status production/import, and an active advanced_semantics runner exist (MC-G020/MC-G021/MC-G025/MC-G026)."
+depends_on = [
+  "spec.en.07.mode_definitions.parser",
+  "spec.en.17.clusters_and_registrations.parser",
+]
+tests = [
+  "tests/miz/fail/modes/fail_mode_existential_after_declaration_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.17.clusters_and_registrations.parser"
 source = "doc/spec/en/17.clusters_and_registrations.md"
 section = "17.2 Registration Blocks; 17.3 Existential Clusters; 17.4 Conditional Clusters; 17.5 Functorial Clusters; 17.6 Reduction Registrations; 17.10 Complete Syntax (EBNF); Appendix A.17 registration/cluster/reduction productions, with annotation prefixes covered separately by spec.en.21.annotations.parser"

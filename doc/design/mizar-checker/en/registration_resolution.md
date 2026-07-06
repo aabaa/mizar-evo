@@ -178,7 +178,13 @@ the checker input for that pass includes the accepted status. Earlier items are
 not rechecked retroactively by treating the registration as if it had always
 been active. In a single pass without accepted proof/artifact input, a new
 local registration remains pending even if the checker successfully emits its
-initial obligation.
+initial obligation. That no-accepted-input state is an interim conservative
+approximation of the spec 17.1 asynchronous-acceptance contract: it may leave
+the module or dependent use sites pending, but it is not a final language rule
+that a preceding local registration can never license later items. Once
+`mizar-vc`, `mizar-proof`, and artifact integration supply accepted status in
+source order, the completed checker pass must activate accepted local
+registrations for later items while keeping earlier items non-retroactive.
 
 Ordering requirements:
 
@@ -546,7 +552,7 @@ No exhaustive public enum exceptions are owned by this module.
 | MC-G019 | `external_dependency_gap` | Statement/proof assumptions, theorem acceptance payloads, and phase-7 trace fact payloads are not available to task 11 fact queries. | Registration tasks may query only existing checker fact tables and visible contexts. They must not fabricate accepted proof facts. |
 | MC-G020 | `external_dependency_gap` / `deferred` | There is no AST-wide source-to-checker extraction API for the checker-owned payloads used by tasks 7-11. | Registration tasks must consume explicit checker-owned registration payloads when available and keep source `.miz` semantic coverage deferred until extraction exists. |
 | MC-G021 | `external_dependency_gap` / `deferred` | The current resolver registration index exposes declaration identity, kind, opaque target shell, visibility/export metadata, dependencies, recovery state, and source contribution, but not checker-ready typed registration patterns, parameter type payloads, correctness-condition anchors, accepted verifier status, active dependency-summary consumption, reduction `LHS`/`RHS` term payloads, or guard-evidence payloads. Task 19 consumes explicit validation payloads and validates them, but still does not source-extract those payloads or create accepted status. | Task 14 may use resolver registrations as identity/origin records only. Tasks 16-20 must use explicit checker-owned payload seams or defer behavior rather than parsing opaque shells, inventing summaries, or treating emitted obligations as accepted. |
-| MC-G025 | `external_dependency_gap` / `deferred` | Task 19 emits checker-local registration-correctness `InitialObligationId`s and gates activation on accepted verifier/artifact status, but the proof/artifact phase that creates or imports that accepted status is not wired to `mizar-checker`. | Keep valid local registrations pending until explicit accepted status input is supplied. Do not promote generated obligations to activated registrations. |
+| MC-G025 | `external_dependency_gap` / `deferred` | Task 19 emits checker-local registration-correctness `InitialObligationId`s and gates activation on accepted verifier/artifact status, but the proof/artifact phase that creates or imports that accepted status is not wired to `mizar-checker`. This is an interim conservative approximation of spec 17.1's asynchronous acceptance contract, not a final rejection policy for later source items. | Keep valid local registrations pending until explicit accepted status input is supplied. Do not promote generated obligations to activated registrations. Lift the approximation when accepted status production/import is connected so accepted earlier registrations can license later items in source order. |
 | MC-G026 | `test_gap` / `external_dependency_gap` / `deferred` | Task 20 implements existential gates over explicit payloads, but source-to-checker extraction of attributed-type gate sites, accepted-status production/import beyond task-19 activation input, artifact emission/reuse, and active `.miz` existential gate fixtures are not wired. | Keep task-local Rust coverage over explicit gate payloads. Defer real source-derived gate cases and artifact reuse until the owning extraction/proof/artifact tasks provide inputs. |
 
 ## Planned Tests

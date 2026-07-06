@@ -781,7 +781,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       deferred parser row `spec.en.07.modes.property_implementation.parser`.
       No checker/core source semantics changed.
 
-40. **Spec contract: registration activation timing (SSA-006).** [ ]
+40. **Spec contract: registration activation timing (SSA-006).** [x]
     - Keep §17.1 item-ordered activation as the language contract and state
       explicitly that correctness-condition acceptance may be asynchronous:
       an implementation may hold a module pending but must not reject a use
@@ -795,6 +795,17 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       user-visible ordering error.
     - Verify: `cargo test -p mizar-test`.
     - Deps: none. Refs: SSA-006, architecture 04.
+    - Completed by task 40: spec 17.1 keeps item-ordered activation as the
+      language contract and states that correctness acceptance may arrive
+      asynchronously from proof/kernel/artifact phases. Architecture 04 and
+      `registration_resolution.md` now name task 19's no-accepted-input
+      behavior as an interim conservative approximation, not a final rejection
+      policy for later source items that a completed pass would accept. The
+      existing inactive seed `fail_mode_existential_after_declaration_001` now
+      traces the negative non-retroactive slice through
+      `spec.en.17.clusters.registration_activation_timing.semantic`; positive
+      accepted-local activation remains deferred on MC-G020/MC-G021/MC-G025/
+      MC-G026. No checker/core source semantics changed.
 
 41. **Spec clarifications: closure termination, contradiction site, `attr(args)` (SSA-007, SSA-008, SSA-020).** [ ]
     - State in §17.7.1 that closure termination follows from the restricted

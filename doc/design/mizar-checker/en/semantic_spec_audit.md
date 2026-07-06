@@ -43,7 +43,7 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 | SSA-003 | high | 19.6.1 | Resolved by task 37: template constraints are not Phase B tie-breakers after expansion |
 | SSA-004 | high | 17.5/17.9.3 | Resolved by task 38: functorial cluster `for T` is an applicability guard in the FOL encoding |
 | SSA-005 | high | 7.4.1 | Resolved by task 39: overlapping property implementations require coherence |
-| SSA-006 | high | 17.1 vs arch 04 | Registration activation timing: spec is item-ordered, design defers to verifier acceptance |
+| SSA-006 | high | 17.1 vs arch 04 | Resolved by task 40: item-ordered activation permits asynchronous acceptance without final rejection of later accepted uses |
 | SSA-007 | medium | 17.10/3.3 | Cluster termination silently relies on the restricted adjective grammar |
 | SSA-008 | medium | 17.7.3 | Contradiction detection site is inconsistent (ATP vs closure) |
 | SSA-009 | medium | 17.6.4 | Reduction determinism claim conflicts with `such`-condition context dependence |
@@ -206,7 +206,7 @@ narrower overlapping implementation without coherence until property
 implementation parser support, property payload extraction, and an
 advanced-semantics runner exist.
 
-### SSA-006 (high, `design_drift`) — Registration activation timing
+### SSA-006 (high, resolved `design_drift`) — Registration activation timing
 
 **Where:** 17.clusters_and_registrations.md §17.1 vs architecture 04
 "Registration Databases Separate Pending and Activated Registrations";
@@ -223,12 +223,17 @@ user sees; under the interim policy, even a *preceding* local registration
 does not license a mode declaration within the same pass, so currently-legal
 modules would be rejected.
 
-**Proposed resolution:** keep §17.1 as the language contract, and state in
-§17.1 explicitly that acceptance of the correctness condition may be
-asynchronous: an implementation may hold the module in a pending state, but
-it must not *reject* a use site that a completed verification pass would
-accept. Record in `registration_resolution.md` that the interim policy is a
-conservative approximation to be lifted when `mizar-vc`/`mizar-proof` land.
+**Resolution (task 40):** §17.1 remains the language contract. It now states
+explicitly that acceptance of the correctness condition may be asynchronous:
+an implementation may hold the module or dependent use sites pending, but a
+completed verification pass must not finally reject a later use that becomes
+accepted after an earlier registration's correctness condition is accepted.
+Architecture 04 and `registration_resolution.md` now name the task-19
+no-accepted-input policy as an interim conservative approximation to be lifted
+when `mizar-vc`/`mizar-proof`/artifact integration supplies accepted status.
+The existing inactive seed `fail_mode_existential_after_declaration_001` pins
+the negative non-retroactive slice; positive accepted-local activation remains
+deferred on MC-G020/MC-G021/MC-G025/MC-G026.
 
 ### SSA-007 (medium, `spec_gap`) — Termination of cluster closure leans on the adjective grammar
 
@@ -486,14 +491,16 @@ spec-decision tasks close.
   spec 17 edits and a functorial-`for` guard seed. SSA-005 is resolved by task
   39 with synchronized spec 07/16/Appendix A edits, an overlapping-property
   coherence seed, and a deferred parser traceability row for property
-  implementation syntax.
-- **Remaining spec tasks (before further checker semantics):** SSA-006,
-  SSA-007, SSA-008, SSA-009, SSA-013, SSA-014, SSA-015, SSA-017, and SSA-020
-  remain assigned to tasks 40-44.
+  implementation syntax. SSA-006 is resolved by task 40 with synchronized
+  spec 17, architecture 04, and checker registration-resolution edits plus a
+  traceability row for the existing non-retroactive activation seed.
+- **Remaining spec tasks (before further checker semantics):** SSA-007,
+  SSA-008, SSA-009, SSA-013, SSA-014, SSA-015, SSA-017, and SSA-020 remain
+  assigned to tasks 41-44.
 - **Task 19/20 (registration gating, existential gates):** revisit against
-  SSA-006's activation contract and SSA-014's built-in inhabitation table
-  once decided; the interim conservative policy should be recorded as such
-  in `registration_resolution.md`.
+  SSA-014's built-in inhabitation table once decided; task 40 records the
+  task-19 activation policy as an interim conservative approximation of
+  SSA-006's asynchronous acceptance contract.
 - **Tasks 16-18 (closure, loops, reductions):** encode SSA-007's grammar-
   based termination argument and SSA-008's closure-time contradiction rule in
   `cluster_trace.md`/`registration_resolution.md`; reduction determinism

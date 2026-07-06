@@ -166,7 +166,13 @@ correctness condition が accepted になり、その pass の checker input が
 を含む場合だけ、後続 item に対して active になってよい。より前の item は、その
 registration が最初から active だったかのように retroactive に再検査されない。
 accepted proof/artifact input のない単一 pass では、checker が initial obligation の
-発行に成功しても、新しい local registration は pending のままである。
+発行に成功しても、新しい local registration は pending のままである。この accepted input
+不在状態は、spec 17.1 の asynchronous acceptance 契約に対する暫定的な保守近似である。
+module または依存する use site を pending にしてよいが、先行する local registration が
+後続 item を決して正当化できないという最終的な言語規則ではない。`mizar-vc`、
+`mizar-proof`、artifact integration が source order 上の accepted status を供給したら、
+完了した checker pass は受理済み local registration を後続 item に対して activate し、
+以前の item は retroactive に扱わない。
 
 順序要件:
 
@@ -503,7 +509,7 @@ wildcard または fallback arm を保持する。checker 内部の match は、
 | MC-G019 | `external_dependency_gap` | statement/proof assumption、theorem acceptance payload、phase-7 trace fact payload は task 11 fact query から利用できない。 | registration task は既存 checker fact table と visible context だけを query する。accepted proof fact を捏造しない。 |
 | MC-G020 | `external_dependency_gap` / `deferred` | tasks 7-11 が使う checker-owned payload 用の AST 全体 source-to-checker extraction API は存在しない。 | registration task は利用可能な場合に explicit checker-owned registration payload を消費し、extraction が存在するまで source `.miz` semantic coverage を deferred に保つ。 |
 | MC-G021 | `external_dependency_gap` / `deferred` | 現在の resolver registration index は declaration identity、kind、opaque target shell、visibility/export metadata、dependency、recovery state、source contribution を公開するが、checker-ready typed registration pattern、parameter type payload、correctness-condition anchor、accepted verifier status、active dependency-summary consumption、reduction `LHS` / `RHS` term payload、guard-evidence payload は公開しない。task 19 は explicit validation payload を消費して検証するが、その payload の source extraction や accepted status の作成はまだ行わない。 | task 14 は resolver registration を identity/origin record としてだけ使ってよい。task 16-20 は explicit checker-owned payload seam を使うか、opaque shell の parse、summary の創作、emitted obligation の accepted 扱いをせず behavior を defer する。 |
-| MC-G025 | `external_dependency_gap` / `deferred` | task 19 は checker-local な registration-correctness `InitialObligationId` を発行し、activation を accepted verifier/artifact status で gate するが、その accepted status を作成または import する proof/artifact phase は `mizar-checker` に接続されていない。 | explicit accepted status input が供給されるまで valid local registration は pending のままにする。generated obligation を activated registration に昇格してはならない。 |
+| MC-G025 | `external_dependency_gap` / `deferred` | task 19 は checker-local な registration-correctness `InitialObligationId` を発行し、activation を accepted verifier/artifact status で gate するが、その accepted status を作成または import する proof/artifact phase は `mizar-checker` に接続されていない。これは spec 17.1 の asynchronous acceptance 契約に対する暫定的な保守近似であり、後続 source item に対する最終 rejection policy ではない。 | explicit accepted status input が供給されるまで valid local registration は pending のままにする。generated obligation を activated registration に昇格してはならない。accepted status production/import が接続されたら近似を解除し、受理済みの先行 registration が source order 上の後続 item を正当化できるようにする。 |
 | MC-G026 | `test_gap` / `external_dependency_gap` / `deferred` | task 20 は explicit payload 上で existential gate を実装するが、attributed-type gate site の source-to-checker extraction、task-19 activation input を超えた accepted-status production/import、artifact emission/reuse、active `.miz` existential gate fixture はまだ配線されていない。 | explicit gate payload 上の task-local Rust coverage に保つ。real source-derived gate case と artifact reuse は、owning extraction/proof/artifact task が input を提供するまで deferred とする。 |
 
 ## planned tests
