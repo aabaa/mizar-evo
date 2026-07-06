@@ -370,6 +370,65 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
       [22.incremental_verification_contract.md](../../architecture/ja/22.incremental_verification_contract.md),
       `dependency_slice.md`。
 
+### kernel 健全性監査フォローアップ(2026-07-03)
+
+kernel 受理境界の監査
+([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md)、
+所見 F1、F2、F6)は、kernel 向け契約 3 件の producer 側を本 crate に割り
+当てる。所見→タスクの完全な処置表は
+[mizar-kernel TODO](../../mizar-kernel/en/todo.md) にあり、以下はその対と
+なる producer タスクである。
+
+27. **kernel evidence handoff における明示的 goal polarity(kernel F1)。** [ ]
+    - task-25 の handoff builder が emit する goal polarity を明記し、証明
+      義務に対する `AssertTrueForConsistency` を禁止する: 証明義務の
+      handoff はすべて refutation polarity を明示的に宣言し、builder は
+      証明義務に consistency polarity を組み合わせる呼び出し要求を
+      fail-closed に拒否する。`kernel_evidence_handoff.md`(英日)を更新し、
+      polarity 契約と対象義務の check kind への束縛(architecture 15
+      「Goal Polarity Is Bound By The Target Obligation」)を記述する。
+    - 受け入れ条件: builder 出力が常に明示的 polarity を運ぶ。証明義務への
+      consistency-polarity 要求が安定した診断とともに拒否される Rust
+      regression を持つ。spec が polarity フィールドを命名する。
+    - 検証: `cargo test -p mizar-vc`、
+      `cargo clippy -p mizar-vc --all-targets -- -D warnings`;
+      kernel 側 task 30 が存在すれば `cargo test -p mizar-kernel`。
+    - 依存: 25; 対: mizar-kernel task 30。仕様: architecture 15、
+      `kernel_evidence_handoff.md`; soundness_argument.md F1。
+
+28. **非 import ソース束縛の context-identity payload(kernel F2)。** [ ]
+    - local-hypothesis / cited-premise / generated-VC-fact の束縛が本当に
+      対象 VC に属することを kernel が検査するための検証データを生成する:
+      evidence の local/VC-fact セクションを canonical な task-25/26
+      kernel-evidence handoff hash(またはより良い記録済みスキーム)に束縛
+      し、kernel が producer のラベルを信頼する代わりに帰属を検証できる
+      ようにする。スキーマと同一変更で `kernel_evidence_handoff.md` と
+      `dependency_slice.md`(英日)を更新する。
+    - 受け入れ条件: handoff 出力がすべての非 import ソース束縛をカバーする
+      context-identity payload を運ぶ。束縛の改変(例: goal を local
+      hypothesis とラベルする)が payload 検査を破る。kernel task 31 の
+      pass fixture がこの出力から構築できる。
+    - 検証: `cargo test -p mizar-vc`; kernel task 31 到着後は
+      `cargo test -p mizar-kernel` / `cargo test -p mizar-test` との joint
+      fixture 検査。
+    - 依存: 26; 対: mizar-kernel task 31。仕様: architecture 15
+      「Context Identity Covers Non-Imported Source Bindings」;
+      soundness_argument.md F2。
+
+29. **imported-statement projection の producer 側(kernel F6)。** [ ]
+    - kernel task 33 とともに、arch-18 の imported statement fingerprint
+      から kernel evidence が引用する formula-tree fingerprint への
+      projection を仕様化して emit し、fingerprint 等値規則を弱めずに
+      imported fact を引用可能にする。kernel が検証する projection データ
+      を dependency slice が運ぶこと。
+    - 受け入れ条件: projection された imported-fact 引用が handoff を
+      round-trip し kernel 側 pass fixture で受理される。stale または
+      不一致の projection は fail-closed。
+    - 検証: `cargo test -p mizar-vc`、`cargo test -p mizar-kernel`、
+      `cargo test -p mizar-test`。
+    - 依存: 28; 対: mizar-kernel task 33。仕様: architecture 15、18;
+      soundness_argument.md F6。
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -387,6 +387,125 @@ Keep `cargo test -p mizar-kernel` green after each task (see
       90/100 before any new closeout claim.
     - Deps: 28. Spec: this TODO and autonomous crate exit criteria.
 
+### Soundness-audit follow-ups (2026-07-03)
+
+[soundness_argument.md](./soundness_argument.md) audited the trusted
+acceptance boundary before further implementation and recorded findings F1-F9
+plus the 23-case reject-first corpus under `tests/certificates/fail/`. Two
+High findings were patched at the architecture level in the same change
+(`f75af877`); the tasks below carry the implementation and schema work.
+Every finding maps to a task or a recorded disposition:
+
+| Finding | Disposition |
+|---|---|
+| F1 (goal polarity) | architecture 15 patched; kernel implementation is task 30; producer-side polarity statement is [mizar-vc](../../mizar-vc/en/todo.md) follow-up |
+| F2 (non-imported source bindings) | architecture 15 patched fail-closed; schema and verification are task 31, paired with the mizar-vc context-identity payload |
+| F3 (solver step budget) | deferred by design in `sat_checker.md` (batsat 0.6.0 exposes no stable budget API); revisit trigger recorded as task 32 |
+| F4 (KernelEvidence field drift) | resolved in `f75af877`; no further task |
+| F5 (fingerprint collision resistance) | constraint added to architecture 15 in `f75af877`; no further task — future fingerprint registrations must satisfy it |
+| F6 (imported-statement projection) | task 33, paired with mizar-vc |
+| F7 (mizar-test soundness vocabulary) | owned by [mizar-test](../../mizar-test/en/todo.md) audit follow-up |
+| F8 (corpus directory naming) | owned by [mizar-test](../../mizar-test/en/todo.md) audit follow-up |
+| F9 (legacy tautology marker) | task 34 |
+
+30. **Goal-polarity binding in the check service (F1, invariant B4).** [ ]
+    - Implement architecture 15 "Goal Polarity Is Bound By The Target
+      Obligation": the task-28 check service must read the check kind from
+      the caller's immutable kernel context and reject evidence whose
+      declared goal polarity does not match it as `context_mismatch`.
+      Proof obligations require refutation polarity; `AssertTrueForConsistency`
+      is acceptable only for explicitly consistency-kind checks.
+    - Acceptance: `fail_certificate_sat_goal_polarity_mismatch_001` rejects
+      for the polarity reason (not an earlier structural reason); a Rust
+      regression covers both polarities against both check kinds; invariant
+      B4 in `soundness_argument.md` is marked implemented.
+    - Verify: `cargo test -p mizar-kernel`, `cargo test -p mizar-test`,
+      `cargo clippy -p mizar-kernel --all-targets -- -D warnings`.
+    - Deps: 28. Spec: architecture 15 (post-audit text), `checker.md`,
+      `sat_encoding.md`; soundness_argument.md F1/B4.
+
+31. **Context-identity verification for non-imported source bindings (F2, invariant P-class).** [ ]
+    - Specify and implement the verification data for local-hypothesis,
+      cited-premise, and generated-VC-fact source bindings: extend
+      `FormulaEvidenceContext` (or the immutable kernel context) to carry the
+      canonical `mizar-vc` kernel-evidence handoff hash, and require each
+      non-imported binding to be checkable against that hash before
+      acceptance. Keep the current fail-closed `missing_provenance` behavior
+      for evidence that lacks the payload. Update `formula_evidence.md` and
+      architecture 15 in the same change; the producer-side payload is the
+      paired mizar-vc task.
+    - Acceptance:
+      `fail_certificate_symbols_unverifiable_local_hypothesis_001` rejects
+      for the provenance reason; a pass fixture with a valid context-identity
+      payload accepts once the mizar-vc payload contract exists; an
+      ATP-labeled goal-as-hypothesis mutation rejects.
+    - Verify: `cargo test -p mizar-kernel`, `cargo test -p mizar-test`,
+      `cargo clippy -p mizar-kernel --all-targets -- -D warnings`.
+    - Deps: 30; paired: mizar-vc context-identity payload task. Spec:
+      architecture 15 "Context Identity Covers Non-Imported Source Bindings",
+      `formula_evidence.md`; soundness_argument.md F2, edge case 5.
+
+32. **Solver step-budget deferral revisit (F3).** [ ]
+    - Availability-only gap: checker `timeout` cannot fire during
+      `batsat` solving because 0.6.0 exposes no deterministic
+      conflict/propagation budget. Re-evaluate when the pinned dependency
+      changes: either adopt a budget API (new pinned version or replacement
+      audited per the task-24 procedure) or re-record the deferral with the
+      size-limit rationale. Do not weaken determinism or add process
+      execution to gain interruptibility.
+    - Acceptance: a recorded decision in `sat_checker.md` (en+ja) citing the
+      dependency version; if a budget lands, resource-rejection tests cover
+      mid-solve budget exhaustion deterministically.
+    - Verify: `cargo test -p mizar-kernel`; dependency/lockfile guards.
+    - Deps: triggered by any `batsat` version change (task-24 audit
+      procedure). Spec: `sat_checker.md`; soundness_argument.md F3.
+
+33. **Imported-statement projection specification (F6).** [ ]
+    - Specify the projection from arch-18 imported statement fingerprints
+      (rich formulas) to the propositional formula-tree fingerprints the
+      evidence checker compares, so realistic imported facts become citable.
+      Until this lands the fingerprint-equality rule keeps import citations
+      fail-closed (sound). Kernel side: projection validation rules in
+      `formula_evidence.md` + architecture 15; producer side is the paired
+      mizar-vc/mizar-atp schema work.
+    - Acceptance: the projection is deterministic and collision-resistant
+      per the F5 constraint; a pass fixture cites a projected imported
+      statement; mutation fixtures (wrong projection, stale fingerprint)
+      reject; invariant F-class rows updated in `soundness_argument.md`.
+    - Verify: `cargo test -p mizar-kernel`, `cargo test -p mizar-test`.
+    - Deps: 31; paired: mizar-vc dependency-slice/import projection task.
+      Spec: architecture 15, 18; soundness_argument.md F6.
+
+34. **Legacy tautology-marker semantics (F9, low).** [ ]
+    - Pin down or retire the legacy resolution-trace tautology marker: its
+      current meaning is profile-dependent and thinly specified. Preferred:
+      retire it together with the migration/audit-only legacy path; if kept
+      for the audit profile, specify its exact acceptance effect in
+      `resolution_trace.md` (en+ja).
+    - Acceptance: either the marker is unreachable under every policy and
+      documented as such, or its semantics have a spec section and
+      mutation-rejection tests. Mislabeling must remain premise-weakening
+      only (no acceptance strengthening).
+    - Verify: `cargo test -p mizar-kernel`.
+    - Deps: 29. Spec: `resolution_trace.md`; soundness_argument.md F9, L-class
+      invariants.
+
+35. **Soundness-argument revisit for the reduct-view encoding.** [ ]
+    - The template-encoding audit
+      ([template_encoding_audit.md](../../mizar-core/en/template_encoding_audit.md))
+      replaced flattened structure widening with reduct-view terms
+      (`view_{D→B}`) in spec 05/13. Once the mizar-core view lowering lands,
+      revisit `soundness_argument.md`'s assumption that attribute predicates
+      are atomic per subject: certificates mentioning structure widening
+      change shape, and the F-class formula invariants plus the corpus seeds
+      touching attribute atoms must be re-checked against view terms.
+    - Acceptance: `soundness_argument.md` (en+ja) records the re-audit
+      result; any invariant change updates the corpus sidecar notes in the
+      same change (per the document's constraint section).
+    - Verify: `cargo test -p mizar-kernel`, `cargo test -p mizar-test`.
+    - Deps: external — mizar-core reduct/view lowering task; then 31. Spec:
+      spec 05 §5.8.3, 13 §13.8.7; template_encoding_audit.md F1/F3.
+
 ## Recommended Verification
 
 Run after each task:

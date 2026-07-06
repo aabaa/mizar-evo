@@ -314,6 +314,27 @@ Keep `cargo test -p mizar-artifact` green after each task (see
       emission remain `external_dependency_gap`s until real proof/producer
       outputs exist.
 
+### Kernel soundness-audit alignment (2026-07-03)
+
+24. **Proof-witness schema re-check against kernel audit follow-ups.** [ ]
+    - The task-23 `ProofWitnessRef` 2.0 schema predates the kernel audit
+      follow-ups. When mizar-kernel tasks 30-31 (goal polarity binding,
+      context-identity for non-imported source bindings) and mizar-vc tasks
+      27-28 land, re-check `proof_witness.md` / `verified_artifact.md` and
+      the schema code: witness refs must be able to carry (or hash over)
+      the declared polarity and context-identity payload so published
+      witnesses cannot be replayed against a different check kind or
+      context. If the existing hashes already cover them via the handoff
+      hash, record that analysis instead of adding fields.
+    - Acceptance: a recorded schema decision (en+ja specs) with either new
+      fields plus round-trip/version tests or a documented no-change
+      analysis; legacy 2.0 refs remain readable per the version policy.
+    - Verify: `cargo test -p mizar-artifact`,
+      `cargo clippy -p mizar-artifact --all-targets -- -D warnings`.
+    - Deps: 23; mizar-kernel tasks 30-31, mizar-vc tasks 27-28. Spec:
+      architecture 15 (post-audit);
+      [soundness_argument.md](../../mizar-kernel/en/soundness_argument.md).
+
 ## Recommended Verification
 
 Run after each task:

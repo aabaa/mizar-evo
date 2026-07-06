@@ -332,6 +332,39 @@ regression test を追加した。
       [expectation_schema.md](./expectation_schema.md),
       [traceability.md](./traceability.md)、checker MC-G020。
 
+### kernel 健全性監査フォローアップ(2026-07-03)
+
+kernel 受理境界の監査
+([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md))は
+harness 所有の所見 F7 と F8 を報告した。以下は監査由来の最小限の追加で
+あり、より広い runner 成長は引き続き task 10 のペース配分に従う。
+
+17. **必須ケース registry への訂正後 soundness 語彙(kernel F7)。** [ ]
+    - `REQUIRED_SOUNDNESS_CASES` と layout/expectation 文書を訂正済み
+      kernel 拒否語彙で拡張する: `invalid_sat_refutation`、
+      `context_mismatch`、`missing_provenance`、および normal policy 下の
+      unsupported-legacy-certificate ケース(architecture 20 の必須
+      カバレッジに従う)。現在これらの理由に非 `soundness.` の stable key
+      を使っている certificate corpus の sidecar を、同一変更で新しい
+      `soundness.certificate.*` key へ付け替える。拒否挙動は一切変えない。
+    - 受け入れ条件: registry は従来どおり未知の `soundness.*` key を拒否
+      する。23 件の監査 corpus が拡張後 registry を充足する。`mizar-test`
+      plan error は 0 のまま。fail-soundness 簿記が訂正後ケースを covered
+      と報告する。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: 8; corpus は mizar-kernel 監査(`f75af877`)由来。仕様:
+      architecture 20; soundness_argument.md F7。
+
+18. **certificate corpus ルート命名の調停(kernel F8)。** [ ]
+    - architecture 20 の `tests/kernel_evidence/` ディレクトリ一覧と実装済み
+      `tests/certificates/` layout を調停する: 片方を rename するか、両者を
+      相互参照する(相互参照なら docs のみ)。architecture 20(英日)と
+      corpus README を同一変更で更新する。
+    - 受け入れ条件: 存在しない corpus ルートを列挙する文書がない。harness
+      の discovery が文書化された layout と一致する。
+    - 検証: `cargo test -p mizar-test`; `git diff --check`。
+    - 依存: なし。仕様: architecture 20; soundness_argument.md F8。
+
 ## 推奨検証
 
 各タスクの後で実行する:

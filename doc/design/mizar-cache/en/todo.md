@@ -407,6 +407,26 @@ Keep `cargo test -p mizar-cache` green after each task (see
       deferred/external dependency items, a valid 94/100 read-only quality
       score with no score cap, and the next-phase handoff.
 
+### Kernel soundness-audit alignment (2026-07-03)
+
+24. **Proof-reuse identity covers the extended kernel-evidence contract (kernel F1, F2).** [ ]
+    - Once `mizar-vc` tasks 27-28 extend the kernel-evidence handoff with an
+      explicit goal polarity and a context-identity payload, include the
+      extended handoff hash in proof-reuse validation: reuse records built
+      against the pre-audit handoff shape fail closed (forced miss), and a
+      cached acceptance is reusable only when polarity and context identity
+      match the requesting obligation. This is the IV-002/IV-005 fail-closed
+      rule applied to the audit's corrected contract
+      ([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md)
+      F1/F2).
+    - Acceptance: Rust regressions show a pre-audit reuse record misses; a
+      polarity or context-identity mismatch misses; a fully matching record
+      still hits deterministically.
+    - Verify: `cargo test -p mizar-cache`,
+      `cargo clippy -p mizar-cache --all-targets -- -D warnings`.
+    - Deps: mizar-vc tasks 27-28; mizar-proof task 21 (witness polarity
+      metadata). Spec: architecture 15 (post-audit), 18, 22.
+
 ## Recommended Verification
 
 Run after each task:

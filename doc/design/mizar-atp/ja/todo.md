@@ -581,6 +581,38 @@ deferred のままである。`mizar-proof` は現在 workspace crate だが、A
       未実装連携は local proof-policy placeholder ではなく
       external_dependency_gap / deferred に残る。
 
+### kernel 健全性監査との整合(2026-07-03)
+
+kernel 受理境界の監査
+([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md))は、
+本 crate が候補を生成する evidence 契約を厳格化した。所見 F1(goal
+polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
+にはそれぞれ kernel/vc 側の owner タスクがあり、ATP 側の適合は 1 タスクと
+する。本 crate は kernel 所有スキーマを通じて候補 evidence を構築し、それを
+弱めてはならないためである。
+
+29. **監査後 kernel 契約への候補 evidence 適合(kernel F1、F2、F6)。** [ ]
+    - 候補 evidence の構築を訂正済み architecture 15 契約に整合させる:
+      すべての証明義務候補は対象義務の check kind に束縛された refutation
+      polarity を宣言する(証明義務に `AssertTrueForConsistency` を使わ
+      ない)。非 import ソース束縛(local hypothesis、cited premise、
+      generated VC fact)は producer が発明したラベルではなく `mizar-vc`
+      の context-identity payload を変更せず運ぶ。imported-fact の引用は
+      kernel task 33 到着後、kernel が検証する statement projection を
+      使う。候補生成は fail-closed を保つ: 契約を満たせない候補は分類され、
+      取り繕われない。
+    - 受け入れ条件: consistency-polarity の証明候補と producer が
+      relabel した local hypothesis が emit されない(または分類済み
+      非候補としてのみ emit される)ことを Rust regression が示す。
+      kernel corpus(`fail_certificate_sat_goal_polarity_mismatch_001`、
+      `fail_certificate_symbols_unverifiable_local_hypothesis_001`)が
+      ATP 構築の候補経由でも拒否のままである joint fixture を持つ。
+    - 検証: `cargo test -p mizar-atp`、`cargo test -p mizar-kernel`、
+      `cargo clippy -p mizar-atp --all-targets -- -D warnings`。
+    - 依存: mizar-kernel tasks 30-31、33; mizar-vc tasks 27-29。仕様:
+      architecture 15(監査後)、internal 04; soundness_argument.md F1、
+      F2、F6。
+
 ## 推奨検証
 
 各タスクの後で実行する:

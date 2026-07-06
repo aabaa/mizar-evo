@@ -370,6 +370,122 @@ backend process execution を含まないものでなければならない。そ
       docs diff check、new closeout claim の前に 90/100 以上の quality review score。
     - 依存: 28。仕様: 本 TODO と autonomous crate exit criteria。
 
+### 健全性監査フォローアップ(2026-07-03)
+
+[soundness_argument.md](./soundness_argument.md) は追加実装に先立って信頼
+受理境界を監査し、所見 F1-F9 と `tests/certificates/fail/` 配下の 23 件の
+reject-first corpus を記録した。High 2 件は同一変更(`f75af877`)で
+architecture レベルで修正済みであり、以下のタスクが実装とスキーマの作業を
+引き受ける。全所見はタスクまたは記録済みの処置に対応する:
+
+| 所見 | 処置 |
+|---|---|
+| F1(goal polarity) | architecture 15 修正済み。kernel 実装は task 30。producer 側の polarity 明記は [mizar-vc](../../mizar-vc/en/todo.md) フォローアップ |
+| F2(非 import ソース束縛) | architecture 15 で fail-closed に修正済み。スキーマと検証は task 31(mizar-vc の context-identity payload と対) |
+| F3(solver step budget) | `sat_checker.md` で設計上 deferral(batsat 0.6.0 に安定 budget API なし)。再訪トリガーを task 32 として記録 |
+| F4(KernelEvidence field drift) | `f75af877` で解決。追加タスクなし |
+| F5(fingerprint 衝突耐性) | `f75af877` で architecture 15 に制約を追加。追加タスクなし — 将来の fingerprint 登録はこの制約を満たすこと |
+| F6(imported-statement projection) | task 33(mizar-vc と対) |
+| F7(mizar-test soundness 語彙) | [mizar-test](../../mizar-test/en/todo.md) の監査フォローアップが所有 |
+| F8(corpus ディレクトリ命名) | [mizar-test](../../mizar-test/en/todo.md) の監査フォローアップが所有 |
+| F9(レガシー tautology marker) | task 34 |
+
+30. **check service における goal-polarity 束縛(F1、不変条件 B4)。** [ ]
+    - architecture 15「Goal Polarity Is Bound By The Target Obligation」を
+      実装する: task-28 の check service は呼び出し側の immutable kernel
+      context から check kind を読み取り、宣言された goal polarity が一致
+      しない evidence を `context_mismatch` として拒否する。証明義務は
+      refutation polarity を要求し、`AssertTrueForConsistency` は明示的に
+      consistency kind の検査でのみ受理可能。
+    - 受け入れ条件: `fail_certificate_sat_goal_polarity_mismatch_001` が
+      (先行する構造的理由ではなく)polarity 理由で拒否される。両 polarity
+      × 両 check kind の Rust regression を持つ。`soundness_argument.md` の
+      不変条件 B4 が実装済みと記録される。
+    - 検証: `cargo test -p mizar-kernel`、`cargo test -p mizar-test`、
+      `cargo clippy -p mizar-kernel --all-targets -- -D warnings`。
+    - 依存: 28。仕様: architecture 15(監査後本文)、`checker.md`、
+      `sat_encoding.md`; soundness_argument.md F1/B4。
+
+31. **非 import ソース束縛の context-identity 検証(F2、P クラス不変条件)。** [ ]
+    - local-hypothesis / cited-premise / generated-VC-fact ソース束縛の検証
+      データを仕様化・実装する: `FormulaEvidenceContext`(または immutable
+      kernel context)を拡張して canonical な `mizar-vc` kernel-evidence
+      handoff hash を運び、非 import 束縛それぞれがその hash に対して検証
+      可能であることを受理の前提にする。payload を欠く evidence への現行の
+      fail-closed `missing_provenance` 挙動は維持する。`formula_evidence.md`
+      と architecture 15 を同一変更で更新する。producer 側 payload は対と
+      なる mizar-vc タスク。
+    - 受け入れ条件:
+      `fail_certificate_symbols_unverifiable_local_hypothesis_001` が
+      provenance 理由で拒否される。mizar-vc の payload 契約が存在すれば、
+      有効な context-identity payload を持つ pass fixture が受理される。
+      goal を hypothesis とラベルする ATP 側 mutation が拒否される。
+    - 検証: `cargo test -p mizar-kernel`、`cargo test -p mizar-test`、
+      `cargo clippy -p mizar-kernel --all-targets -- -D warnings`。
+    - 依存: 30; 対: mizar-vc context-identity payload タスク。仕様:
+      architecture 15「Context Identity Covers Non-Imported Source
+      Bindings」、`formula_evidence.md`; soundness_argument.md F2、edge
+      case 5。
+
+32. **solver step-budget deferral の再訪(F3)。** [ ]
+    - 可用性のみのギャップ: `batsat` 0.6.0 が決定的な conflict/propagation
+      budget を公開しないため、solve 中に checker `timeout` が発火できない。
+      固定した依存が変わる際に再評価する: budget API を採用する(task-24
+      手続きで監査した新バージョンまたは代替)か、size-limit 根拠とともに
+      deferral を再記録する。割り込み可能性のために決定性を弱めたり
+      process 実行を追加したりしない。
+    - 受け入れ条件: 依存バージョンを引用した決定が `sat_checker.md`
+      (英日)に記録される。budget が入る場合、solve 途中の budget 枯渇を
+      決定的にカバーする resource-rejection テストを持つ。
+    - 検証: `cargo test -p mizar-kernel`; dependency/lockfile guard。
+    - 依存: `batsat` バージョン変更がトリガー(task-24 監査手続き)。仕様:
+      `sat_checker.md`; soundness_argument.md F3。
+
+33. **imported-statement projection の仕様化(F6)。** [ ]
+    - arch-18 の imported statement fingerprint(リッチな式)から evidence
+      checker が比較する propositional formula-tree fingerprint への
+      projection を仕様化し、現実的な imported fact を引用可能にする。
+      これが入るまで fingerprint 等値規則が import 引用を fail-closed に
+      保つ(健全)。kernel 側: `formula_evidence.md` + architecture 15 の
+      projection 検証規則。producer 側は対となる mizar-vc/mizar-atp の
+      スキーマ作業。
+    - 受け入れ条件: projection が決定的かつ F5 制約に従い衝突耐性を持つ。
+      projection された imported statement を引用する pass fixture を持つ。
+      mutation fixture(誤った projection、stale fingerprint)が拒否される。
+      `soundness_argument.md` の F クラス不変条件行を更新する。
+    - 検証: `cargo test -p mizar-kernel`、`cargo test -p mizar-test`。
+    - 依存: 31; 対: mizar-vc の dependency-slice/import projection タスク。
+      仕様: architecture 15、18; soundness_argument.md F6。
+
+34. **レガシー tautology marker の意味論(F9、low)。** [ ]
+    - レガシー resolution-trace の tautology marker を確定または廃止する:
+      現在の意味は profile 依存で希薄にしか仕様化されていない。推奨:
+      migration/audit-only のレガシー path とともに廃止する。audit profile
+      向けに残す場合は正確な受理効果を `resolution_trace.md`(英日)に
+      仕様化する。
+    - 受け入れ条件: marker がすべての policy の下で到達不能であることが
+      文書化されるか、意味論が仕様節と mutation-rejection テストを持つ。
+      誤ラベルは premise 弱化のみに留まる(受理強化にならない)。
+    - 検証: `cargo test -p mizar-kernel`。
+    - 依存: 29。仕様: `resolution_trace.md`; soundness_argument.md F9、
+      L クラス不変条件。
+
+35. **reduct-view エンコードに対する soundness argument の再訪。** [ ]
+    - テンプレートエンコーディング監査
+      ([template_encoding_audit.md](../../mizar-core/en/template_encoding_audit.md))
+      は spec 05/13 で flattened structure widening を reduct-view 項
+      (`view_{D→B}`)に置き換えた。mizar-core の view lowering が入り次第、
+      attribute 述語が subject ごとに atomic であるという
+      `soundness_argument.md` の前提を再訪する: structure widening に言及
+      する certificate の形が変わるため、F クラスの式不変条件と attribute
+      atom に触れる corpus seed を view 項に対して再点検する。
+    - 受け入れ条件: `soundness_argument.md`(英日)が再監査結果を記録する。
+      不変条件が変わる場合、corpus sidecar note を同一変更で更新する
+      (本文書の constraint 節に従う)。
+    - 検証: `cargo test -p mizar-kernel`、`cargo test -p mizar-test`。
+    - 依存: 外部 — mizar-core の reduct/view lowering タスク; その後 31。
+      仕様: spec 05 §5.8.3、13 §13.8.7; template_encoding_audit.md F1/F3。
+
 ## 推奨検証
 
 各タスクの後で実行する:
