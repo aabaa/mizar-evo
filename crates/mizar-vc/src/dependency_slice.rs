@@ -1594,7 +1594,7 @@ mod tests {
             KernelFormulaProjection, KernelGoalPolarity, KernelImportedFactRequirement,
             KernelImportedFormulaClass, KernelImportedFormulaPayload,
             KernelImportedStatementProjection, KernelRequiredProofStatus, VcKernelEvidenceHandoff,
-            build_kernel_evidence_handoff,
+            build_kernel_evidence_handoff, canonical_imported_statement_projection_payload,
         },
         vc_ir::{
             AnchorLabel, AnchorLabelRole, AnchorOwner, AnchorUnavailableReason, CanonicalSortKey,
@@ -2183,25 +2183,13 @@ mod tests {
             policy: &DischargePolicy::default(),
         })
         .expect("discharge");
-        let handoff = imported_kernel_handoff_for(
-            &discharge,
-            VcId::new(0),
-            &imported_symbol,
-            b"projection-a",
-        );
-        let projection_changed = imported_kernel_handoff_for(
-            &discharge,
-            VcId::new(0),
-            &imported_symbol,
-            b"projection-b",
-        );
+        let handoff = imported_kernel_handoff_for(&discharge, VcId::new(0), &imported_symbol);
         let statement_changed = imported_kernel_handoff_for_with_fingerprints(
             &discharge,
             VcId::new(0),
             &imported_symbol,
             b"imported-statement-b",
             b"imported-formula",
-            b"projection-a",
         );
         let formula_changed = imported_kernel_handoff_for_with_fingerprints(
             &discharge,
@@ -2209,15 +2197,6 @@ mod tests {
             &imported_symbol,
             b"imported-statement",
             b"imported-formula-b",
-            b"projection-a",
-        );
-        assert_ne!(
-            handoff.canonical_hash(),
-            projection_changed.canonical_hash()
-        );
-        assert_ne!(
-            handoff.context_identity_hash(),
-            projection_changed.context_identity_hash()
         );
 
         let base_slices = try_compute_dependency_slices_with_kernel_evidence(
@@ -2232,7 +2211,6 @@ mod tests {
         )
         .expect("base slices");
         for (label, changed_handoff) in [
-            ("projection-payload", &projection_changed),
             ("statement-fingerprint", &statement_changed),
             ("formula-fingerprint", &formula_changed),
         ] {
@@ -2263,7 +2241,20 @@ mod tests {
         assert!(kernel_payload.contains("imported-statement-projections"));
         assert!(kernel_payload.contains("statement=18:696d706f727465642d73746174656d656e74"));
         assert!(kernel_payload.contains("formula=2:696d706f727465642d666f726d756c61"));
-        assert!(kernel_payload.contains(&hex(b"projection-a")));
+        let base_projection_payload = canonical_imported_statement_projection_payload(
+            &KernelEvidenceFingerprint::new(
+                IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+                b"imported-statement".to_vec(),
+            )
+            .expect("statement fingerprint"),
+            &KernelEvidenceFingerprint::new(
+                KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                b"imported-formula".to_vec(),
+            )
+            .expect("formula fingerprint"),
+        )
+        .expect("canonical imported statement projection payload");
+        assert!(kernel_payload.contains(&hex(&base_projection_payload)));
 
         let base_slice = only_slice(&base_slices);
         assert_eq!(
@@ -3115,7 +3106,6 @@ mod tests {
         discharge: &DischargeOutput,
         vc: VcId,
         symbol: &VcText,
-        projection_payload: &[u8],
     ) -> VcKernelEvidenceHandoff {
         imported_kernel_handoff_for_with_fingerprints(
             discharge,
@@ -3123,7 +3113,6 @@ mod tests {
             symbol,
             b"imported-statement",
             b"imported-formula",
-            projection_payload,
         )
     }
 
@@ -3133,7 +3122,6 @@ mod tests {
         symbol: &VcText,
         statement_digest: &[u8],
         formula_digest: &[u8],
-        projection_payload: &[u8],
     ) -> VcKernelEvidenceHandoff {
         let vc_set = discharge.vc_set();
         let payloads = vc_set
@@ -3180,9 +3168,13 @@ mod tests {
                 provenance_payload: b"imported-provenance".to_vec(),
             },
             statement_projection: KernelImportedStatementProjection {
-                statement_fingerprint,
-                formula_fingerprint,
-                payload: projection_payload.to_vec(),
+                statement_fingerprint: statement_fingerprint.clone(),
+                formula_fingerprint: formula_fingerprint.clone(),
+                payload: canonical_imported_statement_projection_payload(
+                    &statement_fingerprint,
+                    &formula_fingerprint,
+                )
+                .expect("canonical imported statement projection payload"),
             },
         }];
         let context = KernelFormulaContextRequirements {

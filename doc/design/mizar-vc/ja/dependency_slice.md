@@ -240,8 +240,8 @@ Task 29 は Rust coverage として次を追加する:
 - projection payload または mapped statement/formula fingerprint が変わると
   dependency-slice fingerprint が変わること;
 - imported fact が conservative import coverage を残す間、proof-reuse key は利用不能なままであること;
-- kernel-side trusted validation と pass fixture は downstream の `mizar-kernel` task 33 に
-  残ること。
+- kernel-side trusted validation と pass fixture は paired `mizar-kernel` task 33 で
+  実装済みであること。
 
 ## public enum policy
 

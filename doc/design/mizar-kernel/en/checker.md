@@ -530,6 +530,19 @@ Imported proof-status, identity, or fingerprint failure is `unresolved_symbol`
 with `imported_fact_id`. Missing context or missing context provenance is
 `missing_provenance`.
 
+For the corrected formula-evidence path, task 33 extends the caller-owned
+`FormulaImportedFactEvidence` rows with the imported-statement projection
+validated by `formula_evidence.md`. The checker first resolves the imported
+source binding by package, module, exported item, and architecture-18 statement
+fingerprint, then requires the context row's projection to equal the parsed
+formula source projection exactly. A stale or mismatched context projection is
+`unresolved_symbol` at `formula.imported_statement_projection` before SAT
+encoding. Parser-side projection failures (unsupported algorithm id, empty or
+noncanonical payload, stale source projection, formula-projection mismatch)
+remain `missing_provenance` and do not reach checker import lookup. This
+projection check does not change the legacy imported-clause
+`normalized_clause_fingerprint` path.
+
 ## Cluster And Reduction Trace Boundary
 
 Task 15 implements explicit cluster/reduction trace replay. The checker spec
@@ -701,6 +714,16 @@ Task 14 must add Rust tests for:
   clause-content fingerprints rejected before imported clauses enter
   resolution replay;
 - unused malformed imported context entries ignored.
+
+Task 33 must add Rust tests for:
+
+- a projected imported statement whose architecture-18 statement fingerprint is
+  distinct from the kernel formula-tree fingerprint but whose canonical
+  projection payload matches;
+- stale projection statement fingerprints, formula-projection mismatches, and
+  noncanonical projection payloads rejected by the parser;
+- context-side projection mismatches rejected as `unresolved_symbol` before SAT
+  encoding.
 
 Task 15 must add Rust tests for:
 

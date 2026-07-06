@@ -445,10 +445,11 @@ kernel 受理境界の監査
       imported-statement fingerprint を kernel formula-tree fingerprint に写像する
       `KernelImportedStatementProjection` を運ぶようになった。producer は unsupported
       imported-statement/formula algorithm、stale statement projection、projected formula
-      fingerprint mismatch、empty projection payload、missing context/payload data を拒否する。
+      fingerprint mismatch、empty または noncanonical projection payload、
+      missing context/payload data を拒否する。
       Canonical evidence rendering/hash input と dependency-slice `kernel_evidence` payload は
       projection data を含む。trusted kernel validation と pass fixture は対になる
-      `mizar-kernel` task 33 に残る。
+      `mizar-kernel` task 33 で実装済み。
 
 ## 推奨検証
 

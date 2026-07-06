@@ -137,15 +137,26 @@ target と formula-tree fingerprint を比較し、entry hash を proof acceptan
 - local hypothesis と cited premise entry は nonzero local-context id を使う;
 - generated VC fact は nonzero VC-fact id を使う;
 - accepted imported axiom / accepted imported theorem は package id、module path、
-  exported item id、statement fingerprint、required proof status を使う;
+  exported item id、architecture-18 statement fingerprint、required proof status、
+  imported-statement projection payload を使う;
 - policy-bounded built-in は nonempty built-in id を使う。
 
 すべての formula entry は一つの provenance entry を参照する。Provenance entry は provenance
 id、target VC fingerprint、formula-tree fingerprint、opaque nonempty producer-owned payload を
 bind する。Parser は missing provenance、empty provenance payload、provenance target-binding
-mismatch、formula fingerprint mismatch を reject する。Richer source formula projection が仕様化されるまでは、
-imported source binding の imported statement fingerprint は formula-tree fingerprint と一致しなければ
-ならない。
+mismatch、formula fingerprint mismatch を reject する。
+
+Task 33 は、imported statement fingerprint と formula-tree fingerprint が canonical projection
+payload で接続される場合に限り imported source binding を受理可能にする。Imported statement
+fingerprint は architecture-18 algorithm id `18` を使い、formula-tree fingerprint は
+`SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID = 2` を使う。Parser は
+`statement_projection.statement_fingerprint`、
+`statement_projection.formula_fingerprint`、`statement_projection.payload` を読み、
+unsupported algorithm、空 payload、非正準 payload、stale statement fingerprint、
+formula-projection mismatch を `missing_provenance` として reject する。v1 canonical
+payload は `MIZAR_KERNEL_IMPORTED_STATEMENT_PROJECTION\0` に statement fingerprint の
+canonical bytes と formula fingerprint の canonical bytes を続けたものである。Parser は rich
+source formula を再構築せず、source lookup を行わず、display/debug bytes を再解釈しない。
 
 Task 31 は、`FormulaEvidenceContext` が同じ target の task-28 context identity payload を
 運ぶ場合に限り、local hypothesis、cited premise、generated VC fact entry を受理可能にする。

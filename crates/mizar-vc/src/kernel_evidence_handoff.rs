@@ -28,6 +28,18 @@ pub const VC_KERNEL_HANDOFF_SCHEMA: &str = "mizar-vc-kernel-evidence-handoff-v1"
 pub const VC_TARGET_FINGERPRINT_ALGORITHM_ID: u8 = 18;
 pub const IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID: u8 = 18;
 pub const KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID: u8 = 2;
+const IMPORTED_STATEMENT_PROJECTION_DOMAIN_SEPARATOR: &[u8] =
+    b"MIZAR_KERNEL_IMPORTED_STATEMENT_PROJECTION\0";
+
+pub fn canonical_imported_statement_projection_payload(
+    statement_fingerprint: &KernelEvidenceFingerprint,
+    formula_fingerprint: &KernelEvidenceFingerprint,
+) -> Result<Vec<u8>, KernelEvidenceHandoffError> {
+    let mut payload = Vec::from(IMPORTED_STATEMENT_PROJECTION_DOMAIN_SEPARATOR);
+    append_fingerprint_bytes(&mut payload, statement_fingerprint, "statement_fingerprint")?;
+    append_fingerprint_bytes(&mut payload, formula_fingerprint, "formula_fingerprint")?;
+    Ok(payload)
+}
 
 #[derive(Debug, Clone, Copy)]
 pub struct KernelEvidenceHandoffInput<'a> {
@@ -705,6 +717,12 @@ pub enum KernelEvidenceHandoffError {
     EmptyImportedStatementProjectionPayload {
         symbol: VcText,
     },
+    NoncanonicalImportedStatementProjectionPayload {
+        symbol: VcText,
+    },
+    ImportedStatementProjectionPayloadTooLarge {
+        field: &'static str,
+    },
     EmptyFingerprint {
         algorithm_id: u8,
     },
@@ -827,6 +845,17 @@ impl fmt::Display for KernelEvidenceHandoffError {
                 "imported statement projection for {} is empty",
                 symbol.as_str()
             ),
+            Self::NoncanonicalImportedStatementProjectionPayload { symbol } => write!(
+                formatter,
+                "imported statement projection for {} is noncanonical",
+                symbol.as_str()
+            ),
+            Self::ImportedStatementProjectionPayloadTooLarge { field } => {
+                write!(
+                    formatter,
+                    "imported statement projection payload field {field} is too large"
+                )
+            }
             Self::EmptyFingerprint { algorithm_id } => {
                 write!(
                     formatter,
@@ -1480,6 +1509,10 @@ fn validate_imported_statement_projection(
             },
         );
     }
+    let expected_payload = canonical_imported_statement_projection_payload(
+        &statement_projection.statement_fingerprint,
+        &statement_projection.formula_fingerprint,
+    )?;
     if statement_projection.statement_fingerprint != requirement.statement_fingerprint {
         return Err(
             KernelEvidenceHandoffError::ImportedStatementProjectionMismatch {
@@ -1494,6 +1527,36 @@ fn validate_imported_statement_projection(
             },
         );
     }
+    if statement_projection.payload != expected_payload {
+        return Err(
+            KernelEvidenceHandoffError::NoncanonicalImportedStatementProjectionPayload {
+                symbol: symbol.clone(),
+            },
+        );
+    }
+    Ok(())
+}
+
+fn append_fingerprint_bytes(
+    payload: &mut Vec<u8>,
+    fingerprint: &KernelEvidenceFingerprint,
+    field: &'static str,
+) -> Result<(), KernelEvidenceHandoffError> {
+    payload.push(fingerprint.algorithm_id);
+    append_len(payload, fingerprint.digest.len(), field)?;
+    payload.extend_from_slice(&fingerprint.digest);
+    Ok(())
+}
+
+fn append_len(
+    payload: &mut Vec<u8>,
+    len: usize,
+    field: &'static str,
+) -> Result<(), KernelEvidenceHandoffError> {
+    let len = u32::try_from(len).map_err(|_| {
+        KernelEvidenceHandoffError::ImportedStatementProjectionPayloadTooLarge { field }
+    })?;
+    payload.extend_from_slice(&len.to_be_bytes());
     Ok(())
 }
 
@@ -3018,7 +3081,11 @@ mod tests {
         );
         conflicting.statement_projection.formula_fingerprint =
             conflicting.projection.formula_fingerprint.clone();
-        conflicting.statement_projection.payload = b"conflicting-projection".to_vec();
+        conflicting.statement_projection.payload = canonical_imported_statement_projection_payload(
+            &conflicting.statement_projection.statement_fingerprint,
+            &conflicting.statement_projection.formula_fingerprint,
+        )
+        .expect("canonical imported statement projection payload");
         let conflicting_payloads = vec![imported.clone(), conflicting.clone()];
         let error = build_kernel_evidence_handoff(handoff_input(
             &set,
@@ -3046,6 +3113,22 @@ mod tests {
         assert!(matches!(
             error,
             KernelEvidenceHandoffError::EmptyImportedStatementProjectionPayload { symbol: found }
+                if found == symbol
+        ));
+
+        let mut noncanonical_projection = imported.clone();
+        noncanonical_projection.statement_projection.payload = b"not-canonical".to_vec();
+        let noncanonical_projection_payloads = vec![noncanonical_projection];
+        let error = build_kernel_evidence_handoff(handoff_input(
+            &set,
+            &noncanonical_projection_payloads,
+            Some(&context),
+            None,
+        ))
+        .expect_err("noncanonical imported statement projection");
+        assert!(matches!(
+            error,
+            KernelEvidenceHandoffError::NoncanonicalImportedStatementProjectionPayload { symbol: found }
                 if found == symbol
         ));
     }
@@ -3350,9 +3433,13 @@ mod tests {
                 provenance_payload: b"imported-provenance".to_vec(),
             },
             statement_projection: KernelImportedStatementProjection {
-                statement_fingerprint,
-                formula_fingerprint,
-                payload: b"imported-statement-projection".to_vec(),
+                statement_fingerprint: statement_fingerprint.clone(),
+                formula_fingerprint: formula_fingerprint.clone(),
+                payload: canonical_imported_statement_projection_payload(
+                    &statement_fingerprint,
+                    &formula_fingerprint,
+                )
+                .expect("canonical imported statement projection payload"),
             },
         }
     }

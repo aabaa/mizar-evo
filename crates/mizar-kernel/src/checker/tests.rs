@@ -12,7 +12,9 @@ use crate::{
     },
     formula_evidence::{
         Formula, FormulaEvidenceParseContext, FormulaSourceClass, GoalPolarity,
-        SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID, parse_formula_evidence,
+        IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID, ImportedStatementProjection,
+        SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID,
+        canonical_imported_statement_projection_payload, parse_formula_evidence,
     },
     substitution_checker::{Replacement, SubstitutionPayload, SubstitutionPayloadEntry, TermPath},
 };
@@ -221,6 +223,10 @@ fn sat_backed_kernel_evidence_checks_imported_formula_context() {
 
     assert_eq!(accepted.status(), KernelCheckStatus::Accepted);
     assert_eq!(accepted.checked_imports().len(), 1);
+    assert_ne!(
+        accepted.checked_imports()[0].statement_fingerprint,
+        formula_fingerprint(&premise)
+    );
     assert_eq!(accepted.used_axioms().len(), 1);
     assert_eq!(accepted.used_axioms()[0].imported_fact_id, 5);
 
@@ -269,6 +275,70 @@ fn sat_backed_kernel_evidence_checks_imported_formula_context() {
         wrong_identity.rejections()[0].location().field_path,
         Some("formula.imported_source")
     );
+
+    let mut stale_projection =
+        formula_imported_fact(5, &premise, AcceptedProofStatus::KernelVerified);
+    stale_projection.statement_projection.payload =
+        canonical_imported_statement_projection_payload(
+            &stale_projection.statement_projection.statement_fingerprint,
+            &formula_fingerprint(&Formula::Not(Box::new(premise.clone()))),
+        )
+        .expect("canonical stale imported statement projection");
+    stale_projection.statement_projection.formula_fingerprint =
+        formula_fingerprint(&Formula::Not(Box::new(premise.clone())));
+    let stale_projection_context =
+        formula_evidence_context(stale_projection, ImportedFactNamespace::ImportedAxiom);
+    let stale_projection_result = check_kernel_evidence(evidence_input(
+        &target_vc,
+        &parsed,
+        Some(&stale_projection_context),
+    ));
+    assert_eq!(
+        stale_projection_result.status(),
+        KernelCheckStatus::Rejected
+    );
+    assert_eq!(
+        stale_projection_result.rejections()[0].detail(),
+        RejectionDetail::UnresolvedSymbol
+    );
+    assert_eq!(
+        stale_projection_result.rejections()[0]
+            .location()
+            .field_path,
+        Some("formula.imported_statement_projection")
+    );
+
+    let mut payload_only_mismatch =
+        formula_imported_fact(5, &premise, AcceptedProofStatus::KernelVerified);
+    payload_only_mismatch.statement_projection.payload = b"not-canonical".to_vec();
+    assert_imported_projection_rejects(&target_vc, &parsed, payload_only_mismatch);
+
+    let mut unsupported_statement_projection =
+        formula_imported_fact(5, &premise, AcceptedProofStatus::KernelVerified);
+    unsupported_statement_projection
+        .statement_projection
+        .statement_fingerprint = Fingerprint::new(99, b"unsupported-statement".to_vec());
+    assert_imported_projection_rejects(&target_vc, &parsed, unsupported_statement_projection);
+
+    let mut empty_formula_projection =
+        formula_imported_fact(5, &premise, AcceptedProofStatus::KernelVerified);
+    let empty_formula_fingerprint =
+        Fingerprint::new(SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID, vec![]);
+    empty_formula_projection
+        .statement_projection
+        .formula_fingerprint = empty_formula_fingerprint;
+    assert_imported_projection_rejects(&target_vc, &parsed, empty_formula_projection);
+
+    let mut statement_projection_mismatch =
+        formula_imported_fact(5, &premise, AcceptedProofStatus::KernelVerified);
+    let other_statement = Fingerprint::new(
+        IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+        b"other-statement".to_vec(),
+    );
+    statement_projection_mismatch
+        .statement_projection
+        .statement_fingerprint = other_statement;
+    assert_imported_projection_rejects(&target_vc, &parsed, statement_projection_mismatch);
 
     let ambiguous_context = formula_evidence_context_entries(
         vec![
@@ -4192,6 +4262,24 @@ fn default_producer_ref(
     }
 }
 
+fn assert_imported_projection_rejects(
+    target_vc: &TargetVcFingerprint,
+    parsed: &crate::formula_evidence::ParsedKernelEvidence,
+    fact: FormulaImportedFactEvidence,
+) {
+    let context = formula_evidence_context(fact, ImportedFactNamespace::ImportedAxiom);
+    let result = check_kernel_evidence(evidence_input(target_vc, parsed, Some(&context)));
+    assert_eq!(result.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        result.rejections()[0].detail(),
+        RejectionDetail::UnresolvedSymbol
+    );
+    assert_eq!(
+        result.rejections()[0].location().field_path,
+        Some("formula.imported_statement_projection")
+    );
+}
+
 fn formula_imported_fact(
     imported_fact_id: u32,
     formula: &Formula,
@@ -4215,13 +4303,18 @@ fn formula_imported_fact_with_identity(
     formula: &Formula,
     accepted_proof_status: AcceptedProofStatus,
 ) -> FormulaImportedFactEvidence {
+    let formula_fingerprint = formula_fingerprint(formula);
+    let statement_fingerprint = imported_statement_fingerprint();
+    let statement_projection =
+        imported_statement_projection(&statement_fingerprint, &formula_fingerprint);
     FormulaImportedFactEvidence {
         imported_fact_id,
         package_id: package_id.to_vec(),
         module_path: module_path.to_vec(),
         exported_item_id: exported_item_id.to_vec(),
-        statement_fingerprint: formula_fingerprint(formula),
+        statement_fingerprint,
         accepted_proof_status,
+        statement_projection,
     }
 }
 
@@ -4419,6 +4512,8 @@ fn imported_formula_item_with_required_status(
     required_status: RequiredProofStatus,
 ) -> Vec<u8> {
     let fingerprint = formula_fingerprint(formula);
+    let statement_fingerprint = imported_statement_fingerprint();
+    let statement_projection = imported_statement_projection(&statement_fingerprint, &fingerprint);
     let mut item = Vec::new();
     put_u32(formula_id, &mut item);
     item.push(FormulaSourceClass::AcceptedImportedAxiom.tag());
@@ -4427,10 +4522,35 @@ fn imported_formula_item_with_required_status(
     put_bytes(b"pkg", &mut item);
     put_bytes(b"module", &mut item);
     put_bytes(b"ITEM", &mut item);
-    put_fingerprint(&fingerprint, &mut item);
+    put_fingerprint(&statement_fingerprint, &mut item);
     item.push(required_status_tag(required_status));
+    put_fingerprint(&statement_projection.statement_fingerprint, &mut item);
+    put_fingerprint(&statement_projection.formula_fingerprint, &mut item);
+    put_bytes(&statement_projection.payload, &mut item);
     put_formula(formula, &mut item);
     item
+}
+
+fn imported_statement_projection(
+    statement_fingerprint: &Fingerprint,
+    formula_fingerprint: &Fingerprint,
+) -> ImportedStatementProjection {
+    ImportedStatementProjection {
+        statement_fingerprint: statement_fingerprint.clone(),
+        formula_fingerprint: formula_fingerprint.clone(),
+        payload: canonical_imported_statement_projection_payload(
+            statement_fingerprint,
+            formula_fingerprint,
+        )
+        .expect("canonical imported statement projection payload"),
+    }
+}
+
+fn imported_statement_fingerprint() -> Fingerprint {
+    Fingerprint::new(
+        IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+        b"imported-statement".to_vec(),
+    )
 }
 
 fn variable_item(variable_id: u32) -> Vec<u8> {

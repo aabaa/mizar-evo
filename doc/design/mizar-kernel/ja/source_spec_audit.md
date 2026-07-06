@@ -214,12 +214,15 @@ Source: `src/formula_evidence.rs`. Spec: [formula_evidence.md](./formula_evidenc
 Covered top-level public items:
 
 - `SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID`
+- `IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID`
+- `canonical_imported_statement_projection_payload`
 - `FormulaEvidenceParseContext`
 - `FormulaEvidenceParseLimits`
 - `ParsedKernelEvidence`
 - `FormulaEvidenceEntry`
 - `FormulaSourceClass`
 - `FormulaSource`
+- `ImportedStatementProjection`
 - `ImportedFormulaSource`
 - `Formula`
 - `FormulaSubstitutionEvidence`
@@ -237,6 +240,11 @@ Covered top-level public items:
   parser を実装する。Parsed evidence は read-only accessor を expose し、caller が
   checker handoff 前に validated formula/provenance/target binding を mutate できない
   ようにする。
+- `ImportedStatementProjection`、
+  `canonical_imported_statement_projection_payload`、source binding record、
+  architecture-18 / formula-tree fingerprint constants は、source lookup や rich
+  formula reconstruction なしに task-33 imported-statement projection contract を
+  実装する。
 - `Formula`、source binding record、substitution evidence、formula fingerprint、
   entry hash input は、instantiated formula や SAT clause を trusted payload として
   受理せず formula/substitution evidence identity を実装する。
@@ -427,7 +435,10 @@ Default normal proof policy は legacy resolution-trace certificate を replay �
 Explicit audit mode は migration-only のままであり、成功 replay 後も rejected audit data を返し、
 trusted acceptance material ではない。Task-31 context-identity payload は SAT encoding 前に
 検査され、local-hypothesis、cited-premise、generated-VC-fact row を immutable task-28
-source identity data に bind する。
+source identity data に bind する。Task-33 imported-statement projection は
+architecture-18 statement fingerprint を kernel formula-tree fingerprint と区別したまま、
+canonical projection payload を検証し、SAT encoding 前に caller imported-fact context が
+同じ projection を運ぶことを要求する。
 
 ## Test Traceability
 
@@ -442,9 +453,9 @@ migration-only であり deferred のままである。
 | `certificate_parser` | `crates/mizar-kernel/src/certificate_parser/tests.rs` | Valid schema parsing、unsupported header/profile、directory と item canonicality、allocation 前の resource exhaustion、imported fact reference、manifest/generated-clause validation、substitution/resolution/derived/final reference、deterministic collection order、deterministic hash input、parser rejection classification。 |
 | `checker` imported facts | `crates/mizar-kernel/src/checker/tests.rs` | Imported axiom/theorem context validation、namespace preservation、proof-status check、policy taint、fingerprint binding、duplicate context rejection、unused malformed entry handling、deterministic context/report ordering、count/resource limit。 |
 | `checker` cluster/reduction replay | `crates/mizar-kernel/src/checker/tests.rs` | Valid trace replay、missing provenance、hidden/future dependency rejection、guard/result mismatch、bounded context construction、requested-step closure、unchecked base fact rejection、runtime limit、deterministic canonical order。 |
-| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection、proof-obligation / consistency check の両方に対する explicit check-kind / goal-polarity binding、context/SAT work より前の F1-shaped polarity mismatch rejection、local/cited/generated formula source に対する task-31 context-identity acceptance/rejection、context-identity resource limit、task-28 golden line-grammar hashing、imported formula context proof-status check、satisfiable-goal rejection、target mismatch rejection、deterministic evidence batch tie、normal-policy legacy certificate rejection、explicit legacy migration/audit service pipeline、substitution/report binding、generated-clause base set、final-goal / derived-fact fail-closed behavior、mutation fail corpus、deterministic repetition/permutation result、replay-cost budget、timeout/resource propagation、target/input-order batch sorting。 |
+| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection、proof-obligation / consistency check の両方に対する explicit check-kind / goal-polarity binding、context/SAT work より前の F1-shaped polarity mismatch rejection、local/cited/generated formula source に対する task-31 context-identity acceptance/rejection、context-identity resource limit、task-28 golden line-grammar hashing、imported formula context proof-status と imported-statement projection check、satisfiable-goal rejection、target mismatch rejection、deterministic evidence batch tie、normal-policy legacy certificate rejection、explicit legacy migration/audit service pipeline、substitution/report binding、generated-clause base set、final-goal / derived-fact fail-closed behavior、mutation fail corpus、deterministic repetition/permutation result、replay-cost budget、timeout/resource propagation、target/input-order batch sorting。 |
 | `clause` | `crates/mizar-kernel/src/clause/tests.rs` | Canonical literal/term ordering、duplicate literal removal、empty versus tautology form、tautology policy、malformed atom/term/symbol/variable rejection、profile/resource bound、canonical constructor check、stable rendering、display data を除外する hash input。 |
-| `formula_evidence` | `crates/mizar-kernel/src/formula_evidence/tests.rs` | Valid evidence envelope parsing、standalone final-goal separation、stable formula rendering/hash input、explicit substitution evidence payload parsing、unknown schema/domain rejection、duplicate id、malformed formula rejection、missing provenance fail-closed behavior、imported statement fingerprint mismatch rejection、provenance target-binding mismatch rejection。 |
+| `formula_evidence` | `crates/mizar-kernel/src/formula_evidence/tests.rs` | Valid evidence envelope parsing、standalone final-goal separation、stable formula rendering/hash input、explicit substitution evidence payload parsing、unknown schema/domain rejection、duplicate id、malformed formula rejection、missing provenance fail-closed behavior、distinct な architecture-18 statement fingerprint に対する imported-statement projection acceptance、unsupported imported-statement/projection algorithm rejection、empty projection payload rejection、stale projection statement rejection、formula-projection mismatch rejection、非正準 projection payload rejection、provenance target-binding mismatch rejection。 |
 | `rejection` | `crates/mizar-kernel/src/rejection/tests.rs` | Stable key、category/detail ownership、parser conversion、checker location、owner mapping、deterministic ordering and tie-breaker、fixed-width target sort bytes、public enum compatibility。 |
 | `resolution_trace` | `crates/mizar-kernel/src/resolution_trace/tests.rs` | Generated/imported/previous-step parent 上の valid replay、pivot / resolvent rejection、imported context sorting/provenance、first-use compatibility/depth check、resource limit、tautology policy、defensive invariant rejection、final-goal checkedness、deterministic report、deterministic rejection location、clause-owned depth/length helper。 |
 | `sat_checker` | `crates/mizar-kernel/src/sat_checker/tests.rs` | Unsatisfiable / satisfiable kernel-derived SAT problem に対する trusted wrapper outcome、deterministic repeated check、solver construction 前の input-limit rejection、solver-hook accounting なしの unsupported exact step-budget rejection、invalid clause/literal shape rejection、audited `batsat::SolverOpts` pinning。 |

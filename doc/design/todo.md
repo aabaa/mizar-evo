@@ -182,7 +182,7 @@ on step 1.
 
 1. [x] [mizar-vc task 29](./mizar-vc/en/todo.md) — imported-statement
    projection, producer side (F6), paired with:
-2. [ ] [mizar-kernel task 33](./mizar-kernel/en/todo.md) — imported-statement
+2. [x] [mizar-kernel task 33](./mizar-kernel/en/todo.md) — imported-statement
    projection specification and validation (F6).
 3. [ ] [mizar-kernel task 34](./mizar-kernel/en/todo.md) — legacy
    tautology-marker semantics (F9, low).

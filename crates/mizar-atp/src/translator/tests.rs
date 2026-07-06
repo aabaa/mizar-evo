@@ -21,7 +21,7 @@ use mizar_vc::{
         KernelFormulaProjection, KernelGoalPolarity, KernelImportedFactRequirement,
         KernelImportedFormulaClass, KernelImportedFormulaPayload,
         KernelImportedStatementProjection, KernelRequiredProofStatus,
-        build_kernel_evidence_handoff,
+        build_kernel_evidence_handoff, canonical_imported_statement_projection_payload,
     },
     vc_ir::{
         AnchorCompleteness, AnchorIngredient, AnchorLabel, AnchorLabelRole, AnchorOwner,
@@ -34,6 +34,45 @@ use mizar_vc::{
     },
 };
 use std::collections::BTreeSet;
+
+#[test]
+fn imported_statement_projection_payload_matches_kernel_canonical_bytes() {
+    let vc_statement = KernelEvidenceFingerprint::new(
+        IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+        b"statement".to_vec(),
+    )
+    .expect("vc statement fingerprint");
+    let vc_formula = KernelEvidenceFingerprint::new(
+        KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+        b"formula".to_vec(),
+    )
+    .expect("vc formula fingerprint");
+    let kernel_statement = mizar_kernel::certificate_parser::Fingerprint::new(
+        mizar_kernel::formula_evidence::IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+        b"statement".to_vec(),
+    );
+    let kernel_formula = mizar_kernel::certificate_parser::Fingerprint::new(
+        mizar_kernel::formula_evidence::SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID,
+        b"formula".to_vec(),
+    );
+
+    let vc_payload = canonical_imported_statement_projection_payload(&vc_statement, &vc_formula)
+        .expect("vc canonical payload");
+    let kernel_payload =
+        mizar_kernel::formula_evidence::canonical_imported_statement_projection_payload(
+            &kernel_statement,
+            &kernel_formula,
+        )
+        .expect("kernel canonical payload");
+
+    let mut expected = b"MIZAR_KERNEL_IMPORTED_STATEMENT_PROJECTION\0".to_vec();
+    expected.extend([18, 0, 0, 0, 9]);
+    expected.extend(b"statement");
+    expected.extend([2, 0, 0, 0, 7]);
+    expected.extend(b"formula");
+    assert_eq!(vc_payload, expected);
+    assert_eq!(vc_payload, kernel_payload);
+}
 
 #[test]
 fn translates_declarations_in_projection_key_order() {
@@ -1727,9 +1766,13 @@ fn imported_payload_with_projection_source(
             provenance_payload: imported_provenance_payload(projection_source).into_bytes(),
         },
         statement_projection: KernelImportedStatementProjection {
-            statement_fingerprint,
-            formula_fingerprint,
-            payload: imported_statement_projection_payload(projection_source).into_bytes(),
+            statement_fingerprint: statement_fingerprint.clone(),
+            formula_fingerprint: formula_fingerprint.clone(),
+            payload: canonical_imported_statement_projection_payload(
+                &statement_fingerprint,
+                &formula_fingerprint,
+            )
+            .expect("canonical imported statement projection payload"),
         },
     }
 }
@@ -1789,10 +1832,6 @@ fn imported_fingerprint_digest(_symbol: &str) -> String {
 
 fn imported_provenance_payload(symbol: &str) -> String {
     format!("imported-provenance-{symbol}")
-}
-
-fn imported_statement_projection_payload(symbol: &str) -> String {
-    format!("imported-statement-projection-{symbol}")
 }
 
 fn fixture_set(status: VcStatus, module: &str) -> VcSet {

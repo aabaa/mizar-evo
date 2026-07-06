@@ -116,9 +116,10 @@
   ちょうど一つ持ち、対象 VC と formula フィンガープリントを束縛する
   provenance entry をちょうど一つ参照すること。
 - P2. imported axiom/theorem entry は完全な同一性 5 つ組(package id、module
-  path、exported item id、statement fingerprint、required proof status)を
-  持ち、呼び出し側コンテキストの `FormulaImportedFactEvidence` と厳密一致
-  すること。欠如・同一性不一致・フィンガープリント不一致は
+  path、exported item id、statement fingerprint、required proof status)に加えて
+  imported-statement projection payload を持ち、呼び出し側コンテキストの
+  `FormulaImportedFactEvidence` と厳密一致すること。欠如・同一性不一致・
+  フィンガープリント不一致・projection 不一致は
   `unresolved_symbol`。
 - P3. 証明ステータス強度は `kernel_verified > discharged_builtin >
   externally_attested_policy_permitted` の順。要求より弱いステータスで受理
@@ -134,6 +135,11 @@
 - P5. `used_axioms` は、source class が accepted imported axiom/theorem で
   ある受理済み formula evidence のみから導出される。バックエンド報告の
   used-axiom リストは決して信頼されない。
+- P6. imported-statement projection は明示的かつ正準である。Algorithm id `18`
+  の statement fingerprint は algorithm id `2` の formula-tree fingerprint と
+  区別され、projection payload は両 fingerprint に対する task-33 v1 canonical
+  binding でなければならない。欠落・stale・非正準の producer projection は
+  `missing_provenance`、caller context projection mismatch は `unresolved_symbol`。
 
 ### S. 代入・α変換・freshness 不変条件
 
@@ -241,6 +247,7 @@
 | 記録フィールド | カーネルの動作 |
 |---|---|
 | formula フィンガープリント、goal フィンガープリント | パース済みツリーから再計算し比較 |
+| imported-statement projection payload | statement/formula fingerprint から再計算し比較 |
 | entry hash 入力、正準 evidence hash | 検証済みバイトのみから導出 |
 | 代入の target term | capture-avoiding replay で再導出し構造比較 |
 | freshness witness(avoided set、カウンタ) | 正規化 evidence から完全再計算 |
@@ -326,10 +333,10 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
     (恒等)で衝突なし。将来の digest アルゴリズムは衝突耐性が必須で、
     さもなくば imported fact 同一性が偽装可能。制約を architecture 15 に
     記録済み。`finding` F5(文書修正で解決)。
-12. **imported statement fingerprint と formula-tree fingerprint。** v1 規則
-    は等値を要求するため、(arch-18 の豊かな statement fingerprint を持つ)
-    現実の imported statement は projection の仕様化まで引用不能。健全
-    (fail-closed)だが完全性のブロッカー。`finding` F6。
+12. **imported statement fingerprint と formula-tree fingerprint。** Task 33
+    は一時的な等値規則を明示的な architecture-18 imported-statement projection
+    payload で置き換える。Parser 側の stale / 非正準 projection と checker 側の
+    context projection mismatch は SAT encoding 前に reject される。`covered`。
 13. **ゼロフレーム・未使用 binder フレーム。** 明示的 v1 エンコーディング
     経由でのみ受理。空バイト、フレーム欠落、未使用フレームは拒否
     (`invalid_substitution`)。`fail-closed`。
@@ -413,13 +420,12 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   だった。** 現行のフィンガープリントアルゴリズムは正準バイトそのものだが、
   後から弱い digest が登録されることを防ぐ記述がなく、その場合 imported
   fact 同一性が偽装可能になる。制約を architecture 15 に追加(en/ja)。
-- **F6(Medium、報告)。fingerprint 等値規則が imported fact の実用性を
-  ブロック。** imported statement fingerprint に命題論理 formula-tree
-  fingerprint との等値を要求するため、現実的な imported statement
-  (arch-18 の豊かな式に対する statement fingerprint)は source-formula
-  projection の仕様化まで引用できない。fail-closed で健全だが、import を
-  引用する ATP-bound VC が受理されるには kernel/`mizar-vc` 対のスキーマ
-  タスクが必要。
+- **F6(Medium、`mizar-vc` task 29 と対になる `mizar-kernel` task 33 で解決済み)。
+  Imported-statement projection が fingerprint 等値規則を置き換えた。**
+  Corrected formula evidence は architecture-18 imported statement fingerprint と
+  kernel formula-tree fingerprint を区別し、SAT encoding 前に canonical projection
+  payload と caller context の一致を要求する。Stale、非正準、context mismatch の
+  projection は fail closed する。
 - **F7(Medium、`mizar-test` task 21 で解決済み)。訂正後経路の拒否語彙。**
   required-soundness-case レジストリは audit-mode resolution replay 向けの
   legacy `soundness.certificate.invalid_sat_proof` を保持し、訂正後経路向けに
@@ -447,8 +453,8 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   コンテキスト同一性検証(F2)は task 31 で実装済みであり、不透明な `mizar-vc`
   canonical formula-envelope handoff hash と task-28 `context_identity_hash()` を
   運ぶ immutable context payload を使う; (c) ソルバーステップ予算
-  deferral の再訪(F3); (d) fingerprint 等値規則を解除する imported
-  statement projection の仕様化(F6、`mizar-vc` と対)。
+  deferral の再訪(F3)。Fingerprint 等値規則を解除する imported-statement
+  projection は、`mizar-vc` task 29 と対になる task 33 で実装済みである。
 - `doc/design/mizar-vc/en/todo.md`: producer-side goal-polarity declaration
   と consistency-polarity rejection は task 27 で解決済み。local/VC-fact 検証に
   カーネルが必要とする producer-side context-identity payload 生成は task 28 で

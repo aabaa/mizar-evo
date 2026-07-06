@@ -123,8 +123,9 @@ findings section.
   target VC and the formula fingerprint.
 - P2. Imported axiom/theorem entries carry the full identity 5-tuple (package
   id, module path, exported item id, statement fingerprint, required proof
-  status) and must match a caller-context `FormulaImportedFactEvidence` entry
-  exactly; absence, identity mismatch, or fingerprint mismatch is
+  status) plus the imported-statement projection payload and must match a
+  caller-context `FormulaImportedFactEvidence` entry exactly; absence, identity
+  mismatch, fingerprint mismatch, or projection mismatch is
   `unresolved_symbol`.
 - P3. Proof-status strength is ordered `kernel_verified > discharged_builtin >
   externally_attested_policy_permitted`; evidence accepted under a weaker
@@ -141,6 +142,12 @@ findings section.
 - P5. `used_axioms` is derived only from accepted formula evidence whose source
   class is accepted imported axiom/theorem. Backend-reported used-axiom lists
   are never trusted.
+- P6. Imported-statement projection is explicit and canonical: algorithm id
+  `18` statement fingerprints are distinct from algorithm id `2` formula-tree
+  fingerprints, and the projection payload must be the task-33 v1 canonical
+  binding over both fingerprints. Missing, stale, or noncanonical producer
+  projection is `missing_provenance`; a caller-context projection mismatch is
+  `unresolved_symbol`.
 
 ### S. Substitution, alpha-conversion, and freshness invariants
 
@@ -251,6 +258,7 @@ What the kernel recomputes (and therefore does not trust as a field):
 | Recorded field | Kernel action |
 |---|---|
 | formula fingerprints, goal fingerprint | recomputed from parsed trees and compared |
+| imported-statement projection payloads | recomputed from statement/formula fingerprints and compared |
 | entry hash inputs, canonical evidence hash | derived from validated bytes only |
 | substitution target terms | re-derived by capture-avoiding replay and compared structurally |
 | freshness witnesses (avoided set, counter) | fully recomputed from normalized evidence |
@@ -339,10 +347,11 @@ section).
     (identity), so collision-free. Any future digest algorithm must be
     collision-resistant or imported-fact identity could be spoofed; constraint
     now recorded in architecture 15. `finding` F5 (resolved by doc patch).
-12. **Imported statement fingerprint vs formula-tree fingerprint.** The v1 rule
-    requires equality, which blocks real (rich) imported statements until a
-    projection is specified. Sound (fail-closed) but a completeness blocker.
-    `finding` F6.
+12. **Imported statement fingerprint vs formula-tree fingerprint.** Task 33
+    replaces the temporary equality rule with an explicit architecture-18
+    imported-statement projection payload. Parser-side stale/noncanonical
+    projections and checker-side context projection mismatches reject before
+    SAT encoding. `covered`.
 13. **Zero-frame and unused binder frames.** Accepted only through the explicit
     v1 encoding; empty bytes, missing frames, and unused frames reject
     (`invalid_substitution`). `fail-closed`.
@@ -430,13 +439,13 @@ the trusted base; **Low** = documentation/consistency debt.
   nothing prevented a later weak digest from being registered, which would
   make imported-fact identity spoofable. Constraint added to architecture 15
   (en/ja).
-- **F6 (Medium, reported). Imported-fact usability is blocked by the
-  fingerprint-equality rule.** Requiring the imported statement fingerprint to
-  equal the propositional formula-tree fingerprint means realistic imported
-  statements (arch-18 statement fingerprints over rich formulas) cannot be
-  cited until a source-formula projection is specified. Fail-closed and sound;
-  needs a paired kernel/`mizar-vc` schema task before ATP-bound VCs citing
-  imports can ever be accepted.
+- **F6 (Medium, resolved by `mizar-kernel` task 33 paired with `mizar-vc`
+  task 29). Imported-statement projection replaces the fingerprint-equality
+  rule.** Corrected formula evidence now keeps architecture-18 imported
+  statement fingerprints distinct from kernel formula-tree fingerprints and
+  requires a canonical projection payload plus matching caller context before
+  SAT encoding. Stale, noncanonical, or context-mismatched projections fail
+  closed.
 - **F7 (Medium, resolved by `mizar-test` task 21). Corrected-path rejection
   vocabulary.** The required-soundness-case registry now keeps legacy
   `soundness.certificate.invalid_sat_proof` for audit-mode resolution replay
@@ -466,10 +475,9 @@ the trusted base; **Low** = documentation/consistency debt.
   30; (b) context-identity verification for non-imported source bindings (F2)
   is implemented by task 31, using an immutable context payload that carries
   the opaque `mizar-vc` canonical formula-envelope handoff hash plus task-28
-  `context_identity_hash()`; (c) revisit the solver step-budget deferral (F3);
-  (d) specify
-  the imported-statement projection that lifts the fingerprint-equality rule
-  (F6, paired with `mizar-vc`).
+  `context_identity_hash()`; (c) revisit the solver step-budget deferral (F3).
+  The imported-statement projection that lifts the fingerprint-equality rule
+  is implemented by task 33, paired with `mizar-vc` task 29.
 - `doc/design/mizar-vc/en/todo.md`: producer-side goal-polarity declaration
   and consistency-polarity rejection is resolved by task 27; producer-side
   context-identity payload production for local/VC-fact verification is

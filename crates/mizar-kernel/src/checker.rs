@@ -9,7 +9,11 @@ use crate::{
         RequiredProofStatus,
     },
     clause::{Clause, ClauseError, ClauseProfile, ClauseValidationContext},
-    formula_evidence::{FormulaSource, GoalPolarity, ImportedFormulaSource, ParsedKernelEvidence},
+    formula_evidence::{
+        FormulaSource, GoalPolarity, IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+        ImportedFormulaSource, ImportedStatementProjection, ParsedKernelEvidence,
+        SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID,
+    },
     rejection::{
         ClauseRef as RejectionClauseRef, ClauseRefNamespace as RejectionClauseRefNamespace,
         RejectionCategory, RejectionDetail, RejectionLocation, RejectionRecord,
@@ -246,6 +250,7 @@ pub struct FormulaImportedFactEvidence {
     pub exported_item_id: Vec<u8>,
     pub statement_fingerprint: Fingerprint,
     pub accepted_proof_status: AcceptedProofStatus,
+    pub statement_projection: ImportedStatementProjection,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1653,6 +1658,7 @@ fn check_formula_import_source(
     let context = checked_formula_context(input)?;
     let evidence = lookup_formula_import(input.target_vc_fingerprint, context, namespace, source)?;
     let location = imported_location(evidence.imported_fact_id);
+    validate_formula_import_projection(input, source, evidence, location.clone())?;
     validate_formula_import_status(input, source, evidence, location.clone())?;
     Ok(CheckedImportedFact {
         namespace,
@@ -1727,6 +1733,31 @@ fn formula_import_identity_matches(
         && evidence.module_path == source.module_path
         && evidence.exported_item_id == source.exported_item_id
         && evidence.statement_fingerprint == source.statement_fingerprint
+}
+
+fn validate_formula_import_projection(
+    input: KernelEvidenceCheckInput<'_>,
+    source: &ImportedFormulaSource,
+    evidence: &FormulaImportedFactEvidence,
+    location: RejectionLocation,
+) -> KernelCheckServiceResult<()> {
+    let projection = &evidence.statement_projection;
+    let projection_valid = projection.statement_fingerprint.algorithm_id
+        == IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID
+        && !projection.statement_fingerprint.digest.is_empty()
+        && projection.formula_fingerprint.algorithm_id
+            == SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID
+        && !projection.formula_fingerprint.digest.is_empty()
+        && projection.statement_fingerprint == evidence.statement_fingerprint
+        && projection == &source.statement_projection;
+    if projection_valid {
+        return Ok(());
+    }
+    Err(rejection(
+        input.target_vc_fingerprint,
+        RejectionDetail::UnresolvedSymbol,
+        location.with_field_path("formula.imported_statement_projection"),
+    ))
 }
 
 fn validate_formula_import_status(

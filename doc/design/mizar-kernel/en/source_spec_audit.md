@@ -218,12 +218,15 @@ Source: `src/formula_evidence.rs`. Spec: [formula_evidence.md](./formula_evidenc
 Covered top-level public items:
 
 - `SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID`
+- `IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID`
+- `canonical_imported_statement_projection_payload`
 - `FormulaEvidenceParseContext`
 - `FormulaEvidenceParseLimits`
 - `ParsedKernelEvidence`
 - `FormulaEvidenceEntry`
 - `FormulaSourceClass`
 - `FormulaSource`
+- `ImportedStatementProjection`
 - `ImportedFormulaSource`
 - `Formula`
 - `FormulaSubstitutionEvidence`
@@ -241,6 +244,11 @@ Correspondence summary:
   evidence envelope and structural parser. Parsed evidence exposes read-only
   accessors so callers cannot mutate validated formula/provenance/target
   bindings before checker handoff.
+- `ImportedStatementProjection`,
+  `canonical_imported_statement_projection_payload`, source binding records,
+  and architecture-18 / formula-tree fingerprint constants implement the
+  task-33 imported-statement projection contract without source lookup or rich
+  formula reconstruction.
 - `Formula`, source binding records, substitution evidence, formula
   fingerprints, and entry hash inputs implement formula/substitution evidence
   identity without accepting instantiated formulas or SAT clauses as trusted
@@ -437,13 +445,18 @@ the formula/substitution evidence parser, SAT encoder, trusted SAT checker
 wrapper, SAT-backed `check_kernel_evidence` service path, explicit
 `allow_legacy_certificate_audit` gate for the task-22 legacy
 `check_kernel_certificate` path, explicit proof-obligation/consistency check
-kind binding, and context-identity payload types for non-imported formula
+kind binding, context-identity payload types for non-imported formula sources,
+and imported-statement projection validation for corrected imported formula
 sources. Default normal proof policy rejects legacy resolution-trace
 certificates before replay; explicit audit mode remains migration-only,
 returns rejected audit data after successful replay, and is not trusted
 acceptance material. The task-31 context-identity payload is checked before SAT
 encoding and binds local-hypothesis, cited-premise, and generated-VC-fact rows
-to immutable task-28 source identity data.
+to immutable task-28 source identity data. The task-33 imported-statement
+projection keeps architecture-18 statement fingerprints distinct from kernel
+formula-tree fingerprints, validates the canonical projection payload, and
+requires the caller imported-fact context to carry the same projection before
+SAT encoding.
 
 ## Test Traceability
 
@@ -458,9 +471,9 @@ migration-only and remains deferred.
 | `certificate_parser` | `crates/mizar-kernel/src/certificate_parser/tests.rs` | Valid schema parsing, unsupported headers/profiles, directory and item canonicality, resource exhaustion before allocation, imported fact references, manifest/generated-clause validation, substitution/resolution/derived/final references, deterministic collection order, deterministic hash input, and parser rejection classification. |
 | `checker` imported facts | `crates/mizar-kernel/src/checker/tests.rs` | Imported axiom/theorem context validation, namespace preservation, proof-status checks, policy taint, fingerprint binding, duplicate context rejection, unused malformed entry handling, deterministic context/report ordering, and count/resource limits. |
 | `checker` cluster/reduction replay | `crates/mizar-kernel/src/checker/tests.rs` | Valid trace replay, missing provenance, hidden/future dependency rejection, guard/result mismatches, bounded context construction, requested-step closure, unchecked base fact rejection, runtime limits, and deterministic canonical order. |
-| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection, explicit check-kind/goal-polarity binding for both proof-obligation and consistency checks, F1-shaped polarity mismatch rejection before context/SAT work, task-31 context-identity acceptance/rejection for local/cited/generated formula sources, context-identity resource limits, task-28 golden line-grammar hashing, imported formula context proof-status checks, satisfiable-goal rejection, target mismatch rejection, deterministic evidence batch ties, normal-policy legacy certificate rejection, explicit legacy migration/audit service pipeline, substitution/report binding, generated-clause base sets, final-goal and derived-fact fail-closed behavior, mutation fail corpus, deterministic repetition/permutation results, replay-cost budgets, timeout/resource propagation, and target/input-order batch sorting. |
+| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection, explicit check-kind/goal-polarity binding for both proof-obligation and consistency checks, F1-shaped polarity mismatch rejection before context/SAT work, task-31 context-identity acceptance/rejection for local/cited/generated formula sources, context-identity resource limits, task-28 golden line-grammar hashing, imported formula context proof-status and imported-statement projection checks, satisfiable-goal rejection, target mismatch rejection, deterministic evidence batch ties, normal-policy legacy certificate rejection, explicit legacy migration/audit service pipeline, substitution/report binding, generated-clause base sets, final-goal and derived-fact fail-closed behavior, mutation fail corpus, deterministic repetition/permutation results, replay-cost budgets, timeout/resource propagation, and target/input-order batch sorting. |
 | `clause` | `crates/mizar-kernel/src/clause/tests.rs` | Canonical literal/term ordering, duplicate literal removal, empty versus tautology forms, tautology policy, malformed atom/term/symbol/variable rejection, profile/resource bounds, canonical constructor checks, stable rendering, and hash input exclusion of display data. |
-| `formula_evidence` | `crates/mizar-kernel/src/formula_evidence/tests.rs` | Valid evidence envelope parsing, standalone final-goal separation, stable formula rendering/hash input, explicit substitution evidence payload parsing, unknown schema/domain rejection, duplicate ids, malformed formula rejection, missing provenance fail-closed behavior, imported statement fingerprint mismatch rejection, and provenance target-binding mismatch rejection. |
+| `formula_evidence` | `crates/mizar-kernel/src/formula_evidence/tests.rs` | Valid evidence envelope parsing, standalone final-goal separation, stable formula rendering/hash input, explicit substitution evidence payload parsing, unknown schema/domain rejection, duplicate ids, malformed formula rejection, missing provenance fail-closed behavior, imported-statement projection acceptance for distinct architecture-18 statement fingerprints, unsupported imported-statement/projection algorithm rejection, empty projection payload rejection, stale projection statement rejection, formula-projection mismatch rejection, noncanonical projection payload rejection, and provenance target-binding mismatch rejection. |
 | `rejection` | `crates/mizar-kernel/src/rejection/tests.rs` | Stable keys, category/detail ownership, parser conversion, checker locations, owner mappings, deterministic ordering and tie-breakers, fixed-width target sort bytes, and public enum compatibility. |
 | `resolution_trace` | `crates/mizar-kernel/src/resolution_trace/tests.rs` | Valid replay over generated/imported/previous-step parents, pivot and resolvent rejection, imported context sorting/provenance, first-use compatibility/depth checks, resource limits, tautology policy, defensive invariant rejection, final-goal checkedness, deterministic reports, deterministic rejection locations, and clause-owned depth/length helpers. |
 | `sat_checker` | `crates/mizar-kernel/src/sat_checker/tests.rs` | Trusted wrapper outcomes for unsatisfiable and satisfiable kernel-derived SAT problems, deterministic repeated checks, input-limit rejection before solver construction, unsupported exact step-budget rejection without solver-hook accounting, invalid clause/literal shape rejection, and audited `batsat::SolverOpts` pinning. |

@@ -22,7 +22,9 @@ use mizar_kernel::{
     clause::{Atom, SymbolId, SymbolKey, SymbolKind},
     formula_evidence::{
         Formula, FormulaEvidenceParseContext, FormulaSourceClass, GoalPolarity,
-        ParsedKernelEvidence, SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID, parse_formula_evidence,
+        IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID, ImportedStatementProjection,
+        ParsedKernelEvidence, SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID,
+        canonical_imported_statement_projection_payload, parse_formula_evidence,
     },
     rejection::TargetVcFingerprint,
 };
@@ -1027,6 +1029,8 @@ fn imported_formula_item(
     required_status: RequiredProofStatus,
 ) -> FormulaFixture {
     let fingerprint = formula_fingerprint(formula);
+    let statement_fingerprint = imported_statement_fingerprint();
+    let statement_projection = imported_statement_projection(&statement_fingerprint, &fingerprint);
     let mut bytes = Vec::new();
     put_u32(formula_id, &mut bytes);
     bytes.push(FormulaSourceClass::AcceptedImportedAxiom.tag());
@@ -1035,8 +1039,11 @@ fn imported_formula_item(
     put_bytes(b"pkg", &mut bytes);
     put_bytes(b"module", &mut bytes);
     put_bytes(b"ITEM", &mut bytes);
-    put_fingerprint(&fingerprint, &mut bytes);
+    put_fingerprint(&statement_fingerprint, &mut bytes);
     bytes.push(required_status_tag(required_status));
+    put_fingerprint(&statement_projection.statement_fingerprint, &mut bytes);
+    put_fingerprint(&statement_projection.formula_fingerprint, &mut bytes);
+    put_bytes(&statement_projection.payload, &mut bytes);
     put_formula(formula, &mut bytes);
     FormulaFixture {
         bytes,
@@ -1136,14 +1143,41 @@ fn formula_imported_fact(
     formula: &Formula,
     accepted_proof_status: AcceptedProofStatus,
 ) -> FormulaImportedFactEvidence {
+    let formula_fingerprint = formula_fingerprint(formula);
+    let statement_fingerprint = imported_statement_fingerprint();
+    let statement_projection =
+        imported_statement_projection(&statement_fingerprint, &formula_fingerprint);
     FormulaImportedFactEvidence {
         imported_fact_id,
         package_id: b"pkg".to_vec(),
         module_path: b"module".to_vec(),
         exported_item_id: b"ITEM".to_vec(),
-        statement_fingerprint: formula_fingerprint(formula),
+        statement_fingerprint,
         accepted_proof_status,
+        statement_projection,
     }
+}
+
+fn imported_statement_projection(
+    statement_fingerprint: &Fingerprint,
+    formula_fingerprint: &Fingerprint,
+) -> ImportedStatementProjection {
+    ImportedStatementProjection {
+        statement_fingerprint: statement_fingerprint.clone(),
+        formula_fingerprint: formula_fingerprint.clone(),
+        payload: canonical_imported_statement_projection_payload(
+            statement_fingerprint,
+            formula_fingerprint,
+        )
+        .expect("canonical imported statement projection payload"),
+    }
+}
+
+fn imported_statement_fingerprint() -> Fingerprint {
+    Fingerprint::new(
+        IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+        b"imported-statement".to_vec(),
+    )
 }
 
 fn formula_evidence_bytes(

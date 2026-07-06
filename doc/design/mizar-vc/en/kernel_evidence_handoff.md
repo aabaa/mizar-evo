@@ -191,10 +191,14 @@ Formula-tree fingerprints must use the kernel formula fingerprint algorithm for
 this handoff version. Imported-statement fingerprints are not formula-tree
 fingerprints; they must use the imported-statement algorithm id defined for
 architecture-18 dependency fingerprints and must be connected to the cited
-formula-tree fingerprint by a nonempty `KernelImportedStatementProjection`
-payload. Unsupported formula or imported-statement algorithm ids, empty
-projection payloads, stale statement fingerprints, and formula-projection
-mismatches are fail-closed builder errors, not cues to reinterpret bytes.
+formula-tree fingerprint by the canonical v1
+`KernelImportedStatementProjection` payload. That payload is
+`MIZAR_KERNEL_IMPORTED_STATEMENT_PROJECTION\0` followed by the canonical bytes
+of the imported-statement fingerprint and the canonical bytes of the formula
+fingerprint. Unsupported formula or imported-statement algorithm ids, empty or
+noncanonical projection payloads, stale statement fingerprints, and
+formula-projection mismatches are fail-closed builder errors, not cues to
+reinterpret bytes.
 
 ## Substitutions
 
@@ -280,7 +284,7 @@ Remaining gaps:
   fingerprint separately from the kernel formula-tree fingerprint, records the
   projection in canonical evidence rendering/hash input, and exports the same
   payload to dependency slices. Kernel-side trusted validation and the pass
-  fixture remain paired `mizar-kernel` task 33 work.
+  fixture are implemented by paired `mizar-kernel` task 33.
 
 ## Planned Tests
 
@@ -319,8 +323,8 @@ imported-statement fingerprint and formula-tree fingerprint, that the
 projection participates in canonical evidence/debug rendering and dependency
 slices, and that unsupported imported-statement algorithms, stale statement
 projections, formula-projection mismatches, conflicting same-requirement
-projections, empty projection payloads, and missing context/payload data fail
-closed.
+projections, empty or noncanonical projection payloads, and missing
+context/payload data fail closed.
 
 ## Public Enum Policy
 
@@ -353,25 +357,22 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Continue Step 3 with `mizar-kernel` task 33 after the completed mizar-vc task
-29 producer-side imported-statement projection payload. Before editing, verify
-a clean worktree, confirm the mizar-vc task 29 commit, and re-read
-doc/design/todo.md, doc/design/mizar-kernel/en/todo.md,
+Continue Step 3 with `mizar-kernel` task 34 after the completed mizar-kernel
+task 33 imported-statement projection validation. Before editing, verify a
+clean worktree, confirm the task 33 commit, and re-read doc/design/todo.md,
+doc/design/mizar-kernel/en/todo.md,
 doc/design/mizar-kernel/en/soundness_argument.md,
 doc/design/mizar-kernel/en/checker.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/18.dependency_fingerprint.md, and this
-kernel-evidence handoff spec. Implement kernel-side F6 validation and the
-pass/reject fixture only from real mizar-vc projection payloads. Do not
-fabricate projection bytes, weaken formula fingerprint checks, change
-checker/core semantics, activate unverified source fixtures, or rebaseline
+doc/design/mizar-kernel/en/resolution_trace.md,
+doc/design/architecture/en/15.kernel_certificate_format.md, and this
+kernel-evidence handoff spec. Pin down or retire the legacy resolution-trace
+tautology marker without changing corrected formula-evidence acceptance,
+activating unverified fixtures, fabricating runner payloads, or rebaselining
 expectations to match current behavior.
 ```
 
-Rationale: mizar-vc task 29 closes only the producer half of F6. The next
-sequential Step 3 task must decide and enforce the trusted kernel validation
-contract for the projection payload without relying on fake corpus data. Keep
-`xhigh` because this boundary determines whether imported facts can be cited
-without collapsing imported-statement identity into formula-tree identity.
-Lower reasoning is appropriate only for typo-only documentation
+Rationale: task 34 closes the remaining F9 legacy-audit-path ambiguity after
+F6 is implemented on both producer and kernel-consumer sides. Keep `xhigh`
+because the work touches the rejection taxonomy for a migration-only trusted
+boundary; lower reasoning is appropriate only for typo-only documentation
 synchronization.

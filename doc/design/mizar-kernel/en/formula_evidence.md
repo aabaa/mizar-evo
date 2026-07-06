@@ -147,17 +147,30 @@ its `source_class`:
 - local hypothesis and cited premise entries use a nonzero local-context id;
 - generated VC facts use a nonzero VC-fact id;
 - accepted imported axioms and accepted imported theorems use package id,
-  module path, exported item id, statement fingerprint, and required proof
-  status;
+  module path, exported item id, architecture-18 statement fingerprint,
+  required proof status, and an imported-statement projection payload;
 - policy-bounded built-ins use a nonempty built-in id.
 
 Every formula entry references one provenance entry. Provenance entries bind a
 provenance id, the target VC fingerprint, the formula-tree fingerprint, and an
 opaque nonempty producer-owned payload. The parser rejects missing provenance,
 empty provenance payloads, provenance target-binding mismatches, and formula
-fingerprint mismatches. Imported source bindings additionally require the imported
-statement fingerprint to equal the formula-tree fingerprint until richer source
-formula projection is specified.
+fingerprint mismatches.
+
+Task 33 makes imported source bindings acceptable only when the imported
+statement fingerprint and the formula-tree fingerprint are connected by a
+canonical projection payload. The imported statement fingerprint uses
+architecture-18 algorithm id `18`; the formula-tree fingerprint uses
+`SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID = 2`. The parser reads
+`statement_projection.statement_fingerprint`,
+`statement_projection.formula_fingerprint`, and
+`statement_projection.payload`, then rejects unsupported algorithms, empty
+payloads, noncanonical payloads, stale statement fingerprints, and
+formula-projection mismatches as `missing_provenance`. The v1 canonical
+payload is `MIZAR_KERNEL_IMPORTED_STATEMENT_PROJECTION\0` followed by the
+canonical bytes of the statement fingerprint and the canonical bytes of the
+formula fingerprint. The parser does not reconstruct rich source formulas,
+perform source lookup, or reinterpret display/debug bytes.
 
 Task 31 makes local hypothesis, cited premise, and generated VC fact entries
 acceptable only when `FormulaEvidenceContext` carries the task-28 context

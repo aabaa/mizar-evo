@@ -281,8 +281,8 @@ Task 29 adds Rust coverage for:
   statement/formula fingerprints change;
 - proof-reuse keys staying unavailable while imported facts still carry
   conservative import coverage;
-- kernel-side trusted validation and pass fixtures remaining downstream
-  `mizar-kernel` task 33 work.
+- kernel-side trusted validation and pass fixtures implemented by paired
+  `mizar-kernel` task 33.
 
 ## Public Enum Policy
 

@@ -403,7 +403,7 @@ Every finding maps to a task or a recorded disposition:
 | F3 (solver step budget) | deferred by design in `sat_checker.md` (batsat 0.6.0 exposes no stable budget API); revisit trigger recorded as task 32 |
 | F4 (KernelEvidence field drift) | resolved in `f75af877`; no further task |
 | F5 (fingerprint collision resistance) | constraint added to architecture 15 in `f75af877`; no further task — future fingerprint registrations must satisfy it |
-| F6 (imported-statement projection) | task 33, paired with mizar-vc |
+| F6 (imported-statement projection) | implemented by task 33, paired with mizar-vc task 29 |
 | F7 (mizar-test soundness vocabulary) | resolved by [mizar-test task 21](../../mizar-test/en/todo.md) |
 | F8 (corpus directory naming) | resolved by [mizar-test task 22](../../mizar-test/en/todo.md) |
 | F9 (legacy tautology marker) | task 34 |
@@ -464,14 +464,15 @@ Every finding maps to a task or a recorded disposition:
     - Deps: triggered by any `batsat` version change (task-24 audit
       procedure). Spec: `sat_checker.md`; soundness_argument.md F3.
 
-33. **Imported-statement projection specification (F6).** [ ]
+33. **Imported-statement projection specification (F6).** [x]
     - Specify the projection from arch-18 imported statement fingerprints
       (rich formulas) to the propositional formula-tree fingerprints the
       evidence checker compares, so realistic imported facts become citable.
-      Until this lands the fingerprint-equality rule keeps import citations
-      fail-closed (sound). Kernel side: projection validation rules in
-      `formula_evidence.md` + architecture 15; producer side is the paired
-      mizar-vc/mizar-atp schema work.
+      Task 33 replaces the temporary fingerprint-equality rule with canonical
+      imported-statement projection validation in `formula_evidence.md` +
+      architecture 15. The paired `mizar-vc` producer payload contract is
+      complete; remaining ATP/downstream production must use the documented
+      projection contract rather than fabricated payloads.
     - Acceptance: the projection is deterministic and collision-resistant
       per the F5 constraint; a pass fixture cites a projected imported
       statement; mutation fixtures (wrong projection, stale fingerprint)

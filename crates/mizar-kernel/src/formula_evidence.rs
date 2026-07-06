@@ -19,10 +19,13 @@ use crate::{
 };
 
 pub const SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID: u8 = 2;
+pub const IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID: u8 = 18;
 
 const EVIDENCE_DOMAIN_SEPARATOR: &[u8] = b"MIZAR_KERNEL_EVIDENCE\0";
 const FORMULA_DOMAIN_SEPARATOR: &[u8] = b"MIZAR_KERNEL_FORMULA\0";
 const ENTRY_DOMAIN_SEPARATOR: &[u8] = b"MIZAR_KERNEL_FORMULA_ENTRY\0";
+const IMPORTED_STATEMENT_PROJECTION_DOMAIN_SEPARATOR: &[u8] =
+    b"MIZAR_KERNEL_IMPORTED_STATEMENT_PROJECTION\0";
 const SCHEMA_VERSION_V1: u16 = 1;
 const ENCODING_VERSION_V1: u16 = 1;
 const PROFILE_LEN: usize = 8;
@@ -38,6 +41,16 @@ const REQUIRED_SECTIONS: [EvidenceSectionTag; 6] = [
 ];
 
 const PAYLOAD_KIND_FORMAL_TO_ACTUAL_MAP: u8 = 1;
+
+pub fn canonical_imported_statement_projection_payload(
+    statement_fingerprint: &Fingerprint,
+    formula_fingerprint: &Fingerprint,
+) -> Result<Vec<u8>, FormulaEvidenceError> {
+    let mut bytes = Vec::from(IMPORTED_STATEMENT_PROJECTION_DOMAIN_SEPARATOR);
+    bytes.extend(fingerprint_bytes(statement_fingerprint)?);
+    bytes.extend(fingerprint_bytes(formula_fingerprint)?);
+    Ok(bytes)
+}
 const PAYLOAD_KIND_LOCAL_ABBREVIATION_EXPANSION: u8 = 2;
 const REPLACEMENT_ROLE_TERM_ARGUMENT: u8 = 1;
 const REPLACEMENT_ROLE_PREDICATE_ARGUMENT: u8 = 2;
@@ -323,12 +336,20 @@ impl FormulaSource {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ImportedStatementProjection {
+    pub statement_fingerprint: Fingerprint,
+    pub formula_fingerprint: Fingerprint,
+    pub payload: Vec<u8>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ImportedFormulaSource {
     pub package_id: Vec<u8>,
     pub module_path: Vec<u8>,
     pub exported_item_id: Vec<u8>,
     pub statement_fingerprint: Fingerprint,
     pub required_proof_status: RequiredProofStatus,
+    pub statement_projection: ImportedStatementProjection,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -915,22 +936,98 @@ fn read_imported_source(
     if package_id.is_empty() || module_path.is_empty() || exported_item_id.is_empty() {
         return Err(reader.missing_at(reader.offset(), "formula.imported_source"));
     }
+    let statement_offset = reader.offset();
     let statement_fingerprint = read_fingerprint(reader, "formula.statement_fingerprint")?;
-    if &statement_fingerprint != formula_fingerprint {
-        return Err(reader.missing_at(reader.offset(), "formula.statement_fingerprint"));
-    }
+    validate_imported_statement_fingerprint(
+        reader,
+        statement_offset,
+        "formula.statement_fingerprint",
+        &statement_fingerprint,
+    )?;
     let status_offset = reader.offset();
     let status_tag = reader.read_u8("formula.required_proof_status")?;
     let Some(required_proof_status) = required_status_from_tag(status_tag) else {
         return Err(reader.malformed_at(status_offset, "formula.required_proof_status"));
     };
+    let statement_projection =
+        read_imported_statement_projection(reader, formula_fingerprint, &statement_fingerprint)?;
     Ok(ImportedFormulaSource {
         package_id,
         module_path,
         exported_item_id,
         statement_fingerprint,
         required_proof_status,
+        statement_projection,
     })
+}
+
+fn read_imported_statement_projection(
+    reader: &mut Reader<'_>,
+    formula_fingerprint: &Fingerprint,
+    statement_fingerprint: &Fingerprint,
+) -> FormulaEvidenceCheckResult<ImportedStatementProjection> {
+    let statement_offset = reader.offset();
+    let projection_statement =
+        read_fingerprint(reader, "formula.statement_projection.statement_fingerprint")?;
+    validate_imported_statement_fingerprint(
+        reader,
+        statement_offset,
+        "formula.statement_projection.statement_fingerprint",
+        &projection_statement,
+    )?;
+    if &projection_statement != statement_fingerprint {
+        return Err(reader.missing_at(
+            statement_offset,
+            "formula.statement_projection.statement_fingerprint",
+        ));
+    }
+
+    let formula_offset = reader.offset();
+    let projection_formula =
+        read_fingerprint(reader, "formula.statement_projection.formula_fingerprint")?;
+    if projection_formula.algorithm_id != SUPPORTED_FORMULA_FINGERPRINT_ALGORITHM_ID
+        || projection_formula.digest.is_empty()
+        || &projection_formula != formula_fingerprint
+    {
+        return Err(reader.missing_at(
+            formula_offset,
+            "formula.statement_projection.formula_fingerprint",
+        ));
+    }
+
+    let payload_offset = reader.offset();
+    let payload = reader.read_bounded_bytes("formula.statement_projection.payload", usize::MAX)?;
+    if payload.is_empty() {
+        return Err(reader.missing_at(payload_offset, "formula.statement_projection.payload"));
+    }
+    let expected_payload =
+        canonical_imported_statement_projection_payload(&projection_statement, &projection_formula)
+            .map_err(|_| {
+                reader.resource_at(payload_offset, "formula.statement_projection.payload")
+            })?;
+    if payload != expected_payload {
+        return Err(reader.missing_at(payload_offset, "formula.statement_projection.payload"));
+    }
+
+    Ok(ImportedStatementProjection {
+        statement_fingerprint: projection_statement,
+        formula_fingerprint: projection_formula,
+        payload,
+    })
+}
+
+fn validate_imported_statement_fingerprint(
+    reader: &Reader<'_>,
+    byte_offset: usize,
+    field: &'static str,
+    fingerprint: &Fingerprint,
+) -> FormulaEvidenceCheckResult<()> {
+    if fingerprint.algorithm_id != IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID
+        || fingerprint.digest.is_empty()
+    {
+        return Err(reader.missing_at(byte_offset, field));
+    }
+    Ok(())
 }
 
 fn parse_substitutions(
@@ -1846,6 +1943,20 @@ fn imported_source_bytes(source: &ImportedFormulaSource) -> Result<Vec<u8>, Form
     bytes.extend_from_slice(&source.exported_item_id);
     bytes.extend(fingerprint_bytes(&source.statement_fingerprint)?);
     bytes.push(required_status_tag(source.required_proof_status));
+    bytes.extend(imported_statement_projection_bytes(
+        &source.statement_projection,
+    )?);
+    Ok(bytes)
+}
+
+fn imported_statement_projection_bytes(
+    projection: &ImportedStatementProjection,
+) -> Result<Vec<u8>, FormulaEvidenceError> {
+    let mut bytes = Vec::new();
+    bytes.extend(fingerprint_bytes(&projection.statement_fingerprint)?);
+    bytes.extend(fingerprint_bytes(&projection.formula_fingerprint)?);
+    write_len(projection.payload.len(), &mut bytes)?;
+    bytes.extend_from_slice(&projection.payload);
     Ok(bytes)
 }
 

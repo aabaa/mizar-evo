@@ -472,10 +472,10 @@ the paired producer tasks.
       imported-statement fingerprint to the kernel formula-tree fingerprint.
       The producer rejects unsupported imported-statement/formula algorithms,
       stale statement projections, mismatched projected formula fingerprints,
-      empty projection payloads, and missing context/payload data. Canonical
+      empty or noncanonical projection payloads, and missing context/payload data. Canonical
       evidence rendering/hash input and dependency-slice `kernel_evidence`
       payloads include the projection data. Trusted kernel validation and the
-      pass fixture remain paired `mizar-kernel` task 33 work.
+      pass fixture are implemented by paired `mizar-kernel` task 33.
 
 ## Recommended Verification
 
