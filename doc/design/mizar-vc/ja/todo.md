@@ -428,19 +428,27 @@ kernel 受理境界の監査
       mutate されると stale になる。これは producer-side F2 payload だけを閉じる。
       trusted membership verification は mizar-kernel task 31 で実装済み。
 
-29. **imported-statement projection の producer 側(kernel F6)。** [ ]
+29. **imported-statement projection の producer 側(kernel F6)。** [x]
     - kernel task 33 とともに、arch-18 の imported statement fingerprint
       から kernel evidence が引用する formula-tree fingerprint への
-      projection を仕様化して emit し、fingerprint 等値規則を弱めずに
-      imported fact を引用可能にする。kernel が検証する projection データ
-      を dependency slice が運ぶこと。
+      projection を仕様化して emit し、formula fingerprint validation と
+      imported-fact identity check を弱めずに imported fact を引用可能にする。
+      kernel が検証する projection データを dependency slice が運ぶこと。
     - 受け入れ条件: projection された imported-fact 引用が handoff を
-      round-trip し kernel 側 pass fixture で受理される。stale または
-      不一致の projection は fail-closed。
+      round-trip し、対になる kernel 側 pass fixture に必要な projection payload を運ぶ。
+      stale または不一致の projection は producer-side で fail-closed。
     - 検証: `cargo test -p mizar-vc`、`cargo test -p mizar-kernel`、
       `cargo test -p mizar-test`。
     - 依存: 28; 対: mizar-kernel task 33。仕様: architecture 15、18;
       soundness_argument.md F6。
+    - Done in task 29: `KernelImportedFormulaPayload` は、architecture-18 の
+      imported-statement fingerprint を kernel formula-tree fingerprint に写像する
+      `KernelImportedStatementProjection` を運ぶようになった。producer は unsupported
+      imported-statement/formula algorithm、stale statement projection、projected formula
+      fingerprint mismatch、empty projection payload、missing context/payload data を拒否する。
+      Canonical evidence rendering/hash input と dependency-slice `kernel_evidence` payload は
+      projection data を含む。trusted kernel validation と pass fixture は対になる
+      `mizar-kernel` task 33 に残る。
 
 ## 推奨検証
 

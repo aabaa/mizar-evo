@@ -97,7 +97,7 @@ is its task 1). "Next work" points into the
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22 plus task 21 soundness vocabulary | step 5 (task 10) | [todo](./mizar-test/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec-decision wave complete | steps 4, 5 (tasks 45-48) | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete | step 4 (tasks 27-30) | [todo](./mizar-core/en/todo.md) |
-| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | steps 3 (task 29), 5; tasks 27-28 resolved | [todo](./mizar-vc/en/todo.md) |
+| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | step 5; tasks 27-29 resolved | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | steps 3, 4 (tasks 33-35); task 32 parked; tasks 30-31 resolved | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete | steps 3 (task 29), 7 | [todo](./mizar-atp/en/todo.md) |
 | mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete | steps 3 (task 21), 7 | [todo](./mizar-proof/en/todo.md) |
@@ -180,7 +180,7 @@ Finish the remaining kernel-audit producer/consumer follow-ups so the July
 audit inventory is closed except the parked and externally paced rows. Depends
 on step 1.
 
-1. [ ] [mizar-vc task 29](./mizar-vc/en/todo.md) — imported-statement
+1. [x] [mizar-vc task 29](./mizar-vc/en/todo.md) — imported-statement
    projection, producer side (F6), paired with:
 2. [ ] [mizar-kernel task 33](./mizar-kernel/en/todo.md) — imported-statement
    projection specification and validation (F6).

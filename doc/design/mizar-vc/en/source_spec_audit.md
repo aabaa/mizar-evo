@@ -176,14 +176,16 @@ Literal top-level public items:
 
 - `KERNEL_EVIDENCE_SCHEMA_VERSION`, `KERNEL_EVIDENCE_ENCODING_VERSION`,
   `KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION`, `VC_KERNEL_HANDOFF_SCHEMA`,
-  `VC_TARGET_FINGERPRINT_ALGORITHM_ID`, `KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID`
+  `VC_TARGET_FINGERPRINT_ALGORITHM_ID`, `IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID`,
+  `KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID`
 - `KernelEvidenceHandoffInput`, `VcKernelEvidenceHandoff`,
   `KernelEvidenceEnvelope`, `KernelEvidenceProfile`,
   `KernelClauseTautologyPolicy`, `KernelCertificateHashInputAlgorithm`,
   `KernelEvidenceFingerprint`, `KernelManifestEntry`,
   `KernelFormulaPayload`, `KernelFormulaProjection`,
   `KernelImportedFormulaPayload`, `KernelImportedFormulaClass`,
-  `KernelImportedFactRequirement`, `KernelRequiredProofStatus`,
+  `KernelImportedFactRequirement`, `KernelImportedStatementProjection`,
+  `KernelRequiredProofStatus`,
   `KernelFormulaContextRequirements`, `KernelSubstitutionPayload`,
   `KernelFormulaEvidenceEntry`, `KernelFormulaSource`,
   `KernelContextIdentityPayload`, `KernelContextIdentityEntry`,
@@ -202,7 +204,7 @@ Correspondence:
 | Proof-obligation handoffs declare explicit refutation polarity and reject consistency polarity before canonical package assembly. | `KernelEvidenceHandoffInput::goal_polarity`, exhaustive current-`VcKind` `required_goal_polarity`, `KernelEvidenceHandoffError::GoalPolarityMismatch`, and `KernelFinalGoalEvidence::polarity`. | `consistency_goal_polarity_for_proof_obligation_fails_closed` plus deterministic handoff polarity assertion. | Implemented for producer-side current VC kinds; checker-side acceptance binding is implemented by `mizar-kernel` task 30. |
 | Canonical evidence contains schema/encoding versions, target VC, kernel profile, manifests, formula evidence, substitutions, provenance, and final goal; imported context requirements and diagnostics stay outside canonical hash input. | `KernelEvidenceEnvelope`, `target_fingerprint`, `VcKernelEvidenceHandoff::canonical_hash_input`, `canonical_hash_input`. | deterministic hash/debug tests, proof-hint metadata target-binding test, and imported-context tests. | Implemented. |
 | Non-imported local-hypothesis, cited-premise, and generated-VC-fact source bindings have producer-side context identity rows bound to the target VC and canonical evidence hash. | `KernelContextIdentityPayload`, `KernelContextIdentityEntry`, `KernelContextIdentitySource`, `VcKernelEvidenceHandoff::context_identity_hash`, and `context_identity_hash_input`. | `context_identity_covers_non_imported_source_bindings`, `context_identity_binding_breaks_when_source_label_is_mutated`, and dependency-slice kernel-evidence identity coverage. | Implemented for producer-side task 28; kernel-side membership verification is implemented by `mizar-kernel` task 31. |
-| Imported context and payload data fail closed on empty context provenance, mismatched imported statement/formula fingerprints, unsupported formula fingerprint algorithms, and missing context/payload data; returned context requirements are canonical sorted/deduplicated. | `validate_import_requirement`, `imported_payload_map`, `canonical_context_requirements`. | imported context missing/mismatch, empty context provenance, unsupported algorithm, fingerprint mismatch, and duplicate-context tests. | Implemented for current explicit imported payloads. |
+| Imported context and payload data fail closed on empty context provenance, unsupported imported-statement or formula fingerprint algorithms, stale statement projections, formula-projection mismatches, conflicting same-requirement projections, empty imported-statement projection payloads, and missing context/payload data; returned context requirements are canonical sorted/deduplicated. | `validate_import_requirement`, `validate_imported_statement_projection`, `imported_payload_map`, `canonical_context_requirements`. | imported context missing/mismatch, empty context provenance, unsupported algorithm, statement-projection mismatch, projected-formula mismatch, conflicting-projection, empty-projection, and duplicate-context tests. | Implemented for current explicit imported payloads. Kernel-side trusted validation and pass fixtures remain paired `mizar-kernel` task 33 work. |
 | Missing formula, substitution source, provenance, manifest, side-condition, or unsupported premise data fails closed instead of being fabricated. | `KernelEvidenceHandoffError` and validation helpers. | missing payload, invalid projection, substitution missing-source/empty/side-condition, and manifest tests. | Implemented for current fail-closed cases; upstream full formula/binder payload production remains external. |
 | Substitution records omit instantiated formula and target formula fields; side-condition records are opaque deterministic kernel-compatible encodings that are sorted and rejected when empty or duplicated. | `KernelSubstitutionPayload`, `KernelSubstitutionEvidence`, `canonical_side_conditions`. | `substitutions_reference_source_formula_without_instantiated_fields`, substitution side-condition fail-closed tests, and input-order canonicalization tests. | Implemented. |
 | Public enums are forward-compatible. | handoff public enums are `#[non_exhaustive]`. | `vc_public_enums_are_forward_compatible_and_documented`. | Guarded by task 25. |

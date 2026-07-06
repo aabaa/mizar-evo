@@ -452,19 +452,30 @@ the paired producer tasks.
       F2 payload; mizar-kernel task 31 implements trusted membership
       verification.
 
-29. **Imported-statement projection producer side (kernel F6).** [ ]
+29. **Imported-statement projection producer side (kernel F6).** [x]
     - Together with kernel task 33, specify and emit the projection from
       arch-18 imported statement fingerprints to the formula-tree
       fingerprints cited in kernel evidence, so imported facts become citable
-      without weakening the fingerprint-equality rule. Dependency slices must
-      carry whatever projection data the kernel validates.
+      without weakening formula fingerprint validation or imported-fact
+      identity checks. Dependency slices must carry whatever projection data
+      the kernel validates.
     - Acceptance: a projected imported-fact citation round-trips through the
-      handoff and is accepted by the kernel-side pass fixture; stale or
-      mismatched projections fail closed.
+      handoff and carries the projection payload needed by the paired
+      kernel-side pass fixture; stale or mismatched projections fail closed
+      producer-side.
     - Verify: `cargo test -p mizar-vc`, `cargo test -p mizar-kernel`,
       `cargo test -p mizar-test`.
     - Deps: 28; paired: mizar-kernel task 33. Spec: architecture 15, 18;
       soundness_argument.md F6.
+    - Done in task 29: `KernelImportedFormulaPayload` now carries a
+      `KernelImportedStatementProjection` that maps an architecture-18
+      imported-statement fingerprint to the kernel formula-tree fingerprint.
+      The producer rejects unsupported imported-statement/formula algorithms,
+      stale statement projections, mismatched projected formula fingerprints,
+      empty projection payloads, and missing context/payload data. Canonical
+      evidence rendering/hash input and dependency-slice `kernel_evidence`
+      payloads include the projection data. Trusted kernel validation and the
+      pass fixture remain paired `mizar-kernel` task 33 work.
 
 ## Recommended Verification
 

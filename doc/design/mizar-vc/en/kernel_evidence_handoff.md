@@ -19,7 +19,8 @@ material that the kernel checker can parse and check:
 - kernel profile;
 - symbol and variable manifests needed by kernel formula validation;
 - formula evidence entries for local hypotheses, cited premises, generated VC
-  facts, accepted imported facts, and policy-bounded built-ins;
+  facts, accepted imported facts with imported-statement projection payloads,
+  and policy-bounded built-ins;
 - explicit substitution evidence when upstream payloads already exist;
 - provenance bindings for every formula, substitution, and final goal;
 - a standalone final goal record.
@@ -121,8 +122,11 @@ accepted. Missing or mismatched imported-fact context is a fail-closed builder
 error, kernel rejection, or `external_dependency_gap`.
 The builder rejects an empty context provenance fingerprint and returns imported
 axiom/theorem requirements in canonical sorted, duplicate-free order. Imported
-formula payloads must bind the same fingerprint as their imported statement
-requirement.
+formula payloads must carry an explicit imported-statement projection payload:
+the requirement's imported-statement fingerprint uses the architecture-18
+imported-statement algorithm, while the cited formula tree keeps the kernel
+formula fingerprint algorithm. The projection binds those two fingerprints and
+is checked fail-closed by the producer before any imported entry is emitted.
 
 `diagnostic_inputs` are optional producer-side details for explainability. They
 are excluded from the canonical kernel evidence bytes, stable handoff identity,
@@ -157,7 +161,7 @@ producer-owned records already computed by prior VC phases:
 | selected `VcIr.kind` and `KernelEvidenceHandoffInput.goal_polarity` | The builder enumerates every current VC kind and requires `AssertFalseForRefutation` for proof obligations. The validated explicit polarity is copied into `final_goal.polarity`; a consistency-polarity request fails before canonical evidence bytes or package hashes are built. Kernel-side acceptance binding is implemented by `mizar-kernel` task 30. |
 | `LocalContext` entries with formula refs | Formula evidence entries with local-hypothesis or cited-premise source bindings plus `context_identity` rows that bind the context-entry id, formula evidence row id, formula fingerprint, target VC, and canonical evidence hash. Entries without stable formula payloads or provenance are recorded as missing payloads, not fabricated. |
 | `PremiseRef::LocalContext` and `PremiseRef::GeneratedFact` | References to the corresponding local-hypothesis, cited-premise, or generated-VC-fact formula evidence entries, with matching `context_identity` rows for the non-imported source binding. |
-| `PremiseRef::ImportedFact` | Candidate imported axiom/theorem formula entries only when package/module/exported item identity, statement fingerprint, required proof-status requirement, and matching `FormulaEvidenceContext` input are available. `mizar-vc` does not certify the imported fact as accepted; proof/kernel-owned context must do that. Otherwise the premise is an `external_dependency_gap` or fail-closed builder error. |
+| `PremiseRef::ImportedFact` | Candidate imported axiom/theorem formula entries only when package/module/exported item identity, imported-statement fingerprint, imported-statement-to-formula projection payload, required proof-status requirement, and matching `FormulaEvidenceContext` input are available. `mizar-vc` does not certify the imported fact as accepted; proof/kernel-owned context must do that. Otherwise the premise is an `external_dependency_gap` or fail-closed builder error. |
 | `PremiseRef::CheckerFact`, `TypePredicate`, trace, registration, cluster, reduction, definition, policy, and conservative-unknown variants | Mapped only when an explicit formula payload, allowed source class, target binding, and provenance are already available. Marker-only or trace-only records do not become trusted evidence. |
 | `VcGeneratedFormula` table | Generated VC fact entries when the formula tree can be projected into the kernel-supported formula grammar and provenance binds the selected target. |
 | `VcIr.goal` | The standalone `final_goal` record. It is never a premise and never a source of `used_axioms`. |
@@ -183,9 +187,14 @@ debug renderings, backend encodings, trace names, local ids, or proof-method
 metadata. When `CoreFormulaId`, `VcFormulaRef`, or generated formula shape
 cannot be resolved to a stable kernel formula tree, the builder records an
 `external_dependency_gap` and returns no trusted handoff package for that VC.
-Formula and imported-statement fingerprints must use the kernel formula
-fingerprint algorithm for this handoff version; another algorithm id is a
-fail-closed builder error, not a cue to reinterpret bytes.
+Formula-tree fingerprints must use the kernel formula fingerprint algorithm for
+this handoff version. Imported-statement fingerprints are not formula-tree
+fingerprints; they must use the imported-statement algorithm id defined for
+architecture-18 dependency fingerprints and must be connected to the cited
+formula-tree fingerprint by a nonempty `KernelImportedStatementProjection`
+payload. Unsupported formula or imported-statement algorithm ids, empty
+projection payloads, stale statement fingerprints, and formula-projection
+mismatches are fail-closed builder errors, not cues to reinterpret bytes.
 
 ## Substitutions
 
@@ -265,6 +274,13 @@ Remaining gaps:
   VC and canonical evidence hash and participates in dependency-slice /
   proof-reuse identity. Kernel-side membership verification is implemented by
   `mizar-kernel` task 31.
+- resolved `VC-HANDOFF-G008`: task 29 adds the producer-side
+  `KernelImportedStatementProjection` payload for imported axiom/theorem
+  entries. The handoff now validates an architecture-18 imported-statement
+  fingerprint separately from the kernel formula-tree fingerprint, records the
+  projection in canonical evidence rendering/hash input, and exports the same
+  payload to dependency slices. Kernel-side trusted validation and the pass
+  fixture remain paired `mizar-kernel` task 33 work.
 
 ## Planned Tests
 
@@ -298,6 +314,14 @@ non-imported local-hypothesis, cited-premise, and generated-VC-fact source
 binding, excludes imported premises, is stable and self-consistent, and becomes
 stale if a canonical source binding is mutated.
 
+Task 29 adds Rust coverage showing that imported facts can carry a distinct
+imported-statement fingerprint and formula-tree fingerprint, that the
+projection participates in canonical evidence/debug rendering and dependency
+slices, and that unsupported imported-statement algorithms, stale statement
+projections, formula-projection mismatches, conflicting same-requirement
+projections, empty projection payloads, and missing context/payload data fail
+closed.
+
 ## Public Enum Policy
 
 Task 25 classifies every `kernel_evidence_handoff` public enum as a downstream
@@ -322,30 +346,32 @@ No exhaustive public enum exceptions are owned by this module. Internal
 `mizar-vc` matches that intentionally enumerate current variants may remain
 exhaustive.
 
-## Current Step-1 Handoff
+## Current Step-3 Handoff
 
 Recommended reasoning: `xhigh`.
 
 Prompt:
 
 ```text
-Continue Step 1 with `mizar-test` task 21 after the completed mizar-kernel
-task-31 context-identity verification. Before editing, verify a clean worktree,
-confirm the mizar-kernel task 31 commit, and re-read doc/design/todo.md,
-doc/design/mizar-test/en/todo.md, doc/design/mizar-test/en/fail_soundness.md,
+Continue Step 3 with `mizar-kernel` task 33 after the completed mizar-vc task
+29 producer-side imported-statement projection payload. Before editing, verify
+a clean worktree, confirm the mizar-vc task 29 commit, and re-read
+doc/design/todo.md, doc/design/mizar-kernel/en/todo.md,
 doc/design/mizar-kernel/en/soundness_argument.md,
 doc/design/mizar-kernel/en/checker.md,
-doc/design/architecture/en/15.kernel_certificate_format.md, and this
-kernel-evidence handoff spec. Extend the required soundness-case registry and
-test documentation with the corrected-path rejection vocabulary for F7. Do not
-change checker/core/VC implementation semantics, fabricate semantic payloads,
-activate unverified fixtures, or rebaseline expectations to match current
-implementation behavior.
+doc/design/architecture/en/15.kernel_certificate_format.md,
+doc/design/architecture/en/18.dependency_fingerprint.md, and this
+kernel-evidence handoff spec. Implement kernel-side F6 validation and the
+pass/reject fixture only from real mizar-vc projection payloads. Do not
+fabricate projection bytes, weaken formula fingerprint checks, change
+checker/core semantics, activate unverified source fixtures, or rebaseline
+expectations to match current behavior.
 ```
 
-Rationale: mizar-vc task 28 and mizar-kernel task 31 now close the
-producer/consumer halves of F2. The next requested Step 1 task closes F7 in
-`mizar-test` without changing checker/core/VC semantics. Keep `xhigh` because
-the registry vocabulary spans the shared soundness corpus and kernel rejection
-taxonomy. Lower reasoning is appropriate only for typo-only documentation
+Rationale: mizar-vc task 29 closes only the producer half of F6. The next
+sequential Step 3 task must decide and enforce the trusted kernel validation
+contract for the projection payload without relying on fake corpus data. Keep
+`xhigh` because this boundary determines whether imported facts can be cited
+without collapsing imported-statement identity into formula-tree identity.
+Lower reasoning is appropriate only for typo-only documentation
 synchronization.

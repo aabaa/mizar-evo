@@ -83,6 +83,25 @@ handoff fails closed. This remains an identity/invalidation boundary only: it
 does not make VC output trusted proof material, call the kernel, run SAT
 checking, or add proof/cache/artifact consumers.
 
+Task 27 adds explicit goal polarity to the producer-side handoff and rejects
+consistency polarity for every current proof-obligation VC kind before
+canonical package assembly. This closes only the producer half of the F1
+polarity boundary; trusted checker-side acceptance binding is owned by
+`mizar-kernel`.
+
+Task 28 adds producer-side `context_identity` rows and a hash for
+local-hypothesis, cited-premise, and generated-VC-fact formula evidence
+bindings. The payload participates in dependency-slice and proof-reuse
+identity, while imported facts remain outside context identity. Kernel-side
+membership verification is owned by `mizar-kernel` task 31.
+
+Task 29 adds producer-side imported-statement projection payloads for imported
+axiom/theorem formula evidence. The handoff and dependency slices now carry the
+projection from an architecture-18 imported-statement fingerprint to the
+kernel formula-tree fingerprint and reject unsupported, stale, mismatched, or
+empty projection data. Kernel-side trusted validation and pass fixtures remain
+`mizar-kernel` task 33 work.
+
 ## Task Commits
 
 | Task | Commit | Subject |
@@ -113,6 +132,9 @@ checking, or add proof/cache/artifact consumers.
 | 24 | `c33c583d107c8211c22efcbb89d88144f32d163c` | `docs(vc-task-24): specify kernel evidence handoff` |
 | 25 | `0ed1bc23e2bc7f66d2f4f53a8e289721d47105b9` | `feat(vc-task-25): add kernel evidence handoff builder` |
 | 26 | `9c86900451068553a8e96938c420872b047c1d62` | `feat(vc-task-26): include kernel evidence in reuse identity` |
+| 27 | `2d167bde40ccf7788b6de49cc9e324e7e7879987` | `feat(vc-task-27): require explicit handoff goal polarity` |
+| 28 | `ab23833f70f3e8a0733621453e283246c1b5b7d1` | `feat(vc): add kernel context identity payload` |
+| 29 | pending self-hash | `feat(vc-task-29): add imported statement projection handoff` |
 
 ## Hard Gates
 
@@ -162,7 +184,7 @@ milestone does not own those seams and no hard gate fails.
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
 | VC-CLOSEOUT-G001 | `external_dependency_gap` | `mizar-test` still lacks an active `proof_verification` runner/tag gate and source-to-core/source-to-VC extraction seams for real `.miz` corpus inputs. | Add runner and extraction support in the owning staged-test and upstream extraction tasks before activating source-derived VC fixtures. |
-| VC-CLOSEOUT-G002 | `external_dependency_gap` / `deferred` | The original closeout treated `mizar-kernel` as unavailable. `mizar-kernel` tasks 23-29 now provide formula/substitution evidence parsing, deterministic instantiation/SAT encoding, trusted SAT checker wrapping, SAT-backed check service, and legacy-certificate audit gating. Task 25 adds the VC producer-side handoff builder for explicit payloads, and task 26 includes canonical kernel evidence hashes in dependency-slice and proof-reuse identity. ATP candidate production, proof/cache consumers, and artifact witness consumers remain incomplete. | Task 24 specifies the VC/kernel handoff; task 25 implements the producer-side builder; task 26 implements reuse-hash invalidation. Downstream ATP/proof/cache/artifact work must use their own specs instead of placeholders. |
+| VC-CLOSEOUT-G002 | `external_dependency_gap` / `deferred` | The original closeout treated `mizar-kernel` as unavailable. `mizar-kernel` tasks 23-29 now provide formula/substitution evidence parsing, deterministic instantiation/SAT encoding, trusted SAT checker wrapping, SAT-backed check service, and legacy-certificate audit gating. Tasks 25-29 add the VC producer-side handoff builder, canonical evidence identity, explicit goal polarity, context identity, and imported-statement projection payloads for explicit data. ATP candidate production, proof/cache consumers, artifact witness consumers, and kernel task 33 projection validation remain incomplete. | Task 24 specifies the VC/kernel handoff; tasks 25-29 implement producer-side identity/projection payloads. Downstream ATP/proof/cache/artifact work and kernel-side task 33 validation must use their own specs instead of placeholders. |
 | VC-CLOSEOUT-G003 | `external_dependency_gap` | Upstream explicit/stable payloads remain incomplete for registration/redefinition/reduction details, call preconditions, branch/match/range/collection loop obligations, term-only and partial termination, Pick non-emptiness, ghost erasure, complete trace families, source-derived core formula payloads, definition payloads, quantified binder payloads, and source-derived obligation payload families. | Upstream checker/core/control-flow tasks expose stable explicit payloads; `mizar-vc` can then add spec-backed generation/discharge/slice tasks. |
 | VC-CLOSEOUT-G004 | `deferred` | Proof-witness hashes, ATP/kernel/proof/cache validation, artifact consumers, and source-derived runner integration must exist before architecture-22 reuse is accepted outside deterministic-discharge candidate keys. | Downstream proof/cache/artifact phases validate the untrusted reusable inputs produced here. |
 | VC-CLOSEOUT-G005 | `deferred` | Large `vc_ir`, `generator`, and `dependency_slice` files may benefit from private helper/test splits, but Task 22 found no required move-only split before crate exit. | Run future move-only maintenance tasks only if reviewability becomes a bottleneck; do not mix behavior or API changes. |

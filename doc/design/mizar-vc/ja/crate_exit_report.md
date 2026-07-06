@@ -75,6 +75,22 @@ key に参加し、current handoff がない legacy reuse は fail closed する
 invalidation boundary のみであり、VC output を trusted proof material にせず、kernel call、
 SAT checking、proof/cache/artifact consumer を追加しない。
 
+Task 27 は producer-side handoff に explicit goal polarity を追加し、canonical package assembly
+前に現在の各 proof-obligation VC kind に対する consistency polarity を拒否する。これは F1 polarity
+boundary の producer half だけを閉じる。trusted checker-side acceptance binding は
+`mizar-kernel` が所有する。
+
+Task 28 は local-hypothesis、cited-premise、generated-VC-fact formula evidence binding 向けの
+producer-side `context_identity` row と hash を追加する。この payload は dependency-slice と
+proof-reuse identity に参加し、imported fact は context identity の外に残る。kernel-side
+membership verification は `mizar-kernel` task 31 が所有する。
+
+Task 29 は imported axiom/theorem formula evidence 向けの producer-side imported-statement
+projection payload を追加する。handoff と dependency slice は architecture-18
+imported-statement fingerprint から kernel formula-tree fingerprint への projection を運び、
+unsupported、stale、mismatched、empty projection data を拒否する。kernel-side trusted validation と
+pass fixture は `mizar-kernel` task 33 に残る。
+
 ## Task Commits
 
 | Task | Commit | Subject |
@@ -105,6 +121,9 @@ SAT checking、proof/cache/artifact consumer を追加しない。
 | 24 | `c33c583d107c8211c22efcbb89d88144f32d163c` | `docs(vc-task-24): specify kernel evidence handoff` |
 | 25 | `0ed1bc23e2bc7f66d2f4f53a8e289721d47105b9` | `feat(vc-task-25): add kernel evidence handoff builder` |
 | 26 | `9c86900451068553a8e96938c420872b047c1d62` | `feat(vc-task-26): include kernel evidence in reuse identity` |
+| 27 | `2d167bde40ccf7788b6de49cc9e324e7e7879987` | `feat(vc-task-27): require explicit handoff goal polarity` |
+| 28 | `ab23833f70f3e8a0733621453e283246c1b5b7d1` | `feat(vc): add kernel context identity payload` |
+| 29 | pending self-hash | `feat(vc-task-29): add imported statement projection handoff` |
 
 ## Hard Gates
 
@@ -154,7 +173,7 @@ score cap はない。
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
 | VC-CLOSEOUT-G001 | `external_dependency_gap` | `mizar-test` には active `proof_verification` runner/tag gate と real `.miz` corpus input 用 source-to-core/source-to-VC extraction seam がまだない。 | Active source-derived VC fixture を有効化する前に、owning staged-test / upstream extraction task で runner と extraction support を追加する。 |
-| VC-CLOSEOUT-G002 | `external_dependency_gap` / `deferred` | original closeout は `mizar-kernel` を unavailable と扱っていた。`mizar-kernel` task 23-29 は formula/substitution evidence parsing、deterministic instantiation / SAT encoding、trusted SAT checker wrapping、SAT-backed check service、legacy-certificate audit gating を提供済みである。Task 25 は explicit payload 向け VC producer-side handoff builder を追加し、task 26 は canonical kernel evidence hash を dependency-slice / proof-reuse identity に含める。ATP candidate production、proof/cache consumer、artifact witness consumer はまだ incomplete。 | Task 24 は VC/kernel handoff を仕様化する。task 25 は producer-side builder を実装する。task 26 は reuse-hash invalidation を実装する。downstream ATP/proof/cache/artifact work は placeholder ではなくそれぞれの spec を使う。 |
+| VC-CLOSEOUT-G002 | `external_dependency_gap` / `deferred` | original closeout は `mizar-kernel` を unavailable と扱っていた。`mizar-kernel` task 23-29 は formula/substitution evidence parsing、deterministic instantiation / SAT encoding、trusted SAT checker wrapping、SAT-backed check service、legacy-certificate audit gating を提供済みである。Tasks 25-29 は explicit data 向け VC producer-side handoff builder、canonical evidence identity、explicit goal polarity、context identity、imported-statement projection payload を追加する。ATP candidate production、proof/cache consumer、artifact witness consumer、kernel task 33 projection validation はまだ incomplete。 | Task 24 は VC/kernel handoff を仕様化する。tasks 25-29 は producer-side identity/projection payload を実装する。downstream ATP/proof/cache/artifact work と kernel-side task 33 validation は placeholder ではなくそれぞれの spec を使う。 |
 | VC-CLOSEOUT-G003 | `external_dependency_gap` | registration/redefinition/reduction details、call precondition、branch/match/range/collection loop obligation、term-only / partial termination、Pick non-emptiness、ghost erasure、complete trace family、source-derived core formula payload、definition payload、quantified binder payload、source-derived obligation payload family の upstream explicit/stable payload は不完全。 | Upstream checker/core/control-flow task が stable explicit payload を expose した後、`mizar-vc` に spec-backed generation/discharge/slice task を追加する。 |
 | VC-CLOSEOUT-G004 | `deferred` | Proof-witness hash、ATP/kernel/proof/cache validation、artifact consumer、source-derived runner integration は、architecture-22 reuse を deterministic-discharge candidate key の外で受理する前に必要。 | Downstream proof/cache/artifact phase が、ここで生成する untrusted reusable input を validate する。 |
 | VC-CLOSEOUT-G005 | `deferred` | 大きい `vc_ir`、`generator`、`dependency_slice` file は private helper/test split が有益になる可能性があるが、Task 22 は crate exit 前に必須の move-only split はないと判断した。 | reviewability bottleneck が生じた場合だけ、behavior や API change を混ぜず future move-only maintenance task を実施する。 |

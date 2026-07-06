@@ -15,11 +15,13 @@ use mizar_session::{
 };
 use mizar_vc::{
     kernel_evidence_handoff::{
-        KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, KernelClauseTautologyPolicy,
-        KernelEvidenceFingerprint, KernelEvidenceHandoffInput, KernelEvidenceProfile,
-        KernelFormulaContextRequirements, KernelFormulaPayload, KernelFormulaProjection,
-        KernelGoalPolarity, KernelImportedFactRequirement, KernelImportedFormulaClass,
-        KernelImportedFormulaPayload, KernelRequiredProofStatus, build_kernel_evidence_handoff,
+        IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID, KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+        KernelClauseTautologyPolicy, KernelEvidenceFingerprint, KernelEvidenceHandoffInput,
+        KernelEvidenceProfile, KernelFormulaContextRequirements, KernelFormulaPayload,
+        KernelFormulaProjection, KernelGoalPolarity, KernelImportedFactRequirement,
+        KernelImportedFormulaClass, KernelImportedFormulaPayload,
+        KernelImportedStatementProjection, KernelRequiredProofStatus,
+        build_kernel_evidence_handoff,
     },
     vc_ir::{
         AnchorCompleteness, AnchorIngredient, AnchorLabel, AnchorLabelRole, AnchorOwner,
@@ -1190,9 +1192,11 @@ fn imported_formula_projection_requires_imported_provenance_fields() {
         ..
     } = &mut wrong_statement.formula_projections[0].provenance.source
     {
-        *statement_fingerprint =
-            AtpFingerprint::new(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"other".to_vec())
-                .expect("fingerprint");
+        *statement_fingerprint = AtpFingerprint::new(
+            IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+            b"other".to_vec(),
+        )
+        .expect("fingerprint");
     }
     assert!(matches!(
         translate_problem(wrong_statement).expect_err("wrong imported statement"),
@@ -1524,7 +1528,7 @@ fn imported_formula_projection(symbol: &str, formula: AtpFormulaTree) -> AtpForm
             module: AtpSourceBinding::new("module"),
             item: AtpSourceBinding::new("item"),
             statement_fingerprint: AtpFingerprint::new(
-                KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
                 b"statement".to_vec(),
             )
             .expect("statement fingerprint"),
@@ -1544,7 +1548,7 @@ fn imported_theorem_source() -> AtpSourceRef {
         module: AtpSourceBinding::new("module"),
         item: AtpSourceBinding::new("item"),
         statement_fingerprint: AtpFingerprint::new(
-            KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+            IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
             b"statement".to_vec(),
         )
         .expect("statement fingerprint"),
@@ -1663,7 +1667,7 @@ fn handoff_with_imported_symbols(set: &VcSet, symbols: &[&str]) -> VcKernelEvide
     let payloads = formula_payloads(set);
     let imported_payloads = symbols
         .iter()
-        .map(|symbol| imported_payload(&VcText::new(*symbol)))
+        .map(|symbol| imported_payload_with_projection_source(&VcText::new(*symbol), symbols[0]))
         .collect::<Vec<_>>();
     let context = imported_context_for_payloads(&imported_payloads);
     build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
@@ -1700,17 +1704,32 @@ fn formula_payloads(set: &VcSet) -> Vec<KernelFormulaPayload> {
 }
 
 fn imported_payload(symbol: &VcText) -> KernelImportedFormulaPayload {
+    imported_payload_with_projection_source(symbol, symbol.as_str())
+}
+
+fn imported_payload_with_projection_source(
+    symbol: &VcText,
+    projection_source: &str,
+) -> KernelImportedFormulaPayload {
+    let statement_fingerprint =
+        fingerprint(IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID, b"statement");
+    let formula_fingerprint = fingerprint(
+        KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+        imported_fingerprint_digest(projection_source).as_bytes(),
+    );
     KernelImportedFormulaPayload {
         symbol: symbol.clone(),
         class: KernelImportedFormulaClass::Axiom,
         requirement: imported_requirement(),
         projection: KernelFormulaProjection {
-            formula_fingerprint: fingerprint(
-                KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
-                imported_fingerprint_digest(symbol.as_str()).as_bytes(),
-            ),
-            formula_bytes: format!("imported-formula-{}", symbol.as_str()).into_bytes(),
-            provenance_payload: imported_provenance_payload(symbol.as_str()).into_bytes(),
+            formula_fingerprint: formula_fingerprint.clone(),
+            formula_bytes: format!("imported-formula-{projection_source}").into_bytes(),
+            provenance_payload: imported_provenance_payload(projection_source).into_bytes(),
+        },
+        statement_projection: KernelImportedStatementProjection {
+            statement_fingerprint,
+            formula_fingerprint,
+            payload: imported_statement_projection_payload(projection_source).into_bytes(),
         },
     }
 }
@@ -1756,7 +1775,10 @@ fn imported_requirement() -> KernelImportedFactRequirement {
         package_id: b"pkg".to_vec(),
         module_path: b"module".to_vec(),
         exported_item_id: b"item".to_vec(),
-        statement_fingerprint: fingerprint(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"statement"),
+        statement_fingerprint: fingerprint(
+            IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+            b"statement",
+        ),
         required_proof_status: KernelRequiredProofStatus::KernelVerified,
     }
 }
@@ -1767,6 +1789,10 @@ fn imported_fingerprint_digest(_symbol: &str) -> String {
 
 fn imported_provenance_payload(symbol: &str) -> String {
     format!("imported-provenance-{symbol}")
+}
+
+fn imported_statement_projection_payload(symbol: &str) -> String {
+    format!("imported-statement-projection-{symbol}")
 }
 
 fn fixture_set(status: VcStatus, module: &str) -> VcSet {

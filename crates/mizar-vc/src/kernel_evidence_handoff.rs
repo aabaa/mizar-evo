@@ -26,6 +26,7 @@ pub const KERNEL_EVIDENCE_ENCODING_VERSION: u16 = 1;
 pub const KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION: u16 = 1;
 pub const VC_KERNEL_HANDOFF_SCHEMA: &str = "mizar-vc-kernel-evidence-handoff-v1";
 pub const VC_TARGET_FINGERPRINT_ALGORITHM_ID: u8 = 18;
+pub const IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID: u8 = 18;
 pub const KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID: u8 = 2;
 
 #[derive(Debug, Clone, Copy)]
@@ -308,12 +309,13 @@ impl KernelEvidenceEnvelope {
         for formula in &self.formula_evidence {
             writeln!(
                 &mut output,
-                "formula {}: source={:?}; fingerprint={}; provenance={}; bytes={}",
+                "formula {}: source={:?}; fingerprint={}; provenance={}; bytes={}; statement-projection={}",
                 formula.formula_id,
                 formula.source,
                 formula.formula_fingerprint.render(),
                 formula.provenance_id,
-                hex(&formula.formula_bytes)
+                hex(&formula.formula_bytes),
+                render_imported_statement_projection(formula.imported_statement_projection.as_ref())
             )
             .expect("write string");
         }
@@ -447,6 +449,7 @@ pub struct KernelImportedFormulaPayload {
     pub class: KernelImportedFormulaClass,
     pub requirement: KernelImportedFactRequirement,
     pub projection: KernelFormulaProjection,
+    pub statement_projection: KernelImportedStatementProjection,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -464,6 +467,13 @@ pub struct KernelImportedFactRequirement {
     pub exported_item_id: Vec<u8>,
     pub statement_fingerprint: KernelEvidenceFingerprint,
     pub required_proof_status: KernelRequiredProofStatus,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct KernelImportedStatementProjection {
+    pub statement_fingerprint: KernelEvidenceFingerprint,
+    pub formula_fingerprint: KernelEvidenceFingerprint,
+    pub payload: Vec<u8>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -515,6 +525,7 @@ pub struct KernelFormulaEvidenceEntry {
     formula_bytes: Vec<u8>,
     provenance_id: u32,
     producer_formula_ref: Option<VcFormulaRef>,
+    imported_statement_projection: Option<KernelImportedStatementProjection>,
 }
 
 impl KernelFormulaEvidenceEntry {
@@ -540,6 +551,12 @@ impl KernelFormulaEvidenceEntry {
 
     pub const fn producer_formula_ref(&self) -> Option<VcFormulaRef> {
         self.producer_formula_ref
+    }
+
+    pub const fn imported_statement_projection(
+        &self,
+    ) -> Option<&KernelImportedStatementProjection> {
+        self.imported_statement_projection.as_ref()
     }
 }
 
@@ -670,7 +687,22 @@ pub enum KernelEvidenceHandoffError {
     UnsupportedFormulaFingerprintAlgorithm {
         algorithm_id: u8,
     },
+    UnsupportedImportedStatementFingerprintAlgorithm {
+        algorithm_id: u8,
+    },
     ImportedFormulaFingerprintMismatch {
+        symbol: VcText,
+    },
+    ImportedStatementProjectionMismatch {
+        symbol: VcText,
+    },
+    ImportedProjectionFormulaFingerprintMismatch {
+        symbol: VcText,
+    },
+    ConflictingImportedProjection {
+        symbol: VcText,
+    },
+    EmptyImportedStatementProjectionPayload {
         symbol: VcText,
     },
     EmptyFingerprint {
@@ -766,9 +798,33 @@ impl fmt::Display for KernelEvidenceHandoffError {
                 formatter,
                 "unsupported formula fingerprint algorithm {algorithm_id}"
             ),
+            Self::UnsupportedImportedStatementFingerprintAlgorithm { algorithm_id } => write!(
+                formatter,
+                "unsupported imported statement fingerprint algorithm {algorithm_id}"
+            ),
             Self::ImportedFormulaFingerprintMismatch { symbol } => write!(
                 formatter,
                 "imported formula payload for {} does not match its statement fingerprint",
+                symbol.as_str()
+            ),
+            Self::ImportedStatementProjectionMismatch { symbol } => write!(
+                formatter,
+                "imported statement projection for {} does not match its statement fingerprint",
+                symbol.as_str()
+            ),
+            Self::ImportedProjectionFormulaFingerprintMismatch { symbol } => write!(
+                formatter,
+                "imported statement projection for {} does not match its formula fingerprint",
+                symbol.as_str()
+            ),
+            Self::ConflictingImportedProjection { symbol } => write!(
+                formatter,
+                "imported formula payload for {} conflicts with an existing projection for the same requirement",
+                symbol.as_str()
+            ),
+            Self::EmptyImportedStatementProjectionPayload { symbol } => write!(
+                formatter,
+                "imported statement projection for {} is empty",
                 symbol.as_str()
             ),
             Self::EmptyFingerprint { algorithm_id } => {
@@ -1059,6 +1115,7 @@ impl HandoffAssembly {
             formula_bytes: projection.formula_bytes.clone(),
             provenance_id,
             producer_formula_ref: Some(formula_ref),
+            imported_statement_projection: None,
         });
         self.formula_id_by_source.insert(source_key, formula_id);
         self.formula_id_by_ref
@@ -1072,9 +1129,16 @@ impl HandoffAssembly {
         source: KernelFormulaSource,
         symbol: &VcText,
         projection: &KernelFormulaProjection,
+        statement_projection: &KernelImportedStatementProjection,
     ) -> Result<u32, KernelEvidenceHandoffError> {
         let source_key = format!("{source:?}");
         if let Some(formula_id) = self.formula_id_by_source.get(&source_key) {
+            self.validate_existing_imported_formula(
+                *formula_id,
+                symbol,
+                projection,
+                statement_projection,
+            )?;
             self.imported_symbols.insert(symbol.clone());
             return Ok(*formula_id);
         }
@@ -1097,10 +1161,43 @@ impl HandoffAssembly {
             formula_bytes: projection.formula_bytes.clone(),
             provenance_id,
             producer_formula_ref: None,
+            imported_statement_projection: Some(statement_projection.clone()),
         });
         self.formula_id_by_source.insert(source_key, formula_id);
         self.imported_symbols.insert(symbol.clone());
         Ok(formula_id)
+    }
+
+    fn validate_existing_imported_formula(
+        &self,
+        formula_id: u32,
+        symbol: &VcText,
+        projection: &KernelFormulaProjection,
+        statement_projection: &KernelImportedStatementProjection,
+    ) -> Result<(), KernelEvidenceHandoffError> {
+        let formula = self
+            .formulas
+            .iter()
+            .find(|formula| formula.formula_id == formula_id)
+            .expect("formula id comes from formula_id_by_source");
+        let provenance = self
+            .provenance
+            .iter()
+            .find(|provenance| provenance.provenance_id == formula.provenance_id)
+            .expect("formula provenance id comes from add_provenance");
+        let same_formula = formula.formula_fingerprint == projection.formula_fingerprint
+            && formula.formula_bytes == projection.formula_bytes
+            && provenance.formula_fingerprint == projection.formula_fingerprint
+            && provenance.payload == projection.provenance_payload;
+        let same_projection =
+            formula.imported_statement_projection.as_ref() == Some(statement_projection);
+        if same_formula && same_projection {
+            Ok(())
+        } else {
+            Err(KernelEvidenceHandoffError::ConflictingImportedProjection {
+                symbol: symbol.clone(),
+            })
+        }
     }
 
     fn add_provenance(
@@ -1279,15 +1376,28 @@ fn imported_payload_map(
     payloads: &[KernelImportedFormulaPayload],
 ) -> Result<BTreeMap<VcText, KernelImportedFormulaPayload>, KernelEvidenceHandoffError> {
     let mut map = BTreeMap::new();
+    let mut by_requirement: Vec<&KernelImportedFormulaPayload> = Vec::new();
     for payload in payloads {
         validate_projection(&payload.projection, KernelEvidenceRole::ImportedPremise)?;
         validate_import_requirement(&payload.requirement)?;
-        if payload.requirement.statement_fingerprint != payload.projection.formula_fingerprint {
-            return Err(
-                KernelEvidenceHandoffError::ImportedFormulaFingerprintMismatch {
+        validate_imported_statement_projection(
+            &payload.symbol,
+            &payload.requirement,
+            &payload.projection,
+            &payload.statement_projection,
+        )?;
+        if let Some(existing) = by_requirement.iter().find(|existing| {
+            existing.class == payload.class && existing.requirement == payload.requirement
+        }) {
+            if existing.projection != payload.projection
+                || existing.statement_projection != payload.statement_projection
+            {
+                return Err(KernelEvidenceHandoffError::ConflictingImportedProjection {
                     symbol: payload.symbol.clone(),
-                },
-            );
+                });
+            }
+        } else {
+            by_requirement.push(payload);
         }
         if map
             .insert(payload.symbol.clone(), payload.clone())
@@ -1351,10 +1461,54 @@ fn validate_import_requirement(
             algorithm_id: requirement.statement_fingerprint.algorithm_id,
         });
     }
-    if requirement.statement_fingerprint.algorithm_id != KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID {
+    validate_imported_statement_fingerprint(&requirement.statement_fingerprint)?;
+    Ok(())
+}
+
+fn validate_imported_statement_projection(
+    symbol: &VcText,
+    requirement: &KernelImportedFactRequirement,
+    formula_projection: &KernelFormulaProjection,
+    statement_projection: &KernelImportedStatementProjection,
+) -> Result<(), KernelEvidenceHandoffError> {
+    validate_imported_statement_fingerprint(&statement_projection.statement_fingerprint)?;
+    validate_fingerprint(&statement_projection.formula_fingerprint)?;
+    if statement_projection.payload.is_empty() {
         return Err(
-            KernelEvidenceHandoffError::UnsupportedFormulaFingerprintAlgorithm {
-                algorithm_id: requirement.statement_fingerprint.algorithm_id,
+            KernelEvidenceHandoffError::EmptyImportedStatementProjectionPayload {
+                symbol: symbol.clone(),
+            },
+        );
+    }
+    if statement_projection.statement_fingerprint != requirement.statement_fingerprint {
+        return Err(
+            KernelEvidenceHandoffError::ImportedStatementProjectionMismatch {
+                symbol: symbol.clone(),
+            },
+        );
+    }
+    if statement_projection.formula_fingerprint != formula_projection.formula_fingerprint {
+        return Err(
+            KernelEvidenceHandoffError::ImportedProjectionFormulaFingerprintMismatch {
+                symbol: symbol.clone(),
+            },
+        );
+    }
+    Ok(())
+}
+
+fn validate_imported_statement_fingerprint(
+    fingerprint: &KernelEvidenceFingerprint,
+) -> Result<(), KernelEvidenceHandoffError> {
+    if fingerprint.digest.is_empty() {
+        return Err(KernelEvidenceHandoffError::EmptyFingerprint {
+            algorithm_id: fingerprint.algorithm_id,
+        });
+    }
+    if fingerprint.algorithm_id != IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID {
+        return Err(
+            KernelEvidenceHandoffError::UnsupportedImportedStatementFingerprintAlgorithm {
+                algorithm_id: fingerprint.algorithm_id,
             },
         );
     }
@@ -1454,7 +1608,12 @@ fn add_premise(
                     KernelFormulaSource::AcceptedImportedTheorem(payload.requirement.clone())
                 }
             };
-            assembly.add_imported_formula(source, symbol, &payload.projection)?;
+            assembly.add_imported_formula(
+                source,
+                symbol,
+                &payload.projection,
+                &payload.statement_projection,
+            )?;
             Ok(())
         }
         PremiseRef::ConservativeUnknown { reason } => {
@@ -1789,12 +1948,13 @@ fn canonical_hash_input(envelope: &KernelEvidenceEnvelope) -> Vec<u8> {
     for formula in &envelope.formula_evidence {
         writeln!(
             &mut output,
-            "formula-id={}; source={:?}; fingerprint={}; provenance={}; formula-bytes={}",
+            "formula-id={}; source={:?}; fingerprint={}; provenance={}; formula-bytes={}; statement-projection={}",
             formula.formula_id,
             formula.source,
             formula.formula_fingerprint.render(),
             formula.provenance_id,
-            hex(&formula.formula_bytes)
+            hex(&formula.formula_bytes),
+            render_imported_statement_projection(formula.imported_statement_projection.as_ref())
         )
         .expect("write string");
     }
@@ -1897,6 +2057,20 @@ fn write_import_requirements(
             entry.required_proof_status
         )
         .expect("write string");
+    }
+}
+
+fn render_imported_statement_projection(
+    projection: Option<&KernelImportedStatementProjection>,
+) -> String {
+    match projection {
+        Some(projection) => format!(
+            "statement={}; formula={}; payload={}",
+            projection.statement_fingerprint.render(),
+            projection.formula_fingerprint.render(),
+            hex(&projection.payload)
+        ),
+        None => "<none>".to_owned(),
     }
 }
 
@@ -2674,17 +2848,17 @@ mod tests {
         extra_axiom.imported_fact_id = 0;
         extra_axiom.package_id = b"aaa".to_vec();
         extra_axiom.statement_fingerprint =
-            fingerprint(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"extra-axiom");
+            fingerprint(IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID, b"extra-axiom");
         let mut theorem_low = imported.requirement.clone();
         theorem_low.imported_fact_id = 10;
         theorem_low.package_id = b"theorem-a".to_vec();
         theorem_low.statement_fingerprint =
-            fingerprint(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"theorem-a");
+            fingerprint(IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID, b"theorem-a");
         let mut theorem_high = imported.requirement.clone();
         theorem_high.imported_fact_id = 11;
         theorem_high.package_id = b"theorem-b".to_vec();
         theorem_high.statement_fingerprint =
-            fingerprint(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"theorem-b");
+            fingerprint(IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID, b"theorem-b");
         let context = KernelFormulaContextRequirements {
             provenance_fingerprint: fingerprint(7, b"context"),
             imported_axioms: vec![
@@ -2709,6 +2883,18 @@ mod tests {
             handoff.canonical_evidence().formula_evidence()[0].source(),
             KernelFormulaSource::AcceptedImportedAxiom(_)
         ));
+        let imported_formula = &handoff.canonical_evidence().formula_evidence()[0];
+        assert_eq!(
+            imported_formula.imported_statement_projection(),
+            Some(&imported.statement_projection)
+        );
+        let projection_payload = hex(&imported.statement_projection.payload);
+        let debug = handoff.debug_text();
+        let canonical = String::from_utf8_lossy(handoff.canonical_hash_input());
+        assert!(debug.contains("statement-projection="));
+        assert!(debug.contains(&projection_payload));
+        assert!(canonical.contains("statement-projection="));
+        assert!(canonical.contains(&projection_payload));
         assert!(handoff.formula_context_requirements().is_some());
         let mut expected_axioms = vec![imported.requirement.clone(), extra_axiom];
         expected_axioms.sort();
@@ -2766,12 +2952,32 @@ mod tests {
         .expect_err("unsupported imported statement algorithm");
         assert!(matches!(
             error,
+            KernelEvidenceHandoffError::UnsupportedImportedStatementFingerprintAlgorithm {
+                algorithm_id: 99
+            }
+        ));
+
+        let mut wrong_projected_algorithm = imported.clone();
+        wrong_projected_algorithm
+            .statement_projection
+            .formula_fingerprint
+            .algorithm_id = 99;
+        let wrong_projected_algorithm_payloads = vec![wrong_projected_algorithm];
+        let error = build_kernel_evidence_handoff(handoff_input(
+            &set,
+            &wrong_projected_algorithm_payloads,
+            Some(&context),
+            None,
+        ))
+        .expect_err("unsupported imported projection formula algorithm");
+        assert!(matches!(
+            error,
             KernelEvidenceHandoffError::UnsupportedFormulaFingerprintAlgorithm { algorithm_id: 99 }
         ));
 
         let mut mismatched = imported.clone();
-        mismatched.requirement.statement_fingerprint =
-            fingerprint(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"different");
+        mismatched.statement_projection.statement_fingerprint =
+            fingerprint(IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID, b"different");
         let mismatched_payloads = vec![mismatched];
         let error = build_kernel_evidence_handoff(handoff_input(
             &set,
@@ -2782,7 +2988,64 @@ mod tests {
         .expect_err("mismatched imported fingerprint");
         assert!(matches!(
             error,
-            KernelEvidenceHandoffError::ImportedFormulaFingerprintMismatch { symbol: found }
+            KernelEvidenceHandoffError::ImportedStatementProjectionMismatch { symbol: found }
+                if found == symbol
+        ));
+
+        let mut wrong_projected_formula = imported.clone();
+        wrong_projected_formula
+            .statement_projection
+            .formula_fingerprint = fingerprint(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"wrong");
+        let wrong_projected_formula_payloads = vec![wrong_projected_formula];
+        let error = build_kernel_evidence_handoff(handoff_input(
+            &set,
+            &wrong_projected_formula_payloads,
+            Some(&context),
+            None,
+        ))
+        .expect_err("mismatched imported projection formula fingerprint");
+        assert!(matches!(
+            error,
+            KernelEvidenceHandoffError::ImportedProjectionFormulaFingerprintMismatch { symbol: found }
+                if found == symbol
+        ));
+
+        let mut conflicting = imported.clone();
+        conflicting.symbol = VcText::new("Imported::A2");
+        conflicting.projection.formula_fingerprint = fingerprint(
+            KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+            b"conflicting-formula",
+        );
+        conflicting.statement_projection.formula_fingerprint =
+            conflicting.projection.formula_fingerprint.clone();
+        conflicting.statement_projection.payload = b"conflicting-projection".to_vec();
+        let conflicting_payloads = vec![imported.clone(), conflicting.clone()];
+        let error = build_kernel_evidence_handoff(handoff_input(
+            &set,
+            &conflicting_payloads,
+            Some(&context),
+            None,
+        ))
+        .expect_err("conflicting projection for same imported requirement");
+        assert!(matches!(
+            error,
+            KernelEvidenceHandoffError::ConflictingImportedProjection { symbol: found }
+                if found == conflicting.symbol
+        ));
+
+        let mut empty_projection = imported.clone();
+        empty_projection.statement_projection.payload.clear();
+        let empty_projection_payloads = vec![empty_projection];
+        let error = build_kernel_evidence_handoff(handoff_input(
+            &set,
+            &empty_projection_payloads,
+            Some(&context),
+            None,
+        ))
+        .expect_err("empty imported statement projection");
+        assert!(matches!(
+            error,
+            KernelEvidenceHandoffError::EmptyImportedStatementProjectionPayload { symbol: found }
                 if found == symbol
         ));
     }
@@ -3064,6 +3327,12 @@ mod tests {
     }
 
     fn imported_payload(symbol: &VcText) -> KernelImportedFormulaPayload {
+        let statement_fingerprint = fingerprint(
+            IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+            b"imported-statement",
+        );
+        let formula_fingerprint =
+            fingerprint(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"imported-formula");
         KernelImportedFormulaPayload {
             symbol: symbol.clone(),
             class: KernelImportedFormulaClass::Axiom,
@@ -3072,19 +3341,18 @@ mod tests {
                 package_id: b"pkg".to_vec(),
                 module_path: b"module".to_vec(),
                 exported_item_id: b"item".to_vec(),
-                statement_fingerprint: fingerprint(
-                    KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
-                    b"imported-formula",
-                ),
+                statement_fingerprint: statement_fingerprint.clone(),
                 required_proof_status: KernelRequiredProofStatus::KernelVerified,
             },
             projection: KernelFormulaProjection {
-                formula_fingerprint: fingerprint(
-                    KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
-                    b"imported-formula",
-                ),
+                formula_fingerprint: formula_fingerprint.clone(),
                 formula_bytes: b"imported-kernel-formula".to_vec(),
                 provenance_payload: b"imported-provenance".to_vec(),
+            },
+            statement_projection: KernelImportedStatementProjection {
+                statement_fingerprint,
+                formula_fingerprint,
+                payload: b"imported-statement-projection".to_vec(),
             },
         }
     }

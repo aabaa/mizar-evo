@@ -9,7 +9,7 @@ use crate::{
     discharge::{
         DischargeEvidenceRecord, DischargeEvidenceReplay, DischargeEvidenceSource, DischargeOutput,
     },
-    kernel_evidence_handoff::VcKernelEvidenceHandoff,
+    kernel_evidence_handoff::{KernelEvidenceFingerprint, VcKernelEvidenceHandoff},
     vc_ir::{
         AnchorCompleteness, AnchorIngredient, ComputationHint, ContextEntry, ContextEntryId,
         DefinitionUnfoldRequest, DischargeEvidenceRef, HashMarker, ObligationAnchor, PolicyKey,
@@ -1065,14 +1065,16 @@ impl<'a> SliceBuilder<'a> {
             .formula_context_requirements()
             .map_or_else(|| "<none>".to_owned(), |context| format!("{context:?}"));
         let envelope = handoff.canonical_evidence();
+        let imported_statement_projections = imported_statement_projection_entries(handoff);
         let payload = format!(
-            "schema={}; encoding={}; target={:?}; profile={:?}; canonical-hash={}; formula-context={}",
+            "schema={}; encoding={}; target={:?}; profile={:?}; canonical-hash={}; formula-context={}; imported-statement-projections={:?}",
             envelope.schema_version(),
             envelope.encoding_version(),
             envelope.target_vc(),
             envelope.kernel_profile(),
             hex(handoff.canonical_hash().as_bytes()),
-            context_requirements
+            context_requirements,
+            imported_statement_projections
         );
         self.add_entry_with_fingerprint_payload(
             DependencyEntryClass::KernelEvidence,
@@ -1417,10 +1419,11 @@ fn proof_reuse_key_payload(
     writeln!(&mut payload, "verifier-policy: {policy:?}").expect("write string");
     writeln!(
         &mut payload,
-        "kernel-evidence: canonical-hash={:?}; context-identity-hash={:?}; formula-context={:?}",
+        "kernel-evidence: canonical-hash={:?}; context-identity-hash={:?}; formula-context={:?}; imported-statement-projections={:?}",
         kernel_handoff.canonical_hash(),
         kernel_handoff.context_identity_hash(),
-        kernel_handoff.formula_context_requirements()
+        kernel_handoff.formula_context_requirements(),
+        imported_statement_projection_entries(kernel_handoff)
     )
     .expect("write string");
     writeln!(
@@ -1556,16 +1559,42 @@ fn hex(bytes: &[u8]) -> String {
     encoded
 }
 
+fn imported_statement_projection_entries(handoff: &VcKernelEvidenceHandoff) -> Vec<String> {
+    handoff
+        .canonical_evidence()
+        .formula_evidence()
+        .iter()
+        .filter_map(|entry| {
+            entry.imported_statement_projection().map(|projection| {
+                format!(
+                    "source={:?}; statement={}; formula={}; payload={}",
+                    entry.source(),
+                    render_kernel_fingerprint(&projection.statement_fingerprint),
+                    render_kernel_fingerprint(&projection.formula_fingerprint),
+                    hex(&projection.payload)
+                )
+            })
+        })
+        .collect()
+}
+
+fn render_kernel_fingerprint(fingerprint: &KernelEvidenceFingerprint) -> String {
+    format!("{}:{}", fingerprint.algorithm_id, hex(&fingerprint.digest))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
         discharge::{DischargeInput, DischargePolicy, try_discharge},
         kernel_evidence_handoff::{
-            KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, KernelClauseTautologyPolicy,
-            KernelEvidenceFingerprint, KernelEvidenceHandoffInput, KernelEvidenceProfile,
-            KernelFormulaPayload, KernelFormulaProjection, KernelGoalPolarity,
-            VcKernelEvidenceHandoff, build_kernel_evidence_handoff,
+            IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID, KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+            KernelClauseTautologyPolicy, KernelEvidenceFingerprint, KernelEvidenceHandoffInput,
+            KernelEvidenceProfile, KernelFormulaContextRequirements, KernelFormulaPayload,
+            KernelFormulaProjection, KernelGoalPolarity, KernelImportedFactRequirement,
+            KernelImportedFormulaClass, KernelImportedFormulaPayload,
+            KernelImportedStatementProjection, KernelRequiredProofStatus, VcKernelEvidenceHandoff,
+            build_kernel_evidence_handoff,
         },
         vc_ir::{
             AnchorLabel, AnchorLabelRole, AnchorOwner, AnchorUnavailableReason, CanonicalSortKey,
@@ -2133,6 +2162,124 @@ mod tests {
             context_changed_slices
                 .proof_reuse_key_for_kernel_handoff(&discharge, VcId::new(0), &context_changed,)
                 .expect("context-changed key")
+        );
+    }
+
+    #[test]
+    fn imported_statement_projection_participates_in_slice_and_reuse_key() {
+        let imported_symbol = VcText::new("IMPORTS:1");
+        let mut parts = fixture_parts(
+            VcStatus::Open,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+            vec![generated_formula(0, VcGeneratedFormulaShape::True)],
+            complete_anchor_fixture(),
+        );
+        parts.vcs[0].premises = vec![PremiseRef::ImportedFact {
+            symbol: imported_symbol.clone(),
+        }];
+        let original = fixture_set(parts);
+        let discharge = try_discharge(DischargeInput {
+            vc_set: &original,
+            policy: &DischargePolicy::default(),
+        })
+        .expect("discharge");
+        let handoff = imported_kernel_handoff_for(
+            &discharge,
+            VcId::new(0),
+            &imported_symbol,
+            b"projection-a",
+        );
+        let projection_changed = imported_kernel_handoff_for(
+            &discharge,
+            VcId::new(0),
+            &imported_symbol,
+            b"projection-b",
+        );
+        let statement_changed = imported_kernel_handoff_for_with_fingerprints(
+            &discharge,
+            VcId::new(0),
+            &imported_symbol,
+            b"imported-statement-b",
+            b"imported-formula",
+            b"projection-a",
+        );
+        let formula_changed = imported_kernel_handoff_for_with_fingerprints(
+            &discharge,
+            VcId::new(0),
+            &imported_symbol,
+            b"imported-statement",
+            b"imported-formula-b",
+            b"projection-a",
+        );
+        assert_ne!(
+            handoff.canonical_hash(),
+            projection_changed.canonical_hash()
+        );
+        assert_ne!(
+            handoff.context_identity_hash(),
+            projection_changed.context_identity_hash()
+        );
+
+        let base_slices = try_compute_dependency_slices_with_kernel_evidence(
+            DependencySliceInput {
+                vc_set: discharge.vc_set(),
+                discharge_output: Some(&discharge),
+            },
+            &[KernelEvidenceDependencyInput {
+                vc: VcId::new(0),
+                handoff: &handoff,
+            }],
+        )
+        .expect("base slices");
+        for (label, changed_handoff) in [
+            ("projection-payload", &projection_changed),
+            ("statement-fingerprint", &statement_changed),
+            ("formula-fingerprint", &formula_changed),
+        ] {
+            let changed_slices = try_compute_dependency_slices_with_kernel_evidence(
+                DependencySliceInput {
+                    vc_set: discharge.vc_set(),
+                    discharge_output: Some(&discharge),
+                },
+                &[KernelEvidenceDependencyInput {
+                    vc: VcId::new(0),
+                    handoff: changed_handoff,
+                }],
+            )
+            .expect(label);
+            assert_ne!(
+                only_slice(&base_slices).fingerprint(),
+                only_slice(&changed_slices).fingerprint(),
+                "{label} must participate in the dependency-slice fingerprint"
+            );
+        }
+
+        let kernel_payload = entry_payload(
+            only_slice(&base_slices),
+            DependencyEntryClass::KernelEvidence,
+            "kernel-evidence:canonical-handoff",
+        )
+        .expect("kernel evidence payload");
+        assert!(kernel_payload.contains("imported-statement-projections"));
+        assert!(kernel_payload.contains("statement=18:696d706f727465642d73746174656d656e74"));
+        assert!(kernel_payload.contains("formula=2:696d706f727465642d666f726d756c61"));
+        assert!(kernel_payload.contains(&hex(b"projection-a")));
+
+        let base_slice = only_slice(&base_slices);
+        assert_eq!(
+            base_slice.completeness(),
+            DependencySliceCompleteness::IncompleteUncacheable
+        );
+        assert!(base_slice.unknowns().iter().any(|unknown| {
+            unknown.family() == DependencyUnknownFamily::Import
+                && unknown.local_key() == "imported-fact:IMPORTS:1"
+        }));
+        assert!(
+            base_slices
+                .proof_reuse_key_for_kernel_handoff(&discharge, VcId::new(0), &handoff)
+                .is_none(),
+            "imported facts remain conservative import dependencies until the downstream \
+             validator closes the coverage gap"
         );
     }
 
@@ -2962,6 +3109,103 @@ mod tests {
             discharge_output: Some(discharge),
         })
         .expect("kernel evidence handoff")
+    }
+
+    fn imported_kernel_handoff_for(
+        discharge: &DischargeOutput,
+        vc: VcId,
+        symbol: &VcText,
+        projection_payload: &[u8],
+    ) -> VcKernelEvidenceHandoff {
+        imported_kernel_handoff_for_with_fingerprints(
+            discharge,
+            vc,
+            symbol,
+            b"imported-statement",
+            b"imported-formula",
+            projection_payload,
+        )
+    }
+
+    fn imported_kernel_handoff_for_with_fingerprints(
+        discharge: &DischargeOutput,
+        vc: VcId,
+        symbol: &VcText,
+        statement_digest: &[u8],
+        formula_digest: &[u8],
+        projection_payload: &[u8],
+    ) -> VcKernelEvidenceHandoff {
+        let vc_set = discharge.vc_set();
+        let payloads = vc_set
+            .generated_formulas()
+            .iter()
+            .map(|formula| KernelFormulaPayload {
+                formula_ref: VcFormulaRef::Generated(formula.id),
+                projection: KernelFormulaProjection {
+                    formula_fingerprint: KernelEvidenceFingerprint::new(
+                        KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+                        format!("formula-{}", formula.id.index()).into_bytes(),
+                    )
+                    .expect("formula fingerprint"),
+                    formula_bytes: format!("kernel-formula-{}", formula.id.index()).into_bytes(),
+                    provenance_payload: format!("provenance-{}", formula.id.index()).into_bytes(),
+                },
+            })
+            .collect::<Vec<_>>();
+        let statement_fingerprint = KernelEvidenceFingerprint::new(
+            IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID,
+            statement_digest.to_vec(),
+        )
+        .expect("statement fingerprint");
+        let formula_fingerprint = KernelEvidenceFingerprint::new(
+            KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
+            formula_digest.to_vec(),
+        )
+        .expect("formula fingerprint");
+        let requirement = KernelImportedFactRequirement {
+            imported_fact_id: 1,
+            package_id: b"pkg".to_vec(),
+            module_path: b"module".to_vec(),
+            exported_item_id: b"item".to_vec(),
+            statement_fingerprint: statement_fingerprint.clone(),
+            required_proof_status: KernelRequiredProofStatus::KernelVerified,
+        };
+        let imported_payloads = vec![KernelImportedFormulaPayload {
+            symbol: symbol.clone(),
+            class: KernelImportedFormulaClass::Axiom,
+            requirement: requirement.clone(),
+            projection: KernelFormulaProjection {
+                formula_fingerprint: formula_fingerprint.clone(),
+                formula_bytes: b"imported-kernel-formula".to_vec(),
+                provenance_payload: b"imported-provenance".to_vec(),
+            },
+            statement_projection: KernelImportedStatementProjection {
+                statement_fingerprint,
+                formula_fingerprint,
+                payload: projection_payload.to_vec(),
+            },
+        }];
+        let context = KernelFormulaContextRequirements {
+            provenance_fingerprint: KernelEvidenceFingerprint::new(7, b"context".to_vec())
+                .expect("context fingerprint"),
+            imported_axioms: vec![requirement],
+            imported_theorems: Vec::new(),
+        };
+
+        build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+            vc_set,
+            vc,
+            goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
+            kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+            symbol_manifest: &[],
+            variable_manifest: &[],
+            formula_payloads: &payloads,
+            imported_formula_payloads: &imported_payloads,
+            substitutions: &[],
+            formula_context: Some(&context),
+            discharge_output: Some(discharge),
+        })
+        .expect("imported kernel evidence handoff")
     }
 
     fn only_slice(output: &DependencySliceSet) -> &DependencySlice {

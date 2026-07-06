@@ -16,8 +16,10 @@ Task 26 extends the slice and proof-reuse identity boundary with the canonical
 kernel evidence handoff hash produced by
 [kernel_evidence_handoff.md](./kernel_evidence_handoff.md). Task 28 extends
 that boundary with the non-imported source-binding `context_identity_hash()`.
-Both hashes are reuse invalidation inputs only. They do not make `mizar-vc` a
-kernel caller and do not promote a handoff package to proof acceptance.
+Task 29 extends the kernel-evidence dependency payload with imported-statement
+projection data whenever imported formula evidence is supplied. These fields
+are reuse invalidation inputs only. They do not make `mizar-vc` a kernel caller
+and do not promote a handoff package to proof acceptance.
 
 Task 13 is specification-only. It refines
 [architecture 18](../../architecture/en/18.dependency_fingerprint.md) and the
@@ -35,8 +37,9 @@ Owned by this module:
   recomputation instead of pretending dependencies are absent;
 - stable dependency-slice fingerprints suitable for artifact and reuse keys.
 - optional kernel evidence handoff identity entries, including the canonical
-  formula-envelope hash and task-28 context-identity hash, used to invalidate
-  proof-reuse candidates after task 25.
+  formula-envelope hash, task-28 context-identity hash, and task-29
+  imported-statement projection payloads, used to invalidate proof-reuse
+  candidates after task 25.
 
 Out of scope:
 
@@ -129,9 +132,9 @@ Task 14 may introduce a structured Rust enum, but the semantic classes are:
 - `discharge_evidence`: rule names, evidence hashes, evidence inputs, and
   preserved-evidence markers from `DischargeOutput`;
 - `kernel_evidence`: task-25 canonical kernel evidence handoff hash, task-28
-  context-identity hash and rows, target binding, schema/encoding/profile
-  identity, and imported formula context requirements when supplied by the
-  caller;
+  context-identity hash and rows, task-29 imported-statement projection
+  payloads, target binding, schema/encoding/profile identity, and imported
+  formula context requirements when supplied by the caller;
 - `seed`: seed handoff ids and seed mapping rows needed to keep concrete-VC
   cardinality stable for diagnostics, while reusable fingerprint payloads use
   the current-obligation mapping shape rather than handoff ids.
@@ -171,8 +174,9 @@ ids) and include:
 - ordered dependency entries and conservative unknown markers;
 - relevant policy keys/values;
 - generated formula references and discharge evidence boundaries;
-- kernel evidence handoff hash, context-identity hash, and imported formula
-  context requirements when a handoff is supplied;
+- kernel evidence handoff hash, context-identity hash, imported-statement
+  projection payloads, and imported formula context requirements when a
+  handoff is supplied;
 - stable anchor and context hash markers when available, or conservative
   unknown markers when unavailable.
 
@@ -210,9 +214,10 @@ helper must return a key only when all of the following hold:
   completeness, kind, and status;
 - the `ObligationAnchor` is complete and the slice is complete;
 - canonical VC and local-context fingerprints are available;
-- a task-25/28 `VcKernelEvidenceHandoff` is supplied for the same VC and its
-  canonical formula-envelope hash plus `context_identity_hash()` are included
-  in the proof-reuse key payload;
+- a task-25/28/29 `VcKernelEvidenceHandoff` is supplied for the same VC and
+  its canonical formula-envelope hash, `context_identity_hash()`, and
+  imported-statement projection payload boundary are included in the
+  proof-reuse key payload when the slice is otherwise complete;
 - explicit verifier-policy inputs and status policy are included in a policy
   fingerprint;
 - a newly produced replayable deterministic discharge evidence record exists
@@ -267,6 +272,17 @@ Task 28 adds Rust coverage for:
   canonical evidence hash is unchanged;
 - local-hypothesis, cited-premise, and generated-VC-fact rows being covered by
   context identity, with imported axiom/theorem entries excluded.
+
+Task 29 adds Rust coverage for:
+
+- imported-statement projection payloads from imported formula evidence
+  participating in the `kernel_evidence` dependency payload;
+- dependency-slice fingerprints changing when the projection payload or mapped
+  statement/formula fingerprints change;
+- proof-reuse keys staying unavailable while imported facts still carry
+  conservative import coverage;
+- kernel-side trusted validation and pass fixtures remaining downstream
+  `mizar-kernel` task 33 work.
 
 ## Public Enum Policy
 
