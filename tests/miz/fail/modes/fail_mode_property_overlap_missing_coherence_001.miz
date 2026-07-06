@@ -1,0 +1,28 @@
+:: Rejection target: `Group` refines `UnitalMagma`, so the two `unit`
+:: property implementations overlap on every Group value. The later
+:: implementation must provide a `coherence` proof relating its value to the
+:: earlier visible implementation (doc/spec/en/07.modes.md, sections 7.4.1
+:: and 7.8.2).
+
+definition
+  struct UnitalMagmaStr where
+    field carrier -> set;
+    field binop -> set;
+    property unit -> set;
+  end;
+end;
+
+definition
+  mode UnitalMagmaDef: UnitalMagma is UnitalMagmaStr;
+  mode GroupDef: Group is UnitalMagma;
+end;
+
+definition
+  let M be UnitalMagma;
+  property M.unit equals M.carrier;
+end;
+
+definition
+  let G be Group;
+  property G.unit equals G.carrier;
+end;

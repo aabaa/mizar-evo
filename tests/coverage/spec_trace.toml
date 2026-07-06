@@ -668,6 +668,24 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.07.modes.property_implementation.coherence.semantic"
+source = "doc/spec/en/07.modes.md"
+section = "7.4.1 Property Implementation; 7.8.2 Property Implementation Correctness; with 16.6.2 Coherence and Compatibility"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Task 39 / SSA-005 decision: overlapping implementations of the same struct property must be related by an accepted `coherence` condition. The seed is inactive until property-implementation parser support, an advanced_semantics runner, and source-to-checker property-implementation payload extraction exist (MC-G020/MC-G030). Rejection contract: a narrower mode implementation that overlaps an earlier broader mode implementation cannot be accepted without a coherence proof."
+depends_on = [
+  "spec.en.05.structures.parser",
+  "spec.en.07.mode_definitions.parser",
+  "spec.en.13.selector_access.parser",
+]
+tests = [
+  "tests/miz/fail/modes/fail_mode_property_overlap_missing_coherence_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.07.modes.property_implementation.not_constructor_source.semantic"
 source = "doc/spec/en/07.modes.md"
 section = "7.4.1 Property Implementation; with 5.5.1 fields-only constructors"
@@ -675,7 +693,7 @@ stage = "advanced_semantics"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Task 35 / SSA-001 decision, negative half: constructor-supplied arguments are not a source of property values and must be rejected. Positive evaluation of property `means`/`equals` implementations remains blocked on property implementation payload extraction and future SSA-005 coherence decisions. The seed is inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G030)."
+notes = "Task 35 / SSA-001 decision, negative half: constructor-supplied arguments are not a source of property values and must be rejected. Positive evaluation of property `means`/`equals` implementations remains blocked on property implementation payload extraction and task-39 coherence enforcement. The seed is inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G030)."
 depends_on = [
   "spec.en.05.structures.parser",
   "spec.en.07.mode_definitions.parser",
@@ -684,6 +702,17 @@ depends_on = [
 tests = [
   "tests/miz/fail/structures/fail_structure_constructor_property_arg_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.07.modes.property_implementation.parser"
+source = "doc/spec/en/07.modes.md"
+section = "7.4.1 Property Implementation; 7.8.2 Property Implementation Correctness; 7.10 Complete Syntax; Appendix A.7 Modes"
+stage = "parse_only"
+status = "deferred"
+required = true
+coverage = "pass_and_fail"
+deferred_reason = "Task 39 documents property `means`/`equals` implementation syntax plus the optional `coherence` block, but active parser fixtures do not yet cover property implementation definitions and the parser currently does not expose this definition form. Add pass/fail parse-only coverage for property implementations and overlap-coherence grammar after parser support lands."
+tests = []
 
 [[requirement]]
 id = "spec.en.09.predicate_definitions.parser"

@@ -293,9 +293,12 @@ property_impl        ::= "definition"
                          "end" ";" ;
 property_means_impl  ::= "property" identifier "." identifier
                          "means" formula_definiens ";"
-                         existence_block uniqueness_block ;
+                         existence_block uniqueness_block
+                         [ coherence_block ] ;
 property_equals_impl ::= "property" identifier "." identifier
-                         "equals" term_definiens ";" ;
+                         "equals" term_definiens ";"
+                         [ coherence_block ] ;
+coherence_block      ::= "coherence" justification ";" ;
 
 mode_application     ::= mode_ref_name [ type_args ] ;
 ```

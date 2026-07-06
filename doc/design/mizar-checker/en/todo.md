@@ -645,7 +645,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | no task: the greedy `of`/`over` parse is deterministic and documented (spec 19.6.4); a scope-sensitivity lint belongs to the future diagnostics-adoption wave and is recorded in that wave, not here |
-| corpus seeds | task 48 activates the 16 audit fixtures plus the task-35 constructor-property seed, task-36 duplicate-coverage seed, task-37 ordinary/template-derived equivalent-root and same-return signature-conflict seeds, and task-38 functorial-`for` guard seed when the `advanced_semantics` and declaration-symbol runner support land |
+| corpus seeds | task 48 activates the 16 audit fixtures plus the task-35 constructor-property seed, task-36 duplicate-coverage seed, task-37 ordinary/template-derived equivalent-root and same-return signature-conflict seeds, task-38 functorial-`for` guard seed, and task-39 property-overlap coherence seed when the required runners, parser support, declaration-symbol support, and source-to-checker payload extraction land |
 
 35. **Spec decision: constructor property arguments vs extensionality (SSA-001).** [x]
     - Resolve the critical §5.5.1/§5.8.4/§5.8.5 inconsistency. Recommended
@@ -761,7 +761,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       now defer the detailed encoding to Chapter 17. No checker/core source
       semantics changed.
 
-39. **Spec decision: property-implementation coherence (SSA-005).** [ ]
+39. **Spec decision: property-implementation coherence (SSA-005).** [x]
     - Require any two `property S.p means/equals` implementations with
       overlapping domains to be related by a coherence obligation, or
       restrict each property to one implementation per `inherit`-connected
@@ -770,6 +770,16 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       restriction diagnostic; a reject-first seed pins the uncovered overlap.
     - Verify: `cargo test -p mizar-test`.
     - Deps: 35 (property-value source must be settled first). Refs: SSA-005.
+    - Completed by task 39: spec 07 now requires overlapping
+      implementations of the same struct property to carry an accepted
+      `coherence` correctness condition. The grammar admits an optional
+      `coherence` block after property `means` existence/uniqueness and after
+      property `equals`, but the block is semantically mandatory for overlaps;
+      spec 16 and Appendix A were synchronized. Added inactive seed
+      `fail_mode_property_overlap_missing_coherence_001` and traceability row
+      `spec.en.07.modes.property_implementation.coherence.semantic`, plus
+      deferred parser row `spec.en.07.modes.property_implementation.parser`.
+      No checker/core source semantics changed.
 
 40. **Spec contract: registration activation timing (SSA-006).** [ ]
     - Keep §17.1 item-ordered activation as the language contract and state
@@ -876,13 +886,15 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: 40, 43. Refs: SSA-006, SSA-013, SSA-014.
 
 48. **Audit-corpus activation and task-29 record revision.** [ ]
-    - When the `advanced_semantics`/`formula_statement` runners and
-      source-to-checker payload extraction land (mizar-test runner growth +
-      MC-G020/MC-G021/MC-G023/MC-G027), activate the 16 semantic-audit
+    - When the `advanced_semantics`/`formula_statement` runners,
+      property-implementation parser support, and source-to-checker payload
+      extraction land (mizar-test runner growth +
+      MC-G020/MC-G021/MC-G023/MC-G027 plus MC-G030/property-implementation
+      payload extraction for the task-39 seed), activate the 16 semantic-audit
       fixtures plus the task-35 constructor-property seed, task-36
       duplicate-coverage seed, task-37 ordinary/template-derived
-      equivalent-root ambiguity seeds, and task-38 functorial-`for` guard
-      seed.
+      equivalent-root ambiguity seeds, task-38 functorial-`for` guard seed,
+      and task-39 property-overlap coherence seed.
       Activate the task-37 same-return signature-conflict seed when the
       declaration-symbol runner supports that resolver diagnostic. Revise the
       task-29 deferred corpus records to point at (or be superseded by) the

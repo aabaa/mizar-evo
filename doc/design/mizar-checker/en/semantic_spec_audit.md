@@ -42,7 +42,7 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 | SSA-002 | high | 5.3/5.4 | Resolved by task 36: member identity tracks root declaration plus inheritance path/view |
 | SSA-003 | high | 19.6.1 | Resolved by task 37: template constraints are not Phase B tie-breakers after expansion |
 | SSA-004 | high | 17.5/17.9.3 | Resolved by task 38: functorial cluster `for T` is an applicability guard in the FOL encoding |
-| SSA-005 | high | 7.4.1 | Property implementations lack coherence conditions across overlapping modes |
+| SSA-005 | high | 7.4.1 | Resolved by task 39: overlapping property implementations require coherence |
 | SSA-006 | high | 17.1 vs arch 04 | Registration activation timing: spec is item-ordered, design defers to verifier acceptance |
 | SSA-007 | medium | 17.10/3.3 | Cluster termination silently relies on the restricted adjective grammar |
 | SSA-008 | medium | 17.7.3 | Contradiction detection site is inconsistent (ATP vs closure) |
@@ -182,7 +182,7 @@ seed `fail_cluster_functorial_for_guard_001` pins the unavailable-consequent
 case until the advanced-semantics runner and checker-ready payload extraction
 exist.
 
-### SSA-005 (high, `spec_gap`) — Overlapping property implementations lack coherence
+### SSA-005 (high, resolved `spec_gap`) — Overlapping property implementations require coherence
 
 **Where:** 07.modes.md §7.4.1, §7.8.2.
 
@@ -194,10 +194,17 @@ their uniqueness axioms prove a contradiction. `redefine` solved the same
 problem with a mandatory coherence obligation (§19.5); property
 implementations have no analogue.
 
-**Proposed resolution:** require any two property implementations of the
-same struct property with overlapping domains to be related by a coherence
-obligation, or restrict each property to at most one implementation per
-`inherit`-connected mode family.
+**Disposition:** task 39 chooses the coherence-obligation resolution. Spec 07
+now permits a `coherence` block after property `means` and `equals`
+implementations and requires that block when the implementation's normalized
+mode domain overlaps an earlier visible implementation of the same struct
+property. The obligation proves that both implementations assign the same
+property value over the overlap. Spec 16's proof-obligation summary and the
+Appendix A grammar mirror were synchronized. The inactive seed
+`fail_mode_property_overlap_missing_coherence_001` pins rejection of a
+narrower overlapping implementation without coherence until property
+implementation parser support, property payload extraction, and an
+advanced-semantics runner exist.
 
 ### SSA-006 (high, `design_drift`) — Registration activation timing
 
@@ -445,9 +452,12 @@ behavior.
 | `fail/types/fail_types_qua_unrelated_struct_001` | `qua` to unrelated struct rejected | 13.6.1, 13.6.4 |
 | `fail/types/fail_types_comprehension_missing_sethood_001` | Fraenkel without sethood rejected | 13.4.2, 7.8.1 |
 | `fail/structures/fail_structure_constructor_property_arg_001` | constructor property argument rejected | 5.5.1, 5.8.4, 7.4.1 |
+| `fail/modes/fail_mode_property_overlap_missing_coherence_001` | overlapping property implementation without coherence rejected | 7.4.1, 7.8.2 |
 
 New traceability requirements: `spec.en.05.structures.constructor_fields_only.semantic`,
 `spec.en.05.structures.inheritance.semantic`,
+`spec.en.07.modes.property_implementation.coherence.semantic`,
+`spec.en.07.modes.property_implementation.parser`,
 `spec.en.07.modes.property_implementation.not_constructor_source.semantic`,
 `spec.en.07.modes.existential_gating.semantic`,
 `spec.en.13.qua.widening_only.semantic`,
@@ -472,10 +482,14 @@ spec-decision tasks close.
   SSA-003+SSA-010+SSA-016+SSA-019 are resolved by task 37 with synchronized
   spec 19 edits, overload design sync, and equivalent-root / same-signature
   corpus seeds.
-- **Remaining spec tasks (before further checker semantics):** SSA-004 is
-  resolved by task 38 with synchronized spec 17 edits and a functorial-`for`
-  guard seed. One task remains for SSA-005 (property implementation
-  coherence), updating `doc/spec/en/` + `ja/` together.
+- **Resolved spec tasks:** SSA-004 is resolved by task 38 with synchronized
+  spec 17 edits and a functorial-`for` guard seed. SSA-005 is resolved by task
+  39 with synchronized spec 07/16/Appendix A edits, an overlapping-property
+  coherence seed, and a deferred parser traceability row for property
+  implementation syntax.
+- **Remaining spec tasks (before further checker semantics):** SSA-006,
+  SSA-007, SSA-008, SSA-009, SSA-013, SSA-014, SSA-015, SSA-017, and SSA-020
+  remain assigned to tasks 40-44.
 - **Task 19/20 (registration gating, existential gates):** revisit against
   SSA-006's activation contract and SSA-014's built-in inhabitation table
   once decided; the interim conservative policy should be recorded as such
