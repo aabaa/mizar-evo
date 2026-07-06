@@ -168,6 +168,15 @@ Allowed premise sources are:
   imported source tuple; repeated package/module/item/status/statement tuples
   are rejected even when they arrive under different imported symbols.
 
+For the task-29 post-audit kernel contract, non-imported premise projections
+must preserve the VC handoff source identity. A local hypothesis, cited
+premise, or generated VC fact whose projection source binding is relabeled by
+the ATP producer is not repaired into a new identity; it fails closed before an
+`AtpProblem` or backend candidate is constructed. Imported fact projections
+continue to rely on the kernel-validated statement projection payload supplied
+through the VC handoff; the ATP translator does not replace that payload with a
+symbol label, backend axiom label, or backend `used_axioms` record.
+
 Checker-owned facts and type predicates are future conditional premise
 families. Task-6 translator source keeps them fail-closed unless the VC handoff
 exposes matching explicit source classes/projections. A generic policy-builtin
@@ -199,6 +208,9 @@ before constructing the `AtpProblem`. The goal projection provenance binding
 and projection source identity must both use the final-goal source binding
 `goal:1`; premise-style generated, checker-owned, or local bindings cannot be
 used for the conjecture.
+Task 29 treats a proof-obligation handoff requesting
+`AssertTrueForConsistency` as a non-candidate condition at this boundary; ATP
+does not reinterpret proof obligations as consistency checks.
 Concrete encoders may later present the goal as a TPTP conjecture, a negated
 TPTP conjecture, or an SMT assertion of the negated goal, but the
 backend-neutral problem contract remains that a successful backend result must

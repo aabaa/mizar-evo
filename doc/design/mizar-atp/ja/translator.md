@@ -157,6 +157,14 @@ error である。
   imported source tuple の代替ではない。異なる imported symbol から来た場合でも、
   package/module/item/status/statement tuple の重複は reject する。
 
+task-29 post-audit kernel contract では、非 import premise projection は VC handoff の
+source identity を保持しなければならない。local hypothesis、cited premise、generated
+VC fact の projection source binding が ATP producer により relabel されている場合、
+translator はそれを新しい identity に修復せず、`AtpProblem` や backend candidate の
+construction 前に fail closed する。Imported fact projection は引き続き VC handoff 経由で
+供給された kernel-validated statement projection payload に依存する。ATP translator はその
+payload を symbol label、backend axiom label、backend `used_axioms` record で置き換えない。
+
 checker-owned fact と type predicate は future conditional な premise family である。
 task-6 translator source は、VC handoff が対応する explicit source class/projection を公開する
 までそれらを fail-closed に保つ。generic な policy-builtin bucket だけでは、ATP translator が
@@ -182,7 +190,10 @@ VC goal は `AtpProblem.conjecture` formula に変換される。translator は 
 final-goal polarity が `AssertFalseForRefutation` であることも要求する。他の handoff polarity は、
 `AtpProblem` construction の前に fail closed する。goal projection provenance binding と
 projection source identity は final-goal source binding `goal:1` を使わなければならない。
-premise-style generated binding、checker-owned binding、local binding は conjecture には使えない。concrete encoder は後で goal を TPTP
+premise-style generated binding、checker-owned binding、local binding は conjecture には使えない。
+Task 29 は `AssertTrueForConsistency` を要求する proof-obligation handoff をこの boundary の
+non-candidate condition として扱う。ATP は proof obligation を consistency check として
+解釈し直さない。concrete encoder は後で goal を TPTP
 conjecture、negated TPTP conjecture、または negated goal の SMT assertion として提示してよいが、
 backend-neutral problem contract は、successful backend result が premise と negated goal の
 unsatisfiability に対応しなければならない、というままである。

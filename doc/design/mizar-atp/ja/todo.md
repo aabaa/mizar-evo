@@ -591,7 +591,7 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
 する。本 crate は kernel 所有スキーマを通じて候補 evidence を構築し、それを
 弱めてはならないためである。
 
-29. **監査後 kernel 契約への候補 evidence 適合(kernel F1、F2、F6)。** [ ]
+29. **監査後 kernel 契約への候補 evidence 適合(kernel F1、F2、F6)。** [x]
     - 候補 evidence の構築を訂正済み architecture 15 契約に整合させる:
       すべての証明義務候補は対象義務の check kind に束縛された refutation
       polarity を宣言する(証明義務に `AssertTrueForConsistency` を使わ
@@ -604,14 +604,29 @@ polarity)、F2(非 import ソース束縛)、F6(imported-statement projection)
     - 受け入れ条件: consistency-polarity の証明候補と producer が
       relabel した local hypothesis が emit されない(または分類済み
       非候補としてのみ emit される)ことを Rust regression が示す。
+    - deferred joint coverage:
       kernel corpus(`fail_certificate_sat_goal_polarity_mismatch_001`、
-      `fail_certificate_symbols_unverifiable_local_hypothesis_001`)が
-      ATP 構築の候補経由でも拒否のままである joint fixture を持つ。
+      `fail_certificate_symbols_unverifiable_local_hypothesis_001`)は、real
+      source-derived ATP extraction と candidate extraction が存在した後、
+      ATP 構築の候補経由でも拒否のままでなければならない。
     - 検証: `cargo test -p mizar-atp`、`cargo test -p mizar-kernel`、
       `cargo clippy -p mizar-atp --all-targets -- -D warnings`。
     - 依存: mizar-kernel tasks 30-31、33; mizar-vc tasks 27-29。仕様:
       architecture 15(監査後)、internal 04; soundness_argument.md F1、
       F2、F6。
+    - Status: crate-owned conformance boundary として完了。Task 29 は、
+      proof-obligation handoff が `AssertTrueForConsistency` を要求すると
+      ATP translation の前に失敗すること、producer が relabel した local
+      hypothesis が `AtpProblem` や backend candidate なしで fail closed
+      することを focused Rust regression として追加する。既存の
+      imported-statement projection regression は kernel task 33 後の F6
+      consumer 側を cover する。2 つの `fail_certificate_*` fixture を
+      ATP-built candidate 経由で joint kernel-corpus 実行する部分は
+      `external_dependency_gap` / `deferred` のままである: source-derived ATP
+      extraction route と real-output candidate extractor がまだ存在しないため、
+      この task は fake payload、placeholder runner、expectation rebaseline、
+      kernel call、proof policy、witness/cache output、trusted backend material を
+      追加しない。
 
 ## 推奨検証
 

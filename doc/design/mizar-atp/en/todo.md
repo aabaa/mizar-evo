@@ -646,7 +646,7 @@ F1 (goal polarity), F2 (non-imported source bindings), and F6
 ATP-side conformance is one task here because this crate constructs
 candidate evidence through the kernel-owned schema and must not weaken it.
 
-29. **Candidate evidence conformance to the post-audit kernel contract (kernel F1, F2, F6).** [ ]
+29. **Candidate evidence conformance to the post-audit kernel contract (kernel F1, F2, F6).** [x]
     - Align candidate-evidence construction with the corrected architecture
       15 contract: every proof-obligation candidate declares refutation
       polarity bound to the target obligation's check kind (never
@@ -659,15 +659,29 @@ candidate evidence through the kernel-owned schema and must not weaken it.
       satisfy the contract are classified, not patched up.
     - Acceptance: Rust regressions show a consistency-polarity proof
       candidate and a producer-relabeled local hypothesis are never emitted
-      (or are emitted only as classified non-candidates); joint fixtures
-      with the kernel corpus (`fail_certificate_sat_goal_polarity_mismatch_001`,
-      `fail_certificate_symbols_unverifiable_local_hypothesis_001`) stay
-      rejecting when driven through ATP-built candidates.
+      (or are emitted only as classified non-candidates).
+    - Deferred joint coverage: joint fixtures with the kernel corpus
+      (`fail_certificate_sat_goal_polarity_mismatch_001`,
+      `fail_certificate_symbols_unverifiable_local_hypothesis_001`) must stay
+      rejecting when driven through ATP-built candidates after real
+      source-derived ATP extraction and candidate extraction exist.
     - Verify: `cargo test -p mizar-atp`, `cargo test -p mizar-kernel`,
       `cargo clippy -p mizar-atp --all-targets -- -D warnings`.
     - Deps: mizar-kernel tasks 30-31 and 33; mizar-vc tasks 27-29. Spec:
       architecture 15 (post-audit), internal 04; soundness_argument.md F1,
       F2, F6.
+    - Status: complete for the crate-owned conformance boundary. Task 29 adds
+      focused Rust regressions that a proof-obligation handoff requesting
+      `AssertTrueForConsistency` fails before ATP translation and that a
+      producer-relabeled local hypothesis fails closed without an `AtpProblem`
+      or backend candidate. Existing imported-statement projection regressions
+      cover the F6 consumer side after kernel task 33. The joint kernel-corpus
+      execution of the two `fail_certificate_*` fixtures through ATP-built
+      candidates remains `external_dependency_gap` / `deferred`: no
+      source-derived ATP extraction route or real-output candidate extractor
+      exists yet, so this task deliberately adds no fake payload,
+      placeholder runner, expectation rebaseline, kernel call, proof policy,
+      witness/cache output, or trusted backend material.
 
 ## Recommended Verification
 

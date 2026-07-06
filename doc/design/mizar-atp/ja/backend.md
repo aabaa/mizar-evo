@@ -272,6 +272,13 @@ backend proof method、SMT proof object、unsat core、TSTP trace、resolution t
 backend-reported `used_axioms`、legacy certificate であってはならない。kernel acceptance、trusted
 `used_axioms`、proof witness draft、artifact status、cache promotion は downstream task/crate に属する。
 
+Task 29 は post-audit F1/F2/F6 kernel contract を backend classification の上流に保つ。
+backend classifier は candidate target binding、encoded-problem hash、provenance hash、
+formula label、symbol binding を比較してよいが、backend output から goal polarity、
+context-identity payload、imported-statement projection を発明または推測してはならない。
+kernel contract が要求する translator/VC-handoff evidence を欠く candidate は、real extractor が
+explicit formula/substitution payload を生成できるまで non-candidate のままである。
+
 ## failure semantics
 
 - `Timeout`: timeout budget が経過し、child process が終了されたか、実行中でないことが確認された。VC は open のままか他 candidate へ進む。proof status は accepted されない。

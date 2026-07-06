@@ -16,10 +16,10 @@ use mizar_session::{
 use mizar_vc::{
     kernel_evidence_handoff::{
         IMPORTED_STATEMENT_FINGERPRINT_ALGORITHM_ID, KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID,
-        KernelClauseTautologyPolicy, KernelEvidenceFingerprint, KernelEvidenceHandoffInput,
-        KernelEvidenceProfile, KernelFormulaContextRequirements, KernelFormulaPayload,
-        KernelFormulaProjection, KernelGoalPolarity, KernelImportedFactRequirement,
-        KernelImportedFormulaClass, KernelImportedFormulaPayload,
+        KernelClauseTautologyPolicy, KernelEvidenceFingerprint, KernelEvidenceHandoffError,
+        KernelEvidenceHandoffInput, KernelEvidenceProfile, KernelFormulaContextRequirements,
+        KernelFormulaPayload, KernelFormulaProjection, KernelGoalPolarity,
+        KernelImportedFactRequirement, KernelImportedFormulaClass, KernelImportedFormulaPayload,
         KernelImportedStatementProjection, KernelRequiredProofStatus,
         build_kernel_evidence_handoff, canonical_imported_statement_projection_payload,
     },
@@ -646,6 +646,55 @@ fn translate_problem_rejects_non_needs_atp_and_mismatched_handoff() {
         translate_problem(basic_problem_input(&input_set, &stale_handoff))
             .expect_err("stale handoff"),
         AtpTranslationError::MismatchedTargetHandoff { .. }
+    ));
+}
+
+#[test]
+fn task_29_consistency_polarity_proof_obligation_is_not_translated() {
+    let set = fixture_set(VcStatus::NeedsAtp, "task-29-polarity");
+    let payloads = formula_payloads(&set);
+
+    let error = build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
+        vc_set: &set,
+        vc: VcId::new(0),
+        goal_polarity: KernelGoalPolarity::AssertTrueForConsistency,
+        kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
+        symbol_manifest: &[],
+        variable_manifest: &[],
+        formula_payloads: &payloads,
+        imported_formula_payloads: &[],
+        substitutions: &[],
+        formula_context: None,
+        discharge_output: None,
+    })
+    .expect_err("consistency polarity proof obligation must not reach ATP translation");
+
+    assert!(matches!(
+        error,
+        KernelEvidenceHandoffError::GoalPolarityMismatch {
+            vc,
+            requested: KernelGoalPolarity::AssertTrueForConsistency,
+            required: KernelGoalPolarity::AssertFalseForRefutation,
+        } if vc == VcId::new(0)
+    ));
+}
+
+#[test]
+fn task_29_relabelled_local_hypothesis_is_not_translated() {
+    let set = fixture_set(VcStatus::NeedsAtp, "task-29-local-source");
+    let handoff = handoff(&set);
+    let mut input = basic_problem_input(&set, &handoff);
+    input.formula_projections[0].provenance.source =
+        AtpSourceRef::LocalHypothesis(AtpSourceBinding::new("local-context:99"));
+    input.formula_projections[0].source_identity = AtpProjectionKey::new("local-context:99");
+
+    assert!(matches!(
+        translate_problem(input).expect_err("relabelled local hypothesis must fail closed"),
+        AtpTranslationError::Problem {
+            source: AtpProblemError::UnsupportedProfileFeature {
+                feature: "formula provenance source class"
+            }
+        }
     ));
 }
 

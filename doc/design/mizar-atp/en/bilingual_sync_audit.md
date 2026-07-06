@@ -8,10 +8,11 @@ source/spec correspondence audit. Task 25 updates this audit record for the
 portfolio completion-order independence gate deferral. Task 26 re-runs the
 sync audit for the Architecture-22 follow-up. Task 27 re-runs it for the
 module-boundary private test module split. Task 28 re-runs it for the crate
-exit report. These audit edits change no Rust production source behavior,
-public API, `.miz` fixture, expectation, language specification, backend
-route, kernel check, proof policy, artifact witness, cache behavior, or
-downstream integration.
+exit report. Task 29 re-runs it for the post-audit kernel F1/F2/F6 consumer
+conformance update. These audit edits change no Rust production source
+behavior, public API, `.miz` fixture, expectation, language specification,
+backend route, kernel check, proof policy, artifact witness, cache behavior,
+or downstream integration.
 
 ## Scope And Method
 
@@ -46,23 +47,23 @@ behavior is the classified external/deferred work already recorded in
 
 | Document | Synchronized content checked | Result |
 |---|---|---|
-| `00.crate_plan.md` | Crate responsibility, authority order, design/source inventory, known gaps, task decomposition through task 28, hard gates, and verification expectations. | Synchronized. |
-| `crate_exit_report.md` | Task ledger, hard gates, quality score 94/100, score breakdown, review results, ATP-CLOSEOUT gaps, verification, unrun proof/cache command rationale, and next-phase handoff. | Synchronized. |
+| `00.crate_plan.md` | Crate responsibility, authority order, design/source inventory, known gaps, task decomposition through task 29, hard gates, and verification expectations. | Synchronized. |
+| `crate_exit_report.md` | Task ledger through task 29, hard gates, quality score 94/100, score breakdown, review results, ATP-CLOSEOUT gaps, task-29 verification, unrun proof/cache/extraction command rationale, and next-phase handoff. | Synchronized. |
 | `problem.md` | Backend-neutral `AtpProblem` data shape, logic profiles, formula/provenance/type-guard ownership, deterministic identity, prohibited trusted material, planned tests, and public enum inventory. | Synchronized. |
-| `translator.md` | Explicit `VcIr` / kernel-handoff projection inputs, declaration/formula materialization, fail-closed unsupported premise classes, proof-hint non-pruning, deterministic ordering, planned tests, and public enum inventory. | Synchronized. |
+| `translator.md` | Explicit `VcIr` / kernel-handoff projection inputs, declaration/formula materialization, fail-closed unsupported premise classes, task-29 F1/F2/F6 consumer boundary, proof-hint non-pruning, deterministic ordering, planned tests, and public enum inventory. | Synchronized. |
 | `property_encoding.md` | Axiom-form property projection, generated binder rows, provenance and symbol-map requirements, native-declaration deferral, planned tests, and public enum inventory. | Synchronized. |
 | `tptp_encoder.md` | Deterministic FOF emission, label and symbol metadata, name mangling, unsupported typed/native/backend routes, planned tests, and public enum inventory. | Synchronized. |
 | `smtlib_encoder.md` | Deterministic uninterpreted SMT-LIB emission, fixed universe sort, assertion metadata, unsupported theory/native/backend routes, planned tests, and public enum inventory. | Synchronized. |
-| `backend.md` | Generic backend runner, command fingerprints, resource limits, run metadata, candidate-evidence-only `Proved`, prohibited trusted backend material, failure semantics, and public enum inventory. | Synchronized. |
+| `backend.md` | Generic backend runner, command fingerprints, resource limits, run metadata, candidate-evidence-only `Proved`, task-29 non-inference of polarity/context/imported projection from backend output, prohibited trusted backend material, failure semantics, and public enum inventory. | Synchronized. |
 | `portfolio.md` | Policy-neutral planning, no-early-stop collection, candidate/evidence-set ordering, fail-closed result matching, downstream proof-policy boundary, determinism suite, task-25 deferred completion-order gate, and public enum inventory. | Synchronized. |
 | `module_boundary_audit.md` | Task-27 private test module split, layout inventory, no public API change, no production behavior change, no new ATP-AUDIT gap, and unchanged external/deferred follow-ups. | Synchronized. |
-| `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, ATP-AUDIT gap register including task-25 G005, task-26 Architecture-22 follow-up result, task-27 private test module split, `ProofWitnessRef` / `VerifiedArtifact` artifact-surface acknowledgement, and no source/spec drift classification. | Synchronized. |
-| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, task-24/task-25/task-26/task-27/task-28 sync edits, and remaining external/deferred work. | Synchronized by this paired audit document. |
-| `todo.md` | Ordered task list, completed tasks through task 28, deferred task 15/16 status, public enum task status, source/spec audit status, task-25 dependency-gap status, task-26 follow-up-audit status, task-27 layout-refactor status, task-28 closeout status, and verification expectations. | Synchronized. |
+| `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, ATP-AUDIT gap register including task-25 G005 and task-29 G001/G003 linkage, task-26 Architecture-22 follow-up result, task-27 private test module split, task-29 F1/F2/F6 consumer audit, `ProofWitnessRef` / `VerifiedArtifact` artifact-surface acknowledgement, and no source/spec drift classification. | Synchronized. |
+| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, task-24/task-25/task-26/task-27/task-28/task-29 sync edits, and remaining external/deferred work. | Synchronized by this paired audit document. |
+| `todo.md` | Ordered task list, completed tasks through task 29, deferred task 15/16 status, public enum task status, source/spec audit status, task-25 dependency-gap status, task-26 follow-up-audit status, task-27 layout-refactor status, task-28 closeout status, task-29 conformance/deferred split, and verification expectations. | Synchronized. |
 
 ## Classification
 
-Task 24 and its task-26/task-27/task-28 re-runs record no new `spec_gap`,
+Task 24 and its task-26/task-27/task-28/task-29 re-runs record no new `spec_gap`,
 `test_gap`, `design_drift`, `source_drift`, `source_undocumented_behavior`,
 `test_expectation_drift`, `boundary_violation`, `repo_metadata_conflict`, or
 bilingual drift. Existing classified records remain:
@@ -78,7 +79,9 @@ bilingual drift. Existing classified records remain:
   output, proof-policy selection integration, proof-cache integration, and real
   artifact witness publication remain external.
 - `deferred`: active `.miz` advanced-semantics execution and source-derived ATP extraction
-  remain outside the current metadata-only corpus fixture.
+  remain outside the current metadata-only corpus fixture. The task-29 joint
+  kernel-corpus-through-ATP-candidate execution is deferred for the same
+  source-derived extraction reason.
 - `deferred`: TPTP typed/CNF/include paths, SMT arithmetic/sorted signatures,
   solver options, proof commands, native declarations, and backend-native
   shortcuts remain unavailable until paired specs and tests exist.
@@ -160,3 +163,17 @@ validation, but this ATP milestone still does not consume proof/cache APIs;
 `mizar-proof` is formal but not consumed by this ATP milestone, so missing
 integrations are recorded as external_dependency_gap /
 deferred instead of local proof-policy placeholders.
+
+## Task 29 Sync Edits
+
+Task 29 re-runs the bilingual sync audit for the post-audit kernel F1/F2/F6
+consumer conformance update. The paired TODO, crate plan, translator spec,
+backend spec, source/spec audit, this bilingual audit, and crate exit report
+now state that crate-owned conformance is complete while joint
+kernel-corpus-through-ATP-candidate execution remains
+`external_dependency_gap` / `deferred` until real source-derived extraction and
+backend-output candidate extraction exist.
+
+The paired docs and Rust regressions add no production behavior, public API,
+fake payload, placeholder runner, expectation rebaseline, kernel call, proof
+policy, witness/cache output, trusted backend material, or new ATP-AUDIT gap.

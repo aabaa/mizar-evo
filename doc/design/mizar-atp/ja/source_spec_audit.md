@@ -6,11 +6,13 @@
 Task 23 は public-enum policy gate 後の現在の `mizar-atp` public surface と
 仕様が約束する挙動を監査する。Task 26 は task-25 Architecture-22 portfolio
 completion-order contract について、この audit を再実行する。Task 27 は private test
-module split について layout portion を再実行する。これらの audit は source behavior、
-public API、`.miz` fixture、expectation、language specification、backend route、
-kernel check、proof policy、artifact witness、cache behavior を変更しない。まだ利用
-できない挙動は、捏造したり現在の実装都合を normative にしたりせず、明示的な
-`external_dependency_gap` または `deferred` work として記録する。
+module split について layout portion を再実行する。Task 29 は post-audit kernel
+F1/F2/F6 consumer contract について translator/backend evidence-boundary portion を
+再実行する。これらの audit は production source behavior、public API、`.miz` fixture、
+expectation、language specification、backend route、kernel check、proof policy、
+artifact witness、cache behavior を変更しない。まだ利用できない挙動は、捏造したり
+現在の実装都合を normative にしたりせず、明示的な `external_dependency_gap` または
+`deferred` work として記録する。
 
 ## Scope And Method
 
@@ -127,6 +129,7 @@ Public entry functions:
 |---|---|---|---|
 | Translation は explicit public `VcIr` / kernel-handoff projection payload を消費し、deterministic ordering で declaration、type guard、symbol map、provenance、axiom、conjecture を構築する。 | `translate_declarations`、`translate_problem`、projection validation / materialization helper。 | declaration ordering、formula materialization、imported formula、generated fact、deterministic shuffle tests。 | explicit projection payload 向けに実装済み。 |
 | Unsupported checker-owned / type-predicate premise family と malformed / duplicate projection input は ATP が発明せず fail closed する。 | translator validation と error path。 | unsupported checker-owned/type-predicate、missing/malformed/duplicate projection、formula fingerprint mismatch、profile gate tests。 | 実装済み。source-derived extraction は external のまま。 |
+| Post-audit kernel contract consumption は F1/F2/F6 について fail-closed を保つ: proof-obligation final-goal polarity は refutation でなければならず、非 import source binding は VC handoff identity に一致し、imported fact は kernel-validated statement projection に一致しなければならない。 | `validate_formula_handoff`、`validate_formula_source`、`validate_goal_source`、imported-projection metadata check。 | `task_29_consistency_polarity_proof_obligation_is_not_translated` は ATP が invalid polarity handoff を受け取る前の public upstream handoff rejection を cover する。`task_29_relabelled_local_hypothesis_is_not_translated` は ATP translation rejection を cover する。既存 imported-projection mismatch tests は F6 を cover する。 | explicit VC/handoff projection payload 向けに実装済み。private invalid-polarity handoff case は public builder が reject するため source audit が cover する。source-derived joint corpus execution は external/deferred のまま。 |
 | Proof hint と premise restriction は obligation を prune したり証明したりしない。 | translation input validation の proof-hint handling。 | proof-hint restriction tests。 | 実装済み。 |
 | Public enum は downstream forward-compatible である。 | public enum の `#[non_exhaustive]`。 | `atp_public_enums_are_non_exhaustive_and_documented`。 | task 22 で guard 済み。 |
 
@@ -253,6 +256,7 @@ Public entry functions:
 | Crate scaffolding、dependency boundary、module export、spec-backed file set | `Cargo.toml`、`src/lib.rs`、`tests/lint_policy.rs`; manifest、dependency、module-export、crate-file、paired-spec、public API allowlist tests が guard する。 |
 | Formula/substitution candidate production は `mizar-kernel` が check するまで untrusted のままである | `backend.rs` と `portfolio.rs` の candidate record と prohibited trusted-material lint tests。kernel acceptance API は呼ばない。 |
 | 同一 public `VcIr` input は deterministic ATP problem、concrete encoding、mock backend classification、portfolio candidate order を生成する | `crates/mizar-atp/tests/determinism_suite.rs`; `identical_vcir_inputs_produce_identical_problem_encodings_and_candidate_order`。 |
+| Post-audit kernel F1/F2/F6 consumer conformance は invalid candidate を捏造しない | `crates/mizar-atp/src/translator/tests.rs`; task-29 upstream polarity rejection、ATP local-source rejection、既存 imported-projection tests。`src/translator.rs` source audit は private invalid-handoff polarity guard を cover する。real-output extractor や source-derived runner は導入しない。 |
 | Metadata-only advanced-semantics corpus anchor は active source-derived extraction を捏造しない | `crates/mizar-atp/tests/mock_backend_corpus.rs` と `tests/property/atp_mock_backend_integration_001.*`; active `.miz` runner は deferred のまま。 |
 | Public enum forward compatibility | source attribute、EN/JA module inventory、`atp_public_enums_are_non_exhaustive_and_documented`。 |
 
@@ -313,13 +317,44 @@ Audit result: 新しい `source_drift`、`design_drift`、
 `repo_metadata_conflict`、追加 `ATP-AUDIT-*` follow-up は見つからなかった。No new
 ATP-AUDIT gap is required.
 
+## Task 29 Post-Audit Kernel Contract Consumer Audit
+
+Task 29 は kernel F1/F2/F6 evidence contract の ATP consumer 側について
+source/spec audit を再実行した。
+
+source/spec result:
+
+- `src/translator.rs` は `AtpProblem` construction の前に、VC kernel handoff の
+  final-goal polarity が `AssertFalseForRefutation` であることを引き続き要求する。
+  Public invalid-polarity handoff は VC handoff builder 経由では構築できないため、
+  executable task-29 polarity regression は upstream public route を検査し、この audit が
+  ATP 側 guard を記録する。
+- 非 import の local、cited、generated premise projection は VC handoff の source
+  class、source identity、formula fingerprint、provenance payload に一致しなければならず、
+  producer が relabel した label は fail closed する。
+- imported fact は kernel task 33 の statement projection payload、required proof
+  status、formula fingerprint、provenance payload、formula context requirement に
+  引き続き束縛される。
+- `src/backend.rs` は backend observation を untrusted candidate evidence としてだけ扱う。
+  goal polarity、context identity、imported projection validity、kernel acceptance、
+  proof policy、witness output、cache reuse、trusted backend proof material を推測しない。
+
+Audit result: 新しい `source_drift`、`design_drift`、
+`source_undocumented_behavior`、`test_expectation_drift`、`boundary_violation`、
+`repo_metadata_conflict`、追加 `ATP-AUDIT-*` follow-up は見つからなかった。No new
+ATP-AUDIT gap is required。
+`fail_certificate_sat_goal_polarity_mismatch_001` と
+`fail_certificate_symbols_unverifiable_local_hypothesis_001` を source-derived
+ATP-built candidate 経由で joint 実行する部分は、real extraction と runner support が
+存在するまで ATP-AUDIT-G001 と ATP-AUDIT-G003 の下に残る。
+
 ## Remaining Classified Follow-Ups
 
 | ID | Class | Evidence | Owner | Unblock condition | Target follow-up / downstream phase |
 |---|---|---|---|---|---|
-| ATP-AUDIT-G001 | `external_dependency_gap` | task 15 と 16 は、concrete backend output を kernel-parseable formula/substitution candidate payload に map する paired real-output extraction spec/source module がなく、supported backend executable も verification で利用できなかったことを記録する。 | `mizar-atp` と backend-specific spec。 | EN/JA extraction spec、guarded real-backend fixture route、backend proof material を除外する explicit candidate schema mapping を追加する。 | concrete backend route と polarity fixture task を再開する。fake parser や trusted backend proof object は追加しない。 |
+| ATP-AUDIT-G001 | `external_dependency_gap` | task 15 と 16 は、concrete backend output を kernel-parseable formula/substitution candidate payload に map する paired real-output extraction spec/source module がなく、supported backend executable も verification で利用できなかったことを記録する。task 29 はさらに、joint kernel-corpus polarity/local-hypothesis fixture を ATP-built candidate 経由で実行するには real candidate route が必要であることを記録する。 | `mizar-atp` と backend-specific spec。 | EN/JA extraction spec、guarded real-backend fixture route、backend proof material を除外する explicit candidate schema mapping を追加する。 | concrete backend route と polarity fixture task を再開する。fake parser や trusted backend proof object は追加しない。 |
 | ATP-AUDIT-G002 | `external_dependency_gap` | `mizar-artifact` は既に formula/substitution kernel evidence 向け `ProofWitnessRef` schema version `2.0` と `VerifiedArtifact` witness-reference validation を所有し、`mizar-proof` は proof-policy metadata を所有し、`mizar-cache` は現在 cache validation を所有するが、real ATP producer output、proof-policy selection integration、proof-cache integration、concrete witness publication は未接続である。 | `mizar-proof`、`mizar-cache`、`mizar-artifact`、integration owner。 | owner spec と workspace crate が、明示的な integration task を通じて proof-policy winner selection、real witness publication、cache promotion、reuse metadata consumer を checked ATP/kernel evidence に接続する。 | proof policy、real artifact witness publication、proof-cache promotion は `mizar-atp` の外に保つ。 |
-| ATP-AUDIT-G003 | `deferred` | task 20 は metadata-only `advanced_semantics` corpus fixture を使う。active `.miz` advanced-semantics runner または source-derived ATP extraction path は `mizar-test` に存在しない。 | `mizar-test` / source extraction owner。 | active staged runner support と source-derived obligation-to-ATP extraction contract を追加する。 | ATP trust boundary を変えずに metadata-only coverage を active corpus coverage へ置き換える。 |
+| ATP-AUDIT-G003 | `deferred` | task 20 は metadata-only `advanced_semantics` corpus fixture を使う。active `.miz` advanced-semantics runner または source-derived ATP extraction path は `mizar-test` に存在しない。task 29 は kernel-corpus-through-ATP-candidate 部分を同じ source-derived extraction 理由で deferred に保つ。 | `mizar-test` / source extraction owner。 | active staged runner support と source-derived obligation-to-ATP extraction contract を追加する。 | ATP trust boundary を変えずに metadata-only coverage を active corpus coverage へ置き換える。 |
 | ATP-AUDIT-G004 | `deferred` | TPTP typed/CNF/include path、SMT arithmetic/sorted signature/solver option/proof command、native declaration、backend-native shortcut は encoder spec と test により意図的に reject または未実装である。 | `mizar-atp` encoder owner。 | 各 concrete extension に paired EN/JA spec と focused test を追加する。 | backend-neutral problem contract を untrusted/fail-closed に保ったまま concrete encoder を拡張する。 |
 | ATP-AUDIT-G005 | `external_dependency_gap` | task 25 は portfolio completion-order independence gate を再評価する。Portfolio collection は early-stop proof finality、release-policy winner selection、kernel checking、proof policy をまだ行わず、task-18/task-21 は shuffled completion order 下の no-early-stop deterministic handoff だけを cover する。 | `mizar-proof` / proof-policy owner と `mizar-atp` portfolio follow-up。 | 専用 ATP/proof integration task が `mizar-proof` の finality、winner selection、tie-breaking、candidate-displacement contract を消費する。 | その integration が存在した後にだけ portfolio completion-order independence gate を再開する。`mizar-atp` に mock early-stop oracle、placeholder proof-policy adapter、accepted state、kernel call、witness/cache output、trusted backend proof material を追加しない。 |
 

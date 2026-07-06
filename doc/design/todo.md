@@ -98,10 +98,10 @@ is its task 1). "Next work" points into the
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec-decision wave complete | steps 4, 5 (tasks 45-48) | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete | step 4 (tasks 27-30) | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | step 5; tasks 27-29 resolved | [todo](./mizar-vc/en/todo.md) |
-| mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | steps 3, 4 (tasks 33-35); task 32 parked; tasks 30-31 resolved | [todo](./mizar-kernel/en/todo.md) |
-| mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete | steps 3 (task 29), 7 | [todo](./mizar-atp/en/todo.md) |
-| mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete | steps 3 (task 21), 7 | [todo](./mizar-proof/en/todo.md) |
-| mizar-cache | Cache keys, fingerprints, proof reuse, cluster-db storage | [x] internal-cache milestone complete | steps 3 (task 24), 7 | [todo](./mizar-cache/en/todo.md) |
+| mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 (task 35); task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
+| mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete through task 29 | step 7 | [todo](./mizar-atp/en/todo.md) |
+| mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete through task 21 | step 7 | [todo](./mizar-proof/en/todo.md) |
+| mizar-cache | Cache keys, fingerprints, proof reuse, cluster-db storage | [x] internal-cache milestone complete through task 24 | step 7 | [todo](./mizar-cache/en/todo.md) |
 | mizar-artifact | Artifact schemas, summaries, store, manifest transactions | [~] schemas/store/manifest complete through task 24 | step 6 (task 17) | [todo](./mizar-artifact/en/todo.md) |
 | mizar-ir | IR storage, snapshot handles, sealed output blobs, projections | [x] storage/projection milestone complete | step 6 | [todo](./mizar-ir/en/todo.md) |
 | mizar-build | Phase 0 planning, task graph, scheduler, cache seam, commit boundary | [x] milestone complete | step 6 | [todo](./mizar-build/en/todo.md) |
@@ -174,7 +174,7 @@ checker code semantics change in this step.
 Exit: every SSA decision recorded in bilingual spec text with its rejection
 corpus seeds; checker/core implementation tasks in step 4 are unblocked.
 
-### Step 3 — Kernel-contract completion and audit-consumer alignment [ ]
+### Step 3 — Kernel-contract completion and audit-consumer alignment [x]
 
 Finish the remaining kernel-audit producer/consumer follow-ups so the July
 audit inventory is closed except the parked and externally paced rows. Depends
@@ -192,8 +192,11 @@ on step 1.
    covers the extended kernel-evidence contract (F1/F2; needs proof 21).
 6. [x] [mizar-artifact task 24](./mizar-artifact/en/todo.md) — proof-witness
    schema re-check against the audit follow-ups.
-7. [ ] [mizar-atp task 29](./mizar-atp/en/todo.md) — candidate-evidence
+7. [x] [mizar-atp task 29](./mizar-atp/en/todo.md) — candidate-evidence
    conformance to the post-audit kernel contract (F1/F2/F6; needs kernel 33).
+   The crate-owned F1/F2/F6 consumer regressions are complete; the joint
+   source-derived kernel-corpus-through-ATP-candidate execution remains
+   classified as an external/deferred extraction gap rather than mocked.
 
 Exit: every July kernel-audit finding is implemented, parked with a recorded
 trigger (kernel 32), or explicitly waiting on step 4 (kernel 35).

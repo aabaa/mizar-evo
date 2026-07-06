@@ -331,6 +331,15 @@ unsat core, TSTP trace, resolution trace, backend log, backend-reported
 proof witness drafts, artifact status, and cache promotion belong to
 downstream tasks/crates.
 
+Task 29 keeps the post-audit F1/F2/F6 kernel contract upstream of backend
+classification. The backend classifier may compare candidate target bindings,
+encoded-problem hashes, provenance hashes, formula labels, and symbol bindings,
+but it must not invent or infer goal polarity, context-identity payloads, or
+imported-statement projections from backend output. Candidates that lack the
+translator/VC-handoff evidence required by the kernel contract remain
+non-candidates until a real extractor can produce explicit formula/substitution
+payloads.
+
 ## Failure Semantics
 
 - `Timeout`: the timeout budget elapsed and the child process was terminated or

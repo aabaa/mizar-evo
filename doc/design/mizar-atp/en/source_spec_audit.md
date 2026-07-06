@@ -6,12 +6,13 @@
 Task 23 audits the current `mizar-atp` public surface and promised behavior
 after the public-enum policy gate. Task 26 re-runs this audit for the task-25
 Architecture-22 portfolio completion-order contract. Task 27 re-runs the
-layout portion for the private test module split. These audits change no
-source behavior, public API, `.miz` fixture, expectation, language
-specification, backend route, kernel check, proof policy, artifact witness, or
-cache behavior. Remaining unavailable behavior is recorded as explicit
-`external_dependency_gap` or `deferred` work instead of being fabricated or
-treated as normative.
+layout portion for the private test module split. Task 29 re-runs the
+translator/backend evidence-boundary portion for the post-audit kernel F1/F2/F6
+consumer contract. These audits change no production source behavior, public
+API, `.miz` fixture, expectation, language specification, backend route,
+kernel check, proof policy, artifact witness, or cache behavior. Remaining
+unavailable behavior is recorded as explicit `external_dependency_gap` or
+`deferred` work instead of being fabricated or treated as normative.
 
 ## Scope And Method
 
@@ -131,6 +132,7 @@ Public entry functions:
 |---|---|---|---|
 | Translation consumes explicit public `VcIr` / kernel-handoff projection payloads and builds declarations, type guards, symbol maps, provenance, axioms, and conjecture with deterministic ordering. | `translate_declarations`, `translate_problem`, projection validation and materialization helpers. | declaration ordering, formula materialization, imported formula, generated fact, and deterministic shuffle tests. | Implemented for explicit projection payloads. |
 | Unsupported checker-owned/type-predicate premise families and malformed or duplicate projection inputs fail closed instead of being invented by ATP. | translator validation and error paths. | unsupported checker-owned/type-predicate, missing/malformed/duplicate projection, formula fingerprint mismatch, and profile gate tests. | Implemented; source-derived extraction remains external. |
+| Post-audit kernel contract consumption remains fail-closed for F1/F2/F6: proof-obligation final-goal polarity must be refutation, non-imported source bindings must match the VC handoff identity, and imported facts must match the kernel-validated statement projection. | `validate_formula_handoff`, `validate_formula_source`, `validate_goal_source`, and imported-projection metadata checks. | `task_29_consistency_polarity_proof_obligation_is_not_translated` covers the public upstream handoff rejection before ATP receives an invalid polarity handoff; `task_29_relabelled_local_hypothesis_is_not_translated` covers ATP translation rejection; existing imported-projection mismatch tests cover F6. | Implemented for explicit VC/handoff projection payloads; the private invalid-polarity handoff case is covered by source audit because public builders reject it; source-derived joint corpus execution remains external/deferred. |
 | Proof hints and premise restrictions do not prune or prove obligations. | proof-hint handling in translation input validation. | proof-hint restriction tests. | Implemented. |
 | Public enums are downstream forward-compatible. | `#[non_exhaustive]` on public enums. | `atp_public_enums_are_non_exhaustive_and_documented`. | Guarded by task 22. |
 
@@ -257,6 +259,7 @@ Public entry functions:
 | Crate scaffolding, dependency boundary, module exports, and spec-backed file set | `Cargo.toml`, `src/lib.rs`, and `tests/lint_policy.rs`; guarded by manifest, dependency, module-export, crate-file, paired-spec, and public API allowlist tests. |
 | Formula/substitution candidate production stays untrusted until `mizar-kernel` checks it | `backend.rs` and `portfolio.rs` candidate records plus prohibited trusted-material lint tests; no kernel acceptance API is called. |
 | Identical public `VcIr` inputs produce deterministic ATP problems, concrete encodings, mock backend classification, and portfolio candidate order | `crates/mizar-atp/tests/determinism_suite.rs`; `identical_vcir_inputs_produce_identical_problem_encodings_and_candidate_order`. |
+| Post-audit kernel F1/F2/F6 consumer conformance does not fabricate invalid candidates | `crates/mizar-atp/src/translator/tests.rs`; task-29 upstream polarity rejection, ATP local-source rejection, and existing imported-projection tests; `src/translator.rs` source audit covers the private invalid-handoff polarity guard. No real-output extractor or source-derived runner is introduced. |
 | Metadata-only advanced-semantics corpus anchor does not fake active source-derived extraction | `crates/mizar-atp/tests/mock_backend_corpus.rs` and `tests/property/atp_mock_backend_integration_001.*`; active `.miz` runner remains deferred. |
 | Public enum forward compatibility | Source attributes, EN/JA module inventories, and `atp_public_enums_are_non_exhaustive_and_documented`. |
 
@@ -325,13 +328,45 @@ Audit result: no new `source_drift`, `design_drift`,
 `boundary_violation`, `repo_metadata_conflict`, or additional `ATP-AUDIT-*`
 follow-up was found. No new ATP-AUDIT gap is required.
 
+## Task 29 Post-Audit Kernel Contract Consumer Audit
+
+Task 29 re-ran the source/spec audit for ATP's consumer side of the kernel
+F1/F2/F6 evidence contract.
+
+Source/spec result:
+
+- `src/translator.rs` continues to require `AssertFalseForRefutation` final-goal
+  polarity from the VC kernel handoff before constructing an `AtpProblem`.
+  Public invalid-polarity handoffs cannot be constructed through the VC
+  handoff builder; the executable task-29 polarity regression therefore checks
+  that upstream public route while this audit records the ATP-side guard.
+- Non-imported local, cited, and generated premise projections must match the
+  VC handoff source class, source identity, formula fingerprint, and provenance
+  payload; producer-relabeled labels fail closed.
+- Imported facts remain tied to kernel task 33's statement projection payload,
+  required proof status, formula fingerprint, provenance payload, and formula
+  context requirement.
+- `src/backend.rs` still treats backend observations as untrusted candidate
+  evidence only. It does not infer goal polarity, context identity, imported
+  projection validity, kernel acceptance, proof policy, witness output, cache
+  reuse, or trusted backend proof material.
+
+Audit result: no new `source_drift`, `design_drift`,
+`source_undocumented_behavior`, `test_expectation_drift`,
+`boundary_violation`, `repo_metadata_conflict`, or additional `ATP-AUDIT-*`
+follow-up was found. No new ATP-AUDIT gap is required. The joint execution of
+`fail_certificate_sat_goal_polarity_mismatch_001` and
+`fail_certificate_symbols_unverifiable_local_hypothesis_001` through
+source-derived ATP-built candidates remains covered by ATP-AUDIT-G001 and
+ATP-AUDIT-G003 until real extraction and runner support exist.
+
 ## Remaining Classified Follow-Ups
 
 | ID | Class | Evidence | Owner | Unblock condition | Target follow-up / downstream phase |
 |---|---|---|---|---|---|
-| ATP-AUDIT-G001 | `external_dependency_gap` | Tasks 15 and 16 record that no paired real-output extraction spec/source module maps concrete backend output to kernel-parseable formula/substitution candidate payloads, and supported backend executables were unavailable in verification. | `mizar-atp` with backend-specific specs. | Add EN/JA extraction specs, guarded real-backend fixture routes, and explicit candidate schema mapping that excludes backend proof material. | Reopen concrete backend route and polarity fixture tasks; do not add fake parsers or trusted backend proof objects. |
+| ATP-AUDIT-G001 | `external_dependency_gap` | Tasks 15 and 16 record that no paired real-output extraction spec/source module maps concrete backend output to kernel-parseable formula/substitution candidate payloads, and supported backend executables were unavailable in verification. Task 29 additionally records that joint kernel-corpus polarity/local-hypothesis fixtures cannot be driven through ATP-built candidates without that real candidate route. | `mizar-atp` with backend-specific specs. | Add EN/JA extraction specs, guarded real-backend fixture routes, and explicit candidate schema mapping that excludes backend proof material. | Reopen concrete backend route and polarity fixture tasks; do not add fake parsers or trusted backend proof objects. |
 | ATP-AUDIT-G002 | `external_dependency_gap` | `mizar-artifact` already owns `ProofWitnessRef` schema version `2.0` and `VerifiedArtifact` witness-reference validation for formula/substitution kernel evidence, `mizar-proof` owns proof-policy metadata, and `mizar-cache` now owns cache validation; real ATP producer output, proof-policy selection integration, proof-cache integration, and concrete witness publication are still not connected. | `mizar-proof`, `mizar-cache`, `mizar-artifact`, and integration owners. | Owner specs and workspace crates must connect proof-policy winner selection, real witness publication, cache promotion, and reuse metadata consumers to checked ATP/kernel evidence through explicit integration tasks. | Keep proof policy, real artifact witness publication, and proof-cache promotion outside `mizar-atp`. |
-| ATP-AUDIT-G003 | `deferred` | Task 20 uses a metadata-only `advanced_semantics` corpus fixture; no active `.miz` advanced-semantics runner or source-derived ATP extraction path exists in `mizar-test`. | `mizar-test` / source extraction owners. | Add active staged runner support and source-derived obligation-to-ATP extraction contracts. | Replace metadata-only coverage with active corpus coverage without changing ATP trust boundaries. |
+| ATP-AUDIT-G003 | `deferred` | Task 20 uses a metadata-only `advanced_semantics` corpus fixture; no active `.miz` advanced-semantics runner or source-derived ATP extraction path exists in `mizar-test`. Task 29 keeps the kernel-corpus-through-ATP-candidate portion deferred for the same source-derived extraction reason. | `mizar-test` / source extraction owners. | Add active staged runner support and source-derived obligation-to-ATP extraction contracts. | Replace metadata-only coverage with active corpus coverage without changing ATP trust boundaries. |
 | ATP-AUDIT-G004 | `deferred` | TPTP typed/CNF/include paths, SMT arithmetic/sorted signatures/solver options/proof commands, native declarations, and backend-native shortcuts are intentionally rejected or unimplemented by encoder specs and tests. | `mizar-atp` encoder owners. | Add paired EN/JA specs and focused tests for each concrete extension. | Extend concrete encoders only when the backend-neutral problem contract remains untrusted and fail-closed. |
 | ATP-AUDIT-G005 | `external_dependency_gap` | Task 25 re-evaluates the portfolio completion-order independence gate. Portfolio collection still does not perform early-stop proof finality, release-policy winner selection, kernel checking, or proof policy; task-18/task-21 cover only no-early-stop deterministic handoff under shuffled completion order. | `mizar-proof` / proof-policy owner with `mizar-atp` portfolio follow-up. | A dedicated ATP/proof integration task must consume `mizar-proof` finality, winner selection, tie-breaking, and candidate-displacement contracts. | Reopen the portfolio completion-order independence gate only after that integration exists; do not add a mock early-stop oracle, placeholder proof-policy adapter, accepted state, kernel call, witness/cache output, or trusted backend proof material in `mizar-atp`. |
 

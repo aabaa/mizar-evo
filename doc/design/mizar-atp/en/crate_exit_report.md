@@ -20,11 +20,17 @@ stop classifying it as a placeholder. The ATP milestone still does not depend
 on `mizar-cache`, run cache lookup, validate proof reuse, or promote cache
 records.
 
+Post-kernel-audit consumer correction: task 29 records ATP's crate-owned
+consumer conformance to the post-audit kernel F1/F2/F6 contract. It adds
+focused translator regressions and documentation only; the report continues to
+classify source-derived ATP-built candidate execution of the named kernel
+corpus fixtures as external/deferred until real extraction exists.
+
 ## Scope
 
 Milestone scope:
 
-- Build the `mizar-atp` workspace crate from task 1 through task 28.
+- Build the `mizar-atp` workspace crate from task 1 through task 29.
 - Own phase 13 candidate production for `VcStatus::NeedsAtp` obligations:
   backend-neutral `AtpProblem` construction, deterministic TPTP/SMT-LIB
   encodings, generic backend process execution, mock candidate classification,
@@ -101,6 +107,7 @@ Excluded:
 | 26 | `5dc6ab594c2ced35d8afc74e2c01707929a569d6` | `docs(mizar-atp-task-26): audit architecture order gate` |
 | 27 | `f896d48f3ea4f915084343a4f88007b77f9941cb` | `refactor(mizar-atp-task-27): split private test modules` |
 | 28 | `be55e0e80f8b6e5a0079b40554c4fa56c9d2fda7` | `docs(mizar-atp-task-28): add crate exit report` |
+| 29 | `pending self-hash` | `test(mizar-atp-task-29): enforce kernel contract handoff` |
 
 ## Hard Gates
 
@@ -108,11 +115,11 @@ Excluded:
 |---|---|---|
 | Specification consistency | passed | Paired module specs, source/spec audit, bilingual sync audit, module-boundary audit, and closeout review record no unresolved blocking/high specification inconsistency. |
 | Source behavior documented or deferred | passed | Public modules, public entry functions, public enums, and promised behavior are traced in `source_spec_audit.md`; unavailable real-backend and downstream behavior is classified instead of mocked. |
-| Milestone-owned coverage | passed | Crate-local tests cover problem validation, translation, property encoding, concrete encoders, backend runner behavior, portfolio collection, metadata projection, public enum policy, mock corpus coverage, and determinism. |
-| Test expectation integrity | passed | No existing `.miz` fixture or expectation sidecar was changed to match implementation behavior. Active source-derived ATP execution remains deferred. |
-| Design/source synchronization | passed | Source/spec, bilingual, Architecture-22 follow-up, and module-boundary audits match the source layout and public module table. |
+| Milestone-owned coverage | passed | Crate-local tests cover problem validation, translation including task-29 upstream F1 polarity rejection and ATP F2 local-source rejection, property encoding, concrete encoders, backend runner behavior, portfolio collection, metadata projection, public enum policy, mock corpus coverage, and determinism. |
+| Test expectation integrity | passed | No existing `.miz` fixture or expectation sidecar was changed to match implementation behavior. Active source-derived ATP execution and the task-29 joint kernel-corpus-through-ATP-candidate path remain deferred. |
+| Design/source synchronization | passed | Source/spec, bilingual, Architecture-22 follow-up, module-boundary, and task-29 consumer-boundary audits match the source layout and public module table. |
 | Boundary discipline | passed | `mizar-atp` produces untrusted candidates only; it does not call the kernel, run SAT checking, accept proofs, select trusted winners, publish witnesses, or promote cache records. |
-| Verification | passed | Crate-local Rust commands, broad workspace commands, and diff checks passed before the closeout commit. |
+| Verification | passed | Historical task-28 crate-local Rust commands, broad workspace commands, and diff checks passed before the closeout commit. Task-29 focused, crate-local, kernel, clippy, workspace, and diff verification also passed before this update commit. |
 | Residual risk | passed with classified items | Remaining risks are listed below as `external_dependency_gap` or `deferred`. |
 
 ## Score Breakdown
@@ -148,11 +155,11 @@ are outside this crate's current milestone and are explicitly classified.
 
 | ID | Class | Reason | Owner / unblock condition |
 |---|---|---|---|
-| ATP-CLOSEOUT-G001 | `external_dependency_gap` | No paired real-output extraction spec/source module maps concrete backend output to kernel-parseable formula/substitution candidate payloads, and no supported real backend executable route is verified in this environment. | Add backend-specific EN/JA extraction specs, guarded fixtures, and candidate mapping that excludes backend proof material before reopening tasks 15-16. |
+| ATP-CLOSEOUT-G001 | `external_dependency_gap` | No paired real-output extraction spec/source module maps concrete backend output to kernel-parseable formula/substitution candidate payloads, and no supported real backend executable route is verified in this environment. Task 29 also leaves the named kernel polarity/local-hypothesis corpus fixtures outside ATP-built candidate execution until this route exists. | Add backend-specific EN/JA extraction specs, guarded fixtures, and candidate mapping that excludes backend proof material before reopening tasks 15-16 or source-derived ATP candidate corpus execution. |
 | ATP-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-proof` is now the workspace proof-policy owner, but this ATP milestone still has no integration that calls its release-policy finality, deterministic winner selection, proof-status projection, or witness-selection APIs. | Wire `mizar-atp` to formal `mizar-proof` APIs only in a separate integration task; do not add proof policy to `mizar-atp`. |
 | ATP-CLOSEOUT-G003 | `external_dependency_gap` | `mizar-cache` is now the workspace cache owner, but this ATP milestone still has no integration that calls its proof-reuse validation, cache lookup, or policy-compatible reuse APIs. | Wire `mizar-atp` to formal `mizar-cache` APIs only in a separate integration task; cache reuse must never upgrade evidence. |
 | ATP-CLOSEOUT-G004 | `external_dependency_gap` / `deferred` | Real artifact witness publication and proof/cache consumer integration remain incomplete. `mizar-artifact` owns witness schema/projection, not ATP acceptance. | Downstream proof/cache/artifact owners connect checked kernel evidence to published witness refs with their own specs. |
-| ATP-CLOSEOUT-G005 | `deferred` | Active `.miz` advanced-semantics execution and source-derived ATP extraction are unavailable; task 20 uses metadata-only corpus anchors. | Add the staged runner and source extraction contracts before replacing metadata-only coverage with active corpus coverage. |
+| ATP-CLOSEOUT-G005 | `deferred` | Active `.miz` advanced-semantics execution and source-derived ATP extraction are unavailable; task 20 uses metadata-only corpus anchors, and task 29 keeps joint kernel-corpus-through-ATP-candidate execution deferred for the same reason. | Add the staged runner and source extraction contracts before replacing metadata-only coverage with active corpus coverage. |
 | ATP-CLOSEOUT-G006 | `deferred` | Typed TPTP/CNF/include routes, SMT arithmetic/sorted signatures/options/proof commands, native declarations, and backend-native shortcuts remain unsupported by current specs. | Add paired specs and tests for each concrete extension before implementation. |
 
 The stale task-28 statement that `mizar-proof` was a design-only non-workspace
@@ -188,8 +195,9 @@ No existing `.miz` fixtures or expectation sidecars were changed to match
 implementation behavior. Milestone-owned behavior is covered by Rust unit
 tests, integration tests, lint-policy guards, determinism tests, mock-backend
 corpus tests, source/spec audits, or explicit deferred gap records. Active
-source-derived semantic corpus coverage remains blocked by the external runner
-and extraction gaps listed above.
+source-derived semantic corpus coverage, including the task-29 joint
+kernel-corpus-through-ATP-candidate route, remains blocked by the external
+runner and extraction gaps listed above.
 
 ## Verification Commands
 
@@ -214,12 +222,28 @@ Post-closeout metadata correction verification:
   `git diff --check`, and `git diff --cached --check` before the correction
   commit.
 
+Task-29 verification update:
+
+- `cargo fmt --check` passed.
+- `cargo test -p mizar-atp task_29` passed.
+- `cargo test -p mizar-atp --test lint_policy` passed.
+- `cargo test -p mizar-atp` passed.
+- `cargo test -p mizar-kernel` passed.
+- `cargo clippy -p mizar-atp --all-targets --all-features -- -D warnings`
+  passed.
+- `cargo clippy --all-targets --all-features -- -D warnings` passed.
+- `cargo test` passed.
+- `git diff --check` passed before final staging.
+
 Unrun deferred commands:
 
 - Historical task-28 closeout did not run `cargo test -p mizar-cache` because
   `mizar-cache` was not yet a workspace member. After the formal mizar-cache
   scaffold, cache verification belongs to the mizar-cache task ledger and
   current full-workspace verification.
+- Task 29 does not run the named kernel corpus fixtures through ATP-built
+  candidates because no real source-derived ATP extraction route or
+  real-output candidate extractor exists.
 
 ## Next-Phase Handoff
 
@@ -228,14 +252,14 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Continue the evidence-pipeline correction after the mizar-atp task 28 closeout
-commit exists. First verify `git status --short` is clean and that
-`f896d48f3ea4f915084343a4f88007b77f9941cb` plus
-`be55e0e80f8b6e5a0079b40554c4fa56c9d2fda7` are in HEAD history. Use formal
-`mizar-cache` and `mizar-proof` APIs only in separate owner-approved
+Continue the evidence-pipeline correction after the mizar-atp task 29 commit
+exists. First verify `git status --short` is clean and that task 29 added only
+focused translator regressions plus paired documentation. Step 3 is complete;
+resume at Step 4 in `doc/design/todo.md` with `mizar-checker task 45`. Keep
+formal `mizar-cache` and `mizar-proof` APIs in separate owner-approved
 integration tasks, and do not move proof policy or cache validation into
-`mizar-atp`. Treat proof-cache validation, real backend output extraction, real
-artifact witness publication, and active source-derived ATP corpus execution as
-external_dependency_gap / deferred until their owner specs and integration
-tasks are ready.
+`mizar-atp`. Treat proof-cache validation, real backend output extraction,
+real artifact witness publication, and active source-derived ATP corpus
+execution as external_dependency_gap / deferred until their owner specs and
+integration tasks are ready.
 ```
