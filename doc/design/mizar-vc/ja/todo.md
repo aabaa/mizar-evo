@@ -379,7 +379,7 @@ kernel 受理境界の監査
 [mizar-kernel TODO](../../mizar-kernel/en/todo.md) にあり、以下はその対と
 なる producer タスクである。
 
-27. **kernel evidence handoff における明示的 goal polarity(kernel F1)。** [ ]
+27. **kernel evidence handoff における明示的 goal polarity(kernel F1)。** [x]
     - task-25 の handoff builder が emit する goal polarity を明記し、証明
       義務に対する `AssertTrueForConsistency` を禁止する: 証明義務の
       handoff はすべて refutation polarity を明示的に宣言し、builder は
@@ -395,6 +395,12 @@ kernel 受理境界の監査
       kernel 側 task 30 が存在すれば `cargo test -p mizar-kernel`。
     - 依存: 25; 対: mizar-kernel task 30。仕様: architecture 15、
       `kernel_evidence_handoff.md`; soundness_argument.md F1。
+    - Done in task 27: `KernelEvidenceHandoffInput` は explicit
+      `goal_polarity` を運ぶようになり、現在の各 `VcKind` は
+      `AssertFalseForRefutation` に対応し、proof obligation での
+      consistency polarity は `GoalPolarityMismatch` で fail closed する。
+      これは producer-side F1 handoff contract だけを閉じる。trusted
+      check-service acceptance binding は引き続き mizar-kernel task 30 が所有する。
 
 28. **非 import ソース束縛の context-identity payload(kernel F2)。** [ ]
     - local-hypothesis / cited-premise / generated-VC-fact の束縛が本当に

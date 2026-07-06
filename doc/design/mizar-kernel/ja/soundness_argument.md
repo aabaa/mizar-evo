@@ -362,8 +362,9 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   できる。本変更で修正: architecture 15(en/ja)は goal polarity を呼び出し
   側不変コンテキストの検査種別に束縛し、不一致を `context_mismatch` と
   した。コーパス: `fail_certificate_sat_goal_polarity_mismatch_001`。実装
-  追随は `mizar-kernel`(checker/タスク 28 面)と `mizar-vc` handoff(現状、
-  出力する polarity を明記していない)の後続タスク。
+  追随は checker-side B4 acceptance binding 向けの `mizar-kernel` task 30 に
+  属する。producer-side `mizar-vc` handoff の declaration/rejection gap は
+  `mizar-vc` task 27 で閉じた。
 - **F2(High、部分修正)。非 import ソース束縛は仕様上のコンテキストから
   検証不能。** `FormulaEvidenceContext` は imported axiom/theorem のみを
   運ぶ。local hypothesis・cited premise・generated VC fact のエントリは
@@ -430,10 +431,10 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   束縛する `FormulaEvidenceContext` 拡張が有力); (c) ソルバーステップ予算
   deferral の再訪(F3); (d) fingerprint 等値規則を解除する imported
   statement projection の仕様化(F6、`mizar-vc` と対)。
-- `doc/design/mizar-vc/en/todo.md`: 候補フォローアップ — (a) kernel
-  evidence handoff builder が出力する goal polarity の明記と、証明義務での
-  consistency polarity の禁止; (b) local/VC-fact 検証にカーネルが必要と
-  するコンテキスト同一性ペイロードの生成(F2 と対)。
+- `doc/design/mizar-vc/en/todo.md`: producer-side goal-polarity declaration
+  と consistency-polarity rejection は task 27 で解決済み。残る候補
+  フォローアップ — local/VC-fact 検証にカーネルが必要とする
+  コンテキスト同一性ペイロードの生成(F2 と対)。
 - `doc/design/mizar-test/en/`(本タスクの範囲外、報告): required
   soundness-case レジストリと layout/expectation 文書への訂正後経路 reason
   の追加(F7)。コーパスルート命名 drift(F8)は task 22 で解決済み。

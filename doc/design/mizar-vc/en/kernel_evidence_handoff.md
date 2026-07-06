@@ -15,6 +15,7 @@ The handoff maps a validated immutable `VcSet` and a selected `VcIr` into the
 material that the kernel checker can parse and check:
 
 - target VC binding;
+- explicit goal polarity bound to the selected obligation kind;
 - kernel profile;
 - symbol and variable manifests needed by kernel formula validation;
 - formula evidence entries for local hypotheses, cited premises, generated VC
@@ -98,6 +99,14 @@ The task-25 target VC fingerprint is specific to the kernel handoff and excludes
 diagnostic replay data can guide candidate production or explanations, but they
 do not block target binding and do not enter canonical evidence hash input.
 
+Task 27 makes the goal polarity an explicit producer input. The builder accepts
+only a polarity that matches the selected `VcIr` obligation kind before package
+assembly and canonical hash input construction. All currently implemented
+`VcKind` variants are proof obligations, so their required handoff polarity is
+`AssertFalseForRefutation`. A caller request pairing any current proof
+obligation with `AssertTrueForConsistency` is rejected fail-closed with
+`GoalPolarityMismatch`.
+
 ## Input Mapping
 
 The builder input is a validated `VcSet`, a selected `VcIr`, and optional
@@ -106,6 +115,7 @@ producer-owned records already computed by prior VC phases:
 | VC input | Kernel evidence mapping |
 |---|---|
 | `VcSet` schema, module, source, canonical VC fingerprint, and selected `VcIr` | `target_vc`, target provenance binding, and deterministic package identity. If a stable target binding cannot be computed, the builder fails closed. |
+| selected `VcIr.kind` and `KernelEvidenceHandoffInput.goal_polarity` | The builder enumerates every current VC kind and requires `AssertFalseForRefutation` for proof obligations. The validated explicit polarity is copied into `final_goal.polarity`; a consistency-polarity request fails before canonical evidence bytes or package hashes are built. Kernel-side acceptance binding remains owned by `mizar-kernel` task 30. |
 | `LocalContext` entries with formula refs | Formula evidence entries with local-hypothesis source bindings. Entries without stable formula payloads or provenance are recorded as missing payloads, not fabricated. |
 | `PremiseRef::LocalContext` and `PremiseRef::GeneratedFact` | References to the corresponding local-hypothesis or generated-VC-fact formula evidence entries. |
 | `PremiseRef::ImportedFact` | Candidate imported axiom/theorem formula entries only when package/module/exported item identity, statement fingerprint, required proof-status requirement, and matching `FormulaEvidenceContext` input are available. `mizar-vc` does not certify the imported fact as accepted; proof/kernel-owned context must do that. Otherwise the premise is an `external_dependency_gap` or fail-closed builder error. |
@@ -205,6 +215,11 @@ Remaining gaps:
   participates in reuse invalidation without becoming proof acceptance
   material. Missing, duplicate, unknown-VC, or selected-VC-mismatched handoff
   inputs fail closed.
+- resolved `VC-HANDOFF-G006`: task 27 adds explicit `goal_polarity` to the
+  handoff input, records the validated value in `final_goal.polarity`, and
+  rejects consistency polarity for every current proof-obligation VC kind before
+  canonical package assembly. Kernel-side check-service enforcement remains
+  assigned to `mizar-kernel` task 30.
 
 ## Planned Tests
 
@@ -227,6 +242,11 @@ the canonical kernel evidence hash changes, remains unavailable when no current
 kernel evidence handoff is supplied, and rejects duplicate, unknown, or
 selected-VC-mismatched kernel evidence handoff inputs. Downstream
 proof/cache/artifact schemas remain external/deferred.
+
+Task 27 adds Rust coverage showing that a normal proof-obligation handoff
+declares `AssertFalseForRefutation` explicitly and that a caller request for
+`AssertTrueForConsistency` fails closed with the stable
+`GoalPolarityMismatch` diagnostic.
 
 ## Public Enum Policy
 
@@ -251,33 +271,28 @@ No exhaustive public enum exceptions are owned by this module. Internal
 `mizar-vc` matches that intentionally enumerate current variants may remain
 exhaustive.
 
-## Post-Task-26 Handoff Draft
+## Post-Task-27 Handoff Draft
 
 Recommended reasoning: `xhigh`.
 
 Prompt:
 
 ```text
-After the mizar-vc task 26 commit exists, continue the evidence-pipeline
-crate-suite correction with mizar-artifact task 23. Before editing, verify a
-clean worktree, confirm the task 26 commit in git log, and re-read
-doc/design/mizar-artifact/en/todo.md,
-doc/design/mizar-artifact/en/source_spec_audit.md,
-doc/design/mizar-artifact/en/crate_exit_report.md if present,
-doc/design/mizar-vc/en/kernel_evidence_handoff.md,
-doc/design/mizar-vc/en/dependency_slice.md, and
-doc/design/architecture/en/15.kernel_certificate_format.md. Update the kernel
-evidence proof-witness schema only: artifact records may project
-formula/substitution evidence handoff identity and kernel-check results, but
-artifact remains a witness schema/projection crate and not the checker. Do not
-add placeholder producers, proof/cache consumers, SAT solving, ATP backends,
-resolution traces, backend proof-method acceptance, or trusted instantiated
-formula payloads. Re-evaluate artifact task 17 only after task 23 is complete;
-if required producer/proof outputs are still missing, record
-`external_dependency_gap` / `deferred` instead of stubbing.
+Continue Step 1 with mizar-kernel task 30. Before editing, verify a clean
+worktree, confirm the mizar-vc task 27 commit, and re-read
+doc/design/todo.md, doc/design/mizar-kernel/en/todo.md,
+doc/design/mizar-kernel/en/00.crate_plan.md,
+doc/design/mizar-kernel/en/soundness_argument.md,
+doc/design/architecture/en/15.kernel_certificate_format.md, and
+doc/design/mizar-vc/en/kernel_evidence_handoff.md. Implement the kernel-side
+check-service binding for goal polarity only: proof-obligation acceptance must
+require refutation polarity from immutable caller context, mismatch must reject
+fail-closed, and the existing certificate-corpus polarity mismatch case must
+remain rejecting. Do not change checker/core semantics, fabricate producer
+payloads, add placeholder runners, or preempt the later F2/F7 tasks.
 ```
 
-Rationale: artifact task 23 is the witness-schema boundary directly downstream
-of the corrected kernel/vc evidence handoff. Keep `xhigh` because the artifact
-must publish stable witness projections without becoming an acceptance oracle.
-Lower reasoning is appropriate only for typo-only documentation synchronization.
+Rationale: mizar-vc task 27 closes only the F1 producer-side polarity contract;
+the trusted acceptance binding remains in `mizar-kernel` task 30. Keep `xhigh`
+because the next task edits the trusted boundary. Lower reasoning is
+appropriate only for typo-only documentation synchronization.

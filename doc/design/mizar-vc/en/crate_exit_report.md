@@ -112,7 +112,7 @@ checking, or add proof/cache/artifact consumers.
 | 22 | `76f286f9a3d1e6d6f096b84be7b5f38873e48d42` | `docs(vc-task-22): add module boundary audit` |
 | 24 | `c33c583d107c8211c22efcbb89d88144f32d163c` | `docs(vc-task-24): specify kernel evidence handoff` |
 | 25 | `0ed1bc23e2bc7f66d2f4f53a8e289721d47105b9` | `feat(vc-task-25): add kernel evidence handoff builder` |
-| 26 | pending self-hash | `feat(vc-task-26): include kernel evidence in reuse identity` |
+| 26 | `9c86900451068553a8e96938c420872b047c1d62` | `feat(vc-task-26): include kernel evidence in reuse identity` |
 
 ## Hard Gates
 

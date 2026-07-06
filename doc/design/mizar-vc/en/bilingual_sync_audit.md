@@ -43,14 +43,14 @@ because a commit cannot embed its own hash.
 | `generator.md` | Explicit-payload generation scope, unavailable registration/algorithm payload boundaries, local context, controlled unfolding, normalization handoff, task slices, planned tests, and public enum policy. | Synchronized. |
 | `discharge.md` | Deterministic pre-ATP scope, supported classes, limits, evidence/explanation model, status interaction, no-erase ATP boundary, planned tests, and public enum policy. | Synchronized. |
 | `dependency_slice.md` | Conservative slice inputs/outputs, dependency entry classes, unknown coverage, reusable fingerprint contract, task-26 kernel-evidence identity integration, planned tests, and public enum policy. | Synchronized by Task 26 updates. |
-| `kernel_evidence_handoff.md` | Producer-side formula/substitution evidence handoff mapping, prohibited backend/legacy material, gap classification, task-25 builder public enum policy, resolved task-26 reuse-identity gap, and post-task-26 artifact handoff draft. | Synchronized by Tasks 24-26. |
-| `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, and classified external/deferred follow-ups. | Synchronized. |
-| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19/21/22/closeout/24/25/26 sync edits. | Synchronized by this paired audit document. |
+| `kernel_evidence_handoff.md` | Producer-side formula/substitution evidence handoff mapping, prohibited backend/legacy material, gap classification, task-25 builder public enum policy, resolved task-26 reuse-identity gap, task-27 explicit polarity contract, and post-task-27 kernel handoff draft. | Synchronized by Tasks 24-27. |
+| `source_spec_audit.md` | Public module exports, public surface inventory, cross-module evidence, explicit goal-polarity correspondence, and classified external/deferred follow-ups. | Synchronized by task 27 updates. |
+| `bilingual_sync_audit.md` | Audit scope, method, pair inventory, classification, and Task 19/21/22/closeout/24/25/26/27 sync edits. | Synchronized by this paired audit document. |
 | `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence, deterministic-discharge branch evidence, remaining external/deferred gaps, and no-drift classification. | Synchronized by Task 21. |
 | `module_boundary_audit.md` | Task 22 source-layout line counts, module-boundary review, no-required-split decision, and optional maintenance deferrals. | Synchronized by Task 22. |
-| `crate_exit_report.md` | Final status, quality score, hard gates, task commits through task 25, pending task-26 self-hash row, verification, review outcomes, remaining deferred/external items, and next-crate handoff draft. | Synchronized by task 26 updates. |
-| `task_ledger.md` | Task status, commit hashes available through task 25, complete task-26 review/verification evidence, deferred notes, and post-task-26 handoff draft. | Synchronized by task 26 updates; task 26 self-hash is backfilled after its commit exists. |
-| `todo.md` | Ordered task list, completed tasks through task 26, closeout status, recommended verification, and notes. | Synchronized by task 26 updates. |
+| `crate_exit_report.md` | Final status, quality score, hard gates, task commits through task 26, verification, review outcomes, remaining deferred/external items, and next-crate handoff draft. | Synchronized by task 27 backfill of the task-26 commit hash; task 27 remains post-closeout follow-up. |
+| `task_ledger.md` | Task status, commit hashes available through task 26, complete task-27 review/verification evidence, deferred notes, and post-task-27 handoff draft. | Synchronized by task 27 updates; task 27 self-hash is backfilled after its commit exists. |
+| `todo.md` | Ordered task list, completed tasks through task 27, closeout status, recommended verification, and notes. | Synchronized by task 27 updates. |
 
 ## Classification
 
@@ -148,3 +148,12 @@ handoff hash participates in dependency-slice fingerprints and proof-reuse
 candidate keys, that legacy reuse without a current handoff fails closed, and
 that downstream proof/cache/artifact consumers remain
 `external_dependency_gap` / `deferred`.
+
+## Task 27 Sync Edits
+
+Task 27 updates the paired kernel-evidence handoff, source/spec audit, todo,
+plan, ledger, bilingual sync audit, and mizar-kernel soundness argument records
+for explicit producer-side goal polarity. Both languages record that current
+proof-obligation handoffs require `AssertFalseForRefutation`, reject
+`AssertTrueForConsistency` before canonical package assembly, and leave the
+trusted checker-side B4/F1 acceptance binding to `mizar-kernel` task 30.

@@ -374,8 +374,9 @@ the trusted base; **Low** = documentation/consistency debt.
   obligation's check kind from the caller's immutable context and makes a
   mismatch `context_mismatch`. Corpus:
   `fail_certificate_sat_goal_polarity_mismatch_001`. Implementation follow-up
-  belongs to `mizar-kernel` (checker/task-28 surface) and `mizar-vc` handoff
-  (which currently does not state the polarity it emits).
+  belongs to `mizar-kernel` task 30 for checker-side B4 acceptance binding.
+  The producer-side `mizar-vc` handoff declaration/rejection gap was closed by
+  `mizar-vc` task 27.
 - **F2 (High, partially patched). Non-imported source bindings are not
   verifiable from the specified context.** `FormulaEvidenceContext` carries
   imported axioms/theorems only. Local-hypothesis, cited-premise, and
@@ -446,10 +447,10 @@ the trusted base; **Low** = documentation/consistency debt.
   handoff hash; (c) revisit the solver step-budget deferral (F3); (d) specify
   the imported-statement projection that lifts the fingerprint-equality rule
   (F6, paired with `mizar-vc`).
-- `doc/design/mizar-vc/en/todo.md`: candidate follow-ups — (a) state the goal
-  polarity emitted by the kernel evidence handoff builder and forbid
-  consistency polarity for proof obligations; (b) produce the context-identity
-  payload the kernel needs for local/VC-fact verification (pairs with F2).
+- `doc/design/mizar-vc/en/todo.md`: producer-side goal-polarity declaration
+  and consistency-polarity rejection is resolved by task 27; remaining
+  candidate follow-up — produce the context-identity payload the kernel needs
+  for local/VC-fact verification (pairs with F2).
 - `doc/design/mizar-test/en/` (out of scope here, reported): extend the
   required soundness-case registry and layout/expectation docs with
   corrected-path rejection reasons (F7). The corpus root naming drift (F8) is

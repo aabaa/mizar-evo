@@ -22,7 +22,7 @@ use mizar_vc::{
     kernel_evidence_handoff::{
         KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, KernelClauseTautologyPolicy,
         KernelEvidenceFingerprint, KernelEvidenceHandoffInput, KernelEvidenceProfile,
-        KernelFormulaPayload, KernelFormulaProjection, VcKernelEvidenceHandoff,
+        KernelFormulaPayload, KernelFormulaProjection, KernelGoalPolarity, VcKernelEvidenceHandoff,
         build_kernel_evidence_handoff,
     },
     vc_ir::{
@@ -418,6 +418,7 @@ fn kernel_handoff_for(output: &PipelineOutput, vc: VcId) -> VcKernelEvidenceHand
     build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
         vc_set,
         vc,
+        goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
         kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
         symbol_manifest: &[],
         variable_manifest: &[],

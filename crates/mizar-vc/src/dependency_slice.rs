@@ -1537,8 +1537,8 @@ mod tests {
         kernel_evidence_handoff::{
             KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, KernelClauseTautologyPolicy,
             KernelEvidenceFingerprint, KernelEvidenceHandoffInput, KernelEvidenceProfile,
-            KernelFormulaPayload, KernelFormulaProjection, VcKernelEvidenceHandoff,
-            build_kernel_evidence_handoff,
+            KernelFormulaPayload, KernelFormulaProjection, KernelGoalPolarity,
+            VcKernelEvidenceHandoff, build_kernel_evidence_handoff,
         },
         vc_ir::{
             AnchorLabel, AnchorLabelRole, AnchorOwner, AnchorUnavailableReason, CanonicalSortKey,
@@ -2823,6 +2823,7 @@ mod tests {
         build_kernel_evidence_handoff(KernelEvidenceHandoffInput {
             vc_set,
             vc,
+            goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
             kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
             symbol_manifest: &[],
             variable_manifest: &[],

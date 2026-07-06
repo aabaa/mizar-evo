@@ -8,8 +8,10 @@
 use crate::{
     discharge::{DischargeEvidenceReplay, DischargeEvidenceSource, DischargeOutput},
     vc_ir::{
-        ContextEntry, ContextEntryId, ContextEntryKind, PremiseRef, VcFormulaRef,
-        VcGeneratedFormulaId, VcId, VcIr, VcSet, VcText, stable_fingerprint_hash,
+        CollectionLoopObligation, ContextEntry, ContextEntryId, ContextEntryKind,
+        LoopInvariantPhase, PremiseRef, RangeLoopObligation, RegistrationCorrectnessKind,
+        VcFormulaRef, VcGeneratedFormulaId, VcId, VcIr, VcKind, VcSet, VcText,
+        stable_fingerprint_hash,
     },
 };
 use mizar_session::Hash;
@@ -29,6 +31,7 @@ pub const KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID: u8 = 2;
 pub struct KernelEvidenceHandoffInput<'a> {
     pub vc_set: &'a VcSet,
     pub vc: VcId,
+    pub goal_polarity: KernelGoalPolarity,
     pub kernel_profile: KernelEvidenceProfile,
     pub symbol_manifest: &'a [KernelManifestEntry],
     pub variable_manifest: &'a [KernelManifestEntry],
@@ -500,6 +503,11 @@ pub enum KernelEvidenceHandoffError {
     MissingTargetBinding {
         vc: VcId,
     },
+    GoalPolarityMismatch {
+        vc: VcId,
+        requested: KernelGoalPolarity,
+        required: KernelGoalPolarity,
+    },
     MissingFormulaPayload {
         formula: VcFormulaRef,
         role: KernelEvidenceRole,
@@ -582,6 +590,14 @@ impl fmt::Display for KernelEvidenceHandoffError {
             Self::MissingTargetBinding { vc } => {
                 write!(formatter, "missing stable target binding for {vc:?}")
             }
+            Self::GoalPolarityMismatch {
+                vc,
+                requested,
+                required,
+            } => write!(
+                formatter,
+                "goal polarity {requested:?} does not match required {required:?} for {vc:?}"
+            ),
             Self::MissingFormulaPayload { formula, role } => {
                 write!(
                     formatter,
@@ -713,6 +729,14 @@ pub fn build_kernel_evidence_handoff(
         .vc_set
         .vc(input.vc)
         .ok_or(KernelEvidenceHandoffError::UnknownVc { vc: input.vc })?;
+    let required_goal_polarity = required_goal_polarity(vc);
+    if input.goal_polarity != required_goal_polarity {
+        return Err(KernelEvidenceHandoffError::GoalPolarityMismatch {
+            vc: input.vc,
+            requested: input.goal_polarity,
+            required: required_goal_polarity,
+        });
+    }
     let target_vc = target_fingerprint(input.vc_set, input.vc)?;
     let symbol_manifest = sorted_manifest(input.symbol_manifest)?;
     let variable_manifest = sorted_manifest(input.variable_manifest)?;
@@ -741,7 +765,12 @@ pub fn build_kernel_evidence_handoff(
     }
 
     let substitutions = build_substitutions(&mut assembly, input.substitutions)?;
-    let final_goal = build_final_goal(&mut assembly, vc.goal, &formula_payloads)?;
+    let final_goal = build_final_goal(
+        &mut assembly,
+        vc.goal,
+        input.goal_polarity,
+        &formula_payloads,
+    )?;
     let formula_context_requirements =
         context_requirements(input.formula_context, &assembly.imported_symbols)?;
     let diagnostics = diagnostics(input.vc_set, input.vc, input.discharge_output)?;
@@ -769,6 +798,51 @@ pub fn build_kernel_evidence_handoff(
         canonical_hash_input,
         canonical_hash,
     })
+}
+
+fn required_goal_polarity(vc: &VcIr) -> KernelGoalPolarity {
+    match &vc.kind {
+        VcKind::TheoremProofStep | VcKind::TerminalProofGoal | VcKind::DefinitionCorrectness => {
+            KernelGoalPolarity::AssertFalseForRefutation
+        }
+        VcKind::RegistrationStyleCorrectness {
+            style:
+                RegistrationCorrectnessKind::Registration
+                | RegistrationCorrectnessKind::Redefinition
+                | RegistrationCorrectnessKind::Reduction
+                | RegistrationCorrectnessKind::ExplicitCoreSeed,
+        }
+        | VcKind::CheckerInitial
+        | VcKind::GeneratedNonEmptiness
+        | VcKind::GeneratedSethood
+        | VcKind::FraenkelMembershipAxiom
+        | VcKind::AlgorithmPrecondition
+        | VcKind::AlgorithmPostcondition
+        | VcKind::CallPrecondition
+        | VcKind::AlgorithmAssertion => KernelGoalPolarity::AssertFalseForRefutation,
+        VcKind::LoopInvariant {
+            phase:
+                LoopInvariantPhase::Entry
+                | LoopInvariantPhase::Preservation
+                | LoopInvariantPhase::Break
+                | LoopInvariantPhase::Continue
+                | LoopInvariantPhase::Exit,
+        }
+        | VcKind::RangeLoop {
+            obligation:
+                RangeLoopObligation::PositiveStep
+                | RangeLoopObligation::RangeBound
+                | RangeLoopObligation::HiddenIndex,
+        }
+        | VcKind::CollectionLoop {
+            obligation:
+                CollectionLoopObligation::Finiteness | CollectionLoopObligation::OrderIndependence,
+        }
+        | VcKind::Termination
+        | VcKind::PartialTermination
+        | VcKind::GhostErasureSafety
+        | VcKind::PolicyDeferredTraceability => KernelGoalPolarity::AssertFalseForRefutation,
+    }
 }
 
 struct HandoffAssembly {
@@ -1333,6 +1407,7 @@ fn build_substitutions(
 fn build_final_goal(
     assembly: &mut HandoffAssembly,
     goal: VcFormulaRef,
+    polarity: KernelGoalPolarity,
     formula_payloads: &BTreeMap<VcFormulaRef, KernelFormulaProjection>,
 ) -> Result<KernelFinalGoalEvidence, KernelEvidenceHandoffError> {
     let projection = formula_payload(formula_payloads, goal, KernelEvidenceRole::FinalGoal)?;
@@ -1343,7 +1418,7 @@ fn build_final_goal(
         KernelEvidenceRole::FinalGoal,
     )?;
     Ok(KernelFinalGoalEvidence {
-        polarity: KernelGoalPolarity::AssertFalseForRefutation,
+        polarity,
         formula_fingerprint: projection.formula_fingerprint.clone(),
         formula_bytes: projection.formula_bytes.clone(),
         provenance_id,
@@ -1610,11 +1685,13 @@ mod tests {
         discharge::{DischargePolicy, try_discharge},
         vc_ir::{
             AnchorCompleteness, AnchorIngredient, AnchorLabel, AnchorLabelRole,
-            AnchorUnavailableReason, CanonicalSortKey, DefinitionOpacityOverride,
-            DefinitionUnfoldRequest, GenerationSchemaVersion, HashMarker, LocalContext,
-            SeedAccounting, SeedOriginRef, SeedVcMapping, SeedVcRef, VcGeneratedFormula,
-            VcGeneratedFormulaKind, VcGeneratedFormulaShape, VcKind, VcModuleRef, VcProvenance,
-            VcProvenancePhase, VcSchemaVersion, VcSetParts, VcSourceRef, VcStatus,
+            AnchorUnavailableReason, CanonicalSortKey, CollectionLoopObligation,
+            DefinitionOpacityOverride, DefinitionUnfoldRequest, GenerationSchemaVersion,
+            HashMarker, LocalContext, LoopInvariantPhase, RangeLoopObligation,
+            RegistrationCorrectnessKind, SeedAccounting, SeedOriginRef, SeedVcMapping, SeedVcRef,
+            VcGeneratedFormula, VcGeneratedFormulaKind, VcGeneratedFormulaShape, VcKind,
+            VcModuleRef, VcProvenance, VcProvenancePhase, VcSchemaVersion, VcSetParts, VcSourceRef,
+            VcStatus,
         },
     };
     use mizar_core::{
@@ -1654,6 +1731,10 @@ mod tests {
         assert_eq!(
             first.canonical_evidence().final_goal().producer_formula_ref,
             VcFormulaRef::Generated(VcGeneratedFormulaId::new(1))
+        );
+        assert_eq!(
+            first.canonical_evidence().final_goal().polarity,
+            KernelGoalPolarity::AssertFalseForRefutation
         );
         assert!(
             first
@@ -1941,6 +2022,80 @@ mod tests {
                 role: KernelEvidenceRole::FinalGoal
             }
         ));
+    }
+
+    #[test]
+    fn consistency_goal_polarity_for_proof_obligation_fails_closed() {
+        let set = fixture_set(FixtureShape::GeneratedGoalOnly);
+        let input = KernelEvidenceHandoffInput {
+            goal_polarity: KernelGoalPolarity::AssertTrueForConsistency,
+            ..handoff_input(&set, &[], None, None)
+        };
+
+        let error =
+            build_kernel_evidence_handoff(input).expect_err("consistency polarity rejected");
+
+        assert!(matches!(
+            &error,
+            KernelEvidenceHandoffError::GoalPolarityMismatch {
+                vc,
+                requested: KernelGoalPolarity::AssertTrueForConsistency,
+                required: KernelGoalPolarity::AssertFalseForRefutation,
+            } if *vc == VcId::new(0)
+        ));
+        assert_eq!(
+            error.to_string(),
+            "goal polarity AssertTrueForConsistency does not match required AssertFalseForRefutation for VcId(0)"
+        );
+    }
+
+    #[test]
+    fn goal_polarity_mismatch_precedes_payload_validation() {
+        let set = fixture_set(FixtureShape::GeneratedGoalOnly);
+        let payloads = Vec::new();
+        let input = KernelEvidenceHandoffInput {
+            goal_polarity: KernelGoalPolarity::AssertTrueForConsistency,
+            formula_payloads: &payloads,
+            ..handoff_input(&set, &[], None, None)
+        };
+
+        let error = build_kernel_evidence_handoff(input)
+            .expect_err("polarity mismatch rejected before missing payload");
+
+        assert!(matches!(
+            error,
+            KernelEvidenceHandoffError::GoalPolarityMismatch {
+                vc,
+                requested: KernelGoalPolarity::AssertTrueForConsistency,
+                required: KernelGoalPolarity::AssertFalseForRefutation,
+            } if vc == VcId::new(0)
+        ));
+    }
+
+    #[test]
+    fn every_current_vc_kind_requires_refutation_polarity() {
+        for kind in current_vc_kinds() {
+            let set = fixture_set_with_kind(FixtureShape::GeneratedGoalOnly, kind.clone());
+            let input = KernelEvidenceHandoffInput {
+                goal_polarity: KernelGoalPolarity::AssertTrueForConsistency,
+                ..handoff_input(&set, &[], None, None)
+            };
+
+            let error = build_kernel_evidence_handoff(input)
+                .expect_err("current VC kind requires refutation polarity");
+
+            assert!(
+                matches!(
+                    error,
+                    KernelEvidenceHandoffError::GoalPolarityMismatch {
+                        vc,
+                        requested: KernelGoalPolarity::AssertTrueForConsistency,
+                        required: KernelGoalPolarity::AssertFalseForRefutation,
+                    } if vc == VcId::new(0)
+                ),
+                "{kind:?} did not reject consistency polarity"
+            );
+        }
     }
 
     #[test]
@@ -2449,6 +2604,7 @@ mod tests {
         KernelEvidenceHandoffInput {
             vc_set: set,
             vc: VcId::new(0),
+            goal_polarity: KernelGoalPolarity::AssertFalseForRefutation,
             kernel_profile: KernelEvidenceProfile::v1(1, KernelClauseTautologyPolicy::Reject),
             symbol_manifest: &[],
             variable_manifest: &[],
@@ -2544,6 +2700,10 @@ mod tests {
     }
 
     fn fixture_set(shape: FixtureShape) -> VcSet {
+        fixture_set_with_kind(shape, VcKind::TheoremProofStep)
+    }
+
+    fn fixture_set_with_kind(shape: FixtureShape, kind: VcKind) -> VcSet {
         let snapshot = BuildSnapshotId::from_published_schema_str(
             "mizar-session-build-snapshot-v1:\
              2222222222222222222222222222222222222222222222222222222222222222",
@@ -2720,7 +2880,7 @@ mod tests {
             generated_formulas,
             vcs: vec![VcIr {
                 id: VcId::new(0),
-                kind: VcKind::TheoremProofStep,
+                kind: kind.clone(),
                 source: VcSourceRef {
                     primary: source_ref(source),
                     related: Vec::new(),
@@ -2728,7 +2888,7 @@ mod tests {
                 seed: SeedVcRef {
                     handoff: ObligationHandoffId::new(0),
                 },
-                anchor: incomplete_anchor(source),
+                anchor: incomplete_anchor(source, kind),
                 local_context,
                 premises,
                 goal,
@@ -2748,10 +2908,72 @@ mod tests {
         .expect("vc set")
     }
 
-    fn incomplete_anchor(source: SourceId) -> crate::vc_ir::ObligationAnchor {
+    fn current_vc_kinds() -> Vec<VcKind> {
+        vec![
+            VcKind::TheoremProofStep,
+            VcKind::TerminalProofGoal,
+            VcKind::DefinitionCorrectness,
+            VcKind::RegistrationStyleCorrectness {
+                style: RegistrationCorrectnessKind::Registration,
+            },
+            VcKind::RegistrationStyleCorrectness {
+                style: RegistrationCorrectnessKind::Redefinition,
+            },
+            VcKind::RegistrationStyleCorrectness {
+                style: RegistrationCorrectnessKind::Reduction,
+            },
+            VcKind::RegistrationStyleCorrectness {
+                style: RegistrationCorrectnessKind::ExplicitCoreSeed,
+            },
+            VcKind::CheckerInitial,
+            VcKind::GeneratedNonEmptiness,
+            VcKind::GeneratedSethood,
+            VcKind::FraenkelMembershipAxiom,
+            VcKind::AlgorithmPrecondition,
+            VcKind::AlgorithmPostcondition,
+            VcKind::CallPrecondition,
+            VcKind::AlgorithmAssertion,
+            VcKind::LoopInvariant {
+                phase: LoopInvariantPhase::Entry,
+            },
+            VcKind::LoopInvariant {
+                phase: LoopInvariantPhase::Preservation,
+            },
+            VcKind::LoopInvariant {
+                phase: LoopInvariantPhase::Break,
+            },
+            VcKind::LoopInvariant {
+                phase: LoopInvariantPhase::Continue,
+            },
+            VcKind::LoopInvariant {
+                phase: LoopInvariantPhase::Exit,
+            },
+            VcKind::RangeLoop {
+                obligation: RangeLoopObligation::PositiveStep,
+            },
+            VcKind::RangeLoop {
+                obligation: RangeLoopObligation::RangeBound,
+            },
+            VcKind::RangeLoop {
+                obligation: RangeLoopObligation::HiddenIndex,
+            },
+            VcKind::CollectionLoop {
+                obligation: CollectionLoopObligation::Finiteness,
+            },
+            VcKind::CollectionLoop {
+                obligation: CollectionLoopObligation::OrderIndependence,
+            },
+            VcKind::Termination,
+            VcKind::PartialTermination,
+            VcKind::GhostErasureSafety,
+            VcKind::PolicyDeferredTraceability,
+        ]
+    }
+
+    fn incomplete_anchor(source: SourceId, kind: VcKind) -> crate::vc_ir::ObligationAnchor {
         crate::vc_ir::ObligationAnchor {
             owner: crate::vc_ir::AnchorOwner::Theorem(CoreItemId::new(0)),
-            kind: VcKind::TheoremProofStep,
+            kind,
             local_path: LocalProofOrProgramPath::new("proof/0"),
             label: Some(AnchorLabel {
                 role: AnchorLabelRole::UserLabel,

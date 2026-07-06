@@ -398,7 +398,7 @@ Every finding maps to a task or a recorded disposition:
 
 | Finding | Disposition |
 |---|---|
-| F1 (goal polarity) | architecture 15 patched; kernel implementation is task 30; producer-side polarity statement is [mizar-vc](../../mizar-vc/en/todo.md) follow-up |
+| F1 (goal polarity) | architecture 15 patched; kernel implementation is task 30; producer-side polarity declaration/rejection is resolved by [mizar-vc task 27](../../mizar-vc/en/todo.md) |
 | F2 (non-imported source bindings) | architecture 15 patched fail-closed; schema and verification are task 31, paired with the mizar-vc context-identity payload |
 | F3 (solver step budget) | deferred by design in `sat_checker.md` (batsat 0.6.0 exposes no stable budget API); revisit trigger recorded as task 32 |
 | F4 (KernelEvidence field drift) | resolved in `f75af877`; no further task |

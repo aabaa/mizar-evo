@@ -399,7 +399,7 @@ kernel-facing contracts. The full finding-to-task disposition table lives in
 the [mizar-kernel TODO](../../mizar-kernel/en/todo.md); the tasks below are
 the paired producer tasks.
 
-27. **Explicit goal polarity in the kernel evidence handoff (kernel F1).** [ ]
+27. **Explicit goal polarity in the kernel evidence handoff (kernel F1).** [x]
     - Make the task-25 handoff builder state the goal polarity it emits and
       forbid `AssertTrueForConsistency` for proof obligations: every
       proof-obligation handoff declares refutation polarity explicitly, and
@@ -417,6 +417,12 @@ the paired producer tasks.
       `cargo test -p mizar-kernel` when the kernel-side task 30 exists.
     - Deps: 25; paired: mizar-kernel task 30. Spec: architecture 15,
       `kernel_evidence_handoff.md`; soundness_argument.md F1.
+    - Done in task 27: `KernelEvidenceHandoffInput` now carries explicit
+      `goal_polarity`; every current `VcKind` maps to
+      `AssertFalseForRefutation`; consistency polarity for proof obligations
+      fails closed with `GoalPolarityMismatch`. This closes only the
+      producer-side F1 handoff contract; mizar-kernel task 30 still owns the
+      trusted check-service acceptance binding.
 
 28. **Context-identity payload for non-imported source bindings (kernel F2).** [ ]
     - Produce the verification data the kernel needs to check that

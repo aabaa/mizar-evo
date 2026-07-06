@@ -197,6 +197,7 @@ Correspondence:
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
 | The builder packages only producer-side formula, substitution, provenance, and target-binding evidence and never calls the kernel, SAT solving, or ATP backends. | `build_kernel_evidence_handoff` consumes `VcSet`, explicit payload slices, imported context requirements, and optional discharge output only. | deterministic handoff, proof-hint exclusion, target-binding, prohibited-backend-material, and discharge-diagnostic tests. | Implemented for explicit payloads. |
+| Proof-obligation handoffs declare explicit refutation polarity and reject consistency polarity before canonical package assembly. | `KernelEvidenceHandoffInput::goal_polarity`, exhaustive current-`VcKind` `required_goal_polarity`, `KernelEvidenceHandoffError::GoalPolarityMismatch`, and `KernelFinalGoalEvidence::polarity`. | `consistency_goal_polarity_for_proof_obligation_fails_closed` plus deterministic handoff polarity assertion. | Implemented for producer-side current VC kinds; checker-side acceptance binding remains `mizar-kernel` task 30. |
 | Canonical evidence contains schema/encoding versions, target VC, kernel profile, manifests, formula evidence, substitutions, provenance, and final goal; imported context requirements and diagnostics stay outside canonical hash input. | `KernelEvidenceEnvelope`, `target_fingerprint`, `VcKernelEvidenceHandoff::canonical_hash_input`, `canonical_hash_input`. | deterministic hash/debug tests, proof-hint metadata target-binding test, and imported-context tests. | Implemented. |
 | Imported context and payload data fail closed on empty context provenance, mismatched imported statement/formula fingerprints, unsupported formula fingerprint algorithms, and missing context/payload data; returned context requirements are canonical sorted/deduplicated. | `validate_import_requirement`, `imported_payload_map`, `canonical_context_requirements`. | imported context missing/mismatch, empty context provenance, unsupported algorithm, fingerprint mismatch, and duplicate-context tests. | Implemented for current explicit imported payloads. |
 | Missing formula, substitution source, provenance, manifest, side-condition, or unsupported premise data fails closed instead of being fabricated. | `KernelEvidenceHandoffError` and validation helpers. | missing payload, invalid projection, substitution missing-source/empty/side-condition, and manifest tests. | Implemented for current fail-closed cases; upstream full formula/binder payload production remains external. |
@@ -272,6 +273,20 @@ The task does not add SAT solving, kernel calls, ATP backend integration,
 backend proof methods, resolution traces, legacy certificate acceptance,
 artifact witness publication, cache promotion, or downstream proof policy.
 
+## Task 27 Explicit Goal Polarity Follow-Up
+
+Task 27 adds the producer-side `goal_polarity` input to the kernel evidence
+handoff builder, enumerates every current `VcKind` as requiring
+`AssertFalseForRefutation`, records the validated explicit value in
+`final_goal.polarity`, and rejects `AssertTrueForConsistency` requests for
+proof obligations with `GoalPolarityMismatch`.
+
+The task does not add SAT solving, kernel calls, ATP backend integration,
+checker/core semantic changes, fabricated formula/substitution/provenance
+payloads, proof rows, cache promotion, artifact witness publication, or
+expectation updates. The trusted checker-side F1 binding remains assigned to
+`mizar-kernel` task 30.
+
 ## Remaining Classified Follow-Ups
 
 Task 18 introduced no new source/spec correspondence gap. Task 21 re-ran the
@@ -280,8 +295,9 @@ unclassified source/spec gap. Task 22 re-ran the module-boundary gate and
 records no required split before closeout. Task 24 updates the downstream
 kernel classification, Task 25 implements the VC producer-side handoff builder
 for explicit payloads, and Task 26 connects its canonical handoff hash to
-dependency-slice / proof-reuse identity, without resolving the remaining
-upstream full payload and downstream consumer gaps.
+dependency-slice / proof-reuse identity. Task 27 closes the producer-side F1
+polarity declaration/rejection contract, without resolving the remaining
+upstream full payload, checker-side F1, F2, or downstream consumer gaps.
 Existing classified records remain:
 
 - `external_dependency_gap`: active `proof_verification` runner support and
