@@ -383,6 +383,19 @@ including parameter instantiation; matching by type head alone is insufficient.
 This preserves parameterized existential registrations such as attributed
 `Subset of X` gates.
 
+Task 47 extends the same explicit-payload seam to unattributed base-shape
+inhabitation from spec §17.3.4. An `ExistentialGateBaseEvidence` record may
+satisfy only an unattributed gate whose normalized pattern exactly matches the
+evidence pattern. Built-in `object` and `set` use `Builtin` coverage and no
+guards. Accepted mode applications and bare schema type parameters use
+`CompleteGuardSet` coverage and at least one visible consumable guard fact, so
+the accepted mode obligation or schema-context assumption is explicit.
+Structure constructor witnesses use either `ZeroFieldStructure` with no guards,
+or `CompleteGuardSet` with one or more field-inhabitation guards; an empty
+complete guard set is invalid for nonzero structures. Base evidence never
+satisfies a gate with requested attributes; attributed types still require an
+activated existential registration for the full attributed pattern.
+
 A candidate can satisfy a gate only when it is bound to the same accepted
 activation record:
 
@@ -408,16 +421,20 @@ integration may replace the explicit evidence payload with direct
 Gate result precedence is deterministic:
 
 1. `DegradedRecovery` if the gate site is degraded;
-2. `Satisfied` if a valid candidate has all required guard evidence;
-3. `BlockedGuard` if a valid candidate is present but a guard is missing,
-   invisible, or non-consumable;
-4. `InvalidCandidate` if candidates are present but none are valid;
-5. `MissingExistential` if no candidates are available.
+2. `Satisfied` if a valid candidate has all required guard evidence, or valid
+   base evidence has all required guard evidence;
+3. `BlockedGuard` if a valid candidate or valid base evidence is present but a
+   guard is missing, invisible, or non-consumable;
+4. `InvalidCandidate` if candidates or base evidence are present but none are
+   valid;
+5. `MissingExistential` if no candidates or base evidence are available.
 
-Only `Satisfied` gates may seed verified downstream facts. Missing,
-blocked-guard, invalid-candidate, and degraded-recovery gates emit
-checker-local diagnostics, keep degraded output only for follow-on diagnostics,
-and must not export inhabited metadata or seed verified facts.
+Only `Satisfied` gates may seed verified downstream facts. Satisfied
+base-evidence gates have no checker registration id but record the base
+evidence kind/coverage and any visible guard fact ids. Missing, blocked-guard,
+invalid-candidate, and degraded-recovery gates emit checker-local diagnostics,
+keep degraded output only for follow-on diagnostics, and must not export
+inhabited metadata or seed verified facts.
 
 Task 20 deliberately keeps the following deferred:
 
@@ -426,6 +443,13 @@ Task 20 deliberately keeps the following deferred:
   activation input seam;
 - artifact emission/reuse of gate decisions;
 - active `.miz` semantic fixtures for existential gates.
+
+Task 47 additionally keeps source-derived base-shape execution deferred until
+source-to-checker extraction can prove the accepted mode tuple, complete
+structure-field coverage, schema-context assumption, and activation item order
+from real source payloads. The current implementation consumes only explicit
+checker-owned base evidence and must not infer missing guards from type spelling
+or resolver opaque shells.
 
 ## Cluster Closure
 
@@ -557,6 +581,8 @@ implementing the specified behavior.
 | `RegistrationValidationPattern` | Forward-compatible; validation patterns may grow with richer semantic payloads. |
 | `RegistrationReferencedSymbolRole` | Forward-compatible; referenced-symbol roles may grow as validation checks expand. |
 | `ActivationVerifierStatus` | Forward-compatible; verifier/artifact status may grow when proof handoff is connected. |
+| `ExistentialGateBaseEvidenceKind` | Forward-compatible; base-shape inhabitation evidence kinds may grow with additional source-extracted type shapes. |
+| `ExistentialGateBaseEvidenceCoverage` | Forward-compatible; base-evidence coverage categories may grow as structure and mode payloads become richer. |
 | `ExistentialGateRecovery` | Forward-compatible; existential-gate recovery states may grow with source extraction. |
 | `ExistentialGateStatus` | Forward-compatible; existential-gate outcomes may grow with evidence and artifact reuse. |
 | `RegistrationDiagnosticClass` | Forward-compatible; diagnostic classes may grow before public checker diagnostic codes are allocated. |
@@ -574,7 +600,7 @@ No exhaustive public enum exceptions are owned by this module.
 | MC-G020 | `external_dependency_gap` / `deferred` | There is no AST-wide source-to-checker extraction API for the checker-owned payloads used by tasks 7-11. | Registration tasks must consume explicit checker-owned registration payloads when available and keep source `.miz` semantic coverage deferred until extraction exists. |
 | MC-G021 | `external_dependency_gap` / `deferred` | The current resolver registration index exposes declaration identity, kind, opaque target shell, visibility/export metadata, dependencies, recovery state, and source contribution, but not checker-ready typed registration patterns, parameter type payloads, correctness-condition anchors, accepted verifier status, active dependency-summary consumption, reduction `LHS`/`RHS` term payloads, or guard-evidence payloads. Task 19 consumes explicit validation payloads and validates them, but still does not source-extract those payloads or create accepted status. | Task 14 may use resolver registrations as identity/origin records only. Tasks 16-20 must use explicit checker-owned payload seams or defer behavior rather than parsing opaque shells, inventing summaries, or treating emitted obligations as accepted. |
 | MC-G025 | `external_dependency_gap` / `deferred` | Task 19 emits checker-local registration-correctness `InitialObligationId`s and gates activation on accepted verifier/artifact status, but the proof/artifact phase that creates or imports that accepted status is not wired to `mizar-checker`. This is an interim conservative approximation of spec 17.1's asynchronous acceptance contract, not a final rejection policy for later source items. | Keep valid local registrations pending until explicit accepted status input is supplied. Do not promote generated obligations to activated registrations. Lift the approximation when accepted status production/import is connected so accepted earlier registrations can license later items in source order. |
-| MC-G026 | `test_gap` / `external_dependency_gap` / `deferred` | Task 20 implements existential gates over explicit payloads, but source-to-checker extraction of attributed-type gate sites, accepted-status production/import beyond task-19 activation input, artifact emission/reuse, and active `.miz` existential gate fixtures are not wired. | Keep task-local Rust coverage over explicit gate payloads. Defer real source-derived gate cases and artifact reuse until the owning extraction/proof/artifact tasks provide inputs. |
+| MC-G026 | `test_gap` / `external_dependency_gap` / `deferred` | Task 20 implements existential gates over explicit payloads, and task 47 extends that explicit seam to base-shape inhabitation evidence. Source-to-checker extraction of attributed/base gate sites, accepted mode tuples, complete structure-field coverage, schema-context assumptions, accepted-status production/import beyond task-19 activation input, artifact emission/reuse, and active `.miz` existential gate fixtures are not wired. | Keep task-local Rust coverage over explicit gate and base-evidence payloads. Defer real source-derived gate cases and artifact reuse until the owning extraction/proof/artifact tasks provide inputs. |
 
 ## Planned Tests
 

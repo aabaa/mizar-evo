@@ -347,17 +347,27 @@ task 11 が所有する。
   dependency summary に支えられる場合だけである;
 - source-written `qua` は statically checkable upcast または compatible view に対してだけ
   valid であり、narrowing proof として使ってはならない;
-- より specific な type への narrowing は、task 10 input が target type を既に支える
-  consumable known fact を supplied している場合、または後続 task が別の local discharge
-  rule を明示する場合を除き、`InitialObligation` を作る;
-- `reconsider` は target type が known fact で既に支えられていない場合、existing-binding
-  form と new-binding form の両方で narrowing obligation を作る;
+- explicit な narrowing は、task 10 input が target type を既に支える `KnownFacts` evidence
+  と consumable supporting fact id を supplied している場合を除き、`InitialObligation` を作る;
+- task 47 は explicit payload 上で `reconsider` の explicit / omitted を区別する。
+  `CoercionJustification::Explicit` は task-10 の obligation 経路を維持する。
+  `CoercionJustification::Omitted` は、known local fact、built-in radix widening、
+  structure inheritance、activated summary / cluster closure、static upcast、compatible view
+  に由来する proof-free evidence が consumable fact に支えられる場合だけ受理する。evidence
+  marker だけでは omitted form を discharge できない;
+- omitted `reconsider` が proof-free evidence を欠く、または evidence が non-consumable なら、
+  `type.narrowing_requires_proof` を emit し、rejected/degraded coercion を記録し、implicit
+  obligation、proof search、hidden `by` は作らない;
 - sethood と non-emptiness requirement は source assumption と deterministic local id を持つ
   `InitialObligation` を作る;
 - failed / unsupported coercion は diagnostic 付きの `Blocked` または `Rejected` entry として残る。
 
 `InitialObligationId` が phase-6 boundary である。task 10 は `VcId`、
 `ObligationAnchor`、prover status、proof witness、accepted verifier status を割り当ててはならない。
+context-sensitive な `Assumed` fact は omitted `reconsider` helper が直接 query しない。upstream
+producer が fact-query / context boundary を使って consumable supporting fact id を先に供給する
+必要がある。source-derived reconsider/coercion extraction は MC-G019/MC-G020 の下で deferred の
+ままである。
 
 ## Task 11: type facts and queries
 
@@ -484,6 +494,7 @@ fallback arm を保持する。checker 内部の match は、仕様化済み beh
 | enum | decision |
 |---|---|
 | `CoercionRequestKind` | 前方互換; coercion request category は後続の view と obligation form とともに増える可能性がある。 |
+| `CoercionJustification` | 前方互換; proof-block と artifact-backed evidence payload が着地すると justification class は増える可能性がある。 |
 | `CoercionEvidence` | 前方互換; coercion evidence は proof、registration、artifact source とともに増える可能性がある。 |
 | `CoercionDeferredReason` | 前方互換; deferred coercion reason は external payload gap が閉じるにつれて増える可能性がある。 |
 | `InitialRequirementKind` | 前方互換; initial requirement category は VC/proof integration とともに増える可能性がある。 |

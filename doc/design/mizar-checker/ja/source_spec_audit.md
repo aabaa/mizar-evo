@@ -131,8 +131,8 @@ literal top-level public item:
 - `TypeNormalizationOutput`, `TypeNormalizer`, `DeclarationCheckingOutput`,
   `DeclarationChecker`, `TermFormulaInferenceOutput`, `TermFormulaChecker`,
   `CoercionCheckingOutput`, `CoercionObligationChecker`, `CoercionInput`,
-  `CoercionRequestKind`, `CoercionEvidence`, `CoercionDeferredReason`,
-  `InitialObligationInput`, `InitialRequirementKind`,
+  `CoercionRequestKind`, `CoercionJustification`, `CoercionEvidence`,
+  `CoercionDeferredReason`, `InitialObligationInput`, `InitialRequirementKind`,
   `TypeFactQueryEngine`, `TypeFactQuery`, `TypeFactQueryOutput`,
   `TypeFactQueryStatus`, `TermInput`, `TermKind`, `TermReference`,
   `TermDeferredReason`, `FormulaInput`, `FormulaKind`,
@@ -159,7 +159,7 @@ literal top-level public item:
 | Type-expression normalization は mode、attribute、arity、unsupported input の degraded state を canonicalize し、cluster repair を行わない。 | `TypeNormalizer`, `TypeNormalizationOutput`, `TypeExpressionInput`, `ModeExpansion`, normalized type tables. | attribute/order/builtin/mode-expansion/degraded-head tests. | explicit payload について実装済み。MC-G014 は残る。 |
 | Declaration checking は explicit declaration と binding context を消費し、partial output を保持する。 | `DeclarationChecker`, `DeclarationCheckingOutput`, declaration input/status tables. | declaration deterministic/invalid/constrained/set/attributed/reconsider tests. | explicit payload について実装済み。MC-G016 は残る。 |
 | Term/formula inference は checked table、expected constraint、open candidate、fact、recovery を記録する。 | `TermFormulaChecker`, term/formula input and checked tables. | term/formula/recovery tests. | explicit payload について実装済み。MC-G017/MC-G019 は残る。 |
-| Coercion と initial obligation は `VcId` や fabricated evidence なしで記録される。 | `CoercionObligationChecker`, `CoercionInput`, `InitialObligationInput`, evidence/deferred enum. | coercion deterministic/missing evidence/alternate candidate tests. | explicit payload について実装済み。MC-G018 は残る。 |
+| Coercion と initial obligation は `VcId` や fabricated evidence なしで記録される。 | `CoercionObligationChecker`, `CoercionInput`, `InitialObligationInput`, justification/evidence/deferred enum. | coercion deterministic/missing evidence/alternate candidate tests; task 47 omitted-`reconsider` proof-free/requires-proof tests。 | explicit payload について実装済み。source-derived coercion/reconsider extraction について MC-G018/MC-G020 は残る。 |
 | Fact query は deterministic、visibility-scoped、non-mutating。 | `TypeFactQueryEngine`, `TypeFactQueryOutput`, `TypeFactQueryStatus`. | deterministic/provenance/visibility/contradiction tests. | 実装済み。 |
 | public enum は forward-compatible。 | public enum の `#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`. | task 31 で guard 済み。 |
 
@@ -189,7 +189,9 @@ literal top-level public item:
   `RegistrationVariableOccurrence`, `RegistrationValidationParameter`,
   `RegistrationReferencedSymbolRole`, `RegistrationReferencedSymbol`,
   `ActivationInput`, `ActivationVerifierStatus`, `ExistentialGateInput`,
-  `ExistentialGateCandidate`, `ExistentialGateGuardEvidence`,
+  `ExistentialGateCandidate`, `ExistentialGateBaseEvidence`,
+  `ExistentialGateBaseEvidenceKind`, `ExistentialGateBaseEvidenceCoverage`,
+  `ExistentialGateGuardEvidence`,
   `ExistentialGateRecovery`, `ExistentialGateOutput`,
   `ExistentialGateResult`, `ExistentialGateStatus`,
   `RegistrationDiagnostic`, `RegistrationDiagnosticDraft`,
@@ -202,7 +204,7 @@ literal top-level public item:
 |---|---|---|---|
 | Pending/activated registration database は resolver origin を保持し、不完全 payload を activate しない。 | `RegistrationDatabase`, pending/activated/rejected tables and source records. | pending/activation/source/invalid activation tests. | 実装済み。MC-G021 は残る。 |
 | Validation は obligation を emit し、kind-specific payload を検証し、accepted verifier/artifact status で activation を gate する。 | `RegistrationValidationInput`, validation pattern/parameter/reference types, `ActivationInput`. | validation/invalid/routing/reduction-size/accepted-unaccepted activation tests. | explicit payload について実装済み。MC-G025 は残る。 |
-| Existential gate は accepted activation、visible guard、exact pattern、deterministic recovery を要求する。 | `ExistentialGateInput`, candidates, guard evidence, output/result/status types. | missing/inactive/pending/unaccepted/accepted/rejected/degraded existential tests. | explicit payload について実装済み。MC-G026 は残る。 |
+| Existential gate は accepted activation、visible guard、exact pattern/base-evidence match、base-shape coverage、deterministic recovery を要求する。 | `ExistentialGateInput`, candidates, base evidence, guard evidence, output/result/status types. | missing/inactive/pending/unaccepted/accepted/rejected/degraded existential tests; task 47 base-object/set、accepted-mode、structure-field、schema-parameter evidence tests。 | explicit payload について実装済み。MC-G026 は残る。 |
 | Diagnostic と deterministic rendering は stable。 | `RegistrationDiagnosticTable` and diagnostic classes/recovery. | debug rendering and validation diagnostic tests. | 実装済み。public diagnostic code は MC-G005。 |
 | public enum は forward-compatible。 | public enum の `#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`. | task 31 で guard 済み。 |
 

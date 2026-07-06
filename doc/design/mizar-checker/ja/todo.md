@@ -911,7 +911,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       replay、active `.miz` semantic fixture は MC-G020/MC-G021/MC-G023/MC-G030 の下で
       deferred のままである。
 
-47. **Checker 整合: existential gate と activation 契約。** [ ]
+47. **Checker 整合: existential gate と activation 契約。** [x]
     - task-20 の existential gate を task-43 の built-in inhabitation 表と
       パラメータ化 sethood 形に整合させ、task-40 の activation 契約を暫定
       policy が近似する目標挙動として `registration_resolution.md` に記録
@@ -928,6 +928,22 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-checker`、
       `cargo clippy -p mizar-checker --all-targets -- -D warnings`。
     - 依存: 40, 43, 44。参照: SSA-006, SSA-013, SSA-014, SSA-015。
+    - task 47 で完了: `registration_resolution.rs` は explicit
+      base-shape inhabitation evidence を unattributed な exact pattern match に
+      限って受理し、built-in `object`/`set`、accepted mode tuple、zero-field
+      または fully guarded structure constructor、schema type parameter coverage
+      を扱う。attributed gate は引き続き active existential candidate を要求し、
+      hidden、non-consumable、不完全、または mismatched guard evidence は verified
+      fact を seed せず gate を block または reject する。`type_checker.rs` は
+      explicit narrowing request と omitted narrowing request を区別し、justification
+      省略 `reconsider` は supplied consumable proof-free evidence が target を既に
+      discharge する場合だけ受理し、それ以外では implicit obligation を作らず
+      `type.narrowing_requires_proof` を報告する。`registration_resolution.md`、
+      `type_checker.md`、checker plan/audit、top-level coverage audit は
+      task-40/43/44 contract を記録する。source-derived base-shape extraction、
+      positive accepted-local activation、source-derived omitted-`reconsider`
+      parser/extraction coverage、artifact、active `.miz` fixture は
+      MC-G018/MC-G020/MC-G021/MC-G025/MC-G026/MC-G030 の下で deferred のまま。
 
 48. **監査 corpus の活性化と task-29 record の改訂。** [ ]
     - `advanced_semantics`/`formula_statement` runner、property-implementation

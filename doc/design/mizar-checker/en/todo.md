@@ -964,7 +964,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       `.miz` semantic fixtures remain deferred under MC-G020/MC-G021/MC-G023/
       MC-G030.
 
-47. **Checker alignment: existential gate and activation contract.** [ ]
+47. **Checker alignment: existential gate and activation contract.** [x]
     - Align the task-20 existential gate with the task-43 built-in
       inhabitation table and parameterized sethood form, and record the
       task-40 activation contract in `registration_resolution.md` as the
@@ -980,6 +980,23 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Verify: `cargo test -p mizar-checker`,
       `cargo clippy -p mizar-checker --all-targets -- -D warnings`.
     - Deps: 40, 43, 44. Refs: SSA-006, SSA-013, SSA-014, SSA-015.
+    - Completed in task 47: `registration_resolution.rs` now accepts
+      explicit base-shape inhabitation evidence only for unattributed exact
+      pattern matches, with built-in `object`/`set`, accepted mode tuple,
+      zero-field or fully guarded structure constructor, and schema type
+      parameter coverage. Attributed gates still require active existential
+      candidates; hidden, non-consumable, incomplete, or mismatched guard
+      evidence blocks or rejects the gate without seeding verified facts.
+      `type_checker.rs` now distinguishes explicit from omitted narrowing
+      requests, accepts omitted `reconsider` only when supplied consumable
+      proof-free evidence already discharges the target, and reports
+      `type.narrowing_requires_proof` without creating an implicit obligation
+      otherwise. `registration_resolution.md`, `type_checker.md`, the checker
+      plan/audits, and the top-level coverage audit record the task-40/43/44
+      contracts. Source-derived base-shape extraction, positive accepted-local
+      activation, source-derived omitted-`reconsider` parser/extraction
+      coverage, artifacts, and active `.miz` fixtures remain deferred under
+      MC-G018/MC-G020/MC-G021/MC-G025/MC-G026/MC-G030.
 
 48. **Audit-corpus activation and task-29 record revision.** [ ]
     - When the `advanced_semantics`/`formula_statement` runners,

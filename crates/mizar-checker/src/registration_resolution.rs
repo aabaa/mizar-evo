@@ -1205,6 +1205,7 @@ pub struct ExistentialGateInput {
     required_guards: Vec<ExistentialGateGuardKey>,
     guard_evidence: Vec<ExistentialGateGuardEvidence>,
     candidates: Vec<ExistentialGateCandidate>,
+    base_evidence: Option<ExistentialGateBaseEvidence>,
     recovery: ExistentialGateRecovery,
 }
 
@@ -1225,6 +1226,7 @@ impl ExistentialGateInput {
             required_guards: Vec::new(),
             guard_evidence: Vec::new(),
             candidates: Vec::new(),
+            base_evidence: None,
             recovery: ExistentialGateRecovery::Normal,
         }
     }
@@ -1261,6 +1263,10 @@ impl ExistentialGateInput {
         &self.candidates
     }
 
+    pub const fn base_evidence(&self) -> Option<&ExistentialGateBaseEvidence> {
+        self.base_evidence.as_ref()
+    }
+
     pub const fn recovery(&self) -> ExistentialGateRecovery {
         self.recovery
     }
@@ -1286,6 +1292,11 @@ impl ExistentialGateInput {
         candidates: impl IntoIterator<Item = ExistentialGateCandidate>,
     ) -> Self {
         self.candidates = candidates.into_iter().collect();
+        self
+    }
+
+    pub fn with_base_evidence(mut self, evidence: ExistentialGateBaseEvidence) -> Self {
+        self.base_evidence = Some(evidence);
         self
     }
 
@@ -1395,6 +1406,57 @@ impl ExistentialGateCandidate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ExistentialGateBaseEvidence {
+    kind: ExistentialGateBaseEvidenceKind,
+    pattern: RegistrationPatternKey,
+    coverage: ExistentialGateBaseEvidenceCoverage,
+}
+
+impl ExistentialGateBaseEvidence {
+    pub fn new(
+        kind: ExistentialGateBaseEvidenceKind,
+        pattern: impl Into<RegistrationPatternKey>,
+        coverage: ExistentialGateBaseEvidenceCoverage,
+    ) -> Self {
+        Self {
+            kind,
+            pattern: pattern.into(),
+            coverage,
+        }
+    }
+
+    pub const fn kind(&self) -> ExistentialGateBaseEvidenceKind {
+        self.kind
+    }
+
+    pub const fn pattern(&self) -> &RegistrationPatternKey {
+        &self.pattern
+    }
+
+    pub const fn coverage(&self) -> ExistentialGateBaseEvidenceCoverage {
+        self.coverage
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ExistentialGateBaseEvidenceKind {
+    BuiltinObject,
+    BuiltinSet,
+    AcceptedModeApplication,
+    StructureConstructorWitness,
+    SchemaTypeParameter,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum ExistentialGateBaseEvidenceCoverage {
+    Builtin,
+    CompleteGuardSet,
+    ZeroFieldStructure,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExistentialGateGuardEvidence {
     guard: ExistentialGateGuardKey,
     fact: TypeFactId,
@@ -1500,6 +1562,8 @@ pub struct ExistentialGateResult {
     attributes: Vec<RegistrationAttributeKey>,
     status: ExistentialGateStatus,
     registration: Option<CheckerRegistrationId>,
+    base_evidence_kind: Option<ExistentialGateBaseEvidenceKind>,
+    base_evidence_coverage: Option<ExistentialGateBaseEvidenceCoverage>,
     facts: Vec<TypeFactId>,
     diagnostics: Vec<RegistrationDiagnosticId>,
 }
@@ -1535,6 +1599,14 @@ impl ExistentialGateResult {
 
     pub const fn registration(&self) -> Option<CheckerRegistrationId> {
         self.registration
+    }
+
+    pub const fn base_evidence_kind(&self) -> Option<ExistentialGateBaseEvidenceKind> {
+        self.base_evidence_kind
+    }
+
+    pub const fn base_evidence_coverage(&self) -> Option<ExistentialGateBaseEvidenceCoverage> {
+        self.base_evidence_coverage
     }
 
     pub fn facts(&self) -> &[TypeFactId] {
@@ -1702,6 +1774,7 @@ type PendingValidationError = (
     RegistrationDiagnosticClass,
 );
 type SiteOrderKey = (usize, u8, String);
+type ExistentialGateBaseEvidenceOrderKey = (u8, u8, String);
 type ExistentialGateInputOrderKey = (
     String,
     usize,
@@ -1710,6 +1783,7 @@ type ExistentialGateInputOrderKey = (
     String,
     String,
     Vec<String>,
+    Option<ExistentialGateBaseEvidenceOrderKey>,
 );
 type ExistentialGateResultOrderKey = (
     String,
@@ -1719,6 +1793,7 @@ type ExistentialGateResultOrderKey = (
     String,
     String,
     Vec<String>,
+    Option<(u8, u8)>,
     usize,
 );
 
@@ -1744,8 +1819,11 @@ impl<'a> ExistentialGateBuilder<'a> {
             .map(|candidate| evaluate_existential_candidate(self.database, &input, candidate))
             .collect::<Vec<_>>();
         candidate_reports.sort_by_key(existential_candidate_report_order_key);
+        let base_report = input
+            .base_evidence()
+            .map(|evidence| evaluate_existential_base_evidence(&input, evidence));
 
-        let status = existential_gate_status(&input, &candidate_reports);
+        let status = existential_gate_status(&input, &candidate_reports, base_report.as_ref());
         let mut diagnostics = Vec::new();
         if status != ExistentialGateStatus::Satisfied {
             diagnostics.push(
@@ -1769,6 +1847,16 @@ impl<'a> ExistentialGateBuilder<'a> {
                     .map(|report| report.registration)
             })
             .flatten();
+        let satisfied_base = if status == ExistentialGateStatus::Satisfied && registration.is_none()
+        {
+            base_report
+                .as_ref()
+                .filter(|report| report.status == ExistentialBaseEvidenceStatus::Satisfied)
+        } else {
+            None
+        };
+        let base_evidence_kind = satisfied_base.map(|report| report.kind);
+        let base_evidence_coverage = satisfied_base.map(|report| report.coverage);
         let facts = if status == ExistentialGateStatus::Satisfied {
             visible_guard_facts(input.required_guards(), input.guard_evidence())
         } else {
@@ -1784,6 +1872,8 @@ impl<'a> ExistentialGateBuilder<'a> {
             attributes: canonical_attributes(input.attributes),
             status,
             registration,
+            base_evidence_kind,
+            base_evidence_coverage,
             facts,
             diagnostics,
         });
@@ -1810,6 +1900,20 @@ struct ExistentialCandidateReport {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum ExistentialCandidateStatus {
+    Satisfied,
+    BlockedGuard,
+    Invalid,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ExistentialBaseEvidenceReport {
+    kind: ExistentialGateBaseEvidenceKind,
+    coverage: ExistentialGateBaseEvidenceCoverage,
+    status: ExistentialBaseEvidenceStatus,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+enum ExistentialBaseEvidenceStatus {
     Satisfied,
     BlockedGuard,
     Invalid,
@@ -1862,9 +1966,57 @@ fn evaluate_existential_candidate(
     }
 }
 
+fn evaluate_existential_base_evidence(
+    input: &ExistentialGateInput,
+    evidence: &ExistentialGateBaseEvidence,
+) -> ExistentialBaseEvidenceReport {
+    let status = if !input.attributes().is_empty()
+        || evidence.pattern() != input.pattern()
+        || !base_evidence_coverage_is_valid(
+            evidence.kind(),
+            evidence.coverage(),
+            input.required_guards().is_empty(),
+        ) {
+        ExistentialBaseEvidenceStatus::Invalid
+    } else if !guards_are_visible(input.required_guards(), input.guard_evidence()) {
+        ExistentialBaseEvidenceStatus::BlockedGuard
+    } else {
+        ExistentialBaseEvidenceStatus::Satisfied
+    };
+    ExistentialBaseEvidenceReport {
+        kind: evidence.kind(),
+        coverage: evidence.coverage(),
+        status,
+    }
+}
+
+fn base_evidence_coverage_is_valid(
+    kind: ExistentialGateBaseEvidenceKind,
+    coverage: ExistentialGateBaseEvidenceCoverage,
+    required_guards_empty: bool,
+) -> bool {
+    match kind {
+        ExistentialGateBaseEvidenceKind::BuiltinObject
+        | ExistentialGateBaseEvidenceKind::BuiltinSet => {
+            coverage == ExistentialGateBaseEvidenceCoverage::Builtin && required_guards_empty
+        }
+        ExistentialGateBaseEvidenceKind::AcceptedModeApplication
+        | ExistentialGateBaseEvidenceKind::SchemaTypeParameter => {
+            coverage == ExistentialGateBaseEvidenceCoverage::CompleteGuardSet
+                && !required_guards_empty
+        }
+        ExistentialGateBaseEvidenceKind::StructureConstructorWitness => match coverage {
+            ExistentialGateBaseEvidenceCoverage::ZeroFieldStructure => required_guards_empty,
+            ExistentialGateBaseEvidenceCoverage::CompleteGuardSet => !required_guards_empty,
+            ExistentialGateBaseEvidenceCoverage::Builtin => false,
+        },
+    }
+}
+
 fn existential_gate_status(
     input: &ExistentialGateInput,
     reports: &[ExistentialCandidateReport],
+    base_report: Option<&ExistentialBaseEvidenceReport>,
 ) -> ExistentialGateStatus {
     if input.recovery() == ExistentialGateRecovery::Degraded {
         return ExistentialGateStatus::DegradedRecovery;
@@ -1872,16 +2024,20 @@ fn existential_gate_status(
     if reports
         .iter()
         .any(|report| report.status == ExistentialCandidateStatus::Satisfied)
+        || base_report
+            .is_some_and(|report| report.status == ExistentialBaseEvidenceStatus::Satisfied)
     {
         return ExistentialGateStatus::Satisfied;
     }
     if reports
         .iter()
         .any(|report| report.status == ExistentialCandidateStatus::BlockedGuard)
+        || base_report
+            .is_some_and(|report| report.status == ExistentialBaseEvidenceStatus::BlockedGuard)
     {
         return ExistentialGateStatus::BlockedGuard;
     }
-    if !reports.is_empty() {
+    if !reports.is_empty() || base_report.is_some() {
         return ExistentialGateStatus::InvalidCandidate;
     }
     ExistentialGateStatus::MissingExistential
@@ -1948,10 +2104,38 @@ fn canonical_attribute_key_strings(
         .collect()
 }
 
+fn base_evidence_order_key(
+    evidence: &ExistentialGateBaseEvidence,
+) -> ExistentialGateBaseEvidenceOrderKey {
+    (
+        base_evidence_kind_rank(evidence.kind()),
+        base_evidence_coverage_rank(evidence.coverage()),
+        evidence.pattern().as_str().to_owned(),
+    )
+}
+
 fn typed_site_order_key(site: &TypedSiteRef) -> SiteOrderKey {
     match site {
         TypedSiteRef::Node(node) => (node.index(), 0, String::new()),
         TypedSiteRef::Role { node, role } => (node.index(), 1, role.as_str().to_owned()),
+    }
+}
+
+fn base_evidence_kind_rank(kind: ExistentialGateBaseEvidenceKind) -> u8 {
+    match kind {
+        ExistentialGateBaseEvidenceKind::BuiltinObject => 0,
+        ExistentialGateBaseEvidenceKind::BuiltinSet => 1,
+        ExistentialGateBaseEvidenceKind::AcceptedModeApplication => 2,
+        ExistentialGateBaseEvidenceKind::StructureConstructorWitness => 3,
+        ExistentialGateBaseEvidenceKind::SchemaTypeParameter => 4,
+    }
+}
+
+fn base_evidence_coverage_rank(coverage: ExistentialGateBaseEvidenceCoverage) -> u8 {
+    match coverage {
+        ExistentialGateBaseEvidenceCoverage::Builtin => 0,
+        ExistentialGateBaseEvidenceCoverage::CompleteGuardSet => 1,
+        ExistentialGateBaseEvidenceCoverage::ZeroFieldStructure => 2,
     }
 }
 
@@ -2584,6 +2768,7 @@ fn existential_gate_input_order_key(input: &ExistentialGateInput) -> Existential
         input.pattern().as_str().to_owned(),
         input.trigger().as_str().to_owned(),
         canonical_attribute_key_strings(input.attributes().iter().cloned()),
+        input.base_evidence().map(base_evidence_order_key),
     )
 }
 
@@ -2610,6 +2795,15 @@ fn existential_gate_result_order_key(
         result.pattern.as_str().to_owned(),
         result.trigger.as_str().to_owned(),
         canonical_attribute_key_strings(result.attributes.iter().cloned()),
+        result
+            .base_evidence_kind
+            .zip(result.base_evidence_coverage)
+            .map(|(kind, coverage)| {
+                (
+                    base_evidence_kind_rank(kind),
+                    base_evidence_coverage_rank(coverage),
+                )
+            }),
         result.id.index(),
     )
 }
@@ -2842,6 +3036,8 @@ fn write_existential_gates(output: &mut String, gates: &[ExistentialGateResult])
             gate.may_seed_verified_facts()
         );
         write_optional_checker_registration(output, gate.registration);
+        output.push_str(" base=");
+        write_optional_base_evidence(output, gate.base_evidence_kind, gate.base_evidence_coverage);
         output.push_str(" pattern=\"");
         write_escaped(output, gate.pattern.as_str());
         output.push_str("\" trigger=\"");
@@ -3009,6 +3205,21 @@ fn write_optional_checker_registration(
         let _ = write!(output, "checker-registration#{}", registration.index());
     } else {
         output.push_str("<none>");
+    }
+}
+
+fn write_optional_base_evidence(
+    output: &mut String,
+    kind: Option<ExistentialGateBaseEvidenceKind>,
+    coverage: Option<ExistentialGateBaseEvidenceCoverage>,
+) {
+    match (kind, coverage) {
+        (Some(kind), Some(coverage)) => {
+            output.push_str(base_evidence_kind_name(kind));
+            output.push(':');
+            output.push_str(base_evidence_coverage_name(coverage));
+        }
+        _ => output.push_str("<none>"),
     }
 }
 
@@ -3270,6 +3481,26 @@ fn existential_gate_status_name(status: ExistentialGateStatus) -> &'static str {
         ExistentialGateStatus::BlockedGuard => "blocked_guard",
         ExistentialGateStatus::InvalidCandidate => "invalid_candidate",
         ExistentialGateStatus::DegradedRecovery => "degraded_recovery",
+    }
+}
+
+fn base_evidence_kind_name(kind: ExistentialGateBaseEvidenceKind) -> &'static str {
+    match kind {
+        ExistentialGateBaseEvidenceKind::BuiltinObject => "builtin_object",
+        ExistentialGateBaseEvidenceKind::BuiltinSet => "builtin_set",
+        ExistentialGateBaseEvidenceKind::AcceptedModeApplication => "accepted_mode_application",
+        ExistentialGateBaseEvidenceKind::StructureConstructorWitness => {
+            "structure_constructor_witness"
+        }
+        ExistentialGateBaseEvidenceKind::SchemaTypeParameter => "schema_type_parameter",
+    }
+}
+
+fn base_evidence_coverage_name(coverage: ExistentialGateBaseEvidenceCoverage) -> &'static str {
+    match coverage {
+        ExistentialGateBaseEvidenceCoverage::Builtin => "builtin",
+        ExistentialGateBaseEvidenceCoverage::CompleteGuardSet => "complete_guard_set",
+        ExistentialGateBaseEvidenceCoverage::ZeroFieldStructure => "zero_field_structure",
     }
 }
 
@@ -4529,6 +4760,388 @@ mod tests {
     }
 
     #[test]
+    fn base_inhabitation_evidence_satisfies_only_unattributed_exact_patterns() {
+        let fixture = env_fixture();
+        let database = RegistrationDatabase::from_symbol_env(&fixture.env, []);
+
+        let builtin_object = ExistentialGateOutput::evaluate(
+            &database,
+            [
+                unattributed_gate("type:object", 10, 11).with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::BuiltinObject,
+                    "type:object",
+                    ExistentialGateBaseEvidenceCoverage::Builtin,
+                )),
+            ],
+        );
+        let gate = builtin_object.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+        assert!(gate.may_seed_verified_facts());
+        assert_eq!(gate.registration(), None);
+        assert_eq!(
+            gate.base_evidence_kind(),
+            Some(ExistentialGateBaseEvidenceKind::BuiltinObject)
+        );
+        assert_eq!(
+            gate.base_evidence_coverage(),
+            Some(ExistentialGateBaseEvidenceCoverage::Builtin)
+        );
+        assert!(gate.facts().is_empty());
+
+        let builtin_set = ExistentialGateOutput::evaluate(
+            &database,
+            [
+                unattributed_gate("type:set", 12, 13).with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::BuiltinSet,
+                    "type:set",
+                    ExistentialGateBaseEvidenceCoverage::Builtin,
+                )),
+            ],
+        );
+        assert_eq!(
+            builtin_set.iter().next().unwrap().base_evidence_kind(),
+            Some(ExistentialGateBaseEvidenceKind::BuiltinSet)
+        );
+
+        let mode_guard = ExistentialGateGuardKey::new("mode:M(args:a):accepted");
+        let accepted_mode = ExistentialGateOutput::evaluate(
+            &database,
+            [unattributed_gate("mode:M(args:a)", 14, 15)
+                .with_required_guards([mode_guard.clone()])
+                .with_guard_evidence([ExistentialGateGuardEvidence::new(
+                    mode_guard.clone(),
+                    TypeFactId::new(4),
+                )])
+                .with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::AcceptedModeApplication,
+                    "mode:M(args:a)",
+                    ExistentialGateBaseEvidenceCoverage::CompleteGuardSet,
+                ))],
+        );
+        let gate = accepted_mode.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+        assert_eq!(gate.registration(), None);
+        assert_eq!(
+            gate.base_evidence_kind(),
+            Some(ExistentialGateBaseEvidenceKind::AcceptedModeApplication)
+        );
+        assert_eq!(gate.facts(), &[TypeFactId::new(4)]);
+        assert!(
+            accepted_mode
+                .debug_text()
+                .contains("base=accepted_mode_application:complete_guard_set")
+        );
+
+        let mismatched_mode_tuple = ExistentialGateOutput::evaluate(
+            &database,
+            [unattributed_gate("mode:M(args:a)", 16, 17)
+                .with_required_guards([mode_guard.clone()])
+                .with_guard_evidence([ExistentialGateGuardEvidence::new(
+                    mode_guard,
+                    TypeFactId::new(4),
+                )])
+                .with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::AcceptedModeApplication,
+                    "mode:M(args:b)",
+                    ExistentialGateBaseEvidenceCoverage::CompleteGuardSet,
+                ))],
+        );
+        let gate = mismatched_mode_tuple.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::InvalidCandidate);
+        assert!(!gate.may_seed_verified_facts());
+
+        let attributed_gate = ExistentialGateOutput::evaluate(
+            &database,
+            [gate_input("type:object").with_base_evidence(base_evidence(
+                ExistentialGateBaseEvidenceKind::BuiltinObject,
+                "type:object",
+                ExistentialGateBaseEvidenceCoverage::Builtin,
+            ))],
+        );
+        let gate = attributed_gate.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::InvalidCandidate);
+        assert_eq!(gate.registration(), None);
+        assert_eq!(gate.base_evidence_kind(), None);
+        assert!(!gate.may_seed_verified_facts());
+    }
+
+    #[test]
+    fn base_inhabitation_evidence_requires_complete_structure_and_schema_guards() {
+        let fixture = env_fixture();
+        let database = RegistrationDatabase::from_symbol_env(&fixture.env, []);
+
+        let zero_field_structure = ExistentialGateOutput::evaluate(
+            &database,
+            [
+                unattributed_gate("struct:Zero", 20, 21).with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::StructureConstructorWitness,
+                    "struct:Zero",
+                    ExistentialGateBaseEvidenceCoverage::ZeroFieldStructure,
+                )),
+            ],
+        );
+        let gate = zero_field_structure.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+        assert_eq!(
+            gate.base_evidence_coverage(),
+            Some(ExistentialGateBaseEvidenceCoverage::ZeroFieldStructure)
+        );
+        assert!(gate.facts().is_empty());
+
+        let field_guard = ExistentialGateGuardKey::new("field:carrier:inhabited");
+        let field_structure = ExistentialGateOutput::evaluate(
+            &database,
+            [unattributed_gate("struct:OneField", 22, 23)
+                .with_required_guards([field_guard.clone()])
+                .with_guard_evidence([ExistentialGateGuardEvidence::new(
+                    field_guard.clone(),
+                    TypeFactId::new(8),
+                )])
+                .with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::StructureConstructorWitness,
+                    "struct:OneField",
+                    ExistentialGateBaseEvidenceCoverage::CompleteGuardSet,
+                ))],
+        );
+        let gate = field_structure.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+        assert_eq!(gate.facts(), &[TypeFactId::new(8)]);
+
+        let omitted_field_guards = ExistentialGateOutput::evaluate(
+            &database,
+            [
+                unattributed_gate("struct:OneField", 24, 25).with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::StructureConstructorWitness,
+                    "struct:OneField",
+                    ExistentialGateBaseEvidenceCoverage::CompleteGuardSet,
+                )),
+            ],
+        );
+        let gate = omitted_field_guards.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::InvalidCandidate);
+        assert!(!gate.may_seed_verified_facts());
+
+        let hidden_field = ExistentialGateOutput::evaluate(
+            &database,
+            [unattributed_gate("struct:OneField", 26, 27)
+                .with_required_guards([field_guard.clone()])
+                .with_guard_evidence([ExistentialGateGuardEvidence::new(
+                    field_guard.clone(),
+                    TypeFactId::new(8),
+                )
+                .with_visible(false)])
+                .with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::StructureConstructorWitness,
+                    "struct:OneField",
+                    ExistentialGateBaseEvidenceCoverage::CompleteGuardSet,
+                ))],
+        );
+        let gate = hidden_field.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::BlockedGuard);
+        assert!(gate.facts().is_empty());
+
+        let non_consumable_field = ExistentialGateOutput::evaluate(
+            &database,
+            [unattributed_gate("struct:OneField", 28, 29)
+                .with_required_guards([field_guard.clone()])
+                .with_guard_evidence([ExistentialGateGuardEvidence::new(
+                    field_guard.clone(),
+                    TypeFactId::new(8),
+                )
+                .with_consumable(false)])
+                .with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::StructureConstructorWitness,
+                    "struct:OneField",
+                    ExistentialGateBaseEvidenceCoverage::CompleteGuardSet,
+                ))],
+        );
+        let gate = non_consumable_field.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::BlockedGuard);
+        assert!(gate.facts().is_empty());
+
+        let schema_guard = ExistentialGateGuardKey::new("schema:T:inhabited");
+        let schema_parameter = ExistentialGateOutput::evaluate(
+            &database,
+            [unattributed_gate("schema:T", 30, 31)
+                .with_required_guards([schema_guard.clone()])
+                .with_guard_evidence([ExistentialGateGuardEvidence::new(
+                    schema_guard.clone(),
+                    TypeFactId::new(11),
+                )])
+                .with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::SchemaTypeParameter,
+                    "schema:T",
+                    ExistentialGateBaseEvidenceCoverage::CompleteGuardSet,
+                ))],
+        );
+        let gate = schema_parameter.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+        assert_eq!(
+            gate.base_evidence_kind(),
+            Some(ExistentialGateBaseEvidenceKind::SchemaTypeParameter)
+        );
+        assert_eq!(gate.facts(), &[TypeFactId::new(11)]);
+
+        let schema_without_context = ExistentialGateOutput::evaluate(
+            &database,
+            [
+                unattributed_gate("schema:T", 32, 33).with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::SchemaTypeParameter,
+                    "schema:T",
+                    ExistentialGateBaseEvidenceCoverage::CompleteGuardSet,
+                )),
+            ],
+        );
+        assert_eq!(
+            schema_without_context.iter().next().unwrap().status(),
+            ExistentialGateStatus::InvalidCandidate
+        );
+    }
+
+    #[test]
+    fn base_inhabitation_evidence_rejects_invalid_coverage_combinations() {
+        let fixture = env_fixture();
+        let database = RegistrationDatabase::from_symbol_env(&fixture.env, []);
+        let guard = ExistentialGateGuardKey::new("guard:coverage");
+        let guarded = |input: ExistentialGateInput| {
+            input
+                .with_required_guards([guard.clone()])
+                .with_guard_evidence([ExistentialGateGuardEvidence::new(
+                    guard.clone(),
+                    TypeFactId::new(21),
+                )])
+        };
+        let invalid_cases = vec![
+            unattributed_gate("type:object", 40, 41).with_base_evidence(base_evidence(
+                ExistentialGateBaseEvidenceKind::BuiltinObject,
+                "type:object",
+                ExistentialGateBaseEvidenceCoverage::CompleteGuardSet,
+            )),
+            guarded(unattributed_gate("type:set", 42, 43)).with_base_evidence(base_evidence(
+                ExistentialGateBaseEvidenceKind::BuiltinSet,
+                "type:set",
+                ExistentialGateBaseEvidenceCoverage::Builtin,
+            )),
+            guarded(unattributed_gate("mode:M(args:a)", 44, 45)).with_base_evidence(base_evidence(
+                ExistentialGateBaseEvidenceKind::AcceptedModeApplication,
+                "mode:M(args:a)",
+                ExistentialGateBaseEvidenceCoverage::Builtin,
+            )),
+            guarded(unattributed_gate("mode:M(args:a)", 46, 47)).with_base_evidence(base_evidence(
+                ExistentialGateBaseEvidenceKind::AcceptedModeApplication,
+                "mode:M(args:a)",
+                ExistentialGateBaseEvidenceCoverage::ZeroFieldStructure,
+            )),
+            guarded(unattributed_gate("schema:T", 48, 49)).with_base_evidence(base_evidence(
+                ExistentialGateBaseEvidenceKind::SchemaTypeParameter,
+                "schema:T",
+                ExistentialGateBaseEvidenceCoverage::Builtin,
+            )),
+            guarded(unattributed_gate("schema:T", 50, 51)).with_base_evidence(base_evidence(
+                ExistentialGateBaseEvidenceKind::SchemaTypeParameter,
+                "schema:T",
+                ExistentialGateBaseEvidenceCoverage::ZeroFieldStructure,
+            )),
+            guarded(unattributed_gate("struct:OneField", 52, 53)).with_base_evidence(
+                base_evidence(
+                    ExistentialGateBaseEvidenceKind::StructureConstructorWitness,
+                    "struct:OneField",
+                    ExistentialGateBaseEvidenceCoverage::Builtin,
+                ),
+            ),
+            guarded(unattributed_gate("struct:Zero", 54, 55)).with_base_evidence(base_evidence(
+                ExistentialGateBaseEvidenceKind::StructureConstructorWitness,
+                "struct:Zero",
+                ExistentialGateBaseEvidenceCoverage::ZeroFieldStructure,
+            )),
+        ];
+
+        for (index, input) in invalid_cases.into_iter().enumerate() {
+            let output = ExistentialGateOutput::evaluate(&database, [input]);
+            let gate = output.iter().next().unwrap();
+            assert_eq!(
+                gate.status(),
+                ExistentialGateStatus::InvalidCandidate,
+                "invalid coverage case {index} should reject"
+            );
+            assert_eq!(gate.base_evidence_kind(), None);
+            assert!(gate.facts().is_empty());
+            assert!(!gate.may_seed_verified_facts());
+        }
+    }
+
+    #[test]
+    fn existential_gate_satisfaction_source_is_candidate_or_base_evidence() {
+        let fixture = env_fixture();
+        let database = RegistrationDatabase::from_symbol_env(
+            &fixture.env,
+            [ActivationInput::accepted(
+                fixture.cluster_b,
+                ResolverRegistrationKind::Cluster,
+                "trigger:existential",
+                "type:object",
+                "correctness:existential",
+                "evidence:existential",
+            )
+            .with_validation_kind(RegistrationValidationKind::Existential)],
+        );
+
+        let candidate_over_invalid_base = ExistentialGateOutput::evaluate(
+            &database,
+            [gate_input("type:object")
+                .with_candidates([gate_candidate(fixture.cluster_b, "type:object")])
+                .with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::BuiltinObject,
+                    "type:object",
+                    ExistentialGateBaseEvidenceCoverage::Builtin,
+                ))],
+        );
+        let gate = candidate_over_invalid_base.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+        assert_eq!(
+            gate.registration(),
+            Some(CheckerRegistrationId::new(fixture.cluster_b.index()))
+        );
+        assert_eq!(gate.base_evidence_kind(), None);
+
+        let base_over_invalid_candidate = ExistentialGateOutput::evaluate(
+            &database,
+            [unattributed_gate("type:set", 56, 57)
+                .with_candidates([gate_candidate(fixture.cluster_b, "type:object")])
+                .with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::BuiltinSet,
+                    "type:set",
+                    ExistentialGateBaseEvidenceCoverage::Builtin,
+                ))],
+        );
+        let gate = base_over_invalid_candidate.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+        assert_eq!(gate.registration(), None);
+        assert_eq!(
+            gate.base_evidence_kind(),
+            Some(ExistentialGateBaseEvidenceKind::BuiltinSet)
+        );
+
+        let candidate_preferred_over_valid_base = ExistentialGateOutput::evaluate(
+            &database,
+            [unattributed_gate("type:object", 58, 59)
+                .with_candidates([gate_candidate(fixture.cluster_b, "type:object")])
+                .with_base_evidence(base_evidence(
+                    ExistentialGateBaseEvidenceKind::BuiltinObject,
+                    "type:object",
+                    ExistentialGateBaseEvidenceCoverage::Builtin,
+                ))],
+        );
+        let gate = candidate_preferred_over_valid_base.iter().next().unwrap();
+        assert_eq!(gate.status(), ExistentialGateStatus::Satisfied);
+        assert_eq!(
+            gate.registration(),
+            Some(CheckerRegistrationId::new(fixture.cluster_b.index()))
+        );
+        assert_eq!(gate.base_evidence_kind(), None);
+    }
+
+    #[test]
     fn existential_gate_rejects_non_existential_or_mismatched_accepted_evidence() {
         let fixture = env_fixture();
         let database = RegistrationDatabase::from_symbol_env(
@@ -4911,6 +5524,19 @@ mod tests {
         gate_input_with_range(pattern, 50, 51)
     }
 
+    fn unattributed_gate(pattern: &str, start: usize, end: usize) -> ExistentialGateInput {
+        gate_input_with_owner_and_attrs(
+            pattern,
+            start,
+            end,
+            TypedSiteRef::Role {
+                node: TypedNodeId::new(0),
+                role: TypeRole::new("base_inhabitation_gate"),
+            },
+            Vec::<RegistrationAttributeKey>::new(),
+        )
+    }
+
     fn gate_input_with_range(pattern: &str, start: usize, end: usize) -> ExistentialGateInput {
         gate_input_with_owner_and_attrs(
             pattern,
@@ -4938,6 +5564,14 @@ mod tests {
             "trigger:existential",
             attributes,
         )
+    }
+
+    fn base_evidence(
+        kind: ExistentialGateBaseEvidenceKind,
+        pattern: &str,
+        coverage: ExistentialGateBaseEvidenceCoverage,
+    ) -> ExistentialGateBaseEvidence {
+        ExistentialGateBaseEvidence::new(kind, pattern, coverage)
     }
 
     fn gate_candidate(

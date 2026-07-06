@@ -134,8 +134,8 @@ Literal top-level public items:
 - `TypeNormalizationOutput`, `TypeNormalizer`, `DeclarationCheckingOutput`,
   `DeclarationChecker`, `TermFormulaInferenceOutput`, `TermFormulaChecker`,
   `CoercionCheckingOutput`, `CoercionObligationChecker`, `CoercionInput`,
-  `CoercionRequestKind`, `CoercionEvidence`, `CoercionDeferredReason`,
-  `InitialObligationInput`, `InitialRequirementKind`,
+  `CoercionRequestKind`, `CoercionJustification`, `CoercionEvidence`,
+  `CoercionDeferredReason`, `InitialObligationInput`, `InitialRequirementKind`,
   `TypeFactQueryEngine`, `TypeFactQuery`, `TypeFactQueryOutput`,
   `TypeFactQueryStatus`, `TermInput`, `TermKind`, `TermReference`,
   `TermDeferredReason`, `FormulaInput`, `FormulaKind`,
@@ -162,7 +162,7 @@ Correspondence:
 | Type-expression normalization canonicalizes modes, attributes, arity, and degraded unsupported input without cluster repair. | `TypeNormalizer`, `TypeNormalizationOutput`, `TypeExpressionInput`, `ModeExpansion`, normalized type tables. | `attributes_are_sorted_deduplicated_and_contradictions_are_diagnosed`, `attribute_arguments_and_duplicate_ranges_are_canonicalized`, `equivalent_inputs_have_order_independent_debug_rendering`, `builtins_structures_and_recursive_arguments_have_deterministic_ids`, mode-expansion and degraded-head tests. | Implemented for explicit payloads; MC-G014 remains for source extraction/provider payloads. |
 | Declaration checking consumes explicit declarations and binding contexts while preserving partial output. | `DeclarationChecker`, `DeclarationCheckingOutput`, declaration input/status tables. | `declarations_attach_types_and_context_snapshots_are_deterministic`, `invalid_declarations_keep_partial_output_and_deterministic_diagnostics`, constrained/set/attributed/reconsider tests. | Implemented for explicit payloads; MC-G016 remains. |
 | Term and formula inference records checked tables, expected constraints, open candidates, facts, and recovery. | `TermFormulaChecker`, term/formula input and checked tables. | `term_inference_covers_term_kinds_and_open_candidates_deterministically`, `formula_inference_records_expected_constraints_facts_and_open_candidates`, `term_formula_recovery_keeps_partial_entries_without_successful_types`. | Implemented for explicit payloads; MC-G017 and MC-G019 remain. |
-| Coercion and initial obligations are recorded without assigning `VcId`s or fabricating evidence. | `CoercionObligationChecker`, `CoercionInput`, `InitialObligationInput`, evidence/deferred enums. | `coercion_checker_records_candidates_and_initial_obligations_deterministically`, `coercion_checker_blocks_missing_evidence_and_invalid_qua_without_fabrication`, `coercion_checker_preserves_alternate_same_site_kind_candidates`. | Implemented for explicit payloads; MC-G018 remains. |
+| Coercion and initial obligations are recorded without assigning `VcId`s or fabricating evidence. | `CoercionObligationChecker`, `CoercionInput`, `InitialObligationInput`, justification/evidence/deferred enums. | `coercion_checker_records_candidates_and_initial_obligations_deterministically`, `coercion_checker_blocks_missing_evidence_and_invalid_qua_without_fabrication`, `coercion_checker_preserves_alternate_same_site_kind_candidates`, task 47 omitted-`reconsider` proof-free/requires-proof tests. | Implemented for explicit payloads; MC-G018/MC-G020 remain for source-derived coercion/reconsider extraction. |
 | Fact queries are deterministic, visibility-scoped, and non-mutating. | `TypeFactQueryEngine`, `TypeFactQueryOutput`, `TypeFactQueryStatus`. | `type_fact_queries_are_deterministic_and_ignore_provenance_for_matching`, `type_fact_queries_respect_assumption_visibility_and_context_absence`, `type_fact_queries_report_contradictions_without_mutating_facts`. | Implemented. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded by task 31. |
 
@@ -192,7 +192,9 @@ Literal top-level public items:
   `RegistrationVariableOccurrence`, `RegistrationValidationParameter`,
   `RegistrationReferencedSymbolRole`, `RegistrationReferencedSymbol`,
   `ActivationInput`, `ActivationVerifierStatus`, `ExistentialGateInput`,
-  `ExistentialGateCandidate`, `ExistentialGateGuardEvidence`,
+  `ExistentialGateCandidate`, `ExistentialGateBaseEvidence`,
+  `ExistentialGateBaseEvidenceKind`, `ExistentialGateBaseEvidenceCoverage`,
+  `ExistentialGateGuardEvidence`,
   `ExistentialGateRecovery`, `ExistentialGateOutput`,
   `ExistentialGateResult`, `ExistentialGateStatus`,
   `RegistrationDiagnostic`, `RegistrationDiagnosticDraft`,
@@ -205,7 +207,7 @@ Correspondence:
 |---|---|---|---|
 | Pending and activated registration databases preserve resolver origins and never activate incomplete payloads. | `RegistrationDatabase`, pending/activated/rejected tables and source records. | `pending_entries_never_contribute_and_keep_external_gap_diagnostics`, `activation_moves_entries_into_deterministic_trigger_order`, `source_contributions_round_trip_through_all_tables`, invalid activation tests. | Implemented; MC-G021 remains for checker-ready source payloads. |
 | Validation emits obligations, validates kind-specific payloads, and gates activation on accepted verifier/artifact status. | `RegistrationValidationInput`, validation pattern/parameter/reference types, `ActivationInput`. | `validated_payloads_emit_pending_obligations_without_activation`, `kind_specific_validation_accepts_existential_conditional_functorial_and_reduction`, invalid validation/routing/reduction-size tests, accepted/unaccepted activation tests. | Implemented for explicit payloads; MC-G025 remains. |
-| Existential gates require accepted activations, visible guards, exact pattern matches, and deterministic recovery. | `ExistentialGateInput`, candidates, guard evidence, output/result/status types. | missing/inactive/pending/unaccepted/accepted/rejected/degraded existential tests. | Implemented for explicit payloads; MC-G026 remains for source/artifact integration. |
+| Existential gates require accepted activations, visible guards, exact pattern/base-evidence matches, base-shape coverage, and deterministic recovery. | `ExistentialGateInput`, candidates, base evidence, guard evidence, output/result/status types. | missing/inactive/pending/unaccepted/accepted/rejected/degraded existential tests; task 47 base-object/set, accepted-mode, structure-field, and schema-parameter evidence tests. | Implemented for explicit payloads; MC-G026 remains for source/artifact integration. |
 | Diagnostics and deterministic rendering are stable. | `RegistrationDiagnosticTable` and diagnostic classes/recovery. | `debug_rendering_is_stable_and_ordered_by_checker_keys`, validation diagnostics tests. | Implemented; public diagnostic codes remain MC-G005. |
 | Public enums are forward-compatible. | `#[non_exhaustive]` on public enums. | `checker_public_enums_are_forward_compatible_and_documented`. | Guarded by task 31. |
 

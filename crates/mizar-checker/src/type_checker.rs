@@ -497,6 +497,7 @@ pub struct CoercionInput {
     pub site: TypedSiteRef,
     pub source_range: SourceRange,
     pub kind: CoercionRequestKind,
+    pub justification: CoercionJustification,
     pub evidence: CoercionEvidence,
     pub from_type: Option<TypeExpressionInput>,
     pub to_type: TypeExpressionInput,
@@ -516,6 +517,7 @@ impl CoercionInput {
             site,
             source_range,
             kind,
+            justification: CoercionJustification::Explicit,
             evidence: CoercionEvidence::Missing,
             from_type: None,
             to_type,
@@ -532,6 +534,11 @@ impl CoercionInput {
 
     pub const fn with_evidence(mut self, evidence: CoercionEvidence) -> Self {
         self.evidence = evidence;
+        self
+    }
+
+    pub const fn with_justification(mut self, justification: CoercionJustification) -> Self {
+        self.justification = justification;
         self
     }
 
@@ -567,6 +574,13 @@ pub enum CoercionRequestKind {
     Widening,
     Narrowing,
     SourceQua,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum CoercionJustification {
+    Explicit,
+    Omitted,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -943,32 +957,50 @@ impl CoercionCheckingState<'_> {
                         }
                     }
                 }
-                CoercionRequestKind::Narrowing => {
-                    if !narrowing_is_supported_by_known_facts(
-                        input.evidence,
-                        !supporting_facts.is_empty(),
-                    ) {
-                        let obligation_input = input.obligation.clone().unwrap_or_else(|| {
-                            InitialObligationInput::new(
-                                input.site.clone(),
-                                input.source_range,
-                                InitialRequirementKind::Narrowing,
-                                input.to_type.clone(),
-                            )
-                            .with_assumptions(input.supporting_facts.clone())
-                        });
-                        let (obligation_id, obligation_status) =
-                            self.insert_initial_obligation(obligation_input, type_entries_by_site);
-                        obligation = Some(obligation_id);
-                        let obligation_coercion_status =
-                            if obligation_status == InitialObligationStatus::Pending {
-                                CoercionStatus::RequiresObligation
-                            } else {
-                                CoercionStatus::Blocked
-                            };
-                        status = merge_coercion_status(status, obligation_coercion_status);
+                CoercionRequestKind::Narrowing => match input.justification {
+                    CoercionJustification::Explicit => {
+                        if !explicit_narrowing_evidence_is_available(
+                            input.evidence,
+                            !supporting_facts.is_empty(),
+                        ) {
+                            let obligation_input = input.obligation.clone().unwrap_or_else(|| {
+                                InitialObligationInput::new(
+                                    input.site.clone(),
+                                    input.source_range,
+                                    InitialRequirementKind::Narrowing,
+                                    input.to_type.clone(),
+                                )
+                                .with_assumptions(input.supporting_facts.clone())
+                            });
+                            let (obligation_id, obligation_status) = self
+                                .insert_initial_obligation(obligation_input, type_entries_by_site);
+                            obligation = Some(obligation_id);
+                            let obligation_coercion_status =
+                                if obligation_status == InitialObligationStatus::Pending {
+                                    CoercionStatus::RequiresObligation
+                                } else {
+                                    CoercionStatus::Blocked
+                                };
+                            status = merge_coercion_status(status, obligation_coercion_status);
+                        }
                     }
-                }
+                    CoercionJustification::Omitted => {
+                        if !proof_free_reconsider_evidence_is_available(
+                            input.evidence,
+                            !supporting_facts.is_empty(),
+                        ) {
+                            recovery = Some(self.diagnostic(
+                                Some(input.site.clone()),
+                                input.source_range,
+                                TypeDiagnosticClass::Coercion,
+                                TypeDiagnosticSeverity::Error,
+                                "type.narrowing_requires_proof",
+                                DiagnosticRecoveryState::Degraded,
+                            ));
+                            status = merge_coercion_status(status, CoercionStatus::Rejected);
+                        }
+                    }
+                },
             }
         } else {
             status = merge_coercion_status(status, CoercionStatus::Blocked);
@@ -3303,6 +3335,7 @@ type CoercionCheckingInputKey = (
     String,
     Vec<usize>,
     Option<CoercionEvidence>,
+    Option<CoercionJustification>,
 );
 
 fn coercion_checking_input_key(input: &CoercionCheckingInput) -> CoercionCheckingInputKey {
@@ -3316,6 +3349,7 @@ fn coercion_checking_input_key(input: &CoercionCheckingInput) -> CoercionCheckin
             type_expression_input_key(&obligation.target_type),
             String::new(),
             fact_id_indexes(&obligation.assumptions),
+            None,
             None,
         ),
         CoercionCheckingInput::Coercion(coercion) => (
@@ -3332,6 +3366,7 @@ fn coercion_checking_input_key(input: &CoercionCheckingInput) -> CoercionCheckin
                 .unwrap_or_default(),
             fact_id_indexes(&coercion.supporting_facts),
             Some(coercion.evidence),
+            Some(coercion.justification),
         ),
     }
 }
@@ -3385,11 +3420,27 @@ fn source_qua_evidence_is_available(evidence: CoercionEvidence) -> bool {
     )
 }
 
-fn narrowing_is_supported_by_known_facts(
+fn explicit_narrowing_evidence_is_available(
     evidence: CoercionEvidence,
     has_known_facts: bool,
 ) -> bool {
     evidence == CoercionEvidence::KnownFacts && has_known_facts
+}
+
+fn proof_free_reconsider_evidence_is_available(
+    evidence: CoercionEvidence,
+    has_known_facts: bool,
+) -> bool {
+    has_known_facts
+        && matches!(
+            evidence,
+            CoercionEvidence::KnownFacts
+                | CoercionEvidence::BuiltinRadix
+                | CoercionEvidence::StructureInheritance
+                | CoercionEvidence::ActivatedSummary
+                | CoercionEvidence::StaticUpcast
+                | CoercionEvidence::CompatibleView
+        )
 }
 
 fn merge_coercion_status(current: CoercionStatus, next: CoercionStatus) -> CoercionStatus {
@@ -7609,6 +7660,153 @@ mod tests {
     }
 
     #[test]
+    fn omitted_reconsider_accepts_only_proof_free_consumable_evidence() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let mut input_facts = TypeFactTable::new();
+        let known_fact = input_facts.insert(TypeFactDraft {
+            subject: site(90),
+            predicate: TypePredicateRef::new("proof_free_reconsider_support"),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Inferred(TypeRuleId::new("fixture.known")),
+            status: FactStatus::Known,
+        });
+        let degraded_fact = input_facts.insert(TypeFactDraft {
+            subject: site(91),
+            predicate: TypePredicateRef::new("not_consumable_reconsider_support"),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Inferred(TypeRuleId::new("fixture.degraded")),
+            status: FactStatus::Degraded,
+        });
+
+        let accepted_evidence = [
+            (30, CoercionEvidence::KnownFacts),
+            (31, CoercionEvidence::BuiltinRadix),
+            (32, CoercionEvidence::StructureInheritance),
+            (33, CoercionEvidence::ActivatedSummary),
+            (34, CoercionEvidence::StaticUpcast),
+            (35, CoercionEvidence::CompatibleView),
+        ]
+        .into_iter()
+        .map(|(offset, evidence)| {
+            omitted_reconsider_input(source, offset, evidence)
+                .with_supporting_facts(vec![known_fact])
+        });
+        let rejected_evidence = [
+            omitted_reconsider_input(source, 40, CoercionEvidence::ActivatedSummary),
+            omitted_reconsider_input(source, 41, CoercionEvidence::BuiltinRadix),
+            omitted_reconsider_input(source, 42, CoercionEvidence::StaticUpcast),
+            omitted_reconsider_input(source, 43, CoercionEvidence::CompatibleView)
+                .with_supporting_facts(vec![degraded_fact]),
+            omitted_reconsider_input(source, 44, CoercionEvidence::Missing)
+                .with_supporting_facts(vec![known_fact]),
+        ];
+        let output = CoercionObligationChecker::default().check(
+            &symbols,
+            &input_facts,
+            accepted_evidence
+                .chain(rejected_evidence)
+                .collect::<Vec<_>>(),
+            Vec::new(),
+        );
+
+        assert!(output.initial_obligations().is_empty());
+        let coercion_at = |site_ref: TypedSiteRef| {
+            output
+                .coercions()
+                .iter()
+                .map(|(_, coercion)| coercion)
+                .find(|coercion| coercion.site == site_ref)
+                .unwrap()
+        };
+        for offset in 30..=35 {
+            let coercion = coercion_at(site(offset));
+            assert_eq!(coercion.kind, CoercionKind::Narrowing);
+            assert_eq!(coercion.status, CoercionStatus::Candidate);
+            assert_eq!(coercion.supporting_facts, vec![known_fact]);
+            assert_eq!(coercion.obligation, None);
+        }
+        for offset in 40..=44 {
+            let coercion = coercion_at(site(offset));
+            assert_eq!(coercion.kind, CoercionKind::Narrowing);
+            assert_eq!(coercion.status, CoercionStatus::Rejected);
+            assert_eq!(coercion.obligation, None);
+        }
+        assert_eq!(
+            diagnostic_ranges(&output, "type.narrowing_requires_proof"),
+            vec![(200, 205), (205, 210), (210, 215), (215, 220), (220, 225)]
+        );
+        let debug = output.debug_text();
+        assert!(debug.contains("type.narrowing_requires_proof"));
+        assert!(debug.contains("checker.coercion.supporting_fact_not_consumable"));
+        assert!(!debug.contains("kind=narrowing status=requires_obligation"));
+    }
+
+    #[test]
+    fn explicit_narrowing_preserves_task_ten_obligation_path() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let mut input_facts = TypeFactTable::new();
+        let known_fact = input_facts.insert(TypeFactDraft {
+            subject: site(92),
+            predicate: TypePredicateRef::new("explicit_narrowing_support"),
+            polarity: Polarity::Positive,
+            provenance: FactProvenance::Inferred(TypeRuleId::new("fixture.explicit")),
+            status: FactStatus::Known,
+        });
+        let explicit_markers = [
+            (50, CoercionEvidence::BuiltinRadix),
+            (51, CoercionEvidence::StructureInheritance),
+            (52, CoercionEvidence::ActivatedSummary),
+            (53, CoercionEvidence::StaticUpcast),
+            (54, CoercionEvidence::CompatibleView),
+        ]
+        .into_iter()
+        .map(|(offset, evidence)| {
+            CoercionInput::new(
+                site(offset),
+                range(source, offset * 5, offset * 5 + 5),
+                CoercionRequestKind::Narrowing,
+                type_expression(source, offset + 100, TypeHeadInput::BuiltinSet),
+            )
+            .with_from_type(type_expression(
+                source,
+                offset + 200,
+                TypeHeadInput::BuiltinObject,
+            ))
+            .with_evidence(evidence)
+            .with_supporting_facts(vec![known_fact])
+        })
+        .collect::<Vec<_>>();
+
+        let output = CoercionObligationChecker::default().check(
+            &symbols,
+            &input_facts,
+            explicit_markers,
+            Vec::new(),
+        );
+
+        assert_eq!(output.initial_obligations().len(), 5);
+        for offset in 50..=54 {
+            let coercion = output
+                .coercions()
+                .iter()
+                .map(|(_, coercion)| coercion)
+                .find(|coercion| coercion.site == site(offset))
+                .unwrap();
+            assert_eq!(coercion.kind, CoercionKind::Narrowing);
+            assert_eq!(coercion.status, CoercionStatus::RequiresObligation);
+            let obligation = output
+                .initial_obligations()
+                .get(coercion.obligation.unwrap())
+                .unwrap();
+            assert_eq!(obligation.kind, InitialObligationKind::Narrowing);
+            assert_eq!(obligation.assumptions, vec![known_fact]);
+        }
+        assert!(diagnostic_ranges(&output, "type.narrowing_requires_proof").is_empty());
+    }
+
+    #[test]
     fn coercion_checker_blocks_missing_evidence_and_invalid_qua_without_fabrication() {
         let source = source_id();
         let symbols = symbol_env(Vec::new());
@@ -9254,6 +9452,26 @@ mod tests {
             "set",
             head,
         )
+    }
+
+    fn omitted_reconsider_input(
+        source: SourceId,
+        offset: usize,
+        evidence: CoercionEvidence,
+    ) -> CoercionInput {
+        CoercionInput::new(
+            site(offset),
+            range(source, offset * 5, offset * 5 + 5),
+            CoercionRequestKind::Narrowing,
+            type_expression(source, offset + 100, TypeHeadInput::BuiltinSet),
+        )
+        .with_from_type(type_expression(
+            source,
+            offset + 200,
+            TypeHeadInput::BuiltinObject,
+        ))
+        .with_justification(CoercionJustification::Omitted)
+        .with_evidence(evidence)
     }
 
     fn symbol_env(entries: Vec<SymbolEntry>) -> SymbolEnv {

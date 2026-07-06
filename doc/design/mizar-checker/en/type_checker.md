@@ -371,11 +371,18 @@ Required behavior:
   dependency summaries represented by supplied facts through a task-scoped seam;
 - source-written `qua` is valid only for statically checkable upcasts or
   compatible views; it must not be used as narrowing proof;
-- narrowing to a more specific type creates an `InitialObligation` unless the
-  task-10 input supplies consumable known facts that already support the target
-  type or a later task explicitly specifies another local discharge rule;
-- `reconsider` creates narrowing obligations for both existing-binding and
-  new-binding forms when the target type is not already supported by known facts;
+- explicit narrowing to a more specific type creates an `InitialObligation`
+  unless the task-10 input supplies `KnownFacts` evidence with consumable
+  supporting fact ids that already support the target type;
+- task 47 distinguishes explicit and omitted `reconsider` payloads.
+  `CoercionJustification::Explicit` preserves the task-10 obligation path.
+  `CoercionJustification::Omitted` is accepted only when a consumable fact
+  backs proof-free evidence from known local facts, built-in radix widening,
+  structure inheritance, activated summaries/cluster closure, static upcast, or
+  compatible view. Evidence markers alone do not discharge the omitted form;
+- omitted `reconsider` with missing or non-consumable proof-free evidence emits
+  `type.narrowing_requires_proof`, records a rejected/degraded coercion, and
+  creates no implicit obligation, proof search, or hidden `by`;
 - sethood and non-emptiness requirements create `InitialObligation`s with source
   assumptions and deterministic local ids;
 - failed or unsupported coercions remain as `Blocked` or `Rejected` entries with
@@ -383,6 +390,10 @@ Required behavior:
 
 `InitialObligationId` is the phase-6 boundary. Task 10 must not assign `VcId`,
 `ObligationAnchor`, prover status, proof witness, or accepted verifier status.
+Context-sensitive `Assumed` facts are not queried directly by the omitted
+`reconsider` helper; an upstream producer must first use the fact-query/context
+boundary to supply a consumable supporting fact id. Source-derived
+reconsider/coercion extraction remains deferred under MC-G019/MC-G020.
 
 ## Task 11: Type Facts And Queries
 
@@ -523,6 +534,7 @@ behavior.
 | enum | decision |
 |---|---|
 | `CoercionRequestKind` | Forward-compatible; coercion request categories may grow with later view and obligation forms. |
+| `CoercionJustification` | Forward-compatible; justification classes may grow as proof-block and artifact-backed evidence payloads land. |
 | `CoercionEvidence` | Forward-compatible; coercion evidence may grow with proof, registration, and artifact sources. |
 | `CoercionDeferredReason` | Forward-compatible; deferred coercion reasons may grow as external payload gaps close. |
 | `InitialRequirementKind` | Forward-compatible; initial requirement categories may grow with VC/proof integration. |
