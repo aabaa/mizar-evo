@@ -36,6 +36,12 @@ The module owns:
 - exposing read-only encoded-problem accessors and canonical bytes for
   diagnostics and replay checks.
 
+The module does not decide whether the recorded goal polarity is appropriate
+for the caller's target obligation. Task 30 assigns that binding to
+`checker`: `check_kernel_evidence` rejects a `final_goal.polarity` that does
+not match `KernelEvidenceCheckKind` before this module encodes the SAT
+problem.
+
 The module does not own SAT solving, ATP encoding, premise selection, formula
 selection, substitution invention, source formula projection, or backend proof
 extraction.

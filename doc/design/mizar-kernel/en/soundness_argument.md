@@ -96,7 +96,10 @@ findings section.
   immutable context requires for this VC. Proof acceptance of a proof
   obligation requires refutation polarity (goal asserted false); acceptance
   under any other polarity is a `context_mismatch` (architecture 15,
-  "Goal Polarity Is Bound By The Target Obligation"; finding F1).
+  "Goal Polarity Is Bound By The Target Obligation"; finding F1). Implemented
+  by `mizar-kernel` task 30 in `check_kernel_evidence`; accepted consistency
+  checks are carried as `ConsistencyCheck` and are non-selectable diagnostic
+  evidence for downstream proof policy.
 - B5. Missing caller context, or a context provenance fingerprint that does not
   match what the evidence claims to bind, rejects as `missing_provenance`.
 
@@ -373,10 +376,12 @@ the trusted base; **Low** = documentation/consistency debt.
   change: architecture 15 (en/ja) now binds goal polarity to the target
   obligation's check kind from the caller's immutable context and makes a
   mismatch `context_mismatch`. Corpus:
-  `fail_certificate_sat_goal_polarity_mismatch_001`. Implementation follow-up
-  belongs to `mizar-kernel` task 30 for checker-side B4 acceptance binding.
-  The producer-side `mizar-vc` handoff declaration/rejection gap was closed by
-  `mizar-vc` task 27.
+  `fail_certificate_sat_goal_polarity_mismatch_001`. The checker-side B4
+  acceptance binding is implemented by `mizar-kernel` task 30, including
+  fail-fast `final_goal.polarity` rejection and proof-policy refusal to trust
+  accepted consistency checks as proof obligations. The producer-side
+  `mizar-vc` handoff declaration/rejection gap was closed by `mizar-vc` task
+  27.
 - **F2 (High, partially patched). Non-imported source bindings are not
   verifiable from the specified context.** `FormulaEvidenceContext` carries
   imported axioms/theorems only. Local-hypothesis, cited-premise, and
@@ -440,9 +445,9 @@ the trusted base; **Low** = documentation/consistency debt.
 
 ## Impact On Crate TODOs (report only; revisions are follow-up tasks)
 
-- `doc/design/mizar-kernel/en/todo.md`: candidate new tasks — (a) implement
-  B4 goal-polarity binding in the corrected check service; (b) specify and
-  implement context-identity verification for non-imported source bindings
+- `doc/design/mizar-kernel/en/todo.md`: candidate new tasks — (a) B4
+  goal-polarity binding in the corrected check service is implemented by task
+  30; (b) specify and implement context-identity verification for non-imported source bindings
   (F2), likely as a `FormulaEvidenceContext` extension bound to the `mizar-vc`
   handoff hash; (c) revisit the solver step-budget deferral (F3); (d) specify
   the imported-statement projection that lifts the fingerprint-equality rule

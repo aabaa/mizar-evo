@@ -90,7 +90,10 @@
   要求する検査種別と一致すること。証明義務の証明受理には refutation
   polarity(goal を偽として主張)が必要であり、それ以外の polarity での受理
   は `context_mismatch`(architecture 15「Goal Polarity Is Bound By The
-  Target Obligation」; 所見 F1)。
+  Target Obligation」; 所見 F1)。`mizar-kernel` task 30 が
+  `check_kernel_evidence` で実装済みである。Accepted consistency check は
+  `ConsistencyCheck` として運ばれ、downstream proof policy では non-selectable
+  diagnostic evidence である。
 - B5. 呼び出し側コンテキストの欠如、または evidence が束縛を主張する
   コンテキスト provenance フィンガープリントの不一致は
   `missing_provenance`。
@@ -361,10 +364,12 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   選んで UNSAT を得られる — つまり反駁された goal を証明済みとして認定
   できる。本変更で修正: architecture 15(en/ja)は goal polarity を呼び出し
   側不変コンテキストの検査種別に束縛し、不一致を `context_mismatch` と
-  した。コーパス: `fail_certificate_sat_goal_polarity_mismatch_001`。実装
-  追随は checker-side B4 acceptance binding 向けの `mizar-kernel` task 30 に
-  属する。producer-side `mizar-vc` handoff の declaration/rejection gap は
-  `mizar-vc` task 27 で閉じた。
+  した。コーパス: `fail_certificate_sat_goal_polarity_mismatch_001`。
+  Checker-side B4 acceptance binding は `mizar-kernel` task 30 が実装し、
+  `final_goal.polarity` の fail-fast rejection と、accepted consistency check を
+  proof obligation として trust しない proof-policy guard を含む。
+  producer-side `mizar-vc` handoff の declaration/rejection gap は `mizar-vc`
+  task 27 で閉じた。
 - **F2(High、部分修正)。非 import ソース束縛は仕様上のコンテキストから
   検証不能。** `FormulaEvidenceContext` は imported axiom/theorem のみを
   運ぶ。local hypothesis・cited premise・generated VC fact のエントリは
@@ -426,7 +431,7 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
 ## クレート TODO への影響(指摘のみ; 改訂は後続タスク)
 
 - `doc/design/mizar-kernel/en/todo.md`: 候補新タスク — (a) 訂正後検査
-  サービスへの B4 goal-polarity 束縛の実装; (b) 非 import ソース束縛の
+  サービスへの B4 goal-polarity 束縛は task 30 で実装済み; (b) 非 import ソース束縛の
   コンテキスト同一性検証(F2)の仕様化と実装(`mizar-vc` handoff hash に
   束縛する `FormulaEvidenceContext` 拡張が有力); (c) ソルバーステップ予算
   deferral の再訪(F3); (d) fingerprint 等値規則を解除する imported

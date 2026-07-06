@@ -20,8 +20,8 @@ Selection consumes immutable records already produced by earlier stages:
 - normalized obligation identity and encoded problem hash;
 - active `VerifierPolicy` and `PolicyFingerprint`;
 - policy decisions from `ProofPolicyEvaluator`;
-- accepted kernel results paired with explicit kernel evidence origin and the
-  accepted kernel evidence hash;
+- accepted proof-obligation kernel results paired with explicit kernel
+  evidence origin and the accepted proof-obligation kernel evidence hash;
 - deterministic built-in discharge hashes;
 - externally attested admission records;
 - open-obligation explanations;
@@ -38,8 +38,8 @@ Selection compares candidates by winner class before applying tie-break keys.
 
 | Winner class | Eligible candidate | Trusted? | Notes |
 |---|---|---:|---|
-| `KernelVerified` | Accepted kernel result for formula/substitution evidence satisfying the active policy. | yes | Highest class. Trusted `used_axioms` may be copied only from the accepted kernel result. |
-| `DischargedBuiltin` | Accepted `KernelCheckResult` for deterministic built-in evidence, including kernel-owned primitive evidence accepted by the kernel. | yes | Distinct from ATP `KernelVerified`; exports a deterministic discharge hash for reuse validation. |
+| `KernelVerified` | Accepted proof-obligation kernel result for formula/substitution evidence satisfying the active policy. | yes | Highest class. Trusted `used_axioms` may be copied only from the accepted proof-obligation kernel result. |
+| `DischargedBuiltin` | Accepted proof-obligation `KernelCheckResult` for deterministic built-in evidence, including kernel-owned primitive evidence accepted by the kernel. | yes | Distinct from ATP `KernelVerified`; exports a deterministic discharge hash for reuse validation. |
 | `PolicyPermittedExternal` | External admission with `may_win_selection = true` and `require_kernel_certificates = false`. | no | Never trusted and never supplies trusted `used_axioms`. |
 | `PolicyAssumed` | Explicit policy assumption admitted by the active policy and not blocked by `require_kernel_certificates`. | no | Non-trusted policy status only; never supplies trusted witness material or `used_axioms`. |
 | `PolicyOpen` | Open obligation allowed by active policy after no schedulable/running better candidate remains. | no | Carries stable explanation refs only. |
@@ -153,9 +153,10 @@ publication:
 | `selection_reason` | Stable reason code describing whether the result came from class ordering, a primary rejected diagnostic candidate, or `NoSelectableEvidence`. |
 | `tie_break_key_hash` | Stable hash of the actual tie-break tuple. |
 
-For `KernelVerified`, proof reuse may depend on the accepted kernel result and
-its trusted `used_axioms`. For `DischargedBuiltin`, reuse depends on the
-deterministic discharge hash and the accepted built-in/kernel evidence path.
+For `KernelVerified`, proof reuse may depend on the accepted proof-obligation
+kernel result and its trusted `used_axioms`. For `DischargedBuiltin`, reuse
+depends on the deterministic discharge hash and the accepted proof-obligation
+built-in/kernel evidence path.
 For `PolicyPermittedExternal`, `PolicyAssumed`, and `PolicyOpen`, reuse
 metadata is a validation predicate only and does not become trusted acceptance.
 Changing the selected provenance hash, selection reason, tie-break key hash, or
@@ -181,13 +182,15 @@ The task-6 implementation must expose a stable result with:
 - selected reuse metadata;
 - ordered diagnostic refs for non-winning candidates;
 - a flag stating whether trusted `used_axioms` are available from an accepted
-  kernel result.
+  proof-obligation kernel result.
 
 The selected result must not synthesize trusted `used_axioms`. It may carry
-trusted `used_axioms` only by referencing the accepted kernel result selected
-as `KernelVerified` or `DischargedBuiltin`. The trusted marker used by
-selection must be bound to the accepted kernel evidence hash and must match the
-selected candidate's evidence hash.
+trusted `used_axioms` only by referencing the accepted proof-obligation kernel
+result selected as `KernelVerified` or `DischargedBuiltin`. The trusted marker
+used by selection must be bound to the accepted proof-obligation kernel
+evidence hash and must match the selected candidate's evidence hash. Accepted
+consistency checks are non-selectable diagnostics and do not create trusted
+markers.
 
 ## Artifact Proof Selection Merge
 

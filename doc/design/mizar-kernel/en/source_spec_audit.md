@@ -119,6 +119,7 @@ Covered top-level public items:
 - `KernelEvidenceCheckLimits`
 - `KernelCheckResult`
 - `KernelCheckStatus`
+- `KernelEvidenceCheckKind`
 - `CheckedDerivedFact`
 - `CheckedFinalGoal`
 - `UsedAxiom`
@@ -152,9 +153,13 @@ Correspondence summary:
 - `KernelEvidenceCheckInput`, `FormulaEvidenceContext`,
   `FormulaImportedFactEvidence`, `KernelEvidenceCheckLimits`,
   `check_kernel_evidence`, and `check_kernel_evidence_batch` implement the
-  task-28 SAT-backed normal service path over parsed formula/substitution
-  evidence, immutable imported formula context, deterministic SAT encoding,
-  and the trusted SAT checker.
+  task-28/task-30 SAT-backed normal service path over parsed
+  formula/substitution evidence, immutable imported formula context, explicit
+  caller check kind, deterministic SAT encoding, and the trusted SAT checker.
+  `KernelEvidenceCheckKind` binds proof-obligation checks to
+  `AssertFalseForRefutation` and consistency checks to
+  `AssertTrueForConsistency`; mismatches reject as
+  `certificate_rejection/context_mismatch` at `final_goal.polarity`.
 - `KernelCheckInput`, `KernelCheckPolicy`, `KernelCheckLimits`,
   `KernelCheckResult`, `KernelCheckStatus`, checked output records, service
   result alias, `check_kernel_certificate`, and `check_kernel_batch` retain
@@ -437,7 +442,7 @@ migration-only and remains deferred.
 | `certificate_parser` | `crates/mizar-kernel/src/certificate_parser/tests.rs` | Valid schema parsing, unsupported headers/profiles, directory and item canonicality, resource exhaustion before allocation, imported fact references, manifest/generated-clause validation, substitution/resolution/derived/final references, deterministic collection order, deterministic hash input, and parser rejection classification. |
 | `checker` imported facts | `crates/mizar-kernel/src/checker/tests.rs` | Imported axiom/theorem context validation, namespace preservation, proof-status checks, policy taint, fingerprint binding, duplicate context rejection, unused malformed entry handling, deterministic context/report ordering, and count/resource limits. |
 | `checker` cluster/reduction replay | `crates/mizar-kernel/src/checker/tests.rs` | Valid trace replay, missing provenance, hidden/future dependency rejection, guard/result mismatches, bounded context construction, requested-step closure, unchecked base fact rejection, runtime limits, and deterministic canonical order. |
-| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection, imported formula context proof-status checks, satisfiable-goal rejection, target mismatch rejection, deterministic evidence batch ties, normal-policy legacy certificate rejection, explicit legacy migration/audit service pipeline, substitution/report binding, generated-clause base sets, final-goal and derived-fact fail-closed behavior, mutation fail corpus, deterministic repetition/permutation results, replay-cost budgets, timeout/resource propagation, and target/input-order batch sorting. |
+| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection, explicit check-kind/goal-polarity binding for both proof-obligation and consistency checks, F1-shaped polarity mismatch rejection before context/SAT work, imported formula context proof-status checks, satisfiable-goal rejection, target mismatch rejection, deterministic evidence batch ties, normal-policy legacy certificate rejection, explicit legacy migration/audit service pipeline, substitution/report binding, generated-clause base sets, final-goal and derived-fact fail-closed behavior, mutation fail corpus, deterministic repetition/permutation results, replay-cost budgets, timeout/resource propagation, and target/input-order batch sorting. |
 | `clause` | `crates/mizar-kernel/src/clause/tests.rs` | Canonical literal/term ordering, duplicate literal removal, empty versus tautology forms, tautology policy, malformed atom/term/symbol/variable rejection, profile/resource bounds, canonical constructor checks, stable rendering, and hash input exclusion of display data. |
 | `formula_evidence` | `crates/mizar-kernel/src/formula_evidence/tests.rs` | Valid evidence envelope parsing, standalone final-goal separation, stable formula rendering/hash input, explicit substitution evidence payload parsing, unknown schema/domain rejection, duplicate ids, malformed formula rejection, missing provenance fail-closed behavior, imported statement fingerprint mismatch rejection, and provenance target-binding mismatch rejection. |
 | `rejection` | `crates/mizar-kernel/src/rejection/tests.rs` | Stable keys, category/detail ownership, parser conversion, checker locations, owner mappings, deterministic ordering and tie-breakers, fixed-width target sort bytes, and public enum compatibility. |

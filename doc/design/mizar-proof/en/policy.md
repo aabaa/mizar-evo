@@ -13,7 +13,8 @@ externally attested evidence as policy evidence, computes the stable
 
 The module is not a proof acceptor. Trusted acceptance and trusted
 `used_axioms` come only from `mizar-kernel` `KernelCheckResult` values whose
-status is `Accepted`.
+status is `Accepted` and whose kernel evidence check kind is
+`ProofObligation`.
 
 ## Inputs
 
@@ -77,8 +78,8 @@ classification itself must be deterministic and independent of arrival order.
 
 | Class | Source | Trusted? | Notes |
 |---|---|---:|---|
-| `KernelVerified` | Accepted kernel result for ATP formula/substitution evidence. | yes | May propagate trusted `used_axioms` from the kernel result. |
-| `DischargedBuiltin` | Accepted kernel result for built-in discharge evidence, including kernel-owned primitive evidence accepted by the kernel. | yes | Projected separately from `KernelVerified`; must not be collapsed into ATP kernel verification. |
+| `KernelVerified` | Accepted proof-obligation kernel result for ATP formula/substitution evidence. | yes | May propagate trusted `used_axioms` from the kernel result. Accepted consistency checks are diagnostic-only and never enter this class. |
+| `DischargedBuiltin` | Accepted proof-obligation kernel result for built-in discharge evidence, including kernel-owned primitive evidence accepted by the kernel. | yes | Projected separately from `KernelVerified`; must not be collapsed into ATP kernel verification. Accepted consistency checks are diagnostic-only and never enter this class. |
 | `KernelRejected` | Rejected kernel result. | no | Carries structured rejection reason for diagnostics. |
 | `KernelCheckable` | Unchecked formula/substitution candidate or built-in discharge evidence that policy may send to the kernel. | no | Schedulable evidence only; not a winner until the kernel accepts it. Built-in discharge evidence without a stable kernel representation is not in this class. |
 | `ExternallyAttested` | Policy-admitted external attestation. | no | May be recordable according to `ExternalEvidenceAdmission`; may be policy-selectable only when allowed and `require_kernel_certificates` is false. |
@@ -188,10 +189,11 @@ The exhaustive mapping is:
 | `PermitNonTrustedWinner` | true | `Release` or `Development` | yes | no | `RejectedByPolicy` | `RejectedByPolicy` | `policy_rejection/external_evidence_requires_kernel_certificate` |
 | `PermitNonTrustedWinner` | false | any | yes | yes | `ExternallyAttestedPolicyPermitted` | `ExternallyAttested` | `policy_open/external_evidence_policy_permitted` |
 
-Policy-tainted accepted kernel inputs use the same external admission mapping;
-the original kernel result still remains the only source of kernel status, but
-the policy-tainted result is not projected as trusted `KernelVerified` or
-`DischargedBuiltin`.
+Policy-tainted accepted proof-obligation kernel inputs use the same external
+admission mapping; the original kernel result still remains the only source of
+kernel status, but the policy-tainted result is not projected as trusted
+`KernelVerified` or `DischargedBuiltin`. Accepted consistency checks remain
+diagnostic-only before external admission mapping.
 
 For external decisions, `PolicyDecision.diagnostic` mirrors
 `ExternalEvidenceAdmission.diagnostic`; both are either absent or structurally
@@ -314,10 +316,13 @@ The decision is `may_stop = true` only when all of the following hold:
 The query also provides a policy normalization helper that maps a
 `PolicyCandidate` to its best possible early-stop class:
 
-- accepted ATP formula/substitution kernel results and still-kernel-checkable
-  formula/substitution evidence map to `KernelVerified`;
-- accepted built-in/kernel-primitive evidence and still-kernel-checkable
-  built-in evidence map to `DischargedBuiltin`;
+- accepted proof-obligation ATP formula/substitution kernel results and
+  still-kernel-checkable formula/substitution evidence map to
+  `KernelVerified`;
+- accepted proof-obligation built-in/kernel-primitive evidence and
+  still-kernel-checkable built-in evidence map to `DischargedBuiltin`;
+- accepted consistency-check kernel results are non-selectable
+  `DiagnosticOnly` evidence and have no early-stop class;
 - externally attested evidence maps to `PolicyPermittedExternal` only when the
   active policy permits it to win and kernel certificates are not required;
 - policy assumptions and open obligations map to their non-trusted classes only
@@ -358,10 +363,12 @@ distinguishable.
   compiler state.
 - Backend success, backend diagnostics, externally attested evidence, cache
   metadata, and open obligations cannot produce trusted proof status.
-- Trusted `used_axioms` are copied only from accepted kernel results.
+- Trusted `used_axioms` are copied only from accepted proof-obligation kernel
+  results.
 - Built-in discharge becomes trusted `discharged_builtin` only after an
-  accepted kernel result, including kernel-owned primitive evidence accepted by
-  the kernel. Otherwise it remains deterministic policy evidence.
+  accepted proof-obligation kernel result, including kernel-owned primitive
+  evidence accepted by the kernel. Otherwise it remains deterministic policy
+  evidence.
 - Current artifact witness references support formula/substitution
   `kernel_verified` publication but not `discharged_builtin` publication.
   Until that artifact schema gap is closed, policy and selection may keep

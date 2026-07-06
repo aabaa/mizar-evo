@@ -1,5 +1,6 @@
 use crate::selection::{
-    CandidateSourceId, ProofEvidenceCandidate, ProofEvidenceSet, select_winner,
+    CandidateSourceId, ProofEvidenceCandidate, ProofEvidenceSet, TrustedKernelEvidence,
+    select_winner,
 };
 
 use super::*;
@@ -78,6 +79,41 @@ fn policy_tainted_kernel_results_do_not_become_trusted() {
             PolicyDiagnosticCategory::PolicyOpen,
             PolicyReasonCode::ExternalEvidencePolicyPermitted,
         );
+    }
+}
+
+#[test]
+fn accepted_consistency_kernel_results_are_diagnostic_only() {
+    for policy in [
+        VerifierPolicy::release(),
+        VerifierPolicy::development()
+            .with_external_evidence(ExternalEvidenceMode::PermitNonTrustedWinner),
+    ] {
+        for policy_taint in [false, true] {
+            let evaluator = ProofPolicyEvaluator::new(policy.clone());
+            let input = KernelPolicyInput::for_test_with_check_kind(
+                KernelCheckStatus::Accepted,
+                KernelEvidenceOrigin::AtpFormulaSubstitution,
+                Some(KernelEvidenceCheckKind::ConsistencyCheck),
+                policy_taint,
+                Some(hash(7)),
+            );
+            let candidate = PolicyCandidate::KernelResult(input.clone());
+
+            assert_eq!(input.accepted_evidence_hash(), None);
+            assert_eq!(TrustedKernelEvidence::from_policy_input(&input), None);
+            assert_eq!(
+                evaluator.candidate_class(&candidate),
+                CandidatePolicyClass::DiagnosticOnly
+            );
+            assert_eq!(evaluator.best_possible_early_stop_class(&candidate), None);
+
+            let decision = evaluator.evaluate_candidate(&candidate);
+            assert_eq!(decision.class, CandidatePolicyClass::DiagnosticOnly);
+            assert_eq!(decision.diagnostic, None);
+            assert!(decision.kernel_rejections.is_empty());
+            assert!(decision.external_admission.is_none());
+        }
     }
 }
 
@@ -702,7 +738,7 @@ fn trusted_selection_candidate(
         CandidateSourceId::new(id).expect("stable id"),
         &input,
     )
-    .expect("accepted kernel input is trusted evidence")
+    .expect("accepted proof-obligation kernel input is trusted evidence")
 }
 
 fn hash(seed: u8) -> Hash {

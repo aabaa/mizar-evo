@@ -7,7 +7,7 @@
 use std::collections::BTreeSet;
 
 use mizar_kernel::{
-    checker::{KernelCheckResult, KernelCheckStatus},
+    checker::{KernelCheckResult, KernelCheckStatus, KernelEvidenceCheckKind},
     rejection::RejectionRecord,
 };
 use mizar_session::Hash;
@@ -290,7 +290,9 @@ impl ProofPolicyEvaluator {
     ) -> Option<PortfolioEarlyStopClass> {
         match candidate {
             PolicyCandidate::KernelResult(input)
-                if input.status() == KernelCheckStatus::Accepted && !input.policy_taint() =>
+                if input.status() == KernelCheckStatus::Accepted
+                    && input.is_proof_obligation()
+                    && !input.policy_taint() =>
             {
                 Some(match input.origin() {
                     KernelEvidenceOrigin::AtpFormulaSubstitution => {
@@ -303,7 +305,9 @@ impl ProofPolicyEvaluator {
                 })
             }
             PolicyCandidate::KernelResult(input)
-                if input.status() == KernelCheckStatus::Accepted && input.policy_taint() =>
+                if input.status() == KernelCheckStatus::Accepted
+                    && input.is_proof_obligation()
+                    && input.policy_taint() =>
             {
                 self.external_evidence_admission()
                     .may_win_selection()
@@ -407,6 +411,9 @@ impl ProofPolicyEvaluator {
         let can_schedule_kernel_check = self.can_schedule_kernel_check(candidate);
         let (class, diagnostic, kernel_rejections, external_admission) = match candidate {
             PolicyCandidate::KernelResult(input) => match input.status {
+                KernelCheckStatus::Accepted if !input.is_proof_obligation() => {
+                    (CandidatePolicyClass::DiagnosticOnly, None, Vec::new(), None)
+                }
                 KernelCheckStatus::Accepted if input.policy_taint => {
                     self.externally_attested_decision()
                 }
@@ -938,6 +945,7 @@ impl PortfolioEarlyStopDecision {
 pub struct KernelPolicyInput {
     status: KernelCheckStatus,
     origin: KernelEvidenceOrigin,
+    evidence_check_kind: Option<KernelEvidenceCheckKind>,
     policy_taint: bool,
     kernel_rejections: Vec<RejectionRecord>,
     accepted_evidence_hash: Option<Hash>,
@@ -949,6 +957,7 @@ impl KernelPolicyInput {
         Self {
             status: result.status(),
             origin,
+            evidence_check_kind: result.evidence_check_kind(),
             policy_taint: result.policy_taint(),
             kernel_rejections: result.rejections().to_vec(),
             accepted_evidence_hash: accepted_evidence_hash_from_kernel_result(result, origin),
@@ -963,6 +972,19 @@ impl KernelPolicyInput {
     #[must_use]
     pub const fn origin(&self) -> KernelEvidenceOrigin {
         self.origin
+    }
+
+    #[must_use]
+    pub const fn evidence_check_kind(&self) -> Option<KernelEvidenceCheckKind> {
+        self.evidence_check_kind
+    }
+
+    #[must_use]
+    pub const fn is_proof_obligation(&self) -> bool {
+        matches!(
+            self.evidence_check_kind,
+            Some(KernelEvidenceCheckKind::ProofObligation)
+        )
     }
 
     #[must_use]
@@ -987,9 +1009,35 @@ impl KernelPolicyInput {
         policy_taint: bool,
         accepted_evidence_hash: Option<Hash>,
     ) -> Self {
+        Self::for_test_with_check_kind(
+            status,
+            origin,
+            Some(KernelEvidenceCheckKind::ProofObligation),
+            policy_taint,
+            accepted_evidence_hash,
+        )
+    }
+
+    #[cfg(test)]
+    pub(crate) fn for_test_with_check_kind(
+        status: KernelCheckStatus,
+        origin: KernelEvidenceOrigin,
+        evidence_check_kind: Option<KernelEvidenceCheckKind>,
+        policy_taint: bool,
+        accepted_evidence_hash: Option<Hash>,
+    ) -> Self {
+        let accepted_evidence_hash = if status == KernelCheckStatus::Accepted
+            && evidence_check_kind == Some(KernelEvidenceCheckKind::ProofObligation)
+            && !policy_taint
+        {
+            accepted_evidence_hash
+        } else {
+            None
+        };
         Self {
             status,
             origin,
+            evidence_check_kind,
             policy_taint,
             kernel_rejections: Vec::new(),
             accepted_evidence_hash,
@@ -1232,13 +1280,17 @@ fn accepted_evidence_hash_from_kernel_result(
     result: &KernelCheckResult,
     origin: KernelEvidenceOrigin,
 ) -> Option<Hash> {
-    if result.status() != KernelCheckStatus::Accepted || result.policy_taint() {
+    if result.status() != KernelCheckStatus::Accepted
+        || result.policy_taint()
+        || result.evidence_check_kind() != Some(KernelEvidenceCheckKind::ProofObligation)
+    {
         return None;
     }
 
     let mut hash = StableHasher::new("mizar-proof-kernel-accepted-evidence-v1");
     hash.field_str("status", "accepted");
     hash.field_str("origin", origin.as_str());
+    hash.field_str("evidence_check_kind", "proof-obligation");
     hash.field_bytes(
         "target_vc_fingerprint",
         &result.target_vc_fingerprint().sort_bytes(),

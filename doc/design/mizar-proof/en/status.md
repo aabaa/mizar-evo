@@ -9,11 +9,12 @@ artifact-facing and diagnostics-facing proof status records.
 
 Status projection is not proof acceptance. Trusted acceptance and trusted
 `used_axioms` originate only from `mizar-kernel` `KernelCheckResult` values
-whose status is `KernelCheckStatus::Accepted` and that are selected as
-`KernelVerified` or `DischargedBuiltin`. Externally attested evidence, backend
-diagnostics, backend-reported axiom lists, proof cache records, witness
-metadata, and policy assumptions never become kernel-verified status or trusted
-`used_axioms`.
+whose status is `KernelCheckStatus::Accepted`, whose evidence check kind is
+`ProofObligation`, and that are selected as `KernelVerified` or
+`DischargedBuiltin`. Externally attested evidence, backend diagnostics,
+backend-reported axiom lists, proof cache records, witness metadata, policy
+assumptions, and accepted consistency checks never become kernel-verified
+status or trusted `used_axioms`.
 
 ## Inputs
 
@@ -44,8 +45,8 @@ projected obligation status separate:
 
 | Winner class | Projected obligation status | Trusted | Notes |
 |---|---|---:|---|
-| `KernelVerified` | `accepted` | yes | Requires a matching accepted kernel result. Projecting the accepted artifact status as publishable also requires matching selected kernel-witness metadata; committed witness refs are published separately by `witness_store::publish_ref`. |
-| `DischargedBuiltin` | `accepted` | yes | Requires a matching accepted kernel result. Final artifact witness publication remains an `external_dependency_gap` until artifact schema support exists. |
+| `KernelVerified` | `accepted` | yes | Requires a matching accepted proof-obligation kernel result. Projecting the accepted artifact status as publishable also requires matching selected kernel-witness metadata; committed witness refs are published separately by `witness_store::publish_ref`. |
+| `DischargedBuiltin` | `accepted` | yes | Requires a matching accepted proof-obligation kernel result. Final artifact witness publication remains an `external_dependency_gap` until artifact schema support exists. |
 | `PolicyPermittedExternal` | `externally_attested` | no | Policy-controlled evidence only. It carries no trusted `used_axioms`. |
 | `PolicyAssumed` | `policy_assumed` internal status | no | Must remain distinct from accepted and externally attested status. Current artifact schema lacks this public obligation status, so artifact publication is `external_dependency_gap` unless a later schema adds it. |
 | `PolicyOpen` | `open` | no | Carries an explanation reference when available. |
@@ -65,11 +66,12 @@ Trusted `used_axioms` projection is allowed only when all of the following hold:
 
 1. the selected winner class is `KernelVerified` or `DischargedBuiltin`;
 2. the selected proof selection reports trusted `used_axioms` availability;
-3. the projection input includes the accepted kernel result or a trusted
-   kernel-owned reference derived from it;
-4. the accepted kernel evidence hash matches the selection's selected evidence
-   hash;
-5. the kernel result is not policy-tainted and has status `Accepted`.
+3. the projection input includes the accepted proof-obligation kernel result
+   or a trusted kernel-owned reference derived from it;
+4. the accepted proof-obligation kernel evidence hash matches the selection's
+   selected evidence hash;
+5. the kernel result is not policy-tainted, has status `Accepted`, and has
+   evidence check kind `ProofObligation`.
 
 When these conditions hold, projection may expose a trusted used-axiom
 reference or ordered axiom list exactly as supplied by the kernel-owned

@@ -398,7 +398,7 @@ Every finding maps to a task or a recorded disposition:
 
 | Finding | Disposition |
 |---|---|
-| F1 (goal polarity) | architecture 15 patched; kernel implementation is task 30; producer-side polarity declaration/rejection is resolved by [mizar-vc task 27](../../mizar-vc/en/todo.md) |
+| F1 (goal polarity) | architecture 15 patched; kernel implementation is task 30 and is now implemented; producer-side polarity declaration/rejection is resolved by [mizar-vc task 27](../../mizar-vc/en/todo.md) |
 | F2 (non-imported source bindings) | architecture 15 patched fail-closed; schema and verification are task 31, paired with the mizar-vc context-identity payload |
 | F3 (solver step budget) | deferred by design in `sat_checker.md` (batsat 0.6.0 exposes no stable budget API); revisit trigger recorded as task 32 |
 | F4 (KernelEvidence field drift) | resolved in `f75af877`; no further task |
@@ -408,7 +408,7 @@ Every finding maps to a task or a recorded disposition:
 | F8 (corpus directory naming) | owned by [mizar-test](../../mizar-test/en/todo.md) audit follow-up |
 | F9 (legacy tautology marker) | task 34 |
 
-30. **Goal-polarity binding in the check service (F1, invariant B4).** [ ]
+30. **Goal-polarity binding in the check service (F1, invariant B4).** [x]
     - Implement architecture 15 "Goal Polarity Is Bound By The Target
       Obligation": the task-28 check service must read the check kind from
       the caller's immutable kernel context and reject evidence whose

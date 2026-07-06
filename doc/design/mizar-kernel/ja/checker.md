@@ -114,8 +114,13 @@ KernelEvidenceCheckInput
   target_vc_fingerprint
   evidence: ParsedKernelEvidence
   formula_context: FormulaEvidenceContext?
+  check_kind: KernelEvidenceCheckKind
   policy: KernelCheckPolicy
   limits: KernelEvidenceCheckLimits
+
+KernelEvidenceCheckKind
+  ProofObligation -> AssertFalseForRefutation を要求
+  ConsistencyCheck -> AssertTrueForConsistency を要求
 
 FormulaEvidenceContext
   provenance_fingerprint
@@ -145,12 +150,16 @@ KernelCheckPolicy
 `kernel_evidence` は `formula_evidence.md` の schema である。Parser は service handoff
 前に evidence profile を validate する。Checker は target/context binding、formula
 provenance、imported formula identity と proof status、explicit substitution、
-deterministic SAT encoding、trusted SAT checker UNSAT を validate する。
+deterministic SAT encoding、trusted SAT checker UNSAT を validate する前に、final-goal
+polarity を `check_kind` と照合する。Polarity mismatch は imported formula context
+lookup や SAT encoding より前に `final_goal.polarity` の
+`certificate_rejection/context_mismatch` として reject する。
 `FormulaEvidenceContext` は caller-supplied immutable context である。
 Imported formula status が missing、ambiguous、identity-mismatched、too-weak の場合は
-acceptance 前に fail-closed で reject する。Caller-supplied instantiated formula、SAT clause、backend proof method、
-resolution trace、SMT proof object、backend log、backend-reported used axiom は untrusted
-acceptance material として ignore または reject する。
+acceptance 前に fail-closed で reject する。Caller-supplied instantiated formula、SAT
+clause、backend proof method、resolution trace、SMT proof object、backend log、
+backend-reported used axiom は untrusted acceptance material として ignore または reject
+する。
 
 下の legacy `KernelCheckInput` は task-22 source inventory item として残る。Task 29 は
 それを `KernelCheckPolicy.allow_legacy_certificate_audit` の背後に gate するため、default
@@ -385,11 +394,15 @@ aggregate result に policy taint を持つ。Policy layer はそのような re
 として提示してはならない。
 
 Task 28 は corrected normal path のために `check_kernel_evidence` と
-`check_kernel_evidence_batch` を提供する。Batch checking は target VC fingerprint、
-同一 target では caller input order の順で results を sort する。Worker spawn や
-cancellation token read は行わない。External scheduler integration はこの crate の外に残る。
-Task 16 の legacy certificate batch helper は explicit audit gate の背後にある
-migration/audit inventory として残る。Task 29 はその surface を再レビューする。
+`check_kernel_evidence_batch` を提供する。Task 30 はこの path に明示的な
+`KernelEvidenceCheckKind` 束縛を追加する: accepted proof-obligation result は
+`ProofObligation` を運び、accepted consistency check は `ConsistencyCheck` を運ぶ。
+Consistency check は downstream proof policy に対する proof-obligation acceptance
+material ではない。Batch checking は target VC fingerprint、同一 target では caller input
+order の順で results を sort する。Worker spawn や cancellation token read は行わない。
+External scheduler integration はこの crate の外に残る。Task 16 の legacy certificate
+batch helper は explicit audit gate の背後にある migration/audit inventory として残る。
+Task 29 はその surface を再レビューする。
 
 Corrected batch checking は single evidence checks の deterministic wrapper である:
 

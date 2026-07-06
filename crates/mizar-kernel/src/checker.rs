@@ -6,7 +6,7 @@ use crate::{
         RequiredProofStatus,
     },
     clause::{Clause, ClauseError, ClauseProfile, ClauseValidationContext},
-    formula_evidence::{FormulaSource, ImportedFormulaSource, ParsedKernelEvidence},
+    formula_evidence::{FormulaSource, GoalPolarity, ImportedFormulaSource, ParsedKernelEvidence},
     rejection::{
         ClauseRef as RejectionClauseRef, ClauseRefNamespace as RejectionClauseRefNamespace,
         RejectionCategory, RejectionDetail, RejectionLocation, RejectionRecord,
@@ -801,8 +801,25 @@ pub struct KernelEvidenceCheckInput<'a> {
     pub target_vc_fingerprint: &'a TargetVcFingerprint,
     pub evidence: &'a ParsedKernelEvidence,
     pub formula_context: Option<&'a FormulaEvidenceContext>,
+    pub check_kind: KernelEvidenceCheckKind,
     pub policy: KernelCheckPolicy,
     pub limits: KernelEvidenceCheckLimits,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[non_exhaustive]
+pub enum KernelEvidenceCheckKind {
+    ProofObligation,
+    ConsistencyCheck,
+}
+
+impl KernelEvidenceCheckKind {
+    const fn required_goal_polarity(self) -> GoalPolarity {
+        match self {
+            Self::ProofObligation => GoalPolarity::AssertFalseForRefutation,
+            Self::ConsistencyCheck => GoalPolarity::AssertTrueForConsistency,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, Eq, PartialEq)]
@@ -869,6 +886,7 @@ pub struct KernelCheckResult {
     checked_derived_facts: Vec<CheckedDerivedFact>,
     sat_check_report: Option<SatCheckReport>,
     final_goal: Option<CheckedFinalGoal>,
+    evidence_check_kind: Option<KernelEvidenceCheckKind>,
     used_axioms: Vec<UsedAxiom>,
     policy_taint: bool,
     rejections: Vec<RejectionRecord>,
@@ -923,6 +941,11 @@ impl KernelCheckResult {
     #[must_use]
     pub const fn final_goal(&self) -> Option<CheckedFinalGoal> {
         self.final_goal
+    }
+
+    #[must_use]
+    pub const fn evidence_check_kind(&self) -> Option<KernelEvidenceCheckKind> {
+        self.evidence_check_kind
     }
 
     #[must_use]
@@ -1022,6 +1045,7 @@ fn check_kernel_evidence_inner(
     let mut budget = KernelPipelineBudget::new(input.limits.max_pipeline_steps);
     budget.step_target(input.target_vc_fingerprint, "target_vc")?;
     validate_evidence_target_binding(input)?;
+    validate_evidence_goal_polarity(input)?;
 
     budget.step_target(input.target_vc_fingerprint, "formula_context")?;
     let formula_report = check_formula_imports(input)?;
@@ -1077,6 +1101,7 @@ fn check_kernel_evidence_inner(
         checked_derived_facts: Vec::new(),
         sat_check_report: Some(sat_report),
         final_goal: None,
+        evidence_check_kind: Some(input.check_kind),
         used_axioms: formula_report.used_axioms,
         policy_taint: formula_report.policy_taint,
         rejections: Vec::new(),
@@ -1096,6 +1121,24 @@ fn validate_evidence_target_binding(
             RejectionCategory::CertificateRejection,
             RejectionDetail::ContextMismatch,
             RejectionLocation::new().with_field_path("target_vc"),
+        ))
+    }
+}
+
+fn validate_evidence_goal_polarity(
+    input: KernelEvidenceCheckInput<'_>,
+) -> KernelCheckServiceResult<()> {
+    let required = input.check_kind.required_goal_polarity();
+    if input.evidence.final_goal().polarity == required {
+        Ok(())
+    } else {
+        Err(rejection_with_category(
+            input.target_vc_fingerprint,
+            RejectionCategory::CertificateRejection,
+            RejectionDetail::ContextMismatch,
+            RejectionLocation::new()
+                .with_final_goal()
+                .with_field_path("final_goal.polarity"),
         ))
     }
 }
@@ -1383,6 +1426,7 @@ fn check_kernel_certificate_inner(
         checked_derived_facts: Vec::new(),
         sat_check_report: None,
         final_goal: None,
+        evidence_check_kind: None,
         used_axioms: Vec::new(),
         policy_taint: imported_report.policy_taint(),
         rejections: vec![audit_rejection],
@@ -1559,6 +1603,7 @@ fn rejected_kernel_result(
         checked_derived_facts: Vec::new(),
         sat_check_report: None,
         final_goal: None,
+        evidence_check_kind: None,
         used_axioms: Vec::new(),
         policy_taint: false,
         rejections: vec![rejection],

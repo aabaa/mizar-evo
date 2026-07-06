@@ -16,7 +16,8 @@ use mizar_kernel::{
     checker::{
         AcceptedProofStatus, FormulaEvidenceContext, FormulaImportedFactEvidence,
         ImportedFactContextLimits, ImportedFactNamespace, KernelCheckPolicy, KernelCheckStatus,
-        KernelEvidenceCheckInput, KernelEvidenceCheckLimits, check_kernel_evidence,
+        KernelEvidenceCheckInput, KernelEvidenceCheckKind, KernelEvidenceCheckLimits,
+        check_kernel_evidence,
     },
     clause::{Atom, SymbolId, SymbolKey, SymbolKind},
     formula_evidence::{
@@ -262,7 +263,7 @@ fn trusted_used_axioms_from_kernel_result_accepts_public_kernel_result() {
         &result,
         KernelEvidenceOrigin::AtpFormulaSubstitution,
     )
-    .expect("accepted kernel result yields trusted used axioms ref");
+    .expect("accepted proof-obligation kernel result yields trusted used axioms ref");
     let expected_input = KernelPolicyInput::from_kernel_result(
         &result,
         KernelEvidenceOrigin::AtpFormulaSubstitution,
@@ -301,6 +302,25 @@ fn trusted_used_axioms_from_kernel_result_rejects_untrusted_kernel_results() {
             KernelEvidenceOrigin::AtpFormulaSubstitution,
         ),
         Err(TrustedUsedAxiomsError::KernelResultPolicyTainted)
+    );
+
+    let consistency_check = accepted_consistency_kernel_result();
+    assert_eq!(consistency_check.status(), KernelCheckStatus::Accepted);
+    assert_eq!(
+        consistency_check.evidence_check_kind(),
+        Some(KernelEvidenceCheckKind::ConsistencyCheck)
+    );
+    let consistency_input = KernelPolicyInput::from_kernel_result(
+        &consistency_check,
+        KernelEvidenceOrigin::AtpFormulaSubstitution,
+    );
+    assert_eq!(consistency_input.accepted_evidence_hash(), None);
+    assert_eq!(
+        TrustedUsedAxiomsRef::from_kernel_result(
+            &consistency_check,
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+        ),
+        Err(TrustedUsedAxiomsError::MissingAcceptedEvidenceHash)
     );
 }
 
@@ -820,7 +840,7 @@ fn trusted_candidate(
         CandidateSourceId::new(id).expect("stable id"),
         &kernel_input,
     )
-    .expect("accepted kernel input is trusted evidence")
+    .expect("accepted proof-obligation kernel input is trusted evidence")
 }
 
 fn rejected_policy_decision() -> PolicyDecision {
@@ -856,6 +876,28 @@ fn accepted_kernel_result() -> KernelCheckResult {
     );
 
     let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+    assert!(!result.policy_taint());
+    result
+}
+
+fn accepted_consistency_kernel_result() -> KernelCheckResult {
+    let target = formula_target(10);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let not_goal = Formula::Not(Box::new(goal.clone()));
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![local_formula_item(1, 10, &not_goal)],
+        goal_item_with_polarity(20, GoalPolarity::AssertTrueForConsistency, &goal),
+    );
+
+    let result = check_kernel_evidence(evidence_input_with_check_kind(
+        &target_vc,
+        &parsed,
+        None,
+        KernelEvidenceCheckKind::ConsistencyCheck,
+    ));
     assert_eq!(result.status(), KernelCheckStatus::Accepted);
     assert!(!result.policy_taint());
     result
@@ -986,9 +1028,21 @@ fn imported_formula_item(
 }
 
 fn goal_item(provenance_id: u32, formula: &Formula) -> FormulaFixture {
+    goal_item_with_polarity(
+        provenance_id,
+        GoalPolarity::AssertFalseForRefutation,
+        formula,
+    )
+}
+
+fn goal_item_with_polarity(
+    provenance_id: u32,
+    polarity: GoalPolarity,
+    formula: &Formula,
+) -> FormulaFixture {
     let fingerprint = formula_fingerprint(formula);
     let mut bytes = Vec::new();
-    bytes.push(GoalPolarity::AssertFalseForRefutation.tag());
+    bytes.push(polarity.tag());
     put_fingerprint(&fingerprint, &mut bytes);
     put_u32(provenance_id, &mut bytes);
     put_formula(formula, &mut bytes);
@@ -1017,10 +1071,25 @@ fn evidence_input<'a>(
     evidence: &'a ParsedKernelEvidence,
     formula_context: Option<&'a FormulaEvidenceContext>,
 ) -> KernelEvidenceCheckInput<'a> {
+    evidence_input_with_check_kind(
+        target,
+        evidence,
+        formula_context,
+        KernelEvidenceCheckKind::ProofObligation,
+    )
+}
+
+fn evidence_input_with_check_kind<'a>(
+    target: &'a TargetVcFingerprint,
+    evidence: &'a ParsedKernelEvidence,
+    formula_context: Option<&'a FormulaEvidenceContext>,
+    check_kind: KernelEvidenceCheckKind,
+) -> KernelEvidenceCheckInput<'a> {
     KernelEvidenceCheckInput {
         target_vc_fingerprint: target,
         evidence,
         formula_context,
+        check_kind,
         policy: KernelCheckPolicy::default(),
         limits: KernelEvidenceCheckLimits::default(),
     }

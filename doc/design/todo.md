@@ -128,7 +128,7 @@ certified-unsound acceptance paths.
    naming reconciliation (F8; docs-only, no deps).
 2. [x] [mizar-vc task 27](./mizar-vc/en/todo.md) — explicit goal polarity in
    the kernel-evidence handoff (F1 producer side).
-3. [ ] [mizar-kernel task 30](./mizar-kernel/en/todo.md) — goal-polarity
+3. [x] [mizar-kernel task 30](./mizar-kernel/en/todo.md) — goal-polarity
    binding in the check service (F1, invariant B4).
 4. [ ] [mizar-vc task 28](./mizar-vc/en/todo.md) — context-identity payload
    for non-imported source bindings (F2 producer side).

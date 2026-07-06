@@ -87,6 +87,89 @@ fn sat_backed_kernel_evidence_rejects_satisfiable_goal() {
 }
 
 #[test]
+fn sat_backed_kernel_evidence_binds_goal_polarity_to_check_kind() {
+    let target = formula_target(10);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let not_goal = Formula::Not(Box::new(goal.clone()));
+
+    let proof_obligation = parsed_formula_evidence(
+        &target,
+        vec![formula_item(1, 10, &goal)],
+        goal_item_with_polarity(20, GoalPolarity::AssertFalseForRefutation, &goal),
+    );
+    let consistency_check = parsed_formula_evidence(
+        &target,
+        vec![formula_item(1, 10, &not_goal)],
+        goal_item_with_polarity(20, GoalPolarity::AssertTrueForConsistency, &goal),
+    );
+
+    let accepted_proof = check_kernel_evidence(evidence_input_with_check_kind(
+        &target_vc,
+        &proof_obligation,
+        None,
+        KernelEvidenceCheckKind::ProofObligation,
+    ));
+    assert_eq!(accepted_proof.status(), KernelCheckStatus::Accepted);
+    assert_eq!(
+        accepted_proof.evidence_check_kind(),
+        Some(KernelEvidenceCheckKind::ProofObligation)
+    );
+
+    let accepted_consistency = check_kernel_evidence(evidence_input_with_check_kind(
+        &target_vc,
+        &consistency_check,
+        None,
+        KernelEvidenceCheckKind::ConsistencyCheck,
+    ));
+    assert_eq!(accepted_consistency.status(), KernelCheckStatus::Accepted);
+    assert_eq!(
+        accepted_consistency.evidence_check_kind(),
+        Some(KernelEvidenceCheckKind::ConsistencyCheck)
+    );
+
+    let proof_polarity_mismatch = check_kernel_evidence(evidence_input_with_check_kind(
+        &target_vc,
+        &consistency_check,
+        None,
+        KernelEvidenceCheckKind::ProofObligation,
+    ));
+    assert_goal_polarity_mismatch(&proof_polarity_mismatch);
+
+    let consistency_polarity_mismatch = check_kernel_evidence(evidence_input_with_check_kind(
+        &target_vc,
+        &proof_obligation,
+        None,
+        KernelEvidenceCheckKind::ConsistencyCheck,
+    ));
+    assert_goal_polarity_mismatch(&consistency_polarity_mismatch);
+}
+
+#[test]
+fn sat_backed_kernel_evidence_rejects_goal_polarity_before_context_and_sat() {
+    let target = formula_target(11);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let not_goal = Formula::Not(Box::new(goal.clone()));
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![imported_formula_item(1, 10, &not_goal)],
+        goal_item_with_polarity(20, GoalPolarity::AssertTrueForConsistency, &goal),
+    );
+
+    let result = check_kernel_evidence(evidence_input_with_check_kind(
+        &target_vc,
+        &parsed,
+        None,
+        KernelEvidenceCheckKind::ProofObligation,
+    ));
+
+    assert_goal_polarity_mismatch(&result);
+    assert!(result.checked_imports().is_empty());
+    assert!(result.sat_check_report().is_none());
+}
+
+#[test]
 fn sat_backed_kernel_evidence_rejects_target_context_mismatch() {
     let target = formula_target(7);
     let other_target = TargetVcFingerprint::from_certificate_fingerprint(&formula_target(8));
@@ -3589,10 +3672,25 @@ fn evidence_input<'a>(
     evidence: &'a ParsedKernelEvidence,
     formula_context: Option<&'a FormulaEvidenceContext>,
 ) -> KernelEvidenceCheckInput<'a> {
+    evidence_input_with_check_kind(
+        target,
+        evidence,
+        formula_context,
+        KernelEvidenceCheckKind::ProofObligation,
+    )
+}
+
+fn evidence_input_with_check_kind<'a>(
+    target: &'a TargetVcFingerprint,
+    evidence: &'a ParsedKernelEvidence,
+    formula_context: Option<&'a FormulaEvidenceContext>,
+    check_kind: KernelEvidenceCheckKind,
+) -> KernelEvidenceCheckInput<'a> {
     KernelEvidenceCheckInput {
         target_vc_fingerprint: target,
         evidence,
         formula_context,
+        check_kind,
         policy: KernelCheckPolicy::default(),
         limits: KernelEvidenceCheckLimits::default(),
     }
@@ -3831,13 +3929,43 @@ fn formula_substitution_item(
 }
 
 fn goal_item(provenance_id: u32, formula: &Formula) -> Vec<u8> {
+    goal_item_with_polarity(
+        provenance_id,
+        GoalPolarity::AssertFalseForRefutation,
+        formula,
+    )
+}
+
+fn goal_item_with_polarity(
+    provenance_id: u32,
+    polarity: GoalPolarity,
+    formula: &Formula,
+) -> Vec<u8> {
     let fingerprint = formula_fingerprint(formula);
     let mut item = Vec::new();
-    item.push(GoalPolarity::AssertFalseForRefutation.tag());
+    item.push(polarity.tag());
     put_fingerprint(&fingerprint, &mut item);
     put_u32(provenance_id, &mut item);
     put_formula(formula, &mut item);
     item
+}
+
+fn assert_goal_polarity_mismatch(result: &KernelCheckResult) {
+    assert_eq!(result.status(), KernelCheckStatus::Rejected);
+    assert_eq!(result.rejections().len(), 1);
+    assert_eq!(
+        result.rejections()[0].category(),
+        RejectionCategory::CertificateRejection
+    );
+    assert_eq!(
+        result.rejections()[0].detail(),
+        RejectionDetail::ContextMismatch
+    );
+    assert!(result.rejections()[0].location().final_goal);
+    assert_eq!(
+        result.rejections()[0].location().field_path,
+        Some("final_goal.polarity")
+    );
 }
 
 fn provenance_item(target: &Fingerprint, provenance_id: u32, fingerprint: &Fingerprint) -> Vec<u8> {

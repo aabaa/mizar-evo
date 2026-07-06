@@ -68,7 +68,7 @@ strings, command names, and gap identifiers in English. That is not drift.
 |---|---|---|---|
 | `PROOF18-G001` | `external_dependency_gap` | `mizar-cache` now exists and owns proof-reuse validation, lookup, cache-hit/miss decisions, and policy compatibility checks. This proof milestone exports validation metadata but does not call those APIs. | Keep `mizar-proof` metadata as validation input only. Add proof/cache wiring in an owner-scoped integration task. |
 | `PROOF18-G002` | resolved roadmap drift with remaining `external_dependency_gap` | The detailed cache proof-reuse document now exists under `doc/design/mizar-cache/`; no placeholder cache docs or APIs are needed in `mizar-proof`. | Keep the metadata API stable and let `mizar-cache` own validation semantics. |
-| `PROOF18-G003` | `external_dependency_gap` | Current artifact witness schema still cannot publish `DischargedBuiltin` witness refs. | Keep `DischargedBuiltin` trusted internally only after accepted kernel evidence, export deterministic discharge hash, and leave artifact witness publication deferred. |
+| `PROOF18-G003` | `external_dependency_gap` | Current artifact witness schema still cannot publish `DischargedBuiltin` witness refs. | Keep `DischargedBuiltin` trusted internally only after accepted proof-obligation kernel evidence, export deterministic discharge hash, and leave artifact witness publication deferred. |
 | `PROOF18-G004` | `external_dependency_gap` | `CommittedWitnessPublicationProof` remains opaque without an artifact-owned production token. | Witness publication stays blocked on artifact manifest reachability integration. |
 | `PROOF18-G005` | `external_dependency_gap` | `TrustedKernelWitnessMetadata` remains opaque without copied kernel/artifact acceptance metadata. | `mizar-proof` must not trust caller-synthesized kernel acceptance metadata. |
 | `PROOF18-G006` | `external_dependency_gap` | Live ATP early-stop adoption and backend cancellation remain outside `mizar-proof`. | Policy hooks remain stable metadata/API; no backend execution or cancellation stub is added. |
@@ -85,7 +85,7 @@ strings, command names, and gap identifiers in English. That is not drift.
 The task-17 proof-reuse metadata export contract satisfies architecture 22 for
 the `mizar-proof` ownership boundary. The crate now exports stable,
 deterministic validation metadata for future cache consumers while keeping
-trusted proof acceptance tied only to accepted kernel evidence. Remaining work
-is downstream integration or documented branch-coverage follow-up, not a
-permission to promote cache, external, diagnostic, or witness metadata into
-trusted status.
+trusted proof acceptance tied only to accepted proof-obligation kernel
+evidence. Remaining work is downstream integration or documented
+branch-coverage follow-up, not a permission to promote cache, external,
+diagnostic, consistency-check, or witness metadata into trusted status.

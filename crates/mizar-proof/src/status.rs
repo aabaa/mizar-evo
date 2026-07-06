@@ -132,7 +132,8 @@ impl ExplanationRef {
     }
 }
 
-/// Trusted used-axiom reference derived from an accepted kernel result.
+/// Trusted used-axiom reference derived from an accepted proof-obligation
+/// kernel result.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TrustedUsedAxiomsRef {
     accepted_evidence_hash: Hash,
@@ -212,6 +213,9 @@ fn trusted_used_axioms_from_kernel_policy_input(
     }
     if input.policy_taint() {
         return Err(TrustedUsedAxiomsError::KernelResultPolicyTainted);
+    }
+    if !input.is_proof_obligation() {
+        return Err(TrustedUsedAxiomsError::MissingAcceptedEvidenceHash);
     }
 
     let accepted_evidence_hash = input

@@ -35,6 +35,11 @@ trusted payload として受理してはならない。
 - diagnostics と replay check のために read-only encoded-problem accessor と canonical
   bytes を expose すること。
 
+この module は、記録された goal polarity が caller の target obligation に適切かどうかを
+決めない。Task 30 はこの束縛を `checker` に割り当てる:
+`check_kernel_evidence` は SAT problem をこの module が encode する前に、
+`KernelEvidenceCheckKind` と一致しない `final_goal.polarity` を reject する。
+
 この module は SAT solving、ATP encoding、premise selection、formula selection、backend
 proof extraction、substitution invention、source formula projection を所有しない。
 

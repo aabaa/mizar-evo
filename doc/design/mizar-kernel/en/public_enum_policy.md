@@ -59,6 +59,7 @@ checker::ClusterTraceContextError
 checker::ImportedFactContextError
 checker::ImportedFactNamespace
 checker::KernelCheckStatus
+checker::KernelEvidenceCheckKind
 clause::ClauseError
 clause::ClauseForm
 clause::Polarity

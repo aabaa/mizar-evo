@@ -1013,7 +1013,7 @@ fn trusted_candidate(
         CandidateSourceId::new(id).expect("stable id"),
         &kernel_input,
     )
-    .expect("accepted kernel input is trusted evidence");
+    .expect("accepted proof-obligation kernel input is trusted evidence");
     assert_eq!(candidate.decision().class, class);
     candidate
 }

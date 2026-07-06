@@ -60,11 +60,14 @@ internal: [04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.m
   trusted status, and cannot win when `require_kernel_certificates` is set.
 - **Discharge-evidence validation scope: resolved by task 6.**
   `DischargedBuiltin` enters trusted selection only through
-  `TrustedKernelEvidence` created from `KernelPolicyInput`, which public
-  callers can construct only from `KernelCheckResult` plus explicit origin.
+  `TrustedKernelEvidence` created from a proof-obligation `KernelPolicyInput`.
+  Public callers can construct `KernelPolicyInput` from a real
+  `KernelCheckResult` plus explicit origin, but trusted selection admits it
+  only when that result is accepted, untainted, and proof-obligation evidence.
   Pre-ATP discharge must therefore be kernel-replayed or represented as
-  kernel-accepted primitive evidence; otherwise it remains deterministic
-  policy evidence and cannot publish trusted `used_axioms`.
+  accepted proof-obligation kernel primitive evidence; accepted consistency
+  checks and uncheckable discharge remain diagnostic/policy evidence and
+  cannot publish trusted `used_axioms`.
 - **Policy fingerprint surface: resolved by task 2, implemented by task 3.**
   `policy.md` defines the settings that enter `PolicyFingerprint`; coordinate
   future cache integration with `mizar-cache` task 2.
@@ -177,7 +180,8 @@ Keep `cargo test -p mizar-proof` green after each task (see
 8. **Spec: `status.md`.** [x]
    - Write the status-projection spec (English and Japanese, no code): the
      artifact- and diagnostics-facing proof status model, trusted
-     `used_axioms` propagation (only from kernel-accepted evidence), and
+     `used_axioms` propagation (only from accepted proof-obligation kernel
+     evidence), and
      explanation references for open/rejected obligations.
    - Deps: 5. Spec: [internal 04](../../internal/en/04.atp_portfolio_and_kernel_check_integration.md)
      "Proof Witness and Artifact Flow", architecture 19, architecture 22.
@@ -190,13 +194,13 @@ Keep `cargo test -p mizar-proof` green after each task (see
    - Implement status projection for artifacts and diagnostics, including
      trusted `used_axioms` extraction boundaries.
    - Tests: projection fixtures per selection outcome; `used_axioms` only
-     from kernel-accepted evidence.
+     from accepted proof-obligation kernel evidence.
    - Deps: 7, 8. Spec: `status.md`.
    - Status: implemented `src/status.rs` with status projection inputs,
      projected/internal status classes, current artifact publication
      availability, trusted used-axiom references derived only from accepted
-     kernel results, architecture-22 reuse metadata, and fixtures per selected
-     outcome.
+     proof-obligation kernel results, architecture-22 reuse metadata, and
+     fixtures per selected outcome.
 
 ### Witness store
 

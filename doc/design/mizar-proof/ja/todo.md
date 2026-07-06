@@ -58,13 +58,14 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
   認証された証拠はポリシーで記録される証拠であって信頼された状態では
   決してなく、`require_kernel_certificates` の下では勝てない。
 - **discharge 証拠の検証範囲: task 6 で解決済み。**
-  `DischargedBuiltin` は `KernelPolicyInput` から作られた
-  `TrustedKernelEvidence` を通じてだけ trusted selection に入る。public caller が
-  `KernelPolicyInput` を構築できるのは、`KernelCheckResult` と明示的 origin を
-  渡す場合だけである。したがって pre-ATP discharge は kernel replay されるか、
-  kernel が accept した primitive evidence として表現されなければならない。
-  それ以外は deterministic policy evidence のままであり、trusted `used_axioms` を
-  publish できない。
+  `DischargedBuiltin` は proof-obligation `KernelPolicyInput` から作られた
+  `TrustedKernelEvidence` を通じてだけ trusted selection に入る。public caller は real
+  `KernelCheckResult` と明示的 origin から `KernelPolicyInput` を構築できるが、trusted
+  selection は、その result が accepted、untainted、proof-obligation evidence である
+  場合だけ受け入れる。したがって pre-ATP discharge は kernel replay されるか、
+  accepted proof-obligation kernel primitive evidence として表現されなければならない。
+  Accepted consistency check と uncheckable discharge は diagnostic / policy evidence の
+  ままであり、trusted `used_axioms` を publish できない。
 - **ポリシー fingerprint の表面: task 2 で解決済み。task 3 で実装する。**
   `policy.md` は `PolicyFingerprint` に入る設定を定義する。将来の cache
   integration は `mizar-cache` task 2 と調整する。
@@ -186,13 +187,13 @@ internal: [04](../../internal/ja/04.atp_portfolio_and_kernel_check_integration.m
 9. **証明状態の射影。** [x]
    - artifact と診断のための状態射影を実装する。信頼された
      `used_axioms` の抽出境界を含む。
-   - テスト: 選択結果ごとの射影フィクスチャ。`used_axioms` は kernel が
-     受理した証拠からのみ。
+   - テスト: 選択結果ごとの射影フィクスチャ。`used_axioms` は accepted
+     proof-obligation kernel evidence からのみ。
    - 依存: 7、8。仕様: `status.md`。
    - 状態: `src/status.rs` に status projection input、projected/internal status
-     class、現在の artifact publication availability、accepted kernel result だけから
-     導出される trusted used-axiom reference、architecture-22 reuse metadata、
-     selected outcome ごとの fixture を実装した。
+     class、現在の artifact publication availability、accepted proof-obligation kernel
+     result だけから導出される trusted used-axiom reference、architecture-22 reuse
+     metadata、selected outcome ごとの fixture を実装した。
 
 ### witness ストア
 

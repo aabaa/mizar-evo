@@ -20,8 +20,8 @@ selection は、すでに前段が生成した immutable record を消費する:
 - 正規化された obligation identity と encoded problem hash;
 - active `VerifierPolicy` と `PolicyFingerprint`;
 - `ProofPolicyEvaluator` から来る policy decision;
-- 明示的な kernel evidence origin と accepted kernel evidence hash に対になった
-  accepted kernel result;
+- 明示的な kernel evidence origin と accepted proof-obligation kernel evidence hash に
+  対になった accepted proof-obligation kernel result;
 - deterministic built-in discharge hash;
 - externally attested admission record;
 - open-obligation explanation;
@@ -37,8 +37,8 @@ selection は tie-break key を適用する前に winner class で candidate を
 
 | Winner class | Eligible candidate | Trusted? | Notes |
 |---|---|---:|---|
-| `KernelVerified` | active policy を満たす formula/substitution evidence の accepted kernel result。 | yes | 最上位 class。trusted `used_axioms` は accepted kernel result からだけ copy してよい。 |
-| `DischargedBuiltin` | kernel が accept した kernel-owned primitive evidence を含む、deterministic built-in evidence に対する accepted `KernelCheckResult`。 | yes | ATP `KernelVerified` とは別である。reuse validation のため deterministic discharge hash を export する。 |
+| `KernelVerified` | active policy を満たす formula/substitution evidence の accepted proof-obligation kernel result。 | yes | 最上位 class。trusted `used_axioms` は accepted proof-obligation kernel result からだけ copy してよい。 |
+| `DischargedBuiltin` | kernel が accept した kernel-owned primitive evidence を含む、deterministic built-in evidence に対する accepted proof-obligation `KernelCheckResult`。 | yes | ATP `KernelVerified` とは別である。reuse validation のため deterministic discharge hash を export する。 |
 | `PolicyPermittedExternal` | `may_win_selection = true` かつ `require_kernel_certificates = false` の external admission。 | no | trusted ではなく、trusted `used_axioms` を供給しない。 |
 | `PolicyAssumed` | active policy が許可し、`require_kernel_certificates` に阻止されていない明示的な policy assumption。 | no | non-trusted policy status のみ。trusted witness material や `used_axioms` を供給しない。 |
 | `PolicyOpen` | よりよい candidate を生成できない後に active policy が許す open obligation。 | no | 安定した explanation ref だけを持つ。 |
@@ -149,9 +149,10 @@ selection は、proof reuse と後段の witness publication が使う安定 met
 | `selection_reason` | class ordering、primary rejected diagnostic candidate、または `NoSelectableEvidence` から結果が来たことを表す安定 reason code。 |
 | `tie_break_key_hash` | 実際の tie-break tuple の安定 hash。 |
 
-`KernelVerified` では、proof reuse は accepted kernel result と trusted `used_axioms` に
-依存してよい。`DischargedBuiltin` では、reuse は deterministic discharge hash と
-accepted built-in/kernel evidence path に依存する。`PolicyPermittedExternal` と
+`KernelVerified` では、proof reuse は accepted proof-obligation kernel result と
+trusted `used_axioms` に依存してよい。`DischargedBuiltin` では、reuse は deterministic
+discharge hash と accepted proof-obligation built-in/kernel evidence path に依存する。
+`PolicyPermittedExternal` と
 `PolicyAssumed`、`PolicyOpen` では、reuse metadata は validation predicate にすぎず
 trusted acceptance にならない。
 selected provenance hash、selection reason、tie-break key hash、または selected
@@ -175,12 +176,15 @@ task 6 implementation は次を持つ安定 result を expose しなければな
   `NoSelectableEvidence`;
 - selected reuse metadata;
 - non-winning candidate の ordered diagnostic ref;
-- trusted `used_axioms` が accepted kernel result から利用可能かどうかの flag。
+- trusted `used_axioms` が accepted proof-obligation kernel result から利用可能かどうかの
+  flag。
 
 selected result は trusted `used_axioms` を合成してはならない。`KernelVerified` または
-`DischargedBuiltin` として選ばれた accepted kernel result を参照する場合だけ、
+`DischargedBuiltin` として選ばれた accepted proof-obligation kernel result を参照する場合だけ、
 trusted `used_axioms` を保持してよい。selection が使う trusted marker は accepted
-kernel evidence hash に bind され、selected candidate の evidence hash と一致しなければならない。
+proof-obligation kernel evidence hash に bind され、selected candidate の evidence hash と
+一致しなければならない。Accepted consistency check は non-selectable diagnostic であり、
+trusted marker を作らない。
 
 ## Artifact Proof Selection Merge
 

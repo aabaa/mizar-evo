@@ -4,7 +4,7 @@ use mizar_artifact::{
     proof_witness::{EvidenceKind, ProofStatus as ArtifactProofStatus, proof_witness_ref_json},
     store::SchemaVersion,
 };
-use mizar_kernel::checker::KernelCheckStatus;
+use mizar_kernel::checker::{KernelCheckStatus, KernelEvidenceCheckKind};
 use mizar_vc::vc_ir::VcId;
 
 use crate::{
@@ -398,6 +398,13 @@ fn unaccepted_or_policy_tainted_kernel_input_cannot_create_trusted_witness_metad
             KernelEvidenceOrigin::AtpFormulaSubstitution,
             false,
             None,
+        ),
+        KernelPolicyInput::for_test_with_check_kind(
+            KernelCheckStatus::Accepted,
+            KernelEvidenceOrigin::AtpFormulaSubstitution,
+            Some(KernelEvidenceCheckKind::ConsistencyCheck),
+            false,
+            Some(hash(2)),
         ),
     ];
 
@@ -1032,7 +1039,7 @@ fn trusted_candidate_with_id(
         Some(accepted_hash),
     );
     ProofEvidenceCandidate::from_trusted_kernel_input(candidate_id_named(id), &input)
-        .expect("accepted kernel policy input is trusted")
+        .expect("accepted proof-obligation kernel policy input is trusted")
 }
 
 fn candidate_id() -> CandidateSourceId {

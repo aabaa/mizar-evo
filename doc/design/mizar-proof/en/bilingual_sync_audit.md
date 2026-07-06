@@ -68,11 +68,12 @@ The paired documents agree on these canonical constraints:
   proof search, premise selection, substitution invention, cache lookup, or
   artifact manifest commit.
 - Trusted acceptance and trusted `used_axioms` come only from accepted
-  `mizar-kernel::checker::KernelCheckResult` values.
+  proof-obligation `mizar-kernel::checker::KernelCheckResult` values.
 - Externally attested evidence, backend diagnostics, backend proof payloads,
   backend-reported axiom lists, cache records, policy assumptions, open
-  obligations, and witness metadata remain non-trusted unless an accepted
-  kernel result independently supports the trusted class.
+  obligations, consistency checks, and witness metadata remain non-trusted
+  unless an accepted proof-obligation kernel result independently supports the
+  trusted class.
 - `require_kernel_certificates` prevents externally attested evidence and
   policy assumptions from becoming winners.
 - Arrival order, completion time, runtime duration, worker/process ids,

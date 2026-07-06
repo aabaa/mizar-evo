@@ -65,12 +65,12 @@ paired document は次の canonical constraint に合意している:
 - `mizar-proof` は ATP backend、SAT solving、kernel acceptance、proof search、
   premise selection、substitution invention、cache lookup、artifact manifest
   commit を実行しない。
-- trusted acceptance と trusted `used_axioms` は accepted
+- trusted acceptance と trusted `used_axioms` は accepted proof-obligation
   `mizar-kernel::checker::KernelCheckResult` value だけに由来する。
 - externally attested evidence、backend diagnostics、backend proof payload、
   backend-reported axiom list、cache record、policy assumption、open obligation、
-  witness metadata は、accepted kernel result が独立に trusted class を支えない限り
-  non-trusted のままである。
+  consistency check、witness metadata は、accepted proof-obligation kernel result が
+  独立に trusted class を支えない限り non-trusted のままである。
 - `require_kernel_certificates` は externally attested evidence と policy
   assumption が winner になることを防ぐ。
 - arrival order、completion time、runtime duration、worker/process id、

@@ -28,7 +28,7 @@ Milestone scope:
   identity.
 - Own proof status projection, including trusted `used_axioms` propagation only
   from `mizar-kernel::checker::KernelCheckResult` values whose status is
-  `Accepted`.
+  `Accepted` and whose evidence check kind is `ProofObligation`.
 - Own proof witness staging, manifest-gated publication references, and stable
   proof-reuse metadata exported as validation predicates only.
 - Own ATP early-stop policy queries that are class/rank based and never turn
@@ -89,9 +89,9 @@ Excluded:
 
 | Surface | Final shape |
 |---|---|
-| Proof policy | `ProofPolicyEvaluator` classifies explicit policy candidates, records policy diagnostics, computes policy fingerprints, controls external evidence admission, and answers ATP early-stop queries. Accepted kernel input becomes trusted only through explicit `KernelPolicyInput` origin plus accepted `KernelCheckResult`; policy-tainted kernel output is non-trusted. |
+| Proof policy | `ProofPolicyEvaluator` classifies explicit policy candidates, records policy diagnostics, computes policy fingerprints, controls external evidence admission, and answers ATP early-stop queries. Accepted kernel input becomes trusted only through explicit `KernelPolicyInput` origin plus accepted proof-obligation `KernelCheckResult`; accepted consistency checks are diagnostic-only, and policy-tainted kernel output is non-trusted. |
 | Deterministic selection | `select_winner` and artifact merge APIs select by class rank and stable tie-break identity. Raw completion order, runtime, and backend timing never participate in proof identity. `require_kernel_certificates` blocks externally attested winners. |
-| Status projection | `project_status` maps selected proof evidence to artifact/diagnostic status and propagates trusted `used_axioms` only from accepted kernel evidence with matching hashes. External, backend diagnostic, cache, rejected, and open statuses stay distinguishable and non-trusted. |
+| Status projection | `project_status` maps selected proof evidence to artifact/diagnostic status and propagates trusted `used_axioms` only from accepted proof-obligation kernel evidence with matching hashes. External, backend diagnostic, cache, rejected, consistency-check, and open statuses stay distinguishable and non-trusted. |
 | Witness store | The `witness_store` module stages deterministic witness payload hashes with `stage`, provides unpublished `ProofWitnessRef` candidates for kernel-verified formula/substitution evidence, and returns committed publication refs only through `publish_ref` with opaque committed artifact-manifest reachability proof. `selected_proof_witness_hash` is selection/status metadata, not a committed publication ref. `DischargedBuiltin` witness publication remains unsupported until artifact schema support exists. |
 | ATP early stop | Early-stop decisions are policy/class based, require an observed selectable class, and are blocked by equal or higher pending selectable classes. They do not cancel based on time or backend partial diagnostics. Downstream `mizar-atp` adoption remains an `external_dependency_gap`. |
 | Proof-reuse metadata | Status metadata exports policy fingerprint compatibility, obligation/context/dependency fingerprints, selected witness or deterministic discharge hash, evidence identity, dependency artifact/schema compatibility, selected provenance, stable selection reason, and validation hash. The metadata is a cache validation predicate, not proof authority. |
@@ -229,5 +229,5 @@ committing.
 
 Rationale: downstream integration crosses proof/cache/artifact/ATP ownership
 boundaries and must preserve the rule that trusted acceptance comes only from
-kernel results. Keep `xhigh`; lower only for docs-only typo synchronization
-that does not change integration contracts.
+accepted proof-obligation kernel results. Keep `xhigh`; lower only for
+docs-only typo synchronization that does not change integration contracts.

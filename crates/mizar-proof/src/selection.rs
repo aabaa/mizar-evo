@@ -108,7 +108,10 @@ pub struct TrustedKernelEvidence {
 impl TrustedKernelEvidence {
     #[must_use]
     pub fn from_policy_input(input: &KernelPolicyInput) -> Option<Self> {
-        if input.status() != KernelCheckStatus::Accepted || input.policy_taint() {
+        if input.status() != KernelCheckStatus::Accepted
+            || input.policy_taint()
+            || !input.is_proof_obligation()
+        {
             return None;
         }
         let accepted_evidence_hash = input.accepted_evidence_hash()?;

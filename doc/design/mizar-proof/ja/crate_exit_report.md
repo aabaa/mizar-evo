@@ -26,7 +26,8 @@ Milestone scope:
 - deterministic winner selection と artifact-facing proof-selection merge を所有し、
   arrival order、completion time、runtime duration を proof identity に使わない。
 - proof status projection を所有する。trusted `used_axioms` は status が
-  `Accepted` の `mizar-kernel::checker::KernelCheckResult` からだけ伝播する。
+  `Accepted` で evidence check kind が `ProofObligation` の
+  `mizar-kernel::checker::KernelCheckResult` からだけ伝播する。
 - proof witness staging、manifest-gated publication reference、validation
   predicate としてだけ export される stable proof-reuse metadata を所有する。
 - ATP early-stop policy query を所有する。query は class/rank based であり、
@@ -87,9 +88,9 @@ Excluded:
 
 | Surface | Final shape |
 |---|---|
-| Proof policy | `ProofPolicyEvaluator` は明示的な policy candidate を分類し、policy diagnostic を記録し、policy fingerprint を計算し、external evidence admission を制御し、ATP early-stop query に答える。Accepted kernel input は明示的な `KernelPolicyInput` origin と accepted `KernelCheckResult` を通る場合だけ trusted になる。policy-tainted kernel output は non-trusted である。 |
+| Proof policy | `ProofPolicyEvaluator` は明示的な policy candidate を分類し、policy diagnostic を記録し、policy fingerprint を計算し、external evidence admission を制御し、ATP early-stop query に答える。Accepted kernel input は明示的な `KernelPolicyInput` origin と accepted proof-obligation `KernelCheckResult` を通る場合だけ trusted になる。Accepted consistency check は diagnostic-only であり、policy-tainted kernel output は non-trusted である。 |
 | Deterministic selection | `select_winner` と artifact merge API は class rank と stable tie-break identity で選択する。raw completion order、runtime、backend timing は proof identity に参加しない。`require_kernel_certificates` は externally attested winner を block する。 |
-| Status projection | `project_status` は selected proof evidence を artifact/diagnostic status へ map し、matching hash を持つ accepted kernel evidence からだけ trusted `used_axioms` を伝播する。External、backend diagnostic、cache、rejected、open status は区別された non-trusted のままである。 |
+| Status projection | `project_status` は selected proof evidence を artifact/diagnostic status へ map し、matching hash を持つ accepted proof-obligation kernel evidence からだけ trusted `used_axioms` を伝播する。External、backend diagnostic、cache、rejected、consistency-check、open status は区別された non-trusted のままである。 |
 | Witness store | `witness_store` module は `stage` で deterministic witness payload hash を stage し、kernel-verified formula/substitution evidence には unpublished `ProofWitnessRef` candidate を提供し、opaque committed artifact-manifest reachability proof を持つ `publish_ref` を通してだけ committed publication ref を返す。`selected_proof_witness_hash` は selection/status metadata であり、committed publication ref ではない。`DischargedBuiltin` witness publication は artifact schema support が存在するまで unsupported のままである。 |
 | ATP early stop | Early-stop decision は policy/class based であり、observed selectable class を要求し、同一または上位の pending selectable class により block される。time や backend partial diagnostic では cancel しない。downstream `mizar-atp` adoption は `external_dependency_gap` のままである。 |
 | Proof-reuse metadata | Status metadata は policy fingerprint compatibility、obligation/context/dependency fingerprint、selected witness または deterministic discharge hash、evidence identity、dependency artifact/schema compatibility、selected provenance、stable selection reason、validation hash を export する。この metadata は cache validation predicate であり、proof authority ではない。 |
@@ -222,6 +223,6 @@ review phases and full workspace verification before committing.
 ```
 
 Rationale: downstream integration は proof/cache/artifact/ATP ownership boundary を
-またぎ、trusted acceptance が kernel result だけに由来する規則を保つ必要がある。
-`xhigh` を維持する。integration contract を変えない docs-only typo synchronization
-だけなら lower でよい。
+またぎ、trusted acceptance が accepted proof-obligation kernel result だけに由来する
+規則を保つ必要がある。`xhigh` を維持する。integration contract を変えない
+docs-only typo synchronization だけなら lower でよい。

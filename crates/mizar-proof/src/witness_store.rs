@@ -230,8 +230,8 @@ impl ProofWitnessProvenance {
 /// that evidence.
 ///
 /// `mizar-artifact` owns the published metadata shape, but this wrapper keeps
-/// the metadata bound to the accepted kernel evidence hash before witness
-/// staging can turn it into a `ProofWitnessRef`.
+/// the metadata bound to the accepted proof-obligation kernel evidence hash
+/// before witness staging can turn it into a `ProofWitnessRef`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct TrustedKernelWitnessMetadata {
     trusted_kernel_evidence: TrustedKernelEvidence,
@@ -616,7 +616,8 @@ pub enum ProofWitnessStoreError {
     UnsupportedWitnessClass { selected_class: ProofWinnerClass },
     /// The kernel policy input did not represent trusted accepted evidence.
     KernelEvidenceNotTrusted,
-    /// The artifact metadata is not bound to the same accepted kernel evidence.
+    /// The artifact metadata is not bound to the same accepted proof-obligation
+    /// kernel evidence.
     AcceptedEvidenceHashMismatch { expected: Hash, actual: Hash },
     /// The selected status projection does not authorize this witness draft.
     StatusProjectionMismatch {

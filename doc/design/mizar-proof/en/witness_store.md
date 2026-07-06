@@ -20,7 +20,7 @@ The store consumes `ProofWitnessDraft` values only for trusted selections that
 also match the deterministic status projection for the same obligation:
 
 - `KernelVerified` formula/substitution kernel evidence with a matching
-  accepted kernel result;
+  accepted proof-obligation kernel result;
 - `DischargedBuiltin` only as an internal staged outcome until artifact schema
   support exists.
 
@@ -112,7 +112,8 @@ unpublished `ProofWitnessRef` version `2.0` candidate with:
 - `proof_status = "kernel_verified"`;
 - `evidence_kind = "formula_substitution_kernel_evidence"`;
 - the staged witness path and witness artifact hash;
-- kernel acceptance metadata copied from the accepted kernel evidence boundary.
+- kernel acceptance metadata copied from the accepted proof-obligation kernel
+  evidence boundary.
 
 Successful `publish_ref` returns that same reference as publication-reachable
 only after committed manifest reachability is proven.
@@ -187,10 +188,11 @@ For publishable `KernelVerified` witnesses, selected witness hashes and
 published witness refs participate in proof-reuse validation, but they are not
 proof authority. A cache record may reuse a proof only when the witness hash,
 selected evidence hash, obligation fingerprint, policy fingerprint, schema
-versions, and accepted kernel metadata all match the current validation
-predicate. Dependency artifact fingerprints are part of that predicate only
-after downstream artifact/cache owners supply an authoritative binding; task 11
-preserves them as producer-owned reuse metadata. A selected candidate may carry
+versions, and accepted proof-obligation kernel metadata all match the current
+validation predicate. Dependency artifact fingerprints are part of that
+predicate only after downstream artifact/cache owners supply an authoritative
+binding; task 11 preserves them as producer-owned reuse metadata. A selected
+candidate may carry
 `selected_proof_witness_hash` when it has a witness payload artifact hash
 (`witness_artifact_hash`) that the current artifact witness schema can
 reference. That hash is not a hash of the `ProofWitnessRef` metadata object and
