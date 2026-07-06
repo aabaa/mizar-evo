@@ -2,13 +2,13 @@ schema_version = 1
 id = "fail_certificate_sat_goal_polarity_mismatch_001"
 kind = "fail"
 stage = "advanced_semantics"
-domain = "certificate.sat"
+domain = "certificate"
 source = "fail_certificate_sat_goal_polarity_mismatch_001.cert.json"
 expected_outcome = "fail"
 expected_phase = "kernel_check"
 failure_category = "certificate_rejection"
 rejection_reason = "context_mismatch"
-stable_detail_key = "certificate.sat.goal_polarity_mismatch"
+stable_detail_key = "soundness.certificate.context_mismatch"
 diagnostic_codes = []
 spec_refs = [
   "spec.en.architecture_15.kernel_evidence.sat_refutation",

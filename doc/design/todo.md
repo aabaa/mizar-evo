@@ -94,7 +94,7 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] complete through task 45 | parked task 46 | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 (task 30) | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 20 plus task 22 | steps 1, 5 (task 21, then 10) | [todo](./mizar-test/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22 plus task 21 soundness vocabulary | step 5 (task 10) | [todo](./mizar-test/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete | steps 2, 4, 5 (tasks 35-48) | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete | steps 2, 4 (tasks 26-30) | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | steps 3 (task 29), 5; tasks 27-28 resolved | [todo](./mizar-vc/en/todo.md) |
@@ -118,7 +118,7 @@ Revised 2026-07-06 after the July 2026 audit wave (see
 soundness holes and settle semantic decisions before further pipeline growth;
 steps 4-8 are the implementation waves re-paced around them.
 
-### Step 1 — Soundness contract closure [ ]
+### Step 1 — Soundness contract closure [x]
 
 Close the kernel-audit F1/F2/F7/F8 findings on the trusted boundary before any
 further evidence-pipeline work. No external gaps block this step; it removes
@@ -134,11 +134,12 @@ certified-unsound acceptance paths.
    for non-imported source bindings (F2 producer side).
 5. [x] [mizar-kernel task 31](./mizar-kernel/en/todo.md) — context-identity
    verification (F2, paired with vc 28).
-6. [ ] [mizar-test task 21](./mizar-test/en/todo.md) — corrected-path
+6. [x] [mizar-test task 21](./mizar-test/en/todo.md) — corrected-path
    soundness vocabulary in the required-case registry (F7).
 
 Exit: audit F1/F2/F7/F8 closed; `soundness_argument.md` invariants B4 and the
-P-class rows marked implemented; the 23-case certificate corpus stays rejecting.
+P-class rows are marked implemented/resolved; the 23-case certificate corpus
+stays rejecting.
 
 ### Step 2 — Spec-decision wave [ ]
 

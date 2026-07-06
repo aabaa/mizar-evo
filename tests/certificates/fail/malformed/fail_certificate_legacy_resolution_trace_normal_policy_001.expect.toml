@@ -2,13 +2,13 @@ schema_version = 1
 id = "fail_certificate_legacy_resolution_trace_normal_policy_001"
 kind = "fail"
 stage = "advanced_semantics"
-domain = "certificate.legacy"
+domain = "certificate"
 source = "fail_certificate_legacy_resolution_trace_normal_policy_001.cert.json"
 expected_outcome = "fail"
 expected_phase = "certificate_check"
 failure_category = "certificate_rejection"
 rejection_reason = "unsupported_certificate_format"
-stable_detail_key = "certificate.legacy.unsupported_under_normal_policy"
+stable_detail_key = "soundness.certificate.unsupported_legacy_certificate"
 diagnostic_codes = []
 spec_refs = [
   "spec.en.architecture_15.kernel_evidence.envelope_rejection",

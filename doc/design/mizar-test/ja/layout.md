@@ -107,11 +107,11 @@ tests/certificates/fail/resources/
 certificate payloads は、後続 schema が compact binary format を定義しない限り `.cert.json` を使う。すべての certificate test は隣接する `.expect.toml` を持つ。
 
 ```text
-tests/certificates/fail/sat/fail_certificate_invalid_resolution_001.cert.json
-tests/certificates/fail/sat/fail_certificate_invalid_resolution_001.expect.toml
+tests/certificates/fail/sat/fail_certificate_sat_satisfiable_refutation_001.cert.json
+tests/certificates/fail/sat/fail_certificate_sat_satisfiable_refutation_001.expect.toml
 ```
 
-expectation は expected `certificate_rejection` または `kernel_rejection` category と、`invalid_sat_proof`、`invalid_substitution`、`malformed_certificate`、`unresolved_symbol`、`timeout`、`resource_exhaustion` のような stable rejection reason を記録する。
+expectation は expected `certificate_rejection` または `kernel_rejection` category と、`invalid_sat_proof`、`invalid_sat_refutation`、`invalid_substitution`、`malformed_certificate`、`context_mismatch`、`missing_provenance`、`unsupported_certificate_format`、`unresolved_symbol`、`timeout`、`resource_exhaustion` のような stable rejection reason を記録する。
 
 ## Naming Rules
 

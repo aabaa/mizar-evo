@@ -420,15 +420,17 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   projection の仕様化まで引用できない。fail-closed で健全だが、import を
   引用する ATP-bound VC が受理されるには kernel/`mizar-vc` 対のスキーマ
   タスクが必要。
-- **F7(Medium、報告)。`mizar-test` に訂正後経路の拒否語彙がない。**
-  required-soundness-case レジストリ(`REQUIRED_SOUNDNESS_CASES`)は
-  `soundness.certificate.invalid_sat_proof` をレガシー reason に固定し、
-  `invalid_sat_refutation`、`context_mismatch`、`missing_provenance`、
-  レガシーゲートのケースを持たない。architecture 20 は「invalid SAT
-  refutation」と「通常ポリシー下の未サポートレガシー証明書」のカバレッジを
-  明示的に要求している。新コーパスは訂正後経路の reason に非 `soundness.`
-  の安定キーを使う(レジストリは未知の `soundness.*` キーを拒否するため)。
-  レジストリ拡張は `mizar-test` の後続タスク。
+- **F7(Medium、`mizar-test` task 21 で解決済み)。訂正後経路の拒否語彙。**
+  required-soundness-case レジストリは audit-mode resolution replay 向けの
+  legacy `soundness.certificate.invalid_sat_proof` を保持し、訂正後経路向けに
+  `soundness.certificate.invalid_sat_refutation`、
+  `soundness.certificate.context_mismatch`、
+  `soundness.certificate.missing_provenance`、
+  `soundness.certificate.unsupported_legacy_certificate` を追加した。既存
+  corrected-path certificate sidecar は payload や rejection behavior を変えず、
+  `domain = "certificate"` と新 stable key を使う。これにより architecture 20 の
+  invalid SAT refutation と normal policy 下の unsupported legacy-certificate
+  coverage は required-case registry で固定された。
 - **F8(Low、`mizar-test` task 22 で解決済み)。ディレクトリ命名の
   ドリフト。** architecture 20 は現在、certificate と kernel-evidence corpus
   の正準 root として `tests/certificates/` を列挙し、実装済み
@@ -451,9 +453,9 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   と consistency-polarity rejection は task 27 で解決済み。local/VC-fact 検証に
   カーネルが必要とする producer-side context-identity payload 生成は task 28 で
   解決済み。
-- `doc/design/mizar-test/en/`(本タスクの範囲外、報告): required
-  soundness-case レジストリと layout/expectation 文書への訂正後経路 reason
-  の追加(F7)。コーパスルート命名 drift(F8)は task 22 で解決済み。
+- `doc/design/mizar-test/en/`: required soundness-case レジストリと
+  layout/expectation 文書は訂正後経路 reason を含むようになった(F7)。
+  コーパスルート命名 drift(F8)は task 22 で解決済み。
 
 ## 制約と前提
 

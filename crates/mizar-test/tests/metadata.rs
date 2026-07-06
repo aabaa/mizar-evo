@@ -1682,6 +1682,22 @@ tests = []
         diagnostic.detail_key
             == "fail_soundness.required_case.soundness.certificate.invalid_sat_proof"
     }));
+    assert!(development_plan.diagnostics.iter().any(|diagnostic| {
+        diagnostic.detail_key
+            == "fail_soundness.required_case.soundness.certificate.invalid_sat_refutation"
+    }));
+    assert!(development_plan.diagnostics.iter().any(|diagnostic| {
+        diagnostic.detail_key
+            == "fail_soundness.required_case.soundness.certificate.context_mismatch"
+    }));
+    assert!(development_plan.diagnostics.iter().any(|diagnostic| {
+        diagnostic.detail_key
+            == "fail_soundness.required_case.soundness.certificate.missing_provenance"
+    }));
+    assert!(development_plan.diagnostics.iter().any(|diagnostic| {
+        diagnostic.detail_key
+            == "fail_soundness.required_case.soundness.certificate.unsupported_legacy_certificate"
+    }));
 
     let mut release_config = corpus.config();
     release_config.validation_mode = ValidationMode::Release;
@@ -1739,6 +1755,87 @@ spec_refs = ["spec.en.test.proof"]
 }
 
 #[test]
+fn corrected_certificate_soundness_keys_are_required_cases() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.certificate"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "advanced_semantics"
+status = "planned"
+required = true
+coverage = "fail"
+tests = []
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+    for (id, phase, category, reason, key) in [
+        (
+            "corrected_invalid_sat_refutation",
+            "kernel_check",
+            "kernel_rejection",
+            "invalid_sat_refutation",
+            "soundness.certificate.invalid_sat_refutation",
+        ),
+        (
+            "corrected_context_mismatch",
+            "certificate_check",
+            "certificate_rejection",
+            "context_mismatch",
+            "soundness.certificate.context_mismatch",
+        ),
+        (
+            "corrected_missing_provenance",
+            "kernel_check",
+            "kernel_rejection",
+            "missing_provenance",
+            "soundness.certificate.missing_provenance",
+        ),
+        (
+            "corrected_unsupported_legacy_certificate",
+            "certificate_check",
+            "certificate_rejection",
+            "unsupported_certificate_format",
+            "soundness.certificate.unsupported_legacy_certificate",
+        ),
+    ] {
+        corpus.write(format!("tests/certificates/fail/{id}.cert.json"), "{}");
+        corpus.write(
+            format!("tests/certificates/fail/{id}.expect.toml"),
+            format!(
+                r#"schema_version = 1
+id = "{id}"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "{id}.cert.json"
+expected_outcome = "fail"
+expected_phase = "{phase}"
+failure_category = "{category}"
+rejection_reason = "{reason}"
+stable_detail_key = "{key}"
+diagnostic_codes = []
+spec_refs = ["spec.en.test.certificate"]
+"#
+            ),
+        );
+    }
+
+    let plan = corpus.plan();
+
+    assert!(
+        plan.diagnostics
+            .iter()
+            .all(|diagnostic| { !diagnostic.code.0.starts_with("E-EXPECT-SOUNDNESS") }),
+        "{:#?}",
+        plan.diagnostics
+    );
+}
+
+#[test]
 fn invalid_soundness_identity_does_not_satisfy_required_case_bookkeeping() {
     let corpus = Corpus::new();
     corpus.write("tests/certificates/fail/invalid_sat_proof.cert.json", "{}");
@@ -1756,6 +1853,27 @@ failure_category = "certificate_rejection"
 rejection_reason = "malformed_certificate"
 stable_detail_key = "soundness.certificate.invalid_sat_proof"
 diagnostic_codes = ["E-KERNEL-TEST"]
+spec_refs = ["spec.en.test.certificate"]
+"#,
+    );
+    corpus.write(
+        "tests/certificates/fail/invalid_sat_refutation.cert.json",
+        "{}",
+    );
+    corpus.write(
+        "tests/certificates/fail/invalid_sat_refutation.expect.toml",
+        r#"schema_version = 1
+id = "invalid_sat_refutation"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "certificate"
+source = "invalid_sat_refutation.cert.json"
+expected_outcome = "fail"
+expected_phase = "kernel_check"
+failure_category = "kernel_rejection"
+rejection_reason = "invalid_sat_proof"
+stable_detail_key = "soundness.certificate.invalid_sat_refutation"
+diagnostic_codes = []
 spec_refs = ["spec.en.test.certificate"]
 "#,
     );
@@ -1784,6 +1902,10 @@ tests = []
     assert!(plan.diagnostics.iter().any(|diagnostic| {
         diagnostic.detail_key
             == "fail_soundness.required_case.soundness.certificate.invalid_sat_proof"
+    }));
+    assert!(plan.diagnostics.iter().any(|diagnostic| {
+        diagnostic.detail_key
+            == "expectation.soundness_rejection_reason.soundness.certificate.invalid_sat_refutation"
     }));
 }
 
@@ -3146,6 +3268,28 @@ fn repository_corpus_plan_succeeds() {
     let plan = repository_plan();
 
     assert_eq!(plan.error_count(), 0, "{:#?}", plan.diagnostics);
+    for key in [
+        "soundness.certificate.invalid_sat_refutation",
+        "soundness.certificate.context_mismatch",
+        "soundness.certificate.missing_provenance",
+        "soundness.certificate.unsupported_legacy_certificate",
+    ] {
+        assert!(
+            plan.cases
+                .iter()
+                .any(|case| case.expectation.stable_detail_key.as_deref() == Some(key)),
+            "repository corpus should contain corrected required soundness case `{key}`"
+        );
+        let missing_detail_key = format!("fail_soundness.required_case.{key}");
+        assert!(
+            plan.diagnostics.iter().all(|diagnostic| {
+                diagnostic.detail_key != missing_detail_key
+                    || diagnostic.code.0 != "W-SOUNDNESS-MISSING-CASE"
+            }),
+            "corrected required soundness case `{key}` should not be reported missing: {:#?}",
+            plan.diagnostics
+        );
+    }
     assert!(plan.cases.iter().any(|case| {
         case.id.0 == "pass_lexical_identifier_basic_001"
             && case

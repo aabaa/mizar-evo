@@ -113,11 +113,11 @@ tests/certificates/fail/resources/
 Certificate payloads use `.cert.json` unless a later schema defines a compact binary format. Every certificate test has an adjacent `.expect.toml`.
 
 ```text
-tests/certificates/fail/sat/fail_certificate_invalid_resolution_001.cert.json
-tests/certificates/fail/sat/fail_certificate_invalid_resolution_001.expect.toml
+tests/certificates/fail/sat/fail_certificate_sat_satisfiable_refutation_001.cert.json
+tests/certificates/fail/sat/fail_certificate_sat_satisfiable_refutation_001.expect.toml
 ```
 
-The expectation records the expected `certificate_rejection` or `kernel_rejection` category and the stable rejection reason, such as `invalid_sat_proof`, `invalid_substitution`, `malformed_certificate`, `unresolved_symbol`, `timeout`, or `resource_exhaustion`.
+The expectation records the expected `certificate_rejection` or `kernel_rejection` category and the stable rejection reason, such as `invalid_sat_proof`, `invalid_sat_refutation`, `invalid_substitution`, `malformed_certificate`, `context_mismatch`, `missing_provenance`, `unsupported_certificate_format`, `unresolved_symbol`, `timeout`, or `resource_exhaustion`.
 
 ## Naming Rules
 

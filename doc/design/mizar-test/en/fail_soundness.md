@@ -28,7 +28,7 @@ profile.
 | Domain | Required Cases |
 |---|---|
 | substitution | variable capture, binder collision, malformed substitution, alpha-conversion failure |
-| certificate | malformed certificate, invalid substitution, invalid SAT proof, unresolved symbol, timeout, resource exhaustion |
+| certificate | malformed certificate, invalid substitution, legacy invalid SAT proof, invalid SAT refutation, context mismatch, missing provenance, unsupported legacy certificate under normal policy, unresolved symbol, timeout, resource exhaustion |
 | cluster | infinite chain, cyclic registration, unintended coercion, hidden transitive expansion |
 | overload | ambiguous notation, hidden coercion, unstable resolution order; accepted coherent same-root refinement joins must not be classified as ambiguity failures |
 | dependency | stale theorem statement fingerprint, stale cluster semantics, stale notation parse result |
@@ -47,6 +47,10 @@ domain presence. The harness recognizes these stable failure identities:
 | `soundness.certificate.malformed_certificate` | `certificate` | fail | `certificate_rejection` | `malformed_certificate` | `advanced_semantics` | `certificate_check`, `kernel_check` |
 | `soundness.certificate.invalid_substitution` | `certificate` | fail | `kernel_rejection` | `invalid_substitution` | `advanced_semantics` | `certificate_check`, `kernel_check` |
 | `soundness.certificate.invalid_sat_proof` | `certificate` | fail | `kernel_rejection` | `invalid_sat_proof` | `advanced_semantics` | `certificate_check`, `kernel_check` |
+| `soundness.certificate.invalid_sat_refutation` | `certificate` | fail | `kernel_rejection` | `invalid_sat_refutation` | `advanced_semantics` | `certificate_check`, `kernel_check` |
+| `soundness.certificate.context_mismatch` | `certificate` | fail | `certificate_rejection`, `kernel_rejection` | `context_mismatch` | `advanced_semantics` | `certificate_check`, `kernel_check` |
+| `soundness.certificate.missing_provenance` | `certificate` | fail | `kernel_rejection` | `missing_provenance` | `advanced_semantics` | `certificate_check`, `kernel_check` |
+| `soundness.certificate.unsupported_legacy_certificate` | `certificate` | fail | `certificate_rejection` | `unsupported_certificate_format` | `advanced_semantics` | `certificate_check`, `kernel_check` |
 | `soundness.certificate.unresolved_symbol` | `certificate` | fail | `certificate_rejection`, `kernel_rejection` | `unresolved_symbol` | `advanced_semantics` | `certificate_check`, `kernel_check` |
 | `soundness.certificate.timeout` | `certificate` | fail | `certificate_rejection`, `kernel_rejection` | `timeout` | `advanced_semantics` | `certificate_check`, `kernel_check` |
 | `soundness.certificate.resource_exhaustion` | `certificate` | fail | `certificate_rejection`, `kernel_rejection` | `resource_exhaustion` | `advanced_semantics` | `certificate_check`, `kernel_check` |

@@ -404,8 +404,8 @@ Every finding maps to a task or a recorded disposition:
 | F4 (KernelEvidence field drift) | resolved in `f75af877`; no further task |
 | F5 (fingerprint collision resistance) | constraint added to architecture 15 in `f75af877`; no further task — future fingerprint registrations must satisfy it |
 | F6 (imported-statement projection) | task 33, paired with mizar-vc |
-| F7 (mizar-test soundness vocabulary) | owned by [mizar-test](../../mizar-test/en/todo.md) audit follow-up |
-| F8 (corpus directory naming) | owned by [mizar-test](../../mizar-test/en/todo.md) audit follow-up |
+| F7 (mizar-test soundness vocabulary) | resolved by [mizar-test task 21](../../mizar-test/en/todo.md) |
+| F8 (corpus directory naming) | resolved by [mizar-test task 22](../../mizar-test/en/todo.md) |
 | F9 (legacy tautology marker) | task 34 |
 
 30. **Goal-polarity binding in the check service (F1, invariant B4).** [x]

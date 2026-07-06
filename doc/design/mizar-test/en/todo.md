@@ -433,7 +433,7 @@ The kernel acceptance-boundary audit
 reported two harness-owned findings, F7 and F8. These are minimal
 audit-driven additions; broader runner growth remains task 10 pacing.
 
-21. **Corrected-path soundness vocabulary in the required-case registry (kernel F7).** [ ]
+21. **Corrected-path soundness vocabulary in the required-case registry (kernel F7).** [x]
     - Extend `REQUIRED_SOUNDNESS_CASES` and the layout/expectation docs with
       the corrected kernel rejection vocabulary: `invalid_sat_refutation`,
       `context_mismatch`, `missing_provenance`, and an
@@ -446,6 +446,12 @@ audit-driven additions; broader runner growth remains task 10 pacing.
       the 23-case audit corpus satisfies the extended registry;
       `mizar-test` plan errors stay 0; the fail-soundness bookkeeping
       reports the corrected cases as covered.
+    - Completed: task 21 adds the corrected `soundness.certificate.*`
+      required-case keys for `invalid_sat_refutation`, `context_mismatch`,
+      `missing_provenance`, and unsupported legacy certificates under normal
+      policy while retaining legacy `invalid_sat_proof`. Existing certificate
+      sidecars for the corrected reasons now use `domain = "certificate"` and
+      soundness stable keys without changing payloads or rejection behavior.
     - Verify: `cargo test -p mizar-test`.
     - Deps: 8; corpus from mizar-kernel audit (`f75af877`). Spec:
       architecture 20; soundness_argument.md F7.

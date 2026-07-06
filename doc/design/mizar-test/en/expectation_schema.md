@@ -35,8 +35,8 @@ tests/miz/pass/parser/pass_parser_block_001.expect.toml
 tests/lexical/pass/pass_lexical_identifier_001.src
 tests/lexical/pass/pass_lexical_identifier_001.expect.toml
 
-tests/certificates/fail/sat/fail_certificate_invalid_resolution_001.cert.json
-tests/certificates/fail/sat/fail_certificate_invalid_resolution_001.expect.toml
+tests/certificates/fail/sat/fail_certificate_sat_satisfiable_refutation_001.cert.json
+tests/certificates/fail/sat/fail_certificate_sat_satisfiable_refutation_001.expect.toml
 ```
 
 The harness rejects missing sidecars for fail, soundness, certificate,
@@ -493,13 +493,13 @@ Certificate tests use certificate payloads and never depend on parsing `.miz`.
 kind = "fail"
 stage = "advanced_semantics"
 domain = "certificate"
-source = "fail_certificate_invalid_resolution_001.cert.json"
+source = "fail_certificate_sat_satisfiable_refutation_001.cert.json"
 expected_outcome = "fail"
 expected_phase = "kernel_check"
 failure_category = "kernel_rejection"
-rejection_reason = "invalid_sat_proof"
-diagnostic_codes = ["E-KERNEL-INVALID-SAT-PROOF"]
-stable_detail_key = "certificate.invalid_resolution.basic"
+rejection_reason = "invalid_sat_refutation"
+diagnostic_codes = []
+stable_detail_key = "soundness.certificate.invalid_sat_refutation"
 ```
 
 Certificate expectations must include `rejection_reason`.

@@ -437,15 +437,18 @@ the trusted base; **Low** = documentation/consistency debt.
   cited until a source-formula projection is specified. Fail-closed and sound;
   needs a paired kernel/`mizar-vc` schema task before ATP-bound VCs citing
   imports can ever be accepted.
-- **F7 (Medium, reported). `mizar-test` has no corrected-path rejection
-  vocabulary.** The required-soundness-case registry
-  (`REQUIRED_SOUNDNESS_CASES`) pins `soundness.certificate.invalid_sat_proof`
-  to the legacy reason and has no `invalid_sat_refutation`, `context_mismatch`,
-  `missing_provenance`, or legacy-gate case; architecture 20 explicitly asks
-  for "invalid SAT refutation" and "unsupported legacy certificates under
-  normal policy" coverage. The new corpus uses non-`soundness.` stable keys for
-  corrected-path reasons (the registry rejects unknown `soundness.*` keys);
-  extending the registry is a `mizar-test` follow-up task.
+- **F7 (Medium, resolved by `mizar-test` task 21). Corrected-path rejection
+  vocabulary.** The required-soundness-case registry now keeps legacy
+  `soundness.certificate.invalid_sat_proof` for audit-mode resolution replay
+  and adds `soundness.certificate.invalid_sat_refutation`,
+  `soundness.certificate.context_mismatch`,
+  `soundness.certificate.missing_provenance`, and
+  `soundness.certificate.unsupported_legacy_certificate` for the corrected
+  path. Existing corrected-path certificate sidecars use `domain =
+  "certificate"` and the new stable keys without changing payloads or
+  rejection behavior, so architecture 20's invalid SAT refutation and
+  unsupported legacy-certificate coverage is pinned in the required-case
+  registry.
 - **F8 (Low, resolved by `mizar-test` task 22). Directory naming drift.**
   Architecture 20 now lists `tests/certificates/` as the canonical certificate
   and kernel-evidence corpus root, matching the implemented `mizar-test`
@@ -471,10 +474,9 @@ the trusted base; **Low** = documentation/consistency debt.
   and consistency-polarity rejection is resolved by task 27; producer-side
   context-identity payload production for local/VC-fact verification is
   resolved by task 28.
-- `doc/design/mizar-test/en/` (out of scope here, reported): extend the
-  required soundness-case registry and layout/expectation docs with
-  corrected-path rejection reasons (F7). The corpus root naming drift (F8) is
-  resolved by task 22.
+- `doc/design/mizar-test/en/`: the required soundness-case registry and
+  layout/expectation docs now include corrected-path rejection reasons (F7).
+  The corpus root naming drift (F8) is resolved by task 22.
 
 ## Constraints And Assumptions
 

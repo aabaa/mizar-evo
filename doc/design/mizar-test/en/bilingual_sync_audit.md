@@ -15,6 +15,11 @@ scenario ids and equivalence classes, planned/active gating, traceability
 records, consumer-runner pacing, determinism coverage, and module-spec
 contracts.
 
+Task 21 re-runs the relevant paired-document check for the kernel F7
+corrected-path soundness vocabulary. The follow-up covers `fail_soundness.md`,
+`layout.md`, `expectation_schema.md`, `todo.md`, `00.crate_plan.md`, and the
+kernel `soundness_argument.md` references updated in the same change.
+
 This audit does not change language behavior, corpus expectations, existing
 `.miz` fixtures, or expectation meaning.
 
@@ -46,21 +51,31 @@ The task 15 follow-up checked:
   external dependency, not as a `spec_gap` or `repo_metadata_conflict`;
 - task 10 remains consumer-paced with no newly prepared runner increment.
 
+The task 21 follow-up checked:
+
+- the corrected `soundness.certificate.*` keys, failure categories, rejection
+  reasons, domains, and phases match between `fail_soundness.md` companions;
+- certificate layout and expectation examples use the implemented
+  `tests/certificates/` corpus and corrected SAT-refutation vocabulary;
+- `todo.md` and `00.crate_plan.md` both mark task 21 complete and record that
+  `doc/design/spec_coverage_audit.md` remains unchanged;
+- the paired kernel `soundness_argument.md` files mark F7 resolved.
+
 ## Pair Status
 
 | Document | Synchronized content |
 |---|---|
-| `00.crate_plan.md` | Task plan, source inventory, task 8-15 completion status, architecture-22 matrix audit result, and source-derived bridge boundary. |
+| `00.crate_plan.md` | Task plan, source inventory, task 8-15 and task-21 completion status, architecture-22 matrix audit result, source-derived bridge boundary, and corrected soundness vocabulary audit result. |
 | `README.md` | Module index and crate boundary summary. |
-| `expectation_schema.md` | Sidecar schema, origin metadata, soundness fields, and public enum policy. |
-| `fail_soundness.md` | Required soundness cases, failure contract, and validation rules. |
+| `expectation_schema.md` | Sidecar schema, origin metadata, corrected certificate soundness fields, and public enum policy. |
+| `fail_soundness.md` | Required soundness cases, corrected kernel rejection vocabulary, failure contract, and validation rules. |
 | `harness.md` | Public API, runner pacing ledger, determinism requirements, architecture-22 matrix reporting, and tests. |
-| `layout.md` | Directory layout, naming rules, expected-result files, and public enum cross-reference. |
+| `layout.md` | Directory layout, naming rules, corrected certificate rejection reasons, expected-result files, and public enum cross-reference. |
 | `minimal_crate.md` | Minimal metadata-only crate scope, CLI behavior, and verification expectations. |
 | `miz_corpus.md` | Corpus classes, size/review policy, provenance, stress, fuzz, and property rules. |
 | `snapshot.md` | Snapshot records, baseline/update policy, determinism helpers, and public enum policy. |
 | `staged_model.md` | Stage ids, admission rules, prerequisite policy, and public enum policy. |
-| `todo.md` | Ordered tasks, task 8-15 completion notes, and remaining architecture-22 follow-up boundary. |
+| `todo.md` | Ordered tasks, task 8-15 and task-21 completion notes, and remaining architecture-22 follow-up boundary. |
 | `traceability.md` | Manifest schema, coverage/status rules, prerequisite validation, architecture-22 matrix summary, and public enum policy. |
 | `bilingual_sync_audit.md` | Task-13 baseline, task-15 follow-up audit, and Japanese companion. |
 
@@ -68,7 +83,8 @@ The task 15 follow-up checked:
 
 No bilingual documentation drift remains for the current task scope. The
 Japanese companions are synchronized with the English canonical documents for
-the mizar-test design surface through task 15.
+the mizar-test design surface through task 21's corrected-path vocabulary
+update.
 
 The task-15 source/spec follow-up found no blocking `spec_gap`, accepted
 `repo_metadata_conflict`, language behavior change, or need to change existing
@@ -94,9 +110,9 @@ Task 15 used documentation-focused checks:
 - source/spec audit ledger review in `00.crate_plan.md`;
 - `git diff --check`.
 
-Crate-local Rust checks are still run before commit because the workflow
-requires them, but they do not prove whole-document bilingual semantic
-equivalence. The remaining risk is the normal manual-review risk of this audit:
-wording may still diverge at sentence level even when file sets, major
-sections, task status, recorded inventories, and architecture-22 matrix
+Task 21 additionally uses `cargo test -p mizar-test` and `git diff --check`
+before commit. Crate-local Rust checks do not prove whole-document bilingual
+semantic equivalence. The remaining risk is the normal manual-review risk of
+this audit: wording may still diverge at sentence level even when file sets,
+major sections, task status, recorded inventories, and corrected-vocabulary
 metadata match.
