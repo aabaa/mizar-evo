@@ -14,4 +14,4 @@ spec_refs = [
   "spec.en.07.modes.existential_gating.semantic",
   "spec.en.17.clusters.registration_activation_timing.semantic",
 ]
-notes = "Inactive advanced_semantics seed: the existential cluster for `marked set` appears after the mode declaration; activation is item-ordered and never retroactive (spec 17.1), so the mode declaration fails its mandatory existence check (spec 7.8)."
+notes = "Inactive advanced_semantics seed: the existential cluster for `marked set` appears after the mode declaration; activation is item-ordered and never retroactive (spec 17.1), so the attributed mode declaration fails its mandatory inhabitation check (spec 7.8 and 17.3.4)."

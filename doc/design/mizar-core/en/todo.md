@@ -323,7 +323,7 @@ work. Every finding maps to a task or a recorded disposition:
 | Finding | Disposition |
 |---|---|
 | F1 (structure-view collapse) | spec patched; elaborator lowering is task 27; kernel-side re-audit is [mizar-kernel task 35](../../mizar-kernel/en/todo.md); member-identity coordination is [mizar-checker task 36](../../mizar-checker/en/todo.md) |
-| F2 (type-actual inhabitation) | spec patched (§17.3.4 gating row); elaborator gating is task 28; inhabitation-table coordination is [mizar-checker task 43](../../mizar-checker/en/todo.md) |
+| F2 (type-actual inhabitation) | spec patched (§17.3.4 gating row); checker task 43 completed the built-in/base-shape inhabitation table; elaborator gating is task 28 |
 | F3 (`type extends M` object/schema conflation) | spec patched (§18.10.2); lowered together with F1 in task 27 |
 | F4 (functor guards, actual signature compatibility) | spec patched (§18.10.4, §18.9); implementation is task 29 |
 | F5 (type-parameter sethood) | spec patched (§18.10.2 sethood paragraph); plumbing is task 30 |
@@ -388,20 +388,20 @@ work. Every finding maps to a task or a recorded disposition:
       template_encoding_audit.md F1, F3.
 
 28. **Template type-actual inhabitation gating (F2).** [ ]
-    - Run the existential-gating check for template `type_expression`
-      actuals per the §17.3.4 gating row added by the audit: a schema
-      context may assume `∃x. is_T(x)` for each type parameter, and in
-      exchange every instantiation site must supply existential evidence for
-      the actual. Emit the per-parameter inhabitation fact into the schema
-      context during lowering.
+    - Run the §17.3.4 inhabitation-evidence gate for template
+      `type_expression` actuals: a schema context may assume `∃x. is_T(x)`
+      for each type parameter, and in exchange every instantiation site must
+      satisfy the built-in/base-shape table; attributed actuals require an
+      existential registration. Emit the per-parameter inhabitation fact into
+      the schema context during lowering.
     - Acceptance: `fail_template_type_actual_missing_existential_001`'s
       rejection is derivable (unsatisfiable attribute-chain actual is
       rejected at the instantiation site, and no `ex y st y is hollow set`
       style axiom is ever emitted); pass fixtures show gated actuals with
       evidence lowering cleanly.
     - Verify: `cargo test -p mizar-core`, `cargo test -p mizar-checker`.
-    - Deps: 27; coordinate with mizar-checker task 43 (built-in
-      inhabitation table) and task 20 gate surface. Refs: spec 07 §7.8,
+    - Deps: 27; consume mizar-checker task 43's built-in/base-shape
+      inhabitation table and task 20 gate surface. Refs: spec 07 §7.8,
       17 §17.3.4, 18 §18.10.2; template_encoding_audit.md F2.
 
 29. **Scheme-actual signature compatibility, guard obligations, and functor-actual validation (F4, F6, F8).** [ ]
@@ -437,8 +437,8 @@ work. Every finding maps to a task or a recorded disposition:
       fixtures show bound-inherited sethood flowing into the comprehension
       gate.
     - Verify: `cargo test -p mizar-core`, `cargo test -p mizar-checker`.
-    - Deps: 28; coordinate with mizar-checker task 43 (parameterized
-      sethood form, SSA-013). Refs: spec 13 §13.4.2, 18 §18.10.2;
+    - Deps: 28; consume mizar-checker task 43's parameterized sethood form
+      (SSA-013). Refs: spec 13 §13.4.2, 18 §18.10.2;
       template_encoding_audit.md F5.
 
 ## Recommended Verification

@@ -807,19 +807,31 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       使う。`registration_resolution.md` も同じ規則を反映する。
       checker/core source semantics は変更していない。
 
-43. **Spec 明確化: 依存 mode の sethood と built-in inhabitation(SSA-013, SSA-014)。** [ ]
+43. **Spec 明確化: 依存 mode の sethood と built-in inhabitation(SSA-013, SSA-014)。** [x]
     - パラメータ化された sethood 義務形
       (`∀params. ∃S. ∀x. (is_T(x, params) → x ∈ S)`)を §7.8.1 に与え、
       §13.4.2 の comprehension gate が instantiated parameters で sethood
       を検査することを明記する。unattributed base について §7.8 と §17.3.4
       を調停し、built-in inhabitation 表(`object`、`set`、struct radix)を
       追加する。テンプレート監査が §17.3.4 に追加した template 実引数
-      inhabitation gate と整合させる。spec 07、13、17 英日。
+      inhabitation gate と整合させる。spec 07、13、17 英日。gate への参照が
+      ある箇所では Ch18 も同期してよい。
     - 受け入れ条件: checker の existential gate(task 20)が全 base-type
       形状に対し決定可能な規則を持つ。sethood の export 状態(module
       interface に含むか否か)が明記される。
     - 検証: `cargo test -p mizar-test`。
     - 依存: なし。参照: SSA-013, SSA-014; テンプレート監査 F2。
+    - task 43 で完了: spec 07 は guarded parameterized existence /
+      sethood obligation を与え、exported sethood は witness term を export
+      しない module-interface semantic fact と明記した。spec 13 は sethood を
+      resolved mode と正規化済み argument tuple で検査する。spec 17 は属性付き
+      existential registration、built-in `object`/`set`、accepted mode、inhabited
+      field 上の constructor witness による bare structure radix、§18.10.2 による
+      template 本体内の bare schema type parameter の inhabitation table を追加した。
+      spec 18 の type actual も同じ表を使う。既存 inactive
+      sethood、existential、template seed は rejection intent を維持し、positive
+      source-derived coverage は deferred のまま。checker/core source semantics は
+      変更していない。
 
 44. **Spec 明確化: `reconsider` の discharge と曖昧な redefinition target(SSA-015, SSA-017)。** [ ]
     - justification を省略した `reconsider` は、narrowing 義務が widening/

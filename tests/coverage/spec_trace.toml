@@ -653,12 +653,12 @@ tests = [
 [[requirement]]
 id = "spec.en.07.modes.existential_gating.semantic"
 source = "doc/spec/en/07.modes.md"
-section = "7.8 Correctness Conditions; with 17.1 activation ordering and 17.3.4 required existential registrations"
+section = "7.8 Correctness Conditions; with 17.1 activation ordering and 17.3.4 inhabitation evidence table"
 stage = "advanced_semantics"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Adversarial checker seeds fixed test-first; inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G021). Rejection contracts: attributed type use without existential evidence, and item-ordered (non-retroactive) registration activation."
+notes = "Adversarial checker seeds fixed test-first; inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G021). Rejection contracts: attributed type use without existential evidence, and item-ordered (non-retroactive) registration activation. Task 43 / SSA-014 decision: unattributed object/set, accepted mode applications, bare structure radixes, and bare schema type parameters inside template bodies use the 17.3.4 inhabitation-evidence table; positive source-derived coverage for those accepted cases remains deferred with the runner/source-extraction gap."
 depends_on = [
   "spec.en.07.mode_definitions.parser",
   "spec.en.17.clusters_and_registrations.parser",
@@ -1088,7 +1088,7 @@ stage = "advanced_semantics"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Adversarial checker seed fixed test-first; inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020). Rejection contract: Fraenkel generators over types without sethood evidence."
+notes = "Adversarial checker seed fixed test-first; inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020). Rejection contract: Fraenkel generators over types without sethood evidence. Task 43 / SSA-013 decision: parameterized mode sethood is checked at the resolved mode and normalized instantiated argument tuple; positive source-derived sethood evidence remains deferred with the runner/source-extraction gap."
 depends_on = [
   "spec.en.13.set_expressions.parser",
 ]
@@ -1369,7 +1369,7 @@ stage = "advanced_semantics"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Adversarial checker seeds fixed test-first by the template-encoding soundness audit (doc/design/mizar-core/en/template_encoding_audit.md); inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G021). Rejection contracts: template type actuals without inhabitation evidence, Fraenkel comprehension over bare type parameters, scheme actuals with incompatible signatures, and cross-view attribute evidence leaks on diamond inherit paths. Task 36 confirms renamed same-root paths remain distinct positive views, so this row remains the negative guard against evidence crossing those views."
+notes = "Adversarial checker seeds fixed test-first by the template-encoding soundness audit (doc/design/mizar-core/en/template_encoding_audit.md); inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G021). Rejection contracts: template type actuals without inhabitation evidence, Fraenkel comprehension over bare type parameters, scheme actuals with incompatible signatures, and cross-view attribute evidence leaks on diamond inherit paths. Task 43 / SSA-014 coordinates type actual inhabitation with the 17.3.4 built-in/base-shape table. Task 36 confirms renamed same-root paths remain distinct positive views, so this row remains the negative guard against evidence crossing those views."
 depends_on = [
   "spec.en.05.structures.parser",
   "spec.en.17.clusters_and_registrations.parser",

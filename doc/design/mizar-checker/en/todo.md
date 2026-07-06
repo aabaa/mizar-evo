@@ -855,7 +855,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       equal, mixed, or incomparable cases. `registration_resolution.md` mirrors
       the rule. No checker/core source semantics changed.
 
-43. **Spec clarification: sethood for dependent modes and built-in inhabitation (SSA-013, SSA-014).** [ ]
+43. **Spec clarification: sethood for dependent modes and built-in inhabitation (SSA-013, SSA-014).** [x]
     - Give the parameterized sethood obligation form
       (`∀params. ∃S. ∀x. (is_T(x, params) → x ∈ S)`) in §7.8.1 and state
       that §13.4.2 comprehension gates check sethood at the instantiated
@@ -863,11 +863,24 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       the built-in inhabitation table (`object`, `set`, struct radixes).
       Coordinate with the template-actual inhabitation gate added by the
       template audit (§17.3.4). Spec 07, 13, 17 English and Japanese.
+      Ch18 may also be synchronized where it references the gate.
     - Acceptance: the checker's existential gate (task 20) has a decidable
       rule for every base-type shape; sethood export status (module
       interface or not) is stated.
     - Verify: `cargo test -p mizar-test`.
     - Deps: none. Refs: SSA-013, SSA-014; template audit F2.
+    - Completed in task 43: spec 07 now gives guarded parameterized
+      existence and sethood obligations, and states exported sethood is a
+      module-interface semantic fact whose witness term is not exported. Spec
+      13 checks sethood at the resolved mode and normalized argument tuple.
+      Spec 17 adds the inhabitation table for attributed existential
+      registrations, built-in `object`/`set`, accepted modes, bare structure
+      radixes via constructor witnesses over inhabited fields, and bare schema
+      type parameters inside template bodies via §18.10.2. Spec 18 type
+      actuals use the same table. Existing inactive sethood,
+      existential, and template seeds keep their rejection intent; positive
+      source-derived coverage remains deferred. No checker/core source
+      semantics changed.
 
 44. **Spec clarification: `reconsider` discharge and ambiguous redefinition target (SSA-015, SSA-017).** [ ]
     - State that omitted `reconsider` justification is legal iff the

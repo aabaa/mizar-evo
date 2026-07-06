@@ -13,4 +13,4 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.13.sethood.comprehension.semantic",
 ]
-notes = "Inactive advanced_semantics seed: the Fraenkel generator ranges over BagStr, which is neither an Element-of domain nor a sethood-proved type; without sethood evidence the comprehension may denote a proper class and must be rejected (spec 13.4.2, 7.8.1)."
+notes = "Inactive advanced_semantics seed: the Fraenkel generator ranges over BagStr, which is neither an Element-of domain nor a sethood-proved type at the generator's normalized arguments; without sethood evidence the comprehension may denote a proper class and must be rejected (spec 13.4.2, 7.8.1)."

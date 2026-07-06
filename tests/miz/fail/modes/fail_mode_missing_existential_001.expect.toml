@@ -13,4 +13,4 @@ diagnostic_codes = []
 spec_refs = [
   "spec.en.07.modes.existential_gating.semantic",
 ]
-notes = "Inactive advanced_semantics seed: `let s be tinted set` uses an attributed type with no existential cluster in scope; attributed type use is gated on inhabitation evidence (spec 17.3.4, 7.8)."
+notes = "Inactive advanced_semantics seed: `let s be tinted set` uses an attributed type with no existential cluster in scope; attributed type use is gated on inhabitation evidence (spec 17.3.4, 7.8). Task 43 leaves unattributed built-ins, accepted modes, bare structure radixes, and bare schema type parameters inside template bodies to the 17.3.4 inhabitation table, but this attributed type still requires an existential registration."

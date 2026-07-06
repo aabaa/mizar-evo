@@ -311,7 +311,7 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
 | 所見 | 処置 |
 |---|---|
 | F1(structure-view 崩壊) | spec 修正済み。elaborator lowering は task 27。kernel 側再監査は [mizar-kernel task 35](../../mizar-kernel/en/todo.md)。member 同一性の調整は [mizar-checker task 36](../../mizar-checker/en/todo.md) |
-| F2(型実引数の inhabitation) | spec 修正済み(§17.3.4 gating 行)。elaborator gating は task 28。inhabitation 表の調整は [mizar-checker task 43](../../mizar-checker/en/todo.md) |
+| F2(型実引数の inhabitation) | spec 修正済み(§17.3.4 gating 行)。checker task 43 が built-in/base-shape inhabitation 表を完了した。elaborator gating は task 28。 |
 | F3(`type extends M` の object/schema 混同) | spec 修正済み(§18.10.2)。task 27 で F1 とともに lowering |
 | F4(functor guard、実引数シグネチャ適合) | spec 修正済み(§18.10.4、§18.9)。実装は task 29 |
 | F5(型パラメータの sethood) | spec 修正済み(§18.10.2 sethood 段落)。plumbing は task 30 |
@@ -376,20 +376,21 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       template_encoding_audit.md F1、F3。
 
 28. **テンプレート型実引数の inhabitation gating(F2)。** [ ]
-    - 監査が追加した §17.3.4 gating 行に従い、テンプレートの
-      `type_expression` 実引数に existential-gating 検査を走らせる:
-      schema コンテキストは各型パラメータについて `∃x. is_T(x)` を仮定して
-      よく、その代わりすべての instantiation site が実引数の existential
-      evidence を供給しなければならない。lowering 中に per-parameter の
-      inhabitation fact を schema コンテキストへ emit する。
+    - テンプレートの `type_expression` 実引数に §17.3.4 の
+      inhabitation-evidence gate を走らせる: schema コンテキストは各型
+      パラメータについて `∃x. is_T(x)` を仮定してよく、その代わりすべての
+      instantiation site は built-in/base-shape table を満たさなければならない。
+      属性付き実引数は existential registration を必要とする。lowering 中に
+      per-parameter の inhabitation fact を schema コンテキストへ emit する。
     - 受け入れ条件: `fail_template_type_actual_missing_existential_001` の
       拒否が導出可能(充足不能な属性連鎖の実引数が instantiation site で
       拒否され、`ex y st y is hollow set` 型の公理が emit されない)。
       evidence 付きの gated 実引数が正常に lower される pass fixture を
       持つ。
     - 検証: `cargo test -p mizar-core`、`cargo test -p mizar-checker`。
-    - 依存: 27; mizar-checker task 43(built-in inhabitation 表)と task 20
-      gate surface と調整。参照: spec 07 §7.8、17 §17.3.4、18 §18.10.2;
+    - 依存: 27; mizar-checker task 43 の built-in/base-shape inhabitation 表と
+      task 20 gate surface を consume する。参照: spec 07 §7.8、17 §17.3.4、
+      18 §18.10.2;
       template_encoding_audit.md F2。
 
 29. **scheme 実引数のシグネチャ適合・guard 義務・functor 実引数検証(F4、F6、F8)。** [ ]
@@ -424,8 +425,8 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       bound 継承の sethood が comprehension gate へ流れる pass fixture を
       持つ。
     - 検証: `cargo test -p mizar-core`、`cargo test -p mizar-checker`。
-    - 依存: 28; mizar-checker task 43(パラメータ化 sethood 形、SSA-013)
-      と調整。参照: spec 13 §13.4.2、18 §18.10.2;
+    - 依存: 28; mizar-checker task 43 のパラメータ化 sethood 形(SSA-013)を
+      consume する。参照: spec 13 §13.4.2、18 §18.10.2;
       template_encoding_audit.md F5。
 
 ## 推奨検証

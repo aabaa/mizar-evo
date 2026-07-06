@@ -95,7 +95,7 @@ is its task 1). "Next work" points into the
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 (task 30) | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22 plus task 21 soundness vocabulary | step 5 (task 10) | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec wave complete through task 42 | steps 2, 4, 5 (tasks 43-48) | [todo](./mizar-checker/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec wave complete through task 43 | steps 2, 4, 5 (tasks 44-48) | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete | steps 2, 4 (tasks 27-30) | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | steps 3 (task 29), 5; tasks 27-28 resolved | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | steps 3, 4 (tasks 33-35); task 32 parked; tasks 30-31 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -166,7 +166,7 @@ checker code semantics change in this step.
    termination, contradiction site, `attr(args)` (SSA-007/008/020).
 9. [x] [mizar-checker task 42](./mizar-checker/en/todo.md) — reduction
    determinism signature (SSA-009).
-10. [ ] [mizar-checker task 43](./mizar-checker/en/todo.md) — sethood for
+10. [x] [mizar-checker task 43](./mizar-checker/en/todo.md) — sethood for
     dependent modes and built-in inhabitation (SSA-013/014).
 11. [ ] [mizar-checker task 44](./mizar-checker/en/todo.md) — `reconsider`
     discharge and ambiguous redefinition target (SSA-015/017).

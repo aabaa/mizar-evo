@@ -50,8 +50,8 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 | SSA-010 | medium | 19.4.3/19.4.4 | Resolved by task 37: ambiguity covers multiple maximal roots, including equivalent roots |
 | SSA-011 | medium | 5.4 vs 19.2.2 | Resolved by task 36: implicit upcast path uniqueness is syntactic |
 | SSA-012 | medium | 5.3 | Resolved by task 36: inheritance acyclicity is explicit with `structures.inherit.cycle` |
-| SSA-013 | medium | 7.8.1 | `sethood` obligation form for dependent (parameterized) modes is not given |
-| SSA-014 | medium | 7.8/17.3.4 | Existence requirements for unattributed bases and built-ins are unstated |
+| SSA-013 | medium | 7.8.1 | Resolved by task 43: parameterized `sethood` is per normalized argument tuple |
+| SSA-014 | medium | 7.8/17.3.4 | Resolved by task 43: inhabitation table covers unattributed bases and built-ins |
 | SSA-015 | medium | 8.2 | `reconsider` with omitted justification has no defined discharge path |
 | SSA-016 | low | 19.2.3 | Resolved by task 37: specificity is a preorder before quotienting by closure-equivalence |
 | SSA-017 | low | 6.7/19.4.1 | `coherence with` omitted with several sharpenable originals: diagnostic unspecified |
@@ -357,7 +357,7 @@ requirement to §5.3 and names diagnostic detail key
 `structures.inherit.cycle`.
 **Corpus:** `fail_structure_inherit_cycle_001`.
 
-### SSA-013 (medium, `spec_gap`) — `sethood` for dependent modes
+### SSA-013 (medium, resolved `spec_gap`) — `sethood` for dependent modes
 
 **Where:** 7.8.1.
 
@@ -368,7 +368,16 @@ the comprehension gate of §13.4.2 must check sethood *at the instantiated
 parameters*. Not stated; neither is whether sethood is part of the exported
 module interface.
 
-### SSA-014 (medium, `spec_gap`) — Existence for unattributed bases and built-ins
+**Resolution (task 43):** §7.8.1 now gives both unparameterized and
+parameterized `sethood` obligations. Parameterized sethood is guarded by the
+declared parameter guards and is checked at the same resolved mode and
+normalized argument tuple used by the comprehension generator in §13.4.2. The
+witness set may depend on parameters. Accepted public/exported sethood is a
+module-interface semantic property fact, while the concrete witness term is not
+exported as a usable value. The existing inactive comprehension seed remains
+the negative coverage for missing sethood evidence.
+
+### SSA-014 (medium, resolved `spec_gap`) — Existence for unattributed bases and built-ins
 
 **Where:** 7.8 vs 17.3.4.
 
@@ -378,6 +387,20 @@ is found for the base type", while §17.3.4 requires registrations only for
 `object`, `set`, and struct radixes implicitly inhabited (structs are
 FOL-consistent to leave uninhabited)? The checker's existential gate
 (todo task 20) needs the built-in inhabitation table spelled out.
+
+**Resolution (task 43):** §7.8 now requires inhabitation evidence for the full
+normalized RHS of every mode declaration, with a guarded per-parameter
+existence obligation for parameterized modes. §17.3.4 now distinguishes
+attributed type expressions, which require a visible active existential
+registration, from unattributed bases, which use a built-in/base-shape table:
+`object`, `set`, accepted mode applications, bare structure radixes, and bare
+schema type parameters inside template bodies. The bare-structure entry is a
+constructor-witness rule, not unconditional inhabitation: all required field
+argument types after parameter substitution, inheritance, and defaults must
+have inhabitation evidence; properties are excluded and zero-field structures
+are trivially inhabited. The schema-parameter entry is backed by the §18.10.2
+schema-context assumption. §18 template actuals now defer to the same table,
+preserving the F2 inhabitation gate.
 
 ### SSA-015 (medium, `spec_gap`) — `reconsider` without justification
 
@@ -511,12 +534,17 @@ spec-decision tasks close.
   SSA-008, and SSA-020 are resolved by task 41 with synchronized spec
   03/06/17/19/Appendix A edits, architecture 04 saturation wording, the
   closure-time contradiction seed, and a restricted-adjective parser trace row.
-- **Remaining spec tasks (before further checker semantics):** SSA-013,
-  SSA-014, SSA-015, and SSA-017 remain assigned to tasks 43-44.
+  SSA-009 is resolved by task 42 with synchronized spec 17 reduction
+  determinism edits. SSA-013 and SSA-014 are resolved by task 43 with
+  synchronized spec 07/13/17/18 edits, sethood/existential trace note updates,
+  and the existing reject-first corpus seeds kept inactive.
+- **Remaining spec tasks (before further checker semantics):** SSA-015 and
+  SSA-017 remain assigned to task 44.
 - **Task 19/20 (registration gating, existential gates):** revisit against
-  SSA-014's built-in inhabitation table once decided; task 40 records the
-  task-19 activation policy as an interim conservative approximation of
-  SSA-006's asynchronous acceptance contract.
+  task 43's built-in/base-shape inhabitation table when source-derived
+  accepted status and payloads exist; task 40 records the task-19 activation
+  policy as an interim conservative approximation of SSA-006's asynchronous
+  acceptance contract.
 - **Tasks 16-18 (closure, loops, reductions):** task 41 aligns SSA-007's
   grammar-based termination argument and SSA-008's closure-time contradiction
   rule with existing `cluster_trace.md`/`registration_resolution.md`
