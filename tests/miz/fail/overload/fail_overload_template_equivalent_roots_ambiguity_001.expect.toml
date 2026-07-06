@@ -1,0 +1,16 @@
+schema_version = 1
+id = "fail_overload_template_equivalent_roots_ambiguity_001"
+kind = "fail"
+stage = "advanced_semantics"
+domain = "overload.resolution"
+source = "fail_overload_template_equivalent_roots_ambiguity_001.miz"
+expected_outcome = "fail"
+expected_phase = "overload_resolution"
+failure_category = "overload_ambiguity"
+rejection_reason = "template_derived_equivalent_roots"
+stable_detail_key = "overload.roots.template_equivalent_ambiguity"
+diagnostic_codes = []
+spec_refs = [
+  "spec.en.19.overload.ambiguity.semantic",
+]
+notes = "Inactive advanced_semantics seed: both `choose[T]` templates infer `T = C`, pass their `type extends A` / `type extends B` constraints, and enter Phase B as equivalent concrete candidates. Template declared constraint strictness is not a tie-breaker after expansion, so the site must report ambiguous overload rather than selecting the `B`-bounded template (spec 19.4.4, 19.6.1)."

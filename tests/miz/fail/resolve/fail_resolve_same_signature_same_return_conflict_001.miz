@@ -1,0 +1,15 @@
+:: Rejection target: two ordinary definitions of `gauge` share the identical
+:: argument-type signature and the same return type. Same-argument ordinary
+:: definitions are declaration conflicts regardless of return type; they are
+:: not overload alternatives
+:: (doc/spec/en/19.overload_resolution.md, section 19.1 key restrictions).
+
+definition
+  let x be set;
+  func GaugeADef: gauge(x) -> set equals x;
+end;
+
+definition
+  let x be set;
+  func GaugeBDef: gauge(x) -> set equals x;
+end;

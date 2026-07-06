@@ -327,12 +327,15 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       健全。spec 18 §18.2.7 を(英日で)更新し、テンプレート推論と
       オーバーロード選択が単一の比較ストーリーを使うよう、overload
       tie-break 決定([mizar-checker task 37](../../mizar-checker/en/todo.md))
-      と調整する。
+      と調整する。checker task 37 は Phase B の overload tie-break 決定を
+      記録済みであり、この task は Phase A の省略テンプレート引数推論を
+      引き続き所有し、欠落した source payload を推測してはならない。
     - 受け入れ条件: §18.2.7 が比較に使う型と ambiguity 診断を命名する。
       残余候補ケースを固定する ambiguity `.miz` seed を sidecar と
       `spec_trace.toml` エントリ付きで追加する。
     - 検証: `cargo test -p mizar-test`。
-    - 依存: mizar-checker task 37 と調整。参照:
+    - 依存: mizar-checker task 37 は Phase B tie-break 決定を記録済み。
+      この task は Phase A 推論決定性を引き続き担当。参照:
       template_encoding_audit.md F7。
 
 27. **reduct/view lowering(F1、F3)。** [ ]

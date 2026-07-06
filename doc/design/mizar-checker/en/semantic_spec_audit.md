@@ -40,23 +40,23 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 |---|---|---|---|
 | SSA-001 | critical | 5.5/5.8 | Resolved by task 35: constructor-supplied property values plus fields-only extensionality collapsed the logic |
 | SSA-002 | high | 5.3/5.4 | Resolved by task 36: member identity tracks root declaration plus inheritance path/view |
-| SSA-003 | high | 19.6.1 | Template inference Cases 2-3 contradict the ⊑-based selection of 19.4.3 |
+| SSA-003 | high | 19.6.1 | Resolved by task 37: template constraints are not Phase B tie-breakers after expansion |
 | SSA-004 | high | 17.5/17.9.3 | Functorial cluster `for T` clause has no semantics in the FOL encoding |
 | SSA-005 | high | 7.4.1 | Property implementations lack coherence conditions across overlapping modes |
 | SSA-006 | high | 17.1 vs arch 04 | Registration activation timing: spec is item-ordered, design defers to verifier acceptance |
 | SSA-007 | medium | 17.10/3.3 | Cluster termination silently relies on the restricted adjective grammar |
 | SSA-008 | medium | 17.7.3 | Contradiction detection site is inconsistent (ATP vs closure) |
 | SSA-009 | medium | 17.6.4 | Reduction determinism claim conflicts with `such`-condition context dependence |
-| SSA-010 | medium | 19.4.3/19.4.4 | Equally specific distinct roots fit neither "unique best" nor "incomparable" |
+| SSA-010 | medium | 19.4.3/19.4.4 | Resolved by task 37: ambiguity covers multiple maximal roots, including equivalent roots |
 | SSA-011 | medium | 5.4 vs 19.2.2 | Resolved by task 36: implicit upcast path uniqueness is syntactic |
 | SSA-012 | medium | 5.3 | Resolved by task 36: inheritance acyclicity is explicit with `structures.inherit.cycle` |
 | SSA-013 | medium | 7.8.1 | `sethood` obligation form for dependent (parameterized) modes is not given |
 | SSA-014 | medium | 7.8/17.3.4 | Existence requirements for unattributed bases and built-ins are unstated |
 | SSA-015 | medium | 8.2 | `reconsider` with omitted justification has no defined discharge path |
-| SSA-016 | low | 19.2.3 | Antisymmetry claim holds only on closure-equivalence classes |
+| SSA-016 | low | 19.2.3 | Resolved by task 37: specificity is a preorder before quotienting by closure-equivalence |
 | SSA-017 | low | 6.7/19.4.1 | `coherence with` omitted with several sharpenable originals: diagnostic unspecified |
 | SSA-018 | low | 19.6.4 | Greedy `of`/`over` parse depends on the in-scope arity set |
-| SSA-019 | low | 19.6.1 | Editorial: introductory sentence repeated three times |
+| SSA-019 | low | 19.6.1 | Resolved by task 37: duplicated introductory sentences removed |
 | SSA-020 | medium | 3.3/6.2 | Argument-list attribute form `attr(args)` is usable but never declarable |
 
 ## Findings
@@ -133,33 +133,28 @@ cases. Task 36 does not add a renamed-view reject seed because renamed-view
 exposure is positive behavior; `fail_template_qua_view_attribute_leak_001`
 remains the negative guard against evidence leaking across those views.
 
-### SSA-003 (high, `spec_gap`) — Template inference examples contradict the selection rule
+### SSA-003 (high, resolved `spec_gap`) — Template inference examples contradicted the selection rule
 
 **Where:** 19.overload_resolution.md §19.6.1 Cases 2-3 vs §19.4.3;
 architecture 05 "narrow tie-breakers".
 
-After Phase A instantiation, every successful template binds `T` to the
-**same** exact argument type, so all template-derived candidates carry
-identical parameter vectors. Case 2 claims "overload 2 (constraint B) is
-stricter → wins", but constraint strictness is not part of the §19.4.3 `⊑`
-comparison, and architecture 05 allows only the non-template-beats-template
-tie-breaker. Case 3 (`f(c)`) claims the non-template `f(x: B)` beats the
-template instantiated at `C`, yet `C ⊏ B` makes the template-derived
-candidate *strictly more specific*, so §19.4.3 selects the template — the
-opposite outcome.
+Task 37 chose the conservative spec rule: Phase A produces concrete
+template-derived candidates, and Phase B compares those concrete normalized
+parameter vectors with the normal `⊑` preorder. Declared template constraint
+strictness is not a Phase B tie-breaker. A non-template candidate wins only
+when its concrete vector is closure-equivalent to a template-derived vector
+and every other allowed tie-breaker is also tied.
 
-**Proposed resolutions (choose one):**
+The §19.6.1 examples now follow that rule. Case 2, where two template-derived
+roots instantiate to the same concrete vector but come from distinct ordinary
+roots, is ambiguous. Case 3, where the argument has exact type `C`, selects
+the template-derived candidate with concrete parameter `C` over the
+non-template `B` candidate because `C ⊏ B`.
 
-1. Add an explicit rule: among template-derived candidates of one symbol,
-   compare **declared constraints** (mode hierarchy) first; a non-template
-   candidate wins against any template-derived candidate whenever both are
-   viable (not only on ties). Recompute §19.4.3 interaction accordingly.
-2. Keep pure `⊑` selection over instantiated signatures and fix the Case 2/3
-   expected outcomes (Case 2 becomes ambiguous; Case 3 second example selects
-   the template).
-
-Either way, architecture 05's tie-breaker list and checker `overload_resolution.md`
-must be updated to match.
+Architecture 05 and checker `overload_resolution.md` now carry the same
+tie-breaker list. This decision coordinates with, but does not close,
+`mizar-core` task 26 / F7: omitted-template-argument inference remains a
+Phase A source-payload task and must not be inferred from missing payloads.
 
 ### SSA-004 (high, `spec_gap`) — Functorial cluster `for T` has no encoding
 
@@ -276,23 +271,31 @@ in-scope rules, **discharged side-condition set**); define the combined
 specificity as: pattern subsumption first, then position-wise guard
 comparison, all remaining mixed cases incomparable → FQN tie-break.
 
-### SSA-010 (medium, `spec_gap`) — Equally specific distinct roots
+### SSA-010 (medium, resolved `spec_gap`) — Equally specific distinct roots
 
 **Where:** 19.2.3 note, 19.4.3, 19.4.4, 19.1 restrictions.
 
-Two roots whose parameter types have identical closures (different raw
-spellings) are "equally specific". They are then comparable both ways, so
-the site has no *unique* best root, yet §19.4.4 defines ambiguity only for
-**incomparable** roots. Related: two ordinary definitions with identical
-argument signatures and identical return types are neither a stated
-definition conflict (that rule requires different return types) nor a
+Before task 37, two roots whose concrete normalized parameter types had
+identical closures were comparable both ways, so the call site had no
+unique best root, but §19.4.4 only named ambiguity for **incomparable** roots.
+Relatedly, two ordinary definitions with identical argument signatures and
+identical return types were neither a stated definition conflict nor a
 resolvable overload.
 
-**Proposed resolution:** extend §19.4.4 to "no unique maximal root" (covers
-ties), and extend the §19.1 conflict rule to identical-signature
-declarations regardless of return type.
-**Corpus:** `fail_resolve_same_signature_return_conflict_001` pins the
-stated return-type conflict; the tie case awaits the spec decision.
+Task 37 extends ambiguity to the case where at least one viable root exists
+but the post-tie-break maximal-root set contains two or more distinct
+ordinary roots. This covers both incomparable roots and closure-equivalent
+roots. It also extends the §19.1 conflict rule: two ordinary definitions with
+the same name and identical argument-type signature are a definition conflict
+regardless of return type.
+
+**Corpus:** `fail_overload_equivalent_roots_ambiguity_001` is the inactive
+advanced-semantics seed for equivalent-root ambiguity.
+`fail_resolve_same_signature_return_conflict_001` remains the active
+different-return declaration conflict seed, and
+`fail_resolve_same_signature_same_return_conflict_001` is an inactive
+declaration-symbol seed until the resolver diagnostic covers same-return
+duplicates.
 
 ### SSA-011 (medium, `spec_gap`) — Unique "path" vs unique "embedding"
 
@@ -354,11 +357,14 @@ obligation is discharged by cluster closure only, sent to ATP, or an error.
 is discharged by widening/closure evidence alone; otherwise a diagnostic
 requests a justification.
 
-### SSA-016 (low, `spec_gap`) — Antisymmetry wording
+### SSA-016 (low, resolved `spec_gap`) — Antisymmetry wording
 
-§19.2.3 calls `⊑` "antisymmetric", but two syntactically distinct types with
-equal closures satisfy `T₁ ⊑ T₂ ⊑ T₁`. `⊑` is a preorder; antisymmetry holds
-on closure-equivalence classes. Wording fix only (interacts with SSA-010).
+Before task 37, §19.2.3 called `⊑` "antisymmetric", but two syntactically
+distinct concrete normalized type expressions with equal closures satisfy
+`T₁ ⊑ T₂ ⊑ T₁`. Task 37 rewords specificity as a preorder on concrete
+normalized type expressions; antisymmetry holds only after quotienting by
+closure-equivalence classes. This wording is part of the SSA-010 ambiguity
+decision.
 
 ### SSA-017 (low, `spec_gap`) — Ambiguous `coherence with` omission
 
@@ -374,10 +380,10 @@ Documented and deterministic, but fragile; recommend a lint when a lower
 arity interpretation also exists, and note the parser needs arity data from
 the resolver (layering).
 
-### SSA-019 (low, editorial) — Duplicated sentences
+### SSA-019 (low, resolved editorial) — Duplicated sentences
 
-§19.6.1 repeats "The following examples use an abstract mode hierarchy ..."
-three times in a row. Editorial cleanup.
+Task 37 removes the repeated §19.6.1 introductory sentences while updating
+the template tie-break examples.
 
 ### SSA-020 (medium, `spec_gap`) — `attr(args)` usable but not declarable
 
@@ -390,15 +396,19 @@ with SSA-007 (admitting it into clusters breaks the termination argument).
 
 ## Adversarial Corpus
 
-Sixteen rejection fixtures were fixed test-first by the audit (sidecars +
-traceability entries; all are inactive seeds until an `advanced_semantics`
-runner and source-to-checker payload extraction exist —
-MC-G020/MC-G021/MC-G023/MC-G027). Task 35 later adds the SSA-001
-constructor-property seed under the same inactive-seed rule. Task 36 adds the
-duplicate-member-coverage seed under the same rule, while renamed-view
-exposure remains positive behavior guarded by the existing template view-leak
-seed. Existing tests and expectations were not rebaselined to match
-implementation behavior.
+The original audit fixed sixteen rejection fixtures test-first (sidecars +
+traceability entries); the `advanced_semantics` fixtures remain inactive until
+an advanced runner and source-to-checker payload extraction exist —
+MC-G020/MC-G021/MC-G023/MC-G027. Task 35 later adds the SSA-001
+constructor-property seed under the same inactive advanced-semantics rule.
+Task 36 adds the duplicate-member-coverage seed under that rule, while
+renamed-view exposure remains positive behavior guarded by the existing
+template view-leak seed. Task 37 adds inactive ordinary and template-derived
+equivalent-root ambiguity seeds plus one inactive same-return signature-conflict
+declaration seed; the latter waits for the matching resolver diagnostic. The
+existing different-return signature-conflict declaration seed remains active.
+Existing tests and expectations were not rebaselined to match implementation
+behavior.
 
 | Fixture | Target behavior | Spec |
 |---|---|---|
@@ -414,8 +424,11 @@ implementation behavior.
 | `fail/structures/fail_structure_inherit_cycle_001` | inheritance cycle | 5.3, 13.8.7 |
 | `fail/structures/fail_structure_inherit_uncovered_member_001` | uncovered base member | 5.3.1 |
 | `fail/overload/fail_overload_incomparable_roots_001` | incomparable roots → ambiguity | 19.2.3, 19.4.4 |
+| `fail/overload/fail_overload_equivalent_roots_ambiguity_001` | equivalent distinct roots → ambiguity | 19.2.3, 19.4.4 |
+| `fail/overload/fail_overload_template_equivalent_roots_ambiguity_001` | equivalent template-derived roots → ambiguity | 19.4.4, 19.6.1 |
 | `fail/overload/fail_overload_inheritance_path_ambiguity_001` | multi-path upcast needs `qua` | 19.2.2, 19.6.2 |
 | `fail/resolve/fail_resolve_same_signature_return_conflict_001` | same signature, different return | 19.1 |
+| `fail/resolve/fail_resolve_same_signature_same_return_conflict_001` | same signature, same return | 19.1 |
 | `fail/types/fail_types_qua_narrowing_001` | `qua` narrowing rejected | 13.6.4, 8.2.2 |
 | `fail/types/fail_types_qua_unrelated_struct_001` | `qua` to unrelated struct rejected | 13.6.1, 13.6.4 |
 | `fail/types/fail_types_comprehension_missing_sethood_001` | Fraenkel without sethood rejected | 13.4.2, 7.8.1 |
@@ -430,21 +443,25 @@ New traceability requirements: `spec.en.05.structures.constructor_fields_only.se
 `spec.en.17.clusters.pattern_consistency.semantic`,
 `spec.en.17.reductions.termination_order.semantic`,
 `spec.en.19.overload.ambiguity.semantic`,
-`spec.en.19.overload.definition_conflict.declaration`.
+`spec.en.19.overload.definition_conflict.declaration`,
+`spec.en.19.overload.definition_conflict.same_return.declaration`.
 
 ## Impact on the mizar-checker TODO
 
-Recommendations only; todo.md is revised by a follow-up task.
+This section records how `todo.md` and crate plans should remain aligned as
+spec-decision tasks close.
 
 - **Resolved spec tasks:** SSA-001 (constructor/extensionality) is resolved by
   task 35 with synchronized `doc/spec/en/` + `ja/` edits and an inactive
   reject-first corpus seed. SSA-002+SSA-011+SSA-012 are resolved by task 36
   with synchronized spec 05/19 edits, a duplicate-member-coverage seed, and
   traceability note updates; no renamed-view reject seed was required.
+  SSA-003+SSA-010+SSA-016+SSA-019 are resolved by task 37 with synchronized
+  spec 19 edits, overload design sync, and equivalent-root / same-signature
+  corpus seeds.
 - **Remaining spec tasks (before further checker semantics):** one task each
-  for SSA-003 (template tie-break), SSA-004 (functorial `for` semantics),
-  SSA-005 (property implementation coherence), each updating `doc/spec/en/` +
-  `ja/` together.
+  for SSA-004 (functorial `for` semantics) and SSA-005 (property
+  implementation coherence), each updating `doc/spec/en/` + `ja/` together.
 - **Task 19/20 (registration gating, existential gates):** revisit against
   SSA-006's activation contract and SSA-014's built-in inhabitation table
   once decided; the interim conservative policy should be recorded as such
@@ -453,10 +470,12 @@ Recommendations only; todo.md is revised by a follow-up task.
   based termination argument and SSA-008's closure-time contradiction rule in
   `cluster_trace.md`/`registration_resolution.md`; reduction determinism
   needs SSA-009's corrected function signature.
-- **Tasks 23-26 (templates, viability, selection):** blocked on SSA-003 and
-  SSA-010 decisions before real payloads; `overload_resolution.md` should
-  record the chosen tie-break and tie-ambiguity rules.
+- **Tasks 23-26 (templates, viability, selection):** task 37 records the
+  Phase B tie-break and tie-ambiguity rules. Real payload work must still not
+  infer missing comparison evidence, and `mizar-core` task 26 / F7 continues
+  to own Phase A omitted-template-argument inference determinism.
 - **Task 29 corpus records:** the two deferred advanced_semantics corpus
   requirements now have concrete sibling seeds; when the runner lands, the
   deferred records should be revised to point at (or be superseded by) the
-  eight new requirement ids above.
+  applicable audit requirement ids above, including the overload ambiguity
+  row and the deferred same-return declaration-conflict row added by task 37.

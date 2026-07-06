@@ -340,12 +340,16 @@ spec decision. Every finding maps to a task or a recorded disposition:
       Update spec 18 §18.2.7 (English and Japanese) and coordinate with the
       overload tie-break decision
       ([mizar-checker task 37](../../mizar-checker/en/todo.md)) so template
-      inference and overload selection use one comparison story.
+      inference and overload selection use one comparison story. Checker task
+      37 now records the Phase B overload tie-break decision; this task still
+      owns Phase A omitted-template-argument inference and must not infer
+      missing source payloads.
     - Acceptance: §18.2.7 names the comparison type and the ambiguity
       diagnostic; an ambiguity `.miz` seed with sidecar and
       `spec_trace.toml` entry pins the residual-candidates case.
     - Verify: `cargo test -p mizar-test`.
-    - Deps: coordinate with mizar-checker task 37. Refs:
+    - Deps: mizar-checker task 37 records the Phase B tie-break decision; this
+      task remains responsible for Phase A inference determinism. Refs:
       template_encoding_audit.md F7.
 
 27. **Reduct/view lowering (F1, F3).** [ ]

@@ -1,0 +1,29 @@
+:: Rejection target: `choose(c)` is ambiguous after template expansion.
+:: Both templates infer T = C and produce concrete candidates with the same
+:: parameter vector; declared constraint strictness (`type extends B` vs
+:: `type extends A`) is not a Phase B tie-breaker, so distinct template-derived
+:: roots remain ambiguous (doc/spec/en/19.overload_resolution.md, sections
+:: 19.4.4 and 19.6.1).
+
+definition
+  mode ADef: A is set;
+  mode BDef: B is A;
+  mode CDef: C is B;
+end;
+
+definition
+  let T be type extends A;
+  let x be T;
+  func ChooseOverADef: choose[T](x) -> T equals x;
+end;
+
+definition
+  let T be type extends B;
+  let x be T;
+  func ChooseOverBDef: choose[T](x) -> T equals x;
+end;
+
+definition
+  let c be C;
+  func UseChooseDef: use_choose(c) -> C equals choose(c);
+end;

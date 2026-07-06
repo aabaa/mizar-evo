@@ -374,7 +374,7 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 21. **仕様: `overload_resolution.md`。** [x]
     - オーバーロードの仕様を、名前付き節とともに執筆する（英語と日本語、
       コードなし）: 来歴付きサイト/候補収集、template 展開、記録済み事実に
-      よる viability、specificity 半順序（サイトごとのグラフ、グローバル
+      よる viability、specificity 前順序（サイトごとのグラフ、グローバル
       DAG なし）、根の選択と refinement 結合、`qua` view 挿入（widening
       限定、多重継承の曖昧性）、失敗サイトの保存（アーキテクチャ 05）。
     - 依存: 2。仕様: アーキテクチャ 05、
@@ -609,7 +609,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | タスク化しない: greedy `of`/`over` parse は決定的かつ文書化済み(spec 19.6.4)。scope 感度 lint は将来の diagnostics 採用 wave に属し、そこで記録する |
-| corpus seeds | task 48 が `advanced_semantics` runner 到着時に監査 fixture 16 件、task-35 constructor-property seed、task-36 duplicate-coverage seed を活性化する |
+| corpus seeds | task 48 が `advanced_semantics` と declaration-symbol runner support 到着時に、監査 fixture 16 件、task-35 constructor-property seed、task-36 duplicate-coverage seed、task-37 ordinary/template-derived equivalent-root seed と same-return signature-conflict seed を活性化する |
 
 35. **Spec 決定: constructor property 引数と extensionality(SSA-001)。** [x]
     - critical な §5.5.1/§5.8.4/§5.8.5 の不整合を解決する。推奨は解決策 1:
@@ -663,7 +663,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       structure/overload seed と template view-leak seed を他の guard として残す。
       checker/core source semantics は変更していない。
 
-37. **Spec 決定: オーバーロード tie-break と tie の曖昧性(SSA-003, SSA-010, SSA-016, SSA-019)。** [ ]
+37. **Spec 決定: オーバーロード tie-break と tie の曖昧性(SSA-003, SSA-010, SSA-016, SSA-019)。** [x]
     - §19.6.1 Cases 2-3 を §19.4.3 と整合させる: constraint-strictness と
       non-template-beats-template 規則を明示的に追加するか、純粋な `⊑`
       選択を維持して case の期待結果を訂正するかを決める。§19.4.4 を
@@ -679,6 +679,22 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       と trace エントリを持つ。
     - 検証: `cargo test -p mizar-test`。
     - 依存: なし。参照: SSA-003, SSA-010, SSA-016, SSA-019。
+    - task 37 で完了: spec 19 は Phase B overload selection を、instantiated
+      concrete parameter vector 上の通常の `⊑` preorder に保つことを明記した。
+      template 宣言制約の厳しさは tie-breaker ではなく、non-template priority は
+      concrete vector が相互同値な場合だけ適用される。return type は引き続き
+      除外され、ambiguity は非空の maximal-root set が複数の相異なる root を
+      含む場合と定義された。同一 argument signature を持つ ordinary definition
+      は return type に関わらず declaration conflict であり、§19.6.1 の例も
+      規則と一致した。
+      Architecture 05 と `overload_resolution.md` も同期した。inactive seed
+      `fail_overload_equivalent_roots_ambiguity_001`、
+      `fail_overload_template_equivalent_roots_ambiguity_001`、
+      `fail_resolve_same_signature_same_return_conflict_001` を追加した。最後の
+      seed は resolver declaration-symbol support が現在の different-return
+      diagnostic を超えて拡張されるまで inactive のまま。mizar-core task 26 / template-audit
+      F7 は閉じず、Phase A omitted-template inference determinism を引き続き所有
+      する。checker/core/resolver source semantics は変更していない。
 
 38. **Spec 決定: functorial cluster `for T` の意味論(SSA-004)。** [ ]
     - applicability-guard 読み(registration は result 型の radix が `T`
@@ -806,8 +822,12 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       payload 抽出(mizar-test runner 成長 +
       MC-G020/MC-G021/MC-G023/MC-G027)が到着したら、意味論監査 fixture
       16 件、task-35 constructor-property seed、task-36 duplicate-coverage
-      seed を活性化し、task-29 の deferred corpus record を監査由来の
-      requirement id を指す(または置き換えられる)よう改訂する。
+      seed、task-37 ordinary/template-derived equivalent-root ambiguity seed を
+      活性化する。
+      declaration-symbol runner が該当 resolver diagnostic を support した時点で
+      task-37 same-return signature-conflict seed も活性化する。task-29 の
+      deferred corpus record を監査由来の requirement id を指す(または
+      置き換えられる)よう改訂する。
     - 受け入れ条件: `mizar-test` plan が fixture を active と表示し plan
       error が 0 件。deferred record が二重計上されない。
     - 検証: `cargo test -p mizar-test`。

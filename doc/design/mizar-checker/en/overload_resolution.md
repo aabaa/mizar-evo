@@ -225,7 +225,12 @@ inheritance widening exposed by the typed/coercion payloads. Predicate,
 functor, scheme, and algorithm template roles remain deferred unless parser,
 resolver, and checker-owned payloads expose the concrete role and parameter
 mapping. Non-template candidates beat template-derived candidates only when
-their concrete parameter vectors are otherwise equivalent.
+their concrete parameter vectors are otherwise equivalent. Template declared
+constraint strictness is not a tie-breaker after expansion; unresolved
+equivalent template-derived roots remain ambiguous. This records the task-37
+Phase B overload-selection decision only. It does not close mizar-core task 26
+or template-audit F7, which still decide omitted-template-argument inference in
+Phase A.
 
 Template expansion diagnostics preserve the skipped template candidate and the
 reason. A failed template expansion does not become an ordinary candidate.
@@ -322,7 +327,7 @@ candidate table. Duplicate viability payloads for the same concrete candidate
 block that candidate with a stable reason, and payloads keyed to unknown
 candidate ids are diagnosed instead of being silently consumed.
 
-## Specificity Partial Order
+## Specificity Preorder
 
 Specificity is represented as a graph per overload site, not as a global DAG.
 Nodes are viable concrete candidates grouped by ordinary root. An edge
@@ -335,6 +340,8 @@ Comparison uses normalized parameter types and recorded closure facts:
 - attribute subsumption uses already recorded closure facts;
 - all argument positions must be at least as specific;
 - strictness exists only when the reverse edge does not exist;
+- mutual specificity means the concrete normalized parameter vectors are
+  closure-equivalent, not that the roots are interchangeable;
 - incomparable pairs remain incomparable.
 
 Allowed tie-breakers are limited to those in architecture 05 and spec 19:
@@ -342,6 +349,7 @@ Allowed tie-breakers are limited to those in architecture 05 and spec 19:
 - non-template beats template-derived when parameter vectors are equivalent;
 - a source-local declaration may shadow an imported declaration only when
   signature collection has already accepted that shadowing;
+- template declared constraint strictness is not a tie-breaker after expansion;
 - return type is never a tie-breaker;
 - same-root redefinitions are not tie-breakers.
 
@@ -371,8 +379,9 @@ edges.
 
 The selected ordinary root is represented by a unique maximal
 non-redefinition candidate in the per-site specificity graph after allowed
-tie-breakers. If no root is viable, the site is `NoMatch`. If several
-unrelated roots remain maximal, the site is `Ambiguous`.
+tie-breakers. If no root is viable, the site is `NoMatch`. If several distinct
+ordinary roots remain maximal, whether unrelated/incomparable or equivalent by
+mutual specificity, the site is `Ambiguous`.
 At the checker data-layer boundary, "after allowed tie-breakers" means the
 pairwise comparison payloads have already encoded only spec-allowed
 non-template/template or accepted local-shadow decisions as graph edges or

@@ -1309,35 +1309,53 @@ tests = [
 [[requirement]]
 id = "spec.en.19.overload.ambiguity.semantic"
 source = "doc/spec/en/19.overload_resolution.md"
-section = "19.4.4 Ambiguity Errors; 19.2.2 Structure Inheritance Upcasting; 19.6.2 Multiple Inheritance Paths"
+section = "19.2.3 Specificity Ordering; 19.4.4 Ambiguity Errors; 19.2.2 Structure Inheritance Upcasting; 19.6.1 Template Parameter Inference; 19.6.2 Multiple Inheritance Paths"
 stage = "advanced_semantics"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Task 36 / SSA-011 decision: implicit upcast uniqueness is syntactic over resolved inherit declaration paths; coherent member joins do not collapse multiple paths, so explicit qua is required. Seeds remain inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G027). Rejection contracts: incomparable ordinary roots report ambiguous overload, and multiple inheritance paths block implicit upcasts without qua."
+notes = "Task 36 / SSA-011 decision: implicit upcast uniqueness is syntactic over resolved inherit declaration paths; coherent member joins do not collapse multiple paths, so explicit qua is required. Task 37 / SSA-003+SSA-010+SSA-016 decision: specificity is a preorder over concrete normalized parameter vectors, template declared constraint strictness is not a Phase B tie-breaker, and any nonempty maximal-root set with multiple distinct roots remains ambiguous, including equivalent roots. Seeds remain inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G027). Rejection contracts: incomparable ordinary roots, ordinary equivalent roots, template-derived equivalent roots, and multiple inheritance paths all report ambiguity instead of silent selection."
 depends_on = [
   "spec.en.05.structures.parser",
   "spec.en.10.functor_definitions.parser",
 ]
 tests = [
+  "tests/miz/fail/overload/fail_overload_equivalent_roots_ambiguity_001.expect.toml",
   "tests/miz/fail/overload/fail_overload_incomparable_roots_001.expect.toml",
   "tests/miz/fail/overload/fail_overload_inheritance_path_ambiguity_001.expect.toml",
+  "tests/miz/fail/overload/fail_overload_template_equivalent_roots_ambiguity_001.expect.toml",
 ]
 
 [[requirement]]
 id = "spec.en.19.overload.definition_conflict.declaration"
 source = "doc/spec/en/19.overload_resolution.md"
-section = "19.1 Overview, key restrictions (identical argument-type signatures with different return types are a definition conflict)"
+section = "19.1 Overview, key restrictions (ordinary definitions with identical argument-type signatures and different return types are definition conflicts)"
 stage = "declaration_symbol"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Active declaration_symbol fail coverage for the resolver-owned parser-backed slice: same argument-signature functor declarations with different return signatures conflict at declaration/signature collection. Checker-owned semantic type equivalence and overload winner selection remain out of scope."
+notes = "Active declaration_symbol fail coverage for the resolver-owned parser-backed slice: same argument-signature functor declarations with different return signatures conflict at declaration/signature collection. Task 37 generalizes the spec rule beyond this active slice; the same-return case is tracked separately as deferred. Checker-owned semantic type equivalence and overload winner selection remain out of scope."
 depends_on = [
   "spec.en.10.functor_definitions.parser",
 ]
 tests = [
   "tests/miz/fail/resolve/fail_resolve_same_signature_return_conflict_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.19.overload.definition_conflict.same_return.declaration"
+source = "doc/spec/en/19.overload_resolution.md"
+section = "19.1 Overview, key restrictions (ordinary definitions with identical argument-type signatures are definition conflicts regardless of return type)"
+stage = "declaration_symbol"
+status = "deferred"
+required = true
+coverage = "fail"
+deferred_reason = "Task 37 / SSA-010 generalizes ordinary declaration conflicts to identical argument signatures regardless of return type, but the active declaration_symbol resolver runner currently diagnoses only the different-return signature-conflict slice. Keep the same-return seed inactive until resolver support and the declaration-symbol runner expose the matching diagnostic."
+depends_on = [
+  "spec.en.10.functor_definitions.parser",
+]
+tests = [
+  "tests/miz/fail/resolve/fail_resolve_same_signature_same_return_conflict_001.expect.toml",
 ]
 
 [[requirement]]

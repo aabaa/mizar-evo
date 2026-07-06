@@ -1,0 +1,40 @@
+:: Rejection target: `probe(w)` is ambiguous even though the two viable
+:: overload roots have equivalent parameter types. The closure makes
+:: `wide set` and `broad set` mutually at least as specific, but they are
+:: distinct ordinary roots and no allowed tie-breaker chooses between them
+:: (doc/spec/en/19.overload_resolution.md, sections 19.2.3 and 19.4.4).
+
+definition
+  let x be set;
+  attr WideDef: x is wide means x = x;
+  attr BroadDef: x is broad means x = x;
+end;
+
+registration
+  cluster WideExists: wide set;
+  existence proof thus thesis; end;
+
+  cluster BroadExists: broad set;
+  existence proof thus thesis; end;
+
+  cluster WideImpliesBroad: wide -> broad for set;
+  coherence proof thus thesis; end;
+
+  cluster BroadImpliesWide: broad -> wide for set;
+  coherence proof thus thesis; end;
+end;
+
+definition
+  let x be wide set;
+  func ProbeWideDef: probe(x) -> set equals x;
+end;
+
+definition
+  let x be broad set;
+  func ProbeBroadDef: probe(x) -> set equals x;
+end;
+
+definition
+  let w be wide set;
+  func UseProbeDef: use_probe(w) -> set equals probe(w);
+end;
