@@ -13,7 +13,11 @@ use crate::cache_key::{
 };
 
 /// Current cache-side proof-reuse validation schema.
-pub const PROOF_REUSE_SCHEMA_VERSION: &str = "mizar-cache/proof-reuse-schema/v1";
+pub const PROOF_REUSE_SCHEMA_VERSION: &str = "mizar-cache/proof-reuse-schema/v2";
+
+/// Cache-local key for the currently supported accepted proof-obligation
+/// polarity exported by `mizar-proof`.
+pub const SUPPORTED_ACCEPTED_GOAL_POLARITY: &str = "assert_false_for_refutation";
 
 /// Cache-side snapshot of proof metadata exported by `mizar-proof`.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -40,6 +44,8 @@ pub struct ProofReuseMetadataSnapshot {
     pub selected_proof_witness_hash: Option<Hash>,
     /// Deterministic discharge hash for built-in discharge evidence.
     pub deterministic_discharge_hash: Option<Hash>,
+    /// Cache-local accepted proof-obligation polarity key exported by `mizar-proof`.
+    pub accepted_goal_polarity: Option<String>,
     /// Trusted used-axioms reference hash exported by proof status, if any.
     pub trusted_used_axioms_hash: Option<Hash>,
     /// Producer-owned selected candidate provenance hash, if any.
@@ -191,6 +197,12 @@ pub enum ProofReuseMissReason {
     UnexpectedDeterministicDischargeHash,
     /// Deterministic discharge hash mismatch.
     DeterministicDischargeHashMismatch,
+    /// Accepted proof-obligation polarity is missing from a reusable trusted class.
+    AcceptedGoalPolarityMissing,
+    /// Accepted proof-obligation polarity is not supported by this cache schema.
+    UnsupportedAcceptedGoalPolarity,
+    /// Accepted proof-obligation polarity mismatch.
+    AcceptedGoalPolarityMismatch,
     /// Trusted used-axioms reference hash mismatch.
     TrustedAxiomSetReferenceMismatch,
     /// Dependency artifact fingerprint mismatch.
@@ -254,6 +266,9 @@ impl From<&StatusReuseMetadata> for ProofReuseMetadataSnapshot {
             selected_evidence_hash: metadata.selected_evidence_hash(),
             selected_proof_witness_hash: metadata.selected_proof_witness_hash(),
             deterministic_discharge_hash: metadata.deterministic_discharge_hash(),
+            accepted_goal_polarity: metadata
+                .accepted_goal_polarity()
+                .map(|polarity| polarity.as_str().to_owned()),
             trusted_used_axioms_hash: metadata.trusted_used_axioms_hash(),
             selected_candidate_provenance_hash: metadata.selected_candidate_provenance_hash(),
             selection_reason: metadata.selection_reason().to_owned(),
@@ -313,6 +328,9 @@ pub fn validate_proof_reuse(request: &ProofReuseValidationRequest) -> ProofReuse
     }
     if !is_reusable_class(current.selected_class) {
         return miss(ProofReuseMissReason::NonReusableClass, diagnostic_refs);
+    }
+    if let Some(reason) = accepted_goal_polarity_miss(current, cached) {
+        return miss(reason, diagnostic_refs);
     }
 
     if current.obligation_anchor != cached.obligation_anchor {
@@ -511,6 +529,36 @@ fn is_reusable_class(class: ProofWinnerClass) -> bool {
 
 fn synthesized_trusted_used_axioms(metadata: &ProofReuseMetadataSnapshot) -> bool {
     !metadata.selected_class.is_trusted() && metadata.trusted_used_axioms_hash.is_some()
+}
+
+fn accepted_goal_polarity_miss(
+    current: &ProofReuseMetadataSnapshot,
+    cached: &ProofReuseMetadataSnapshot,
+) -> Option<ProofReuseMissReason> {
+    match (
+        current.accepted_goal_polarity.as_deref(),
+        cached.accepted_goal_polarity.as_deref(),
+    ) {
+        (Some(current), Some(cached)) if current != cached => {
+            return Some(ProofReuseMissReason::AcceptedGoalPolarityMismatch);
+        }
+        (None, _) | (_, None) => return Some(ProofReuseMissReason::AcceptedGoalPolarityMissing),
+        _ => {}
+    }
+
+    for value in [
+        current.accepted_goal_polarity.as_deref(),
+        cached.accepted_goal_polarity.as_deref(),
+    ]
+    .into_iter()
+    .flatten()
+    {
+        if value != SUPPORTED_ACCEPTED_GOAL_POLARITY {
+            return Some(ProofReuseMissReason::UnsupportedAcceptedGoalPolarity);
+        }
+    }
+
+    None
 }
 
 fn schema_incompatible(environment: &ProofReuseValidationEnvironment) -> bool {

@@ -409,7 +409,7 @@ Keep `cargo test -p mizar-cache` green after each task (see
 
 ### Kernel soundness-audit alignment (2026-07-03)
 
-24. **Proof-reuse identity covers the extended kernel-evidence contract (kernel F1, F2).** [ ]
+24. **Proof-reuse identity covers the extended kernel-evidence contract (kernel F1, F2).** [x]
     - Once `mizar-vc` tasks 27-28 extend the kernel-evidence handoff with an
       explicit goal polarity and a context-identity payload, include the
       extended handoff hash in proof-reuse validation: reuse records built
@@ -420,12 +420,23 @@ Keep `cargo test -p mizar-cache` green after each task (see
       ([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md)
       F1/F2).
     - Acceptance: Rust regressions show a pre-audit reuse record misses; a
-      polarity or context-identity mismatch misses; a fully matching record
-      still hits deterministically.
+      polarity or context-identity mismatch misses; a real
+      `StatusReuseMetadata` projection carries the supported polarity key into
+      the cache snapshot; a fully matching record still hits deterministically.
     - Verify: `cargo test -p mizar-cache`,
-      `cargo clippy -p mizar-cache --all-targets -- -D warnings`.
+      `cargo clippy -p mizar-cache --all-targets --all-features -- -D warnings`.
     - Deps: mizar-vc tasks 27-28; mizar-proof task 21 (witness polarity
       metadata). Spec: architecture 15 (post-audit), 18, 22.
+    - Status: complete. The cache-side proof-reuse schema is now v2 and
+      includes the accepted goal-polarity key exported by `mizar-proof` as
+      validation data for reusable trusted classes. Pre-audit records missing
+      that key, unsupported future polarity keys, and accepted-polarity
+      mismatches fail closed; a real kernel/proof projection fixture guards
+      cache ingestion from `StatusReuseMetadata`. The canonical
+      handoff/context-identity hashes remain owner-provided through `mizar-vc`
+      dependency slices and `mizar-proof` validation hashes; this task adds no
+      source runner, placeholder bridge, cache authority, or proof-status
+      promotion.
 
 ## Recommended Verification
 

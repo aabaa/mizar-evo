@@ -188,7 +188,7 @@ on step 1.
    tautology-marker semantics (F9, low).
 4. [x] [mizar-proof task 21](./mizar-proof/en/todo.md) — policy alignment
    with the corrected kernel rejection taxonomy (F1/F2).
-5. [ ] [mizar-cache task 24](./mizar-cache/en/todo.md) — proof-reuse identity
+5. [x] [mizar-cache task 24](./mizar-cache/en/todo.md) — proof-reuse identity
    covers the extended kernel-evidence contract (F1/F2; needs proof 21).
 6. [ ] [mizar-artifact task 24](./mizar-artifact/en/todo.md) — proof-witness
    schema re-check against the audit follow-ups.

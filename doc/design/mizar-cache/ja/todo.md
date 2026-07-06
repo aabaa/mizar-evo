@@ -390,7 +390,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### kernel 健全性監査との整合(2026-07-03)
 
-24. **拡張 kernel-evidence 契約をカバーする proof-reuse identity(kernel F1、F2)。** [ ]
+24. **拡張 kernel-evidence 契約をカバーする proof-reuse identity(kernel F1、F2)。** [x]
     - `mizar-vc` tasks 27-28 が kernel-evidence handoff を明示的 goal
       polarity と context-identity payload で拡張し次第、拡張後の handoff
       hash を proof-reuse 検証に含める: 監査前の handoff 形に対して構築
@@ -400,12 +400,22 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
       ([soundness_argument.md](../../mizar-kernel/en/soundness_argument.md)
       F1/F2)への IV-002/IV-005 fail-closed 規則の適用である。
     - 受け入れ条件: 監査前 reuse record が miss すること、polarity または
-      context-identity 不一致が miss すること、完全一致 record が決定的に
-      hit することを Rust regression が示す。
+      context-identity 不一致が miss すること、real `StatusReuseMetadata`
+      projection が supported polarity key を cache snapshot へ運ぶこと、
+      完全一致 record が決定的に hit することを Rust regression が示す。
     - 検証: `cargo test -p mizar-cache`、
-      `cargo clippy -p mizar-cache --all-targets -- -D warnings`。
+      `cargo clippy -p mizar-cache --all-targets --all-features -- -D warnings`。
     - 依存: mizar-vc tasks 27-28; mizar-proof task 21(witness polarity
       メタデータ)。仕様: architecture 15(監査後)、18、22。
+    - 状態: complete。cache-side proof-reuse schema は v2 になり、reusable
+      trusted class の validation data として `mizar-proof` が export する
+      accepted goal-polarity key を含む。key を欠く監査前 record、unsupported
+      future polarity key、accepted-polarity mismatch は fail closed する。
+      real kernel/proof projection fixture は `StatusReuseMetadata` からの cache
+      ingestion を guard する。canonical handoff/context-identity hash は引き続き
+      `mizar-vc` dependency slice と `mizar-proof` validation hash を通じた
+      owner-provided identity であり、本 task は source runner、placeholder bridge、
+      cache authority、proof-status promotion を追加しない。
 
 ## 推奨検証
 

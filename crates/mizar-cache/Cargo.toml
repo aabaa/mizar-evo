@@ -21,3 +21,4 @@ mizar-vc = { path = "../mizar-vc" }
 
 [dev-dependencies]
 mizar-core = { path = "../mizar-core" }
+mizar-kernel = { path = "../mizar-kernel" }

@@ -27,6 +27,7 @@ use mizar_cache::{
         PROOF_REUSE_SCHEMA_VERSION, ProofReuseDependencyCompatibilitySnapshot,
         ProofReuseMetadataSnapshot, ProofReuseMissReason, ProofReuseValidationEnvironment,
         ProofReuseValidationOutcome, ProofReuseValidationRequest, ProofReuseValidator,
+        SUPPORTED_ACCEPTED_GOAL_POLARITY,
     },
 };
 use mizar_proof::selection::ProofWinnerClass;
@@ -170,6 +171,13 @@ fn proof_reuse_requires_each_architecture_22_validation_field() {
                 request.current = proof_snapshot(ProofWinnerClass::DischargedBuiltin);
                 request.cached = request.current.clone();
                 request.cached.deterministic_discharge_hash = Some(hash(36));
+            }),
+        ),
+        (
+            "accepted goal polarity",
+            ProofReuseMissReason::AcceptedGoalPolarityMismatch,
+            Box::new(|request| {
+                request.cached.accepted_goal_polarity = Some("future-polarity".to_owned());
             }),
         ),
         (
@@ -731,6 +739,9 @@ fn proof_snapshot(class: ProofWinnerClass) -> ProofReuseMetadataSnapshot {
         selected_evidence_hash: Some(hash(6)),
         selected_proof_witness_hash,
         deterministic_discharge_hash,
+        accepted_goal_polarity: class
+            .is_trusted()
+            .then(|| SUPPORTED_ACCEPTED_GOAL_POLARITY.to_owned()),
         trusted_used_axioms_hash: class.is_trusted().then(|| hash(7)),
         selected_candidate_provenance_hash: Some(hash(8)),
         selection_reason: "proof-owner-selected-winner".to_owned(),

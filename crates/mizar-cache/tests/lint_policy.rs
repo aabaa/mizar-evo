@@ -102,14 +102,18 @@ fn cache_manifest_dependency_boundary_matches_cache_key_builder() {
             ),
             (
                 "dev-dependencies".to_owned(),
-                vec!["mizar-core = { path = \"../mizar-core\" }"],
+                vec![
+                    "mizar-core = { path = \"../mizar-core\" }",
+                    "mizar-kernel = { path = \"../mizar-kernel\" }",
+                ],
             ),
         ],
         "{} must keep production dependencies limited to the cache-key and \
          dependency-fingerprint hash implementation plus mizar-session, \
          mizar-artifact, mizar-proof, and mizar-vc, with mizar-core allowed \
-         only as a task-5 dev dependency for VC projection fixtures; build/target \
-         dependency sections require a later explicit task",
+         as a task-5 dev dependency for VC projection fixtures and mizar-kernel \
+         allowed as a task-24 dev dependency for real proof metadata ingestion \
+         fixtures; build/target dependency sections require a later explicit task",
         manifest_path.display()
     );
 }

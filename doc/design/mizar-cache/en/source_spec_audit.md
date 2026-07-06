@@ -199,6 +199,7 @@ Source path: `crates/mizar-cache/src/proof_reuse.rs`.
 Top-level public items:
 
 - `PROOF_REUSE_SCHEMA_VERSION`
+- `SUPPORTED_ACCEPTED_GOAL_POLARITY`
 - `ProofReuseMetadataSnapshot`,
   `ProofReuseDependencyCompatibilitySnapshot`,
   `ProofReuseValidationEnvironment`, `ProofReuseValidationRequest`,
@@ -213,8 +214,8 @@ Public functions and methods:
 
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
-| Reuse consumes `mizar-proof` status/selection metadata as validation data and does not own policy, deterministic winner selection, status projection, witness publication, or artifact commit. | snapshot conversion from `StatusReuseMetadata`; validator compares supplied current/cached metadata and environment only. | proof-reuse downstream-stub lint tests; status metadata match and mismatch tests. | consistent |
-| Only reusable winner classes with matching anchor, VC, local context, dependency slice, policy, evidence hash, schema, and validation hash can hit. | `ProofReuseValidator::validate` and class/evidence comparison helpers. | matching kernel/discharge tests, each-mismatch tests, missing-required-fields tests. | consistent |
+| Reuse consumes `mizar-proof` status/selection metadata as validation data and does not own policy, deterministic winner selection, status projection, witness publication, or artifact commit. | snapshot conversion from `StatusReuseMetadata`, including accepted goal polarity as a cache-local string key; validator compares supplied current/cached metadata and environment only. | real kernel/proof status projection conversion test, proof-reuse downstream-stub lint tests, status metadata match and mismatch tests. | consistent |
+| Only reusable winner classes with matching anchor, VC, local context, dependency slice, policy, evidence hash, accepted goal-polarity key, schema, and validation hash can hit. | `ProofReuseValidator::validate`, cache-local supported-polarity guard, and class/evidence comparison helpers. | matching kernel/discharge tests, accepted-polarity missing/unsupported/mismatch tests, architecture-22 mutation tests, each-mismatch tests, missing-required-fields tests. | consistent |
 | Unknown schema/toolchain, incomplete footprints, uncacheable markers, unavailable dependency artifacts, and externally attested/synthesized trusted data miss. | environment fail-closed helpers and non-reusable class checks. | environment fail-closed, non-trusted/synthesized metadata, and upstream completeness tests. | consistent |
 | Diagnostic refs are deterministic miss/hit metadata only and do not change validation identity or proof acceptance. | `canonical_diagnostic_refs` and hit/miss payloads. | diagnostic-order and determinism-suite proof-reuse tests. | consistent |
 | Public API excludes proof authority, publication tokens, scheduler hooks, IR adapters, and trace/reduction constructors. | public surface exposes validation request/outcome types only. | proof-reuse API and implementation boundary lint tests. | consistent |

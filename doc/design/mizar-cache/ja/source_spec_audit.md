@@ -199,6 +199,7 @@ Source path: `crates/mizar-cache/src/proof_reuse.rs`。
 Top-level public item:
 
 - `PROOF_REUSE_SCHEMA_VERSION`
+- `SUPPORTED_ACCEPTED_GOAL_POLARITY`
 - `ProofReuseMetadataSnapshot`,
   `ProofReuseDependencyCompatibilitySnapshot`,
   `ProofReuseValidationEnvironment`, `ProofReuseValidationRequest`,
@@ -213,8 +214,8 @@ Public function / method:
 
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
-| Reuse は `mizar-proof` status/selection metadata を validation data として消費し、policy、deterministic winner selection、status projection、witness publication、artifact commit を所有しない。 | `StatusReuseMetadata` からの snapshot conversion。validator は supplied current/cached metadata と environment だけを比較する。 | proof-reuse downstream-stub lint tests; status metadata match/mismatch tests。 | consistent |
-| Reusable winner class で、anchor、VC、local context、dependency slice、policy、evidence hash、schema、validation hash が一致する場合だけ hit できる。 | `ProofReuseValidator::validate` と class/evidence comparison helper。 | matching kernel/discharge tests、each-mismatch tests、missing-required-fields tests。 | consistent |
+| Reuse は `mizar-proof` status/selection metadata を validation data として消費し、policy、deterministic winner selection、status projection、witness publication、artifact commit を所有しない。 | accepted goal polarity を cache-local string key として含む `StatusReuseMetadata` からの snapshot conversion。validator は supplied current/cached metadata と environment だけを比較する。 | real kernel/proof status projection conversion test、proof-reuse downstream-stub lint tests、status metadata match/mismatch tests。 | consistent |
+| Reusable winner class で、anchor、VC、local context、dependency slice、policy、evidence hash、accepted goal-polarity key、schema、validation hash が一致する場合だけ hit できる。 | `ProofReuseValidator::validate`、cache-local supported-polarity guard、class/evidence comparison helper。 | matching kernel/discharge tests、accepted-polarity missing/unsupported/mismatch tests、architecture-22 mutation tests、each-mismatch tests、missing-required-fields tests。 | consistent |
 | unknown schema/toolchain、incomplete footprint、uncacheable marker、unavailable dependency artifact、externally attested / synthesized trusted data は miss する。 | environment fail-closed helper と non-reusable class checks。 | environment fail-closed、non-trusted/synthesized metadata、upstream completeness tests。 | consistent |
 | Diagnostic ref は deterministic miss/hit metadata に限られ、validation identity や proof acceptance を変えない。 | `canonical_diagnostic_refs` と hit/miss payload。 | diagnostic-order と determinism-suite proof-reuse tests。 | consistent |
 | Public API は proof authority、publication token、scheduler hook、IR adapter、trace/reduction constructor を除外する。 | public surface は validation request/outcome type だけを公開する。 | proof-reuse API / implementation boundary lint tests。 | consistent |

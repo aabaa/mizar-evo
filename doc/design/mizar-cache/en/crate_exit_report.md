@@ -5,7 +5,8 @@
 
 ## Result
 
-Status: complete for the `mizar-cache` internal-cache milestone.
+Status: complete for the `mizar-cache` internal-cache milestone and
+post-closeout task 24 proof-reuse identity update.
 Quality score: 94/100.
 Score caps applied: none.
 
@@ -13,14 +14,16 @@ Score caps applied: none.
 
 Milestone scope:
 
-- Build the `mizar-cache` workspace crate from task 0 through task 22 and this
-  closeout task.
+- Build the `mizar-cache` workspace crate from task 0 through task 22, the
+  closeout task, and post-closeout task 24.
 - Own canonical internal build `CacheKey` construction as a pure projection.
 - Own dependency footprints and fingerprints, including complete, unknown,
   unsupported, and uncacheable states.
 - Own internal cache record and blob storage with compatibility checks,
   corruption handling, deletability, and deterministic record lookup.
-- Own proof-reuse validation over metadata exported by `mizar-proof`.
+- Own proof-reuse validation over metadata exported by `mizar-proof`,
+  including the cache-local accepted goal-polarity key required by the
+  corrected kernel-evidence contract.
 - Own accepted-only in-memory cluster-db origin/index/view materialization.
 - Classify, rather than stub, unfinished scheduler, `mizar-ir`, artifact
   publication-token, persistent cluster-db/view, and producer-slice work.
@@ -63,7 +66,8 @@ Excluded:
 | 20 | `c4f855b37c3e850a030d768f9223faf862704256` | `test(cache-task-20): enforce incremental cache contract` |
 | 21 | `b1dbc697d38511613fe207817e142a7092f52486` | `docs(cache-task-21): audit architecture 22 contract` |
 | 22 | `486f0640e75a0f079c21ce540c4e6f637341b033` | `refactor(cache-task-22): split private test modules` |
-| 23 | pending self-hash | `docs(cache-task-23): add cache crate exit report` |
+| 23 | `25aabc85e91ac96f798dc5ada838ded8fa87a781` | `docs(cache-task-23): add cache crate exit report` |
+| 24 | pending self-hash | `fix(cache-task-24): validate accepted proof polarity` |
 
 ## Final Owned Surfaces
 
@@ -72,7 +76,7 @@ Excluded:
 | CacheKey | `CacheKeyBuilder` canonicalizes source identity, input hashes, dependency hashes/slices, schema versions, policy fingerprint, and validation inputs. It rejects unsupported schema, duplicate conflicting identities, incomplete footprint markers, and uncacheable records. It performs no trust decision. |
 | Dependency fingerprint | `DependencyFootprintBuilder` records complete dependency slices, producer hashes, proof-reuse validation identities, unknown markers, and uncacheable states. Rebuild triggers overtrigger conservatively but do not permit false-negative reuse. |
 | Cache record store | `CacheStoreRoot` reads and writes internal cache records and blobs under deterministic paths, validates embedded keys and compatibility metadata, fails closed on corruption, missing blobs, schema/toolchain/policy mismatches, incomplete footprints, and dependency artifact mismatches, and treats deletion as lookup availability only. |
-| Proof reuse | `ProofReuseValidator` consumes `mizar-proof` validation metadata for trusted reusable classes only. It requires matching obligation, VC/context/dependency fingerprints, policy, selected evidence, witness/discharge hashes, trusted axiom-set references, schema/toolchain compatibility, and dependency artifacts. It never owns winner selection or status projection. |
+| Proof reuse | `ProofReuseValidator` consumes `mizar-proof` validation metadata for trusted reusable classes only. It requires matching obligation, VC/context/dependency fingerprints, policy, selected evidence, witness/discharge hashes, accepted goal-polarity key, trusted axiom-set references, schema/toolchain compatibility, and dependency artifacts. It never owns winner selection or status projection. |
 | Cluster DB | `ClusterDbIndex` accepts only visible accepted contribution records with complete producer metadata, maintains in-memory origins/aggregate indexes/views, rejects hidden/recovered/external/unaccepted/incomplete origins, and exposes only accepted importer-visible rows. |
 | Integration boundary | Scheduler integration, `mizar-ir` adapters, artifact committed-publication-token linkage, durable cluster-db/view files, and finer producer slices are explicitly classified as `external_dependency_gap` or `deferred`; no placeholder API was added. |
 
@@ -83,7 +87,7 @@ Excluded:
 | Specification consistency | passed | Paired module specs, crate plan, architecture-22 audit, module-boundary audit, source/spec audit, and closeout reviews record no unresolved blocking/high inconsistency. |
 | Source behavior documented or deferred | passed | Public modules, public APIs, tests, private test module paths, and residual gaps are traced in `source_spec_audit.md`, `task_ledger.md`, and this report. |
 | Cache is not proof authority | passed | Lint guards, module specs, proof-reuse tests, and task-20 integration tests forbid cache records, external evidence, diagnostics, logs, timing, and cluster-db data from becoming kernel-verified proof status or trusted `used_axioms`. |
-| Fail-closed reuse | passed | Unknown schema/toolchain/policy, incomplete dependency footprints, uncacheable markers, missing/corrupt records, missing dependency artifacts, and proof metadata mismatches all miss. |
+| Fail-closed reuse | passed | Unknown schema/toolchain/policy, incomplete dependency footprints, uncacheable markers, missing/corrupt records, missing dependency artifacts, missing or unsupported accepted goal-polarity keys, and proof metadata mismatches all miss. |
 | Test expectation integrity | passed | No `.miz` fixture, traceability row, or expectation sidecar was changed to match implementation behavior. This crate's behavior is covered by Rust tests and audits. |
 | Design/source synchronization | passed | EN/JA docs are paired and synchronized, and lint-policy guards track source paths, public enums, audit markers, and gap IDs. |
 | Downstream gaps classified | passed | Scheduler, IR adapter, publication token, durable storage, producer-field, and fine-grained-slice work is classified rather than stubbed. |
@@ -118,6 +122,7 @@ placeholders and all hard gates pass.
 | Full implementation review | No findings. The report matches the implemented crate boundaries, and no production source change is part of closeout. |
 | Source/documentation consistency review | No findings. EN/JA exit reports are synchronized, task hashes and subjects match git, and the bilingual sync audit includes this report. |
 | Read-only crate quality review | Valid quality score: 94/100. No score cap applies; all hard gates pass. |
+| Post-closeout task 24 reviews | Final spec/test/full/source-doc reviews reported no findings after schema-version, polarity forward-compatibility, and coverage feedback was addressed. |
 
 ## Deferred And External Dependency Items
 
@@ -150,7 +155,9 @@ gap records.
 |---|---|
 | `cargo fmt --check` | passed |
 | `cargo test -p mizar-cache` | passed |
-| `cargo clippy -p mizar-cache --all-targets -- -D warnings` | passed |
+| `cargo clippy -p mizar-cache --all-targets --all-features -- -D warnings` | passed |
+| `cargo test -p mizar-vc` | passed |
+| `cargo test -p mizar-proof` | passed |
 | `cargo clippy --all-targets --all-features -- -D warnings` | passed |
 | `cargo test` | passed |
 | `git diff --check` | passed |

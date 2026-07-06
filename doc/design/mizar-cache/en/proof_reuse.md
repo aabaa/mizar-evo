@@ -43,6 +43,9 @@ cache key plus proof metadata exported by `mizar-proof`:
 - selected proof class and proof-evidence identity exported by `mizar-proof`;
 - selected proof witness hash for `KernelVerified` selections when available;
 - deterministic discharge hash for `DischargedBuiltin` selections;
+- cache-local accepted goal-polarity key exported by `mizar-proof`; task 24
+  supports only `assert_false_for_refutation` and treats future/unknown keys as
+  misses until this spec and the cache-side schema are updated;
 - proof-reuse validation hash exported by status projection;
 - selected evidence hash, selected candidate provenance hash, selection
   reason, and tie-break key hash;
@@ -74,8 +77,8 @@ The validation predicate is class-aware:
 
 | Exported proof class | Reuse requirement | Trusted by cache? |
 |---|---|---:|
-| `KernelVerified` | The selected proof witness hash, selected evidence hash, proof-reuse validation hash, `ObligationAnchor`, canonical VC/local-context/dependency-slice fingerprints, policy fingerprint, schema versions, and dependency artifacts all match. | no |
-| `DischargedBuiltin` | The deterministic discharge hash, selected evidence hash, proof-reuse validation hash, `ObligationAnchor`, canonical VC/local-context/dependency-slice fingerprints, policy fingerprint, schema versions, and dependency artifacts all match. | no |
+| `KernelVerified` | The selected proof witness hash, selected evidence hash, accepted goal-polarity key, proof-reuse validation hash, `ObligationAnchor`, canonical VC/local-context/dependency-slice fingerprints, policy fingerprint, schema versions, and dependency artifacts all match. | no |
+| `DischargedBuiltin` | The deterministic discharge hash, selected evidence hash, accepted goal-polarity key, proof-reuse validation hash, `ObligationAnchor`, canonical VC/local-context/dependency-slice fingerprints, policy fingerprint, schema versions, and dependency artifacts all match. | no |
 | `PolicyPermittedExternal` | May be compared or recorded as non-trusted validation metadata only when `mizar-proof` exports it as the selected class for the current policy. It is not a complete proof-reuse hit. | no |
 | `PolicyAssumed` | May be compared or recorded as policy metadata only. It is not a complete proof-reuse hit. | no |
 | `PolicyOpen`, `Rejected`, `NoSelectableEvidence` | May be compared or recorded for diagnostics only. They are not complete proof-reuse hits. | no |
@@ -96,6 +99,15 @@ therefore compares the structured schema fields currently exported by
 `mizar-proof` plus the cache-side proof-reuse schema guard, and does not invent
 placeholder producer-adapter schema APIs.
 
+Task 24 bumps the cache-side proof-reuse schema to v2. The v2 validator requires
+the cache-local accepted goal-polarity key for reusable trusted classes. A
+pre-audit record that lacks this key, or a record whose key is unsupported by
+the current cache schema, is a forced miss. The canonical VC handoff hash and
+context-identity hash are already part of the upstream `mizar-vc`
+dependency-slice/proof-reuse key payload and the `mizar-proof` validation hash,
+so this module records and compares those owner-provided identities without
+inventing a source runner or bridge payload.
+
 ## Validation Predicate
 
 Validation succeeds only when all required fields match exactly:
@@ -109,12 +121,14 @@ Validation succeeds only when all required fields match exactly:
 7. selected proof class and proof-evidence identity match;
 8. selected proof witness hash matches for `KernelVerified`;
 9. deterministic discharge hash matches for `DischargedBuiltin`;
-10. selected evidence hash, selected provenance hash, selection reason, and
+10. accepted goal-polarity key is present, supported by this cache schema, and
+    matches for reusable trusted classes;
+11. selected evidence hash, selected provenance hash, selection reason, and
     tie-break key hash match when supplied by `mizar-proof`;
-11. trusted used-axioms reference hash matches when `mizar-proof` exports one;
-12. proof-reuse validation hash matches;
-13. dependency artifact availability and recorded domain/digest checks succeed;
-14. no `uncacheable`, incomplete-footprint, unsupported-schema, unknown
+12. trusted used-axioms reference hash matches when `mizar-proof` exports one;
+13. proof-reuse validation hash matches;
+14. dependency artifact availability and recorded domain/digest checks succeed;
+15. no `uncacheable`, incomplete-footprint, unsupported-schema, unknown
     toolchain, or incompatible policy marker is present.
 
 The trusted used-axioms reference hash is a validation field only. It may be
@@ -152,6 +166,8 @@ Validation returns a miss for:
 - missing selected proof witness hash for `KernelVerified`;
 - missing deterministic discharge hash for `DischargedBuiltin`;
 - witness/discharge hash mismatch;
+- missing, mismatched, or unsupported accepted goal-polarity key for a reusable
+  trusted class;
 - selected evidence or proof-evidence identity mismatch;
 - missing or mismatched trusted used-axioms reference hash when exported;
 - proof-reuse validation hash mismatch;
@@ -212,7 +228,10 @@ Task 11 must cover at least:
   hash, selected proof class, selected proof-evidence identity, selected
   evidence hash, selected candidate provenance hash, selection reason,
   tie-break key hash, trusted used-axioms reference hash when exported,
+  accepted goal-polarity key for reusable trusted classes,
   proof-reuse validation hash, policy, schema version, and dependency artifact;
+- real `StatusReuseMetadata` conversion from a kernel/proof status projection
+  carries the supported accepted goal-polarity key into the cache snapshot;
 - incomplete dependency footprint, unsupported schema, unknown toolchain, and
   explicit uncacheable marker miss;
 - externally attested, policy-assumed, open, rejected, and no-selectable
