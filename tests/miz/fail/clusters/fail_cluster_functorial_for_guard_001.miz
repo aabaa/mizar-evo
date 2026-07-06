@@ -1,0 +1,42 @@
+:: Rejection target: a functorial cluster guarded by `for warm set` must not
+:: provide `bright` for a result whose known type is only plain `set`. The
+:: registration itself is conditional on the full result type expression,
+:: including attributes, so same-radix use sites outside that guard cannot rely
+:: on the consequent attribute (doc/spec/en/17.clusters_and_registrations.md,
+:: sections 17.5 and 17.9.3).
+
+definition
+  struct GuardedStr where
+    field carrier -> set;
+  end;
+end;
+
+definition
+  let x be set;
+  attr WarmDef: x is warm means x = x;
+  attr BrightDef: x is bright means x = x;
+end;
+
+registration
+  cluster WarmSetExists: warm set;
+  existence proof thus thesis; end;
+
+  cluster BrightSetExists: bright set;
+  existence proof thus thesis; end;
+end;
+
+definition
+  let G be GuardedStr;
+  func PayloadDef: payload(G) -> set equals G.carrier;
+end;
+
+registration
+  let G be GuardedStr;
+  cluster PayloadBrightOnWarmSet: payload(G) -> bright for warm set;
+  coherence proof thus thesis; end;
+end;
+
+definition
+  let G be GuardedStr;
+  func UsePayloadDef: use_payload(G) -> bright set equals payload(G);
+end;

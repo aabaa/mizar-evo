@@ -1238,6 +1238,22 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.17.clusters.functorial_for_guard.semantic"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.5 Functorial Clusters; 17.8.3 Clusters and Proof Obligations; 17.9.3 Functorial Cluster Encoding"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Task 38 / SSA-004 decision: a functorial cluster's `for` type is an applicability guard over the full normalized result type expression, and the coherence/FOL encoding includes that result guard as a premise. The seed is inactive until an advanced_semantics runner, checker-ready functorial-cluster payload extraction, and source-derived result-type facts exist (MC-G020/MC-G021/MC-G023/MC-G030). Rejection contract: the consequent attribute is unavailable at use sites where the functor result has the same radix but lacks the guarded attribute."
+depends_on = [
+  "spec.en.17.clusters_and_registrations.parser",
+]
+tests = [
+  "tests/miz/fail/clusters/fail_cluster_functorial_for_guard_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.17.clusters.pattern_consistency.semantic"
 source = "doc/spec/en/17.clusters_and_registrations.md"
 section = "17.4 Conditional Clusters; 17.7.3 Conflict Resolution"

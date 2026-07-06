@@ -95,7 +95,7 @@ is its task 1). "Next work" points into the
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 (task 30) | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22 plus task 21 soundness vocabulary | step 5 (task 10) | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec wave in progress through task 37 | steps 2, 4, 5 (tasks 38-48) | [todo](./mizar-checker/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec wave in progress through task 38 | steps 2, 4, 5 (tasks 39-48) | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete | steps 2, 4 (tasks 27-30) | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | steps 3 (task 29), 5; tasks 27-28 resolved | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | steps 3, 4 (tasks 33-35); task 32 parked; tasks 30-31 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -156,7 +156,7 @@ checker code semantics change in this step.
    tie-break and tie ambiguity (SSA-003/010/016/019), coordinated with:
 4. [x] [mizar-core task 26](./mizar-core/en/todo.md) — template argument
    inference determinism (template-audit F7).
-5. [ ] [mizar-checker task 38](./mizar-checker/en/todo.md) — functorial
+5. [x] [mizar-checker task 38](./mizar-checker/en/todo.md) — functorial
    cluster `for T` semantics (SSA-004).
 6. [ ] [mizar-checker task 39](./mizar-checker/en/todo.md) —
    property-implementation coherence (SSA-005).

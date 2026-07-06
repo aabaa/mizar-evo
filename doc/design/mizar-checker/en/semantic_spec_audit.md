@@ -41,7 +41,7 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 | SSA-001 | critical | 5.5/5.8 | Resolved by task 35: constructor-supplied property values plus fields-only extensionality collapsed the logic |
 | SSA-002 | high | 5.3/5.4 | Resolved by task 36: member identity tracks root declaration plus inheritance path/view |
 | SSA-003 | high | 19.6.1 | Resolved by task 37: template constraints are not Phase B tie-breakers after expansion |
-| SSA-004 | high | 17.5/17.9.3 | Functorial cluster `for T` clause has no semantics in the FOL encoding |
+| SSA-004 | high | 17.5/17.9.3 | Resolved by task 38: functorial cluster `for T` is an applicability guard in the FOL encoding |
 | SSA-005 | high | 7.4.1 | Property implementations lack coherence conditions across overlapping modes |
 | SSA-006 | high | 17.1 vs arch 04 | Registration activation timing: spec is item-ordered, design defers to verifier acceptance |
 | SSA-007 | medium | 17.10/3.3 | Cluster termination silently relies on the restricted adjective grammar |
@@ -156,7 +156,7 @@ tie-breaker list. This decision coordinates with the separate Phase A rule
 recorded by `mizar-core` task 26 / F7: omitted-template-argument inference is
 based on declared argument types and must not be inferred from missing payloads.
 
-### SSA-004 (high, `spec_gap`) — Functorial cluster `for T` has no encoding
+### SSA-004 (high, resolved `spec_gap`) — Functorial cluster `for T` has no encoding
 
 **Where:** 17.clusters_and_registrations.md §17.5, §17.9.3.
 
@@ -169,9 +169,18 @@ fires only where the result is already known to be `T`; (c) documentation
 only. Trigger indexing and closure results differ under (a) vs (b).
 
 **Proposed resolution:** specify (b) — the registration applies when the
-result type's radix is `T` or a subtype (mirroring conditional clusters
-§17.7.2) — and additionally emit `is_T(F(args))` premises in the coherence
-obligation. Update §17.9.3 tables.
+result's known normalized type is the full `for` type expression, or a subtype
+of it (mirroring conditional clusters §17.7.2) — and additionally emit
+`is_T(F(args))` premises in the coherence obligation. Update §17.9.3 tables.
+
+**Disposition:** task 38 adopts the applicability-guard resolution, refined to
+the full normalized `for` type expression rather than only the radix. Spec 17
+now states that a valid functorial registration fires only when the functor
+result is already known as the guarded type expression or a subtype, and the
+coherence/FOL encoding includes that result guard as a premise. The inactive
+seed `fail_cluster_functorial_for_guard_001` pins the unavailable-consequent
+case until the advanced-semantics runner and checker-ready payload extraction
+exist.
 
 ### SSA-005 (high, `spec_gap`) — Overlapping property implementations lack coherence
 
@@ -405,8 +414,10 @@ Task 36 adds the duplicate-member-coverage seed under that rule, while
 renamed-view exposure remains positive behavior guarded by the existing
 template view-leak seed. Task 37 adds inactive ordinary and template-derived
 equivalent-root ambiguity seeds plus one inactive same-return signature-conflict
-declaration seed; the latter waits for the matching resolver diagnostic. The
-existing different-return signature-conflict declaration seed remains active.
+declaration seed; the latter waits for the matching resolver diagnostic.
+Task 38 adds the inactive functorial-`for` guard seed under the same
+advanced-semantics rule. The existing different-return signature-conflict
+declaration seed remains active.
 Existing tests and expectations were not rebaselined to match implementation
 behavior.
 
@@ -417,6 +428,7 @@ behavior.
 | `fail/clusters/fail_cluster_reduce_fresh_variable_001` | fresh RHS variable rejected | 17.6.4 r1 |
 | `fail/clusters/fail_cluster_reduce_duplicating_variable_001` | RHS occurrence increase rejected | 17.6.4 r2 |
 | `fail/clusters/fail_cluster_contradictory_consequent_001` | contradictory consequent adjectives | 17.4, 17.7.3 |
+| `fail/clusters/fail_cluster_functorial_for_guard_001` | functorial consequent unavailable outside `for` guard | 17.5, 17.9.3 |
 | `fail/modes/fail_mode_missing_existential_001` | attributed type without existential evidence | 17.3.4, 7.8 |
 | `fail/modes/fail_mode_existential_after_declaration_001` | activation is item-ordered, not retroactive | 17.1, 7.8 |
 | `fail/structures/fail_structure_diamond_member_type_conflict_001` | incompatible joined member types under root+path/view identity | 5.3.1, 5.4 |
@@ -441,6 +453,7 @@ New traceability requirements: `spec.en.05.structures.constructor_fields_only.se
 `spec.en.13.qua.widening_only.semantic`,
 `spec.en.13.sethood.comprehension.semantic`,
 `spec.en.17.clusters.pattern_consistency.semantic`,
+`spec.en.17.clusters.functorial_for_guard.semantic`,
 `spec.en.17.reductions.termination_order.semantic`,
 `spec.en.19.overload.ambiguity.semantic`,
 `spec.en.19.overload.definition_conflict.declaration`,
@@ -459,9 +472,10 @@ spec-decision tasks close.
   SSA-003+SSA-010+SSA-016+SSA-019 are resolved by task 37 with synchronized
   spec 19 edits, overload design sync, and equivalent-root / same-signature
   corpus seeds.
-- **Remaining spec tasks (before further checker semantics):** one task each
-  for SSA-004 (functorial `for` semantics) and SSA-005 (property
-  implementation coherence), each updating `doc/spec/en/` + `ja/` together.
+- **Remaining spec tasks (before further checker semantics):** SSA-004 is
+  resolved by task 38 with synchronized spec 17 edits and a functorial-`for`
+  guard seed. One task remains for SSA-005 (property implementation
+  coherence), updating `doc/spec/en/` + `ja/` together.
 - **Task 19/20 (registration gating, existential gates):** revisit against
   SSA-006's activation contract and SSA-014's built-in inhabitation table
   once decided; the interim conservative policy should be recorded as such
@@ -477,5 +491,6 @@ spec-decision tasks close.
 - **Task 29 corpus records:** the two deferred advanced_semantics corpus
   requirements now have concrete sibling seeds; when the runner lands, the
   deferred records should be revised to point at (or be superseded by) the
-  applicable audit requirement ids above, including the overload ambiguity
-  row and the deferred same-return declaration-conflict row added by task 37.
+  applicable audit requirement ids above, including the functorial-`for`
+  guard row added by task 38, the overload ambiguity row, and the deferred
+  same-return declaration-conflict row added by task 37.
