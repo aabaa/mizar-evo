@@ -313,11 +313,12 @@ Keep `cargo test -p mizar-core` green after each task (see
 
 [template_encoding_audit.md](./template_encoding_audit.md) audited the spec
 18.10 FOL encoding of templates and recorded findings F1-F8 plus a 4-seed
-reject-first corpus under `tests/miz/fail/templates/`
+reject-first encoding corpus under `tests/miz/fail/templates/`
 (`spec.en.18.templates.encoding_soundness.semantic`). The spec text for
 F1-F6 and F8 was patched in the same change (`cef7e109`: spec 03, 05, 13,
-17, 18); what remains here is the elaborator implementation and the one open
-spec decision. Every finding maps to a task or a recorded disposition:
+17, 18), and task 26 records the remaining F7 spec decision; what remains here
+after task 26 is the elaborator implementation and payload-bearing execution
+work. Every finding maps to a task or a recorded disposition:
 
 | Finding | Disposition |
 |---|---|
@@ -327,11 +328,11 @@ spec decision. Every finding maps to a task or a recorded disposition:
 | F4 (functor guards, actual signature compatibility) | spec patched (§18.10.4, §18.9); implementation is task 29 |
 | F5 (type-parameter sethood) | spec patched (§18.10.2 sethood paragraph); plumbing is task 30 |
 | F6 (schemes applied inside template bodies) | spec patched (§18.10.3 paragraph); implementation is task 29 |
-| F7 (inference determinism over widening) | not yet patched — spec decision is task 26 |
+| F7 (inference determinism over widening) | spec patched by task 26; implementation remains deferred to payload-bearing inference/elaboration work |
 | F8 (partial-algorithm functor actuals) | spec patched (§18.8.4); rejection implementation folded into task 29 |
-| corpus seeds (4) | inactive `advanced_semantics` seeds; activated with the runner via [mizar-checker task 48](../../mizar-checker/en/todo.md) and the mizar-test runner work |
+| corpus seeds (6) | inactive `advanced_semantics` seeds: the original 4 encoding seeds plus the task 26 F7 inference-determinism seeds. Activated with the runner via [mizar-checker task 48](../../mizar-checker/en/todo.md) and the mizar-test runner work |
 
-26. **Spec decision: template argument inference determinism (F7).** [ ]
+26. **Spec decision: template argument inference determinism (F7).** [x]
     - Decide the §18.2.7 inference algorithm over the widening lattice. The
       audit's recommendation: infer omitted `[T]` at the arguments' declared
       types after mode unfolding; residual multiple candidates are an
@@ -341,16 +342,26 @@ spec decision. Every finding maps to a task or a recorded disposition:
       overload tie-break decision
       ([mizar-checker task 37](../../mizar-checker/en/todo.md)) so template
       inference and overload selection use one comparison story. Checker task
-      37 now records the Phase B overload tie-break decision; this task still
-      owns Phase A omitted-template-argument inference and must not infer
+      37 records the Phase B overload tie-break decision; this task records
+      the Phase A omitted-template-argument inference rule and must not infer
       missing source payloads.
     - Acceptance: §18.2.7 names the comparison type and the ambiguity
       diagnostic; an ambiguity `.miz` seed with sidecar and
       `spec_trace.toml` entry pins the residual-candidates case.
     - Verify: `cargo test -p mizar-test`.
     - Deps: mizar-checker task 37 records the Phase B tie-break decision; this
-      task remains responsible for Phase A inference determinism. Refs:
+      task records the Phase A inference-determinism decision. Refs:
       template_encoding_audit.md F7.
+    - Completed by task 26: spec 18 §18.2.7 now infers omitted func/pred
+      template type parameters from mode-unfolded declared argument types only.
+      It does not search widening ancestors, apply cluster expansion, or infer
+      `qua` views; residual distinct declared-type candidates are an ambiguous
+      template instantiation even when their closures are equivalent. Added
+      inactive seeds `fail_template_inference_declared_type_ambiguity_001` and
+      `fail_template_inference_requires_explicit_qua_view_001`, plus trace row
+      `spec.en.18.templates.inference_determinism.semantic`. This closes the
+      F7 spec decision only; no checker/core source semantics or payload bridge
+      behavior changed.
 
 27. **Reduct/view lowering (F1, F3).** [ ]
     - Implement the reduct-view encoding in elaboration: emit `view_{D→B}`

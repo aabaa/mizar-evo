@@ -692,9 +692,9 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       `fail_overload_template_equivalent_roots_ambiguity_001`、
       `fail_resolve_same_signature_same_return_conflict_001` を追加した。最後の
       seed は resolver declaration-symbol support が現在の different-return
-      diagnostic を超えて拡張されるまで inactive のまま。mizar-core task 26 / template-audit
-      F7 は閉じず、Phase A omitted-template inference determinism を引き続き所有
-      する。checker/core/resolver source semantics は変更していない。
+      diagnostic を超えて拡張されるまで inactive のまま。mizar-core task 26 /
+      template-audit F7 は、別個の Phase A omitted-template inference determinism
+      規則を記録する。checker/core/resolver source semantics は変更していない。
 
 38. **Spec 決定: functorial cluster `for T` の意味論(SSA-004)。** [ ]
     - applicability-guard 読み(registration は result 型の radix が `T`

@@ -1307,6 +1307,25 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.18.templates.inference_determinism.semantic"
+source = "doc/spec/en/18.templates.md"
+section = "18.2.7 Template Parameter Inference"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Task 26 / template-encoding audit F7 decision: omitted func/pred template arguments are inferred from mode-unfolded declared argument types only. Inference does not search the widening lattice, apply cluster expansion, or infer qua views; residual distinct declared-type candidates are ambiguous even when their closures are equivalent. Seed remains inactive until an advanced_semantics runner and source-to-checker/template-inference payload extraction exist."
+depends_on = [
+  "spec.en.05.structures.parser",
+  "spec.en.17.clusters_and_registrations.parser",
+  "spec.en.syntax.template_arguments.parser",
+]
+tests = [
+  "tests/miz/fail/templates/fail_template_inference_declared_type_ambiguity_001.expect.toml",
+  "tests/miz/fail/templates/fail_template_inference_requires_explicit_qua_view_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.19.overload.ambiguity.semantic"
 source = "doc/spec/en/19.overload_resolution.md"
 section = "19.2.3 Specificity Ordering; 19.4.4 Ambiguity Errors; 19.2.2 Structure Inheritance Upcasting; 19.6.1 Template Parameter Inference; 19.6.2 Multiple Inheritance Paths"

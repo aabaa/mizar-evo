@@ -301,11 +301,12 @@ crate 所有権: [internal 07](../../internal/ja/07.crate_module_layout.md)。
 
 [template_encoding_audit.md](./template_encoding_audit.md) は spec 18.10 の
 テンプレート FOL エンコードを監査し、所見 F1-F8 と
-`tests/miz/fail/templates/` 配下の 4 seed の reject-first corpus
+`tests/miz/fail/templates/` 配下の 4 seed の reject-first encoding corpus
 (`spec.en.18.templates.encoding_soundness.semantic`)を記録した。F1-F6 と
 F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修正済み
-であり、ここに残るのは elaborator の実装と、未決の spec 決定 1 件である。
-全所見はタスクまたは記録済みの処置に対応する:
+であり、task 26 が残っていた F7 spec decision を記録する。task 26 後に
+ここへ残るのは elaborator 実装と payload を伴う実行作業である。全所見は
+タスクまたは記録済みの処置に対応する:
 
 | 所見 | 処置 |
 |---|---|
@@ -315,11 +316,11 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
 | F4(functor guard、実引数シグネチャ適合) | spec 修正済み(§18.10.4、§18.9)。実装は task 29 |
 | F5(型パラメータの sethood) | spec 修正済み(§18.10.2 sethood 段落)。plumbing は task 30 |
 | F6(テンプレート本体内の scheme 適用) | spec 修正済み(§18.10.3 の段落)。実装は task 29 |
-| F7(widening 上の推論決定性) | 未修正 — spec 決定は task 26 |
+| F7(widening 上の推論決定性) | task 26 で spec 修正済み。実装は payload を伴う inference / elaboration 作業へ deferred |
 | F8(部分 algorithm の functor 実引数) | spec 修正済み(§18.8.4)。拒否実装は task 29 に統合 |
-| corpus seed(4 件) | inactive な `advanced_semantics` seed。runner 到着時に [mizar-checker task 48](../../mizar-checker/en/todo.md) と mizar-test の runner 作業で活性化 |
+| corpus seed(6 件) | inactive な `advanced_semantics` seed。元の 4 件の encoding seed と task 26 の F7 推論決定性 seed。runner 到着時に [mizar-checker task 48](../../mizar-checker/en/todo.md) と mizar-test の runner 作業で活性化 |
 
-26. **Spec 決定: テンプレート引数推論の決定性(F7)。** [ ]
+26. **Spec 決定: テンプレート引数推論の決定性(F7)。** [x]
     - widening 束上の §18.2.7 推論アルゴリズムを決定する。監査の推奨:
       省略された `[T]` は mode unfolding 後の実引数の宣言型で推論し、残る
       複数候補はインスタンスが論理的に等価でも ambiguity エラーとする。
@@ -328,15 +329,25 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       オーバーロード選択が単一の比較ストーリーを使うよう、overload
       tie-break 決定([mizar-checker task 37](../../mizar-checker/en/todo.md))
       と調整する。checker task 37 は Phase B の overload tie-break 決定を
-      記録済みであり、この task は Phase A の省略テンプレート引数推論を
-      引き続き所有し、欠落した source payload を推測してはならない。
+      記録し、この task は Phase A の省略テンプレート引数推論規則を記録する。
+      欠落した source payload を推測してはならない。
     - 受け入れ条件: §18.2.7 が比較に使う型と ambiguity 診断を命名する。
       残余候補ケースを固定する ambiguity `.miz` seed を sidecar と
       `spec_trace.toml` エントリ付きで追加する。
     - 検証: `cargo test -p mizar-test`。
-    - 依存: mizar-checker task 37 は Phase B tie-break 決定を記録済み。
-      この task は Phase A 推論決定性を引き続き担当。参照:
+    - 依存: mizar-checker task 37 は Phase B tie-break 決定を記録する。
+      この task は Phase A 推論決定性の決定を記録する。参照:
       template_encoding_audit.md F7。
+    - task 26 で完了: spec 18 §18.2.7 は、省略された func/pred template
+      型パラメータを mode-unfolded declared argument type だけから推論すると
+      明記した。widening 祖先の探索、cluster expansion、`qua` view 推論は
+      行わない。相異なる declared-type candidate が残る場合、それらの closure
+      が同値でも ambiguous template instantiation とする。inactive seed
+      `fail_template_inference_declared_type_ambiguity_001` と
+      `fail_template_inference_requires_explicit_qua_view_001`、および trace row
+      `spec.en.18.templates.inference_determinism.semantic` を追加した。これは
+      F7 の spec decision だけを閉じる。checker/core source semantics や
+      payload bridge behavior は変更していない。
 
 27. **reduct/view lowering(F1、F3)。** [ ]
     - elaboration に reduct-view エンコードを実装する: 改名または複数経路

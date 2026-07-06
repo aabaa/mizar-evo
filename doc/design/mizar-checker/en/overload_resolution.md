@@ -228,9 +228,9 @@ mapping. Non-template candidates beat template-derived candidates only when
 their concrete parameter vectors are otherwise equivalent. Template declared
 constraint strictness is not a tie-breaker after expansion; unresolved
 equivalent template-derived roots remain ambiguous. This records the task-37
-Phase B overload-selection decision only. It does not close mizar-core task 26
-or template-audit F7, which still decide omitted-template-argument inference in
-Phase A.
+Phase B overload-selection decision only. Mizar-core task 26 / template-audit
+F7 now records the separate Phase A omitted-template-argument inference
+determinism rule.
 
 Template expansion diagnostics preserve the skipped template candidate and the
 reason. A failed template expansion does not become an ordinary candidate.

@@ -402,10 +402,14 @@ not a soundness hole, but the generated axiom differs per choice, making
 verification outcomes implementation-defined. `qua` views are never inferred
 (§18.2.7), which — importantly — keeps F1's view choice out of inference.
 
-**Disposition.** Not patched here (needs an inference-algorithm decision owned
-by the elaborator design); recorded for the todo.md revision task. Recommend:
-infer at declared types after mode unfolding; residual multiple candidates are
-an ambiguity error even when instances would be logically equivalent.
+**Disposition.** Resolved by task 26. Spec 18 §18.2.7 now infers omitted
+func/pred template type parameters from mode-unfolded declared argument types
+only. It does not search widening ancestors, apply cluster expansion, or infer
+`qua` views. Residual distinct declared-type candidates are an ambiguous
+template instantiation even when their closures are equivalent, and the
+inactive seeds `fail_template_inference_declared_type_ambiguity_001` and
+`fail_template_inference_requires_explicit_qua_view_001` record the
+reject-first intent.
 
 ### F8 (Minor) — §18.8.4 example passes a schema functor as a first-order argument; partial algorithms as functor actuals unaddressed
 
@@ -450,8 +454,8 @@ itself is deliberately not revised in this change.**
    actuals; guard obligations discharged, never asserted.
 4. **Sethood evidence plumbing for type parameters (F5).** Fraenkel gating in
    template bodies keyed to bound-inherited or constraint-supplied sethood.
-5. **Inference determinism decision (F7)** and rejection of partial-algorithm
-   functor actuals (F8).
+5. **Partial-algorithm functor actual rejection (F8).** F7 inference
+   determinism is resolved by task 26; implementation remains payload-gated.
 
 Kernel-side (from the Jul 3 kernel audit's perspective): the reduct encoding
 changes the shape of certificates that mention structure widening; the
@@ -470,3 +474,5 @@ modified:
 | `fail_template_type_actual_missing_existential_001` | F2 | attributed type actual without existential registration |
 | `fail_template_fraenkel_over_type_param_001` | F5 | comprehension generator ranging over a bare type parameter |
 | `fail_template_func_actual_result_widening_001` | F4 | `deffunc` actual whose result type does not widen to the schema codomain |
+| `fail_template_inference_declared_type_ambiguity_001` | F7 | omitted template parameter inference must reject residual distinct declared-type candidates |
+| `fail_template_inference_requires_explicit_qua_view_001` | F7 | omitted template parameter inference must not infer an inherited `qua` view |

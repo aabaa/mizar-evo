@@ -1,0 +1,38 @@
+:: Rejection target: omitted `[T]` in `pair_as(w, b)` is ambiguous.
+:: The two occurrences of T infer from declared argument types `wide set` and
+:: `broad set`. Their closures are equivalent by registrations, but §18.2.7
+:: does not use cluster expansion or a widening search during inference; the
+:: source must write the intended `[T]` explicitly.
+
+definition
+  let x be set;
+  attr WideDef: x is wide means x = x;
+  attr BroadDef: x is broad means x = x;
+end;
+
+registration
+  cluster WideExists: wide set;
+  existence proof thus thesis; end;
+
+  cluster BroadExists: broad set;
+  existence proof thus thesis; end;
+
+  cluster WideImpliesBroad: wide -> broad for set;
+  coherence proof thus thesis; end;
+
+  cluster BroadImpliesWide: broad -> wide for set;
+  coherence proof thus thesis; end;
+end;
+
+definition
+  let T be type;
+  let x be T;
+  let y be T;
+  func PairAsDef: pair_as[T](x, y) -> T equals x;
+end;
+
+definition
+  let w be wide set;
+  let b be broad set;
+  func UsePairAsDef: use_pair_as(w, b) -> set equals pair_as(w, b);
+end;

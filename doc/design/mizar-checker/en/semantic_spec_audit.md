@@ -152,9 +152,9 @@ the template-derived candidate with concrete parameter `C` over the
 non-template `B` candidate because `C ⊏ B`.
 
 Architecture 05 and checker `overload_resolution.md` now carry the same
-tie-breaker list. This decision coordinates with, but does not close,
-`mizar-core` task 26 / F7: omitted-template-argument inference remains a
-Phase A source-payload task and must not be inferred from missing payloads.
+tie-breaker list. This decision coordinates with the separate Phase A rule
+recorded by `mizar-core` task 26 / F7: omitted-template-argument inference is
+based on declared argument types and must not be inferred from missing payloads.
 
 ### SSA-004 (high, `spec_gap`) — Functorial cluster `for T` has no encoding
 
@@ -472,8 +472,8 @@ spec-decision tasks close.
   needs SSA-009's corrected function signature.
 - **Tasks 23-26 (templates, viability, selection):** task 37 records the
   Phase B tie-break and tie-ambiguity rules. Real payload work must still not
-  infer missing comparison evidence, and `mizar-core` task 26 / F7 continues
-  to own Phase A omitted-template-argument inference determinism.
+  infer missing comparison evidence; `mizar-core` task 26 / F7 records the
+  separate Phase A omitted-template-argument inference determinism rule.
 - **Task 29 corpus records:** the two deferred advanced_semantics corpus
   requirements now have concrete sibling seeds; when the runner lands, the
   deferred records should be revised to point at (or be superseded by) the

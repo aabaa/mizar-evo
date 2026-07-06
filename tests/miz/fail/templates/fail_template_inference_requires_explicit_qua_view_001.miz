@@ -1,0 +1,38 @@
+:: Rejection target: omitted `[T]` in `point_witness(D)` must not infer a
+:: `qua` view of D. BiPointStr reaches PointedStr through distinct left and
+:: right views, so the source must write the intended `[D qua ...]` explicitly.
+
+definition
+  struct PointedStr where
+    field point -> set;
+  end;
+  struct LeftPointStr where
+    field left -> set;
+  end;
+  inherit LeftPointStr extends PointedStr where
+    field left from point;
+  end;
+  struct RightPointStr where
+    field right -> set;
+  end;
+  inherit RightPointStr extends PointedStr where
+    field right from point;
+  end;
+  struct BiPointStr where
+    field left -> set;
+    field right -> set;
+  end;
+  inherit BiPointStr extends LeftPointStr;
+  inherit BiPointStr extends RightPointStr;
+end;
+
+definition
+  let T be type extends PointedStr;
+  let x be T;
+  func PointWitnessDef: point_witness[T](x) -> set equals x.point;
+end;
+
+definition
+  let D be BiPointStr;
+  func UsePointWitnessDef: use_point_witness(D) -> set equals point_witness(D);
+end;

@@ -210,8 +210,8 @@ deferred のままである。non-template candidate は、concrete parameter ve
 equivalent の場合に限って template-derived candidate に勝つ。template 宣言制約の
 厳しさは、展開後の tie-breaker ではない。未解決の同値な template-derived root は
 曖昧なまま残る。これは task 37 の Phase B overload-selection 決定だけを記録
-する。mizar-core task 26 や template-audit F7 は閉じず、Phase A の省略 template
-argument 推論を引き続き決定する。
+する。mizar-core task 26 / template-audit F7 は、別個の Phase A 省略 template
+argument 推論決定性規則を記録済みである。
 
 template expansion diagnostic は skipped template candidate と reason を保持する。failed
 template expansion は ordinary candidate にならない。

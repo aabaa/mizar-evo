@@ -730,9 +730,9 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       `fail_overload_template_equivalent_roots_ambiguity_001`, and
       `fail_resolve_same_signature_same_return_conflict_001`; the last stays
       inactive until resolver declaration-symbol support grows beyond the
-      current different-return diagnostic. This does not close mizar-core task
-      26 / template-audit F7, which still owns Phase A omitted-template
-      inference determinism. No checker/core/resolver source semantics changed.
+      current different-return diagnostic. Mizar-core task 26 / template-audit
+      F7 records the separate Phase A omitted-template inference determinism
+      rule. No checker/core/resolver source semantics changed.
 
 38. **Spec decision: functorial cluster `for T` semantics (SSA-004).** [ ]
     - Specify the applicability-guard reading (registration fires where the
