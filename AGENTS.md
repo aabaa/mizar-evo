@@ -28,11 +28,19 @@ For each task, complete these phases in order:
 6. If the test review finds gaps, expand tests carefully and repeat the test review until there are no findings.
 7. Review the full implementation for bugs, regressions, design mismatches, and missing edge cases.
 8. If the implementation review finds issues, fix them and repeat the implementation review until there are no findings.
-9. Review whether source code and documentation still agree.
+9. Review whether source code and documentation still agree, including whether
+   `doc/design/spec_coverage_audit.md` must be updated for changed
+   specification/design coverage, follow-up ownership, or deferred coverage
+   status.
 10. If the source-documentation consistency review finds issues, fix them and repeat the consistency review until there are no findings.
-11. Run the relevant verification commands.
-12. Prepare a handoff prompt for the next task so it can be started in a separate chat. Include a recommended reasoning setting for the next task, a short rationale, and any conditions that would justify raising or lowering that setting.
-13. Inspect the worktree, prepare a commit message, and commit the completed change when the user invoked this full workflow or requested autonomous crate development, unless the user asks not to commit. For tasks outside this workflow, commit only when the user explicitly requested committing, for example by saying `commit`, `commitまで`, or `コミットまで`.
+11. Update `doc/design/spec_coverage_audit.md` when the task changes how
+    `doc/spec/en/` chapters are covered by design documents, tests,
+    traceability metadata, owner crates, or follow-up tasks. If no audit change
+    is required, keep the file unchanged and mention that in the review or
+    final response when relevant.
+12. Run the relevant verification commands.
+13. Prepare a handoff prompt for the next task so it can be started in a separate chat. Include a recommended reasoning setting for the next task, a short rationale, and any conditions that would justify raising or lowering that setting.
+14. Inspect the worktree, prepare a commit message, and commit the completed change when the user invoked this full workflow or requested autonomous crate development, unless the user asks not to commit. For tasks outside this workflow, commit only when the user explicitly requested committing, for example by saying `commit`, `commitまで`, or `コミットまで`.
 
 ## Specification-Driven Autonomous Crate Development
 
@@ -72,9 +80,10 @@ task explicitly changes specification or test intent.
 Before crate-wide autonomous work starts, create or update
 `doc/design/<crate>/en/00.crate_plan.md`. The plan must cover crate
 responsibility, specification references, relevant tests, design/source
-inventory, known gaps and drift, task decomposition, and exit criteria. Do not
-begin implementation if the plan finds missing or contradictory specification
-that blocks the crate.
+inventory, known gaps and drift, task decomposition, the expected impact on
+`doc/design/spec_coverage_audit.md`, and exit criteria. Do not begin
+implementation if the plan finds missing or contradictory specification that
+blocks the crate.
 
 Before editing, classify disagreements as `spec_gap`, `test_gap`,
 `design_drift`, `source_drift`, `source_undocumented_behavior`,

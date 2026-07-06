@@ -88,8 +88,9 @@ The Crate Plan must include:
 3. relevant tests
 4. design/source inventory
 5. known gaps and drift
-6. task decomposition
-7. exit criteria
+6. expected `doc/design/spec_coverage_audit.md` impact
+7. task decomposition
+8. exit criteria
 
 Do not begin implementation if the Crate Plan concludes that the crate is
 blocked by missing or contradictory specification.
@@ -130,6 +131,10 @@ Observed behavior:
 | ID | Class | Evidence | Action |
 |---|---|---|---|
 
+## Specification Coverage Audit Impact
+
+Expected updates to `doc/design/spec_coverage_audit.md`:
+
 ## Task Decomposition
 
 ### Task <ID>: <title>
@@ -143,6 +148,8 @@ Tests:
 Affected design files:
 
 Affected source files:
+
+Spec coverage audit impact:
 
 Completion condition:
 
@@ -159,6 +166,12 @@ Review expectations:
 
 Tasks inside a crate should be decomposed by specification requirement or test
 obligation, not merely by source module.
+
+Each task must update `doc/design/spec_coverage_audit.md` when it changes the
+coverage status, design mapping, follow-up owner, or deferred rationale for any
+`doc/spec/en/` chapter. If a task has no audit impact, record that explicitly
+in the Crate Plan task entry or the task handoff/review notes instead of making
+a no-op edit.
 
 ## Source Observation
 
@@ -199,6 +212,7 @@ Each crate task entry should identify:
 - tests
 - affected design files
 - affected source files
+- spec coverage audit impact
 - completion condition
 - forbidden behavior
 
@@ -217,6 +231,10 @@ Tests:
 Affected files:
 - doc/design/mizar-parser/en/...
 - crates/mizar-parser/src/...
+
+Spec coverage audit impact:
+- update parser-related coverage rows if this task changes chapter coverage or
+  closes a parser follow-up; otherwise record no audit change required
 
 Completion:
 - positive syntax is accepted
@@ -242,9 +260,11 @@ pass:
 4. test expectations were not changed merely to match current implementation
 5. `doc/design` and source are synchronized within the target crate scope
 6. crate responsibility boundaries are not violated
-7. required verification commands pass, or any unrun command is explicitly
+7. `doc/design/spec_coverage_audit.md` is updated for any changed spec/design
+   coverage, follow-up ownership, or deferred coverage status
+8. required verification commands pass, or any unrun command is explicitly
    justified
-8. remaining risks are classified as deferred, out of scope, or human-owned
+9. remaining risks are classified as deferred, out of scope, or human-owned
 
 In this protocol, "no findings" means no unresolved blocking/high findings. Low
 notes may remain if documented. Medium findings must be fixed or explicitly
