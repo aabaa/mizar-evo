@@ -159,6 +159,21 @@ fingerprint mismatches. Imported source bindings additionally require the import
 statement fingerprint to equal the formula-tree fingerprint until richer source
 formula projection is specified.
 
+Task 31 makes local hypothesis, cited premise, and generated VC fact entries
+acceptable only when `FormulaEvidenceContext` carries the task-28 context
+identity payload for the same target. That payload is immutable caller context:
+the kernel checks its target VC, recomputes its `context_identity_hash()` from
+the architecture-15 v1 line grammar, and requires every non-imported formula
+entry to match exactly one row by source class/id, formula id, and formula
+fingerprint. The row's producer formula ref remains part of the recomputed
+context-identity hash, but it is not a separate parser-envelope field. The
+payload's canonical handoff hash is the opaque `mizar-vc` formula-envelope
+handoff hash, not
+`ParsedKernelEvidence::canonical_hash_input()`, and the kernel must not derive
+one from the parser's binary envelope bytes. Missing, stale, hash-mismatched,
+missing-row, or ambiguous-row context identity rejects as `missing_provenance`
+before SAT encoding.
+
 ## Substitutions
 
 Substitution records are explicit evidence. They identify the formula they are
@@ -194,9 +209,9 @@ formula instantiation remain task 26 work.
 Every formula must bind to one available proof source. Imported facts must bind
 to stable package/module/item identity, statement fingerprint, and required
 proof status. Local context and generated VC facts must bind to caller-supplied
-target and VC provenance. The kernel must derive trusted `used_axioms` only
-from accepted formula evidence whose source class is an accepted imported axiom
-or theorem.
+target, VC provenance, and the task-31 context identity rows. The kernel must
+derive trusted `used_axioms` only from accepted formula evidence whose source
+class is an accepted imported axiom or theorem.
 
 `final_goal` records the target formula and refutation polarity. The kernel
 checks the supplied formulas plus the negated goal according to the profile. It
@@ -209,7 +224,10 @@ asserted premise formula set and is not a source for `used_axioms`. The parser
 structurally validates the goal formula with the same manifest-derived context,
 requires its fingerprint to match the goal formula tree, and requires its
 provenance to bind the target VC and goal fingerprint. It records the target
-binding but does not perform SAT encoding or acceptance.
+binding. Acceptance is still granted only by the checker service after tasks
+26-31 instantiate formula evidence, encode the SAT problem, run the trusted SAT
+checker, bind proof-obligation polarity, and verify non-imported context
+identity; the `formula_evidence` parser alone never grants trust.
 
 ## Legacy Evidence
 
@@ -225,14 +243,17 @@ promotion, or artifact `kernel_verified` status.
   resolution-trace certificates in `checker`; task 29 gates that path behind
   explicit migration/audit policy so normal proof policy rejects it before
   replay.
-- `test_gap`: task 25 must add round-trip, malformed evidence, provenance-gap,
-  deterministic rendering, and hash-stability tests.
+- resolved `test_gap`: task 31 adds valid local/cited/generated
+  context-identity acceptance, missing/stale payload rejection, formula-id and
+  row-mutation rejection, goal-as-hypothesis rejection, constructor/runtime
+  context-identity limits, PolicyBoundedBuiltin exemption coverage, and a
+  task-28 line-grammar golden vector.
 - `external_dependency_gap`: full source-derived formula payloads from VC/ATP
   producers are not complete yet; the kernel schema must reject missing
   producer payloads instead of fabricating them.
-- `deferred`: semantic formula instantiation, SAT encoding, SAT checking,
-  service acceptance, artifact witness projection, and ATP candidate evidence
-  production are later tasks and must not be stubbed here.
+- `deferred`: artifact witness projection, ATP candidate evidence production,
+  source-to-kernel-evidence runner activation, and richer producer-owned
+  payload schemas remain later tasks and must not be stubbed here.
 
 ## Rejection Mapping
 

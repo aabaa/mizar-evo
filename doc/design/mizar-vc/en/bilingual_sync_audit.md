@@ -155,8 +155,8 @@ Task 27 updates the paired kernel-evidence handoff, source/spec audit, todo,
 plan, ledger, bilingual sync audit, and mizar-kernel soundness argument records
 for explicit producer-side goal polarity. Both languages record that current
 proof-obligation handoffs require `AssertFalseForRefutation`, reject
-`AssertTrueForConsistency` before canonical package assembly, and leave trusted
-checker-side B4/F1 acceptance binding to `mizar-kernel` task 30.
+`AssertTrueForConsistency` before canonical package assembly. The trusted
+checker-side B4/F1 acceptance binding is implemented by `mizar-kernel` task 30.
 
 ## Task 28 Sync Edits
 
@@ -166,4 +166,5 @@ audit, and paired mizar-kernel F2 task records for producer-side context
 identity. Both languages record that `context_identity_hash()` covers
 local-hypothesis, cited-premise, and generated-VC-fact source bindings,
 participates in dependency-slice and proof-reuse identity, excludes imported
-facts, and leaves trusted membership verification to `mizar-kernel` task 31.
+facts, and is checked by trusted membership verification in `mizar-kernel` task
+31.

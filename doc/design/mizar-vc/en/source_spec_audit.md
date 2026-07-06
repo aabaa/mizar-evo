@@ -199,9 +199,9 @@ Correspondence:
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
 | The builder packages only producer-side formula, substitution, provenance, and target-binding evidence and never calls the kernel, SAT solving, or ATP backends. | `build_kernel_evidence_handoff` consumes `VcSet`, explicit payload slices, imported context requirements, and optional discharge output only. | deterministic handoff, proof-hint exclusion, target-binding, prohibited-backend-material, and discharge-diagnostic tests. | Implemented for explicit payloads. |
-| Proof-obligation handoffs declare explicit refutation polarity and reject consistency polarity before canonical package assembly. | `KernelEvidenceHandoffInput::goal_polarity`, exhaustive current-`VcKind` `required_goal_polarity`, `KernelEvidenceHandoffError::GoalPolarityMismatch`, and `KernelFinalGoalEvidence::polarity`. | `consistency_goal_polarity_for_proof_obligation_fails_closed` plus deterministic handoff polarity assertion. | Implemented for producer-side current VC kinds; checker-side acceptance binding remains `mizar-kernel` task 30. |
+| Proof-obligation handoffs declare explicit refutation polarity and reject consistency polarity before canonical package assembly. | `KernelEvidenceHandoffInput::goal_polarity`, exhaustive current-`VcKind` `required_goal_polarity`, `KernelEvidenceHandoffError::GoalPolarityMismatch`, and `KernelFinalGoalEvidence::polarity`. | `consistency_goal_polarity_for_proof_obligation_fails_closed` plus deterministic handoff polarity assertion. | Implemented for producer-side current VC kinds; checker-side acceptance binding is implemented by `mizar-kernel` task 30. |
 | Canonical evidence contains schema/encoding versions, target VC, kernel profile, manifests, formula evidence, substitutions, provenance, and final goal; imported context requirements and diagnostics stay outside canonical hash input. | `KernelEvidenceEnvelope`, `target_fingerprint`, `VcKernelEvidenceHandoff::canonical_hash_input`, `canonical_hash_input`. | deterministic hash/debug tests, proof-hint metadata target-binding test, and imported-context tests. | Implemented. |
-| Non-imported local-hypothesis, cited-premise, and generated-VC-fact source bindings have producer-side context identity rows bound to the target VC and canonical evidence hash. | `KernelContextIdentityPayload`, `KernelContextIdentityEntry`, `KernelContextIdentitySource`, `VcKernelEvidenceHandoff::context_identity_hash`, and `context_identity_hash_input`. | `context_identity_covers_non_imported_source_bindings`, `context_identity_binding_breaks_when_source_label_is_mutated`, and dependency-slice kernel-evidence identity coverage. | Implemented for producer-side task 28; kernel-side membership verification remains `mizar-kernel` task 31. |
+| Non-imported local-hypothesis, cited-premise, and generated-VC-fact source bindings have producer-side context identity rows bound to the target VC and canonical evidence hash. | `KernelContextIdentityPayload`, `KernelContextIdentityEntry`, `KernelContextIdentitySource`, `VcKernelEvidenceHandoff::context_identity_hash`, and `context_identity_hash_input`. | `context_identity_covers_non_imported_source_bindings`, `context_identity_binding_breaks_when_source_label_is_mutated`, and dependency-slice kernel-evidence identity coverage. | Implemented for producer-side task 28; kernel-side membership verification is implemented by `mizar-kernel` task 31. |
 | Imported context and payload data fail closed on empty context provenance, mismatched imported statement/formula fingerprints, unsupported formula fingerprint algorithms, and missing context/payload data; returned context requirements are canonical sorted/deduplicated. | `validate_import_requirement`, `imported_payload_map`, `canonical_context_requirements`. | imported context missing/mismatch, empty context provenance, unsupported algorithm, fingerprint mismatch, and duplicate-context tests. | Implemented for current explicit imported payloads. |
 | Missing formula, substitution source, provenance, manifest, side-condition, or unsupported premise data fails closed instead of being fabricated. | `KernelEvidenceHandoffError` and validation helpers. | missing payload, invalid projection, substitution missing-source/empty/side-condition, and manifest tests. | Implemented for current fail-closed cases; upstream full formula/binder payload production remains external. |
 | Substitution records omit instantiated formula and target formula fields; side-condition records are opaque deterministic kernel-compatible encodings that are sorted and rejected when empty or duplicated. | `KernelSubstitutionPayload`, `KernelSubstitutionEvidence`, `canonical_side_conditions`. | `substitutions_reference_source_formula_without_instantiated_fields`, substitution side-condition fail-closed tests, and input-order canonicalization tests. | Implemented. |
@@ -287,7 +287,7 @@ proof obligations with `GoalPolarityMismatch`.
 The task does not add SAT solving, kernel calls, ATP backend integration,
 checker/core semantic changes, fabricated formula/substitution/provenance
 payloads, proof rows, cache promotion, artifact witness publication, or
-expectation updates. The trusted checker-side F1 binding remains assigned to
+expectation updates. The trusted checker-side F1 binding is implemented by
 `mizar-kernel` task 30.
 
 ## Task 28 Context Identity Follow-Up
@@ -302,8 +302,9 @@ identity.
 The task does not add kernel calls, checker/core semantic changes, ATP backend
 integration, fabricated source payloads, proof rows, cache promotion, artifact
 witness publication, corpus runner activation, `doc/spec` edits, `.miz`
-fixtures, or expectation updates. Kernel-side F2 membership verification
-remains assigned to `mizar-kernel` task 31.
+fixtures, or expectation updates. Kernel-side F2 membership verification is
+implemented by `mizar-kernel` task 31 and remains outside the `mizar-vc`
+producer-side source surface.
 
 ## Remaining Classified Follow-Ups
 
@@ -315,8 +316,8 @@ kernel classification, Task 25 implements the VC producer-side handoff builder
 for explicit payloads, Task 26 connects its canonical handoff hash to
 dependency-slice / proof-reuse identity, Task 27 closes the producer-side F1
 polarity declaration/rejection contract, and Task 28 adds the producer-side F2
-context-identity hash. Remaining checker-side F2 and downstream consumer gaps
-stay classified.
+context-identity hash. Task 31 in `mizar-kernel` closes the trusted
+checker-side F2 membership check; downstream consumer gaps stay classified.
 Existing classified records remain:
 
 - `external_dependency_gap`: active `proof_verification` runner support and

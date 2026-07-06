@@ -126,6 +126,20 @@ FormulaEvidenceContext
   provenance_fingerprint
   imported_axioms: sorted FormulaImportedFactEvidence
   imported_theorems: sorted FormulaImportedFactEvidence
+  context_identity?: KernelContextIdentityPayload
+
+KernelContextIdentityPayload
+  schema_version = 1
+  target_vc
+  canonical_handoff_hash
+  context_identity_hash
+  entries: sorted KernelContextIdentityEntry
+
+KernelContextIdentityEntry
+  source: local_hypothesis | cited_premise | generated_vc_fact
+  formula_id
+  formula_fingerprint
+  producer_formula_ref
 
 FormulaImportedFactEvidence
   imported_fact_id
@@ -148,18 +162,25 @@ KernelCheckPolicy
 ```
 
 `kernel_evidence` は `formula_evidence.md` の schema である。Parser は service handoff
-前に evidence profile を validate する。Checker は target/context binding、formula
-provenance、imported formula identity と proof status、explicit substitution、
-deterministic SAT encoding、trusted SAT checker UNSAT を validate する前に、final-goal
-polarity を `check_kind` と照合する。Polarity mismatch は imported formula context
+前に evidence profile を validate する。Checker は target/context binding、final-goal
+polarity、非 import source context identity、formula provenance、imported formula identity と
+proof status、explicit substitution、deterministic SAT encoding、trusted SAT checker UNSAT を
+validate する。Polarity mismatch は imported formula context
 lookup や SAT encoding より前に `final_goal.polarity` の
 `certificate_rejection/context_mismatch` として reject する。
 `FormulaEvidenceContext` は caller-supplied immutable context である。
 Imported formula status が missing、ambiguous、identity-mismatched、too-weak の場合は
-acceptance 前に fail-closed で reject する。Caller-supplied instantiated formula、SAT
-clause、backend proof method、resolution trace、SMT proof object、backend log、
-backend-reported used axiom は untrusted acceptance material として ignore または reject
-する。
+acceptance 前に fail-closed で reject する。Task 31 は local-hypothesis、cited-premise、
+generated-VC-fact formula entry が SAT encoding に進む前に context identity payload を要求する。
+その payload 内の canonical handoff hash は不透明な `mizar-vc` formula-envelope handoff hash
+である。Checker は architecture 15 の line grammar から task-28
+`context_identity_hash()` を再計算し、formula entry を source class/id、formula id、formula
+fingerprint により row と照合する。Producer formula ref は再計算される hash payload の一部に
+残る。Checker は target、hash、row、duplicate-row mismatch を
+`kernel_rejection/missing_provenance` として reject する。Caller-supplied instantiated
+formula、SAT clause、backend proof method、resolution trace、SMT proof object、backend
+log、backend-reported used axiom は untrusted acceptance material として ignore または
+reject する。
 
 下の legacy `KernelCheckInput` は task-22 source inventory item として残る。Task 29 は
 それを `KernelCheckPolicy.allow_legacy_certificate_audit` の背後に gate するため、default
@@ -398,11 +419,12 @@ Task 28 は corrected normal path のために `check_kernel_evidence` と
 `KernelEvidenceCheckKind` 束縛を追加する: accepted proof-obligation result は
 `ProofObligation` を運び、accepted consistency check は `ConsistencyCheck` を運ぶ。
 Consistency check は downstream proof policy に対する proof-obligation acceptance
-material ではない。Batch checking は target VC fingerprint、同一 target では caller input
-order の順で results を sort する。Worker spawn や cancellation token read は行わない。
-External scheduler integration はこの crate の外に残る。Task 16 の legacy certificate
-batch helper は explicit audit gate の背後にある migration/audit inventory として残る。
-Task 29 はその surface を再レビューする。
+material ではない。Task 31 はこの path に SAT encoding 前の非 import context identity
+verification を追加する。Batch checking は target VC fingerprint、同一 target では caller
+input order の順で results を sort する。Worker spawn や cancellation token read は行わない。
+External scheduler integration はこの crate の外に残る。Task 16 の legacy certificate batch
+helper は explicit audit gate の背後にある migration/audit inventory として残る。Task 29 は
+その surface を再レビューする。
 
 Corrected batch checking は single evidence checks の deterministic wrapper である:
 

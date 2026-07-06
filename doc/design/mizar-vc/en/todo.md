@@ -449,7 +449,7 @@ the paired producer tasks.
       `context_identity_hash()`, participates in dependency-slice and
       proof-reuse identity, excludes imported premises, and becomes stale when
       a canonical source binding is mutated. This closes only the producer-side
-      F2 payload; mizar-kernel task 31 still owns trusted membership
+      F2 payload; mizar-kernel task 31 implements trusted membership
       verification.
 
 29. **Imported-statement projection producer side (kernel F6).** [ ]

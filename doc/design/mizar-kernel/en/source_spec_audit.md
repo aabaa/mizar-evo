@@ -106,6 +106,12 @@ Covered top-level public items:
 - `ImportedFactEvidence`
 - `FormulaEvidenceContext`
 - `FormulaImportedFactEvidence`
+- `KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION`
+- `KernelContextIdentityPayload`
+- `KernelContextIdentityEntry`
+- `KernelContextIdentitySource`
+- `KernelFormulaProducerRef`
+- `KernelVcGeneratedFormulaId`
 - `ImportedFactNamespace`
 - `AcceptedProofStatus`
 - `ImportedFactCheckReport`
@@ -151,15 +157,21 @@ Correspondence summary:
   `check_imported_facts` implement the spec's immutable imported-fact
   validation boundary.
 - `KernelEvidenceCheckInput`, `FormulaEvidenceContext`,
-  `FormulaImportedFactEvidence`, `KernelEvidenceCheckLimits`,
-  `check_kernel_evidence`, and `check_kernel_evidence_batch` implement the
-  task-28/task-30 SAT-backed normal service path over parsed
-  formula/substitution evidence, immutable imported formula context, explicit
-  caller check kind, deterministic SAT encoding, and the trusted SAT checker.
+  `FormulaImportedFactEvidence`, `KernelContextIdentityPayload`,
+  `KernelContextIdentityEntry`, `KernelContextIdentitySource`,
+  `KernelFormulaProducerRef`, `KernelVcGeneratedFormulaId`,
+  `KernelEvidenceCheckLimits`, `check_kernel_evidence`, and
+  `check_kernel_evidence_batch` implement the task-28/task-30/task-31
+  SAT-backed normal service path over parsed formula/substitution evidence,
+  immutable imported formula/context-identity context, explicit caller check
+  kind, deterministic SAT encoding, and the trusted SAT checker.
   `KernelEvidenceCheckKind` binds proof-obligation checks to
   `AssertFalseForRefutation` and consistency checks to
   `AssertTrueForConsistency`; mismatches reject as
   `certificate_rejection/context_mismatch` at `final_goal.polarity`.
+  `KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION` and the context-identity payload
+  types bind local-hypothesis, cited-premise, and generated-VC-fact formula
+  entries to immutable task-28 context rows before SAT encoding.
 - `KernelCheckInput`, `KernelCheckPolicy`, `KernelCheckLimits`,
   `KernelCheckResult`, `KernelCheckStatus`, checked output records, service
   result alias, `check_kernel_certificate`, and `check_kernel_batch` retain
@@ -420,14 +432,18 @@ Task 24 adds the dependency audit before source changes:
   candidates, unsafe-code audit, no-process/no-network audit, resource-limit
   gates, and the dependency lint-policy revision that task 27 must encode.
 
-The current source inventory above is now the task-29 public surface: it adds
+The current source inventory above is now the task-31 public surface: it adds
 the formula/substitution evidence parser, SAT encoder, trusted SAT checker
-wrapper, SAT-backed `check_kernel_evidence` service path, and explicit
+wrapper, SAT-backed `check_kernel_evidence` service path, explicit
 `allow_legacy_certificate_audit` gate for the task-22 legacy
-`check_kernel_certificate` path. Default normal proof policy rejects legacy
-resolution-trace certificates before replay; explicit audit mode remains
-migration-only, returns rejected audit data after successful replay, and is not
-trusted acceptance material.
+`check_kernel_certificate` path, explicit proof-obligation/consistency check
+kind binding, and context-identity payload types for non-imported formula
+sources. Default normal proof policy rejects legacy resolution-trace
+certificates before replay; explicit audit mode remains migration-only,
+returns rejected audit data after successful replay, and is not trusted
+acceptance material. The task-31 context-identity payload is checked before SAT
+encoding and binds local-hypothesis, cited-premise, and generated-VC-fact rows
+to immutable task-28 source identity data.
 
 ## Test Traceability
 
@@ -442,7 +458,7 @@ migration-only and remains deferred.
 | `certificate_parser` | `crates/mizar-kernel/src/certificate_parser/tests.rs` | Valid schema parsing, unsupported headers/profiles, directory and item canonicality, resource exhaustion before allocation, imported fact references, manifest/generated-clause validation, substitution/resolution/derived/final references, deterministic collection order, deterministic hash input, and parser rejection classification. |
 | `checker` imported facts | `crates/mizar-kernel/src/checker/tests.rs` | Imported axiom/theorem context validation, namespace preservation, proof-status checks, policy taint, fingerprint binding, duplicate context rejection, unused malformed entry handling, deterministic context/report ordering, and count/resource limits. |
 | `checker` cluster/reduction replay | `crates/mizar-kernel/src/checker/tests.rs` | Valid trace replay, missing provenance, hidden/future dependency rejection, guard/result mismatches, bounded context construction, requested-step closure, unchecked base fact rejection, runtime limits, and deterministic canonical order. |
-| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection, explicit check-kind/goal-polarity binding for both proof-obligation and consistency checks, F1-shaped polarity mismatch rejection before context/SAT work, imported formula context proof-status checks, satisfiable-goal rejection, target mismatch rejection, deterministic evidence batch ties, normal-policy legacy certificate rejection, explicit legacy migration/audit service pipeline, substitution/report binding, generated-clause base sets, final-goal and derived-fact fail-closed behavior, mutation fail corpus, deterministic repetition/permutation results, replay-cost budgets, timeout/resource propagation, and target/input-order batch sorting. |
+| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection, explicit check-kind/goal-polarity binding for both proof-obligation and consistency checks, F1-shaped polarity mismatch rejection before context/SAT work, task-31 context-identity acceptance/rejection for local/cited/generated formula sources, context-identity resource limits, task-28 golden line-grammar hashing, imported formula context proof-status checks, satisfiable-goal rejection, target mismatch rejection, deterministic evidence batch ties, normal-policy legacy certificate rejection, explicit legacy migration/audit service pipeline, substitution/report binding, generated-clause base sets, final-goal and derived-fact fail-closed behavior, mutation fail corpus, deterministic repetition/permutation results, replay-cost budgets, timeout/resource propagation, and target/input-order batch sorting. |
 | `clause` | `crates/mizar-kernel/src/clause/tests.rs` | Canonical literal/term ordering, duplicate literal removal, empty versus tautology forms, tautology policy, malformed atom/term/symbol/variable rejection, profile/resource bounds, canonical constructor checks, stable rendering, and hash input exclusion of display data. |
 | `formula_evidence` | `crates/mizar-kernel/src/formula_evidence/tests.rs` | Valid evidence envelope parsing, standalone final-goal separation, stable formula rendering/hash input, explicit substitution evidence payload parsing, unknown schema/domain rejection, duplicate ids, malformed formula rejection, missing provenance fail-closed behavior, imported statement fingerprint mismatch rejection, and provenance target-binding mismatch rejection. |
 | `rejection` | `crates/mizar-kernel/src/rejection/tests.rs` | Stable keys, category/detail ownership, parser conversion, checker locations, owner mappings, deterministic ordering and tie-breakers, fixed-width target sort bytes, and public enum compatibility. |
@@ -461,7 +477,7 @@ migration-only and remains deferred.
 | KERNEL20-G003 | `external_dependency_gap` / `deferred` | Cluster/reduction payload production by `mizar-checker` is not a ready integration contract. | Kernel replays explicit cluster/reduction payloads only; no cluster search or payload synthesis is added. |
 | KERNEL20-G004 | `external_dependency_gap` / `deferred` | Derived-fact payload schema beyond current explicit checked inputs remains downstream/provenance-owned. | Derived facts remain fail-closed unless backed by checked evidence. |
 | KERNEL20-G005 | `external_dependency_gap` / `deferred` | Service-envelope normalization, cancellation token plumbing, and external worker scheduling are integration concerns outside the crate. | In-crate checks remain deterministic and synchronous over immutable inputs. |
-| KERNEL20-G006 | `external_dependency_gap` / `deferred` | Downstream `mizar-proof`, `mizar-cache`, and `mizar-artifact` consumers are not ready proof-policy/cache/artifact contracts. | No dependency or placeholder integration is added. |
+| KERNEL20-G006 | `external_dependency_gap` / `deferred` | Downstream `mizar-proof`, `mizar-cache`, and `mizar-artifact` consumers are not ready as full proof-policy/cache/artifact contracts. `mizar-proof` has limited accepted proof-obligation status, used-axiom, and witness-boundary consumers after tasks 30-31, but richer proof-policy projection and externally authenticated evidence policy remain downstream; `mizar-cache` and `mizar-artifact` still have no proof-cache/artifact consumer contracts. | No dependency or placeholder cache/artifact integration is added; proof-policy expansion remains owned by downstream `mizar-proof` tasks. |
 | KERNEL20-G007 | `deferred` | Downstream wildcard-arm checks for public enums must be enforced by downstream consumers after task 19. | Kernel enum inventory is documented and lint-guarded; downstream checks remain outside this crate. |
 | KERNEL20-G008 | `source_undocumented_behavior` risk | Future public APIs or module exports could be added without audit updates. | `tests/lint_policy.rs` now fails unless this audit lists current public modules/items and module Trust Statement prohibitions. |
 | KERNEL20-G009 | `repo_metadata_conflict` | None observed in task 20. | Report only if future metadata conflicts appear; do not auto-repair unrelated metadata. |
@@ -469,20 +485,23 @@ migration-only and remains deferred.
 | KERNEL25-G001 | `deferred` | Task 25 parses and structurally validates formula/substitution evidence but does not instantiate formulas, encode SAT, call the SAT checker, or replace the legacy service acceptance path. | Tasks 26-28 derive instantiated formulas, build deterministic SAT problems, run the trusted SAT checker, and wire the SAT-backed service path without treating backend methods or legacy resolution traces as trusted material. |
 | KERNEL26-G001 | `deferred` | Task 26 derives instantiated formulas and deterministic SAT problems, task 27 adds the trusted SAT checker wrapper, and task 28 adds the SAT-backed `check_kernel_evidence` service path. Richer formula-path and alpha-renaming substitution evidence is still not yet a producer-owned stable schema. | Richer substitution producers must extend the formula/substitution evidence schema before those shapes can be accepted. |
 | KERNEL29-G001 | `source_drift` / `design_drift` closed by task 29 | The legacy `check_kernel_certificate` surface remains present for task-22 migration/audit inventory. | Task 29 gates it behind `KernelCheckPolicy.allow_legacy_certificate_audit`; default normal proof policy rejects legacy resolution-trace certificates before replay, explicit audit replay still returns `Rejected` without trusted `final_goal` / `used_axioms`, and this migration-only surface is re-audited during quality re-review. |
+| KERNEL31-G001 | F2 `source_drift` / `design_drift` closed by task 31 | Before task 31, non-imported local-hypothesis, cited-premise, and generated-VC-fact formula sources were well-shaped but not checked against immutable source context rows. | Task 31 requires a context-identity payload for those sources, checks target binding, recomputes the documented task-28 context-identity hash, matches each non-imported formula entry against immutable rows, and rejects missing/stale/ambiguous rows before SAT encoding. |
 
 ## Verification Plan
 
-Task 29 refreshes this audit and quality review while gating the legacy
-certificate surface behind explicit migration/audit policy. Required
-verification is:
+Task 31 refreshes this audit while adding context-identity verification to the
+SAT-backed checker service. Required verification is:
 
 - `cargo test -p mizar-kernel source_spec_audit_covers_public_surface_and_prohibitions`;
+- focused `cargo test -p mizar-kernel context_identity --lib`;
+- focused `cargo test -p mizar-kernel sat_backed_kernel_evidence --lib`;
 - `cargo fmt --check`;
 - `cargo test -p mizar-kernel`;
 - `cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings`;
 - `git diff --check`;
 - `git diff --cached --check` after explicit path staging.
 
-Because task 29 changes checker service behavior, `cargo test -p mizar-core`,
-`cargo test -p mizar-vc`, `cargo test -p mizar-artifact`, and
-`cargo test -p mizar-checker` should be run for boundary confidence.
+Because task 31 changes checker service behavior but not `mizar-core`,
+`mizar-vc`, `mizar-artifact`, or `mizar-checker` source semantics, broad
+workspace `cargo clippy --all-targets --all-features -- -D warnings` and
+`cargo test` provide final boundary confidence when practical.

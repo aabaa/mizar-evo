@@ -10,11 +10,12 @@ Quality score: 95/100.
 Score caps applied: none.
 
 Post-closeout correction: commit `c6d94fe51923aa0363ea7297bfe4e9f905aef076`
-supersedes the task-22 evidence target. Tasks 23-30 complete the corrected
+supersedes the task-22 evidence target. Tasks 23-31 complete the corrected
 formula/substitution evidence pipeline, trusted in-process SAT checking,
-legacy path migration audit, and explicit proof-obligation/consistency
-goal-polarity binding. Task 30 is the post-correction soundness-contract
-closure point for goal polarity; its self-hash is recorded by a later
+legacy path migration audit, explicit proof-obligation/consistency
+goal-polarity binding, and kernel-side context-identity verification for
+non-imported formula sources. Task 31 is the post-correction
+soundness-contract closure point for F2; its self-hash is recorded by a later
 bookkeeping point after commit.
 
 ## Scope
@@ -55,6 +56,11 @@ Post-correction scope:
   consistency checks require consistency polarity, and accepted consistency
   checks are carried as diagnostic-only/non-trusted material for downstream
   `mizar-proof` policy, selection, status, and witness boundaries.
+- `check_kernel_evidence` now requires the task-28 context-identity payload for
+  local-hypothesis, cited-premise, and generated-VC-fact formula sources,
+  verifies the target and documented context-identity hash, matches each
+  non-imported formula entry against immutable source/id and fingerprint rows,
+  and rejects missing, stale, or ambiguous rows before SAT encoding.
 
 Included:
 
@@ -115,6 +121,7 @@ Excluded:
 | 28 | `43674a221dd5f43259c480846db7428f85ac9386` | `feat(kernel-task-28): check formula evidence with SAT` |
 | 29 | `0cbcbf01c4b5c2e53c872d6edd35cf38065f90a8` | `fix(kernel-task-29): gate legacy certificate audit` |
 | 30 | `f3197e12a8f7a2124da8ebbf0f678cf3cf6bd890` | `fix(kernel-task-30): bind evidence goal polarity` |
+| 31 | pending self-hash | `fix(kernel-task-31): verify context identity` |
 
 ## Hard Gates
 
@@ -122,11 +129,11 @@ Excluded:
 |---|---|---|
 | Specification consistency | passed | Module specs, source/spec audit, bilingual sync audit, module-boundary audit, and closeout reviews record no unresolved blocking/high specification inconsistency. |
 | Source behavior documented or deferred | passed | Public modules, public items, tests, and promised behavior are traced in `source_spec_audit.md`; unsupported source-derived and downstream behavior is classified rather than implemented silently. |
-| Milestone-owned coverage | passed | Crate-local Rust tests cover canonical clauses, certificate parsing, rejection records, resolution replay, substitution/alpha/FV replay, imported facts, cluster/reduction replay, checker orchestration, goal-polarity/check-kind binding, determinism, replay cost, public enum policy, and soundness mutation failures. |
+| Milestone-owned coverage | passed | Crate-local Rust tests cover canonical clauses, certificate parsing, rejection records, resolution replay, substitution/alpha/FV replay, imported facts, cluster/reduction replay, checker orchestration, goal-polarity/check-kind binding, context-identity verification, determinism, replay cost, public enum policy, and soundness mutation failures. |
 | Test expectation integrity | passed | No existing `.miz` fixture or expectation sidecar was changed to match implementation behavior. Source-derived certificate corpus support remains explicitly deferred. |
 | Design/source synchronization | passed | Paired source/spec, bilingual, public enum, soundness, determinism, and module-boundary audits are synchronized with the source layout and public module table. |
 | Boundary discipline | passed | The task-22 legacy milestone checks evidence only and contains no SAT solver. Post-correction tasks may add only the task-24 audited in-process SAT checker over kernel-derived SAT problems, with no ATP backend, proof search, proof-policy projection, cache/artifact coupling, overload resolution, cluster search, implicit coercion insertion, fallback inference, or global mutable state reads. |
-| Verification | passed | Task-30 focused/crate-local checks, broad clippy/test, diff check, and cached-diff check passed before commit. |
+| Verification | passed | Task-31 focused/crate-local checks, broad clippy/test, diff check, and cached-diff check passed before commit. |
 | Residual risk | passed with classified items | Remaining risks are listed below as `external_dependency_gap` or `deferred`. |
 
 ## Score Breakdown
@@ -155,11 +162,11 @@ gate fails.
 
 | Review | Result |
 |---|---|
-| Implementation specification / documentation review | Stale legacy-surface task ownership and closeout wording findings fixed by attributing the explicit audit gate to task 29 and keeping the corrected formula/substitution service as task 28. Final focused re-review found no blocking/high/medium findings. |
-| Test sufficiency review | Medium imported formula identity/ambiguity and report-limit gaps fixed; follow-up medium default-policy legacy rejection gap fixed with a direct `KernelCheckPolicy::default()` test. Final focused re-review found no blocking/high/medium findings. |
-| Full implementation review | High post-parse `ParsedKernelEvidence` mutation boundary fixed with private fields, read-only accessors, and lint-policy guard. Final focused re-review found no blocking/high/medium implementation findings. |
-| Source/documentation consistency review | Medium batch API-name/profile wording, task-ownership, formula-evidence legacy wording, audit-result shape, and closeout-review drift findings fixed in paired English/Japanese docs. Final focused re-review found no blocking/high/medium findings. |
-| Read-only crate quality review | Initial high finding that legacy audit replay still returned trusted acceptance-shaped `Accepted` / `used_axioms` material was fixed by returning rejected audit data without trusted `final_goal` or `used_axioms`. Final quality re-review hard gates pass with no blocking/high/medium findings. Valid quality score: 95/100, which is >= 90. |
+| Implementation specification / documentation review | Task 31 spec/doc review initially found an invalid plan to recompute the opaque `mizar-vc` canonical handoff hash from parser bytes; follow-up review found the stable bridge hash algorithm underdocumented. Paired design docs now specify the canonical handoff hash as opaque caller context and document the task-31 context-identity hash grammar/bridge hashing; final focused re-review found no findings. |
+| Test sufficiency review | Task 31 test review initially found helper-derived source-class coverage, golden grammar, and constructor-limit gaps. Hand-built local-hypothesis/cited-premise/generated-VC-fact rows, formula-id mismatch rejection, all-source golden grammar, constructor limit rejection, and PolicyBoundedBuiltin exemption coverage fixed them; final re-review found no findings. |
+| Full implementation review | Task 31 full implementation review initially found the runtime `max_context_identity_entries` check occurred after hash/row scanning. The service now checks the runtime limit before recomputing context-identity hashes or scanning rows; final re-review found no findings. |
+| Source/documentation consistency review | Task 31 source/doc review initially found stale ledger/exit-report bookkeeping and stale `mizar-proof` active-consumer wording. Paired docs now record the task-31 reviews, limited proof-obligation consumer reality, and unchanged `doc/design/spec_coverage_audit.md` status because no spec coverage ownership, traceability, owner-crate, or deferred-coverage classification changed. |
+| Read-only crate quality review | The post-correction hard gates remain satisfied after task 31: trusted acceptance still flows only through parsed formula/substitution evidence, kernel-derived SAT checking, proof-obligation polarity binding, and verified context identity. Residual source-runner, producer, proof-policy, cache/artifact, and richer substitution gaps remain classified; valid quality score remains 95/100, which is >= 90. |
 
 ## Deferred Items
 
@@ -167,7 +174,7 @@ gate fails.
 |---|---|---|---|
 | KERNEL-CLOSEOUT-G001 | `external_dependency_gap` | No active source-to-kernel-evidence runner or `.miz` proof-verification corpus feeds formula/substitution evidence. | Add the owning staged-test/source-to-kernel-evidence runner before activating source-derived formula/substitution evidence corpus fixtures. |
 | KERNEL-CLOSEOUT-G002 | `external_dependency_gap` | `mizar-atp` is not an active formula/substitution evidence candidate producer. MiniSAT-compatible backend traces are legacy migration/audit material, not trusted output. | Build the ATP crate around candidate formula/substitution evidence production after the VC handoff contract exists; do not add trusted backend proof translation. |
-| KERNEL-CLOSEOUT-G003 | `external_dependency_gap` | `mizar-proof` is not an active policy consumer of `KernelCheckResult`; proof-status projection and externally authenticated evidence policy remain downstream. | Add proof-policy consumers in `mizar-proof` with their own crate plan and consumer contract. |
+| KERNEL-CLOSEOUT-G003 | `external_dependency_gap` | `mizar-proof` now consumes accepted proof-obligation `KernelCheckResult` values at the status, trusted used-axiom, and witness-boundary fixture level, but richer proof-policy projection and externally authenticated evidence policy remain downstream. | Expand proof-policy consumers in `mizar-proof` under their own crate plan and consumer contract. |
 | KERNEL-CLOSEOUT-G004 | `external_dependency_gap` | `mizar-cache` and `mizar-artifact` do not provide active proof-cache/proof-witness consumer contracts for kernel outputs. | Downstream cache/artifact phases define validation and publication contracts before any kernel coupling is added. |
 | KERNEL-CLOSEOUT-G005 | `external_dependency_gap` / `deferred` | Source-derived certificate/service envelopes, derived-fact payload schemas, service-envelope normalization, cancellation token plumbing, and external worker scheduling are integration concerns outside this crate. | Add producer/consumer tasks once upstream/downstream contracts exist; do not add placeholders here. |
 | KERNEL-CLOSEOUT-G006 | `external_dependency_gap` / `deferred` | `mizar-checker` cluster/reduction payload production and richer semantic redex/LHS-to-RHS producer validation remain outside the trusted kernel. | Keep kernel replay limited to explicit normalized commitments; source-side cluster payload producers must land in their owning crate. |
@@ -205,15 +212,17 @@ above.
 | Command | Result |
 |---|---|
 | `cargo fmt --check` | passed |
-| `git diff --check` | passed |
+| `cargo test -p mizar-kernel context_identity --lib` | passed |
 | `cargo test -p mizar-kernel sat_backed_kernel_evidence --lib` | passed |
-| `cargo test -p mizar-proof accepted_consistency_kernel_results_are_diagnostic_only` | passed |
-| `cargo test -p mizar-proof unaccepted_or_policy_tainted_kernel_input_cannot_create_trusted_witness_metadata` | passed |
-| `cargo test -p mizar-proof trusted_used_axioms_from_kernel_result_rejects_untrusted_kernel_results` | passed |
+| `cargo test -p mizar-kernel --test lint_policy` | passed |
 | `cargo test -p mizar-kernel` | passed |
-| `cargo test -p mizar-proof` | passed |
 | `cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings` | passed |
+| `cargo test -p mizar-proof trusted_used_axioms_from_kernel_result` | passed |
 | `cargo clippy -p mizar-proof --all-targets --all-features -- -D warnings` | passed |
+| `cargo clippy --all-targets --all-features -- -D warnings` | passed |
+| `cargo test` | passed after fixing a source/spec audit lint phrase |
+| `git diff --check` | passed |
+| `git diff --cached --check` | passed after explicit task-31 path staging |
 
 Unrun deferred commands:
 
@@ -226,35 +235,35 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Start `mizar-vc` task 28 after the completed mizar-kernel task-30
-goal-polarity binding. Before editing, verify a clean worktree, confirm the
-mizar-kernel task 30 commit in git log, and read
+Continue Step 1 with `mizar-test` task 21 after the completed mizar-kernel
+task-31 context-identity verification. Before editing, verify a clean worktree,
+confirm the mizar-kernel task 31 commit in git log, and read
+doc/design/todo.md,
+doc/design/mizar-test/en/todo.md,
+doc/design/mizar-test/en/fail_soundness.md,
 doc/design/mizar-kernel/en/crate_exit_report.md,
 doc/design/mizar-kernel/en/00.crate_plan.md,
 doc/design/mizar-kernel/en/checker.md,
 doc/design/mizar-kernel/en/source_spec_audit.md,
 doc/design/mizar-kernel/en/soundness_argument.md,
-doc/design/mizar-vc/en/todo.md,
-doc/design/mizar-vc/en/00.crate_plan.md,
 doc/design/mizar-vc/en/kernel_evidence_handoff.md,
-doc/design/mizar-vc/en/dependency_slice.md,
 doc/design/internal/en/04.atp_portfolio_and_kernel_check_integration.md,
 doc/design/internal/en/07.crate_module_layout.md,
 doc/design/architecture/en/08.reasoning_boundary.md,
 doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/16.substitution_and_binding.md, and
-doc/design/architecture/en/19.failure_semantics.md. Begin with mizar-vc task
-28: produce the context-identity payload for non-imported source bindings
-(kernel F2) so local-hypothesis, cited-premise, and generated-VC-fact labels
-are membership-checked instead of trusted by name. Keep the work
-producer-side: do not call the kernel, run SAT/ATP, fabricate semantic payloads,
-or change checker/core implementation semantics. Preserve one task per commit.
+doc/design/architecture/en/19.failure_semantics.md, and
+tests/coverage/spec_trace.toml. Begin with mizar-test task 21: extend the
+required soundness-case registry and test documentation with the corrected-path
+rejection vocabulary for F7. Keep the work docs-plus-corpus/registry scoped:
+do not change checker/core/VC implementation semantics, fabricate payloads,
+activate unverified fixtures, or rebaseline expectations to match current
+implementation behavior. Preserve one task per commit.
 ```
 
-Rationale: `mizar-vc` task 28 is the next task in the requested Step 1 order
-after the producer-side F1 and checker-side goal-polarity closures. Keep
-`xhigh` because F2 crosses VC identity, dependency slices, source binding
-membership, kernel target binding, and downstream proof/witness trust
-boundaries. Lower reasoning is appropriate only for typo-only documentation
-sync; raise only if repository metadata or specification contradictions block
-the handoff.
+Rationale: `mizar-test` task 21 is the next task in the requested Step 1 order
+after the producer-side and kernel-side F2 closures. Keep `xhigh` because the
+work closes F7 at the shared soundness vocabulary boundary and must preserve
+existing spec/test intent while linking the corrected kernel rejection taxonomy
+to the corpus registry. Lower reasoning is appropriate only for typo-only
+documentation sync; raise only if repository metadata or specification
+contradictions block the handoff.

@@ -269,7 +269,7 @@ fn trusted_used_axioms_from_kernel_result_accepts_public_kernel_result() {
         KernelEvidenceOrigin::AtpFormulaSubstitution,
     );
 
-    assert_eq!(trusted.used_axiom_count(), 0);
+    assert_eq!(trusted.used_axiom_count(), 1);
     assert_eq!(
         trusted.accepted_evidence_hash(),
         expected_input
@@ -871,11 +871,20 @@ fn accepted_kernel_result() -> KernelCheckResult {
     let premise = formula_atom(1);
     let parsed = parsed_formula_evidence(
         &target,
-        vec![local_formula_item(1, 10, &premise)],
+        vec![imported_formula_item(
+            1,
+            10,
+            &premise,
+            RequiredProofStatus::KernelVerified,
+        )],
         goal_item(20, &premise),
     );
+    let context = formula_evidence_context(
+        formula_imported_fact(5, &premise, AcceptedProofStatus::KernelVerified),
+        ImportedFactNamespace::ImportedAxiom,
+    );
 
-    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
     assert_eq!(result.status(), KernelCheckStatus::Accepted);
     assert!(!result.policy_taint());
     result
@@ -888,14 +897,23 @@ fn accepted_consistency_kernel_result() -> KernelCheckResult {
     let not_goal = Formula::Not(Box::new(goal.clone()));
     let parsed = parsed_formula_evidence(
         &target,
-        vec![local_formula_item(1, 10, &not_goal)],
+        vec![imported_formula_item(
+            1,
+            10,
+            &not_goal,
+            RequiredProofStatus::KernelVerified,
+        )],
         goal_item_with_polarity(20, GoalPolarity::AssertTrueForConsistency, &goal),
+    );
+    let context = formula_evidence_context(
+        formula_imported_fact(5, &not_goal, AcceptedProofStatus::KernelVerified),
+        ImportedFactNamespace::ImportedAxiom,
     );
 
     let result = check_kernel_evidence(evidence_input_with_check_kind(
         &target_vc,
         &parsed,
-        None,
+        Some(&context),
         KernelEvidenceCheckKind::ConsistencyCheck,
     ));
     assert_eq!(result.status(), KernelCheckStatus::Accepted);

@@ -147,6 +147,18 @@ mismatch、formula fingerprint mismatch を reject する。Richer source formul
 imported source binding の imported statement fingerprint は formula-tree fingerprint と一致しなければ
 ならない。
 
+Task 31 は、`FormulaEvidenceContext` が同じ target の task-28 context identity payload を
+運ぶ場合に限り、local hypothesis、cited premise、generated VC fact entry を受理可能にする。
+この payload は immutable caller context である。Kernel はその target VC を検査し、
+architecture 15 の v1 line grammar から `context_identity_hash()` を再計算し、
+各非 import formula entry が source class/id、formula id、formula fingerprint によって
+ちょうど一つの row と一致することを要求する。Row の producer formula ref は再計算される
+context-identity hash の一部に残るが、parser envelope の独立 field ではない。Payload の
+canonical handoff hash は不透明な `mizar-vc` formula-envelope handoff hash であり、
+`ParsedKernelEvidence::canonical_hash_input()` ではない。Kernel は parser の binary
+envelope bytes からそれを導出してはならない。Missing、stale、hash mismatch、missing row、
+ambiguous row の context identity は SAT encoding 前に `missing_provenance` として reject する。
+
 ## Substitutions
 
 Substitution record は explicit evidence である。それは適用先 formula、normalized binder
@@ -178,9 +190,9 @@ Semantic replay と formula instantiation は task 26 の作業である。
 
 すべての formula は一つの利用可能な proof source に bind しなければならない。Imported fact は
 stable package/module/item identity、statement fingerprint、required proof status に bind する。
-Local context と generated VC fact は caller-supplied target と VC provenance に bind する。
-Kernel は accepted imported axiom/theorem source class を持つ accepted formula evidence から
-だけ trusted `used_axioms` を導出しなければならない。
+Local context と generated VC fact は caller-supplied target / VC provenance、および task-31
+context identity rows に bind する。Kernel は accepted imported axiom/theorem source class を
+持つ accepted formula evidence からだけ trusted `used_axioms` を導出しなければならない。
 
 `final_goal` は target formula と refutation polarity を記録する。Kernel は supplied formulas
 と negated goal を profile に従って check する。Target VC、goal fingerprint、kernel profile、
@@ -190,7 +202,10 @@ Task 25 の final goal record は standalone goal formula、goal polarity、form
 provenance reference を含む。これは asserted premise formula set の一部ではなく、`used_axioms` の
 source でもない。Parser は同じ manifest-derived context で goal formula を structural に検証し、
 fingerprint が goal formula tree と一致すること、provenance が target VC と goal fingerprint に
-bind することを要求する。Target binding は記録するが、SAT encoding や acceptance は行わない。
+bind することを要求する。Target binding は記録する。Acceptance は tasks 26-31 後も checker
+service だけが与える。checker service は formula evidence を instantiate し、SAT problem を
+encode し、trusted SAT checker を実行し、proof-obligation polarity を bind し、非 import
+context identity を検証する。`formula_evidence` parser 単体は trust を決して与えない。
 
 ## Legacy evidence
 
@@ -204,13 +219,15 @@ cache promotion、artifact `kernel_verified` status を生成できない。
 - `design_drift` / `source_drift`: task-22 source は legacy resolution-trace certificate を
   `checker` に保持していた。Task 29 はその path を explicit migration/audit policy の
   背後に gate し、normal proof policy では replay 前に拒否する。
-- `test_gap`: task 25 は round-trip、malformed evidence、provenance-gap、
-  deterministic rendering、hash-stability tests を追加する必要がある。
+- 解決済み `test_gap`: task 31 は valid local/cited/generated context-identity acceptance、
+  missing/stale payload rejection、formula-id / row-mutation rejection、
+  goal-as-hypothesis rejection、constructor/runtime context-identity limit、
+  PolicyBoundedBuiltin exemption coverage、task-28 line-grammar golden vector を追加した。
 - `external_dependency_gap`: VC/ATP producers からの full source-derived formula payload は
   まだ complete ではない。Kernel schema は missing producer payload を fabricate せず reject する。
-- `deferred`: semantic formula instantiation、SAT encoding、SAT checking、service
-  acceptance、artifact witness projection、ATP candidate evidence production は後続 task であり、
-  ここで stub してはならない。
+- `deferred`: artifact witness projection、ATP candidate evidence production、
+  source-to-kernel-evidence runner activation、より豊かな producer-owned payload schema は
+  後続 task に残り、ここで stub してはならない。
 
 ## Rejection mapping
 

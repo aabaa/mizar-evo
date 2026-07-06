@@ -91,6 +91,27 @@ the formula evidence row id, formula fingerprint, and producer `VcFormulaRef`.
 Imported axiom/theorem entries are covered by `formula_context_requirements`
 instead and do not appear in `context_identity`.
 
+The v1 `context_identity_hash()` input is the UTF-8 line grammar shared with
+`mizar-kernel` task 31:
+
+```text
+vc-kernel-context-identity-v1
+schema-version=1
+target-vc={algorithm_id}:{lower_hex_digest}
+canonical-evidence-hash={lower_hex_32_byte_hash}
+[entries]
+source={source_debug}; formula-id={formula_id}; fingerprint={algorithm_id}:{lower_hex_digest}; producer={producer_debug}
+```
+
+Rows are sorted by source kind/id, formula id, formula fingerprint, and
+producer formula ref. Source spellings use the Rust debug forms
+`LocalHypothesis { local_context_id: N }`,
+`CitedPremise { local_context_id: N }`, and
+`GeneratedVcFact { vc_fact_id: N }`; producer refs use
+`Core(CoreFormulaId(N))` or `Generated(VcGeneratedFormulaId(N))`. Kernel task
+31 treats `canonical_evidence_hash` as the opaque `mizar-vc` canonical
+formula-envelope handoff hash and recomputes only this context-identity hash.
+
 `formula_context_requirements` is not a canonical evidence-envelope section.
 It records the immutable imported-fact context that must be supplied to
 `mizar-kernel` as `FormulaEvidenceContext` before imported axioms or theorems
@@ -133,7 +154,7 @@ producer-owned records already computed by prior VC phases:
 | VC input | Kernel evidence mapping |
 |---|---|
 | `VcSet` schema, module, source, canonical VC fingerprint, and selected `VcIr` | `target_vc`, target provenance binding, and deterministic package identity. If a stable target binding cannot be computed, the builder fails closed. |
-| selected `VcIr.kind` and `KernelEvidenceHandoffInput.goal_polarity` | The builder enumerates every current VC kind and requires `AssertFalseForRefutation` for proof obligations. The validated explicit polarity is copied into `final_goal.polarity`; a consistency-polarity request fails before canonical evidence bytes or package hashes are built. Kernel-side acceptance binding remains owned by `mizar-kernel` task 30. |
+| selected `VcIr.kind` and `KernelEvidenceHandoffInput.goal_polarity` | The builder enumerates every current VC kind and requires `AssertFalseForRefutation` for proof obligations. The validated explicit polarity is copied into `final_goal.polarity`; a consistency-polarity request fails before canonical evidence bytes or package hashes are built. Kernel-side acceptance binding is implemented by `mizar-kernel` task 30. |
 | `LocalContext` entries with formula refs | Formula evidence entries with local-hypothesis or cited-premise source bindings plus `context_identity` rows that bind the context-entry id, formula evidence row id, formula fingerprint, target VC, and canonical evidence hash. Entries without stable formula payloads or provenance are recorded as missing payloads, not fabricated. |
 | `PremiseRef::LocalContext` and `PremiseRef::GeneratedFact` | References to the corresponding local-hypothesis, cited-premise, or generated-VC-fact formula evidence entries, with matching `context_identity` rows for the non-imported source binding. |
 | `PremiseRef::ImportedFact` | Candidate imported axiom/theorem formula entries only when package/module/exported item identity, statement fingerprint, required proof-status requirement, and matching `FormulaEvidenceContext` input are available. `mizar-vc` does not certify the imported fact as accepted; proof/kernel-owned context must do that. Otherwise the premise is an `external_dependency_gap` or fail-closed builder error. |
@@ -236,14 +257,14 @@ Remaining gaps:
 - resolved `VC-HANDOFF-G006`: task 27 adds explicit `goal_polarity` to the
   handoff input, records the validated value in `final_goal.polarity`, and
   rejects consistency polarity for every current proof-obligation VC kind before
-  canonical package assembly. Kernel-side check-service enforcement remains
-  assigned to `mizar-kernel` task 30.
+  canonical package assembly. Kernel-side check-service enforcement is
+  implemented by `mizar-kernel` task 30.
 - resolved `VC-HANDOFF-G007`: task 28 adds the producer-side
   `context_identity` payload and hash for local-hypothesis, cited-premise, and
   generated-VC-fact formula evidence rows. The payload is bound to the target
   VC and canonical evidence hash and participates in dependency-slice /
-  proof-reuse identity. Kernel-side membership verification remains assigned
-  to `mizar-kernel` task 31.
+  proof-reuse identity. Kernel-side membership verification is implemented by
+  `mizar-kernel` task 31.
 
 ## Planned Tests
 
@@ -301,29 +322,30 @@ No exhaustive public enum exceptions are owned by this module. Internal
 `mizar-vc` matches that intentionally enumerate current variants may remain
 exhaustive.
 
-## Post-Task-28 Handoff Draft
+## Current Step-1 Handoff
 
 Recommended reasoning: `xhigh`.
 
 Prompt:
 
 ```text
-Continue Step 1 with mizar-kernel task 31. Before editing, verify a clean
-worktree, confirm the mizar-vc task 28 commit, and re-read
-doc/design/todo.md, doc/design/mizar-kernel/en/todo.md,
-doc/design/mizar-kernel/en/00.crate_plan.md,
+Continue Step 1 with `mizar-test` task 21 after the completed mizar-kernel
+task-31 context-identity verification. Before editing, verify a clean worktree,
+confirm the mizar-kernel task 31 commit, and re-read doc/design/todo.md,
+doc/design/mizar-test/en/todo.md, doc/design/mizar-test/en/fail_soundness.md,
 doc/design/mizar-kernel/en/soundness_argument.md,
-doc/design/architecture/en/15.kernel_certificate_format.md, and
-doc/design/mizar-vc/en/kernel_evidence_handoff.md. Implement kernel-side F2
-context-identity verification only: accepted non-imported local-hypothesis,
-cited-premise, and generated-VC-fact source bindings must match the immutable
-target VC context rows carried by the task-28 `context_identity_hash()` payload,
-and missing or stale payloads must reject fail-closed. Do not change checker or
-core semantics, fabricate producer payloads, add placeholder runners, or
-preempt F6/F7/F8 work.
+doc/design/mizar-kernel/en/checker.md,
+doc/design/architecture/en/15.kernel_certificate_format.md, and this
+kernel-evidence handoff spec. Extend the required soundness-case registry and
+test documentation with the corrected-path rejection vocabulary for F7. Do not
+change checker/core/VC implementation semantics, fabricate semantic payloads,
+activate unverified fixtures, or rebaseline expectations to match current
+implementation behavior.
 ```
 
-Rationale: mizar-vc task 28 closes only the producer-side F2 context-identity
-payload. Trusted membership verification remains in `mizar-kernel` task 31.
-Keep `xhigh` because the next task edits the trusted boundary. Lower reasoning
-is appropriate only for typo-only documentation synchronization.
+Rationale: mizar-vc task 28 and mizar-kernel task 31 now close the
+producer/consumer halves of F2. The next requested Step 1 task closes F7 in
+`mizar-test` without changing checker/core/VC semantics. Keep `xhigh` because
+the registry vocabulary spans the shared soundness corpus and kernel rejection
+taxonomy. Lower reasoning is appropriate only for typo-only documentation
+synchronization.

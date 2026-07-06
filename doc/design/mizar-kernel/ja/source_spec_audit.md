@@ -103,6 +103,12 @@ Covered top-level public items:
 - `ImportedFactEvidence`
 - `FormulaEvidenceContext`
 - `FormulaImportedFactEvidence`
+- `KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION`
+- `KernelContextIdentityPayload`
+- `KernelContextIdentityEntry`
+- `KernelContextIdentitySource`
+- `KernelFormulaProducerRef`
+- `KernelVcGeneratedFormulaId`
 - `ImportedFactNamespace`
 - `AcceptedProofStatus`
 - `ImportedFactCheckReport`
@@ -147,15 +153,21 @@ Covered top-level public items:
 - Imported-fact context、policy、status、evidence、report、result、
   `check_imported_facts` は immutable imported-fact validation boundary を実装する。
 - `KernelEvidenceCheckInput`、`FormulaEvidenceContext`、
-  `FormulaImportedFactEvidence`、`KernelEvidenceCheckLimits`、
-  `check_kernel_evidence`、`check_kernel_evidence_batch` は、parsed
-  formula/substitution evidence、immutable imported formula context、明示的な
-  caller check kind、deterministic SAT encoding、trusted SAT checker 上の
-  task-28/task-30 SAT-backed normal service path を実装する。
+  `FormulaImportedFactEvidence`、`KernelContextIdentityPayload`、
+  `KernelContextIdentityEntry`、`KernelContextIdentitySource`、
+  `KernelFormulaProducerRef`、`KernelVcGeneratedFormulaId`、
+  `KernelEvidenceCheckLimits`、`check_kernel_evidence`、
+  `check_kernel_evidence_batch` は、parsed formula/substitution evidence、
+  immutable imported formula/context-identity context、明示的な caller check kind、
+  deterministic SAT encoding、trusted SAT checker 上の task-28/task-30/task-31
+  SAT-backed normal service path を実装する。
   `KernelEvidenceCheckKind` は proof-obligation check を
   `AssertFalseForRefutation` に、consistency check を
   `AssertTrueForConsistency` に束縛する。不一致は `final_goal.polarity` の
   `certificate_rejection/context_mismatch` として拒否される。
+  `KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION` と context-identity payload types は、
+  local-hypothesis、cited-premise、generated-VC-fact formula entry を SAT encoding 前に
+  immutable task-28 context row に bind する。
 - `KernelCheckInput`、`KernelCheckPolicy`、`KernelCheckLimits`、
   `KernelCheckResult`、`KernelCheckStatus`、checked output record、service result
   alias、`check_kernel_certificate`、`check_kernel_batch` は、task-29
@@ -406,12 +418,16 @@ Task 24 は source change より先に dependency audit を追加する:
   unsafe-code audit、no-process/no-network audit、resource-limit gate、task 27 が
   符号化すべき dependency lint-policy revision を記録する。
 
-現在の source inventory は task-29 public surface であり、formula/substitution evidence
+現在の source inventory は task-31 public surface であり、formula/substitution evidence
 parser、SAT encoder、trusted SAT checker wrapper、SAT-backed `check_kernel_evidence`
-service path、そして task-22 legacy `check_kernel_certificate` path に対する explicit
-`allow_legacy_certificate_audit` gate を追加する。Default normal proof policy は legacy
-resolution-trace certificate を replay 前に拒否する。Explicit audit mode は migration-only
-のままであり、成功 replay 後も rejected audit data を返し、trusted acceptance material ではない。
+service path、task-22 legacy `check_kernel_certificate` path に対する explicit
+`allow_legacy_certificate_audit` gate、explicit proof-obligation / consistency check kind
+binding、非 import formula source 向け context-identity payload types を追加する。
+Default normal proof policy は legacy resolution-trace certificate を replay 前に拒否する。
+Explicit audit mode は migration-only のままであり、成功 replay 後も rejected audit data を返し、
+trusted acceptance material ではない。Task-31 context-identity payload は SAT encoding 前に
+検査され、local-hypothesis、cited-premise、generated-VC-fact row を immutable task-28
+source identity data に bind する。
 
 ## Test Traceability
 
@@ -426,7 +442,7 @@ migration-only であり deferred のままである。
 | `certificate_parser` | `crates/mizar-kernel/src/certificate_parser/tests.rs` | Valid schema parsing、unsupported header/profile、directory と item canonicality、allocation 前の resource exhaustion、imported fact reference、manifest/generated-clause validation、substitution/resolution/derived/final reference、deterministic collection order、deterministic hash input、parser rejection classification。 |
 | `checker` imported facts | `crates/mizar-kernel/src/checker/tests.rs` | Imported axiom/theorem context validation、namespace preservation、proof-status check、policy taint、fingerprint binding、duplicate context rejection、unused malformed entry handling、deterministic context/report ordering、count/resource limit。 |
 | `checker` cluster/reduction replay | `crates/mizar-kernel/src/checker/tests.rs` | Valid trace replay、missing provenance、hidden/future dependency rejection、guard/result mismatch、bounded context construction、requested-step closure、unchecked base fact rejection、runtime limit、deterministic canonical order。 |
-| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection、proof-obligation / consistency check の両方に対する explicit check-kind / goal-polarity binding、context/SAT work より前の F1-shaped polarity mismatch rejection、imported formula context proof-status check、satisfiable-goal rejection、target mismatch rejection、deterministic evidence batch tie、normal-policy legacy certificate rejection、explicit legacy migration/audit service pipeline、substitution/report binding、generated-clause base set、final-goal / derived-fact fail-closed behavior、mutation fail corpus、deterministic repetition/permutation result、replay-cost budget、timeout/resource propagation、target/input-order batch sorting。 |
+| `checker` service orchestration | `crates/mizar-kernel/src/checker/tests.rs` | SAT-backed formula evidence acceptance/rejection、proof-obligation / consistency check の両方に対する explicit check-kind / goal-polarity binding、context/SAT work より前の F1-shaped polarity mismatch rejection、local/cited/generated formula source に対する task-31 context-identity acceptance/rejection、context-identity resource limit、task-28 golden line-grammar hashing、imported formula context proof-status check、satisfiable-goal rejection、target mismatch rejection、deterministic evidence batch tie、normal-policy legacy certificate rejection、explicit legacy migration/audit service pipeline、substitution/report binding、generated-clause base set、final-goal / derived-fact fail-closed behavior、mutation fail corpus、deterministic repetition/permutation result、replay-cost budget、timeout/resource propagation、target/input-order batch sorting。 |
 | `clause` | `crates/mizar-kernel/src/clause/tests.rs` | Canonical literal/term ordering、duplicate literal removal、empty versus tautology form、tautology policy、malformed atom/term/symbol/variable rejection、profile/resource bound、canonical constructor check、stable rendering、display data を除外する hash input。 |
 | `formula_evidence` | `crates/mizar-kernel/src/formula_evidence/tests.rs` | Valid evidence envelope parsing、standalone final-goal separation、stable formula rendering/hash input、explicit substitution evidence payload parsing、unknown schema/domain rejection、duplicate id、malformed formula rejection、missing provenance fail-closed behavior、imported statement fingerprint mismatch rejection、provenance target-binding mismatch rejection。 |
 | `rejection` | `crates/mizar-kernel/src/rejection/tests.rs` | Stable key、category/detail ownership、parser conversion、checker location、owner mapping、deterministic ordering and tie-breaker、fixed-width target sort bytes、public enum compatibility。 |
@@ -445,7 +461,7 @@ migration-only であり deferred のままである。
 | KERNEL20-G003 | `external_dependency_gap` / `deferred` | Cluster/reduction payload production by `mizar-checker` is not a ready integration contract. | Kernel は explicit cluster/reduction payload だけを replay する。cluster search や payload synthesis は追加しない。 |
 | KERNEL20-G004 | `external_dependency_gap` / `deferred` | Derived-fact payload schema beyond current explicit checked inputs remains downstream/provenance-owned. | Derived fact は checked evidence で裏付けられない限り fail-closed のまま。 |
 | KERNEL20-G005 | `external_dependency_gap` / `deferred` | Service-envelope normalization, cancellation token plumbing, and external worker scheduling are integration concerns outside the crate. | In-crate check は immutable input 上の deterministic synchronous check のまま。 |
-| KERNEL20-G006 | `external_dependency_gap` / `deferred` | Downstream `mizar-proof`, `mizar-cache`, and `mizar-artifact` consumers are not ready proof-policy/cache/artifact contracts. | dependency や placeholder integration は追加しない。 |
+| KERNEL20-G006 | `external_dependency_gap` / `deferred` | Downstream `mizar-proof`, `mizar-cache`, and `mizar-artifact` consumers are not ready as full proof-policy/cache/artifact contracts. Tasks 30-31 後、`mizar-proof` は accepted proof-obligation status、used-axiom、witness-boundary の限定的 consumer を持つが、より豊かな proof-policy projection と externally authenticated evidence policy は downstream に残る。`mizar-cache` と `mizar-artifact` にはまだ proof-cache/artifact consumer contract がない。 | dependency や placeholder cache/artifact integration は追加しない。proof-policy expansion は downstream `mizar-proof` task が所有する。 |
 | KERNEL20-G007 | `deferred` | Downstream wildcard-arm checks for public enums must be enforced by downstream consumers after task 19. | Kernel enum inventory は documented / lint-guarded。downstream check は crate 外に残る。 |
 | KERNEL20-G008 | `source_undocumented_behavior` risk | Future public APIs or module exports could be added without audit updates. | `tests/lint_policy.rs` は、この audit が current public modules/items と module Trust Statement prohibitions を列挙しない限り fail する。 |
 | KERNEL20-G009 | `repo_metadata_conflict` | None observed in task 20. | 将来 metadata conflict が見つかった場合だけ報告する。unrelated metadata は auto-repair しない。 |
@@ -453,19 +469,23 @@ migration-only であり deferred のままである。
 | KERNEL25-G001 | `deferred` | Task 25 は formula/substitution evidence を parse し structural validation するが、formula instantiation、SAT encoding、SAT checker 呼び出し、legacy service acceptance path の置換は行わない。 | Tasks 26-28 は instantiated formula を導出し、deterministic SAT problem を構築し、trusted SAT checker を実行し、backend method や legacy resolution trace を trusted material として扱わず SAT-backed service path を wire する。 |
 | KERNEL26-G001 | `deferred` | Task 26 は instantiated formula と deterministic SAT problem を導出し、task 27 は trusted SAT checker wrapper を追加し、task 28 は SAT-backed `check_kernel_evidence` service path を追加する。より豊かな formula-path / alpha-renaming substitution evidence はまだ producer-owned stable schema ではない。 | より豊かな substitution producer は、それらの shape を受理できるようになる前に formula/substitution evidence schema を拡張しなければならない。 |
 | KERNEL29-G001 | task 29 で閉じた `source_drift` / `design_drift` | Legacy `check_kernel_certificate` surface は task-22 migration/audit inventory として残っている。 | Task 29 はこれを `KernelCheckPolicy.allow_legacy_certificate_audit` の背後に gate する。Default normal proof policy は legacy resolution-trace certificate を replay 前に拒否し、explicit audit replay も trusted `final_goal` / `used_axioms` を持たない `Rejected` を返し、この migration-only surface を quality re-review で再監査する。 |
+| KERNEL31-G001 | task 31 で閉じた F2 `source_drift` / `design_drift` | Task 31 前は、非 import local-hypothesis、cited-premise、generated-VC-fact formula source は well-shaped でも immutable source context row に対して検査されなかった。 | Task 31 はそれらの source に context-identity payload を要求し、target binding を検査し、documented task-28 context-identity hash を再計算し、各非 import formula entry を immutable row と照合し、missing/stale/ambiguous row を SAT encoding 前に拒否する。 |
 
 ## Verification Plan
 
-Task 29 は、legacy certificate surface を explicit migration/audit policy の背後に
-gate しながら、この audit と quality review を refresh する。必要な verification:
+Task 31 は SAT-backed checker service に context-identity verification を追加しながら、
+この audit を refresh する。必要な verification:
 
 - `cargo test -p mizar-kernel source_spec_audit_covers_public_surface_and_prohibitions`;
+- focused `cargo test -p mizar-kernel context_identity --lib`;
+- focused `cargo test -p mizar-kernel sat_backed_kernel_evidence --lib`;
 - `cargo fmt --check`;
 - `cargo test -p mizar-kernel`;
 - `cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings`;
 - `git diff --check`;
 - explicit path staging 後の `git diff --cached --check`。
 
-Task 29 は checker service behavior を変更するため、boundary confidence として
-`cargo test -p mizar-core`、`cargo test -p mizar-vc`、`cargo test -p mizar-artifact`、
-`cargo test -p mizar-checker` を実行するべきである。
+Task 31 は checker service behavior を変更するが、`mizar-core`、`mizar-vc`、
+`mizar-artifact`、`mizar-checker` の source semantics は変更しない。実用上可能なら、
+final boundary confidence として broad
+`cargo clippy --all-targets --all-features -- -D warnings` と `cargo test` を実行する。

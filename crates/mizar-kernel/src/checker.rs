@@ -1,4 +1,7 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::{
+    collections::{BTreeMap, BTreeSet},
+    fmt::Write as _,
+};
 
 use crate::{
     certificate_parser::{
@@ -26,8 +29,12 @@ use crate::{
         checked_substitutions_for_input, replay_substitutions,
     },
 };
+use mizar_core::core_ir::CoreFormulaId;
+use mizar_session::Hash;
 
 pub const SUPPORTED_NORMALIZED_CLAUSE_FINGERPRINT_ALGORITHM_ID: u8 = 1;
+pub const KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION: u16 = 1;
+const KERNEL_CONTEXT_IDENTITY_HASH_DOMAIN: &str = "mizar-vc-kernel-context-identity";
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ImportedFactCheckLimits {
@@ -69,12 +76,14 @@ pub struct ImportedFactPolicy {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ImportedFactContextLimits {
     pub max_imported_context_entries: usize,
+    pub max_context_identity_entries: usize,
 }
 
 impl Default for ImportedFactContextLimits {
     fn default() -> Self {
         Self {
             max_imported_context_entries: usize::MAX,
+            max_context_identity_entries: usize::MAX,
         }
     }
 }
@@ -83,6 +92,7 @@ impl From<ImportedFactCheckLimits> for ImportedFactContextLimits {
     fn from(value: ImportedFactCheckLimits) -> Self {
         Self {
             max_imported_context_entries: value.max_imported_context_entries,
+            max_context_identity_entries: usize::MAX,
         }
     }
 }
@@ -136,6 +146,7 @@ pub struct FormulaEvidenceContext {
     provenance_fingerprint: Option<Vec<u8>>,
     imported_axioms: Vec<FormulaImportedFactEvidence>,
     imported_theorems: Vec<FormulaImportedFactEvidence>,
+    context_identity: Option<KernelContextIdentityPayload>,
 }
 
 impl FormulaEvidenceContext {
@@ -145,7 +156,24 @@ impl FormulaEvidenceContext {
         imported_theorems: Vec<FormulaImportedFactEvidence>,
         limits: ImportedFactContextLimits,
     ) -> Result<Self, ImportedFactContextError> {
+        Self::with_context_identity(
+            provenance_fingerprint,
+            imported_axioms,
+            imported_theorems,
+            None,
+            limits,
+        )
+    }
+
+    pub fn with_context_identity(
+        provenance_fingerprint: Option<Vec<u8>>,
+        imported_axioms: Vec<FormulaImportedFactEvidence>,
+        imported_theorems: Vec<FormulaImportedFactEvidence>,
+        context_identity: Option<KernelContextIdentityPayload>,
+        limits: ImportedFactContextLimits,
+    ) -> Result<Self, ImportedFactContextError> {
         validate_context_entry_count(&imported_axioms, &imported_theorems, limits)?;
+        validate_context_identity_entry_count(context_identity.as_ref(), limits)?;
         Ok(Self {
             provenance_fingerprint,
             imported_axioms: canonical_formula_imports(
@@ -156,6 +184,7 @@ impl FormulaEvidenceContext {
                 ImportedFactNamespace::ImportedTheorem,
                 imported_theorems,
             )?,
+            context_identity,
         })
     }
 
@@ -173,6 +202,11 @@ impl FormulaEvidenceContext {
     pub fn imported_theorems(&self) -> &[FormulaImportedFactEvidence] {
         &self.imported_theorems
     }
+
+    #[must_use]
+    pub const fn context_identity(&self) -> Option<&KernelContextIdentityPayload> {
+        self.context_identity.as_ref()
+    }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -185,6 +219,10 @@ pub enum ImportedFactContextError {
     DuplicateImportedFact {
         namespace: ImportedFactNamespace,
         imported_fact_id: u32,
+    },
+    ContextIdentityCountExceeded {
+        max: usize,
+        actual: usize,
     },
 }
 
@@ -208,6 +246,134 @@ pub struct FormulaImportedFactEvidence {
     pub exported_item_id: Vec<u8>,
     pub statement_fingerprint: Fingerprint,
     pub accepted_proof_status: AcceptedProofStatus,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct KernelContextIdentityPayload {
+    schema_version: u16,
+    target_vc: TargetVcFingerprint,
+    canonical_handoff_hash: Hash,
+    context_identity_hash: Hash,
+    entries: Vec<KernelContextIdentityEntry>,
+}
+
+impl KernelContextIdentityPayload {
+    #[must_use]
+    pub fn new(
+        target_vc: TargetVcFingerprint,
+        canonical_handoff_hash: Hash,
+        context_identity_hash: Hash,
+        mut entries: Vec<KernelContextIdentityEntry>,
+    ) -> Self {
+        entries.sort();
+        Self {
+            schema_version: KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION,
+            target_vc,
+            canonical_handoff_hash,
+            context_identity_hash,
+            entries,
+        }
+    }
+
+    #[must_use]
+    pub const fn schema_version(&self) -> u16 {
+        self.schema_version
+    }
+
+    #[must_use]
+    pub const fn target_vc(&self) -> &TargetVcFingerprint {
+        &self.target_vc
+    }
+
+    #[must_use]
+    pub const fn canonical_handoff_hash(&self) -> Hash {
+        self.canonical_handoff_hash
+    }
+
+    #[must_use]
+    pub const fn context_identity_hash(&self) -> Hash {
+        self.context_identity_hash
+    }
+
+    #[must_use]
+    pub fn entries(&self) -> &[KernelContextIdentityEntry] {
+        &self.entries
+    }
+}
+
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
+pub struct KernelContextIdentityEntry {
+    source: KernelContextIdentitySource,
+    formula_id: u32,
+    formula_fingerprint: Fingerprint,
+    producer_formula_ref: KernelFormulaProducerRef,
+}
+
+impl KernelContextIdentityEntry {
+    #[must_use]
+    pub fn new(
+        source: KernelContextIdentitySource,
+        formula_id: u32,
+        formula_fingerprint: Fingerprint,
+        producer_formula_ref: KernelFormulaProducerRef,
+    ) -> Self {
+        Self {
+            source,
+            formula_id,
+            formula_fingerprint,
+            producer_formula_ref,
+        }
+    }
+
+    #[must_use]
+    pub const fn source(&self) -> KernelContextIdentitySource {
+        self.source
+    }
+
+    #[must_use]
+    pub const fn formula_id(&self) -> u32 {
+        self.formula_id
+    }
+
+    #[must_use]
+    pub const fn formula_fingerprint(&self) -> &Fingerprint {
+        &self.formula_fingerprint
+    }
+
+    #[must_use]
+    pub const fn producer_formula_ref(&self) -> KernelFormulaProducerRef {
+        self.producer_formula_ref
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[non_exhaustive]
+pub enum KernelContextIdentitySource {
+    LocalHypothesis { local_context_id: u32 },
+    CitedPremise { local_context_id: u32 },
+    GeneratedVcFact { vc_fact_id: u32 },
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[non_exhaustive]
+pub enum KernelFormulaProducerRef {
+    Core(CoreFormulaId),
+    Generated(KernelVcGeneratedFormulaId),
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct KernelVcGeneratedFormulaId(usize);
+
+impl KernelVcGeneratedFormulaId {
+    #[must_use]
+    pub const fn new(index: usize) -> Self {
+        Self(index)
+    }
+
+    #[must_use]
+    pub const fn index(self) -> usize {
+        self.0
+    }
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
@@ -694,6 +860,20 @@ fn validate_context_entry_count<T, U>(
     Ok(())
 }
 
+fn validate_context_identity_entry_count(
+    identity: Option<&KernelContextIdentityPayload>,
+    limits: ImportedFactContextLimits,
+) -> Result<(), ImportedFactContextError> {
+    let actual = identity.map_or(0, |payload| payload.entries().len());
+    if actual > limits.max_context_identity_entries {
+        return Err(ImportedFactContextError::ContextIdentityCountExceeded {
+            max: limits.max_context_identity_entries,
+            actual,
+        });
+    }
+    Ok(())
+}
+
 fn imported_clause_context_rejection(
     target: &TargetVcFingerprint,
     error: ImportedClauseContextError,
@@ -1048,6 +1228,7 @@ fn check_kernel_evidence_inner(
     validate_evidence_goal_polarity(input)?;
 
     budget.step_target(input.target_vc_fingerprint, "formula_context")?;
+    check_formula_context_identity(input)?;
     let formula_report = check_formula_imports(input)?;
 
     budget.step_target(input.target_vc_fingerprint, "sat_encoding")?;
@@ -1158,6 +1339,17 @@ fn check_formula_imports(
                 RejectionLocation::new().with_field_path("formula_context.imported_context_count"),
             ));
         }
+        if let Some(identity) = context.context_identity() {
+            let actual = identity.entries().len();
+            if actual > input.limits.formula_context.max_context_identity_entries {
+                return Err(rejection(
+                    input.target_vc_fingerprint,
+                    RejectionDetail::ResourceExhaustion,
+                    RejectionLocation::new()
+                        .with_field_path("formula_context.context_identity.entries"),
+                ));
+            }
+        }
     }
 
     let mut checked = BTreeMap::new();
@@ -1212,6 +1404,245 @@ fn check_formula_imports(
         used_axioms,
         policy_taint,
     })
+}
+
+fn check_formula_context_identity(
+    input: KernelEvidenceCheckInput<'_>,
+) -> KernelCheckServiceResult<()> {
+    let required = input
+        .evidence
+        .formulas()
+        .iter()
+        .filter(|formula| context_identity_source(&formula.source).is_some())
+        .collect::<Vec<_>>();
+    if required.is_empty() {
+        return Ok(());
+    }
+
+    let context = checked_formula_context(input)?;
+    let Some(identity) = context.context_identity() else {
+        return Err(rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::MissingProvenance,
+            RejectionLocation::new().with_field_path("formula_context.context_identity"),
+        ));
+    };
+    if identity.schema_version() != KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION {
+        return Err(rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::MissingProvenance,
+            RejectionLocation::new().with_field_path("formula_context.context_identity.schema"),
+        ));
+    }
+    if identity.target_vc() != input.target_vc_fingerprint {
+        return Err(rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::MissingProvenance,
+            RejectionLocation::new().with_field_path("formula_context.context_identity.target_vc"),
+        ));
+    }
+    validate_runtime_context_identity_limit(input, identity)?;
+    if recompute_context_identity_hash(identity) != identity.context_identity_hash() {
+        return Err(rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::MissingProvenance,
+            RejectionLocation::new().with_field_path("formula_context.context_identity.hash"),
+        ));
+    }
+
+    for formula in required {
+        match matching_context_identity_entries(identity, formula).as_slice() {
+            [_] => {}
+            [] => {
+                return Err(rejection(
+                    input.target_vc_fingerprint,
+                    RejectionDetail::MissingProvenance,
+                    RejectionLocation::new().with_field_path("formula.context_identity"),
+                ));
+            }
+            [_, ..] => {
+                return Err(rejection(
+                    input.target_vc_fingerprint,
+                    RejectionDetail::MissingProvenance,
+                    RejectionLocation::new().with_field_path("formula.context_identity"),
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+fn validate_runtime_context_identity_limit(
+    input: KernelEvidenceCheckInput<'_>,
+    identity: &KernelContextIdentityPayload,
+) -> KernelCheckServiceResult<()> {
+    if identity.entries().len() > input.limits.formula_context.max_context_identity_entries {
+        return Err(rejection(
+            input.target_vc_fingerprint,
+            RejectionDetail::ResourceExhaustion,
+            RejectionLocation::new().with_field_path("formula_context.context_identity.entries"),
+        ));
+    }
+    Ok(())
+}
+
+fn matching_context_identity_entries<'a>(
+    identity: &'a KernelContextIdentityPayload,
+    formula: &crate::formula_evidence::FormulaEvidenceEntry,
+) -> Vec<&'a KernelContextIdentityEntry> {
+    let Some(source) = context_identity_source(&formula.source) else {
+        return Vec::new();
+    };
+    identity
+        .entries()
+        .iter()
+        .filter(|entry| {
+            entry.source() == source
+                && entry.formula_id() == formula.formula_id
+                && entry.formula_fingerprint() == &formula.formula_fingerprint
+        })
+        .collect()
+}
+
+fn context_identity_source(source: &FormulaSource) -> Option<KernelContextIdentitySource> {
+    match source {
+        FormulaSource::LocalHypothesis { local_context_id } => {
+            Some(KernelContextIdentitySource::LocalHypothesis {
+                local_context_id: *local_context_id,
+            })
+        }
+        FormulaSource::CitedPremise { local_context_id } => {
+            Some(KernelContextIdentitySource::CitedPremise {
+                local_context_id: *local_context_id,
+            })
+        }
+        FormulaSource::GeneratedVcFact { vc_fact_id } => {
+            Some(KernelContextIdentitySource::GeneratedVcFact {
+                vc_fact_id: *vc_fact_id,
+            })
+        }
+        FormulaSource::AcceptedImportedAxiom(_)
+        | FormulaSource::AcceptedImportedTheorem(_)
+        | FormulaSource::PolicyBoundedBuiltin { .. } => None,
+    }
+}
+
+fn recompute_context_identity_hash(identity: &KernelContextIdentityPayload) -> Hash {
+    stable_bridge_hash(
+        KERNEL_CONTEXT_IDENTITY_HASH_DOMAIN,
+        &context_identity_hash_input(identity),
+    )
+}
+
+fn context_identity_hash_input(identity: &KernelContextIdentityPayload) -> Vec<u8> {
+    let mut output = String::from("vc-kernel-context-identity-v1\n");
+    writeln!(&mut output, "schema-version={}", identity.schema_version()).expect("write string");
+    writeln!(
+        &mut output,
+        "target-vc={}",
+        target_fingerprint_render(identity.target_vc())
+    )
+    .expect("write string");
+    writeln!(
+        &mut output,
+        "canonical-evidence-hash={}",
+        hex(identity.canonical_handoff_hash().as_bytes())
+    )
+    .expect("write string");
+    writeln!(&mut output, "[entries]").expect("write string");
+    for entry in identity.entries() {
+        writeln!(
+            &mut output,
+            "source={}; formula-id={}; fingerprint={}; producer={}",
+            context_identity_source_render(entry.source()),
+            entry.formula_id(),
+            fingerprint_render(entry.formula_fingerprint()),
+            producer_ref_render(entry.producer_formula_ref())
+        )
+        .expect("write string");
+    }
+    output.into_bytes()
+}
+
+fn stable_bridge_hash(domain: &str, bytes: &[u8]) -> Hash {
+    let mut lanes = [
+        0x6d_69_7a_61_72_2d_76_63_u64,
+        0x70_72_6f_6f_66_2d_69_64_u64,
+        0x74_61_73_6b_32_30_2d_76_u64,
+        0x66_69_6e_67_65_72_2d_31_u64,
+    ];
+
+    for (index, byte) in domain
+        .as_bytes()
+        .iter()
+        .copied()
+        .chain([0])
+        .chain(bytes.iter().copied())
+        .enumerate()
+    {
+        let lane = index % lanes.len();
+        let mixed_index = (index as u64).rotate_left((lane as u32) + 1);
+        lanes[lane] ^= u64::from(byte)
+            .wrapping_add(0x9e37_79b9_7f4a_7c15)
+            .wrapping_add(mixed_index);
+        lanes[lane] = lanes[lane]
+            .rotate_left(11 + lane as u32)
+            .wrapping_mul(0x1000_0000_01b3);
+    }
+
+    lanes[0] ^= bytes.len() as u64;
+    lanes[1] ^= (domain.len() as u64).rotate_left(17);
+    lanes[2] ^= lanes[0].rotate_left(7);
+    lanes[3] ^= lanes[1].rotate_left(13);
+
+    let mut output = [0_u8; Hash::BYTE_LEN];
+    for (chunk, lane) in output.chunks_exact_mut(8).zip(lanes) {
+        chunk.copy_from_slice(&lane.to_be_bytes());
+    }
+    Hash::from_bytes(output)
+}
+
+fn context_identity_source_render(source: KernelContextIdentitySource) -> String {
+    match source {
+        KernelContextIdentitySource::LocalHypothesis { local_context_id } => {
+            format!("LocalHypothesis {{ local_context_id: {local_context_id} }}")
+        }
+        KernelContextIdentitySource::CitedPremise { local_context_id } => {
+            format!("CitedPremise {{ local_context_id: {local_context_id} }}")
+        }
+        KernelContextIdentitySource::GeneratedVcFact { vc_fact_id } => {
+            format!("GeneratedVcFact {{ vc_fact_id: {vc_fact_id} }}")
+        }
+    }
+}
+
+fn producer_ref_render(producer: KernelFormulaProducerRef) -> String {
+    match producer {
+        KernelFormulaProducerRef::Core(formula) => {
+            format!("Core(CoreFormulaId({}))", formula.index())
+        }
+        KernelFormulaProducerRef::Generated(formula) => {
+            format!("Generated(VcGeneratedFormulaId({}))", formula.index())
+        }
+    }
+}
+
+fn target_fingerprint_render(fingerprint: &TargetVcFingerprint) -> String {
+    format!("{}:{}", fingerprint.algorithm_id, hex(&fingerprint.digest))
+}
+
+fn fingerprint_render(fingerprint: &Fingerprint) -> String {
+    format!("{}:{}", fingerprint.algorithm_id, hex(&fingerprint.digest))
+}
+
+fn hex(bytes: &[u8]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut output = String::with_capacity(bytes.len() * 2);
+    for byte in bytes {
+        output.push(HEX[(byte >> 4) as usize] as char);
+        output.push(HEX[(byte & 0x0f) as usize] as char);
+    }
+    output
 }
 
 fn check_formula_import_source(

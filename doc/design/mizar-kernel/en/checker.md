@@ -127,6 +127,20 @@ FormulaEvidenceContext
   provenance_fingerprint
   imported_axioms: sorted FormulaImportedFactEvidence
   imported_theorems: sorted FormulaImportedFactEvidence
+  context_identity?: KernelContextIdentityPayload
+
+KernelContextIdentityPayload
+  schema_version = 1
+  target_vc
+  canonical_handoff_hash
+  context_identity_hash
+  entries: sorted KernelContextIdentityEntry
+
+KernelContextIdentityEntry
+  source: local_hypothesis | cited_premise | generated_vc_fact
+  formula_id
+  formula_fingerprint
+  producer_formula_ref
 
 FormulaImportedFactEvidence
   imported_fact_id
@@ -150,17 +164,26 @@ KernelCheckPolicy
 
 `kernel_evidence` is the schema from `formula_evidence.md`. The parser
 validates the evidence profile before service handoff; the checker validates
-target/context binding, final-goal polarity against `check_kind`, formula
-provenance, imported formula identity and proof status, explicit
-substitutions, deterministic SAT encoding, and trusted SAT checker UNSAT.
+target/context binding, final-goal polarity against `check_kind`, non-imported
+source context identity, formula provenance, imported formula identity and
+proof status, explicit substitutions, deterministic SAT encoding, and trusted
+SAT checker UNSAT.
 Polarity mismatches reject as `certificate_rejection/context_mismatch` at
 `final_goal.polarity` before imported formula context lookup or SAT encoding.
 `FormulaEvidenceContext` is immutable caller-supplied context; missing,
 ambiguous, identity-mismatched, or too-weak imported formula status rejects
-fail-closed before acceptance. Caller-supplied instantiated formulas, SAT
-clauses, backend proof methods, resolution traces, SMT proof objects, backend
-logs, and backend-reported used axioms are ignored or rejected as untrusted
-acceptance material.
+fail-closed before acceptance. Task 31 also requires a context identity payload
+before any local-hypothesis, cited-premise, or generated-VC-fact formula entry
+can reach SAT encoding. The canonical handoff hash in that payload is the
+opaque `mizar-vc` formula-envelope handoff hash. The checker recomputes the
+task-28 `context_identity_hash()` from the architecture-15 line grammar and
+matches formula entries to rows by source class/id, formula id, and formula
+fingerprint. Producer formula refs remain part of the recomputed hash payload.
+The checker rejects target, hash, row, and duplicate-row mismatches as
+`kernel_rejection/missing_provenance`. Caller-supplied instantiated formulas,
+SAT clauses, backend proof methods, resolution traces, SMT proof objects,
+backend logs, and backend-reported used axioms are ignored or rejected as
+untrusted acceptance material.
 
 The legacy `KernelCheckInput` below remains a task-22 source inventory item.
 Task 29 gates it behind `KernelCheckPolicy.allow_legacy_certificate_audit`, so
@@ -411,11 +434,13 @@ the corrected normal path. Task 30 extends that path with explicit
 `KernelEvidenceCheckKind` binding: accepted proof-obligation results carry
 `ProofObligation`, accepted consistency checks carry `ConsistencyCheck`, and
 consistency checks are not proof-obligation acceptance material for downstream
-proof policy. Batch checking sorts results by target VC fingerprint, then by
-caller input order for equal targets. It does not spawn workers or read
-cancellation tokens; external scheduler integration remains outside this
-crate. Task 16's legacy certificate batch helper remains migration/audit
-inventory behind the explicit audit gate; task 29 re-reviews that surface.
+proof policy. Task 31 extends the path with non-imported context identity
+verification before SAT encoding. Batch checking sorts results by target VC
+fingerprint, then by caller input order for equal targets. It does not spawn
+workers or read cancellation tokens; external scheduler integration remains
+outside this crate. Task 16's legacy certificate batch helper remains
+migration/audit inventory behind the explicit audit gate; task 29 re-reviews
+that surface.
 
 Corrected batch checking is a deterministic wrapper around single evidence
 checks:

@@ -133,9 +133,11 @@ findings section.
 - P4. Local-hypothesis, cited-premise, and generated-VC-fact bindings must be
   verifiable against the caller's immutable context identity, not merely
   well-shaped (architecture 15, "Context Identity Covers Non-Imported Source
-  Bindings"; finding F2). Until the verification data is specified and
-  implemented, a checker must fail closed rather than accept a well-shaped but
-  unverifiable local binding.
+  Bindings"; finding F2). The corrected checker requires the task-28
+  context-identity payload before SAT encoding, matches every non-imported
+  formula entry against immutable source/id, formula-id, and formula-fingerprint
+  rows, and rejects missing, stale, or ambiguous identity as
+  `missing_provenance`.
 - P5. `used_axioms` is derived only from accepted formula evidence whose source
   class is accepted imported axiom/theorem. Backend-reported used-axiom lists
   are never trusted.
@@ -309,9 +311,9 @@ section).
    replay rejects forward/self parent references (L3). `covered`.
 5. **Goal smuggled as premise.** The final goal is standalone and never
    asserted as a premise (I3). However, a producer can copy the goal formula
-   into a premise entry labeled as a local hypothesis or VC fact; only context
-   identity verification for non-imported bindings (P4) blocks this. `finding`
-   F2.
+   into a premise entry labeled as a local hypothesis or VC fact; task-31
+   context identity verification for non-imported bindings (P4) rejects that
+   row unless it is present in the caller's immutable context. `covered`.
 6. **Goal polarity confusion.** Asserting the goal true and obtaining UNSAT
    proves the premises refute the goal — accepting that as proof of the goal
    would be unsound. B4 binds polarity to the obligation's check kind.
@@ -382,7 +384,7 @@ the trusted base; **Low** = documentation/consistency debt.
   accepted consistency checks as proof obligations. The producer-side
   `mizar-vc` handoff declaration/rejection gap was closed by `mizar-vc` task
   27.
-- **F2 (High, partially patched). Non-imported source bindings are not
+- **F2 (High, patched). Non-imported source bindings were not
   verifiable from the specified context.** `FormulaEvidenceContext` carries
   imported axioms/theorems only. Local-hypothesis, cited-premise, and
   generated-VC-fact entries bind nonzero ids and an *opaque producer-owned*
@@ -390,14 +392,24 @@ the trusted base; **Low** = documentation/consistency debt.
   binding but cannot check membership in the actual VC's local context or
   generated-fact set. An ATP-side producer (a different, untrusted channel from
   `mizar-vc`) could therefore label an arbitrary formula — including the goal
-  itself — as a local hypothesis (edge case 5). Patched in this change:
+  itself — as a local hypothesis (edge case 5). Patched across the Step 1
+  producer/consumer pair:
   architecture 15 (en/ja) now requires context identity to cover non-imported
   source bindings before such entries can be accepted, with fail-closed
   behavior until the verification data exists. The producer-side schema now
   separates the canonical formula-envelope hash from the task-28
   `context_identity_hash()`: the context payload binds each local/VC-fact row
-  to the target VC and canonical evidence hash, and kernel task 31 must verify
-  membership against that payload before acceptance. Corpus:
+  to the target VC and the opaque `mizar-vc` canonical formula-envelope
+  handoff hash. The kernel must not recompute that canonical handoff hash from
+  `ParsedKernelEvidence::canonical_hash_input()` because the parser hash input
+  is the binary evidence envelope, not the `mizar-vc` handoff renderer; task 31
+  instead verifies target/row membership and recomputes the task-28
+  context-identity hash from the documented line grammar before acceptance.
+  Regression coverage includes valid local/cited/generated rows, missing
+  identity, stale target/hash/row payloads, duplicate rows, a goal labeled as a
+  local hypothesis without a matching immutable row, and the task-28 golden
+  context-identity line grammar.
+  Corpus:
   `fail_certificate_symbols_unverifiable_local_hypothesis_001`.
 - **F3 (Medium, deferred by design). No exact solver step budget in the trusted
   SAT wrapper.** `sat_checker.md` records that `batsat` 0.6.0 exposes no stable
@@ -448,17 +460,17 @@ the trusted base; **Low** = documentation/consistency debt.
 
 - `doc/design/mizar-kernel/en/todo.md`: candidate new tasks — (a) B4
   goal-polarity binding in the corrected check service is implemented by task
-  30; (b) specify and implement context-identity verification for non-imported
-  source bindings (F2), using an immutable context payload that carries the
-  `mizar-vc` canonical formula-envelope hash plus task-28
+  30; (b) context-identity verification for non-imported source bindings (F2)
+  is implemented by task 31, using an immutable context payload that carries
+  the opaque `mizar-vc` canonical formula-envelope handoff hash plus task-28
   `context_identity_hash()`; (c) revisit the solver step-budget deferral (F3);
   (d) specify
   the imported-statement projection that lifts the fingerprint-equality rule
   (F6, paired with `mizar-vc`).
 - `doc/design/mizar-vc/en/todo.md`: producer-side goal-polarity declaration
-  and consistency-polarity rejection is resolved by task 27; remaining
-  candidate follow-up — produce the context-identity payload the kernel needs
-  for local/VC-fact verification (pairs with F2).
+  and consistency-polarity rejection is resolved by task 27; producer-side
+  context-identity payload production for local/VC-fact verification is
+  resolved by task 28.
 - `doc/design/mizar-test/en/` (out of scope here, reported): extend the
   required soundness-case registry and layout/expectation docs with
   corrected-path rejection reasons (F7). The corpus root naming drift (F8) is

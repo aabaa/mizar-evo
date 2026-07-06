@@ -424,7 +424,7 @@ Every finding maps to a task or a recorded disposition:
     - Deps: 28. Spec: architecture 15 (post-audit text), `checker.md`,
       `sat_encoding.md`; soundness_argument.md F1/B4.
 
-31. **Context-identity verification for non-imported source bindings (F2, invariant P-class).** [ ]
+31. **Context-identity verification for non-imported source bindings (F2, invariant P-class).** [x]
     - Specify and implement the verification data for local-hypothesis,
       cited-premise, and generated-VC-fact source bindings: extend
       `FormulaEvidenceContext` (or the immutable kernel context) to carry the
@@ -432,13 +432,17 @@ Every finding maps to a task or a recorded disposition:
       `mizar-vc` formula-envelope handoff hash, and require each non-imported
       binding to be checkable against that payload before acceptance. Keep the
       current fail-closed `missing_provenance` behavior for evidence that lacks
-      the payload. Update `formula_evidence.md` and architecture 15 in the same
+      the payload. Treat the canonical `mizar-vc` handoff hash as opaque caller
+      context rather than recomputing it from parser envelope bytes; recompute
+      the task-28 context-identity hash from the architecture-15 v1 line
+      grammar. Update `formula_evidence.md` and architecture 15 in the same
       change; the producer-side payload is the paired mizar-vc task.
     - Acceptance:
       `fail_certificate_symbols_unverifiable_local_hypothesis_001` rejects
       for the provenance reason; a pass fixture with a valid context-identity
       payload accepts once the mizar-vc payload contract exists; an
-      ATP-labeled goal-as-hypothesis mutation rejects.
+      ATP-labeled goal-as-hypothesis mutation rejects; a golden-vector test
+      locks the task-28 context-identity line grammar and hash domain.
     - Verify: `cargo test -p mizar-kernel`, `cargo test -p mizar-test`,
       `cargo clippy -p mizar-kernel --all-targets -- -D warnings`.
     - Deps: 30; paired: mizar-vc context-identity payload task. Spec:

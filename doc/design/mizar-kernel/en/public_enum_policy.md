@@ -59,7 +59,9 @@ checker::ClusterTraceContextError
 checker::ImportedFactContextError
 checker::ImportedFactNamespace
 checker::KernelCheckStatus
+checker::KernelContextIdentitySource
 checker::KernelEvidenceCheckKind
+checker::KernelFormulaProducerRef
 clause::ClauseError
 clause::ClauseForm
 clause::Polarity

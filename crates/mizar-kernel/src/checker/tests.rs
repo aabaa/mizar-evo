@@ -28,7 +28,9 @@ fn sat_backed_kernel_evidence_accepts_only_unsat_wrapper_result() {
         goal_item(20, &premise),
     );
 
-    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+    let context = formula_evidence_context_with_identity(&target_vc, &parsed);
+
+    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
 
     assert_eq!(result.status(), KernelCheckStatus::Accepted);
     assert!(result.sat_check_report().is_some());
@@ -50,7 +52,8 @@ fn sat_backed_kernel_evidence_instantiates_formula_substitution_before_sat_check
         vec![formula_substitution_item(2, 1, 11, 1, &var(2))],
         goal_item(20, &instantiated),
     );
-    let mut input = evidence_input(&target_vc, &parsed, None);
+    let context = formula_evidence_context_with_identity(&target_vc, &parsed);
+    let mut input = evidence_input(&target_vc, &parsed, Some(&context));
     input.limits.max_report_records = 1;
 
     let result = check_kernel_evidence(input);
@@ -71,7 +74,9 @@ fn sat_backed_kernel_evidence_rejects_satisfiable_goal() {
         goal_item(20, &formula_atom(2)),
     );
 
-    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+    let context = formula_evidence_context_with_identity(&target_vc, &parsed);
+
+    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
 
     assert_eq!(result.status(), KernelCheckStatus::Rejected);
     assert_eq!(result.rejections().len(), 1);
@@ -104,10 +109,14 @@ fn sat_backed_kernel_evidence_binds_goal_polarity_to_check_kind() {
         goal_item_with_polarity(20, GoalPolarity::AssertTrueForConsistency, &goal),
     );
 
+    let proof_context = formula_evidence_context_with_identity(&target_vc, &proof_obligation);
+    let consistency_context =
+        formula_evidence_context_with_identity(&target_vc, &consistency_check);
+
     let accepted_proof = check_kernel_evidence(evidence_input_with_check_kind(
         &target_vc,
         &proof_obligation,
-        None,
+        Some(&proof_context),
         KernelEvidenceCheckKind::ProofObligation,
     ));
     assert_eq!(accepted_proof.status(), KernelCheckStatus::Accepted);
@@ -119,7 +128,7 @@ fn sat_backed_kernel_evidence_binds_goal_polarity_to_check_kind() {
     let accepted_consistency = check_kernel_evidence(evidence_input_with_check_kind(
         &target_vc,
         &consistency_check,
-        None,
+        Some(&consistency_context),
         KernelEvidenceCheckKind::ConsistencyCheck,
     ));
     assert_eq!(accepted_consistency.status(), KernelCheckStatus::Accepted);
@@ -336,6 +345,353 @@ fn sat_backed_kernel_evidence_checks_imported_formula_context() {
 }
 
 #[test]
+fn sat_backed_kernel_evidence_checks_context_identity_for_non_imported_sources() {
+    let target = formula_target(12);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let cited = formula_atom(2);
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![
+            formula_item(1, 10, &goal),
+            cited_formula_item(2, 11, 2, &cited),
+            generated_formula_item(3, 12, 7, &goal),
+        ],
+        goal_item(20, &goal),
+    );
+    let context = formula_evidence_context_with_identity_payload(context_identity_payload(
+        &target_vc,
+        vec![
+            KernelContextIdentityEntry::new(
+                KernelContextIdentitySource::GeneratedVcFact { vc_fact_id: 7 },
+                3,
+                formula_fingerprint(&goal),
+                KernelFormulaProducerRef::Generated(KernelVcGeneratedFormulaId::new(3)),
+            ),
+            KernelContextIdentityEntry::new(
+                KernelContextIdentitySource::LocalHypothesis {
+                    local_context_id: 1,
+                },
+                1,
+                formula_fingerprint(&goal),
+                KernelFormulaProducerRef::Core(CoreFormulaId::new(1)),
+            ),
+            KernelContextIdentityEntry::new(
+                KernelContextIdentitySource::CitedPremise {
+                    local_context_id: 2,
+                },
+                2,
+                formula_fingerprint(&cited),
+                KernelFormulaProducerRef::Core(CoreFormulaId::new(2)),
+            ),
+        ],
+    ));
+
+    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
+
+    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+    assert!(result.checked_imports().is_empty());
+    assert!(result.used_axioms().is_empty());
+}
+
+#[test]
+fn sat_backed_kernel_evidence_rejects_context_identity_formula_id_mismatch() {
+    let target = formula_target(13);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![cited_formula_item(2, 11, 2, &goal)],
+        goal_item(20, &goal),
+    );
+    let context = formula_evidence_context_with_identity_payload(context_identity_payload(
+        &target_vc,
+        vec![KernelContextIdentityEntry::new(
+            KernelContextIdentitySource::CitedPremise {
+                local_context_id: 2,
+            },
+            99,
+            formula_fingerprint(&goal),
+            KernelFormulaProducerRef::Core(CoreFormulaId::new(99)),
+        )],
+    ));
+
+    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
+
+    assert_eq!(result.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        result.rejections()[0].detail(),
+        RejectionDetail::MissingProvenance
+    );
+    assert_eq!(
+        result.rejections()[0].location().field_path,
+        Some("formula.context_identity")
+    );
+}
+
+#[test]
+fn sat_backed_kernel_evidence_requires_context_identity_for_local_sources() {
+    let target = formula_target(13);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![formula_item(1, 10, &goal)],
+        goal_item(20, &goal),
+    );
+    let import_only_context = formula_evidence_context_entries(Vec::new(), Vec::new());
+
+    let missing_context = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+    assert_eq!(missing_context.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        missing_context.rejections()[0].detail(),
+        RejectionDetail::MissingProvenance
+    );
+    assert_eq!(
+        missing_context.rejections()[0].location().field_path,
+        Some("formula_context")
+    );
+
+    let missing_identity = check_kernel_evidence(evidence_input(
+        &target_vc,
+        &parsed,
+        Some(&import_only_context),
+    ));
+    assert_eq!(missing_identity.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        missing_identity.rejections()[0].detail(),
+        RejectionDetail::MissingProvenance
+    );
+    assert_eq!(
+        missing_identity.rejections()[0].location().field_path,
+        Some("formula_context.context_identity")
+    );
+}
+
+#[test]
+fn sat_backed_kernel_evidence_exempts_policy_bounded_builtin_from_context_identity() {
+    let target = formula_target(17);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![policy_bounded_builtin_formula_item(
+            1,
+            10,
+            b"builtin-tautology",
+            &goal,
+        )],
+        goal_item(20, &goal),
+    );
+
+    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, None));
+
+    assert_eq!(result.status(), KernelCheckStatus::Accepted);
+    assert!(result.rejections().is_empty());
+    assert!(result.used_axioms().is_empty());
+}
+
+#[test]
+fn sat_backed_kernel_evidence_rejects_stale_context_identity_payloads() {
+    let target = formula_target(14);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![formula_item(1, 10, &goal)],
+        goal_item(20, &goal),
+    );
+
+    let wrong_target_identity = context_identity_payload(
+        &TargetVcFingerprint::from_certificate_fingerprint(&formula_target(99)),
+        context_identity_entries_for(&parsed),
+    );
+    let wrong_target_context =
+        formula_evidence_context_with_identity_payload(wrong_target_identity);
+    let wrong_target = check_kernel_evidence(evidence_input(
+        &target_vc,
+        &parsed,
+        Some(&wrong_target_context),
+    ));
+    assert_eq!(wrong_target.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        wrong_target.rejections()[0].location().field_path,
+        Some("formula_context.context_identity.target_vc")
+    );
+
+    let mut stale_hash_identity =
+        context_identity_payload(&target_vc, context_identity_entries_for(&parsed));
+    stale_hash_identity.context_identity_hash = Hash::from_bytes([9; Hash::BYTE_LEN]);
+    let stale_hash_context = formula_evidence_context_with_identity_payload(stale_hash_identity);
+    let stale_hash = check_kernel_evidence(evidence_input(
+        &target_vc,
+        &parsed,
+        Some(&stale_hash_context),
+    ));
+    assert_eq!(stale_hash.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        stale_hash.rejections()[0].location().field_path,
+        Some("formula_context.context_identity.hash")
+    );
+
+    let mut wrong_row_entries = context_identity_entries_for(&parsed);
+    wrong_row_entries[0] = KernelContextIdentityEntry::new(
+        KernelContextIdentitySource::LocalHypothesis {
+            local_context_id: 2,
+        },
+        1,
+        formula_fingerprint(&goal),
+        KernelFormulaProducerRef::Core(CoreFormulaId::new(1)),
+    );
+    let wrong_row_context = formula_evidence_context_with_identity_payload(
+        context_identity_payload(&target_vc, wrong_row_entries),
+    );
+    let wrong_row = check_kernel_evidence(evidence_input(
+        &target_vc,
+        &parsed,
+        Some(&wrong_row_context),
+    ));
+    assert_eq!(wrong_row.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        wrong_row.rejections()[0].location().field_path,
+        Some("formula.context_identity")
+    );
+
+    let mut duplicate_entries = context_identity_entries_for(&parsed);
+    duplicate_entries.push(duplicate_entries[0].clone());
+    let duplicate_context = formula_evidence_context_with_identity_payload(
+        context_identity_payload(&target_vc, duplicate_entries),
+    );
+    let duplicate = check_kernel_evidence(evidence_input(
+        &target_vc,
+        &parsed,
+        Some(&duplicate_context),
+    ));
+    assert_eq!(duplicate.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        duplicate.rejections()[0].location().field_path,
+        Some("formula.context_identity")
+    );
+}
+
+#[test]
+fn sat_backed_kernel_evidence_rejects_goal_labeled_as_local_hypothesis_without_context_row() {
+    let target = formula_target(15);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![formula_item(1, 10, &goal)],
+        goal_item(20, &goal),
+    );
+    let immutable_context_rows = vec![KernelContextIdentityEntry::new(
+        KernelContextIdentitySource::LocalHypothesis {
+            local_context_id: 1,
+        },
+        1,
+        formula_fingerprint(&formula_atom(2)),
+        KernelFormulaProducerRef::Core(CoreFormulaId::new(1)),
+    )];
+    let context = formula_evidence_context_with_identity_payload(context_identity_payload(
+        &target_vc,
+        immutable_context_rows,
+    ));
+
+    let result = check_kernel_evidence(evidence_input(&target_vc, &parsed, Some(&context)));
+
+    assert_eq!(result.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        result.rejections()[0].detail(),
+        RejectionDetail::MissingProvenance
+    );
+    assert_eq!(
+        result.rejections()[0].location().field_path,
+        Some("formula.context_identity")
+    );
+}
+
+#[test]
+fn sat_backed_kernel_evidence_limits_context_identity_entries_before_sat() {
+    let target = formula_target(16);
+    let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
+    let goal = formula_atom(1);
+    let parsed = parsed_formula_evidence(
+        &target,
+        vec![formula_item(1, 10, &goal)],
+        goal_item(20, &goal),
+    );
+    let context = formula_evidence_context_with_identity(&target_vc, &parsed);
+    let mut input = evidence_input(&target_vc, &parsed, Some(&context));
+    input.limits.formula_context.max_context_identity_entries = 0;
+
+    let result = check_kernel_evidence(input);
+
+    assert_eq!(result.status(), KernelCheckStatus::Rejected);
+    assert_eq!(
+        result.rejections()[0].detail(),
+        RejectionDetail::ResourceExhaustion
+    );
+    assert_eq!(
+        result.rejections()[0].location().field_path,
+        Some("formula_context.context_identity.entries")
+    );
+}
+
+#[test]
+fn context_identity_hash_uses_task_28_golden_line_grammar() {
+    let target = TargetVcFingerprint::new(18, vec![0xab, 0xcd]);
+    let canonical = Hash::from_bytes([0x42; Hash::BYTE_LEN]);
+    let entries = vec![
+        KernelContextIdentityEntry::new(
+            KernelContextIdentitySource::GeneratedVcFact { vc_fact_id: 7 },
+            3,
+            Fingerprint::new(2, vec![0x30]),
+            KernelFormulaProducerRef::Generated(KernelVcGeneratedFormulaId::new(9)),
+        ),
+        KernelContextIdentityEntry::new(
+            KernelContextIdentitySource::CitedPremise {
+                local_context_id: 2,
+            },
+            2,
+            Fingerprint::new(2, vec![0x11]),
+            KernelFormulaProducerRef::Core(CoreFormulaId::new(5)),
+        ),
+        KernelContextIdentityEntry::new(
+            KernelContextIdentitySource::LocalHypothesis {
+                local_context_id: 1,
+            },
+            1,
+            Fingerprint::new(2, vec![0x10, 0x20]),
+            KernelFormulaProducerRef::Core(CoreFormulaId::new(4)),
+        ),
+    ];
+    let provisional =
+        KernelContextIdentityPayload::new(target, canonical, Hash::from_bytes([0; 32]), entries);
+
+    let hash_input = context_identity_hash_input(&provisional);
+
+    assert_eq!(
+        String::from_utf8(hash_input).expect("utf8"),
+        "vc-kernel-context-identity-v1\n\
+schema-version=1\n\
+target-vc=18:abcd\n\
+canonical-evidence-hash=4242424242424242424242424242424242424242424242424242424242424242\n\
+[entries]\n\
+source=LocalHypothesis { local_context_id: 1 }; formula-id=1; fingerprint=2:1020; producer=Core(CoreFormulaId(4))\n\
+source=CitedPremise { local_context_id: 2 }; formula-id=2; fingerprint=2:11; producer=Core(CoreFormulaId(5))\n\
+source=GeneratedVcFact { vc_fact_id: 7 }; formula-id=3; fingerprint=2:30; producer=Generated(VcGeneratedFormulaId(9))\n"
+    );
+    assert_eq!(
+        recompute_context_identity_hash(&provisional),
+        Hash::from_bytes([
+            0xe6, 0xec, 0x91, 0x89, 0x9b, 0x20, 0x41, 0xe4, 0x02, 0x4f, 0xf8, 0x9a, 0xfe, 0x66,
+            0x6f, 0xbf, 0xab, 0x9c, 0x11, 0x76, 0xde, 0x13, 0x86, 0x76, 0xbb, 0x8c, 0xb5, 0x4b,
+            0x03, 0xdd, 0x0a, 0xb7,
+        ])
+    );
+}
+
+#[test]
 fn sat_backed_kernel_evidence_batch_preserves_equal_target_order() {
     let target = formula_target(7);
     let target_vc = TargetVcFingerprint::from_certificate_fingerprint(&target);
@@ -350,10 +706,12 @@ fn sat_backed_kernel_evidence_batch_preserves_equal_target_order() {
         vec![formula_item(1, 10, &formula_atom(1))],
         goal_item(20, &formula_atom(2)),
     );
+    let rejected_context = formula_evidence_context_with_identity(&target_vc, &rejected);
+    let accepted_context = formula_evidence_context_with_identity(&target_vc, &accepted);
 
     let results = check_kernel_evidence_batch(&[
-        evidence_input(&target_vc, &rejected, None),
-        evidence_input(&target_vc, &accepted, None),
+        evidence_input(&target_vc, &rejected, Some(&rejected_context)),
+        evidence_input(&target_vc, &accepted, Some(&accepted_context)),
     ]);
 
     assert_eq!(results[0].status(), KernelCheckStatus::Rejected);
@@ -2904,6 +3262,7 @@ fn context_constructor_rejects_entry_count_before_sorting() {
         Vec::new(),
         ImportedFactContextLimits {
             max_imported_context_entries: 0,
+            max_context_identity_entries: usize::MAX,
         },
     )
     .expect_err("context entry count limit");
@@ -2911,6 +3270,40 @@ fn context_constructor_rejects_entry_count_before_sorting() {
     assert_eq!(
         error,
         ImportedFactContextError::ImportedFactCountExceeded { max: 0, actual: 1 }
+    );
+}
+
+#[test]
+fn formula_context_constructor_rejects_context_identity_entry_count() {
+    let target = TargetVcFingerprint::new(19, vec![0x19]);
+    let formula = formula_atom(1);
+    let identity = context_identity_payload(
+        &target,
+        vec![KernelContextIdentityEntry::new(
+            KernelContextIdentitySource::LocalHypothesis {
+                local_context_id: 1,
+            },
+            1,
+            formula_fingerprint(&formula),
+            KernelFormulaProducerRef::Core(CoreFormulaId::new(1)),
+        )],
+    );
+
+    let error = FormulaEvidenceContext::with_context_identity(
+        Some(vec![1]),
+        Vec::new(),
+        Vec::new(),
+        Some(identity),
+        ImportedFactContextLimits {
+            max_imported_context_entries: usize::MAX,
+            max_context_identity_entries: 0,
+        },
+    )
+    .expect_err("context identity entry count limit");
+
+    assert_eq!(
+        error,
+        ImportedFactContextError::ContextIdentityCountExceeded { max: 0, actual: 1 }
     );
 }
 
@@ -3475,6 +3868,7 @@ fn limits() -> ImportedFactCheckLimits {
 fn context_limits() -> ImportedFactContextLimits {
     ImportedFactContextLimits {
         max_imported_context_entries: 16,
+        max_context_identity_entries: 16,
     }
 }
 
@@ -3720,6 +4114,84 @@ fn formula_evidence_context_entries(
     .expect("formula evidence context")
 }
 
+fn formula_evidence_context_with_identity(
+    target: &TargetVcFingerprint,
+    evidence: &ParsedKernelEvidence,
+) -> FormulaEvidenceContext {
+    formula_evidence_context_with_identity_payload(context_identity_payload(
+        target,
+        context_identity_entries_for(evidence),
+    ))
+}
+
+fn formula_evidence_context_with_identity_payload(
+    identity: KernelContextIdentityPayload,
+) -> FormulaEvidenceContext {
+    FormulaEvidenceContext::with_context_identity(
+        Some(vec![1]),
+        Vec::new(),
+        Vec::new(),
+        Some(identity),
+        ImportedFactContextLimits::default(),
+    )
+    .expect("formula evidence context with identity")
+}
+
+fn context_identity_payload(
+    target: &TargetVcFingerprint,
+    entries: Vec<KernelContextIdentityEntry>,
+) -> KernelContextIdentityPayload {
+    let canonical_handoff_hash = Hash::from_bytes([0x42; Hash::BYTE_LEN]);
+    let provisional = KernelContextIdentityPayload::new(
+        target.clone(),
+        canonical_handoff_hash,
+        Hash::from_bytes([0; Hash::BYTE_LEN]),
+        entries,
+    );
+    let hash = recompute_context_identity_hash(&provisional);
+    KernelContextIdentityPayload::new(
+        target.clone(),
+        canonical_handoff_hash,
+        hash,
+        provisional.entries().to_vec(),
+    )
+}
+
+fn context_identity_entries_for(
+    evidence: &ParsedKernelEvidence,
+) -> Vec<KernelContextIdentityEntry> {
+    evidence
+        .formulas()
+        .iter()
+        .filter_map(|formula| {
+            let source = context_identity_source(&formula.source)?;
+            Some(KernelContextIdentityEntry::new(
+                source,
+                formula.formula_id,
+                formula.formula_fingerprint.clone(),
+                default_producer_ref(source, formula.formula_id),
+            ))
+        })
+        .collect()
+}
+
+fn default_producer_ref(
+    source: KernelContextIdentitySource,
+    formula_id: u32,
+) -> KernelFormulaProducerRef {
+    match source {
+        KernelContextIdentitySource::GeneratedVcFact { vc_fact_id } => {
+            KernelFormulaProducerRef::Generated(KernelVcGeneratedFormulaId::new(
+                vc_fact_id as usize,
+            ))
+        }
+        KernelContextIdentitySource::LocalHypothesis { .. }
+        | KernelContextIdentitySource::CitedPremise { .. } => {
+            KernelFormulaProducerRef::Core(CoreFormulaId::new(formula_id as usize))
+        }
+    }
+}
+
 fn formula_imported_fact(
     imported_fact_id: u32,
     formula: &Formula,
@@ -3857,13 +4329,76 @@ fn formula_symbol_items() -> Vec<Vec<u8>> {
 }
 
 fn formula_item(formula_id: u32, provenance_id: u32, formula: &Formula) -> Vec<u8> {
+    non_imported_formula_item(
+        FormulaSourceClass::LocalHypothesis,
+        formula_id,
+        provenance_id,
+        1,
+        formula,
+    )
+}
+
+fn cited_formula_item(
+    formula_id: u32,
+    provenance_id: u32,
+    local_context_id: u32,
+    formula: &Formula,
+) -> Vec<u8> {
+    non_imported_formula_item(
+        FormulaSourceClass::CitedPremise,
+        formula_id,
+        provenance_id,
+        local_context_id,
+        formula,
+    )
+}
+
+fn generated_formula_item(
+    formula_id: u32,
+    provenance_id: u32,
+    vc_fact_id: u32,
+    formula: &Formula,
+) -> Vec<u8> {
+    non_imported_formula_item(
+        FormulaSourceClass::GeneratedVcFact,
+        formula_id,
+        provenance_id,
+        vc_fact_id,
+        formula,
+    )
+}
+
+fn non_imported_formula_item(
+    source_class: FormulaSourceClass,
+    formula_id: u32,
+    provenance_id: u32,
+    source_id: u32,
+    formula: &Formula,
+) -> Vec<u8> {
     let fingerprint = formula_fingerprint(formula);
     let mut item = Vec::new();
     put_u32(formula_id, &mut item);
-    item.push(FormulaSourceClass::LocalHypothesis.tag());
+    item.push(source_class.tag());
     put_fingerprint(&fingerprint, &mut item);
     put_u32(provenance_id, &mut item);
-    put_u32(1, &mut item);
+    put_u32(source_id, &mut item);
+    put_formula(formula, &mut item);
+    item
+}
+
+fn policy_bounded_builtin_formula_item(
+    formula_id: u32,
+    provenance_id: u32,
+    built_in_id: &[u8],
+    formula: &Formula,
+) -> Vec<u8> {
+    let fingerprint = formula_fingerprint(formula);
+    let mut item = Vec::new();
+    put_u32(formula_id, &mut item);
+    item.push(FormulaSourceClass::PolicyBoundedBuiltin.tag());
+    put_fingerprint(&fingerprint, &mut item);
+    put_u32(provenance_id, &mut item);
+    put_bytes(built_in_id, &mut item);
     put_formula(formula, &mut item);
     item
 }

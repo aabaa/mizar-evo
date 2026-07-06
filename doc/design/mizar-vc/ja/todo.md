@@ -426,7 +426,7 @@ kernel 受理境界の監査
       hash に bind され、`context_identity_hash()` を expose し、dependency-slice と
       proof-reuse identity に参加し、imported premise を除外し、canonical source binding が
       mutate されると stale になる。これは producer-side F2 payload だけを閉じる。
-      trusted membership verification は引き続き mizar-kernel task 31 が所有する。
+      trusted membership verification は mizar-kernel task 31 で実装済み。
 
 29. **imported-statement projection の producer 側(kernel F6)。** [ ]
     - kernel task 33 とともに、arch-18 の imported statement fingerprint

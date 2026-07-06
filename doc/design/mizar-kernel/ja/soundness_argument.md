@@ -127,9 +127,10 @@
 - P4. local hypothesis、cited premise、generated VC fact の束縛は、単に
   well-shaped であるだけでなく、呼び出し側の不変コンテキスト同一性に対して
   検証可能でなければならない(architecture 15「Context Identity Covers
-  Non-Imported Source Bindings」; 所見 F2)。検証データが仕様化・実装される
-  まで、チェッカーは well-shaped だが検証不能な local 束縛を受理せず
-  fail-closed とすること。
+  Non-Imported Source Bindings」; 所見 F2)。訂正後 checker は SAT encoding 前に
+  task-28 context-identity payload を要求し、すべての非 import formula entry を
+  不変な source/id、formula-id、formula-fingerprint row と照合し、欠落・stale・
+  ambiguous な identity を `missing_provenance` として拒否する。
 - P5. `used_axioms` は、source class が accepted imported axiom/theorem で
   ある受理済み formula evidence のみから導出される。バックエンド報告の
   used-axiom リストは決して信頼されない。
@@ -297,9 +298,9 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
    循環もない。レガシー監査 replay は前方/自己親参照を拒否(L3)。`covered`。
 5. **premise としての goal の持ち込み。** final goal は standalone であり
    premise として主張されない(I3)。しかし producer は goal の式を local
-   hypothesis や VC fact とラベルした premise entry に複製できる。これを
-   防ぐのは非 import 束縛に対するコンテキスト同一性検証(P4)のみである。
-   `finding` F2。
+   hypothesis や VC fact とラベルした premise entry に複製できる。task-31
+   context identity verification は、その row が呼び出し側の不変コンテキストに
+   存在しない限り、非 import 束縛(P4)として拒否する。`covered`。
 6. **goal polarity の混同。** goal を真として主張し UNSAT を得ることは、
    premise が goal を反駁することの証明であり、それを goal の証明として
    受理すれば不健全。B4 が polarity を義務の検査種別に束縛する。`finding`
@@ -370,20 +371,28 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   proof obligation として trust しない proof-policy guard を含む。
   producer-side `mizar-vc` handoff の declaration/rejection gap は `mizar-vc`
   task 27 で閉じた。
-- **F2(High、部分修正)。非 import ソース束縛は仕様上のコンテキストから
-  検証不能。** `FormulaEvidenceContext` は imported axiom/theorem のみを
+- **F2(High、修正済み)。非 import ソース束縛は仕様上のコンテキストから
+  検証不能だった。** `FormulaEvidenceContext` は imported axiom/theorem のみを
   運ぶ。local hypothesis・cited premise・generated VC fact のエントリは
   非ゼロ id と*不透明な producer 所有* provenance ペイロードを束縛する —
   仕様上のカーネルは形状と対象束縛は検査できるが、実際の VC の local
   context や generated fact 集合への所属は検査できない。したがって
   (`mizar-vc` とは別の untrusted チャネルである)ATP 側 producer は任意の
   式 — goal 自身を含む — を local hypothesis とラベルできる(エッジ
-  ケース 5)。本変更で部分修正: architecture 15(en/ja)は、非 import
+  ケース 5)。Step 1 の producer/consumer 対で修正済み: architecture 15(en/ja)は、非 import
   ソース束縛の受理前にコンテキスト同一性がそれらを覆うことを要求し、検証
   データが存在するまで fail-closed とした。producer-side schema は現在、
   canonical formula-envelope hash と task-28 `context_identity_hash()` を分離する。
-  context payload は各 local/VC-fact row を target VC と canonical evidence hash に
-  束縛し、kernel task 31 は受理前にその payload に対する所属を検証しなければならない。
+  context payload は各 local/VC-fact row を target VC と不透明な `mizar-vc` canonical
+  formula-envelope handoff hash に束縛する。Kernel はその canonical handoff hash を
+  `ParsedKernelEvidence::canonical_hash_input()` から再計算してはならない。parser hash
+  input は binary evidence envelope であり、`mizar-vc` handoff renderer ではないためである。
+  task 31 は受理前に target/row membership を検証し、documented line grammar から task-28
+  context-identity hash を再計算する。
+  回帰 coverage は、有効な local/cited/generated rows、identity 欠落、stale な
+  target/hash/row payload、duplicate rows、matching immutable row を持たない
+  local hypothesis としてラベルされた goal、task-28 golden context-identity line
+  grammar を含む。
   コーパス:
   `fail_certificate_symbols_unverifiable_local_hypothesis_001`。
 - **F3(Medium、設計上の deferral)。信頼 SAT ラッパーに正確なソルバー
@@ -433,15 +442,15 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
 
 - `doc/design/mizar-kernel/en/todo.md`: 候補新タスク — (a) 訂正後検査
   サービスへの B4 goal-polarity 束縛は task 30 で実装済み; (b) 非 import ソース束縛の
-  コンテキスト同一性検証(F2)の仕様化と実装(`mizar-vc` canonical
-  formula-envelope hash と task-28 `context_identity_hash()` を運ぶ immutable
-  context payload を使う); (c) ソルバーステップ予算
+  コンテキスト同一性検証(F2)は task 31 で実装済みであり、不透明な `mizar-vc`
+  canonical formula-envelope handoff hash と task-28 `context_identity_hash()` を
+  運ぶ immutable context payload を使う; (c) ソルバーステップ予算
   deferral の再訪(F3); (d) fingerprint 等値規則を解除する imported
   statement projection の仕様化(F6、`mizar-vc` と対)。
 - `doc/design/mizar-vc/en/todo.md`: producer-side goal-polarity declaration
-  と consistency-polarity rejection は task 27 で解決済み。残る候補
-  フォローアップ — local/VC-fact 検証にカーネルが必要とする
-  コンテキスト同一性ペイロードの生成(F2 と対)。
+  と consistency-polarity rejection は task 27 で解決済み。local/VC-fact 検証に
+  カーネルが必要とする producer-side context-identity payload 生成は task 28 で
+  解決済み。
 - `doc/design/mizar-test/en/`(本タスクの範囲外、報告): required
   soundness-case レジストリと layout/expectation 文書への訂正後経路 reason
   の追加(F7)。コーパスルート命名 drift(F8)は task 22 で解決済み。

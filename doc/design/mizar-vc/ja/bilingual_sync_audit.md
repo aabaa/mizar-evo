@@ -144,8 +144,8 @@ Task 27 は paired kernel-evidence handoff、source/spec audit、todo、plan、l
 bilingual sync audit、mizar-kernel soundness argument record を explicit producer-side
 goal polarity 向けに更新する。両言語は、現在の proof-obligation handoff が
 `AssertFalseForRefutation` を要求し、canonical package assembly 前に
-`AssertTrueForConsistency` を拒否し、trusted checker-side B4/F1 acceptance binding を
-`mizar-kernel` task 30 に残すことを記録する。
+`AssertTrueForConsistency` を拒否することを記録する。Trusted checker-side B4/F1
+acceptance binding は `mizar-kernel` task 30 で実装済みである。
 
 ## Task 28 の同期編集
 
@@ -154,4 +154,5 @@ dependency-slice、architecture-22 audit、source/spec audit、todo、plan、led
 bilingual sync audit、および paired mizar-kernel F2 task record を更新する。両言語は、
 `context_identity_hash()` が local-hypothesis、cited-premise、generated-VC-fact source
 binding を cover し、dependency-slice / proof-reuse identity に参加し、imported fact を
-除外し、trusted membership verification を `mizar-kernel` task 31 に残すことを記録する。
+除外し、`mizar-kernel` task 31 の trusted membership verification によって検査されることを
+記録する。

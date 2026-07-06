@@ -16,14 +16,16 @@ the trusted SAT checker wrapper, exact dependency/lockfile policy, the
 read-only encoded SAT problem boundary, and public enum/source-spec inventory.
 Task 28 refreshes it for the SAT-backed kernel evidence service path and
 checker API inventory. Task 29 refreshes it for the explicit legacy audit gate,
-post-correction closeout report, and mizar-vc handoff. English remains canonical. Japanese companions are
+post-correction closeout report, and mizar-vc handoff. Task 31 refreshes it for
+kernel-side context-identity verification, public context-identity payload
+types, and the mizar-test task-21 handoff. English remains canonical. Japanese companions are
 synchronized to the English document unless a task-local bookkeeping omission,
 such as a missing commit hash or task status, is obviously paired and can be
 fixed in both languages with the same rationale. Japanese-only semantic drift
 must not be promoted into English without a separate classified finding.
 
-This is a documentation audit for the task-29 source change that gates legacy
-certificate checking behind explicit migration/audit policy. It does not change
+This is a documentation audit for the task-31 source change that verifies
+non-imported formula source context identity before SAT encoding. It does not change
 `doc/spec`, `.miz` fixtures, expectations, SAT/ATP/proof search, premise
 selection, overload resolution, cluster search, implicit coercion insertion,
 fallback inference, global mutable state, or downstream ATP/proof/cache/artifact
@@ -37,25 +39,25 @@ with the same file name.
 
 | File | Companion links | Heading count | Table row count | Sync result |
 |---|---|---:|---:|---|
-| `00.crate_plan.md` | EN -> JA and JA -> EN | 8 / 8 | 64 / 64 | Synchronized after post-closeout task rows. |
-| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 35 / 35 | Synchronized after task-29 migration-audit bookkeeping. |
+| `00.crate_plan.md` | EN -> JA and JA -> EN | 8 / 8 | 65 / 65 | Refreshed for task-31 post-correction owned behavior. |
+| `bilingual_sync_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 35 / 35 | Synchronized after task-31 context-identity bookkeeping. |
 | `certificate_parser.md` | EN -> JA and JA -> EN | 15 / 15 | 29 / 29 | Synchronized. |
-| `checker.md` | EN -> JA and JA -> EN | 15 / 15 | 15 / 15 | Refreshed for task-29 legacy audit policy gate. |
+| `checker.md` | EN -> JA and JA -> EN | 17 / 17 | 15 / 15 | Refreshed for task-31 context-identity checker behavior. |
 | `clause.md` | EN -> JA and JA -> EN | 12 / 12 | 5 / 5 | Synchronized. |
-| `crate_exit_report.md` | EN -> JA and JA -> EN | 12 / 12 | 78 / 78 | Refreshed for task-29 post-correction closeout and mizar-vc handoff. |
-| `formula_evidence.md` | EN -> JA and JA -> EN | 13 / 13 | 0 / 0 | Refreshed for task-29 parsed evidence read-only boundary. |
+| `crate_exit_report.md` | EN -> JA and JA -> EN | 12 / 12 | 84 / 84 | Refreshed for task-31 post-correction closeout and mizar-test handoff. |
+| `formula_evidence.md` | EN -> JA and JA -> EN | 13 / 13 | 0 / 0 | Refreshed for task-31 context-identity evidence boundary. |
 | `module_boundary_audit.md` | EN -> JA and JA -> EN | 6 / 6 | 13 / 13 | Synchronized. |
-| `public_enum_policy.md` | EN -> JA and JA -> EN | 5 / 5 | 0 / 0 | Synchronized after task-27 SAT checker result enum addition. |
+| `public_enum_policy.md` | EN -> JA and JA -> EN | 5 / 5 | 0 / 0 | Synchronized after task-31 context-identity enum additions. |
 | `rejection.md` | EN -> JA and JA -> EN | 14 / 14 | 32 / 32 | Refreshed for task-27 SAT wrapper failure mapping. |
 | `resolution_trace.md` | EN -> JA and JA -> EN | 12 / 12 | 15 / 15 | Synchronized. |
 | `sat_checker.md` | EN -> JA and JA -> EN | 6 / 6 | 0 / 0 | Refreshed for task-27 wrapper API and unsupported step-budget policy. |
 | `sat_dependency_audit.md` | EN -> JA and JA -> EN | 13 / 13 | 32 / 32 | Refreshed for task-27 exact dependency and no-callback branch. |
 | `sat_encoding.md` | EN -> JA and JA -> EN | 8 / 8 | 0 / 0 | Refreshed for task-27 read-only encoded problem boundary. |
-| `soundness_argument.md` | EN -> JA and JA -> EN | 20 / 20 | 19 / 19 | Added by the pre-implementation soundness audit; synchronized at creation. |
-| `source_spec_audit.md` | EN -> JA and JA -> EN | 18 / 18 | 29 / 29 | Synchronized after task-29 legacy audit gate. |
+| `soundness_argument.md` | EN -> JA and JA -> EN | 20 / 20 | 23 / 23 | Refreshed for task-31 F2 closure. |
+| `source_spec_audit.md` | EN -> JA and JA -> EN | 18 / 18 | 30 / 30 | Synchronized after task-31 public surface update. |
 | `substitution_checker.md` | EN -> JA and JA -> EN | 15 / 15 | 17 / 17 | Synchronized. |
-| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 33 / 33 | Synchronized after Task 28 hash backfill and Task 29 completion row. |
-| `todo.md` | EN -> JA and JA -> EN | 13 / 13 | 11 / 11 | Synchronized after Task 29 completion status update. |
+| `task_ledger.md` | EN -> JA and JA -> EN | 2 / 2 | 35 / 35 | Synchronized after Task 30 hash backfill and Task 31 completion row. |
+| `todo.md` | EN -> JA and JA -> EN | 14 / 14 | 22 / 22 | Synchronized after Task 31 completion status update. |
 
 The count checks are not used as a full translation proof. They are a drift
 screen that supports the semantic checks below.
@@ -65,13 +67,13 @@ screen that supports the semantic checks below.
 | Area | Result |
 |---|---|
 | Canonical/companion headers | Every English file points at its Japanese companion, and every Japanese file points back to the English canonical file. |
-| Task status and sequencing | Tasks 0-29 are complete consistently; task 28 commit `43674a221dd5f43259c480846db7428f85ac9386` is backfilled, and task 29 is complete with its commit pending later backfill. |
+| Task status and sequencing | Tasks 0-31 are complete consistently; task 30 commit `f3197e12a8f7a2124da8ebbf0f678cf3cf6bd890` is backfilled, and task 31 is complete with its commit pending later backfill. |
 | Task 21 bookkeeping | `73a919c16b48da82038fd7267e86e1a844cb4c6f` is the completed Task 21 commit and is backfilled in both ledgers. |
 | Task 22 bookkeeping | `814e47bb9aaaff75ebfe4cc1be10d2eb4618498b` is the completed Task 22 commit and is backfilled in both ledgers. |
 | Closeout report inventory | `crate_exit_report.md` is paired and records the same hard gates, task commits, residual gaps, quality score, verification plan, and next-crate handoff in English and Japanese. |
-| Closeout handoff | Both ledgers now keep only the closeout to next-crate handoff. |
-| Public enum inventory | `public_enum_policy.md` uses the same `public-enum-inventory` block in English and Japanese, including `sat_checker::SatCheckResult`. The executable guard in `crates/mizar-kernel/tests/lint_policy.rs` remains the source of exact inventory validation. |
-| Source/spec audit inventory | `source_spec_audit.md` has matched module, public item, formula-evidence/SAT-checker/checker-service traceability, gap, and verification sections in English and Japanese. |
+| Closeout handoff | Both ledgers now point to `mizar-test` task 21 as the next requested Step 1 task. |
+| Public enum inventory | `public_enum_policy.md` uses the same `public-enum-inventory` block in English and Japanese, including task-31 context-identity source and producer-ref enums. The executable guard in `crates/mizar-kernel/tests/lint_policy.rs` remains the source of exact inventory validation. |
+| Source/spec audit inventory | `source_spec_audit.md` has matched module, public item, formula-evidence/SAT-checker/checker-service/context-identity traceability, gap, and verification sections in English and Japanese. |
 | Module-boundary audit inventory | `module_boundary_audit.md` is paired and records the same move-only test-module split, drift classification, and verification plan in English and Japanese. |
 | Trust Statement wording | Each module keeps paired `## Trust Statement` sections with the task-20 trusted-kernel prohibition wording. |
 | Gap/deferred classification | Remaining external integrations stay classified as `external_dependency_gap` or `deferred`; no placeholder integration is added by this task. |
@@ -80,9 +82,10 @@ screen that supports the semantic checks below.
 ## Remaining Gaps
 
 Task 29 closes the legacy normal-policy acceptance gap by gating
-`check_kernel_certificate` behind explicit audit policy. It does not close
-external producer or consumer gaps. The following remain documented in the
-module specs and `source_spec_audit.md`:
+`check_kernel_certificate` behind explicit audit policy. Task 31 closes the
+kernel-side F2 context-identity membership gap for non-imported formula
+sources. External producer or consumer gaps remain. The following remain
+documented in the module specs and `source_spec_audit.md`:
 
 - source-derived formula/substitution evidence and service envelopes;
 - formula/substitution candidate evidence production in `mizar-atp`;
@@ -97,15 +100,15 @@ module specs and `source_spec_audit.md`:
 
 ## Verification Plan
 
-Task 29 verification for this refreshed bilingual audit includes:
+Task 31 verification for this refreshed bilingual audit includes:
 
 - deterministic file-pair and companion-link checks over
   `doc/design/mizar-kernel/{en,ja}`;
+- focused `cargo test -p mizar-kernel context_identity --lib`;
+- focused `cargo test -p mizar-kernel sat_backed_kernel_evidence --lib`;
 - `cargo fmt --check`;
 - `cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings`;
 - `cargo test -p mizar-kernel`;
-- boundary tests for `mizar-core`, `mizar-vc`, `mizar-artifact`, and
-  `mizar-checker`;
 - broad `cargo clippy --all-targets --all-features -- -D warnings` and
   `cargo test` when practical;
 - `git diff --check`;
