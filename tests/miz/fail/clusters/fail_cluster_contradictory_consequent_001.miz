@@ -1,10 +1,10 @@
 :: Rejection target: a single conditional cluster whose consequent contains
-:: both `solid` and `non solid` is statically contradictory. Deriving an
-:: attribute and its negation for the same subject signals an unsound
-:: registration and must be rejected before it can enter the active cluster
-:: database (doc/spec/en/17.clusters_and_registrations.md, sections 17.4 and
-:: 17.7.3; architecture 04 lists contradictory attributes as a registration
-:: diagnostic).
+:: both `solid` and `non solid` is a closure-time cluster contradiction.
+:: Normalizing or firing the registration would place an attribute and its
+:: negation on the same subject, so the checker must emit a fatal cluster
+:: diagnostic before publishing any verified closure/export result
+:: (doc/spec/en/17.clusters_and_registrations.md, sections 17.4 and 17.7.3;
+:: architecture 04 lists contradictory attributes as a registration diagnostic).
 
 definition
   let x be set;

@@ -204,6 +204,11 @@ qualified_constructor_name  ::= { namespace_segment "." } constructor_name ;
 namespace_segment           ::= identifier ;
 ```
 
+The `attribute_ref` argument-list form is ordinary type-expression use-site
+syntax for parameterized attributes declared by A.6 / Chapter 6. Cluster
+registrations use the restricted A.17 `adjective` production, which excludes
+that argument-list form.
+
 The final token of `qualified_symbol` is a functor/predicate notation symbol
 in the active lexicon. The final token of `qualified_constructor_name` is a
 mode, structure, or attribute constructor name. Identifier-shaped symbols are
@@ -289,6 +294,9 @@ redefine_attr  ::= "redefine" "attr" label ":" subject "is" attr_pattern
 ```
 
 Attribute use inside type expressions is summarized in A.3.
+`attr_pattern` declares parameter slots through `param_prefix`; there is no
+`attr_name(args)` declaration syntax. The `attribute_ref(args)` form in A.3 is
+a use-site application of a declared parameterized attribute.
 
 ## A.7 Modes
 
@@ -754,6 +762,10 @@ antecedent_adjectives ::= adjective_list ;
 consequent_adjectives ::= adjective_list ;
 functor_term          ::= functor_application ;
 ```
+
+The A.17 `adjective` production is the cluster-registration subset of A.3
+`attribute_ref`; it intentionally excludes `attribute_name(argument_list)` so
+cluster closure remains finite.
 
 ## A.18 Templates
 

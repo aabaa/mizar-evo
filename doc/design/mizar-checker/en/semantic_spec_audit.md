@@ -44,8 +44,8 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 | SSA-004 | high | 17.5/17.9.3 | Resolved by task 38: functorial cluster `for T` is an applicability guard in the FOL encoding |
 | SSA-005 | high | 7.4.1 | Resolved by task 39: overlapping property implementations require coherence |
 | SSA-006 | high | 17.1 vs arch 04 | Resolved by task 40: item-ordered activation permits asynchronous acceptance without final rejection of later accepted uses |
-| SSA-007 | medium | 17.10/3.3 | Cluster termination silently relies on the restricted adjective grammar |
-| SSA-008 | medium | 17.7.3 | Contradiction detection site is inconsistent (ATP vs closure) |
+| SSA-007 | medium | 17.10/3.3 | Resolved by task 41: cluster termination relies on the restricted no-argument adjective grammar |
+| SSA-008 | medium | 17.7.3 | Resolved by task 41: contradictory derived attributes are closure-time fatal cluster diagnostics |
 | SSA-009 | medium | 17.6.4 | Reduction determinism claim conflicts with `such`-condition context dependence |
 | SSA-010 | medium | 19.4.3/19.4.4 | Resolved by task 37: ambiguity covers multiple maximal roots, including equivalent roots |
 | SSA-011 | medium | 5.4 vs 19.2.2 | Resolved by task 36: implicit upcast path uniqueness is syntactic |
@@ -57,7 +57,7 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 | SSA-017 | low | 6.7/19.4.1 | `coherence with` omitted with several sharpenable originals: diagnostic unspecified |
 | SSA-018 | low | 19.6.4 | Greedy `of`/`over` parse depends on the in-scope arity set |
 | SSA-019 | low | 19.6.1 | Resolved by task 37: duplicated introductory sentences removed |
-| SSA-020 | medium | 3.3/6.2 | Argument-list attribute form `attr(args)` is usable but never declarable |
+| SSA-020 | medium | 3.3/6.2 | Resolved by task 41: `attr(args)` is a use-site application form, not a cluster adjective |
 
 ## Findings
 
@@ -235,7 +235,7 @@ The existing inactive seed `fail_mode_existential_after_declaration_001` pins
 the negative non-retroactive slice; positive accepted-local activation remains
 deferred on MC-G020/MC-G021/MC-G025/MC-G026.
 
-### SSA-007 (medium, `spec_gap`) — Termination of cluster closure leans on the adjective grammar
+### SSA-007 (medium, resolved `spec_gap`) — Termination of cluster closure leans on the adjective grammar
 
 **Where:** 17.10 `adjective`, 19.2.1, 3.3 `attribute_ref`.
 
@@ -250,13 +250,15 @@ cluster consequents, the fact space becomes term-indexed and the naive
 fixpoint may diverge; architecture 04's "saturation limits" would silently
 become semantics.
 
-**Proposed resolution:** state in §17.7.1 that termination follows from the
-adjective grammar (finite attribute vocabulary over let-bound parameters),
-and that any future extension of adjectives to term arguments requires a new
-termination argument. Keep architecture 04's saturation bound as a defensive
-diagnostic, not a semantic device.
+**Resolution (task 41):** §17.7.1 now states this as a load-bearing
+termination premise. Cluster closure uses the restricted no-argument
+`adjective` grammar and does not synthesize term arguments; any future
+extension of cluster adjectives to arbitrary term arguments requires a new
+termination proof. Spec 19.2.1 now points back to this premise, and
+architecture 04 treats saturation bounds as defensive failure diagnostics,
+not successful truncated semantics.
 
-### SSA-008 (medium, `spec_gap`) — Where are contradictory derived attributes detected?
+### SSA-008 (medium, resolved `spec_gap`) — Where are contradictory derived attributes detected?
 
 **Where:** 17.7 (no ATP call) vs 17.7.3 ("detected during ATP resolution");
 architecture 04 diagnostics table ("contradictory derived attributes" during
@@ -268,11 +270,13 @@ checker needs a definite answer: closure-time detection (fact set contains
 `A` and `non A` for one subject) is decidable and should be the specified
 trigger; ATP-time inconsistency is a distinct, later failure.
 
-**Proposed resolution:** specify closure-time detection as a fatal
-`cluster` diagnostic (matching §17.7.3's severity), and reword §17.7.3 to
-cover the residual ATP-visible inconsistencies separately.
-**Corpus:** `fail_cluster_contradictory_consequent_001` pins the static
-single-registration case.
+**Resolution (task 41):** §17.7.3 now specifies closure-time detection as a
+fatal `cluster` diagnostic, including the static single-registration case
+whose normalized consequents would put `A` and `non A` on the same subject.
+Residual ATP-visible inconsistencies are described as later proof-system
+failures, not cluster-resolution triggers. The inactive
+`fail_cluster_contradictory_consequent_001` seed maps to this closure-time
+fatal diagnostic.
 
 ### SSA-009 (medium, `spec_gap`) — Reduction determinism vs `such` side conditions
 
@@ -406,14 +410,17 @@ the resolver (layering).
 Task 37 removes the repeated §19.6.1 introductory sentences while updating
 the template tie-break examples.
 
-### SSA-020 (medium, `spec_gap`) — `attr(args)` usable but not declarable
+### SSA-020 (medium, resolved `spec_gap`) — `attr(args)` usable but not declarable
 
 `attribute_ref` (§3.3, §6.9) admits `attribute_name "(" argument_list ")"`,
 but §6.2 only defines declarations with hyphen `param_prefix` parameters,
 and the cluster `adjective` grammar (§17.10) excludes the argument-list form
-entirely. Either define the declaration and registration story for
-argument-list attributes or remove the form from `attribute_ref`. Interacts
-with SSA-007 (admitting it into clusters breaks the termination argument).
+entirely. Task 41 defines the missing story: `attr_pattern` remains the only
+declaration form, `attribute_name(args)` is a use-site positional application
+of a declared parameterized attribute with matching arity, and cluster
+registration adjectives intentionally use the restricted no-argument subset.
+The active parser recovery seed for argument-bearing registration adjectives
+now traces `spec.en.17.clusters.restricted_adjective_grammar.parser`.
 
 ## Adversarial Corpus
 
@@ -493,18 +500,21 @@ spec-decision tasks close.
   coherence seed, and a deferred parser traceability row for property
   implementation syntax. SSA-006 is resolved by task 40 with synchronized
   spec 17, architecture 04, and checker registration-resolution edits plus a
-  traceability row for the existing non-retroactive activation seed.
-- **Remaining spec tasks (before further checker semantics):** SSA-007,
-  SSA-008, SSA-009, SSA-013, SSA-014, SSA-015, SSA-017, and SSA-020 remain
-  assigned to tasks 41-44.
+  traceability row for the existing non-retroactive activation seed. SSA-007,
+  SSA-008, and SSA-020 are resolved by task 41 with synchronized spec
+  03/06/17/19/Appendix A edits, architecture 04 saturation wording, the
+  closure-time contradiction seed, and a restricted-adjective parser trace row.
+- **Remaining spec tasks (before further checker semantics):** SSA-009,
+  SSA-013, SSA-014, SSA-015, and SSA-017 remain assigned to tasks 42-44.
 - **Task 19/20 (registration gating, existential gates):** revisit against
   SSA-014's built-in inhabitation table once decided; task 40 records the
   task-19 activation policy as an interim conservative approximation of
   SSA-006's asynchronous acceptance contract.
-- **Tasks 16-18 (closure, loops, reductions):** encode SSA-007's grammar-
-  based termination argument and SSA-008's closure-time contradiction rule in
-  `cluster_trace.md`/`registration_resolution.md`; reduction determinism
-  needs SSA-009's corrected function signature.
+- **Tasks 16-18 (closure, loops, reductions):** task 41 aligns SSA-007's
+  grammar-based termination argument and SSA-008's closure-time contradiction
+  rule with existing `cluster_trace.md`/`registration_resolution.md`
+  behavior. Reduction determinism still needs SSA-009's corrected function
+  signature.
 - **Tasks 23-26 (templates, viability, selection):** task 37 records the
   Phase B tie-break and tie-ambiguity rules. Real payload work must still not
   infer missing comparison evidence; `mizar-core` task 26 / F7 records the

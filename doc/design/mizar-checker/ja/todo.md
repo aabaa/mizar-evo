@@ -764,7 +764,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       activation は MC-G020/MC-G021/MC-G025/MC-G026 により deferred のままである。
       checker/core source semantics は変更していない。
 
-41. **Spec 明確化: closure 停止性・矛盾検出サイト・`attr(args)`(SSA-007, SSA-008, SSA-020)。** [ ]
+41. **Spec 明確化: closure 停止性・矛盾検出サイト・`attr(args)`(SSA-007, SSA-008, SSA-020)。** [x]
     - closure の停止性が制限された adjective 文法に依存すること、adjective
       を term 引数へ拡張するには新しい停止性論証が必要であることを §17.7.1
       に明記する。矛盾する導出属性の closure 時検出を fatal な `cluster`
@@ -777,6 +777,16 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       する。`attribute_ref` 文法と宣言文法が一致する。
     - 検証: `cargo test -p mizar-test`。
     - 依存: なし。参照: SSA-007, SSA-008, SSA-020。
+    - task 41 で完了: spec 17.7.1 と spec 19.2.1 は、引数なしの制限された
+      cluster `adjective` 文法を load-bearing な停止性前提とし、architecture 04 は
+      saturation bound を成功した truncated semantics ではなく防御的な failure
+      diagnostic として扱う。spec 17.7.3 は static contradictory-consequent seed を
+      含む矛盾する derived attribute について、closure 時の fatal `cluster` 診断を
+      規定した。spec 03/06/Appendix A は `attribute_name(args)` を宣言済み
+      parameterized attribute の use-site application として定義しつつ、cluster
+      registration adjective から引数リストを除外する。traceability に
+      `spec.en.17.clusters.restricted_adjective_grammar.parser` を追加した。
+      checker/core source semantics は変更していない。
 
 42. **Spec 明確化: reduction 決定性のシグネチャ(SSA-009)。** [ ]
     - §17.6.4 の正規化決定性を(term、in-scope rules、discharged

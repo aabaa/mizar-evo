@@ -547,6 +547,7 @@ required = true
 coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/parser/pass_parser_type_expressions_001.expect.toml",
+  "tests/miz/pass/parser/pass_parser_primary_terms_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_type_expression_malformed_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_type_expression_missing_bracket_001.expect.toml",
 ]
@@ -1290,7 +1291,7 @@ stage = "advanced_semantics"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Adversarial checker seed fixed test-first; inactive until an advanced_semantics runner and checker-ready registration payload extraction exist (MC-G021/MC-G023). Rejection contract: statically contradictory cluster consequents never enter the active database."
+notes = "Adversarial checker seed fixed test-first; inactive until an advanced_semantics runner and checker-ready registration payload extraction exist (MC-G021/MC-G023). Rejection contract: contradictory cluster consequents map to a closure-time fatal cluster diagnostic and never produce a verified closure/export result."
 depends_on = [
   "spec.en.17.clusters_and_registrations.parser",
 ]
@@ -1313,6 +1314,19 @@ depends_on = [
 ]
 tests = [
   "tests/miz/fail/modes/fail_mode_existential_after_declaration_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.17.clusters.restricted_adjective_grammar.parser"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.7.1 Cluster Closure; 17.10 Complete Syntax"
+stage = "parse_only"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Task 41 / SSA-007+SSA-020 decision: cluster registration adjectives are the no-argument subset of Chapter 3 attribute_ref, preserving finite closure termination. Existing active parser recovery rejects argument-bearing registration adjectives in existential clusters and consequents; ordinary type-expression attribute arguments remain covered by spec.en.03.type_expressions.parser."
+tests = [
+  "tests/miz/fail/parser/fail_parser_registrations_recovery_001.expect.toml",
 ]
 
 [[requirement]]

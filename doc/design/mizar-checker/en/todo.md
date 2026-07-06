@@ -807,7 +807,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       accepted-local activation remains deferred on MC-G020/MC-G021/MC-G025/
       MC-G026. No checker/core source semantics changed.
 
-41. **Spec clarifications: closure termination, contradiction site, `attr(args)` (SSA-007, SSA-008, SSA-020).** [ ]
+41. **Spec clarifications: closure termination, contradiction site, `attr(args)` (SSA-007, SSA-008, SSA-020).** [x]
     - State in §17.7.1 that closure termination follows from the restricted
       adjective grammar and that extending adjectives to term arguments
       requires a new termination argument; specify closure-time detection of
@@ -822,6 +822,18 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       diagnostic; `attribute_ref` grammar and declaration grammar agree.
     - Verify: `cargo test -p mizar-test`.
     - Deps: none. Refs: SSA-007, SSA-008, SSA-020.
+    - Completed by task 41: spec 17.7.1 and spec 19.2.1 now make the
+      restricted no-argument cluster `adjective` grammar the load-bearing
+      termination premise, and architecture 04 treats saturation bounds as
+      defensive failure diagnostics rather than successful truncated
+      semantics. Spec 17.7.3 now specifies closure-time fatal `cluster`
+      diagnostics for contradictory derived attributes, including the static
+      contradictory-consequent seed. Spec 03/06/Appendix A define
+      `attribute_name(args)` as a use-site application of a declared
+      parameterized attribute while excluding argument lists from cluster
+      registration adjectives. Updated traceability with
+      `spec.en.17.clusters.restricted_adjective_grammar.parser`. No
+      checker/core source semantics changed.
 
 42. **Spec clarification: reduction determinism signature (SSA-009).** [ ]
     - Restate §17.6.4 normalization determinism as a function of (term,

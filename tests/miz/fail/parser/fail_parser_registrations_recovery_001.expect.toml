@@ -32,6 +32,7 @@ diagnostic_codes = [
 ]
 tags = ["active_parse_only", "allow_frontend_recovery_diagnostics"]
 spec_refs = [
+  "spec.en.17.clusters.restricted_adjective_grammar.parser",
   "spec.en.17.clusters_and_registrations.parser",
 ]
-notes = "Active parse-only runner coverage for parser task 30 recovery: rejected definition-only registration parameters, missing registration labels, missing antecedents, malformed functorial payloads including qua payloads, argument-bearing registration adjectives in existential clusters and consequents, missing correctness conditions, missing reducibility justifications, and missing registration block end recovery."
+notes = "Active parse-only runner coverage for parser task 30 recovery and task 41 restricted cluster adjective grammar: rejected definition-only registration parameters, missing registration labels, missing antecedents, malformed functorial payloads including qua payloads, argument-bearing registration adjectives in existential clusters and consequents, missing correctness conditions, missing reducibility justifications, and missing registration block end recovery. Ordinary type-expression attribute arguments remain covered by spec.en.03.type_expressions.parser."

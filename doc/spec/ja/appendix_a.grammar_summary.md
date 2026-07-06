@@ -191,6 +191,10 @@ qualified_constructor_name  ::= { namespace_segment "." } constructor_name ;
 namespace_segment           ::= identifier ;
 ```
 
+`attribute_ref` の argument-list 形式は、A.6 / 第 6 章で宣言された parameterized
+attribute の通常の型式 use-site 構文です。cluster registration は、引数リスト形式を
+除外する制限された A.17 `adjective` production を使います。
+
 `qualified_symbol` の最後のトークンは、アクティブなレキシコンにある functor / 述語の
 記法シンボルです。`qualified_constructor_name` の最後のトークンは、モード・構造体・
 属性のコンストラクタ名です。そのため、識別子形のシンボルは、アクティブなレキシコンで
@@ -276,6 +280,9 @@ redefine_attr  ::= "redefine" "attr" label ":" subject "is" attr_pattern
 ```
 
 型式内での属性利用は A.3 にまとめています。
+`attr_pattern` は `param_prefix` で parameter slot を宣言します。
+`attr_name(args)` という宣言構文はありません。A.3 の `attribute_ref(args)` 形式は、
+宣言済み parameterized attribute の use-site application です。
 
 ## A.7 モード
 
@@ -735,6 +742,9 @@ antecedent_adjectives ::= adjective_list ;
 consequent_adjectives ::= adjective_list ;
 functor_term          ::= functor_application ;
 ```
+
+A.17 の `adjective` production は、A.3 `attribute_ref` の cluster-registration subset です。
+cluster closure を有限に保つため、`attribute_name(argument_list)` を意図的に除外します。
 
 ## A.18 template
 

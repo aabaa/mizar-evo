@@ -9,6 +9,7 @@ expected_phase = "parse"
 diagnostic_codes = []
 tags = ["active_parse_only"]
 spec_refs = [
+  "spec.en.03.type_expressions.parser",
   "spec.en.13.primary_terms.parser",
   "spec.en.13.functor_applications.parser",
   "spec.en.13.structure_expressions.parser",
