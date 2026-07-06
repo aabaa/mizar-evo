@@ -6,9 +6,11 @@
 ## Scope
 
 Task 20 audits the crate after task 19. Task 23 re-runs the proof-witness and
-verified-artifact portions after the kernel evidence schema correction. The
-audit traces public API and promised artifact-facing behavior from the module
-specs to source and tests.
+verified-artifact portions after the kernel evidence schema correction. Task 24
+re-checks those same portions against the post-audit goal-polarity and
+context-identity follow-ups and records that no artifact schema change is needed.
+The audit traces public API and promised artifact-facing behavior from the
+module specs to source and tests.
 
 Classification result:
 
@@ -18,9 +20,9 @@ Classification result:
 - `source_drift`: none found for the crate-owned surface.
 - `external_dependency_gap`: the existing upstream producer, proof, kernel,
   cache, and build-integration gaps remain listed below.
-- `deferred`: task 17 emission integration remains deferred after task 23
-  reevaluation because real producer publication outputs are absent; task 22
-  owns any source-layout refactor decision.
+- `deferred`: task 17 emission integration remains deferred after the task 23
+  and task 24 reevaluations because real producer publication outputs are absent;
+  task 22 owns any source-layout refactor decision.
 
 ## Public API Trace
 
@@ -45,8 +47,8 @@ Classification result:
 | Published path safety, root confinement, symlink rejection, atomic temp-and-rename writes, and corruption-detecting reads | `write_published_artifact`, `read_published_artifact`, path validation, temporary-file protocol | Store I/O, path, symlink, corruption, interrupted-write, replacement, and deterministic-write tests | No finding. |
 | `ModuleSummary` excludes source-only metadata from `interface_hash` and rejects non-canonical collections | `src/module_summary.rs` projection/hash helpers and reader validation | Module-summary hash stability, hash participation, ordering, duplicate, mismatch, and reader rejection tests | No finding. |
 | `RegistrationSummary` records activated accepted public registrations and trace references without owning trace payload production | `src/registration_summary.rs` schema, hash, and validation helpers | Registration-summary round-trip, trace-hash, private/unaccepted rejection, ordering, duplicate, and mismatch tests | No finding. |
-| `ProofWitnessRef` stores formula/substitution kernel evidence references and kernel-acceptance metadata without loading, accepting, or replaying proof payloads | `src/proof_witness.rs` schema and validation helpers | Proof-witness round-trip, hash mismatch, formula/substitution evidence matrix, legacy certificate rejection, path, missing/unknown field, and hash-domain tests | No finding. |
-| `VerifiedArtifact` publishes stable projected data, rejects raw IR/cache/scheduler/proof-authority ownership leaks, and separates interface/implementation/artifact hashes | `src/verified_artifact.rs` schema, projection-input, hash-input, and validation helpers | Verified-artifact round-trip, raw-IR/boundary rejection, witness consistency, proof-authority rejection, hash participation/exclusion, public helper, and deterministic tests | No finding. |
+| `ProofWitnessRef` stores formula/substitution kernel evidence references and kernel-acceptance metadata without loading, accepting, or replaying proof payloads. Task 24 keeps goal-polarity and context-identity coverage indirect through producer-owned composite and accepted-result hashes instead of adding artifact-owned fields. | `src/proof_witness.rs` schema and validation helpers | Proof-witness round-trip, hash mismatch, formula/substitution evidence matrix, legacy certificate rejection, path, missing/unknown field, and hash-domain tests | No finding. |
+| `VerifiedArtifact` publishes stable projected data, rejects raw IR/cache/scheduler/proof-authority ownership leaks, and separates interface/implementation/artifact hashes. Task 24 clarifies that `obligation_fingerprint` is the producer-owned composite that must already include the corrected kernel-evidence identity for trusted witnesses. | `src/verified_artifact.rs` schema, projection-input, hash-input, and validation helpers | Verified-artifact round-trip, raw-IR/boundary rejection, witness consistency, proof-authority rejection, hash participation/exclusion, public helper, and deterministic tests | No finding. |
 | Manifest publication is manifest-first, deterministic, atomic at the final manifest path, and validates referenced artifacts without owning cache promotion | `src/manifest.rs` manifest reader/writer and `ManifestTransaction` | Manifest round-trip, transaction, replay, freshness/base hash, reference validation, witness coverage, reachability, and deterministic tests | No finding. |
 | Determinism for the crate-owned artifact-facing surface | Canonical writers, sorted collections, hash helpers, store writes, manifest transactions | Task 18 determinism tests across store, schema writers, hash inputs, and manifest transactions | No finding. |
 | Public enums are forward-compatible API surfaces while serialized unknown values remain rejected until a future schema revision | `#[non_exhaustive]` on public enums and strict string readers | Task 19 lint-policy guard plus existing unknown-enum reader rejection tests | No finding. |
@@ -63,7 +65,7 @@ or explicitly deferred:
 | ART-G-004 | `external_dependency_gap` | Full phase 15 emission still depends on real kernel/proof outputs and producer projections. Task 17 remains deferred. |
 | ART-G-007 | `external_dependency_gap` | Resolver/checker producers still need to emit real `ModuleSummary` projections. The crate owns the stable schema/writer/reader only. |
 | ART-G-008 / ART-G-010 | `external_dependency_gap` | Checker/proof/trace producers still need to emit real `RegistrationSummary` inputs and concrete trace artifacts. The crate owns the stable schema/writer/reader only. |
-| ART-G-012 | `external_dependency_gap` | Concrete witness payload publication and proof producer integration remain upstream; task 23 now defines the artifact-side formula/substitution reference schema and rejects legacy certificate material. |
+| ART-G-012 | `external_dependency_gap` | Concrete witness payload publication and proof producer integration remain upstream; task 24 confirms that schema version `2.0` does not add artifact-owned goal-polarity or context-identity fields, so publication still depends on producers supplying hashes derived after those checks. |
 | ART-G-014 | `external_dependency_gap` | Real resolver/checker/VC/proof/kernel projection inputs for full `VerifiedArtifact` emission remain upstream. |
 | ART-G-015 | `external_dependency_gap` | Development artifact payload hash recomputation remains blocked on producer-owned payload schemas. |
 | ART-G-016 | `external_dependency_gap` | Clean/incremental/parallel scheduler, cache-race, ATP completion order, and real-emission determinism remain upstream integration concerns. |
@@ -71,6 +73,6 @@ or explicitly deferred:
 
 ## Verification
 
-Task 23 changes Rust source and re-runs this audit scope for the proof-witness
-boundary. Rust verification is recorded with the task 23 commit. Documentation
-verification still includes `git diff --check`.
+Task 24 is documentation-only and re-runs this audit scope for the
+proof-witness/verified-artifact boundary. Rust source coverage is unchanged;
+verification uses the existing artifact schema tests and `git diff --check`.

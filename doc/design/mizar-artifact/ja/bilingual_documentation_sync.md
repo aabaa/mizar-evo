@@ -5,7 +5,8 @@
 
 ## 範囲
 
-task 21 は task 20 後の bilingual documentation set を監査する。
+task 21 は task 20 後の bilingual documentation set を監査する。task 24 は
+proof-witness schema 再点検後にこの監査を最新化する。
 `doc/design/mizar-artifact/en/` 配下の英語文書が正本であり、
 `doc/design/mizar-artifact/ja/` 配下の日本語文書は意味を同期して保つ companion
 である。この task は documentation-only であり、schema、source behavior、tests、
@@ -25,17 +26,17 @@ diagnostics、public API は変更しない。
 
 | 英語正本 | 日本語 companion | 同期結果 |
 |---|---|---|
-| [../en/00.crate_plan.md](../en/00.crate_plan.md) | [00.crate_plan.md](./00.crate_plan.md) | task 23 までの task result、active gap、verification expectation、exit criteria が同期している。 |
-| [../en/todo.md](../en/todo.md) | [todo.md](./todo.md) | task 23 までの task status、task 17 deferral、task 18-23 status note が同期している。 |
+| [../en/00.crate_plan.md](../en/00.crate_plan.md) | [00.crate_plan.md](./00.crate_plan.md) | task 24 までの task result、active gap、verification expectation、exit criteria が同期している。 |
+| [../en/todo.md](../en/todo.md) | [todo.md](./todo.md) | task 24 までの task status、task 17 deferral、task 18-24 status note が同期している。 |
 | [../en/store.md](../en/store.md) | [store.md](./store.md) | Store ownership、canonical JSON、schema-version policy、hash separation/exclusion、atomic write、validating read、public-enum policy、implementation staging が同期している。 |
 | [../en/module_summary.md](../en/module_summary.md) | [module_summary.md](./module_summary.md) | summary shape、identity/export/label/lexical/reexport/dependency field、interface hash、ordering、reader/writer rule、public-enum policy、implementation status が同期している。 |
 | [../en/registration_summary.md](../en/registration_summary.md) | [registration_summary.md](./registration_summary.md) | registration shape、hash domain、trace/dependency reference、registration interface hash、ordering、reader/writer rule、public-enum policy、implementation status が同期している。 |
-| [../en/proof_witness.md](../en/proof_witness.md) | [proof_witness.md](./proof_witness.md) | ownership、schema version `2.0`、formula/substitution evidence reference shape、hash domain、legacy certificate rejection、witness path、resident-set discipline、ordering、reader/writer rule、public-enum policy、implementation boundary が同期している。 |
-| [../en/verified_artifact.md](../en/verified_artifact.md) | [verified_artifact.md](./verified_artifact.md) | ownership、top-level shape、export、expression metadata、obligation/formula-evidence witness、diagnostic、provenance、hash domain/participation、ordering、reader/writer rule、public-enum policy、implementation status が同期している。 |
+| [../en/proof_witness.md](../en/proof_witness.md) | [proof_witness.md](./proof_witness.md) | ownership、schema version `2.0`、formula/substitution evidence reference shape、task-24 no-change schema decision、hash domain、legacy certificate rejection、witness path、resident-set discipline、ordering、reader/writer rule、public-enum policy、implementation boundary が同期している。 |
+| [../en/verified_artifact.md](../en/verified_artifact.md) | [verified_artifact.md](./verified_artifact.md) | ownership、top-level shape、export、expression metadata、obligation/formula-evidence witness、task-24 indirect goal-polarity/context-identity coverage、diagnostic、provenance、hash domain/participation、ordering、reader/writer rule、public-enum policy、implementation status が同期している。 |
 | [../en/manifest.md](../en/manifest.md) | [manifest.md](./manifest.md) | manifest scope、file/version、top-level shape、module/witness/development entry、hash domain、ordering、reader requirement、transaction protocol、recovery、public-enum policy、implementation status が同期している。 |
 | [../en/phase15_emission_reevaluation.md](../en/phase15_emission_reevaluation.md) | [phase15_emission_reevaluation.md](./phase15_emission_reevaluation.md) | task 17 の task 23 後再評価、external-dependency classification、no-stub disposition、verification note が同期している。 |
-| [../en/source_spec_correspondence.md](../en/source_spec_correspondence.md) | [source_spec_correspondence.md](./source_spec_correspondence.md) | task 20 scope と task 23 rerun scope、classification result、public API trace、promised behavior trace、remaining gaps、verification note が同期している。 |
-| [../en/bilingual_documentation_sync.md](../en/bilingual_documentation_sync.md) | [bilingual_documentation_sync.md](./bilingual_documentation_sync.md) | task 21 audit scope、task 23 までの pair inventory、audit note、verification note が同期している。 |
+| [../en/source_spec_correspondence.md](../en/source_spec_correspondence.md) | [source_spec_correspondence.md](./source_spec_correspondence.md) | task 20 scope と task 23 / task 24 rerun scope、classification result、public API trace、promised behavior trace、remaining gaps、verification note が同期している。 |
+| [../en/bilingual_documentation_sync.md](../en/bilingual_documentation_sync.md) | [bilingual_documentation_sync.md](./bilingual_documentation_sync.md) | task 21 audit scope、task 24 までの pair inventory、audit note、verification note が同期している。 |
 | [../en/module_boundary_refactor.md](../en/module_boundary_refactor.md) | [module_boundary_refactor.md](./module_boundary_refactor.md) | task 22 source-layout audit、behavior-preserving test split、production-root rationale、再実行した audit note、verification command が同期している。 |
 
 ## 監査メモ
@@ -52,5 +53,6 @@ diagnostics、public API は変更しない。
 
 ## Verification
 
-この task は documentation-only である。必要な verification は、audit file と
-status update を stage した後の `git diff --check`。
+task 24 は documentation-only である。必要な verification は、audit file と
+status update を stage した後の `git diff --check` を含む。wire shape が変わらないことの
+regression check として artifact schema tests を実行してよい。

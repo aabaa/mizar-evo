@@ -316,7 +316,7 @@ Keep `cargo test -p mizar-artifact` green after each task (see
 
 ### Kernel soundness-audit alignment (2026-07-03)
 
-24. **Proof-witness schema re-check against kernel audit follow-ups.** [ ]
+24. **Proof-witness schema re-check against kernel audit follow-ups.** [x]
     - The task-23 `ProofWitnessRef` 2.0 schema predates the kernel audit
       follow-ups. When mizar-kernel tasks 30-31 (goal polarity binding,
       context-identity for non-imported source bindings) and mizar-vc tasks
@@ -334,6 +334,15 @@ Keep `cargo test -p mizar-artifact` green after each task (see
     - Deps: 23; mizar-kernel tasks 30-31, mizar-vc tasks 27-28. Spec:
       architecture 15 (post-audit);
       [soundness_argument.md](../../mizar-kernel/en/soundness_argument.md).
+    - Status: task 24 records a no-change schema decision. `ProofWitnessRef`
+      remains schema version `2.0`; no `goal_polarity`, `context_identity_hash`,
+      or proof-reuse validation-hash field is added. The corrected kernel
+      contract is covered indirectly by producer-owned `obligation_fingerprint`,
+      proof validation identity, accepted-result metadata, and existing
+      kernel-acceptance hashes. Artifact readers still validate only projected
+      hash shape, witness bytes when supplied, and witness/obligation
+      consistency; source-derived producer/publication integration remains an
+      `external_dependency_gap`.
 
 ## Recommended Verification
 

@@ -207,9 +207,14 @@ trusted by the kernel.
 fingerprint. It commits to the VC semantic fingerprint, local proof context
 fingerprint, dependency-slice fingerprint, verifier-policy fingerprint, and the
 kernel evidence handoff identity that affects whether an existing witness may be
-reused. `VerifiedArtifact` validates the field's hash class and spelling and
-uses it for witness consistency; the VC/proof producer remains responsible for
-constructing the composite value until real producer integration lands.
+reused. After the task-24 re-check, trusted formula/substitution witness
+producers must derive this composite from the corrected kernel-evidence identity:
+explicit proof-obligation goal polarity, the canonical formula-envelope handoff
+hash, the task-28 non-imported-source `context_identity_hash()` when present, and
+imported formula context/projection identities when present. `VerifiedArtifact`
+validates the field's hash class and spelling and uses it for witness
+consistency; the VC/proof producer remains responsible for constructing the
+composite value until real producer integration lands.
 
 Every obligation with `status = "accepted"` must set
 `accepted_witness_obligation_id` to the same string as its own `obligation_id`.
@@ -237,7 +242,11 @@ Task 11 validates the accepted-witness consistency tuple:
   `formula_evidence_hash`, `substitution_evidence_hash`, `provenance_hash`, the
   optional `formula_context_hash`, and `accepted_result_hash` are interface
   hashes supplied by the producer/kernel boundary and included through the
-  referenced `ProofWitnessRef`.
+  referenced `ProofWitnessRef`;
+- task-24 goal-polarity and context-identity coverage is indirect: it is part of
+  the producer-owned `obligation_fingerprint`, proof validation identity, and
+  accepted-result metadata. `VerifiedArtifact` does not recompute the
+  `mizar-vc` context-identity hash or replay kernel acceptance.
 
 `VerifiedArtifact` verifies only reference consistency among projected fields.
 It does not replay the witness, recompute kernel acceptance, or decide proof

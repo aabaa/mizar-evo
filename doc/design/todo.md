@@ -102,7 +102,7 @@ is its task 1). "Next work" points into the
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete | steps 3 (task 29), 7 | [todo](./mizar-atp/en/todo.md) |
 | mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete | steps 3 (task 21), 7 | [todo](./mizar-proof/en/todo.md) |
 | mizar-cache | Cache keys, fingerprints, proof reuse, cluster-db storage | [x] internal-cache milestone complete | steps 3 (task 24), 7 | [todo](./mizar-cache/en/todo.md) |
-| mizar-artifact | Artifact schemas, summaries, store, manifest transactions | [~] schemas/store/manifest complete through task 23 | steps 3 (task 24), 6 (task 17) | [todo](./mizar-artifact/en/todo.md) |
+| mizar-artifact | Artifact schemas, summaries, store, manifest transactions | [~] schemas/store/manifest complete through task 24 | step 6 (task 17) | [todo](./mizar-artifact/en/todo.md) |
 | mizar-ir | IR storage, snapshot handles, sealed output blobs, projections | [x] storage/projection milestone complete | step 6 | [todo](./mizar-ir/en/todo.md) |
 | mizar-build | Phase 0 planning, task graph, scheduler, cache seam, commit boundary | [x] milestone complete | step 6 | [todo](./mizar-build/en/todo.md) |
 | mizar-driver | Build requests, phase registry, CLI/watch/LSP entry points | [x] session/registry/event milestone complete | step 6 | [todo](./mizar-driver/en/todo.md) |
@@ -190,7 +190,7 @@ on step 1.
    with the corrected kernel rejection taxonomy (F1/F2).
 5. [x] [mizar-cache task 24](./mizar-cache/en/todo.md) — proof-reuse identity
    covers the extended kernel-evidence contract (F1/F2; needs proof 21).
-6. [ ] [mizar-artifact task 24](./mizar-artifact/en/todo.md) — proof-witness
+6. [x] [mizar-artifact task 24](./mizar-artifact/en/todo.md) — proof-witness
    schema re-check against the audit follow-ups.
 7. [ ] [mizar-atp task 29](./mizar-atp/en/todo.md) — candidate-evidence
    conformance to the post-audit kernel contract (F1/F2/F6; needs kernel 33).

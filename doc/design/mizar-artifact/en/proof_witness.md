@@ -10,7 +10,9 @@ embedding the witness payload in the main artifact.
 This document defines the `ProofWitnessRef` schema. Task 9 introduced the
 reference schema, canonical value writer, validating reader, and tests at the
 `CanonicalJson` boundary. Task 23 revises the trusted witness projection from
-legacy certificate acceptance to formula/substitution kernel evidence.
+legacy certificate acceptance to formula/substitution kernel evidence. Task 24
+re-checks that schema against the post-audit kernel/vc goal-polarity and
+context-identity follow-ups.
 
 ## Ownership
 
@@ -87,6 +89,34 @@ hashes, the optional imported formula-context hash, schema versions, and policy
 fingerprints. Instantiated formulas and SAT problems are not caller-supplied
 trusted payloads and are not stored here. The kernel derives them from the
 formula evidence and substitution evidence when it checks acceptance.
+
+Task 24 keeps schema version `2.0` unchanged. The corrected kernel contract adds
+explicit proof-obligation goal polarity and non-imported source context identity
+to the owner-owned VC/kernel/proof pipeline, but `ProofWitnessRef` does not
+recompute or re-render those payloads. Instead:
+
+- `obligation_fingerprint` is the producer-owned composite witness/reuse
+  fingerprint. For trusted formula/substitution witnesses, the producer contract
+  requires it to be derived from the current VC/proof identity that includes the
+  explicit accepted goal-polarity decision and the task-28
+  `context_identity_hash()` when such a handoff exists.
+- `kernel_acceptance.target_binding_hash` names the producer/kernel target and
+  canonical evidence binding that was accepted for the selected obligation; it
+  must not be used as a substitute for the separate context-identity hash.
+- `kernel_acceptance.formula_context_hash` carries the imported formula context
+  identity when imported axioms or theorems participate. It is `null` only when no
+  imported formula context is part of the accepted evidence boundary.
+- `kernel_acceptance.accepted_result_hash` is the accepted kernel/proof result
+  hash copied from the trusted proof owner. It must match the selected evidence
+  hash before proof publication can stage a witness reference.
+
+This is a no-change schema decision: no `goal_polarity`,
+`context_identity_hash`, or proof-reuse validation hash field is added to
+`ProofWitnessRef`. If a future producer cannot prove that its
+`obligation_fingerprint` and accepted-result metadata were derived after the
+goal-polarity and context-identity checks, artifact publication must remain
+blocked by the existing producer-integration gap instead of fabricating fields in
+this schema.
 
 Backend proof methods, portfolio names, solver logs, resolution traces, and SMT
 proof objects are not trusted witness content. If preserved, they must live in a
@@ -233,6 +263,11 @@ Task 23 implements schema version `2.0`, the canonical value writer, validating
 `CanonicalJson` reader, and tests for round-trips, deterministic writer output,
 version mismatch rejection, hash-domain validation, legacy certificate-field
 rejection, and witness hash mismatch detection.
+
+Task 24 adds no Rust schema changes and no version bump. Existing schema `2.0`
+references remain readable under the same reader policy because the corrected
+goal-polarity and context-identity binding is carried by owner-produced hashes,
+not by new artifact-owned fields.
 
 Concrete witness payload publication, proof producer integration, and full phase
 15 emission remain `external_dependency_gap` items until real producer outputs

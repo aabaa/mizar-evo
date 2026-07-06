@@ -9,7 +9,9 @@ path と hash で witness を指せるようにする。
 この document は `ProofWitnessRef` schema を定義する。task 9 は
 `CanonicalJson` boundary での schema、canonical value writer、validating
 reader、test を導入した。task 23 は trusted witness projection を legacy
-certificate acceptance から formula/substitution kernel evidence へ改訂する。
+certificate acceptance から formula/substitution kernel evidence へ改訂する。task 24 は
+この schema を、監査後の kernel/vc goal-polarity と context-identity follow-up に
+対して再点検する。
 
 ## Ownership
 
@@ -85,6 +87,33 @@ imported formula-context hash、schema version、policy fingerprint だけを記
 instantiated formula と SAT problem は caller-supplied trusted payload ではなく、
 ここには保存しない。kernel は formula evidence と substitution evidence からそれらを
 導出して acceptance を check する。
+
+task 24 は schema version `2.0` を変更しない。修正後の kernel contract は
+explicit proof-obligation goal polarity と non-imported source context identity を
+owner-owned VC/kernel/proof pipeline に追加するが、`ProofWitnessRef` はそれらの
+payload を再計算したり再描画したりしない。代わりに:
+
+- `obligation_fingerprint` は producer-owned な composite witness/reuse
+  fingerprint である。trusted formula/substitution witness について、producer
+  contract は、explicit accepted goal-polarity decision と、handoff が存在する場合の
+  task-28 `context_identity_hash()` を含む current VC/proof identity からこれを
+  導出することを要求する。
+- `kernel_acceptance.target_binding_hash` は selected obligation について受理された
+  producer/kernel target と canonical evidence binding を指す。これは別個の
+  context-identity hash の代替として使ってはならない。
+- `kernel_acceptance.formula_context_hash` は imported axiom または theorem が
+  関与する場合の imported formula context identity を運ぶ。accepted evidence
+  boundary に imported formula context が含まれない場合だけ `null` になる。
+- `kernel_acceptance.accepted_result_hash` は trusted proof owner から copied された
+  accepted kernel/proof result hash である。proof publication が witness reference
+  を stage する前に、selected evidence hash と一致しなければならない。
+
+これは no-change schema decision である。`ProofWitnessRef` に `goal_polarity`、
+`context_identity_hash`、proof-reuse validation hash の field は追加しない。将来の
+producer が `obligation_fingerprint` と accepted-result metadata を
+goal-polarity / context-identity check 後に導出したことを証明できない場合、artifact
+publication はこの schema に field を捏造するのではなく、既存の producer-integration
+gap により block されなければならない。
 
 backend proof method、portfolio 名、solver log、resolution trace、SMT proof object は
 trusted witness content ではない。保存する場合は、`kernel_acceptance` と accepted
@@ -218,6 +247,11 @@ task 23 は schema version `2.0`、canonical value writer、validating `Canonica
 reader、および round-trip、deterministic writer output、version mismatch rejection、
 hash-domain validation、legacy certificate-field rejection、witness hash mismatch detection
 の test を実装する。
+
+task 24 は Rust schema の変更も version bump も追加しない。修正後の goal-polarity と
+context-identity binding は新しい artifact-owned field ではなく owner-produced hash によって
+運ばれるため、既存の schema `2.0` reference は同じ reader policy の下で読み取り可能な
+ままである。
 
 concrete witness payload publication、proof producer integration、full phase 15 emission は、
 real producer output が存在するまで `external_dependency_gap` として残る。schema version `1.0`

@@ -310,7 +310,7 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
 
 ### kernel 健全性監査との整合(2026-07-03)
 
-24. **kernel 監査フォローアップに対する proof-witness schema の再点検。** [ ]
+24. **kernel 監査フォローアップに対する proof-witness schema の再点検。** [x]
     - task-23 の `ProofWitnessRef` 2.0 schema は kernel 監査フォローアップ
       より前のものである。mizar-kernel tasks 30-31(goal polarity 束縛、
       非 import ソース束縛の context-identity)と mizar-vc tasks 27-28 が
@@ -329,6 +329,14 @@ internal: [02](../../internal/ja/02.artifact_store_cache_key_and_manifest.md)、
     - 依存: 23; mizar-kernel tasks 30-31、mizar-vc tasks 27-28。仕様:
       architecture 15(監査後);
       [soundness_argument.md](../../mizar-kernel/en/soundness_argument.md)。
+    - 状態: task 24 は no-change schema decision を記録する。
+      `ProofWitnessRef` は schema version `2.0` のままであり、`goal_polarity`、
+      `context_identity_hash`、proof-reuse validation-hash field は追加しない。
+      修正後の kernel contract は、producer-owned な `obligation_fingerprint`、
+      proof validation identity、accepted-result metadata、既存の kernel-acceptance
+      hash により間接的に覆われる。artifact reader は引き続き projected hash
+      shape、供給された witness byte、witness/obligation consistency だけを検証する。
+      source-derived producer/publication integration は `external_dependency_gap` として残る。
 
 ## 推奨検証
 
