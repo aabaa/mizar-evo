@@ -385,13 +385,15 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       payload rejection を cover する。`doc/spec`、既存 `.miz`、expectation、
       source-derived runner、fake checker payload は変更していない。
 
-28. **テンプレート型実引数の inhabitation gating(F2)。** [ ]
-    - テンプレートの `type_expression` 実引数に §17.3.4 の
-      inhabitation-evidence gate を走らせる: schema コンテキストは各型
-      パラメータについて `∃x. is_T(x)` を仮定してよく、その代わりすべての
-      instantiation site は built-in/base-shape table を満たさなければならない。
-      属性付き実引数は existential registration を必要とする。lowering 中に
-      per-parameter の inhabitation fact を schema コンテキストへ emit する。
+28. **テンプレート型実引数の inhabitation gating(F2)。** [x]
+    - テンプレートの `type_expression` 実引数について checker-owned の
+      §17.3.4 inhabitation-evidence gate result を consume する: schema
+      コンテキストは各型パラメータについて `∃x. is_T(x)` を仮定してよく、
+      その代わりすべての instantiation site は built-in/base-shape table を
+      満たす checker result を持たなければならない。属性付き実引数は
+      existential registration を必要とする。checker registration semantics は
+      再実行せず、lowering 中に per-parameter の inhabitation fact を schema
+      コンテキストへ emit する。
     - 受け入れ条件: `fail_template_type_actual_missing_existential_001` の
       拒否が導出可能(充足不能な属性連鎖の実引数が instantiation site で
       拒否され、`ex y st y is hollow set` 型の公理が emit されない)。
@@ -402,6 +404,15 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       task 20 gate surface を consume する。参照: spec 07 §7.8、17 §17.3.4、
       18 §18.10.2;
       template_encoding_audit.md F2。
+    - task 28 で完了: `TemplateTypeParameterInhabitationSeed` は checker が提供する
+      witness binder を schema-context `∃x. is_T(x)` assumption へ lower する。
+      `TemplateTypeActualGateSeed` は checker existential-gate status と registration、
+      base-evidence、guard-fact、diagnostic backref を保存する。非 satisfied gate は
+      core diagnostic だけを emit し、actual-side existential axiom や proof obligation は
+      生成しない。Rust fixture は accepted registration/base/fact evidence、actual の
+      missing-existential rejection、invalid gate payload を cover する。`doc/spec`、
+      既存 `.miz`、expectation、traceability metadata、source-derived runner、fake checker
+      payload は変更していない。
 
 29. **scheme 実引数のシグネチャ適合・guard 義務・functor 実引数検証(F4、F6、F8)。** [ ]
     - `defpred`/`deffunc` 実引数に対する §18.10.4/§18.9 規則を実装する:

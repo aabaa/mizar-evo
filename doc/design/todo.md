@@ -213,7 +213,7 @@ Implement the decisions from step 2 in checker and core. Depends on step 2.
    omitted-reconsider gates plus activation contract (deps: tasks 40, 43, 44).
 4. [x] [mizar-core task 27](./mizar-core/en/todo.md) — reduct/view lowering
    (template-audit F1/F3; deps: checker 36).
-5. [ ] [mizar-core task 28](./mizar-core/en/todo.md) — template type-actual
+5. [x] [mizar-core task 28](./mizar-core/en/todo.md) — template type-actual
    inhabitation gating (F2; deps: core 27, checker 43).
 6. [ ] [mizar-core task 29](./mizar-core/en/todo.md) — scheme-actual
    compatibility, guard obligations, functor-actual validation (F4/F6/F8).

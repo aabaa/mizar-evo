@@ -206,6 +206,10 @@ enum CoreFormulaKind {
 
 - type erasure は必ず explicit `TypePred` formula、local assumption、view
   provenance、diagnostic、または obligation seed を残す。
+- template type-parameter inhabitation は checker が提供する witness binder 上の
+  explicit `Exists` formula として表現する。template type actual gate の失敗は
+  diagnostic/backref のままであり、Core IR は reject された actual に対する
+  actual-side existential axiom を追加しない。
 - type erasure により生成される conjunction は stable predicate ordering を使う。
 - quantifier binder は `binder_normalization.md` と互換な `CoreBinder` row で表現する。
 - formula node は surface precedence、parentheses、notation spelling を保持しない。

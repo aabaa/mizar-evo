@@ -39,7 +39,7 @@ exposes unexpected public APIs, or blocks safe review of future work.
 | `src/lib.rs` | 9 | module table in `todo.md` | Exports exactly `binder_normalization`, `control_flow`, `core_ir`, and `elaborator`. No drift. |
 | `src/core_ir.rs` | 4015 | `core_ir.md` | Large but cohesive data-shape module. No split required before closeout. |
 | `src/binder_normalization.rs` | 5828 | `binder_normalization.md` | Large but cohesive binder/substitution/canonicalization module. Future private helper extraction is optional. |
-| `src/elaborator.rs` | 12802 | `elaborator.md` | Largest review-risk file, but its sections map to the six elaboration steps in the owning spec. Task 27's reduct-view payload/lowering tests remain inside the Step 2/Step 3 elaboration boundary. The audit does not classify it as a current review-bottleneck requiring a split. |
+| `src/elaborator.rs` | 13451 | `elaborator.md` | Largest review-risk file, but its sections map to the six elaboration steps in the owning spec. Task 28's template type-actual gate fixtures remain inside the Step 2 type/fact elaboration boundary. The audit does not classify it as a current review-bottleneck requiring a split. |
 | `src/control_flow.rs` | 6718 | `control_flow.md` | Large but maps to phase-10 CFG, contracts, diagnostics, and handoff sections. No mandatory split in this task. |
 | `tests/determinism_suite.rs` | 627 | `00.crate_plan.md`, task 20 | Cross-module integration test; no boundary issue. |
 | `tests/lint_policy.rs` | 1167 | task 1, task 21, task 22 policies | Policy/audit guard test; no boundary issue. |
@@ -50,10 +50,10 @@ updated, checks public enum policy drift, and checks the Task 22 source/spec
 audit inventory. These guards make the public boundary explicit even though the
 implementation files remain physically large.
 
-Task 27 rechecked this audit after adding explicit reduct-view payload lowering
-and Rust fixtures to `src/elaborator.rs`. The public module boundary and owning
-spec remain unchanged; no move-only split is required by the new localized
-Step 3 term/formula lowering behavior.
+Task 28 rechecked this audit after adding explicit template type-actual gate
+payloads and Rust fixtures to `src/elaborator.rs`. The public module boundary
+and owning spec remain unchanged; no move-only split is required by the new
+localized Step 2 type/fact lowering behavior.
 
 ## Classification
 

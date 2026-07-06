@@ -399,13 +399,15 @@ work. Every finding maps to a task or a recorded disposition:
       lowering. No `doc/spec`, existing `.miz`, expectation, source-derived
       runner, or fake checker payload was changed.
 
-28. **Template type-actual inhabitation gating (F2).** [ ]
-    - Run the §17.3.4 inhabitation-evidence gate for template
-      `type_expression` actuals: a schema context may assume `∃x. is_T(x)`
-      for each type parameter, and in exchange every instantiation site must
-      satisfy the built-in/base-shape table; attributed actuals require an
-      existential registration. Emit the per-parameter inhabitation fact into
-      the schema context during lowering.
+28. **Template type-actual inhabitation gating (F2).** [x]
+    - Consume checker-owned §17.3.4 inhabitation-evidence gate results for
+      template `type_expression` actuals: a schema context may assume
+      `∃x. is_T(x)` for each type parameter, and in exchange every
+      instantiation site must have a checker result satisfying the
+      built-in/base-shape table; attributed actuals require an existential
+      registration. Emit the per-parameter inhabitation fact into the schema
+      context during lowering, without re-running checker registration
+      semantics.
     - Acceptance: `fail_template_type_actual_missing_existential_001`'s
       rejection is derivable (unsatisfiable attribute-chain actual is
       rejected at the instantiation site, and no `ex y st y is hollow set`
@@ -415,6 +417,16 @@ work. Every finding maps to a task or a recorded disposition:
     - Deps: 27; consume mizar-checker task 43's built-in/base-shape
       inhabitation table and task 20 gate surface. Refs: spec 07 §7.8,
       17 §17.3.4, 18 §18.10.2; template_encoding_audit.md F2.
+    - Completed by task 28: `TemplateTypeParameterInhabitationSeed` lowers
+      checker-supplied witness binders to schema-context `∃x. is_T(x)`
+      assumptions. `TemplateTypeActualGateSeed` preserves checker
+      existential-gate status plus registration, base-evidence, guard-fact,
+      and diagnostic backrefs. Non-satisfied gates emit only core diagnostics;
+      they do not create actual-side existential axioms or proof obligations.
+      Rust fixtures cover accepted registration/base/fact evidence,
+      missing-existential rejection for an actual, and invalid gate payloads.
+      No `doc/spec`, existing `.miz`, expectation, traceability metadata,
+      source-derived runner, or fake checker payload was changed.
 
 29. **Scheme-actual signature compatibility, guard obligations, and functor-actual validation (F4, F6, F8).** [ ]
     - Implement the §18.10.4/§18.9 rules for `defpred`/`deffunc` actuals:

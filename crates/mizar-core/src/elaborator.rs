@@ -26,7 +26,12 @@ use crate::{
 };
 use mizar_checker::{
     cluster_trace::ClusterFactId,
-    overload_resolution::QuaPathKey,
+    overload_resolution::{QuaPathKey, TemplateInstantiationKey, TemplateParameterKey},
+    registration_resolution::{
+        CheckerRegistrationId, ExistentialGateBaseEvidenceCoverage,
+        ExistentialGateBaseEvidenceKind, ExistentialGateId, ExistentialGateStatus,
+        RegistrationDiagnosticId,
+    },
     resolved_typed_ast::{
         CoercionInsertionId, OverloadResolutionId, ResolvedNodeRecovery, ResolvedTypedAst,
         ResolvedTypedDiagnosticId, ResolvedTypedDiagnosticSeverity, ResolvedTypedNodeId,
@@ -1244,6 +1249,26 @@ pub enum TypeAndFactLoweringError {
     EmptyReductViewPayload {
         path: QuaPathKey,
     },
+    DuplicateTemplateTypeParameter {
+        parameter: TemplateParameterKey,
+    },
+    DuplicateTemplateTypeActualGate {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+    },
+    PartialTemplateTypeActualBaseEvidence {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+    },
+    SatisfiedTemplateTypeActualWithoutEvidence {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+    },
+    UnsatisfiedTemplateTypeActualCarriesEvidence {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+        status: ExistentialGateStatus,
+    },
     UnsupportedPolarity,
     InvalidSeedProvenance(CoreContextError),
 }
@@ -1294,6 +1319,58 @@ impl fmt::Display for TypeAndFactLoweringError {
                     path.as_str()
                 )
             }
+            Self::DuplicateTemplateTypeParameter { parameter } => {
+                write!(
+                    formatter,
+                    "duplicate template type parameter inhabitation seed {}",
+                    parameter.as_str()
+                )
+            }
+            Self::DuplicateTemplateTypeActualGate {
+                instantiation,
+                parameter,
+            } => {
+                write!(
+                    formatter,
+                    "duplicate template type actual gate for instantiation {} parameter {}",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::PartialTemplateTypeActualBaseEvidence {
+                instantiation,
+                parameter,
+            } => {
+                write!(
+                    formatter,
+                    "template type actual gate for instantiation {} parameter {} has partial base evidence",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::SatisfiedTemplateTypeActualWithoutEvidence {
+                instantiation,
+                parameter,
+            } => {
+                write!(
+                    formatter,
+                    "satisfied template type actual gate for instantiation {} parameter {} has no registration, base evidence, or guard facts",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::UnsatisfiedTemplateTypeActualCarriesEvidence {
+                instantiation,
+                parameter,
+                status,
+            } => {
+                write!(
+                    formatter,
+                    "unsatisfied template type actual gate for instantiation {} parameter {} carries accepted evidence with status {status:?}",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
             Self::UnsupportedPolarity => write!(formatter, "unsupported checker polarity"),
             Self::InvalidSeedProvenance(error) => write!(formatter, "{error}"),
         }
@@ -1317,6 +1394,8 @@ pub struct TypeAndFactLoweringInput {
     pub mode_expansions: Vec<ModeExpansionSeed>,
     pub cluster_facts: Vec<ClusterFactSeed>,
     pub view_explanations: Vec<ViewExplanationSeed>,
+    pub template_type_parameters: Vec<TemplateTypeParameterInhabitationSeed>,
+    pub template_type_actual_gates: Vec<TemplateTypeActualGateSeed>,
     pub reconsiderings: Vec<ReconsideringSeed>,
     pub carried_obligations: Vec<CarriedInitialObligationSeed>,
     pub missing_evidence: Vec<MissingEvidenceSeed>,
@@ -1332,6 +1411,8 @@ impl TypeAndFactLoweringInput {
             mode_expansions: Vec::new(),
             cluster_facts: Vec::new(),
             view_explanations: Vec::new(),
+            template_type_parameters: Vec::new(),
+            template_type_actual_gates: Vec::new(),
             reconsiderings: Vec::new(),
             carried_obligations: Vec::new(),
             missing_evidence: Vec::new(),
@@ -1431,6 +1512,33 @@ pub struct ModeExpansionSeed {
 pub struct ClusterFactSeed {
     pub cluster_fact: ClusterFactId,
     pub fact: TypePredicateSeed,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateTypeParameterInhabitationSeed {
+    pub parameter: TemplateParameterKey,
+    pub witness: CoreVarId,
+    pub witness_role: CoreVarRole,
+    pub witness_source_name: Option<String>,
+    pub predicate: CoreTypePredicate,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateTypeActualGateSeed {
+    pub instantiation: TemplateInstantiationKey,
+    pub parameter: TemplateParameterKey,
+    pub actual_type: NormalizedTypeId,
+    pub gate: Option<ExistentialGateId>,
+    pub status: ExistentialGateStatus,
+    pub registration: Option<CheckerRegistrationId>,
+    pub base_evidence_kind: Option<ExistentialGateBaseEvidenceKind>,
+    pub base_evidence_coverage: Option<ExistentialGateBaseEvidenceCoverage>,
+    pub facts: Vec<TypeFactId>,
+    pub diagnostics: Vec<RegistrationDiagnosticId>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -1594,6 +1702,8 @@ pub struct TypeAndFactLoweringOutput {
     pub mode_expansions: Vec<LoweredModeExpansion>,
     pub cluster_facts: Vec<LoweredClusterFact>,
     pub view_explanations: Vec<ViewExplanation>,
+    pub template_type_parameter_inhabitations: Vec<LoweredTemplateTypeParameterInhabitation>,
+    pub template_type_actual_gates: Vec<TemplateTypeActualGate>,
     pub reconsidered_binders: Vec<ReconsideredBinding>,
     pub carried_obligations: Vec<ObligationSeedId>,
     pub missing_evidence: Vec<MissingEvidenceRecord>,
@@ -1615,6 +1725,34 @@ pub struct LoweredModeExpansion {
 pub struct LoweredClusterFact {
     pub cluster_fact: ClusterFactId,
     pub formula: CoreFormulaId,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct LoweredTemplateTypeParameterInhabitation {
+    pub parameter: TemplateParameterKey,
+    pub witness: CoreBinder,
+    pub witness_term: CoreTermId,
+    pub witness_fact: CoreFormulaId,
+    pub assumption: CoreFormulaId,
+    pub predicate: CoreTypePredicate,
+    pub provenance: Vec<CoreProvenance>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateTypeActualGate {
+    pub instantiation: TemplateInstantiationKey,
+    pub parameter: TemplateParameterKey,
+    pub actual_type: NormalizedTypeId,
+    pub gate: Option<ExistentialGateId>,
+    pub status: ExistentialGateStatus,
+    pub registration: Option<CheckerRegistrationId>,
+    pub base_evidence_kind: Option<ExistentialGateBaseEvidenceKind>,
+    pub base_evidence_coverage: Option<ExistentialGateBaseEvidenceCoverage>,
+    pub facts: Vec<TypeFactId>,
+    pub checker_diagnostics: Vec<RegistrationDiagnosticId>,
+    pub diagnostic: Option<CoreDiagnosticId>,
+    pub source: CoreSourceRef,
+    pub provenance: Vec<CoreProvenance>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1717,6 +1855,79 @@ impl TypeAndFactLoweringState {
         })
     }
 
+    fn insert_template_type_parameter_inhabitation(
+        &mut self,
+        seed: TemplateTypeParameterInhabitationSeed,
+    ) -> LoweredTemplateTypeParameterInhabitation {
+        let witness_term = self.insert_var_term(seed.witness, seed.source.clone());
+        let witness_fact = self.insert_formula(
+            CoreFormulaKind::TypePred {
+                subject: witness_term,
+                ty: seed.predicate.clone(),
+            },
+            seed.source.clone(),
+        );
+        let witness = CoreBinder {
+            var: seed.witness,
+            role: seed.witness_role,
+            ty_guard: None,
+            source_name: seed.witness_source_name,
+            source: normalized_source(seed.source.clone()),
+        };
+        let assumption = self.insert_formula(
+            CoreFormulaKind::Exists {
+                binders: vec![witness.clone()],
+                body: witness_fact,
+            },
+            seed.source,
+        );
+        LoweredTemplateTypeParameterInhabitation {
+            parameter: seed.parameter,
+            witness,
+            witness_term,
+            witness_fact,
+            assumption,
+            predicate: seed.predicate,
+            provenance: seed.provenance.as_slice().to_vec(),
+        }
+    }
+
+    fn lower_template_type_actual_gate(
+        &mut self,
+        mut seed: TemplateTypeActualGateSeed,
+    ) -> TemplateTypeActualGate {
+        seed.facts.sort();
+        seed.facts.dedup();
+        seed.diagnostics.sort();
+        seed.diagnostics.dedup();
+        let diagnostic = if template_actual_gate_is_satisfied(seed.status) {
+            None
+        } else {
+            Some(self.insert_diagnostic(
+                CoreDiagnosticClass::UnresolvedSemanticInput,
+                CoreDiagnosticSeverity::Error,
+                CoreDiagnosticRecovery::Partial,
+                template_actual_gate_message_key(seed.status),
+                seed.source.clone(),
+            ))
+        };
+        TemplateTypeActualGate {
+            instantiation: seed.instantiation,
+            parameter: seed.parameter,
+            actual_type: seed.actual_type,
+            gate: seed.gate,
+            status: seed.status,
+            registration: seed.registration,
+            base_evidence_kind: seed.base_evidence_kind,
+            base_evidence_coverage: seed.base_evidence_coverage,
+            facts: seed.facts,
+            checker_diagnostics: seed.diagnostics,
+            diagnostic,
+            source: normalized_source(seed.source),
+            provenance: seed.provenance.as_slice().to_vec(),
+        }
+    }
+
     fn insert_obligation_formula(
         &mut self,
         seed: &ObligationFormulaSeed,
@@ -1761,8 +1972,15 @@ pub fn lower_type_and_fact_inputs(
     validate_type_and_fact_input(context, &input)?;
 
     let mut state = TypeAndFactLoweringState::new(input.owner);
-    let mut binder_guards = Vec::new();
     let mut assumptions = Vec::new();
+    let mut template_type_parameter_inhabitations = Vec::new();
+    for seed in input.template_type_parameters {
+        let lowered = state.insert_template_type_parameter_inhabitation(seed);
+        assumptions.push(lowered.assumption);
+        template_type_parameter_inhabitations.push(lowered);
+    }
+
+    let mut binder_guards = Vec::new();
     for seed in input.declared_binders {
         let predicate = TypePredicateSeed::positive(
             seed.var,
@@ -1838,6 +2056,11 @@ pub fn lower_type_and_fact_inputs(
             source: normalized_source(seed.source),
             provenance: seed.provenance.as_slice().to_vec(),
         });
+    }
+
+    let mut template_type_actual_gates = Vec::new();
+    for seed in input.template_type_actual_gates {
+        template_type_actual_gates.push(state.lower_template_type_actual_gate(seed));
     }
 
     let mut reconsidered_binders = Vec::new();
@@ -1919,6 +2142,8 @@ pub fn lower_type_and_fact_inputs(
         mode_expansions,
         cluster_facts,
         view_explanations,
+        template_type_parameter_inhabitations,
+        template_type_actual_gates,
         reconsidered_binders,
         carried_obligations,
         missing_evidence,
@@ -1929,6 +2154,33 @@ fn validate_type_and_fact_input(
     context: &CoreContext,
     input: &TypeAndFactLoweringInput,
 ) -> TypeAndFactResult<()> {
+    let mut template_parameters = BTreeSet::new();
+    for seed in &input.template_type_parameters {
+        validate_checker_owned_provenance(
+            "template type parameter inhabitation seed",
+            seed.provenance.as_slice(),
+        )?;
+        if !template_parameters.insert(seed.parameter.clone()) {
+            return Err(TypeAndFactLoweringError::DuplicateTemplateTypeParameter {
+                parameter: seed.parameter.clone(),
+            });
+        }
+    }
+    let mut template_actual_gates = BTreeSet::new();
+    for seed in &input.template_type_actual_gates {
+        validate_checker_owned_provenance(
+            "template type actual gate seed",
+            seed.provenance.as_slice(),
+        )?;
+        let key = (seed.instantiation.clone(), seed.parameter.clone());
+        if !template_actual_gates.insert(key) {
+            return Err(TypeAndFactLoweringError::DuplicateTemplateTypeActualGate {
+                instantiation: seed.instantiation.clone(),
+                parameter: seed.parameter.clone(),
+            });
+        }
+        validate_template_type_actual_gate_seed(seed)?;
+    }
     for seed in &input.declared_binders {
         ensure_declared_subject(context, seed.var)?;
         validate_checker_owned_provenance("declared binder type seed", seed.provenance.as_slice())?;
@@ -1986,6 +2238,57 @@ fn validate_type_fact_reduct_view_seed(reduct: &ReductViewSeed) -> TypeAndFactRe
         });
     }
     Ok(())
+}
+
+fn validate_template_type_actual_gate_seed(
+    seed: &TemplateTypeActualGateSeed,
+) -> TypeAndFactResult<()> {
+    if seed.base_evidence_kind.is_some() != seed.base_evidence_coverage.is_some() {
+        return Err(
+            TypeAndFactLoweringError::PartialTemplateTypeActualBaseEvidence {
+                instantiation: seed.instantiation.clone(),
+                parameter: seed.parameter.clone(),
+            },
+        );
+    }
+    let has_evidence =
+        seed.registration.is_some() || seed.base_evidence_kind.is_some() || !seed.facts.is_empty();
+    if template_actual_gate_is_satisfied(seed.status) {
+        if !has_evidence {
+            return Err(
+                TypeAndFactLoweringError::SatisfiedTemplateTypeActualWithoutEvidence {
+                    instantiation: seed.instantiation.clone(),
+                    parameter: seed.parameter.clone(),
+                },
+            );
+        }
+    } else if has_evidence {
+        return Err(
+            TypeAndFactLoweringError::UnsatisfiedTemplateTypeActualCarriesEvidence {
+                instantiation: seed.instantiation.clone(),
+                parameter: seed.parameter.clone(),
+                status: seed.status,
+            },
+        );
+    }
+    Ok(())
+}
+
+fn template_actual_gate_is_satisfied(status: ExistentialGateStatus) -> bool {
+    matches!(status, ExistentialGateStatus::Satisfied)
+}
+
+fn template_actual_gate_message_key(status: ExistentialGateStatus) -> &'static str {
+    match status {
+        ExistentialGateStatus::MissingExistential => "missing-template-type-actual-inhabitation",
+        ExistentialGateStatus::BlockedGuard => "blocked-template-type-actual-inhabitation-guard",
+        ExistentialGateStatus::InvalidCandidate => {
+            "invalid-template-type-actual-inhabitation-candidate"
+        }
+        ExistentialGateStatus::DegradedRecovery => "degraded-template-type-actual-inhabitation",
+        ExistentialGateStatus::Satisfied => "satisfied-template-type-actual-inhabitation",
+        _ => "unsupported-template-type-actual-inhabitation-status",
+    }
 }
 
 fn validate_predicate_seed(
@@ -7194,6 +7497,47 @@ mod tests {
         }
     }
 
+    fn template_type_parameter(
+        parameter: &str,
+        witness: CoreVarId,
+        predicate: &str,
+        start: usize,
+    ) -> TemplateTypeParameterInhabitationSeed {
+        TemplateTypeParameterInhabitationSeed {
+            parameter: TemplateParameterKey::new(parameter),
+            witness,
+            witness_role: CoreVarRole::new("template-type-witness"),
+            witness_source_name: Some(format!("{parameter}$inhabitant")),
+            predicate: CoreTypePredicate::new(predicate),
+            source: direct(start, start + 1),
+            provenance: provenance(format!("checker:template-param:{parameter}").as_str()),
+        }
+    }
+
+    fn template_type_actual_gate(
+        instantiation: &str,
+        parameter: &str,
+        status: ExistentialGateStatus,
+        start: usize,
+    ) -> TemplateTypeActualGateSeed {
+        TemplateTypeActualGateSeed {
+            instantiation: TemplateInstantiationKey::new(instantiation),
+            parameter: TemplateParameterKey::new(parameter),
+            actual_type: NormalizedTypeId::new(start),
+            gate: Some(ExistentialGateId::new(start)),
+            status,
+            registration: None,
+            base_evidence_kind: None,
+            base_evidence_coverage: None,
+            facts: Vec::new(),
+            diagnostics: Vec::new(),
+            source: direct(start, start + 1),
+            provenance: provenance(
+                format!("checker:template-gate:{instantiation}:{parameter}").as_str(),
+            ),
+        }
+    }
+
     fn source_qua_explanation(
         path: &str,
         functors: &[&str],
@@ -7897,6 +8241,311 @@ mod tests {
         );
         assert!(output.obligation_seeds.is_empty());
         assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn template_type_parameter_inhabitation_emits_schema_exists_assumption() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let witness = CoreVarId::new(42);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_parameters = vec![template_type_parameter("T", witness, "is_T", 46)];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        assert_eq!(output.template_type_parameter_inhabitations.len(), 1);
+        assert_eq!(output.assumptions.len(), 1);
+        let lowered = &output.template_type_parameter_inhabitations[0];
+        assert_eq!(lowered.parameter, TemplateParameterKey::new("T"));
+        assert_eq!(lowered.assumption, output.assumptions[0]);
+        assert_eq!(lowered.witness.var, witness);
+        assert_eq!(
+            lowered.witness.role,
+            CoreVarRole::new("template-type-witness")
+        );
+        assert_eq!(lowered.witness.source_name.as_deref(), Some("T$inhabitant"));
+
+        let CoreFormulaKind::Exists { binders, body } = &output
+            .formulas
+            .get(lowered.assumption)
+            .expect("exists formula")
+            .kind
+        else {
+            panic!("schema parameter assumption must be an existential formula");
+        };
+        assert_eq!(binders, &vec![lowered.witness.clone()]);
+        assert_eq!(*body, lowered.witness_fact);
+        let CoreFormulaKind::TypePred { subject, ty } = &output
+            .formulas
+            .get(lowered.witness_fact)
+            .expect("witness fact")
+            .kind
+        else {
+            panic!("schema witness body must be a type predicate");
+        };
+        assert_eq!(*subject, lowered.witness_term);
+        assert_eq!(ty, &CoreTypePredicate::new("is_T"));
+        assert!(matches!(
+            output.terms.get(lowered.witness_term).expect("witness term").kind,
+            CoreTermKind::Var(actual) if actual == witness
+        ));
+        assert!(output.template_type_actual_gates.is_empty());
+        assert!(output.diagnostics.is_empty());
+        assert!(output.obligation_seeds.is_empty());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn template_type_actual_gates_preserve_accepted_evidence_without_axioms() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let mut registration_gate = template_type_actual_gate(
+            "Inhab[prime Nat]",
+            "T",
+            ExistentialGateStatus::Satisfied,
+            47,
+        );
+        registration_gate.registration = Some(CheckerRegistrationId::new(5));
+        let mut base_gate =
+            template_type_actual_gate("Inhab[set]", "U", ExistentialGateStatus::Satisfied, 48);
+        base_gate.base_evidence_kind = Some(ExistentialGateBaseEvidenceKind::BuiltinSet);
+        base_gate.base_evidence_coverage = Some(ExistentialGateBaseEvidenceCoverage::Builtin);
+        let mut guard_gate =
+            template_type_actual_gate("Inhab[Struct]", "V", ExistentialGateStatus::Satisfied, 49);
+        guard_gate.facts = vec![TypeFactId::new(9), TypeFactId::new(3), TypeFactId::new(3)];
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_actual_gates = vec![registration_gate, base_gate, guard_gate];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        assert_eq!(output.template_type_actual_gates.len(), 3);
+        assert!(output.assumptions.is_empty());
+        assert!(output.terms.is_empty());
+        assert!(output.formulas.is_empty());
+        assert!(output.diagnostics.is_empty());
+        assert!(output.obligation_seeds.is_empty());
+
+        assert_eq!(
+            output.template_type_actual_gates[0].registration,
+            Some(CheckerRegistrationId::new(5))
+        );
+        assert_eq!(
+            output.template_type_actual_gates[1].base_evidence_kind,
+            Some(ExistentialGateBaseEvidenceKind::BuiltinSet)
+        );
+        assert_eq!(
+            output.template_type_actual_gates[1].base_evidence_coverage,
+            Some(ExistentialGateBaseEvidenceCoverage::Builtin)
+        );
+        assert_eq!(
+            output.template_type_actual_gates[2].facts,
+            vec![TypeFactId::new(3), TypeFactId::new(9)]
+        );
+        assert!(
+            output
+                .template_type_actual_gates
+                .iter()
+                .all(|gate| gate.status == ExistentialGateStatus::Satisfied
+                    && gate.diagnostic.is_none()
+                    && !gate.provenance.is_empty())
+        );
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn missing_template_type_actual_gate_rejects_without_existential_axiom() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let mut missing = template_type_actual_gate(
+            "Inhab[hollow set]",
+            "T",
+            ExistentialGateStatus::MissingExistential,
+            50,
+        );
+        missing.diagnostics = vec![RegistrationDiagnosticId::new(12)];
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_actual_gates = vec![missing];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        assert_eq!(output.template_type_actual_gates.len(), 1);
+        let gate = &output.template_type_actual_gates[0];
+        let diagnostic = gate.diagnostic.expect("core diagnostic");
+        assert_eq!(
+            gate.checker_diagnostics,
+            vec![RegistrationDiagnosticId::new(12)]
+        );
+        assert_eq!(
+            output
+                .diagnostics
+                .get(diagnostic)
+                .expect("diagnostic")
+                .message_key
+                .as_str(),
+            "missing-template-type-actual-inhabitation"
+        );
+        assert!(output.assumptions.is_empty());
+        assert!(output.terms.is_empty());
+        assert!(output.formulas.is_empty());
+        assert!(output.obligation_seeds.is_empty());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn unsatisfied_template_type_actual_gate_status_matrix_is_diagnostic_only() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let cases = [
+            (
+                ExistentialGateStatus::MissingExistential,
+                "missing-template-type-actual-inhabitation",
+            ),
+            (
+                ExistentialGateStatus::BlockedGuard,
+                "blocked-template-type-actual-inhabitation-guard",
+            ),
+            (
+                ExistentialGateStatus::InvalidCandidate,
+                "invalid-template-type-actual-inhabitation-candidate",
+            ),
+            (
+                ExistentialGateStatus::DegradedRecovery,
+                "degraded-template-type-actual-inhabitation",
+            ),
+        ];
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_actual_gates = cases
+            .iter()
+            .enumerate()
+            .map(|(offset, (status, _))| {
+                let mut seed = template_type_actual_gate(
+                    format!("Inhab[case{offset}]").as_str(),
+                    format!("T{offset}").as_str(),
+                    *status,
+                    56 + offset,
+                );
+                seed.diagnostics = vec![RegistrationDiagnosticId::new(100 + offset)];
+                seed
+            })
+            .collect();
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        assert_eq!(output.template_type_actual_gates.len(), cases.len());
+        for (gate, (status, message)) in output.template_type_actual_gates.iter().zip(cases) {
+            assert_eq!(gate.status, status);
+            assert!(gate.registration.is_none());
+            assert!(gate.base_evidence_kind.is_none());
+            assert!(gate.base_evidence_coverage.is_none());
+            assert!(gate.facts.is_empty());
+            let diagnostic = gate.diagnostic.expect("diagnostic-only rejected gate");
+            assert_eq!(
+                output
+                    .diagnostics
+                    .get(diagnostic)
+                    .expect("diagnostic")
+                    .message_key
+                    .as_str(),
+                message
+            );
+        }
+        assert!(output.assumptions.is_empty());
+        assert!(output.terms.is_empty());
+        assert!(output.formulas.is_empty());
+        assert!(output.obligation_seeds.is_empty());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn template_type_actual_gate_payloads_fail_closed() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let no_evidence = template_type_actual_gate(
+            "Inhab[NoEvidence]",
+            "T",
+            ExistentialGateStatus::Satisfied,
+            51,
+        );
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_actual_gates = vec![no_evidence];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::SatisfiedTemplateTypeActualWithoutEvidence { .. })
+        ));
+
+        let mut partial_base =
+            template_type_actual_gate("Inhab[partial]", "T", ExistentialGateStatus::Satisfied, 52);
+        partial_base.base_evidence_kind = Some(ExistentialGateBaseEvidenceKind::BuiltinObject);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_actual_gates = vec![partial_base];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::PartialTemplateTypeActualBaseEvidence { .. })
+        ));
+
+        let mut unsatisfied_with_registration = template_type_actual_gate(
+            "Inhab[hollow set]",
+            "T",
+            ExistentialGateStatus::MissingExistential,
+            53,
+        );
+        unsatisfied_with_registration.registration = Some(CheckerRegistrationId::new(9));
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_actual_gates = vec![unsatisfied_with_registration];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(
+                TypeAndFactLoweringError::UnsatisfiedTemplateTypeActualCarriesEvidence {
+                    status: ExistentialGateStatus::MissingExistential,
+                    ..
+                }
+            )
+        ));
+
+        let mut unsatisfied_with_base = template_type_actual_gate(
+            "Inhab[blocked-base]",
+            "T",
+            ExistentialGateStatus::BlockedGuard,
+            60,
+        );
+        unsatisfied_with_base.base_evidence_kind =
+            Some(ExistentialGateBaseEvidenceKind::BuiltinObject);
+        unsatisfied_with_base.base_evidence_coverage =
+            Some(ExistentialGateBaseEvidenceCoverage::Builtin);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_actual_gates = vec![unsatisfied_with_base];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(
+                TypeAndFactLoweringError::UnsatisfiedTemplateTypeActualCarriesEvidence {
+                    status: ExistentialGateStatus::BlockedGuard,
+                    ..
+                }
+            )
+        ));
+
+        let mut unsatisfied_with_facts = template_type_actual_gate(
+            "Inhab[invalid-fact]",
+            "T",
+            ExistentialGateStatus::InvalidCandidate,
+            61,
+        );
+        unsatisfied_with_facts.facts = vec![TypeFactId::new(10)];
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_actual_gates = vec![unsatisfied_with_facts];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(
+                TypeAndFactLoweringError::UnsatisfiedTemplateTypeActualCarriesEvidence {
+                    status: ExistentialGateStatus::InvalidCandidate,
+                    ..
+                }
+            )
+        ));
+
+        let mut first =
+            template_type_actual_gate("Inhab[set]", "T", ExistentialGateStatus::Satisfied, 62);
+        first.registration = Some(CheckerRegistrationId::new(1));
+        let mut second =
+            template_type_actual_gate("Inhab[set]", "T", ExistentialGateStatus::Satisfied, 63);
+        second.registration = Some(CheckerRegistrationId::new(2));
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_actual_gates = vec![first, second];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::DuplicateTemplateTypeActualGate { .. })
+        ));
     }
 
     #[test]

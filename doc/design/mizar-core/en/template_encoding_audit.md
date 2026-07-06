@@ -448,9 +448,14 @@ roadmap records their owning tasks and task-27 progress.
    the view term. The task preserves explicit exact-instance guard formulas on
    reduct terms; source-derived extensionality emission and real payload
    extraction remain gated on the checker/runner bridge.
-2. **Inhabitation gating of template actuals (F2).** The existential-gating
-   check must run for template `type_expression` actuals; schema contexts get
-   a per-parameter inhabitation fact.
+2. **Inhabitation gating of template actuals (F2).** Task 28 implements the
+   explicit-payload core side: schema contexts get checker-supplied
+   per-parameter `∃x. is_T(x)` assumptions, and template `type_expression`
+   actuals preserve checker existential-gate status, registration/base/fact
+   evidence, and diagnostics. Rejected actuals remain diagnostics/backrefs and
+   never become actual-side existential axioms. Source-derived actual
+   extraction and active runner execution remain gated on the checker/runner
+   bridge.
 3. **Signature-compatibility check for scheme actuals (F4/F6).** Contravariant
    domain / covariant codomain widening checks for `defpred`/`deffunc`
    actuals; guard obligations discharged, never asserted.

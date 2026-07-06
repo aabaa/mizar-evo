@@ -169,6 +169,8 @@ task 9 がこの section を実装する。
 - normalized checker type row。
 - visible type fact と cluster fact。
 - inserted view と source-written `qua` metadata。
+- explicit な template type-parameter inhabitation assumption と、checker
+  existential-gate evaluation 由来の template type-actual gate result。
 - checker initial obligation と deferred evidence row。
 
 出力:
@@ -176,6 +178,7 @@ task 9 がこの section を実装する。
 - `CoreTypePredicate` application。
 - core assumption と guard formula。
 - view explanation provenance。
+- schema parameter inhabitation assumption と template type-actual gate record。
 - carried obligation seed reference。
 
 消去規則:
@@ -191,6 +194,17 @@ task 9 がこの section を実装する。
   fact だけへ lower する。この step は term を作らない。Step 2 fact の subject は変数に
   限られるため、reduct term 上の view-specific attribute fact は Step 3 の formula seed である。
   `qua` view は新しい proof step ではない。
+- template type parameter `T` は explicit checker-owned seed から schema context
+  assumption `Exists { binders: [witness], body: TypePred(witness, is_T) }`
+  へ lower する。seed は witness binder identity、role、source name、predicate、
+  source、provenance を提供し、elaborator は source syntax から witness variable を
+  作らない。
+- template type actual は §17.3.4 の checker existential-gate result を保持する。
+  `Satisfied` gate は inhabitation を正当化した checker registration id、base evidence
+  pair、または guard fact を保存する。非 satisfied status(`MissingExistential`,
+  `BlockedGuard`, `InvalidCandidate`, `DegradedRecovery`)は core diagnostic と
+  checker-diagnostic backref だけを生成する。actual 側の existential axiom や proof
+  obligation は生成しない。
 - reconsider/narrowing payload は fresh/narrowed core binding と、checker が提供した場合の
   carried obligation seed になる。
 - sethood、non-emptiness、coercion、cluster evidence が欠けている場合は diagnostic/error node

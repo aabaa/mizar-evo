@@ -180,6 +180,8 @@ Input:
 - normalized checker type rows;
 - visible type facts and cluster facts;
 - inserted views and source-written `qua` metadata;
+- explicit template type-parameter inhabitation assumptions and template
+  type-actual gate results from checker existential-gate evaluation;
 - checker initial obligations and deferred evidence rows.
 
 Output:
@@ -187,6 +189,8 @@ Output:
 - `CoreTypePredicate` applications;
 - core assumptions and guard formulas;
 - view explanation provenance;
+- schema-parameter inhabitation assumptions and template type-actual gate
+  records;
 - carried obligation seed references.
 
 Erasure rules:
@@ -204,6 +208,18 @@ Erasure rules:
   create terms because Step 2 facts have variable subjects; view-specific
   attribute facts on reduct terms are Step 3 formula seeds. `qua` views are not
   new proof steps.
+- A template type parameter `T` lowers from an explicit checker-owned seed to
+  the schema-context assumption `Exists { binders: [witness], body:
+  TypePred(witness, is_T) }`. The seed supplies the witness binder identity,
+  role, source name, predicate, source, and provenance; the elaborator does not
+  invent witness variables from source syntax.
+- A template type actual carries the checker existential-gate result for
+  §17.3.4. `Satisfied` gates preserve the checker registration id, base
+  evidence pair, or guard facts that justified inhabitation. Non-satisfied
+  statuses (`MissingExistential`, `BlockedGuard`, `InvalidCandidate`, or
+  `DegradedRecovery`) produce a core diagnostic and checker-diagnostic
+  backrefs only. They never emit an actual-side existential axiom or proof
+  obligation.
 - Reconsider/narrowing payloads become a fresh or narrowed core binding plus
   a carried obligation seed when the checker supplied one.
 - Missing sethood, non-emptiness, coercion, or cluster evidence becomes a

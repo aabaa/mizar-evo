@@ -433,9 +433,13 @@ task 27 の進捗を記録している。
    対象にできる。この task は reduct term 上の明示的 exact-instance guard formula を
    保持する。source-derived extensionality emission と real payload extraction は
    checker/runner bridge まで gated のままである。
-2. **テンプレート実引数の非空性ゲート(F2)。** existential gating 検査を
-   テンプレートの `type_expression` 実引数にも実行し、schema 文脈は
-   パラメータごとの非空性事実を得る。
+2. **テンプレート実引数の非空性ゲート(F2)。** task 28 は explicit-payload の
+   core 側を実装済みである。schema 文脈は checker が提供する parameter ごとの
+   `∃x. is_T(x)` assumption を得て、template `type_expression` actual は checker
+   existential-gate status、registration/base/fact evidence、diagnostic を保存する。
+   reject された actual は diagnostic/backref のままであり、actual-side existential
+   axiom にはならない。source-derived actual extraction と active runner execution は
+   checker/runner bridge に gated のままである。
 3. **scheme 実引数のシグネチャ適合検査(F4/F6)。** `defpred`/`deffunc`
    実引数への反変ドメイン/共変コドメイン widening 検査。ガード義務は
    放出して放つのみで、主張は決してしない。

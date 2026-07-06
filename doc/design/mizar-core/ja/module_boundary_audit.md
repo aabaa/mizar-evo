@@ -38,7 +38,7 @@ module specification と比較する。file size は reviewability signal であ
 | `src/lib.rs` | 9 | `todo.md` の module table | `binder_normalization`, `control_flow`, `core_ir`, `elaborator` だけを export する。drift なし。 |
 | `src/core_ir.rs` | 4015 | `core_ir.md` | 大きいが cohesive な data-shape module。closeout 前の split は不要。 |
 | `src/binder_normalization.rs` | 5828 | `binder_normalization.md` | 大きいが cohesive な binder/substitution/canonicalization module。future private helper extraction は optional。 |
-| `src/elaborator.rs` | 12802 | `elaborator.md` | 最大の review-risk file だが、section は owning spec の six elaboration step に対応する。Task 27 の reduct-view payload / lowering test は Step 2 / Step 3 elaboration boundary 内に残る。この audit は split を要求する current review-bottleneck とは分類しない。 |
+| `src/elaborator.rs` | 13451 | `elaborator.md` | 最大の review-risk file だが、section は owning spec の six elaboration step に対応する。Task 28 の template type-actual gate fixture は Step 2 type/fact elaboration boundary 内に残る。この audit は split を要求する current review-bottleneck とは分類しない。 |
 | `src/control_flow.rs` | 6718 | `control_flow.md` | 大きいが phase-10 CFG、contract、diagnostic、handoff section に対応する。この task で mandatory split はしない。 |
 | `tests/determinism_suite.rs` | 627 | `00.crate_plan.md`, task 20 | cross-module integration test。boundary issue なし。 |
 | `tests/lint_policy.rs` | 1167 | task 1, task 21, task 22 policy | policy/audit guard test。boundary issue なし。 |
@@ -48,9 +48,9 @@ module specification と比較する。file size は reviewability signal であ
 enum policy drift と Task 22 source/spec audit inventory を検査する。implementation
 file は物理的には大きいが、これらの guard により public boundary は明示されている。
 
-Task 27 では explicit reduct-view payload lowering と Rust fixture を
+Task 28 では explicit template type-actual gate payload と Rust fixture を
 `src/elaborator.rs` に追加した後、この audit を再確認した。public module boundary と
-owning spec は変わらない。新しい局所的な Step 3 term/formula lowering behavior によって
+owning spec は変わらない。新しい局所的な Step 2 type/fact lowering behavior によって
 move-only split は必要にならない。
 
 ## Classification
