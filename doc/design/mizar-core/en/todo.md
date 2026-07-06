@@ -326,7 +326,7 @@ work. Every finding maps to a task or a recorded disposition:
 | F2 (type-actual inhabitation) | spec patched (§17.3.4 gating row); checker task 43 completed the built-in/base-shape inhabitation table; elaborator gating is task 28 |
 | F3 (`type extends M` object/schema conflation) | spec patched (§18.10.2); explicit-payload bounded-view lowering is covered together with F1 in task 27 |
 | F4 (functor guards, actual signature compatibility) | spec patched (§18.10.4, §18.9); explicit-payload implementation completed in task 29 |
-| F5 (type-parameter sethood) | spec patched (§18.10.2 sethood paragraph); plumbing is task 30 |
+| F5 (type-parameter sethood) | spec patched (§18.10.2 sethood paragraph); explicit-payload plumbing completed in task 30; source-derived extraction remains external |
 | F6 (schemes applied inside template bodies) | spec patched (§18.10.3 paragraph); explicit substitution-composition metadata implementation completed in task 29 |
 | F7 (inference determinism over widening) | spec patched by task 26; implementation remains deferred to payload-bearing inference/elaboration work |
 | F8 (partial-algorithm functor actuals) | spec patched (§18.8.4); explicit diagnostic-only rejection completed in task 29 |
@@ -460,16 +460,19 @@ work. Every finding maps to a task or a recorded disposition:
       §18.9/§18.10.3/§18.10.4/§18.8.4; template_encoding_audit.md F4, F6,
       F8.
 
-30. **Sethood plumbing for type parameters (F5).** [ ]
+30. **Sethood plumbing for type parameters (F5).** [x]
     - Key Fraenkel-comprehension gating inside template bodies to
       bound-inherited or constraint-supplied sethood per the §18.10.2
       sethood paragraph: a bare type parameter carries no sethood, so a
       comprehension ranging over it is rejected unless the bound or an
       explicit constraint supplies sethood evidence.
-    - Acceptance: `fail_template_fraenkel_over_type_param_001`'s rejection
-      is derivable (no Russell-style comprehension over `para[set]`); pass
-      fixtures show bound-inherited sethood flowing into the comprehension
-      gate.
+    - Acceptance: explicit payload fixtures derive the same rejection as
+      `fail_template_fraenkel_over_type_param_001` (no Russell-style
+      comprehension over `para[set]`), preserve bound-inherited and
+      constraint-supplied sethood in generated Fraenkel origins, keep ordinary
+      non-template Fraenkel evidence unchanged, and fail closed for malformed
+      or duplicate cross-reference payloads. Source-derived extraction and
+      active corpus execution remain external/deferred.
     - Verify: `cargo test -p mizar-core`, `cargo test -p mizar-checker`.
     - Deps: 28; consume mizar-checker task 43's parameterized sethood form
       (SSA-013). Refs: spec 13 §13.4.2, 18 §18.10.2;

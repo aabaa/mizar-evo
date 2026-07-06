@@ -357,9 +357,15 @@ set r = para[set];    :: Russell: r in r iff not r in r
 で放たれる。パラメータ上の内包は、これらのいずれかの根拠がない限り記号的
 に拒否される。
 
-**処置。** 本変更で仕様修正: §18.10.2 sethood 段落。reject-first テスト
+**処置。** audit 変更で仕様修正: §18.10.2 sethood 段落。reject-first テスト
 追加:
 `tests/miz/fail/templates/fail_template_fraenkel_over_type_param_001.miz`。
+task 30 は explicit-payload core 側を実装する: Step 2 は bound 継承、
+constraint 供給、bare-missing sethood row を保存し、Step 3 は
+template-parameter Fraenkel comprehension が generated origin を emit する前に
+accepted bound/constraint row を cross-reference することを要求する。
+source-derived sethood extraction と active corpus execution は checker/runner
+bridge 到着まで gated のままである。
 
 ### F6(Medium)— テンプレート本体内で外側テンプレートのパラメータを実引数として scheme を適用する場合
 
@@ -448,8 +454,12 @@ task 27 の進捗を記録している。
    emit し、guard axiom や active VC は決して assert しない。source-derived
    closure expansion と active runner extraction は checker/runner bridge に
    gated のままである。
-4. **型パラメータの sethood 証拠の配管(F5)。** テンプレート本体での
-   Fraenkel ゲートを、bound 継承または制約供給の sethood にキーする。
+4. **型パラメータの sethood 証拠の配管(F5)。** task 30 は explicit-payload
+   core 側を実装する: テンプレート本体での Fraenkel ゲートは accepted な
+   bound 継承または constraint 供給の sethood record に key され、bare type
+   parameter は missing-sethood error path へ lower する。source-derived
+   sethood extraction と active runner execution は checker/runner bridge に
+   gated のままである。
 5. **部分 algorithm の functor 実引数の拒否(F8)。** task 29 は partial、
    void、unsupported algorithm actual を accepted evidence のない diagnostic-only
    explicit payload row として記録する。F7 の推論決定性は task 26 で解決済みで、

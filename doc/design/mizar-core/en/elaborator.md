@@ -225,6 +225,15 @@ Erasure rules:
   `DegradedRecovery`) produce a core diagnostic and checker-diagnostic
   backrefs only. They never emit an actual-side existential axiom or proof
   obligation.
+- Template type-parameter sethood rows carry the §13.4.2/§18.10.2
+  sethood decision keyed by template parameter and the checker-normalized
+  sethood evidence key. `Accepted` rows must come from
+  `BoundInherited` or `ConstraintSupplied` evidence and must carry explicit
+  checker facts. A `BareParameter` row is diagnostic-only `Missing` evidence;
+  it is a normative rejection for Fraenkel generators over bare template type
+  parameters, not a source of sethood. Duplicate or conflicting rows fail
+  closed before lowering. `DegradedRecovery` rows are also diagnostic-only,
+  carry no facts, and cannot satisfy a Fraenkel sethood gate if referenced.
 - A scheme actual carries explicit checker validation for Chapter 18
   instantiations. Predicate and functor actual rows record the directional
   widening evidence required by §18.10.4: schema domain types widen to the
@@ -255,6 +264,8 @@ Input:
 
 - resolved expression metadata and overload resolution records;
 - lowered type predicates/facts from Step 2;
+- lowered template type-parameter sethood records from Step 2 when a Fraenkel
+  generator ranges over a template type parameter;
 - binder contexts from Step 1;
 - generated-origin registry.
 
@@ -317,6 +328,15 @@ Term rules:
   explicit already-carried marker. Missing evidence lowers to an error term and,
   when the checker provides a deferred `ObligationSeedKind::GeneratedSethood`
   seed, that deferred seed; it is not fabricated as a valid set term.
+- When a Fraenkel generator ranges over a template type parameter, Step 3 must
+  receive a structured `TemplateFraenkelSethoodEvidenceSeed` that references a
+  Step 2 `TemplateTypeParameterSethood` row by parameter and normalized
+  evidence key. The referenced row must be accepted, must use
+  `BoundInherited` or `ConstraintSupplied` source, must match the normalized
+  type key, and must carry checker evidence. Missing rows, duplicate rows,
+  wrong status/source, normalized-key mismatch, or empty evidence fail closed.
+  A `BareParameter`/`Missing` row deliberately clears any raw sethood
+  provenance and lowers through the missing-sethood error/deferred path.
 - Algorithm statement picks lower to `CoreAlgorithmStmtKind::Pick` in Step 6,
   not to shared stable choice symbols.
 
@@ -609,7 +629,10 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `TemplateSchemeActualKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `TemplateSchemeActualStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `TemplateWideningEvidenceStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TemplateTypeParameterSethoodSource` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TemplateTypeParameterSethoodStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `TermAndFormulaLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TemplateSethoodRecordErrorKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CoreTermSeedKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CoreFormulaSeedKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `FraenkelMembershipObligationSeed` | `#[non_exhaustive]` downstream forward-compatible surface. |

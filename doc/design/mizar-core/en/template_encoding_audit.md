@@ -372,9 +372,15 @@ sethood may be demanded as a `such that` constraint and is then discharged at
 use sites like any constraint. Comprehension over a parameter is rejected
 symbolically unless one of these sources applies.
 
-**Disposition.** Spec patched in this change: §18.10.2 sethood paragraph.
+**Disposition.** Spec patched in the audit change: §18.10.2 sethood paragraph.
 Reject-first test added:
 `tests/miz/fail/templates/fail_template_fraenkel_over_type_param_001.miz`.
+Task 30 implements the explicit-payload core side: Step 2 preserves
+bound-inherited, constraint-supplied, and bare-missing sethood rows, and Step 3
+requires template-parameter Fraenkel comprehensions to cross-reference accepted
+bound/constraint rows before emitting generated origins. Source-derived sethood
+extraction and active corpus execution remain gated on the checker/runner
+bridge.
 
 ### F6 (Medium) — Schemes applied inside template bodies with the enclosing template's parameters as actuals
 
@@ -463,8 +469,12 @@ roadmap records their owning tasks and task-27 progress.
    functor rows emit `Skipped` guard obligation seeds as traceability and never
    assert guard axioms or active VCs. Source-derived closure expansion and
    active runner extraction remain gated on the checker/runner bridge.
-4. **Sethood evidence plumbing for type parameters (F5).** Fraenkel gating in
-   template bodies keyed to bound-inherited or constraint-supplied sethood.
+4. **Sethood evidence plumbing for type parameters (F5).** Task 30 implements
+   the explicit-payload core side: Fraenkel gating in template bodies is keyed
+   to accepted bound-inherited or constraint-supplied sethood records, while
+   bare type parameters lower through the missing-sethood error path.
+   Source-derived sethood extraction and active runner execution remain gated
+   on the checker/runner bridge.
 5. **Partial-algorithm functor actual rejection (F8).** Task 29 records
    partial, void, and unsupported algorithm actuals as diagnostic-only explicit
    payload rows without accepted evidence. F7 inference determinism is resolved

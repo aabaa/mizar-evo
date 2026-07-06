@@ -314,7 +314,7 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
 | F2(型実引数の inhabitation) | spec 修正済み(§17.3.4 gating 行)。checker task 43 が built-in/base-shape inhabitation 表を完了した。elaborator gating は task 28。 |
 | F3(`type extends M` の object/schema 混同) | spec 修正済み(§18.10.2)。explicit-payload bounded-view lowering は task 27 で F1 とともに cover 済み。 |
 | F4(functor guard、実引数シグネチャ適合) | spec 修正済み(§18.10.4、§18.9)。explicit-payload 実装は task 29 で完了 |
-| F5(型パラメータの sethood) | spec 修正済み(§18.10.2 sethood 段落)。plumbing は task 30 |
+| F5(型パラメータの sethood) | spec 修正済み(§18.10.2 sethood 段落)。explicit-payload plumbing は task 30 で完了。source-derived extraction は external のまま。 |
 | F6(テンプレート本体内の scheme 適用) | spec 修正済み(§18.10.3 の段落)。explicit substitution-composition metadata 実装は task 29 で完了 |
 | F7(widening 上の推論決定性) | task 26 で spec 修正済み。実装は payload を伴う inference / elaboration 作業へ deferred |
 | F8(部分 algorithm の functor 実引数) | spec 修正済み(§18.8.4)。explicit diagnostic-only rejection は task 29 で完了 |
@@ -444,16 +444,19 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       §18.9/§18.10.3/§18.10.4/§18.8.4; template_encoding_audit.md F4、F6、
       F8。
 
-30. **型パラメータの sethood plumbing(F5)。** [ ]
+30. **型パラメータの sethood plumbing(F5)。** [x]
     - §18.10.2 の sethood 段落に従い、テンプレート本体内の Fraenkel
       comprehension gating を bound 継承または constraint 供給の sethood
       に keying する: 裸の型パラメータは sethood を持たないため、それを
       range とする comprehension は bound または明示的 constraint が
       sethood evidence を供給しない限り拒否される。
-    - 受け入れ条件: `fail_template_fraenkel_over_type_param_001` の拒否が
-      導出可能(`para[set]` 上の Russell 型 comprehension が生じない)。
-      bound 継承の sethood が comprehension gate へ流れる pass fixture を
-      持つ。
+    - 受け入れ条件: explicit payload fixture は
+      `fail_template_fraenkel_over_type_param_001` と同じ拒否を導出する
+      (`para[set]` 上の Russell 型 comprehension が生じない)。bound 継承と
+      constraint 供給の sethood は generated Fraenkel origin に保存され、
+      通常の non-template Fraenkel evidence は変えず、malformed または duplicate
+      cross-reference payload は fail closed する。source-derived extraction と
+      active corpus execution は external/deferred のまま。
     - 検証: `cargo test -p mizar-core`、`cargo test -p mizar-checker`。
     - 依存: 28; mizar-checker task 43 のパラメータ化 sethood 形(SSA-013)を
       consume する。参照: spec 13 §13.4.2、18 §18.10.2;

@@ -1256,6 +1256,10 @@ pub enum TypeAndFactLoweringError {
         instantiation: TemplateInstantiationKey,
         parameter: TemplateParameterKey,
     },
+    DuplicateTemplateTypeParameterSethood {
+        parameter: TemplateParameterKey,
+        evidence_key: TemplateSethoodEvidenceKey,
+    },
     DuplicateTemplateSchemeActual {
         instantiation: TemplateInstantiationKey,
         parameter: TemplateParameterKey,
@@ -1272,6 +1276,24 @@ pub enum TypeAndFactLoweringError {
         instantiation: TemplateInstantiationKey,
         parameter: TemplateParameterKey,
         status: ExistentialGateStatus,
+    },
+    AcceptedTemplateTypeParameterSethoodWithoutEvidence {
+        parameter: TemplateParameterKey,
+        evidence_key: TemplateSethoodEvidenceKey,
+    },
+    BareTemplateTypeParameterSethoodAccepted {
+        parameter: TemplateParameterKey,
+        evidence_key: TemplateSethoodEvidenceKey,
+    },
+    MissingTemplateTypeParameterSethoodCarriesEvidence {
+        parameter: TemplateParameterKey,
+        evidence_key: TemplateSethoodEvidenceKey,
+        status: TemplateTypeParameterSethoodStatus,
+    },
+    MissingTemplateTypeParameterSethoodWrongSource {
+        parameter: TemplateParameterKey,
+        evidence_key: TemplateSethoodEvidenceKey,
+        source_kind: TemplateTypeParameterSethoodSource,
     },
     TemplateSchemeActualKindMismatch {
         instantiation: TemplateInstantiationKey,
@@ -1392,6 +1414,17 @@ impl fmt::Display for TypeAndFactLoweringError {
                     parameter.as_str()
                 )
             }
+            Self::DuplicateTemplateTypeParameterSethood {
+                parameter,
+                evidence_key,
+            } => {
+                write!(
+                    formatter,
+                    "duplicate template type-parameter sethood record for parameter {} evidence {}",
+                    parameter.as_str(),
+                    evidence_key.as_str()
+                )
+            }
             Self::DuplicateTemplateSchemeActual {
                 instantiation,
                 parameter,
@@ -1435,6 +1468,52 @@ impl fmt::Display for TypeAndFactLoweringError {
                     "unsatisfied template type actual gate for instantiation {} parameter {} carries accepted evidence with status {status:?}",
                     instantiation.as_str(),
                     parameter.as_str()
+                )
+            }
+            Self::AcceptedTemplateTypeParameterSethoodWithoutEvidence {
+                parameter,
+                evidence_key,
+            } => {
+                write!(
+                    formatter,
+                    "accepted template type-parameter sethood record for parameter {} evidence {} has no checker facts",
+                    parameter.as_str(),
+                    evidence_key.as_str()
+                )
+            }
+            Self::BareTemplateTypeParameterSethoodAccepted {
+                parameter,
+                evidence_key,
+            } => {
+                write!(
+                    formatter,
+                    "bare template type parameter {} cannot accept sethood evidence {}",
+                    parameter.as_str(),
+                    evidence_key.as_str()
+                )
+            }
+            Self::MissingTemplateTypeParameterSethoodCarriesEvidence {
+                parameter,
+                evidence_key,
+                status,
+            } => {
+                write!(
+                    formatter,
+                    "non-accepted template type-parameter sethood record for parameter {} evidence {} carries checker facts with status {status:?}",
+                    parameter.as_str(),
+                    evidence_key.as_str()
+                )
+            }
+            Self::MissingTemplateTypeParameterSethoodWrongSource {
+                parameter,
+                evidence_key,
+                source_kind,
+            } => {
+                write!(
+                    formatter,
+                    "missing template type-parameter sethood record for parameter {} evidence {} has wrong source {source_kind:?}",
+                    parameter.as_str(),
+                    evidence_key.as_str()
                 )
             }
             Self::TemplateSchemeActualKindMismatch {
@@ -1590,6 +1669,7 @@ pub struct TypeAndFactLoweringInput {
     pub view_explanations: Vec<ViewExplanationSeed>,
     pub template_type_parameters: Vec<TemplateTypeParameterInhabitationSeed>,
     pub template_type_actual_gates: Vec<TemplateTypeActualGateSeed>,
+    pub template_type_parameter_sethoods: Vec<TemplateTypeParameterSethoodSeed>,
     pub template_scheme_actuals: Vec<TemplateSchemeActualSeed>,
     pub reconsiderings: Vec<ReconsideringSeed>,
     pub carried_obligations: Vec<CarriedInitialObligationSeed>,
@@ -1608,6 +1688,7 @@ impl TypeAndFactLoweringInput {
             view_explanations: Vec::new(),
             template_type_parameters: Vec::new(),
             template_type_actual_gates: Vec::new(),
+            template_type_parameter_sethoods: Vec::new(),
             template_scheme_actuals: Vec::new(),
             reconsiderings: Vec::new(),
             carried_obligations: Vec::new(),
@@ -1733,6 +1814,60 @@ pub struct TemplateTypeActualGateSeed {
     pub base_evidence_coverage: Option<ExistentialGateBaseEvidenceCoverage>,
     pub facts: Vec<TypeFactId>,
     pub diagnostics: Vec<RegistrationDiagnosticId>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct TemplateSethoodEvidenceKey(String);
+
+impl TemplateSethoodEvidenceKey {
+    pub fn new(value: impl Into<String>) -> Self {
+        Self(value.into())
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
+impl From<&str> for TemplateSethoodEvidenceKey {
+    fn from(value: &str) -> Self {
+        Self::new(value)
+    }
+}
+
+impl From<String> for TemplateSethoodEvidenceKey {
+    fn from(value: String) -> Self {
+        Self::new(value)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateTypeParameterSethoodSource {
+    BareParameter,
+    BoundInherited,
+    ConstraintSupplied,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateTypeParameterSethoodStatus {
+    Accepted,
+    Missing,
+    DegradedRecovery,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateTypeParameterSethoodSeed {
+    pub parameter: TemplateParameterKey,
+    pub evidence_key: TemplateSethoodEvidenceKey,
+    pub normalized_type: NormalizedTypeId,
+    pub source_kind: TemplateTypeParameterSethoodSource,
+    pub status: TemplateTypeParameterSethoodStatus,
+    pub facts: Vec<TypeFactId>,
+    pub diagnostics: Vec<TypeDiagnosticId>,
     pub source: CoreSourceRef,
     pub provenance: CheckerOwnedProvenance,
 }
@@ -1981,6 +2116,7 @@ pub struct TypeAndFactLoweringOutput {
     pub view_explanations: Vec<ViewExplanation>,
     pub template_type_parameter_inhabitations: Vec<LoweredTemplateTypeParameterInhabitation>,
     pub template_type_actual_gates: Vec<TemplateTypeActualGate>,
+    pub template_type_parameter_sethoods: Vec<TemplateTypeParameterSethood>,
     pub template_scheme_actuals: Vec<TemplateSchemeActual>,
     pub reconsidered_binders: Vec<ReconsideredBinding>,
     pub carried_obligations: Vec<ObligationSeedId>,
@@ -2028,6 +2164,20 @@ pub struct TemplateTypeActualGate {
     pub base_evidence_coverage: Option<ExistentialGateBaseEvidenceCoverage>,
     pub facts: Vec<TypeFactId>,
     pub checker_diagnostics: Vec<RegistrationDiagnosticId>,
+    pub diagnostic: Option<CoreDiagnosticId>,
+    pub source: CoreSourceRef,
+    pub provenance: Vec<CoreProvenance>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateTypeParameterSethood {
+    pub parameter: TemplateParameterKey,
+    pub evidence_key: TemplateSethoodEvidenceKey,
+    pub normalized_type: NormalizedTypeId,
+    pub source_kind: TemplateTypeParameterSethoodSource,
+    pub status: TemplateTypeParameterSethoodStatus,
+    pub facts: Vec<TypeFactId>,
+    pub checker_diagnostics: Vec<TypeDiagnosticId>,
     pub diagnostic: Option<CoreDiagnosticId>,
     pub source: CoreSourceRef,
     pub provenance: Vec<CoreProvenance>,
@@ -2240,6 +2390,39 @@ impl TypeAndFactLoweringState {
         }
     }
 
+    fn lower_template_type_parameter_sethood(
+        &mut self,
+        mut seed: TemplateTypeParameterSethoodSeed,
+    ) -> TemplateTypeParameterSethood {
+        seed.facts.sort();
+        seed.facts.dedup();
+        seed.diagnostics.sort();
+        seed.diagnostics.dedup();
+        let diagnostic = if template_type_parameter_sethood_is_accepted(seed.status) {
+            None
+        } else {
+            Some(self.insert_diagnostic(
+                CoreDiagnosticClass::UnresolvedSemanticInput,
+                CoreDiagnosticSeverity::Error,
+                CoreDiagnosticRecovery::Partial,
+                template_type_parameter_sethood_message_key(seed.status),
+                seed.source.clone(),
+            ))
+        };
+        TemplateTypeParameterSethood {
+            parameter: seed.parameter,
+            evidence_key: seed.evidence_key,
+            normalized_type: seed.normalized_type,
+            source_kind: seed.source_kind,
+            status: seed.status,
+            facts: seed.facts,
+            checker_diagnostics: seed.diagnostics,
+            diagnostic,
+            source: normalized_source(seed.source),
+            provenance: seed.provenance.as_slice().to_vec(),
+        }
+    }
+
     fn lower_template_scheme_actual(
         &mut self,
         mut seed: TemplateSchemeActualSeed,
@@ -2438,6 +2621,11 @@ pub fn lower_type_and_fact_inputs(
         template_type_actual_gates.push(state.lower_template_type_actual_gate(seed));
     }
 
+    let mut template_type_parameter_sethoods = Vec::new();
+    for seed in input.template_type_parameter_sethoods {
+        template_type_parameter_sethoods.push(state.lower_template_type_parameter_sethood(seed));
+    }
+
     let mut template_scheme_actuals = Vec::new();
     for seed in input.template_scheme_actuals {
         template_scheme_actuals.push(state.lower_template_scheme_actual(seed)?);
@@ -2524,6 +2712,7 @@ pub fn lower_type_and_fact_inputs(
         view_explanations,
         template_type_parameter_inhabitations,
         template_type_actual_gates,
+        template_type_parameter_sethoods,
         template_scheme_actuals,
         reconsidered_binders,
         carried_obligations,
@@ -2561,6 +2750,23 @@ fn validate_type_and_fact_input(
             });
         }
         validate_template_type_actual_gate_seed(seed)?;
+    }
+    let mut template_type_parameter_sethoods = BTreeSet::new();
+    for seed in &input.template_type_parameter_sethoods {
+        validate_checker_owned_provenance(
+            "template type parameter sethood seed",
+            seed.provenance.as_slice(),
+        )?;
+        let key = (seed.parameter.clone(), seed.evidence_key.clone());
+        if !template_type_parameter_sethoods.insert(key) {
+            return Err(
+                TypeAndFactLoweringError::DuplicateTemplateTypeParameterSethood {
+                    parameter: seed.parameter.clone(),
+                    evidence_key: seed.evidence_key.clone(),
+                },
+            );
+        }
+        validate_template_type_parameter_sethood_seed(seed)?;
     }
     let mut template_scheme_actuals = BTreeSet::new();
     for seed in &input.template_scheme_actuals {
@@ -2684,6 +2890,68 @@ fn template_actual_gate_message_key(status: ExistentialGateStatus) -> &'static s
         ExistentialGateStatus::DegradedRecovery => "degraded-template-type-actual-inhabitation",
         ExistentialGateStatus::Satisfied => "satisfied-template-type-actual-inhabitation",
         _ => "unsupported-template-type-actual-inhabitation-status",
+    }
+}
+
+fn validate_template_type_parameter_sethood_seed(
+    seed: &TemplateTypeParameterSethoodSeed,
+) -> TypeAndFactResult<()> {
+    let has_evidence = !seed.facts.is_empty();
+    if template_type_parameter_sethood_is_accepted(seed.status) {
+        if seed.source_kind == TemplateTypeParameterSethoodSource::BareParameter {
+            return Err(
+                TypeAndFactLoweringError::BareTemplateTypeParameterSethoodAccepted {
+                    parameter: seed.parameter.clone(),
+                    evidence_key: seed.evidence_key.clone(),
+                },
+            );
+        }
+        if !has_evidence {
+            return Err(
+                TypeAndFactLoweringError::AcceptedTemplateTypeParameterSethoodWithoutEvidence {
+                    parameter: seed.parameter.clone(),
+                    evidence_key: seed.evidence_key.clone(),
+                },
+            );
+        }
+    } else {
+        if seed.status == TemplateTypeParameterSethoodStatus::Missing
+            && seed.source_kind != TemplateTypeParameterSethoodSource::BareParameter
+        {
+            return Err(
+                TypeAndFactLoweringError::MissingTemplateTypeParameterSethoodWrongSource {
+                    parameter: seed.parameter.clone(),
+                    evidence_key: seed.evidence_key.clone(),
+                    source_kind: seed.source_kind,
+                },
+            );
+        }
+        if has_evidence {
+            return Err(
+                TypeAndFactLoweringError::MissingTemplateTypeParameterSethoodCarriesEvidence {
+                    parameter: seed.parameter.clone(),
+                    evidence_key: seed.evidence_key.clone(),
+                    status: seed.status,
+                },
+            );
+        }
+    }
+    Ok(())
+}
+
+fn template_type_parameter_sethood_is_accepted(status: TemplateTypeParameterSethoodStatus) -> bool {
+    matches!(status, TemplateTypeParameterSethoodStatus::Accepted)
+}
+
+fn template_type_parameter_sethood_message_key(
+    status: TemplateTypeParameterSethoodStatus,
+) -> &'static str {
+    match status {
+        TemplateTypeParameterSethoodStatus::Missing => "missing-template-type-parameter-sethood",
+        TemplateTypeParameterSethoodStatus::DegradedRecovery => {
+            "degraded-template-type-parameter-sethood"
+        }
+        TemplateTypeParameterSethoodStatus::Accepted => "accepted-template-type-parameter-sethood",
     }
 }
 
@@ -3147,6 +3415,18 @@ fn missing_evidence_message_key(kind: MissingEvidenceKind) -> &'static str {
 
 pub type TermAndFormulaResult<T> = Result<T, TermAndFormulaLoweringError>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateSethoodRecordErrorKind {
+    Duplicate,
+    Missing,
+    NotAccepted,
+    WrongSource,
+    NormalizedTypeMismatch,
+    MissingEvidence,
+    UnexpectedBareEvidence,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum TermAndFormulaLoweringError {
@@ -3195,6 +3475,11 @@ pub enum TermAndFormulaLoweringError {
     },
     InvalidFraenkelMissingSethoodObligation {
         kind: ObligationSeedKind,
+    },
+    InvalidTemplateFraenkelSethoodEvidence {
+        parameter: TemplateParameterKey,
+        evidence_key: TemplateSethoodEvidenceKey,
+        reason: TemplateSethoodRecordErrorKind,
     },
     MissingActiveObligationGoal {
         kind: ObligationSeedKind,
@@ -3284,6 +3569,18 @@ impl fmt::Display for TermAndFormulaLoweringError {
                     "missing Fraenkel sethood obligation must be GeneratedSethood, got {kind:?}"
                 )
             }
+            Self::InvalidTemplateFraenkelSethoodEvidence {
+                parameter,
+                evidence_key,
+                reason,
+            } => {
+                write!(
+                    formatter,
+                    "template Fraenkel sethood evidence for parameter {} evidence {} is invalid: {reason:?}",
+                    parameter.as_str(),
+                    evidence_key.as_str()
+                )
+            }
             Self::MissingActiveObligationGoal { kind } => {
                 write!(formatter, "active {kind:?} obligation is missing a goal")
             }
@@ -3336,6 +3633,7 @@ impl CoreFormulaSeedId {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TermAndFormulaLoweringInput {
     pub owner: CoreItemId,
+    pub template_type_parameter_sethoods: Vec<TemplateTypeParameterSethood>,
     pub terms: Vec<CoreTermSeed>,
     pub formulas: Vec<CoreFormulaSeed>,
     pub failed_sites: Vec<FailedSemanticSiteSeed>,
@@ -3345,6 +3643,7 @@ impl TermAndFormulaLoweringInput {
     pub const fn new(owner: CoreItemId) -> Self {
         Self {
             owner,
+            template_type_parameter_sethoods: Vec::new(),
             terms: Vec::new(),
             formulas: Vec::new(),
             failed_sites: Vec::new(),
@@ -3371,6 +3670,15 @@ impl CoreTermSeed {
             provenance,
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateFraenkelSethoodEvidenceSeed {
+    pub parameter: TemplateParameterKey,
+    pub evidence_key: TemplateSethoodEvidenceKey,
+    pub normalized_type: NormalizedTypeId,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -3407,6 +3715,7 @@ pub enum CoreTermSeedKind {
         params: Vec<CoreVarId>,
         args: Vec<CoreTermSeedId>,
         sethood_evidence: Vec<CoreProvenance>,
+        template_type_parameter_sethood: Option<TemplateFraenkelSethoodEvidenceSeed>,
         membership_obligation: Box<FraenkelMembershipObligationSeed>,
         missing_sethood_obligation: Option<Box<CoreObligationSeed>>,
     },
@@ -4044,11 +4353,21 @@ impl TermAndFormulaLoweringState {
                 key,
                 params,
                 args,
-                sethood_evidence,
+                mut sethood_evidence,
+                template_type_parameter_sethood,
                 membership_obligation,
                 missing_sethood_obligation,
             } => {
                 validate_generated_functor(&key, &origin_functor, &functor)?;
+                if let Some(evidence) = template_type_parameter_sethood {
+                    if let Some(record_evidence) =
+                        resolve_template_fraenkel_sethood_evidence(input, &evidence)?
+                    {
+                        sethood_evidence.extend(record_evidence);
+                    } else {
+                        sethood_evidence.clear();
+                    }
+                }
                 if sethood_evidence.is_empty() {
                     let diagnostic_id = self.diagnostics.insert(diagnostic(
                         CoreDiagnosticClass::UnresolvedSemanticInput,
@@ -4318,13 +4637,165 @@ pub fn lower_term_and_formula_inputs(
     })
 }
 
+fn validate_template_type_parameter_sethood_record(
+    record: &TemplateTypeParameterSethood,
+) -> TermAndFormulaResult<()> {
+    validate_checker_owned_provenance("template type parameter sethood record", &record.provenance)
+        .map_err(TermAndFormulaLoweringError::InvalidSeedProvenance)?;
+    match record.status {
+        TemplateTypeParameterSethoodStatus::Accepted => {
+            if record.source_kind == TemplateTypeParameterSethoodSource::BareParameter {
+                return Err(
+                    TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                        parameter: record.parameter.clone(),
+                        evidence_key: record.evidence_key.clone(),
+                        reason: TemplateSethoodRecordErrorKind::WrongSource,
+                    },
+                );
+            }
+            if record.facts.is_empty() {
+                return Err(
+                    TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                        parameter: record.parameter.clone(),
+                        evidence_key: record.evidence_key.clone(),
+                        reason: TemplateSethoodRecordErrorKind::MissingEvidence,
+                    },
+                );
+            }
+        }
+        TemplateTypeParameterSethoodStatus::Missing => {
+            if record.source_kind != TemplateTypeParameterSethoodSource::BareParameter {
+                return Err(
+                    TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                        parameter: record.parameter.clone(),
+                        evidence_key: record.evidence_key.clone(),
+                        reason: TemplateSethoodRecordErrorKind::WrongSource,
+                    },
+                );
+            }
+            if !record.facts.is_empty() {
+                return Err(
+                    TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                        parameter: record.parameter.clone(),
+                        evidence_key: record.evidence_key.clone(),
+                        reason: TemplateSethoodRecordErrorKind::UnexpectedBareEvidence,
+                    },
+                );
+            }
+        }
+        TemplateTypeParameterSethoodStatus::DegradedRecovery => {
+            if !record.facts.is_empty() {
+                return Err(
+                    TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                        parameter: record.parameter.clone(),
+                        evidence_key: record.evidence_key.clone(),
+                        reason: TemplateSethoodRecordErrorKind::UnexpectedBareEvidence,
+                    },
+                );
+            }
+        }
+    }
+    Ok(())
+}
+
+fn resolve_template_fraenkel_sethood_evidence(
+    input: &TermAndFormulaLoweringInput,
+    evidence: &TemplateFraenkelSethoodEvidenceSeed,
+) -> TermAndFormulaResult<Option<Vec<CoreProvenance>>> {
+    validate_checker_owned_provenance(
+        "template Fraenkel sethood evidence seed",
+        evidence.provenance.as_slice(),
+    )
+    .map_err(TermAndFormulaLoweringError::InvalidSeedProvenance)?;
+    let record = find_template_type_parameter_sethood_record(input, evidence)?;
+    if record.normalized_type != evidence.normalized_type {
+        return Err(
+            TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                parameter: evidence.parameter.clone(),
+                evidence_key: evidence.evidence_key.clone(),
+                reason: TemplateSethoodRecordErrorKind::NormalizedTypeMismatch,
+            },
+        );
+    }
+    match record.status {
+        TemplateTypeParameterSethoodStatus::Accepted => {
+            if record.source_kind == TemplateTypeParameterSethoodSource::BareParameter {
+                return Err(
+                    TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                        parameter: evidence.parameter.clone(),
+                        evidence_key: evidence.evidence_key.clone(),
+                        reason: TemplateSethoodRecordErrorKind::WrongSource,
+                    },
+                );
+            }
+            let mut provenance = record.provenance.clone();
+            provenance.extend(evidence.provenance.as_slice().iter().cloned());
+            provenance.sort();
+            provenance.dedup();
+            Ok(Some(provenance))
+        }
+        TemplateTypeParameterSethoodStatus::Missing
+            if record.source_kind == TemplateTypeParameterSethoodSource::BareParameter =>
+        {
+            Ok(None)
+        }
+        _ => Err(
+            TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                parameter: evidence.parameter.clone(),
+                evidence_key: evidence.evidence_key.clone(),
+                reason: TemplateSethoodRecordErrorKind::NotAccepted,
+            },
+        ),
+    }
+}
+
+fn validate_template_fraenkel_sethood_evidence(
+    input: &TermAndFormulaLoweringInput,
+    evidence: &TemplateFraenkelSethoodEvidenceSeed,
+) -> TermAndFormulaResult<()> {
+    resolve_template_fraenkel_sethood_evidence(input, evidence).map(|_| ())
+}
+
+fn find_template_type_parameter_sethood_record<'a>(
+    input: &'a TermAndFormulaLoweringInput,
+    evidence: &TemplateFraenkelSethoodEvidenceSeed,
+) -> TermAndFormulaResult<&'a TemplateTypeParameterSethood> {
+    input
+        .template_type_parameter_sethoods
+        .iter()
+        .find(|record| {
+            record.parameter == evidence.parameter && record.evidence_key == evidence.evidence_key
+        })
+        .ok_or_else(
+            || TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                parameter: evidence.parameter.clone(),
+                evidence_key: evidence.evidence_key.clone(),
+                reason: TemplateSethoodRecordErrorKind::Missing,
+            },
+        )
+}
+
 fn validate_term_and_formula_input(
     context: &CoreContext,
     input: &TermAndFormulaLoweringInput,
 ) -> TermAndFormulaResult<()> {
+    let mut template_sethood_records = BTreeSet::new();
+    for record in &input.template_type_parameter_sethoods {
+        let key = (record.parameter.clone(), record.evidence_key.clone());
+        if !template_sethood_records.insert(key) {
+            return Err(
+                TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                    parameter: record.parameter.clone(),
+                    evidence_key: record.evidence_key.clone(),
+                    reason: TemplateSethoodRecordErrorKind::Duplicate,
+                },
+            );
+        }
+        validate_template_type_parameter_sethood_record(record)?;
+    }
     for seed in &input.terms {
         validate_checker_owned_provenance("term seed", seed.provenance.as_slice())?;
-        validate_term_seed_kind(context, &seed.kind)?;
+        validate_term_seed_kind(context, input, &seed.kind)?;
     }
     for seed in &input.formulas {
         validate_checker_owned_provenance("formula seed", seed.provenance.as_slice())?;
@@ -4338,6 +4809,7 @@ fn validate_term_and_formula_input(
 
 fn validate_term_seed_kind(
     context: &CoreContext,
+    input: &TermAndFormulaLoweringInput,
     kind: &CoreTermSeedKind,
 ) -> TermAndFormulaResult<()> {
     match kind {
@@ -4354,6 +4826,7 @@ fn validate_term_seed_kind(
         CoreTermSeedKind::Fraenkel {
             params,
             sethood_evidence,
+            template_type_parameter_sethood,
             membership_obligation,
             missing_sethood_obligation,
             ..
@@ -4375,6 +4848,9 @@ fn validate_term_seed_kind(
             }
             if let Some(obligation) = missing_sethood_obligation.as_deref() {
                 validate_fraenkel_missing_sethood_obligation(obligation)?;
+            }
+            if let Some(evidence) = template_type_parameter_sethood {
+                validate_template_fraenkel_sethood_evidence(input, evidence)?;
             }
             Ok(())
         }
@@ -8240,6 +8716,41 @@ mod tests {
         }
     }
 
+    fn template_sethood_seed(
+        parameter: &str,
+        evidence_key: &str,
+        source_kind: TemplateTypeParameterSethoodSource,
+        status: TemplateTypeParameterSethoodStatus,
+        start: usize,
+    ) -> TemplateTypeParameterSethoodSeed {
+        TemplateTypeParameterSethoodSeed {
+            parameter: TemplateParameterKey::new(parameter),
+            evidence_key: TemplateSethoodEvidenceKey::new(evidence_key),
+            normalized_type: NormalizedTypeId::new(start),
+            source_kind,
+            status,
+            facts: Vec::new(),
+            diagnostics: Vec::new(),
+            source: direct(start, start + 1),
+            provenance: provenance(format!("checker:template-sethood:{parameter}").as_str()),
+        }
+    }
+
+    fn template_fraenkel_sethood(
+        parameter: &str,
+        evidence_key: &str,
+        normalized_type: usize,
+        start: usize,
+    ) -> TemplateFraenkelSethoodEvidenceSeed {
+        TemplateFraenkelSethoodEvidenceSeed {
+            parameter: TemplateParameterKey::new(parameter),
+            evidence_key: TemplateSethoodEvidenceKey::new(evidence_key),
+            normalized_type: NormalizedTypeId::new(normalized_type),
+            source: direct(start, start + 1),
+            provenance: provenance(format!("checker:fraenkel-template-sethood:{start}").as_str()),
+        }
+    }
+
     fn template_scheme_actual(
         instantiation: &str,
         parameter: &str,
@@ -9313,6 +9824,223 @@ mod tests {
         assert!(matches!(
             lower_type_and_fact_inputs(&context, input),
             Err(TypeAndFactLoweringError::DuplicateTemplateTypeActualGate { .. })
+        ));
+    }
+
+    #[test]
+    fn template_type_parameter_sethood_records_bound_constraint_and_bare_missing() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let mut bound = template_sethood_seed(
+            "T",
+            "T:bound:Nat",
+            TemplateTypeParameterSethoodSource::BoundInherited,
+            TemplateTypeParameterSethoodStatus::Accepted,
+            64,
+        );
+        bound.facts = vec![TypeFactId::new(9), TypeFactId::new(8), TypeFactId::new(9)];
+        bound.diagnostics = vec![TypeDiagnosticId::new(4), TypeDiagnosticId::new(4)];
+        let mut constraint = template_sethood_seed(
+            "U",
+            "U:constraint:sethood",
+            TemplateTypeParameterSethoodSource::ConstraintSupplied,
+            TemplateTypeParameterSethoodStatus::Accepted,
+            65,
+        );
+        constraint.facts = vec![TypeFactId::new(10)];
+        let bare = template_sethood_seed(
+            "Bare",
+            "Bare:bare",
+            TemplateTypeParameterSethoodSource::BareParameter,
+            TemplateTypeParameterSethoodStatus::Missing,
+            66,
+        );
+
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_parameter_sethoods = vec![bound, constraint, bare];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+
+        assert_eq!(output.template_type_parameter_sethoods.len(), 3);
+        let bound = &output.template_type_parameter_sethoods[0];
+        assert_eq!(bound.parameter.as_str(), "T");
+        assert_eq!(bound.evidence_key.as_str(), "T:bound:Nat");
+        assert_eq!(
+            bound.source_kind,
+            TemplateTypeParameterSethoodSource::BoundInherited
+        );
+        assert_eq!(bound.status, TemplateTypeParameterSethoodStatus::Accepted);
+        assert_eq!(bound.facts, vec![TypeFactId::new(8), TypeFactId::new(9)]);
+        assert_eq!(bound.checker_diagnostics, vec![TypeDiagnosticId::new(4)]);
+        assert!(bound.diagnostic.is_none());
+
+        let constraint = &output.template_type_parameter_sethoods[1];
+        assert_eq!(constraint.parameter.as_str(), "U");
+        assert_eq!(constraint.evidence_key.as_str(), "U:constraint:sethood");
+        assert_eq!(
+            constraint.source_kind,
+            TemplateTypeParameterSethoodSource::ConstraintSupplied
+        );
+        assert_eq!(
+            constraint.status,
+            TemplateTypeParameterSethoodStatus::Accepted
+        );
+        assert_eq!(constraint.facts, vec![TypeFactId::new(10)]);
+        assert!(constraint.diagnostic.is_none());
+
+        let bare = &output.template_type_parameter_sethoods[2];
+        assert_eq!(bare.parameter.as_str(), "Bare");
+        assert_eq!(
+            bare.source_kind,
+            TemplateTypeParameterSethoodSource::BareParameter
+        );
+        assert_eq!(bare.status, TemplateTypeParameterSethoodStatus::Missing);
+        assert!(bare.facts.is_empty());
+        let diagnostic = output
+            .diagnostics
+            .get(bare.diagnostic.expect("bare diagnostic"))
+            .expect("diagnostic");
+        assert_eq!(
+            diagnostic.message_key.as_str(),
+            "missing-template-type-parameter-sethood"
+        );
+        assert!(output.assumptions.is_empty());
+        assert!(output.terms.is_empty());
+        assert!(output.formulas.is_empty());
+        assert!(output.obligation_seeds.is_empty());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn template_type_parameter_sethood_payloads_fail_closed() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+
+        let mut accepted_bare = template_sethood_seed(
+            "Bare",
+            "Bare:accepted",
+            TemplateTypeParameterSethoodSource::BareParameter,
+            TemplateTypeParameterSethoodStatus::Accepted,
+            67,
+        );
+        accepted_bare.facts = vec![TypeFactId::new(11)];
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_parameter_sethoods = vec![accepted_bare];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::BareTemplateTypeParameterSethoodAccepted { .. })
+        ));
+
+        let no_facts = template_sethood_seed(
+            "T",
+            "T:no-facts",
+            TemplateTypeParameterSethoodSource::BoundInherited,
+            TemplateTypeParameterSethoodStatus::Accepted,
+            68,
+        );
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_parameter_sethoods = vec![no_facts];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(
+                TypeAndFactLoweringError::AcceptedTemplateTypeParameterSethoodWithoutEvidence { .. }
+            )
+        ));
+
+        let mut missing_with_facts = template_sethood_seed(
+            "Bare",
+            "Bare:missing-with-facts",
+            TemplateTypeParameterSethoodSource::BareParameter,
+            TemplateTypeParameterSethoodStatus::Missing,
+            69,
+        );
+        missing_with_facts.facts = vec![TypeFactId::new(12)];
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_parameter_sethoods = vec![missing_with_facts];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(
+                TypeAndFactLoweringError::MissingTemplateTypeParameterSethoodCarriesEvidence {
+                    status: TemplateTypeParameterSethoodStatus::Missing,
+                    ..
+                }
+            )
+        ));
+
+        let missing_bound = template_sethood_seed(
+            "T",
+            "T:missing-bound",
+            TemplateTypeParameterSethoodSource::BoundInherited,
+            TemplateTypeParameterSethoodStatus::Missing,
+            70,
+        );
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_parameter_sethoods = vec![missing_bound];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(
+                TypeAndFactLoweringError::MissingTemplateTypeParameterSethoodWrongSource {
+                    source_kind: TemplateTypeParameterSethoodSource::BoundInherited,
+                    ..
+                }
+            )
+        ));
+
+        let mut degraded_with_facts = template_sethood_seed(
+            "T",
+            "T:degraded",
+            TemplateTypeParameterSethoodSource::ConstraintSupplied,
+            TemplateTypeParameterSethoodStatus::DegradedRecovery,
+            71,
+        );
+        degraded_with_facts.facts = vec![TypeFactId::new(13)];
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_parameter_sethoods = vec![degraded_with_facts];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(
+                TypeAndFactLoweringError::MissingTemplateTypeParameterSethoodCarriesEvidence {
+                    status: TemplateTypeParameterSethoodStatus::DegradedRecovery,
+                    ..
+                }
+            )
+        ));
+
+        let mut first = template_sethood_seed(
+            "T",
+            "T:dup",
+            TemplateTypeParameterSethoodSource::BoundInherited,
+            TemplateTypeParameterSethoodStatus::Accepted,
+            72,
+        );
+        first.facts = vec![TypeFactId::new(14)];
+        let mut second = first.clone();
+        second.source = direct(73, 74);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_parameter_sethoods = vec![first, second];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::DuplicateTemplateTypeParameterSethood { .. })
+        ));
+
+        let mut accepted = template_sethood_seed(
+            "T",
+            "T:conflict",
+            TemplateTypeParameterSethoodSource::BoundInherited,
+            TemplateTypeParameterSethoodStatus::Accepted,
+            74,
+        );
+        accepted.facts = vec![TypeFactId::new(15)];
+        let conflicting_missing = template_sethood_seed(
+            "T",
+            "T:conflict",
+            TemplateTypeParameterSethoodSource::BareParameter,
+            TemplateTypeParameterSethoodStatus::Missing,
+            75,
+        );
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_type_parameter_sethoods = vec![accepted, conflicting_missing];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::DuplicateTemplateTypeParameterSethood { .. })
         ));
     }
 
@@ -10993,6 +11721,7 @@ mod tests {
                         CoreProvenancePhase::Checker,
                         "checker:fraenkel:sethood",
                     )],
+                    template_type_parameter_sethood: None,
                     membership_obligation: Box::new(FraenkelMembershipObligationSeed::New(
                         CoreObligationSeed::active(
                             ObligationSeedKind::FraenkelMembershipAxiom,
@@ -11018,6 +11747,7 @@ mod tests {
                         CoreProvenancePhase::Checker,
                         "checker:fraenkel:sethood:reuse",
                     )],
+                    template_type_parameter_sethood: None,
                     membership_obligation: Box::new(
                         FraenkelMembershipObligationSeed::AlreadyCarried(
                             AlreadyCarriedFraenkelMembershipSeed {
@@ -11102,6 +11832,7 @@ mod tests {
                         CoreProvenancePhase::Checker,
                         "checker:fraenkel:bad:sethood",
                     )],
+                    template_type_parameter_sethood: None,
                     membership_obligation: Box::new(FraenkelMembershipObligationSeed::New(
                         CoreObligationSeed::active(
                             ObligationSeedKind::GeneratedSethood,
@@ -11140,6 +11871,7 @@ mod tests {
                         CoreProvenancePhase::Checker,
                         "checker:fraenkel:deferred:sethood",
                     )],
+                    template_type_parameter_sethood: None,
                     membership_obligation: Box::new(FraenkelMembershipObligationSeed::New(
                         CoreObligationSeed::deferred(
                             ObligationSeedKind::FraenkelMembershipAxiom,
@@ -11164,6 +11896,531 @@ mod tests {
     }
 
     #[test]
+    fn ordinary_fraenkel_sethood_evidence_does_not_need_template_record() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let degraded = template_sethood_seed(
+            "T",
+            "T:degraded-unused",
+            TemplateTypeParameterSethoodSource::BoundInherited,
+            TemplateTypeParameterSethoodStatus::DegradedRecovery,
+            199,
+        );
+        let mut type_input = TypeAndFactLoweringInput::new(owner);
+        type_input.template_type_parameter_sethoods = vec![degraded];
+        let type_output = lower_type_and_fact_inputs(&context, type_input).expect("type lowering");
+
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.template_type_parameter_sethoods =
+            type_output.template_type_parameter_sethoods.clone();
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 200),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("ordinary_fraenkel"),
+                    origin_functor: symbol("ordinary_fraenkel"),
+                    key: GeneratedOriginKey::new("fraenkel:ordinary"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:fraenkel:ordinary-sethood",
+                    )],
+                    template_type_parameter_sethood: None,
+                    membership_obligation: Box::new(
+                        FraenkelMembershipObligationSeed::AlreadyCarried(
+                            AlreadyCarriedFraenkelMembershipSeed {
+                                source: direct(201, 202),
+                                provenance: provenance("checker:fraenkel:ordinary-carried"),
+                            },
+                        ),
+                    ),
+                    missing_sethood_obligation: None,
+                },
+                201,
+            ),
+        ];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+
+        assert_eq!(output.generated_origin_refs.len(), 1);
+        assert!(matches!(
+            output
+                .terms
+                .get(output.term_map[&CoreTermSeedId::new(1)])
+                .expect("fraenkel")
+                .kind,
+            CoreTermKind::Apply { .. }
+        ));
+        let generated = output
+            .generated
+            .get(output.generated_origin_refs[0].origin)
+            .expect("ordinary fraenkel origin");
+        assert!(generated.evidence.iter().any(|entry| {
+            entry.phase == CoreProvenancePhase::Checker
+                && entry.key.as_str() == "checker:fraenkel:ordinary-sethood"
+        }));
+        assert!(!generated.evidence.iter().any(|entry| {
+            entry.phase == CoreProvenancePhase::Checker
+                && entry.key.as_str() == "checker:template-sethood:T"
+        }));
+        assert!(output.diagnostics.is_empty());
+        assert!(output.generated_obligations.is_empty());
+        assert!(output.obligation_seeds.is_empty());
+        assert_step2_delta_valid(&context, &type_output);
+        assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn fraenkel_template_type_parameter_sethood_records_gate_generated_origins() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let mut bound = template_sethood_seed(
+            "T",
+            "T:bound:Nat",
+            TemplateTypeParameterSethoodSource::BoundInherited,
+            TemplateTypeParameterSethoodStatus::Accepted,
+            210,
+        );
+        bound.facts = vec![TypeFactId::new(20)];
+        let mut constraint = template_sethood_seed(
+            "U",
+            "U:constraint:sethood",
+            TemplateTypeParameterSethoodSource::ConstraintSupplied,
+            TemplateTypeParameterSethoodStatus::Accepted,
+            211,
+        );
+        constraint.facts = vec![TypeFactId::new(21)];
+        let mut type_input = TypeAndFactLoweringInput::new(owner);
+        type_input.template_type_parameter_sethoods = vec![bound, constraint];
+        let type_output = lower_type_and_fact_inputs(&context, type_input).expect("type lowering");
+
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.template_type_parameter_sethoods =
+            type_output.template_type_parameter_sethoods.clone();
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 212),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("template_fraenkel_T"),
+                    origin_functor: symbol("template_fraenkel_T"),
+                    key: GeneratedOriginKey::new("fraenkel:template:T"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: Vec::new(),
+                    template_type_parameter_sethood: Some(template_fraenkel_sethood(
+                        "T",
+                        "T:bound:Nat",
+                        210,
+                        213,
+                    )),
+                    membership_obligation: Box::new(FraenkelMembershipObligationSeed::New(
+                        CoreObligationSeed::active(
+                            ObligationSeedKind::FraenkelMembershipAxiom,
+                            CoreFormulaSeedId::new(0),
+                            "fraenkel/template/T-membership",
+                            "pkg::main::Owner.fraenkel.template.T-membership",
+                            direct(214, 215),
+                            provenance("checker:fraenkel:template:T-membership"),
+                        ),
+                    )),
+                    missing_sethood_obligation: None,
+                },
+                213,
+            ),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("template_fraenkel_U"),
+                    origin_functor: symbol("template_fraenkel_U"),
+                    key: GeneratedOriginKey::new("fraenkel:template:U"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: Vec::new(),
+                    template_type_parameter_sethood: Some(template_fraenkel_sethood(
+                        "U",
+                        "U:constraint:sethood",
+                        211,
+                        216,
+                    )),
+                    membership_obligation: Box::new(
+                        FraenkelMembershipObligationSeed::AlreadyCarried(
+                            AlreadyCarriedFraenkelMembershipSeed {
+                                source: direct(217, 218),
+                                provenance: provenance("checker:fraenkel:template:U-carried"),
+                            },
+                        ),
+                    ),
+                    missing_sethood_obligation: None,
+                },
+                216,
+            ),
+        ];
+        input.formulas = vec![formula_seed(CoreFormulaSeedKind::True, 215)];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("term lowering");
+
+        assert!(output.diagnostics.is_empty());
+        assert_eq!(output.generated_origin_refs.len(), 2);
+        assert_eq!(output.generated_obligations.len(), 1);
+        assert_eq!(output.already_carried_generated_obligations.len(), 1);
+        for (index, expected_template_key, expected_fraenkel_key) in [
+            (
+                0,
+                "checker:template-sethood:T",
+                "checker:fraenkel-template-sethood:213",
+            ),
+            (
+                1,
+                "checker:template-sethood:U",
+                "checker:fraenkel-template-sethood:216",
+            ),
+        ] {
+            let generated = output
+                .generated
+                .get(output.generated_origin_refs[index].origin)
+                .expect("template fraenkel origin");
+            assert_eq!(generated.kind, GeneratedOriginKind::FraenkelComprehension);
+            assert!(generated.evidence.iter().any(|entry| {
+                entry.phase == CoreProvenancePhase::Checker
+                    && entry.key.as_str() == expected_template_key
+            }));
+            assert!(generated.evidence.iter().any(|entry| {
+                entry.phase == CoreProvenancePhase::Checker
+                    && entry.key.as_str() == expected_fraenkel_key
+            }));
+        }
+        assert_step2_delta_valid(&context, &type_output);
+        assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn fraenkel_bare_template_type_parameter_remains_missing_sethood_error() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let bare = template_sethood_seed(
+            "Bare",
+            "Bare:bare",
+            TemplateTypeParameterSethoodSource::BareParameter,
+            TemplateTypeParameterSethoodStatus::Missing,
+            220,
+        );
+        let mut type_input = TypeAndFactLoweringInput::new(owner);
+        type_input.template_type_parameter_sethoods = vec![bare];
+        let type_output = lower_type_and_fact_inputs(&context, type_input).expect("type lowering");
+
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.template_type_parameter_sethoods =
+            type_output.template_type_parameter_sethoods.clone();
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 221),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("bare_template_fraenkel"),
+                    origin_functor: symbol("bare_template_fraenkel"),
+                    key: GeneratedOriginKey::new("fraenkel:template:bare"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: vec![CoreProvenance::new(
+                        CoreProvenancePhase::Checker,
+                        "checker:fraenkel:bare-template-raw",
+                    )],
+                    template_type_parameter_sethood: Some(template_fraenkel_sethood(
+                        "Bare",
+                        "Bare:bare",
+                        220,
+                        222,
+                    )),
+                    membership_obligation: Box::new(
+                        FraenkelMembershipObligationSeed::AlreadyCarried(
+                            AlreadyCarriedFraenkelMembershipSeed {
+                                source: direct(223, 224),
+                                provenance: provenance("checker:fraenkel:bare-carried"),
+                            },
+                        ),
+                    ),
+                    missing_sethood_obligation: Some(Box::new(CoreObligationSeed::deferred(
+                        ObligationSeedKind::GeneratedSethood,
+                        "fraenkel/template/bare-missing-sethood",
+                        "pkg::main::Owner.fraenkel.template.bare-missing-sethood",
+                        direct(224, 225),
+                        provenance("checker:fraenkel:bare-missing-sethood"),
+                    ))),
+                },
+                222,
+            ),
+        ];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("term lowering");
+        let CoreTermKind::Error(diagnostic_id) = output
+            .terms
+            .get(output.term_map[&CoreTermSeedId::new(1)])
+            .expect("bare template fraenkel")
+            .kind
+        else {
+            panic!("expected error term");
+        };
+        let diagnostic = output.diagnostics.get(diagnostic_id).expect("diagnostic");
+        let obligation = output
+            .obligation_seeds
+            .get(output.generated_obligations[0].obligation)
+            .expect("generated sethood obligation");
+
+        assert_eq!(
+            diagnostic.message_key.as_str(),
+            "missing-fraenkel-sethood-evidence"
+        );
+        assert!(output.generated_origin_refs.is_empty());
+        assert_eq!(obligation.kind, ObligationSeedKind::GeneratedSethood);
+        assert_eq!(obligation.status, ObligationSeedStatus::Deferred);
+        assert_step2_delta_valid(&context, &type_output);
+        assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn fraenkel_template_sethood_cross_references_fail_closed() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let mut seed = template_sethood_seed(
+            "T",
+            "T:bound:Nat",
+            TemplateTypeParameterSethoodSource::BoundInherited,
+            TemplateTypeParameterSethoodStatus::Accepted,
+            230,
+        );
+        seed.facts = vec![TypeFactId::new(30)];
+        let mut type_input = TypeAndFactLoweringInput::new(owner);
+        type_input.template_type_parameter_sethoods = vec![seed];
+        let type_output = lower_type_and_fact_inputs(&context, type_input).expect("type lowering");
+        let record = type_output.template_type_parameter_sethoods[0].clone();
+
+        let mut duplicate = TermAndFormulaLoweringInput::new(owner);
+        duplicate.template_type_parameter_sethoods = vec![record.clone(), record.clone()];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, duplicate),
+            Err(
+                TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                    reason: TemplateSethoodRecordErrorKind::Duplicate,
+                    ..
+                }
+            )
+        ));
+
+        let mut missing_record = TermAndFormulaLoweringInput::new(owner);
+        missing_record.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 231),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("missing_template_sethood"),
+                    origin_functor: symbol("missing_template_sethood"),
+                    key: GeneratedOriginKey::new("fraenkel:template:missing-record"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: Vec::new(),
+                    template_type_parameter_sethood: Some(template_fraenkel_sethood(
+                        "T",
+                        "T:bound:Nat",
+                        230,
+                        232,
+                    )),
+                    membership_obligation: Box::new(
+                        FraenkelMembershipObligationSeed::AlreadyCarried(
+                            AlreadyCarriedFraenkelMembershipSeed {
+                                source: direct(233, 234),
+                                provenance: provenance("checker:fraenkel:missing-record-carried"),
+                            },
+                        ),
+                    ),
+                    missing_sethood_obligation: None,
+                },
+                232,
+            ),
+        ];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, missing_record),
+            Err(
+                TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                    reason: TemplateSethoodRecordErrorKind::Missing,
+                    ..
+                }
+            )
+        ));
+
+        let mut normalized_mismatch = TermAndFormulaLoweringInput::new(owner);
+        normalized_mismatch.template_type_parameter_sethoods = vec![record.clone()];
+        normalized_mismatch.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 234),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("mismatched_template_sethood"),
+                    origin_functor: symbol("mismatched_template_sethood"),
+                    key: GeneratedOriginKey::new("fraenkel:template:normalized-mismatch"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: Vec::new(),
+                    template_type_parameter_sethood: Some(template_fraenkel_sethood(
+                        "T",
+                        "T:bound:Nat",
+                        231,
+                        235,
+                    )),
+                    membership_obligation: Box::new(
+                        FraenkelMembershipObligationSeed::AlreadyCarried(
+                            AlreadyCarriedFraenkelMembershipSeed {
+                                source: direct(236, 237),
+                                provenance: provenance(
+                                    "checker:fraenkel:normalized-mismatch-carried",
+                                ),
+                            },
+                        ),
+                    ),
+                    missing_sethood_obligation: None,
+                },
+                235,
+            ),
+        ];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, normalized_mismatch),
+            Err(
+                TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                    reason: TemplateSethoodRecordErrorKind::NormalizedTypeMismatch,
+                    ..
+                }
+            )
+        ));
+
+        let referenced_malformed_input = |record: TemplateTypeParameterSethood, start: usize| {
+            let mut input = TermAndFormulaLoweringInput::new(owner);
+            input.template_type_parameter_sethoods = vec![record];
+            input.terms = vec![
+                term_seed(CoreTermSeedKind::Var(x), start),
+                term_seed(
+                    CoreTermSeedKind::Fraenkel {
+                        functor: symbol("malformed_template_sethood"),
+                        origin_functor: symbol("malformed_template_sethood"),
+                        key: GeneratedOriginKey::new(format!(
+                            "fraenkel:template:malformed:{start}"
+                        )),
+                        params: vec![x],
+                        args: vec![CoreTermSeedId::new(0)],
+                        sethood_evidence: Vec::new(),
+                        template_type_parameter_sethood: Some(template_fraenkel_sethood(
+                            "T",
+                            "T:bound:Nat",
+                            230,
+                            start + 1,
+                        )),
+                        membership_obligation: Box::new(
+                            FraenkelMembershipObligationSeed::AlreadyCarried(
+                                AlreadyCarriedFraenkelMembershipSeed {
+                                    source: direct(start + 2, start + 3),
+                                    provenance: provenance(
+                                        format!("checker:fraenkel:malformed-carried:{start}")
+                                            .as_str(),
+                                    ),
+                                },
+                            ),
+                        ),
+                        missing_sethood_obligation: None,
+                    },
+                    start + 1,
+                ),
+            ];
+            input
+        };
+
+        let mut degraded = record.clone();
+        degraded.status = TemplateTypeParameterSethoodStatus::DegradedRecovery;
+        degraded.facts.clear();
+        let wrong_status = referenced_malformed_input(degraded, 238);
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, wrong_status),
+            Err(
+                TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                    reason: TemplateSethoodRecordErrorKind::NotAccepted,
+                    ..
+                }
+            )
+        ));
+
+        let mut accepted_bare = record.clone();
+        accepted_bare.source_kind = TemplateTypeParameterSethoodSource::BareParameter;
+        let wrong_source = referenced_malformed_input(accepted_bare, 242);
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, wrong_source),
+            Err(
+                TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                    reason: TemplateSethoodRecordErrorKind::WrongSource,
+                    ..
+                }
+            )
+        ));
+
+        let mut missing_evidence = record.clone();
+        missing_evidence.facts.clear();
+        let missing_evidence_input = referenced_malformed_input(missing_evidence, 246);
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, missing_evidence_input),
+            Err(
+                TermAndFormulaLoweringError::InvalidTemplateFraenkelSethoodEvidence {
+                    reason: TemplateSethoodRecordErrorKind::MissingEvidence,
+                    ..
+                }
+            )
+        ));
+
+        let mut generated_provenance = record.clone();
+        generated_provenance.provenance = vec![CoreProvenance::new(
+            CoreProvenancePhase::Generated,
+            "generated:template-sethood",
+        )];
+        let generated_provenance_input = referenced_malformed_input(generated_provenance, 250);
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, generated_provenance_input),
+            Err(TermAndFormulaLoweringError::InvalidSeedProvenance(_))
+        ));
+
+        let mut bad_evidence_seed = template_fraenkel_sethood("T", "T:bound:Nat", 230, 254);
+        bad_evidence_seed.provenance = CheckerOwnedProvenance {
+            entries: vec![CoreProvenance::new(
+                CoreProvenancePhase::Generated,
+                "generated:fraenkel-template-sethood",
+            )],
+        };
+        let mut generated_evidence_seed_input = TermAndFormulaLoweringInput::new(owner);
+        generated_evidence_seed_input.template_type_parameter_sethoods = vec![record.clone()];
+        generated_evidence_seed_input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 253),
+            term_seed(
+                CoreTermSeedKind::Fraenkel {
+                    functor: symbol("bad_template_evidence_seed"),
+                    origin_functor: symbol("bad_template_evidence_seed"),
+                    key: GeneratedOriginKey::new("fraenkel:template:bad-evidence-seed"),
+                    params: vec![x],
+                    args: vec![CoreTermSeedId::new(0)],
+                    sethood_evidence: Vec::new(),
+                    template_type_parameter_sethood: Some(bad_evidence_seed),
+                    membership_obligation: Box::new(
+                        FraenkelMembershipObligationSeed::AlreadyCarried(
+                            AlreadyCarriedFraenkelMembershipSeed {
+                                source: direct(255, 256),
+                                provenance: provenance(
+                                    "checker:fraenkel:bad-evidence-seed-carried",
+                                ),
+                            },
+                        ),
+                    ),
+                    missing_sethood_obligation: None,
+                },
+                254,
+            ),
+        ];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, generated_evidence_seed_input),
+            Err(TermAndFormulaLoweringError::InvalidSeedProvenance(_))
+        ));
+    }
+
+    #[test]
     fn fraenkel_missing_sethood_remains_error_and_deferred_seed() {
         let x = CoreVarId::new(0);
         let (context, owner) = context_with_var(x);
@@ -11178,6 +12435,7 @@ mod tests {
                     params: vec![x],
                     args: vec![CoreTermSeedId::new(0)],
                     sethood_evidence: Vec::new(),
+                    template_type_parameter_sethood: None,
                     membership_obligation: Box::new(
                         FraenkelMembershipObligationSeed::AlreadyCarried(
                             AlreadyCarriedFraenkelMembershipSeed {
@@ -11231,6 +12489,7 @@ mod tests {
                     params: vec![x],
                     args: vec![CoreTermSeedId::new(0)],
                     sethood_evidence: Vec::new(),
+                    template_type_parameter_sethood: None,
                     membership_obligation: Box::new(
                         FraenkelMembershipObligationSeed::AlreadyCarried(
                             AlreadyCarriedFraenkelMembershipSeed {
