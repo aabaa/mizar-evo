@@ -46,7 +46,7 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 | SSA-006 | high | 17.1 vs arch 04 | Resolved by task 40: item-ordered activation permits asynchronous acceptance without final rejection of later accepted uses |
 | SSA-007 | medium | 17.10/3.3 | Resolved by task 41: cluster termination relies on the restricted no-argument adjective grammar |
 | SSA-008 | medium | 17.7.3 | Resolved by task 41: contradictory derived attributes are closure-time fatal cluster diagnostics |
-| SSA-009 | medium | 17.6.4 | Reduction determinism claim conflicts with `such`-condition context dependence |
+| SSA-009 | medium | 17.6.4 | Resolved by task 42: reduction determinism signature includes discharged side-condition set |
 | SSA-010 | medium | 19.4.3/19.4.4 | Resolved by task 37: ambiguity covers multiple maximal roots, including equivalent roots |
 | SSA-011 | medium | 5.4 vs 19.2.2 | Resolved by task 36: implicit upcast path uniqueness is syntactic |
 | SSA-012 | medium | 5.3 | Resolved by task 36: inheritance acyclicity is explicit with `structures.inherit.cycle` |
@@ -278,7 +278,7 @@ failures, not cluster-resolution triggers. The inactive
 `fail_cluster_contradictory_consequent_001` seed maps to this closure-time
 fatal diagnostic.
 
-### SSA-009 (medium, `spec_gap`) — Reduction determinism vs `such` side conditions
+### SSA-009 (medium, resolved `spec_gap`) — Reduction determinism vs `such` side conditions
 
 **Where:** 17.6.4 "Deterministic normalization" and "Matching" row.
 
@@ -291,10 +291,17 @@ stated function signature is wrong. Additionally, "specificity over the
 whole matching constraint" combines pattern subsumption with §19.2.3 type
 specificity without defining the product order when the two disagree.
 
-**Proposed resolution:** restate determinism as a function of (term,
-in-scope rules, **discharged side-condition set**); define the combined
-specificity as: pattern subsumption first, then position-wise guard
-comparison, all remaining mixed cases incomparable → FQN tie-break.
+**Resolution (task 42):** §17.6.4 now states normalization as a deterministic
+function of the term, in-scope activated reduction rules, and the discharged
+side-condition set available at the rewrite site. `such` side conditions are
+applicability guards read from stable local-fact, trace, or citation evidence;
+they are not specificity inputs. Rule selection is pattern-first, guard-second:
+strict `LHS` pattern subsumption wins before guard comparison, otherwise
+corresponding pattern-variable type/attribute guards are compared position-wise
+with the §19.2.3 preorder. Missing correspondences, mixed winners, and equal or
+incomparable matches fall to the lexicographically smallest rule FQN. The
+checker `registration_resolution.md` reduction section mirrors this rule and
+keeps task-18 `such` guards applicability-only.
 
 ### SSA-010 (medium, resolved `spec_gap`) — Equally specific distinct roots
 
@@ -504,8 +511,8 @@ spec-decision tasks close.
   SSA-008, and SSA-020 are resolved by task 41 with synchronized spec
   03/06/17/19/Appendix A edits, architecture 04 saturation wording, the
   closure-time contradiction seed, and a restricted-adjective parser trace row.
-- **Remaining spec tasks (before further checker semantics):** SSA-009,
-  SSA-013, SSA-014, SSA-015, and SSA-017 remain assigned to tasks 42-44.
+- **Remaining spec tasks (before further checker semantics):** SSA-013,
+  SSA-014, SSA-015, and SSA-017 remain assigned to tasks 43-44.
 - **Task 19/20 (registration gating, existential gates):** revisit against
   SSA-014's built-in inhabitation table once decided; task 40 records the
   task-19 activation policy as an interim conservative approximation of
@@ -513,8 +520,8 @@ spec-decision tasks close.
 - **Tasks 16-18 (closure, loops, reductions):** task 41 aligns SSA-007's
   grammar-based termination argument and SSA-008's closure-time contradiction
   rule with existing `cluster_trace.md`/`registration_resolution.md`
-  behavior. Reduction determinism still needs SSA-009's corrected function
-  signature.
+  behavior. Task 42 aligns reduction determinism with task-18's explicit
+  discharged-guard evidence and applicability-only `such` side conditions.
 - **Tasks 23-26 (templates, viability, selection):** task 37 records the
   Phase B tie-break and tie-ambiguity rules. Real payload work must still not
   infer missing comparison evidence; `mizar-core` task 26 / F7 records the

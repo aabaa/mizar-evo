@@ -467,6 +467,10 @@ rewrites and they must preserve source provenance. Task 18 implements the
 checker-local reduction trace data layer over explicit reduction payloads only;
 full typed-term matching, traversal, rule search/selection from source terms,
 and source-derived guard extraction remain deferred behind MC-G020 and MC-G021.
+For a fixed rewrite site, normalization is deterministic over the typed term,
+the in-scope activated reduction rule set, and the discharged side-condition
+set that supplies stable local-fact, trace, or citation evidence for `such`
+guards.
 
 Required behavior:
 
@@ -475,13 +479,16 @@ Required behavior:
 - each candidate must satisfy the type and attribute guards introduced by the
   registration parameters;
 - each `such` side condition from surrounding registration parameters must
-  already be available as a recorded local fact or cited fact before the rule
-  may apply; such side conditions are applicability guards and do not make the
-  rule more specific;
+  already be available as recorded local-fact, trace, or citation evidence
+  before the rule may apply; such side conditions are applicability guards and
+  do not make the rule more specific;
 - traversal is leftmost-innermost;
-- rule selection prefers the most specific `LHS` pattern and type/attribute
-  guard constraint, then the lexicographically smallest rule FQN as the stable
-  tie breaker;
+- rule selection discards non-applicable rules, compares `LHS` patterns by
+  pattern subsumption first, uses position-wise §19.2.3 type/attribute guard
+  comparison only when pattern comparison has no unique winner, treats missing
+  correspondences and mixed guard winners as incomparable, excludes `such`
+  guards from specificity, and then chooses the lexicographically smallest
+  rule FQN as the stable tie breaker;
 - each applied rewrite records source redex, target term, substitution,
   discharged guards, rule FQN, active rule-view fingerprint, selection key,
   redex path, enclosing-term fingerprint, and source provenance;
@@ -590,8 +597,8 @@ Task 18:
   source redexes, target terms, active rule-view fingerprints,
   enclosing-term fingerprints, and source provenance are recorded for every
   reduction;
-- `such` side conditions must be recorded or cited before a rule applies and do
-  not affect specificity ranking;
+- `such` side conditions must have recorded local-fact, trace, or citation
+  evidence before a rule applies and do not affect specificity ranking;
 - pending, rejected, unaccepted, and external-gap reductions never rewrite
   terms even when their patterns would match;
 - invalid reduction substitutions and mismatched strategy-audit keys are

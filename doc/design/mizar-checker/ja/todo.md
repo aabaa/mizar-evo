@@ -788,7 +788,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       `spec.en.17.clusters.restricted_adjective_grammar.parser` を追加した。
       checker/core source semantics は変更していない。
 
-42. **Spec 明確化: reduction 決定性のシグネチャ(SSA-009)。** [ ]
+42. **Spec 明確化: reduction 決定性のシグネチャ(SSA-009)。** [x]
     - §17.6.4 の正規化決定性を(term、in-scope rules、discharged
       side-condition set)の関数として再記述する。複合 specificity を
       pattern subsumption 優先、次に position ごとの guard 比較、残る混合
@@ -799,6 +799,13 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       導出可能である。
     - 検証: `cargo test -p mizar-test`。
     - 依存: なし。参照: SSA-009。
+    - task 42 で完了: spec 17 は reduction normalization を、項、スコープ内の
+      activated reduction rule、解消済み side-condition 集合の決定的関数として
+      定義する。`such` guard は applicability-only evidence であり、specificity
+      の入力ではない。rule selection は pattern-first、guard-second で、
+      §19.2.3 の位置ごとの比較と、同等、mixed、比較不能ケースの FQN tie-break を
+      使う。`registration_resolution.md` も同じ規則を反映する。
+      checker/core source semantics は変更していない。
 
 43. **Spec 明確化: 依存 mode の sethood と built-in inhabitation(SSA-013, SSA-014)。** [ ]
     - パラメータ化された sethood 義務形

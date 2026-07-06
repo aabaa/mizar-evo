@@ -835,7 +835,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       `spec.en.17.clusters.restricted_adjective_grammar.parser`. No
       checker/core source semantics changed.
 
-42. **Spec clarification: reduction determinism signature (SSA-009).** [ ]
+42. **Spec clarification: reduction determinism signature (SSA-009).** [x]
     - Restate §17.6.4 normalization determinism as a function of (term,
       in-scope rules, discharged side-condition set); define combined
       specificity as pattern subsumption first, then position-wise guard
@@ -847,6 +847,13 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       applicability-only) is derivable from the spec text.
     - Verify: `cargo test -p mizar-test`.
     - Deps: none. Refs: SSA-009.
+    - Completed in task 42: spec 17 now defines reduction normalization as a
+      deterministic function of the term, in-scope activated reduction rules,
+      and discharged side-condition set. `such` guards are applicability-only
+      evidence, not specificity inputs. Rule selection is pattern-first,
+      guard-second with position-wise §19.2.3 comparison and FQN tie-break for
+      equal, mixed, or incomparable cases. `registration_resolution.md` mirrors
+      the rule. No checker/core source semantics changed.
 
 43. **Spec clarification: sethood for dependent modes and built-in inhabitation (SSA-013, SSA-014).** [ ]
     - Give the parameterized sethood obligation form
