@@ -900,17 +900,21 @@ derived documentation drift である `from` tail が task-17 justification node
 
 ## Task 18: `consider` と `reconsider`
 
-Task 18 は、mandatory な simple justification を持つ Chapter 15 の linkable
-statement form により、S-013 statement syntax を継続する。この task は task-17 の
-`JustificationClause` と `ReferenceList` surface を使うが、simple citation 形だけに
-限定する。`by computation` は、より多くの statement kind に仕様が明示的に許可するまで、
-task-17 の明示的 `CompactStatement` host だけで受け入れる。
+Task 18 は、当時 mandatory な simple justification を持つものとして実装された
+Chapter 15 の linkable statement form により、S-013 statement syntax を継続した。
+この task は task-17 の `JustificationClause` と `ReferenceList` surface を使うが、
+simple citation 形だけに限定する。`by computation` は、より多くの statement kind に
+仕様が明示的に許可するまで、task-17 の明示的 `CompactStatement` host だけで受け入れる。
 
-Chapter 15 はこれらの statement を `simple_justification` で定義しつつ、両方とも
-mandatory justification を持つとも述べている。この parser 増分では、その本文と crate
-plan を controlling syntax intent として扱う。つまり task 18 は明示的な
-`by references` tail を必須とし、空の justification を黙って受け入れるのではなく、
-欠落した tail を malformed justification syntax として recover する。
+そのため task 18 は明示的な `by references` tail を必須とし、空の justification を
+黙って受け入れるのではなく、欠落した tail を malformed justification syntax として
+recover する。checker task 44 はその後、Chapter 4、8、15、Appendix A の canonical
+`reconsider` 契約を変更した。justification 省略 `reconsider` は構文上受理可能だが、
+semantic `type.narrowing_requires_proof` gate によって制限され、proof-block
+`reconsider` も `reconsider_tail` で明示された。parser task 47 が、この task-18
+実装挙動と active parse-only fixture を更新後の canonical syntax に整合させる責務を
+持つ。それまではこの不一致を `source_drift` / `test_expectation_drift` として
+記録する。
 
 ```ebnf
 statement_item       ::= ... | consider_statement | reconsider_statement ;

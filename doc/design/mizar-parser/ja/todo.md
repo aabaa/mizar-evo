@@ -946,7 +946,7 @@ resolver / build-system 依存を避ける。
       `public_enum_exhaustiveness_exceptions_are_documented`、
       `every_public_enum_has_a_forward_compatibility_decision` により完全な分類を
       guard する。Rust source の変更は不要だった。残る parser TODO は deferred
-      task 46 のみである。
+      task 46 と 47 である。
     - 依存: 35、42。仕様: すべてのモジュール仕様。
 
 46. **concrete operator declaration と operator 予約語 corpus。** [ ] deferred
@@ -960,6 +960,26 @@ resolver / build-system 依存を避ける。
     - 依存: 43、および将来の frontend string-required operator-declaration context。
       仕様: [grammar.md](./grammar.md)、[pratt.md](./pratt.md)、
       [source_spec_audit.md](./source_spec_audit.md)。
+
+47. **`reconsider` justification の parser 整合。** [ ] deferred
+    - `mizar-checker` task 44 で記録した deferred follow-up。canonical spec は
+      Chapter 4、8、15 と Appendix A で `reconsider` の
+      `simple_justification` 省略構文を許可し、proof-free evidence で discharge
+      できない省略ケースは semantic `type.narrowing_requires_proof` gate で拒否する
+      ことにした。また、以前から記述されていた proof-block `reconsider` form を
+      `reconsider_tail` により明示した。現在の parser 実装と active
+      `fail_parser_consider_reconsider_recovery_001` fixture はまだ
+      `reconsider x as set;` を mandatory justification 欠落として分類し、
+      reconsider を simple-justification-only host として扱っている。
+      parser-alignment task が grammar、recovery diagnostic、parse-only corpus を
+      semantic intent を変えずに更新できるまで、この挙動を `source_drift` /
+      `test_expectation_drift` として記録しておく。
+    - 依存: `mizar-checker` task 44 と parser grammar-alignment slice。
+      仕様: [grammar.md](./grammar.md)、
+      [doc/spec/ja/04.variables_and_constants.md](../../../spec/ja/04.variables_and_constants.md)、
+      [doc/spec/ja/08.type_inference.md](../../../spec/ja/08.type_inference.md)、
+      [doc/spec/ja/15.statements.md](../../../spec/ja/15.statements.md)、
+      [doc/spec/ja/appendix_a.grammar_summary.md](../../../spec/ja/appendix_a.grammar_summary.md)。
 
 ## 推奨検証
 

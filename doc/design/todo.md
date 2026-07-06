@@ -91,12 +91,12 @@ is its task 1). "Next work" points into the
 | mizar-session | Source identity, source maps, source loading, build snapshots, retention | [x] complete | — | [todo](./mizar-session/en/todo.md) |
 | mizar-lexer | Raw scan, scope skeletons, lexical environments, token disambiguation | [x] complete | — | [todo](./mizar-lexer/en/todo.md) |
 | mizar-syntax | Rowan-backed `SurfaceAst`, trivia, recovery, typed views | [x] complete | parked task 21 | [todo](./mizar-syntax/en/todo.md) |
-| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] complete through task 45 | parked task 46 | [todo](./mizar-parser/en/todo.md) |
+| mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] complete through task 45 | parked tasks 46-47 | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 (task 30) | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22 plus task 21 soundness vocabulary | step 5 (task 10) | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec wave complete through task 43 | steps 2, 4, 5 (tasks 44-48) | [todo](./mizar-checker/en/todo.md) |
-| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete | steps 2, 4 (tasks 27-30) | [todo](./mizar-core/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec-decision wave complete | steps 4, 5 (tasks 45-48) | [todo](./mizar-checker/en/todo.md) |
+| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete | step 4 (tasks 27-30) | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | steps 3 (task 29), 5; tasks 27-28 resolved | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | steps 3, 4 (tasks 33-35); task 32 parked; tasks 30-31 resolved | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete | steps 3 (task 29), 7 | [todo](./mizar-atp/en/todo.md) |
@@ -141,7 +141,7 @@ Exit: audit F1/F2/F7/F8 closed; `soundness_argument.md` invariants B4 and the
 P-class rows are marked implemented/resolved; the 23-case certificate corpus
 stays rejecting.
 
-### Step 2 — Spec-decision wave [~]
+### Step 2 — Spec-decision wave [x]
 
 Settle the audited semantic decisions as docs-plus-corpus work before any
 checker/core implementation that would preempt them. Per AGENTS.md these are
@@ -168,7 +168,7 @@ checker code semantics change in this step.
    determinism signature (SSA-009).
 10. [x] [mizar-checker task 43](./mizar-checker/en/todo.md) — sethood for
     dependent modes and built-in inhabitation (SSA-013/014).
-11. [ ] [mizar-checker task 44](./mizar-checker/en/todo.md) — `reconsider`
+11. [x] [mizar-checker task 44](./mizar-checker/en/todo.md) — `reconsider`
     discharge and ambiguous redefinition target (SSA-015/017).
 
 Exit: every SSA decision recorded in bilingual spec text with its rejection
@@ -203,11 +203,11 @@ trigger (kernel 32), or explicitly waiting on step 4 (kernel 35).
 Implement the decisions from step 2 in checker and core. Depends on step 2.
 
 1. [ ] [mizar-checker task 45](./mizar-checker/en/todo.md) — overload
-   tie-break implementation (deps: task 37).
+   tie-break and redefinition-target implementation (deps: tasks 37, 44).
 2. [ ] [mizar-checker task 46](./mizar-checker/en/todo.md) — closure
    contradiction and termination rules (deps: tasks 41-42).
-3. [ ] [mizar-checker task 47](./mizar-checker/en/todo.md) — existential gate
-   and activation contract (deps: tasks 40, 43).
+3. [ ] [mizar-checker task 47](./mizar-checker/en/todo.md) — existential and
+   omitted-reconsider gates plus activation contract (deps: tasks 40, 43, 44).
 4. [ ] [mizar-core task 27](./mizar-core/en/todo.md) — reduct/view lowering
    (template-audit F1/F3; deps: checker 36).
 5. [ ] [mizar-core task 28](./mizar-core/en/todo.md) — template type-actual
@@ -367,9 +367,9 @@ expectations to current behavior.
 
 | Audit | Findings | Owning tasks / dispositions |
 |---|---|---|
-| [mizar-checker semantic_spec_audit.md](./mizar-checker/en/semantic_spec_audit.md) (2026-07-03, commit `707c95be`) | SSA-001 (critical) through SSA-020; 16-fixture rejection corpus | [mizar-checker tasks 35-48](./mizar-checker/en/todo.md) (plan steps 2, 4, 5); SSA-018 recorded as a diagnostics-wave lint (step 8), no task; full disposition table in the checker TODO |
+| [mizar-checker semantic_spec_audit.md](./mizar-checker/en/semantic_spec_audit.md) (2026-07-03, commit `707c95be`) | SSA-001 (critical) through SSA-020; 16-fixture rejection corpus | [mizar-checker tasks 35-48](./mizar-checker/en/todo.md) (step 2 complete; remaining plan steps 4, 5); SSA-018 recorded as a diagnostics-wave lint (step 8), no task; full disposition table in the checker TODO |
 | [mizar-kernel soundness_argument.md](./mizar-kernel/en/soundness_argument.md) (2026-07-03, commit `f75af877`) | F1-F9; 23-case reject-first certificate corpus | [mizar-kernel tasks 30-35](./mizar-kernel/en/todo.md); producer side [mizar-vc tasks 28-29](./mizar-vc/en/todo.md), with F1 producer polarity resolved by mizar-vc task 27; consumers [mizar-atp task 29](./mizar-atp/en/todo.md), [mizar-proof task 21](./mizar-proof/en/todo.md), [mizar-cache task 24](./mizar-cache/en/todo.md), [mizar-artifact task 24](./mizar-artifact/en/todo.md); harness [mizar-test task 21](./mizar-test/en/todo.md) for F7, with F8 resolved by mizar-test task 22 (plan steps 1, 3, 4); F4/F5 resolved inside `f75af877` |
-| [mizar-core template_encoding_audit.md](./mizar-core/en/template_encoding_audit.md) (2026-07-05, commit `cef7e109`) | F1-F8; original 4-seed encoding corpus plus task 26 F7 inference seeds | spec text for F1-F6/F8 patched inside `cef7e109`; F7 spec decision completed in task 26; [mizar-core tasks 27-30](./mizar-core/en/todo.md) remain (plan steps 2, 4); coordination rows in [mizar-checker tasks 36/43](./mizar-checker/en/todo.md) and [mizar-kernel task 35](./mizar-kernel/en/todo.md) |
+| [mizar-core template_encoding_audit.md](./mizar-core/en/template_encoding_audit.md) (2026-07-05, commit `cef7e109`) | F1-F8; original 4-seed encoding corpus plus task 26 F7 inference seeds | spec text for F1-F6/F8 patched inside `cef7e109`; F7 spec decision completed in task 26; [mizar-core tasks 27-30](./mizar-core/en/todo.md) remain (plan step 4); coordination rows in [mizar-checker tasks 36/43](./mizar-checker/en/todo.md) and [mizar-kernel task 35](./mizar-kernel/en/todo.md) |
 
 `mizar-ir`, `mizar-diagnostics`, `mizar-driver`, and `mizar-doc` reviewed the
 audits and recorded a no-crate-owned-task note in their TODOs (they carry no

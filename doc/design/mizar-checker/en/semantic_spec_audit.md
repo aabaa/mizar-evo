@@ -52,9 +52,9 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 | SSA-012 | medium | 5.3 | Resolved by task 36: inheritance acyclicity is explicit with `structures.inherit.cycle` |
 | SSA-013 | medium | 7.8.1 | Resolved by task 43: parameterized `sethood` is per normalized argument tuple |
 | SSA-014 | medium | 7.8/17.3.4 | Resolved by task 43: inhabitation table covers unattributed bases and built-ins |
-| SSA-015 | medium | 8.2 | `reconsider` with omitted justification has no defined discharge path |
+| SSA-015 | medium | 8.2 | Resolved by task 44: omitted `reconsider` justification is proof-free widening, inheritance/view, cluster-closure, or local facts only |
 | SSA-016 | low | 19.2.3 | Resolved by task 37: specificity is a preorder before quotienting by closure-equivalence |
-| SSA-017 | low | 6.7/19.4.1 | `coherence with` omitted with several sharpenable originals: diagnostic unspecified |
+| SSA-017 | low | 6.7/19.4.1 | Resolved by task 44: omitted `coherence with` with several targets reports ambiguous redefinition target |
 | SSA-018 | low | 19.6.4 | Greedy `of`/`over` parse depends on the in-scope arity set |
 | SSA-019 | low | 19.6.1 | Resolved by task 37: duplicated introductory sentences removed |
 | SSA-020 | medium | 3.3/6.2 | Resolved by task 41: `attr(args)` is a use-site application form, not a cluster adjective |
@@ -402,15 +402,27 @@ are trivially inhabited. The schema-parameter entry is backed by the §18.10.2
 schema-context assumption. §18 template actuals now defer to the same table,
 preserving the F2 inhabitation gate.
 
-### SSA-015 (medium, `spec_gap`) — `reconsider` without justification
+### SSA-015 (medium, resolved `spec_gap`) — `reconsider` without justification
 
 **Where:** 8.2 EBNF ("can be omitted entirely"), 8.2.2.
 
-If the justification is omitted, the spec does not say whether the narrowing
-obligation is discharged by cluster closure only, sent to ATP, or an error.
-**Proposed resolution:** omitted justification is legal iff the obligation
-is discharged by widening/closure evidence alone; otherwise a diagnostic
-requests a justification.
+Before task 44, if the justification was omitted, the spec did not say whether
+the narrowing obligation was discharged by cluster closure only, sent to ATP,
+or an error.
+
+**Resolution (task 44):** the omitted form is syntax-admissible, but it is
+legal only when every target-type obligation is discharged by proof-free
+widening, inheritance, cluster-closure, or already recorded local type facts
+available at that source point. It does not start proof search and does not
+create an implicit `by` step. If any item needs a new proof, the checker
+reports `type.narrowing_requires_proof`. Spec 04, 08, 15, Appendix A, and 22
+now carry the same grammar/semantic split, and Chapter 15/Appendix A make the
+long-documented proof-block `reconsider` form explicit through
+`reconsider_tail`. The inactive seed
+`fail_types_reconsider_omitted_justification_001` pins the missing-proof
+negative case; existing parser behavior that still rejects the omitted syntax
+and proof-block `reconsider` is recorded as parser task 47 `source_drift` /
+`test_expectation_drift`.
 
 ### SSA-016 (low, resolved `spec_gap`) — Antisymmetry wording
 
@@ -421,11 +433,21 @@ normalized type expressions; antisymmetry holds only after quotienting by
 closure-equivalence classes. This wording is part of the SSA-010 ambiguity
 decision.
 
-### SSA-017 (low, `spec_gap`) — Ambiguous `coherence with` omission
+### SSA-017 (low, resolved `spec_gap`) — Ambiguous `coherence with` omission
 
-§19.4.1 assigns a `redefine` without `coherence with` to "the unique earlier
-definition whose signature it sharpens". When several qualify, no error name
-or behavior is given. Specify an "ambiguous redefinition target" diagnostic.
+Before task 44, §19.4.1 assigned a `redefine` without `coherence with` to "the
+unique earlier definition whose signature it sharpens". When several qualified,
+no error name or behavior was given.
+
+**Resolution (task 44):** target inference for omitted `coherence with` occurs
+at declaration checking, before use-site overload resolution. It succeeds only
+when exactly one visible earlier ordinary root of the same symbol kind and
+arity is strictly sharpened by the redefinition signature. If several roots
+qualify, the checker reports `resolve.ambiguous_redefinition_target` and must
+not choose by declaration order, import order, or return type. The inactive
+seed `fail_overload_redefine_ambiguous_target_001` pins this negative case
+until the advanced-semantics runner and source-to-checker redefinition payloads
+exist.
 
 ### SSA-018 (low, `design_drift`) — Greedy `of`/`over` parse depends on scope
 
@@ -465,8 +487,12 @@ template view-leak seed. Task 37 adds inactive ordinary and template-derived
 equivalent-root ambiguity seeds plus one inactive same-return signature-conflict
 declaration seed; the latter waits for the matching resolver diagnostic.
 Task 38 adds the inactive functorial-`for` guard seed under the same
-advanced-semantics rule. The existing different-return signature-conflict
-declaration seed remains active.
+advanced-semantics rule. Task 39 adds the property-overlap coherence seed,
+task 40 keeps the non-retroactive activation seed under a new traceability row,
+tasks 41-43 keep their contradiction/reduction/sethood seeds inactive until
+source-derived payload support exists, and task 44 adds the omitted
+`reconsider` justification and ambiguous omitted-`coherence with` target seeds.
+The existing different-return signature-conflict declaration seed remains active.
 Existing tests and expectations were not rebaselined to match implementation
 behavior.
 
@@ -493,8 +519,10 @@ behavior.
 | `fail/types/fail_types_qua_narrowing_001` | `qua` narrowing rejected | 13.6.4, 8.2.2 |
 | `fail/types/fail_types_qua_unrelated_struct_001` | `qua` to unrelated struct rejected | 13.6.1, 13.6.4 |
 | `fail/types/fail_types_comprehension_missing_sethood_001` | Fraenkel without sethood rejected | 13.4.2, 7.8.1 |
+| `fail/types/fail_types_reconsider_omitted_justification_001` | omitted `reconsider` justification needs proof-free evidence only | 8.2.2, 15.5.1 |
 | `fail/structures/fail_structure_constructor_property_arg_001` | constructor property argument rejected | 5.5.1, 5.8.4, 7.4.1 |
 | `fail/modes/fail_mode_property_overlap_missing_coherence_001` | overlapping property implementation without coherence rejected | 7.4.1, 7.8.2 |
+| `fail/overload/fail_overload_redefine_ambiguous_target_001` | omitted `coherence with` rejects several sharpened roots | 19.4.1, 19.5 |
 
 New traceability requirements: `spec.en.05.structures.constructor_fields_only.semantic`,
 `spec.en.05.structures.inheritance.semantic`,
@@ -502,6 +530,7 @@ New traceability requirements: `spec.en.05.structures.constructor_fields_only.se
 `spec.en.07.modes.property_implementation.parser`,
 `spec.en.07.modes.property_implementation.not_constructor_source.semantic`,
 `spec.en.07.modes.existential_gating.semantic`,
+`spec.en.08.reconsider.omitted_justification.semantic`,
 `spec.en.13.qua.widening_only.semantic`,
 `spec.en.13.sethood.comprehension.semantic`,
 `spec.en.17.clusters.pattern_consistency.semantic`,
@@ -509,7 +538,8 @@ New traceability requirements: `spec.en.05.structures.constructor_fields_only.se
 `spec.en.17.reductions.termination_order.semantic`,
 `spec.en.19.overload.ambiguity.semantic`,
 `spec.en.19.overload.definition_conflict.declaration`,
-`spec.en.19.overload.definition_conflict.same_return.declaration`.
+`spec.en.19.overload.definition_conflict.same_return.declaration`,
+`spec.en.19.redefinition.target.semantic`.
 
 ## Impact on the mizar-checker TODO
 
@@ -537,9 +567,13 @@ spec-decision tasks close.
   SSA-009 is resolved by task 42 with synchronized spec 17 reduction
   determinism edits. SSA-013 and SSA-014 are resolved by task 43 with
   synchronized spec 07/13/17/18 edits, sethood/existential trace note updates,
-  and the existing reject-first corpus seeds kept inactive.
-- **Remaining spec tasks (before further checker semantics):** SSA-015 and
-  SSA-017 remain assigned to task 44.
+  and the existing reject-first corpus seeds kept inactive. SSA-015 and
+  SSA-017 are resolved by task 44 with synchronized spec 04/08/15/19/22 and
+  Appendix A edits plus inactive reject-first seeds for omitted `reconsider`
+  justification and ambiguous omitted `coherence with` target inference.
+- **Remaining spec tasks (before further checker semantics):** none for the
+  Step 2 SSA decision wave. Checker/core implementation tasks may consume
+  these decisions in Step 4 without preempting source-derived payload gaps.
 - **Task 19/20 (registration gating, existential gates):** revisit against
   task 43's built-in/base-shape inhabitation table when source-derived
   accepted status and payloads exist; task 40 records the task-19 activation

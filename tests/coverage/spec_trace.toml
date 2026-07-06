@@ -716,6 +716,22 @@ deferred_reason = "Task 39 documents property `means`/`equals` implementation sy
 tests = []
 
 [[requirement]]
+id = "spec.en.08.reconsider.omitted_justification.semantic"
+source = "doc/spec/en/08.type_inference.md"
+section = "8.2.2 Explicit Conversion; 8.3 Type Checking Process; with 15.5.1 Type Reconsideration"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Task 44 / SSA-015 decision: omitted `reconsider` justification is syntax-admissible but semantically accepted only when proof-free widening, inheritance, cluster-closure, or already recorded local type facts discharge every target-type obligation. The omitted form must not invoke proof search; otherwise it reports `type.narrowing_requires_proof`. Seed remains inactive until an advanced_semantics runner and source-to-checker reconsider/coercion payload extraction exist. Existing active parser recovery for omitted reconsider justification is classified as test_expectation_drift/source_drift and assigned to deferred parser follow-up task 47."
+depends_on = [
+  "spec.en.15.statements.syntax",
+]
+tests = [
+  "tests/miz/fail/types/fail_types_reconsider_omitted_justification_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.09.predicate_definitions.parser"
 source = "doc/spec/en/09.predicates.md"
 section = "9.1 Overview and Syntax; 9.3 Definition Styles; 9.4 Dependent and Typed Parameters; 9.5 Correctness Conditions; 9.10 Complete Syntax"
@@ -1157,6 +1173,28 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.15.reconsider.omitted_justification.parser"
+source = "doc/spec/en/15.statements.md"
+section = "15.5.1 Type Reconsideration (`reconsider`); 15.12 Complete Syntax; Appendix A.15 Reasoning Statements"
+stage = "parse_only"
+status = "deferred"
+required = true
+coverage = "pass"
+deferred_reason = "Checker task 44 makes omitted `reconsider` simple justification syntax-admissible, with rejection moved to the semantic `type.narrowing_requires_proof` gate when proof-free widening, inheritance/view, cluster-closure, or recorded local type evidence cannot discharge the target type. The current parser and active recovery fixture still reject `reconsider x as set;` as missing mandatory justification. Parser task 47 owns grammar/recovery/corpus alignment; do not add an active parser pass case until that task changes the parser."
+tests = []
+
+[[requirement]]
+id = "spec.en.15.reconsider.proof_block.parser"
+source = "doc/spec/en/15.statements.md"
+section = "15.5.1 Type Reconsideration (`reconsider`); 15.8.2 Full Proof; 15.12 Complete Syntax; Appendix A.15 Reasoning Statements"
+stage = "parse_only"
+status = "deferred"
+required = true
+coverage = "pass"
+deferred_reason = "Chapter 8 has long described proof-block `reconsider`, and checker task 44 makes the Chapter 15/Appendix A grammar explicit through `reconsider_tail`. The current parser task-18 implementation treats reconsider as a simple-justification-only host and rejects proof blocks. Parser task 47 owns grammar/recovery/corpus alignment; do not add an active parser pass case until that task changes the parser."
+tests = []
+
+[[requirement]]
 id = "spec.en.15.statements.syntax"
 source = "doc/spec/en/15.statements.md"
 section = "15.2.1 Generalization Statement; 15.2.2 Constant Definition; 15.2.3 Inline Function Definition (`deffunc`); 15.2.4 Inline Predicate Definition (`defpred`); 15.3.1 Single Assumption; 15.3.2 Collective Assumption; 15.3.3 Existential Assumption; 15.3.4 Choice Statement (`consider`); 15.4.1 Conclusion Statement (`thus`/`hence`); 15.4.2 Hence Statement; 15.4.3 Block Conclusion (`hereby`); 15.4.4 Witness Introduction; 15.5.1 Type Reconsideration (`reconsider`); 15.6.1 Labeled Reasoning Block (`now`); 15.6.2 Case Analysis (`case`); 15.6.3 Supposition (`suppose`); 15.7 Iterative Equality; 15.8 Justification Forms; 15.9.1 Sequential Link (`then`)"
@@ -1164,6 +1202,7 @@ stage = "parse_only"
 status = "covered"
 required = true
 coverage = "pass_and_fail"
+notes = "Covers the implemented statement syntax surface except the task-44 omitted `reconsider` justification update and the now-explicit proof-block `reconsider` grammar, tracked separately by `spec.en.15.reconsider.omitted_justification.parser` and `spec.en.15.reconsider.proof_block.parser` until parser task 47 lands. The active reconsider recovery fixture remains a documented source/test drift for those syntax slices."
 tests = [
   "tests/miz/pass/parser/pass_parser_simple_statements_001.expect.toml",
   "tests/miz/pass/parser/pass_parser_justifications_001.expect.toml",
@@ -1451,6 +1490,24 @@ depends_on = [
 ]
 tests = [
   "tests/miz/fail/resolve/fail_resolve_same_signature_same_return_conflict_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.19.redefinition.target.semantic"
+source = "doc/spec/en/19.overload_resolution.md"
+section = "19.4.1 Candidate Collection; 19.5 Symbol Redefinition; 22.3.4 Overload Resolution Failure"
+stage = "advanced_semantics"
+status = "covered"
+required = true
+coverage = "fail"
+notes = "Task 44 / SSA-017 decision: a `redefine` with omitted `coherence with` may infer its target only when exactly one visible earlier ordinary root of the same symbol kind and arity is strictly sharpened by the redefinition signature. Multiple qualifying roots report `resolve.ambiguous_redefinition_target`; declaration/import order and return type must not choose. Seed remains inactive until an advanced_semantics runner and source-to-checker redefinition payload extraction exist."
+depends_on = [
+  "spec.en.10.functor_definitions.parser",
+  "spec.en.17.clusters_and_registrations.parser",
+  "spec.en.syntax.redefinition_notation.parser",
+]
+tests = [
+  "tests/miz/fail/overload/fail_overload_redefine_ambiguous_target_001.expect.toml",
 ]
 
 [[requirement]]

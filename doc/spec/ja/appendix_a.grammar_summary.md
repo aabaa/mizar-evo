@@ -223,9 +223,10 @@ equating_list      ::= equating { "," equating } ;
 equating           ::= identifier "=" term_expression ;
 
 reconsider_decl    ::= "reconsider" type_change_list "as" type_expression
-                       [ simple_justification ] ";" ;
+                       reconsider_tail ;
 type_change_list   ::= reconsider_item { "," reconsider_item } ;
 reconsider_item    ::= identifier | identifier "=" term_expression ;
+reconsider_tail    ::= [ simple_justification ] ";" | proof ";" ;
 
 ```
 
@@ -645,7 +646,8 @@ example_list                 ::= example { "," example } ;
 example                      ::= term_expression | identifier "=" term_expression ;
 
 type_changing_statement      ::= "reconsider" type_change_list "as"
-                                 type_expression simple_justification ";" ;
+                                 type_expression reconsider_tail ;
+reconsider_tail              ::= [ simple_justification ] ";" | proof ";" ;
 (* type_change_list and reconsider_item are defined in A.4. *)
 
 compact_statement            ::= proposition justification ";" ;
@@ -667,8 +669,8 @@ suppose_item                 ::= "suppose" ( proposition | conditions ) ";"
 proposition                  ::= [ label_identifier ":" ] formula ;
 conditions                   ::= "that" proposition { "and" proposition } ;
 
-justification                ::= simple_justification | proof | computation_proof ;
-simple_justification         ::= [ "by" references ] ;
+justification                ::= [ simple_justification ] | proof | computation_proof ;
+simple_justification         ::= "by" references ;
 references                   ::= reference { "," reference } ;
 reference                    ::= label_identifier [ template_args ]
                                | qualified_reference [ template_args ]

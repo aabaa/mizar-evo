@@ -609,7 +609,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | タスク化しない: greedy `of`/`over` parse は決定的かつ文書化済み(spec 19.6.4)。scope 感度 lint は将来の diagnostics 採用 wave に属し、そこで記録する |
-| corpus seeds | task 48 が必要な runner、parser support、declaration-symbol support、source-to-checker payload extraction 到着時に、監査 fixture 16 件、task-35 constructor-property seed、task-36 duplicate-coverage seed、task-37 ordinary/template-derived equivalent-root seed と same-return signature-conflict seed、task-38 functorial-`for` guard seed、task-39 property-overlap coherence seed を活性化する |
+| corpus seeds | task 48 が必要な runner、parser support、declaration-symbol support、source-to-checker payload extraction 到着時に、監査 fixture 16 件、task-35 constructor-property seed、task-36 duplicate-coverage seed、task-37 ordinary/template-derived equivalent-root seed と same-return signature-conflict seed、task-38 functorial-`for` guard seed、task-39 property-overlap coherence seed、task-44 omitted-`reconsider` / ambiguous-redefinition-target seed を活性化する |
 
 35. **Spec 決定: constructor property 引数と extensionality(SSA-001)。** [x]
     - critical な §5.5.1/§5.8.4/§5.8.5 の不整合を解決する。推奨は解決策 1:
@@ -833,9 +833,10 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       source-derived coverage は deferred のまま。checker/core source semantics は
       変更していない。
 
-44. **Spec 明確化: `reconsider` の discharge と曖昧な redefinition target(SSA-015, SSA-017)。** [ ]
-    - justification を省略した `reconsider` は、narrowing 義務が widening/
-      closure evidence のみで discharge される場合に限り合法で、それ以外は
+44. **Spec 明確化: `reconsider` の discharge と曖昧な redefinition target(SSA-015, SSA-017)。** [x]
+    - justification を省略した `reconsider` は、narrowing 義務が proof-free
+      widening、inheritance/view、cluster-closure、または既に記録済みの
+      local type fact で discharge される場合に限り合法で、それ以外は
       justification を求める診断とすることを §8.2 に明記する。複数の元定義
       が該当する `coherence with` 省略 `redefine` に対する「ambiguous
       redefinition target」診断を §19.4.1 に命名する。spec 08 と 19 英日。
@@ -843,17 +844,36 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       reject-first seed を持つ。
     - 検証: `cargo test -p mizar-test`。
     - 依存: 37(chapter 19 の編集を共有)。参照: SSA-015, SSA-017。
+    - task 44 で完了: spec 04/08/15/Appendix A は、justification 省略
+      `reconsider` が構文上受理可能である点で一致した。一方 spec 08/22 は、
+      その省略形を proof-free widening / inheritance / cluster-closure /
+      local-fact discharge に限定し、それ以外は `type.narrowing_requires_proof`
+      を要求する。同じ grammar 更新で proof-block `reconsider` も明示した。
+      spec 19/22 は、複数の可視先行 root を厳密に精密化する
+      `coherence with` 省略に `resolve.ambiguous_redefinition_target` を命名し、
+      宣言順、import 順、return type では選ばないことを明記した。2 件の inactive
+      advanced-semantics seed が決定を固定する。既存 parser の justification
+      省略および proof-block 挙動は parser task 47 の deferred `source_drift` /
+      `test_expectation_drift` として残す。checker/core source semantics は
+      変更していない。
 
 45. **Checker 整合: オーバーロード tie-break の実装。** [ ]
     - `overload_resolution.md` と第 3 波実装(tasks 23-26 の surface:
       template expansion priority、specificity 比較、root selection)を
       task-37 の決定に整合させ、決定された Case 2/3 の結果と tie-ambiguity
       規則の Rust regression を追加する。
+    - task 44 の declaration-time `redefine` family target inference も整合
+      させる。`coherence with` 省略時に target を推論できるのは、同じ
+      symbol kind と arity の可視な先行 ordinary root がちょうど 1 つだけ
+      redefinition signature によって厳密に精密化される場合に限る。複数
+      root が該当する場合は、declaration order、import order、return type
+      で選ばず、失敗 record/diagnostic を保持する。
     - 受け入れ条件: `cargo test -p mizar-checker` が決定済みの結果をカバー
-      する。文書化されていない tie-breaker がコードに残らない。
+      する。文書化されていない tie-breaker や redefinition target 省略時の
+      chooser がコードに残らない。
     - 検証: `cargo test -p mizar-checker`、
       `cargo clippy -p mizar-checker --all-targets -- -D warnings`。
-    - 依存: 37。参照: SSA-003, SSA-010; architecture 05。
+    - 依存: 37, 44。参照: SSA-003, SSA-010, SSA-017; architecture 05。
 
 46. **Checker 整合: closure の矛盾検出と停止性規則。** [ ]
     - task-41/42 の決定を `cluster_trace.md` と `registration_resolution.md`
@@ -872,11 +892,18 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       パラメータ化 sethood 形に整合させ、task-40 の activation 契約を暫定
       policy が近似する目標挙動として `registration_resolution.md` に記録
       する。
+    - task 44 の justification 省略 `reconsider` handling も整合させる:
+      proof search や暗黙の `by` は使わず、proof-free widening、一意な
+      inheritance/view evidence、active cluster closure、または既に記録済みの
+      local type fact が各 target obligation を discharge する場合だけ受理し、
+      それ以外の failed site は `type.narrowing_requires_proof` を報告する。
     - 受け入れ条件: `mode M is set`、built-in、struct radix に対する gate
-      挙動が決定済みの表と一致し、Rust regression を持つ。
+      挙動が決定済みの表と一致し、Rust regression を持つ。justification
+      省略 `reconsider` は parser-only rejection ではなく semantic E0102 gate
+      を維持する。
     - 検証: `cargo test -p mizar-checker`、
       `cargo clippy -p mizar-checker --all-targets -- -D warnings`。
-    - 依存: 40, 43。参照: SSA-006, SSA-013, SSA-014。
+    - 依存: 40, 43, 44。参照: SSA-006, SSA-013, SSA-014, SSA-015。
 
 48. **監査 corpus の活性化と task-29 record の改訂。** [ ]
     - `advanced_semantics`/`formula_statement` runner、property-implementation
@@ -886,7 +913,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       16 件、task-35 constructor-property seed、task-36 duplicate-coverage
       seed、task-37 ordinary/template-derived equivalent-root ambiguity seed、
       task-38 functorial-`for` guard seed、task-39 property-overlap coherence
-      seed を活性化する。
+      seed、task-44 omitted-`reconsider` / ambiguous-redefinition-target seed を活性化する。
       declaration-symbol runner が該当 resolver diagnostic を support した時点で
       task-37 same-return signature-conflict seed も活性化する。task-29 の
       deferred corpus record を監査由来の requirement id を指す(または

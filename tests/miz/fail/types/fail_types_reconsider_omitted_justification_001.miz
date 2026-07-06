@@ -1,0 +1,23 @@
+:: Rejection target: the omitted justification on `reconsider k = s as keen set`
+:: is not proof-free. `keen` is not derivable from the type of `s` by
+:: widening, inheritance, local type facts, or cluster closure, so the
+:: verifier must request an explicit `by` justification or proof block rather
+:: than sending the omitted form to proof search
+:: (doc/spec/en/08.type_inference.md, section 8.2.2).
+
+definition
+  let x be set;
+  attr KeenDef: x is keen means x = x;
+end;
+
+registration
+  cluster KeenExists: keen set;
+  existence proof thus thesis; end;
+end;
+
+theorem
+proof
+  let s be set;
+  reconsider k = s as keen set;
+  thus thesis;
+end;

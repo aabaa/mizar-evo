@@ -369,10 +369,14 @@ interaction. Spec references are the normative grammar chapters under
       `deffunc`/`defpred` local definitions (parser task 21).
     - Result: parser tasks 16, 18, 19, 20, and 21 are implemented. `ConsiderStatement`,
       `ReconsiderStatement`, and `ReconsiderItem` now cover shared-type
-      `consider` variables, condition lists, mandatory simple justifications,
-      reconsider item lists, target types, task-18 recovery, scope-skeleton
+      `consider` variables, condition lists, task-18 simple-justification
+      recovery, reconsider item lists, target types, scope-skeleton
       `type_change_list` support, syntax typed accessors, parser unit tests,
-      and active parse-only pass/fail corpus coverage. `ConclusionStatement`,
+      and active parse-only pass/fail corpus coverage. After checker task 44,
+      omitted `reconsider` justification is canonical syntax with a semantic
+      gate; parser task 47 owns updating the parser/syntax recovery fixtures
+      that still treat it as missing mandatory justification and the parser
+      slice that still treats proof-block `reconsider` as unsupported. `ConclusionStatement`,
       `ThenStatement`, `IterativeEqualityStatement`, and
       `IterativeEqualityStep` now cover `thus`/`hence`, linkable `then`
       statements, iterative equality `.=` steps, label and `then` variants,

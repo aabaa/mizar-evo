@@ -163,10 +163,13 @@ registry validation test または developer-mode internal error として報告
 
 ## Initial Allocations
 
-初期 active registry は
+初期 active registry は、実装済み部分について
 `doc/spec/en/22.error_handling_and_diagnostics.md#227-error-code-reference`
 の canonical code reference を反映する。Info code は display diagnostic が数値
 `DiagnosticCode` とともに normative に列挙されるまで reserved のままとする。
+producer/consumer 実装をまだ持たない spec-reserved row は active table の後に
+記録し、Rust registry と consumer を更新する所有 diagnostics adoption task が
+着地するまで emit してはならない。
 
 | Code | Semantic name | `PhaseFamily` | 既定 severity | Summary |
 |---|---|---|---|---|
@@ -223,6 +226,12 @@ registry validation test または developer-mode internal error として報告
 | `W0303` | `compat.overload_resolution_shift` | `CompatibilityWarning` | Warning | Registration, redefinition, or conditional-cluster change may shift overload/refinement resolution (heuristic MAJOR) |
 | `W0304` | `compat.version_bump_insufficient` | `CompatibilityWarning` | Warning | Declared version bump smaller than required |
 | `W0305` | `compat.edition_increase` | `CompatibilityWarning` | Warning | Package edition raised; MAJOR by default, review recommended |
+
+Deferred spec-reserved rows:
+
+| Code | Semantic name | Owner condition |
+|---|---|---|
+| `E0205` | `resolve.ambiguous_redefinition_target` | checker task 44 で Chapter 22 に追加。checker/resolver の redefinition-target diagnostic producer と source-derived payload が存在するときだけ、active Rust registry に採用する。 |
 
 ## Lookup Contract
 

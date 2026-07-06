@@ -982,7 +982,8 @@ older numeric syntax task references appear to disagree, prefer
       `public_forward_compatible_enums_are_marked_non_exhaustive`,
       `public_enum_exhaustiveness_exceptions_are_documented`, and
       `every_public_enum_has_a_forward_compatibility_decision`. No Rust source
-      change was required. The only remaining parser TODO is deferred task 46.
+      change was required. The remaining parser TODOs are deferred tasks 46
+      and 47.
     - Deps: 35, 42. Spec: all module specs.
 
 46. **Concrete operator declarations and operator reserved-word corpus.** [ ] deferred
@@ -997,6 +998,27 @@ older numeric syntax task references appear to disagree, prefer
     - Deps: 43 and the future frontend string-required operator-declaration
       context. Spec: [grammar.md](./grammar.md), [pratt.md](./pratt.md),
       [source_spec_audit.md](./source_spec_audit.md).
+
+47. **`reconsider` justification parser alignment.** [ ] deferred
+    - Deferred follow-up recorded by `mizar-checker` task 44. The canonical
+      spec now permits omitted `reconsider` `simple_justification` syntax in
+      Chapters 4, 8, and 15 plus Appendix A, then lets the semantic
+      `type.narrowing_requires_proof` gate reject omitted cases that cannot be
+      discharged by proof-free evidence. It also makes the long-documented
+      proof-block `reconsider` form explicit through `reconsider_tail`. The
+      current parser implementation and active
+      `fail_parser_consider_reconsider_recovery_001` fixture still classify
+      `reconsider x as set;` as missing mandatory justification and treat
+      reconsider as a simple-justification-only host; keep that behavior
+      recorded as `source_drift` / `test_expectation_drift` until a
+      parser-alignment task can update grammar, recovery diagnostics, and the
+      parse-only corpus without changing semantic intent.
+    - Deps: `mizar-checker` task 44 and a parser grammar-alignment slice.
+      Spec: [grammar.md](./grammar.md),
+      [doc/spec/en/04.variables_and_constants.md](../../../spec/en/04.variables_and_constants.md),
+      [doc/spec/en/08.type_inference.md](../../../spec/en/08.type_inference.md),
+      [doc/spec/en/15.statements.md](../../../spec/en/15.statements.md),
+      [doc/spec/en/appendix_a.grammar_summary.md](../../../spec/en/appendix_a.grammar_summary.md).
 
 ## Recommended Verification
 

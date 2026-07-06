@@ -645,7 +645,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | no task: the greedy `of`/`over` parse is deterministic and documented (spec 19.6.4); a scope-sensitivity lint belongs to the future diagnostics-adoption wave and is recorded in that wave, not here |
-| corpus seeds | task 48 activates the 16 audit fixtures plus the task-35 constructor-property seed, task-36 duplicate-coverage seed, task-37 ordinary/template-derived equivalent-root and same-return signature-conflict seeds, task-38 functorial-`for` guard seed, and task-39 property-overlap coherence seed when the required runners, parser support, declaration-symbol support, and source-to-checker payload extraction land |
+| corpus seeds | task 48 activates the 16 audit fixtures plus the task-35 constructor-property seed, task-36 duplicate-coverage seed, task-37 ordinary/template-derived equivalent-root and same-return signature-conflict seeds, task-38 functorial-`for` guard seed, task-39 property-overlap coherence seed, and task-44 omitted-`reconsider`/ambiguous-redefinition-target seeds when the required runners, parser support, declaration-symbol support, and source-to-checker payload extraction land |
 
 35. **Spec decision: constructor property arguments vs extensionality (SSA-001).** [x]
     - Resolve the critical §5.5.1/§5.8.4/§5.8.5 inconsistency. Recommended
@@ -882,9 +882,10 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       source-derived coverage remains deferred. No checker/core source
       semantics changed.
 
-44. **Spec clarification: `reconsider` discharge and ambiguous redefinition target (SSA-015, SSA-017).** [ ]
+44. **Spec clarification: `reconsider` discharge and ambiguous redefinition target (SSA-015, SSA-017).** [x]
     - State that omitted `reconsider` justification is legal iff the
-      narrowing obligation is discharged by widening/closure evidence alone,
+      narrowing obligation is discharged by proof-free widening,
+      inheritance/view, cluster-closure, or already recorded local type facts,
       otherwise a diagnostic requests a justification (§8.2); name an
       "ambiguous redefinition target" diagnostic for `redefine` without
       `coherence with` when several originals qualify (§19.4.1). Spec 08 and
@@ -893,17 +894,36 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       seed each.
     - Verify: `cargo test -p mizar-test`.
     - Deps: 37 (shares chapter 19 edits). Refs: SSA-015, SSA-017.
+    - Completed in task 44: spec 04/08/15/Appendix A now agree that omitted
+      `reconsider` justification is syntax-admissible, while spec 08/22 gate
+      it to proof-free widening/inheritance/cluster-closure/local-fact
+      discharge and otherwise require `type.narrowing_requires_proof`; the same
+      grammar update makes proof-block `reconsider` explicit. Spec
+      19/22 now name `resolve.ambiguous_redefinition_target` for omitted
+      `coherence with` when several visible earlier roots are strictly
+      sharpened; declaration/import order and return type do not choose. Two
+      inactive advanced-semantics seeds pin the decisions. Existing parser
+      omitted-justification and proof-block behavior remains a deferred parser task-47
+      `source_drift` / `test_expectation_drift`; no checker/core source
+      semantics changed.
 
 45. **Checker alignment: overload tie-break implementation.** [ ]
     - Align `overload_resolution.md` and the wave-3 implementation (tasks
       23-26 surfaces: template expansion priority, specificity comparisons,
       root selection) with the task-37 decision; add Rust regressions for the
       decided Case 2/3 outcomes and the tie-ambiguity rule.
+    - Also align declaration-time `redefine`-family target inference with
+      task 44: omitted `coherence with` may infer a target only when exactly
+      one visible earlier ordinary root of the same symbol kind and arity is
+      strictly sharpened. Multiple qualifying roots must preserve a failed
+      record/diagnostic instead of choosing by declaration order, import order,
+      or return type.
     - Acceptance: `cargo test -p mizar-checker` covers the decided outcomes;
-      no undocumented tie-breaker remains in code.
+      no undocumented tie-breaker or omitted-redefinition-target chooser remains
+      in code.
     - Verify: `cargo test -p mizar-checker`,
       `cargo clippy -p mizar-checker --all-targets -- -D warnings`.
-    - Deps: 37. Refs: SSA-003, SSA-010; architecture 05.
+    - Deps: 37, 44. Refs: SSA-003, SSA-010, SSA-017; architecture 05.
 
 46. **Checker alignment: closure contradiction and termination rules.** [ ]
     - Encode the task-41/42 decisions in `cluster_trace.md` and
@@ -922,11 +942,17 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       inhabitation table and parameterized sethood form, and record the
       task-40 activation contract in `registration_resolution.md` as the
       target behavior the interim policy approximates.
+    - Also align omitted `reconsider` justification handling with task 44:
+      no proof search and no implicit `by`; proof-free widening, unique
+      inheritance/view evidence, active cluster closure, or already recorded
+      local type facts must discharge every target obligation, otherwise the
+      failed site reports `type.narrowing_requires_proof`.
     - Acceptance: gate behavior for `mode M is set`, built-ins, and struct
-      radixes matches the decided table with Rust regressions.
+      radixes matches the decided table with Rust regressions, and omitted
+      `reconsider` keeps the semantic E0102 gate without parser-only rejection.
     - Verify: `cargo test -p mizar-checker`,
       `cargo clippy -p mizar-checker --all-targets -- -D warnings`.
-    - Deps: 40, 43. Refs: SSA-006, SSA-013, SSA-014.
+    - Deps: 40, 43, 44. Refs: SSA-006, SSA-013, SSA-014, SSA-015.
 
 48. **Audit-corpus activation and task-29 record revision.** [ ]
     - When the `advanced_semantics`/`formula_statement` runners,
@@ -937,7 +963,8 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       fixtures plus the task-35 constructor-property seed, task-36
       duplicate-coverage seed, task-37 ordinary/template-derived
       equivalent-root ambiguity seeds, task-38 functorial-`for` guard seed,
-      and task-39 property-overlap coherence seed.
+      task-39 property-overlap coherence seed, and task-44 omitted-`reconsider`
+      / ambiguous-redefinition-target seeds.
       Activate the task-37 same-return signature-conflict seed when the
       declaration-symbol runner supports that resolver diagnostic. Revise the
       task-29 deferred corpus records to point at (or be superseded by) the

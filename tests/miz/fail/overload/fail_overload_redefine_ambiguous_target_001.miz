@@ -1,0 +1,46 @@
+:: Rejection target: the `redefine func tune(g)` declaration omits
+:: `coherence with`, but its `giant set` parameter strictly sharpens both
+:: earlier ordinary roots `tune(wide set)` and `tune(tall set)`. The verifier
+:: must reject the declaration with an ambiguous redefinition target diagnostic
+:: instead of choosing a target by declaration order, import order, or return
+:: type (doc/spec/en/19.overload_resolution.md, section 19.4.1).
+
+definition
+  let x be set;
+  attr WideDef: x is wide means x = x;
+  attr TallDef: x is tall means x = x;
+  attr GiantDef: x is giant means x = x;
+end;
+
+registration
+  cluster WideExists: wide set;
+  existence proof thus thesis; end;
+
+  cluster TallExists: tall set;
+  existence proof thus thesis; end;
+
+  cluster GiantExists: giant set;
+  existence proof thus thesis; end;
+
+  cluster GiantIsWide: giant -> wide for set;
+  coherence proof thus thesis; end;
+
+  cluster GiantIsTall: giant -> tall for set;
+  coherence proof thus thesis; end;
+end;
+
+definition
+  let x be wide set;
+  func TuneWideDef: tune(x) -> set equals x;
+end;
+
+definition
+  let x be tall set;
+  func TuneTallDef: tune(x) -> set equals x;
+end;
+
+definition
+  let g be giant set;
+  redefine func TuneGiantDef: tune(g) -> set equals g;
+  coherence proof thus thesis; end;
+end;

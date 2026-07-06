@@ -163,10 +163,14 @@ not normal user diagnostics.
 
 ## Initial Allocations
 
-The initial active registry mirrors the canonical code reference in
+The initial active registry mirrors the implemented portion of the canonical
+code reference in
 `doc/spec/en/22.error_handling_and_diagnostics.md#227-error-code-reference`.
 Info codes remain reserved until display diagnostics are normatively enumerated
-with numeric `DiagnosticCode` values.
+with numeric `DiagnosticCode` values. Spec-reserved rows that do not yet have a
+producer/consumer implementation are recorded after the active table and must
+not be emitted until an owning diagnostics adoption task updates the Rust
+registry and its consumers.
 
 | Code | Semantic name | `PhaseFamily` | Default severity | Summary |
 |---|---|---|---|---|
@@ -223,6 +227,12 @@ with numeric `DiagnosticCode` values.
 | `W0303` | `compat.overload_resolution_shift` | `CompatibilityWarning` | Warning | Registration, redefinition, or conditional-cluster change may shift overload/refinement resolution (heuristic MAJOR) |
 | `W0304` | `compat.version_bump_insufficient` | `CompatibilityWarning` | Warning | Declared version bump smaller than required |
 | `W0305` | `compat.edition_increase` | `CompatibilityWarning` | Warning | Package edition raised; MAJOR by default, review recommended |
+
+Deferred spec-reserved rows:
+
+| Code | Semantic name | Owner condition |
+|---|---|---|
+| `E0205` | `resolve.ambiguous_redefinition_target` | Added to Chapter 22 by checker task 44; adopt in the active Rust registry only when the checker/resolver redefinition-target diagnostic producer and source-derived payloads exist. |
 
 ## Lookup Contract
 

@@ -959,19 +959,24 @@ active parse-only pass/fail corpus coverage with traceability to Chapter 15
 
 ## Task 18: `consider` And `reconsider`
 
-Task 18 continues S-013 statement syntax with the Chapter 15 linkable
-statement forms that carry mandatory simple justifications. The task uses the
-task-17 `JustificationClause` and `ReferenceList` surfaces, but only in the
-simple citation form; `by computation` remains accepted only by the explicit
-task-17 compact-statement host until a later specification explicitly admits it
-for more statement kinds.
+Task 18 continued S-013 statement syntax with the Chapter 15 linkable
+statement forms that, at the time, were implemented as carrying mandatory
+simple justifications. The task uses the task-17 `JustificationClause` and
+`ReferenceList` surfaces, but only in the simple citation form; `by
+computation` remains accepted only by the explicit task-17 compact-statement
+host until a later specification explicitly admits it for more statement
+kinds.
 
-Chapter 15 defines these statements with `simple_justification` while also
-stating that both forms have mandatory justification. For this parser
-increment, that prose and the crate plan are treated as the controlling
-syntax intent: task 18 requires an explicit `by references` tail and recovers a
+Task 18 therefore requires an explicit `by references` tail and recovers a
 missing tail as malformed justification syntax instead of silently accepting an
-empty justification.
+empty justification. Checker task 44 later changed the canonical Chapter 4,
+8, 15, and Appendix A contract for `reconsider`: omitted `reconsider`
+justification is syntax-admissible but semantically gated by
+`type.narrowing_requires_proof`, and proof-block `reconsider` is explicit in
+`reconsider_tail`. Parser task 47 owns aligning this implemented task-18
+behavior and its active parse-only fixture with the updated canonical syntax;
+until then the mismatch is recorded as `source_drift` /
+`test_expectation_drift`.
 
 ```ebnf
 statement_item       ::= ... | consider_statement | reconsider_statement ;
