@@ -152,6 +152,13 @@ task 22 では、site provenance を `owner`、`source_range`、`name`、`argume
 決して参加しない。`redefine` candidate は refine する ordinary root を指さなければならない。
 same-root redefinition は競合する root ではない。pending または rejected coherence は
 diagnostic のために保持してよいが、accepted coherence だけが redefinition を active にできる。
+`coherence with` 省略時の target inference は、この data layer が candidate を受け取る前の
+declaration checking / source-extraction 側の責務である。rejected、missing、ambiguous、または
+外部依存により deferred の omitted-target decision は、active redefinition candidate として表現せず、
+failed diagnostic record として保持しなければならない。この layer に到達する accepted
+redefinition candidate は、すでに 1 つの `ordinary_root` と
+`CandidateOrigin::Redefinition { refined }` を持つ必要がある。selection は declaration order、
+import order、result type、redefinition の有無で target を選んではならない。
 
 site と candidate の canonical ordering は source id、source range、typed owner key、
 declaration kind、ordinary root、symbol id、template instantiation key、import/source
@@ -560,7 +567,8 @@ task 23 template expansion:
 - constrained template evidence の accepted、missing、deferred case;
 - source-`qua` accepted widening / rejected narrowing case;
 - omitted-inference payload missing case;
-- equivalent template-derived candidate に対する non-template priority;
+- 成功した template expansion が、後段の comparison と diagnostic 用に
+  `TemplateDerived` origin metadata を保持すること;
 - unsupported template/scheme role は deferred exclusion を生成すること;
 - deterministic template expansion rendering。
 
@@ -578,6 +586,8 @@ task 25 specificity:
 
 - comparable、equivalent、incomparable candidate pair;
 - edge を作らない blocked / deferred comparison row;
+- equivalent template-derived candidate に対する encoded non-template priority は、
+  caller-supplied comparison edge としてのみ現れること;
 - per-site graph rendering;
 - missing、duplicate、unknown、cross-site comparison payload diagnostic;
 - root selection、tie-breaker application、return-type-based ordering を行わないこと。
@@ -589,9 +599,11 @@ task 26 selection, refinement, and views:
 - maximal set が zero または multiple non-redefinition root を持つ場合の missing /
   ambiguous ordinary-root candidate;
 - blocked specificity graph の保存;
-- graph の maximal root が unrelated のままなら追加 root-selection tie-breaker を行わないこと;
+- graph の maximal root が unrelated、equivalent、または ordinary / template-derived priority edge
+  未エンコードのままなら追加 root-selection tie-breaker を行わないこと;
 - active accepted same-root refinement;
 - rejected/pending coherence redefinition を inactive refinement として拒否すること;
+- same-root redefinition metadata は distinct ordinary root 間の tie を決して解消しないこと;
 - strongest result type、same-radix attribute union、incompatible refinement join;
 - inserted widening view;
 - rejected narrowing または missing-evidence inserted view;

@@ -907,7 +907,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       `source_drift` / `test_expectation_drift`; no checker/core source
       semantics changed.
 
-45. **Checker alignment: overload tie-break implementation.** [ ]
+45. **Checker alignment: overload tie-break implementation.** [x]
     - Align `overload_resolution.md` and the wave-3 implementation (tasks
       23-26 surfaces: template expansion priority, specificity comparisons,
       root selection) with the task-37 decision; add Rust regressions for the
@@ -924,6 +924,19 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Verify: `cargo test -p mizar-checker`,
       `cargo clippy -p mizar-checker --all-targets -- -D warnings`.
     - Deps: 37, 44. Refs: SSA-003, SSA-010, SSA-017; architecture 05.
+    - Completed in task 45: `overload_resolution.rs` now has explicit-payload
+      regressions for the task-37 Case 2/3 outcomes: equivalent distinct
+      template-derived roots remain ambiguous, encoded non-template priority
+      and strictly-more-specific template edges select the intended root, and
+      an unencoded ordinary/template-derived equivalence tie stays ambiguous.
+      Same-root accepted redefinition metadata likewise cannot break a
+      distinct-root tie. `overload_resolution.md`, the checker plan/audits,
+      and the top-level coverage audit now state that omitted `coherence with`
+      target diagnostics are declaration-checking/source-extraction producer
+      behavior; this data layer accepts only already-bound redefinition
+      payloads and preserves missing/deferred/rejected producer records. The
+      inactive `.miz` overload/redefinition seeds and deferred traceability rows
+      remain unchanged under MC-G027/MC-G030.
 
 46. **Checker alignment: closure contradiction and termination rules.** [ ]
     - Encode the task-41/42 decisions in `cluster_trace.md` and

@@ -6295,6 +6295,331 @@ mod tests {
     }
 
     #[test]
+    fn selection_keeps_equivalent_template_derived_roots_ambiguous() {
+        let source_id = source_id(82);
+        let mut template_a = candidate(
+            "equivalent-templates",
+            "template-root-a",
+            "template-a",
+            CandidateScope::Imported {
+                module: module("pkg", "tmpl_a"),
+                import_key: CandidateProvenanceKey::new("tmpl-a-import"),
+            },
+            0,
+        );
+        template_a.origin = CandidateOrigin::TemplateDerived {
+            template: symbol_id("template-source-a"),
+            instantiation: TemplateInstantiationKey::new("T=Concrete"),
+        };
+        template_a.result = Some(NormalizedTypeId::new(501));
+        let mut template_b = candidate(
+            "equivalent-templates",
+            "template-root-b",
+            "template-b",
+            CandidateScope::Local,
+            1,
+        );
+        template_b.origin = CandidateOrigin::TemplateDerived {
+            template: symbol_id("template-source-b"),
+            instantiation: TemplateInstantiationKey::new("U=Concrete"),
+        };
+        template_b.result = Some(NormalizedTypeId::new(777));
+        let viability = viable_output(
+            vec![site(
+                "equivalent-templates",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![template_b, template_a],
+        );
+        let template_a = candidate_id_by_symbol_in_table(viability.candidates(), "template-a");
+        let template_b = candidate_id_by_symbol_in_table(viability.candidates(), "template-b");
+        let graphs = SpecificityGraphOutput::build(
+            &viability,
+            [SpecificityComparisonInput {
+                left: template_a,
+                right: template_b,
+                status: SpecificityComparisonStatus::Equivalent,
+                reasons: vec![SpecificityReasonKey::new("equivalent-concrete-vectors")],
+            }],
+        );
+
+        let output = OverloadSelectionOutput::resolve(&graphs, []);
+
+        let (_, result) = output.results().iter().next().expect("selection result");
+        let OverloadResultStatus::Ambiguous { candidates } = &result.status else {
+            panic!(
+                "expected ambiguous equivalent templates, got {:?}",
+                result.status
+            );
+        };
+        assert_eq!(candidates.len(), 2);
+        assert!(candidates.contains(&template_a));
+        assert!(candidates.contains(&template_b));
+        let debug = output.debug_text();
+        assert!(debug.contains("message_key=\"overload.selection.ambiguous_selection\""));
+        assert!(!debug.contains("status=resolved("));
+    }
+
+    #[test]
+    fn selection_uses_only_encoded_template_priority() {
+        let source_id = source_id(83);
+        let mut priority_template = candidate(
+            "encoded-priority",
+            "priority-template-root",
+            "priority-template",
+            CandidateScope::Imported {
+                module: module("pkg", "priority_template"),
+                import_key: CandidateProvenanceKey::new("priority-template-import"),
+            },
+            1,
+        );
+        priority_template.origin = CandidateOrigin::TemplateDerived {
+            template: symbol_id("priority-template-source"),
+            instantiation: TemplateInstantiationKey::new("T=Special"),
+        };
+        let mut strict_template = candidate(
+            "template-strict",
+            "strict-template-root",
+            "strict-template",
+            CandidateScope::Imported {
+                module: module("pkg", "strict_template"),
+                import_key: CandidateProvenanceKey::new("strict-template-import"),
+            },
+            3,
+        );
+        strict_template.origin = CandidateOrigin::TemplateDerived {
+            template: symbol_id("strict-template-source"),
+            instantiation: TemplateInstantiationKey::new("T=Narrow"),
+        };
+        let mut tied_template = candidate(
+            "unencoded-tie",
+            "tied-template-root",
+            "tied-template",
+            CandidateScope::Imported {
+                module: module("pkg", "tied_template"),
+                import_key: CandidateProvenanceKey::new("tied-template-import"),
+            },
+            5,
+        );
+        tied_template.origin = CandidateOrigin::TemplateDerived {
+            template: symbol_id("tied-template-source"),
+            instantiation: TemplateInstantiationKey::new("T=Equivalent"),
+        };
+        let viability = viable_output(
+            vec![
+                site(
+                    "encoded-priority",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    10,
+                ),
+                site(
+                    "template-strict",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    30,
+                ),
+                site(
+                    "unencoded-tie",
+                    OverloadSiteKind::FunctorApplication,
+                    source_id,
+                    50,
+                ),
+            ],
+            vec![
+                candidate(
+                    "encoded-priority",
+                    "priority-ordinary-root",
+                    "priority-ordinary",
+                    CandidateScope::Local,
+                    0,
+                ),
+                priority_template,
+                candidate(
+                    "template-strict",
+                    "strict-ordinary-root",
+                    "strict-ordinary",
+                    CandidateScope::Local,
+                    2,
+                ),
+                strict_template,
+                candidate(
+                    "unencoded-tie",
+                    "tied-ordinary-root",
+                    "tied-ordinary",
+                    CandidateScope::Local,
+                    4,
+                ),
+                tied_template,
+            ],
+        );
+        let priority_ordinary =
+            candidate_id_by_symbol_in_table(viability.candidates(), "priority-ordinary");
+        let priority_template =
+            candidate_id_by_symbol_in_table(viability.candidates(), "priority-template");
+        let strict_ordinary =
+            candidate_id_by_symbol_in_table(viability.candidates(), "strict-ordinary");
+        let strict_template =
+            candidate_id_by_symbol_in_table(viability.candidates(), "strict-template");
+        let tied_ordinary =
+            candidate_id_by_symbol_in_table(viability.candidates(), "tied-ordinary");
+        let tied_template =
+            candidate_id_by_symbol_in_table(viability.candidates(), "tied-template");
+        let graphs = SpecificityGraphOutput::build(
+            &viability,
+            [
+                SpecificityComparisonInput {
+                    left: priority_ordinary,
+                    right: priority_template,
+                    status: SpecificityComparisonStatus::LeftAtLeastRight,
+                    reasons: vec![SpecificityReasonKey::new("encoded-non-template-priority")],
+                },
+                SpecificityComparisonInput {
+                    left: strict_ordinary,
+                    right: strict_template,
+                    status: SpecificityComparisonStatus::RightAtLeastLeft,
+                    reasons: vec![SpecificityReasonKey::new("template-strictly-narrower")],
+                },
+                SpecificityComparisonInput {
+                    left: tied_ordinary,
+                    right: tied_template,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("priority-not-encoded")],
+                },
+            ],
+        );
+        let priority_site = site_id_by_candidate_symbol(graphs.candidates(), "priority-ordinary");
+        let strict_site = site_id_by_candidate_symbol(graphs.candidates(), "strict-ordinary");
+        let tied_site = site_id_by_candidate_symbol(graphs.candidates(), "tied-ordinary");
+
+        let output = OverloadSelectionOutput::resolve(
+            &graphs,
+            [
+                compatible_resolution_input(priority_site, Vec::new(), None, Vec::new()),
+                compatible_resolution_input(strict_site, Vec::new(), None, Vec::new()),
+            ],
+        );
+        let statuses = output
+            .results()
+            .iter()
+            .map(|(_, result)| (result.site, &result.status))
+            .collect::<BTreeMap<_, _>>();
+        assert!(matches!(
+            statuses.get(&priority_site),
+            Some(OverloadResultStatus::Resolved { root, .. }) if *root == priority_ordinary
+        ));
+        assert!(matches!(
+            statuses.get(&strict_site),
+            Some(OverloadResultStatus::Resolved { root, .. }) if *root == strict_template
+        ));
+        assert!(matches!(
+            statuses.get(&tied_site),
+            Some(OverloadResultStatus::Ambiguous { candidates })
+                if candidates.contains(&tied_ordinary) && candidates.contains(&tied_template)
+        ));
+        let graph_debug = graphs.debug_text();
+        assert!(graph_debug.contains("encoded-non-template-priority"));
+        assert!(graph_debug.contains("template-strictly-narrower"));
+        assert!(graph_debug.contains("priority-not-encoded"));
+        let debug = output.debug_text();
+        assert!(debug.contains("message_key=\"overload.selection.ambiguous_selection\""));
+    }
+
+    #[test]
+    fn selection_does_not_use_redefinition_metadata_to_break_root_ties() {
+        let source_id = source_id(84);
+        let root_a = candidate(
+            "redefinition-tie",
+            "root-a",
+            "root-a-symbol",
+            CandidateScope::Local,
+            0,
+        );
+        let mut root_a_refinement = candidate(
+            "redefinition-tie",
+            "root-a",
+            "root-a-refinement",
+            CandidateScope::Local,
+            1,
+        );
+        root_a_refinement.origin = CandidateOrigin::Redefinition {
+            refined: symbol_id("root-a-symbol"),
+        };
+        root_a_refinement.coherence = Some(CoherenceStatus::Accepted);
+        root_a_refinement.result = Some(NormalizedTypeId::new(901));
+        let mut root_b = candidate(
+            "redefinition-tie",
+            "root-b",
+            "root-b-symbol",
+            CandidateScope::Imported {
+                module: module("pkg", "root_b"),
+                import_key: CandidateProvenanceKey::new("root-b-import"),
+            },
+            2,
+        );
+        root_b.result = Some(NormalizedTypeId::new(902));
+        let viability = viable_output(
+            vec![site(
+                "redefinition-tie",
+                OverloadSiteKind::FunctorApplication,
+                source_id,
+                10,
+            )],
+            vec![root_b, root_a_refinement, root_a],
+        );
+        let root_a = candidate_id_by_symbol_in_table(viability.candidates(), "root-a-symbol");
+        let root_a_refinement =
+            candidate_id_by_symbol_in_table(viability.candidates(), "root-a-refinement");
+        let root_b = candidate_id_by_symbol_in_table(viability.candidates(), "root-b-symbol");
+        let graphs = SpecificityGraphOutput::build(
+            &viability,
+            [
+                SpecificityComparisonInput {
+                    left: root_a,
+                    right: root_a_refinement,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("same-root-refinement")],
+                },
+                SpecificityComparisonInput {
+                    left: root_a,
+                    right: root_b,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("root-tie")],
+                },
+                SpecificityComparisonInput {
+                    left: root_a_refinement,
+                    right: root_b,
+                    status: SpecificityComparisonStatus::Equivalent,
+                    reasons: vec![SpecificityReasonKey::new("refinement-result-not-tiebreak")],
+                },
+            ],
+        );
+
+        let output = OverloadSelectionOutput::resolve(&graphs, []);
+
+        let (_, result) = output.results().iter().next().expect("selection result");
+        let OverloadResultStatus::Ambiguous { candidates } = &result.status else {
+            panic!(
+                "expected redefinition metadata to preserve ambiguity, got {:?}",
+                result.status
+            );
+        };
+        assert!(candidates.contains(&root_a));
+        assert!(candidates.contains(&root_a_refinement));
+        assert!(candidates.contains(&root_b));
+        assert!(
+            graphs
+                .debug_text()
+                .contains("refinement-result-not-tiebreak")
+        );
+        let debug = output.debug_text();
+        assert!(debug.contains("message_key=\"overload.selection.ambiguous_selection\""));
+        assert!(!debug.contains("status=resolved("));
+    }
+
+    #[test]
     fn selection_reports_missing_duplicate_unknown_and_blocked_payloads() {
         let source_id = source_id(56);
         let mut malformed_refinement = candidate(

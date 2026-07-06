@@ -166,6 +166,15 @@ participates in ordinary root selection. A `redefine` candidate must point to
 the ordinary root it refines; same-root redefinitions are not competing roots.
 Pending or rejected coherence may be retained for diagnostics, but only
 accepted coherence can make a redefinition active.
+Omitted `coherence with` target inference is a declaration-checking and
+source-extraction responsibility before this data layer receives candidates.
+Rejected, missing, ambiguous, or externally deferred omitted-target decisions
+must be preserved as failed diagnostic records rather than represented as
+active redefinition candidates. Accepted redefinition candidates reaching this
+layer must already carry one `ordinary_root` and
+`CandidateOrigin::Redefinition { refined }`; selection must not choose a
+target by declaration order, import order, result type, or redefinition
+presence.
 
 Canonical ordering for sites and candidates uses source id, source range,
 typed owner key, declaration kind, ordinary root, symbol id, template
@@ -606,7 +615,8 @@ Task 23 template expansion:
 - constrained template evidence accepted, missing, and deferred cases;
 - source-`qua` accepted widening and rejected narrowing cases;
 - missing omitted-inference payload cases;
-- non-template priority over equivalent template-derived candidates;
+- successful template expansions retain `TemplateDerived` origin metadata for
+  later comparison and diagnostics;
 - unsupported template/scheme roles produce deferred exclusions;
 - deterministic template expansion rendering.
 
@@ -624,6 +634,8 @@ Task 25 specificity:
 
 - comparable, equivalent, and incomparable candidate pairs;
 - blocked and deferred comparison rows without edges;
+- encoded non-template priority over equivalent template-derived candidates
+  appears only as caller-supplied comparison edges;
 - per-site graph rendering;
 - missing, duplicate, unknown, and cross-site comparison payload diagnostics;
 - no root selection, tie-breaker application, or return-type-based ordering.
@@ -636,9 +648,12 @@ Task 26 selection, refinement, and views:
   or multiple non-redefinition roots;
 - blocked specificity graph preservation;
 - no additional root-selection tie-breaker when graph maximal roots remain
-  unrelated;
+  unrelated, equivalent, or an ordinary/template-derived priority edge was not
+  encoded in the graph;
 - active accepted same-root refinements;
 - rejected/pending coherence redefinitions rejected as inactive refinements;
+- same-root redefinition metadata never breaks ties between distinct ordinary
+  roots;
 - strongest result type, same-radix attribute union, and incompatible
   refinement joins;
 - inserted widening views;

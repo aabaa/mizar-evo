@@ -857,7 +857,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       `test_expectation_drift` として残す。checker/core source semantics は
       変更していない。
 
-45. **Checker 整合: オーバーロード tie-break の実装。** [ ]
+45. **Checker 整合: オーバーロード tie-break の実装。** [x]
     - `overload_resolution.md` と第 3 波実装(tasks 23-26 の surface:
       template expansion priority、specificity 比較、root selection)を
       task-37 の決定に整合させ、決定された Case 2/3 の結果と tie-ambiguity
@@ -874,6 +874,18 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-checker`、
       `cargo clippy -p mizar-checker --all-targets -- -D warnings`。
     - 依存: 37, 44。参照: SSA-003, SSA-010, SSA-017; architecture 05。
+    - task 45 で完了: `overload_resolution.rs` に、task-37 Case 2/3 の
+      explicit-payload regression を追加した。distinct な equivalent
+      template-derived root は ambiguous のまま、encoded non-template priority と
+      strictly-more-specific template edge は意図した root を選択し、未エンコードの
+      ordinary / template-derived equivalence tie は ambiguous に残る。same-root の
+      accepted redefinition metadata も distinct-root tie を解消できない。
+      `overload_resolution.md`、checker plan/audit、top-level coverage audit は、
+      `coherence with` 省略時 target diagnostic が declaration-checking /
+      source-extraction producer 側の挙動であると記録した。この data layer は
+      already-bound redefinition payload のみを受け取り、missing/deferred/rejected
+      producer record を保持する。inactive `.miz` overload/redefinition seed と
+      deferred traceability row は MC-G027/MC-G030 の下で変更していない。
 
 46. **Checker 整合: closure の矛盾検出と停止性規則。** [ ]
     - task-41/42 の決定を `cluster_trace.md` と `registration_resolution.md`
