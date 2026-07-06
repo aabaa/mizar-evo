@@ -199,9 +199,11 @@ Erasure rules:
 - Mode/radix expansions lower through the checker-normalized type head and
   must not reconstruct type syntax.
 - A source-written `qua` and an inserted view lower in this step only to view
-  provenance and already-established type facts for the variable-subject fact
-  being erased. The underlying term remains a Step 3 lowering responsibility.
-  They are not new proof steps.
+  provenance, optional checker-owned reduct metadata, and already-established
+  type facts for the variable-subject fact being erased. This step does not
+  create terms because Step 2 facts have variable subjects; view-specific
+  attribute facts on reduct terms are Step 3 formula seeds. `qua` views are not
+  new proof steps.
 - Reconsider/narrowing payloads become a fresh or narrowed core binding plus
   a carried obligation seed when the checker supplied one.
 - Missing sethood, non-emptiness, coercion, or cluster evidence becomes a
@@ -244,8 +246,17 @@ Term rules:
 - Applications lower to `CoreTermKind::Apply` with already selected roots and
   lowered arguments.
 - Selectors, tuples, and set enumerations lower to their explicit core nodes.
-- Source-written or inserted `qua` lowers to the underlying term plus view
-  provenance and type facts; it does not create an implicit cast node.
+- Source-written or inserted no-reduct `qua` lowers to the underlying term plus
+  view provenance and type facts; it does not create an implicit cast node.
+- Source-written or inserted reduct `qua` carries a checker-owned `QuaPathKey`
+  and an ordered list of explicit view functors. Step 3 lowers it by applying
+  those functors, nested in order, to the lowered base term and returns the
+  final view term. Attribute atoms, `TypePred` formulas, selectors,
+  bounded-template actual formulas, and explicit exact-instance extensionality
+  guards target that view term by referencing the `Qua` seed id. Core preserves
+  explicit exact-instance guard formulas such as `exact_Magma(view_path(x))`;
+  it does not synthesize source-derived extensionality axioms or infer view
+  paths that the checker payload did not provide.
 - Stable choice terms lower to ordinary `Apply` nodes whose functor is a
   generated choice symbol. `CoreTermKind::Generated` must not be used for
   stable choices.

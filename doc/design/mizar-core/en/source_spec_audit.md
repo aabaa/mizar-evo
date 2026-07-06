@@ -161,11 +161,11 @@ Top-level public API groups:
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
   `ClusterFactSeed`, `ViewExplanationKind`, `ViewExplanationSeed`,
-  `ReconsideringSeed`, `ObligationFormulaSeed`,
+  `ReductViewSeed`, `ReconsideringSeed`, `ObligationFormulaSeed`,
   `CarriedInitialObligationSeed`, `MissingEvidenceKind`,
   `MissingEvidenceSeed`, `TypeAndFactLoweringOutput`,
   `LoweredBinderGuard`, `LoweredModeExpansion`, `LoweredClusterFact`,
-  `ViewExplanation`, `ReconsideredBinding`, `MissingEvidenceRecord`,
+  `ViewExplanation`, `ReductView`, `ReconsideredBinding`, `MissingEvidenceRecord`,
   `lower_type_and_fact_inputs`
 - Term/formula lowering: `TermAndFormulaResult`,
   `TermAndFormulaLoweringError`, `CoreTermSeedId`, `CoreFormulaSeedId`,
@@ -200,8 +200,8 @@ Correspondence:
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
 | Step 1 prepares a deterministic core context over explicit checker/resolver/session payloads and never scans raw syntax. | Context seed/input/output types, registries, summaries, worklist, `prepare_core_context`, lint boundary guard. | Task 8 tests in `src/elaborator.rs`; `core_source_stays_off_frontend_and_downstream_boundaries`. | Implemented for explicit checker-owned payload summaries. |
-| Step 2 lowers soft type and fact data into explicit predicates, assumptions, view provenance, carried obligations, diagnostics, or deferred seeds without registration activation. | Type/fact seed/output types and `lower_type_and_fact_inputs`. | Task 9 tests for declared binders, attributes, modes, cluster facts, `qua`, reconsidering, carried/missing evidence. | Implemented. |
-| Step 3 lowers terms/formulas, inserted/source `qua`, stable choices, Fraenkel comprehensions, failed sites, generated origins, and generated obligations. | Term/formula seed/output types and `lower_term_and_formula_inputs`. | Task 10 tests for surface forms, generated origin reuse/deltas, sethood evidence, failed error nodes, and quantifier guards. | Implemented for explicit seeds. |
+| Step 2 lowers soft type and fact data into explicit predicates, assumptions, view provenance, optional reduct-view metadata, carried obligations, diagnostics, or deferred seeds without registration activation. | Type/fact seed/output types and `lower_type_and_fact_inputs`. | Task 9 tests for declared binders, attributes, modes, cluster facts, `qua`, reconsidering, carried/missing evidence; task 27 rejects empty reduct-view metadata. | Implemented for explicit checker-owned payloads; Step 2 does not create view terms. |
+| Step 3 lowers terms/formulas, inserted/source `qua`, stable choices, Fraenkel comprehensions, failed sites, generated origins, and generated obligations. `qua` with a checker-owned reduct payload lowers to ordered `Apply` view terms while no-reduct views reuse the base term. | Term/formula seed/output types, `ReductViewSeed`, `ReductView`, and `lower_term_and_formula_inputs`. | Task 10 tests for surface forms, generated origin reuse/deltas, sethood evidence, failed error nodes, and quantifier guards; task 27 tests renamed-edge, composed/multi-path, exact-instance guard, and empty reduct-view payload cases. | Implemented for explicit seeds and checker-owned reduct-view payloads. Source-derived view payload extraction remains external. |
 | Step 4 keeps definition expansion boundaries explicit and records correctness obligations/generated dependencies. | Definition seed/output types and `lower_definition_inputs`. | Task 11 tests for boundaries, correctness seeds, generated dependencies, and skipped/error status. | Implemented. |
 | Step 5 lowers proof skeletons, thesis tracking, labels, citations, malformed roots, and terminal obligation seeds without proof acceptance. | Proof seed/output types and `lower_proof_inputs`. | Task 12 tests for proof forms, citations, terminal goals, labels, malformed/error cases, and durable terminal citations. | Implemented. |
 | Step 6 lowers algorithm shells with contracts, ghost/runtime metadata, local `Pick` binders, source/provenance preservation, and diagnostics without CFG construction. | Algorithm seed/output types and `lower_algorithm_inputs`. | Task 13 tests for shell forms, malformed statements, source/provenance, status, and diagnostic aggregation. | Implemented. |
@@ -281,7 +281,7 @@ the follow-up register below.
 
 | ID | Class | Evidence | Owner | Unblock condition | Target follow-up / downstream phase |
 |---|---|---|---|---|---|
-| CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction still blocks full source-derived `ResolvedTypedAst` payloads for elaboration and production source-to-core fixtures. | Checker extraction / mizar-test integration follow-up. | Checker-ready AST-wide payload extraction exists without raw syntax rescanning in `mizar-core`. | Add active source-derived core lowering fixtures and snapshots. |
+| CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction still blocks full source-derived `ResolvedTypedAst` payloads for elaboration, including real view-path/reduct-functor payloads for `qua`, and production source-to-core fixtures. | Checker extraction / mizar-test integration follow-up. | Checker-ready AST-wide payload extraction exists without raw syntax rescanning in `mizar-core`. | Add active source-derived core lowering fixtures and snapshots. |
 | CORE-AUDIT-G002 | `external_dependency_gap` | `mizar-test` does not yet provide active source-derived `type_elaboration` and `proof_verification` snapshot runners for `CoreIr` and `ControlFlowIr`. | `mizar-test` staged runner follow-up. | Stage runners can compare `CoreIr` and `ControlFlowIr` baselines from real checker payloads. | Replace task-19 deferred traceability rows with active corpus snapshots. |
 | CORE-AUDIT-G003 | `external_dependency_gap` | artifact schema emission, proof acceptance, VC generation, and kernel checking are downstream or cross-crate work. | `mizar-artifact`, `mizar-proof`, `mizar-vc`, and `mizar-kernel` phases. | Downstream crates define accepted schemas and consumers for core/control-flow handoff. | Wire consumers without changing `mizar-core` into proof acceptance or kernel checking. |
 | CORE-AUDIT-G004 | `external_dependency_gap` | Concrete `VcId`, `ObligationAnchor`, VC fingerprints, proof/cache reuse anchors, and downstream artifact identities are not owned by `mizar-core`. | `mizar-vc` incremental verification / artifact phases. | Downstream identity and anchor contracts exist. | Map current obligation seeds and local paths into downstream anchors. |

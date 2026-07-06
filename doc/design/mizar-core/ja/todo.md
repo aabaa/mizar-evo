@@ -310,9 +310,9 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
 
 | 所見 | 処置 |
 |---|---|
-| F1(structure-view 崩壊) | spec 修正済み。elaborator lowering は task 27。kernel 側再監査は [mizar-kernel task 35](../../mizar-kernel/en/todo.md)。member 同一性の調整は [mizar-checker task 36](../../mizar-checker/en/todo.md) |
+| F1(structure-view 崩壊) | spec 修正済み。task 27 は explicit-payload elaborator reduct-view lowering を実装済み。kernel 側再監査は [mizar-kernel task 35](../../mizar-kernel/en/todo.md)。member 同一性の調整は [mizar-checker task 36](../../mizar-checker/en/todo.md)。source-derived runner/extraction は external のまま。 |
 | F2(型実引数の inhabitation) | spec 修正済み(§17.3.4 gating 行)。checker task 43 が built-in/base-shape inhabitation 表を完了した。elaborator gating は task 28。 |
-| F3(`type extends M` の object/schema 混同) | spec 修正済み(§18.10.2)。task 27 で F1 とともに lowering |
+| F3(`type extends M` の object/schema 混同) | spec 修正済み(§18.10.2)。explicit-payload bounded-view lowering は task 27 で F1 とともに cover 済み。 |
 | F4(functor guard、実引数シグネチャ適合) | spec 修正済み(§18.10.4、§18.9)。実装は task 29 |
 | F5(型パラメータの sethood) | spec 修正済み(§18.10.2 sethood 段落)。plumbing は task 30 |
 | F6(テンプレート本体内の scheme 適用) | spec 修正済み(§18.10.3 の段落)。実装は task 29 |
@@ -349,13 +349,14 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       F7 の spec decision だけを閉じる。checker/core source semantics や
       payload bridge behavior は変更していない。
 
-27. **reduct/view lowering(F1、F3)。** [ ]
+27. **reduct/view lowering(F1、F3)。** [x]
     - elaboration に reduct-view エンコードを実装する: 改名または複数経路
       の inherit 辺上の `qua` と bounded-type-parameter instantiation に
       対して `view_{D→B}` 項を emit する。attribute atom と field
       selection を flattened instance ではなく view 項に対して emit する。
-      extensionality の emission を exact-instance guard(§5.8.5)へ切り
-      替える。`type extends M` の object-level ストーリー(view 型の
+      reduct term 上の明示的 exact-instance guard formula(§5.8.5)を保持し、
+      source-derived extensionality emission は checker/runner bridge に残す。
+      `type extends M` の object-level ストーリー(view 型の
       schema パラメータ、`T.binop` の lowering、§18.10.2)をカバーする。
       type/fact と term/formula lowering の surface(tasks 9-10)および
       直近で landed した builtin type bridge / typed-AST elaboration の
@@ -365,7 +366,7 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       `fail_template_qua_view_attribute_leak_001` seed の拒否が lowered
       form から導出可能(一方の view 上の attribute evidence が他方の
       view 上の bound を discharge しない)。改名辺・複数経路・
-      exact-instance extensionality の lowering を Rust fixture がカバー
+      明示的 exact-instance guard preservation を Rust fixture がカバー
       する。
     - 検証: `cargo test -p mizar-core`、
       `cargo clippy -p mizar-core --all-targets -- -D warnings`;
@@ -374,6 +375,15 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       決定)。landing 時に mizar-kernel task 35 へ通知。参照: spec 05
       §5.8.3/§5.8.5、13 §13.8.7、18 §18.10.2;
       template_encoding_audit.md F1、F3。
+    - task 27 で完了: `ReductViewSeed` / `ReductView` は checker-owned
+      `QuaPathKey` と順序付きの明示的 reduct functor を保持する。
+      `CoreTermSeedKind::Qua` は no-reduct identity/cluster view だけ base term を
+      再利用し、explicit reduct payload は ordered `Apply` view term へ lower する。
+      Rust fixture は renamed diamond view、composed/multi-path view、final view term
+      上の template-bound fact / field selection、reduct term 上の exact-instance
+      guard preservation、type/fact と term/formula lowering の両方における empty reduct
+      payload rejection を cover する。`doc/spec`、既存 `.miz`、expectation、
+      source-derived runner、fake checker payload は変更していない。
 
 28. **テンプレート型実引数の inhabitation gating(F2)。** [ ]
     - テンプレートの `type_expression` 実引数に §17.3.4 の

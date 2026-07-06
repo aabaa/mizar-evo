@@ -29,9 +29,10 @@ audited, per the task scope:
 - §18.9 scheme application and §18.2.7 parameter inference determinism;
 - Chapter 20 algorithm templates (§18.8.4).
 
-This is an audit artifact. Spec amendments made in the same change are listed
-per finding under **Disposition**; everything else is recorded for follow-up
-tasks (`mizar-core` elaborator todo.md revision is deliberately deferred).
+This is an audit artifact. Spec amendments made in the original audit change
+are listed per finding under **Disposition**; implementation follow-ups are
+tracked in the current `mizar-core` and roadmap TODOs, with task 27 recording
+the explicit-payload elaborator progress.
 
 ## Method and Soundness Baseline
 
@@ -435,17 +436,18 @@ on valid functor actuals.
 | §18.9 scheme application / §18.2.7 inference | Sound modulo F4 (signature rule) and F6; F7 is determinism, not soundness. |
 | Ch.20 algorithm templates | Symbolic VC discharge is conservative, hence sound; promotion per instance sound by substitution; F8 example defect. |
 
-## Impact on mizar-core (elaborator) — input for the todo.md revision task
+## Impact on mizar-core (elaborator)
 
-The following implementation obligations follow from the findings. **todo.md
-itself is deliberately not revised in this change.**
+The following implementation obligations follow from the findings. The current
+roadmap records their owning tasks and task-27 progress.
 
-1. **Reduct/view lowering (F1, F3).** Core IR needs view terms for `qua` on
-   renamed/multi-path inherit edges and for bounded-type-parameter
-   instantiation; attribute atoms and field selections must be emitted against
-   view terms. Extensionality emission must switch to exact-instance guards.
-   This touches the builtin type bridge and the typed-AST elaboration recently
-   landed (`feat: bridge type elaboration to resolved typed ast`).
+1. **Reduct/view lowering (F1, F3).** Task 27 implements the explicit-payload
+   core side: checker-owned `QuaPathKey`s and ordered reduct functors lower
+   `qua` on renamed/multi-path inherit edges and bounded-type-parameter view
+   actuals into view terms, so attribute atoms and field selections can target
+   the view term. The task preserves explicit exact-instance guard formulas on
+   reduct terms; source-derived extensionality emission and real payload
+   extraction remain gated on the checker/runner bridge.
 2. **Inhabitation gating of template actuals (F2).** The existential-gating
    check must run for template `type_expression` actuals; schema contexts get
    a per-parameter inhabitation fact.
@@ -460,7 +462,8 @@ itself is deliberately not revised in this change.**
 Kernel-side (from the Jul 3 kernel audit's perspective): the reduct encoding
 changes the shape of certificates that mention structure widening; the
 soundness-argument document's assumptions about atomic attribute predicates
-should be revisited once F1's encoding lands.
+should be revisited in mizar-kernel task 35 now that task 27 has landed the
+explicit-payload core encoding.
 
 ## Test Deliverables (reject-first)
 

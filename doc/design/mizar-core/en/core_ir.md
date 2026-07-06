@@ -172,9 +172,17 @@ Rules:
 - Fraenkel comprehensions lower to generated set-valued terms with captured
   free parameters, sethood evidence in the generated-origin record, and a
   definitional membership-axiom obligation seed for the generated set.
-- Source-written or inserted `qua` views do not change the underlying term;
-  their evidence is represented in provenance, explicit predicates, and
-  obligation seeds.
+- Source-written or inserted no-reduct `qua` views, such as cluster widening
+  or a unique identity inheritance path, reuse the underlying term; their
+  evidence remains in provenance, explicit predicates, and obligation seeds.
+- Renamed, multi-path, or bounded-template view selections carry a
+  checker-owned `QuaPathKey` plus ordered explicit reduct functors. They lower
+  to ordinary `Apply` nodes, nested in functor order when a path composes
+  multiple reduct functions. These `Apply` terms are the logical view identity:
+  selectors, attribute atoms, template-bound formulas, and exact-instance
+  guards must refer to the returned view term, not to the flattened base term.
+  `CoreTermKind::Generated` must not be used for reduct views, and core must
+  not infer source view paths that were not supplied by the checker payload.
 - `Error` terms are first-class recovery nodes. They are never accepted as
   valid logical terms.
 

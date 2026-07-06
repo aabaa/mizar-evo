@@ -322,9 +322,9 @@ work. Every finding maps to a task or a recorded disposition:
 
 | Finding | Disposition |
 |---|---|
-| F1 (structure-view collapse) | spec patched; elaborator lowering is task 27; kernel-side re-audit is [mizar-kernel task 35](../../mizar-kernel/en/todo.md); member-identity coordination is [mizar-checker task 36](../../mizar-checker/en/todo.md) |
+| F1 (structure-view collapse) | spec patched; task 27 implements explicit-payload elaborator reduct-view lowering; kernel-side re-audit is [mizar-kernel task 35](../../mizar-kernel/en/todo.md); member-identity coordination is [mizar-checker task 36](../../mizar-checker/en/todo.md); source-derived runner/extraction remains external |
 | F2 (type-actual inhabitation) | spec patched (§17.3.4 gating row); checker task 43 completed the built-in/base-shape inhabitation table; elaborator gating is task 28 |
-| F3 (`type extends M` object/schema conflation) | spec patched (§18.10.2); lowered together with F1 in task 27 |
+| F3 (`type extends M` object/schema conflation) | spec patched (§18.10.2); explicit-payload bounded-view lowering is covered together with F1 in task 27 |
 | F4 (functor guards, actual signature compatibility) | spec patched (§18.10.4, §18.9); implementation is task 29 |
 | F5 (type-parameter sethood) | spec patched (§18.10.2 sethood paragraph); plumbing is task 30 |
 | F6 (schemes applied inside template bodies) | spec patched (§18.10.3 paragraph); implementation is task 29 |
@@ -363,12 +363,14 @@ work. Every finding maps to a task or a recorded disposition:
       F7 spec decision only; no checker/core source semantics or payload bridge
       behavior changed.
 
-27. **Reduct/view lowering (F1, F3).** [ ]
+27. **Reduct/view lowering (F1, F3).** [x]
     - Implement the reduct-view encoding in elaboration: emit `view_{D→B}`
       terms for `qua` on renamed or multi-path inherit edges and for
       bounded-type-parameter instantiation; emit attribute atoms and field
-      selections against view terms, not the flattened instance; switch
-      extensionality emission to exact-instance guards (§5.8.5). Cover the
+      selections against view terms, not the flattened instance; preserve
+      explicit exact-instance guard formulas on reduct terms (§5.8.5) while
+      leaving source-derived extensionality emission to the checker/runner
+      bridge. Cover the
       §18.10.2 object-level story for `type extends M` (view-typed schema
       parameter, `T.binop` lowering). This touches the type/fact and
       term/formula lowering surfaces (tasks 9-10) and the recently landed
@@ -378,7 +380,7 @@ work. Every finding maps to a task or a recorded disposition:
       `fail_template_qua_view_attribute_leak_001` seed's rejection is
       derivable from the lowered forms (attribute evidence on one view does
       not discharge a bound on another); Rust fixtures cover renamed-edge,
-      multi-path, and exact-instance extensionality lowering.
+      multi-path, and explicit exact-instance guard preservation.
     - Verify: `cargo test -p mizar-core`,
       `cargo clippy -p mizar-core --all-targets -- -D warnings`;
       `cargo test -p mizar-checker` for the shared boundary.
@@ -386,6 +388,16 @@ work. Every finding maps to a task or a recorded disposition:
       the identity rule; notify mizar-kernel task 35 when landing. Refs:
       spec 05 §5.8.3/§5.8.5, 13 §13.8.7, 18 §18.10.2;
       template_encoding_audit.md F1, F3.
+    - Completed by task 27: `ReductViewSeed` / `ReductView` carry the
+      checker-owned `QuaPathKey` and ordered explicit reduct functors.
+      `CoreTermSeedKind::Qua` now reuses the base term only for no-reduct
+      identity/cluster views and lowers explicit reduct payloads to ordered
+      `Apply` view terms. Rust fixtures cover renamed diamond views,
+      composed/multi-path views, template-bound facts/field selections on the
+      final view term, exact-instance guard preservation on reduct terms, and
+      empty reduct payload rejection in both type/fact and term/formula
+      lowering. No `doc/spec`, existing `.miz`, expectation, source-derived
+      runner, or fake checker payload was changed.
 
 28. **Template type-actual inhabitation gating (F2).** [ ]
     - Run the §17.3.4 inhabitation-evidence gate for template

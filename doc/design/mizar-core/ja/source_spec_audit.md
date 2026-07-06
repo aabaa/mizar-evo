@@ -160,11 +160,11 @@ top-level public API group:
   `TypeAndFactLoweringInput`, `TypePredicateSeed`,
   `DeclaredBinderTypeSeed`, `AttributeChainSeed`, `ModeExpansionSeed`,
   `ClusterFactSeed`, `ViewExplanationKind`, `ViewExplanationSeed`,
-  `ReconsideringSeed`, `ObligationFormulaSeed`,
+  `ReductViewSeed`, `ReconsideringSeed`, `ObligationFormulaSeed`,
   `CarriedInitialObligationSeed`, `MissingEvidenceKind`,
   `MissingEvidenceSeed`, `TypeAndFactLoweringOutput`,
   `LoweredBinderGuard`, `LoweredModeExpansion`, `LoweredClusterFact`,
-  `ViewExplanation`, `ReconsideredBinding`, `MissingEvidenceRecord`,
+  `ViewExplanation`, `ReductView`, `ReconsideredBinding`, `MissingEvidenceRecord`,
   `lower_type_and_fact_inputs`
 - Term/formula lowering: `TermAndFormulaResult`,
   `TermAndFormulaLoweringError`, `CoreTermSeedId`, `CoreFormulaSeedId`,
@@ -199,8 +199,8 @@ top-level public API group:
 | Spec promise | Source evidence | Test evidence | Status |
 |---|---|---|---|
 | Step 1 は explicit checker/resolver/session payload 上で deterministic core context を準備し、raw syntax を scan しない。 | context seed/input/output type、registry、summary、worklist、`prepare_core_context`、lint boundary guard。 | task 8 の `src/elaborator.rs` test、`core_source_stays_off_frontend_and_downstream_boundaries`。 | explicit checker-owned payload summary について実装済み。 |
-| Step 2 は soft type/fact data を explicit predicate、assumption、view provenance、carried obligation、diagnostic、deferred seed へ lower し、registration activation はしない。 | type/fact seed/output type と `lower_type_and_fact_inputs`。 | declared binder、attribute、mode、cluster fact、`qua`、reconsidering、carried/missing evidence の task 9 test。 | 実装済み。 |
-| Step 3 は term/formula、inserted/source `qua`、stable choice、Fraenkel comprehension、failed site、generated origin、generated obligation を lower する。 | term/formula seed/output type と `lower_term_and_formula_inputs`。 | surface form、generated origin reuse/delta、sethood evidence、failed error node、quantifier guard の task 10 test。 | explicit seed について実装済み。 |
+| Step 2 は soft type/fact data を explicit predicate、assumption、view provenance、任意の reduct-view metadata、carried obligation、diagnostic、deferred seed へ lower し、registration activation はしない。 | type/fact seed/output type と `lower_type_and_fact_inputs`。 | declared binder、attribute、mode、cluster fact、`qua`、reconsidering、carried/missing evidence の task 9 test。task 27 は空の reduct-view metadata を reject する。 | explicit checker-owned payload について実装済み。Step 2 は view term を作らない。 |
+| Step 3 は term/formula、inserted/source `qua`、stable choice、Fraenkel comprehension、failed site、generated origin、generated obligation を lower する。checker-owned reduct payload を持つ `qua` は順序付き `Apply` view term へ lower し、no-reduct view は base term を再利用する。 | term/formula seed/output type、`ReductViewSeed`、`ReductView`、`lower_term_and_formula_inputs`。 | surface form、generated origin reuse/delta、sethood evidence、failed error node、quantifier guard の task 10 test。task 27 は renamed-edge、composed/multi-path、exact-instance guard、空の reduct-view payload case を test する。 | explicit seed と checker-owned reduct-view payload について実装済み。source-derived view payload extraction は external。 |
 | Step 4 は definition expansion boundary を explicit に保ち、correctness obligation と generated dependency を記録する。 | definition seed/output type と `lower_definition_inputs`。 | boundary、correctness seed、generated dependency、skipped/error status の task 11 test。 | 実装済み。 |
 | Step 5 は proof skeleton、thesis tracking、label、citation、malformed root、terminal obligation seed を lower し、proof acceptance はしない。 | proof seed/output type と `lower_proof_inputs`。 | proof form、citation、terminal goal、label、malformed/error case、durable terminal citation の task 12 test。 | 実装済み。 |
 | Step 6 は contract、ghost/runtime metadata、local `Pick` binder、source/provenance preservation、diagnostic を持つ algorithm shell を lower し、CFG construction はしない。 | algorithm seed/output type と `lower_algorithm_inputs`。 | shell form、malformed statement、source/provenance、status、diagnostic aggregation の task 13 test。 | 実装済み。 |
@@ -278,7 +278,7 @@ source behavior ではなく、下の follow-up register で分類した unavail
 
 | ID | Class | Evidence | Owner | Unblock condition | Target follow-up / downstream phase |
 |---|---|---|---|---|---|
-| CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction が full source-derived `ResolvedTypedAst` payload と production source-to-core fixture をまだ block している。 | Checker extraction / mizar-test integration follow-up。 | `mizar-core` が raw syntax を再 scan せずに checker-ready AST-wide payload extraction を利用できる。 | active source-derived core lowering fixture と snapshot を追加する。 |
+| CORE-AUDIT-G001 | `external_dependency_gap` | source-to-checker extraction が full source-derived `ResolvedTypedAst` payload、`qua` の real view-path / reduct-functor payload、production source-to-core fixture をまだ block している。 | Checker extraction / mizar-test integration follow-up。 | `mizar-core` が raw syntax を再 scan せずに checker-ready AST-wide payload extraction を利用できる。 | active source-derived core lowering fixture と snapshot を追加する。 |
 | CORE-AUDIT-G002 | `external_dependency_gap` | `mizar-test` は `CoreIr` / `ControlFlowIr` 向けの active source-derived `type_elaboration` / `proof_verification` snapshot runner をまだ提供しない。 | `mizar-test` staged runner follow-up。 | Stage runner が real checker payload 由来の `CoreIr` / `ControlFlowIr` baseline を比較できる。 | task-19 の deferred traceability row を active corpus snapshot に置き換える。 |
 | CORE-AUDIT-G003 | `external_dependency_gap` | artifact schema emission、proof acceptance、VC generation、kernel checking は downstream または cross-crate work。 | `mizar-artifact`, `mizar-proof`, `mizar-vc`, `mizar-kernel` phase。 | downstream crate が core/control-flow handoff の accepted schema と consumer を定義する。 | `mizar-core` を proof acceptance / kernel checking に変えず consumer を接続する。 |
 | CORE-AUDIT-G004 | `external_dependency_gap` | concrete `VcId`、`ObligationAnchor`、VC fingerprint、proof/cache reuse anchor、downstream artifact identity は `mizar-core` の責務外。 | `mizar-vc` incremental verification / artifact phase。 | downstream identity と anchor contract が存在する。 | current obligation seed と local path を downstream anchor に map する。 |

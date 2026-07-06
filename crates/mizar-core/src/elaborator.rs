@@ -26,6 +26,7 @@ use crate::{
 };
 use mizar_checker::{
     cluster_trace::ClusterFactId,
+    overload_resolution::QuaPathKey,
     resolved_typed_ast::{
         CoercionInsertionId, OverloadResolutionId, ResolvedNodeRecovery, ResolvedTypedAst,
         ResolvedTypedDiagnosticId, ResolvedTypedDiagnosticSeverity, ResolvedTypedNodeId,
@@ -1240,6 +1241,9 @@ pub enum TypeAndFactLoweringError {
     InactiveObligationWithoutReason {
         obligation: Option<InitialObligationId>,
     },
+    EmptyReductViewPayload {
+        path: QuaPathKey,
+    },
     UnsupportedPolarity,
     InvalidSeedProvenance(CoreContextError),
 }
@@ -1281,6 +1285,13 @@ impl fmt::Display for TypeAndFactLoweringError {
                 write!(
                     formatter,
                     "inactive carried obligation {obligation:?} needs a diagnostic or provenance reason"
+                )
+            }
+            Self::EmptyReductViewPayload { path } => {
+                write!(
+                    formatter,
+                    "reduct view path {} needs at least one explicit view functor",
+                    path.as_str()
                 )
             }
             Self::UnsupportedPolarity => write!(formatter, "unsupported checker polarity"),
@@ -1430,10 +1441,17 @@ pub enum ViewExplanationKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReductViewSeed {
+    pub path: QuaPathKey,
+    pub functors: Vec<SymbolId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ViewExplanationSeed {
     pub kind: ViewExplanationKind,
     pub inserted_view: Option<CoercionInsertionId>,
     pub target_type: Option<NormalizedTypeId>,
+    pub reduct: Option<ReductViewSeed>,
     pub evidence_facts: Vec<TypeFactId>,
     pub source: CoreSourceRef,
     pub provenance: CheckerOwnedProvenance,
@@ -1604,9 +1622,25 @@ pub struct ViewExplanation {
     pub kind: ViewExplanationKind,
     pub inserted_view: Option<CoercionInsertionId>,
     pub target_type: Option<NormalizedTypeId>,
+    pub reduct: Option<ReductView>,
     pub evidence_facts: Vec<TypeFactId>,
     pub source: CoreSourceRef,
     pub provenance: Vec<CoreProvenance>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReductView {
+    pub path: QuaPathKey,
+    pub functors: Vec<SymbolId>,
+}
+
+impl From<ReductViewSeed> for ReductView {
+    fn from(seed: ReductViewSeed) -> Self {
+        Self {
+            path: seed.path,
+            functors: seed.functors,
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1799,6 +1833,7 @@ pub fn lower_type_and_fact_inputs(
             kind: seed.kind,
             inserted_view: seed.inserted_view,
             target_type: seed.target_type,
+            reduct: seed.reduct.map(ReductView::from),
             evidence_facts: seed.evidence_facts,
             source: normalized_source(seed.source),
             provenance: seed.provenance.as_slice().to_vec(),
@@ -1921,6 +1956,9 @@ fn validate_type_and_fact_input(
     }
     for seed in &input.view_explanations {
         validate_checker_owned_provenance("view explanation seed", seed.provenance.as_slice())?;
+        if let Some(reduct) = &seed.reduct {
+            validate_type_fact_reduct_view_seed(reduct)?;
+        }
     }
     for seed in &input.reconsiderings {
         validate_checker_owned_provenance("reconsidering seed", seed.provenance.as_slice())?;
@@ -1937,6 +1975,15 @@ fn validate_type_and_fact_input(
         if let Some(obligation) = &seed.deferred_obligation {
             validate_carried_obligation_seed(context, obligation, true)?;
         }
+    }
+    Ok(())
+}
+
+fn validate_type_fact_reduct_view_seed(reduct: &ReductViewSeed) -> TypeAndFactResult<()> {
+    if reduct.functors.is_empty() {
+        return Err(TypeAndFactLoweringError::EmptyReductViewPayload {
+            path: reduct.path.clone(),
+        });
     }
     Ok(())
 }
@@ -2147,6 +2194,9 @@ pub enum TermAndFormulaLoweringError {
     MissingActiveObligationGoal {
         kind: ObligationSeedKind,
     },
+    EmptyReductViewPayload {
+        path: QuaPathKey,
+    },
     InvalidSeedProvenance(CoreContextError),
 }
 
@@ -2231,6 +2281,13 @@ impl fmt::Display for TermAndFormulaLoweringError {
             }
             Self::MissingActiveObligationGoal { kind } => {
                 write!(formatter, "active {kind:?} obligation is missing a goal")
+            }
+            Self::EmptyReductViewPayload { path } => {
+                write!(
+                    formatter,
+                    "reduct view path {} needs at least one explicit view functor",
+                    path.as_str()
+                )
             }
             Self::InvalidSeedProvenance(error) => write!(formatter, "{error}"),
         }
@@ -2940,8 +2997,12 @@ impl TermAndFormulaLoweringState {
             }
             CoreTermSeedKind::Qua { base, explanation } => {
                 let lowered = self.lower_term_seed(input, base)?;
+                let reduct = explanation.reduct.clone();
                 self.push_view_explanation(explanation);
-                Ok(lowered)
+                Ok(match reduct {
+                    Some(reduct) => self.lower_reduct_view(lowered, &reduct, source),
+                    None => lowered,
+                })
             }
             CoreTermSeedKind::StableChoice {
                 functor,
@@ -3186,10 +3247,29 @@ impl TermAndFormulaLoweringState {
             kind: seed.kind,
             inserted_view: seed.inserted_view,
             target_type: seed.target_type,
+            reduct: seed.reduct.map(ReductView::from),
             evidence_facts: seed.evidence_facts,
             source: source_with_provenance(seed.source, &seed.provenance),
             provenance: seed.provenance.as_slice().to_vec(),
         });
+    }
+
+    fn lower_reduct_view(
+        &mut self,
+        mut current: CoreTermId,
+        reduct: &ReductViewSeed,
+        source: CoreSourceRef,
+    ) -> CoreTermId {
+        for functor in &reduct.functors {
+            current = self.insert_term(
+                CoreTermKind::Apply {
+                    functor: functor.clone(),
+                    args: vec![current],
+                },
+                source.clone(),
+            );
+        }
+        current
     }
 }
 
@@ -3298,6 +3378,9 @@ fn validate_term_seed_kind(
                 "qua view explanation",
                 explanation.provenance.as_slice(),
             )?;
+            if let Some(reduct) = &explanation.reduct {
+                validate_term_reduct_view_seed(reduct)?;
+            }
             Ok(())
         }
         CoreTermSeedKind::Error(site) => {
@@ -3337,6 +3420,15 @@ fn validate_formula_seed_kind(
         | CoreFormulaSeedKind::Implies { .. }
         | CoreFormulaSeedKind::Iff { .. } => Ok(()),
     }
+}
+
+fn validate_term_reduct_view_seed(reduct: &ReductViewSeed) -> TermAndFormulaResult<()> {
+    if reduct.functors.is_empty() {
+        return Err(TermAndFormulaLoweringError::EmptyReductViewPayload {
+            path: reduct.path.clone(),
+        });
+    }
+    Ok(())
 }
 
 fn validate_generated_params(
@@ -7095,6 +7187,30 @@ mod tests {
         )
     }
 
+    fn reduct_view(path: &str, functors: &[&str]) -> ReductViewSeed {
+        ReductViewSeed {
+            path: QuaPathKey::new(path),
+            functors: functors.iter().copied().map(symbol).collect(),
+        }
+    }
+
+    fn source_qua_explanation(
+        path: &str,
+        functors: &[&str],
+        target_type: usize,
+        start: usize,
+    ) -> ViewExplanationSeed {
+        ViewExplanationSeed {
+            kind: ViewExplanationKind::SourceQua,
+            inserted_view: None,
+            target_type: Some(NormalizedTypeId::new(target_type)),
+            reduct: Some(reduct_view(path, functors)),
+            evidence_facts: Vec::new(),
+            source: direct(start, start + 1),
+            provenance: provenance(format!("checker:reduct-view:{path}").as_str()),
+        }
+    }
+
     fn formula_seed(kind: CoreFormulaSeedKind, start: usize) -> CoreFormulaSeed {
         CoreFormulaSeed::new(
             kind,
@@ -7508,6 +7624,7 @@ mod tests {
                 kind: ViewExplanationKind::SourceQua,
                 inserted_view: None,
                 target_type: Some(NormalizedTypeId::new(1)),
+                reduct: None,
                 evidence_facts: vec![TypeFactId::new(2), TypeFactId::new(1), TypeFactId::new(1)],
                 source: direct(20, 23),
                 provenance: provenance("checker:view:source-qua"),
@@ -7516,6 +7633,7 @@ mod tests {
                 kind: ViewExplanationKind::InsertedView,
                 inserted_view: Some(CoercionInsertionId::new(0)),
                 target_type: Some(NormalizedTypeId::new(2)),
+                reduct: None,
                 evidence_facts: vec![TypeFactId::new(4)],
                 source: direct(24, 25),
                 provenance: provenance("checker:view:inserted"),
@@ -7571,6 +7689,39 @@ mod tests {
                 "checker:view:inserted"
             )]
         );
+    }
+
+    #[test]
+    fn type_fact_lowering_preserves_valid_reduct_view_metadata_without_terms() {
+        let var = CoreVarId::new(0);
+        let (context, owner) = context_with_var(var);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.view_explanations = vec![ViewExplanationSeed {
+            kind: ViewExplanationKind::SourceQua,
+            inserted_view: None,
+            target_type: Some(NormalizedTypeId::new(3)),
+            reduct: Some(reduct_view("Ring>AddGroup>Magma", &["z_step", "a_step"])),
+            evidence_facts: vec![TypeFactId::new(8), TypeFactId::new(8), TypeFactId::new(7)],
+            source: direct(26, 27),
+            provenance: provenance("checker:view:reduct-metadata"),
+        }];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+
+        assert!(output.terms.is_empty());
+        assert!(output.formulas.is_empty());
+        assert_eq!(output.view_explanations.len(), 1);
+        let reduct = output.view_explanations[0]
+            .reduct
+            .as_ref()
+            .expect("reduct metadata");
+        assert_eq!(reduct.path.as_str(), "Ring>AddGroup>Magma");
+        assert_eq!(reduct.functors, vec![symbol("z_step"), symbol("a_step")]);
+        assert_eq!(
+            output.view_explanations[0].evidence_facts,
+            vec![TypeFactId::new(7), TypeFactId::new(8)]
+        );
+        assert_step2_delta_valid(&context, &output);
     }
 
     #[test]
@@ -8111,6 +8262,7 @@ mod tests {
                         kind: ViewExplanationKind::SourceQua,
                         inserted_view: None,
                         target_type: Some(NormalizedTypeId::new(12)),
+                        reduct: None,
                         evidence_facts: vec![
                             TypeFactId::new(3),
                             TypeFactId::new(2),
@@ -8129,6 +8281,7 @@ mod tests {
                         kind: ViewExplanationKind::InsertedView,
                         inserted_view: Some(CoercionInsertionId::new(7)),
                         target_type: Some(NormalizedTypeId::new(13)),
+                        reduct: None,
                         evidence_facts: vec![TypeFactId::new(5)],
                         source: direct(96, 97),
                         provenance: provenance("checker:term-inserted-view"),
@@ -8162,11 +8315,350 @@ mod tests {
             output.view_explanations[1].inserted_view,
             Some(CoercionInsertionId::new(7))
         );
+        assert!(output.view_explanations[0].reduct.is_none());
+        assert!(output.view_explanations[1].reduct.is_none());
         assert_eq!(
             output.view_explanations[1].evidence_facts,
             vec![TypeFactId::new(5)]
         );
         assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn reduct_qua_lowers_renamed_views_to_distinct_terms() {
+        let r = CoreVarId::new(0);
+        let (context, owner) = context_with_var(r);
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(r), 94),
+            term_seed(
+                CoreTermSeedKind::Qua {
+                    base: CoreTermSeedId::new(0),
+                    explanation: source_qua_explanation(
+                        "Ring>AddMagma",
+                        &["view_add_magma"],
+                        20,
+                        95,
+                    ),
+                },
+                95,
+            ),
+            term_seed(
+                CoreTermSeedKind::Qua {
+                    base: CoreTermSeedId::new(0),
+                    explanation: source_qua_explanation(
+                        "Ring>MulMagma",
+                        &["view_mul_magma"],
+                        21,
+                        96,
+                    ),
+                },
+                96,
+            ),
+            term_seed(
+                CoreTermSeedKind::Select {
+                    selector: symbol("binop"),
+                    base: CoreTermSeedId::new(1),
+                },
+                97,
+            ),
+            term_seed(
+                CoreTermSeedKind::Select {
+                    selector: symbol("binop"),
+                    base: CoreTermSeedId::new(2),
+                },
+                98,
+            ),
+        ];
+        input.formulas = vec![
+            formula_seed(
+                CoreFormulaSeedKind::Atom {
+                    predicate: symbol("is_commutative"),
+                    args: vec![CoreTermSeedId::new(1)],
+                },
+                99,
+            ),
+            formula_seed(
+                CoreFormulaSeedKind::TypePred {
+                    subject: CoreTermSeedId::new(2),
+                    ty: CoreTypePredicate::new("commutative_Magma"),
+                },
+                100,
+            ),
+        ];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let term_id = |seed| output.term_map[&CoreTermSeedId::new(seed)];
+        let formula_id = |seed| output.formula_map[&CoreFormulaSeedId::new(seed)];
+        let base = term_id(0);
+        let add_view = term_id(1);
+        let mul_view = term_id(2);
+
+        assert_ne!(add_view, base);
+        assert_ne!(mul_view, base);
+        assert_ne!(add_view, mul_view);
+        assert!(matches!(
+            &output.terms.get(add_view).expect("add view").kind,
+            CoreTermKind::Apply { functor, args }
+                if functor == &symbol("view_add_magma") && args == &vec![base]
+        ));
+        assert!(matches!(
+            &output.terms.get(mul_view).expect("mul view").kind,
+            CoreTermKind::Apply { functor, args }
+                if functor == &symbol("view_mul_magma") && args == &vec![base]
+        ));
+        assert!(matches!(
+            &output.terms.get(term_id(3)).expect("add binop").kind,
+            CoreTermKind::Select { selector, base }
+                if selector == &symbol("binop") && *base == add_view
+        ));
+        assert!(matches!(
+            &output.terms.get(term_id(4)).expect("mul binop").kind,
+            CoreTermKind::Select { selector, base }
+                if selector == &symbol("binop") && *base == mul_view
+        ));
+        assert!(matches!(
+            &output.formulas.get(formula_id(0)).expect("attribute").kind,
+            CoreFormulaKind::Atom { predicate, args }
+                if predicate == &symbol("is_commutative") && args == &vec![add_view]
+        ));
+        assert!(matches!(
+            &output.formulas.get(formula_id(1)).expect("type pred").kind,
+            CoreFormulaKind::TypePred { subject, ty }
+                if *subject == mul_view && ty == &CoreTypePredicate::new("commutative_Magma")
+        ));
+        assert!(
+            output
+                .formulas
+                .iter()
+                .all(|(_, formula)| !matches!(formula.kind, CoreFormulaKind::Equals { .. }))
+        );
+        assert_eq!(
+            output.view_explanations[0]
+                .reduct
+                .as_ref()
+                .expect("add reduct")
+                .path
+                .as_str(),
+            "Ring>AddMagma"
+        );
+        assert_eq!(
+            output.view_explanations[0]
+                .reduct
+                .as_ref()
+                .expect("add reduct")
+                .functors,
+            vec![symbol("view_add_magma")]
+        );
+        assert_eq!(
+            output.view_explanations[1]
+                .reduct
+                .as_ref()
+                .expect("mul reduct")
+                .path
+                .as_str(),
+            "Ring>MulMagma"
+        );
+        assert_eq!(
+            output.view_explanations[1]
+                .reduct
+                .as_ref()
+                .expect("mul reduct")
+                .functors,
+            vec![symbol("view_mul_magma")]
+        );
+        assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn composed_reduct_view_lowers_nested_and_template_bounds_use_final_view() {
+        let r = CoreVarId::new(0);
+        let (context, owner) = context_with_var(r);
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(r), 101),
+            term_seed(
+                CoreTermSeedKind::Qua {
+                    base: CoreTermSeedId::new(0),
+                    explanation: source_qua_explanation(
+                        "Ring>AddGroup>Magma",
+                        &["z_view_add_group", "a_view_group_magma"],
+                        22,
+                        102,
+                    ),
+                },
+                102,
+            ),
+            term_seed(
+                CoreTermSeedKind::Select {
+                    selector: symbol("binop"),
+                    base: CoreTermSeedId::new(1),
+                },
+                103,
+            ),
+        ];
+        input.formulas = vec![formula_seed(
+            CoreFormulaSeedKind::TypePred {
+                subject: CoreTermSeedId::new(1),
+                ty: CoreTypePredicate::new("template_bound_commutative"),
+            },
+            104,
+        )];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let term_id = |seed| output.term_map[&CoreTermSeedId::new(seed)];
+        let formula_id = |seed| output.formula_map[&CoreFormulaSeedId::new(seed)];
+        let base = term_id(0);
+        let final_view = term_id(1);
+        let CoreTermKind::Apply {
+            functor: final_functor,
+            args: final_args,
+        } = &output.terms.get(final_view).expect("final view").kind
+        else {
+            panic!("expected final view apply");
+        };
+        assert_eq!(final_functor, &symbol("a_view_group_magma"));
+        let [intermediate] = final_args.as_slice() else {
+            panic!("expected unary final view");
+        };
+        assert!(matches!(
+            &output.terms.get(*intermediate).expect("intermediate view").kind,
+            CoreTermKind::Apply { functor, args }
+                if functor == &symbol("z_view_add_group") && args == &vec![base]
+        ));
+        assert!(matches!(
+            &output.terms.get(term_id(2)).expect("selected field").kind,
+            CoreTermKind::Select { selector, base }
+                if selector == &symbol("binop") && *base == final_view
+        ));
+        assert!(matches!(
+            &output.formulas.get(formula_id(0)).expect("template bound").kind,
+            CoreFormulaKind::TypePred { subject, ty }
+                if *subject == final_view
+                    && ty == &CoreTypePredicate::new("template_bound_commutative")
+        ));
+        assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn exact_instance_extensionality_guard_is_preserved_on_reduct_term() {
+        let r = CoreVarId::new(0);
+        let (context, owner) = context_with_var(r);
+        let mut input = TermAndFormulaLoweringInput::new(owner);
+        input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(r), 105),
+            term_seed(
+                CoreTermSeedKind::Qua {
+                    base: CoreTermSeedId::new(0),
+                    explanation: source_qua_explanation(
+                        "Ring>AddMagma",
+                        &["view_add_magma"],
+                        23,
+                        106,
+                    ),
+                },
+                106,
+            ),
+        ];
+        input.formulas = vec![
+            formula_seed(
+                CoreFormulaSeedKind::TypePred {
+                    subject: CoreTermSeedId::new(1),
+                    ty: CoreTypePredicate::new("exact_Magma"),
+                },
+                107,
+            ),
+            formula_seed(
+                CoreFormulaSeedKind::Atom {
+                    predicate: symbol("magma_field_extensionality"),
+                    args: vec![CoreTermSeedId::new(1)],
+                },
+                108,
+            ),
+            formula_seed(
+                CoreFormulaSeedKind::Implies {
+                    premise: CoreFormulaSeedId::new(0),
+                    conclusion: CoreFormulaSeedId::new(1),
+                },
+                109,
+            ),
+        ];
+
+        let output = lower_term_and_formula_inputs(&context, input).expect("lowering");
+        let term_id = |seed| output.term_map[&CoreTermSeedId::new(seed)];
+        let formula_id = |seed| output.formula_map[&CoreFormulaSeedId::new(seed)];
+        let view = term_id(1);
+
+        assert_eq!(output.formulas.len(), 3);
+        assert!(matches!(
+            &output.formulas.get(formula_id(0)).expect("exact guard").kind,
+            CoreFormulaKind::TypePred { subject, ty }
+                if *subject == view && ty == &CoreTypePredicate::new("exact_Magma")
+        ));
+        assert!(matches!(
+            &output.formulas.get(formula_id(1)).expect("extensionality atom").kind,
+            CoreFormulaKind::Atom { predicate, args }
+                if predicate == &symbol("magma_field_extensionality") && args == &vec![view]
+        ));
+        assert!(matches!(
+            &output.formulas.get(formula_id(2)).expect("guarded formula").kind,
+            CoreFormulaKind::Implies { premise, conclusion }
+                if *premise == formula_id(0) && *conclusion == formula_id(1)
+        ));
+        assert!(output.formulas.iter().all(|(_, formula)| {
+            !matches!(
+                &formula.kind,
+                CoreFormulaKind::TypePred { ty, .. } if ty == &CoreTypePredicate::new("is_Magma")
+            )
+        }));
+        assert_step3_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn reduct_view_payload_requires_explicit_functors() {
+        let x = CoreVarId::new(0);
+        let (context, owner) = context_with_var(x);
+        let empty_reduct = reduct_view("Ring>Magma", &[]);
+        let mut type_input = TypeAndFactLoweringInput::new(owner);
+        type_input.view_explanations = vec![ViewExplanationSeed {
+            kind: ViewExplanationKind::SourceQua,
+            inserted_view: None,
+            target_type: Some(NormalizedTypeId::new(24)),
+            reduct: Some(empty_reduct.clone()),
+            evidence_facts: Vec::new(),
+            source: direct(110, 111),
+            provenance: provenance("checker:empty-reduct-step2"),
+        }];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, type_input),
+            Err(TypeAndFactLoweringError::EmptyReductViewPayload { path })
+                if path.as_str() == "Ring>Magma"
+        ));
+
+        let mut term_input = TermAndFormulaLoweringInput::new(owner);
+        term_input.terms = vec![
+            term_seed(CoreTermSeedKind::Var(x), 112),
+            term_seed(
+                CoreTermSeedKind::Qua {
+                    base: CoreTermSeedId::new(0),
+                    explanation: ViewExplanationSeed {
+                        kind: ViewExplanationKind::SourceQua,
+                        inserted_view: None,
+                        target_type: Some(NormalizedTypeId::new(25)),
+                        reduct: Some(empty_reduct),
+                        evidence_facts: Vec::new(),
+                        source: direct(113, 114),
+                        provenance: provenance("checker:empty-reduct-step3"),
+                    },
+                },
+                113,
+            ),
+        ];
+        assert!(matches!(
+            lower_term_and_formula_inputs(&context, term_input),
+            Err(TermAndFormulaLoweringError::EmptyReductViewPayload { path })
+                if path.as_str() == "Ring>Magma"
+        ));
     }
 
     #[test]

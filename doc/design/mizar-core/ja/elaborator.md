@@ -186,9 +186,11 @@ task 9 がこの section を実装する。
 - attribute chain は deterministic predicate order の明示的 predicate fact conjunction に lower する。
   negative polarity は `Not(TypePred)` になる。
 - mode/radix expansion は checker-normalized type head を通じて lower し、type syntax を再構成しない。
-- source-written `qua` と inserted view は、この step では variable-subject fact の消去に必要な
-  view provenance と既に確立済みの type fact だけへ lower する。underlying term は Step 3 の
-  lowering 責務として残る。新しい proof step ではない。
+- source-written `qua` と inserted view は、この step では variable-subject fact の消去に
+  必要な view provenance、任意の checker-owned reduct metadata、既に確立済みの type
+  fact だけへ lower する。この step は term を作らない。Step 2 fact の subject は変数に
+  限られるため、reduct term 上の view-specific attribute fact は Step 3 の formula seed である。
+  `qua` view は新しい proof step ではない。
 - reconsider/narrowing payload は fresh/narrowed core binding と、checker が提供した場合の
   carried obligation seed になる。
 - sethood、non-emptiness、coercion、cluster evidence が欠けている場合は diagnostic/error node
@@ -229,8 +231,16 @@ term 規則:
 - constant と selected functor root は canonical `SymbolId` に lower する。
 - application は selected root と lowered argument を持つ `CoreTermKind::Apply` へ lower する。
 - selector、tuple、set enumeration は明示的 core node へ lower する。
-- source-written / inserted `qua` は underlying term と view provenance / type fact へ lower し、
-  implicit cast node を作らない。
+- source-written / inserted no-reduct `qua` は underlying term と view provenance / type
+  fact へ lower し、implicit cast node を作らない。
+- source-written / inserted reduct `qua` は checker-owned `QuaPathKey` と明示的 view
+  functor の順序付き list を持つ。Step 3 は、それらの functor を lowered base term へ
+  順に入れ子に適用し、最後の view term を返す。attribute atom、`TypePred` formula、
+  selector、bounded-template actual formula、明示的 exact-instance extensionality guard は
+  `Qua` seed id を参照することでその view term を対象にする。core は
+  `exact_Magma(view_path(x))` のような明示的 exact-instance guard formula を保持する。
+  source-derived extensionality axiom を合成せず、checker payload が提供していない view
+  path を推論しない。
 - stable choice term は generated choice symbol を functor とする通常の `Apply` node へ lower する。
   stable choice に `CoreTermKind::Generated` を使ってはならない。
 - stable choice generated symbol は owning core item/proof または definition context、

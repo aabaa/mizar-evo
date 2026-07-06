@@ -161,8 +161,16 @@ enum CoreTermKind {
 - Fraenkel comprehension は captured free parameter、generated-origin record 内の
   sethood evidence、生成された集合に対する definitional membership-axiom obligation seed
   を持つ generated set-valued term へ lower される。
-- source-written / inserted `qua` view は underlying term を変えない。その evidence は
-  provenance、explicit predicate、obligation seed で表現する。
+- cluster widening や一意の identity inheritance path など、source-written / inserted の
+  no-reduct `qua` view は underlying term を再利用する。その evidence は provenance、
+  explicit predicate、obligation seed に残る。
+- 改名、複数経路、または bounded-template の view selection は、checker-owned
+  `QuaPathKey` と順序付きの明示的 reduct functor を持つ。複数の reduct 関数を合成する
+  path では functor 順に入れ子にした通常の `Apply` node へ lower する。これらの
+  `Apply` term が logical view identity であり、selector、attribute atom、
+  template-bound formula、exact-instance guard は flattened base term ではなく返された
+  view term を参照しなければならない。reduct view に `CoreTermKind::Generated` を使っては
+  ならず、core は checker payload が供給していない source view path を推論してはならない。
 - `Error` term は first-class recovery node であり、valid logical term として
   受理してはならない。
 
