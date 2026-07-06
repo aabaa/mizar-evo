@@ -325,11 +325,11 @@ work. Every finding maps to a task or a recorded disposition:
 | F1 (structure-view collapse) | spec patched; task 27 implements explicit-payload elaborator reduct-view lowering; kernel-side re-audit is [mizar-kernel task 35](../../mizar-kernel/en/todo.md); member-identity coordination is [mizar-checker task 36](../../mizar-checker/en/todo.md); source-derived runner/extraction remains external |
 | F2 (type-actual inhabitation) | spec patched (§17.3.4 gating row); checker task 43 completed the built-in/base-shape inhabitation table; elaborator gating is task 28 |
 | F3 (`type extends M` object/schema conflation) | spec patched (§18.10.2); explicit-payload bounded-view lowering is covered together with F1 in task 27 |
-| F4 (functor guards, actual signature compatibility) | spec patched (§18.10.4, §18.9); implementation is task 29 |
+| F4 (functor guards, actual signature compatibility) | spec patched (§18.10.4, §18.9); explicit-payload implementation completed in task 29 |
 | F5 (type-parameter sethood) | spec patched (§18.10.2 sethood paragraph); plumbing is task 30 |
-| F6 (schemes applied inside template bodies) | spec patched (§18.10.3 paragraph); implementation is task 29 |
+| F6 (schemes applied inside template bodies) | spec patched (§18.10.3 paragraph); explicit substitution-composition metadata implementation completed in task 29 |
 | F7 (inference determinism over widening) | spec patched by task 26; implementation remains deferred to payload-bearing inference/elaboration work |
-| F8 (partial-algorithm functor actuals) | spec patched (§18.8.4); rejection implementation folded into task 29 |
+| F8 (partial-algorithm functor actuals) | spec patched (§18.8.4); explicit diagnostic-only rejection completed in task 29 |
 | corpus seeds (6) | inactive `advanced_semantics` seeds: the original 4 encoding seeds plus the task 26 F7 inference-determinism seeds. Activated with the runner via [mizar-checker task 48](../../mizar-checker/en/todo.md) and the mizar-test runner work |
 
 26. **Spec decision: template argument inference determinism (F7).** [x]
@@ -428,7 +428,7 @@ work. Every finding maps to a task or a recorded disposition:
       No `doc/spec`, existing `.miz`, expectation, traceability metadata,
       source-derived runner, or fake checker payload was changed.
 
-29. **Scheme-actual signature compatibility, guard obligations, and functor-actual validation (F4, F6, F8).** [ ]
+29. **Scheme-actual signature compatibility, guard obligations, and functor-actual validation (F4, F6, F8).** [x]
     - Implement the §18.10.4/§18.9 rules for `defpred`/`deffunc` actuals:
       contravariant domain / covariant codomain widening checks; functor
       guards are proof obligations discharged at instantiation, never
@@ -444,6 +444,16 @@ work. Every finding maps to a task or a recorded disposition:
       rejected with a stable diagnostic; nested scheme application uses the
       enclosing parameters soundly per the substitution-lemma
       reconstruction.
+    - Completed by task 29: `TemplateSchemeActualSeed` / `TemplateSchemeActual`
+      preserve checker-owned scheme-actual rows for type, predicate, and
+      functor parameters. Predicate/functor rows keep directional widening
+      evidence (schema domain to actual parameter, actual result to schema
+      codomain for functors), accepted functor rows emit `Skipped`
+      checker-initial guard seeds as traceability instead of axioms or active
+      VCs, partial/void/unsupported actuals are diagnostic-only, and enclosing
+      template parameters preserve substitution-composition metadata without
+      creating fresh symbols or source-derived closure expansions. Source
+      extraction and active corpus execution remain external/deferred.
     - Verify: `cargo test -p mizar-core`, `cargo test -p mizar-vc` (seed
       handoff), `cargo test -p mizar-test`.
     - Deps: 27; obligation seeds flow through task 18. Refs: spec 18

@@ -440,13 +440,20 @@ task 27 の進捗を記録している。
    reject された actual は diagnostic/backref のままであり、actual-side existential
    axiom にはならない。source-derived actual extraction と active runner execution は
    checker/runner bridge に gated のままである。
-3. **scheme 実引数のシグネチャ適合検査(F4/F6)。** `defpred`/`deffunc`
-   実引数への反変ドメイン/共変コドメイン widening 検査。ガード義務は
-   放出して放つのみで、主張は決してしない。
+3. **scheme 実引数のシグネチャ適合検査(F4/F6)。** task 29 は
+   explicit-payload の core 側を実装済みである。checker-owned row は
+   `defpred`/`deffunc`、template functor、enclosing-parameter、promoted
+   terminating-algorithm actual の directional widening evidence を保持する。
+   accepted functor row は traceability として `Skipped` guard obligation seed を
+   emit し、guard axiom や active VC は決して assert しない。source-derived
+   closure expansion と active runner extraction は checker/runner bridge に
+   gated のままである。
 4. **型パラメータの sethood 証拠の配管(F5)。** テンプレート本体での
    Fraenkel ゲートを、bound 継承または制約供給の sethood にキーする。
-5. **部分 algorithm の functor 実引数の拒否(F8)。** F7 の推論決定性は
-   task 26 で解決済み。実装は payload 到着まで gated。
+5. **部分 algorithm の functor 実引数の拒否(F8)。** task 29 は partial、
+   void、unsupported algorithm actual を accepted evidence のない diagnostic-only
+   explicit payload row として記録する。F7 の推論決定性は task 26 で解決済みで、
+   source-derived active execution は payload 到着まで gated。
 
 カーネル側(7月3日のカーネル監査の観点から): レダクトエンコードは構造体
 widening に言及する証明書の形を変える。原子的属性述語に関する

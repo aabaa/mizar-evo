@@ -182,6 +182,9 @@ Input:
 - inserted views and source-written `qua` metadata;
 - explicit template type-parameter inhabitation assumptions and template
   type-actual gate results from checker existential-gate evaluation;
+- explicit scheme-actual validation rows for type, predicate, and functor
+  parameters, including directional widening evidence, skipped guard
+  obligation seeds, and substitution-composition metadata;
 - checker initial obligations and deferred evidence rows.
 
 Output:
@@ -191,6 +194,8 @@ Output:
 - view explanation provenance;
 - schema-parameter inhabitation assumptions and template type-actual gate
   records;
+- scheme-actual validation records and skipped guard obligation seed
+  references;
 - carried obligation seed references.
 
 Erasure rules:
@@ -220,6 +225,19 @@ Erasure rules:
   `DegradedRecovery`) produce a core diagnostic and checker-diagnostic
   backrefs only. They never emit an actual-side existential axiom or proof
   obligation.
+- A scheme actual carries explicit checker validation for Chapter 18
+  instantiations. Predicate and functor actual rows record the directional
+  widening evidence required by §18.10.4: schema domain types widen to the
+  actual's declared parameter types, and functor result types widen to the
+  schema codomain. Accepted functor rows carry a `Skipped` checker-initial
+  guard obligation seed as traceability; the guard is not a core assumption,
+  active VC, or instantiated functor axiom. Rejected rows such as result
+  widening failure, partial algorithms, void algorithms, role mismatches, and
+  arity mismatches are diagnostic-only or fail closed before lowering accepted
+  evidence. Enclosing template parameters used as inner-scheme actuals record
+  checker substitution-composition metadata only; the elaborator does not
+  invent fresh predicate/function/type symbols or expand proof-local
+  `defpred`/`deffunc` closures from source.
 - Reconsider/narrowing payloads become a fresh or narrowed core binding plus
   a carried obligation seed when the checker supplied one.
 - Missing sethood, non-emptiness, coercion, or cluster evidence becomes a
@@ -587,6 +605,10 @@ payload categories can be added without breaking downstream exhaustive matches.
 | `TypeAndFactLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `ViewExplanationKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `MissingEvidenceKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TemplateSchemeParameterKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TemplateSchemeActualKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TemplateSchemeActualStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TemplateWideningEvidenceStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `TermAndFormulaLoweringError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CoreTermSeedKind` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `CoreFormulaSeedKind` | `#[non_exhaustive]` downstream forward-compatible surface. |

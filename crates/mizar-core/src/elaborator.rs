@@ -1256,6 +1256,10 @@ pub enum TypeAndFactLoweringError {
         instantiation: TemplateInstantiationKey,
         parameter: TemplateParameterKey,
     },
+    DuplicateTemplateSchemeActual {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+    },
     PartialTemplateTypeActualBaseEvidence {
         instantiation: TemplateInstantiationKey,
         parameter: TemplateParameterKey,
@@ -1268,6 +1272,57 @@ pub enum TypeAndFactLoweringError {
         instantiation: TemplateInstantiationKey,
         parameter: TemplateParameterKey,
         status: ExistentialGateStatus,
+    },
+    TemplateSchemeActualKindMismatch {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+        parameter_kind: TemplateSchemeParameterKind,
+        actual_kind: TemplateSchemeActualKind,
+    },
+    TemplateSchemeActualArityMismatch {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+        expected: usize,
+        actual: usize,
+    },
+    AcceptedTemplateSchemeActualMissingEvidence {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+    },
+    TemplateSchemeActualPartialDomainEvidence {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+    },
+    TemplateSchemeActualInvalidCodomainEvidence {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+    },
+    TemplateSchemeFunctorMissingGuardSeed {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+    },
+    TemplateSchemeFunctorInvalidGuardSeedStatus {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+        status: ObligationSeedStatus,
+    },
+    TemplateSchemeFunctorInvalidGuardSeedKind {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+        kind: InitialObligationKind,
+    },
+    RejectedTemplateSchemeActualCarriesEvidence {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+        status: TemplateSchemeActualStatus,
+    },
+    TemplateSchemeTypeActualCarriesCallableEvidence {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
+    },
+    TemplateSchemeActualMissingSubstitutionEvidence {
+        instantiation: TemplateInstantiationKey,
+        parameter: TemplateParameterKey,
     },
     UnsupportedPolarity,
     InvalidSeedProvenance(CoreContextError),
@@ -1337,6 +1392,17 @@ impl fmt::Display for TypeAndFactLoweringError {
                     parameter.as_str()
                 )
             }
+            Self::DuplicateTemplateSchemeActual {
+                instantiation,
+                parameter,
+            } => {
+                write!(
+                    formatter,
+                    "duplicate template scheme actual for instantiation {} parameter {}",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
             Self::PartialTemplateTypeActualBaseEvidence {
                 instantiation,
                 parameter,
@@ -1371,6 +1437,134 @@ impl fmt::Display for TypeAndFactLoweringError {
                     parameter.as_str()
                 )
             }
+            Self::TemplateSchemeActualKindMismatch {
+                instantiation,
+                parameter,
+                parameter_kind,
+                actual_kind,
+            } => {
+                write!(
+                    formatter,
+                    "template scheme actual for instantiation {} parameter {} has incompatible parameter/actual kinds {parameter_kind:?}/{actual_kind:?}",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::TemplateSchemeActualArityMismatch {
+                instantiation,
+                parameter,
+                expected,
+                actual,
+            } => {
+                write!(
+                    formatter,
+                    "template scheme actual for instantiation {} parameter {} has arity mismatch: expected {expected}, got {actual}",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::AcceptedTemplateSchemeActualMissingEvidence {
+                instantiation,
+                parameter,
+            } => {
+                write!(
+                    formatter,
+                    "accepted template scheme actual for instantiation {} parameter {} is missing complete compatibility evidence",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::TemplateSchemeActualPartialDomainEvidence {
+                instantiation,
+                parameter,
+            } => {
+                write!(
+                    formatter,
+                    "template scheme actual for instantiation {} parameter {} has partial domain-widening evidence",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::TemplateSchemeActualInvalidCodomainEvidence {
+                instantiation,
+                parameter,
+            } => {
+                write!(
+                    formatter,
+                    "template scheme actual for instantiation {} parameter {} has invalid codomain-widening evidence",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::TemplateSchemeFunctorMissingGuardSeed {
+                instantiation,
+                parameter,
+            } => {
+                write!(
+                    formatter,
+                    "accepted functor actual for instantiation {} parameter {} is missing its skipped guard obligation seed",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::TemplateSchemeFunctorInvalidGuardSeedStatus {
+                instantiation,
+                parameter,
+                status,
+            } => {
+                write!(
+                    formatter,
+                    "functor actual for instantiation {} parameter {} has invalid guard seed status {status:?}",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::TemplateSchemeFunctorInvalidGuardSeedKind {
+                instantiation,
+                parameter,
+                kind,
+            } => {
+                write!(
+                    formatter,
+                    "functor actual for instantiation {} parameter {} has invalid guard seed kind {kind:?}",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::RejectedTemplateSchemeActualCarriesEvidence {
+                instantiation,
+                parameter,
+                status,
+            } => {
+                write!(
+                    formatter,
+                    "rejected template scheme actual for instantiation {} parameter {} carries accepted evidence with status {status:?}",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::TemplateSchemeTypeActualCarriesCallableEvidence {
+                instantiation,
+                parameter,
+            } => {
+                write!(
+                    formatter,
+                    "type scheme actual for instantiation {} parameter {} carries callable compatibility evidence",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
+            Self::TemplateSchemeActualMissingSubstitutionEvidence {
+                instantiation,
+                parameter,
+            } => {
+                write!(
+                    formatter,
+                    "enclosing template parameter actual for instantiation {} parameter {} is missing substitution-composition evidence",
+                    instantiation.as_str(),
+                    parameter.as_str()
+                )
+            }
             Self::UnsupportedPolarity => write!(formatter, "unsupported checker polarity"),
             Self::InvalidSeedProvenance(error) => write!(formatter, "{error}"),
         }
@@ -1396,6 +1590,7 @@ pub struct TypeAndFactLoweringInput {
     pub view_explanations: Vec<ViewExplanationSeed>,
     pub template_type_parameters: Vec<TemplateTypeParameterInhabitationSeed>,
     pub template_type_actual_gates: Vec<TemplateTypeActualGateSeed>,
+    pub template_scheme_actuals: Vec<TemplateSchemeActualSeed>,
     pub reconsiderings: Vec<ReconsideringSeed>,
     pub carried_obligations: Vec<CarriedInitialObligationSeed>,
     pub missing_evidence: Vec<MissingEvidenceSeed>,
@@ -1413,6 +1608,7 @@ impl TypeAndFactLoweringInput {
             view_explanations: Vec::new(),
             template_type_parameters: Vec::new(),
             template_type_actual_gates: Vec::new(),
+            template_scheme_actuals: Vec::new(),
             reconsiderings: Vec::new(),
             carried_obligations: Vec::new(),
             missing_evidence: Vec::new(),
@@ -1537,6 +1733,87 @@ pub struct TemplateTypeActualGateSeed {
     pub base_evidence_coverage: Option<ExistentialGateBaseEvidenceCoverage>,
     pub facts: Vec<TypeFactId>,
     pub diagnostics: Vec<RegistrationDiagnosticId>,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateSchemeParameterKind {
+    Type,
+    Predicate,
+    Functor,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateSchemeActualKind {
+    TypeExpression,
+    EnclosingTypeParameter,
+    Defpred,
+    Deffunc,
+    TemplateFunctor,
+    EnclosingPredicateParameter,
+    EnclosingFunctorParameter,
+    PromotedTerminatingAlgorithm,
+    PartialAlgorithm,
+    VoidAlgorithm,
+    Unsupported,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateSchemeActualStatus {
+    Accepted,
+    SignatureMismatch,
+    RoleMismatch,
+    ArityMismatch,
+    PartialAlgorithm,
+    VoidAlgorithm,
+    Unsupported,
+    MissingEvidence,
+    DegradedRecovery,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum TemplateWideningEvidenceStatus {
+    Accepted,
+    Missing,
+    DeferredExternalDependency,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateWideningEvidenceSeed {
+    pub from_type: NormalizedTypeId,
+    pub to_type: NormalizedTypeId,
+    pub status: TemplateWideningEvidenceStatus,
+    pub facts: Vec<TypeFactId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateSubstitutionCompositionSeed {
+    pub enclosing_parameter: TemplateParameterKey,
+    pub source: CoreSourceRef,
+    pub provenance: CheckerOwnedProvenance,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateSchemeActualSeed {
+    pub instantiation: TemplateInstantiationKey,
+    pub parameter: TemplateParameterKey,
+    pub parameter_kind: TemplateSchemeParameterKind,
+    pub actual_kind: TemplateSchemeActualKind,
+    pub status: TemplateSchemeActualStatus,
+    pub expected_arity: usize,
+    pub actual_arity: usize,
+    /// Direction: schema-domain type widens to actual declared parameter type.
+    pub domain_evidence: Vec<TemplateWideningEvidenceSeed>,
+    /// Direction for functors: actual declared result type widens to schema codomain.
+    pub codomain_evidence: Option<TemplateWideningEvidenceSeed>,
+    pub guard_obligation: Option<CarriedInitialObligationSeed>,
+    pub substitution: Option<TemplateSubstitutionCompositionSeed>,
+    pub checker_diagnostics: Vec<TypeDiagnosticId>,
     pub source: CoreSourceRef,
     pub provenance: CheckerOwnedProvenance,
 }
@@ -1704,6 +1981,7 @@ pub struct TypeAndFactLoweringOutput {
     pub view_explanations: Vec<ViewExplanation>,
     pub template_type_parameter_inhabitations: Vec<LoweredTemplateTypeParameterInhabitation>,
     pub template_type_actual_gates: Vec<TemplateTypeActualGate>,
+    pub template_scheme_actuals: Vec<TemplateSchemeActual>,
     pub reconsidered_binders: Vec<ReconsideredBinding>,
     pub carried_obligations: Vec<ObligationSeedId>,
     pub missing_evidence: Vec<MissingEvidenceRecord>,
@@ -1750,6 +2028,40 @@ pub struct TemplateTypeActualGate {
     pub base_evidence_coverage: Option<ExistentialGateBaseEvidenceCoverage>,
     pub facts: Vec<TypeFactId>,
     pub checker_diagnostics: Vec<RegistrationDiagnosticId>,
+    pub diagnostic: Option<CoreDiagnosticId>,
+    pub source: CoreSourceRef,
+    pub provenance: Vec<CoreProvenance>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateDirectionalWideningEvidence {
+    pub from_type: NormalizedTypeId,
+    pub to_type: NormalizedTypeId,
+    pub status: TemplateWideningEvidenceStatus,
+    pub facts: Vec<TypeFactId>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateSubstitutionComposition {
+    pub enclosing_parameter: TemplateParameterKey,
+    pub source: CoreSourceRef,
+    pub provenance: Vec<CoreProvenance>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TemplateSchemeActual {
+    pub instantiation: TemplateInstantiationKey,
+    pub parameter: TemplateParameterKey,
+    pub parameter_kind: TemplateSchemeParameterKind,
+    pub actual_kind: TemplateSchemeActualKind,
+    pub status: TemplateSchemeActualStatus,
+    pub expected_arity: usize,
+    pub actual_arity: usize,
+    pub domain_evidence: Vec<TemplateDirectionalWideningEvidence>,
+    pub codomain_evidence: Option<TemplateDirectionalWideningEvidence>,
+    pub guard_obligation: Option<ObligationSeedId>,
+    pub substitution: Option<TemplateSubstitutionComposition>,
+    pub checker_diagnostics: Vec<TypeDiagnosticId>,
     pub diagnostic: Option<CoreDiagnosticId>,
     pub source: CoreSourceRef,
     pub provenance: Vec<CoreProvenance>,
@@ -1928,6 +2240,69 @@ impl TypeAndFactLoweringState {
         }
     }
 
+    fn lower_template_scheme_actual(
+        &mut self,
+        mut seed: TemplateSchemeActualSeed,
+    ) -> TypeAndFactResult<TemplateSchemeActual> {
+        for evidence in &mut seed.domain_evidence {
+            evidence.facts.sort();
+            evidence.facts.dedup();
+        }
+        if let Some(evidence) = &mut seed.codomain_evidence {
+            evidence.facts.sort();
+            evidence.facts.dedup();
+        }
+        seed.checker_diagnostics.sort();
+        seed.checker_diagnostics.dedup();
+
+        let guard_obligation = seed
+            .guard_obligation
+            .map(|obligation| insert_carried_obligation(self, obligation))
+            .transpose()?;
+        let substitution = seed
+            .substitution
+            .map(|substitution| TemplateSubstitutionComposition {
+                enclosing_parameter: substitution.enclosing_parameter,
+                source: source_with_provenance(substitution.source, &substitution.provenance),
+                provenance: substitution.provenance.as_slice().to_vec(),
+            });
+        let diagnostic = if template_scheme_actual_is_accepted(seed.status) {
+            None
+        } else {
+            Some(self.insert_diagnostic(
+                CoreDiagnosticClass::UnresolvedSemanticInput,
+                CoreDiagnosticSeverity::Error,
+                CoreDiagnosticRecovery::Partial,
+                template_scheme_actual_message_key(seed.status),
+                seed.source.clone(),
+            ))
+        };
+
+        Ok(TemplateSchemeActual {
+            instantiation: seed.instantiation,
+            parameter: seed.parameter,
+            parameter_kind: seed.parameter_kind,
+            actual_kind: seed.actual_kind,
+            status: seed.status,
+            expected_arity: seed.expected_arity,
+            actual_arity: seed.actual_arity,
+            domain_evidence: seed
+                .domain_evidence
+                .into_iter()
+                .map(TemplateDirectionalWideningEvidence::from)
+                .collect(),
+            codomain_evidence: seed
+                .codomain_evidence
+                .map(TemplateDirectionalWideningEvidence::from),
+            guard_obligation,
+            substitution,
+            checker_diagnostics: seed.checker_diagnostics,
+            diagnostic,
+            source: normalized_source(seed.source),
+            provenance: seed.provenance.as_slice().to_vec(),
+        })
+    }
+
     fn insert_obligation_formula(
         &mut self,
         seed: &ObligationFormulaSeed,
@@ -2063,6 +2438,11 @@ pub fn lower_type_and_fact_inputs(
         template_type_actual_gates.push(state.lower_template_type_actual_gate(seed));
     }
 
+    let mut template_scheme_actuals = Vec::new();
+    for seed in input.template_scheme_actuals {
+        template_scheme_actuals.push(state.lower_template_scheme_actual(seed)?);
+    }
+
     let mut reconsidered_binders = Vec::new();
     for seed in input.reconsiderings {
         let guard = if let Some(predicate) = seed.predicate {
@@ -2144,6 +2524,7 @@ pub fn lower_type_and_fact_inputs(
         view_explanations,
         template_type_parameter_inhabitations,
         template_type_actual_gates,
+        template_scheme_actuals,
         reconsidered_binders,
         carried_obligations,
         missing_evidence,
@@ -2180,6 +2561,21 @@ fn validate_type_and_fact_input(
             });
         }
         validate_template_type_actual_gate_seed(seed)?;
+    }
+    let mut template_scheme_actuals = BTreeSet::new();
+    for seed in &input.template_scheme_actuals {
+        validate_checker_owned_provenance(
+            "template scheme actual seed",
+            seed.provenance.as_slice(),
+        )?;
+        let key = (seed.instantiation.clone(), seed.parameter.clone());
+        if !template_scheme_actuals.insert(key) {
+            return Err(TypeAndFactLoweringError::DuplicateTemplateSchemeActual {
+                instantiation: seed.instantiation.clone(),
+                parameter: seed.parameter.clone(),
+            });
+        }
+        validate_template_scheme_actual_seed(context, seed)?;
     }
     for seed in &input.declared_binders {
         ensure_declared_subject(context, seed.var)?;
@@ -2288,6 +2684,312 @@ fn template_actual_gate_message_key(status: ExistentialGateStatus) -> &'static s
         ExistentialGateStatus::DegradedRecovery => "degraded-template-type-actual-inhabitation",
         ExistentialGateStatus::Satisfied => "satisfied-template-type-actual-inhabitation",
         _ => "unsupported-template-type-actual-inhabitation-status",
+    }
+}
+
+fn validate_template_scheme_actual_seed(
+    context: &CoreContext,
+    seed: &TemplateSchemeActualSeed,
+) -> TypeAndFactResult<()> {
+    if !template_scheme_actual_kind_matches(seed.parameter_kind, seed.actual_kind) {
+        return Err(TypeAndFactLoweringError::TemplateSchemeActualKindMismatch {
+            instantiation: seed.instantiation.clone(),
+            parameter: seed.parameter.clone(),
+            parameter_kind: seed.parameter_kind,
+            actual_kind: seed.actual_kind,
+        });
+    }
+    if template_scheme_actual_is_accepted(seed.status)
+        && !template_scheme_actual_kind_can_be_accepted(seed.actual_kind)
+    {
+        return Err(TypeAndFactLoweringError::TemplateSchemeActualKindMismatch {
+            instantiation: seed.instantiation.clone(),
+            parameter: seed.parameter.clone(),
+            parameter_kind: seed.parameter_kind,
+            actual_kind: seed.actual_kind,
+        });
+    }
+    if seed.substitution.is_some()
+        && !template_scheme_actual_uses_enclosing_parameter(seed.actual_kind)
+    {
+        return Err(TypeAndFactLoweringError::TemplateSchemeActualKindMismatch {
+            instantiation: seed.instantiation.clone(),
+            parameter: seed.parameter.clone(),
+            parameter_kind: seed.parameter_kind,
+            actual_kind: seed.actual_kind,
+        });
+    }
+    if seed.expected_arity != seed.actual_arity {
+        return Err(
+            TypeAndFactLoweringError::TemplateSchemeActualArityMismatch {
+                instantiation: seed.instantiation.clone(),
+                parameter: seed.parameter.clone(),
+                expected: seed.expected_arity,
+                actual: seed.actual_arity,
+            },
+        );
+    }
+    for evidence in &seed.domain_evidence {
+        if evidence.status != TemplateWideningEvidenceStatus::Accepted {
+            return Err(
+                TypeAndFactLoweringError::TemplateSchemeActualPartialDomainEvidence {
+                    instantiation: seed.instantiation.clone(),
+                    parameter: seed.parameter.clone(),
+                },
+            );
+        }
+    }
+    if matches!(
+        seed.codomain_evidence.as_ref(),
+        Some(evidence) if evidence.status != TemplateWideningEvidenceStatus::Accepted
+    ) {
+        return Err(
+            TypeAndFactLoweringError::TemplateSchemeActualInvalidCodomainEvidence {
+                instantiation: seed.instantiation.clone(),
+                parameter: seed.parameter.clone(),
+            },
+        );
+    }
+
+    match seed.parameter_kind {
+        TemplateSchemeParameterKind::Type => validate_type_scheme_actual_seed(seed),
+        TemplateSchemeParameterKind::Predicate => validate_predicate_scheme_actual_seed(seed),
+        TemplateSchemeParameterKind::Functor => validate_functor_scheme_actual_seed(context, seed),
+    }
+}
+
+fn validate_type_scheme_actual_seed(seed: &TemplateSchemeActualSeed) -> TypeAndFactResult<()> {
+    if !seed.domain_evidence.is_empty()
+        || seed.codomain_evidence.is_some()
+        || seed.guard_obligation.is_some()
+    {
+        return Err(
+            TypeAndFactLoweringError::TemplateSchemeTypeActualCarriesCallableEvidence {
+                instantiation: seed.instantiation.clone(),
+                parameter: seed.parameter.clone(),
+            },
+        );
+    }
+    if template_scheme_actual_is_accepted(seed.status)
+        && seed.actual_kind == TemplateSchemeActualKind::EnclosingTypeParameter
+        && seed.substitution.is_none()
+    {
+        return Err(
+            TypeAndFactLoweringError::TemplateSchemeActualMissingSubstitutionEvidence {
+                instantiation: seed.instantiation.clone(),
+                parameter: seed.parameter.clone(),
+            },
+        );
+    }
+    validate_rejected_scheme_actual_payload(seed)
+}
+
+fn validate_predicate_scheme_actual_seed(seed: &TemplateSchemeActualSeed) -> TypeAndFactResult<()> {
+    if seed.codomain_evidence.is_some() {
+        return Err(
+            TypeAndFactLoweringError::TemplateSchemeActualInvalidCodomainEvidence {
+                instantiation: seed.instantiation.clone(),
+                parameter: seed.parameter.clone(),
+            },
+        );
+    }
+    if seed.guard_obligation.is_some() {
+        return Err(
+            TypeAndFactLoweringError::TemplateSchemeTypeActualCarriesCallableEvidence {
+                instantiation: seed.instantiation.clone(),
+                parameter: seed.parameter.clone(),
+            },
+        );
+    }
+    if template_scheme_actual_is_accepted(seed.status) {
+        if seed.domain_evidence.len() != seed.expected_arity {
+            return Err(
+                TypeAndFactLoweringError::AcceptedTemplateSchemeActualMissingEvidence {
+                    instantiation: seed.instantiation.clone(),
+                    parameter: seed.parameter.clone(),
+                },
+            );
+        }
+        if seed.actual_kind == TemplateSchemeActualKind::EnclosingPredicateParameter
+            && seed.substitution.is_none()
+        {
+            return Err(
+                TypeAndFactLoweringError::TemplateSchemeActualMissingSubstitutionEvidence {
+                    instantiation: seed.instantiation.clone(),
+                    parameter: seed.parameter.clone(),
+                },
+            );
+        }
+    }
+    validate_rejected_scheme_actual_payload(seed)
+}
+
+fn validate_functor_scheme_actual_seed(
+    context: &CoreContext,
+    seed: &TemplateSchemeActualSeed,
+) -> TypeAndFactResult<()> {
+    if template_scheme_actual_is_accepted(seed.status) {
+        if seed.domain_evidence.len() != seed.expected_arity || seed.codomain_evidence.is_none() {
+            return Err(
+                TypeAndFactLoweringError::AcceptedTemplateSchemeActualMissingEvidence {
+                    instantiation: seed.instantiation.clone(),
+                    parameter: seed.parameter.clone(),
+                },
+            );
+        }
+        let Some(guard) = &seed.guard_obligation else {
+            return Err(
+                TypeAndFactLoweringError::TemplateSchemeFunctorMissingGuardSeed {
+                    instantiation: seed.instantiation.clone(),
+                    parameter: seed.parameter.clone(),
+                },
+            );
+        };
+        if guard.status != ObligationSeedStatus::Skipped {
+            return Err(
+                TypeAndFactLoweringError::TemplateSchemeFunctorInvalidGuardSeedStatus {
+                    instantiation: seed.instantiation.clone(),
+                    parameter: seed.parameter.clone(),
+                    status: guard.status,
+                },
+            );
+        }
+        if map_initial_obligation_kind(guard.checker_kind) != ObligationSeedKind::CheckerInitial {
+            return Err(
+                TypeAndFactLoweringError::TemplateSchemeFunctorInvalidGuardSeedKind {
+                    instantiation: seed.instantiation.clone(),
+                    parameter: seed.parameter.clone(),
+                    kind: guard.checker_kind,
+                },
+            );
+        }
+        validate_carried_obligation_seed(context, guard, true)?;
+        if seed.actual_kind == TemplateSchemeActualKind::EnclosingFunctorParameter
+            && seed.substitution.is_none()
+        {
+            return Err(
+                TypeAndFactLoweringError::TemplateSchemeActualMissingSubstitutionEvidence {
+                    instantiation: seed.instantiation.clone(),
+                    parameter: seed.parameter.clone(),
+                },
+            );
+        }
+    }
+    validate_rejected_scheme_actual_payload(seed)
+}
+
+fn validate_rejected_scheme_actual_payload(
+    seed: &TemplateSchemeActualSeed,
+) -> TypeAndFactResult<()> {
+    if template_scheme_actual_is_accepted(seed.status) {
+        if let Some(substitution) = &seed.substitution {
+            validate_checker_owned_provenance(
+                "template scheme substitution composition seed",
+                substitution.provenance.as_slice(),
+            )?;
+        }
+        return Ok(());
+    }
+
+    if !seed.domain_evidence.is_empty()
+        || seed.codomain_evidence.is_some()
+        || seed.guard_obligation.is_some()
+        || seed.substitution.is_some()
+    {
+        return Err(
+            TypeAndFactLoweringError::RejectedTemplateSchemeActualCarriesEvidence {
+                instantiation: seed.instantiation.clone(),
+                parameter: seed.parameter.clone(),
+                status: seed.status,
+            },
+        );
+    }
+    Ok(())
+}
+
+fn template_scheme_actual_kind_matches(
+    parameter_kind: TemplateSchemeParameterKind,
+    actual_kind: TemplateSchemeActualKind,
+) -> bool {
+    match parameter_kind {
+        TemplateSchemeParameterKind::Type => matches!(
+            actual_kind,
+            TemplateSchemeActualKind::TypeExpression
+                | TemplateSchemeActualKind::EnclosingTypeParameter
+                | TemplateSchemeActualKind::Unsupported
+        ),
+        TemplateSchemeParameterKind::Predicate => matches!(
+            actual_kind,
+            TemplateSchemeActualKind::Defpred
+                | TemplateSchemeActualKind::EnclosingPredicateParameter
+                | TemplateSchemeActualKind::Unsupported
+        ),
+        TemplateSchemeParameterKind::Functor => matches!(
+            actual_kind,
+            TemplateSchemeActualKind::Deffunc
+                | TemplateSchemeActualKind::TemplateFunctor
+                | TemplateSchemeActualKind::EnclosingFunctorParameter
+                | TemplateSchemeActualKind::PromotedTerminatingAlgorithm
+                | TemplateSchemeActualKind::PartialAlgorithm
+                | TemplateSchemeActualKind::VoidAlgorithm
+                | TemplateSchemeActualKind::Unsupported
+        ),
+    }
+}
+
+fn template_scheme_actual_kind_can_be_accepted(actual_kind: TemplateSchemeActualKind) -> bool {
+    matches!(
+        actual_kind,
+        TemplateSchemeActualKind::TypeExpression
+            | TemplateSchemeActualKind::EnclosingTypeParameter
+            | TemplateSchemeActualKind::Defpred
+            | TemplateSchemeActualKind::Deffunc
+            | TemplateSchemeActualKind::TemplateFunctor
+            | TemplateSchemeActualKind::EnclosingPredicateParameter
+            | TemplateSchemeActualKind::EnclosingFunctorParameter
+            | TemplateSchemeActualKind::PromotedTerminatingAlgorithm
+    )
+}
+
+fn template_scheme_actual_uses_enclosing_parameter(actual_kind: TemplateSchemeActualKind) -> bool {
+    matches!(
+        actual_kind,
+        TemplateSchemeActualKind::EnclosingTypeParameter
+            | TemplateSchemeActualKind::EnclosingPredicateParameter
+            | TemplateSchemeActualKind::EnclosingFunctorParameter
+    )
+}
+
+fn template_scheme_actual_is_accepted(status: TemplateSchemeActualStatus) -> bool {
+    matches!(status, TemplateSchemeActualStatus::Accepted)
+}
+
+fn template_scheme_actual_message_key(status: TemplateSchemeActualStatus) -> &'static str {
+    match status {
+        TemplateSchemeActualStatus::SignatureMismatch => {
+            "template-scheme-actual-signature-mismatch"
+        }
+        TemplateSchemeActualStatus::RoleMismatch => "template-scheme-actual-role-mismatch",
+        TemplateSchemeActualStatus::ArityMismatch => "template-scheme-actual-arity-mismatch",
+        TemplateSchemeActualStatus::PartialAlgorithm => "partial-algorithm-template-functor-actual",
+        TemplateSchemeActualStatus::VoidAlgorithm => "void-algorithm-template-functor-actual",
+        TemplateSchemeActualStatus::Unsupported => "unsupported-template-scheme-actual",
+        TemplateSchemeActualStatus::MissingEvidence => "template-scheme-actual-missing-evidence",
+        TemplateSchemeActualStatus::DegradedRecovery => "template-scheme-actual-degraded-recovery",
+        TemplateSchemeActualStatus::Accepted => "accepted-template-scheme-actual",
+    }
+}
+
+impl From<TemplateWideningEvidenceSeed> for TemplateDirectionalWideningEvidence {
+    fn from(mut seed: TemplateWideningEvidenceSeed) -> Self {
+        seed.facts.sort();
+        seed.facts.dedup();
+        Self {
+            from_type: seed.from_type,
+            to_type: seed.to_type,
+            status: seed.status,
+            facts: seed.facts,
+        }
     }
 }
 
@@ -7538,6 +8240,72 @@ mod tests {
         }
     }
 
+    fn template_scheme_actual(
+        instantiation: &str,
+        parameter: &str,
+        parameter_kind: TemplateSchemeParameterKind,
+        actual_kind: TemplateSchemeActualKind,
+        status: TemplateSchemeActualStatus,
+        arity: usize,
+        start: usize,
+    ) -> TemplateSchemeActualSeed {
+        TemplateSchemeActualSeed {
+            instantiation: TemplateInstantiationKey::new(instantiation),
+            parameter: TemplateParameterKey::new(parameter),
+            parameter_kind,
+            actual_kind,
+            status,
+            expected_arity: arity,
+            actual_arity: arity,
+            domain_evidence: Vec::new(),
+            codomain_evidence: None,
+            guard_obligation: None,
+            substitution: None,
+            checker_diagnostics: Vec::new(),
+            source: direct(start, start + 1),
+            provenance: provenance(
+                format!("checker:scheme-actual:{instantiation}:{parameter}").as_str(),
+            ),
+        }
+    }
+
+    fn widening_evidence(from: usize, to: usize, facts: &[usize]) -> TemplateWideningEvidenceSeed {
+        TemplateWideningEvidenceSeed {
+            from_type: NormalizedTypeId::new(from),
+            to_type: NormalizedTypeId::new(to),
+            status: TemplateWideningEvidenceStatus::Accepted,
+            facts: facts.iter().copied().map(TypeFactId::new).collect(),
+        }
+    }
+
+    fn skipped_guard_obligation(start: usize) -> CarriedInitialObligationSeed {
+        CarriedInitialObligationSeed {
+            checker_obligation: Some(InitialObligationId::new(start)),
+            checker_kind: InitialObligationKind::Narrowing,
+            status: ObligationSeedStatus::Skipped,
+            goal: None,
+            context: Vec::new(),
+            local_path: format!("scheme-actual-guard/{start}").into(),
+            semantic_origin: format!("pkg::main::Owner.scheme-actual-guard.{start}").into(),
+            source: direct(start, start + 1),
+            provenance: provenance(format!("checker:scheme-actual:guard:{start}").as_str()),
+        }
+    }
+
+    fn substitution_composition(
+        enclosing_parameter: &str,
+        start: usize,
+    ) -> TemplateSubstitutionCompositionSeed {
+        TemplateSubstitutionCompositionSeed {
+            enclosing_parameter: TemplateParameterKey::new(enclosing_parameter),
+            source: direct(start, start + 1),
+            provenance: provenance(
+                format!("checker:scheme-actual:substitution:{enclosing_parameter}:{start}")
+                    .as_str(),
+            ),
+        }
+    }
+
     fn source_qua_explanation(
         path: &str,
         functors: &[&str],
@@ -8545,6 +9313,701 @@ mod tests {
         assert!(matches!(
             lower_type_and_fact_inputs(&context, input),
             Err(TypeAndFactLoweringError::DuplicateTemplateTypeActualGate { .. })
+        ));
+    }
+
+    #[test]
+    fn template_scheme_deffunc_actual_preserves_signature_evidence_and_guard_seed() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let mut actual = template_scheme_actual(
+            "Iter[double]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::Deffunc,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            70,
+        );
+        actual.domain_evidence = vec![widening_evidence(10, 11, &[9, 3, 3])];
+        actual.codomain_evidence = Some(widening_evidence(12, 13, &[7]));
+        actual.guard_obligation = Some(skipped_guard_obligation(71));
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![actual];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        assert_eq!(output.template_scheme_actuals.len(), 1);
+        let lowered = &output.template_scheme_actuals[0];
+        assert_eq!(lowered.actual_kind, TemplateSchemeActualKind::Deffunc);
+        assert_eq!(lowered.status, TemplateSchemeActualStatus::Accepted);
+        assert_eq!(
+            lowered.domain_evidence,
+            vec![TemplateDirectionalWideningEvidence {
+                from_type: NormalizedTypeId::new(10),
+                to_type: NormalizedTypeId::new(11),
+                status: TemplateWideningEvidenceStatus::Accepted,
+                facts: vec![TypeFactId::new(3), TypeFactId::new(9)],
+            }]
+        );
+        assert_eq!(
+            lowered.codomain_evidence,
+            Some(TemplateDirectionalWideningEvidence {
+                from_type: NormalizedTypeId::new(12),
+                to_type: NormalizedTypeId::new(13),
+                status: TemplateWideningEvidenceStatus::Accepted,
+                facts: vec![TypeFactId::new(7)],
+            })
+        );
+
+        let guard = lowered.guard_obligation.expect("skipped guard seed");
+        let guard_seed = output
+            .obligation_seeds
+            .get(guard)
+            .expect("guard obligation");
+        assert_eq!(guard_seed.kind, ObligationSeedKind::CheckerInitial);
+        assert_eq!(guard_seed.status, ObligationSeedStatus::Skipped);
+        assert!(guard_seed.goal.is_none());
+        assert!(output.assumptions.is_empty());
+        assert!(output.terms.is_empty());
+        assert!(output.formulas.is_empty());
+        assert!(output.diagnostics.is_empty());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn rejected_template_scheme_actuals_are_diagnostic_only() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let result_mismatch = template_scheme_actual(
+            "Iter[shrink]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::Deffunc,
+            TemplateSchemeActualStatus::SignatureMismatch,
+            1,
+            72,
+        );
+        let defpred_mismatch = template_scheme_actual(
+            "Induction[narrow]",
+            "P",
+            TemplateSchemeParameterKind::Predicate,
+            TemplateSchemeActualKind::Defpred,
+            TemplateSchemeActualStatus::SignatureMismatch,
+            1,
+            73,
+        );
+        let mut partial_algorithm = template_scheme_actual(
+            "Sigma[partial]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::PartialAlgorithm,
+            TemplateSchemeActualStatus::PartialAlgorithm,
+            1,
+            74,
+        );
+        partial_algorithm.checker_diagnostics = vec![TypeDiagnosticId::new(8)];
+        let void_algorithm = template_scheme_actual(
+            "Sigma[void]",
+            "F3",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::VoidAlgorithm,
+            TemplateSchemeActualStatus::VoidAlgorithm,
+            1,
+            75,
+        );
+        let unsupported_actual = template_scheme_actual(
+            "Scheme[template-predicate]",
+            "P2",
+            TemplateSchemeParameterKind::Predicate,
+            TemplateSchemeActualKind::Unsupported,
+            TemplateSchemeActualStatus::Unsupported,
+            1,
+            76,
+        );
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![
+            result_mismatch,
+            defpred_mismatch,
+            partial_algorithm,
+            void_algorithm,
+            unsupported_actual,
+        ];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        assert_eq!(output.template_scheme_actuals.len(), 5);
+        let messages: Vec<_> = output
+            .template_scheme_actuals
+            .iter()
+            .map(|actual| {
+                let diagnostic = actual.diagnostic.expect("diagnostic-only rejection");
+                output
+                    .diagnostics
+                    .get(diagnostic)
+                    .expect("diagnostic")
+                    .message_key
+                    .as_str()
+                    .to_owned()
+            })
+            .collect();
+        assert_eq!(
+            messages,
+            vec![
+                "template-scheme-actual-signature-mismatch",
+                "template-scheme-actual-signature-mismatch",
+                "partial-algorithm-template-functor-actual",
+                "void-algorithm-template-functor-actual",
+                "unsupported-template-scheme-actual",
+            ]
+        );
+        assert_eq!(
+            output.template_scheme_actuals[2].checker_diagnostics,
+            vec![TypeDiagnosticId::new(8)]
+        );
+        assert!(output.template_scheme_actuals.iter().all(
+            |actual| actual.domain_evidence.is_empty()
+                && actual.codomain_evidence.is_none()
+                && actual.guard_obligation.is_none()
+                && actual.substitution.is_none()
+        ));
+        assert!(output.assumptions.is_empty());
+        assert!(output.terms.is_empty());
+        assert!(output.formulas.is_empty());
+        assert!(output.obligation_seeds.is_empty());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn accepted_plain_template_scheme_type_actual_preserves_type_row_without_callable_evidence() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let type_actual = template_scheme_actual(
+            "Choice[Nat]",
+            "T",
+            TemplateSchemeParameterKind::Type,
+            TemplateSchemeActualKind::TypeExpression,
+            TemplateSchemeActualStatus::Accepted,
+            0,
+            74,
+        );
+
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![type_actual];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        assert_eq!(output.template_scheme_actuals.len(), 1);
+        let lowered = &output.template_scheme_actuals[0];
+        assert_eq!(lowered.parameter_kind, TemplateSchemeParameterKind::Type);
+        assert_eq!(
+            lowered.actual_kind,
+            TemplateSchemeActualKind::TypeExpression
+        );
+        assert_eq!(lowered.status, TemplateSchemeActualStatus::Accepted);
+        assert!(lowered.domain_evidence.is_empty());
+        assert!(lowered.codomain_evidence.is_none());
+        assert!(lowered.guard_obligation.is_none());
+        assert!(lowered.substitution.is_none());
+        assert!(output.assumptions.is_empty());
+        assert!(output.terms.is_empty());
+        assert!(output.formulas.is_empty());
+        assert!(output.obligation_seeds.is_empty());
+        assert!(output.diagnostics.is_empty());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn accepted_defpred_template_functor_and_promoted_algorithm_actuals() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let mut pred = template_scheme_actual(
+            "Induction[IsOdd]",
+            "P",
+            TemplateSchemeParameterKind::Predicate,
+            TemplateSchemeActualKind::Defpred,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            75,
+        );
+        pred.domain_evidence = vec![widening_evidence(20, 21, &[11])];
+
+        let mut template_functor = template_scheme_actual(
+            "Sigma[Square]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::TemplateFunctor,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            76,
+        );
+        template_functor.domain_evidence = vec![widening_evidence(22, 23, &[12])];
+        template_functor.codomain_evidence = Some(widening_evidence(24, 25, &[13]));
+        template_functor.guard_obligation = Some(skipped_guard_obligation(77));
+
+        let mut promoted_algorithm = template_scheme_actual(
+            "Sigma[factorial]",
+            "F2",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::PromotedTerminatingAlgorithm,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            78,
+        );
+        promoted_algorithm.domain_evidence = vec![widening_evidence(26, 27, &[14])];
+        promoted_algorithm.codomain_evidence = Some(widening_evidence(28, 29, &[15]));
+        promoted_algorithm.guard_obligation = Some(skipped_guard_obligation(79));
+
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![pred, template_functor, promoted_algorithm];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        assert_eq!(output.template_scheme_actuals.len(), 3);
+        assert_eq!(
+            output.template_scheme_actuals[0].actual_kind,
+            TemplateSchemeActualKind::Defpred
+        );
+        assert!(output.template_scheme_actuals[0].guard_obligation.is_none());
+        assert!(
+            output.template_scheme_actuals[0]
+                .codomain_evidence
+                .is_none()
+        );
+        assert_eq!(
+            output.template_scheme_actuals[1].actual_kind,
+            TemplateSchemeActualKind::TemplateFunctor
+        );
+        assert_eq!(
+            output.template_scheme_actuals[2].actual_kind,
+            TemplateSchemeActualKind::PromotedTerminatingAlgorithm
+        );
+        assert_eq!(output.obligation_seeds.iter().count(), 2);
+        assert!(
+            output
+                .obligation_seeds
+                .iter()
+                .all(|(_, seed)| seed.status == ObligationSeedStatus::Skipped
+                    && seed.kind == ObligationSeedKind::CheckerInitial)
+        );
+        assert!(output.diagnostics.is_empty());
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn enclosing_scheme_parameters_preserve_substitution_metadata_without_symbols() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+        let mut type_actual = template_scheme_actual(
+            "Inner[T]",
+            "T",
+            TemplateSchemeParameterKind::Type,
+            TemplateSchemeActualKind::EnclosingTypeParameter,
+            TemplateSchemeActualStatus::Accepted,
+            0,
+            80,
+        );
+        type_actual.substitution = Some(substitution_composition("OuterT", 81));
+
+        let mut pred_actual = template_scheme_actual(
+            "Inner[P]",
+            "P",
+            TemplateSchemeParameterKind::Predicate,
+            TemplateSchemeActualKind::EnclosingPredicateParameter,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            82,
+        );
+        pred_actual.domain_evidence = vec![widening_evidence(30, 31, &[16])];
+        pred_actual.substitution = Some(substitution_composition("OuterP", 83));
+
+        let mut functor_actual = template_scheme_actual(
+            "Inner[F]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::EnclosingFunctorParameter,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            84,
+        );
+        functor_actual.domain_evidence = vec![widening_evidence(32, 33, &[17])];
+        functor_actual.codomain_evidence = Some(widening_evidence(34, 35, &[18]));
+        functor_actual.guard_obligation = Some(skipped_guard_obligation(85));
+        functor_actual.substitution = Some(substitution_composition("OuterF", 86));
+
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![type_actual, pred_actual, functor_actual];
+
+        let output = lower_type_and_fact_inputs(&context, input).expect("lowering");
+        assert_eq!(output.template_scheme_actuals.len(), 3);
+        assert_eq!(
+            output
+                .template_scheme_actuals
+                .iter()
+                .map(|actual| actual
+                    .substitution
+                    .as_ref()
+                    .expect("substitution")
+                    .enclosing_parameter
+                    .as_str()
+                    .to_owned())
+                .collect::<Vec<_>>(),
+            vec!["OuterT", "OuterP", "OuterF"]
+        );
+        assert!(output.assumptions.is_empty());
+        assert!(output.terms.is_empty());
+        assert!(output.formulas.is_empty());
+        assert!(output.diagnostics.is_empty());
+        assert_eq!(output.obligation_seeds.iter().count(), 1);
+        assert_step2_delta_valid(&context, &output);
+    }
+
+    #[test]
+    fn template_scheme_actual_payloads_fail_closed() {
+        let (context, owner) = context_with_var(CoreVarId::new(0));
+
+        let mut missing_guard = template_scheme_actual(
+            "Sigma[no-guard]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::Deffunc,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            87,
+        );
+        missing_guard.domain_evidence = vec![widening_evidence(40, 41, &[19])];
+        missing_guard.codomain_evidence = Some(widening_evidence(42, 43, &[20]));
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![missing_guard];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::TemplateSchemeFunctorMissingGuardSeed { .. })
+        ));
+
+        let mut active_guard = template_scheme_actual(
+            "Sigma[active-guard]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::Deffunc,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            88,
+        );
+        active_guard.domain_evidence = vec![widening_evidence(44, 45, &[21])];
+        active_guard.codomain_evidence = Some(widening_evidence(46, 47, &[22]));
+        active_guard.guard_obligation = Some(active_obligation(CoreVarId::new(0), "guard", 89));
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![active_guard];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(
+                TypeAndFactLoweringError::TemplateSchemeFunctorInvalidGuardSeedStatus {
+                    status: ObligationSeedStatus::Active,
+                    ..
+                }
+            )
+        ));
+
+        for (kind, start) in [
+            (InitialObligationKind::Sethood, 112),
+            (InitialObligationKind::NonEmptiness, 114),
+        ] {
+            let mut generated_kind_guard = template_scheme_actual(
+                "Sigma[generated-guard]",
+                "F",
+                TemplateSchemeParameterKind::Functor,
+                TemplateSchemeActualKind::Deffunc,
+                TemplateSchemeActualStatus::Accepted,
+                1,
+                start,
+            );
+            generated_kind_guard.domain_evidence = vec![widening_evidence(80, 81, &[37])];
+            generated_kind_guard.codomain_evidence = Some(widening_evidence(82, 83, &[38]));
+            let mut guard = skipped_guard_obligation(start + 1);
+            guard.checker_kind = kind;
+            generated_kind_guard.guard_obligation = Some(guard);
+            let mut input = TypeAndFactLoweringInput::new(owner);
+            input.template_scheme_actuals = vec![generated_kind_guard];
+            assert!(matches!(
+                lower_type_and_fact_inputs(&context, input),
+                Err(
+                    TypeAndFactLoweringError::TemplateSchemeFunctorInvalidGuardSeedKind {
+                        kind: rejected_kind,
+                        ..
+                    }
+                ) if rejected_kind == kind
+            ));
+        }
+
+        let mut predicate_with_codomain = template_scheme_actual(
+            "Induction[codomain]",
+            "P",
+            TemplateSchemeParameterKind::Predicate,
+            TemplateSchemeActualKind::Defpred,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            90,
+        );
+        predicate_with_codomain.domain_evidence = vec![widening_evidence(48, 49, &[23])];
+        predicate_with_codomain.codomain_evidence = Some(widening_evidence(50, 51, &[24]));
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![predicate_with_codomain];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::TemplateSchemeActualInvalidCodomainEvidence { .. })
+        ));
+
+        let mut rejected_with_evidence = template_scheme_actual(
+            "Sigma[bad]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::PartialAlgorithm,
+            TemplateSchemeActualStatus::PartialAlgorithm,
+            1,
+            91,
+        );
+        rejected_with_evidence.domain_evidence = vec![widening_evidence(52, 53, &[25])];
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![rejected_with_evidence];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(
+                TypeAndFactLoweringError::RejectedTemplateSchemeActualCarriesEvidence {
+                    status: TemplateSchemeActualStatus::PartialAlgorithm,
+                    ..
+                }
+            )
+        ));
+
+        let mut type_with_callable_evidence = template_scheme_actual(
+            "Inner[type-evidence]",
+            "T",
+            TemplateSchemeParameterKind::Type,
+            TemplateSchemeActualKind::TypeExpression,
+            TemplateSchemeActualStatus::Accepted,
+            0,
+            92,
+        );
+        type_with_callable_evidence.domain_evidence = vec![widening_evidence(54, 55, &[26])];
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![type_with_callable_evidence];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::TemplateSchemeTypeActualCarriesCallableEvidence { .. })
+        ));
+
+        let missing_predicate_domain = template_scheme_actual(
+            "Induction[missing-domain]",
+            "P",
+            TemplateSchemeParameterKind::Predicate,
+            TemplateSchemeActualKind::Defpred,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            93,
+        );
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![missing_predicate_domain];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::AcceptedTemplateSchemeActualMissingEvidence { .. })
+        ));
+
+        let mut missing_functor_domain = template_scheme_actual(
+            "Sigma[missing-domain]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::Deffunc,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            94,
+        );
+        missing_functor_domain.codomain_evidence = Some(widening_evidence(64, 65, &[31]));
+        missing_functor_domain.guard_obligation = Some(skipped_guard_obligation(95));
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![missing_functor_domain];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::AcceptedTemplateSchemeActualMissingEvidence { .. })
+        ));
+
+        let mut missing_functor_codomain = template_scheme_actual(
+            "Sigma[missing-codomain]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::Deffunc,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            96,
+        );
+        missing_functor_codomain.domain_evidence = vec![widening_evidence(66, 67, &[32])];
+        missing_functor_codomain.guard_obligation = Some(skipped_guard_obligation(97));
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![missing_functor_codomain];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::AcceptedTemplateSchemeActualMissingEvidence { .. })
+        ));
+
+        let mut partial_domain = template_scheme_actual(
+            "Induction[partial-domain]",
+            "P",
+            TemplateSchemeParameterKind::Predicate,
+            TemplateSchemeActualKind::Defpred,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            98,
+        );
+        partial_domain.domain_evidence = vec![TemplateWideningEvidenceSeed {
+            from_type: NormalizedTypeId::new(68),
+            to_type: NormalizedTypeId::new(69),
+            status: TemplateWideningEvidenceStatus::DeferredExternalDependency,
+            facts: Vec::new(),
+        }];
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![partial_domain];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::TemplateSchemeActualPartialDomainEvidence { .. })
+        ));
+
+        let mut partial_codomain = template_scheme_actual(
+            "Sigma[partial-codomain]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::Deffunc,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            99,
+        );
+        partial_codomain.domain_evidence = vec![widening_evidence(70, 71, &[33])];
+        partial_codomain.codomain_evidence = Some(TemplateWideningEvidenceSeed {
+            from_type: NormalizedTypeId::new(72),
+            to_type: NormalizedTypeId::new(73),
+            status: TemplateWideningEvidenceStatus::Missing,
+            facts: Vec::new(),
+        });
+        partial_codomain.guard_obligation = Some(skipped_guard_obligation(100));
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![partial_codomain];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::TemplateSchemeActualInvalidCodomainEvidence { .. })
+        ));
+
+        let missing_type_substitution = template_scheme_actual(
+            "Inner[missing-type-subst]",
+            "T",
+            TemplateSchemeParameterKind::Type,
+            TemplateSchemeActualKind::EnclosingTypeParameter,
+            TemplateSchemeActualStatus::Accepted,
+            0,
+            101,
+        );
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![missing_type_substitution];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::TemplateSchemeActualMissingSubstitutionEvidence { .. })
+        ));
+
+        let mut missing_predicate_substitution = template_scheme_actual(
+            "Inner[missing-predicate-subst]",
+            "P",
+            TemplateSchemeParameterKind::Predicate,
+            TemplateSchemeActualKind::EnclosingPredicateParameter,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            102,
+        );
+        missing_predicate_substitution.domain_evidence = vec![widening_evidence(74, 75, &[34])];
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![missing_predicate_substitution];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::TemplateSchemeActualMissingSubstitutionEvidence { .. })
+        ));
+
+        let mut missing_functor_substitution = template_scheme_actual(
+            "Inner[missing-functor-subst]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::EnclosingFunctorParameter,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            103,
+        );
+        missing_functor_substitution.domain_evidence = vec![widening_evidence(76, 77, &[35])];
+        missing_functor_substitution.codomain_evidence = Some(widening_evidence(78, 79, &[36]));
+        missing_functor_substitution.guard_obligation = Some(skipped_guard_obligation(104));
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![missing_functor_substitution];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::TemplateSchemeActualMissingSubstitutionEvidence { .. })
+        ));
+
+        let role_mismatch = template_scheme_actual(
+            "Sigma[predicate-as-functor]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::Defpred,
+            TemplateSchemeActualStatus::RoleMismatch,
+            1,
+            105,
+        );
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![role_mismatch];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::TemplateSchemeActualKindMismatch { .. })
+        ));
+
+        let mut arity_mismatch = template_scheme_actual(
+            "Induction[arity]",
+            "P",
+            TemplateSchemeParameterKind::Predicate,
+            TemplateSchemeActualKind::Defpred,
+            TemplateSchemeActualStatus::ArityMismatch,
+            2,
+            106,
+        );
+        arity_mismatch.actual_arity = 1;
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![arity_mismatch];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::TemplateSchemeActualArityMismatch { .. })
+        ));
+
+        let mut unsupported_accepted = template_scheme_actual(
+            "Sigma[unsupported]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::Unsupported,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            107,
+        );
+        unsupported_accepted.domain_evidence = vec![widening_evidence(56, 57, &[27])];
+        unsupported_accepted.codomain_evidence = Some(widening_evidence(58, 59, &[28]));
+        unsupported_accepted.guard_obligation = Some(skipped_guard_obligation(108));
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![unsupported_accepted];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::TemplateSchemeActualKindMismatch { .. })
+        ));
+
+        let mut first = template_scheme_actual(
+            "Sigma[dup]",
+            "F",
+            TemplateSchemeParameterKind::Functor,
+            TemplateSchemeActualKind::Deffunc,
+            TemplateSchemeActualStatus::Accepted,
+            1,
+            109,
+        );
+        first.domain_evidence = vec![widening_evidence(60, 61, &[29])];
+        first.codomain_evidence = Some(widening_evidence(62, 63, &[30]));
+        first.guard_obligation = Some(skipped_guard_obligation(110));
+        let mut second = first.clone();
+        second.source = direct(111, 112);
+        let mut input = TypeAndFactLoweringInput::new(owner);
+        input.template_scheme_actuals = vec![first, second];
+        assert!(matches!(
+            lower_type_and_fact_inputs(&context, input),
+            Err(TypeAndFactLoweringError::DuplicateTemplateSchemeActual { .. })
         ));
     }
 

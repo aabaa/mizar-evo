@@ -215,7 +215,7 @@ Implement the decisions from step 2 in checker and core. Depends on step 2.
    (template-audit F1/F3; deps: checker 36).
 5. [x] [mizar-core task 28](./mizar-core/en/todo.md) — template type-actual
    inhabitation gating (F2; deps: core 27, checker 43).
-6. [ ] [mizar-core task 29](./mizar-core/en/todo.md) — scheme-actual
+6. [x] [mizar-core task 29](./mizar-core/en/todo.md) — scheme-actual
    compatibility, guard obligations, functor-actual validation (F4/F6/F8).
 7. [ ] [mizar-core task 30](./mizar-core/en/todo.md) — sethood plumbing for
    type parameters (F5; deps: core 28, checker 43).
@@ -372,7 +372,7 @@ expectations to current behavior.
 |---|---|---|
 | [mizar-checker semantic_spec_audit.md](./mizar-checker/en/semantic_spec_audit.md) (2026-07-03, commit `707c95be`) | SSA-001 (critical) through SSA-020; 16-fixture rejection corpus | [mizar-checker tasks 35-48](./mizar-checker/en/todo.md) (step 2 complete; remaining plan steps 4, 5); SSA-018 recorded as a diagnostics-wave lint (step 8), no task; full disposition table in the checker TODO |
 | [mizar-kernel soundness_argument.md](./mizar-kernel/en/soundness_argument.md) (2026-07-03, commit `f75af877`) | F1-F9; 23-case reject-first certificate corpus | [mizar-kernel tasks 30-35](./mizar-kernel/en/todo.md); producer side [mizar-vc tasks 28-29](./mizar-vc/en/todo.md), with F1 producer polarity resolved by mizar-vc task 27; consumers [mizar-atp task 29](./mizar-atp/en/todo.md), [mizar-proof task 21](./mizar-proof/en/todo.md), [mizar-cache task 24](./mizar-cache/en/todo.md), [mizar-artifact task 24](./mizar-artifact/en/todo.md); harness [mizar-test task 21](./mizar-test/en/todo.md) for F7, with F8 resolved by mizar-test task 22 (plan steps 1, 3, 4); F4/F5 resolved inside `f75af877` |
-| [mizar-core template_encoding_audit.md](./mizar-core/en/template_encoding_audit.md) (2026-07-05, commit `cef7e109`) | F1-F8; original 4-seed encoding corpus plus task 26 F7 inference seeds | spec text for F1-F6/F8 patched inside `cef7e109`; F7 spec decision completed in task 26; task 27 implements explicit-payload reduct/view lowering for F1/F3; [mizar-core tasks 28-30](./mizar-core/en/todo.md) and [mizar-kernel task 35](./mizar-kernel/en/todo.md) remain in plan step 4; coordination rows in [mizar-checker tasks 36/43](./mizar-checker/en/todo.md) |
+| [mizar-core template_encoding_audit.md](./mizar-core/en/template_encoding_audit.md) (2026-07-05, commit `cef7e109`) | F1-F8; original 4-seed encoding corpus plus task 26 F7 inference seeds | spec text for F1-F6/F8 patched inside `cef7e109`; F7 spec decision completed in task 26; task 27 implements explicit-payload reduct/view lowering for F1/F3; task 28 implements explicit-payload type-actual inhabitation gating for F2; task 29 implements explicit-payload scheme-actual compatibility, skipped guard obligation traceability, F6 substitution metadata, and F8 diagnostic-only rejection; [mizar-core task 30](./mizar-core/en/todo.md) and [mizar-kernel task 35](./mizar-kernel/en/todo.md) remain in plan step 4; coordination rows in [mizar-checker tasks 36/43](./mizar-checker/en/todo.md) |
 
 `mizar-ir`, `mizar-diagnostics`, `mizar-driver`, and `mizar-doc` reviewed the
 audits and recorded a no-crate-owned-task note in their TODOs (they carry no

@@ -313,11 +313,11 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
 | F1(structure-view 崩壊) | spec 修正済み。task 27 は explicit-payload elaborator reduct-view lowering を実装済み。kernel 側再監査は [mizar-kernel task 35](../../mizar-kernel/en/todo.md)。member 同一性の調整は [mizar-checker task 36](../../mizar-checker/en/todo.md)。source-derived runner/extraction は external のまま。 |
 | F2(型実引数の inhabitation) | spec 修正済み(§17.3.4 gating 行)。checker task 43 が built-in/base-shape inhabitation 表を完了した。elaborator gating は task 28。 |
 | F3(`type extends M` の object/schema 混同) | spec 修正済み(§18.10.2)。explicit-payload bounded-view lowering は task 27 で F1 とともに cover 済み。 |
-| F4(functor guard、実引数シグネチャ適合) | spec 修正済み(§18.10.4、§18.9)。実装は task 29 |
+| F4(functor guard、実引数シグネチャ適合) | spec 修正済み(§18.10.4、§18.9)。explicit-payload 実装は task 29 で完了 |
 | F5(型パラメータの sethood) | spec 修正済み(§18.10.2 sethood 段落)。plumbing は task 30 |
-| F6(テンプレート本体内の scheme 適用) | spec 修正済み(§18.10.3 の段落)。実装は task 29 |
+| F6(テンプレート本体内の scheme 適用) | spec 修正済み(§18.10.3 の段落)。explicit substitution-composition metadata 実装は task 29 で完了 |
 | F7(widening 上の推論決定性) | task 26 で spec 修正済み。実装は payload を伴う inference / elaboration 作業へ deferred |
-| F8(部分 algorithm の functor 実引数) | spec 修正済み(§18.8.4)。拒否実装は task 29 に統合 |
+| F8(部分 algorithm の functor 実引数) | spec 修正済み(§18.8.4)。explicit diagnostic-only rejection は task 29 で完了 |
 | corpus seed(6 件) | inactive な `advanced_semantics` seed。元の 4 件の encoding seed と task 26 の F7 推論決定性 seed。runner 到着時に [mizar-checker task 48](../../mizar-checker/en/todo.md) と mizar-test の runner 作業で活性化 |
 
 26. **Spec 決定: テンプレート引数推論の決定性(F7)。** [x]
@@ -414,7 +414,7 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       既存 `.miz`、expectation、traceability metadata、source-derived runner、fake checker
       payload は変更していない。
 
-29. **scheme 実引数のシグネチャ適合・guard 義務・functor 実引数検証(F4、F6、F8)。** [ ]
+29. **scheme 実引数のシグネチャ適合・guard 義務・functor 実引数検証(F4、F6、F8)。** [x]
     - `defpred`/`deffunc` 実引数に対する §18.10.4/§18.9 規則を実装する:
       反変 domain / 共変 codomain の widening 検査。functor guard は
       instantiation 時に discharge される証明義務であり、公理として assert
@@ -429,6 +429,15 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
       (task 18 surface)として現れる。部分 algorithm 実引数が安定した
       診断で拒否される。入れ子の scheme 適用が substitution-lemma の再構成
       に従い外側パラメータを健全に使う。
+    - task 29 で完了: `TemplateSchemeActualSeed` / `TemplateSchemeActual` は
+      type、predicate、functor parameter の checker-owned scheme-actual row を
+      保存する。predicate/functor row は directional widening evidence(schema
+      domain から actual parameter、functor では actual result から schema codomain)
+      を保持し、accepted functor row は axiom や active VC ではなく traceability として
+      `Skipped` checker-initial guard seed を emit する。partial/void/unsupported actual
+      は diagnostic-only であり、enclosing template parameter は新しい symbol や
+      source-derived closure expansion を作らず substitution-composition metadata を
+      保存する。source extraction と active corpus execution は external/deferred のまま。
     - 検証: `cargo test -p mizar-core`、`cargo test -p mizar-vc`(seed
       handoff)、`cargo test -p mizar-test`。
     - 依存: 27; obligation seed は task 18 を通じて流れる。参照: spec 18

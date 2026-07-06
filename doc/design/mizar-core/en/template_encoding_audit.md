@@ -456,13 +456,19 @@ roadmap records their owning tasks and task-27 progress.
    never become actual-side existential axioms. Source-derived actual
    extraction and active runner execution remain gated on the checker/runner
    bridge.
-3. **Signature-compatibility check for scheme actuals (F4/F6).** Contravariant
-   domain / covariant codomain widening checks for `defpred`/`deffunc`
-   actuals; guard obligations discharged, never asserted.
+3. **Signature-compatibility check for scheme actuals (F4/F6).** Task 29
+   implements the explicit-payload core side: checker-owned rows preserve
+   directional widening evidence for `defpred`/`deffunc`, template functor,
+   enclosing-parameter, and promoted terminating-algorithm actuals; accepted
+   functor rows emit `Skipped` guard obligation seeds as traceability and never
+   assert guard axioms or active VCs. Source-derived closure expansion and
+   active runner extraction remain gated on the checker/runner bridge.
 4. **Sethood evidence plumbing for type parameters (F5).** Fraenkel gating in
    template bodies keyed to bound-inherited or constraint-supplied sethood.
-5. **Partial-algorithm functor actual rejection (F8).** F7 inference
-   determinism is resolved by task 26; implementation remains payload-gated.
+5. **Partial-algorithm functor actual rejection (F8).** Task 29 records
+   partial, void, and unsupported algorithm actuals as diagnostic-only explicit
+   payload rows without accepted evidence. F7 inference determinism is resolved
+   by task 26; source-derived active execution remains payload-gated.
 
 Kernel-side (from the Jul 3 kernel audit's perspective): the reduct encoding
 changes the shape of certificates that mention structure widening; the
