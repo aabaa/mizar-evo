@@ -150,7 +150,7 @@ checker code semantics change in this step.
 
 1. [x] [mizar-checker task 35](./mizar-checker/en/todo.md) — constructor
    property arguments vs extensionality (SSA-001, critical).
-2. [ ] [mizar-checker task 36](./mizar-checker/en/todo.md) — structure member
+2. [x] [mizar-checker task 36](./mizar-checker/en/todo.md) — structure member
    identity, upcast paths, acyclicity (SSA-002/011/012).
 3. [ ] [mizar-checker task 37](./mizar-checker/en/todo.md) — overload
    tie-break and tie ambiguity (SSA-003/010/016/019), coordinated with:

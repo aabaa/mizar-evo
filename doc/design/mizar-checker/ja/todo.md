@@ -609,7 +609,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | タスク化しない: greedy `of`/`over` parse は決定的かつ文書化済み(spec 19.6.4)。scope 感度 lint は将来の diagnostics 採用 wave に属し、そこで記録する |
-| corpus seeds | task 48 が `advanced_semantics` runner 到着時に監査 fixture 16 件と task-35 constructor-property seed を活性化する |
+| corpus seeds | task 48 が `advanced_semantics` runner 到着時に監査 fixture 16 件、task-35 constructor-property seed、task-36 duplicate-coverage seed を活性化する |
 
 35. **Spec 決定: constructor property 引数と extensionality(SSA-001)。** [x]
     - critical な §5.5.1/§5.8.4/§5.8.5 の不整合を解決する。推奨は解決策 1:
@@ -633,7 +633,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       `spec.en.07.modes.property_implementation.not_constructor_source.semantic` を記録した。
       checker/core source semantics は変更していない。
 
-36. **Spec 決定: structure member 同一性・upcast path・非循環性(SSA-002, SSA-011, SSA-012)。** [ ]
+36. **Spec 決定: structure member 同一性・upcast path・非循環性(SSA-002, SSA-011, SSA-012)。** [x]
     - diamond member 同一性を `from` chain で到達する root 宣言として定義
       する(またはより良い規則を記録する)。child member 型が全 parent の
       member 型に対して `⊑` であることを parent ごとの coherence 義務付きで
@@ -650,6 +650,18 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       時の同一性ケースに決定済みの結果がある。
     - 検証: `cargo test -p mizar-test`。
     - 依存: 35。参照: SSA-002, SSA-011, SSA-012; テンプレート監査 F1。
+    - task 36 で完了: spec 05 は継承 member identity を root declaration と
+      inheritance path/view の組として定義し、member coverage の exactness、
+      既存 `coherence` block で discharge される parent ごとの type-inclusion
+      obligation、renamed same-root path を distinct view として保持すること、
+      acyclicity failure の `structures.inherit.cycle` を明記した。spec 19 は
+      implicit upcast path uniqueness が resolved `inherit` declaration path 上の
+      syntactic uniqueness であると明記した。
+      `fail_structure_inherit_duplicate_member_coverage_001` を inactive
+      duplicate-coverage seed として追加した。renamed-view exposure は有効な
+      positive behavior のため renamed-view reject seed は追加せず、既存の
+      structure/overload seed と template view-leak seed を他の guard として残す。
+      checker/core source semantics は変更していない。
 
 37. **Spec 決定: オーバーロード tie-break と tie の曖昧性(SSA-003, SSA-010, SSA-016, SSA-019)。** [ ]
     - §19.6.1 Cases 2-3 を §19.4.3 と整合させる: constraint-strictness と
@@ -793,7 +805,8 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - `advanced_semantics`/`formula_statement` runner と source-to-checker
       payload 抽出(mizar-test runner 成長 +
       MC-G020/MC-G021/MC-G023/MC-G027)が到着したら、意味論監査 fixture
-      16 件を活性化し、task-29 の deferred corpus record を監査由来の 8
+      16 件、task-35 constructor-property seed、task-36 duplicate-coverage
+      seed を活性化し、task-29 の deferred corpus record を監査由来の
       requirement id を指す(または置き換えられる)よう改訂する。
     - 受け入れ条件: `mizar-test` plan が fixture を active と表示し plan
       error が 0 件。deferred record が二重計上されない。

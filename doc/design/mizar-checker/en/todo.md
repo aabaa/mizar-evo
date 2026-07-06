@@ -645,7 +645,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | no task: the greedy `of`/`over` parse is deterministic and documented (spec 19.6.4); a scope-sensitivity lint belongs to the future diagnostics-adoption wave and is recorded in that wave, not here |
-| corpus seeds | task 48 activates the 16 audit fixtures plus the task-35 constructor-property seed when the `advanced_semantics` runner lands |
+| corpus seeds | task 48 activates the 16 audit fixtures plus the task-35 constructor-property seed and task-36 duplicate-coverage seed when the `advanced_semantics` runner lands |
 
 35. **Spec decision: constructor property arguments vs extensionality (SSA-001).** [x]
     - Resolve the critical §5.5.1/§5.8.4/§5.8.5 inconsistency. Recommended
@@ -670,7 +670,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       `spec.en.07.modes.property_implementation.not_constructor_source.semantic`.
       No checker/core source semantics changed.
 
-36. **Spec decision: structure member identity, upcast paths, acyclicity (SSA-002, SSA-011, SSA-012).** [ ]
+36. **Spec decision: structure member identity, upcast paths, acyclicity (SSA-002, SSA-011, SSA-012).** [x]
     - Define diamond member identity as the root declaration reached by the
       `from` chain (or record a superior rule); require the child member type
       to be `⊑` every parent's member type with per-parent coherence
@@ -688,6 +688,18 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       rationale); renamed-member identity cases have a decided outcome.
     - Verify: `cargo test -p mizar-test`.
     - Deps: 35. Refs: SSA-002, SSA-011, SSA-012; template audit F1.
+    - Completed by task 36: spec 05 now defines inherited member identity as
+      root declaration plus inheritance path/view, requires exact member
+      coverage and per-parent type-inclusion obligations discharged by the
+      existing `coherence` block, keeps renamed same-root paths as distinct
+      views, and names `structures.inherit.cycle` for acyclicity failures.
+      Spec 19 now states that implicit upcast path uniqueness is syntactic over
+      resolved `inherit` declaration paths. Added
+      `fail_structure_inherit_duplicate_member_coverage_001` as an inactive
+      duplicate-coverage seed; no renamed-view reject seed was added because
+      renamed-view exposure remains valid positive behavior. Existing
+      structure/overload seeds and the template view-leak seed remain the other
+      guards. No checker/core source semantics changed.
 
 37. **Spec decision: overload tie-break and tie ambiguity (SSA-003, SSA-010, SSA-016, SSA-019).** [ ]
     - Fix §19.6.1 Cases 2-3 against §19.4.3: either add explicit
@@ -835,8 +847,9 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - When the `advanced_semantics`/`formula_statement` runners and
       source-to-checker payload extraction land (mizar-test runner growth +
       MC-G020/MC-G021/MC-G023/MC-G027), activate the 16 semantic-audit
-      fixtures and revise the task-29 deferred corpus records to point at
-      (or be superseded by) the eight audit requirement ids.
+      fixtures plus the task-35 constructor-property seed and task-36
+      duplicate-coverage seed, and revise the task-29 deferred corpus records
+      to point at (or be superseded by) the audit requirement ids.
     - Acceptance: `mizar-test` plan shows the fixtures active with zero plan
       errors; deferred records no longer double-count them.
     - Verify: `cargo test -p mizar-test`.

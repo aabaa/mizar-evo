@@ -39,7 +39,7 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 | Id | Severity | Area | Summary |
 |---|---|---|---|
 | SSA-001 | critical | 5.5/5.8 | Resolved by task 35: constructor-supplied property values plus fields-only extensionality collapsed the logic |
-| SSA-002 | high | 5.3/5.4 | Diamond member identity is name-based but renaming breaks name matching |
+| SSA-002 | high | 5.3/5.4 | Resolved by task 36: member identity tracks root declaration plus inheritance path/view |
 | SSA-003 | high | 19.6.1 | Template inference Cases 2-3 contradict the ⊑-based selection of 19.4.3 |
 | SSA-004 | high | 17.5/17.9.3 | Functorial cluster `for T` clause has no semantics in the FOL encoding |
 | SSA-005 | high | 7.4.1 | Property implementations lack coherence conditions across overlapping modes |
@@ -48,8 +48,8 @@ Classification uses the AGENTS.md taxonomy (`spec_gap`, `design_drift`, ...).
 | SSA-008 | medium | 17.7.3 | Contradiction detection site is inconsistent (ATP vs closure) |
 | SSA-009 | medium | 17.6.4 | Reduction determinism claim conflicts with `such`-condition context dependence |
 | SSA-010 | medium | 19.4.3/19.4.4 | Equally specific distinct roots fit neither "unique best" nor "incomparable" |
-| SSA-011 | medium | 5.4 vs 19.2.2 | Consistent diamonds still block implicit upcast; "path" vs "embedding" undefined |
-| SSA-012 | medium | 5.3 | Inheritance acyclicity is assumed (13.8.7) but never stated as a checker rule |
+| SSA-011 | medium | 5.4 vs 19.2.2 | Resolved by task 36: implicit upcast path uniqueness is syntactic |
+| SSA-012 | medium | 5.3 | Resolved by task 36: inheritance acyclicity is explicit with `structures.inherit.cycle` |
 | SSA-013 | medium | 7.8.1 | `sethood` obligation form for dependent (parameterized) modes is not given |
 | SSA-014 | medium | 7.8/17.3.4 | Existence requirements for unattributed bases and built-ins are unstated |
 | SSA-015 | medium | 8.2 | `reconsider` with omitted justification has no defined discharge path |
@@ -114,15 +114,24 @@ the child's joined member type must satisfy when parents disagree (only the
 two-parent example with a common subtype is shown; incomparable parent types
 are unspecified).
 
-**Proposed resolution:** define member identity as the **root declaration
-reached by the `from` chain**; require the child member type to be `⊑` every
-parent's member type, with one coherence obligation per parent whose type is
-not syntactically identical; make name collisions of distinct origins an
-error unless renamed apart.
+**Resolution:** task 36 records the superior root-plus-path rule in spec 05.
+Inherited member identity tracks the root declaration reached by `from`
+mappings and the inheritance path/view that reaches it. The root coordinate
+identifies the ancestor declaration being covered; the path/view coordinate
+preserves reduct terms and prevents evidence from crossing renamed or
+multi-path views. A child member may realize several parent members in a
+diamond join, but its type must be `⊑` every covered parent member type; the
+existing `coherence` block discharges the non-identical type obligations for
+that `inherit` declaration. Same-name/same-type joins from distinct roots
+remain valid, and the same root reached through distinct renamed paths may
+remain exposed as distinct child views/selectors.
 
 **Corpus:** `fail_structure_diamond_member_type_conflict_001`,
-`fail_structure_inherit_uncovered_member_001` pin the already-specified
-rejection cases.
+`fail_structure_inherit_uncovered_member_001`, and task-36 seed
+`fail_structure_inherit_duplicate_member_coverage_001` pin the rejection
+cases. Task 36 does not add a renamed-view reject seed because renamed-view
+exposure is positive behavior; `fail_template_qua_view_attribute_leak_001`
+remains the negative guard against evidence leaking across those views.
 
 ### SSA-003 (high, `spec_gap`) — Template inference examples contradict the selection rule
 
@@ -294,11 +303,13 @@ members coincide, but §19.2.2 blocks implicit upcasting whenever **two or
 more syntactic paths** exist — even when every member embedding coincides,
 so the upcast is semantically unique. The spec should say whether path
 identity is syntactic (declaration pairs) or semantic (member embedding).
-The current text implies syntactic; that is implementable but surprising
-next to §5.4, and the choice must be recorded.
+Task 36 records the syntactic choice in spec 19. A path is unique only when
+there is one resolved `inherit` declaration path. Coherent member joins do not
+collapse multiple reduct/view paths for overload resolution, so an explicit
+`qua` is required when two or more paths exist.
 
-**Corpus:** `fail_overload_inheritance_path_ambiguity_001` pins the stated
-syntactic behavior test-first.
+**Corpus:** `fail_overload_inheritance_path_ambiguity_001` pins the syntactic
+behavior test-first.
 
 ### SSA-012 (medium, `spec_gap`) — Inheritance acyclicity never stated
 
@@ -306,8 +317,9 @@ syntactic behavior test-first.
 
 The `inherit` closure must be well-founded — §13.8.7's qua encoding assumes
 "cycle freedom" — but Chapter 5 never forbids `inherit A extends B; inherit
-B extends A;` nor names a diagnostic. **Proposed resolution:** add an
-explicit acyclicity requirement and diagnostic to §5.3.
+B extends A;` nor names a diagnostic. Task 36 adds an explicit acyclicity
+requirement to §5.3 and names diagnostic detail key
+`structures.inherit.cycle`.
 **Corpus:** `fail_structure_inherit_cycle_001`.
 
 ### SSA-013 (medium, `spec_gap`) — `sethood` for dependent modes
@@ -382,8 +394,11 @@ Sixteen rejection fixtures were fixed test-first by the audit (sidecars +
 traceability entries; all are inactive seeds until an `advanced_semantics`
 runner and source-to-checker payload extraction exist —
 MC-G020/MC-G021/MC-G023/MC-G027). Task 35 later adds the SSA-001
-constructor-property seed under the same inactive-seed rule. Existing tests
-and expectations were not rebaselined to match implementation behavior.
+constructor-property seed under the same inactive-seed rule. Task 36 adds the
+duplicate-member-coverage seed under the same rule, while renamed-view
+exposure remains positive behavior guarded by the existing template view-leak
+seed. Existing tests and expectations were not rebaselined to match
+implementation behavior.
 
 | Fixture | Target behavior | Spec |
 |---|---|---|
@@ -394,7 +409,8 @@ and expectations were not rebaselined to match implementation behavior.
 | `fail/clusters/fail_cluster_contradictory_consequent_001` | contradictory consequent adjectives | 17.4, 17.7.3 |
 | `fail/modes/fail_mode_missing_existential_001` | attributed type without existential evidence | 17.3.4, 7.8 |
 | `fail/modes/fail_mode_existential_after_declaration_001` | activation is item-ordered, not retroactive | 17.1, 7.8 |
-| `fail/structures/fail_structure_diamond_member_type_conflict_001` | diamond member type conflict | 5.3.1, 5.4 |
+| `fail/structures/fail_structure_diamond_member_type_conflict_001` | incompatible joined member types under root+path/view identity | 5.3.1, 5.4 |
+| `fail/structures/fail_structure_inherit_duplicate_member_coverage_001` | duplicate parent member coverage | 5.3.1 |
 | `fail/structures/fail_structure_inherit_cycle_001` | inheritance cycle | 5.3, 13.8.7 |
 | `fail/structures/fail_structure_inherit_uncovered_member_001` | uncovered base member | 5.3.1 |
 | `fail/overload/fail_overload_incomparable_roots_001` | incomparable roots → ambiguity | 19.2.3, 19.4.4 |
@@ -420,14 +436,15 @@ New traceability requirements: `spec.en.05.structures.constructor_fields_only.se
 
 Recommendations only; todo.md is revised by a follow-up task.
 
-- **Resolved spec task:** SSA-001 (constructor/extensionality) is resolved by
+- **Resolved spec tasks:** SSA-001 (constructor/extensionality) is resolved by
   task 35 with synchronized `doc/spec/en/` + `ja/` edits and an inactive
-  reject-first corpus seed.
+  reject-first corpus seed. SSA-002+SSA-011+SSA-012 are resolved by task 36
+  with synchronized spec 05/19 edits, a duplicate-member-coverage seed, and
+  traceability note updates; no renamed-view reject seed was required.
 - **Remaining spec tasks (before further checker semantics):** one task each
-  for SSA-002+SSA-011+SSA-012 (inheritance identity, path uniqueness,
-  acyclicity), SSA-003 (template tie-break), SSA-004 (functorial `for`
-  semantics), SSA-005 (property implementation coherence), each updating
-  `doc/spec/en/` + `ja/` together.
+  for SSA-003 (template tie-break), SSA-004 (functorial `for` semantics),
+  SSA-005 (property implementation coherence), each updating `doc/spec/en/` +
+  `ja/` together.
 - **Task 19/20 (registration gating, existential gates):** revisit against
   SSA-006's activation contract and SSA-014's built-in inhabitation table
   once decided; the interim conservative policy should be recorded as such

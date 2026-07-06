@@ -599,13 +599,14 @@ stage = "advanced_semantics"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Adversarial checker seeds fixed test-first; inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020). Rejection contracts: diamond member-type conflicts, inheritance cycles, uncovered base members."
+notes = "Task 36 / SSA-002+SSA-012 decision: inherited member identity tracks root declaration plus inheritance path/view, every parent member is covered exactly once per inherit declaration, child member types must be subtypes of every covered parent type, and cycles reject with structures.inherit.cycle. Seeds remain inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020). Rejection contracts: incompatible joined member types, inheritance cycles, uncovered base members, and duplicate member coverage. Renamed same-root multi-path exposure remains valid positive view behavior; cross-view leakage is guarded by spec.en.18.templates.encoding_soundness.semantic."
 depends_on = [
   "spec.en.05.structures.parser",
 ]
 tests = [
   "tests/miz/fail/structures/fail_structure_diamond_member_type_conflict_001.expect.toml",
   "tests/miz/fail/structures/fail_structure_inherit_cycle_001.expect.toml",
+  "tests/miz/fail/structures/fail_structure_inherit_duplicate_member_coverage_001.expect.toml",
   "tests/miz/fail/structures/fail_structure_inherit_uncovered_member_001.expect.toml",
 ]
 
@@ -1292,7 +1293,7 @@ stage = "advanced_semantics"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Adversarial checker seeds fixed test-first by the template-encoding soundness audit (doc/design/mizar-core/en/template_encoding_audit.md); inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G021). Rejection contracts: template type actuals without inhabitation evidence, Fraenkel comprehension over bare type parameters, scheme actuals with incompatible signatures, and cross-view attribute evidence leaks on diamond inherit paths."
+notes = "Adversarial checker seeds fixed test-first by the template-encoding soundness audit (doc/design/mizar-core/en/template_encoding_audit.md); inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G021). Rejection contracts: template type actuals without inhabitation evidence, Fraenkel comprehension over bare type parameters, scheme actuals with incompatible signatures, and cross-view attribute evidence leaks on diamond inherit paths. Task 36 confirms renamed same-root paths remain distinct positive views, so this row remains the negative guard against evidence crossing those views."
 depends_on = [
   "spec.en.05.structures.parser",
   "spec.en.17.clusters_and_registrations.parser",
@@ -1313,7 +1314,7 @@ stage = "advanced_semantics"
 status = "covered"
 required = true
 coverage = "fail"
-notes = "Adversarial checker seeds fixed test-first; inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G027). Rejection contracts: incomparable ordinary roots report ambiguous overload, and multiple inheritance paths block implicit upcasts without qua."
+notes = "Task 36 / SSA-011 decision: implicit upcast uniqueness is syntactic over resolved inherit declaration paths; coherent member joins do not collapse multiple paths, so explicit qua is required. Seeds remain inactive until an advanced_semantics runner and source-to-checker payload extraction exist (MC-G020/MC-G027). Rejection contracts: incomparable ordinary roots report ambiguous overload, and multiple inheritance paths block implicit upcasts without qua."
 depends_on = [
   "spec.en.05.structures.parser",
   "spec.en.10.functor_definitions.parser",

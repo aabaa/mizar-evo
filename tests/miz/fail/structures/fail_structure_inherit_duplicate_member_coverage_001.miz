@@ -1,0 +1,21 @@
+:: Rejection target: the explicit inherit block maps the same parent field
+:: `payload` twice. Every base field and property must be covered exactly once
+:: by an inherit declaration; duplicate coverage would make the parent member's
+:: child view ambiguous
+:: (doc/spec/en/05.structures.md, section 5.3.1).
+
+definition
+  struct BaseStr where
+    field payload -> set;
+  end;
+
+  struct BadSubStr where
+    field payload -> set;
+    field payload_alias -> set;
+  end;
+
+  inherit BadSubStr extends BaseStr where
+    field payload from payload;
+    field payload_alias from payload;
+  end;
+end;
