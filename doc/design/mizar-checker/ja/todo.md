@@ -887,7 +887,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       producer record を保持する。inactive `.miz` overload/redefinition seed と
       deferred traceability row は MC-G027/MC-G030 の下で変更していない。
 
-46. **Checker 整合: closure の矛盾検出と停止性規則。** [ ]
+46. **Checker 整合: closure の矛盾検出と停止性規則。** [x]
     - task-41/42 の決定を `cluster_trace.md` と `registration_resolution.md`
       (英日)にエンコードし、task 16-18 実装を整合させる: closure 時矛盾を
       fatal 診断(severity は §17.7.3 準拠)とし、防御的 saturation bound の
@@ -898,6 +898,18 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-checker`、
       `cargo clippy -p mizar-checker --all-targets -- -D warnings`。
     - 依存: 41, 42。参照: SSA-007, SSA-008, SSA-009。
+    - task 46 で完了: `cluster_trace.rs` は explicit closure contradiction が
+      checker-local contradiction class、error severity、fatal recovery、incomplete
+      closure status を持ち、contradictory generated fact を degraded export しない
+      ことを assert する。determinism suite は explicit-payload reduction trace
+      snapshot を追加し、discharged guard order の同値性が canonical であること、
+      discharged `such` evidence の変更が trace identity を変えること、strategy-audit
+      key は変わらず `such` specificity を含まないことを固定する。
+      `cluster_trace.md`、`registration_resolution.md`、checker plan/audit、top-level
+      coverage audit は task-41/42 の spec decision を引用する。source-derived
+      normalization result、source-derived cluster contradiction extraction、artifact/cache
+      replay、active `.miz` semantic fixture は MC-G020/MC-G021/MC-G023/MC-G030 の下で
+      deferred のままである。
 
 47. **Checker 整合: existential gate と activation 契約。** [ ]
     - task-20 の existential gate を task-43 の built-in inhabitation 表と

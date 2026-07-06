@@ -2898,6 +2898,17 @@ mod tests {
             output.diagnostics(),
             &["checker.cluster_trace.cluster_contradiction"],
         );
+        let (_, diagnostic) = output
+            .diagnostics()
+            .iter()
+            .next()
+            .expect("contradiction diagnostic");
+        assert_eq!(
+            diagnostic.class(),
+            ClusterDiagnosticClass::ClusterContradiction
+        );
+        assert_eq!(diagnostic.severity(), ClusterDiagnosticSeverity::Error);
+        assert_eq!(diagnostic.recovery(), ClusterDiagnosticRecovery::Fatal);
     }
 
     #[test]

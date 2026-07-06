@@ -141,12 +141,16 @@ Depth is measured over the explicit fact-dependency hypergraph: input facts
 have depth `0`; a derived fact with antecedents has depth
 `1 + max(antecedent depths)`; and a zero-antecedent cluster-generated fact has
 depth `1`.
+Spec §17.7.1 makes the restricted no-argument cluster adjective grammar the
+language-level termination argument. The task-17 saturation bounds are
+defensive implementation diagnostics, not a successful truncated semantics.
 Loop, bound, and contradiction failures set the checker-local
 `ClusterClosureOutput` status to incomplete. An incomplete output may still
 carry facts that were derived before the fatal candidate, but those facts must
 not be exported as a verified closure result.
 
-Contradiction handling remains checker-owned at this seam. Task 17 allows an
+Contradiction handling remains checker-owned at this seam and implements the
+spec §17.7.3 fatal closure rule for explicit payloads. Task 17 allows an
 explicit rule payload to list already-visible fact fingerprints that conflict
 with the generated fact. If any listed fact is present when the rule would fire,
 the builder emits `cluster_contradiction` and does not export a verified or
@@ -228,7 +232,9 @@ accepted `reducibility` registration: the redex matches the rule `LHS`, the
 target is the corresponding `RHS` instance, each pattern binding is valid, and
 every type, attribute, and `such` guard has stable evidence. `such` evidence is
 an applicability side condition only; it does not make a rule more specific.
-The minimum kernel does not search for matching rules or reselect reductions.
+This matches the spec §17.6.4 normalization signature by preserving the
+discharged side-condition set in the trace. The minimum kernel does not search
+for matching rules or reselect reductions.
 
 The strategy-audit key records the leftmost-innermost redex path, the active
 rule-view fingerprint, and the specificity/FQN selection key required by
@@ -269,9 +275,13 @@ schema fork; artifact projection must either omit it or replace it with the
 canonical rule payload once MC-G021 lands.
 
 Task 18 treats `such` guards as applicability side conditions only. They must
-have stable evidence before a rewrite step can be recorded, but they do not
-contribute to the strategy-audit selection key and therefore cannot make a rule
-more specific.
+have stable evidence before a rewrite step can be recorded, and the discharged
+side-condition evidence is part of the explicit reduction trace identity. They
+do not contribute to the strategy-audit selection key and therefore cannot make
+a rule more specific. Task 46 adds Rust coverage for this explicit-payload
+trace identity; source-derived normalization result dependence on available
+`such` evidence remains deferred until MC-G020/MC-G021/MC-G023 extraction and
+runner support exist.
 
 Replay of task-18 reduction steps checks the active reduction registration,
 resolver id, rule-view fingerprint/pattern fallback, deterministic selection
@@ -299,11 +309,13 @@ stored as two steps unless a later artifact also preserves the original steps by
 content-addressed reference. Derived fact de-duplication is allowed only after
 canonical fact fingerprints match.
 
-Reduction normalization follows spec 17.6.4: left-to-right rewriting,
-leftmost-innermost redex traversal, matching modulo alpha-equivalence and
-binding, most-specific rule selection, and FQN tie-breaks for remaining
-matches. Reduction order is not capped by cluster expansion depth; termination
-comes from registration-time simplification-order validation.
+Reduction normalization follows spec §17.6.4: for a fixed typed term, in-scope
+activated reduction rule set, and discharged side-condition set, the strategy
+is left-to-right rewriting, leftmost-innermost redex traversal, matching modulo
+alpha-equivalence and binding, most-specific rule selection, and FQN tie-breaks
+for remaining matches. Reduction order is not capped by cluster expansion
+depth; termination comes from registration-time simplification-order
+validation.
 
 ## Bounds And Failures
 

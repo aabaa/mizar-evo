@@ -31,10 +31,10 @@ note として記録する。
 | `src/binding_env.rs` | 3090 | binding environment and resolver shell boundary | `binding_env.md` | no | no | cohesive な binding/context data layer。behavior-neutral split は不要。 |
 | `src/type_checker.rs` | 9358 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | 最大の file だが phase-6 spec boundary 内にある。normalization、declaration checking、inference、coercion、fact query、diagnostic、rendering、test は behavior-coupled なので、review friction が具体化した場合だけ focused private-layout task で後続 split する。 |
 | `src/registration_resolution.rs` | 5254 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | cohesive な registration data layer と gate logic。behavior-neutral split は不要。 |
-| `src/cluster_trace.rs` | 3937 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | cohesive な trace/replay module。behavior-neutral split は不要。 |
+| `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | cohesive な trace/replay module。behavior-neutral split は不要。 |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | overload collection、template expansion、viability、specificity、selection、rendering、test は大きいが cohesive。downstream 利用後の ergonomics を monitor する。 |
 | `src/resolved_typed_ast.rs` | 3728 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | cohesive な final projection module。behavior-neutral split は不要。 |
-| `src/determinism_suite.rs` | 893 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | private `#[cfg(test)]` crate support として維持する。 |
+| `src/determinism_suite.rs` | 1096 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | private `#[cfg(test)]` crate support として維持する。 |
 | `tests/lint_policy.rs` | 1786 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | 大きい support test だが repository-policy guardrail を意図的に集約している。task 34 の split は不要。 |
 
 ## Task 34 Classification

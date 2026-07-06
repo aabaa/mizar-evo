@@ -3,7 +3,11 @@ use crate::{
         ClusterAttributeFingerprint, ClusterFactDraft, ClusterFactFingerprint, ClusterFactInput,
         ClusterFactProvenance, ClusterFactTable, ClusterRuleDraft, ClusterRuleFingerprint,
         ClusterRuleInput, ClusterRuleKind, ClusterStepId, ClusterTraceBuilder,
-        ClusterTypeFingerprint, ResolutionTrace, ResolutionTraceStep,
+        ClusterTypeFingerprint, ReductionBinding, ReductionDraft, ReductionFingerprint,
+        ReductionGuardEvidenceRef, ReductionGuardKind, ReductionGuardRequirement, ReductionInput,
+        ReductionRedexPath, ReductionRuleFqn, ReductionRuleViewFingerprint, ReductionSelectionKey,
+        ReductionStrategyAuditKey, ReductionTermFingerprint, ReductionTraceBuilder,
+        ResolutionTrace, ResolutionTraceStep,
     },
     overload_resolution::{
         ArgumentViabilityEvidence, CandidateDeclarationKind, CandidateOrigin, CandidateProvenance,
@@ -78,6 +82,27 @@ fn cluster_trace_outputs_are_deterministic_across_equivalent_orders() {
     assert_eq!(first.generated_facts, ["fact:B", "fact:C"]);
     assert_eq!(first.closure_facts, ["fact:A", "fact:B", "fact:C"]);
     assert!(first.diagnostics.is_empty());
+}
+
+#[test]
+fn reduction_trace_identity_tracks_discharged_side_condition_set() {
+    let first = reduction_snapshot("evidence:such:P", false);
+    let second = reduction_snapshot("evidence:such:P", false);
+    let permuted = reduction_snapshot("evidence:such:P", true);
+    let alternate_such = reduction_snapshot("evidence:such:alternate", false);
+
+    assert_eq!(first, second);
+    assert_eq!(first, permuted);
+    assert_ne!(first.debug, alternate_such.debug);
+    assert_ne!(first.discharged_guards, alternate_such.discharged_guards);
+    assert_eq!(first.strategy_audit, alternate_such.strategy_audit);
+    assert!(!first.strategy_audit.contains("such"));
+    assert!(first.debug.contains("such:guard:such:P=evidence:such:P"));
+    assert!(
+        alternate_such
+            .debug
+            .contains("such:guard:such:P=evidence:such:alternate")
+    );
 }
 
 #[test]
@@ -277,6 +302,155 @@ struct ClusterEnvFixture {
     cluster_b: CheckerRegistrationId,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct ReductionTraceSnapshot {
+    debug: String,
+    discharged_guards: Vec<String>,
+    strategy_audit: String,
+}
+
+fn reduction_snapshot(such_evidence: &str, reverse_guard_order: bool) -> ReductionTraceSnapshot {
+    let fixture = reduction_env_fixture();
+    let input = reduction_input(&fixture, such_evidence, reverse_guard_order);
+    let output = ReductionTraceBuilder::new().record(
+        &fixture.database,
+        fixture.source,
+        fixture.module,
+        [input],
+    );
+
+    assert!(output.diagnostics().is_empty());
+    let [ResolutionTraceStep::Reduction(step)] = output.trace().steps() else {
+        panic!("expected one reduction step");
+    };
+    ReductionTraceSnapshot {
+        debug: output.debug_text(),
+        discharged_guards: step
+            .discharged_guards()
+            .iter()
+            .map(|guard| {
+                format!(
+                    "{}:{}={}",
+                    reduction_guard_kind_name(guard.kind()),
+                    guard.guard().as_str(),
+                    guard.evidence().as_str()
+                )
+            })
+            .collect(),
+        strategy_audit: step.strategy_audit_key().as_str().to_owned(),
+    }
+}
+
+struct ReductionEnvFixture {
+    database: RegistrationDatabase,
+    source: SourceId,
+    module: ModuleId,
+    reduction: CheckerRegistrationId,
+}
+
+fn reduction_env_fixture() -> ReductionEnvFixture {
+    let source = source_id(32);
+    let module = module();
+    let mut registrations = RegistrationIndex::new();
+    let mut contributions = SourceContributionIndex::new();
+    let contribution = contribution(&mut contributions, module.clone(), source, 40);
+    let reduction = insert_registration_with_kind(
+        &mut registrations,
+        module.clone(),
+        source,
+        contribution,
+        ResolverRegistrationKind::Reduction,
+        "ReduceR",
+        40,
+    );
+    contributions.add_registration(contribution, reduction);
+
+    let env = SymbolEnv::new(
+        module.clone(),
+        SymbolEnvIndexes {
+            registrations,
+            contributions,
+            ..SymbolEnvIndexes::default()
+        },
+    );
+    let database = RegistrationDatabase::from_symbol_env(
+        &env,
+        [activation_with_kind(
+            reduction,
+            ResolverRegistrationKind::Reduction,
+            "trigger:R",
+            "fingerprint:R",
+        )],
+    );
+
+    ReductionEnvFixture {
+        database,
+        source,
+        module,
+        reduction: CheckerRegistrationId::new(reduction.index()),
+    }
+}
+
+fn reduction_input(
+    fixture: &ReductionEnvFixture,
+    such_evidence: &str,
+    reverse_guard_order: bool,
+) -> ReductionInput {
+    let enclosing = ReductionTermFingerprint::new("term:before:R");
+    let redex_path = ReductionRedexPath::new("path:0.1");
+    let rule_view = ReductionRuleViewFingerprint::new("fingerprint:R");
+    let selection_key = ReductionSelectionKey::new("selection:R");
+    let strategy_audit_key = ReductionStrategyAuditKey::new(format!(
+        "enclosing={};redex_path={};rule_view={};selection={}",
+        enclosing.as_str(),
+        redex_path.as_str(),
+        rule_view.as_str(),
+        selection_key.as_str()
+    ));
+    let mut discharged_guards = vec![
+        ReductionGuardEvidenceRef::new(ReductionGuardKind::Type, "guard:type:T", "evidence:type:T"),
+        ReductionGuardEvidenceRef::new(
+            ReductionGuardKind::Attribute,
+            "guard:attr:A",
+            "evidence:attr:A",
+        ),
+        ReductionGuardEvidenceRef::new(ReductionGuardKind::Such, "guard:such:P", such_evidence),
+    ];
+    if reverse_guard_order {
+        discharged_guards.reverse();
+    }
+
+    ReductionInput::new(ReductionDraft {
+        registration: fixture.reduction,
+        trigger: RegistrationTriggerKey::new("trigger:R"),
+        applied_reduction: ReductionFingerprint::new("reduction:R"),
+        rule_fqn: ReductionRuleFqn::new("pkg::main::ReduceR"),
+        enclosing_term_before: enclosing,
+        redex_path,
+        source_redex: ReductionTermFingerprint::new("term:redex:R"),
+        target_term: ReductionTermFingerprint::new("term:target:R"),
+        rule_view,
+        selection_key,
+        strategy_audit_key,
+        source_range: range(fixture.source, 40, 41),
+    })
+    .with_substitution([ReductionBinding::new("var:x", "term:x")])
+    .with_required_guards([
+        ReductionGuardRequirement::new(ReductionGuardKind::Type, "guard:type:T"),
+        ReductionGuardRequirement::new(ReductionGuardKind::Attribute, "guard:attr:A"),
+        ReductionGuardRequirement::new(ReductionGuardKind::Such, "guard:such:P"),
+    ])
+    .with_discharged_guards(discharged_guards)
+}
+
+fn reduction_guard_kind_name(kind: ReductionGuardKind) -> &'static str {
+    match kind {
+        ReductionGuardKind::Type => "type",
+        ReductionGuardKind::Attribute => "attribute",
+        ReductionGuardKind::Such => "such",
+    }
+}
+
 fn cluster_env_fixture(reverse_activations: bool) -> ClusterEnvFixture {
     let source = source_id(11);
     let module = module();
@@ -330,9 +504,18 @@ fn cluster_env_fixture(reverse_activations: bool) -> ClusterEnvFixture {
 }
 
 fn activation(id: ResolverRegistrationId, trigger: &str, fingerprint: &str) -> ActivationInput {
+    activation_with_kind(id, ResolverRegistrationKind::Cluster, trigger, fingerprint)
+}
+
+fn activation_with_kind(
+    id: ResolverRegistrationId,
+    kind: ResolverRegistrationKind,
+    trigger: &str,
+    fingerprint: &str,
+) -> ActivationInput {
     ActivationInput::accepted(
         id,
-        ResolverRegistrationKind::Cluster,
+        kind,
         trigger,
         format!("pattern:{trigger}"),
         format!("correctness:{trigger}"),
@@ -362,9 +545,29 @@ fn insert_registration(
     local: &str,
     offset: u32,
 ) -> ResolverRegistrationId {
+    insert_registration_with_kind(
+        registrations,
+        module,
+        source,
+        contribution,
+        ResolverRegistrationKind::Cluster,
+        local,
+        offset,
+    )
+}
+
+fn insert_registration_with_kind(
+    registrations: &mut RegistrationIndex,
+    module: ModuleId,
+    source: SourceId,
+    contribution: SourceContributionId,
+    kind: ResolverRegistrationKind,
+    local: &str,
+    offset: u32,
+) -> ResolverRegistrationId {
     registrations.insert(
         Some(symbol(local)),
-        ResolverRegistrationKind::Cluster,
+        kind,
         SignatureShell::Pending,
         SemanticOrigin::new(
             source,

@@ -241,9 +241,9 @@ literal top-level public item:
 | 仕様上の約束 | source 根拠 | test 根拠 | 状態 |
 |---|---|---|---|
 | Cluster closure は replayable deterministic cluster step と derived fact を記録する。 | `ClusterTraceBuilder`, `ClusterClosureOutput`, `ResolutionTrace`, `ClusterStep`, `ClusterFactTable`. | closure/inactive/order/conditional/subtype/transitive/mismatch/rejected/duplicate tests. | explicit payload について実装済み。MC-G023 は残る。 |
-| Saturation bound、loop、explicit contradiction は silent truncation でなく visible failure。 | `ClusterTraversalConfig`, `ClusterTraversalProfile`, `ClusterClosureStatus`, diagnostics. | loop/bound/zero-antecedent/contradiction tests. | 実装済み。 |
+| Saturation bound、loop、explicit contradiction は silent truncation でなく visible failure。 | `ClusterTraversalConfig`, `ClusterTraversalProfile`, `ClusterClosureStatus`, diagnostics. | loop/bound/zero-antecedent/contradiction tests; task 46 class/severity/recovery assertion。 | explicit payload について実装済み。 |
 | Replay は active registration fingerprint を再検証する。 | `ResolutionTrace::replay`, `ClusterReplayReport`, `ClusterReplayStatus`. | `replay_revalidates_active_registration_fingerprint`, `active_pattern_fallback_must_match_rule_fingerprint`. | 実装済み。 |
-| Reduction step は architecture 17 provenance、guard evidence、strategy audit key を保持する。 | `ReductionTraceBuilder`, `ReductionTraceOutput`, `ReductionStep`, reduction input/guard types. | reduction provenance/inactive/rejected/invalid/`such` guard tests. | explicit payload について実装済み。source-derived rewrite extraction は MC-G023。 |
+| Reduction step は architecture 17 provenance、guard evidence、strategy audit key を保持する。 | `ReductionTraceBuilder`, `ReductionTraceOutput`, `ReductionStep`, reduction input/guard types. | reduction provenance/inactive/rejected/invalid/`such` guard tests; task 46 discharged-side-condition trace identity determinism coverage。 | explicit payload について実装済み。source-derived rewrite extraction と normalization-result dependence は MC-G023。 |
 | public enum は forward-compatible。 | public enum の `#[non_exhaustive]`。 | `checker_public_enums_are_forward_compatible_and_documented`. | task 31 で guard 済み。 |
 
 ### `overload_resolution`
@@ -349,7 +349,7 @@ literal top-level public item:
 | 根拠 | coverage |
 |---|---|
 | `crates/mizar-checker/tests/lint_policy.rs` | workspace lint opt-in、dependency boundary、no direct syntax import、documented public module、explicit overload/resolved-AST boundary guard、public enum forward-compatibility policy、source/spec audit の public-surface と MC-G reconciliation guard、bilingual documentation sync の pair-inventory / companion-link guard、module-boundary source-layout guard、documented `allow` exception。 |
-| `crates/mizar-checker/src/determinism_suite.rs` | type normalization、fact query、cluster closure、overload pipeline、final `ResolvedTypedAst` projection の cross-module deterministic rerun と equivalent-order permutation。 |
+| `crates/mizar-checker/src/determinism_suite.rs` | type normalization、fact query、cluster closure、reduction trace discharged-side-condition identity、overload pipeline、final `ResolvedTypedAst` projection の cross-module deterministic rerun と equivalent-order permutation。 |
 | 各 source module の unit tests | 実装済み checker seam に対する task-local behavior tests。source-to-checker extraction と後続 semantic corpus runner が存在するまで、これが active executable coverage。 |
 | `tests/coverage/spec_trace.toml` deferred rows | formula/statement、cluster/reduction、overload/refinement、review-audit semantic corpus obligation を active fixture と偽らずに記録する。 |
 
@@ -375,7 +375,7 @@ MC-G row はすべて次のように照合する。
 | MC-G019 | `external_dependency_gap` | statement/proof assumption、theorem acceptance payload、phase-7 trace fact payload について active。 |
 | MC-G020 | `external_dependency_gap` / `deferred` | task 7-11 と後続 consumer の semantic pass fixture を妨げる source-to-checker extraction blocker として active。reserve-only builtin declaration slice は `BindingEnv`、`DeclarationInput`、`DeclarationChecker`、`TypedAst`、`ResolvedTypedAst` まで到達したが、より広い non-builtin declaration、attribute / mode / structure、term、formula、coercion、overload、recorded-fact、CoreIr、ControlFlowIr、VC、proof payload extraction は未解決のまま。 |
 | MC-G021 | `external_dependency_gap` / `deferred` | registration payload、accepted-status、source extraction blocker として active。registration code は explicit payload seam のみ消費する。 |
-| MC-G023 | `test_gap` / `external_dependency_gap` / `deferred` | source-derived cluster/reduction fixture、artifact/cache integration、real trace extraction について active。 |
+| MC-G023 | `test_gap` / `external_dependency_gap` / `deferred` | source-derived cluster/reduction fixture、artifact/cache integration、source-derived normalization-result dependence、real trace extraction について active。task 46 は explicit-payload fatal contradiction と reduction trace-identity seam だけを cover する。 |
 | MC-G025 | `external_dependency_gap` / `deferred` | accepted registration status の proof/artifact production または import について active。 |
 | MC-G026 | `test_gap` / `external_dependency_gap` / `deferred` | source-derived existential gate case、artifact reuse、accepted-status integration について active。 |
 | MC-G027 | `test_gap` / `external_dependency_gap` / `deferred` | source-derived overload payload、`coherence with` 省略 target diagnostic production、diagnostic code allocation、artifact emission/reuse、semantic fixture について active。task 45 は explicit-payload Rust regression だけを追加し、source-derived seed は inactive のままにする。 |

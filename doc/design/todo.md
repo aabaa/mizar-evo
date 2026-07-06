@@ -95,7 +95,7 @@ is its task 1). "Next work" points into the
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 (task 30) | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22 plus task 21 soundness vocabulary | step 5 (task 10) | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec-decision wave complete; step 4 task 45 complete | steps 4, 5 (tasks 46-48) | [todo](./mizar-checker/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec-decision wave complete; step 4 tasks 45-46 complete | steps 4, 5 (tasks 47-48) | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete | step 4 (tasks 27-30) | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | step 5; tasks 27-29 resolved | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 (task 35); task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -207,7 +207,7 @@ Implement the decisions from step 2 in checker and core. Depends on step 2.
 
 1. [x] [mizar-checker task 45](./mizar-checker/en/todo.md) — overload
    tie-break and redefinition-target implementation (deps: tasks 37, 44).
-2. [ ] [mizar-checker task 46](./mizar-checker/en/todo.md) — closure
+2. [x] [mizar-checker task 46](./mizar-checker/en/todo.md) — closure
    contradiction and termination rules (deps: tasks 41-42).
 3. [ ] [mizar-checker task 47](./mizar-checker/en/todo.md) — existential and
    omitted-reconsider gates plus activation contract (deps: tasks 40, 43, 44).

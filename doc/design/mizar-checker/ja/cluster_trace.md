@@ -130,12 +130,16 @@ configured bound、bounded saturation に到達したか、ordering version と 
 depth は explicit fact-dependency hypergraph 上で測る。input fact の depth は `0`、
 antecedent を持つ derived fact の depth は `1 + max(antecedent depths)`、antecedent を
 持たない cluster-generated fact の depth は `1` とする。
+spec §17.7.1 は、制限された no-argument cluster adjective grammar を language-level
+の停止性根拠にする。task-17 の saturation bound は防御的な implementation
+diagnostic であり、成功した truncated semantics ではない。
 loop、bound、contradiction failure は checker-local な `ClusterClosureOutput` status を
 incomplete にする。incomplete output は fatal candidate より前に導出された fact を保持して
 よいが、それらを verified closure result として export してはならない。
 
-contradiction handling はこの seam では checker-owned のままである。task 17 では explicit
-rule payload が、generated fact と conflict する already-visible fact fingerprint を列挙
+contradiction handling はこの seam では checker-owned のままであり、explicit payload では
+spec §17.7.3 の fatal closure rule を実装する。task 17 では explicit rule payload が、
+generated fact と conflict する already-visible fact fingerprint を列挙
 できる。rule が発火しようとした時点で列挙された fact が存在する場合、builder は
 `cluster_contradiction` を emit し、その contradictory generated fact を verified または
 degraded closure fact として export しない。contradiction は verified export に対する fatal
@@ -212,8 +216,9 @@ reduction replay は、すでに accepted された `reducibility` registration 
 rewrite instance だけを検査する。redex が rule `LHS` と match すること、target が対応する
 `RHS` instance であること、各 pattern binding が valid であること、すべての type /
 attribute / `such` guard が stable evidence を持つことを確認する。`such` evidence は
-applicability side condition であり、rule をより specific にはしない。minimum kernel は
-matching rule の探索や reduction の再選択を行わない。
+applicability side condition であり、rule をより specific にはしない。これは discharged
+side-condition set を trace に保持することで spec §17.6.4 の normalization signature と
+一致する。minimum kernel は matching rule の探索や reduction の再選択を行わない。
 
 strategy-audit key は leftmost-innermost redex path、active rule-view fingerprint、
 spec 17.6.4 が要求する specificity/FQN selection key を記録する。local rewrite を replay
@@ -249,8 +254,12 @@ in-memory checker step はさらに `required_guards` を checker-local replay-o
 MC-G021 が解消された後の canonical rule payload に置き換えなければならない。
 
 task 18 は `such` guard を applicability side condition としてだけ扱う。rewrite step を
-記録する前に stable evidence が必要だが、strategy-audit selection key には寄与せず、rule を
-より specific にすることはできない。
+記録する前に stable evidence が必要であり、discharged side-condition evidence は explicit
+reduction trace identity の一部である。strategy-audit selection key には寄与せず、rule を
+より specific にすることはできない。task 46 はこの explicit-payload trace identity の Rust
+coverage を追加する。利用可能な `such` evidence による source-derived normalization result
+dependence は、MC-G020/MC-G021/MC-G023 extraction と runner support が存在するまで
+deferred のままである。
 
 task-18 reduction step の replay は、active reduction registration、resolver id、rule-view
 fingerprint / pattern fallback、deterministic selection key、valid substitution binding、
@@ -276,11 +285,12 @@ cluster closure はすべての intermediate step を記録する。`A -> B -> C
 2 つの step として保存しなければならない。derived fact deduplication は canonical fact
 fingerprint が一致した後にだけ許される。
 
-reduction normalization は spec 17.6.4 に従う。left-to-right rewriting、
-leftmost-innermost redex traversal、alpha-equivalence と binding を考慮した matching、
-most-specific rule selection、残る match に対する FQN tie-break である。reduction order は
-cluster expansion depth で制限しない。停止性は registration-time simplification-order
-validation によって得る。
+reduction normalization は spec §17.6.4 に従う。固定された typed term、スコープ内の
+activated reduction rule set、discharged side-condition set に対して、strategy は
+left-to-right rewriting、leftmost-innermost redex traversal、alpha-equivalence と binding を
+考慮した matching、most-specific rule selection、残る match に対する FQN tie-break である。
+reduction order は cluster expansion depth で制限しない。停止性は registration-time
+simplification-order validation によって得る。
 
 ## bounds と failure
 

@@ -938,7 +938,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       inactive `.miz` overload/redefinition seeds and deferred traceability rows
       remain unchanged under MC-G027/MC-G030.
 
-46. **Checker alignment: closure contradiction and termination rules.** [ ]
+46. **Checker alignment: closure contradiction and termination rules.** [x]
     - Encode the task-41/42 decisions in `cluster_trace.md` and
       `registration_resolution.md` (en+ja) and align the task 16-18
       implementation: closure-time contradiction as fatal diagnostic
@@ -949,6 +949,20 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Verify: `cargo test -p mizar-checker`,
       `cargo clippy -p mizar-checker --all-targets -- -D warnings`.
     - Deps: 41, 42. Refs: SSA-007, SSA-008, SSA-009.
+    - Completed in task 46: `cluster_trace.rs` now asserts that explicit
+      closure contradictions produce the checker-local contradiction class with
+      error severity, fatal recovery, incomplete closure status, and no
+      degraded export for the contradictory generated fact. The determinism
+      suite now records an explicit-payload reduction trace snapshot proving
+      that equivalent discharged guard order is canonical, changing the
+      discharged `such` evidence changes the trace identity, and the
+      strategy-audit key remains unchanged and free of `such` specificity.
+      `cluster_trace.md`, `registration_resolution.md`, the checker
+      plan/audits, and the top-level coverage audit now cite the task-41/42
+      spec decisions. Source-derived normalization results, source-derived
+      cluster contradiction extraction, artifact/cache replay, and active
+      `.miz` semantic fixtures remain deferred under MC-G020/MC-G021/MC-G023/
+      MC-G030.
 
 47. **Checker alignment: existential gate and activation contract.** [ ]
     - Align the task-20 existential gate with the task-43 built-in

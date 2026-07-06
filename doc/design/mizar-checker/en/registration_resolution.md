@@ -452,12 +452,18 @@ Closure rules:
 7. Stop at a deterministic fixed point, a contradiction, a loop diagnostic, or
    a configured saturation bound.
 
-Contradictory derived attributes are a registration-resolution diagnostic and
-must not be silently reconciled by dropping one side. A contradiction is a
-fatal, non-recoverable soundness-boundary failure: the checker may report
-contextual diagnostics, but it must not continue by degrading the affected facts
-into exportable partial output. Bounded saturation is a failure, not permission
-to export a truncated verified fact set.
+The restricted no-argument cluster adjective grammar from spec §17.7.1 is the
+language-level termination argument for closure. The configured task-17
+saturation bound is a defensive diagnostic and cache-key input, not permission
+to export a successful truncated fixed point. Contradictory derived attributes
+are a registration-resolution diagnostic and must not be silently reconciled by
+dropping one side. Spec §17.7.3 makes a closure-time contradiction a fatal,
+non-recoverable soundness-boundary failure: the checker may report contextual
+diagnostics, but it must not continue by degrading the affected facts into
+exportable partial output. The current checker-local diagnostic class remains
+`cluster_contradiction` until MC-G005 allocates public checker diagnostic codes;
+the public diagnostic contract should map this family to the Chapter 22
+cluster-inconsistency code rather than inventing a second semantic condition.
 
 ## Reduction Rewrites
 
@@ -498,6 +504,14 @@ The simplification-order check is part of registration validation. A reduction
 whose `RHS` is not strictly smaller than its `LHS` is rejected before
 activation. Runtime rewrite step limits must not be used to compensate for a
 missing validation proof.
+
+Task 46 aligns the checker-owned explicit-payload trace layer with this
+signature: replay requires stable type, attribute, and `such` evidence; the
+discharged side-condition set is part of the recorded reduction trace identity;
+and `such` evidence remains excluded from the strategy-audit selection key.
+Source-derived normalization results, rule search, and guard extraction stay
+deferred under MC-G020/MC-G021/MC-G023/MC-G030 until real source payloads and an
+active advanced-semantics runner exist.
 
 ## Diagnostics And Recovery
 

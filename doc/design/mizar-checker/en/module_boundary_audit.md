@@ -32,10 +32,10 @@ remain aligned with their owning specifications.
 | `src/binding_env.rs` | 3090 | binding environment and resolver shell boundary | `binding_env.md` | no | no | Cohesive binding/context data layer; no behavior-neutral split required. |
 | `src/type_checker.rs` | 9358 | phase-6 type checking over checker-owned payloads | `type_checker.md` | no | no | Largest file but still within the phase-6 spec boundary; normalization, declaration checking, inference, coercions, fact queries, diagnostics, rendering, and tests remain behavior-coupled, so split later only with a focused private-layout task if review friction becomes concrete. |
 | `src/registration_resolution.rs` | 5254 | phase-7 registration validation, activation, and existential gates | `registration_resolution.md` | no | no | Cohesive registration data layer and gate logic; no behavior-neutral split required. |
-| `src/cluster_trace.rs` | 3937 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
+| `src/cluster_trace.rs` | 3948 | cluster closure and reduction trace recording | `cluster_trace.md` | no | no | Cohesive trace/replay module; no behavior-neutral split required. |
 | `src/overload_resolution.rs` | 8004 | phase-8 overload pipeline | `overload_resolution.md` | no | no | Large but cohesive overload collection, template expansion, viability, specificity, selection, rendering, and tests; monitor ergonomics after downstream use. |
 | `src/resolved_typed_ast.rs` | 3728 | final resolved typed AST assembly | `resolved_typed_ast.md` | no | no | Cohesive final projection module; no behavior-neutral split required. |
-| `src/determinism_suite.rs` | 893 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as private `#[cfg(test)]` crate support. |
+| `src/determinism_suite.rs` | 1096 | test-only cross-module determinism suite | `00.crate_plan.md` and `source_spec_audit.md` | no | no | Keep as private `#[cfg(test)]` crate support. |
 | `tests/lint_policy.rs` | 1786 | cross-cutting policy and audit guards | `source_spec_audit.md`, `bilingual_sync_audit.md`, and `module_boundary_audit.md` | no | no | Large support test but intentionally centralizes repository-policy guardrails; no split required for task 34. |
 
 ## Task 34 Classification
