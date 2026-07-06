@@ -424,7 +424,7 @@ the paired producer tasks.
       producer-side F1 handoff contract; mizar-kernel task 30 still owns the
       trusted check-service acceptance binding.
 
-28. **Context-identity payload for non-imported source bindings (kernel F2).** [ ]
+28. **Context-identity payload for non-imported source bindings (kernel F2).** [x]
     - Produce the verification data the kernel needs to check that
       local-hypothesis, cited-premise, and generated-VC-fact bindings really
       belong to the target VC: bind the evidence's local/VC-fact sections to
@@ -442,6 +442,15 @@ the paired producer tasks.
     - Deps: 26; paired: mizar-kernel task 31. Spec: architecture 15
       "Context Identity Covers Non-Imported Source Bindings";
       soundness_argument.md F2.
+    - Done in task 28: `VcKernelEvidenceHandoff` now carries a stable
+      `context_identity` payload with rows for every local-hypothesis,
+      cited-premise, and generated-VC-fact formula evidence binding. The
+      payload is bound to the target VC and canonical evidence hash, exposes
+      `context_identity_hash()`, participates in dependency-slice and
+      proof-reuse identity, excludes imported premises, and becomes stale when
+      a canonical source binding is mutated. This closes only the producer-side
+      F2 payload; mizar-kernel task 31 still owns trusted membership
+      verification.
 
 29. **Imported-statement projection producer side (kernel F6).** [ ]
     - Together with kernel task 33, specify and emit the projection from

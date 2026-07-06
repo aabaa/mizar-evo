@@ -393,10 +393,11 @@ the trusted base; **Low** = documentation/consistency debt.
   itself — as a local hypothesis (edge case 5). Patched in this change:
   architecture 15 (en/ja) now requires context identity to cover non-imported
   source bindings before such entries can be accepted, with fail-closed
-  behavior until the verification data exists. Concrete schema work (e.g.,
-  binding the evidence's local/VC-fact sections to the canonical `mizar-vc`
-  kernel-evidence handoff hash carried in the immutable context) is a follow-up
-  task for `mizar-kernel` and `mizar-vc`. Corpus:
+  behavior until the verification data exists. The producer-side schema now
+  separates the canonical formula-envelope hash from the task-28
+  `context_identity_hash()`: the context payload binds each local/VC-fact row
+  to the target VC and canonical evidence hash, and kernel task 31 must verify
+  membership against that payload before acceptance. Corpus:
   `fail_certificate_symbols_unverifiable_local_hypothesis_001`.
 - **F3 (Medium, deferred by design). No exact solver step budget in the trusted
   SAT wrapper.** `sat_checker.md` records that `batsat` 0.6.0 exposes no stable
@@ -447,9 +448,11 @@ the trusted base; **Low** = documentation/consistency debt.
 
 - `doc/design/mizar-kernel/en/todo.md`: candidate new tasks — (a) B4
   goal-polarity binding in the corrected check service is implemented by task
-  30; (b) specify and implement context-identity verification for non-imported source bindings
-  (F2), likely as a `FormulaEvidenceContext` extension bound to the `mizar-vc`
-  handoff hash; (c) revisit the solver step-budget deferral (F3); (d) specify
+  30; (b) specify and implement context-identity verification for non-imported
+  source bindings (F2), using an immutable context payload that carries the
+  `mizar-vc` canonical formula-envelope hash plus task-28
+  `context_identity_hash()`; (c) revisit the solver step-budget deferral (F3);
+  (d) specify
   the imported-statement projection that lifts the fingerprint-equality rule
   (F6, paired with `mizar-vc`).
 - `doc/design/mizar-vc/en/todo.md`: producer-side goal-polarity declaration

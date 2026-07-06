@@ -23,6 +23,7 @@ use std::{
 
 pub const KERNEL_EVIDENCE_SCHEMA_VERSION: u16 = 1;
 pub const KERNEL_EVIDENCE_ENCODING_VERSION: u16 = 1;
+pub const KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION: u16 = 1;
 pub const VC_KERNEL_HANDOFF_SCHEMA: &str = "mizar-vc-kernel-evidence-handoff-v1";
 pub const VC_TARGET_FINGERPRINT_ALGORITHM_ID: u8 = 18;
 pub const KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID: u8 = 2;
@@ -45,6 +46,7 @@ pub struct KernelEvidenceHandoffInput<'a> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct VcKernelEvidenceHandoff {
     canonical_evidence: KernelEvidenceEnvelope,
+    context_identity: KernelContextIdentityPayload,
     formula_context_requirements: Option<KernelFormulaContextRequirements>,
     diagnostics: KernelEvidenceDiagnosticInputs,
     canonical_hash_input: Vec<u8>,
@@ -54,6 +56,10 @@ pub struct VcKernelEvidenceHandoff {
 impl VcKernelEvidenceHandoff {
     pub const fn canonical_evidence(&self) -> &KernelEvidenceEnvelope {
         &self.canonical_evidence
+    }
+
+    pub const fn context_identity(&self) -> &KernelContextIdentityPayload {
+        &self.context_identity
     }
 
     pub const fn formula_context_requirements(&self) -> Option<&KernelFormulaContextRequirements> {
@@ -72,8 +78,46 @@ impl VcKernelEvidenceHandoff {
         self.canonical_hash
     }
 
+    pub const fn context_identity_hash(&self) -> Hash {
+        self.context_identity.hash()
+    }
+
+    pub fn context_identity_is_consistent(&self) -> bool {
+        if self.context_identity.target_vc() != self.canonical_evidence.target_vc()
+            || self.context_identity.canonical_evidence_hash() != self.canonical_hash
+        {
+            return false;
+        }
+        build_context_identity(&self.canonical_evidence, self.canonical_hash)
+            .is_ok_and(|expected| self.context_identity == expected)
+    }
+
+    #[cfg(test)]
+    pub(crate) fn with_test_context_identity_producer_ref(
+        &self,
+        entry_index: usize,
+        producer_formula_ref: VcFormulaRef,
+    ) -> Self {
+        let mut handoff = self.clone();
+        let formula_id = handoff.context_identity.entries[entry_index].formula_id;
+        let formula = handoff
+            .canonical_evidence
+            .formula_evidence
+            .iter_mut()
+            .find(|formula| formula.formula_id == formula_id)
+            .expect("context identity entry formula id exists");
+        formula.producer_formula_ref = Some(producer_formula_ref);
+        handoff.context_identity =
+            build_context_identity(&handoff.canonical_evidence, handoff.canonical_hash)
+                .expect("test context identity rebuild");
+        handoff
+    }
+
     pub fn targets_vc(&self, vc_set: &VcSet, vc: VcId) -> Result<bool, KernelEvidenceHandoffError> {
-        Ok(self.canonical_evidence.target_vc() == &target_fingerprint(vc_set, vc)?)
+        let target = target_fingerprint(vc_set, vc)?;
+        Ok(self.canonical_evidence.target_vc() == &target
+            && self.context_identity.target_vc() == &target
+            && self.context_identity_is_consistent())
     }
 
     pub fn debug_text(&self) -> String {
@@ -85,6 +129,7 @@ impl VcKernelEvidenceHandoff {
         )
         .expect("write string");
         output.push_str(&self.canonical_evidence.debug_text());
+        output.push_str(&self.context_identity.debug_text());
         if let Some(context) = &self.formula_context_requirements {
             output.push_str(&context.debug_text());
         } else {
@@ -93,6 +138,107 @@ impl VcKernelEvidenceHandoff {
         output.push_str(&self.diagnostics.debug_text());
         output
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KernelContextIdentityPayload {
+    schema_version: u16,
+    target_vc: KernelEvidenceFingerprint,
+    canonical_evidence_hash: Hash,
+    entries: Vec<KernelContextIdentityEntry>,
+    hash_input: Vec<u8>,
+    hash: Hash,
+}
+
+impl KernelContextIdentityPayload {
+    pub const fn schema_version(&self) -> u16 {
+        self.schema_version
+    }
+
+    pub const fn target_vc(&self) -> &KernelEvidenceFingerprint {
+        &self.target_vc
+    }
+
+    pub const fn canonical_evidence_hash(&self) -> Hash {
+        self.canonical_evidence_hash
+    }
+
+    pub fn entries(&self) -> &[KernelContextIdentityEntry] {
+        &self.entries
+    }
+
+    pub fn hash_input(&self) -> &[u8] {
+        &self.hash_input
+    }
+
+    pub const fn hash(&self) -> Hash {
+        self.hash
+    }
+
+    fn debug_text(&self) -> String {
+        let mut output = String::from("[context-identity]\n");
+        writeln!(&mut output, "schema-version: {}", self.schema_version).expect("write string");
+        writeln!(&mut output, "target-vc: {}", self.target_vc.render()).expect("write string");
+        writeln!(
+            &mut output,
+            "canonical-evidence-hash: {}",
+            hex(self.canonical_evidence_hash.as_bytes())
+        )
+        .expect("write string");
+        writeln!(
+            &mut output,
+            "context-identity-hash: {}",
+            hex(self.hash.as_bytes())
+        )
+        .expect("write string");
+        writeln!(&mut output, "[context-identity-entries]").expect("write string");
+        for entry in &self.entries {
+            writeln!(
+                &mut output,
+                "entry: source={:?}; formula-id={}; fingerprint={}; producer={:?}",
+                entry.source,
+                entry.formula_id,
+                entry.formula_fingerprint.render(),
+                entry.producer_formula_ref
+            )
+            .expect("write string");
+        }
+        output
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct KernelContextIdentityEntry {
+    source: KernelContextIdentitySource,
+    formula_id: u32,
+    formula_fingerprint: KernelEvidenceFingerprint,
+    producer_formula_ref: VcFormulaRef,
+}
+
+impl KernelContextIdentityEntry {
+    pub const fn source(&self) -> KernelContextIdentitySource {
+        self.source
+    }
+
+    pub const fn formula_id(&self) -> u32 {
+        self.formula_id
+    }
+
+    pub const fn formula_fingerprint(&self) -> &KernelEvidenceFingerprint {
+        &self.formula_fingerprint
+    }
+
+    pub const fn producer_formula_ref(&self) -> VcFormulaRef {
+        self.producer_formula_ref
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[non_exhaustive]
+pub enum KernelContextIdentitySource {
+    LocalHypothesis { local_context_id: u32 },
+    CitedPremise { local_context_id: u32 },
+    GeneratedVcFact { vc_fact_id: u32 },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -556,6 +702,9 @@ pub enum KernelEvidenceHandoffError {
         premise: PremiseRef,
         reason: VcText,
     },
+    MissingContextIdentityProducerRef {
+        formula_id: u32,
+    },
     DuplicateSubstitution {
         substitution_id: u32,
     },
@@ -671,6 +820,10 @@ impl fmt::Display for KernelEvidenceHandoffError {
                     reason.as_str()
                 )
             }
+            Self::MissingContextIdentityProducerRef { formula_id } => write!(
+                formatter,
+                "non-imported formula {formula_id} has no producer formula ref"
+            ),
             Self::DuplicateSubstitution { substitution_id } => {
                 write!(formatter, "duplicate substitution {substitution_id}")
             }
@@ -790,9 +943,11 @@ pub fn build_kernel_evidence_handoff(
     let canonical_hash_input = canonical_hash_input(&canonical_evidence);
     let canonical_hash =
         stable_fingerprint_hash("mizar-vc-kernel-evidence-handoff", &canonical_hash_input);
+    let context_identity = build_context_identity(&canonical_evidence, canonical_hash)?;
 
     Ok(VcKernelEvidenceHandoff {
         canonical_evidence,
+        context_identity,
         formula_context_requirements,
         diagnostics,
         canonical_hash_input,
@@ -1437,6 +1592,64 @@ fn context_requirements(
     canonical_context_requirements(context).map(Some)
 }
 
+fn build_context_identity(
+    envelope: &KernelEvidenceEnvelope,
+    canonical_evidence_hash: Hash,
+) -> Result<KernelContextIdentityPayload, KernelEvidenceHandoffError> {
+    let mut entries = Vec::new();
+    for formula in &envelope.formula_evidence {
+        let Some(source) = context_identity_source(&formula.source) else {
+            continue;
+        };
+        let producer_formula_ref = formula.producer_formula_ref.ok_or(
+            KernelEvidenceHandoffError::MissingContextIdentityProducerRef {
+                formula_id: formula.formula_id,
+            },
+        )?;
+        entries.push(KernelContextIdentityEntry {
+            source,
+            formula_id: formula.formula_id,
+            formula_fingerprint: formula.formula_fingerprint.clone(),
+            producer_formula_ref,
+        });
+    }
+    entries.sort();
+    let hash_input =
+        context_identity_hash_input(envelope.target_vc(), canonical_evidence_hash, &entries);
+    let hash = stable_fingerprint_hash("mizar-vc-kernel-context-identity", &hash_input);
+    Ok(KernelContextIdentityPayload {
+        schema_version: KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION,
+        target_vc: envelope.target_vc.clone(),
+        canonical_evidence_hash,
+        entries,
+        hash_input,
+        hash,
+    })
+}
+
+fn context_identity_source(source: &KernelFormulaSource) -> Option<KernelContextIdentitySource> {
+    match source {
+        KernelFormulaSource::LocalHypothesis { local_context_id } => {
+            Some(KernelContextIdentitySource::LocalHypothesis {
+                local_context_id: *local_context_id,
+            })
+        }
+        KernelFormulaSource::CitedPremise { local_context_id } => {
+            Some(KernelContextIdentitySource::CitedPremise {
+                local_context_id: *local_context_id,
+            })
+        }
+        KernelFormulaSource::GeneratedVcFact { vc_fact_id } => {
+            Some(KernelContextIdentitySource::GeneratedVcFact {
+                vc_fact_id: *vc_fact_id,
+            })
+        }
+        KernelFormulaSource::AcceptedImportedAxiom(_)
+        | KernelFormulaSource::AcceptedImportedTheorem(_)
+        | KernelFormulaSource::PolicyBoundedBuiltin { .. } => None,
+    }
+}
+
 fn canonical_context_requirements(
     context: &KernelFormulaContextRequirements,
 ) -> Result<KernelFormulaContextRequirements, KernelEvidenceHandoffError> {
@@ -1624,6 +1837,40 @@ fn canonical_hash_input(envelope: &KernelEvidenceEnvelope) -> Vec<u8> {
     output.into_bytes()
 }
 
+fn context_identity_hash_input(
+    target_vc: &KernelEvidenceFingerprint,
+    canonical_evidence_hash: Hash,
+    entries: &[KernelContextIdentityEntry],
+) -> Vec<u8> {
+    let mut output = String::from("vc-kernel-context-identity-v1\n");
+    writeln!(
+        &mut output,
+        "schema-version={}",
+        KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION
+    )
+    .expect("write string");
+    writeln!(&mut output, "target-vc={}", target_vc.render()).expect("write string");
+    writeln!(
+        &mut output,
+        "canonical-evidence-hash={}",
+        hex(canonical_evidence_hash.as_bytes())
+    )
+    .expect("write string");
+    writeln!(&mut output, "[entries]").expect("write string");
+    for entry in entries {
+        writeln!(
+            &mut output,
+            "source={:?}; formula-id={}; fingerprint={}; producer={:?}",
+            entry.source,
+            entry.formula_id,
+            entry.formula_fingerprint.render(),
+            entry.producer_formula_ref
+        )
+        .expect("write string");
+    }
+    output.into_bytes()
+}
+
 fn write_manifest(output: &mut String, label: &str, entries: &[KernelManifestEntry]) {
     writeln!(output, "[{label}]").expect("write string");
     for entry in entries {
@@ -1783,6 +2030,148 @@ mod tests {
             fingerprint(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"formula-1")
         );
         assert_eq!(evidence.provenance()[1].payload, b"provenance-1");
+    }
+
+    #[test]
+    fn context_identity_covers_non_imported_source_bindings() {
+        let set = fixture_set(FixtureShape::MixedSourceBindings);
+        let symbol = VcText::new("Imported::A1");
+        let imported = imported_payload(&symbol);
+        let imported_payloads = vec![imported.clone()];
+        let context = KernelFormulaContextRequirements {
+            provenance_fingerprint: fingerprint(7, b"context"),
+            imported_axioms: vec![imported.requirement.clone()],
+            imported_theorems: Vec::new(),
+        };
+
+        let handoff = build_kernel_evidence_handoff(handoff_input(
+            &set,
+            &imported_payloads,
+            Some(&context),
+            None,
+        ))
+        .expect("mixed handoff");
+        let identity = handoff.context_identity();
+
+        assert!(handoff.context_identity_is_consistent());
+        assert_eq!(
+            identity.schema_version(),
+            KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION
+        );
+        assert_eq!(
+            identity.target_vc(),
+            handoff.canonical_evidence().target_vc()
+        );
+        assert_eq!(identity.canonical_evidence_hash(), handoff.canonical_hash());
+        assert_eq!(identity.entries().len(), 3);
+        assert_eq!(identity.hash(), handoff.context_identity_hash());
+        assert_eq!(
+            identity.hash(),
+            stable_fingerprint_hash("mizar-vc-kernel-context-identity", identity.hash_input())
+        );
+        assert!(identity.entries().iter().any(|entry| {
+            entry.source()
+                == (KernelContextIdentitySource::LocalHypothesis {
+                    local_context_id: 1,
+                })
+                && entry.formula_id() == 1
+                && entry.producer_formula_ref()
+                    == VcFormulaRef::Generated(VcGeneratedFormulaId::new(0))
+                && entry.formula_fingerprint()
+                    == &fingerprint(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"formula-0")
+        }));
+        assert!(identity.entries().iter().any(|entry| {
+            entry.source()
+                == (KernelContextIdentitySource::CitedPremise {
+                    local_context_id: 2,
+                })
+                && entry.formula_id() == 2
+                && entry.producer_formula_ref()
+                    == VcFormulaRef::Generated(VcGeneratedFormulaId::new(1))
+                && entry.formula_fingerprint()
+                    == &fingerprint(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"formula-1")
+        }));
+        assert!(identity.entries().iter().any(|entry| {
+            entry.source() == (KernelContextIdentitySource::GeneratedVcFact { vc_fact_id: 3 })
+                && entry.producer_formula_ref()
+                    == VcFormulaRef::Generated(VcGeneratedFormulaId::new(2))
+                && entry.formula_fingerprint()
+                    == &fingerprint(KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID, b"formula-2")
+        }));
+        assert!(
+            !identity.entries().iter().any(
+                |entry| entry.formula_fingerprint() == &imported.projection.formula_fingerprint
+            )
+        );
+        assert!(handoff.debug_text().contains("[context-identity]"));
+        assert!(
+            String::from_utf8_lossy(identity.hash_input())
+                .contains(&hex(handoff.canonical_hash().as_bytes()))
+        );
+    }
+
+    #[test]
+    fn context_identity_excludes_imported_theorem_source_bindings() {
+        let set = fixture_set(FixtureShape::ImportedPremise);
+        let symbol = VcText::new("Imported::A1");
+        let mut imported = imported_payload(&symbol);
+        imported.class = KernelImportedFormulaClass::Theorem;
+        let imported_payloads = vec![imported.clone()];
+        let context = KernelFormulaContextRequirements {
+            provenance_fingerprint: fingerprint(7, b"context"),
+            imported_axioms: Vec::new(),
+            imported_theorems: vec![imported.requirement.clone()],
+        };
+
+        let handoff = build_kernel_evidence_handoff(handoff_input(
+            &set,
+            &imported_payloads,
+            Some(&context),
+            None,
+        ))
+        .expect("theorem handoff");
+
+        assert!(matches!(
+            handoff.canonical_evidence().formula_evidence()[0].source(),
+            KernelFormulaSource::AcceptedImportedTheorem(_)
+        ));
+        assert!(handoff.context_identity().entries().is_empty());
+        assert!(handoff.context_identity_is_consistent());
+    }
+
+    #[test]
+    fn context_identity_binding_breaks_when_source_label_is_mutated() {
+        let set = fixture_set(FixtureShape::GeneratedPremise);
+        let handoff =
+            build_kernel_evidence_handoff(handoff_input(&set, &[], None, None)).expect("handoff");
+        let original_identity_hash = handoff.context_identity_hash();
+        let mut mutated = handoff.clone();
+        mutated.canonical_evidence.formula_evidence[0].source =
+            KernelFormulaSource::LocalHypothesis {
+                local_context_id: 1,
+            };
+        mutated.canonical_hash_input = canonical_hash_input(&mutated.canonical_evidence);
+        mutated.canonical_hash = stable_fingerprint_hash(
+            "mizar-vc-kernel-evidence-handoff",
+            &mutated.canonical_hash_input,
+        );
+
+        assert_ne!(
+            mutated.canonical_hash(),
+            handoff.context_identity().canonical_evidence_hash()
+        );
+        assert!(!mutated.context_identity_is_consistent());
+
+        let rebuilt_identity =
+            build_context_identity(&mutated.canonical_evidence, mutated.canonical_hash())
+                .expect("rebuilt context identity");
+        assert_ne!(rebuilt_identity.hash(), original_identity_hash);
+        assert!(matches!(
+            rebuilt_identity.entries()[0].source(),
+            KernelContextIdentitySource::LocalHypothesis {
+                local_context_id: 1
+            }
+        ));
     }
 
     #[test]
@@ -2591,6 +2980,7 @@ mod tests {
         HintOnlyCitation,
         UnsupportedHintMetadata,
         ImportedPremise,
+        MixedSourceBindings,
     }
 
     fn handoff_input<'a>(
@@ -2712,7 +3102,7 @@ mod tests {
         let source = InMemorySessionIdAllocator::new()
             .next_source_id(snapshot)
             .expect("source id");
-        let generated_formulas = vec![
+        let mut generated_formulas = vec![
             VcGeneratedFormula {
                 id: VcGeneratedFormulaId::new(0),
                 kind: VcGeneratedFormulaKind::GeneratedTypeObligation,
@@ -2726,6 +3116,20 @@ mod tests {
                 provenance: vec![provenance("generated-1")],
             },
         ];
+        if matches!(shape, FixtureShape::MixedSourceBindings) {
+            generated_formulas.push(VcGeneratedFormula {
+                id: VcGeneratedFormulaId::new(2),
+                kind: VcGeneratedFormulaKind::GeneratedTypeObligation,
+                shape: VcGeneratedFormulaShape::True,
+                provenance: vec![provenance("generated-2")],
+            });
+            generated_formulas.push(VcGeneratedFormula {
+                id: VcGeneratedFormulaId::new(3),
+                kind: VcGeneratedFormulaKind::SplitGoal,
+                shape: VcGeneratedFormulaShape::False,
+                provenance: vec![provenance("generated-3")],
+            });
+        }
         let (local_context, premises, proof_hint, goal, status) = match shape {
             FixtureShape::GeneratedGoalOnly => (
                 LocalContext::try_new(Vec::new(), Vec::new()).expect("context"),
@@ -2869,6 +3273,41 @@ mod tests {
                 }],
                 None,
                 VcFormulaRef::Generated(VcGeneratedFormulaId::new(1)),
+                VcStatus::NeedsAtp,
+            ),
+            FixtureShape::MixedSourceBindings => (
+                LocalContext::try_new(
+                    vec![
+                        ContextEntry {
+                            id: ContextEntryId::new(0),
+                            sort_key: CanonicalSortKey::new("000-local"),
+                            kind: ContextEntryKind::ProofAssumption,
+                            formula: Some(VcFormulaRef::Generated(VcGeneratedFormulaId::new(0))),
+                            provenance: vec![provenance("local")],
+                        },
+                        ContextEntry {
+                            id: ContextEntryId::new(1),
+                            sort_key: CanonicalSortKey::new("001-cited"),
+                            kind: ContextEntryKind::CitedPremise,
+                            formula: Some(VcFormulaRef::Generated(VcGeneratedFormulaId::new(1))),
+                            provenance: vec![provenance("cited")],
+                        },
+                    ],
+                    Vec::new(),
+                )
+                .expect("context"),
+                vec![
+                    PremiseRef::LocalContext(ContextEntryId::new(0)),
+                    PremiseRef::LocalContext(ContextEntryId::new(1)),
+                    PremiseRef::GeneratedFact {
+                        formula: VcFormulaRef::Generated(VcGeneratedFormulaId::new(2)),
+                    },
+                    PremiseRef::ImportedFact {
+                        symbol: VcText::new("Imported::A1"),
+                    },
+                ],
+                None,
+                VcFormulaRef::Generated(VcGeneratedFormulaId::new(3)),
                 VcStatus::NeedsAtp,
             ),
         };

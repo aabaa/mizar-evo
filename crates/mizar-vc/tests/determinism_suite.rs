@@ -124,7 +124,7 @@ fn identical_public_inputs_have_deterministic_pipeline_outputs() {
 }
 
 #[test]
-fn kernel_evidence_reuse_key_requires_handoff_and_tracks_kernel_hash() {
+fn kernel_evidence_reuse_key_requires_handoff_and_tracks_handoff_hashes() {
     let base = run_reuse_pipeline(false, VcId::new(0));
     let edited = run_reuse_pipeline(true, VcId::new(1));
 
@@ -160,6 +160,10 @@ fn kernel_evidence_reuse_key_requires_handoff_and_tracks_kernel_hash() {
         base_handoff.canonical_hash(),
         shifted_handoff.canonical_hash()
     );
+    assert_ne!(
+        base_handoff.context_identity_hash(),
+        shifted_handoff.context_identity_hash()
+    );
     let base_kernel_slices = slices_with_kernel_handoff(&base, VcId::new(0), &base_handoff);
     assert_ne!(
         slice_fingerprints(&base.slices),
@@ -184,10 +188,16 @@ fn kernel_evidence_reuse_key_requires_handoff_and_tracks_kernel_hash() {
     let context_changed = run_context_changed_reuse_pipeline();
     let context_changed_key = kernel_reuse_key(&context_changed, VcId::new(0));
     assert_ne!(base_key, context_changed_key);
+    let context_changed_handoff = kernel_handoff_for(&context_changed, VcId::new(0));
     assert_ne!(
         base_handoff.canonical_hash(),
-        kernel_handoff_for(&context_changed, VcId::new(0)).canonical_hash(),
+        context_changed_handoff.canonical_hash(),
         "canonical kernel evidence hash changes must invalidate reuse identity"
+    );
+    assert_ne!(
+        base_handoff.context_identity_hash(),
+        context_changed_handoff.context_identity_hash(),
+        "context identity hash changes must invalidate reuse identity"
     );
     assert_ne!(
         base.discharge.evidence_records()[0]

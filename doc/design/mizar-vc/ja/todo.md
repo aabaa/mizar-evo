@@ -402,7 +402,7 @@ kernel 受理境界の監査
       これは producer-side F1 handoff contract だけを閉じる。trusted
       check-service acceptance binding は引き続き mizar-kernel task 30 が所有する。
 
-28. **非 import ソース束縛の context-identity payload(kernel F2)。** [ ]
+28. **非 import ソース束縛の context-identity payload(kernel F2)。** [x]
     - local-hypothesis / cited-premise / generated-VC-fact の束縛が本当に
       対象 VC に属することを kernel が検査するための検証データを生成する:
       evidence の local/VC-fact セクションを canonical な task-25/26
@@ -420,6 +420,13 @@ kernel 受理境界の監査
     - 依存: 26; 対: mizar-kernel task 31。仕様: architecture 15
       「Context Identity Covers Non-Imported Source Bindings」;
       soundness_argument.md F2。
+    - Done in task 28: `VcKernelEvidenceHandoff` は、すべての local-hypothesis、
+      cited-premise、generated-VC-fact formula evidence binding 向け row を持つ stable
+      `context_identity` payload を運ぶ。この payload は target VC と canonical evidence
+      hash に bind され、`context_identity_hash()` を expose し、dependency-slice と
+      proof-reuse identity に参加し、imported premise を除外し、canonical source binding が
+      mutate されると stale になる。これは producer-side F2 payload だけを閉じる。
+      trusted membership verification は引き続き mizar-kernel task 31 が所有する。
 
 29. **imported-statement projection の producer 側(kernel F6)。** [ ]
     - kernel task 33 とともに、arch-18 の imported statement fingerprint

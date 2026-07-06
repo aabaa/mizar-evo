@@ -379,6 +379,7 @@ fn kernel_evidence_by_vc<'a>(
                 .final_goal()
                 .producer_formula_ref
                 != vc.goal
+            || !handoff.context_identity_is_consistent()
         {
             return Err(DependencySliceError::MismatchedKernelEvidence { vc: input.vc });
         }
@@ -1079,6 +1080,21 @@ impl<'a> SliceBuilder<'a> {
             payload.clone(),
             payload,
         );
+        let context_identity = handoff.context_identity();
+        let payload = format!(
+            "schema={}; target={:?}; canonical-hash={}; context-identity-hash={}; entries={:?}",
+            context_identity.schema_version(),
+            context_identity.target_vc(),
+            hex(context_identity.canonical_evidence_hash().as_bytes()),
+            hex(context_identity.hash().as_bytes()),
+            context_identity.entries()
+        );
+        self.add_entry_with_fingerprint_payload(
+            DependencyEntryClass::KernelEvidence,
+            "kernel-evidence:context-identity",
+            payload.clone(),
+            payload,
+        );
     }
 
     fn collect_discharge_evidence_ref(&mut self, role: &str, evidence: &DischargeEvidenceRef) {
@@ -1351,6 +1367,19 @@ fn proof_reuse_key(
     discharge_output: &DischargeOutput,
     kernel_handoff: &VcKernelEvidenceHandoff,
 ) -> Option<ProofReuseCandidateKey> {
+    let payload = proof_reuse_key_payload(vc, slice, discharge_output, kernel_handoff)?;
+    Some(ProofReuseCandidateKey(stable_fingerprint_hash(
+        "mizar-vc-proof-reuse-key",
+        payload.as_bytes(),
+    )))
+}
+
+fn proof_reuse_key_payload(
+    vc: &VcIr,
+    slice: &DependencySlice,
+    discharge_output: &DischargeOutput,
+    kernel_handoff: &VcKernelEvidenceHandoff,
+) -> Option<String> {
     if vc.id != slice.vc || vc.kind != slice.kind || vc.status != slice.status {
         return None;
     }
@@ -1388,8 +1417,9 @@ fn proof_reuse_key(
     writeln!(&mut payload, "verifier-policy: {policy:?}").expect("write string");
     writeln!(
         &mut payload,
-        "kernel-evidence: canonical-hash={:?}; formula-context={:?}",
+        "kernel-evidence: canonical-hash={:?}; context-identity-hash={:?}; formula-context={:?}",
         kernel_handoff.canonical_hash(),
+        kernel_handoff.context_identity_hash(),
         kernel_handoff.formula_context_requirements()
     )
     .expect("write string");
@@ -1400,10 +1430,7 @@ fn proof_reuse_key(
     )
     .expect("write string");
 
-    Some(ProofReuseCandidateKey(stable_fingerprint_hash(
-        "mizar-vc-proof-reuse-key",
-        payload.as_bytes(),
-    )))
+    Some(payload)
 }
 
 fn write_reuse_anchor_payload(output: &mut String, anchor: &ObligationAnchor) {
@@ -1898,6 +1925,11 @@ mod tests {
             DependencyEntryClass::KernelEvidence,
             "kernel-evidence:canonical-handoff"
         ));
+        assert!(has_entry(
+            kernel_slice,
+            DependencyEntryClass::KernelEvidence,
+            "kernel-evidence:context-identity"
+        ));
         assert!(
             plain
                 .proof_reuse_key_for(&discharge, VcId::new(0))
@@ -1959,7 +1991,6 @@ mod tests {
             ),
             Err(DependencySliceError::MismatchedKernelEvidence { vc: VcId::new(0) })
         );
-
         let two_vc = two_vc_same_goal_fixture();
         let two_vc_discharge = try_discharge(DischargeInput {
             vc_set: &two_vc,
@@ -2005,6 +2036,103 @@ mod tests {
                 )
                 .is_none(),
             "handoff target binding must match the selected VC before reuse"
+        );
+    }
+
+    #[test]
+    fn context_identity_hash_participates_independently_in_slice_and_reuse_key() {
+        let mut parts = fixture_parts(
+            VcStatus::Open,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(1)),
+            vec![
+                generated_formula(0, VcGeneratedFormulaShape::True),
+                generated_formula(1, VcGeneratedFormulaShape::True),
+            ],
+            complete_anchor_fixture(),
+        );
+        parts.vcs[0].premises = vec![PremiseRef::GeneratedFact {
+            formula: VcFormulaRef::Generated(VcGeneratedFormulaId::new(0)),
+        }];
+        let original = fixture_set(parts);
+        let discharge = try_discharge(DischargeInput {
+            vc_set: &original,
+            policy: &DischargePolicy::default(),
+        })
+        .expect("discharge");
+        let handoff = kernel_handoff_for(&discharge, VcId::new(0));
+        let context_changed = handoff.with_test_context_identity_producer_ref(
+            0,
+            VcFormulaRef::Generated(VcGeneratedFormulaId::new(1)),
+        );
+
+        assert_eq!(handoff.canonical_hash(), context_changed.canonical_hash());
+        assert_ne!(
+            handoff.context_identity_hash(),
+            context_changed.context_identity_hash()
+        );
+        assert!(context_changed.context_identity_is_consistent());
+
+        let base_slices = try_compute_dependency_slices_with_kernel_evidence(
+            DependencySliceInput {
+                vc_set: discharge.vc_set(),
+                discharge_output: Some(&discharge),
+            },
+            &[KernelEvidenceDependencyInput {
+                vc: VcId::new(0),
+                handoff: &handoff,
+            }],
+        )
+        .expect("base slices");
+        let context_changed_slices = try_compute_dependency_slices_with_kernel_evidence(
+            DependencySliceInput {
+                vc_set: discharge.vc_set(),
+                discharge_output: Some(&discharge),
+            },
+            &[KernelEvidenceDependencyInput {
+                vc: VcId::new(0),
+                handoff: &context_changed,
+            }],
+        )
+        .expect("context-changed slices");
+        assert_ne!(
+            only_slice(&base_slices).fingerprint(),
+            only_slice(&context_changed_slices).fingerprint()
+        );
+        let discharged_vc = discharge.vc_set().vc(VcId::new(0)).expect("discharged vc");
+        let base_key_payload = proof_reuse_key_payload(
+            discharged_vc,
+            only_slice(&base_slices),
+            &discharge,
+            &handoff,
+        )
+        .expect("base key payload");
+        let context_changed_key_payload = proof_reuse_key_payload(
+            discharged_vc,
+            only_slice(&context_changed_slices),
+            &discharge,
+            &context_changed,
+        )
+        .expect("context-changed key payload");
+        let base_kernel_line = base_key_payload
+            .lines()
+            .find(|line| line.starts_with("kernel-evidence: "))
+            .expect("base kernel line");
+        let context_changed_kernel_line = context_changed_key_payload
+            .lines()
+            .find(|line| line.starts_with("kernel-evidence: "))
+            .expect("context-changed kernel line");
+        assert!(base_kernel_line.contains(&format!(
+            "context-identity-hash={:?}",
+            handoff.context_identity_hash()
+        )));
+        assert_ne!(base_kernel_line, context_changed_kernel_line);
+        assert_ne!(
+            base_slices
+                .proof_reuse_key_for_kernel_handoff(&discharge, VcId::new(0), &handoff)
+                .expect("base key"),
+            context_changed_slices
+                .proof_reuse_key_for_kernel_handoff(&discharge, VcId::new(0), &context_changed,)
+                .expect("context-changed key")
         );
     }
 

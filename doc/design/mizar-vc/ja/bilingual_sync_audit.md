@@ -40,15 +40,15 @@ Closeout の自己 hash は commit 自身に埋め込めないため final user 
 | `vc_ir.md` | snapshot-local `VcId`、seed accounting、generated formula ownership、local context、premise、status、anchor、rendering、planned tests、public enum policy。 | 同期済み。 |
 | `generator.md` | explicit-payload generation scope、利用不能な registration / algorithm payload boundary、local context、controlled unfolding、normalization handoff、task slice、planned tests、public enum policy。 | 同期済み。 |
 | `discharge.md` | deterministic pre-ATP scope、supported classes、limit、evidence/explanation model、status interaction、no-erase ATP boundary、planned tests、public enum policy。 | 同期済み。 |
-| `dependency_slice.md` | conservative slice inputs/outputs、dependency entry classes、unknown coverage、reusable fingerprint contract、task-26 kernel-evidence identity integration、planned tests、public enum policy。 | Task 26 update により同期済み。 |
-| `kernel_evidence_handoff.md` | producer-side formula/substitution evidence handoff mapping、禁止される backend/legacy material、gap classification、task-25 builder public enum policy、resolved task-26 reuse-identity gap、task-27 explicit polarity contract、post-task-27 kernel handoff draft。 | Tasks 24-27 により同期済み。 |
-| `source_spec_audit.md` | public module exports、public surface inventory、cross-module evidence、explicit goal-polarity correspondence、classified external/deferred follow-ups。 | task 27 update により同期済み。 |
-| `bilingual_sync_audit.md` | audit scope、method、pair inventory、classification、Task 19/21/22/closeout/24/25/26/27 sync edits。 | この paired audit document により同期済み。 |
-| `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence、deterministic-discharge branch evidence、remaining external/deferred gaps、no-drift classification。 | Task 21 により同期済み。 |
+| `dependency_slice.md` | conservative slice inputs/outputs、dependency entry classes、unknown coverage、reusable fingerprint contract、task-26 kernel-evidence identity integration、task-28 context-identity hash integration、planned tests、public enum policy。 | Task 28 update により同期済み。 |
+| `kernel_evidence_handoff.md` | producer-side formula/substitution evidence handoff mapping、禁止される backend/legacy material、gap classification、task-25 builder public enum policy、resolved task-26 reuse-identity gap、task-27 explicit polarity contract、task-28 context-identity payload、post-task-28 kernel handoff draft。 | Tasks 24-28 により同期済み。 |
+| `source_spec_audit.md` | public module exports、public surface inventory、cross-module evidence、explicit goal-polarity correspondence、context-identity correspondence、classified external/deferred follow-ups。 | task 28 update により同期済み。 |
+| `bilingual_sync_audit.md` | audit scope、method、pair inventory、classification、Task 19/21/22/closeout/24/25/26/27/28 sync edits。 | この paired audit document により同期済み。 |
+| `architecture_22_audit.md` | Task 20 architecture-22 identity correspondence、deterministic-discharge branch evidence、task-28 kernel-handoff context-identity reuse behavior、remaining external/deferred gaps、no-drift classification。 | Task 28 update により同期済み。 |
 | `module_boundary_audit.md` | Task 22 source-layout line count、module-boundary review、必須 split なしの判断、任意 maintenance deferral。 | Task 22 により同期済み。 |
-| `crate_exit_report.md` | final status、quality score、hard gates、task 26 までの task commit、verification、review outcome、remaining deferred/external items、next-crate handoff draft。 | task 27 による task-26 commit hash backfill で同期済み。task 27 は post-closeout follow-up のまま。 |
-| `task_ledger.md` | Task status、task 26 までに利用可能な commit hash、complete task-27 review/verification evidence、deferred notes、post-task-27 handoff draft。 | task 27 update により同期済み。task 27 self-hash は commit が存在した後に backfill する。 |
-| `todo.md` | ordered task list、task 27 までの完了 task、closeout status、recommended verification、notes。 | task 27 update により同期済み。 |
+| `crate_exit_report.md` | final status、quality score、hard gates、task 26 までの task commit、verification、review outcome、remaining deferred/external items、next-crate handoff draft。 | prior closeout / task-27 bookkeeping により同期済み。task 28 は post-closeout follow-up のまま。 |
+| `task_ledger.md` | Task status、task 27 までに利用可能な commit hash、complete task-28 review/verification evidence、deferred notes、post-task-28 handoff draft。 | task 28 update により同期済み。task 28 self-hash は commit が存在した後に backfill する。 |
+| `todo.md` | ordered task list、task 28 までの完了 task、closeout status、recommended verification、notes。 | task 28 update により同期済み。 |
 
 ## 分類
 
@@ -146,3 +146,12 @@ goal polarity 向けに更新する。両言語は、現在の proof-obligation 
 `AssertFalseForRefutation` を要求し、canonical package assembly 前に
 `AssertTrueForConsistency` を拒否し、trusted checker-side B4/F1 acceptance binding を
 `mizar-kernel` task 30 に残すことを記録する。
+
+## Task 28 の同期編集
+
+Task 28 は producer-side context identity 向けに paired kernel-evidence handoff、
+dependency-slice、architecture-22 audit、source/spec audit、todo、plan、ledger、
+bilingual sync audit、および paired mizar-kernel F2 task record を更新する。両言語は、
+`context_identity_hash()` が local-hypothesis、cited-premise、generated-VC-fact source
+binding を cover し、dependency-slice / proof-reuse identity に参加し、imported fact を
+除外し、trusted membership verification を `mizar-kernel` task 31 に残すことを記録する。

@@ -164,8 +164,8 @@ Correspondence:
 | Slices are deterministic per-VC records preserving VC order, kind/status boundary, entries, unknowns, completeness, and fingerprint. | `try_compute_dependency_slices`, `DependencySliceSet`, `DependencySlice`, debug/fingerprint helpers. | dependency ordering/debug/fingerprint tests, status-boundary tests, determinism suite. | Implemented. |
 | Dependency entries collect local context, generated/core formulas, definitions, imports, traces, policy, anchors, discharge evidence, and seed mapping data. | slice collector helpers over `VcSet` and optional `DischargeOutput`. | `collects_dependency_classes_from_vc_ir_inputs`, discharge-evidence, pre-existing evidence, unused-context tests. | Implemented for current explicit payloads. |
 | Unknown coverage is fail-closed and causes uncacheable slices. | `DependencyUnknown`, completeness and cache-miss helpers. | conservative unknown, incomplete anchor, binder/context cycle, unavailable evidence tests. | Implemented. |
-| Reusable fingerprints exclude snapshot-local ids and normalize snapshot-local discharge evidence hashes. | fingerprint payload helpers that hash stable payloads rather than diagnostic local keys. | `reusable_fingerprint_excludes_snapshot_local_vc_id`, `reusable_fingerprint_normalizes_snapshot_local_discharge_hashes`, generated-formula-id shift and unresolved-payload tests. | Implemented for current deterministic-discharge reuse candidates. |
-| Proof-reuse candidate keys require complete anchors/slices, current matching slice computation, canonical VC/context fingerprints, compatible policy fingerprint, newly produced replayable deterministic discharge evidence, and current kernel evidence handoff identity. | `DependencySliceSet::proof_reuse_key_for_kernel_handoff`, `DependencySliceSet::proof_reuse_key_for` fail-closed fallback, `KernelEvidenceDependencyInput`, `ProofReuseCandidateKey`, `proof_reuse_key`. | `kernel_evidence_reuse_key_requires_handoff_and_tracks_kernel_hash`, `kernel_evidence_identity_participates_in_slice_and_reuse_key`, and dependency-slice fail-closed tests. | Implemented for kernel-evidence invalidation and deterministic-discharge branch; proof-witness/cache/kernel acceptance consumers remain external/deferred. |
+| Reusable fingerprints exclude snapshot-local ids and normalize snapshot-local discharge evidence hashes. | fingerprint payload helpers that hash stable payloads rather than diagnostic local keys. | `reusable_fingerprint_excludes_snapshot_local_vc_id`, `reusable_fingerprint_normalizes_snapshot_local_discharge_hashes`, generated-formula-id shift and unresolved-payload tests. | Implemented for current deterministic-discharge reuse candidates. Task 28's kernel-handoff reuse key is stricter and intentionally invalidates when canonical handoff or context-identity hashes shift. |
+| Proof-reuse candidate keys require complete anchors/slices, current matching slice computation, canonical VC/context fingerprints, compatible policy fingerprint, newly produced replayable deterministic discharge evidence, and current kernel evidence handoff identity. | `DependencySliceSet::proof_reuse_key_for_kernel_handoff`, `DependencySliceSet::proof_reuse_key_for` fail-closed fallback, `KernelEvidenceDependencyInput`, `ProofReuseCandidateKey`, `proof_reuse_key`. | `kernel_evidence_reuse_key_requires_handoff_and_tracks_handoff_hashes`, `kernel_evidence_identity_participates_in_slice_and_reuse_key`, and dependency-slice fail-closed tests. | Implemented for kernel-evidence invalidation and deterministic-discharge branch; proof-witness/cache/kernel acceptance consumers remain external/deferred. |
 | Public enums are forward-compatible. | dependency-slice public enums are `#[non_exhaustive]`. | `vc_public_enums_are_forward_compatible_and_documented`. | Guarded by task 17. |
 
 ### `kernel_evidence_handoff`
@@ -175,8 +175,8 @@ Source path: `crates/mizar-vc/src/kernel_evidence_handoff.rs`.
 Literal top-level public items:
 
 - `KERNEL_EVIDENCE_SCHEMA_VERSION`, `KERNEL_EVIDENCE_ENCODING_VERSION`,
-  `VC_KERNEL_HANDOFF_SCHEMA`, `VC_TARGET_FINGERPRINT_ALGORITHM_ID`,
-  `KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID`
+  `KERNEL_CONTEXT_IDENTITY_SCHEMA_VERSION`, `VC_KERNEL_HANDOFF_SCHEMA`,
+  `VC_TARGET_FINGERPRINT_ALGORITHM_ID`, `KERNEL_FORMULA_FINGERPRINT_ALGORITHM_ID`
 - `KernelEvidenceHandoffInput`, `VcKernelEvidenceHandoff`,
   `KernelEvidenceEnvelope`, `KernelEvidenceProfile`,
   `KernelClauseTautologyPolicy`, `KernelCertificateHashInputAlgorithm`,
@@ -186,6 +186,8 @@ Literal top-level public items:
   `KernelImportedFactRequirement`, `KernelRequiredProofStatus`,
   `KernelFormulaContextRequirements`, `KernelSubstitutionPayload`,
   `KernelFormulaEvidenceEntry`, `KernelFormulaSource`,
+  `KernelContextIdentityPayload`, `KernelContextIdentityEntry`,
+  `KernelContextIdentitySource`,
   `KernelSubstitutionEvidence`, `KernelEvidenceProvenance`,
   `KernelFinalGoalEvidence`, `KernelGoalPolarity`,
   `KernelEvidenceDiagnosticInputs`, `KernelDischargeDiagnostic`,
@@ -199,6 +201,7 @@ Correspondence:
 | The builder packages only producer-side formula, substitution, provenance, and target-binding evidence and never calls the kernel, SAT solving, or ATP backends. | `build_kernel_evidence_handoff` consumes `VcSet`, explicit payload slices, imported context requirements, and optional discharge output only. | deterministic handoff, proof-hint exclusion, target-binding, prohibited-backend-material, and discharge-diagnostic tests. | Implemented for explicit payloads. |
 | Proof-obligation handoffs declare explicit refutation polarity and reject consistency polarity before canonical package assembly. | `KernelEvidenceHandoffInput::goal_polarity`, exhaustive current-`VcKind` `required_goal_polarity`, `KernelEvidenceHandoffError::GoalPolarityMismatch`, and `KernelFinalGoalEvidence::polarity`. | `consistency_goal_polarity_for_proof_obligation_fails_closed` plus deterministic handoff polarity assertion. | Implemented for producer-side current VC kinds; checker-side acceptance binding remains `mizar-kernel` task 30. |
 | Canonical evidence contains schema/encoding versions, target VC, kernel profile, manifests, formula evidence, substitutions, provenance, and final goal; imported context requirements and diagnostics stay outside canonical hash input. | `KernelEvidenceEnvelope`, `target_fingerprint`, `VcKernelEvidenceHandoff::canonical_hash_input`, `canonical_hash_input`. | deterministic hash/debug tests, proof-hint metadata target-binding test, and imported-context tests. | Implemented. |
+| Non-imported local-hypothesis, cited-premise, and generated-VC-fact source bindings have producer-side context identity rows bound to the target VC and canonical evidence hash. | `KernelContextIdentityPayload`, `KernelContextIdentityEntry`, `KernelContextIdentitySource`, `VcKernelEvidenceHandoff::context_identity_hash`, and `context_identity_hash_input`. | `context_identity_covers_non_imported_source_bindings`, `context_identity_binding_breaks_when_source_label_is_mutated`, and dependency-slice kernel-evidence identity coverage. | Implemented for producer-side task 28; kernel-side membership verification remains `mizar-kernel` task 31. |
 | Imported context and payload data fail closed on empty context provenance, mismatched imported statement/formula fingerprints, unsupported formula fingerprint algorithms, and missing context/payload data; returned context requirements are canonical sorted/deduplicated. | `validate_import_requirement`, `imported_payload_map`, `canonical_context_requirements`. | imported context missing/mismatch, empty context provenance, unsupported algorithm, fingerprint mismatch, and duplicate-context tests. | Implemented for current explicit imported payloads. |
 | Missing formula, substitution source, provenance, manifest, side-condition, or unsupported premise data fails closed instead of being fabricated. | `KernelEvidenceHandoffError` and validation helpers. | missing payload, invalid projection, substitution missing-source/empty/side-condition, and manifest tests. | Implemented for current fail-closed cases; upstream full formula/binder payload production remains external. |
 | Substitution records omit instantiated formula and target formula fields; side-condition records are opaque deterministic kernel-compatible encodings that are sorted and rejected when empty or duplicated. | `KernelSubstitutionPayload`, `KernelSubstitutionEvidence`, `canonical_side_conditions`. | `substitutions_reference_source_formula_without_instantiated_fields`, substitution side-condition fail-closed tests, and input-order canonicalization tests. | Implemented. |
@@ -287,6 +290,21 @@ payloads, proof rows, cache promotion, artifact witness publication, or
 expectation updates. The trusted checker-side F1 binding remains assigned to
 `mizar-kernel` task 30.
 
+## Task 28 Context Identity Follow-Up
+
+Task 28 adds the producer-side `context_identity` payload to
+`VcKernelEvidenceHandoff`. The payload records deterministic rows for every
+non-imported local-hypothesis, cited-premise, and generated-VC-fact source
+binding, binds those rows to the selected target VC and canonical evidence hash,
+and exposes `context_identity_hash()` for dependency-slice and proof-reuse
+identity.
+
+The task does not add kernel calls, checker/core semantic changes, ATP backend
+integration, fabricated source payloads, proof rows, cache promotion, artifact
+witness publication, corpus runner activation, `doc/spec` edits, `.miz`
+fixtures, or expectation updates. Kernel-side F2 membership verification
+remains assigned to `mizar-kernel` task 31.
+
 ## Remaining Classified Follow-Ups
 
 Task 18 introduced no new source/spec correspondence gap. Task 21 re-ran the
@@ -294,10 +312,11 @@ audit after the architecture-22 identity work and likewise records no new
 unclassified source/spec gap. Task 22 re-ran the module-boundary gate and
 records no required split before closeout. Task 24 updates the downstream
 kernel classification, Task 25 implements the VC producer-side handoff builder
-for explicit payloads, and Task 26 connects its canonical handoff hash to
-dependency-slice / proof-reuse identity. Task 27 closes the producer-side F1
-polarity declaration/rejection contract, without resolving the remaining
-upstream full payload, checker-side F1, F2, or downstream consumer gaps.
+for explicit payloads, Task 26 connects its canonical handoff hash to
+dependency-slice / proof-reuse identity, Task 27 closes the producer-side F1
+polarity declaration/rejection contract, and Task 28 adds the producer-side F2
+context-identity hash. Remaining checker-side F2 and downstream consumer gaps
+stay classified.
 Existing classified records remain:
 
 - `external_dependency_gap`: active `proof_verification` runner support and

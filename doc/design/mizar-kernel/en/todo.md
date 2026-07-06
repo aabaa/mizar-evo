@@ -428,12 +428,12 @@ Every finding maps to a task or a recorded disposition:
     - Specify and implement the verification data for local-hypothesis,
       cited-premise, and generated-VC-fact source bindings: extend
       `FormulaEvidenceContext` (or the immutable kernel context) to carry the
-      canonical `mizar-vc` kernel-evidence handoff hash, and require each
-      non-imported binding to be checkable against that hash before
-      acceptance. Keep the current fail-closed `missing_provenance` behavior
-      for evidence that lacks the payload. Update `formula_evidence.md` and
-      architecture 15 in the same change; the producer-side payload is the
-      paired mizar-vc task.
+      task-28 `context_identity_hash()` payload alongside the canonical
+      `mizar-vc` formula-envelope handoff hash, and require each non-imported
+      binding to be checkable against that payload before acceptance. Keep the
+      current fail-closed `missing_provenance` behavior for evidence that lacks
+      the payload. Update `formula_evidence.md` and architecture 15 in the same
+      change; the producer-side payload is the paired mizar-vc task.
     - Acceptance:
       `fail_certificate_symbols_unverifiable_local_hypothesis_001` rejects
       for the provenance reason; a pass fixture with a valid context-identity

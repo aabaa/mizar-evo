@@ -380,10 +380,11 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   式 — goal 自身を含む — を local hypothesis とラベルできる(エッジ
   ケース 5)。本変更で部分修正: architecture 15(en/ja)は、非 import
   ソース束縛の受理前にコンテキスト同一性がそれらを覆うことを要求し、検証
-  データが存在するまで fail-closed とした。具体的なスキーマ作業(例:
-  evidence の local/VC-fact セクションを、不変コンテキストが運ぶ正準
-  `mizar-vc` kernel-evidence handoff hash に束縛する)は `mizar-kernel` と
-  `mizar-vc` の後続タスク。コーパス:
+  データが存在するまで fail-closed とした。producer-side schema は現在、
+  canonical formula-envelope hash と task-28 `context_identity_hash()` を分離する。
+  context payload は各 local/VC-fact row を target VC と canonical evidence hash に
+  束縛し、kernel task 31 は受理前にその payload に対する所属を検証しなければならない。
+  コーパス:
   `fail_certificate_symbols_unverifiable_local_hypothesis_001`。
 - **F3(Medium、設計上の deferral)。信頼 SAT ラッパーに正確なソルバー
   ステップ予算がない。** `sat_checker.md` は `batsat` 0.6.0 が安定した
@@ -432,8 +433,9 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
 
 - `doc/design/mizar-kernel/en/todo.md`: 候補新タスク — (a) 訂正後検査
   サービスへの B4 goal-polarity 束縛は task 30 で実装済み; (b) 非 import ソース束縛の
-  コンテキスト同一性検証(F2)の仕様化と実装(`mizar-vc` handoff hash に
-  束縛する `FormulaEvidenceContext` 拡張が有力); (c) ソルバーステップ予算
+  コンテキスト同一性検証(F2)の仕様化と実装(`mizar-vc` canonical
+  formula-envelope hash と task-28 `context_identity_hash()` を運ぶ immutable
+  context payload を使う); (c) ソルバーステップ予算
   deferral の再訪(F3); (d) fingerprint 等値規則を解除する imported
   statement projection の仕様化(F6、`mizar-vc` と対)。
 - `doc/design/mizar-vc/en/todo.md`: producer-side goal-polarity declaration

@@ -70,9 +70,26 @@ VcKernelEvidenceHandoff
     substitutions
     provenance
     final_goal
+  context_identity
+    schema_version
+    target_vc
+    canonical_evidence_hash
+    non_imported_source_binding_rows
+    context_identity_hash
   formula_context_requirements?
   diagnostic_inputs?
 ```
+
+Task 28 adds `context_identity` as a stable, non-diagnostic handoff section.
+It is intentionally outside `canonical_evidence`: `canonical_hash()` continues
+to name the formula/substitution/provenance envelope hash, and the context
+section has its own non-recursive `context_identity_hash()`. The context hash
+input records the target VC fingerprint, the canonical evidence hash, and one
+deterministic row for every local-hypothesis, cited-premise, or
+generated-VC-fact formula evidence entry. Each row binds the source class/id to
+the formula evidence row id, formula fingerprint, and producer `VcFormulaRef`.
+Imported axiom/theorem entries are covered by `formula_context_requirements`
+instead and do not appear in `context_identity`.
 
 `formula_context_requirements` is not a canonical evidence-envelope section.
 It records the immutable imported-fact context that must be supplied to
@@ -87,8 +104,9 @@ formula payloads must bind the same fingerprint as their imported statement
 requirement.
 
 `diagnostic_inputs` are optional producer-side details for explainability. They
-are excluded from the canonical kernel evidence bytes, hash inputs, and proof
-reuse identity unless a later spec explicitly promotes a stable field.
+are excluded from the canonical kernel evidence bytes, stable handoff identity,
+and proof reuse identity unless a later spec explicitly promotes a stable
+field.
 Snapshot-local `VcId`, generated formula ids, context-entry ids, source ranges,
 and handoff row ids may appear in diagnostics, but canonical evidence must bind
 through stable formula fingerprints, target identifiers, source bindings, and
@@ -116,15 +134,15 @@ producer-owned records already computed by prior VC phases:
 |---|---|
 | `VcSet` schema, module, source, canonical VC fingerprint, and selected `VcIr` | `target_vc`, target provenance binding, and deterministic package identity. If a stable target binding cannot be computed, the builder fails closed. |
 | selected `VcIr.kind` and `KernelEvidenceHandoffInput.goal_polarity` | The builder enumerates every current VC kind and requires `AssertFalseForRefutation` for proof obligations. The validated explicit polarity is copied into `final_goal.polarity`; a consistency-polarity request fails before canonical evidence bytes or package hashes are built. Kernel-side acceptance binding remains owned by `mizar-kernel` task 30. |
-| `LocalContext` entries with formula refs | Formula evidence entries with local-hypothesis source bindings. Entries without stable formula payloads or provenance are recorded as missing payloads, not fabricated. |
-| `PremiseRef::LocalContext` and `PremiseRef::GeneratedFact` | References to the corresponding local-hypothesis or generated-VC-fact formula evidence entries. |
+| `LocalContext` entries with formula refs | Formula evidence entries with local-hypothesis or cited-premise source bindings plus `context_identity` rows that bind the context-entry id, formula evidence row id, formula fingerprint, target VC, and canonical evidence hash. Entries without stable formula payloads or provenance are recorded as missing payloads, not fabricated. |
+| `PremiseRef::LocalContext` and `PremiseRef::GeneratedFact` | References to the corresponding local-hypothesis, cited-premise, or generated-VC-fact formula evidence entries, with matching `context_identity` rows for the non-imported source binding. |
 | `PremiseRef::ImportedFact` | Candidate imported axiom/theorem formula entries only when package/module/exported item identity, statement fingerprint, required proof-status requirement, and matching `FormulaEvidenceContext` input are available. `mizar-vc` does not certify the imported fact as accepted; proof/kernel-owned context must do that. Otherwise the premise is an `external_dependency_gap` or fail-closed builder error. |
 | `PremiseRef::CheckerFact`, `TypePredicate`, trace, registration, cluster, reduction, definition, policy, and conservative-unknown variants | Mapped only when an explicit formula payload, allowed source class, target binding, and provenance are already available. Marker-only or trace-only records do not become trusted evidence. |
 | `VcGeneratedFormula` table | Generated VC fact entries when the formula tree can be projected into the kernel-supported formula grammar and provenance binds the selected target. |
 | `VcIr.goal` | The standalone `final_goal` record. It is never a premise and never a source of `used_axioms`. |
 | `ProofHint` and premise restrictions | Diagnostic or candidate-production metadata only. They do not select premises, add premises, drop premises, or authorize acceptance. The builder may reference only exact premise refs already materialized in immutable `VcIr` inputs; restrictions that are not already reflected in those inputs stay diagnostic. |
 | `DischargeEvidenceRecord` | Task 25 carries replayable input references as diagnostics outside canonical evidence and canonical hash input. A discharge rule name or evidence hash is not trusted acceptance material. Promoting deterministic discharge data into canonical formula/substitution/provenance evidence requires a later spec-backed task. |
-| `DependencySlice` and proof-reuse candidate data | Identity and invalidation inputs for task 26. They do not prove the VC and do not replace kernel checking. |
+| `DependencySlice` and proof-reuse candidate data | Identity and invalidation inputs for tasks 26 and 28. They include both the canonical formula-envelope hash and context-identity hash, but they do not prove the VC and do not replace kernel checking. |
 
 The builder must preserve deterministic ordering. Missing formula payloads,
 missing imported-fact identity, missing provenance, non-projectable formulas,
@@ -220,6 +238,12 @@ Remaining gaps:
   rejects consistency polarity for every current proof-obligation VC kind before
   canonical package assembly. Kernel-side check-service enforcement remains
   assigned to `mizar-kernel` task 30.
+- resolved `VC-HANDOFF-G007`: task 28 adds the producer-side
+  `context_identity` payload and hash for local-hypothesis, cited-premise, and
+  generated-VC-fact formula evidence rows. The payload is bound to the target
+  VC and canonical evidence hash and participates in dependency-slice /
+  proof-reuse identity. Kernel-side membership verification remains assigned
+  to `mizar-kernel` task 31.
 
 ## Planned Tests
 
@@ -248,6 +272,11 @@ declares `AssertFalseForRefutation` explicitly and that a caller request for
 `AssertTrueForConsistency` fails closed with the stable
 `GoalPolarityMismatch` diagnostic.
 
+Task 28 adds Rust coverage showing that `context_identity` covers every
+non-imported local-hypothesis, cited-premise, and generated-VC-fact source
+binding, excludes imported premises, is stable and self-consistent, and becomes
+stale if a canonical source binding is mutated.
+
 ## Public Enum Policy
 
 Task 25 classifies every `kernel_evidence_handoff` public enum as a downstream
@@ -263,6 +292,7 @@ can be added without breaking downstream exhaustive matches.
 | `KernelImportedFormulaClass` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `KernelRequiredProofStatus` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `KernelFormulaSource` | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `KernelContextIdentitySource` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `KernelGoalPolarity` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `KernelEvidenceHandoffError` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `KernelEvidenceRole` | `#[non_exhaustive]` downstream forward-compatible surface. |
@@ -271,28 +301,29 @@ No exhaustive public enum exceptions are owned by this module. Internal
 `mizar-vc` matches that intentionally enumerate current variants may remain
 exhaustive.
 
-## Post-Task-27 Handoff Draft
+## Post-Task-28 Handoff Draft
 
 Recommended reasoning: `xhigh`.
 
 Prompt:
 
 ```text
-Continue Step 1 with mizar-kernel task 30. Before editing, verify a clean
-worktree, confirm the mizar-vc task 27 commit, and re-read
+Continue Step 1 with mizar-kernel task 31. Before editing, verify a clean
+worktree, confirm the mizar-vc task 28 commit, and re-read
 doc/design/todo.md, doc/design/mizar-kernel/en/todo.md,
 doc/design/mizar-kernel/en/00.crate_plan.md,
 doc/design/mizar-kernel/en/soundness_argument.md,
 doc/design/architecture/en/15.kernel_certificate_format.md, and
-doc/design/mizar-vc/en/kernel_evidence_handoff.md. Implement the kernel-side
-check-service binding for goal polarity only: proof-obligation acceptance must
-require refutation polarity from immutable caller context, mismatch must reject
-fail-closed, and the existing certificate-corpus polarity mismatch case must
-remain rejecting. Do not change checker/core semantics, fabricate producer
-payloads, add placeholder runners, or preempt the later F2/F7 tasks.
+doc/design/mizar-vc/en/kernel_evidence_handoff.md. Implement kernel-side F2
+context-identity verification only: accepted non-imported local-hypothesis,
+cited-premise, and generated-VC-fact source bindings must match the immutable
+target VC context rows carried by the task-28 `context_identity_hash()` payload,
+and missing or stale payloads must reject fail-closed. Do not change checker or
+core semantics, fabricate producer payloads, add placeholder runners, or
+preempt F6/F7/F8 work.
 ```
 
-Rationale: mizar-vc task 27 closes only the F1 producer-side polarity contract;
-the trusted acceptance binding remains in `mizar-kernel` task 30. Keep `xhigh`
-because the next task edits the trusted boundary. Lower reasoning is
-appropriate only for typo-only documentation synchronization.
+Rationale: mizar-vc task 28 closes only the producer-side F2 context-identity
+payload. Trusted membership verification remains in `mizar-kernel` task 31.
+Keep `xhigh` because the next task edits the trusted boundary. Lower reasoning
+is appropriate only for typo-only documentation synchronization.

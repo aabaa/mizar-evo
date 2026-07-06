@@ -49,7 +49,10 @@ downstream ATP/kernel/proof/cache integration は変更しない。
 Task 20 は Rust coverage を追加または更新した:
 
 - cross-edit `VcId` shift で同じ proof-reuse key になること;
-- generated-formula id shift で同じ proof-reuse key になること;
+- generated-formula id shift で、kernel evidence handoff identity が供給される前の
+  deterministic-discharge reuse fingerprint は同じになること; task 28 は canonical
+  handoff または context-identity hash が shift する場合、current kernel-handoff
+  proof-reuse key を意図的に conservative に invalidation する;
 - policy と local-context の変更が reuse identity を変えること;
 - stale slice set、pre-existing evidence、incomplete anchor、generated-goal
   change、stable evidence 欠落、unresolved payload が fail closed すること;

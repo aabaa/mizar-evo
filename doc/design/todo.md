@@ -97,8 +97,8 @@ is its task 1). "Next work" points into the
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 20 plus task 22 | steps 1, 5 (task 21, then 10) | [todo](./mizar-test/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete | steps 2, 4, 5 (tasks 35-48) | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete | steps 2, 4 (tasks 26-30) | [todo](./mizar-core/en/todo.md) |
-| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | steps 1, 3 (tasks 28-29), 5; task 27 resolved | [todo](./mizar-vc/en/todo.md) |
-| mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | steps 1, 3, 4 (tasks 30-31, 33-35); task 32 parked | [todo](./mizar-kernel/en/todo.md) |
+| mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | steps 3 (task 29), 5; tasks 27-28 resolved | [todo](./mizar-vc/en/todo.md) |
+| mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | steps 1, 3, 4 (tasks 31, 33-35); task 32 parked; task 30 resolved | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete | steps 3 (task 29), 7 | [todo](./mizar-atp/en/todo.md) |
 | mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete | steps 3 (task 21), 7 | [todo](./mizar-proof/en/todo.md) |
 | mizar-cache | Cache keys, fingerprints, proof reuse, cluster-db storage | [x] internal-cache milestone complete | steps 3 (task 24), 7 | [todo](./mizar-cache/en/todo.md) |
@@ -130,7 +130,7 @@ certified-unsound acceptance paths.
    the kernel-evidence handoff (F1 producer side).
 3. [x] [mizar-kernel task 30](./mizar-kernel/en/todo.md) — goal-polarity
    binding in the check service (F1, invariant B4).
-4. [ ] [mizar-vc task 28](./mizar-vc/en/todo.md) — context-identity payload
+4. [x] [mizar-vc task 28](./mizar-vc/en/todo.md) — context-identity payload
    for non-imported source bindings (F2 producer side).
 5. [ ] [mizar-kernel task 31](./mizar-kernel/en/todo.md) — context-identity
    verification (F2, paired with vc 28).

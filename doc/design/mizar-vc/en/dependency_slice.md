@@ -14,9 +14,10 @@ artifact metadata, and later prover/proof consumers.
 
 Task 26 extends the slice and proof-reuse identity boundary with the canonical
 kernel evidence handoff hash produced by
-[kernel_evidence_handoff.md](./kernel_evidence_handoff.md). The hash is a
-reuse invalidation input only. It does not make `mizar-vc` a kernel caller and
-does not promote a handoff package to proof acceptance.
+[kernel_evidence_handoff.md](./kernel_evidence_handoff.md). Task 28 extends
+that boundary with the non-imported source-binding `context_identity_hash()`.
+Both hashes are reuse invalidation inputs only. They do not make `mizar-vc` a
+kernel caller and do not promote a handoff package to proof acceptance.
 
 Task 13 is specification-only. It refines
 [architecture 18](../../architecture/en/18.dependency_fingerprint.md) and the
@@ -33,7 +34,8 @@ Owned by this module:
 - conservative unknown-coverage markers that force cache misses or downstream
   recomputation instead of pretending dependencies are absent;
 - stable dependency-slice fingerprints suitable for artifact and reuse keys.
-- optional kernel evidence handoff identity entries used to invalidate
+- optional kernel evidence handoff identity entries, including the canonical
+  formula-envelope hash and task-28 context-identity hash, used to invalidate
   proof-reuse candidates after task 25.
 
 Out of scope:
@@ -126,9 +128,10 @@ Task 14 may introduce a structured Rust enum, but the semantic classes are:
   eligibility;
 - `discharge_evidence`: rule names, evidence hashes, evidence inputs, and
   preserved-evidence markers from `DischargeOutput`;
-- `kernel_evidence`: task-25 canonical kernel evidence handoff hash, target
-  binding, schema/encoding/profile identity, and imported formula context
-  requirements when supplied by the caller;
+- `kernel_evidence`: task-25 canonical kernel evidence handoff hash, task-28
+  context-identity hash and rows, target binding, schema/encoding/profile
+  identity, and imported formula context requirements when supplied by the
+  caller;
 - `seed`: seed handoff ids and seed mapping rows needed to keep concrete-VC
   cardinality stable for diagnostics, while reusable fingerprint payloads use
   the current-obligation mapping shape rather than handoff ids.
@@ -168,8 +171,8 @@ ids) and include:
 - ordered dependency entries and conservative unknown markers;
 - relevant policy keys/values;
 - generated formula references and discharge evidence boundaries;
-- kernel evidence handoff hash and imported formula context requirements when a
-  handoff is supplied;
+- kernel evidence handoff hash, context-identity hash, and imported formula
+  context requirements when a handoff is supplied;
 - stable anchor and context hash markers when available, or conservative
   unknown markers when unavailable.
 
@@ -207,8 +210,9 @@ helper must return a key only when all of the following hold:
   completeness, kind, and status;
 - the `ObligationAnchor` is complete and the slice is complete;
 - canonical VC and local-context fingerprints are available;
-- a task-25 `VcKernelEvidenceHandoff` is supplied for the same VC and its
-  canonical hash is included in the proof-reuse key payload;
+- a task-25/28 `VcKernelEvidenceHandoff` is supplied for the same VC and its
+  canonical formula-envelope hash plus `context_identity_hash()` are included
+  in the proof-reuse key payload;
 - explicit verifier-policy inputs and status policy are included in a policy
   fingerprint;
 - a newly produced replayable deterministic discharge evidence record exists
@@ -246,14 +250,23 @@ gates when canonical VC/context fingerprints and artifact consumers exist.
 
 Task 26 adds Rust coverage for:
 
-- kernel evidence handoff hashes participating in dependency-slice fingerprints
-  and proof-reuse candidate keys;
+- canonical kernel evidence handoff hashes participating in dependency-slice
+  fingerprints and proof-reuse candidate keys;
 - proof-reuse keys being unavailable when no kernel evidence handoff is
   supplied;
 - proof-reuse invalidation when the canonical kernel evidence hash changes;
 - duplicate, unknown, or selected-VC-mismatched kernel evidence handoff inputs
   failing closed;
 - downstream proof/cache/artifact consumers remaining external/deferred.
+
+Task 28 adds Rust coverage for:
+
+- context-identity hashes participating in dependency-slice fingerprints and
+  proof-reuse candidate keys;
+- proof-reuse invalidation when the context-identity hash changes while the
+  canonical evidence hash is unchanged;
+- local-hypothesis, cited-premise, and generated-VC-fact rows being covered by
+  context identity, with imported axiom/theorem entries excluded.
 
 ## Public Enum Policy
 

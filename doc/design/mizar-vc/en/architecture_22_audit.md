@@ -50,7 +50,10 @@ Reviewed mizar-vc documents:
 Task 20 adds or updates Rust coverage for:
 
 - cross-edit `VcId` shift with equal proof-reuse key;
-- generated-formula id shift with equal proof-reuse key;
+- generated-formula id shift with equal deterministic-discharge reuse
+  fingerprint before kernel evidence handoff identity is supplied; task 28
+  intentionally makes current kernel-handoff proof-reuse keys conservative when
+  the canonical handoff or context-identity hash shifts;
 - policy and local-context changes changing reuse identity;
 - stale slice sets, pre-existing evidence, incomplete anchors, generated-goal
   changes, missing stable evidence, and unresolved payloads failing closed;
