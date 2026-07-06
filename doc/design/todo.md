@@ -94,7 +94,7 @@ is its task 1). "Next work" points into the
 | mizar-parser | Grammar, Pratt parsing, syntax recovery, parse-only corpus | [x] complete through task 45 | parked task 46 | [todo](./mizar-parser/en/todo.md) |
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 (task 30) | [todo](./mizar-resolve/en/todo.md) |
-| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 20 | steps 1, 5 (tasks 21-22, then 10) | [todo](./mizar-test/en/todo.md) |
+| mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 20 plus task 22 | steps 1, 5 (task 21, then 10) | [todo](./mizar-test/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete | steps 2, 4, 5 (tasks 35-48) | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete | steps 2, 4 (tasks 26-30) | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | steps 1, 3 (tasks 27-29), 5 | [todo](./mizar-vc/en/todo.md) |
@@ -124,7 +124,7 @@ Close the kernel-audit F1/F2/F7/F8 findings on the trusted boundary before any
 further evidence-pipeline work. No external gaps block this step; it removes
 certified-unsound acceptance paths.
 
-1. [ ] [mizar-test task 22](./mizar-test/en/todo.md) — certificate-corpus root
+1. [x] [mizar-test task 22](./mizar-test/en/todo.md) — certificate-corpus root
    naming reconciliation (F8; docs-only, no deps).
 2. [ ] [mizar-vc task 27](./mizar-vc/en/todo.md) — explicit goal polarity in
    the kernel-evidence handoff (F1 producer side).
@@ -367,7 +367,7 @@ expectations to current behavior.
 | Audit | Findings | Owning tasks / dispositions |
 |---|---|---|
 | [mizar-checker semantic_spec_audit.md](./mizar-checker/en/semantic_spec_audit.md) (2026-07-03, commit `707c95be`) | SSA-001 (critical) through SSA-020; 16-fixture rejection corpus | [mizar-checker tasks 35-48](./mizar-checker/en/todo.md) (plan steps 2, 4, 5); SSA-018 recorded as a diagnostics-wave lint (step 8), no task; full disposition table in the checker TODO |
-| [mizar-kernel soundness_argument.md](./mizar-kernel/en/soundness_argument.md) (2026-07-03, commit `f75af877`) | F1-F9; 23-case reject-first certificate corpus | [mizar-kernel tasks 30-35](./mizar-kernel/en/todo.md); producer side [mizar-vc tasks 27-29](./mizar-vc/en/todo.md); consumers [mizar-atp task 29](./mizar-atp/en/todo.md), [mizar-proof task 21](./mizar-proof/en/todo.md), [mizar-cache task 24](./mizar-cache/en/todo.md), [mizar-artifact task 24](./mizar-artifact/en/todo.md); harness [mizar-test tasks 21-22](./mizar-test/en/todo.md) (plan steps 1, 3, 4); F4/F5 resolved inside `f75af877` |
+| [mizar-kernel soundness_argument.md](./mizar-kernel/en/soundness_argument.md) (2026-07-03, commit `f75af877`) | F1-F9; 23-case reject-first certificate corpus | [mizar-kernel tasks 30-35](./mizar-kernel/en/todo.md); producer side [mizar-vc tasks 27-29](./mizar-vc/en/todo.md); consumers [mizar-atp task 29](./mizar-atp/en/todo.md), [mizar-proof task 21](./mizar-proof/en/todo.md), [mizar-cache task 24](./mizar-cache/en/todo.md), [mizar-artifact task 24](./mizar-artifact/en/todo.md); harness [mizar-test task 21](./mizar-test/en/todo.md) for F7, with F8 resolved by mizar-test task 22 (plan steps 1, 3, 4); F4/F5 resolved inside `f75af877` |
 | [mizar-core template_encoding_audit.md](./mizar-core/en/template_encoding_audit.md) (2026-07-05, commit `cef7e109`) | F1-F8; 4-seed template rejection corpus | spec text for F1-F6/F8 patched inside `cef7e109`; [mizar-core tasks 26-30](./mizar-core/en/todo.md) (plan steps 2, 4); coordination rows in [mizar-checker tasks 36/43](./mizar-checker/en/todo.md) and [mizar-kernel task 35](./mizar-kernel/en/todo.md) |
 
 `mizar-ir`, `mizar-diagnostics`, `mizar-driver`, and `mizar-doc` reviewed the

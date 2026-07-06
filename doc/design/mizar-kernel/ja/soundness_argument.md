@@ -413,10 +413,11 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   明示的に要求している。新コーパスは訂正後経路の reason に非 `soundness.`
   の安定キーを使う(レジストリは未知の `soundness.*` キーを拒否するため)。
   レジストリ拡張は `mizar-test` の後続タスク。
-- **F8(Low、報告)。ディレクトリ命名のドリフト。** architecture 20 は必須
-  ディレクトリに `tests/kernel_evidence/` を列挙するが、実装済み
-  `mizar-test` レイアウトは `tests/certificates/`(本コーパス)を所有する。
-  後続 docs タスクでどちらかに改名または相互参照すべき。
+- **F8(Low、`mizar-test` task 22 で解決済み)。ディレクトリ命名の
+  ドリフト。** architecture 20 は現在、certificate と kernel-evidence corpus
+  の正準 root として `tests/certificates/` を列挙し、実装済み
+  `mizar-test` レイアウトと本コーパスに一致している。退役済みの監査 draft 名
+  `tests/kernel_evidence/` は、必要な場合の歴史的文脈に限って残す。
 - **F9(Low、報告)。レガシー恒真 marker の意味論がプロファイル依存かつ
   希薄。** 誤ラベルは premise を弱めるだけで健全性の穴ではないが、タスク 29
   後続でレガシー経路とともに確定または退役させるべき。
@@ -435,7 +436,7 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   するコンテキスト同一性ペイロードの生成(F2 と対)。
 - `doc/design/mizar-test/en/`(本タスクの範囲外、報告): required
   soundness-case レジストリと layout/expectation 文書への訂正後経路 reason
-  の追加(F7)、コーパスルート命名の整合(F8)。
+  の追加(F7)。コーパスルート命名 drift(F8)は task 22 で解決済み。
 
 ## 制約と前提
 

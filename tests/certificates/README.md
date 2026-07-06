@@ -2,6 +2,9 @@
 
 Certificate payload tests use `.cert.json` with adjacent `.expect.toml`
 sidecars. Many certificate failures are independent of `.miz` parsing.
+This directory is the canonical corpus root named by architecture 20 for
+certificate and kernel-evidence payload tests; `tests/kernel_evidence/` is only
+a retired audit-draft name.
 
 ## Reject-First Corpus
 

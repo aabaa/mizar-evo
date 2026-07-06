@@ -450,13 +450,16 @@ audit-driven additions; broader runner growth remains task 10 pacing.
     - Deps: 8; corpus from mizar-kernel audit (`f75af877`). Spec:
       architecture 20; soundness_argument.md F7.
 
-22. **Certificate-corpus root naming reconciliation (kernel F8).** [ ]
+22. **Certificate-corpus root naming reconciliation (kernel F8).** [x]
     - Reconcile architecture 20's `tests/kernel_evidence/` directory list
       with the implemented `tests/certificates/` layout: rename one side or
       cross-reference both (docs-only if cross-referencing). Update
       architecture 20 (en+ja) and the corpus README in the same change.
-    - Acceptance: no document lists a corpus root that does not exist;
-      harness discovery matches the documented layout.
+    - Completed by task 22: architecture 20 (EN/JA), the certificate corpus
+      README, the crate plan, and the kernel soundness argument now identify
+      `tests/certificates/` as the canonical certificate/kernel-evidence
+      corpus root. Remaining `tests/kernel_evidence/` mentions are historical
+      retired-name notes, not normative corpus roots.
     - Verify: `cargo test -p mizar-test`; `git diff --check`.
     - Deps: none. Spec: architecture 20; soundness_argument.md F8.
 

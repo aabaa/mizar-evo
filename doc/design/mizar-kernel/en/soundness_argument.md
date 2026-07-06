@@ -427,10 +427,11 @@ the trusted base; **Low** = documentation/consistency debt.
   normal policy" coverage. The new corpus uses non-`soundness.` stable keys for
   corrected-path reasons (the registry rejects unknown `soundness.*` keys);
   extending the registry is a `mizar-test` follow-up task.
-- **F8 (Low, reported). Directory naming drift.** Architecture 20 lists
-  `tests/kernel_evidence/` among required directories, while the implemented
-  `mizar-test` layout owns `tests/certificates/` (this corpus). One of the two
-  should be renamed or cross-referenced in a follow-up docs task.
+- **F8 (Low, resolved by `mizar-test` task 22). Directory naming drift.**
+  Architecture 20 now lists `tests/certificates/` as the canonical certificate
+  and kernel-evidence corpus root, matching the implemented `mizar-test`
+  layout and this corpus. The retired audit-draft name
+  `tests/kernel_evidence/` is kept only as historical context where needed.
 - **F9 (Low, reported). Legacy tautology-marker semantics are profile-dependent
   and thinly specified.** Mislabeling weakens premises only, so this is not a
   soundness hole; it should still be pinned down or retired with the legacy
@@ -451,8 +452,8 @@ the trusted base; **Low** = documentation/consistency debt.
   payload the kernel needs for local/VC-fact verification (pairs with F2).
 - `doc/design/mizar-test/en/` (out of scope here, reported): extend the
   required soundness-case registry and layout/expectation docs with
-  corrected-path rejection reasons (F7) and reconcile the corpus root naming
-  (F8).
+  corrected-path rejection reasons (F7). The corpus root naming drift (F8) is
+  resolved by task 22.
 
 ## Constraints And Assumptions
 
