@@ -322,7 +322,7 @@ work. Every finding maps to a task or a recorded disposition:
 
 | Finding | Disposition |
 |---|---|
-| F1 (structure-view collapse) | spec patched; task 27 implements explicit-payload elaborator reduct-view lowering; kernel-side re-audit is [mizar-kernel task 35](../../mizar-kernel/en/todo.md); member-identity coordination is [mizar-checker task 36](../../mizar-checker/en/todo.md); source-derived runner/extraction remains external |
+| F1 (structure-view collapse) | spec patched; task 27 implements explicit-payload elaborator reduct-view lowering; kernel-side re-audit is completed by [mizar-kernel task 35](../../mizar-kernel/en/todo.md); member-identity coordination is [mizar-checker task 36](../../mizar-checker/en/todo.md); source-derived runner/extraction remains external |
 | F2 (type-actual inhabitation) | spec patched (§17.3.4 gating row); checker task 43 completed the built-in/base-shape inhabitation table; elaborator gating is task 28 |
 | F3 (`type extends M` object/schema conflation) | spec patched (§18.10.2); explicit-payload bounded-view lowering is covered together with F1 in task 27 |
 | F4 (functor guards, actual signature compatibility) | spec patched (§18.10.4, §18.9); explicit-payload implementation completed in task 29 |

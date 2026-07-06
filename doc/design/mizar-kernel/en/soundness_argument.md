@@ -110,11 +110,16 @@ findings section.
   malformed terms, unknown symbols, and manifest-incompatible variables reject.
 - F2. Atom identity is the canonical injective byte encoding; equal bytes if
   and only if equal normalized atoms. No display name, source path, or
-  allocation order participates.
+  allocation order participates. After the task-35 reduct-view re-audit, this
+  includes explicit view terms inside atom subjects: an attribute predicate is
+  still atomic for its normalized subject, but `attr(view_add(R))` and
+  `attr(view_mul(R))` are different atoms because their subject term bytes
+  differ.
 - F3. Each formula's tree fingerprint is recomputed by the kernel and must
   equal the recorded fingerprint (stable identity binding, not acceptance).
 - F4. Symbol and variable manifests authorize structure validation only; they
-  never trigger symbol lookup, overload resolution, or source loading.
+  never trigger symbol lookup, overload resolution, view-path inference, or
+  source loading.
 
 ### P. Provenance and source-binding invariants
 
@@ -276,8 +281,8 @@ provenance fingerprints, policy gates, limits.
 What the kernel never does on any path: proof search, premise selection or
 minimization, substitution invention, overload resolution, cluster search,
 registration activation, implicit coercion insertion, fallback inference,
-alternate encodings, ATP/SAT child processes, acceptance from backend-reported
-success, or heuristic repair of malformed evidence.
+view-path inference, alternate encodings, ATP/SAT child processes, acceptance
+from backend-reported success, or heuristic repair of malformed evidence.
 
 ## Rejection Taxonomy And Attacks Prevented
 
@@ -374,6 +379,18 @@ section).
     `finding` F2 (documented in Trust Model; enforcement is integration work).
 18. **Batch tie-breaking.** Equal target fingerprints preserve caller input
     order; shuffled construction covered by determinism tests. `covered`.
+19. **Attribute atoms over reduct-view terms.** The template-encoding audit
+    replaced flattened structure widening with explicit reduct/view terms for
+    renamed or multi-path structure views. A certificate that mentions a
+    view-dependent attribute must therefore carry the chosen view as part of
+    the normalized term subject, for example `attr(view_add(R))` rather than a
+    flattened `attr(R)`. The kernel does not decide which view is semantically
+    available and does not collapse extensional view paths; it only validates
+    the normalized atom bytes it is given. Thus F1-F4 remain unchanged:
+    distinct view-term bytes produce distinct atom identities, formula
+    fingerprints bind those identities, and any missing or flattened view is an
+    upstream evidence/provenance problem rather than a kernel repair case.
+    `covered` (task-35 re-audit).
 
 ## Audit Findings
 
@@ -475,6 +492,38 @@ the trusted base; **Low** = documentation/consistency debt.
   at the marker rejects as `invalid_sat_proof`. Mislabeling still weakens
   premises only and cannot strengthen acceptance.
 
+## Reduct-View Re-Audit (task 35)
+
+The `mizar-core` template-encoding audit replaced flattened structure widening
+with explicit reduct/view terms for Chapter 5/13 structure views, and task 27
+implemented the explicit-payload core lowering. Rechecking the kernel
+soundness argument against that encoding found no kernel invariant change and
+no certificate corpus sidecar change.
+
+The reason is local to the existing F-class formula invariants: the kernel's
+atom identity is the canonical byte encoding of the normalized atom, including
+the full subject term. Once upstream evidence writes the view choice into the
+term (`view_{D->B}(x)` or the corresponding ordered view path), attribute
+predicates and selector atoms over different views are already different
+kernel atoms. The predicate remains atomic per subject; the subject is no
+longer assumed to be the unviewed source expression. The view functor and path
+choice are caller/producer-supplied normalized term symbols that must be
+authorized by the evidence manifest like any other term symbol; they are not
+derived by kernel-side `qua` resolution.
+
+Task 35 therefore records the following boundary:
+
+- the kernel accepts or rejects only the normalized atom/formula bytes and
+  immutable-context provenance it receives;
+- it must not insert, infer, erase, or equate reduct/view paths;
+- source-derived view availability, selector extensionality facts, and exact
+  instance guard formulas remain checker/core/VC producer obligations until
+  real payload extraction exists;
+- `tests/certificates/` sidecar invariant references remain valid because no
+  invariant id or rejection category changed. The template view-leak seeds stay
+  inactive source-semantic corpus rows until the Step 5 source-derived runner
+  can produce real evidence.
+
 ## Impact On Crate TODOs (report only; revisions are follow-up tasks)
 
 - `doc/design/mizar-kernel/en/todo.md`: candidate new tasks — (a) B4
@@ -492,6 +541,9 @@ the trusted base; **Low** = documentation/consistency debt.
 - `doc/design/mizar-test/en/`: the required soundness-case registry and
   layout/expectation docs now include corrected-path rejection reasons (F7).
   The corpus root naming drift (F8) is resolved by task 22.
+- `doc/design/mizar-core/en/template_encoding_audit.md`: the F1/F3 kernel
+  follow-up is resolved by task 35 with the docs-only conclusion above; no
+  kernel source change or corpus sidecar rewrite is required.
 
 ## Constraints And Assumptions
 

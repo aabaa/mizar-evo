@@ -104,11 +104,14 @@
   `Atom`/`Not`/`And`/`Or`)でパースされること。空の連言/選言、不正 term、
   未知シンボル、manifest 非互換変数は拒否。
 - F2. Atom の同一性は正準かつ単射なバイトエンコーディングによる。表示名、
-  ソースパス、割り当て順序は一切関与しない。
+  ソースパス、割り当て順序は一切関与しない。task 35 の reduct-view
+  再監査後は、atom subject 内の明示的 view term もここに含まれる。属性述語は
+  正規化 subject ごとに atomic のままだが、`attr(view_add(R))` と
+  `attr(view_mul(R))` は subject term bytes が異なるため別 atom である。
 - F3. 各論理式の tree フィンガープリントはカーネルが再計算し、記録値と一致
   すること(安定同一性の束縛であり、受理主張ではない)。
 - F4. symbol/variable manifest は構造検証のみを許可し、シンボル検索、
-  オーバーロード解決、ソース読み込みを決して誘発しない。
+  オーバーロード解決、view-path 推論、ソース読み込みを決して誘発しない。
 
 ### P. Provenance・ソース束縛不変条件
 
@@ -265,8 +268,9 @@
 
 カーネルがいかなる経路でも行わないこと: 証明探索、premise の選択・最小化、
 代入の発明、オーバーロード解決、cluster 探索、registration 活性化、暗黙の
-coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子プロセス、
-バックエンド報告の成功による受理、不正 evidence のヒューリスティック修復。
+coercion 挿入、fallback 推論、view-path 推論、代替エンコーディング、
+ATP/SAT 子プロセス、バックエンド報告の成功による受理、不正 evidence の
+ヒューリスティック修復。
 
 ## 拒否分類と防がれる攻撃
 
@@ -359,6 +363,17 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
     文書化。強制は統合作業)。
 18. **バッチのタイブレーク。** 同一対象フィンガープリントは呼び出し側入力順
     を保持。シャッフル構成は決定性テストでカバー。`covered`。
+19. **reduct-view term 上の属性 atom。** template encoding audit は、改名または
+    複数経路の構造体 view について、flattened structure widening を明示的な
+    reduct/view term に置き換えた。したがって view 依存属性に言及する証明書は、
+    flattened `attr(R)` ではなく、たとえば `attr(view_add(R))` のように、選んだ
+    view を正規化 term subject の一部として運ばなければならない。カーネルは
+    どの view が意味論的に利用可能かを決定せず、外延的 view path を collapse
+    しない。与えられた正規化 atom bytes を検証するだけである。したがって
+    F1-F4 は変わらない。異なる view-term bytes は異なる atom identity を作り、
+    formula fingerprint はその identity を束縛する。view が欠落または flatten
+    されている場合は upstream evidence/provenance の問題であり、kernel repair
+    case ではない。`covered`(task 35 再監査)。
 
 ## 監査所見
 
@@ -453,6 +468,38 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
   `invalid_sat_proof` として拒否される。誤ラベルは引き続き premise を弱めるだけで、
   acceptance を強められない。
 
+## Reduct-View 再監査(task 35)
+
+`mizar-core` template-encoding audit は Chapter 5/13 の構造体 view について、
+flattened structure widening を明示的な reduct/view term に置き換え、task 27 は
+explicit-payload の core lowering を実装した。この encoding に対して kernel
+soundness argument を再確認した結果、kernel invariant の変更も certificate
+corpus sidecar の変更も不要である。
+
+理由は既存の F-class formula invariants だけで局所的に説明できる。Kernel の
+atom identity は、完全な subject term を含む正規化 atom の正準バイト
+エンコーディングである。upstream evidence が view choice を term
+(`view_{D->B}(x)` または対応する ordered view path)に書き込めば、異なる view 上
+の属性述語や selector atom はすでに異なる kernel atom になる。述語は subject
+ごとに atomic のままだが、その subject はもはや view されていない source
+expression だとは仮定しない。view functor と path choice は、他の term symbol
+と同じく evidence manifest で許可されなければならない caller/producer-supplied
+normalized term symbols であり、kernel-side `qua` resolution によって導出される
+ものではない。
+
+したがって task 35 は次の境界を記録する:
+
+- kernel は、受け取った正規化 atom/formula bytes と immutable-context
+  provenance だけを受理または拒否する;
+- reduct/view path を挿入、推論、消去、同一視してはならない;
+- source-derived view availability、selector extensionality facts、exact
+  instance guard formulas は、real payload extraction が存在するまで
+  checker/core/VC producer obligation のままである;
+- invariant id や rejection category は変わらないため、`tests/certificates/`
+  sidecar の invariant 参照は有効なままである。template view-leak seed は、
+  Step 5 source-derived runner が real evidence を生成できるまで inactive な
+  source-semantic corpus row に留まる。
+
 ## クレート TODO への影響(指摘のみ; 改訂は後続タスク)
 
 - `doc/design/mizar-kernel/en/todo.md`: 候補新タスク — (a) 訂正後検査
@@ -469,6 +516,9 @@ coercion 挿入、fallback 推論、代替エンコーディング、ATP/SAT 子
 - `doc/design/mizar-test/en/`: required soundness-case レジストリと
   layout/expectation 文書は訂正後経路 reason を含むようになった(F7)。
   コーパスルート命名 drift(F8)は task 22 で解決済み。
+- `doc/design/mizar-core/en/template_encoding_audit.md`: F1/F3 の kernel
+  follow-up は task 35 により上記 docs-only conclusion で解決した。kernel source
+  change や corpus sidecar rewrite は不要である。
 
 ## 制約と前提
 

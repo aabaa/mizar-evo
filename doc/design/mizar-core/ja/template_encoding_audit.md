@@ -466,9 +466,11 @@ task 27 の進捗を記録している。
    source-derived active execution は payload 到着まで gated。
 
 カーネル側(7月3日のカーネル監査の観点から): レダクトエンコードは構造体
-widening に言及する証明書の形を変える。原子的属性述語に関する
-soundness-argument 文書の仮定は、task 27 が explicit-payload core encoding を
-land したため mizar-kernel task 35 で再訪すべきである。
+widening に言及する証明書の形を変える。`mizar-kernel` task 35 の再監査は、
+view choice が正規化 term bytes の一部であるため kernel の F-class formula
+invariants は安定したままと記録する。`view_add(R)` と `view_mul(R)` 上の属性
+atom は別 atom であり、source-derived view availability と extensionality facts は
+Step 5 bridge が存在するまで checker/core/VC producer obligation のままである。
 
 ## テスト成果物(reject-first)
 

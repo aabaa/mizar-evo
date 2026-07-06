@@ -310,7 +310,7 @@ F8 の spec 本文は同一変更(`cef7e109`: spec 03、05、13、17、18)で修
 
 | 所見 | 処置 |
 |---|---|
-| F1(structure-view 崩壊) | spec 修正済み。task 27 は explicit-payload elaborator reduct-view lowering を実装済み。kernel 側再監査は [mizar-kernel task 35](../../mizar-kernel/en/todo.md)。member 同一性の調整は [mizar-checker task 36](../../mizar-checker/en/todo.md)。source-derived runner/extraction は external のまま。 |
+| F1(structure-view 崩壊) | spec 修正済み。task 27 は explicit-payload elaborator reduct-view lowering を実装済み。kernel 側再監査は [mizar-kernel task 35](../../mizar-kernel/en/todo.md) で完了済み。member 同一性の調整は [mizar-checker task 36](../../mizar-checker/en/todo.md)。source-derived runner/extraction は external のまま。 |
 | F2(型実引数の inhabitation) | spec 修正済み(§17.3.4 gating 行)。checker task 43 が built-in/base-shape inhabitation 表を完了した。elaborator gating は task 28。 |
 | F3(`type extends M` の object/schema 混同) | spec 修正済み(§18.10.2)。explicit-payload bounded-view lowering は task 27 で F1 とともに cover 済み。 |
 | F4(functor guard、実引数シグネチャ適合) | spec 修正済み(§18.10.4、§18.9)。explicit-payload 実装は task 29 で完了 |

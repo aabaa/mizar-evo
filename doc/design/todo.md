@@ -96,9 +96,9 @@ is its task 1). "Next work" points into the
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 (task 30) | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22 plus task 21 soundness vocabulary | step 5 (task 10) | [todo](./mizar-test/en/todo.md) |
 | mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec-decision wave complete; step 4 tasks 45-47 complete | step 5 (task 48) | [todo](./mizar-checker/en/todo.md) |
-| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete | step 4 (tasks 27-30) | [todo](./mizar-core/en/todo.md) |
+| mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete; step 4 tasks 27-30 complete | step 5 source-derived bridge | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | step 5; tasks 27-29 resolved | [todo](./mizar-vc/en/todo.md) |
-| mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 (task 35); task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
+| mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
 | mizar-atp | ATP encoding, backend execution, portfolio candidates | [x] candidate-evidence milestone complete through task 29 | step 7 | [todo](./mizar-atp/en/todo.md) |
 | mizar-proof | Proof policy evaluation, status projection, witness selection | [x] policy/status/witness milestone complete through task 21 | step 7 | [todo](./mizar-proof/en/todo.md) |
 | mizar-cache | Cache keys, fingerprints, proof reuse, cluster-db storage | [x] internal-cache milestone complete through task 24 | step 7 | [todo](./mizar-cache/en/todo.md) |
@@ -199,9 +199,9 @@ on step 1.
    classified as an external/deferred extraction gap rather than mocked.
 
 Exit: every July kernel-audit finding is implemented, parked with a recorded
-trigger (kernel 32), or explicitly waiting on step 4 (kernel 35).
+trigger (kernel 32), or resolved by the Step 4 kernel re-audit (kernel 35).
 
-### Step 4 — Checker/core audit implementation [ ]
+### Step 4 — Checker/core audit implementation [x]
 
 Implement the decisions from step 2 in checker and core. Depends on step 2.
 
@@ -219,7 +219,7 @@ Implement the decisions from step 2 in checker and core. Depends on step 2.
    compatibility, guard obligations, functor-actual validation (F4/F6/F8).
 7. [x] [mizar-core task 30](./mizar-core/en/todo.md) — sethood plumbing for
    type parameters (F5; deps: core 28, checker 43).
-8. [ ] [mizar-kernel task 35](./mizar-kernel/en/todo.md) — soundness-argument
+8. [x] [mizar-kernel task 35](./mizar-kernel/en/todo.md) — soundness-argument
    revisit for the reduct-view encoding (deps: core 27).
 
 Exit: audited semantic corrections are implemented with their rejection
@@ -372,7 +372,7 @@ expectations to current behavior.
 |---|---|---|
 | [mizar-checker semantic_spec_audit.md](./mizar-checker/en/semantic_spec_audit.md) (2026-07-03, commit `707c95be`) | SSA-001 (critical) through SSA-020; 16-fixture rejection corpus | [mizar-checker tasks 35-48](./mizar-checker/en/todo.md) (step 2 complete; remaining plan steps 4, 5); SSA-018 recorded as a diagnostics-wave lint (step 8), no task; full disposition table in the checker TODO |
 | [mizar-kernel soundness_argument.md](./mizar-kernel/en/soundness_argument.md) (2026-07-03, commit `f75af877`) | F1-F9; 23-case reject-first certificate corpus | [mizar-kernel tasks 30-35](./mizar-kernel/en/todo.md); producer side [mizar-vc tasks 28-29](./mizar-vc/en/todo.md), with F1 producer polarity resolved by mizar-vc task 27; consumers [mizar-atp task 29](./mizar-atp/en/todo.md), [mizar-proof task 21](./mizar-proof/en/todo.md), [mizar-cache task 24](./mizar-cache/en/todo.md), [mizar-artifact task 24](./mizar-artifact/en/todo.md); harness [mizar-test task 21](./mizar-test/en/todo.md) for F7, with F8 resolved by mizar-test task 22 (plan steps 1, 3, 4); F4/F5 resolved inside `f75af877` |
-| [mizar-core template_encoding_audit.md](./mizar-core/en/template_encoding_audit.md) (2026-07-05, commit `cef7e109`) | F1-F8; original 4-seed encoding corpus plus task 26 F7 inference seeds | spec text for F1-F6/F8 patched inside `cef7e109`; F7 spec decision completed in task 26; task 27 implements explicit-payload reduct/view lowering for F1/F3; task 28 implements explicit-payload type-actual inhabitation gating for F2; task 29 implements explicit-payload scheme-actual compatibility, skipped guard obligation traceability, F6 substitution metadata, and F8 diagnostic-only rejection; task 30 implements explicit-payload sethood plumbing for F5 while source-derived extraction stays external; [mizar-kernel task 35](./mizar-kernel/en/todo.md) remains in plan step 4; coordination rows in [mizar-checker tasks 36/43](./mizar-checker/en/todo.md) |
+| [mizar-core template_encoding_audit.md](./mizar-core/en/template_encoding_audit.md) (2026-07-05, commit `cef7e109`) | F1-F8; original 4-seed encoding corpus plus task 26 F7 inference seeds | spec text for F1-F6/F8 patched inside `cef7e109`; F7 spec decision completed in task 26; task 27 implements explicit-payload reduct/view lowering for F1/F3; task 28 implements explicit-payload type-actual inhabitation gating for F2; task 29 implements explicit-payload scheme-actual compatibility, skipped guard obligation traceability, F6 substitution metadata, and F8 diagnostic-only rejection; task 30 implements explicit-payload sethood plumbing for F5 while source-derived extraction stays external; [mizar-kernel task 35](./mizar-kernel/en/todo.md) re-audits the kernel soundness argument for reduct-view terms with no invariant/corpus-sidecar change; coordination rows in [mizar-checker tasks 36/43](./mizar-checker/en/todo.md) |
 
 `mizar-ir`, `mizar-diagnostics`, `mizar-driver`, and `mizar-doc` reviewed the
 audits and recorded a no-crate-owned-task note in their TODOs (they carry no

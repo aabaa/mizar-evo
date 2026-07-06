@@ -10,13 +10,13 @@ Quality score: 95/100。
 Score caps applied: none。
 
 Closeout 後 correction: commit `c6d94fe51923aa0363ea7297bfe4e9f905aef076`
-は task-22 evidence target を supersede する。Tasks 23-34 は corrected
+は task-22 evidence target を supersede する。Tasks 23-35 は corrected
 formula/substitution evidence pipeline、trusted in-process SAT checking、legacy path
 migration audit、明示的な proof-obligation / consistency goal-polarity binding、
 非 import formula source に対する kernel-side context-identity verification、
-imported-statement projection validation、legacy tautology-marker audit semantics を
-完了する。Task 34 は Step 3 F9 closure point であり、その self-hash は commit 後の
-後続 bookkeeping point で記録する。
+imported-statement projection validation、legacy tautology-marker audit semantics、
+Step 4 reduct-view soundness 再監査を完了する。Task 35 は Step 4 closure point
+であり、その self-hash は commit 後の後続 bookkeeping point で記録する。
 
 ## Scope
 
@@ -119,7 +119,8 @@ Excluded:
 | 30 | `f3197e12a8f7a2124da8ebbf0f678cf3cf6bd890` | `fix(kernel-task-30): bind evidence goal polarity` |
 | 31 | `a62bae00bb23845e6636c8b39cebb9043898cc03` | `fix(kernel-task-31): verify context identity` |
 | 33 | `0f3d7fa316cffbf7e55722fd255cb3fbf32d9249` | `feat(kernel-task-33): validate imported statement projections` |
-| 34 | pending self-hash | `fix(kernel-task-34): pin legacy tautology marker` |
+| 34 | `6abcc3926387bebd1e9ef4aa967913a93fa6607f` | `fix(kernel-task-34): pin legacy tautology marker` |
+| 35 | pending self-hash | `docs(kernel-task-35): revisit reduct-view soundness` |
 
 ## Hard Gates
 
@@ -131,7 +132,7 @@ Excluded:
 | Test expectation integrity | passed | 既存 `.miz` fixture または expectation sidecar は implementation behavior に合わせるため変更していない。Source-derived certificate corpus support は明示的に deferred のまま。 |
 | Design/source synchronization | passed | Paired source/spec、bilingual、public enum、soundness、determinism、module-boundary audit は source layout と public module table に同期している。 |
 | Boundary discipline | passed | task-22 legacy milestone は evidence だけを check し、SAT solver を含まない。Post-correction tasks は、kernel-derived SAT problem に対する task-24 audit 済み in-process SAT checker だけを追加できる。ATP backend、proof search、proof-policy projection、cache/artifact coupling、overload resolution、cluster search、implicit coercion insertion、fallback inference、global mutable state read は含まない。 |
-| Verification | passed | Task-31 focused / crate-local check、broad clippy/test、diff check、cached-diff check は commit 前に passed。 |
+| Verification | passed | Task-35 required kernel/test checks、broad fmt/clippy/test、diff check、cached-diff check は commit 前に passed。 |
 | Residual risk | passed with classified items | 残る risk は下で `external_dependency_gap` または `deferred` として分類する。 |
 
 ## Score Breakdown
@@ -159,11 +160,11 @@ gate failure でもないため score cap はない。
 
 | Review | Result |
 |---|---|
-| Implementation specification / documentation review | Task 34 spec/doc review は、premise-weakening tautology mislabeling と final-goal rejection を混同する medium wording issue と、service-test rejection-shape の low issue を最初に指摘した。Paired docs はこれらを分離し、marker mislabeling は premise を弱めるだけ、marker final goal は `invalid_sat_proof` として拒否されることを明記した。Service test は final-goal location の `kernel_rejection/invalid_sat_proof` を assert する。 |
-| Test sufficiency review | Task 34 test review は finding なし。Resolution-trace test は marker replay と final-goal rejection を cover し、checker service test は explicit audit mode が successful-audit wrapping 前に marker final goal を拒否することを cover する。対称的な resolution-step marker final-goal case は任意かつ non-blocking。 |
-| Full implementation review | Initial task 34 full implementation review は task-ledger と crate-exit-report bookkeeping drift の medium findings を指摘した。Task ledger、crate exit report、handoff と stale な source/spec-audit task reference を更新し、final re-review は finding なし。 |
-| Source/documentation consistency review | Finding なし。EN/JA docs、task ledger、TODO state、handoff、Rust tests は task-34 audit-only tautology-marker semantics で一致している。Task 34 は spec coverage ownership、traceability metadata、owner crate、deferred coverage classification を変えないため、`doc/design/spec_coverage_audit.md` は unchanged のまま。 |
-| Read-only crate quality review | Task 34 後も post-correction hard gate は満たされる。trusted acceptance は parsed formula/substitution evidence、kernel-derived SAT checking、proof-obligation polarity binding、verified context identity、imported-statement projection validation だけを通る。Legacy tautology marker は audit-only であり、trusted final goal や used axiom を populate できない。残る source-runner、producer、proof-policy、cache/artifact、より豊かな substitution gap は分類済みであり、valid quality score は 95/100 のまま 90 以上。 |
+| Implementation specification / documentation review | Task 35 spec/doc review は、cross-crate template-encoding-audit status の stale 表現と、F4 / spec-coverage decision の low gap を最初に指摘した。Paired docs は、view functor / path choice が kernel-derived `qua` resolution ではなく manifest-authorized normalized term symbol であることを明記し、core audit は task 35 を open として指さなくなった。Final re-review は finding なし。 |
+| Test sufficiency review | Task 35 test review は finding なし。task は docs-only であり、`cargo test -p mizar-kernel`、`cargo test -p mizar-test`、broad workspace checks、diff checks で既存 kernel/test boundary を保持するには十分。 |
+| Full implementation review | Task 35 full implementation review は finding なし。変更は paired soundness/audit/TODO/ledger/handoff docs に限定され、Rust source、`.miz` fixture、expectation sidecar、traceability metadata は編集しない。 |
+| Source/documentation consistency review | Finding なし。EN/JA docs、task ledger、TODO state、top-level Step 4 status、core template audit、spec coverage audit は、reduct/view choice が正規化 atom subject bytes であり kernel invariant と corpus sidecar は unchanged という点で一致している。`doc/design/spec_coverage_audit.md` wording は 05/13/18 向けに更新したが、coverage ownership、traceability metadata、owner crate、deferred classification は unchanged。 |
+| Read-only crate quality review | Task 35 後も post-correction hard gate は満たされる。trusted acceptance は parsed formula/substitution evidence、kernel-derived SAT checking、proof-obligation polarity binding、verified context identity、imported-statement projection validation、manifest-authorized atom/term bytes だけを通る。Kernel は reduct/view path を推論または collapse しない。残る source-runner、producer、proof-policy、cache/artifact、より豊かな substitution gap は分類済みであり、valid quality score は 95/100 のまま 90 以上。 |
 
 ## Deferred Items
 
@@ -208,15 +209,12 @@ external runner / producer gap により blocked のまま。
 | Command | Result |
 |---|---|
 | `cargo fmt --check` | passed |
-| `cargo test -p mizar-kernel tautology_outcomes_follow_the_active_clause_profile -- --nocapture` | passed |
-| `cargo test -p mizar-kernel kernel_service_rejects_legacy_tautology_marker_final_goal_in_audit_mode -- --nocapture` | passed |
-| `cargo test -p mizar-kernel source_spec_audit_covers_public_surface_and_prohibitions` | passed |
 | `cargo test -p mizar-kernel` | passed |
-| `cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings` | passed |
+| `cargo test -p mizar-test` | passed |
 | `cargo clippy --all-targets --all-features -- -D warnings` | passed |
 | `cargo test` | passed |
 | `git diff --check` | passed |
-| `git diff --cached --check` | explicit task-34 path staging 後に passed |
+| `git diff --cached --check` | explicit task-35 path staging 後に passed |
 
 Unrun deferred commands:
 
@@ -229,37 +227,28 @@ Recommended reasoning: `xhigh`。
 Prompt:
 
 ```text
-Continue Step 3 with `mizar-proof` task 21 after the completed mizar-kernel
-task-34 legacy tautology-marker semantics. Before editing, verify a clean
-worktree, confirm the mizar-kernel task 34 commit in git log, and read
-doc/design/todo.md,
-doc/design/mizar-proof/en/todo.md,
-doc/design/mizar-proof/en/00.crate_plan.md,
-doc/design/mizar-proof/en/status.md,
-doc/design/mizar-proof/en/witness.md,
-doc/design/mizar-kernel/en/crate_exit_report.md,
-doc/design/mizar-kernel/en/00.crate_plan.md,
-doc/design/mizar-kernel/en/checker.md,
-doc/design/mizar-kernel/en/formula_evidence.md,
-doc/design/mizar-kernel/en/resolution_trace.md,
-doc/design/mizar-kernel/en/source_spec_audit.md,
-doc/design/mizar-kernel/en/soundness_argument.md,
-doc/design/mizar-vc/en/kernel_evidence_handoff.md,
-doc/design/internal/en/04.atp_portfolio_and_kernel_check_integration.md,
-doc/design/internal/en/07.crate_module_layout.md,
-doc/design/architecture/en/08.reasoning_boundary.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/18.dependency_fingerprint.md,
-doc/design/architecture/en/19.failure_semantics.md, and
-tests/coverage/spec_trace.toml. Begin with mizar-proof task 21: align proof
-policy consumers with the corrected kernel rejection taxonomy for F1/F2/F6/F9
-without weakening proof-obligation-only trust, fabricating kernel payloads,
-activating unverified fixtures, publishing proof rows, or rebaselining
-expectations to current implementation behavior. Preserve one task per commit.
+Continue with Step 5 — Source-derived semantic bridge — after Step 4 closed
+with mizar-kernel task 35. Before editing, verify a clean worktree, confirm the
+task 35 commit in git log, and reread doc/design/todo.md Step 5,
+doc/design/mizar-test/en/todo.md tasks 10 and 16-20,
+doc/design/mizar-test/en/source_coverage.md if present,
+doc/design/mizar-checker/en/todo.md,
+doc/design/mizar-checker/en/00.crate_plan.md,
+doc/design/mizar-core/en/todo.md,
+doc/design/mizar-core/en/00.crate_plan.md,
+doc/design/mizar-vc/en/source_spec_audit.md,
+doc/design/spec_coverage_audit.md, and tests/coverage/spec_trace.toml. Start
+by classifying the real source-to-checker runner/extraction readiness for the
+first promotable semantic payload family. If no real runner or payload family
+is ready, do not reorder Step 5 or fabricate payloads; record the blocker as
+`external_dependency_gap` / `deferred` and prepare the first owner task or
+runner-support handoff. Preserve one logical task per commit.
 ```
 
-Rationale: `mizar-proof` task 21 は kernel F9 closure の後に来る、指定 Step 3
-順序の次 task である。Trusted kernel proof-obligation acceptance と rejection taxonomy を
-proof-policy consumer に投影する作業であり、legacy acceptance や fabricated bridge payload に
-戻ってはならないため `xhigh` を維持する。typo-only documentation sync だけなら下げてよい。
-repository metadata や specification contradiction が handoff を block する場合だけ上げる。
+Rationale: Step 5 は inactive semantic corpus rows を、real `.miz`
+source-derived payload extraction と consumer runner support が存在する場合に限って
+promote できる最初の段階である。checker/core/VC semantics を横断し、fake payload、
+placeholder runner、verified evidence のない active fixture promotion、
+expectation rebaseline を避ける必要があるため `xhigh` を維持する。
+bookkeeping-only task creation だけなら下げてよい。Specification contradiction や
+repository metadata conflict が最初の source-derived bridge slice を block する場合だけ上げる。

@@ -481,10 +481,12 @@ roadmap records their owning tasks and task-27 progress.
    by task 26; source-derived active execution remains payload-gated.
 
 Kernel-side (from the Jul 3 kernel audit's perspective): the reduct encoding
-changes the shape of certificates that mention structure widening; the
-soundness-argument document's assumptions about atomic attribute predicates
-should be revisited in mizar-kernel task 35 now that task 27 has landed the
-explicit-payload core encoding.
+changes the shape of certificates that mention structure widening. The
+task-35 `mizar-kernel` re-audit records that the kernel's F-class formula
+invariants remain stable because view choices are part of normalized term
+bytes: attribute atoms over `view_add(R)` and `view_mul(R)` are distinct atoms,
+while source-derived view availability and extensionality facts remain
+checker/core/VC producer obligations until the Step 5 bridge exists.
 
 ## Test Deliverables (reject-first)
 

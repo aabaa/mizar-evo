@@ -407,6 +407,7 @@ Every finding maps to a task or a recorded disposition:
 | F7 (mizar-test soundness vocabulary) | resolved by [mizar-test task 21](../../mizar-test/en/todo.md) |
 | F8 (corpus directory naming) | resolved by [mizar-test task 22](../../mizar-test/en/todo.md) |
 | F9 (legacy tautology marker) | implemented by task 34 |
+| Reduct-view soundness re-audit | completed by task 35 |
 
 30. **Goal-polarity binding in the check service (F1, invariant B4).** [x]
     - Implement architecture 15 "Goal Polarity Is Bound By The Target
@@ -498,7 +499,7 @@ Every finding maps to a task or a recorded disposition:
     - Deps: 29. Spec: `resolution_trace.md`; soundness_argument.md F9, L-class
       invariants.
 
-35. **Soundness-argument revisit for the reduct-view encoding.** [ ]
+35. **Soundness-argument revisit for the reduct-view encoding.** [x]
     - The template-encoding audit
       ([template_encoding_audit.md](../../mizar-core/en/template_encoding_audit.md))
       replaced flattened structure widening with reduct-view terms
@@ -508,8 +509,10 @@ Every finding maps to a task or a recorded disposition:
       change shape, and the F-class formula invariants plus the corpus seeds
       touching attribute atoms must be re-checked against view terms.
     - Acceptance: `soundness_argument.md` (en+ja) records the re-audit
-      result; any invariant change updates the corpus sidecar notes in the
-      same change (per the document's constraint section).
+      result: no kernel invariant or corpus sidecar change is required because
+      view choices are normalized term bytes in atom subjects. Any future
+      invariant change must still update the corpus sidecar notes in the same
+      change (per the document's constraint section).
     - Verify: `cargo test -p mizar-kernel`, `cargo test -p mizar-test`.
     - Deps: external — mizar-core reduct/view lowering task; then 31. Spec:
       spec 05 §5.8.3, 13 §13.8.7; template_encoding_audit.md F1/F3.

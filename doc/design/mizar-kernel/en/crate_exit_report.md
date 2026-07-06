@@ -10,13 +10,14 @@ Quality score: 95/100.
 Score caps applied: none.
 
 Post-closeout correction: commit `c6d94fe51923aa0363ea7297bfe4e9f905aef076`
-supersedes the task-22 evidence target. Tasks 23-34 complete the corrected
+supersedes the task-22 evidence target. Tasks 23-35 complete the corrected
 formula/substitution evidence pipeline, trusted in-process SAT checking,
 legacy path migration audit, explicit proof-obligation/consistency
 goal-polarity binding, kernel-side context-identity verification for
-non-imported formula sources, imported-statement projection validation, and
-legacy tautology-marker audit semantics. Task 34 is the Step 3 F9 closure
-point; its self-hash is recorded by a later bookkeeping point after commit.
+non-imported formula sources, imported-statement projection validation, legacy
+tautology-marker audit semantics, and the Step 4 reduct-view soundness
+re-audit. Task 35 is the Step 4 closure point; its self-hash is recorded by a
+later bookkeeping point after commit.
 
 ## Scope
 
@@ -123,7 +124,8 @@ Excluded:
 | 30 | `f3197e12a8f7a2124da8ebbf0f678cf3cf6bd890` | `fix(kernel-task-30): bind evidence goal polarity` |
 | 31 | `a62bae00bb23845e6636c8b39cebb9043898cc03` | `fix(kernel-task-31): verify context identity` |
 | 33 | `0f3d7fa316cffbf7e55722fd255cb3fbf32d9249` | `feat(kernel-task-33): validate imported statement projections` |
-| 34 | pending self-hash | `fix(kernel-task-34): pin legacy tautology marker` |
+| 34 | `6abcc3926387bebd1e9ef4aa967913a93fa6607f` | `fix(kernel-task-34): pin legacy tautology marker` |
+| 35 | pending self-hash | `docs(kernel-task-35): revisit reduct-view soundness` |
 
 ## Hard Gates
 
@@ -135,7 +137,7 @@ Excluded:
 | Test expectation integrity | passed | No existing `.miz` fixture or expectation sidecar was changed to match implementation behavior. Source-derived certificate corpus support remains explicitly deferred. |
 | Design/source synchronization | passed | Paired source/spec, bilingual, public enum, soundness, determinism, and module-boundary audits are synchronized with the source layout and public module table. |
 | Boundary discipline | passed | The task-22 legacy milestone checks evidence only and contains no SAT solver. Post-correction tasks may add only the task-24 audited in-process SAT checker over kernel-derived SAT problems, with no ATP backend, proof search, proof-policy projection, cache/artifact coupling, overload resolution, cluster search, implicit coercion insertion, fallback inference, or global mutable state reads. |
-| Verification | passed | Task-31 focused/crate-local checks, broad clippy/test, diff check, and cached-diff check passed before commit. |
+| Verification | passed | Task-35 required kernel/test checks, broad fmt/clippy/test, diff check, and cached-diff check passed before commit. |
 | Residual risk | passed with classified items | Remaining risks are listed below as `external_dependency_gap` or `deferred`. |
 
 ## Score Breakdown
@@ -164,11 +166,11 @@ gate fails.
 
 | Review | Result |
 |---|---|
-| Implementation specification / documentation review | Task 34 spec/doc review initially found a medium wording issue that conflated premise-weakening tautology mislabeling with final-goal rejection, plus a low service-test rejection-shape issue. Paired docs now separate those cases: marker mislabeling weakens premises only, while a marker final goal rejects as `invalid_sat_proof`; the service test asserts `kernel_rejection/invalid_sat_proof` at the final-goal location. |
-| Test sufficiency review | Task 34 test review found no findings. The resolution-trace test covers marker replay plus final-goal rejection, and the checker service test covers explicit audit mode rejecting the marker final goal before successful-audit wrapping. A symmetric resolution-step marker final-goal case was optional and non-blocking. |
-| Full implementation review | Initial task 34 full implementation review found medium ledger and crate-exit-report bookkeeping drift. The task ledger, crate exit report, handoff, and one stale source/spec-audit task reference were updated; final re-review found no findings. |
-| Source/documentation consistency review | No findings. EN/JA docs, task ledger, TODO state, handoff, and Rust tests agree on the task-34 audit-only tautology-marker semantics. `doc/design/spec_coverage_audit.md` remains unchanged because task 34 does not change spec coverage ownership, traceability metadata, owner crates, or deferred coverage classification. |
-| Read-only crate quality review | The post-correction hard gates remain satisfied after task 34: trusted acceptance still flows only through parsed formula/substitution evidence, kernel-derived SAT checking, proof-obligation polarity binding, verified context identity, and imported-statement projection validation. Legacy tautology markers are audit-only and cannot populate trusted final goals or used axioms. Residual source-runner, producer, proof-policy, cache/artifact, and richer substitution gaps remain classified; valid quality score remains 95/100, which is >= 90. |
+| Implementation specification / documentation review | Task 35 spec/doc review initially found stale cross-crate template-encoding-audit status plus low F4 and spec-coverage decision gaps. Paired docs now state that view functors/path choices are manifest-authorized normalized term symbols, not kernel-derived `qua` resolution, and the core audit no longer points at an open task 35. Final re-review found no findings. |
+| Test sufficiency review | Task 35 test review found no findings. The task is docs-only; `cargo test -p mizar-kernel`, `cargo test -p mizar-test`, broad workspace checks, and diff checks are sufficient to preserve the existing kernel/test boundary. |
+| Full implementation review | Task 35 full implementation review found no findings. The change is limited to paired soundness/audit/TODO/ledger/handoff documents and does not edit Rust source, `.miz` fixtures, expectation sidecars, or traceability metadata. |
+| Source/documentation consistency review | No findings. EN/JA docs, task ledger, TODO state, top-level Step 4 status, core template audit, and spec coverage audit agree that reduct/view choices are normalized atom subject bytes; kernel invariants and corpus sidecars remain unchanged. `doc/design/spec_coverage_audit.md` wording was updated for tasks 05/13/18, but coverage ownership, traceability metadata, owner crates, and deferred classification remain unchanged. |
+| Read-only crate quality review | The post-correction hard gates remain satisfied after task 35: trusted acceptance still flows only through parsed formula/substitution evidence, kernel-derived SAT checking, proof-obligation polarity binding, verified context identity, imported-statement projection validation, and manifest-authorized atom/term bytes. Kernel does not infer or collapse reduct/view paths. Residual source-runner, producer, proof-policy, cache/artifact, and richer substitution gaps remain classified; valid quality score remains 95/100, which is >= 90. |
 
 ## Deferred Items
 
@@ -214,15 +216,12 @@ above.
 | Command | Result |
 |---|---|
 | `cargo fmt --check` | passed |
-| `cargo test -p mizar-kernel tautology_outcomes_follow_the_active_clause_profile -- --nocapture` | passed |
-| `cargo test -p mizar-kernel kernel_service_rejects_legacy_tautology_marker_final_goal_in_audit_mode -- --nocapture` | passed |
-| `cargo test -p mizar-kernel source_spec_audit_covers_public_surface_and_prohibitions` | passed |
 | `cargo test -p mizar-kernel` | passed |
-| `cargo clippy -p mizar-kernel --all-targets --all-features -- -D warnings` | passed |
+| `cargo test -p mizar-test` | passed |
 | `cargo clippy --all-targets --all-features -- -D warnings` | passed |
 | `cargo test` | passed |
 | `git diff --check` | passed |
-| `git diff --cached --check` | passed after explicit task-34 path staging |
+| `git diff --cached --check` | passed after explicit task-35 path staging |
 
 Unrun deferred commands:
 
@@ -235,39 +234,29 @@ Recommended reasoning: `xhigh`.
 Prompt:
 
 ```text
-Continue Step 3 with `mizar-proof` task 21 after the completed mizar-kernel
-task-34 legacy tautology-marker semantics. Before editing, verify a clean
-worktree, confirm the mizar-kernel task 34 commit in git log, and read
-doc/design/todo.md,
-doc/design/mizar-proof/en/todo.md,
-doc/design/mizar-proof/en/00.crate_plan.md,
-doc/design/mizar-proof/en/status.md,
-doc/design/mizar-proof/en/witness.md,
-doc/design/mizar-kernel/en/crate_exit_report.md,
-doc/design/mizar-kernel/en/00.crate_plan.md,
-doc/design/mizar-kernel/en/checker.md,
-doc/design/mizar-kernel/en/formula_evidence.md,
-doc/design/mizar-kernel/en/resolution_trace.md,
-doc/design/mizar-kernel/en/source_spec_audit.md,
-doc/design/mizar-kernel/en/soundness_argument.md,
-doc/design/mizar-vc/en/kernel_evidence_handoff.md,
-doc/design/internal/en/04.atp_portfolio_and_kernel_check_integration.md,
-doc/design/internal/en/07.crate_module_layout.md,
-doc/design/architecture/en/08.reasoning_boundary.md,
-doc/design/architecture/en/15.kernel_certificate_format.md,
-doc/design/architecture/en/18.dependency_fingerprint.md,
-doc/design/architecture/en/19.failure_semantics.md, and
-tests/coverage/spec_trace.toml. Begin with mizar-proof task 21: align proof
-policy consumers with the corrected kernel rejection taxonomy for F1/F2/F6/F9
-without weakening proof-obligation-only trust, fabricating kernel payloads,
-activating unverified fixtures, publishing proof rows, or rebaselining
-expectations to current implementation behavior. Preserve one task per commit.
+Continue with Step 5 — Source-derived semantic bridge — after Step 4 closed
+with mizar-kernel task 35. Before editing, verify a clean worktree, confirm the
+task 35 commit in git log, and reread doc/design/todo.md Step 5,
+doc/design/mizar-test/en/todo.md tasks 10 and 16-20,
+doc/design/mizar-test/en/source_coverage.md if present,
+doc/design/mizar-checker/en/todo.md,
+doc/design/mizar-checker/en/00.crate_plan.md,
+doc/design/mizar-core/en/todo.md,
+doc/design/mizar-core/en/00.crate_plan.md,
+doc/design/mizar-vc/en/source_spec_audit.md,
+doc/design/spec_coverage_audit.md, and tests/coverage/spec_trace.toml. Start
+by classifying the real source-to-checker runner/extraction readiness for the
+first promotable semantic payload family. If no real runner or payload family
+is ready, do not reorder Step 5 or fabricate payloads; record the blocker as
+`external_dependency_gap` / `deferred` and prepare the first owner task or
+runner-support handoff. Preserve one logical task per commit.
 ```
 
-Rationale: `mizar-proof` task 21 is the next task in the requested Step 3 order
-after the kernel F9 closure. Keep `xhigh` because the work projects trusted
-kernel proof-obligation acceptance and rejection taxonomy into proof policy
-consumers, and must not backslide into legacy acceptance or fabricated bridge
-payloads. Lower reasoning is appropriate only for typo-only documentation sync;
-raise only if repository metadata or specification contradictions block the
-handoff.
+Rationale: Step 5 is the first point where inactive semantic corpus rows may be
+promoted only if real `.miz` source-derived payload extraction and consumer
+runner support exist. Keep `xhigh` because the task crosses checker/core/VC
+semantics and must avoid fake payloads, placeholder runners, active fixture
+promotion without verified evidence, and expectation rebaselining. Lower
+reasoning is appropriate only for bookkeeping-only task creation; raise only if
+specification contradictions or repository metadata conflicts block the first
+source-derived bridge slice.
