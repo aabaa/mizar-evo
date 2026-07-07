@@ -24,6 +24,7 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_local_mode_forward_reference_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_local_structure_forward_reference_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -588,6 +589,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.05.structures.active_range.local_structure_forward_reference"
+source = "doc/spec/en/05.structures.md"
+section = "5.2 Syntax"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_structure_forward_reference_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.05.structures.constructor_fields_only.semantic"
 source = "doc/spec/en/05.structures.md"
 section = "5.5.1 Default Constructor; 5.8.4 Constructor Axioms; 5.8.5 Extensionality; with 7.4.1 Property Implementation"
@@ -827,6 +840,7 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_local_mode_forward_reference_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_local_structure_forward_reference_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1770,6 +1784,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_local_mode_forward_reference_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.active_range.local_structure_forward_reference_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 76 source-derived local structure forward-reference active-range boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_structure_forward_reference_gap_001.expect.toml",
 ]
 
 [[requirement]]

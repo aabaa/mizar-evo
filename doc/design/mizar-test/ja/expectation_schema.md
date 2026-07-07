@@ -490,11 +490,13 @@ task 67-71 は fail case であり、pass-slice coverage ではない。task 72 
 bare local-mode chain の pass sidecar、task 73 は three-edge bare local-mode chain の
 pass sidecar、task 74 は structural bare local-mode chain の pass sidecar について empty diagnostic payload list を許可し、unsupported structural-guard failure について checker missing mode-expansion
 payload と recovery detail key を要求することを許可する。
-task 75 は、reserve head が later local mode declaration を active 前に名前参照する
-forward local-mode reserve head fail sidecar について、
+task 75 は forward local-mode reserve head fail sidecar、task 76 は forward
+local-structure reserve head fail sidecar について、reserve head が later local
+declaration を active 前に名前参照する場合に
 `failure_category = "lower_stage_error"` と
 `stable_detail_key = "type_elaboration.lower_stage.frontend:malformed_type_expression"`
-を許可する。この sidecar は checker `ModeExpansion` production を credit しない。
+を許可する。この sidecar は checker `ModeExpansion`、structure type-head、
+base-shape、constructor-witness production を credit しない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
 から checker-owned payload を non-builtin declaration、imported symbol、unresolved /

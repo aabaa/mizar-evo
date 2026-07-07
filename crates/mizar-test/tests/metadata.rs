@@ -3437,8 +3437,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 41);
-    assert_eq!(report.passed_count(), 41);
+    assert_eq!(report.results.len(), 42);
+    assert_eq!(report.passed_count(), 42);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3487,6 +3487,11 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_local_mode_forward_reference_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.lower_stage.frontend:malformed_type_expression"]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_local_structure_forward_reference_gap_001"
             && result.actual_detail_keys
                 == ["type_elaboration.lower_stage.frontend:malformed_type_expression"]
     }));
@@ -6717,6 +6722,61 @@ tests = ["tests/miz/fail/types/fail_forward_local_mode_reference.expect.toml"]
 }
 
 #[test]
+fn type_elaboration_runner_keeps_forward_local_structure_references_on_lower_stage_gap() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/types/fail_forward_local_structure_reference.miz",
+        "reserve s for LaterStruct;\n\ndefinition\n  struct LaterStruct where\n    field carrier -> set;\n  end;\nend;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/types/fail_forward_local_structure_reference.expect.toml",
+        r#"schema_version = 1
+id = "fail_forward_local_structure_reference"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_forward_local_structure_reference.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "lower_stage_error"
+rejection_reason = "local_structure_forward_reference_active_range"
+stable_detail_key = "type_elaboration.lower_stage.frontend:malformed_type_expression"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.lower_stage.frontend:malformed_type_expression",
+]
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration.forward_local_structure_reference"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration.forward_local_structure_reference"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = ["tests/miz/fail/types/fail_forward_local_structure_reference.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert_eq!(
+        report.results[0].actual_detail_keys,
+        ["type_elaboration.lower_stage.frontend:malformed_type_expression"]
+    );
+}
+
+#[test]
 fn type_elaboration_runner_rejects_active_tag_on_wrong_phase() {
     let corpus = Corpus::new();
     corpus.write(
@@ -7235,8 +7295,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 41"));
-    assert!(stdout.contains("passed: 41"));
+    assert!(stdout.contains("type-elaboration cases: 42"));
+    assert!(stdout.contains("passed: 42"));
     assert!(stdout.contains("failed: 0"));
 }
 

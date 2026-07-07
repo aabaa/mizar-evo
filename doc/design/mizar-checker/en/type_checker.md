@@ -293,6 +293,14 @@ rejects the type expression with
 `type_elaboration.lower_stage.frontend:malformed_type_expression` before any
 checker handoff. The source-derived runner must not fabricate a later
 `ModeExpansion` payload from the future declaration.
+Task 76 mirrors that active-range boundary for same-module local structures:
+if a reserve head names a local structure before the structure declaration item
+is active, lower-stage frontend/resolver processing rejects the type expression
+with `type_elaboration.lower_stage.frontend:malformed_type_expression` before
+checker handoff. The runner must not fabricate a later structure type-head
+payload, successful reserve declaration, base-shape/constructor-witness
+evidence query, or downstream CoreIr/ControlFlowIr/VC/proof payload from the
+future declaration.
 Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case

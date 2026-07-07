@@ -1,0 +1,7 @@
+reserve s for LaterStruct;
+
+definition
+  struct LaterStruct where
+    field carrier -> set;
+  end;
+end;

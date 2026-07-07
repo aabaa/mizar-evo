@@ -278,7 +278,15 @@ reserve head が、その mode declaration item が active になる前に local
 名前参照する場合、lower-stage frontend/resolver processing は checker handoff の前に
 `type_elaboration.lower_stage.frontend:malformed_type_expression` で type
 expression を拒否する。source-derived runner は future declaration から後続の
-`ModeExpansion` payload を捏造してはならない。task 57 はさらに、RHS が type argument を持たない same-module
+`ModeExpansion` payload を捏造してはならない。task 76 は同じ active-range
+boundary を same-module local structure にも適用する。reserve head が、その
+structure declaration item が active になる前に local structure を名前参照する場合、
+lower-stage frontend/resolver processing は checker handoff 前に
+`type_elaboration.lower_stage.frontend:malformed_type_expression` で type
+expression を拒否する。runner は future declaration から structure type-head
+payload、successful reserve declaration、base-shape / constructor-witness
+evidence query、CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。
+task 57 はさらに、RHS が type argument を持たない same-module
 local structure head である bare same-module no-argument local mode expansion を許可する。
 この case は real `ModeExpansion` を消費するため missing mode-expansion payload diagnostic を
 出してはならない。ただし expanded structure radix は real base-shape /

@@ -11,12 +11,13 @@ Score caps applied: none.
 
 Post-closeout continuation: this report remains the closeout for the original
 task-34 explicit-payload checker milestone. Step 5 source-derived bridge tasks
-48-75 are post-closeout continuation tasks tracked in the crate plan, TODO,
+48-76 are post-closeout continuation tasks tracked in the crate plan, TODO,
 source/spec audit, and corpus traceability. Task 74 adds an AST-bounded
 structural bare local-mode chain pass slice after task 73's three-edge bridge;
 task 75 adds a lower-stage active-range boundary for forward local-mode reserve
-heads. These additions do not change the original score or claim AST-wide
-extraction, CoreIr/ControlFlowIr/VC, or proof payload promotion.
+heads, and task 76 adds the matching boundary for forward local-structure
+reserve heads. These additions do not change the original score or claim
+AST-wide extraction, CoreIr/ControlFlowIr/VC, or proof payload promotion.
 
 ## Scope
 

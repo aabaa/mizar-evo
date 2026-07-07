@@ -1,0 +1,23 @@
+schema_version = 1
+id = "fail_type_elaboration_local_structure_forward_reference_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_local_structure_forward_reference_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "lower_stage_error"
+rejection_reason = "local_structure_forward_reference_active_range"
+stable_detail_key = "type_elaboration.lower_stage.frontend:malformed_type_expression"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.lower_stage.frontend:malformed_type_expression",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.02.lexical.active_range.local_declaration_no_forward_reference",
+  "spec.en.05.structures.active_range.local_structure_forward_reference",
+  "spec.en.11.symbol_management.active_lexicon.no_forward_reference",
+  "spec.en.checker.type_elaboration.active_range.local_structure_forward_reference_gap",
+]
+notes = "Active type_elaboration runner boundary coverage for checker task 76: source uses a same-module local structure reserve head before the corresponding structure declaration is active. The lower-stage frontend rejects the malformed type expression before checker handoff; the runner must not fabricate a later structure type-head payload from the future definition, accept the reserve declaration, query base-shape/constructor-witness evidence, reach CoreIr/ControlFlowIr/VC/proof payloads, or weaken the active-range rule."
