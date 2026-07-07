@@ -1048,6 +1048,31 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: 35-44 decided; external: mizar-test runner support. Refs:
       semantic_spec_audit.md "Adversarial Corpus".
 
+50. **Source-derived attributed reserve evidence-gap bridge.** [x]
+    - Extend the task-48 reserve source declaration seam just far enough to
+      accept source-derived attribute chains on builtin `set`/`object` reserve
+      type expressions when the attribute symbol is already present in the
+      resolver `SymbolEnv`.
+    - Acceptance: same-module source-derived attributes are preserved in
+      checker-owned `TypeExpressionInput` and normalized by declaration
+      checking; attributed reserve declarations remain active fail cases with
+      `checker.declaration.deferred.evidence_query` until a real existential
+      registration/evidence-query seam exists. Imported attribute symbols,
+      non-builtin heads, mode/structure payloads, terms, formulas, proof
+      skeletons, CoreIr/ControlFlowIr/VC/proof payloads, and successful
+      attributed declarations remain deferred under MC-G020/MC-G021/MC-G026.
+    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
+    - Deps: task 48; external evidence remains MC-G021/MC-G026. Refs:
+      Step 5 source-derived semantic bridge; mizar-test task 10;
+      spec 03 type expressions; spec 17 existential gates.
+    - Completed in task 50: `type_checker.rs` now accepts source-derived
+      attribute payloads on the syntax-free reserve bridge and marks those
+      declarations with `MissingEvidenceQuery` rather than fabricating
+      existential evidence. `mizar-test` adds an active same-module attributed
+      reserve fail fixture that reaches the checker diagnostic, while the
+      existing import-backed attributed reserve fixture remains on the broader
+      extraction gap until imported symbols enter the active runner `SymbolEnv`.
+
 ## Recommended Verification
 
 Run after each task:

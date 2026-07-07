@@ -245,7 +245,8 @@ regression test を追加した。
       builtin declaration inventory）、task 20（reserve bridge binder-only
       `CoreContext` readiness）、post-task-20 resolver R-G007 の parser-backed
       same-signature/different-return functor conflict active declaration-symbol seed
-      と exact SymbolEnv-derived declaration-symbol pass payload assertion を
+      と exact SymbolEnv-derived declaration-symbol pass payload assertion、checker
+      task 50 の same-module attributed reserve evidence-query active fail slice を
       prepared/implemented increments として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder

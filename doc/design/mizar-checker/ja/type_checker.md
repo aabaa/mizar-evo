@@ -211,15 +211,23 @@ definition body payload を公開しないため、task 8 は raw syntax を wal
 再構成してはならない。
 
 現在の source-derived producer seam: `type_checker` module は、upstream runner が
-抽出した syntax-free な reserve-only payload を受け取り、bare builtin `set` /
+抽出した syntax-free な reserve-only payload を受け取り、builtin `set` /
 `object` reserve declaration 用の checker-owned `BindingEnv` と
-`DeclarationCheckingOutput` を構築してよい。この payload は source/module identity、
+`DeclarationCheckingOutput` を構築してよい。successful pass slice では payload は
+bare builtin `set` / `object` である。task 50 はさらに、attribute symbol がすでに
+resolver `SymbolEnv` に存在する場合に限り、これら builtin head 上の
+source-derived attribute payload を許可する。attributed reserve declaration は
+`MissingEvidenceQuery` を付けられ、real existential / evidence-query seam が
+存在するまで active fail case のままにする。この payload は source/module identity、
 reserve item source range、各 binding の spelling と declaration range、各 builtin
-type-expression の spelling / range / head を含まなければならない。この seam は
-runner が既存の `TypedAst` / `ResolvedTypedAst` readiness check を組み立てるための
-deterministic typed-site id を公開するが、`mizar-checker` が `mizar-syntax` を import
-すること、raw syntax を scan すること、non-builtin declaration を accept すること、
-CoreIr / ControlFlowIr / VC / proof execution を主張することは許可しない。
+type-expression の spelling / range / head、および対応済み same-module attribute の
+symbol / range / polarity を含まなければならない。この seam は runner が successful
+bare-builtin slice 用の既存 `TypedAst` / `ResolvedTypedAst` readiness check を
+組み立てるための deterministic typed-site id を公開するが、`mizar-checker` が
+`mizar-syntax` を import すること、raw syntax を scan すること、non-builtin
+declaration を accept すること、imported symbol を捏造すること、existential
+evidence を捏造すること、CoreIr / ControlFlowIr / VC / proof execution を主張する
+ことは許可しない。
 
 必須 behavior:
 

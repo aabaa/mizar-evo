@@ -248,7 +248,9 @@ Keep `cargo test -p mizar-test` green after each task (see
       `CoreContext` readiness), and the post-task-20 resolver R-G007
       parser-backed same-signature/different-return functor conflict active
       declaration-symbol seed plus exact SymbolEnv-derived declaration-symbol
-      pass payload assertions, as prepared/implemented increments.
+      pass payload assertions, plus checker task 50's same-module attributed
+      reserve evidence-query active fail slice, as prepared/implemented
+      increments.
       Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
       `paced/open`; no placeholder runner or fake active fixture is created for

@@ -1,0 +1,6 @@
+definition
+  let x be set;
+  attr EmptyLikeDef: x is emptyish means thesis;
+end;
+
+reserve y for non emptyish set;

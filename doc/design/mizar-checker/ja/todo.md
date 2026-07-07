@@ -991,6 +991,32 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: 35-44 の決定; 外部: mizar-test の runner 対応。参照:
       semantic_spec_audit.md「Adversarial Corpus」。
 
+50. **Source-derived attributed reserve evidence-gap bridge.** [x]
+    - task 48 の reserve source declaration seam を、resolver `SymbolEnv` に
+      すでに存在する attribute symbol に限り、builtin `set` / `object`
+      reserve type-expression 上の source-derived attribute chain を受け取れる
+      最小範囲で拡張する。
+    - 受け入れ条件: same-module の source-derived attribute は checker-owned
+      `TypeExpressionInput` に保存され、declaration checking で normalize される。
+      attributed reserve declaration は real existential registration /
+      evidence-query seam が存在するまで
+      `checker.declaration.deferred.evidence_query` の active fail case に
+      留める。imported attribute symbol、non-builtin head、mode / structure
+      payload、term、formula、proof skeleton、CoreIr / ControlFlowIr / VC /
+      proof payload、successful attributed declaration は MC-G020 / MC-G021 /
+      MC-G026 の下で deferred のままにする。
+    - 検証: `cargo test -p mizar-checker`、`cargo test -p mizar-test`。
+    - 依存: task 48。external evidence は MC-G021 / MC-G026 のまま。参照:
+      Step 5 source-derived semantic bridge、mizar-test task 10、spec 03
+      type expression、spec 17 existential gate。
+    - task 50 で完了: `type_checker.rs` は syntax-free reserve bridge 上で
+      source-derived attribute payload を受け取り、existential evidence を捏造せず
+      declaration に `MissingEvidenceQuery` を付ける。`mizar-test` は checker
+      diagnostic まで到達する same-module attributed reserve の active fail
+      fixture を追加する一方、既存の import-backed attributed reserve fixture は
+      imported symbol が active runner の `SymbolEnv` に入るまで、より広い
+      extraction gap のまま保持する。
+
 ## 推奨検証
 
 各タスクの後で実行する:

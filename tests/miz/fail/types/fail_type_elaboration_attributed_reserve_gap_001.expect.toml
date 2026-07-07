@@ -17,4 +17,4 @@ tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.checker.type_elaboration.payload_extraction",
 ]
-notes = "Active type_elaboration runner boundary coverage: an attributed reserve type is parser/resolver executable but remains outside the reserve-only builtin declaration bridge and must report the source-to-checker payload extraction gap."
+notes = "Active type_elaboration runner boundary coverage: an import-backed attributed reserve type is parser/resolver executable but remains outside the task-50 same-module attributed reserve bridge and must report the source-to-checker payload extraction gap."

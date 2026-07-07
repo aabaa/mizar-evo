@@ -17,4 +17,4 @@ tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.checker.type_elaboration.payload_extraction",
 ]
-notes = "Active type_elaboration runner boundary coverage: a source containing both supported builtin reserve declarations and an unsupported attributed reserve type must keep the whole handoff on the source-to-checker payload extraction gap instead of partially accepting the supported binding."
+notes = "Active type_elaboration runner boundary coverage: a source containing both supported builtin reserve declarations and an import-backed attributed reserve type must keep the whole handoff on the source-to-checker payload extraction gap instead of partially accepting the supported binding."

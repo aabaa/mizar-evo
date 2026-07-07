@@ -2844,20 +2844,28 @@ impl SourceReserveDeclarationBridge {
             .enumerate()
             .map(|(index, binding)| {
                 let type_site = TypedSiteRef::Node(self.type_node(index));
-                DeclarationInput::new(
+                let mut declaration = DeclarationInput::new(
                     BindingId::new(index),
                     self.module_context(),
                     TypedSiteRef::Node(self.declaration_node(index)),
                     binding.binding_range,
                     DeclarationKind::ReservedVariable,
                 )
-                .with_type_expression(TypeExpressionInput::new(
-                    type_site.clone(),
-                    binding.type_range,
-                    binding.type_spelling.clone(),
-                    binding.type_head.clone(),
-                ))
-                .with_reserved_default(ReservedDefaultPayload::new(type_site, false))
+                .with_type_expression(
+                    TypeExpressionInput::new(
+                        type_site.clone(),
+                        binding.type_range,
+                        binding.type_spelling.clone(),
+                        binding.type_head.clone(),
+                    )
+                    .with_attributes(binding.type_attributes.clone()),
+                )
+                .with_reserved_default(ReservedDefaultPayload::new(type_site, false));
+                if !binding.type_attributes.is_empty() {
+                    declaration = declaration
+                        .with_deferred(vec![DeclarationDeferredReason::MissingEvidenceQuery]);
+                }
+                declaration
             })
             .collect::<Vec<_>>();
         let declarations = DeclarationChecker::default().check(
@@ -2926,6 +2934,7 @@ pub struct SourceReserveBindingInput {
     pub type_range: SourceRange,
     pub type_spelling: String,
     pub type_head: TypeHeadInput,
+    pub type_attributes: Vec<AttributeInput>,
 }
 
 impl SourceReserveBindingInput {
@@ -2942,7 +2951,13 @@ impl SourceReserveBindingInput {
             type_range,
             type_spelling: type_spelling.into(),
             type_head,
+            type_attributes: Vec::new(),
         }
+    }
+
+    pub fn with_type_attributes(mut self, type_attributes: Vec<AttributeInput>) -> Self {
+        self.type_attributes = type_attributes;
+        self
     }
 
     fn validate(&self, source_id: SourceId, index: usize) -> Result<(), String> {
@@ -2966,6 +2981,18 @@ impl SourceReserveBindingInput {
             return Err(format!(
                 "source reserve binding {index} is not a supported builtin reserve type"
             ));
+        }
+        for (attribute_index, attribute) in self.type_attributes.iter().enumerate() {
+            if attribute.source_range.source_id != source_id {
+                return Err(format!(
+                    "source reserve binding {index} attribute {attribute_index} range uses a different source id"
+                ));
+            }
+            if !attribute.args.is_empty() {
+                return Err(format!(
+                    "source reserve binding {index} attribute {attribute_index} has unsupported arguments"
+                ));
+            }
         }
         Ok(())
     }
@@ -6531,6 +6558,73 @@ mod tests {
             );
             assert!(declaration.type_entry.is_some());
         }
+    }
+
+    #[test]
+    fn source_reserve_declaration_bridge_preserves_attributed_builtin_evidence_gap() {
+        let source = source_id();
+        let module = module_id();
+        let attr = symbol_id("empty/0", "pkg::main::empty/0");
+        let symbols = symbol_env(vec![symbol_entry(attr.clone(), SymbolKind::Attribute)]);
+        let bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module,
+            range(source, 0, 30),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 8, 9),
+                    range(source, 14, 27),
+                    "non empty set",
+                    TypeHeadInput::BuiltinSet,
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    attr.clone(),
+                    AttributePolarity::Negative,
+                    range(source, 14, 23),
+                    "non empty",
+                )]),
+            ],
+        )
+        .expect("attributed builtin reserve payload should validate");
+
+        let handoff = bridge
+            .check(&symbols)
+            .expect("checker-owned attributed reserve handoff should assemble");
+        let declaration = declarations_by_binding(handoff.declarations())
+            .remove(&BindingId::new(0))
+            .expect("checked declaration should exist");
+        assert_eq!(declaration.status, DeclarationStatus::Partial);
+        assert_eq!(
+            declaration.deferred,
+            vec![DeclarationDeferredReason::MissingEvidenceQuery]
+        );
+        let type_entry = handoff
+            .declarations()
+            .type_entries()
+            .get(declaration.type_entry.unwrap())
+            .expect("attributed reserve type entry should exist");
+        assert_eq!(type_entry.status, TypeStatus::Unknown);
+        let TypeEntryActual::Known(normalized_id) = type_entry.actual else {
+            panic!("attributed reserve should keep a normalized type");
+        };
+        let normalized = handoff
+            .declarations()
+            .normalized_types()
+            .get(normalized_id)
+            .expect("normalized attributed reserve type should exist");
+        assert_eq!(normalized.status, NormalizedTypeStatus::Known);
+        assert_eq!(normalized.attributes.negative().len(), 1);
+        assert_eq!(normalized.attributes.negative()[0].symbol, attr);
+        assert!(normalized.attributes.positive().is_empty());
+        assert_eq!(
+            diagnostic_ranges(
+                handoff.declarations(),
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(8, 9)]
+        );
+        assert!(handoff.declarations().facts().is_empty());
     }
 
     #[test]

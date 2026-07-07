@@ -221,14 +221,22 @@ walk raw syntax to reconstruct them.
 
 Current source-derived producer seam: the `type_checker` module may accept a
 syntax-free reserve-only payload extracted by an upstream runner and build the
-checker-owned `BindingEnv` plus `DeclarationCheckingOutput` for bare builtin
-`set` / `object` reserve declarations. That payload must include source/module
-identity, the reserve item source range, each binding spelling and declaration
-range, and each builtin type-expression spelling/range/head. The seam exposes
-deterministic typed-site ids for the runner to assemble the existing
-`TypedAst` / `ResolvedTypedAst` readiness checks, but it does not authorize
-`mizar-checker` to import `mizar-syntax`, scan raw syntax, accept non-builtin
-declarations, or claim CoreIr / ControlFlowIr / VC / proof execution.
+checker-owned `BindingEnv` plus `DeclarationCheckingOutput` for builtin
+`set` / `object` reserve declarations. For the successful pass slice the
+payload is bare builtin `set` / `object`. Task 50 additionally permits
+source-derived attribute payloads on those builtin heads only when the
+attribute symbol is already present in resolver `SymbolEnv`; attributed
+reserve declarations are marked with `MissingEvidenceQuery` and remain active
+fail cases until a real existential/evidence-query seam exists. The payload
+must include source/module identity, the reserve item source range, each
+binding spelling and declaration range, and each builtin type-expression
+spelling/range/head plus any supported same-module attribute symbol/range/
+polarity. The seam exposes deterministic typed-site ids for the runner to
+assemble the existing `TypedAst` / `ResolvedTypedAst` readiness checks for the
+successful bare-builtin slice, but it does not authorize `mizar-checker` to
+import `mizar-syntax`, scan raw syntax, accept non-builtin declarations,
+invent imported symbols, fabricate existential evidence, or claim CoreIr /
+ControlFlowIr / VC / proof execution.
 
 Required behavior:
 

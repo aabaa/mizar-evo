@@ -21,8 +21,8 @@ use mizar_checker::resolved_typed_ast::{
     SourceNodeRole,
 };
 use mizar_checker::type_checker::{
-    DeclarationCheckingOutput, DeclarationKind, DeclarationStatus, SourceReserveBindingInput,
-    SourceReserveDeclarationBridge, TypeHeadInput,
+    AttributeInput, AttributePolarity, DeclarationCheckingOutput, DeclarationKind,
+    DeclarationStatus, SourceReserveBindingInput, SourceReserveDeclarationBridge, TypeHeadInput,
 };
 use mizar_checker::typed_ast::{
     CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, TypeEntryId,
@@ -49,7 +49,8 @@ use mizar_frontend::parsing::MizarParserSeam;
 use mizar_frontend::source::{FrontendSourceLoader, SourceUnitRequest};
 use mizar_resolve::declarations::DeclarationShellCollector;
 use mizar_resolve::env::{
-    DefinitionKind, ExportStatus, NamespacePath, SymbolEnv, SymbolKind, Visibility,
+    ContributionKind, DefinitionKind, ExportStatus, NamespacePath, SymbolEnv, SymbolKind,
+    Visibility,
 };
 use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
 use mizar_resolve::symbols::{
@@ -729,7 +730,8 @@ fn source_type_elaboration_detail_keys(
     module: ResolverModuleId,
     symbols: &SymbolEnv,
 ) -> Vec<String> {
-    let Ok(source_reserve) = extract_builtin_source_reserve_declarations(ast, module.clone())
+    let Ok(source_reserve) =
+        extract_builtin_source_reserve_declarations(ast, module.clone(), symbols)
     else {
         return vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()];
     };
@@ -782,11 +784,13 @@ struct SourceTypeExpression {
     range: SourceRange,
     spelling: String,
     head: TypeHeadInput,
+    attributes: Vec<AttributeInput>,
 }
 
 fn extract_builtin_source_reserve_declarations(
     ast: &SurfaceAst,
     module: ResolverModuleId,
+    symbols: &SymbolEnv,
 ) -> Result<SourceReserveDeclarationBridge, ()> {
     if ast
         .nodes()
@@ -821,7 +825,9 @@ fn extract_builtin_source_reserve_declarations(
             return Err(());
         }
         for segment in segments {
-            bindings.extend(extract_builtin_reserve_segment(ast, segment)?);
+            bindings.extend(extract_builtin_reserve_segment(
+                ast, segment, &module, symbols,
+            )?);
         }
     }
 
@@ -844,9 +850,24 @@ fn is_supported_builtin_reserve_bridge_node(node: &SurfaceNode) -> bool {
             | SurfaceNodeKind::Token(_)
             | SurfaceNodeKind::CompilationUnit
             | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::DefinitionBlockItem
+            | SurfaceNodeKind::DefinitionParameter
+            | SurfaceNodeKind::QualifiedVariableSegment
+            | SurfaceNodeKind::AttributeDefinition
+            | SurfaceNodeKind::AttributePattern
+            | SurfaceNodeKind::FormulaDefiniens
+            | SurfaceNodeKind::FormulaCase
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::FormulaConstant(_)
             | SurfaceNodeKind::ReserveItem
             | SurfaceNodeKind::ReserveSegment
             | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::AttributeChain
+            | SurfaceNodeKind::AttributeRef
+            | SurfaceNodeKind::QualifiedSymbol
             | SurfaceNodeKind::TypeHead
     )
 }
@@ -854,6 +875,8 @@ fn is_supported_builtin_reserve_bridge_node(node: &SurfaceNode) -> bool {
 fn extract_builtin_reserve_segment(
     ast: &SurfaceAst,
     segment: &SurfaceNode,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
 ) -> Result<Vec<SourceReserveBindingInput>, ()> {
     if subtree_has_recovery(ast, segment) {
         return Err(());
@@ -883,7 +906,9 @@ fn extract_builtin_reserve_segment(
                     && token.text.as_ref() == ","
                     && !saw_for => {}
             SurfaceNodeKind::TypeExpression if saw_for && type_expression.is_none() => {
-                type_expression = Some(extract_builtin_source_type_expression(ast, child)?);
+                type_expression = Some(extract_builtin_source_type_expression(
+                    ast, child, module, symbols,
+                )?);
             }
             _ => return Err(()),
         }
@@ -903,6 +928,7 @@ fn extract_builtin_reserve_segment(
                 type_expression.spelling.clone(),
                 type_expression.head.clone(),
             )
+            .with_type_attributes(type_expression.attributes.clone())
         })
         .collect())
 }
@@ -910,11 +936,24 @@ fn extract_builtin_reserve_segment(
 fn extract_builtin_source_type_expression(
     ast: &SurfaceAst,
     node: &SurfaceNode,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
 ) -> Result<SourceTypeExpression, ()> {
-    if subtree_has_recovery(ast, node) || node.children.len() != 1 {
+    if subtree_has_recovery(ast, node) || node.children.is_empty() || node.children.len() > 2 {
         return Err(());
     }
-    let head = ast.node(node.children[0]).ok_or(())?;
+    let (attribute_node, head_id) = match node.children.as_slice() {
+        [head] => (None, *head),
+        [attributes, head] => (Some(ast.node(*attributes).ok_or(())?), *head),
+        _ => return Err(()),
+    };
+    let attributes = match attribute_node {
+        Some(attribute_node) => {
+            extract_builtin_source_attributes(ast, attribute_node, module, symbols)?
+        }
+        None => Vec::new(),
+    };
+    let head = ast.node(head_id).ok_or(())?;
     if !matches!(head.kind, SurfaceNodeKind::TypeHead) || head.children.len() != 1 {
         return Err(());
     }
@@ -926,9 +965,135 @@ fn extract_builtin_source_type_expression(
     };
     Ok(SourceTypeExpression {
         range: node.range,
-        spelling: token.expect("builtin token matched").to_owned(),
+        spelling: source_text_from_children(ast, node).ok_or(())?,
         head,
+        attributes,
     })
+}
+
+fn extract_builtin_source_attributes(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Result<Vec<AttributeInput>, ()> {
+    if !matches!(node.kind, SurfaceNodeKind::AttributeChain) || node.children.is_empty() {
+        return Err(());
+    }
+    node.children
+        .iter()
+        .map(|child_id| {
+            let child = ast.node(*child_id).ok_or(())?;
+            extract_builtin_source_attribute(ast, child, module, symbols)
+        })
+        .collect()
+}
+
+fn extract_builtin_source_attribute(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Result<AttributeInput, ()> {
+    if !matches!(node.kind, SurfaceNodeKind::AttributeRef) {
+        return Err(());
+    }
+    let mut polarity = AttributePolarity::Positive;
+    let mut symbol_spelling = None;
+    for child_id in &node.children {
+        let child = ast.node(*child_id).ok_or(())?;
+        match &child.kind {
+            SurfaceNodeKind::Token(token)
+                if token.kind == SurfaceTokenKind::ReservedWord
+                    && token.text.as_ref() == "non"
+                    && symbol_spelling.is_none()
+                    && polarity == AttributePolarity::Positive =>
+            {
+                polarity = AttributePolarity::Negative;
+            }
+            SurfaceNodeKind::QualifiedSymbol if symbol_spelling.is_none() => {
+                symbol_spelling = Some(qualified_symbol_spelling(ast, child)?);
+            }
+            _ => return Err(()),
+        }
+    }
+    let spelling = symbol_spelling.ok_or(())?;
+    let symbol = resolve_visible_attribute(symbols, module, &spelling)?;
+    Ok(AttributeInput::new(
+        symbol,
+        polarity,
+        node.range,
+        source_text_from_children(ast, node).ok_or(())?,
+    ))
+}
+
+fn qualified_symbol_spelling(ast: &SurfaceAst, node: &SurfaceNode) -> Result<String, ()> {
+    if !matches!(node.kind, SurfaceNodeKind::QualifiedSymbol) || node.children.is_empty() {
+        return Err(());
+    }
+    let mut segments = Vec::new();
+    for child_id in &node.children {
+        let child = ast.node(*child_id).ok_or(())?;
+        if !matches!(child.kind, SurfaceNodeKind::PathSegment) || child.children.len() != 1 {
+            return Err(());
+        }
+        let token = ast
+            .node(child.children[0])
+            .and_then(SurfaceNode::token_text)
+            .ok_or(())?;
+        segments.push(token.to_owned());
+    }
+    Ok(segments.join("."))
+}
+
+fn resolve_visible_attribute(
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+    spelling: &str,
+) -> Result<mizar_resolve::resolved_ast::SymbolId, ()> {
+    let namespace = NamespacePath::new(module.path().as_str());
+    let candidates = symbols
+        .symbols()
+        .visible_candidates(&namespace, spelling)
+        .into_iter()
+        .filter(|entry| entry.kind() == SymbolKind::Attribute)
+        .filter(|entry| entry.symbol().module() == module)
+        .filter(|entry| {
+            symbols
+                .contributions()
+                .get(entry.contribution())
+                .is_some_and(|contribution| {
+                    contribution.module() == module
+                        && matches!(contribution.kind(), ContributionKind::LocalSource { .. })
+                })
+        })
+        .map(|entry| entry.symbol().clone())
+        .collect::<Vec<_>>();
+    match candidates.as_slice() {
+        [symbol] => Ok(symbol.clone()),
+        _ => Err(()),
+    }
+}
+
+fn source_text_from_children(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
+    let mut tokens = Vec::new();
+    collect_token_text(ast, node, &mut tokens)?;
+    Some(tokens.join(" "))
+}
+
+fn collect_token_text<'a>(
+    ast: &'a SurfaceAst,
+    node: &'a SurfaceNode,
+    output: &mut Vec<&'a str>,
+) -> Option<()> {
+    if let Some(text) = node.token_text() {
+        output.push(text);
+        return Some(());
+    }
+    for child_id in &node.children {
+        collect_token_text(ast, ast.node(*child_id)?, output)?;
+    }
+    Some(())
 }
 
 fn merge_optional_range(left: Option<SourceRange>, right: SourceRange) -> SourceRange {
@@ -2011,7 +2176,7 @@ mod tests {
     };
     use mizar_checker::binding_env::BindingId;
     use mizar_checker::resolved_typed_ast::{ResolvedTypedNodeId, ResolvedTypedNodeKind};
-    use mizar_checker::type_checker::TypeHeadInput;
+    use mizar_checker::type_checker::{AttributePolarity, TypeHeadInput};
     use mizar_checker::typed_ast::LocalTypeContextId;
     use mizar_core::elaborator::ResolvedTypedAstSummary;
     use mizar_frontend::lexical_env::{
@@ -2019,11 +2184,17 @@ mod tests {
         LexicalEnvironmentRequest, LexicalSummaryProvider, UserSymbolKind,
     };
     use mizar_frontend::preprocess::{ImportStub, ImportStubPath};
-    use mizar_resolve::env::{SymbolEnv, SymbolEnvIndexes};
-    use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
+    use mizar_resolve::env::{
+        ContributionKind, ExportStatus, NamespacePath, SymbolEntry, SymbolEnv, SymbolEnvIndexes,
+        SymbolKind, Visibility,
+    };
+    use mizar_resolve::resolved_ast::{
+        FullyQualifiedName, LocalSymbolId, ModuleId as ResolverModuleId, SemanticOrigin,
+        SymbolId as ResolverSymbolId,
+    };
     use mizar_session::{
         BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, ModulePath, PackageId,
-        SessionIdAllocator, SourceId, SourceRange,
+        SessionIdAllocator, SourceAnchor, SourceId, SourceRange,
     };
     use mizar_syntax::{
         SurfaceAst, SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceNodeKind, SurfaceTokenKind,
@@ -2154,8 +2325,10 @@ mod tests {
         );
         let module = ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
 
-        let source_reserve = extract_builtin_source_reserve_declarations(&ast, module.clone())
-            .expect("builtin reserve declarations should extract");
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let source_reserve =
+            extract_builtin_source_reserve_declarations(&ast, module.clone(), &symbols)
+                .expect("builtin reserve declarations should extract");
 
         assert_eq!(
             source_reserve
@@ -2196,18 +2369,25 @@ mod tests {
         );
 
         assert!(
-            extract_builtin_source_reserve_declarations(&non_builtin, module.clone()).is_err(),
+            extract_builtin_source_reserve_declarations(&non_builtin, module.clone(), &symbols)
+                .is_err(),
             "non-builtin type heads must stay on the external gap"
         );
 
+        let attributed_symbols = source_symbol_env(module.clone());
         let unsupported = reserve_ast(
             source_id(93),
             vec![reserve_item(vec!["x"], ReserveTypeShape::AttributedSet)],
         );
 
-        assert!(
-            extract_builtin_source_reserve_declarations(&unsupported, module).is_err(),
-            "attribute-bearing type expressions must stay on the external gap"
+        let attributed =
+            extract_builtin_source_reserve_declarations(&unsupported, module, &attributed_symbols)
+                .expect("attribute-bearing builtin reserve type should extract");
+        assert_eq!(attributed.bindings().len(), 1);
+        assert_eq!(attributed.bindings()[0].type_attributes.len(), 1);
+        assert_eq!(
+            attributed.bindings()[0].type_attributes[0].polarity,
+            AttributePolarity::Negative
         );
     }
 
@@ -2222,9 +2402,10 @@ mod tests {
             ],
         );
         let module = ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
-        let source_reserve = extract_builtin_source_reserve_declarations(&ast, module.clone())
-            .expect("builtin reserve declarations should extract");
         let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let source_reserve =
+            extract_builtin_source_reserve_declarations(&ast, module.clone(), &symbols)
+                .expect("builtin reserve declarations should extract");
 
         let handoff = assemble_source_checker_handoff(&symbols, &source_reserve)
             .expect("source-derived checker handoff should reach ResolvedTypedAst");
@@ -2307,10 +2488,10 @@ mod tests {
     }
 
     #[test]
-    fn source_reserve_bridge_reports_external_gap_detail_for_unsupported_and_mixed_shapes() {
+    fn source_reserve_bridge_reports_gap_or_evidence_detail_for_unsupported_shapes() {
         let source_id = source_id(95);
         let module = ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
-        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let symbols = source_symbol_env(module.clone());
         let non_builtin = reserve_ast(
             source_id,
             vec![reserve_item(vec!["x"], ReserveTypeShape::NonBuiltin("T"))],
@@ -2329,8 +2510,95 @@ mod tests {
         );
         assert_eq!(
             source_type_elaboration_detail_keys(&mixed, module, &symbols),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        let attributed = reserve_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::AttributedSet)],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&attributed, symbols.module_id().clone(), &symbols),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        let imported_symbols = imported_attribute_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed,
+                imported_symbols.module_id().clone(),
+                &imported_symbols
+            ),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
+    }
+
+    fn source_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        let source = source_id(190);
+        let mut indexes = SymbolEnvIndexes::default();
+        let contribution = indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 1)),
+        );
+        let symbol = ResolverSymbolId::new(
+            module.clone(),
+            LocalSymbolId::new("attribute/empty/0"),
+            FullyQualifiedName::new(format!("{}::empty/0", module.path().as_str())),
+        );
+        indexes.symbols.insert(
+            SymbolEntry::new(
+                symbol,
+                SymbolKind::Attribute,
+                NamespacePath::new(module.path().as_str()),
+                "empty",
+                SemanticOrigin::new(
+                    source,
+                    module.clone(),
+                    SourceAnchor::Range(range(source, 0, 1)),
+                    Vec::new(),
+                ),
+                contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        SymbolEnv::new(module, indexes)
+    }
+
+    fn imported_attribute_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        let source = source_id(191);
+        let imported_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("imported"));
+        let mut indexes = SymbolEnvIndexes::default();
+        let contribution = indexes.contributions.insert(
+            imported_module.clone(),
+            ContributionKind::ImportedSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 1)),
+        );
+        let symbol = ResolverSymbolId::new(
+            imported_module.clone(),
+            LocalSymbolId::new("attribute/empty/0"),
+            FullyQualifiedName::new(format!("{}::empty/0", imported_module.path().as_str())),
+        );
+        indexes.symbols.insert(
+            SymbolEntry::new(
+                symbol,
+                SymbolKind::Attribute,
+                NamespacePath::new(module.path().as_str()),
+                "empty",
+                SemanticOrigin::new(
+                    source,
+                    imported_module,
+                    SourceAnchor::Range(range(source, 0, 1)),
+                    Vec::new(),
+                ),
+                contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        SymbolEnv::new(module, indexes)
     }
 
     fn import_stub(source_id: SourceId, spelling: &str, start: usize, end: usize) -> ImportStub {
