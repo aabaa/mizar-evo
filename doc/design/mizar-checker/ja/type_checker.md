@@ -255,7 +255,16 @@ local structure head である bare same-module no-argument local mode expansion
 この case は real `ModeExpansion` を消費するため missing mode-expansion payload diagnostic を
 出してはならない。ただし expanded structure radix は real base-shape /
 constructor-witness evidence extraction が存在するまで
-`checker.declaration.deferred.evidence_query` で fail closed する。task 58 はさらに、
+`checker.declaration.deferred.evidence_query` で fail closed する。task 60 はさらに、
+mode definition が unique / unrecovered / preceding / no-argument で definition-local
+context を持たず、structure definition が unique / unrecovered / same-module で mode
+definition より前に現れ、同じ mode が同じ bridge input 内で bare reserve head としても
+使われていない場合に限り、この direct structure-RHS expansion を attributed local-mode
+reserve head に許可する。expanded attributed structure type は real base-shape /
+constructor-witness evidence と full attributed-type existential evidence が存在するまで
+`checker.declaration.deferred.evidence_query` で fail closed する。mixed bare/attributed use、
+dependency / chain、imported / argument-bearing symbol、attributed structure RHS はこの slice
+の外に残る。task 58 はさらに、
 RHS が attributed builtin `set` / `object` type である bare same-module no-argument
 local mode expansion を許可する。この case も real `ModeExpansion` を消費するため
 missing mode-expansion payload diagnostic を出してはならない。ただし expanded

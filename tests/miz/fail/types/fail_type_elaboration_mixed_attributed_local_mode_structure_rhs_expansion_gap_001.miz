@@ -1,0 +1,17 @@
+definition
+  let x be set;
+  attr MarkedDef: x is marked means thesis;
+end;
+
+definition
+  struct LocalStruct where
+    field carrier -> set;
+  end;
+end;
+
+definition
+  mode StructModeDef: StructMode is LocalStruct;
+end;
+
+reserve x for StructMode;
+reserve y for marked StructMode;

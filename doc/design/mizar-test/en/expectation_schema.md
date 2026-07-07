@@ -484,7 +484,10 @@ local-mode expansions whose RHS is an attributed builtin head to stop at the
 evidence-query key because attributed-type existential evidence is still
 absent; task 59 permits attributed local-mode reserve heads with real direct
 bare-builtin expansions to stop at the evidence-query key because
-attributed-type existential evidence is still absent. These are fail cases,
+attributed-type existential evidence is still absent; task 60 permits
+attributed local-mode reserve heads with real direct local-structure RHS
+expansions to stop at the evidence-query key because base-shape/
+constructor-witness and full attributed-type evidence are still absent. These are fail cases,
 not pass-slice coverage.
 
 Detailed type assertion tables and broader type pass expectations remain

@@ -268,7 +268,18 @@ head with no type arguments. The real `ModeExpansion` is consumed, so the case
 must not report the missing mode-expansion payload diagnostic; however, the
 expanded structure radix still fails closed with
 `checker.declaration.deferred.evidence_query` until real
-base-shape/constructor-witness evidence extraction exists. Task 58 additionally
+base-shape/constructor-witness evidence extraction exists. Task 60 additionally
+permits that direct structure-RHS expansion for an attributed local-mode
+reserve head only when the mode definition is unique, unrecovered, preceding,
+no-argument, and free of definition-local context, the structure definition is
+unique, unrecovered, same-module, and precedes the mode definition, and the
+same mode is not also used as a bare reserve head in the same bridge input.
+The expanded attributed structure type fails closed with
+`checker.declaration.deferred.evidence_query` until real base-shape/
+constructor-witness evidence and full attributed-type existential evidence
+exist; mixed bare/attributed uses, dependencies/chains, imported or
+argument-bearing symbols, and attributed structure RHSs remain outside this
+slice. Task 58 additionally
 permits a bare same-module no-argument local mode expansion whose RHS is an
 attributed builtin `set` / `object` type. The real `ModeExpansion` is
 consumed, so the case must not report the missing mode-expansion payload

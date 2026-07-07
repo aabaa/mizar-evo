@@ -1340,6 +1340,48 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       dependencies or chains, CoreIr, ControlFlowIr, VC, proof payloads, and
       broader semantic pass coverage remain deferred.
 
+60. **Source-derived attributed local mode structure-RHS evidence-gap bridge.** [x]
+    - Extend the task-57 structure-RHS bridge just far enough to produce a real
+      `ModeExpansion` payload for a same-module attributed local-mode reserve
+      head when its mode definition is unique, unrecovered, preceding,
+      no-argument, free of definition-local context, and has a direct
+      same-module local structure RHS whose unique unrecovered structure
+      definition precedes the mode definition. The same mode must not also be
+      used as a bare reserve head in the same bridge input.
+    - Acceptance: checker unit coverage proves `marked Mode` with a real
+      `Mode -> LocalStruct` expansion no longer emits
+      `checker.type.external.mode_expansion_payload`, preserves the normalized
+      attribute, marks the declaration partial with `MissingEvidenceQuery`,
+      and exports no verified facts. Runner unit coverage proves the single
+      attributed local-mode reserve use receives the real direct structure-RHS
+      expansion while mixed bare/attributed uses of the same mode, attributed
+      structure-RHS chains, and cached direct structure-RHS dependencies still
+      withhold expansion. A new active `type_elaboration` fail fixture covers
+      the real `.miz` source path with
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query`;
+      additional active fail fixtures cover the mixed structure-RHS and
+      attributed structure-RHS chain exclusions with the missing-expansion
+      diagnostic.
+      Imported or argument-bearing attributes/modes/structures, dependencies,
+      chains, attributed structure RHSs, attributed-builtin RHSs, successful
+      attributed or structure declarations, and base-shape/existential evidence
+      remain outside the slice.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 50, 52, 53, 57, and 59. Structure base-shape evidence,
+      full attributed-type existential evidence, and broader mode expansion
+      remain MC-G020/MC-G026. Refs: Step 5 source-derived semantic bridge;
+      mizar-test task 10; spec 03 type expressions; spec 05 structures; spec
+      06 attributes; spec 07 modes; spec 17 attributed-type evidence.
+    - Completed in task 60: `mizar-test` extracts a real AST-derived direct
+      local-structure RHS expansion for a same-module attributed reserve head
+      when the same mode has no mixed bare reserve use, and `mizar-checker`
+      routes the expanded attributed reserve declaration to the existing
+      missing evidence-query diagnostic rather than the missing expansion-
+      payload diagnostic. Positive attributed/structure acceptance, base-
+      shape/constructor-witness extraction, existential evidence extraction,
+      mixed attributed/bare uses, dependencies or chains, CoreIr, ControlFlowIr,
+      VC, proof payloads, and broader semantic pass coverage remain deferred.
+
 ## Recommended Verification
 
 Run after each task:

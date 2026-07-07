@@ -275,7 +275,13 @@ base-shape/constructor-witness evidence query. Task 58 may credit the parallel
 diagnostic-only fail slice when the reserve head expands through a real
 same-module local-mode expansion whose RHS is an attributed builtin head; the
 runner passes the real expansion to the checker-owned seam, but the checker
-still reports the missing attributed-type existential evidence query. Those sources
+still reports the missing attributed-type existential evidence query. Task 60
+may credit the direct attributed-root structure-RHS diagnostic-only fail slice:
+the reserve head is an attributed argument-free same-module local mode, the
+runner derives a real direct local-structure RHS expansion under the inherited
+task-57 uniqueness/precedence/no-context constraints, and the checker still
+reports the missing base-shape/constructor-witness plus full attributed-type
+evidence query. Those sources
 are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one `DeclarationInput` per
 binding, binding-specific `TypeExpressionInput` sites, and `DeclarationChecker`
@@ -304,12 +310,17 @@ existential evidence, task-57 same-module local-mode expansions with local
 structure RHSs missing base-shape evidence, task-58 same-module local-mode
 expansions with attributed builtin RHSs missing attributed-type existential
 evidence, task-59 attributed local-mode reserve heads with real direct
-bare-builtin expansions missing attributed-type existential evidence, or
+bare-builtin expansions missing attributed-type existential evidence, task-60
+attributed local-mode reserve heads with real direct local-structure RHS
+expansions missing base-shape/constructor-witness and full attributed-type
+evidence, or
 same-module local mode reserve heads, including mixed attributed/bare
 local-mode sources, missing mode-expansion payloads. Task 56's
 attributed-chain-dependency fail case is part
 of that same missing mode-expansion payload family and does not credit a partial
-chain expansion; attributed-RHS chains likewise remain outside task 58. Those gap tests do not satisfy the broader task 7-11
+chain expansion; attributed-RHS chains likewise remain outside task 58, and
+structure-RHS chains remain outside task 60's direct attributed-root slice.
+Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and
 `proof_verification` rows remain deferred until prepared consumer execution
 exists; the summary/context readiness read is not a CoreIr/ControlFlowIr/VC/

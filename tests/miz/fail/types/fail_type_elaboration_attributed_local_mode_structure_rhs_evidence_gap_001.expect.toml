@@ -1,0 +1,20 @@
+schema_version = 1
+id = "fail_type_elaboration_attributed_local_mode_structure_rhs_evidence_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_attributed_local_mode_structure_rhs_evidence_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_attributed_mode_structure_rhs_evidence_query"
+stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.checker.checker.declaration.deferred.evidence_query",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction.attributed_local_mode_structure_rhs_evidence_gap",
+]
+notes = "Active type_elaboration runner coverage for checker task 60: same-module source-derived attribute and mode symbols are extracted into an attributed local-mode reserve type-expression payload, the mode's direct local-structure RHS is lowered into a real mode-expansion payload, and checker declaration checking fails closed on the missing full attributed structure-type evidence query instead of accepting the declaration, fabricating base-shape/existential evidence, or reporting the missing mode-expansion payload."

@@ -1032,8 +1032,13 @@ impl SourceLocalModeExpansionExtractor<'_> {
             return false;
         };
         if is_attributed_root
-            && (!mode_expansion_is_safe_chain_terminal(&candidate.expansion)
-                || !candidate.dependencies.is_empty())
+            && (!candidate.dependencies.is_empty()
+                || (!mode_expansion_is_safe_chain_terminal(&candidate.expansion)
+                    && !mode_expansion_is_direct_structure_rhs_terminal(
+                        &candidate.expansion,
+                        self.symbols,
+                        self.module,
+                    )))
         {
             visiting.remove(symbol);
             return false;
@@ -1120,6 +1125,21 @@ fn mode_expansion_is_safe_chain_terminal(expansion: &ModeExpansion) -> bool {
     expansion.attributes.is_empty()
         && expansion.radix.attributes.is_empty()
         && !matches!(expansion.radix.head, TypeHeadInput::Symbol(_))
+}
+
+fn mode_expansion_is_direct_structure_rhs_terminal(
+    expansion: &ModeExpansion,
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+) -> bool {
+    expansion.attributes.is_empty()
+        && expansion.radix.attributes.is_empty()
+        && matches!(
+            expansion.radix.head,
+            TypeHeadInput::Symbol(ref radix)
+                if source_reserve_symbol_head_kind(symbols, module, radix)
+                    == Some(SymbolKind::Structure)
+        )
 }
 
 fn extract_source_local_mode_expansion(
@@ -3291,6 +3311,87 @@ mod tests {
             Some(&TypeHeadInput::Symbol(structure_rhs_struct))
         );
 
+        let attributed_structure_rhs_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let attributed_structure_rhs_symbols = source_local_symbols_env(
+            attributed_structure_rhs_module.clone(),
+            &[
+                ("empty", SymbolKind::Attribute),
+                ("Struct", SymbolKind::Structure),
+                ("Mode", SymbolKind::Mode),
+            ],
+        );
+        let attributed_structure_rhs = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [mode_definition(
+                "Mode",
+                ReserveTypeShape::QualifiedSymbol("Struct"),
+            )],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("Mode"),
+            )],
+        );
+        let attributed_structure_rhs_extraction = extract_builtin_source_reserve_declarations(
+            &attributed_structure_rhs,
+            attributed_structure_rhs_module.clone(),
+            &attributed_structure_rhs_symbols,
+        )
+        .expect("attributed mode with structure RHS reserve should extract");
+        let attributed_structure_rhs_mode = resolve_visible_type_head(
+            &attributed_structure_rhs_symbols,
+            &attributed_structure_rhs_module,
+            "Mode",
+        )
+        .unwrap();
+        let attributed_structure_rhs_struct = resolve_visible_type_head(
+            &attributed_structure_rhs_symbols,
+            &attributed_structure_rhs_module,
+            "Struct",
+        )
+        .unwrap();
+        assert_eq!(
+            attributed_structure_rhs_extraction.mode_expansions().len(),
+            1
+        );
+        assert_eq!(
+            attributed_structure_rhs_extraction
+                .mode_expansions()
+                .get(&attributed_structure_rhs_mode)
+                .map(|expansion| &expansion.radix.head),
+            Some(&TypeHeadInput::Symbol(attributed_structure_rhs_struct))
+        );
+
+        let mixed_attributed_structure_rhs = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [mode_definition(
+                "Mode",
+                ReserveTypeShape::QualifiedSymbol("Struct"),
+            )],
+            vec![
+                reserve_item(vec!["x"], ReserveTypeShape::QualifiedSymbol("Mode")),
+                reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::AttributedQualifiedSymbol("Mode"),
+                ),
+            ],
+        );
+        let mixed_attributed_structure_rhs_extraction =
+            extract_builtin_source_reserve_declarations(
+                &mixed_attributed_structure_rhs,
+                attributed_structure_rhs_module.clone(),
+                &attributed_structure_rhs_symbols,
+            )
+            .expect("mixed attributed structure-RHS reserve should still extract");
+        assert!(
+            mixed_attributed_structure_rhs_extraction
+                .mode_expansions()
+                .is_empty(),
+            "mixed bare/attributed uses still withhold direct structure-RHS expansion"
+        );
+
         let attributed_rhs_module =
             ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
         let attributed_rhs_symbols =
@@ -3358,6 +3459,43 @@ mod tests {
         assert!(
             chain_structure_rhs_extraction.mode_expansions().is_empty(),
             "structure RHS expansions stay limited to the direct reserved mode head"
+        );
+
+        let attributed_chain_structure_rhs_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let attributed_chain_structure_rhs_symbols = source_local_symbols_env(
+            attributed_chain_structure_rhs_module.clone(),
+            &[
+                ("empty", SymbolKind::Attribute),
+                ("Struct", SymbolKind::Structure),
+                ("A", SymbolKind::Mode),
+                ("B", SymbolKind::Mode),
+            ],
+        );
+        let attributed_chain_structure_rhs = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("A"),
+            )],
+        );
+        let attributed_chain_structure_rhs_extraction =
+            extract_builtin_source_reserve_declarations(
+                &attributed_chain_structure_rhs,
+                attributed_chain_structure_rhs_module,
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("attributed mode chain ending in structure RHS should still extract");
+        assert!(
+            attributed_chain_structure_rhs_extraction
+                .mode_expansions()
+                .is_empty(),
+            "attributed structure-RHS expansions stay direct-root only"
         );
 
         let chain_attributed_rhs_symbols = source_mode_chain_symbol_env(ResolverModuleId::new(
@@ -3521,6 +3659,58 @@ mod tests {
                 .mode_expansions()
                 .contains_key(&cached_c),
             "cached one-edge expansion payloads must not let a deeper chain bypass the cap"
+        );
+
+        let cached_structure_rhs_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let cached_structure_rhs_symbols = source_local_symbols_env(
+            cached_structure_rhs_module.clone(),
+            &[
+                ("Struct", SymbolKind::Structure),
+                ("B", SymbolKind::Mode),
+                ("A", SymbolKind::Mode),
+            ],
+        );
+        let cached_structure_rhs_chain = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![
+                reserve_item(vec!["y"], ReserveTypeShape::QualifiedSymbol("B")),
+                reserve_item(vec!["z"], ReserveTypeShape::QualifiedSymbol("A")),
+            ],
+        );
+        let cached_structure_rhs_extraction = extract_builtin_source_reserve_declarations(
+            &cached_structure_rhs_chain,
+            cached_structure_rhs_module.clone(),
+            &cached_structure_rhs_symbols,
+        )
+        .expect("cached structure RHS chain reserve should still extract");
+        let cached_structure_b = resolve_visible_type_head(
+            &cached_structure_rhs_symbols,
+            &cached_structure_rhs_module,
+            "B",
+        )
+        .unwrap();
+        let cached_structure_a = resolve_visible_type_head(
+            &cached_structure_rhs_symbols,
+            &cached_structure_rhs_module,
+            "A",
+        )
+        .unwrap();
+        assert!(
+            cached_structure_rhs_extraction
+                .mode_expansions()
+                .contains_key(&cached_structure_b)
+        );
+        assert!(
+            !cached_structure_rhs_extraction
+                .mode_expansions()
+                .contains_key(&cached_structure_a),
+            "cached direct structure-RHS expansion must not let a dependent chain bypass the direct-head cap"
         );
 
         let cyclic_symbols = source_local_symbols_env(

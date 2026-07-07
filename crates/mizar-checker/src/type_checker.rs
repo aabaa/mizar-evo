@@ -7503,6 +7503,79 @@ mod tests {
             "real mode expansion must not make attributed mode uses accepted without existential evidence"
         );
 
+        let structure_attribute_symbols = symbol_env(vec![
+            symbol_entry(symbol_id("Mode/0", "pkg::main::Mode/0"), SymbolKind::Mode),
+            symbol_entry(
+                symbol_id("Struct/0", "pkg::main::Struct/0"),
+                SymbolKind::Structure,
+            ),
+            symbol_entry(
+                symbol_id("empty/0", "pkg::main::empty/0"),
+                SymbolKind::Attribute,
+            ),
+        ]);
+        let attributed_mode_with_structure_expansion = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 18),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 18),
+                    "non empty Mode",
+                    TypeHeadInput::Symbol(symbol_id("Mode/0", "pkg::main::Mode/0")),
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    symbol_id("empty/0", "pkg::main::empty/0"),
+                    AttributePolarity::Negative,
+                    range(source, 4, 13),
+                    "non empty",
+                )]),
+            ],
+        )
+        .expect("attributed mode reserve payload should validate before SymbolEnv checks");
+        let attributed_mode_with_structure_expansion_handoff =
+            attributed_mode_with_structure_expansion
+                .check_with_mode_expansions(
+                    &structure_attribute_symbols,
+                    [(
+                        symbol_id("Mode/0", "pkg::main::Mode/0"),
+                        ModeExpansion::new(
+                            TypeExpressionInput::new(
+                                site(779),
+                                range(source, 20, 31),
+                                "Struct",
+                                TypeHeadInput::Symbol(symbol_id("Struct/0", "pkg::main::Struct/0")),
+                            ),
+                            Vec::new(),
+                        ),
+                    )],
+                )
+                .expect("attributed mode with real structure RHS expansion should fail closed");
+        assert_eq!(
+            diagnostic_ranges(
+                attributed_mode_with_structure_expansion_handoff.declarations(),
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        assert!(
+            diagnostic_ranges(
+                attributed_mode_with_structure_expansion_handoff.declarations(),
+                "checker.type.external.mode_expansion_payload"
+            )
+            .is_empty(),
+            "real structure RHS expansion should move attributed mode uses past the missing-expansion gap"
+        );
+        assert!(
+            attributed_mode_with_structure_expansion_handoff
+                .declarations()
+                .facts()
+                .is_empty(),
+            "structure RHS expansion must not make attributed mode uses accepted without evidence"
+        );
+
         let unresolved = SourceReserveDeclarationBridge::new(
             source,
             module.clone(),
