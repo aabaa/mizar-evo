@@ -3437,8 +3437,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 25);
-    assert_eq!(report.passed_count(), 25);
+    assert_eq!(report.results.len(), 26);
+    assert_eq!(report.passed_count(), 26);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3545,6 +3545,11 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_local_mode_structure_rhs_chain_evidence_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_local_mode_attributed_rhs_chain_evidence_gap_001"
             && result.actual_detail_keys
                 == ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
     }));
@@ -5557,6 +5562,61 @@ tests = ["tests/miz/fail/types/fail_local_mode_structure_rhs_chain.expect.toml"]
 }
 
 #[test]
+fn type_elaboration_runner_expands_local_mode_attributed_rhs_chain_to_evidence_gap() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/types/fail_local_mode_attributed_rhs_chain.miz",
+        "definition\n  let x be set;\n  attr MarkedDef: x is marked means thesis;\nend;\n\ndefinition\n  mode MarkedModeDef: MarkedMode is marked set;\nend;\n\ndefinition\n  mode ChainMarkedModeDef: ChainMarkedMode is MarkedMode;\nend;\n\nreserve z for ChainMarkedMode;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/types/fail_local_mode_attributed_rhs_chain.expect.toml",
+        r#"schema_version = 1
+id = "fail_local_mode_attributed_rhs_chain"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_local_mode_attributed_rhs_chain.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_attributed_rhs_chain_evidence_query"
+stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.checker.checker.declaration.deferred.evidence_query",
+]
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration.local_mode_attributed_rhs_chain_evidence_gap"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration.local_mode_attributed_rhs_chain_evidence_gap"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = ["tests/miz/fail/types/fail_local_mode_attributed_rhs_chain.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert_eq!(
+        report.results[0].actual_detail_keys,
+        ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
+    );
+}
+
+#[test]
 fn type_elaboration_runner_expands_attributed_local_mode_rhs_to_evidence_gap() {
     let corpus = Corpus::new();
     corpus.write(
@@ -6290,8 +6350,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 25"));
-    assert!(stdout.contains("passed: 25"));
+    assert!(stdout.contains("type-elaboration cases: 26"));
+    assert!(stdout.contains("passed: 26"));
     assert!(stdout.contains("failed: 0"));
 }
 

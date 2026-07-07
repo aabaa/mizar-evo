@@ -1344,6 +1344,35 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       structure acceptance、CoreIr、ControlFlowIr、VC、proof payload、より広い semantic
       pass coverage は deferred のまま。
 
+63. **Source-derived local mode attributed-builtin-RHS chain evidence-gap bridge を追加する。** [x]
+    - task-56 chain producer を、bare same-module local-mode reserve head `A` に限って
+      拡張する。`A` は unique / unrecovered / no-argument / preceding な `A is B`
+      mode definition を持ち、`B` は unique / unrecovered / no-argument same-module
+      local mode で、その preceding definition が direct attributed builtin `set` /
+      `object` RHS を持つ必要がある。`B` は `A` より前、`A` は reserve use より前に
+      あり、両方の mode definition は definition-local context を持たず、RHS attributes は
+      argument-free same-module attribute symbol に resolve しなければならない。
+    - Acceptance: runner unit coverage は同じ `SurfaceAst` から real source-derived
+      `B -> marked set` と `A -> B` expansion payload の両方が抽出されることを証明する。
+      cached direct attributed-builtin-RHS payload はこの one-edge chain を支えてよいが、
+      deeper chain と attributed root は withheld のままにする。新しい active
+      `type_elaboration` fail fixture は real `.miz` source path を cover し、
+      `checker.type.external.mode_expansion_payload` ではなく
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query` に到達する。
+      checker は verified fact を emit せず、positive attributed-type acceptance は deferred のまま。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、50、56、58、61。full attributed-type existential evidence と
+      より広い mode expansion は MC-G020 / MC-G026 のまま。参照: Step 5
+      source-derived semantic bridge、mizar-test task 10、spec 03 type expressions、
+      spec 06 attributes、spec 07 modes、spec 17 evidence。
+    - task 63 で完了: `mizar-test` は attributed builtin RHS で終端する one-edge bare
+      local-mode chain を real AST-derived expansion として抽出し、`mizar-checker` は
+      expanded reserve declaration を既存の missing evidence-query diagnostic へ route する。
+      imported / ambiguous symbol、attribute / mode argument、contextual /
+      parameterized definition、attributed root、attributed/deeper chain、positive
+      attributed-type acceptance、CoreIr、ControlFlowIr、VC、proof payload、より広い semantic
+      pass coverage は deferred のまま。
+
 ## 推奨検証
 
 各タスクの後で実行する:

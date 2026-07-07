@@ -1,0 +1,14 @@
+definition
+  let x be set;
+  attr MarkedAttrDef: x is marked means thesis;
+end;
+
+definition
+  mode MarkedModeExpansionDef: MarkedMode is marked set;
+end;
+
+definition
+  mode ChainMarkedModeExpansionDef: ChainMarkedMode is MarkedMode;
+end;
+
+reserve z for ChainMarkedMode;
