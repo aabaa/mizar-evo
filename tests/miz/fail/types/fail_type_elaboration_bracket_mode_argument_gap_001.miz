@@ -1,0 +1,5 @@
+definition
+  mode FamilyDef: Family [a, b] is set;
+end;
+
+reserve f for Family[set];

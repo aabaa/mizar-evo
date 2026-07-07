@@ -133,6 +133,20 @@ arguments, arity matching, term payloads, base-shape/constructor-witness
 evidence, positive structure type elaboration, CoreIr, ControlFlowIr, VC, and
 proof payloads remain deferred.
 
+Task70 addendum for chapters `03.type_system.md` and `07.modes.md`: checker
+task 70 adds active source-derived diagnostic boundary coverage for source
+containing a same-module bracket-parameter local mode declaration and a
+bracket-form reserve type head, such as `Family[set]`. Chapters 3 and 7 plus
+parser coverage already define this syntax; this addendum does not claim
+bracket-form mode application semantics. The active runner proves the source
+is parser/resolver executable but leaves it on the source-to-checker payload
+extraction gap before bracket type-argument payload extraction or mode-head
+resolution because checker-owned reserve payloads do not yet preserve real
+bracket type-argument or `qua`-argument provenance. This does not change the
+partial status of either chapter; bracket `type_arg_list` payloads,
+`qua`-argument lowering, arity matching, mode expansion, positive type
+elaboration, CoreIr, ControlFlowIr, VC, and proof payloads remain deferred.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

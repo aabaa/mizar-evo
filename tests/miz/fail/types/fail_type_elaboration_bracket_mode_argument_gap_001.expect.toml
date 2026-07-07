@@ -1,0 +1,21 @@
+schema_version = 1
+id = "fail_type_elaboration_bracket_mode_argument_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_bracket_mode_argument_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "bracket_mode_type_head_payload_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.bracket_mode_argument_gap",
+]
+notes = "Active type_elaboration runner boundary coverage for checker task 70: source containing a same-module bracket-parameter mode declaration and a bracket-form reserve use such as `Family[set]` is parser/resolver executable, but the checker-owned source bridge lacks real bracket type-argument and qua-argument provenance and must stay on the source-to-checker payload extraction gap before bracket type-argument payload extraction, mode-head resolution, arity matching, mode expansion, or positive type elaboration."

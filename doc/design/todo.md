@@ -255,7 +255,8 @@ added the attributed local mode attributed-builtin-RHS chain
 evidence-gap slice, task 67 added the structure-qualified attribute
 extraction-gap boundary slice, task 68 added the argument-bearing local mode
 reserve extraction-gap boundary slice, and task 69 added the argument-bearing
-local structure reserve extraction-gap boundary slice).
+local structure reserve extraction-gap boundary slice, and task 70 added the
+bracket-form local mode reserve extraction-gap boundary slice).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate
 semantic payloads; promote corpus rows only with prepared consumers.

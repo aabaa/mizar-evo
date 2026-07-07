@@ -358,6 +358,18 @@ source family を `type_elaboration.external_dependency.ast_payload_extraction` 
 `TypeExpressionInput` に昇格せず、term payload を捏造せず、CoreIr、ControlFlowIr、VC、
 proof payload も昇格しない。
 
+task 70 は reserve type expression 内の local mode head について bracket-form の対応境界を
+記録する。`Family[set]` のような source は第 3 章と第 7 章により bracket
+type-argument syntax として有効で、same-module bracket-parameter mode declaration と並んで
+現れ得るが、現在の reserve source bridge は引き続き argument-free local mode /
+structure head だけを許可し、real bracket `type_arg_list` / `qua`-argument provenance
+payload を持たない。そのため active runner は bracket type-argument payload extraction、
+mode-head resolution、arity matching、mode expansion、positive type elaboration へ進む前に、
+この source family を `type_elaboration.external_dependency.ast_payload_extraction` に残さなければならない。
+これは diagnostic boundary coverage に限る。bracket argument を `TypeExpressionInput` に
+昇格せず、`qua` payload や term payload を捏造せず、CoreIr、ControlFlowIr、VC、proof
+payload も昇格しない。
+
 task 60 はさらに、
 mode definition が unique / unrecovered / preceding / no-argument で definition-local
 context を持たず、structure definition が unique / unrecovered / same-module で mode

@@ -261,7 +261,8 @@ regression test を追加した。
       checker task 66 の same-module attributed local-mode attributed-builtin-RHS chain evidence-query active fail slice、
       checker task 67 の structure-qualified attribute extraction-gap active boundary slice、
       checker task 68 の argument-bearing local-mode reserve extraction-gap active boundary slice、
-      checker task 69 の argument-bearing local-structure reserve extraction-gap active boundary slice とともに
+      checker task 69 の argument-bearing local-structure reserve extraction-gap active boundary slice、
+      checker task 70 の bracket-form local-mode reserve extraction-gap active boundary slice とともに
       prepared/implemented increments として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder

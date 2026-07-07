@@ -1775,6 +1775,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_mode_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_structure_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_attributed_reserve_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_bracket_mode_argument_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mixed_reserve_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_non_builtin_type_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_payload_extraction_gap_001.expect.toml",
@@ -1913,6 +1914,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_local_attributed_reserve_evidence_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.bracket_mode_argument_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 70 source-derived bracket-form local mode reserve extraction gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_bracket_mode_argument_gap_001.expect.toml",
 ]
 
 [[requirement]]

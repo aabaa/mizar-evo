@@ -388,6 +388,20 @@ diagnostic boundary coverage only: it does not promote structure arguments into
 `TypeExpressionInput`, does not fabricate term payloads, and does not promote
 CoreIr, ControlFlowIr, VC, or proof payloads.
 
+Task 70 records the bracket-form counterpart for local mode heads in reserve
+type expressions. Source such as `Family[set]` is valid bracket
+type-argument syntax by Chapters 3 and 7 and can appear beside a same-module
+bracket-parameter mode declaration, but the current reserve source bridge
+still admits only argument-free local mode or structure heads and has no real
+bracket `type_arg_list` or `qua`-argument provenance payload. The active runner
+therefore must leave this source family on
+`type_elaboration.external_dependency.ast_payload_extraction` before bracket
+type-argument payload extraction, mode-head resolution, arity matching, mode
+expansion, or positive type elaboration. This is diagnostic boundary coverage
+only: it does not promote bracket arguments into `TypeExpressionInput`, does
+not fabricate `qua` or term payloads, and does not promote CoreIr,
+ControlFlowIr, VC, or proof payloads.
+
 Task 60 additionally
 permits that direct structure-RHS expansion for an attributed local-mode
 reserve head only when the mode definition is unique, unrecovered, preceding,
