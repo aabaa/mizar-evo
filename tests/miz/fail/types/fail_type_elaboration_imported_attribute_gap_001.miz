@@ -1,0 +1,2 @@
+import parser.type_fixtures;
+reserve a for TypeCaseAttr set;

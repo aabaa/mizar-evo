@@ -1813,6 +1813,23 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       bridge; mizar-test task 10; spec 03 type expressions; spec 07 modes; spec
       11 symbol management; spec 12 modules and namespaces.
 
+80. **Add source-derived imported attribute reserve extraction-gap boundary.** [x]
+    - Add active fail coverage for a reserve type whose attribute is an imported
+      attribute symbol supplied by the existing `parser.type_fixtures` import
+      summary.
+    - Acceptance: the active type-elaboration runner reports
+      `type_elaboration.external_dependency.ast_payload_extraction`, does not
+      fabricate imported attribute provenance, `AttributeInput` payloads,
+      attributed-type evidence, positive attributed type elaboration, or broader
+      imported attribute semantics, and does not promote CoreIr, ControlFlowIr,
+      VC, or proof payloads. The fixture is diagnostic boundary coverage only
+      and only refines traceability for the generic import-backed attributed
+      reserve gap.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 50, 67, 78, and 79. Refs: Step 5 source-derived semantic
+      bridge; mizar-test task 10; spec 03 type expressions; spec 06 attributes;
+      spec 11 symbol management; spec 12 modules and namespaces.
+
 ## Recommended Verification
 
 Run after each task:

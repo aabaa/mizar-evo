@@ -264,7 +264,7 @@ regression test を追加した。
       checker task 69 の argument-bearing local-structure reserve extraction-gap active boundary slice、
       checker task 70 の bracket-form local-mode reserve extraction-gap active boundary slice、
       checker task 71 の bracket-form local-structure reserve extraction-gap active boundary slice、
-      checker task 72 の two-edge bare local-mode chain active pass slice、checker task 73 の three-edge bare local-mode chain active pass slice、checker task 74 の structural bare local-mode chain active pass slice、checker task 75 の lower-stage forward local-mode active-range boundary、checker task 76 の lower-stage forward local-structure active-range boundary、checker task 77 の lower-stage forward local-attribute active-range boundary、checker task 78 の imported structure reserve extraction-gap boundary、checker task 79 の imported mode reserve extraction-gap boundary とともに
+      checker task 72 の two-edge bare local-mode chain active pass slice、checker task 73 の three-edge bare local-mode chain active pass slice、checker task 74 の structural bare local-mode chain active pass slice、checker task 75 の lower-stage forward local-mode active-range boundary、checker task 76 の lower-stage forward local-structure active-range boundary、checker task 77 の lower-stage forward local-attribute active-range boundary、checker task 78 の imported structure reserve extraction-gap boundary、checker task 79 の imported mode reserve extraction-gap boundary、checker task 80 の imported attribute reserve extraction-gap boundary とともに
       prepared/implemented increments として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
@@ -385,7 +385,9 @@ regression test を追加した。
       その handoff を `TypedAst`、`ResolvedTypedAst` へ継続する。
       `reserve x, y for set` のように source type range を共有する場合も、binding
       ごとに distinct typed site を持つ。
-    - 未対応の non-builtin declaration、imported attribute / mode / structure、
+    - 未対応の non-builtin declaration、task-80 boundary を超える imported
+      attribute provenance、task-78/task-79 boundary を超える imported mode /
+      structure provenance、
       attribute argument、attributed / argument-bearing mode / structure head、
       structure base-shape payload、term、formula、coercion、overload payload、fact、
       CoreIr、ControlFlowIr、VC payload、proof

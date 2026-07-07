@@ -327,6 +327,16 @@ extraction, must not fabricate imported mode provenance, mode type-head
 payloads, `ModeExpansion` payloads, positive mode elaboration, or downstream
 CoreIr/ControlFlowIr/VC/proof payloads. This only refines the existing generic
 non-builtin imported-mode gap into an owned diagnostic boundary slice.
+Task 80 records the imported-attribute analogue as the same external
+extraction-gap boundary: a reserve type such as `TypeCaseAttr set` from the
+documented `parser.type_fixtures` import summary reaches the active
+type-elaboration runner and reports
+`type_elaboration.external_dependency.ast_payload_extraction`. The bridge must
+not treat that imported summary as real imported module AST extraction, must not
+fabricate imported attribute provenance, `AttributeInput` payloads,
+attributed-type evidence, positive attributed type elaboration, or downstream
+CoreIr/ControlFlowIr/VC/proof payloads. This only refines the existing generic
+import-backed attributed reserve gap into an owned diagnostic boundary slice.
 Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case

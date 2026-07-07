@@ -516,6 +516,15 @@ task 79 は imported mode reserve-head fail sidecar について、source が do
 を許可する。この sidecar は real imported module AST extraction、imported mode
 provenance、mode type-head payload extraction、`ModeExpansion` payload、positive
 mode elaboration、CoreIr、ControlFlowIr、VC、proof payload を credit しない。
+task 80 は imported attribute reserve fail sidecar について、source が documented
+`parser.type_fixtures` import summary を通じて active runner に到達する場合に
+`failure_category = "external_dependency_gap"`、
+`rejection_reason = "imported_attribute_payload_gap"`、
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
+を許可する。この sidecar は real imported module AST extraction、imported
+attribute provenance、`AttributeInput` payload extraction、attributed-type evidence、
+positive attributed type elaboration、CoreIr、ControlFlowIr、VC、proof payload を
+credit しない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
 から checker-owned payload を non-builtin declaration、imported symbol、unresolved /
