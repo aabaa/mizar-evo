@@ -454,6 +454,8 @@ task 54 は local mode head に same-module no-argument attribute payload を at
 real mode expansion がないため evidence-query key なしで mode-expansion key に停止することを許可する。
 task 57 は RHS が same-module local structure head である real local-mode expansion が、
 base-shape / constructor-witness evidence 欠落のため evidence-query key で停止することを許可する。
+task 58 は RHS が attributed builtin head である real local-mode expansion が、
+attributed-type existential evidence 欠落のため evidence-query key で停止することを許可する。
 これらは fail case であり、pass-slice coverage ではない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source

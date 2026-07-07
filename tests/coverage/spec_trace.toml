@@ -1815,6 +1815,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.local_mode_attributed_rhs_evidence_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 58 source-derived local mode attributed builtin RHS evidence gap"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_mode_attributed_rhs_expansion_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.local_mode_expansion_chain_gap"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 56 source-derived local mode expansion chain gap"
@@ -1835,7 +1847,6 @@ status = "covered"
 required = true
 coverage = "diagnostic"
 tests = [
-  "tests/miz/fail/types/fail_type_elaboration_local_mode_attributed_rhs_expansion_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_local_mode_mixed_attributed_reserve_expansion_gap_001.expect.toml",
 ]
 

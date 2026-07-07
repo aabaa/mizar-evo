@@ -251,17 +251,24 @@ whose RHS is another bare same-module no-argument local mode, but only when
 that dependency mode has its own accepted task-55 bare builtin `set` /
 `object` expansion, the dependency definition precedes the chain definition,
 both definition nodes are uniquely paired in the AST, and no reserve binding
-uses attributes on either chain symbol. Forward, ambiguous, partial,
-attributed, imported, argument-bearing, parameterized, contextual, cyclic, or
-attributed-RHS mode definitions remain on the missing-expansion /
-extraction-gap path, and the checker-owned seam must not fabricate expansion
-or existential evidence. Task 57 additionally permits a bare same-module
+uses attributes on either chain symbol. Forward, ambiguous, partial, imported,
+argument-bearing, parameterized, contextual, cyclic, attributed-structure RHS,
+attributed-RHS chains, or attributed-builtin RHS mode definitions outside the
+task-58 direct slice remain on the missing-expansion / extraction-gap path,
+and the checker-owned seam must not fabricate expansion or existential
+evidence. Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case
 must not report the missing mode-expansion payload diagnostic; however, the
 expanded structure radix still fails closed with
 `checker.declaration.deferred.evidence_query` until real
-base-shape/constructor-witness evidence extraction exists. Task 52 additionally permits
+base-shape/constructor-witness evidence extraction exists. Task 58 additionally
+permits a bare same-module no-argument local mode expansion whose RHS is an
+attributed builtin `set` / `object` type. The real `ModeExpansion` is
+consumed, so the case must not report the missing mode-expansion payload
+diagnostic; however, the expanded attributed type still fails closed with
+`checker.declaration.deferred.evidence_query` until real attributed-type
+existential evidence extraction exists. Task 52 additionally permits
 un-attributed reserve type heads that resolve to a unique same-module
 `LocalSource` `SymbolKind::Structure` entry with no type arguments. Those
 local-structure reserve declarations reach declaration checking and fail

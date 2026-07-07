@@ -2892,11 +2892,11 @@ impl SourceReserveDeclarationBridge {
                     }
                     _ => false,
                 };
-                let mode_expansion_reaches_structure = match &binding.type_head {
+                let mode_expansion_requires_evidence = match &binding.type_head {
                     TypeHeadInput::Symbol(symbol)
                         if matches!(symbol_head_kind, Some(SymbolKind::Mode)) =>
                     {
-                        mode_expansion_reaches_structure_radix(
+                        mode_expansion_requires_evidence_query(
                             symbols,
                             &normalizer.mode_expansions,
                             symbol,
@@ -2905,7 +2905,7 @@ impl SourceReserveDeclarationBridge {
                     _ => false,
                 };
                 if matches!(symbol_head_kind, Some(SymbolKind::Structure))
-                    || mode_expansion_reaches_structure
+                    || mode_expansion_requires_evidence
                     || (!binding.type_attributes.is_empty()
                         && (!matches!(symbol_head_kind, Some(SymbolKind::Mode))
                             || symbol_head_has_mode_expansion))
@@ -3045,7 +3045,7 @@ impl SourceReserveDeclarationBridge {
     }
 }
 
-fn mode_expansion_reaches_structure_radix(
+fn mode_expansion_requires_evidence_query(
     symbols: &SymbolEnv,
     mode_expansions: &BTreeMap<SymbolId, ModeExpansion>,
     symbol: &SymbolId,
@@ -3056,6 +3056,9 @@ fn mode_expansion_reaches_structure_radix(
         let Some(expansion) = mode_expansions.get(current) else {
             return false;
         };
+        if !expansion.attributes.is_empty() || !expansion.radix.attributes.is_empty() {
+            return true;
+        }
         let TypeHeadInput::Symbol(radix) = &expansion.radix.head else {
             return false;
         };
@@ -6979,6 +6982,157 @@ mod tests {
                 .facts()
                 .is_empty(),
             "chained mode expansions ending in structure radixes must not seed facts"
+        );
+
+        let attributed_expansion_attr = symbol_id("marked/0", "pkg::main::marked/0");
+        let attributed_expansion_symbols = symbol_env(vec![
+            symbol_entry(symbol_id("Mode/0", "pkg::main::Mode/0"), SymbolKind::Mode),
+            symbol_entry(attributed_expansion_attr.clone(), SymbolKind::Attribute),
+        ]);
+        let attributed_expansion_handoff = mode_expansion_bridge
+            .check_with_mode_expansions(
+                &attributed_expansion_symbols,
+                [(
+                    symbol_id("Mode/0", "pkg::main::Mode/0"),
+                    ModeExpansion::new(
+                        TypeExpressionInput::new(
+                            site(781),
+                            range(source, 50, 53),
+                            "set",
+                            TypeHeadInput::BuiltinSet,
+                        ),
+                        vec![AttributeInput::new(
+                            attributed_expansion_attr.clone(),
+                            AttributePolarity::Positive,
+                            range(source, 45, 51),
+                            "marked",
+                        )],
+                    ),
+                )],
+            )
+            .expect("attributed mode expansion should reach declaration checking");
+        assert!(
+            diagnostic_ranges(
+                &attributed_expansion_handoff.declarations,
+                "checker.type.external.mode_expansion_payload"
+            )
+            .is_empty()
+        );
+        assert_eq!(
+            diagnostic_ranges(
+                &attributed_expansion_handoff.declarations,
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        let attributed_expansion_declaration =
+            declarations_by_binding(attributed_expansion_handoff.declarations())
+                .remove(&BindingId::new(0))
+                .expect("checked attributed-expansion declaration should exist");
+        assert_eq!(
+            attributed_expansion_declaration.status,
+            DeclarationStatus::Partial
+        );
+        let attributed_expansion_type_entry = attributed_expansion_handoff
+            .declarations()
+            .type_entries()
+            .get(
+                attributed_expansion_declaration
+                    .type_entry
+                    .expect("attributed-expansion declaration should keep a type entry"),
+            )
+            .expect("attributed-expansion type entry should exist");
+        assert_eq!(attributed_expansion_type_entry.status, TypeStatus::Unknown);
+        let TypeEntryActual::Known(attributed_expansion_normalized_id) =
+            attributed_expansion_type_entry.actual
+        else {
+            panic!("attributed-expansion reserve should keep a normalized type");
+        };
+        let attributed_expansion_normalized = attributed_expansion_handoff
+            .declarations()
+            .normalized_types()
+            .get(attributed_expansion_normalized_id)
+            .expect("normalized attributed-expansion type should exist");
+        assert_eq!(
+            attributed_expansion_normalized.attributes.positive().len(),
+            1
+        );
+        assert_eq!(
+            attributed_expansion_normalized.attributes.positive()[0].symbol,
+            attributed_expansion_attr
+        );
+        assert!(
+            attributed_expansion_handoff
+                .declarations()
+                .facts()
+                .is_empty(),
+            "attributed mode expansions must not seed facts without existential evidence"
+        );
+
+        let chained_attributed_attr = symbol_id("marked/0", "pkg::main::marked/0");
+        let chained_attributed_mode = symbol_id("Mode/0", "pkg::main::Mode/0");
+        let chained_attributed_alias = symbol_id("Alias/0", "pkg::main::Alias/0");
+        let chained_attributed_symbols = symbol_env(vec![
+            symbol_entry(chained_attributed_mode.clone(), SymbolKind::Mode),
+            symbol_entry(chained_attributed_alias.clone(), SymbolKind::Mode),
+            symbol_entry(chained_attributed_attr.clone(), SymbolKind::Attribute),
+        ]);
+        let chained_attributed_handoff = mode_expansion_bridge
+            .check_with_mode_expansions(
+                &chained_attributed_symbols,
+                [
+                    (
+                        chained_attributed_mode,
+                        ModeExpansion::new(
+                            TypeExpressionInput::new(
+                                site(782),
+                                range(source, 60, 65),
+                                "Alias",
+                                TypeHeadInput::Symbol(chained_attributed_alias.clone()),
+                            ),
+                            Vec::new(),
+                        ),
+                    ),
+                    (
+                        chained_attributed_alias,
+                        ModeExpansion::new(
+                            TypeExpressionInput::new(
+                                site(783),
+                                range(source, 70, 73),
+                                "set",
+                                TypeHeadInput::BuiltinSet,
+                            )
+                            .with_attributes(vec![
+                                AttributeInput::new(
+                                    chained_attributed_attr,
+                                    AttributePolarity::Positive,
+                                    range(source, 64, 70),
+                                    "marked",
+                                ),
+                            ]),
+                            Vec::new(),
+                        ),
+                    ),
+                ],
+            )
+            .expect("chained attributed mode expansion should reach declaration checking");
+        assert!(
+            diagnostic_ranges(
+                &chained_attributed_handoff.declarations,
+                "checker.type.external.mode_expansion_payload"
+            )
+            .is_empty()
+        );
+        assert_eq!(
+            diagnostic_ranges(
+                &chained_attributed_handoff.declarations,
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        assert!(
+            chained_attributed_handoff.declarations().facts().is_empty(),
+            "chained attributed mode expansions must not seed facts"
         );
 
         let structure = symbol_id("Struct/0", "pkg::main::Struct/0");

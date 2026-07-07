@@ -3468,10 +3468,7 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_local_mode_attributed_rhs_expansion_gap_001"
             && result.actual_detail_keys
-                == [
-                    "type_elaboration.checker.checker.type.external.mode_expansion_payload",
-                    "type_elaboration.checker.checker.type.recovery",
-                ]
+                == ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_local_mode_mixed_attributed_reserve_expansion_gap_001"
@@ -5347,7 +5344,7 @@ tests = ["tests/miz/fail/types/fail_mixed_local_mode_expansion.expect.toml"]
 }
 
 #[test]
-fn type_elaboration_runner_does_not_expand_attributed_local_mode_rhs() {
+fn type_elaboration_runner_expands_attributed_local_mode_rhs_to_evidence_gap() {
     let corpus = Corpus::new();
     corpus.write(
         "tests/miz/fail/types/fail_attributed_mode_rhs_expansion.miz",
@@ -5364,22 +5361,21 @@ source = "fail_attributed_mode_rhs_expansion.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "missing_mode_expansion_payload"
-stable_detail_key = "type_elaboration.checker.checker.type.external.mode_expansion_payload"
+rejection_reason = "missing_attributed_rhs_evidence_query"
+stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.checker.checker.type.external.mode_expansion_payload",
-  "type_elaboration.checker.checker.type.recovery",
+  "type_elaboration.checker.checker.declaration.deferred.evidence_query",
 ]
 tags = ["active_type_elaboration"]
-spec_refs = ["spec.en.test.type_elaboration.local_mode_expansion_gap"]
+spec_refs = ["spec.en.test.type_elaboration.local_mode_attributed_rhs_evidence_gap"]
 "#,
     );
     corpus.write(
         "tests/coverage/spec_trace.toml",
         r#"
 [[requirement]]
-id = "spec.en.test.type_elaboration.local_mode_expansion_gap"
+id = "spec.en.test.type_elaboration.local_mode_attributed_rhs_evidence_gap"
 source = "doc/spec/en/test.md"
 section = "Test"
 stage = "type_elaboration"
@@ -5398,10 +5394,7 @@ tests = ["tests/miz/fail/types/fail_attributed_mode_rhs_expansion.expect.toml"]
     assert_eq!(report.passed_count(), 1);
     assert_eq!(
         report.results[0].actual_detail_keys,
-        [
-            "type_elaboration.checker.checker.type.external.mode_expansion_payload",
-            "type_elaboration.checker.checker.type.recovery",
-        ]
+        ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
     );
 }
 

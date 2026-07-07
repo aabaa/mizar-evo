@@ -964,7 +964,7 @@ impl SourceLocalModeExpansionExtractor<'_> {
         depth: usize,
     ) -> bool {
         if let Some(expansion) = expansions.get(symbol) {
-            return depth < 1 || !matches!(expansion.radix.head, TypeHeadInput::Symbol(_));
+            return depth < 1 || mode_expansion_is_safe_chain_terminal(expansion);
         }
         if !visiting.insert(symbol.clone())
             || self.attributed_mode_heads.contains(symbol)
@@ -995,6 +995,10 @@ impl SourceLocalModeExpansionExtractor<'_> {
             visiting.remove(symbol);
             return false;
         }
+        if depth >= 1 && !mode_expansion_is_safe_chain_terminal(&candidate.expansion) {
+            visiting.remove(symbol);
+            return false;
+        }
         if depth >= 1 && !candidate.dependencies.is_empty() {
             visiting.remove(symbol);
             return false;
@@ -1017,6 +1021,12 @@ impl SourceLocalModeExpansionExtractor<'_> {
         visiting.remove(symbol);
         true
     }
+}
+
+fn mode_expansion_is_safe_chain_terminal(expansion: &ModeExpansion) -> bool {
+    expansion.attributes.is_empty()
+        && expansion.radix.attributes.is_empty()
+        && !matches!(expansion.radix.head, TypeHeadInput::Symbol(_))
 }
 
 fn extract_source_local_mode_expansion(
@@ -1043,7 +1053,7 @@ fn extract_source_local_mode_expansion(
     let [(_, definition)] = definitions.as_slice() else {
         return None;
     };
-    let rhs = extract_bare_source_mode_rhs(ast, definition, module, symbols)?;
+    let rhs = extract_source_mode_rhs(ast, definition, module, symbols)?;
     if matches!(
         rhs.head,
         TypeHeadInput::Symbol(ref radix)
@@ -1076,7 +1086,7 @@ fn extract_source_local_mode_expansion(
                 rhs.spelling,
                 rhs.head,
             ),
-            Vec::new(),
+            rhs.attributes,
         ),
         dependencies,
     })
@@ -1175,7 +1185,7 @@ fn structure_definition_pattern_spelling(ast: &SurfaceAst, node: &SurfaceNode) -
     }
 }
 
-fn extract_bare_source_mode_rhs(
+fn extract_source_mode_rhs(
     ast: &SurfaceAst,
     node: &SurfaceNode,
     module: &ResolverModuleId,
@@ -1190,47 +1200,19 @@ fn extract_bare_source_mode_rhs(
     let [rhs] = rhs_nodes.as_slice() else {
         return None;
     };
-    if subtree_has_recovery(ast, rhs) || rhs.children.len() != 1 {
+    if subtree_has_recovery(ast, rhs) {
         return None;
     }
-    let head = ast.node(rhs.children[0])?;
-    let head = extract_bare_expansion_type_head(ast, head, module, symbols)?;
-    Some(SourceTypeExpression {
-        range: rhs.range,
-        spelling: source_text_from_children(ast, rhs)?,
-        head,
-        attributes: Vec::new(),
-    })
-}
-
-fn extract_bare_expansion_type_head(
-    ast: &SurfaceAst,
-    node: &SurfaceNode,
-    module: &ResolverModuleId,
-    symbols: &SymbolEnv,
-) -> Option<TypeHeadInput> {
-    if !matches!(node.kind, SurfaceNodeKind::TypeHead) || node.children.len() != 1 {
+    let rhs = extract_builtin_source_type_expression(ast, rhs, module, symbols).ok()?;
+    if !rhs.attributes.is_empty()
+        && !matches!(
+            rhs.head,
+            TypeHeadInput::BuiltinSet | TypeHeadInput::BuiltinObject
+        )
+    {
         return None;
     }
-    let child = ast.node(node.children[0])?;
-    if let Some(token) = child.token_text() {
-        return match token {
-            "set" => Some(TypeHeadInput::BuiltinSet),
-            "object" => Some(TypeHeadInput::BuiltinObject),
-            _ => None,
-        };
-    }
-    if matches!(child.kind, SurfaceNodeKind::QualifiedSymbol) {
-        let spelling = qualified_symbol_spelling(ast, child).ok()?;
-        let symbol = resolve_visible_type_head(symbols, module, &spelling).ok()?;
-        if matches!(
-            source_reserve_symbol_head_kind(symbols, module, &symbol),
-            Some(SymbolKind::Mode | SymbolKind::Structure)
-        ) {
-            return Some(TypeHeadInput::Symbol(symbol));
-        }
-    }
-    None
+    Some(rhs)
 }
 
 fn surface_nodes_with_kind(
@@ -3166,6 +3148,42 @@ mod tests {
             Some(&TypeHeadInput::Symbol(structure_rhs_struct))
         );
 
+        let attributed_rhs_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let attributed_rhs_symbols =
+            source_mode_attribute_symbol_env(attributed_rhs_module.clone());
+        let attributed_rhs = mode_chain_reserve_ast(
+            source,
+            [mode_definition("Mode", ReserveTypeShape::AttributedSet)],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("Mode"),
+            )],
+        );
+        let attributed_rhs_extraction = extract_builtin_source_reserve_declarations(
+            &attributed_rhs,
+            attributed_rhs_module.clone(),
+            &attributed_rhs_symbols,
+        )
+        .expect("mode with attributed builtin RHS reserve should extract");
+        let attributed_rhs_mode =
+            resolve_visible_type_head(&attributed_rhs_symbols, &attributed_rhs_module, "Mode")
+                .unwrap();
+        assert_eq!(attributed_rhs_extraction.mode_expansions().len(), 1);
+        let attributed_rhs_expansion = attributed_rhs_extraction
+            .mode_expansions()
+            .get(&attributed_rhs_mode)
+            .expect("attributed RHS mode expansion should be present");
+        assert!(matches!(
+            attributed_rhs_expansion.radix.head,
+            TypeHeadInput::BuiltinSet
+        ));
+        assert_eq!(attributed_rhs_expansion.attributes.len(), 1);
+        assert_eq!(
+            attributed_rhs_expansion.attributes[0].polarity,
+            AttributePolarity::Negative
+        );
+
         let chain_structure_rhs_module =
             ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
         let chain_structure_rhs_symbols = source_local_symbols_env(
@@ -3197,6 +3215,33 @@ mod tests {
         assert!(
             chain_structure_rhs_extraction.mode_expansions().is_empty(),
             "structure RHS expansions stay limited to the direct reserved mode head"
+        );
+
+        let chain_attributed_rhs_symbols = source_mode_chain_symbol_env(ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("bridge"),
+        ));
+        let chain_attributed_rhs_module = chain_attributed_rhs_symbols.module_id().clone();
+        let chain_attributed_rhs = mode_chain_reserve_ast(
+            source,
+            [
+                mode_definition("B", ReserveTypeShape::AttributedSet),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("A"),
+            )],
+        );
+        let chain_attributed_rhs_extraction = extract_builtin_source_reserve_declarations(
+            &chain_attributed_rhs,
+            chain_attributed_rhs_module,
+            &chain_attributed_rhs_symbols,
+        )
+        .expect("mode chain ending in attributed RHS reserve should still extract");
+        assert!(
+            chain_attributed_rhs_extraction.mode_expansions().is_empty(),
+            "attributed RHS expansions stay limited to the direct reserved mode head"
         );
 
         let forward_structure_rhs_module =

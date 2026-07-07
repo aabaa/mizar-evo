@@ -240,14 +240,20 @@ bare same-module no-argument local mode であり、その dependency mode が t
 bare builtin `set` / `object` expansion として受理済みで、dependency definition が chain
 definition より前に現れ、両方の definition node が AST 上で一意に対応し、chain 内の
 どちらの symbol にも attribute 付き reserve binding が無い場合だけ expand してよい。
-forward、ambiguous、partial、attributed、imported、argument-bearing、parameterized、
-contextual、cyclic、または attributed-RHS の mode definition は missing-expansion /
+forward、ambiguous、partial、imported、argument-bearing、parameterized、
+contextual、cyclic、attributed-structure RHS、attributed-RHS chain、または
+task-58 direct slice 外の attributed-builtin RHS mode definition は missing-expansion /
 extraction-gap path に残り、checker-owned seam は expansion や existential evidence を
 捏造してはならない。task 57 はさらに、RHS が type argument を持たない same-module
 local structure head である bare same-module no-argument local mode expansion を許可する。
 この case は real `ModeExpansion` を消費するため missing mode-expansion payload diagnostic を
 出してはならない。ただし expanded structure radix は real base-shape /
 constructor-witness evidence extraction が存在するまで
+`checker.declaration.deferred.evidence_query` で fail closed する。task 58 はさらに、
+RHS が attributed builtin `set` / `object` type である bare same-module no-argument
+local mode expansion を許可する。この case も real `ModeExpansion` を消費するため
+missing mode-expansion payload diagnostic を出してはならない。ただし expanded
+attributed type は real attributed-type existential evidence extraction が存在するまで
 `checker.declaration.deferred.evidence_query` で fail closed する。task 52 はさらに、
 type argument を持たず attribute も付かない、unique な same-module `LocalSource`
 `SymbolKind::Structure` entry に解決された reserve type head を許可する。これら

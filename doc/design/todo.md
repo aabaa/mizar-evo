@@ -238,8 +238,9 @@ task 53 adding the same-module attributed local structure reserve diagnostic
 slice, and task 54 adding the same-module attributed local mode reserve
 diagnostic slice, and task 55 adding the same-module bare local mode expansion
 pass slice, and task 56 adding the one-edge same-module local-mode expansion
-chain pass/gap slice, and task 57 adding the same-module local mode expansion
-to local structure RHS evidence-gap slice).
+chain pass/gap slice, task 57 adding the same-module local mode expansion
+to local structure RHS evidence-gap slice, and task 58 adding the same-module
+local mode attributed-builtin RHS evidence-gap slice).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate
 semantic payloads; promote corpus rows only with prepared consumers.

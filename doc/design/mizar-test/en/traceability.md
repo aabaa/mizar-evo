@@ -271,7 +271,11 @@ checker-owned reserve seam. Task 57 may credit a diagnostic-only fail slice
 when the reserve head expands through a real same-module local-mode expansion
 whose RHS is a same-module local structure head; the runner passes the real
 expansion to the checker-owned seam, but the checker still reports the missing
-base-shape/constructor-witness evidence query. Those sources
+base-shape/constructor-witness evidence query. Task 58 may credit the parallel
+diagnostic-only fail slice when the reserve head expands through a real
+same-module local-mode expansion whose RHS is an attributed builtin head; the
+runner passes the real expansion to the checker-owned seam, but the checker
+still reports the missing attributed-type existential evidence query. Those sources
 are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one `DeclarationInput` per
 binding, binding-specific `TypeExpressionInput` sites, and `DeclarationChecker`
@@ -297,11 +301,13 @@ detail keys for same-module attributed builtin reserve heads missing evidence
 or same-module local structure reserve heads missing base-shape evidence,
 including attributed local structures that lack full normalized attributed-type
 existential evidence, task-57 same-module local-mode expansions with local
-structure RHSs missing base-shape evidence, or same-module local mode reserve heads, including
+structure RHSs missing base-shape evidence, task-58 same-module local-mode
+expansions with attributed builtin RHSs missing attributed-type existential
+evidence, or same-module local mode reserve heads, including
 attributed local modes or mixed attributed/bare local-mode sources, missing
 mode-expansion payloads. Task 56's attributed-chain-dependency fail case is part
 of that same missing mode-expansion payload family and does not credit a partial
-chain expansion. Those gap tests do not satisfy the broader task 7-11
+chain expansion; attributed-RHS chains likewise remain outside task 58. Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and
 `proof_verification` rows remain deferred until prepared consumer execution
 exists; the summary/context readiness read is not a CoreIr/ControlFlowIr/VC/
