@@ -255,7 +255,13 @@ uses attributes on either chain symbol. Forward, ambiguous, partial,
 attributed, imported, argument-bearing, parameterized, contextual, cyclic, or
 attributed-RHS mode definitions remain on the missing-expansion /
 extraction-gap path, and the checker-owned seam must not fabricate expansion
-or existential evidence. Task 52 additionally permits
+or existential evidence. Task 57 additionally permits a bare same-module
+no-argument local mode expansion whose RHS is a same-module local structure
+head with no type arguments. The real `ModeExpansion` is consumed, so the case
+must not report the missing mode-expansion payload diagnostic; however, the
+expanded structure radix still fails closed with
+`checker.declaration.deferred.evidence_query` until real
+base-shape/constructor-witness evidence extraction exists. Task 52 additionally permits
 un-attributed reserve type heads that resolve to a unique same-module
 `LocalSource` `SymbolKind::Structure` entry with no type arguments. Those
 local-structure reserve declarations reach declaration checking and fail

@@ -267,7 +267,11 @@ also credit the narrow one-edge local-mode expansion chain pass slice: the
 reserve type head expands to a preceding same-module no-argument local mode
 whose own preceding source definition has an accepted task-55 bare builtin RHS
 expansion, and the runner inserts both real source-derived expansions before the
-checker-owned reserve seam. Those sources
+checker-owned reserve seam. Task 57 may credit a diagnostic-only fail slice
+when the reserve head expands through a real same-module local-mode expansion
+whose RHS is a same-module local structure head; the runner passes the real
+expansion to the checker-owned seam, but the checker still reports the missing
+base-shape/constructor-witness evidence query. Those sources
 are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one `DeclarationInput` per
 binding, binding-specific `TypeExpressionInput` sites, and `DeclarationChecker`
@@ -292,7 +296,8 @@ may instead assert the checker
 detail keys for same-module attributed builtin reserve heads missing evidence
 or same-module local structure reserve heads missing base-shape evidence,
 including attributed local structures that lack full normalized attributed-type
-existential evidence, or same-module local mode reserve heads, including
+existential evidence, task-57 same-module local-mode expansions with local
+structure RHSs missing base-shape evidence, or same-module local mode reserve heads, including
 attributed local modes or mixed attributed/bare local-mode sources, missing
 mode-expansion payloads. Task 56's attributed-chain-dependency fail case is part
 of that same missing mode-expansion payload family and does not credit a partial

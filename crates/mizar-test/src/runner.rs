@@ -984,6 +984,17 @@ impl SourceLocalModeExpansionExtractor<'_> {
             visiting.remove(symbol);
             return false;
         };
+        if depth >= 1
+            && matches!(
+                candidate.expansion.radix.head,
+                TypeHeadInput::Symbol(ref radix)
+                    if source_reserve_symbol_head_kind(self.symbols, self.module, radix)
+                        == Some(SymbolKind::Structure)
+            )
+        {
+            visiting.remove(symbol);
+            return false;
+        }
         if depth >= 1 && !candidate.dependencies.is_empty() {
             visiting.remove(symbol);
             return false;
@@ -1033,8 +1044,27 @@ fn extract_source_local_mode_expansion(
         return None;
     };
     let rhs = extract_bare_source_mode_rhs(ast, definition, module, symbols)?;
+    if matches!(
+        rhs.head,
+        TypeHeadInput::Symbol(ref radix)
+            if source_reserve_symbol_head_kind(symbols, module, radix) == Some(SymbolKind::Structure)
+                && !local_structure_definition_precedes(
+                    ast,
+                    module,
+                    symbols,
+                    radix,
+                    definition.range.start,
+                )
+    ) {
+        return None;
+    }
     let dependencies = match &rhs.head {
-        TypeHeadInput::Symbol(dependency) => vec![dependency.clone()],
+        TypeHeadInput::Symbol(dependency)
+            if source_reserve_symbol_head_kind(symbols, module, dependency)
+                == Some(SymbolKind::Mode) =>
+        {
+            vec![dependency.clone()]
+        }
         _ => Vec::new(),
     };
     Some(SourceModeExpansionCandidate {
@@ -1053,6 +1083,10 @@ fn extract_source_local_mode_expansion(
 }
 
 fn source_mode_symbol_spelling(symbol: &ResolverSymbolId) -> Option<&str> {
+    source_local_symbol_spelling(symbol)
+}
+
+fn source_local_symbol_spelling(symbol: &ResolverSymbolId) -> Option<&str> {
     let spelling = symbol.local().as_str();
     let name = spelling.strip_prefix("name=").unwrap_or_else(|| {
         spelling
@@ -1073,6 +1107,32 @@ fn source_mode_symbol_spelling(symbol: &ResolverSymbolId) -> Option<&str> {
     (!name.is_empty()).then_some(name)
 }
 
+fn local_structure_definition_precedes(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+    symbol: &ResolverSymbolId,
+    before: usize,
+) -> bool {
+    if symbol.module() != module
+        || source_reserve_symbol_head_kind(symbols, module, symbol) != Some(SymbolKind::Structure)
+    {
+        return false;
+    }
+    let Some(spelling) = source_local_symbol_spelling(symbol) else {
+        return false;
+    };
+    let definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::StructureDefinition)
+        .into_iter()
+        .filter(|(_, node)| {
+            !subtree_has_recovery(ast, node)
+                && node.range.end <= before
+                && structure_definition_pattern_spelling(ast, node).as_deref() == Some(spelling)
+        })
+        .collect::<Vec<_>>();
+    matches!(definitions.as_slice(), [(_, _)])
+}
+
 fn mode_definition_pattern_spelling(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
     if !matches!(node.kind, SurfaceNodeKind::ModeDefinition) {
         return None;
@@ -1082,6 +1142,27 @@ fn mode_definition_pattern_spelling(ast: &SurfaceAst, node: &SurfaceNode) -> Opt
         .iter()
         .filter_map(|child| ast.node(*child))
         .find(|child| matches!(child.kind, SurfaceNodeKind::ModePattern))?;
+    if pattern.children.len() != 1 {
+        return None;
+    }
+    let token_node = ast.node(pattern.children[0])?;
+    match &token_node.kind {
+        SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier => {
+            Some(token.text.to_string())
+        }
+        _ => None,
+    }
+}
+
+fn structure_definition_pattern_spelling(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
+    if !matches!(node.kind, SurfaceNodeKind::StructureDefinition) {
+        return None;
+    }
+    let pattern = node
+        .children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .find(|child| matches!(child.kind, SurfaceNodeKind::StructurePattern))?;
     if pattern.children.len() != 1 {
         return None;
     }
@@ -1142,7 +1223,10 @@ fn extract_bare_expansion_type_head(
     if matches!(child.kind, SurfaceNodeKind::QualifiedSymbol) {
         let spelling = qualified_symbol_spelling(ast, child).ok()?;
         let symbol = resolve_visible_type_head(symbols, module, &spelling).ok()?;
-        if source_reserve_symbol_head_kind(symbols, module, &symbol) == Some(SymbolKind::Mode) {
+        if matches!(
+            source_reserve_symbol_head_kind(symbols, module, &symbol),
+            Some(SymbolKind::Mode | SymbolKind::Structure)
+        ) {
             return Some(TypeHeadInput::Symbol(symbol));
         }
     }
@@ -3040,6 +3124,115 @@ mod tests {
             "any attributed reserve use in a local-mode chain withholds the chain expansion"
         );
 
+        let structure_rhs_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let structure_rhs_symbols = source_local_symbols_env(
+            structure_rhs_module.clone(),
+            &[
+                ("Struct", SymbolKind::Structure),
+                ("Mode", SymbolKind::Mode),
+            ],
+        );
+        let structure_rhs = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [mode_definition(
+                "Mode",
+                ReserveTypeShape::QualifiedSymbol("Struct"),
+            )],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("Mode"),
+            )],
+        );
+        let structure_rhs_extraction = extract_builtin_source_reserve_declarations(
+            &structure_rhs,
+            structure_rhs_module.clone(),
+            &structure_rhs_symbols,
+        )
+        .expect("mode with structure RHS reserve should extract");
+        let structure_rhs_mode =
+            resolve_visible_type_head(&structure_rhs_symbols, &structure_rhs_module, "Mode")
+                .unwrap();
+        let structure_rhs_struct =
+            resolve_visible_type_head(&structure_rhs_symbols, &structure_rhs_module, "Struct")
+                .unwrap();
+        assert_eq!(structure_rhs_extraction.mode_expansions().len(), 1);
+        assert_eq!(
+            structure_rhs_extraction
+                .mode_expansions()
+                .get(&structure_rhs_mode)
+                .map(|expansion| &expansion.radix.head),
+            Some(&TypeHeadInput::Symbol(structure_rhs_struct))
+        );
+
+        let chain_structure_rhs_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let chain_structure_rhs_symbols = source_local_symbols_env(
+            chain_structure_rhs_module.clone(),
+            &[
+                ("Struct", SymbolKind::Structure),
+                ("B", SymbolKind::Mode),
+                ("A", SymbolKind::Mode),
+            ],
+        );
+        let chain_structure_rhs = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("A"),
+            )],
+        );
+        let chain_structure_rhs_extraction = extract_builtin_source_reserve_declarations(
+            &chain_structure_rhs,
+            chain_structure_rhs_module,
+            &chain_structure_rhs_symbols,
+        )
+        .expect("mode chain ending in structure RHS reserve should still extract");
+        assert!(
+            chain_structure_rhs_extraction.mode_expansions().is_empty(),
+            "structure RHS expansions stay limited to the direct reserved mode head"
+        );
+
+        let forward_structure_rhs_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let forward_structure_rhs_symbols = source_local_symbols_env(
+            forward_structure_rhs_module.clone(),
+            &[
+                ("Struct", SymbolKind::Structure),
+                ("Mode", SymbolKind::Mode),
+            ],
+        );
+        let forward_structure_rhs = mode_chain_reserve_ast_with_trailing_structures(
+            source,
+            [mode_definition(
+                "Mode",
+                ReserveTypeShape::QualifiedSymbol("Struct"),
+            )],
+            ["Struct"],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("Mode"),
+            )],
+        );
+        let forward_structure_rhs_extraction = extract_builtin_source_reserve_declarations(
+            &forward_structure_rhs,
+            forward_structure_rhs_module,
+            &forward_structure_rhs_symbols,
+        )
+        .expect("forward structure RHS reserve should still extract");
+        assert!(
+            forward_structure_rhs_extraction
+                .mode_expansions()
+                .is_empty(),
+            "structure RHS expansion payloads require the structure definition to precede the mode definition"
+        );
+
         let forward_dependency = mode_chain_reserve_ast(
             source,
             [
@@ -4031,15 +4224,59 @@ mod tests {
         modes: impl IntoIterator<Item = ModeDefinitionSpec>,
         items: Vec<ReserveItemSpec>,
     ) -> SurfaceAst {
+        mode_chain_reserve_ast_with_order(source_id, [], modes, [], items)
+    }
+
+    fn mode_chain_reserve_ast_with_structures(
+        source_id: SourceId,
+        structures: impl IntoIterator<Item = &'static str>,
+        modes: impl IntoIterator<Item = ModeDefinitionSpec>,
+        items: Vec<ReserveItemSpec>,
+    ) -> SurfaceAst {
+        mode_chain_reserve_ast_with_order(source_id, structures, modes, [], items)
+    }
+
+    fn mode_chain_reserve_ast_with_trailing_structures(
+        source_id: SourceId,
+        modes: impl IntoIterator<Item = ModeDefinitionSpec>,
+        structures: impl IntoIterator<Item = &'static str>,
+        items: Vec<ReserveItemSpec>,
+    ) -> SurfaceAst {
+        mode_chain_reserve_ast_with_order(source_id, [], modes, structures, items)
+    }
+
+    fn mode_chain_reserve_ast_with_order(
+        source_id: SourceId,
+        leading_structures: impl IntoIterator<Item = &'static str>,
+        modes: impl IntoIterator<Item = ModeDefinitionSpec>,
+        trailing_structures: impl IntoIterator<Item = &'static str>,
+        items: Vec<ReserveItemSpec>,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut root_children = Vec::new();
         let mut offset = 0;
+        for structure in leading_structures {
+            root_children.push(add_structure_definition_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                structure,
+            ));
+        }
         for mode in modes {
             root_children.push(add_mode_definition_item(
                 &mut builder,
                 source_id,
                 &mut offset,
                 mode,
+            ));
+        }
+        for structure in trailing_structures {
+            root_children.push(add_structure_definition_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                structure,
             ));
         }
         root_children.extend(add_reserve_items(
@@ -4240,6 +4477,149 @@ mod tests {
             SurfaceNodeKind::DefinitionBlockItem,
             range(source_id, item_start, item_end),
             vec![definition, mode_definition, end, block_semicolon],
+        )
+    }
+
+    fn add_structure_definition_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        structure: &'static str,
+    ) -> SurfaceBuilderNodeId {
+        let item_start = *offset;
+        let definition = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "definition",
+        );
+        let structure_start = *offset;
+        let struct_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "struct",
+        );
+        let pattern_start = *offset;
+        let pattern_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            structure,
+        );
+        let pattern = builder.add_node(
+            SurfaceNodeKind::StructurePattern,
+            range(source_id, pattern_start, pattern_start + structure.len()),
+            vec![pattern_token],
+        );
+        let where_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "where",
+        );
+        let field = add_structure_field(builder, source_id, offset);
+        let end = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "end",
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let structure_end = builder
+            .node_range(semicolon)
+            .expect("just-created structure semicolon should exist")
+            .end;
+        let structure_definition = builder.add_node(
+            SurfaceNodeKind::StructureDefinition,
+            range(source_id, structure_start, structure_end),
+            vec![struct_token, pattern, where_token, field, end, semicolon],
+        );
+        let block_end = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "end",
+        );
+        let block_semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let item_end = builder
+            .node_range(block_semicolon)
+            .expect("just-created block semicolon should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::DefinitionBlockItem,
+            range(source_id, item_start, item_end),
+            vec![definition, structure_definition, block_end, block_semicolon],
+        )
+    }
+
+    fn add_structure_field(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+    ) -> SurfaceBuilderNodeId {
+        let field_start = *offset;
+        let field = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "field",
+        );
+        let name = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            "carrier",
+        );
+        let arrow = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            "->",
+        );
+        let field_type = add_simple_type_expression(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "set",
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let field_end = builder
+            .node_range(semicolon)
+            .expect("just-created field semicolon should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::StructureField,
+            range(source_id, field_start, field_end),
+            vec![field, name, arrow, field_type, semicolon],
         )
     }
 

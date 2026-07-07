@@ -1241,6 +1241,36 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       chains fail-closed on the checker missing mode-expansion diagnostic
       without promoting CoreIr, ControlFlowIr, VC, or proof payloads.
 
+57. **Source-derived local mode structure-RHS evidence-gap bridge.** [x]
+    - Extend the task-55 bridge just far enough to produce a real
+      `ModeExpansion` payload when a same-module bare local-mode reserve head
+      expands to a preceding same-module no-argument local structure head.
+      The checker must consume that expansion, then fail closed on missing
+      structure base-shape/constructor-witness evidence.
+    - Acceptance: checker unit coverage proves `Mode -> LocalStruct` consumes
+      the real `ModeExpansion`, does not emit
+      `checker.type.external.mode_expansion_payload`, marks the declaration
+      partial with `MissingEvidenceQuery`, and exports no verified facts.
+      Runner unit coverage proves same-module local structure RHS extraction
+      is accepted as a terminal expansion payload. One active
+      `type_elaboration` fail fixture covers the real `.miz` source path with
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query`.
+      Imported, argument-bearing, attributed, ambiguous, cyclic, and
+      forward-reference structure RHSs remain outside the slice.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 52, and 55. Structure base-shape evidence and broader
+      mode expansion remain MC-G020/MC-G026. Refs: Step 5 source-derived
+      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 05
+      structures; spec 07 modes; spec 17 base-shape inhabitation evidence.
+    - Completed in task 57: `mizar-test` extracts a real AST-derived
+      local-mode expansion whose RHS is a same-module local structure head,
+      and `mizar-checker` routes the expanded reserve declaration to the
+      existing missing evidence-query diagnostic rather than the missing
+      expansion-payload diagnostic. Positive structure acceptance,
+      base-shape/constructor-witness extraction, imported/argument-bearing/
+      attributed structure RHSs, CoreIr, ControlFlowIr, VC, proof payloads,
+      and broader semantic pass coverage remain deferred.
+
 ## Recommended Verification
 
 Run after each task:

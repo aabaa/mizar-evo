@@ -253,7 +253,9 @@ regression test を追加した。
       reserve evidence-query active fail slice、checker task 54 の attributed local mode
       reserve missing-expansion active fail slice、checker task 55 の bare same-module
       local mode expansion active pass slice、checker task 56 の one-edge same-module
-      local-mode expansion chain active pass/gap slice を prepared/implemented increments として記録する。
+      local-mode expansion chain active pass/gap slice、checker task 57 の same-module
+      local-mode structure-RHS evidence-query active fail slice を
+      prepared/implemented increments として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
       runner や fake active fixture は作らない。

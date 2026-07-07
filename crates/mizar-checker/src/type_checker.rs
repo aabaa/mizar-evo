@@ -2892,7 +2892,20 @@ impl SourceReserveDeclarationBridge {
                     }
                     _ => false,
                 };
+                let mode_expansion_reaches_structure = match &binding.type_head {
+                    TypeHeadInput::Symbol(symbol)
+                        if matches!(symbol_head_kind, Some(SymbolKind::Mode)) =>
+                    {
+                        mode_expansion_reaches_structure_radix(
+                            symbols,
+                            &normalizer.mode_expansions,
+                            symbol,
+                        )
+                    }
+                    _ => false,
+                };
                 if matches!(symbol_head_kind, Some(SymbolKind::Structure))
+                    || mode_expansion_reaches_structure
                     || (!binding.type_attributes.is_empty()
                         && (!matches!(symbol_head_kind, Some(SymbolKind::Mode))
                             || symbol_head_has_mode_expansion))
@@ -3030,6 +3043,29 @@ impl SourceReserveDeclarationBridge {
         })
         .map_err(|error| error.to_string())
     }
+}
+
+fn mode_expansion_reaches_structure_radix(
+    symbols: &SymbolEnv,
+    mode_expansions: &BTreeMap<SymbolId, ModeExpansion>,
+    symbol: &SymbolId,
+) -> bool {
+    let mut visiting = BTreeSet::new();
+    let mut current = symbol;
+    while visiting.insert(current.clone()) {
+        let Some(expansion) = mode_expansions.get(current) else {
+            return false;
+        };
+        let TypeHeadInput::Symbol(radix) = &expansion.radix.head else {
+            return false;
+        };
+        match symbols.symbols().get(radix).map(|entry| entry.kind()) {
+            Some(SymbolKind::Structure) => return true,
+            Some(SymbolKind::Mode) => current = radix,
+            _ => return false,
+        }
+    }
+    false
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -6824,6 +6860,126 @@ mod tests {
             )
             .expect("expanded mode type entry should exist");
         assert_eq!(expanded_mode_type_entry.status, TypeStatus::Known);
+
+        let struct_radix = symbol_id("Struct/0", "pkg::main::Struct/0");
+        let mode_to_structure_symbols = symbol_env(vec![
+            symbol_entry(symbol_id("Mode/0", "pkg::main::Mode/0"), SymbolKind::Mode),
+            symbol_entry(struct_radix.clone(), SymbolKind::Structure),
+        ]);
+        let mode_to_structure_handoff = mode_expansion_bridge
+            .check_with_mode_expansions(
+                &mode_to_structure_symbols,
+                [(
+                    symbol_id("Mode/0", "pkg::main::Mode/0"),
+                    ModeExpansion::new(
+                        TypeExpressionInput::new(
+                            site(778),
+                            range(source, 20, 26),
+                            "Struct",
+                            TypeHeadInput::Symbol(struct_radix),
+                        ),
+                        Vec::new(),
+                    ),
+                )],
+            )
+            .expect("mode expansion to structure should reach declaration checking");
+        assert!(
+            diagnostic_ranges(
+                &mode_to_structure_handoff.declarations,
+                "checker.type.external.mode_expansion_payload"
+            )
+            .is_empty()
+        );
+        assert_eq!(
+            diagnostic_ranges(
+                &mode_to_structure_handoff.declarations,
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        let mode_to_structure_declaration =
+            declarations_by_binding(mode_to_structure_handoff.declarations())
+                .remove(&BindingId::new(0))
+                .expect("checked mode-to-structure declaration should exist");
+        assert_eq!(
+            mode_to_structure_declaration.status,
+            DeclarationStatus::Partial
+        );
+        let mode_to_structure_type_entry = mode_to_structure_handoff
+            .declarations()
+            .type_entries()
+            .get(
+                mode_to_structure_declaration
+                    .type_entry
+                    .expect("mode-to-structure declaration should keep a type entry"),
+            )
+            .expect("mode-to-structure type entry should exist");
+        assert_eq!(mode_to_structure_type_entry.status, TypeStatus::Unknown);
+        assert!(
+            mode_to_structure_handoff.declarations().facts().is_empty(),
+            "mode expansions with structure radixes must not seed facts without base-shape evidence"
+        );
+
+        let chained_struct_radix = symbol_id("Struct/0", "pkg::main::Struct/0");
+        let chained_mode = symbol_id("Mode/0", "pkg::main::Mode/0");
+        let chained_alias = symbol_id("Alias/0", "pkg::main::Alias/0");
+        let chained_mode_to_structure_symbols = symbol_env(vec![
+            symbol_entry(chained_mode.clone(), SymbolKind::Mode),
+            symbol_entry(chained_alias.clone(), SymbolKind::Mode),
+            symbol_entry(chained_struct_radix.clone(), SymbolKind::Structure),
+        ]);
+        let chained_mode_to_structure_handoff = mode_expansion_bridge
+            .check_with_mode_expansions(
+                &chained_mode_to_structure_symbols,
+                [
+                    (
+                        chained_mode,
+                        ModeExpansion::new(
+                            TypeExpressionInput::new(
+                                site(779),
+                                range(source, 30, 35),
+                                "Alias",
+                                TypeHeadInput::Symbol(chained_alias.clone()),
+                            ),
+                            Vec::new(),
+                        ),
+                    ),
+                    (
+                        chained_alias,
+                        ModeExpansion::new(
+                            TypeExpressionInput::new(
+                                site(780),
+                                range(source, 40, 46),
+                                "Struct",
+                                TypeHeadInput::Symbol(chained_struct_radix),
+                            ),
+                            Vec::new(),
+                        ),
+                    ),
+                ],
+            )
+            .expect("chained mode expansion to structure should reach declaration checking");
+        assert!(
+            diagnostic_ranges(
+                &chained_mode_to_structure_handoff.declarations,
+                "checker.type.external.mode_expansion_payload"
+            )
+            .is_empty()
+        );
+        assert_eq!(
+            diagnostic_ranges(
+                &chained_mode_to_structure_handoff.declarations,
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        assert!(
+            chained_mode_to_structure_handoff
+                .declarations()
+                .facts()
+                .is_empty(),
+            "chained mode expansions ending in structure radixes must not seed facts"
+        );
 
         let structure = symbol_id("Struct/0", "pkg::main::Struct/0");
         let structure_bridge = SourceReserveDeclarationBridge::new(

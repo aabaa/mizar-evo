@@ -476,13 +476,16 @@ attribute payloads and stop at the same evidence-query key because full
 attributed-type existential evidence is still absent; task 54 permits local
 mode heads to carry same-module no-argument attribute payloads and stop at the
 mode-expansion key without an evidence-query key because real mode expansion is
-still absent. These are fail cases, not pass-slice coverage.
+still absent; task 57 permits real local-mode expansions whose RHS is a
+same-module local structure head to stop at the evidence-query key because
+base-shape/constructor-witness evidence is still absent. These are fail cases,
+not pass-slice coverage.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source
 without inventing non-builtin declarations, imported symbols, unresolved or
 ambiguous symbols, attribute or mode/structure arguments,
-imported attributed structure heads, structure payloads,
+imported attributed structure heads, structure base-shape evidence,
 terms, formulas, coercions, facts, overload evidence, CoreIr, ControlFlowIr,
 VC payloads, or proof evidence.
 

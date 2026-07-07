@@ -1160,6 +1160,33 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       coverage を追加する。attributed dependency chain は CoreIr、ControlFlowIr、VC、
       proof payload へ昇格せず checker missing mode-expansion diagnostic で fail closed のままにする。
 
+57. **Source-derived local mode structure-RHS evidence-gap bridge.** [x]
+    - task-55 bridge を、same-module bare local-mode reserve head が preceding
+      same-module no-argument local structure head へ expand する場合の real
+      `ModeExpansion` payload 生成まで最小限拡張する。checker はその expansion を消費し、
+      structure base-shape / constructor-witness evidence 欠落で fail closed しなければならない。
+    - 受け入れ条件: checker unit coverage は `Mode -> LocalStruct` が real
+      `ModeExpansion` を消費し、`checker.type.external.mode_expansion_payload` を出さず、
+      declaration を `MissingEvidenceQuery` 付き partial にし、verified fact を export
+      しないことを示す。runner unit coverage は same-module local structure RHS extraction
+      が terminal expansion payload として受け入れられることを示す。active
+      `type_elaboration` fail fixture は real `.miz` source path を
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query` で cover する。
+      imported、argument-bearing、attributed、ambiguous、cyclic、forward-reference
+      structure RHS はこの slice の外に残す。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、52、55。structure base-shape evidence とより広い mode expansion は
+      MC-G020 / MC-G026 のまま。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 03 type expression、spec 05 structure、spec 07 mode、
+      spec 17 base-shape inhabitation evidence。
+    - task 57 で完了: `mizar-test` は RHS が same-module local structure head である
+      real AST-derived local-mode expansion を抽出し、`mizar-checker` は expanded reserve
+      declaration を missing expansion-payload diagnostic ではなく既存の missing
+      evidence-query diagnostic に route する。positive structure acceptance、
+      base-shape / constructor-witness extraction、imported / argument-bearing /
+      attributed structure RHS、CoreIr、ControlFlowIr、VC、proof payload、より広い
+      semantic pass coverage は deferred のままにする。
+
 ## 推奨検証
 
 各タスクの後で実行する:
