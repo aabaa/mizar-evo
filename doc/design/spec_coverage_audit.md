@@ -58,6 +58,17 @@ or Rust source. It is a synchronization ledger for design and TODO work.
 | `appendix_d.recommended_coding_rules.md` | Style/reference guidance, not an implementation phase. | reference | No crate task unless a formatter/linter is later specified. |
 | `appendix_e.annotation_quick_reference.md` | Annotation reference mirrors chapter 21. | partial | Close together with chapter 21 annotation display/evaluation follow-ups. |
 
+Task64 addendum for chapters `03.type_system.md`, `06.attributes.md`,
+`07.modes.md`, and `17.clusters_and_registrations.md`: checker task 64 adds
+active source-derived diagnostic coverage for an attributed local-mode reserve
+head whose one-edge dependency chain ends in a bare builtin RHS. The active
+runner consumes the real expansion payloads and reserve-head attribute, then
+stops at the missing attributed-type evidence query instead of reporting a
+missing mode-expansion payload. This does not change the partial status of
+those chapters; imported/argument-bearing/structure-RHS/attributed-RHS/deeper
+chains, positive attributed-type acceptance, CoreIr, ControlFlowIr, VC, and
+proof payloads remain deferred.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

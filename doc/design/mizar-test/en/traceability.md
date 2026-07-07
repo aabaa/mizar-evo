@@ -335,7 +335,8 @@ attributed-builtin RHS expansions missing full attributed-type existential
 evidence, task-62 one-edge bare local-mode chains ending in local structure
 RHSs missing base-shape/constructor-witness evidence, task-63 one-edge bare
 local-mode chains ending in attributed builtin RHSs missing attributed-type
-existential evidence, or
+existential evidence, task-64 attributed local-mode reserve heads with one-edge
+bare-builtin chains missing attributed-type existential evidence, or
 same-module local mode reserve heads, including mixed attributed/bare
 local-mode sources, missing mode-expansion payloads. Task 56's
 attributed-chain-dependency fail case is part
@@ -343,7 +344,9 @@ of that same missing mode-expansion payload family and does not credit a partial
 chain expansion; attributed-RHS chains likewise remain outside the task-58 and
 task-61 direct slices plus task 63's bare one-edge chain slice, and
 structure-RHS chains remain outside task 60's direct attributed-root slice and
-task 62's bare one-edge chain slice.
+task 62's bare one-edge chain slice. Attributed-root chains whose dependency
+terminates in a local structure RHS or attributed builtin RHS remain outside
+task 64.
 Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and
 `proof_verification` rows remain deferred until prepared consumer execution

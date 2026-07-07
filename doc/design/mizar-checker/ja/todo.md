@@ -1373,6 +1373,31 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       attributed-type acceptance、CoreIr、ControlFlowIr、VC、proof payload、より広い semantic
       pass coverage は deferred のまま。
 
+64. **Source-derived attributed local mode bare-builtin chain evidence-gap bridge を追加する。** [x]
+    - task-59 attributed-root producer を、`reserve z for marked A` に限定して拡張する。
+      `A` は preceding definition が `A is B` である unique / unrecovered /
+      no-argument / same-module mode、`B` は preceding definition が direct bare builtin
+      `set` / `object` RHS を持つ unique / unrecovered / no-argument / same-module
+      mode でなければならない。`B` は `A` より前に、`A` は reserve use より前に現れ、
+      両方の mode definition は definition-local context を持たず、`A` は同じ bridge
+      input 内で bare reserve head としても使われておらず、`B` は attributed reserve
+      head として使われていないこと。
+    - Acceptance: runner unit coverage は同じ `SurfaceAst` から real source-derived
+      `B -> set` と `A -> B` expansion payload の両方、および attributed reserve head が
+      抽出されることを証明する。cached direct bare-builtin dependency payload はこの
+      one-edge attributed-root chain に使ってよいが、deeper chain、attributed dependency、
+      `A` の mixed bare/attributed use、dependency が local structure RHS または
+      attributed builtin RHS に終端する attributed root は引き続き withheld する。新しい
+      active `type_elaboration` fail fixture は real `.miz` source path を cover し、
+      `checker.type.external.mode_expansion_payload` ではなく
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query` に到達する。
+      checker は verified fact を出さず、positive attributed-type acceptance は deferred のまま。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、50、55、56、59。full attributed-type existential evidence と
+      broader mode expansion は MC-G020/MC-G026 のまま。参照: Step 5 source-derived
+      semantic bridge、mizar-test task 10、spec 03 type expressions、spec 06 attributes、
+      spec 07 modes、spec 17 evidence。
+
 ## 推奨検証
 
 各タスクの後で実行する:

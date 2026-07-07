@@ -1791,6 +1791,31 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.attributed_local_mode_chain_evidence_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 64 source-derived attributed local mode bare-builtin chain evidence gap"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_attributed_local_mode_chain_evidence_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.attributed_local_mode_chain_expansion_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 64 source-derived attributed local mode chain expansion exclusion"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_attributed_local_mode_attributed_rhs_chain_expansion_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_attributed_local_mode_structure_rhs_chain_expansion_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.attributed_local_mode_evidence_gap"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 59 source-derived attributed local mode reserve evidence gap"

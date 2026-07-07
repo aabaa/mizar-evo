@@ -1,0 +1,20 @@
+schema_version = 1
+id = "fail_type_elaboration_attributed_local_mode_chain_evidence_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_attributed_local_mode_chain_evidence_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_attributed_mode_chain_evidence_query"
+stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.checker.checker.declaration.deferred.evidence_query",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction.attributed_local_mode_chain_evidence_gap",
+]
+notes = "Active type_elaboration runner coverage for checker task 64: a same-module attributed local-mode reserve head expands through one real source-derived mode dependency whose terminal RHS is a bare builtin type; the checker consumes both mode-expansion payloads and the reserve-head attribute, then fails closed on the missing attributed-type evidence query instead of reporting the missing mode-expansion payload or fabricating existential evidence."

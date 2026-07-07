@@ -260,7 +260,8 @@ both definition nodes are uniquely paired in the AST, and no reserve binding
 uses attributes on either chain symbol. Forward, ambiguous, partial, imported,
 argument-bearing, parameterized, contextual, cyclic, attributed-structure RHS
 outside the task-62 bare one-edge chain slice, attributed-RHS chains outside
-the task-58/task-61 direct slices and task-63 bare one-edge chain slice, or broader
+the task-58/task-61 direct slices and task-63 bare one-edge chain slice,
+attributed-root bare-builtin chains outside task 64, or broader
 attributed-builtin RHS mode definitions remain on the missing-expansion /
 extraction-gap path, and the checker-owned seam must not fabricate expansion
 or existential evidence. Task 57 additionally permits a bare same-module
@@ -293,7 +294,23 @@ expanded chain still fails closed with
 `checker.declaration.deferred.evidence_query` until real attributed-type
 existential evidence extraction exists; attributed roots, attributed/deeper
 chains, imported or argument-bearing attributes or modes, and contextual or
-parameterized definitions remain outside this slice. Task 60 additionally
+parameterized definitions remain outside this slice.
+
+Task 64 permits one attributed-root variant of the task-56 chain: an
+attributed local-mode reserve head `marked A` may consume the real one-edge
+chain `A -> B -> set` / `object` only when `A` is not also used as a bare
+reserve head, `B` is not used as an attributed reserve head, both mode
+definitions are unique, unrecovered, same-module, no-argument, and free of
+definition-local context, and the source order is `B -> A -> reserve`. The
+checker consumes both real expansions and the reserve-head attributes, then
+fails closed with `checker.declaration.deferred.evidence_query` until real
+attributed-type existential evidence extraction exists; attributed roots whose
+one-edge dependency terminates in a local structure RHS or attributed builtin
+RHS, deeper chains, mixed bare/attributed uses, imports, arguments, contextual
+or parameterized definitions, and positive attributed-type acceptance remain
+outside this slice.
+
+Task 60 additionally
 permits that direct structure-RHS expansion for an attributed local-mode
 reserve head only when the mode definition is unique, unrecovered, preceding,
 no-argument, and free of definition-local context, the structure definition is

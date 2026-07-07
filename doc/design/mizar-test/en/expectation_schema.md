@@ -495,7 +495,9 @@ local-mode chains ending in local structure RHSs to stop at the evidence-query
 key because base-shape/constructor-witness evidence is still absent; task 63
 permits one-edge bare local-mode chains ending in attributed builtin RHSs to
 stop at the evidence-query key because attributed-type existential evidence is
-still absent. These are fail cases, not
+still absent; task 64 permits attributed local-mode reserve heads with
+one-edge bare-builtin chains to stop at the evidence-query key because
+attributed-type existential evidence is still absent. These are fail cases, not
 pass-slice coverage.
 
 Detailed type assertion tables and broader type pass expectations remain

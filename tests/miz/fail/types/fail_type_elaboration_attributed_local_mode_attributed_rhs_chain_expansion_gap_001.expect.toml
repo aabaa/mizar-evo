@@ -17,7 +17,8 @@ diagnostic_payloads = [
 tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.checker.type_elaboration.payload_extraction.attributed_local_mode_expansion_gap",
+  "spec.en.checker.type_elaboration.payload_extraction.attributed_local_mode_chain_expansion_gap",
   "spec.en.checker.type_elaboration.payload_extraction.local_mode_attributed_rhs_chain_expansion_gap",
   "spec.en.checker.type_elaboration.payload_extraction.local_mode_expansion_chain_gap",
 ]
-notes = "Active type_elaboration runner coverage for checker tasks 56, 61, and 63: an attributed local-mode reserve head whose expansion would need a dependency chain ending in an attributed builtin RHS remains outside the direct attributed-root attributed-RHS slice and the task-63 bare chain slice, so the runner withholds the chain expansion and checker normalization fails closed on the missing mode-expansion payload."
+notes = "Active type_elaboration runner coverage for checker tasks 56, 61, 63, and 64: an attributed local-mode reserve head whose expansion would need a dependency chain ending in an attributed builtin RHS remains outside the direct attributed-root attributed-RHS slice, the task-63 bare chain slice, and the task-64 attributed-root bare-builtin chain slice, so the runner withholds the chain expansion and checker normalization fails closed on the missing mode-expansion payload."
