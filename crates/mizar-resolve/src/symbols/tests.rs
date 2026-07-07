@@ -870,6 +870,7 @@ fn parser_backed_extractor_projects_represented_signature_families() {
     assert_projection(&projections, SymbolKind::Theorem, "T1");
     assert_projection(&projections, SymbolKind::Lemma, "L1");
     assert_projection(&projections, SymbolKind::Attribute, "empty");
+    assert_projection(&projections, SymbolKind::Attribute, "ranked");
     assert_projection(&projections, SymbolKind::Predicate, "x R y");
     assert_projection(&projections, SymbolKind::Functor, "F");
     assert_projection(&projections, SymbolKind::Mode, "Element");
@@ -912,6 +913,18 @@ fn parser_backed_extractor_projects_represented_signature_families() {
                 && payload.contains("TemplateParameter")
     ));
 
+    let parameterized_attribute = projections
+        .iter()
+        .find(|projection| {
+            projection.symbol_kind() == SymbolKind::Attribute
+                && projection.primary_spelling() == "ranked"
+        })
+        .unwrap();
+    assert_eq!(
+        parameterized_attribute.notation_spelling(),
+        Some("2 - ranked")
+    );
+
     let result = collect(source_id, &shells, &projections);
     assert!(
         result
@@ -920,6 +933,21 @@ fn parser_backed_extractor_projects_represented_signature_families() {
             .visible_candidates(&namespace, "x R y")
             .iter()
             .any(|entry| entry.kind() == LexicalSummaryKind::Notation)
+    );
+    assert!(
+        result
+            .env()
+            .lexical_summaries()
+            .visible_candidates(&namespace, "ranked")
+            .iter()
+            .any(|entry| entry.kind() == LexicalSummaryKind::Notation)
+    );
+    assert!(
+        result
+            .env()
+            .lexical_summaries()
+            .visible_candidates(&namespace, "2 - ranked")
+            .is_empty()
     );
     assert!(
         result
@@ -1200,6 +1228,18 @@ fn parser_backed_signature_ast(source_id: SourceId) -> mizar_syntax::SurfaceAst 
             SurfaceNodeKind::AttributeDefinition,
             SurfaceNodeKind::AttributePattern,
             &[(SurfaceTokenKind::Identifier, "empty")],
+        ),
+        pattern_item(
+            &mut builder,
+            source_id,
+            500,
+            SurfaceNodeKind::AttributeDefinition,
+            SurfaceNodeKind::AttributePattern,
+            &[
+                (SurfaceTokenKind::Numeral, "2"),
+                (SurfaceTokenKind::ReservedSymbol, "-"),
+                (SurfaceTokenKind::UserSymbol, "ranked"),
+            ],
         ),
         templated_pattern_item(
             &mut builder,

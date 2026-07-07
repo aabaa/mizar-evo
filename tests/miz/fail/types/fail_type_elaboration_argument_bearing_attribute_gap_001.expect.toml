@@ -1,0 +1,23 @@
+schema_version = 1
+id = "fail_type_elaboration_argument_bearing_attribute_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_argument_bearing_attribute_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "argument_bearing_attribute_payload_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.03.type_expressions.argument_bearing_attribute_payload_gap",
+  "spec.en.06.attributes.argument_bearing_attribute_payload_gap",
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.argument_bearing_attribute_gap",
+]
+notes = "Active type_elaboration runner boundary coverage for checker task 81: a same-module parameterized attribute declared with numeral-prefix syntax and used as `ranked(2) set` in a reserve type is parser/resolver executable, but the checker-owned source bridge lacks real term-argument provenance and AttributeInput argument payload extraction, so it must stay on the source-to-checker payload extraction gap instead of accepting the attributed type, querying attributed-type evidence, or promoting CoreIr/ControlFlowIr/VC/proof payloads."

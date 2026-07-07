@@ -1695,6 +1695,28 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       bridge、mizar-test task 10、spec 03 type expressions、spec 06 attributes、
       spec 11 symbol management、spec 12 modules and namespaces。
 
+81. **Source-derived argument-bearing local attribute reserve extraction-gap boundary を追加する。** [x]
+    - `param_prefix` 構文で宣言された same-module parameterized attribute を、
+      Chapter 3/6 の `attribute_name(args)` application form で reserve type
+      expression に使う active fail coverage を追加する。
+    - Acceptance: active type-elaboration runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告し、
+      term-argument provenance、checker `AttributeInput` argument payload、
+      attributed-type evidence、positive attributed type elaboration、より広い
+      parameterized attribute semantics を捏造せず、CoreIr、ControlFlowIr、VC、
+      proof payload へ昇格しない。この fixture は diagnostic boundary coverage
+      のみであり、real source lexer/parser producer seam が parameterized local
+      attribute surface を checker-owned extraction boundary まで運び、resolver
+      declaration-symbol suffix projection がそれを保持することだけを確認する。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`、
+      `cargo test -p mizar-lexer`、`cargo test -p mizar-frontend`、
+      `cargo test -p mizar-parser`。
+    - 依存: tasks 48、50、67、77。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 02 lexical structure、spec 03 type
+      expressions、spec 06 attributes、spec 11 symbol management、
+      mizar-lexer disambiguator design、
+      mizar-resolve symbol projection design。
+
 ## 推奨検証
 
 各タスクの後で実行する:

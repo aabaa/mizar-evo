@@ -1,5 +1,6 @@
 use crate::lexical_environment::{
-    ActiveLexicalEnvironment, LocalLexicalDeclarations, UserSymbolCandidate, UserSymbolKindSet,
+    ActiveLexicalEnvironment, LocalLexicalDeclarations, UserSymbolCandidate, UserSymbolKind,
+    UserSymbolKindSet,
 };
 use crate::raw_lexer::{
     LexError, RawToken, RawTokenKind, RawTokenStream, is_identifier, is_identifier_continue,
@@ -644,12 +645,7 @@ impl<'a> Disambiguator<'a> {
         cursor: usize,
         candidates: &mut Vec<DisambiguationCandidate>,
     ) {
-        let user_symbols = self.lexical_env.longest_user_symbol_at_position(
-            &raw_token.lexeme,
-            cursor,
-            raw_token.span.start + cursor,
-            self.local_declarations,
-        );
+        let user_symbols = self.token_user_symbol_candidates_at(raw_token, cursor);
         if user_symbols.is_empty() {
             return;
         }
@@ -682,6 +678,7 @@ impl<'a> Disambiguator<'a> {
         candidates: &mut Vec<DisambiguationCandidate>,
     ) {
         if let Some(symbol) = longest_reserved_symbol_prefix(&raw_token.lexeme[cursor..])
+            .or_else(|| self.context_admitted_parameter_prefix_hyphen_symbol(raw_token, cursor))
             && self.parser_context.admits_symbol(symbol)
         {
             let priority =
@@ -745,17 +742,14 @@ impl<'a> Disambiguator<'a> {
 
     fn has_context_rejected_candidate(&self, raw_token: &RawToken, cursor: usize) -> bool {
         longest_reserved_symbol_prefix(&raw_token.lexeme[cursor..]).is_some()
+            || self
+                .parameter_prefix_hyphen_symbol_candidate(raw_token, cursor)
+                .is_some()
             || identifier_prefix_len(&raw_token.lexeme[cursor..]).is_some()
             || numeral_prefix_len(&raw_token.lexeme[cursor..]).is_some()
             || string_literal_prefix_len(&raw_token.lexeme[cursor..]).is_some()
             || !self
-                .lexical_env
-                .longest_user_symbol_at_position(
-                    &raw_token.lexeme,
-                    cursor,
-                    raw_token.span.start + cursor,
-                    self.local_declarations,
-                )
+                .token_user_symbol_candidates_at(raw_token, cursor)
                 .is_empty()
     }
 
@@ -796,6 +790,13 @@ impl<'a> Disambiguator<'a> {
                 raw_token.span.start + cursor,
             ));
         }
+        if let Some(symbol) = self.parameter_prefix_hyphen_symbol_candidate(raw_token, cursor) {
+            candidates.push(rejected_candidate(
+                TokenKind::ReservedSymbol,
+                symbol,
+                raw_token.span.start + cursor,
+            ));
+        }
         if let Some(len) = identifier_prefix_len(rest) {
             let spelling = &rest[..len];
             let kind = if is_reserved_word(spelling) {
@@ -824,13 +825,7 @@ impl<'a> Disambiguator<'a> {
             ));
         }
         if let Some(symbol) = self
-            .lexical_env
-            .longest_user_symbol_at_position(
-                &raw_token.lexeme,
-                cursor,
-                raw_token.span.start + cursor,
-                self.local_declarations,
-            )
+            .token_user_symbol_candidates_at(raw_token, cursor)
             .first()
             .map(|candidate| candidate.spelling.as_str())
         {
@@ -841,6 +836,126 @@ impl<'a> Disambiguator<'a> {
             ));
         }
         candidates
+    }
+
+    fn token_user_symbol_candidates_at(
+        &self,
+        raw_token: &RawToken,
+        cursor: usize,
+    ) -> Vec<UserSymbolCandidate> {
+        let candidates = self.user_symbol_candidates_at(raw_token, cursor);
+        let position = raw_token.span.start + cursor;
+        if self.previous_token_is_parameter_prefix_hyphen(position) {
+            return merge_same_length_user_symbol_candidates(
+                candidates,
+                self.declared_attribute_candidates_at(raw_token, cursor),
+            );
+        }
+        candidates
+    }
+
+    fn user_symbol_candidates_at(
+        &self,
+        raw_token: &RawToken,
+        cursor: usize,
+    ) -> Vec<UserSymbolCandidate> {
+        let position = raw_token.span.start + cursor;
+        self.lexical_env.longest_user_symbol_at_position(
+            &raw_token.lexeme,
+            cursor,
+            position,
+            self.local_declarations,
+        )
+    }
+
+    fn declared_attribute_candidates_at(
+        &self,
+        raw_token: &RawToken,
+        cursor: usize,
+    ) -> Vec<UserSymbolCandidate> {
+        let position = raw_token.span.start + cursor;
+        self.local_declarations
+            .declared_user_symbols_starting_at(&raw_token.lexeme, cursor, position)
+            .into_iter()
+            .filter(|candidate| candidate.kind == UserSymbolKind::Attribute)
+            .collect()
+    }
+
+    fn context_admitted_parameter_prefix_hyphen_symbol(
+        &self,
+        raw_token: &RawToken,
+        cursor: usize,
+    ) -> Option<&'static str> {
+        self.parameter_prefix_hyphen_symbol_candidate(raw_token, cursor)
+            .filter(|_| {
+                self.has_context_admitted_attribute_symbol_candidate_at(
+                    raw_token,
+                    cursor + '-'.len_utf8(),
+                )
+            })
+    }
+
+    fn parameter_prefix_hyphen_symbol_candidate(
+        &self,
+        raw_token: &RawToken,
+        cursor: usize,
+    ) -> Option<&'static str> {
+        if !raw_token.lexeme.get(cursor..)?.starts_with('-') {
+            return None;
+        }
+        let position = raw_token.span.start + cursor;
+        let previous = self.tokens.last()?;
+        let previous_is_parameter = previous.span.end == position
+            && (matches!(previous.kind, TokenKind::Identifier | TokenKind::Numeral)
+                || (previous.kind == TokenKind::ReservedSymbol && previous.lexeme == ")"));
+        if !previous_is_parameter {
+            return None;
+        }
+        self.has_any_attribute_symbol_candidate_at(raw_token, cursor + '-'.len_utf8())
+            .then_some("-")
+    }
+
+    fn has_any_attribute_symbol_candidate_at(&self, raw_token: &RawToken, cursor: usize) -> bool {
+        !self
+            .attribute_symbol_candidates_at(raw_token, cursor)
+            .is_empty()
+    }
+
+    fn has_context_admitted_attribute_symbol_candidate_at(
+        &self,
+        raw_token: &RawToken,
+        cursor: usize,
+    ) -> bool {
+        let attribute_candidates = self.attribute_symbol_candidates_at(raw_token, cursor);
+        !attribute_candidates.is_empty()
+            && self
+                .parser_context
+                .admits_user_symbol(&attribute_candidates)
+    }
+
+    fn attribute_symbol_candidates_at(
+        &self,
+        raw_token: &RawToken,
+        cursor: usize,
+    ) -> Vec<UserSymbolCandidate> {
+        if cursor >= raw_token.lexeme.len() {
+            return Vec::new();
+        }
+        merge_same_length_user_symbol_candidates(
+            self.user_symbol_candidates_at(raw_token, cursor),
+            self.declared_attribute_candidates_at(raw_token, cursor),
+        )
+        .into_iter()
+        .filter(|candidate| candidate.kind == UserSymbolKind::Attribute)
+        .collect()
+    }
+
+    fn previous_token_is_parameter_prefix_hyphen(&self, position: usize) -> bool {
+        self.tokens.last().is_some_and(|token| {
+            token.span.end == position
+                && token.kind == TokenKind::ReservedSymbol
+                && token.lexeme == "-"
+        })
     }
 
     fn push_token(&mut self, kind: TokenKind, lexeme: &str, span: SourceRange) {
@@ -858,6 +973,32 @@ impl<'a> Disambiguator<'a> {
         self.diagnostics
             .push(LexDiagnostic::with_payload(code, message, span, payload));
         self.push_token(TokenKind::ErrorRecovery, lexeme, span);
+    }
+}
+
+fn merge_same_length_user_symbol_candidates(
+    left: Vec<UserSymbolCandidate>,
+    right: Vec<UserSymbolCandidate>,
+) -> Vec<UserSymbolCandidate> {
+    match (left.first(), right.first()) {
+        (None, None) => Vec::new(),
+        (Some(_), None) => left,
+        (None, Some(_)) => right,
+        (Some(left_candidate), Some(right_candidate)) => {
+            match left_candidate
+                .spelling
+                .len()
+                .cmp(&right_candidate.spelling.len())
+            {
+                std::cmp::Ordering::Greater => left,
+                std::cmp::Ordering::Less => right,
+                std::cmp::Ordering::Equal => {
+                    let mut candidates = left;
+                    candidates.extend(right);
+                    candidates
+                }
+            }
+        }
     }
 }
 

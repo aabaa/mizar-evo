@@ -1,0 +1,23 @@
+schema_version = 1
+id = "pass_resolve_parameterized_local_attribute_001"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "pass_resolve_parameterized_local_attribute_001.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = [
+  "declaration_symbol.definition.kind.ranked.attribute",
+  "declaration_symbol.definition.visibility.ranked.public",
+  "declaration_symbol.symbol.export.ranked.exported",
+  "declaration_symbol.symbol.kind.ranked.attribute",
+  "declaration_symbol.symbol.visibility.ranked.public",
+]
+tags = ["active_declaration_symbol"]
+spec_refs = [
+  "spec.en.06.attributes.parameterized_attribute_declaration_symbol",
+  "spec.en.11.symbol_management.signatures",
+  "spec.en.resolve.symbols.parameterized_attribute_suffix",
+]
+notes = "Active declaration_symbol pass coverage for checker task 81: a same-module parameterized attribute declared with `param_prefix` syntax is projected and exported as the suffix primary spelling `ranked`, while the prefixed surface remains resolver signature/notation payload rather than a checker AttributeInput argument."

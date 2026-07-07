@@ -267,8 +267,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    later local structure declaration, task 77 added the corresponding
    lower-stage boundary for a later local attribute declaration, task 78 added
    the imported structure reserve-head extraction-gap boundary, task 79 added
-   the imported mode reserve-head extraction-gap boundary, and task 80 added the
-   imported attribute reserve extraction-gap boundary).
+   the imported mode reserve-head extraction-gap boundary, task 80 added the
+   imported attribute reserve extraction-gap boundary, and task 81 added the
+   argument-bearing local attribute reserve extraction-gap boundary plus the
+   resolver suffix-primary projection needed for parameterized local attributes).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate
 semantic payloads; promote corpus rows only with prepared consumers.

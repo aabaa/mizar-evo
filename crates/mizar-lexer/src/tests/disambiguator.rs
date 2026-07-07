@@ -228,6 +228,171 @@ fn disambiguator_filters_user_symbols_by_parser_kind_context() {
 }
 
 #[test]
+fn disambiguator_splits_parameter_prefix_hyphen_for_local_attribute_names() {
+    let source = concat!(
+        "definition\n",
+        "let n be set;\n",
+        "let x be set;\n",
+        "attr RankedDef: x is 2-ranked means thesis;\n",
+        "attr DimensionalDef: x is n-dimensional means thesis;\n",
+        "end;\n",
+        "reserve y for dimensional(n) ranked(2) set;\n",
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(
+        &[resolved_import("std.modes")],
+        &[summary(
+            "std.modes",
+            90,
+            &[exported_with_metadata(
+                "ranked",
+                "std.modes#ranked",
+                "std.modes",
+                0,
+                UserSymbolKind::Mode,
+                UserSymbolArity::exact(0),
+            )],
+        )],
+    )
+    .expect("environment should build");
+    let skeleton = build_scope_skeleton(&raw);
+    let stream = disambiguate_with_local_declarations(
+        &raw,
+        &env,
+        &locals,
+        &ParserLexContext::general(),
+        &skeleton,
+    );
+    let token_shapes = stream
+        .tokens
+        .iter()
+        .map(|token| (token.kind, token.lexeme.as_str()))
+        .collect::<Vec<_>>();
+
+    assert!(stream.diagnostics.is_empty(), "{:#?}", stream.diagnostics);
+    assert!(token_shapes.windows(3).any(|window| {
+        window
+            == [
+                (TokenKind::Numeral, "2"),
+                (TokenKind::ReservedSymbol, "-"),
+                (TokenKind::UserSymbol, "ranked"),
+            ]
+    }));
+    assert!(token_shapes.windows(3).any(|window| {
+        window
+            == [
+                (TokenKind::Identifier, "n"),
+                (TokenKind::ReservedSymbol, "-"),
+                (TokenKind::UserSymbol, "dimensional"),
+            ]
+    }));
+    assert!(token_shapes.windows(5).any(|window| {
+        window
+            == [
+                (TokenKind::ReservedWord, "for"),
+                (TokenKind::UserSymbol, "dimensional"),
+                (TokenKind::ReservedSymbol, "("),
+                (TokenKind::Identifier, "n"),
+                (TokenKind::ReservedSymbol, ")"),
+            ]
+    }));
+    assert!(token_shapes.windows(5).any(|window| {
+        window
+            == [
+                (TokenKind::UserSymbol, "ranked"),
+                (TokenKind::ReservedSymbol, "("),
+                (TokenKind::Numeral, "2"),
+                (TokenKind::ReservedSymbol, ")"),
+                (TokenKind::ReservedWord, "set"),
+            ]
+    }));
+}
+
+#[test]
+fn disambiguator_does_not_split_attribute_prefix_when_context_rejects_attributes() {
+    let source = concat!(
+        "definition\n",
+        "let x be set;\n",
+        "attr RankedDef: x is 2-ranked means thesis;\n",
+        "end;\n",
+    );
+    let raw = scan_raw(source).expect("source should raw scan");
+    let locals = collect_local_lexical_declarations(&raw, module_id("current"));
+    let env = build_lexical_environment(&[], &[]).expect("environment should build");
+    let skeleton = build_scope_skeleton(&raw);
+    let context = ParserLexContext::general()
+        .with_user_symbol_kinds(UserSymbolKindSet::only(UserSymbolKind::Mode));
+    let stream = disambiguate_with_local_declarations(&raw, &env, &locals, &context, &skeleton);
+    let token_shapes = stream
+        .tokens
+        .iter()
+        .map(|token| (token.kind, token.lexeme.as_str()))
+        .collect::<Vec<_>>();
+
+    assert!(!token_shapes.windows(3).any(|window| {
+        window
+            == [
+                (TokenKind::Numeral, "2"),
+                (TokenKind::ReservedSymbol, "-"),
+                (TokenKind::UserSymbol, "ranked"),
+            ]
+    }));
+    let diagnostic = stream
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.span.start == source.find('-').unwrap())
+        .expect("context rejection should point at the parameter-prefix hyphen");
+    assert_eq!(
+        diagnostic.code,
+        LexDiagnosticCode::ParserContextRejectedCandidate
+    );
+    assert!(matches!(
+        &diagnostic.payload,
+        LexDiagnosticPayload::ParserContextRejectedCandidate { candidates, .. }
+            if candidates.iter().any(|candidate| {
+                candidate.kind == TokenKind::ReservedSymbol && candidate.lexeme == "-"
+            })
+    ));
+}
+
+#[test]
+fn disambiguator_keeps_hyphenated_constructor_names_whole() {
+    let source = "C-star-algebraic";
+    let raw = scan_raw(source).expect("source should raw scan");
+    let env = build_lexical_environment(
+        &[resolved_import("std.modes")],
+        &[summary(
+            "std.modes",
+            91,
+            &[exported_with_metadata(
+                "C-star-algebraic",
+                "std.modes#c_star_algebraic",
+                "std.modes",
+                0,
+                UserSymbolKind::Mode,
+                UserSymbolArity::exact(0),
+            )],
+        )],
+    )
+    .expect("environment should build");
+    let skeleton = build_scope_skeleton(&raw);
+    let stream = disambiguate(&raw, &env, &ParserLexContext::general(), &skeleton);
+    let token_shapes = stream
+        .tokens
+        .iter()
+        .map(|token| (token.kind, token.lexeme.as_str()))
+        .collect::<Vec<_>>();
+
+    assert!(stream.diagnostics.is_empty(), "{:#?}", stream.diagnostics);
+    assert_eq!(
+        token_shapes.as_slice(),
+        &[(TokenKind::UserSymbol, "C-star-algebraic")]
+    );
+    assert!(!token_shapes.contains(&(TokenKind::ReservedSymbol, "-")));
+}
+
+#[test]
 fn disambiguator_filters_same_spelling_overloads_by_parser_kind_context() {
     let env = build_lexical_environment(
         &[resolved_import("std.kind_overloads")],

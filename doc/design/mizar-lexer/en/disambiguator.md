@@ -68,6 +68,7 @@ The implemented `disambiguate` algorithm processes raw tokens in order and emits
 3. Annotation marker `@[` becomes a reserved symbol only when the parser context admits symbols. Other annotation markers and raw error tokens become `ErrorRecovery` with `UnsupportedRawToken`.
 4. Each `LexemeRun` is scanned with an internal byte cursor. In string-required context, a leading quote starts string-literal scanning before normal candidate selection. The literal must close with the same quote and may only escape `"`, `'`, and `\`; malformed strings consume the rest of the run as one recovery token.
 5. At every other cursor position, the disambiguator gathers candidates from reserved compound symbols, active user symbols, reserved words, identifier syntax, numeral syntax, and fallback recovery. String-literal candidates are intentionally handled before this normal candidate set because they are admitted only in string-required context.
+6. A hyphen that separates an attribute `param_prefix` from an active or declaration-site attribute suffix is admitted as a local reserved-symbol candidate even though `-` is not part of the global reserved-symbol table. This lets `n-dimensional`, `(row,col)-size`, and `2-ranked` split into the parser's `ParameterPrefix` surface while still preserving ordinary hyphenated constructor names as one longer user-symbol candidate.
 
 The selected candidate is the longest valid candidate after parser expectation and scope override rules are applied.
 
@@ -180,6 +181,8 @@ Tests should cover:
 - reserved word emission;
 - namespace-path context;
 - parser contexts that admit only a subset of active user-symbol kinds;
+- local attribute parameter-prefix hyphen splitting without splitting ordinary
+  hyphenated constructor names;
 - string literal only in string-required positions;
 - equal-length import tie breaking through lexical environment;
 - recovery emits stable `ErrorRecovery` tokens and diagnostics.

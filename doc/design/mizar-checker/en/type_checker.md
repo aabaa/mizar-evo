@@ -337,6 +337,19 @@ fabricate imported attribute provenance, `AttributeInput` payloads,
 attributed-type evidence, positive attributed type elaboration, or downstream
 CoreIr/ControlFlowIr/VC/proof payloads. This only refines the existing generic
 import-backed attributed reserve gap into an owned diagnostic boundary slice.
+Task 81 records the same extraction-gap boundary for a same-module
+argument-bearing local attribute surface: a declaration-site attribute written
+with Chapter 6 `param_prefix` syntax, such as `attr RankedDef: x is 2-ranked`,
+and a Chapter 3/6 use-site application such as `ranked(2) set`, are carried by
+the real lexer/parser/frontend producer seam to the active type-elaboration
+runner, with resolver declaration-symbol projection recording the suffix as the
+primary spelling and lexer-visible lexical summary while preserving the
+prefixed surface as notation. The runner reports
+`type_elaboration.external_dependency.ast_payload_extraction` because checker
+payload extraction still does not preserve real term-argument provenance or
+checker-owned `AttributeInput` argument payloads. The bridge must not fabricate
+attribute arguments, attributed-type evidence, positive parameterized
+attribute elaboration, or downstream CoreIr/ControlFlowIr/VC/proof payloads.
 Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case

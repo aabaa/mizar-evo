@@ -689,7 +689,7 @@ mod tests {
         SourceAnchor, SourceId, SourceInput, SourceLoadError, SourceMapError, SourceOrigin,
         SourceOriginInput, SourceRange, hash_text, normalize_path,
     };
-    use mizar_syntax::{SyntaxDiagnostic, SyntaxDiagnosticCode};
+    use mizar_syntax::{SurfaceNodeKind, SyntaxDiagnostic, SyntaxDiagnosticCode};
     use std::fs;
     use std::io;
     use std::path::{Path, PathBuf};
@@ -835,6 +835,59 @@ mod tests {
 
         assert!(output.ast.is_some());
         assert!(output.diagnostics.is_empty());
+    }
+
+    #[test]
+    fn real_parser_frontend_accepts_parameterized_attribute_declaration_and_use() {
+        let fixture = PackageFixture::new();
+        fixture.write(
+            "src/parameterized_attr.miz",
+            concat!(
+                "definition\n",
+                "  let x be set;\n",
+                "  attr RankedDef: x is 2-ranked means thesis;\n",
+                "end;\n\n",
+                "reserve y for ranked(2) set;\n",
+            ),
+        );
+        let frontend = frontend_for_fixture(&fixture, MizarParserSeam);
+        let ids = InMemorySessionIdAllocator::new();
+
+        let output = frontend
+            .run(fixture.request("src/parameterized_attr.miz"), &ids)
+            .expect("parameterized attribute source should run through the real parser frontend");
+
+        let ast = output
+            .ast
+            .as_ref()
+            .expect("real parser frontend should return an AST");
+        assert!(output.diagnostics.is_empty(), "{:#?}", output.diagnostics);
+        assert!(output.tokens.tokens().windows(3).any(|window| {
+            window[0].kind == TokenKind::Numeral
+                && window[0].text.as_ref() == "2"
+                && window[1].kind == TokenKind::ReservedSymbol
+                && window[1].text.as_ref() == "-"
+                && window[2].kind == TokenKind::UserSymbol
+                && window[2].text.as_ref() == "ranked"
+        }));
+        assert_eq!(
+            ast.nodes()
+                .iter()
+                .filter(|node| matches!(node.kind, SurfaceNodeKind::ParameterPrefix))
+                .count(),
+            1
+        );
+        let attribute_refs = ast
+            .nodes()
+            .iter()
+            .filter(|node| matches!(node.kind, SurfaceNodeKind::AttributeRef))
+            .collect::<Vec<_>>();
+        assert_eq!(attribute_refs.len(), 1);
+        assert!(
+            attribute_refs[0].children.iter().any(|id| {
+                matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::TermExpression)
+            })
+        );
     }
 
     #[test]

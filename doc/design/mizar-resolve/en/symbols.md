@@ -183,6 +183,15 @@ Signature shells are intentionally shallow. They preserve the syntax needed by
 checker/type/proof phases, but they do not claim that the signature is
 well-typed, semantically compatible, terminating, executable, or proof-valid.
 
+For attribute patterns with a declaration-site `param_prefix`, the primary
+spelling is the declared attribute suffix such as `ranked`, while the optional
+notation spelling preserves the concrete pattern surface such as
+`2 - ranked`. Resolver symbol collection does not lower the prefix into
+checker `AttributeInput` arguments. Exported lexical summaries for attributes
+use the suffix primary spelling, because imported attribute uses resolve the
+attribute name and carry any arguments through later checker-owned payload
+extraction.
+
 ## Per-Kind Signature Shapes
 
 | Declaration family | Resolver-owned signature payload |

@@ -8102,6 +8102,78 @@ fn parser_preserves_struct_qualified_attribute_spelling() {
 }
 
 #[test]
+fn parser_preserves_parameterized_attribute_declaration_and_use_tree_shape() {
+    let source_id = source_id(148);
+    let tokens = token_sequence(
+        source_id,
+        &[
+            ("definition", ParserTokenKind::ReservedWord),
+            ("let", ParserTokenKind::ReservedWord),
+            ("x", ParserTokenKind::Identifier),
+            ("be", ParserTokenKind::ReservedWord),
+            ("set", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("attr", ParserTokenKind::ReservedWord),
+            ("RankedDef", ParserTokenKind::Identifier),
+            (":", ParserTokenKind::ReservedSymbol),
+            ("x", ParserTokenKind::Identifier),
+            ("is", ParserTokenKind::ReservedWord),
+            ("2", ParserTokenKind::Numeral),
+            ("-", ParserTokenKind::ReservedSymbol),
+            ("ranked", ParserTokenKind::UserSymbol),
+            ("means", ParserTokenKind::ReservedWord),
+            ("thesis", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("end", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+            ("reserve", ParserTokenKind::ReservedWord),
+            ("y", ParserTokenKind::Identifier),
+            ("for", ParserTokenKind::ReservedWord),
+            ("ranked", ParserTokenKind::UserSymbol),
+            ("(", ParserTokenKind::ReservedSymbol),
+            ("2", ParserTokenKind::Numeral),
+            (")", ParserTokenKind::ReservedSymbol),
+            ("set", ParserTokenKind::ReservedWord),
+            (";", ParserTokenKind::ReservedSymbol),
+        ],
+    );
+    let output = parse(ParseRequest::new(
+        source_id,
+        Edition::new("2026"),
+        tokens,
+        Vec::new(),
+    ));
+
+    assert!(
+        output.diagnostics.is_empty(),
+        "unexpected diagnostics: {:?}",
+        output.diagnostics
+    );
+    let ast = output
+        .ast
+        .expect("parameterized attribute declaration and use should parse");
+    assert_eq!(
+        ast.nodes()
+            .iter()
+            .filter(|node| matches!(node.kind, SurfaceNodeKind::ParameterPrefix))
+            .count(),
+        1
+    );
+    let attribute_refs = ast
+        .nodes()
+        .iter()
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::AttributeRef))
+        .collect::<Vec<_>>();
+    assert_eq!(attribute_refs.len(), 1);
+    assert!(
+        attribute_refs[0]
+            .children
+            .iter()
+            .any(|id| { matches!(ast.node(*id).unwrap().kind, SurfaceNodeKind::TermExpression) })
+    );
+}
+
+#[test]
 fn parser_parses_primary_terms_in_type_and_attribute_arguments() {
     let source_id = source_id(111);
     let tokens = token_sequence(

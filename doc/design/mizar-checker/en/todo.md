@@ -1830,6 +1830,29 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       bridge; mizar-test task 10; spec 03 type expressions; spec 06 attributes;
       spec 11 symbol management; spec 12 modules and namespaces.
 
+81. **Add source-derived argument-bearing local attribute reserve extraction-gap boundary.** [x]
+    - Add active fail coverage for a same-module parameterized attribute
+      declared with `param_prefix` syntax and used through the Chapter 3/6
+      `attribute_name(args)` application form in a reserve type expression.
+    - Acceptance: the active type-elaboration runner reports
+      `type_elaboration.external_dependency.ast_payload_extraction`, does not
+      fabricate term-argument provenance, checker `AttributeInput` argument
+      payloads, attributed-type evidence, positive attributed type elaboration,
+      or broader parameterized attribute semantics, and does not promote
+      CoreIr, ControlFlowIr, VC, or proof payloads. The fixture is diagnostic
+      boundary coverage only and only proves that the real source lexer/parser
+      producer seam and resolver declaration-symbol suffix projection can carry
+      the parameterized local attribute surface to the checker-owned extraction
+      boundary.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`,
+      `cargo test -p mizar-lexer`, `cargo test -p mizar-frontend`,
+      `cargo test -p mizar-parser`.
+    - Deps: tasks 48, 50, 67, and 77. Refs: Step 5 source-derived semantic
+      bridge; mizar-test task 10; spec 02 lexical structure; spec 03 type
+      expressions; spec 06 attributes; spec 11 symbol management;
+      mizar-lexer disambiguator design;
+      mizar-resolve symbol projection design.
+
 ## Recommended Verification
 
 Run after each task:

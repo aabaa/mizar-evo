@@ -148,10 +148,15 @@ The hyphen used in parameterized attribute spellings such as `n-dimensional`
 or `(m,n)-ary` is a contextual `param_prefix` separator, not a reserved special
 symbol. In attribute positions only, the lexer/parser first attempts a
 `param_prefix` split when the prefix is an in-scope parameter name, a numeral,
-or a parenthesized parameter list, and the suffix resolves to an active
-attribute name. If that check fails, the entire spelling is matched against the
-active lexicon as one attribute name. When both interpretations are valid, the
-`param_prefix` split wins.
+or a parenthesized parameter list, and the suffix either resolves to an active
+attribute name at a use site or is the declaration-site `attribute_name` being
+introduced by the current `attr_pattern` (A.6). If that check fails, the entire
+spelling is matched against the active lexicon as one attribute name. When both
+interpretations are valid, the `param_prefix` split wins. A shared
+parser-facing lexer may expose the split candidate before the parser has
+entered the final attribute production, but non-attribute grammar positions
+must reject that token sequence during parsing; the hyphen is still not a
+globally reserved special symbol.
 
 Fixed annotation names and option names are contextual spellings, not reserved
 identifiers outside their grammar positions. Current contextual spellings are
