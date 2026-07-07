@@ -147,6 +147,21 @@ partial status of either chapter; bracket `type_arg_list` payloads,
 `qua`-argument lowering, arity matching, mode expansion, positive type
 elaboration, CoreIr, ControlFlowIr, VC, and proof payloads remain deferred.
 
+Task71 addendum for chapters `03.type_system.md` and `05.structures.md`:
+checker task 71 adds active source-derived diagnostic boundary coverage for
+source containing a same-module bracket-parameter local structure declaration
+and a bracket-form reserve type head, such as `LocalStruct[set]`. Chapters 3
+and 5 plus parser coverage already define this syntax; this addendum does not
+claim bracket-form structure application semantics. The active runner proves
+the source is parser/resolver executable but leaves it on the source-to-checker
+payload extraction gap before bracket type-argument payload extraction or
+structure-head resolution because checker-owned reserve payloads do not yet
+preserve real bracket type-argument or `qua`-argument provenance. This does
+not change the partial status of either chapter; bracket `type_arg_list`
+payloads, `qua`-argument lowering, arity matching, base-shape or
+constructor-witness evidence, positive structure type elaboration, CoreIr,
+ControlFlowIr, VC, and proof payloads remain deferred.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

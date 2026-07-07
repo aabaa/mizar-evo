@@ -513,8 +513,12 @@ stop at the external extraction-gap key because real type-argument and
 term-argument provenance are still absent. Task 70 permits bracket-form
 local-mode reserve heads to stop at the external extraction-gap key before
 bracket type-argument payload extraction or mode-head resolution because real
-bracket type-argument and `qua`-argument provenance are still absent. These are
-fail cases, not pass-slice coverage.
+bracket type-argument and `qua`-argument provenance are still absent. Task 71
+permits bracket-form local-structure reserve heads to stop at the
+external extraction-gap key before bracket type-argument payload extraction or
+structure-head resolution because real bracket type-argument and
+`qua`-argument provenance are still absent. These are fail cases, not
+pass-slice coverage.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

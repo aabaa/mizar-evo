@@ -1643,6 +1643,26 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       MC-G020/MC-G014. Refs: Step 5 source-derived semantic bridge; mizar-test
       task 10; spec 03 type expressions; spec 07 modes.
 
+71. **Add source-derived bracket-form local structure reserve gap boundary.** [x]
+    - Add an active `type_elaboration` boundary fixture for source containing a
+      same-module bracket-parameter structure declaration and a bracket-form
+      reserve type head, for example `LocalStruct[set]`.
+    - Acceptance: the active runner proves the real `.miz` source path is
+      parser/resolver executable but remains on
+      `type_elaboration.external_dependency.ast_payload_extraction` before
+      bracket type-argument payload extraction or structure-head resolution
+      because the checker-owned reserve source bridge does not yet carry real
+      bracket type-argument or `qua`-argument provenance. The boundary must not
+      claim bracket payload extraction, arity matching, base-shape or
+      constructor-witness evidence, positive structure type elaboration, or
+      CoreIr/ControlFlowIr/VC/proof payloads.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 52, and 69. Bracket `type_arg_list` provenance,
+      `qua`-argument lowering, structure-head resolution with arguments, arity
+      checking, positive structure acceptance, and broader structure extraction
+      remain MC-G020/MC-G014. Refs: Step 5 source-derived semantic bridge;
+      mizar-test task 10; spec 03 type expressions; spec 05 structures.
+
 ## Recommended Verification
 
 Run after each task:

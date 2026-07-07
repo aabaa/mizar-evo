@@ -306,7 +306,12 @@ slice として、same-module bracket-parameter mode declaration と `Family[set
 reserve use を含む source が parser/resolver まで到達する一方、bracket type-argument
 payload extraction や mode-head resolution の前に runner が
 `type_elaboration.external_dependency.ast_payload_extraction` を assert する場合を
-credit してよい。task 67、task 68、task 69、task 70 の external-gap boundary case を除く上記の
+credit してよい。task 71 は bracket-form local structure reserve extraction-gap boundary
+slice として、same-module bracket-parameter structure declaration と `LocalStruct[set]` のような
+reserve use を含む source が parser/resolver まで到達する一方、bracket type-argument
+payload extraction や structure-head resolution の前に runner が
+`type_elaboration.external_dependency.ast_payload_extraction` を assert する場合を
+credit してよい。task 67、task 68、task 69、task 70、task 71 の external-gap boundary case を除く上記の
 supported reserve slices を syntax-free
 checker source reserve payload へ変換し、checker-owned seam が module `BindingEnv`、
 binding ごとの `DeclarationInput`、binding 固有の `TypeExpressionInput` site、
@@ -367,7 +372,10 @@ structure-argument payload、arity matching、base-shape evidence、positive str
 type-elaboration coverage とは扱わない。task 70 の bracket-form mode case は
 extraction-gap boundary coverage としてだけ credit し、real bracket type-argument
 payload、`qua`-argument payload、mode-head resolution、arity matching、mode expansion、
-positive type-elaboration coverage とは扱わない。
+positive type-elaboration coverage とは扱わない。task 71 の bracket-form structure case は
+extraction-gap boundary coverage としてだけ credit し、real bracket type-argument
+payload、`qua`-argument payload、structure-head resolution、arity matching、base-shape /
+constructor-witness evidence、positive structure type-elaboration coverage とは扱わない。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
 `proof_verification` row は deferred のままにする。summary/context readiness read は
