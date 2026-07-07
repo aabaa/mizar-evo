@@ -1663,6 +1663,26 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       remain MC-G020/MC-G014. Refs: Step 5 source-derived semantic bridge;
       mizar-test task 10; spec 03 type expressions; spec 05 structures.
 
+72. **Add source-derived two-edge bare local mode chain bridge.** [x]
+    - Extend the task-56 pass producer only for bare same-module no-argument
+      local-mode chains `Outer -> Middle -> Base -> set` / `object`.
+    - Acceptance: the active runner extracts all three real `ModeExpansion`
+      payloads from unique unrecovered same-module mode definitions in source
+      order, with no definition-local context, no attributes, and no arguments,
+      then the reserve declaration follows the existing `TypedAst`,
+      `ResolvedTypedAst`, summary-readiness, and binder-only `CoreContext`
+      preparation path. Cold and cached three-edge local-mode chains remain on
+      `type_elaboration.checker.checker.type.external.mode_expansion_payload`
+      so the two-edge cap cannot silently broaden.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 55, and 56. Attributed roots or dependencies,
+      structure/attributed-builtin terminals beyond the existing one-edge
+      diagnostic slices, imported/argument-bearing/parameterized/contextual/
+      ambiguous/cyclic/forward-reference definitions, deeper chains, CoreIr,
+      ControlFlowIr, VC, proof payloads, and broader mode extraction remain
+      MC-G020/MC-G014. Refs: Step 5 source-derived semantic bridge; mizar-test
+      task 10; spec 03 type expressions; spec 07 modes.
+
 ## Recommended Verification
 
 Run after each task:

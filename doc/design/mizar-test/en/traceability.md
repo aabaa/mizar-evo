@@ -338,6 +338,12 @@ source containing a same-module bracket-parameter structure declaration and
 reserve use such as `LocalStruct[set]` reaches parser/resolver, but the runner
 still asserts `type_elaboration.external_dependency.ast_payload_extraction`
 before bracket type-argument payload extraction or structure-head resolution.
+Task 72 may credit the two-edge bare local-mode chain pass slice: the runner
+derives real `Outer -> Middle`, `Middle -> Base`, and `Base -> set/object`
+expansions from unique unrecovered preceding same-module no-argument
+definitions, continues the outer reserve through the existing checker handoff
+and readiness path, and separately keeps cold or cached three-edge chains on
+the checker missing mode-expansion diagnostic.
 The supported reserve slices above, excluding task 67, task 68, task 69, task
 70, and task 71 external-gap boundary
 cases, are converted into a syntax-free checker source reserve payload, then the
@@ -384,7 +390,8 @@ base-shape/constructor-witness and full attributed-type existential evidence,
 task-66 attributed local-mode reserve heads with one-edge attributed-builtin-RHS
 chains missing full attributed-type existential evidence, or same-module local
 mode reserve heads, including mixed attributed/bare
-local-mode sources, missing mode-expansion payloads. Task 56's
+local-mode sources or task-72 cold/cached three-edge chains, missing
+mode-expansion payloads. Task 56's
 attributed-chain-dependency fail case is part
 of that same missing mode-expansion payload family and does not credit a partial
 chain expansion; attributed-RHS chains beyond the task-58/task-61 direct
@@ -408,6 +415,10 @@ boundary coverage, not as real bracket type-argument payload,
 `qua`-argument payload, structure-head resolution, arity matching, base-shape
 or constructor-witness evidence, or positive structure type-elaboration
 coverage.
+Task 72 pass cases credit only the source-derived two-edge bare local-mode
+chain bridge; task-72 three-edge guard cases do not credit deeper mode
+expansion, structure/attributed-builtin terminals beyond the existing one-edge
+diagnostics, or CoreIr/ControlFlowIr/VC/proof promotion.
 
 Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and

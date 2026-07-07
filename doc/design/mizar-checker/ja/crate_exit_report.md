@@ -9,6 +9,14 @@ Status: complete。
 Quality score: 94/100。
 Score caps applied: none。
 
+Post-closeout continuation: この report は original task-34 explicit-payload
+checker milestone の closeout のまま維持する。Step 5 source-derived bridge の
+task 48-72 は crate plan、TODO、source/spec audit、corpus traceability で追跡する
+post-closeout continuation task である。task 72 は source-derived two-edge bare
+local-mode chain pass slice と cold / cached three-edge guard を追加するが、original
+score を変更せず、AST-wide extraction、CoreIr/ControlFlowIr/VC、proof payload
+promotion を主張しない。
+
 ## Scope
 
 Milestone scope:

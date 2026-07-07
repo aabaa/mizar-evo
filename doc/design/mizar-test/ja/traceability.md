@@ -311,7 +311,12 @@ slice として、same-module bracket-parameter structure declaration と `Local
 reserve use を含む source が parser/resolver まで到達する一方、bracket type-argument
 payload extraction や structure-head resolution の前に runner が
 `type_elaboration.external_dependency.ast_payload_extraction` を assert する場合を
-credit してよい。task 67、task 68、task 69、task 70、task 71 の external-gap boundary case を除く上記の
+credit してよい。task 72 は two-edge bare local-mode chain pass slice として、
+unique / unrecovered / preceding / same-module / no-argument definition から real
+`Outer -> Middle`、`Middle -> Base`、`Base -> set/object` expansion を抽出し、
+outer reserve を既存の checker handoff と readiness path へ継続し、cold / cached
+three-edge chain は checker missing mode-expansion diagnostic に残す場合を credit
+してよい。task 67、task 68、task 69、task 70、task 71 の external-gap boundary case を除く上記の
 supported reserve slices を syntax-free
 checker source reserve payload へ変換し、checker-owned seam が module `BindingEnv`、
 binding ごとの `DeclarationInput`、binding 固有の `TypeExpressionInput` site、
@@ -356,7 +361,7 @@ missing base-shape / constructor-witness evidence と full attributed-type exist
 task-66 の attributed-builtin-RHS chain を持つ attributed local-mode reserve head における
 missing full attributed-type existential evidence、または same-module local mode reserve head の
 missing mode-expansion payload diagnostic（mixed attributed/bare
-local-mode source を含む）の checker detail key を代わりに assert してよい。task 56 の
+local-mode source や task-72 cold / cached three-edge chain を含む）の checker detail key を代わりに assert してよい。task 56 の
 attributed-chain-dependency fail case は同じ missing mode-expansion payload family に属し、
 partial chain expansion は credit しない。attributed-RHS chain も task 58 / task 61 の
 direct slice、task 63 の bare one-edge chain slice、task 66 の attributed-root
@@ -376,6 +381,10 @@ positive type-elaboration coverage とは扱わない。task 71 の bracket-form
 extraction-gap boundary coverage としてだけ credit し、real bracket type-argument
 payload、`qua`-argument payload、structure-head resolution、arity matching、base-shape /
 constructor-witness evidence、positive structure type-elaboration coverage とは扱わない。
+task 72 の pass case は source-derived two-edge bare local-mode chain bridge だけを
+credit する。task-72 three-edge guard case は deeper mode expansion、既存 one-edge
+diagnostic を超える structure / attributed-builtin terminal、CoreIr / ControlFlowIr /
+VC / proof promotion を credit しない。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
 `proof_verification` row は deferred のままにする。summary/context readiness read は

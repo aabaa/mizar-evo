@@ -1,0 +1,22 @@
+schema_version = 1
+id = "fail_type_elaboration_local_mode_three_edge_chain_expansion_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_local_mode_three_edge_chain_expansion_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_deeper_local_mode_chain_expansion_payload"
+stable_detail_key = "type_elaboration.checker.checker.type.external.mode_expansion_payload"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+  "type_elaboration.checker.checker.type.recovery",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.local_mode_three_edge_chain_gap",
+]
+notes = "Active type_elaboration runner guard coverage for checker task 72: a same-module no-argument bare local mode chain with three mode-to-mode dependency edges remains outside the two-edge source-derived expansion slice and fails closed on the missing mode-expansion payload diagnostic instead of fabricating broader chain payloads."

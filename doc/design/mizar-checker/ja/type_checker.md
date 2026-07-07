@@ -252,7 +252,16 @@ task-58/task-61 direct slice と task-63 bare one-edge chain slice 外の
 attributed-RHS chain、task 64 外の attributed-root bare-builtin chain、task 65 外の
 attributed-root structure-RHS chain、または attributed-builtin RHS mode definition は missing-expansion /
 extraction-gap path に残り、checker-owned seam は expansion や existential evidence を
-捏造してはならない。task 57 はさらに、RHS が type argument を持たない same-module
+捏造してはならない。task 72 は bare builtin terminal の pass slice だけをもう 1 つの
+source-derived dependency edge に拡張する: bare local-mode reserve head は、3 個すべての
+mode definition が unique / unrecovered / same-module / no-argument /
+definition-local-context-free / source-preceding である場合に限り、
+`Outer -> Middle -> Base -> set` / `object` として expand してよい。active pass
+fixture は既存の `TypedAst`、`ResolvedTypedAst`、summary-readiness、binder-only
+`CoreContext` preparation path を通るが、新しい CoreIr / ControlFlowIr / VC / proof
+payload は昇格しない。別の supported reserve binding によって middle dependency が
+cache 済みである場合も含め、three-edge local-mode dependency chain は missing
+mode-expansion diagnostic に残し、cap を明示する。task 57 はさらに、RHS が type argument を持たない same-module
 local structure head である bare same-module no-argument local mode expansion を許可する。
 この case は real `ModeExpansion` を消費するため missing mode-expansion payload diagnostic を
 出してはならない。ただし expanded structure radix は real base-shape /

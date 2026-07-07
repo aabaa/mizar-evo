@@ -1538,6 +1538,26 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       参照: Step 5 source-derived semantic bridge、mizar-test task 10、spec 03 type
       expressions、spec 05 structures。
 
+72. **Source-derived two-edge bare local mode chain bridge を追加する。** [x]
+    - task 56 の pass producer を、bare same-module no-argument local-mode chain
+      `Outer -> Middle -> Base -> set` / `object` だけに拡張する。
+    - Acceptance: active runner は unique / unrecovered / same-module な mode
+      definition 3 個から、source order、definition-local context なし、
+      attributes なし、arguments なしの条件で real `ModeExpansion` payload をすべて
+      抽出し、reserve declaration は既存の `TypedAst`、`ResolvedTypedAst`、
+      summary-readiness、binder-only `CoreContext` preparation path を通る。
+      cold path と cached dependency reuse の three-edge local-mode chain は
+      `type_elaboration.checker.checker.type.external.mode_expansion_payload` に残し、
+      two-edge cap が暗黙に広がらないようにする。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、55、56。attributed root / dependency、既存 one-edge
+      diagnostic slice を超える structure / attributed-builtin terminal、
+      imported / argument-bearing / parameterized / contextual / ambiguous /
+      cyclic / forward-reference definition、deeper chain、CoreIr、ControlFlowIr、
+      VC、proof payload、broader mode extraction は MC-G020/MC-G014 のまま。参照:
+      Step 5 source-derived semantic bridge、mizar-test task 10、spec 03 type
+      expressions、spec 07 modes。
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -837,7 +837,11 @@ struct SourceModeExpansionCandidate {
 struct SourceModeExpansionEntry {
     definition_range: SourceRange,
     expansion: ModeExpansion,
+    chain_edges_to_terminal: usize,
+    chain_terminal_is_safe_builtin: bool,
 }
+
+const MAX_BARE_LOCAL_MODE_CHAIN_DEPTH: usize = 2;
 
 fn extract_builtin_source_reserve_declarations(
     ast: &SurfaceAst,
@@ -1024,11 +1028,14 @@ impl SourceLocalModeExpansionExtractor<'_> {
                 return false;
             }
             return depth < 1
-                || mode_expansion_is_chain_dependency_terminal(
+                || mode_expansion_can_feed_chain_dependency(
                     &entry.expansion,
+                    entry.chain_edges_to_terminal,
+                    entry.chain_terminal_is_safe_builtin,
+                    depth,
+                    root_is_attributed,
                     self.symbols,
                     self.module,
-                    depth,
                 );
         }
         let is_attributed_root = depth == 0 && root_is_attributed;
@@ -1063,17 +1070,14 @@ impl SourceLocalModeExpansionExtractor<'_> {
             return false;
         }
         if depth >= 1
-            && !mode_expansion_is_chain_dependency_terminal(
-                &candidate.expansion,
+            && !mode_expansion_candidate_can_feed_chain_dependency(
+                &candidate,
+                depth,
+                root_is_attributed,
                 self.symbols,
                 self.module,
-                depth,
             )
         {
-            visiting.remove(symbol);
-            return false;
-        }
-        if depth >= 1 && !candidate.dependencies.is_empty() {
             visiting.remove(symbol);
             return false;
         }
@@ -1092,11 +1096,15 @@ impl SourceLocalModeExpansionExtractor<'_> {
                 return false;
             }
         }
+        let (chain_edges_to_terminal, chain_terminal_is_safe_builtin) =
+            mode_expansion_chain_metadata(&candidate, expansions);
         expansions.insert(
             symbol.clone(),
             SourceModeExpansionEntry {
                 definition_range: candidate.definition_range,
                 expansion: candidate.expansion,
+                chain_edges_to_terminal,
+                chain_terminal_is_safe_builtin,
             },
         );
         visiting.remove(symbol);
@@ -1159,6 +1167,102 @@ fn mode_expansion_is_chain_dependency_terminal(
         || (depth == 1
             && mode_expansion_is_direct_structure_rhs_terminal(expansion, symbols, module))
         || (depth == 1 && mode_expansion_is_direct_attributed_builtin_rhs_terminal(expansion))
+}
+
+fn mode_expansion_candidate_can_feed_chain_dependency(
+    candidate: &SourceModeExpansionCandidate,
+    depth: usize,
+    root_is_attributed: bool,
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+) -> bool {
+    if mode_expansion_is_chain_dependency_terminal(&candidate.expansion, symbols, module, depth) {
+        return candidate.dependencies.is_empty();
+    }
+    !root_is_attributed
+        && depth < MAX_BARE_LOCAL_MODE_CHAIN_DEPTH
+        && candidate.dependencies.len() == 1
+        && mode_expansion_is_bare_local_mode_dependency(
+            &candidate.expansion,
+            &candidate.dependencies[0],
+            symbols,
+            module,
+        )
+}
+
+fn mode_expansion_can_feed_chain_dependency(
+    expansion: &ModeExpansion,
+    chain_edges_to_terminal: usize,
+    chain_terminal_is_safe_builtin: bool,
+    depth: usize,
+    root_is_attributed: bool,
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+) -> bool {
+    mode_expansion_is_chain_dependency_terminal(expansion, symbols, module, depth)
+        || (!root_is_attributed
+            && chain_terminal_is_safe_builtin
+            && depth < MAX_BARE_LOCAL_MODE_CHAIN_DEPTH
+            && depth.saturating_add(chain_edges_to_terminal) <= MAX_BARE_LOCAL_MODE_CHAIN_DEPTH
+            && mode_expansion_is_bare_local_mode_head(expansion, symbols, module))
+}
+
+fn mode_expansion_chain_metadata(
+    candidate: &SourceModeExpansionCandidate,
+    expansions: &BTreeMap<ResolverSymbolId, SourceModeExpansionEntry>,
+) -> (usize, bool) {
+    if candidate.dependencies.is_empty() {
+        return (
+            0,
+            mode_expansion_is_safe_chain_terminal(&candidate.expansion),
+        );
+    }
+    candidate
+        .dependencies
+        .iter()
+        .filter_map(|dependency| expansions.get(dependency))
+        .map(|entry| {
+            (
+                entry.chain_edges_to_terminal.saturating_add(1),
+                entry.chain_terminal_is_safe_builtin,
+            )
+        })
+        .max_by_key(|(chain_edges_to_terminal, _)| *chain_edges_to_terminal)
+        .unwrap_or((usize::MAX, false))
+}
+
+fn mode_expansion_is_bare_local_mode_dependency(
+    expansion: &ModeExpansion,
+    dependency: &ResolverSymbolId,
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+) -> bool {
+    expansion.attributes.is_empty()
+        && expansion.radix.attributes.is_empty()
+        && expansion.radix.args.is_empty()
+        && matches!(
+            expansion.radix.head,
+            TypeHeadInput::Symbol(ref radix)
+                if radix == dependency
+                    && source_reserve_symbol_head_kind(symbols, module, radix)
+                        == Some(SymbolKind::Mode)
+        )
+}
+
+fn mode_expansion_is_bare_local_mode_head(
+    expansion: &ModeExpansion,
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+) -> bool {
+    expansion.attributes.is_empty()
+        && expansion.radix.attributes.is_empty()
+        && expansion.radix.args.is_empty()
+        && matches!(
+            expansion.radix.head,
+            TypeHeadInput::Symbol(ref radix)
+                if source_reserve_symbol_head_kind(symbols, module, radix)
+                    == Some(SymbolKind::Mode)
+        )
 }
 
 fn mode_expansion_is_supported_attributed_root(
@@ -6078,6 +6182,7 @@ mod tests {
                 ("A", SymbolKind::Mode),
                 ("B", SymbolKind::Mode),
                 ("C", SymbolKind::Mode),
+                ("D", SymbolKind::Mode),
             ],
         );
         let deeper_module = deeper_symbols.module_id().clone();
@@ -6087,10 +6192,11 @@ mod tests {
                 mode_definition("A", ReserveTypeShape::Builtin("set")),
                 mode_definition("B", ReserveTypeShape::QualifiedSymbol("A")),
                 mode_definition("C", ReserveTypeShape::QualifiedSymbol("B")),
+                mode_definition("D", ReserveTypeShape::QualifiedSymbol("C")),
             ],
             vec![reserve_item(
                 vec!["z"],
-                ReserveTypeShape::QualifiedSymbol("C"),
+                ReserveTypeShape::QualifiedSymbol("D"),
             )],
         );
         let deeper_extraction = extract_builtin_source_reserve_declarations(
@@ -6101,7 +6207,7 @@ mod tests {
         .expect("deeper chain reserve should still extract");
         assert!(
             deeper_extraction.mode_expansions().is_empty(),
-            "task 56 admits only one local-mode dependency edge beyond the reserve head"
+            "task 72 admits only two local-mode dependency edges beyond the reserve head"
         );
 
         let cached_deeper_module =
@@ -6112,6 +6218,7 @@ mod tests {
                 ("A", SymbolKind::Mode),
                 ("B", SymbolKind::Mode),
                 ("C", SymbolKind::Mode),
+                ("D", SymbolKind::Mode),
             ],
         );
         let cached_deeper_chain = mode_chain_reserve_ast(
@@ -6120,10 +6227,11 @@ mod tests {
                 mode_definition("A", ReserveTypeShape::Builtin("set")),
                 mode_definition("B", ReserveTypeShape::QualifiedSymbol("A")),
                 mode_definition("C", ReserveTypeShape::QualifiedSymbol("B")),
+                mode_definition("D", ReserveTypeShape::QualifiedSymbol("C")),
             ],
             vec![
-                reserve_item(vec!["y"], ReserveTypeShape::QualifiedSymbol("B")),
-                reserve_item(vec!["z"], ReserveTypeShape::QualifiedSymbol("C")),
+                reserve_item(vec!["y"], ReserveTypeShape::QualifiedSymbol("C")),
+                reserve_item(vec!["z"], ReserveTypeShape::QualifiedSymbol("D")),
             ],
         );
         let cached_deeper_extraction = extract_builtin_source_reserve_declarations(
@@ -6138,6 +6246,8 @@ mod tests {
             resolve_visible_type_head(&cached_deeper_symbols, &cached_deeper_module, "B").unwrap();
         let cached_c =
             resolve_visible_type_head(&cached_deeper_symbols, &cached_deeper_module, "C").unwrap();
+        let cached_d =
+            resolve_visible_type_head(&cached_deeper_symbols, &cached_deeper_module, "D").unwrap();
         assert!(
             cached_deeper_extraction
                 .mode_expansions()
@@ -6149,10 +6259,16 @@ mod tests {
                 .contains_key(&cached_b)
         );
         assert!(
-            !cached_deeper_extraction
+            cached_deeper_extraction
                 .mode_expansions()
                 .contains_key(&cached_c),
-            "cached one-edge expansion payloads must not let a deeper chain bypass the cap"
+            "cached two-edge expansion payloads remain available for the supported reserve"
+        );
+        assert!(
+            !cached_deeper_extraction
+                .mode_expansions()
+                .contains_key(&cached_d),
+            "cached two-edge expansion payloads must not let a deeper chain bypass the cap"
         );
 
         let cached_structure_rhs_module =

@@ -265,7 +265,18 @@ attributed-root bare-builtin chains outside task 64, attributed-root
 structure-RHS chains outside task 65, or broader attributed-builtin RHS mode
 definitions remain on the missing-expansion /
 extraction-gap path, and the checker-owned seam must not fabricate expansion
-or existential evidence. Task 57 additionally permits a bare same-module
+or existential evidence. Task 72 extends only the bare builtin terminal pass
+slice one more source-derived dependency edge: a bare local-mode reserve head
+may expand through `Outer -> Middle -> Base -> set` / `object` when all three
+mode definitions are unique, unrecovered, same-module, no-argument,
+definition-local-context-free, and source-preceding. The active pass fixtures
+continue through the existing `TypedAst`, `ResolvedTypedAst`, summary-readiness,
+and binder-only `CoreContext` preparation path, but do not promote new
+CoreIr/ControlFlowIr/VC/proof payloads. Three-edge local-mode dependency
+chains, including chains whose middle dependency was already cached by another
+supported reserve binding, remain on the missing mode-expansion diagnostic so
+the cap is explicit.
+Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case
 must not report the missing mode-expansion payload diagnostic; however, the

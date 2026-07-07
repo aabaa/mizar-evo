@@ -486,7 +486,10 @@ mode-head resolution の前に external extraction-gap key で停止すること
 task 71 は bracket-form local-structure reserve head が、real bracket type-argument と
 `qua`-argument provenance 欠落のため、bracket type-argument payload extraction や
 structure-head resolution の前に external extraction-gap key で停止することを許可する。
-これらは fail case であり、pass-slice coverage ではない。
+task 67-71 は fail case であり、pass-slice coverage ではない。task 72 は two-edge
+bare local-mode chain の pass sidecar について empty diagnostic payload list を許可し、
+cold / cached three-edge guard の fail sidecar について checker missing mode-expansion
+payload と recovery detail key を要求することを許可する。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
 から checker-owned payload を non-builtin declaration、imported symbol、unresolved /
