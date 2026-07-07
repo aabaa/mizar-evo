@@ -3339,13 +3339,18 @@ fn repository_declaration_symbol_runner_executes_active_resolver_seeds() {
     let report = run_declaration_symbol_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 3);
-    assert_eq!(report.passed_count(), 3);
+    assert_eq!(report.results.len(), 4);
+    assert_eq!(report.passed_count(), 4);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_resolve_declaration_symbol_smoke_001"
             && result.actual_detail_keys.is_empty()
             && result.actual_payload_keys == expected_declaration_symbol_smoke_payloads()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_resolve_parameterized_local_attribute_001"
+            && result.actual_detail_keys.is_empty()
+            && result.actual_payload_keys == parameterized_attribute_declaration_symbol_payloads()
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_resolve_duplicate_theorem_symbol_001"
@@ -3406,6 +3411,19 @@ fn expected_declaration_symbol_smoke_payloads() -> Vec<String> {
     .collect()
 }
 
+fn parameterized_attribute_declaration_symbol_payloads() -> Vec<String> {
+    [
+        "declaration_symbol.definition.kind.ranked.attribute",
+        "declaration_symbol.definition.visibility.ranked.public",
+        "declaration_symbol.symbol.export.ranked.exported",
+        "declaration_symbol.symbol.kind.ranked.attribute",
+        "declaration_symbol.symbol.visibility.ranked.public",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect()
+}
+
 fn visible_theorem_declaration_symbol_payloads() -> Vec<String> {
     [
         "declaration_symbol.definition.kind.VisibleTheorem.theorem",
@@ -3437,8 +3455,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 46);
-    assert_eq!(report.passed_count(), 46);
+    assert_eq!(report.results.len(), 47);
+    assert_eq!(report.passed_count(), 47);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3457,6 +3475,11 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_argument_bearing_mode_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_argument_bearing_attribute_gap_001"
             && result.actual_detail_keys
                 == ["type_elaboration.external_dependency.ast_payload_extraction"]
     }));
@@ -6362,6 +6385,61 @@ tests = ["tests/miz/fail/types/fail_structure_qualified_attribute_gap.expect.tom
 }
 
 #[test]
+fn type_elaboration_runner_keeps_argument_bearing_attributes_on_external_gap() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/types/fail_argument_bearing_attribute_gap.miz",
+        "definition\n  let x be set;\n  attr RankedDef: x is 2-ranked means thesis;\nend;\n\nreserve y for ranked(2) set;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/types/fail_argument_bearing_attribute_gap.expect.toml",
+        r#"schema_version = 1
+id = "fail_argument_bearing_attribute_gap"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_argument_bearing_attribute_gap.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "argument_bearing_attribute_payload_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration.argument_bearing_attribute_gap"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration.argument_bearing_attribute_gap"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = ["tests/miz/fail/types/fail_argument_bearing_attribute_gap.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert_eq!(
+        report.results[0].actual_detail_keys,
+        ["type_elaboration.external_dependency.ast_payload_extraction"]
+    );
+}
+
+#[test]
 fn type_elaboration_runner_keeps_argument_bearing_mode_heads_on_external_gap() {
     let corpus = Corpus::new();
     corpus.write(
@@ -7112,6 +7190,68 @@ tests = ["tests/miz/fail/resolve/fail_duplicate_theorem.expect.toml"]
 }
 
 #[test]
+fn declaration_symbol_runner_records_parameterized_local_attribute_suffix() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/pass/resolve/pass_parameterized_local_attribute_001.miz",
+        "definition\n  let x be set;\n  attr RankedDef: x is 2-ranked means thesis;\nend;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/resolve/pass_parameterized_local_attribute_001.expect.toml",
+        r#"schema_version = 1
+id = "pass_parameterized_local_attribute_001"
+kind = "pass"
+stage = "declaration_symbol"
+domain = "resolve.declaration_symbol"
+source = "pass_parameterized_local_attribute_001.miz"
+expected_outcome = "pass"
+expected_phase = "resolve"
+diagnostic_codes = []
+declaration_symbol_payloads = [
+  "declaration_symbol.definition.kind.ranked.attribute",
+  "declaration_symbol.definition.visibility.ranked.public",
+  "declaration_symbol.symbol.export.ranked.exported",
+  "declaration_symbol.symbol.kind.ranked.attribute",
+  "declaration_symbol.symbol.visibility.ranked.public",
+]
+tags = ["active_declaration_symbol"]
+spec_refs = ["spec.en.test.resolve.parameterized_local_attribute"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.resolve.parameterized_local_attribute"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "pass"
+tests = ["tests/miz/pass/resolve/pass_parameterized_local_attribute_001.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_declaration_symbol_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert_eq!(
+        report.results[0].actual_payload_keys,
+        [
+            "declaration_symbol.definition.kind.ranked.attribute",
+            "declaration_symbol.definition.visibility.ranked.public",
+            "declaration_symbol.symbol.export.ranked.exported",
+            "declaration_symbol.symbol.kind.ranked.attribute",
+            "declaration_symbol.symbol.visibility.ranked.public",
+        ]
+    );
+}
+
+#[test]
 fn declaration_symbol_runner_compares_payloads_exactly_and_sorts_expectations() {
     let corpus = Corpus::new();
     corpus.write(
@@ -7514,8 +7654,8 @@ fn declaration_symbol_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("declaration-symbol cases: 3"));
-    assert!(stdout.contains("passed: 3"));
+    assert!(stdout.contains("declaration-symbol cases: 4"));
+    assert!(stdout.contains("passed: 4"));
     assert!(stdout.contains("failed: 0"));
 }
 
@@ -7535,8 +7675,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 46"));
-    assert!(stdout.contains("passed: 46"));
+    assert!(stdout.contains("type-elaboration cases: 47"));
+    assert!(stdout.contains("passed: 47"));
     assert!(stdout.contains("failed: 0"));
 }
 

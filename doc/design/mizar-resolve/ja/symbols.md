@@ -173,6 +173,13 @@ signature shell は意図的に浅い。checker/type/proof phase が必要とす
 signature が well-typed、semantically compatible、terminating、executable、
 proof-valid であるとは主張しない。
 
+declaration-site `param_prefix` を持つ attribute pattern では、primary spelling は
+`ranked` のような宣言された attribute suffix とし、optional notation spelling は
+`2 - ranked` のような concrete pattern surface を保持する。resolver symbol
+collection は prefix を checker `AttributeInput` argument へ lower しない。attribute の
+exported lexical summary は suffix primary spelling を使う。imported attribute use は
+attribute name を解決し、argument は後続の checker-owned payload extraction で運ぶためである。
+
 ## Kind ごとの Signature Shape
 
 | Declaration family | Resolver-owned signature payload |

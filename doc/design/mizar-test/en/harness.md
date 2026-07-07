@@ -203,6 +203,16 @@ fabricated coverage.
 | `mizar-atp` task 20 | `advanced_semantics` metadata handoff | paced/open in `mizar-test`; metadata-only property fixtures may be consumed by `mizar-atp` Rust tests | Add active `.miz` ATP runner support only after source-derived ATP extraction and proof-policy/kernel handoff seams exist. |
 | `mizar-kernel` task 17 | proof/certificate/kernel evidence | paced/open; fail/soundness metadata is validated without active proof/certificate/kernel execution | Add runner support only after source-to-evidence or certificate execution seams exist. |
 
+Task 81 addendum: the `type_elaboration` runner also owns the active
+argument-bearing local attribute extraction-gap boundary. It may run a
+same-module parameterized attribute declared with `param_prefix` syntax and
+used as `attribute_name(args)` in a reserve type expression, and it must keep
+that source on `type_elaboration.external_dependency.ast_payload_extraction`
+until real term-argument provenance and checker `AttributeInput` argument
+payload extraction exist. This runner support does not credit attributed-type
+evidence, positive parameterized attribute elaboration, CoreIr, ControlFlowIr,
+VC, or proof payloads.
+
 ## Algorithm / Logic
 
 1. Discover tests through `layout` under the known payload roots

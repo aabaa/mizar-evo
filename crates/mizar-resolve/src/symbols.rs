@@ -493,7 +493,11 @@ impl<'a> SignatureProjectionExtractor<'a> {
         overload_policy: SymbolOverloadPolicy,
     ) -> Option<SymbolDeclarationProjection> {
         let pattern = first_child_matching(view, is_pattern).unwrap_or(view);
-        let spelling = normalized_token_shape(pattern);
+        let spelling = if symbol_kind == SymbolKind::Attribute {
+            preferred_symbol_spelling(pattern).unwrap_or_else(|| normalized_token_shape(pattern))
+        } else {
+            normalized_token_shape(pattern)
+        };
         if spelling.is_empty() {
             return None;
         }
@@ -1514,13 +1518,14 @@ fn lexical_summary_projection(
         return None;
     }
     let kind = item.projection.lexical_summary_kind?;
-    Some((
-        kind,
+    let spelling = if item.projection.symbol_kind() == SymbolKind::Attribute {
+        item.projection.primary_spelling()
+    } else {
         item.projection
             .notation_spelling()
             .unwrap_or_else(|| item.projection.primary_spelling())
-            .to_owned(),
-    ))
+    };
+    Some((kind, spelling.to_owned()))
 }
 
 fn first_child_matching<'a>(

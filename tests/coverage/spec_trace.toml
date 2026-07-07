@@ -552,6 +552,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.03.type_expressions.argument_bearing_attribute_payload_gap"
+source = "doc/spec/en/03.type_system.md"
+section = "3.3 Type Expressions"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.03.type_expressions.imported_attribute_payload_gap"
 source = "doc/spec/en/03.type_system.md"
 section = "3.3 Type Expressions"
@@ -724,6 +736,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.06.attributes.argument_bearing_attribute_payload_gap"
+source = "doc/spec/en/06.attributes.md"
+section = "6.2 Syntax; 6.9 Complete Syntax"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.06.attributes.imported_attribute_payload_gap"
 source = "doc/spec/en/06.attributes.md"
 section = "6.2 Syntax; 6.9 Complete Syntax"
@@ -733,6 +757,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.06.attributes.parameterized_attribute_declaration_symbol"
+source = "doc/spec/en/06.attributes.md"
+section = "6.2 Syntax; 6.9 Complete Syntax"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/resolve/pass_resolve_parameterized_local_attribute_001.expect.toml",
 ]
 
 [[requirement]]
@@ -988,6 +1024,7 @@ coverage = "manual_review"
 notes = "Active declaration_symbol pass coverage now exact-compares SymbolEnv-derived symbol/definition fact keys for represented kind, visibility, and export status. Broader import, namespace/name, dot-chain, label-reference, checker, CoreIr, VC, and proof facts remain out of scope."
 tests = [
   "tests/miz/pass/resolve/pass_resolve_declaration_symbol_smoke_001.expect.toml",
+  "tests/miz/pass/resolve/pass_resolve_parameterized_local_attribute_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2057,6 +2094,7 @@ status = "covered"
 required = true
 coverage = "diagnostic"
 tests = [
+  "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_mode_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_structure_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_attributed_reserve_gap_001.expect.toml",
@@ -2069,6 +2107,18 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_non_builtin_type_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_payload_extraction_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_structure_qualified_attribute_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.argument_bearing_attribute_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 81 source-derived argument-bearing attribute reserve extraction gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2418,6 +2468,19 @@ required = true
 coverage = "pass_and_fail"
 deferred_reason = "Task 15 records this as an external_dependency_gap rather than adding fake active fixtures: mizar-test has no active proof_verification runner/tag gate, source-to-core and source-to-VC extraction seams are unavailable for `.miz` corpus inputs, ATP/proof/kernel/artifact consumers are not wired to mizar-vc outputs, and current parser/type-elaboration runners cannot validate VC generation, status policy, deterministic discharge, dependency-slice fingerprints, or proof-verification outcomes. Add active corpus cases only after proof_verification runner support, source-to-core/source-to-VC extraction, and downstream verifier/artifact seams exist."
 tests = []
+
+[[requirement]]
+id = "spec.en.resolve.symbols.parameterized_attribute_suffix"
+source = "doc/design/mizar-resolve/en/symbols.md"
+section = "Signature Shells"
+stage = "declaration_symbol"
+status = "covered"
+required = true
+coverage = "pass"
+notes = "Active declaration_symbol pass coverage records that a parameterized attribute declaration projects and exports the suffix as the lexer-visible primary spelling while preserving the prefixed surface as resolver notation/signature data. This does not credit checker AttributeInput argument extraction."
+tests = [
+  "tests/miz/pass/resolve/pass_resolve_parameterized_local_attribute_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.syntax.parser_minimal_token_stream"

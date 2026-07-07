@@ -377,11 +377,23 @@ for the documented `parser.type_fixtures` imported attribute summary and does
 not credit real imported attribute provenance, `AttributeInput` payload
 extraction, attributed-type evidence, positive attributed type elaboration,
 CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 81 may credit only the argument-bearing local-attribute extraction-gap
+boundary: the runner observes
+`type_elaboration.external_dependency.ast_payload_extraction` for a
+same-module parameterized attribute declared with `param_prefix` syntax and
+used through `attribute_name(args)`, and does not credit real term-argument
+provenance, checker `AttributeInput` argument payloads, attributed-type
+evidence, positive attributed type elaboration, CoreIr, ControlFlowIr, VC, or
+proof payloads.
+The declaration-symbol runner may separately credit the resolver suffix-primary
+projection for that declaration, including imported-lexicon visibility under
+the suffix, but this is not checker argument payload extraction.
 The supported reserve slices above, excluding task 67, task 68, task 69, task
 70, task 71 external-gap boundary cases, the task 75/task 76/task 77
 lower-stage boundary cases, the task 78 imported-structure external-gap case,
 the task 79 imported-mode external-gap case, and the task 80 imported-attribute
-external-gap case, are converted into a syntax-free checker source reserve payload, then the
+external-gap case, and the task 81 argument-bearing local-attribute external-gap
+case, are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one
 `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites,
 and `DeclarationChecker` output.
@@ -460,7 +472,11 @@ real imported structure provenance or structure evidence. Task 79 fail cases
 credit only the imported mode extraction-gap boundary and do not credit real
 imported mode provenance or mode expansion. Task 80 fail cases credit only the
 imported attribute extraction-gap boundary and do not credit real imported
-attribute provenance or attributed-type evidence. Task 75/76/77 fail
+attribute provenance or attributed-type evidence. Task 81 fail cases credit only
+the argument-bearing local-attribute extraction-gap boundary and do not credit
+real term-argument provenance, checker `AttributeInput` argument payloads,
+attributed-type evidence, or positive attributed type elaboration. Task
+75/76/77 fail
 cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker
 `ModeExpansion`, structure type-head, base-shape, constructor-witness,

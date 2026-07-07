@@ -698,6 +698,37 @@ impl LocalLexicalDeclarations {
         candidates
     }
 
+    pub(crate) fn declared_user_symbols_starting_at(
+        &self,
+        input: &str,
+        start: usize,
+        position: SourcePos,
+    ) -> Vec<UserSymbolCandidate> {
+        let Some(rest) = input.get(start..) else {
+            return Vec::new();
+        };
+
+        let mut longest_len = 0;
+        let mut candidates = Vec::new();
+        for declaration in &self.user_symbols {
+            if declaration.declared_at.start != position || !rest.starts_with(&declaration.spelling)
+            {
+                continue;
+            }
+            match declaration.spelling.len().cmp(&longest_len) {
+                std::cmp::Ordering::Greater => {
+                    longest_len = declaration.spelling.len();
+                    candidates.clear();
+                    candidates.push(declaration.candidate());
+                }
+                std::cmp::Ordering::Equal => candidates.push(declaration.candidate()),
+                std::cmp::Ordering::Less => {}
+            }
+        }
+        sort_user_symbol_candidates(&mut candidates);
+        candidates
+    }
+
     pub fn operator_metadata(
         &self,
         environment: &ActiveLexicalEnvironment,

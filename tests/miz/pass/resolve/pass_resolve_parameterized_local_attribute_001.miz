@@ -1,0 +1,4 @@
+definition
+  let x be set;
+  attr RankedDef: x is 2-ranked means thesis;
+end;
