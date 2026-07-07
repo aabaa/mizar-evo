@@ -1,0 +1,6 @@
+reserve x for marked set;
+
+definition
+  let x be set;
+  attr MarkedDef: x is marked means thesis;
+end;

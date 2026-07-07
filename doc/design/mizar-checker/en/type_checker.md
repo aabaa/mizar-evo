@@ -301,6 +301,14 @@ checker handoff. The runner must not fabricate a later structure type-head
 payload, successful reserve declaration, base-shape/constructor-witness
 evidence query, or downstream CoreIr/ControlFlowIr/VC/proof payload from the
 future declaration.
+Task 77 applies the same boundary to same-module local attributes: if a reserve
+type expression such as `marked set` uses an attribute before the attribute
+declaration item is active, lower-stage frontend/resolver processing rejects the
+type expression with the same
+`type_elaboration.lower_stage.frontend:malformed_type_expression` detail before
+checker handoff. The runner must not fabricate an `AttributeInput`,
+attributed-type evidence query, successful reserve declaration, or downstream
+CoreIr/ControlFlowIr/VC/proof payload from the future attribute declaration.
 Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case

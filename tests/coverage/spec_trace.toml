@@ -23,6 +23,7 @@ status = "covered"
 required = true
 coverage = "diagnostic"
 tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_attribute_forward_reference_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_local_mode_forward_reference_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_local_structure_forward_reference_gap_001.expect.toml",
 ]
@@ -663,6 +664,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.06.attributes.active_range.local_attribute_forward_reference"
+source = "doc/spec/en/06.attributes.md"
+section = "6.2 Syntax; 6.9 Complete Syntax"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_attribute_forward_reference_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.07.mode_definitions.parser"
 source = "doc/spec/en/07.modes.md"
 section = "7.2 Syntax for Declaring and Using Modes; 7.6 Unified Mode Syntax; 7.7 Dependent Modes; 7.8 Correctness Conditions; 7.8.1 Mode Property: `sethood`; 7.10 Complete Syntax"
@@ -839,6 +852,7 @@ status = "covered"
 required = true
 coverage = "diagnostic"
 tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_attribute_forward_reference_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_local_mode_forward_reference_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_local_structure_forward_reference_gap_001.expect.toml",
 ]
@@ -1773,6 +1787,18 @@ required = true
 coverage = "pass_and_fail"
 deferred_reason = "Task 29 cannot add active formula_statement `.miz` cases yet: mizar-test has no active formula_statement runner/tag gate, and mizar-checker still lacks AST-wide source-to-checker extraction for statement assumptions, formula payloads, local proof contexts, and recorded facts. Add equality, predicate, quantifier, assumption, label, and statement-failure corpus cases only after MC-G019/MC-G020 and runner support are implemented."
 tests = []
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.active_range.local_attribute_forward_reference_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 77 source-derived local attribute forward-reference active-range boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_attribute_forward_reference_gap_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.active_range.local_mode_forward_reference_gap"

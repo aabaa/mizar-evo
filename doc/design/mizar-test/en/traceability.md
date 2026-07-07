@@ -354,9 +354,13 @@ Task 76 may credit only the matching active-range/no-forward-reference
 boundary for a forward local-structure reserve head: the runner observes the
 same lower-stage detail before checker handoff and does not credit checker
 structure type-head, base-shape, or constructor-witness payload extraction.
+Task 77 may credit only the matching active-range/no-forward-reference
+boundary for a forward local-attribute reserve type expression: the runner
+observes the same lower-stage detail before checker handoff and does not credit
+checker `AttributeInput` payload extraction or attributed-type evidence queries.
 The supported reserve slices above, excluding task 67, task 68, task 69, task
-70, task 71 external-gap boundary cases, and the task 75/task 76 lower-stage
-boundary cases, are converted into a syntax-free checker source reserve
+70, task 71 external-gap boundary cases, and the task 75/task 76/task 77
+lower-stage boundary cases, are converted into a syntax-free checker source reserve
 payload, then the checker-owned seam builds the module `BindingEnv`, one
 `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites,
 and `DeclarationChecker` output.
@@ -429,10 +433,11 @@ Task 72 pass cases credit only the source-derived two-edge bare local-mode
 chain bridge, and task 73 pass cases credit only the corresponding three-edge
 bare local-mode chain bridge, and task 74 pass cases credit only the structural bare-chain bridge; unsupported chains do not credit broader mode
 expansion, structure/attributed-builtin terminals beyond the existing one-edge
-diagnostics, or CoreIr/ControlFlowIr/VC/proof promotion. Task 75/76 fail cases
-credit only the lower-stage active-range boundary for forward local-mode or
-local-structure references and do not credit checker `ModeExpansion`,
-structure type-head, base-shape, or constructor-witness production.
+diagnostics, or CoreIr/ControlFlowIr/VC/proof promotion. Task 75/76/77 fail
+cases credit only the lower-stage active-range boundary for forward local-mode,
+local-structure, or local-attribute references and do not credit checker
+`ModeExpansion`, structure type-head, base-shape, constructor-witness,
+`AttributeInput`, or attributed-type evidence production.
 
 Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and

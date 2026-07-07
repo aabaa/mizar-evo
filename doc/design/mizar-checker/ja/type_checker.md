@@ -286,6 +286,14 @@ lower-stage frontend/resolver processing は checker handoff 前に
 expression を拒否する。runner は future declaration から structure type-head
 payload、successful reserve declaration、base-shape / constructor-witness
 evidence query、CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。
+task 77 は同じ boundary を same-module local attribute に適用する。
+`marked set` のような reserve type expression が、その attribute declaration
+item が active になる前に attribute を使う場合、lower-stage frontend/resolver
+processing は checker handoff 前に
+`type_elaboration.lower_stage.frontend:malformed_type_expression` で type
+expression を拒否する。runner は future attribute declaration から
+`AttributeInput`、attributed-type evidence query、successful reserve
+declaration、CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。
 task 57 はさらに、RHS が type argument を持たない same-module
 local structure head である bare same-module no-argument local mode expansion を許可する。
 この case は real `ModeExpansion` を消費するため missing mode-expansion payload diagnostic を

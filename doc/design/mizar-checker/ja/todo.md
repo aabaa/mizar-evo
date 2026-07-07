@@ -1635,6 +1635,20 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       mizar-test task 10、spec 02 active range、spec 05 structures、spec 11 symbol
       management。
 
+77. **Source-derived local attribute forward-reference active-range boundary を追加する。** [x]
+    - declaration item が active になる前に、後続 same-module local attribute
+      declaration を reserve type が使う active fail coverage を追加する。
+    - Acceptance: active type-elaboration runner は checker handoff 前に
+      `type_elaboration.lower_stage.frontend:malformed_type_expression` を報告し、
+      future declaration から `AttributeInput` を捏造せず、successful reserve
+      declaration、attributed-type evidence query、CoreIr、ControlFlowIr、VC、
+      proof payload を昇格しない。forward reference acceptance は Chapter 2/11
+      active-range rule により forbidden のまま。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、50、75、76。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 02 active range、spec 06 attributes、spec 11 symbol
+      management。
+
 ## 推奨検証
 
 各タスクの後で実行する:

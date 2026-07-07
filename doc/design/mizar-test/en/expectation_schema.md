@@ -523,13 +523,15 @@ sidecars, task 73 permits three-edge bare local-mode chain pass sidecars, and
 task 74 permits structural bare local-mode chain pass sidecars to use an empty
 diagnostic payload list; unsupported structural-guard failures still require
 the checker missing mode-expansion payload plus recovery detail keys.
-Task 75 permits forward local-mode reserve head fail sidecars, and task 76
-permits forward local-structure reserve head fail sidecars, to use
+Task 75 permits forward local-mode reserve head fail sidecars, task 76 permits
+forward local-structure reserve head fail sidecars, and task 77 permits forward
+local-attribute reserve type fail sidecars to use
 `failure_category = "lower_stage_error"` with
 `stable_detail_key = "type_elaboration.lower_stage.frontend:malformed_type_expression"`
 when a reserve head names a later local declaration before it is active. Those
 sidecars do not credit checker `ModeExpansion`, structure type-head,
-base-shape, or constructor-witness production.
+base-shape, constructor-witness, `AttributeInput`, or attributed-type evidence
+production.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source
