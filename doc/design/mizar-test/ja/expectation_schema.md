@@ -461,6 +461,8 @@ task 59 は real direct bare-builtin expansion を持つ attributed local-mode r
 attributed-type existential evidence 欠落のため evidence-query key で停止することを許可する。
 task 60 は real direct local-structure RHS expansion を持つ attributed local-mode reserve head が、
 base-shape / constructor-witness と full attributed-type evidence 欠落のため evidence-query key で停止することを許可する。
+task 61 は real direct attributed-builtin RHS expansion を持つ attributed local-mode reserve head が、
+full attributed-type evidence 欠落のため evidence-query key で停止することを許可する。
 これらは fail case であり、pass-slice coverage ではない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source

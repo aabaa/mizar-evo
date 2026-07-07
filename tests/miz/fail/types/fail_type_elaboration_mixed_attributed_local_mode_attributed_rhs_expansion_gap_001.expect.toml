@@ -1,0 +1,22 @@
+schema_version = 1
+id = "fail_type_elaboration_mixed_attributed_local_mode_attributed_rhs_expansion_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_mixed_attributed_local_mode_attributed_rhs_expansion_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_mode_expansion_payload"
+stable_detail_key = "type_elaboration.checker.checker.type.external.mode_expansion_payload"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+  "type_elaboration.checker.checker.type.recovery",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction.attributed_local_mode_expansion_gap",
+  "spec.en.checker.type_elaboration.payload_extraction.local_mode_expansion_gap",
+]
+notes = "Active type_elaboration runner coverage for checker tasks 54, 58, and 61: a same-module local mode with a real direct attributed builtin RHS is deliberately used both as a bare reserve head and as an attributed reserve head, so the runner withholds the otherwise available attributed-RHS expansion for that symbol and checker normalization fails closed on the missing mode-expansion payload."

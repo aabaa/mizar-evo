@@ -259,10 +259,10 @@ that dependency mode has its own accepted task-55 bare builtin `set` /
 both definition nodes are uniquely paired in the AST, and no reserve binding
 uses attributes on either chain symbol. Forward, ambiguous, partial, imported,
 argument-bearing, parameterized, contextual, cyclic, attributed-structure RHS,
-attributed-RHS chains, or attributed-builtin RHS mode definitions outside the
-task-58 direct slice remain on the missing-expansion / extraction-gap path,
-and the checker-owned seam must not fabricate expansion or existential
-evidence. Task 57 additionally permits a bare same-module
+attributed-RHS chains outside the task-58/task-61 direct slices, or broader
+attributed-builtin RHS mode definitions remain on the missing-expansion /
+extraction-gap path, and the checker-owned seam must not fabricate expansion
+or existential evidence. Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case
 must not report the missing mode-expansion payload diagnostic; however, the
@@ -285,7 +285,16 @@ attributed builtin `set` / `object` type. The real `ModeExpansion` is
 consumed, so the case must not report the missing mode-expansion payload
 diagnostic; however, the expanded attributed type still fails closed with
 `checker.declaration.deferred.evidence_query` until real attributed-type
-existential evidence extraction exists. Task 52 additionally permits
+existential evidence extraction exists. Task 61 additionally permits that
+direct attributed-builtin RHS expansion for an attributed local-mode reserve
+head only when the mode definition is unique, unrecovered, preceding,
+no-argument, and free of definition-local context, and the same mode is not
+also used as a bare reserve head in the same bridge input. The expanded
+attributed type fails closed with
+`checker.declaration.deferred.evidence_query` until real attributed-type
+existential evidence extraction exists; mixed bare/attributed uses,
+dependencies/chains, imported or argument-bearing symbols, structure RHSs, and
+attributed structure RHSs remain outside this slice. Task 52 additionally permits
 un-attributed reserve type heads that resolve to a unique same-module
 `LocalSource` `SymbolKind::Structure` entry with no type arguments. Those
 local-structure reserve declarations reach declaration checking and fail

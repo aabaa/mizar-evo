@@ -257,7 +257,12 @@ structure-RHS diagnostic-only fail slice として、reserve head が attributed
 argument-free same-module local mode で、runner が task-57 由来の unique /
 preceding / no-context 条件の下で real direct local-structure RHS expansion を導出し、
 checker が missing base-shape / constructor-witness と full attributed-type evidence
-query を報告する場合を credit してよい。これらの source を syntax-free
+query を報告する場合を credit してよい。task 61 は direct attributed-root
+attributed-builtin-RHS diagnostic-only fail slice として、reserve head が attributed
+argument-free same-module local mode で、runner が task-58 由来の unique /
+preceding / no-context 条件の下で real direct attributed-builtin RHS expansion を導出し、
+checker が missing full attributed-type existential evidence query を報告する場合を
+credit してよい。これらの source を syntax-free
 checker source reserve payload へ変換し、checker-owned seam が module `BindingEnv`、
 binding ごとの `DeclarationInput`、binding 固有の `TypeExpressionInput` site、
 `DeclarationChecker` output を構築する。runner はその handoff を checker-owned
@@ -287,12 +292,15 @@ task-59 の real direct bare-builtin expansion を持つ attributed local-mode r
 task-60 の real direct local-structure RHS expansion を持つ attributed local-mode
 reserve head における missing base-shape / constructor-witness と full attributed-type
 evidence、
+task-61 の real direct attributed-builtin RHS expansion を持つ attributed local-mode
+reserve head における missing full attributed-type existential evidence、
 または same-module local mode reserve head の missing
 mode-expansion payload diagnostic（mixed attributed/bare
 local-mode source を含む）の checker detail key を代わりに assert してよい。task 56 の
 attributed-chain-dependency fail case は同じ missing mode-expansion payload family に属し、
-partial chain expansion は credit しない。attributed-RHS chain も task 58 では credit せず、
-structure-RHS chain も task 60 の direct attributed-root slice では credit しない。
+partial chain expansion は credit しない。attributed-RHS chain も task 58 / task 61 の
+direct slice では credit せず、structure-RHS chain も task 60 の direct attributed-root
+slice では credit しない。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
 `proof_verification` row は deferred のままにする。summary/context readiness read は

@@ -1,0 +1,11 @@
+definition
+  let x be set;
+  attr MarkedDef: x is marked means thesis;
+end;
+
+definition
+  mode MarkedModeDef: MarkedMode is marked set;
+end;
+
+reserve x for MarkedMode;
+reserve y for marked MarkedMode;

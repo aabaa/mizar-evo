@@ -1283,6 +1283,39 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       use、dependency / chain、CoreIr、ControlFlowIr、VC、proof payload、より広い semantic
       pass coverage は deferred のままにする。
 
+61. **Source-derived attributed local mode attributed-builtin-RHS evidence-gap bridge.** [x]
+    - task-58 attributed-builtin RHS bridge を、same-module attributed local-mode reserve
+      head に対して real `ModeExpansion` payload を生成する最小範囲だけ拡張する。mode
+      definition は unique / unrecovered / preceding / no-argument、definition-local
+      context なしで、direct attributed builtin `set` / `object` RHS を持つ必要がある。
+      同じ bridge input 内で同じ mode が bare reserve head として使われていてはならない。
+    - Acceptance: checker unit coverage は、real `Mode -> marked set` expansion を持つ
+      `marked Mode` が `checker.type.external.mode_expansion_payload` を出さず、reserve
+      head と RHS の normalized attribute を保持し、declaration を
+      `MissingEvidenceQuery` 付き partial にし、verified fact を export しないことを証明する。
+      runner unit coverage は、single attributed local-mode reserve use が real direct
+      attributed-builtin RHS expansion を受け取り、mixed bare/attributed use と attributed
+      RHS へ至る dependency chain は expansion を withheld し続けることを証明する。新しい
+      active `type_elaboration` fail fixture は real `.miz` source path を
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query` で cover し、
+      追加の active fail fixture は mixed attributed-RHS と attributed-RHS chain exclusion を
+      missing-expansion diagnostic で cover する。imported / argument-bearing attribute/mode、
+      dependency、chain、structure RHS、attributed structure RHS、successful attributed
+      declaration、existential evidence extraction、CoreIr / ControlFlowIr / VC / proof payload は
+      slice 外に残す。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、50、54、55、58、59。full attributed-type existential evidence と
+      より広い mode expansion は MC-G020 / MC-G026 のまま。参照: Step 5 source-derived
+      semantic bridge、mizar-test task 10、spec 03 type expressions、spec 06 attributes、
+      spec 07 modes、spec 17 attributed-type evidence。
+    - task 61 で完了: `mizar-test` は同じ mode に mixed bare reserve use がない
+      same-module attributed reserve head について real AST-derived direct attributed-builtin
+      RHS expansion を抽出し、`mizar-checker` は expanded attributed reserve declaration を
+      missing expansion-payload diagnostic ではなく既存の missing evidence-query diagnostic へ
+      route する。positive attributed acceptance、existential evidence extraction、mixed
+      attributed/bare use、dependency / chain、CoreIr、ControlFlowIr、VC、proof payload、より広い
+      semantic pass coverage は deferred のままにする。
+
 ## 推奨検証
 
 各タスクの後で実行する:

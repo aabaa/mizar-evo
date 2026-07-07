@@ -7069,6 +7069,112 @@ mod tests {
             "attributed mode expansions must not seed facts without existential evidence"
         );
 
+        let attributed_reserve_attributed_expansion_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 10),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 17),
+                    "non marked Mode",
+                    TypeHeadInput::Symbol(symbol_id("Mode/0", "pkg::main::Mode/0")),
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    attributed_expansion_attr.clone(),
+                    AttributePolarity::Negative,
+                    range(source, 4, 14),
+                    "non marked",
+                )]),
+            ],
+        )
+        .expect("attributed local mode reserve payload should validate source shape");
+        let attributed_reserve_attributed_expansion_handoff =
+            attributed_reserve_attributed_expansion_bridge
+                .check_with_mode_expansions(
+                    &attributed_expansion_symbols,
+                    [(
+                        symbol_id("Mode/0", "pkg::main::Mode/0"),
+                        ModeExpansion::new(
+                            TypeExpressionInput::new(
+                                site(784),
+                                range(source, 80, 83),
+                                "set",
+                                TypeHeadInput::BuiltinSet,
+                            ),
+                            vec![AttributeInput::new(
+                                attributed_expansion_attr.clone(),
+                                AttributePolarity::Negative,
+                                range(source, 70, 80),
+                                "non marked",
+                            )],
+                        ),
+                    )],
+                )
+                .expect("attributed reserve with attributed expansion should reach checking");
+        assert!(
+            diagnostic_ranges(
+                &attributed_reserve_attributed_expansion_handoff.declarations,
+                "checker.type.external.mode_expansion_payload"
+            )
+            .is_empty()
+        );
+        assert_eq!(
+            diagnostic_ranges(
+                &attributed_reserve_attributed_expansion_handoff.declarations,
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        let attributed_reserve_attributed_expansion_declaration =
+            declarations_by_binding(attributed_reserve_attributed_expansion_handoff.declarations())
+                .remove(&BindingId::new(0))
+                .expect("checked attributed reserve/expansion declaration should exist");
+        assert_eq!(
+            attributed_reserve_attributed_expansion_declaration.status,
+            DeclarationStatus::Partial
+        );
+        let attributed_reserve_attributed_expansion_type_entry =
+            attributed_reserve_attributed_expansion_handoff
+                .declarations()
+                .type_entries()
+                .get(
+                    attributed_reserve_attributed_expansion_declaration
+                        .type_entry
+                        .expect("attributed reserve/expansion should keep a type entry"),
+                )
+                .expect("attributed reserve/expansion type entry should exist");
+        assert_eq!(
+            attributed_reserve_attributed_expansion_type_entry.status,
+            TypeStatus::Unknown
+        );
+        let TypeEntryActual::Known(attributed_reserve_attributed_expansion_normalized_id) =
+            attributed_reserve_attributed_expansion_type_entry.actual
+        else {
+            panic!("attributed reserve/expansion should keep a normalized type");
+        };
+        let attributed_reserve_attributed_expansion_normalized =
+            attributed_reserve_attributed_expansion_handoff
+                .declarations()
+                .normalized_types()
+                .get(attributed_reserve_attributed_expansion_normalized_id)
+                .expect("normalized attributed reserve/expansion type should exist");
+        assert_eq!(
+            attributed_reserve_attributed_expansion_normalized
+                .attributes
+                .negative()
+                .len(),
+            1
+        );
+        assert!(
+            attributed_reserve_attributed_expansion_handoff
+                .declarations()
+                .facts()
+                .is_empty(),
+            "attributed reserve heads with attributed expansions must not seed facts"
+        );
+
         let chained_attributed_attr = symbol_id("marked/0", "pkg::main::marked/0");
         let chained_attributed_mode = symbol_id("Mode/0", "pkg::main::Mode/0");
         let chained_attributed_alias = symbol_id("Alias/0", "pkg::main::Alias/0");
