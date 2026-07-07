@@ -519,8 +519,9 @@ external extraction-gap key before bracket type-argument payload extraction or
 structure-head resolution because real bracket type-argument and
 `qua`-argument provenance are still absent. Tasks 67-71 are fail cases, not
 pass-slice coverage. Task 72 permits two-edge bare local-mode chain pass
-sidecars to use an empty diagnostic payload list and permits cold/cached
-three-edge guard fail sidecars to require the checker missing mode-expansion
+sidecars, and task 73 permits three-edge bare local-mode chain pass sidecars,
+to use an empty diagnostic payload list; task 73 also permits cold/cached
+four-edge guard fail sidecars to require the checker missing mode-expansion
 payload plus recovery detail keys.
 
 Detailed type assertion tables and broader type pass expectations remain

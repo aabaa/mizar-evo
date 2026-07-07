@@ -841,7 +841,7 @@ struct SourceModeExpansionEntry {
     chain_terminal_is_safe_builtin: bool,
 }
 
-const MAX_BARE_LOCAL_MODE_CHAIN_DEPTH: usize = 2;
+const MAX_BARE_LOCAL_MODE_CHAIN_DEPTH: usize = 3;
 
 fn extract_builtin_source_reserve_declarations(
     ast: &SurfaceAst,
@@ -6176,7 +6176,7 @@ mod tests {
             "mode expansion chains require each dependency definition to precede its use"
         );
 
-        let deeper_symbols = source_local_symbols_env(
+        let three_edge_symbols = source_local_symbols_env(
             ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
             &[
                 ("A", SymbolKind::Mode),
@@ -6185,8 +6185,8 @@ mod tests {
                 ("D", SymbolKind::Mode),
             ],
         );
-        let deeper_module = deeper_symbols.module_id().clone();
-        let deeper_chain = mode_chain_reserve_ast(
+        let three_edge_module = three_edge_symbols.module_id().clone();
+        let three_edge_chain = mode_chain_reserve_ast(
             source,
             [
                 mode_definition("A", ReserveTypeShape::Builtin("set")),
@@ -6199,6 +6199,68 @@ mod tests {
                 ReserveTypeShape::QualifiedSymbol("D"),
             )],
         );
+        let three_edge_extraction = extract_builtin_source_reserve_declarations(
+            &three_edge_chain,
+            three_edge_module.clone(),
+            &three_edge_symbols,
+        )
+        .expect("three-edge chain reserve should extract");
+        let three_edge_a =
+            resolve_visible_type_head(&three_edge_symbols, &three_edge_module, "A").unwrap();
+        let three_edge_b =
+            resolve_visible_type_head(&three_edge_symbols, &three_edge_module, "B").unwrap();
+        let three_edge_c =
+            resolve_visible_type_head(&three_edge_symbols, &three_edge_module, "C").unwrap();
+        let three_edge_d =
+            resolve_visible_type_head(&three_edge_symbols, &three_edge_module, "D").unwrap();
+        assert_eq!(three_edge_extraction.mode_expansions().len(), 4);
+        assert!(
+            three_edge_extraction
+                .mode_expansions()
+                .contains_key(&three_edge_a)
+        );
+        assert!(
+            three_edge_extraction
+                .mode_expansions()
+                .contains_key(&three_edge_b)
+        );
+        assert!(
+            three_edge_extraction
+                .mode_expansions()
+                .contains_key(&three_edge_c)
+        );
+        assert!(
+            three_edge_extraction
+                .mode_expansions()
+                .contains_key(&three_edge_d),
+            "task 73 admits three local-mode dependency edges beyond the reserve head"
+        );
+
+        let deeper_symbols = source_local_symbols_env(
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
+            &[
+                ("A", SymbolKind::Mode),
+                ("B", SymbolKind::Mode),
+                ("C", SymbolKind::Mode),
+                ("D", SymbolKind::Mode),
+                ("E", SymbolKind::Mode),
+            ],
+        );
+        let deeper_module = deeper_symbols.module_id().clone();
+        let deeper_chain = mode_chain_reserve_ast(
+            source,
+            [
+                mode_definition("A", ReserveTypeShape::Builtin("set")),
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("A")),
+                mode_definition("C", ReserveTypeShape::QualifiedSymbol("B")),
+                mode_definition("D", ReserveTypeShape::QualifiedSymbol("C")),
+                mode_definition("E", ReserveTypeShape::QualifiedSymbol("D")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("E"),
+            )],
+        );
         let deeper_extraction = extract_builtin_source_reserve_declarations(
             &deeper_chain,
             deeper_module,
@@ -6207,7 +6269,7 @@ mod tests {
         .expect("deeper chain reserve should still extract");
         assert!(
             deeper_extraction.mode_expansions().is_empty(),
-            "task 72 admits only two local-mode dependency edges beyond the reserve head"
+            "task 73 admits only three local-mode dependency edges beyond the reserve head"
         );
 
         let cached_deeper_module =
@@ -6219,6 +6281,7 @@ mod tests {
                 ("B", SymbolKind::Mode),
                 ("C", SymbolKind::Mode),
                 ("D", SymbolKind::Mode),
+                ("E", SymbolKind::Mode),
             ],
         );
         let cached_deeper_chain = mode_chain_reserve_ast(
@@ -6228,10 +6291,11 @@ mod tests {
                 mode_definition("B", ReserveTypeShape::QualifiedSymbol("A")),
                 mode_definition("C", ReserveTypeShape::QualifiedSymbol("B")),
                 mode_definition("D", ReserveTypeShape::QualifiedSymbol("C")),
+                mode_definition("E", ReserveTypeShape::QualifiedSymbol("D")),
             ],
             vec![
-                reserve_item(vec!["y"], ReserveTypeShape::QualifiedSymbol("C")),
-                reserve_item(vec!["z"], ReserveTypeShape::QualifiedSymbol("D")),
+                reserve_item(vec!["y"], ReserveTypeShape::QualifiedSymbol("D")),
+                reserve_item(vec!["z"], ReserveTypeShape::QualifiedSymbol("E")),
             ],
         );
         let cached_deeper_extraction = extract_builtin_source_reserve_declarations(
@@ -6248,6 +6312,8 @@ mod tests {
             resolve_visible_type_head(&cached_deeper_symbols, &cached_deeper_module, "C").unwrap();
         let cached_d =
             resolve_visible_type_head(&cached_deeper_symbols, &cached_deeper_module, "D").unwrap();
+        let cached_e =
+            resolve_visible_type_head(&cached_deeper_symbols, &cached_deeper_module, "E").unwrap();
         assert!(
             cached_deeper_extraction
                 .mode_expansions()
@@ -6261,14 +6327,19 @@ mod tests {
         assert!(
             cached_deeper_extraction
                 .mode_expansions()
-                .contains_key(&cached_c),
-            "cached two-edge expansion payloads remain available for the supported reserve"
+                .contains_key(&cached_c)
+        );
+        assert!(
+            cached_deeper_extraction
+                .mode_expansions()
+                .contains_key(&cached_d),
+            "cached three-edge expansion payloads remain available for the supported reserve"
         );
         assert!(
             !cached_deeper_extraction
                 .mode_expansions()
-                .contains_key(&cached_d),
-            "cached two-edge expansion payloads must not let a deeper chain bypass the cap"
+                .contains_key(&cached_e),
+            "cached three-edge expansion payloads must not let a deeper chain bypass the cap"
         );
 
         let cached_structure_rhs_module =

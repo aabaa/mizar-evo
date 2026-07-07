@@ -1546,11 +1546,32 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       attributes なし、arguments なしの条件で real `ModeExpansion` payload をすべて
       抽出し、reserve declaration は既存の `TypedAst`、`ResolvedTypedAst`、
       summary-readiness、binder-only `CoreContext` preparation path を通る。
-      cold path と cached dependency reuse の three-edge local-mode chain は
+      cold path と cached dependency reuse の three-edge local-mode chain は当時
       `type_elaboration.checker.checker.type.external.mode_expansion_payload` に残し、
-      two-edge cap が暗黙に広がらないようにする。
+      two-edge cap が暗黙に広がらないようにした。task 73 は同じ seam を
+      three-edge へ昇格し、guard を four-edge へ移している。
     - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
     - 依存: tasks 48、55、56。attributed root / dependency、既存 one-edge
+      diagnostic slice を超える structure / attributed-builtin terminal、
+      imported / argument-bearing / parameterized / contextual / ambiguous /
+      cyclic / forward-reference definition、deeper chain、CoreIr、ControlFlowIr、
+      VC、proof payload、broader mode extraction は MC-G020/MC-G014 のまま。参照:
+      Step 5 source-derived semantic bridge、mizar-test task 10、spec 03 type
+      expressions、spec 07 modes。
+
+73. **Source-derived three-edge bare local mode chain bridge を追加する。** [x]
+    - task 72 の pass producer を、bare same-module no-argument local-mode chain
+      `Outer -> Middle -> Inner -> Base -> set` / `object` だけに拡張する。
+    - Acceptance: active runner は unique / unrecovered / same-module な mode
+      definition 4 個から、source order、definition-local context なし、
+      attributes なし、arguments なしの条件で real `ModeExpansion` payload をすべて
+      抽出し、reserve declaration は既存の `TypedAst`、`ResolvedTypedAst`、
+      summary-readiness、binder-only `CoreContext` preparation path を通る。
+      cold path と cached dependency reuse の four-edge local-mode chain は
+      `type_elaboration.checker.checker.type.external.mode_expansion_payload` に残し、
+      three-edge cap が暗黙に広がらないようにする。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、55、56、72。attributed root / dependency、既存 one-edge
       diagnostic slice を超える structure / attributed-builtin terminal、
       imported / argument-bearing / parameterized / contextual / ambiguous /
       cyclic / forward-reference definition、deeper chain、CoreIr、ControlFlowIr、

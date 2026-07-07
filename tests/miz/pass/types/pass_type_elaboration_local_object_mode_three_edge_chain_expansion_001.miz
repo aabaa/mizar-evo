@@ -1,0 +1,17 @@
+definition
+  mode BaseObjectModeDef: BaseObjectMode is object;
+end;
+
+definition
+  mode InnerObjectModeDef: InnerObjectMode is BaseObjectMode;
+end;
+
+definition
+  mode MiddleObjectModeDef: MiddleObjectMode is InnerObjectMode;
+end;
+
+definition
+  mode OuterObjectModeDef: OuterObjectMode is MiddleObjectMode;
+end;
+
+reserve z for OuterObjectMode;

@@ -1,9 +1,9 @@
 schema_version = 1
-id = "fail_type_elaboration_local_mode_cached_three_edge_chain_gap_001"
+id = "fail_type_elaboration_local_mode_cached_four_edge_chain_gap_001"
 kind = "fail"
 stage = "type_elaboration"
 domain = "checker.type_elaboration"
-source = "fail_type_elaboration_local_mode_cached_three_edge_chain_gap_001.miz"
+source = "fail_type_elaboration_local_mode_cached_four_edge_chain_gap_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
@@ -17,6 +17,6 @@ diagnostic_payloads = [
 tags = ["active_type_elaboration"]
 spec_refs = [
   "spec.en.checker.type_elaboration.payload_extraction",
-  "spec.en.checker.type_elaboration.payload_extraction.local_mode_three_edge_chain_gap",
+  "spec.en.checker.type_elaboration.payload_extraction.local_mode_four_edge_chain_gap",
 ]
-notes = "Active type_elaboration runner guard coverage for checker task 72: a source first reserves a valid two-edge same-module local mode chain, then reuses that cached chain as the dependency of a deeper outer local mode. The outer three-edge chain must stay outside the two-edge bridge and fail closed on the missing mode-expansion payload diagnostic."
+notes = "Active type_elaboration runner guard coverage for checker task 73: a source first reserves a valid three-edge same-module local mode chain, then reuses that cached chain as the dependency of a deeper outer local mode. The outer four-edge chain must stay outside the three-edge bridge and fail closed on the missing mode-expansion payload diagnostic."

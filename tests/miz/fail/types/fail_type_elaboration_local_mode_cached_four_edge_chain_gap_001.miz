@@ -14,5 +14,9 @@ definition
   mode OuterModeDef: OuterMode is MiddleMode;
 end;
 
-reserve y for MiddleMode;
-reserve z for OuterMode;
+definition
+  mode TooDeepModeDef: TooDeepMode is OuterMode;
+end;
+
+reserve y for OuterMode;
+reserve z for TooDeepMode;

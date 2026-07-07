@@ -11,9 +11,9 @@ Score caps applied: none.
 
 Post-closeout continuation: this report remains the closeout for the original
 task-34 explicit-payload checker milestone. Step 5 source-derived bridge tasks
-48-72 are post-closeout continuation tasks tracked in the crate plan, TODO,
-source/spec audit, and corpus traceability. Task 72 adds a source-derived
-two-edge bare local-mode chain pass slice plus cold/cached three-edge guards
+48-73 are post-closeout continuation tasks tracked in the crate plan, TODO,
+source/spec audit, and corpus traceability. Task 73 adds a source-derived
+three-edge bare local-mode chain pass slice plus cold/cached four-edge guards
 without changing the original score or claiming AST-wide extraction,
 CoreIr/ControlFlowIr/VC, or proof payload promotion.
 

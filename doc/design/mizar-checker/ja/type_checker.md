@@ -260,8 +260,13 @@ definition-local-context-free / source-preceding である場合に限り、
 fixture は既存の `TypedAst`、`ResolvedTypedAst`、summary-readiness、binder-only
 `CoreContext` preparation path を通るが、新しい CoreIr / ControlFlowIr / VC / proof
 payload は昇格しない。別の supported reserve binding によって middle dependency が
-cache 済みである場合も含め、three-edge local-mode dependency chain は missing
-mode-expansion diagnostic に残し、cap を明示する。task 57 はさらに、RHS が type argument を持たない same-module
+cache 済みである場合も含め、three-edge local-mode dependency chain は task 72 時点で
+missing mode-expansion diagnostic に残していた。task 73 は同じ source-derived seam を
+さらに 1 dependency edge 昇格し、4 個すべての mode definition が同じ
+unique / same-module / no-argument / definition-local-context-free /
+source-preceding 制約を満たす場合に `Outer -> Middle -> Inner -> Base -> set` /
+`object` を pass させる。cold / cached four-edge chain は missing mode-expansion
+diagnostic に残し、cap を明示する。task 57 はさらに、RHS が type argument を持たない same-module
 local structure head である bare same-module no-argument local mode expansion を許可する。
 この case は real `ModeExpansion` を消費するため missing mode-expansion payload diagnostic を
 出してはならない。ただし expanded structure radix は real base-shape /

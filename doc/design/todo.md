@@ -259,7 +259,9 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
 bracket-form local mode reserve extraction-gap boundary slice, task 71 added
 the bracket-form local structure reserve extraction-gap boundary slice, and
 task 72 added the two-edge bare local-mode chain expansion pass slice plus the
-three-edge cold/cached guard).
+three-edge cold/cached guard, and task 73 promoted the same source-derived
+bare local-mode chain seam to three edges while moving the cold/cached guard to
+four edges).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate
 semantic payloads; promote corpus rows only with prepared consumers.

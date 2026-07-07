@@ -273,9 +273,13 @@ definition-local-context-free, and source-preceding. The active pass fixtures
 continue through the existing `TypedAst`, `ResolvedTypedAst`, summary-readiness,
 and binder-only `CoreContext` preparation path, but do not promote new
 CoreIr/ControlFlowIr/VC/proof payloads. Three-edge local-mode dependency
-chains, including chains whose middle dependency was already cached by another
-supported reserve binding, remain on the missing mode-expansion diagnostic so
-the cap is explicit.
+chains originally remained on the missing mode-expansion diagnostic for task
+72. Task 73 promotes the same source-derived seam one more dependency edge:
+`Outer -> Middle -> Inner -> Base -> set` / `object` may pass when all four
+mode definitions satisfy the same uniqueness, same-module, no-argument,
+definition-local-context-free, and source-preceding constraints. Cold and
+cached four-edge chains remain on the missing mode-expansion diagnostic so the
+cap is explicit.
 Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case

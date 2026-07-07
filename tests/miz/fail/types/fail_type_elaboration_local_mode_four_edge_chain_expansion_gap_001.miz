@@ -1,0 +1,21 @@
+definition
+  mode BaseModeDef: BaseMode is set;
+end;
+
+definition
+  mode InnerModeDef: InnerMode is BaseMode;
+end;
+
+definition
+  mode MiddleModeDef: MiddleMode is InnerMode;
+end;
+
+definition
+  mode OuterModeDef: OuterMode is MiddleMode;
+end;
+
+definition
+  mode TooDeepModeDef: TooDeepMode is OuterMode;
+end;
+
+reserve z for TooDeepMode;
