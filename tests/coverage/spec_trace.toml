@@ -15,6 +15,18 @@
 # tests = []
 
 [[requirement]]
+id = "spec.en.02.lexical.active_range.local_declaration_no_forward_reference"
+source = "doc/spec/en/02.lexical_structure.md"
+section = "2.5.2 User-Defined Symbolic Names: Active range rules"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_mode_forward_reference_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.02.lexical.annotations.markers"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.9.2 Annotations"
@@ -651,6 +663,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.07.modes.active_range.local_mode_forward_reference"
+source = "doc/spec/en/07.modes.md"
+section = "7.2 Syntax for Declaring and Using Modes"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_mode_forward_reference_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.07.modes.existential_gating.semantic"
 source = "doc/spec/en/07.modes.md"
 section = "7.8 Correctness Conditions; with 17.1 activation ordering and 17.3.4 inhabitation evidence table"
@@ -791,6 +815,18 @@ required = true
 coverage = "manual_review"
 tests = [
   "tests/property/lexical_environment_phase4_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.11.symbol_management.active_lexicon.no_forward_reference"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.2 Scope and Visibility"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_mode_forward_reference_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1723,6 +1759,18 @@ required = true
 coverage = "pass_and_fail"
 deferred_reason = "Task 29 cannot add active formula_statement `.miz` cases yet: mizar-test has no active formula_statement runner/tag gate, and mizar-checker still lacks AST-wide source-to-checker extraction for statement assumptions, formula payloads, local proof contexts, and recorded facts. Add equality, predicate, quantifier, assumption, label, and statement-failure corpus cases only after MC-G019/MC-G020 and runner support are implemented."
 tests = []
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.active_range.local_mode_forward_reference_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 75 source-derived local mode forward-reference active-range boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_mode_forward_reference_gap_001.expect.toml",
+]
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.builtin_type_expression_source_bridge"

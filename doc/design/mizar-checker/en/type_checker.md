@@ -286,7 +286,13 @@ attribute-free, and the terminal RHS is exactly builtin `set` / `object`. The
 producer carries an AST-derived traversal budget equal to the number of source
 mode definitions; that budget is a resource guard, not a semantic chain-length
 limit. Chains that violate those structural guards remain on the
-missing-expansion / extraction-gap path.
+missing-expansion / extraction-gap path. Task 75 fixes the forward-reference
+boundary for this family: if a reserve head names a local mode before that
+mode declaration item is active, lower-stage frontend/resolver processing
+rejects the type expression with
+`type_elaboration.lower_stage.frontend:malformed_type_expression` before any
+checker handoff. The source-derived runner must not fabricate a later
+`ModeExpansion` payload from the future declaration.
 Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case

@@ -1,0 +1,5 @@
+reserve z for LaterMode;
+
+definition
+  mode LaterModeDef: LaterMode is set;
+end;

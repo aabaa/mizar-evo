@@ -1607,6 +1607,20 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       mizar-test task 10、spec 03 type expressions、spec 07 modes、spec 17
       base-shape inhabitation。
 
+75. **Source-derived local mode forward-reference active-range boundary を追加する。** [x]
+    - declaration item が active になる前に、後続 same-module local mode
+      declaration を reserve head が名前参照する active fail coverage を追加する。
+    - Acceptance: active type-elaboration runner は checker handoff 前に
+      `type_elaboration.lower_stage.frontend:malformed_type_expression` を報告し、
+      future declaration から `ModeExpansion` を捏造せず、successful reserve
+      declaration、CoreIr、ControlFlowIr、VC、proof payload を昇格しない。
+      forward reference acceptance は Chapter 2/11 active-range rule により
+      forbidden のまま。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、55、74。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 02 active range、spec 07 modes、spec 11 symbol
+      management。
+
 ## 推奨検証
 
 各タスクの後で実行する:

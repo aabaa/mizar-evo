@@ -1735,6 +1735,22 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       bridge; mizar-test task 10; spec 03 type expressions; spec 07 modes;
       spec 17 base-shape inhabitation.
 
+75. **Add source-derived local mode forward-reference active-range boundary.** [x]
+    - Add active fail coverage for a reserve head that names a later
+      same-module local mode declaration before that declaration item is
+      active.
+    - Acceptance: the active type-elaboration runner reports
+      `type_elaboration.lower_stage.frontend:malformed_type_expression`
+      before checker handoff, does not fabricate a `ModeExpansion` from the
+      future declaration, and does not promote a successful reserve
+      declaration, CoreIr, ControlFlowIr, VC, or proof payload. Forward
+      reference acceptance remains forbidden by the Chapter 2/11 active-range
+      rules.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 55, and 74. Refs: Step 5 source-derived semantic
+      bridge; mizar-test task 10; spec 02 active range; spec 07 modes; spec 11
+      symbol management.
+
 ## Recommended Verification
 
 Run after each task:

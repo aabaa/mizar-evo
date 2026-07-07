@@ -316,8 +316,10 @@ three-edge bare local-mode chain pass slice、task 74 は structural bare local-
 chain pass slice として、unique / unrecovered / preceding / same-module /
 no-argument な definition から chain の各 real expansion を抽出し、temporary
 depth cap を AST-bounded structural traversal budget に置き換える場合を credit
-してよい。task 67、task 68、task 69、task 70、task 71 の external-gap boundary case を除く上記の
-supported reserve slices を syntax-free
+してよい。task 75 は forward local-mode reserve head について、checker handoff 前の
+`type_elaboration.lower_stage.frontend:malformed_type_expression` だけを credit
+してよい。task 67、task 68、task 69、task 70、task 71 の external-gap boundary case
+と task 75 の lower-stage boundary case を除く上記の supported reserve slices を syntax-free
 checker source reserve payload へ変換し、checker-owned seam が module `BindingEnv`、
 binding ごとの `DeclarationInput`、binding 固有の `TypeExpressionInput` site、
 `DeclarationChecker` output を構築する。runner はその handoff を checker-owned
@@ -387,7 +389,9 @@ bridge だけを credit し、task 74 の pass case は AST-bounded structural b
 local-mode chain bridge だけを credit する。task-74 unsupported chain case は
 broader mode expansion、既存 one-edge diagnostic を超える structure /
 attributed-builtin terminal、CoreIr / ControlFlowIr / VC / proof promotion を
-credit しない。
+credit しない。task 75 の fail case は forward local-mode reference の
+lower-stage active-range boundary だけを credit し、checker `ModeExpansion`
+production は credit しない。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
 `proof_verification` row は deferred のままにする。summary/context readiness read は
