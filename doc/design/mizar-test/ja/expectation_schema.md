@@ -438,10 +438,21 @@ diagnostic_payloads = [
 tags = ["active_type_elaboration"]
 ```
 
+対応済み checker-owned diagnostic slice は、source reserve seam が生成する checker
+detail key を代わりに assert してよい。task 50 は same-module attributed builtin
+reserve head が
+`type_elaboration.checker.checker.declaration.deferred.evidence_query` で停止することを
+許可し、task 51 は attribute や type argument のない unique な same-module
+`LocalSource` `SymbolKind::Mode` reserve head が
+`type_elaboration.checker.checker.type.external.mode_expansion_payload` と、出力される場合は
+paired recovery key で停止することを許可する。これらは fail case であり、pass-slice
+coverage ではない。
+
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
-から checker-owned payload を non-builtin declaration、attribute、mode / structure
-expansion、term、formula、coercion、fact、overload evidence、CoreIr、ControlFlowIr、
-VC payload、proof evidence を捏造せず構築できるまで deferred のままにする。
+から checker-owned payload を non-builtin declaration、imported symbol、unresolved /
+ambiguous symbol、attribute / mode argument、attributed mode head、structure、term、formula、
+coercion、fact、overload evidence、CoreIr、ControlFlowIr、VC payload、proof evidence を捏造せず
+構築できるまで deferred のままにする。
 
 ## Formula, Statement, And Proof Expectations
 

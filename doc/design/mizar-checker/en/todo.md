@@ -1073,6 +1073,30 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       existing import-backed attributed reserve fixture remains on the broader
       extraction gap until imported symbols enter the active runner `SymbolEnv`.
 
+51. **Source-derived local mode reserve expansion-gap bridge.** [x]
+    - Extend the task-48 reserve source declaration seam just far enough to
+      accept source-derived reserve type heads that resolve to a unique
+      same-module `LocalSource` mode symbol with no type arguments or source
+      attributes.
+    - Acceptance: the checker-owned bridge validates that symbol heads are
+      exact `SymbolKind::Mode` entries from the current module's local source,
+      then declaration checking reaches the existing
+      `checker.type.external.mode_expansion_payload` diagnostic because real
+      mode-expansion payload extraction is not implemented. Imported modes,
+      structures, mode arguments, unresolved/ambiguous heads, mode expansion
+      extraction, terms, formulas, CoreIr/ControlFlowIr/VC/proof payloads, and
+      successful local-mode reserve declarations remain deferred under MC-G020.
+    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
+    - Deps: task 48; external mode expansion remains MC-G014/MC-G020. Refs:
+      Step 5 source-derived semantic bridge; mizar-test task 10; spec 03 type
+      expressions; spec 07 modes; spec 17 accepted-mode inhabitation evidence.
+    - Completed in task 51: `type_checker.rs` validates local source-backed
+      mode heads on the syntax-free reserve bridge and preserves the existing
+      missing mode-expansion diagnostic rather than unfolding from raw syntax.
+      `mizar-test` adds an active same-module local-mode reserve fail fixture,
+      while imported modes, local structures, and argument-bearing mode heads
+      remain on the broader extraction gap.
+
 ## Recommended Verification
 
 Run after each task:

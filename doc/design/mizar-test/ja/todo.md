@@ -246,8 +246,9 @@ regression test を追加した。
       `CoreContext` readiness）、post-task-20 resolver R-G007 の parser-backed
       same-signature/different-return functor conflict active declaration-symbol seed
       と exact SymbolEnv-derived declaration-symbol pass payload assertion、checker
-      task 50 の same-module attributed reserve evidence-query active fail slice を
-      prepared/implemented increments として記録する。
+      task 50 の same-module attributed reserve evidence-query active fail slice、
+      checker task 51 の same-module local mode reserve missing-expansion active
+      fail slice を prepared/implemented increments として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
       runner や fake active fixture は作らない。

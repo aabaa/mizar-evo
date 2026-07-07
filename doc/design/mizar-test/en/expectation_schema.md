@@ -460,10 +460,21 @@ diagnostic_payloads = [
 tags = ["active_type_elaboration"]
 ```
 
+Supported checker-owned diagnostic slices may instead assert the checker detail
+keys produced by the source reserve seam. Task 50 permits same-module
+attributed builtin reserve heads to stop at
+`type_elaboration.checker.checker.declaration.deferred.evidence_query`; task
+51 permits unique same-module `LocalSource` `SymbolKind::Mode` reserve heads
+with no attributes or type arguments to stop at
+`type_elaboration.checker.checker.type.external.mode_expansion_payload`, with
+the paired recovery key when emitted. These are fail cases, not pass-slice
+coverage.
+
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source
-without inventing non-builtin declarations, attributes, mode/structure
-expansions, terms, formulas, coercions, facts, overload evidence, CoreIr,
+without inventing non-builtin declarations, imported symbols, unresolved or
+ambiguous symbols, attribute or mode arguments, attributed mode heads,
+structures, terms, formulas, coercions, facts, overload evidence, CoreIr,
 ControlFlowIr, VC payloads, or proof evidence.
 
 ## Formula, Statement, And Proof Expectations

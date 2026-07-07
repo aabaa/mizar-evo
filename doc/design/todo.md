@@ -95,7 +95,7 @@ is its task 1). "Next work" points into the
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 (task 30) | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22 plus task 21 soundness vocabulary | step 5 (task 10) | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec-decision wave complete; step 4 tasks 45-47 complete; step 5 task 48 complete | step 5 (task 49) | [todo](./mizar-checker/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec-decision wave complete; step 4 tasks 45-47 complete; step 5 tasks 48, 50, and 51 complete | step 5 source-derived bridge slices; task 49 remains dependency-gated | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete; step 4 tasks 27-30 complete | step 5 source-derived bridge | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | step 5; tasks 27-29 resolved | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -231,9 +231,11 @@ Widen real `.miz` source-derived payload extraction beyond the active
 reserve-only builtin declaration slice (`mizar-test` tasks 16-20 plus the
 post-task-20 resolver R-G007 and SymbolEnv assertion increments, with
 `mizar-checker` task 48 owning the checker-side syntax-free reserve producer
-seam). This wave has no fixed task list yet: it is promoted slice by slice,
-opening new numbered owner tasks as each payload family becomes real. Do not
-fabricate semantic payloads; promote corpus rows only with prepared consumers.
+seam, task 50 adding the same-module attributed builtin reserve diagnostic
+slice, and task 51 adding the same-module local mode reserve diagnostic slice).
+This wave has no fixed task list yet: it is promoted slice by slice, opening
+new numbered owner tasks as each payload family becomes real. Do not fabricate
+semantic payloads; promote corpus rows only with prepared consumers.
 
 1. [ ] AST-wide source-to-checker extraction in `mizar-checker`
    (declarations beyond builtins, attributes, terms, formulas, proof

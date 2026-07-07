@@ -536,12 +536,16 @@ checker-stage fixture は不要である。最初の active `type_elaboration` c
 と traceability entry は task 12 が所有する。
 
 現在の source-derived runner note: `mizar-test` type-elaboration runner は bounded
-reserve-only builtin declaration bridge のために explicit checker-owned `TypedAst`
-node を構築してよい。各 reserve binding は declaration node と binding 固有の
+reserve-only bare-builtin declaration pass bridge のために explicit checker-owned
+`TypedAst` node を構築してよい。各 reserve binding は declaration node と binding 固有の
 type-expression node を持つ。複数 binding が同じ source type range を共有しても、
-distinct `TypedSiteRef` owner を使う。これは `TypedAst` を checker-owned payload
-surface のまま保つためのものであり、`mizar-checker` に raw syntax walking、general
-declaration extraction、CoreIr、ControlFlowIr、VC payload、proof evidence を許可しない。
+distinct `TypedSiteRef` owner を使う。same-module attributed builtin reserve head と
+local-mode reserve head は active fail slice のみである。active runner は stable
+diagnostic key を集めるために同じ checker-owned assembly helper を使ってよいが、これらの
+slice は successful `TypedAst` readiness payload として credit しない。これは `TypedAst` を
+checker-owned payload surface のまま保つためのものであり、`mizar-checker` に raw syntax
+walking、general declaration extraction、CoreIr、ControlFlowIr、VC payload、proof evidence
+を許可しない。
 
 ## task 2 の分類
 

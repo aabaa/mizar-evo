@@ -1017,6 +1017,28 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       imported symbol が active runner の `SymbolEnv` に入るまで、より広い
       extraction gap のまま保持する。
 
+51. **Source-derived local mode reserve expansion-gap bridge.** [x]
+    - task 48 の reserve source declaration seam を、type argument や source
+      attribute を持たず、unique な same-module `LocalSource` mode symbol に
+      解決される source-derived reserve type head だけを受け取るところまで拡張する。
+    - 受け入れ条件: checker-owned bridge は symbol head が current module の
+      local source 由来の exact `SymbolKind::Mode` entry であることを検証し、その後
+      declaration checking は real mode-expansion payload extraction が未実装なので
+      既存の `checker.type.external.mode_expansion_payload` diagnostic に到達する。
+      imported mode、structure、mode argument、unresolved/ambiguous head、mode
+      expansion extraction、term、formula、CoreIr / ControlFlowIr / VC / proof
+      payload、successful local-mode reserve declaration は MC-G020 の下で
+      deferred のままにする。
+    - 検証: `cargo test -p mizar-checker`、`cargo test -p mizar-test`。
+    - 依存: task 48。external mode expansion は MC-G014 / MC-G020 のまま。参照:
+      Step 5 source-derived semantic bridge、mizar-test task 10、spec 03 type
+      expression、spec 07 mode、spec 17 accepted-mode inhabitation evidence。
+    - task 51 で完了: `type_checker.rs` は syntax-free reserve bridge 上で
+      local source-backed mode head を検証し、raw syntax から unfold せず既存の
+      missing mode-expansion diagnostic を保持する。`mizar-test` は same-module
+      local-mode reserve の active fail fixture を追加し、imported mode、local
+      structure、argument-bearing mode head は広い extraction gap のままにする。
+
 ## 推奨検証
 
 各タスクの後で実行する:

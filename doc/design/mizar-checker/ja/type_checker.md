@@ -218,16 +218,20 @@ bare builtin `set` / `object` である。task 50 はさらに、attribute symbo
 resolver `SymbolEnv` に存在する場合に限り、これら builtin head 上の
 source-derived attribute payload を許可する。attributed reserve declaration は
 `MissingEvidenceQuery` を付けられ、real existential / evidence-query seam が
-存在するまで active fail case のままにする。この payload は source/module identity、
-reserve item source range、各 binding の spelling と declaration range、各 builtin
-type-expression の spelling / range / head、および対応済み same-module attribute の
-symbol / range / polarity を含まなければならない。この seam は runner が successful
-bare-builtin slice 用の既存 `TypedAst` / `ResolvedTypedAst` readiness check を
-組み立てるための deterministic typed-site id を公開するが、`mizar-checker` が
-`mizar-syntax` を import すること、raw syntax を scan すること、non-builtin
-declaration を accept すること、imported symbol を捏造すること、existential
-evidence を捏造すること、CoreIr / ControlFlowIr / VC / proof execution を主張する
-ことは許可しない。
+存在するまで active fail case のままにする。task 51 はさらに、type argument を持たず
+attribute も付かない、unique な same-module `LocalSource` `SymbolKind::Mode` entry に
+解決された reserve type head を許可する。これら local-mode reserve declaration は
+type normalization に到達し、real mode-expansion provider / extraction seam が存在する
+まで `checker.type.external.mode_expansion_payload` で fail closed する。この payload は
+source/module identity、reserve item source range、各 binding の spelling と
+declaration range、対応済み type-expression の spelling / range / head、および
+対応済み same-module attribute の symbol / range / polarity を含まなければならない。
+この seam は runner が successful bare-builtin slice 用の既存 `TypedAst` /
+`ResolvedTypedAst` readiness check を組み立てるための deterministic typed-site id を
+公開するが、`mizar-checker` が `mizar-syntax` を import すること、raw syntax を scan
+すること、non-reserve declaration を accept すること、imported symbol を捏造すること、
+mode expansion や existential evidence を捏造すること、mode head に source attribute
+を付けること、CoreIr / ControlFlowIr / VC / proof execution を主張することは許可しない。
 
 必須 behavior:
 

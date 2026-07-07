@@ -78,10 +78,14 @@ expression id または duplicate `TypedSiteRef` owner は assembly error であ
 のままである。
 
 現在の source-derived runner note: `mizar-test` type-elaboration runner は bounded
-reserve-only builtin declaration bridge のために real `ExpressionMetadataInput` row を
-供給する。Reserve declaration node と binding 固有の type-expression node は、declaration
-checking が成功した場合に final type を持つ source-preserved `ResolvedTypedAst` node になる。
-active runner はさらに、その real `ResolvedTypedAst` payload を `mizar-core` の
+reserve-only bare-builtin declaration pass bridge のために real
+`ExpressionMetadataInput` row を供給する。Reserve declaration node と binding 固有の
+type-expression node は、declaration checking が成功した場合に final type を持つ
+source-preserved `ResolvedTypedAst` node になる。same-module attributed builtin reserve
+head と local-mode reserve head は active fail slice のみである。active runner は stable
+diagnostic key を集めるために同じ assembly helper を使ってよいが、diagnostic-free
+bare-builtin output だけを `ResolvedTypedAst` readiness として credit する。active runner は
+さらに、successful bare-builtin の real `ResolvedTypedAst` payload を `mizar-core` の
 `ResolvedTypedAstSummary::from_ast` に渡し、summary-readiness を確認する。これは
 `mizar-core` lowering を実行したり、artifact を publish したり、public diagnostic を
 割り当てたり、CoreIr / ControlFlowIr / VC / proof corpus row を昇格したりするものではない。

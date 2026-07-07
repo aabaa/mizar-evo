@@ -254,12 +254,12 @@ For the type-elaboration stage, coverage is executable only for `.miz`
 sidecars admitted by the active runner gate (`active_type_elaboration`,
 `stage = "type_elaboration"`, `expected_phase = "type_check"`, and pass/fail
 outcome). The task 16-20 bridge continuation may credit only the narrow
-reserve-only builtin declaration slice: unrecovered top-level reserve items
-whose segments contain one or more identifiers and exactly one bare builtin
-`set` or `object` type-expression, with no attributes, arguments, parameter
-prefixes, or non-builtin symbol heads. Those sources are converted into a
-syntax-free checker source reserve payload, then the checker-owned seam builds
-the module `BindingEnv`, one `DeclarationInput` per binding,
+reserve-only builtin declaration pass slice: unrecovered top-level reserve
+items whose segments contain one or more identifiers and exactly one bare
+builtin `set` or `object` type-expression, with no attributes, arguments,
+parameter prefixes, or non-builtin symbol heads. Those sources are converted
+into a syntax-free checker source reserve payload, then the checker-owned seam
+builds the module `BindingEnv`, one `DeclarationInput` per binding,
 binding-specific `TypeExpressionInput` sites, and `DeclarationChecker` output.
 The runner continues that handoff into checker-owned `TypedAst` and
 `ResolvedTypedAst`, then reads it through `mizar-core`
@@ -273,13 +273,17 @@ being credited from the diagnostic external-gap row.
 
 Covered active fail tests may still assert the external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` when a case needs
-unsupported non-builtin declarations, attributes, mode/structure payloads,
+unsupported non-builtin declarations, imported symbols, attribute or mode
+arguments, unresolved or ambiguous symbols, attributed mode heads, structures,
 terms, formulas, coercions, overload payloads, facts, CoreIr, ControlFlowIr,
-VC payloads, or proof payload extraction. Those gap tests do not satisfy the broader task 7-11
-semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and
-`proof_verification` rows remain deferred until prepared consumer execution
-exists; the summary/context readiness read is not a
-CoreIr/ControlFlowIr/VC/proof promotion.
+VC payloads, or proof payload extraction. Supported checker-owned fail slices
+may instead assert the checker
+detail keys for same-module attributed builtin reserve heads missing evidence
+or same-module local mode reserve heads missing mode-expansion payloads. Those
+gap tests do not satisfy the broader task 7-11 semantic pass/fail coverage,
+and `CoreIr`, `ControlFlowIr`, and `proof_verification` rows remain deferred
+until prepared consumer execution exists; the summary/context readiness read is
+not a CoreIr/ControlFlowIr/VC/proof promotion.
 
 ## Reporting
 

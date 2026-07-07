@@ -22,7 +22,7 @@ use crate::{
     },
 };
 use mizar_resolve::{
-    env::{SymbolEnv, SymbolKind},
+    env::{ContributionKind, SymbolEnv, SymbolKind},
     resolved_ast::{ModuleId, SymbolId},
 };
 use mizar_session::{SourceId, SourceRange};
@@ -2832,6 +2832,7 @@ impl SourceReserveDeclarationBridge {
         if symbols.module_id() != &self.module_id {
             return Err("source reserve bridge symbol environment module mismatch".to_owned());
         }
+        self.validate_symbol_heads(symbols)?;
         let binding_env = self.binding_env()?;
         let context_inputs = vec![DeclarationContextInput::new(
             self.module_context(),
@@ -2879,6 +2880,43 @@ impl SourceReserveDeclarationBridge {
             binding_env,
             declarations,
         })
+    }
+
+    fn validate_symbol_heads(&self, symbols: &SymbolEnv) -> Result<(), String> {
+        for (index, binding) in self.bindings.iter().enumerate() {
+            let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
+                continue;
+            };
+            if symbol.module() != &self.module_id {
+                return Err(format!(
+                    "source reserve binding {index} symbol head is not local to the bridge module"
+                ));
+            }
+            let entry = symbols.symbols().get(symbol).ok_or_else(|| {
+                format!("source reserve binding {index} symbol head is missing from SymbolEnv")
+            })?;
+            if entry.kind() != SymbolKind::Mode {
+                return Err(format!(
+                    "source reserve binding {index} symbol head is not a supported local mode"
+                ));
+            }
+            let contribution = symbols
+                .contributions()
+                .get(entry.contribution())
+                .ok_or_else(|| {
+                    format!(
+                        "source reserve binding {index} symbol head has an unknown source contribution"
+                    )
+                })?;
+            if contribution.module() != &self.module_id
+                || !matches!(contribution.kind(), ContributionKind::LocalSource { .. })
+            {
+                return Err(format!(
+                    "source reserve binding {index} symbol head is not backed by local source"
+                ));
+            }
+        }
+        Ok(())
     }
 
     fn binding_env(&self) -> Result<BindingEnv, String> {
@@ -2976,10 +3014,15 @@ impl SourceReserveBindingInput {
         }
         if !matches!(
             &self.type_head,
-            TypeHeadInput::BuiltinSet | TypeHeadInput::BuiltinObject
+            TypeHeadInput::BuiltinSet | TypeHeadInput::BuiltinObject | TypeHeadInput::Symbol(_)
         ) {
             return Err(format!(
-                "source reserve binding {index} is not a supported builtin reserve type"
+                "source reserve binding {index} is not a supported reserve type head"
+            ));
+        }
+        if matches!(&self.type_head, TypeHeadInput::Symbol(_)) && !self.type_attributes.is_empty() {
+            return Err(format!(
+                "source reserve binding {index} symbol head does not support source attributes yet"
             ));
         }
         for (attribute_index, attribute) in self.type_attributes.iter().enumerate() {
@@ -6628,11 +6671,11 @@ mod tests {
     }
 
     #[test]
-    fn source_reserve_declaration_bridge_rejects_non_builtin_or_mismatched_inputs() {
+    fn source_reserve_declaration_bridge_validates_mode_heads_and_mismatched_inputs() {
         let source = source_id();
         let module = module_id();
         let mode = symbol_id("Mode/0", "pkg::main::Mode/0");
-        let non_builtin = SourceReserveDeclarationBridge::new(
+        let mode_bridge = SourceReserveDeclarationBridge::new(
             source,
             module.clone(),
             range(source, 0, 10),
@@ -6643,10 +6686,103 @@ mod tests {
                 "Mode",
                 TypeHeadInput::Symbol(mode),
             )],
+        )
+        .expect("local mode reserve payload should validate source shape");
+        let mode_symbols = symbol_env(vec![symbol_entry(
+            symbol_id("Mode/0", "pkg::main::Mode/0"),
+            SymbolKind::Mode,
+        )]);
+        let mode_handoff = mode_bridge
+            .check(&mode_symbols)
+            .expect("local mode reserve payload should reach declaration checking");
+        assert_eq!(
+            diagnostic_ranges(
+                mode_handoff.declarations(),
+                "checker.type.external.mode_expansion_payload"
+            ),
+            vec![(4, 8)]
+        );
+
+        let structure = symbol_id("Struct/0", "pkg::main::Struct/0");
+        let structure_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 10),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 10),
+                "Struct",
+                TypeHeadInput::Symbol(structure.clone()),
+            )],
+        )
+        .expect("symbol reserve payload shape should validate before SymbolEnv checks");
+        let structure_symbols = symbol_env(vec![symbol_entry(structure, SymbolKind::Structure)]);
+        assert!(
+            structure_bridge.check(&structure_symbols).is_err(),
+            "non-mode symbol heads must fail before checker handoff production"
+        );
+
+        let attributed_mode = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 18),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 18),
+                    "non empty Mode",
+                    TypeHeadInput::Symbol(symbol_id("Mode/0", "pkg::main::Mode/0")),
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    symbol_id("empty/0", "pkg::main::empty/0"),
+                    AttributePolarity::Negative,
+                    range(source, 4, 13),
+                    "non empty",
+                )]),
+            ],
         );
         assert!(
-            non_builtin.is_err(),
-            "non-builtin source reserve payloads must stay on the extraction gap"
+            attributed_mode.is_err(),
+            "symbol reserve heads with attributes must stay on the extraction gap"
+        );
+
+        let unresolved = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 10),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 11),
+                "Missing",
+                TypeHeadInput::Unresolved("Missing".to_owned()),
+            )],
+        );
+        assert!(
+            unresolved.is_err(),
+            "unresolved source reserve heads must stay on the extraction gap"
+        );
+
+        let ambiguous = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 10),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 8),
+                "Mode",
+                TypeHeadInput::Ambiguous(vec![
+                    symbol_id("Mode/0", "pkg::main::Mode/0"),
+                    symbol_id("Mode/1", "pkg::main::Mode/1"),
+                ]),
+            )],
+        );
+        assert!(
+            ambiguous.is_err(),
+            "ambiguous source reserve heads must stay on the extraction gap"
         );
 
         let other_source = source_ids_pair().1;
@@ -6673,7 +6809,7 @@ mod tests {
         );
         let bridge = SourceReserveDeclarationBridge::new(
             source,
-            module,
+            module.clone(),
             range(source, 0, 10),
             vec![SourceReserveBindingInput::new(
                 "x",
@@ -6687,6 +6823,29 @@ mod tests {
         assert!(
             bridge.check(&symbols).is_err(),
             "symbol environment module mismatches must fail closed"
+        );
+
+        let imported_mode = SymbolId::new(
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("imported")),
+            LocalSymbolId::new("ImportedMode/0"),
+            FullyQualifiedName::new("pkg::imported::ImportedMode/0"),
+        );
+        let imported_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module,
+            range(source, 0, 15),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 15),
+                "ImportedMode",
+                TypeHeadInput::Symbol(imported_mode),
+            )],
+        )
+        .expect("symbol reserve payload shape should validate before local module checks");
+        assert!(
+            imported_bridge.check(&mode_symbols).is_err(),
+            "non-local symbol heads must fail closed"
         );
     }
 

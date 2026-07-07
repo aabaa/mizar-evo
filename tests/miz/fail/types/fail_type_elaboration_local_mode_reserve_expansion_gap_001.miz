@@ -1,0 +1,5 @@
+definition
+  mode LocalModeDef: LocalMode is set;
+end;
+
+reserve z for LocalMode;
