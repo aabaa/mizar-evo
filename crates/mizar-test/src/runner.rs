@@ -833,6 +833,12 @@ struct SourceModeExpansionCandidate {
     dependencies: Vec<ResolverSymbolId>,
 }
 
+#[derive(Debug, Clone)]
+struct SourceModeExpansionEntry {
+    definition_range: SourceRange,
+    expansion: ModeExpansion,
+}
+
 fn extract_builtin_source_reserve_declarations(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -988,6 +994,9 @@ fn extract_source_local_mode_expansions(
         );
     }
     expansions
+        .into_iter()
+        .map(|(symbol, entry)| (symbol, entry.expansion))
+        .collect()
 }
 
 struct SourceLocalModeExpansionExtractor<'a> {
@@ -1005,11 +1014,20 @@ impl SourceLocalModeExpansionExtractor<'_> {
         symbol: &ResolverSymbolId,
         reserve_type_range: SourceRange,
         visiting: &mut BTreeSet<ResolverSymbolId>,
-        expansions: &mut BTreeMap<ResolverSymbolId, ModeExpansion>,
+        expansions: &mut BTreeMap<ResolverSymbolId, SourceModeExpansionEntry>,
         depth: usize,
     ) -> bool {
-        if let Some(expansion) = expansions.get(symbol) {
-            return depth < 1 || mode_expansion_is_safe_chain_terminal(expansion);
+        if let Some(entry) = expansions.get(symbol) {
+            if depth >= 1 && entry.definition_range.end > reserve_type_range.start {
+                return false;
+            }
+            return depth < 1
+                || mode_expansion_is_chain_dependency_terminal(
+                    &entry.expansion,
+                    self.symbols,
+                    self.module,
+                    depth,
+                );
         }
         let is_attributed_root = depth == 0 && self.attributed_mode_heads.contains(symbol);
         if !visiting.insert(symbol.clone())
@@ -1047,17 +1065,13 @@ impl SourceLocalModeExpansionExtractor<'_> {
             return false;
         }
         if depth >= 1
-            && matches!(
-                candidate.expansion.radix.head,
-                TypeHeadInput::Symbol(ref radix)
-                    if source_reserve_symbol_head_kind(self.symbols, self.module, radix)
-                        == Some(SymbolKind::Structure)
+            && !mode_expansion_is_chain_dependency_terminal(
+                &candidate.expansion,
+                self.symbols,
+                self.module,
+                depth,
             )
         {
-            visiting.remove(symbol);
-            return false;
-        }
-        if depth >= 1 && !mode_expansion_is_safe_chain_terminal(&candidate.expansion) {
             visiting.remove(symbol);
             return false;
         }
@@ -1079,7 +1093,13 @@ impl SourceLocalModeExpansionExtractor<'_> {
                 return false;
             }
         }
-        expansions.insert(symbol.clone(), candidate.expansion);
+        expansions.insert(
+            symbol.clone(),
+            SourceModeExpansionEntry {
+                definition_range: candidate.definition_range,
+                expansion: candidate.expansion,
+            },
+        );
         visiting.remove(symbol);
         true
     }
@@ -1128,6 +1148,17 @@ fn mode_expansion_is_safe_chain_terminal(expansion: &ModeExpansion) -> bool {
     expansion.attributes.is_empty()
         && expansion.radix.attributes.is_empty()
         && !matches!(expansion.radix.head, TypeHeadInput::Symbol(_))
+}
+
+fn mode_expansion_is_chain_dependency_terminal(
+    expansion: &ModeExpansion,
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+    depth: usize,
+) -> bool {
+    mode_expansion_is_safe_chain_terminal(expansion)
+        || (depth == 1
+            && mode_expansion_is_direct_structure_rhs_terminal(expansion, symbols, module))
 }
 
 fn mode_expansion_is_direct_structure_rhs_terminal(
@@ -1452,10 +1483,12 @@ fn is_supported_builtin_reserve_bridge_node(node: &SurfaceNode) -> bool {
             | SurfaceNodeKind::ReserveItem
             | SurfaceNodeKind::ReserveSegment
             | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::TypeArguments
             | SurfaceNodeKind::AttributeChain
             | SurfaceNodeKind::AttributeRef
             | SurfaceNodeKind::QualifiedSymbol
             | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::ErrorRecovery(_)
     )
 }
 
@@ -2886,6 +2919,7 @@ mod tests {
         BuildSnapshotId, Edition, Hash, InMemorySessionIdAllocator, ModulePath, PackageId,
         SessionIdAllocator, SourceAnchor, SourceId, SourceRange,
     };
+    use mizar_syntax::recovery::SyntaxRecoveryKind;
     use mizar_syntax::{
         SurfaceAst, SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceNodeKind, SurfaceTokenKind,
     };
@@ -3610,13 +3644,42 @@ mod tests {
         );
         let chain_structure_rhs_extraction = extract_builtin_source_reserve_declarations(
             &chain_structure_rhs,
-            chain_structure_rhs_module,
+            chain_structure_rhs_module.clone(),
             &chain_structure_rhs_symbols,
         )
         .expect("mode chain ending in structure RHS reserve should still extract");
-        assert!(
-            chain_structure_rhs_extraction.mode_expansions().is_empty(),
-            "structure RHS expansions stay limited to the direct reserved mode head"
+        let chain_structure_b = resolve_visible_type_head(
+            &chain_structure_rhs_symbols,
+            &chain_structure_rhs_module,
+            "B",
+        )
+        .unwrap();
+        let chain_structure_a = resolve_visible_type_head(
+            &chain_structure_rhs_symbols,
+            &chain_structure_rhs_module,
+            "A",
+        )
+        .unwrap();
+        let chain_structure_struct = resolve_visible_type_head(
+            &chain_structure_rhs_symbols,
+            &chain_structure_rhs_module,
+            "Struct",
+        )
+        .unwrap();
+        assert_eq!(chain_structure_rhs_extraction.mode_expansions().len(), 2);
+        assert_eq!(
+            chain_structure_rhs_extraction
+                .mode_expansions()
+                .get(&chain_structure_b)
+                .map(|expansion| &expansion.radix.head),
+            Some(&TypeHeadInput::Symbol(chain_structure_struct))
+        );
+        assert_eq!(
+            chain_structure_rhs_extraction
+                .mode_expansions()
+                .get(&chain_structure_a)
+                .map(|expansion| &expansion.radix.head),
+            Some(&TypeHeadInput::Symbol(chain_structure_b))
         );
 
         let attributed_chain_structure_rhs_module =
@@ -3865,10 +3928,247 @@ mod tests {
                 .contains_key(&cached_structure_b)
         );
         assert!(
-            !cached_structure_rhs_extraction
+            cached_structure_rhs_extraction
                 .mode_expansions()
                 .contains_key(&cached_structure_a),
-            "cached direct structure-RHS expansion must not let a dependent chain bypass the direct-head cap"
+            "cached direct structure-RHS expansion should feed the one-edge structure-RHS chain"
+        );
+
+        let cached_forward_structure_rhs_chain = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+            ],
+            vec![
+                reserve_item(vec!["y"], ReserveTypeShape::QualifiedSymbol("B")),
+                reserve_item(vec!["z"], ReserveTypeShape::QualifiedSymbol("A")),
+            ],
+        );
+        let cached_forward_structure_rhs_extraction = extract_builtin_source_reserve_declarations(
+            &cached_forward_structure_rhs_chain,
+            cached_structure_rhs_module.clone(),
+            &cached_structure_rhs_symbols,
+        )
+        .expect("cached forward structure-RHS chain reserve should still extract");
+        assert!(
+            cached_forward_structure_rhs_extraction
+                .mode_expansions()
+                .contains_key(&cached_structure_b)
+        );
+        assert!(
+            !cached_forward_structure_rhs_extraction
+                .mode_expansions()
+                .contains_key(&cached_structure_a),
+            "cached direct structure-RHS payloads must still prove the dependency definition precedes the dependent mode"
+        );
+
+        let cached_deeper_structure_rhs_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let cached_deeper_structure_rhs_symbols = source_local_symbols_env(
+            cached_deeper_structure_rhs_module.clone(),
+            &[
+                ("Struct", SymbolKind::Structure),
+                ("B", SymbolKind::Mode),
+                ("A", SymbolKind::Mode),
+                ("C", SymbolKind::Mode),
+            ],
+        );
+        let cached_deeper_structure_rhs_chain = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                mode_definition("C", ReserveTypeShape::QualifiedSymbol("A")),
+            ],
+            vec![
+                reserve_item(vec!["w"], ReserveTypeShape::QualifiedSymbol("B")),
+                reserve_item(vec!["y"], ReserveTypeShape::QualifiedSymbol("A")),
+                reserve_item(vec!["z"], ReserveTypeShape::QualifiedSymbol("C")),
+            ],
+        );
+        let cached_deeper_structure_rhs_extraction = extract_builtin_source_reserve_declarations(
+            &cached_deeper_structure_rhs_chain,
+            cached_deeper_structure_rhs_module.clone(),
+            &cached_deeper_structure_rhs_symbols,
+        )
+        .expect("cached deeper structure-RHS chain reserve should still extract");
+        let cached_deeper_structure_b = resolve_visible_type_head(
+            &cached_deeper_structure_rhs_symbols,
+            &cached_deeper_structure_rhs_module,
+            "B",
+        )
+        .unwrap();
+        let cached_deeper_structure_a = resolve_visible_type_head(
+            &cached_deeper_structure_rhs_symbols,
+            &cached_deeper_structure_rhs_module,
+            "A",
+        )
+        .unwrap();
+        let cached_deeper_structure_c = resolve_visible_type_head(
+            &cached_deeper_structure_rhs_symbols,
+            &cached_deeper_structure_rhs_module,
+            "C",
+        )
+        .unwrap();
+        assert!(
+            cached_deeper_structure_rhs_extraction
+                .mode_expansions()
+                .contains_key(&cached_deeper_structure_b)
+        );
+        assert!(
+            cached_deeper_structure_rhs_extraction
+                .mode_expansions()
+                .contains_key(&cached_deeper_structure_a)
+        );
+        assert!(
+            !cached_deeper_structure_rhs_extraction
+                .mode_expansions()
+                .contains_key(&cached_deeper_structure_c),
+            "cached one-edge structure-RHS payloads must not let a deeper chain bypass the cap"
+        );
+
+        let duplicate_mode_definition = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("A"),
+            )],
+        );
+        let duplicate_mode_extraction = extract_builtin_source_reserve_declarations(
+            &duplicate_mode_definition,
+            cached_structure_rhs_module.clone(),
+            &cached_structure_rhs_symbols,
+        )
+        .expect("duplicate mode definition reserve should still extract");
+        assert!(
+            duplicate_mode_extraction.mode_expansions().is_empty(),
+            "structure-RHS chains require a unique preceding mode definition for every mode head"
+        );
+
+        let duplicate_structure_definition = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct", "Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("A"),
+            )],
+        );
+        let duplicate_structure_extraction = extract_builtin_source_reserve_declarations(
+            &duplicate_structure_definition,
+            cached_structure_rhs_module.clone(),
+            &cached_structure_rhs_symbols,
+        )
+        .expect("duplicate structure definition reserve should still extract");
+        assert!(
+            duplicate_structure_extraction.mode_expansions().is_empty(),
+            "structure-RHS chains require a unique preceding structure definition for the terminal structure head"
+        );
+
+        let contextual_structure_rhs_chain = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                contextual_mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("A"),
+            )],
+        );
+        let contextual_structure_extraction = extract_builtin_source_reserve_declarations(
+            &contextual_structure_rhs_chain,
+            cached_structure_rhs_module.clone(),
+            &cached_structure_rhs_symbols,
+        )
+        .expect("contextual structure-RHS chain reserve should still extract");
+        assert!(
+            contextual_structure_extraction.mode_expansions().is_empty(),
+            "definition-local context keeps structure-RHS chain expansions withheld"
+        );
+
+        let parameterized_structure_rhs_chain = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                parameterized_mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("A"),
+            )],
+        );
+        let parameterized_structure_extraction = extract_builtin_source_reserve_declarations(
+            &parameterized_structure_rhs_chain,
+            cached_structure_rhs_module.clone(),
+            &cached_structure_rhs_symbols,
+        )
+        .expect("parameterized structure-RHS chain reserve should still extract");
+        assert!(
+            parameterized_structure_extraction
+                .mode_expansions()
+                .is_empty(),
+            "parameterized mode definitions remain outside the source-derived structure-RHS chain slice"
+        );
+
+        let recovered_structure_rhs_chain = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                recovered_mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("A"),
+            )],
+        );
+        let recovered_structure_extraction = extract_builtin_source_reserve_declarations(
+            &recovered_structure_rhs_chain,
+            cached_structure_rhs_module.clone(),
+            &cached_structure_rhs_symbols,
+        )
+        .expect("recovered structure-RHS chain reserve should still extract");
+        assert!(
+            recovered_structure_extraction.mode_expansions().is_empty(),
+            "recovered mode definitions remain outside the source-derived structure-RHS chain slice"
+        );
+
+        let argument_structure_rhs_chain = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbolWithArgs("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("A"),
+            )],
+        );
+        let argument_structure_extraction = extract_builtin_source_reserve_declarations(
+            &argument_structure_rhs_chain,
+            cached_structure_rhs_module.clone(),
+            &cached_structure_rhs_symbols,
+        )
+        .expect("argument-bearing structure-RHS chain reserve should still extract");
+        assert!(
+            argument_structure_extraction.mode_expansions().is_empty(),
+            "argument-bearing RHS symbols remain outside the source-derived structure-RHS chain slice"
         );
 
         let cyclic_symbols = source_local_symbols_env(
@@ -4730,6 +5030,9 @@ mod tests {
     struct ModeDefinitionSpec {
         pattern: &'static str,
         rhs_shape: ReserveTypeShape,
+        local_context: bool,
+        parameterized_pattern: bool,
+        recovered: bool,
     }
 
     #[derive(Debug, Clone, Copy)]
@@ -4753,7 +5056,52 @@ mod tests {
         pattern: &'static str,
         rhs_shape: ReserveTypeShape,
     ) -> ModeDefinitionSpec {
-        ModeDefinitionSpec { pattern, rhs_shape }
+        ModeDefinitionSpec {
+            pattern,
+            rhs_shape,
+            local_context: false,
+            parameterized_pattern: false,
+            recovered: false,
+        }
+    }
+
+    const fn contextual_mode_definition(
+        pattern: &'static str,
+        rhs_shape: ReserveTypeShape,
+    ) -> ModeDefinitionSpec {
+        ModeDefinitionSpec {
+            pattern,
+            rhs_shape,
+            local_context: true,
+            parameterized_pattern: false,
+            recovered: false,
+        }
+    }
+
+    const fn parameterized_mode_definition(
+        pattern: &'static str,
+        rhs_shape: ReserveTypeShape,
+    ) -> ModeDefinitionSpec {
+        ModeDefinitionSpec {
+            pattern,
+            rhs_shape,
+            local_context: false,
+            parameterized_pattern: true,
+            recovered: false,
+        }
+    }
+
+    const fn recovered_mode_definition(
+        pattern: &'static str,
+        rhs_shape: ReserveTypeShape,
+    ) -> ModeDefinitionSpec {
+        ModeDefinitionSpec {
+            pattern,
+            rhs_shape,
+            local_context: false,
+            parameterized_pattern: false,
+            recovered: true,
+        }
     }
 
     fn mode_chain_reserve_ast(
@@ -4932,6 +5280,10 @@ mod tests {
             SurfaceTokenKind::ReservedWord,
             "definition",
         );
+        let mut block_children = vec![definition];
+        if mode.local_context {
+            block_children.push(add_definition_parameter(builder, source_id, offset));
+        }
         let mode_start = *offset;
         let mode_token = add_token(
             builder,
@@ -4963,10 +5315,42 @@ mod tests {
             SurfaceTokenKind::Identifier,
             mode.pattern,
         );
+        let mut pattern_children = vec![pattern_token];
+        let mut pattern_end = pattern_start + mode.pattern.len();
+        if mode.parameterized_pattern {
+            let of = add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                "of",
+            );
+            let arg = add_simple_type_expression(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                "set",
+            );
+            pattern_end = builder
+                .node_range(arg)
+                .expect("just-created pattern argument should exist")
+                .end;
+            let pattern_args = builder.add_node(
+                SurfaceNodeKind::TypeArguments,
+                range(
+                    source_id,
+                    pattern_start + mode.pattern.len() + 1,
+                    pattern_end,
+                ),
+                vec![of, arg],
+            );
+            pattern_children.push(pattern_args);
+        }
         let pattern = builder.add_node(
             SurfaceNodeKind::ModePattern,
-            range(source_id, pattern_start, pattern_start + mode.pattern.len()),
-            vec![pattern_token],
+            range(source_id, pattern_start, pattern_end),
+            pattern_children,
         );
         let is = add_token(
             builder,
@@ -4987,10 +5371,20 @@ mod tests {
             .node_range(semicolon)
             .expect("just-created semicolon should exist")
             .end;
+        let mut mode_definition_children = vec![mode_token, label_token, colon, pattern, is, rhs];
+        if mode.recovered {
+            let recovery = builder.add_recovery(
+                SyntaxRecoveryKind::MissingTerm,
+                range(source_id, mode_end, mode_end),
+                Vec::new(),
+            );
+            mode_definition_children.push(recovery);
+        }
+        mode_definition_children.push(semicolon);
         let mode_definition = builder.add_node(
             SurfaceNodeKind::ModeDefinition,
             range(source_id, mode_start, mode_end),
-            vec![mode_token, label_token, colon, pattern, is, rhs, semicolon],
+            mode_definition_children,
         );
         let end = add_token(
             builder,
@@ -5010,10 +5404,63 @@ mod tests {
             .node_range(block_semicolon)
             .expect("just-created block semicolon should exist")
             .end;
+        block_children.extend([mode_definition, end, block_semicolon]);
         builder.add_node(
             SurfaceNodeKind::DefinitionBlockItem,
             range(source_id, item_start, item_end),
-            vec![definition, mode_definition, end, block_semicolon],
+            block_children,
+        )
+    }
+
+    fn add_definition_parameter(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+    ) -> SurfaceBuilderNodeId {
+        let parameter_start = *offset;
+        let let_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "let",
+        );
+        let name = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            "x",
+        );
+        let be = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "be",
+        );
+        let ty = add_simple_type_expression(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "set",
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let parameter_end = builder
+            .node_range(semicolon)
+            .expect("just-created definition parameter semicolon should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::DefinitionParameter,
+            range(source_id, parameter_start, parameter_end),
+            vec![let_token, name, be, ty, semicolon],
         )
     }
 

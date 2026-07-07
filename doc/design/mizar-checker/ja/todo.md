@@ -1316,6 +1316,34 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       attributed/bare use、dependency / chain、CoreIr、ControlFlowIr、VC、proof payload、より広い
       semantic pass coverage は deferred のままにする。
 
+62. **Source-derived local mode structure-RHS chain evidence-gap bridge を追加する。** [x]
+    - task-56 chain producer を、bare same-module local-mode reserve head `A` に限って
+      拡張する。`A` は unique / unrecovered / no-argument / preceding な `A is B`
+      mode definition を持ち、`B` は unique / unrecovered / no-argument same-module
+      local mode で、その preceding definition が `B is LocalStruct` でなければならない。
+      unique / unrecovered / same-module local structure definition は `B` より前にあり、
+      `B` は `A` より前、`A` は reserve use より前にある必要がある。両方の mode
+      definition は definition-local context を持ってはならない。
+    - Acceptance: runner unit coverage は同じ `SurfaceAst` から real source-derived
+      `B -> LocalStruct` と `A -> B` expansion payload の両方が抽出されることを証明する。
+      cached direct structure-RHS payload はこの one-edge chain を支えてよいが、deeper
+      chain は withheld のままにする。新しい active `type_elaboration` fail fixture は
+      real `.miz` source path を cover し、`checker.type.external.mode_expansion_payload`
+      ではなく `type_elaboration.checker.checker.declaration.deferred.evidence_query` に到達する。
+      checker は verified fact を emit せず、positive structure acceptance は deferred のまま。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、52、56、57。structure base-shape / constructor-witness evidence と
+      より広い mode expansion は MC-G020 / MC-G026 のまま。参照: Step 5
+      source-derived semantic bridge、mizar-test task 10、spec 03 type expressions、
+      spec 05 structures、spec 07 modes、spec 17 evidence。
+    - task 62 で完了: `mizar-test` は same-module local structure RHS で終端する
+      one-edge bare local-mode chain を real AST-derived expansion として抽出し、
+      `mizar-checker` は expanded reserve declaration を既存の missing evidence-query
+      diagnostic へ route する。imported / ambiguous symbol、argument、contextual /
+      parameterized definition、attributed root、attributed/deeper chain、positive
+      structure acceptance、CoreIr、ControlFlowIr、VC、proof payload、より広い semantic
+      pass coverage は deferred のまま。
+
 ## 推奨検証
 
 各タスクの後で実行する:

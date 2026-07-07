@@ -247,15 +247,27 @@ bare builtin `set` / `object` expansion として受理済みで、dependency de
 definition より前に現れ、両方の definition node が AST 上で一意に対応し、chain 内の
 どちらの symbol にも attribute 付き reserve binding が無い場合だけ expand してよい。
 forward、ambiguous、partial、imported、argument-bearing、parameterized、
-contextual、cyclic、attributed-structure RHS、attributed-RHS chain、または
-task-58/task-61 direct slice 外の attributed-builtin RHS mode definition は missing-expansion /
+contextual、cyclic、task-62 bare one-edge chain slice 外の attributed-structure RHS、
+task-58/task-61 direct slice 外の attributed-RHS chain、または
+attributed-builtin RHS mode definition は missing-expansion /
 extraction-gap path に残り、checker-owned seam は expansion や existential evidence を
 捏造してはならない。task 57 はさらに、RHS が type argument を持たない same-module
 local structure head である bare same-module no-argument local mode expansion を許可する。
 この case は real `ModeExpansion` を消費するため missing mode-expansion payload diagnostic を
 出してはならない。ただし expanded structure radix は real base-shape /
 constructor-witness evidence extraction が存在するまで
-`checker.declaration.deferred.evidence_query` で fail closed する。task 60 はさらに、
+`checker.declaration.deferred.evidence_query` で fail closed する。task 62 はさらに、
+同じ structure-RHS diagnostic path を bare local-mode dependency edge 1 つだけに許可する。
+unique / unrecovered / same-module / no-argument な terminal mode definition
+`B is LocalStruct` と unique / unrecovered / same-module / no-argument な chain
+definition `A is B` はどちらも reserve use より前に現れ、unique / unrecovered /
+same-module structure definition は `B` より前に現れ、両方の mode definition は
+definition-local context を持たず、runner は同じ `SurfaceAst` から real `B -> LocalStruct`
+と `A -> B` expansion の両方を抽出しなければならない。expanded chain は real
+base-shape / constructor-witness evidence extraction が存在するまで
+`checker.declaration.deferred.evidence_query` で fail closed する。attributed root、
+attributed/deeper chain、imported / argument-bearing symbol、contextual /
+parameterized definition はこの slice の外に残る。task 60 はさらに、
 mode definition が unique / unrecovered / preceding / no-argument で definition-local
 context を持たず、structure definition が unique / unrecovered / same-module で mode
 definition より前に現れ、同じ mode が同じ bridge input 内で bare reserve head としても

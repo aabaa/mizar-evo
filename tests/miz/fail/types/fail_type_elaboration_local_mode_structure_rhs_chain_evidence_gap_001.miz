@@ -1,0 +1,15 @@
+definition
+  struct LocalStruct where
+    field carrier -> set;
+  end;
+end;
+
+definition
+  mode StructModeDef: StructMode is LocalStruct;
+end;
+
+definition
+  mode ChainStructModeDef: ChainStructMode is StructMode;
+end;
+
+reserve z for ChainStructMode;

@@ -1422,6 +1422,39 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       CoreIr, ControlFlowIr, VC, proof payloads, and broader semantic pass
       coverage remain deferred.
 
+62. **Add source-derived local mode structure-RHS chain evidence-gap bridge.** [x]
+    - Extend the task-56 chain producer only for a bare same-module
+      local-mode reserve head `A` whose unique unrecovered no-argument
+      preceding mode definition is `A is B`, where `B` is a unique unrecovered
+      no-argument same-module local mode whose own preceding definition is
+      `B is LocalStruct`. The unique unrecovered same-module local structure
+      definition must precede `B`; `B` must precede `A`; `A` must precede the
+      reserve use; both mode definitions must be free of definition-local
+      context.
+    - Acceptance: runner unit coverage proves both real source-derived
+      `B -> LocalStruct` and `A -> B` expansion payloads are extracted from the
+      same `SurfaceAst`; cached direct structure-RHS payloads may feed this
+      one-edge chain, but deeper chains remain withheld. A new active
+      `type_elaboration` fail fixture covers the real `.miz` source path and
+      reaches `type_elaboration.checker.checker.declaration.deferred.evidence_query`
+      rather than `checker.type.external.mode_expansion_payload`. The checker
+      emits no verified facts and positive structure acceptance remains
+      deferred.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 52, 56, and 57. Structure base-shape/
+      constructor-witness evidence and broader mode expansion remain
+      MC-G020/MC-G026. Refs: Step 5 source-derived semantic bridge;
+      mizar-test task 10; spec 03 type expressions; spec 05 structures;
+      spec 07 modes; spec 17 evidence.
+    - Completed in task 62: `mizar-test` extracts a real AST-derived
+      one-edge bare local-mode chain ending in a same-module local structure
+      RHS, and `mizar-checker` routes the expanded reserve declaration to the
+      existing missing evidence-query diagnostic. Imported/ambiguous symbols,
+      arguments, contextual or parameterized definitions, attributed roots,
+      attributed or deeper chains, positive structure acceptance, CoreIr,
+      ControlFlowIr, VC, proof payloads, and broader semantic pass coverage
+      remain deferred.
+
 ## Recommended Verification
 
 Run after each task:

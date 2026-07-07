@@ -490,7 +490,9 @@ expansions to stop at the evidence-query key because base-shape/
 constructor-witness and full attributed-type evidence are still absent; task 61
 permits attributed local-mode reserve heads with real direct
 attributed-builtin RHS expansions to stop at the evidence-query key because
-full attributed-type evidence is still absent. These are fail cases, not
+full attributed-type evidence is still absent; task 62 permits one-edge bare
+local-mode chains ending in local structure RHSs to stop at the evidence-query
+key because base-shape/constructor-witness evidence is still absent. These are fail cases, not
 pass-slice coverage.
 
 Detailed type assertion tables and broader type pass expectations remain

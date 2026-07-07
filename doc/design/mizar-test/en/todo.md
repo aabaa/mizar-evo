@@ -264,7 +264,9 @@ Keep `cargo test -p mizar-test` green after each task (see
       evidence-query active fail slice, and checker task 60's same-module
       attributed local-mode structure-RHS evidence-query active fail slice, and
       checker task 61's same-module attributed local-mode attributed-builtin-RHS
-      evidence-query active fail slice, as prepared/implemented increments.
+      evidence-query active fail slice, and checker task 62's same-module
+      local-mode structure-RHS chain evidence-query active fail slice, as
+      prepared/implemented increments.
       Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
       `paced/open`; no placeholder runner or fake active fixture is created for
