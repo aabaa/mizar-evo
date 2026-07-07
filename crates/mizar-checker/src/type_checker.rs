@@ -2868,8 +2868,9 @@ impl SourceReserveDeclarationBridge {
                     }
                     _ => None,
                 };
-                if !binding.type_attributes.is_empty()
-                    || matches!(symbol_head_kind, Some(SymbolKind::Structure))
+                if matches!(symbol_head_kind, Some(SymbolKind::Structure))
+                    || (!binding.type_attributes.is_empty()
+                        && !matches!(symbol_head_kind, Some(SymbolKind::Mode)))
                 {
                     declaration = declaration
                         .with_deferred(vec![DeclarationDeferredReason::MissingEvidenceQuery]);
@@ -2939,12 +2940,6 @@ impl SourceReserveDeclarationBridge {
             if !matches!(entry.kind(), SymbolKind::Mode | SymbolKind::Structure) {
                 return Err(format!(
                     "source reserve binding {index} symbol head is not a supported local type head"
-                ));
-            }
-            if !binding.type_attributes.is_empty() && !matches!(entry.kind(), SymbolKind::Structure)
-            {
-                return Err(format!(
-                    "source reserve binding {index} attributed symbol head is not a supported local structure type head"
                 ));
             }
             let contribution = symbols
@@ -6994,9 +6989,60 @@ mod tests {
                 SymbolKind::Attribute,
             ),
         ]);
+        let attributed_mode_handoff = attributed_mode
+            .check(&mode_attribute_symbols)
+            .expect("attributed local mode reserve payload should reach type normalization");
+        assert_eq!(
+            diagnostic_ranges(
+                attributed_mode_handoff.declarations(),
+                "checker.type.external.mode_expansion_payload"
+            ),
+            vec![(4, 18)]
+        );
         assert!(
-            attributed_mode.check(&mode_attribute_symbols).is_err(),
-            "attributed local mode reserve heads must stay on the extraction gap"
+            diagnostic_ranges(
+                attributed_mode_handoff.declarations(),
+                "checker.declaration.deferred.evidence_query"
+            )
+            .is_empty(),
+            "attributed local modes must not receive an evidence-query diagnostic before real expansion payloads exist"
+        );
+        let attributed_mode_declaration =
+            declarations_by_binding(attributed_mode_handoff.declarations())
+                .remove(&BindingId::new(0))
+                .expect("checked attributed mode declaration should exist");
+        let attributed_mode_type_entry = attributed_mode_handoff
+            .declarations()
+            .type_entries()
+            .get(
+                attributed_mode_declaration
+                    .type_entry
+                    .expect("attributed mode declaration should keep a type entry"),
+            )
+            .expect("attributed mode type entry should exist");
+        let TypeEntryActual::Known(attributed_mode_normalized_id) =
+            attributed_mode_type_entry.actual
+        else {
+            panic!("attributed local mode should keep a normalized type");
+        };
+        let attributed_mode_normalized = attributed_mode_handoff
+            .declarations()
+            .normalized_types()
+            .get(attributed_mode_normalized_id)
+            .expect("normalized attributed local mode type should exist");
+        assert_eq!(
+            attributed_mode_normalized.status,
+            NormalizedTypeStatus::Degraded
+        );
+        assert_eq!(attributed_mode_normalized.attributes.negative().len(), 1);
+        assert_eq!(
+            attributed_mode_normalized.attributes.negative()[0].symbol,
+            symbol_id("empty/0", "pkg::main::empty/0")
+        );
+        assert!(attributed_mode_normalized.attributes.positive().is_empty());
+        assert!(
+            attributed_mode_handoff.declarations().facts().is_empty(),
+            "attributed local mode reserve heads must not seed facts without mode expansion and existential evidence"
         );
 
         let unresolved = SourceReserveDeclarationBridge::new(

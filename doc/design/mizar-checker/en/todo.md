@@ -1134,7 +1134,8 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       same-module `LocalSource` structure reserve head with no type arguments.
     - Acceptance: the checker-owned bridge validates exact local
       `SymbolKind::Structure` provenance for the symbol head, keeps attributed
-      local mode heads on the broader extraction gap, marks the attributed
+      local mode heads outside the later task-54 diagnostic slice on the broader
+      extraction gap, marks the attributed
       local-structure reserved-variable declaration with
       `MissingEvidenceQuery`, and reaches
       `checker.declaration.deferred.evidence_query` because real existential
@@ -1151,10 +1152,39 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       structures; spec 17 existential and base-shape inhabitation evidence.
     - Completed in task 53: `type_checker.rs` admits same-module source
       attributes only for local structure heads on the syntax-free reserve
-      bridge, while rejecting attributed local modes at checker validation.
+      bridge, while task 54 later owns the attributed local-mode diagnostic
+      slice.
       `mizar-test` adds an active same-module attributed local-structure
       reserve fail fixture and keeps imported/argument-bearing forms on the
       broader extraction gap.
+
+54. **Source-derived attributed local mode reserve expansion-gap bridge.** [x]
+    - Extend the task-48 reserve source declaration seam just far enough to
+      accept source-derived no-argument attribute payloads attached to a unique
+      same-module `LocalSource` mode reserve head with no type arguments.
+    - Acceptance: the checker-owned bridge validates exact local
+      `SymbolKind::Mode` provenance for the symbol head, preserves the
+      same-module source-derived attributes, does not attach
+      `MissingEvidenceQuery` before a real mode expansion exists, and reaches
+      `checker.type.external.mode_expansion_payload` because real
+      mode-expansion payload extraction is not implemented. Imported
+      attributes or modes, attribute arguments, qualified attribute
+      disambiguation, mode arguments, successful attributed mode reserve
+      declarations, real mode expansion, accepted-mode/base evidence,
+      existential evidence for the fully expanded attributed type,
+      CoreIr/ControlFlowIr/VC/proof payloads, and broader semantic pass
+      coverage remain deferred under MC-G014/MC-G020/MC-G026.
+    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
+    - Deps: tasks 48, 50, and 51; external mode-expansion and existential
+      evidence remain MC-G014/MC-G020/MC-G026. Refs: Step 5 source-derived
+      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
+      modes; spec 17 existential and accepted-mode inhabitation evidence.
+    - Completed in task 54: `type_checker.rs` admits same-module source
+      attributes for local mode heads on the syntax-free reserve bridge without
+      treating the missing existential evidence as an evidence-query diagnostic.
+      `mizar-test` adds an active same-module attributed local-mode reserve fail
+      fixture and keeps imported/argument-bearing forms on the broader
+      extraction gap.
 
 ## Recommended Verification
 

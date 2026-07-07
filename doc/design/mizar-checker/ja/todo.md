@@ -1067,8 +1067,9 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       same-module `LocalSource` structure reserve head に source-derived no-argument
       attribute payload を付けるところまで拡張する。
     - 受け入れ条件: checker-owned bridge は symbol head の exact local
-      `SymbolKind::Structure` provenance を検証し、attributed local mode head は広い
-      extraction gap のままにし、attributed local-structure reserved-variable declaration に
+      `SymbolKind::Structure` provenance を検証し、後続 task 54 の diagnostic slice 外の
+      attributed local mode head は広い extraction gap のままにし、attributed
+      local-structure reserved-variable declaration に
       `MissingEvidenceQuery` を付ける。full normalized attributed type の real existential
       evidence は未実装なので、`checker.declaration.deferred.evidence_query` に到達する。
       imported attribute / structure、attribute argument、qualified attribute disambiguation、
@@ -1081,10 +1082,35 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       mizar-test task 10、spec 03 type expression、spec 05 structure、spec 17
       existential と base-shape inhabitation evidence。
     - task 53 で完了: `type_checker.rs` は syntax-free reserve bridge 上で local
-      structure head に限って same-module source attribute を受け入れ、attributed local
-      mode は checker validation で拒否する。`mizar-test` は same-module attributed
+      structure head に限って same-module source attribute を受け入れる。attributed
+      local mode の diagnostic slice は後続 task 54 が所有する。`mizar-test` は same-module attributed
       local-structure reserve の active fail fixture を追加し、imported / argument-bearing
       form は広い extraction gap のままにする。
+
+54. **Source-derived attributed local mode reserve expansion-gap bridge.** [x]
+    - task 48 の reserve source declaration seam を、type argument を持たない unique な
+      same-module `LocalSource` mode reserve head に source-derived no-argument
+      attribute payload を付けるところまで拡張する。
+    - 受け入れ条件: checker-owned bridge は symbol head の exact local
+      `SymbolKind::Mode` provenance を検証し、same-module source-derived attribute を保持し、
+      real mode expansion が存在するまでは `MissingEvidenceQuery` を付けず、real
+      mode-expansion payload extraction が未実装なので
+      `checker.type.external.mode_expansion_payload` に到達する。imported attribute / mode、
+      attribute argument、qualified attribute disambiguation、mode argument、successful
+      attributed mode reserve declaration、real mode expansion、accepted-mode / base evidence、
+      fully expanded attributed type の existential evidence、CoreIr / ControlFlowIr / VC /
+      proof payload、より広い semantic pass coverage は MC-G014 / MC-G020 / MC-G026 の下で
+      deferred のままにする。
+    - 検証: `cargo test -p mizar-checker`、`cargo test -p mizar-test`。
+    - 依存: tasks 48、50、51。external mode-expansion と existential evidence は
+      MC-G014 / MC-G020 / MC-G026 のまま。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 03 type expression、spec 07 mode、spec 17 existential と
+      accepted-mode inhabitation evidence。
+    - task 54 で完了: `type_checker.rs` は syntax-free reserve bridge 上で local mode
+      head への same-module source attribute を受け入れ、missing existential evidence を
+      evidence-query diagnostic として扱わない。`mizar-test` は same-module attributed
+      local-mode reserve の active fail fixture を追加し、imported / argument-bearing form は
+      広い extraction gap のままにする。
 
 ## 推奨検証
 

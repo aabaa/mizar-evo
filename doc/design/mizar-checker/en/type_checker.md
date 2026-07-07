@@ -232,7 +232,12 @@ additionally permits un-attributed reserve type heads that resolve to a unique
 same-module `LocalSource` `SymbolKind::Mode` entry with no type arguments.
 Those local-mode reserve declarations reach type normalization and fail closed
 with `checker.type.external.mode_expansion_payload` until a real
-mode-expansion provider/extraction seam exists. Task 52 additionally permits
+mode-expansion provider/extraction seam exists. Task 54 permits that
+local-mode slice to carry same-module source-derived attributes, which still
+fail closed with `checker.type.external.mode_expansion_payload`; the bridge
+does not attach `MissingEvidenceQuery` to the attributed mode before real
+mode-expansion payloads exist, and it does not claim existential evidence for
+the fully expanded attributed type. Task 52 additionally permits
 un-attributed reserve type heads that resolve to a unique same-module
 `LocalSource` `SymbolKind::Structure` entry with no type arguments. Those
 local-structure reserve declarations reach declaration checking and fail
@@ -251,8 +256,9 @@ exposes deterministic typed-site ids for the runner to assemble the existing
 bare-builtin slice, but it does not authorize `mizar-checker` to import
 `mizar-syntax`, scan raw syntax, accept non-reserve declarations, invent
 imported symbols, fabricate mode expansions or existential/base-shape
-evidence, attach source attributes to local mode heads, accept argument-bearing
-symbol heads, or claim CoreIr / ControlFlowIr / VC / proof execution.
+evidence, attach imported or argument-bearing source attributes to local mode
+heads, accept argument-bearing symbol heads, or claim CoreIr / ControlFlowIr /
+VC / proof execution.
 
 Required behavior:
 
