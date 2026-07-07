@@ -1,0 +1,5 @@
+definition
+  mode ElementDef: Element of a is set;
+end;
+
+reserve e for Element of a;

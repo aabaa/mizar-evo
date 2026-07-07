@@ -1,0 +1,21 @@
+schema_version = 1
+id = "fail_type_elaboration_argument_bearing_mode_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_argument_bearing_mode_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "argument_bearing_mode_type_head_payload_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.argument_bearing_mode_gap",
+]
+notes = "Active type_elaboration runner boundary coverage for checker task 68: source containing an argument-bearing same-module mode surface and a reserve use such as `Element of a` is parser/resolver executable, but the checker-owned source bridge lacks real type-argument and term-argument provenance and must stay on the source-to-checker payload extraction gap instead of reaching mode expansion, arity matching, or positive type elaboration."

@@ -362,6 +362,18 @@ attribute payload, does not change the same-module no-argument unqualified
 attribute slices, and does not fabricate existential evidence, CoreIr,
 ControlFlowIr, VC, or proof payloads.
 
+Task 68 records the boundary for argument-bearing mode heads in reserve type
+expressions. Source such as `Element of a` is valid type-expression syntax by
+Chapter 3 and can appear in a same-module mode surface, but the current
+reserve source bridge admits only argument-free local mode or structure heads
+and has no real term/type-argument provenance payload. The active runner
+therefore must leave this source family on
+`type_elaboration.external_dependency.ast_payload_extraction` before checker
+mode expansion, arity matching, or positive type elaboration. This is
+diagnostic boundary coverage only: it does not promote mode arguments into
+`TypeExpressionInput`, does not fabricate term payloads, and does not promote
+CoreIr, ControlFlowIr, VC, or proof payloads.
+
 Task 60 additionally
 permits that direct structure-RHS expansion for an attributed local-mode
 reserve head only when the mode definition is unique, unrecovered, preceding,

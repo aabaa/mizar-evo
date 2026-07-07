@@ -316,9 +316,14 @@ evidence query. Task 67 may credit the structure-qualified attribute
 extraction-gap boundary slice: a same-module structure-qualified attribute
 reference is parser/resolver executable, but the runner still asserts
 `type_elaboration.external_dependency.ast_payload_extraction` until checker
-payloads preserve real qualifier and attribute-owner provenance. The supported
-reserve slices above, excluding task 67's external-gap boundary case, are
-converted into a syntax-free checker source reserve payload, then the
+payloads preserve real qualifier and attribute-owner provenance. Task 68 may
+credit the argument-bearing mode reserve extraction-gap boundary slice: a
+same-module argument-bearing local mode surface and reserve use such as
+`Element of a` are parser/resolver executable, but the runner still asserts
+`type_elaboration.external_dependency.ast_payload_extraction` until checker
+payloads preserve real type-argument and term-argument provenance. The supported
+reserve slices above, excluding task 67 and task 68 external-gap boundary
+cases, are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one `DeclarationInput` per
 binding, binding-specific `TypeExpressionInput` sites, and `DeclarationChecker`
 output.
@@ -335,9 +340,9 @@ being credited from the diagnostic external-gap row.
 Covered active fail tests may still assert the external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` when a case needs
 unsupported non-builtin declarations, imported symbols, attribute or
-mode/structure arguments, structure-qualified attribute provenance, unresolved
-or ambiguous symbols, terms, formulas, coercions, overload payloads, facts,
-CoreIr, ControlFlowIr,
+mode/structure arguments, structure-qualified attribute provenance,
+type-argument or term-argument provenance, unresolved or ambiguous symbols,
+terms, formulas, coercions, overload payloads, facts, CoreIr, ControlFlowIr,
 VC payloads, or proof payload extraction. Supported checker-owned fail slices
 may instead assert the checker
 detail keys for same-module attributed builtin reserve heads missing evidence
@@ -372,7 +377,9 @@ structure-RHS chains remain outside task 60's direct attributed-root slice, task
 62's bare one-edge chain slice, and task 65's attributed-root chain slice.
 Task 67 structure-qualified attribute cases are credited only as
 extraction-gap boundary coverage, not as real qualified attribute payload
-coverage.
+coverage. Task 68 argument-bearing mode cases are credited only as
+extraction-gap boundary coverage, not as real mode-argument payload, arity
+matching, mode expansion, or positive type-elaboration coverage.
 
 Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and

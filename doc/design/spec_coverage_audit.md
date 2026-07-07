@@ -107,6 +107,18 @@ qualified attribute payloads, positive attributed-structure acceptance,
 existential evidence, CoreIr, ControlFlowIr, VC, and proof payloads remain
 deferred.
 
+Task68 addendum for chapter `03.type_system.md`: checker task 68 adds active
+source-derived diagnostic boundary coverage for a reserve type expression whose
+same-module local mode head carries `of` type arguments, such as
+`Element of a`. Chapter 3 and parser coverage already define this syntax; this
+addendum does not claim argument-bearing mode semantics. The active runner
+proves the source is parser/resolver executable but leaves it on the
+source-to-checker payload extraction gap because checker-owned reserve payloads
+do not yet preserve real type-argument or term-argument provenance. This does
+not change the partial status of the chapter; mode/structure arguments, arity
+matching, term payloads, mode expansion, positive type elaboration, CoreIr,
+ControlFlowIr, VC, and proof payloads remain deferred.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

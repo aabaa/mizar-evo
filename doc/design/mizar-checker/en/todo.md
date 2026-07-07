@@ -1586,6 +1586,24 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       source-derived semantic bridge; mizar-test task 10; spec 03 type
       expressions; spec 05 structures; spec 06 attributes.
 
+68. **Add source-derived argument-bearing mode reserve gap boundary.** [x]
+    - Add an active `type_elaboration` boundary fixture for a reserve type
+      expression whose same-module local mode head has `of` type arguments,
+      for example `Element of a`.
+    - Acceptance: the active runner proves the real `.miz` source path is
+      parser/resolver executable but remains on
+      `type_elaboration.external_dependency.ast_payload_extraction` because the
+      checker-owned reserve source bridge does not yet carry real
+      type-argument or term-argument provenance. The boundary must not claim
+      mode-argument payload extraction, arity matching, mode expansion,
+      positive type elaboration, or CoreIr/ControlFlowIr/VC/proof payloads.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 51, and 55. Type-argument and term-argument provenance,
+      argument-bearing mode expansion, arity checking, positive acceptance,
+      and broader mode extraction remain MC-G020/MC-G014. Refs: Step 5
+      source-derived semantic bridge; mizar-test task 10; spec 03 type
+      expressions; spec 07 modes.
+
 ## Recommended Verification
 
 Run after each task:

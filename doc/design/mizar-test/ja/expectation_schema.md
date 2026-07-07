@@ -476,12 +476,15 @@ task 66 は one-edge attributed-builtin-RHS chain を持つ attributed local-mod
 full attributed-type existential evidence 欠落のため evidence-query key で停止することを許可する。
 task 67 は structure-qualified attribute reference が、real qualifier と attribute-owner
 provenance 欠落のため external extraction-gap key で停止することを許可する。
+task 68 は argument-bearing local-mode reserve head が、real type-argument と
+term-argument provenance 欠落のため external extraction-gap key で停止することを許可する。
 これらは fail case であり、pass-slice coverage ではない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
 から checker-owned payload を non-builtin declaration、imported symbol、unresolved /
 ambiguous symbol、attribute / mode / structure argument、imported attributed structure head、
-qualified attribute provenance、structure base-shape evidence、term、formula、
+qualified attribute provenance、type-argument / term-argument provenance、
+structure base-shape evidence、term、formula、
 coercion、fact、overload evidence、CoreIr、ControlFlowIr、VC payload、proof evidence を捏造せず
 構築できるまで deferred のままにする。
 

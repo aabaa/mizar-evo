@@ -1464,6 +1464,24 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       source-derived semantic bridge、mizar-test task 10、spec 03 type expressions、
       spec 05 structures、spec 06 attributes。
 
+68. **Source-derived argument-bearing mode reserve gap boundary を追加する。** [x]
+    - same-module local mode head が `of` type arguments を持つ reserve type
+      expression、たとえば `Element of a` に対する active `type_elaboration`
+      boundary fixture を追加する。
+    - Acceptance: active runner は real `.miz` source path が parser/resolver
+      executable である一方、checker-owned reserve source bridge がまだ real
+      type-argument / term-argument provenance を持たないため
+      `type_elaboration.external_dependency.ast_payload_extraction` に残ることを証明する。
+      この boundary は mode-argument payload extraction、arity matching、mode
+      expansion、positive type elaboration、CoreIr/ControlFlowIr/VC/proof payload を
+      実装済みとして扱ってはならない。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、51、55。type-argument / term-argument provenance、
+      argument-bearing mode expansion、arity checking、positive acceptance、
+      broader mode extraction は MC-G020/MC-G014 のまま。参照: Step 5
+      source-derived semantic bridge、mizar-test task 10、spec 03 type expressions、
+      spec 07 modes。
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -505,7 +505,10 @@ attributed local-mode reserve heads with one-edge attributed-builtin-RHS chains
 to stop at the evidence-query key because full attributed-type existential
 evidence is still absent. Task 67 permits structure-qualified attribute
 references to stop at the external extraction-gap key because real qualifier
-and attribute-owner provenance are still absent. These are fail cases, not
+and attribute-owner provenance are still absent. Task 68 permits
+argument-bearing local-mode reserve heads to stop at the external
+extraction-gap key because real type-argument and term-argument provenance are
+still absent. These are fail cases, not
 pass-slice coverage.
 
 Detailed type assertion tables and broader type pass expectations remain
@@ -513,7 +516,7 @@ deferred until the runner can build checker-owned payloads from `.miz` source
 without inventing non-builtin declarations, imported symbols, unresolved or
 ambiguous symbols, attribute or mode/structure arguments,
 imported attributed structure heads, qualified attribute provenance,
-structure base-shape evidence,
+type-argument or term-argument provenance, structure base-shape evidence,
 terms, formulas, coercions, facts, overload evidence, CoreIr, ControlFlowIr,
 VC payloads, or proof evidence.
 

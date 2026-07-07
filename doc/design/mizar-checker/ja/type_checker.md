@@ -335,6 +335,16 @@ same-module attribute payload に書き換えず、
 昇格せず、same-module no-argument unqualified attribute slice を変更せず、
 existential evidence、CoreIr、ControlFlowIr、VC、proof payload も捏造しない。
 
+task 68 は reserve type expression 内の argument-bearing mode head の境界を記録する。
+`Element of a` のような source は Chapter 3 の type-expression syntax として有効で、
+same-module mode surface に現れることができるが、現在の reserve source bridge は
+argument-free local mode / structure head だけを許可し、real term / type-argument
+provenance payload を持たない。そのため active runner は checker mode expansion、arity
+matching、positive type elaboration へ進む前に、この source family を
+`type_elaboration.external_dependency.ast_payload_extraction` に残さなければならない。
+これは diagnostic boundary coverage に限る。mode argument を `TypeExpressionInput` に
+昇格せず、term payload を捏造せず、CoreIr、ControlFlowIr、VC、proof payload も昇格しない。
+
 task 60 はさらに、
 mode definition が unique / unrecovered / preceding / no-argument で definition-local
 context を持たず、structure definition が unique / unrecovered / same-module で mode
