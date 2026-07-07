@@ -258,16 +258,18 @@ reserve-only builtin declaration slice: unrecovered top-level reserve items
 whose segments contain one or more identifiers and exactly one bare builtin
 `set` or `object` type-expression, with no attributes, arguments, parameter
 prefixes, or non-builtin symbol heads. Those sources are converted into a
-checker-owned module `BindingEnv`, one `DeclarationInput` per binding,
-binding-specific `TypeExpressionInput` sites, a checker-owned `TypedAst`, and
-checker-owned `ResolvedTypedAst`, then read by `mizar-core` through
+syntax-free checker source reserve payload, then the checker-owned seam builds
+the module `BindingEnv`, one `DeclarationInput` per binding,
+binding-specific `TypeExpressionInput` sites, and `DeclarationChecker` output.
+The runner continues that handoff into checker-owned `TypedAst` and
+`ResolvedTypedAst`, then reads it through `mizar-core`
 `ResolvedTypedAstSummary::from_ast` and binder-only `CoreContext` preparation
 for readiness only. Active pass tests may cover that slice only when the
 listed source has at least one extracted reserve binding and runner regression
-evidence confirms the binding-env construction, `DeclarationChecker`, minimal
-`TypedAst`, `ResolvedTypedAst`, summary-readiness, and binder-only core context
-paths were exercised. The pass slice must have its own traceability row/test
-instead of being credited from the diagnostic external-gap row.
+evidence confirms checker handoff construction, minimal `TypedAst`,
+`ResolvedTypedAst`, summary-readiness, and binder-only core context paths were
+exercised. The pass slice must have its own traceability row/test instead of
+being credited from the diagnostic external-gap row.
 
 Covered active fail tests may still assert the external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` when a case needs

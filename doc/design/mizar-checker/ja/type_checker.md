@@ -210,6 +210,17 @@ declaration/type-site table、reserve default payload、right-hand-side term pay
 definition body payload を公開しないため、task 8 は raw syntax を walk してそれらを
 再構成してはならない。
 
+現在の source-derived producer seam: `type_checker` module は、upstream runner が
+抽出した syntax-free な reserve-only payload を受け取り、bare builtin `set` /
+`object` reserve declaration 用の checker-owned `BindingEnv` と
+`DeclarationCheckingOutput` を構築してよい。この payload は source/module identity、
+reserve item source range、各 binding の spelling と declaration range、各 builtin
+type-expression の spelling / range / head を含まなければならない。この seam は
+runner が既存の `TypedAst` / `ResolvedTypedAst` readiness check を組み立てるための
+deterministic typed-site id を公開するが、`mizar-checker` が `mizar-syntax` を import
+すること、raw syntax を scan すること、non-builtin declaration を accept すること、
+CoreIr / ControlFlowIr / VC / proof execution を主張することは許可しない。
+
 必須 behavior:
 
 - `let`、definition parameter、quantified variable、`given`、`consider`、`take`

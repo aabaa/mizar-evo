@@ -371,10 +371,12 @@ Keep `cargo test -p mizar-test` green after each task (see
     - Completed: extends the active `type_elaboration` source bridge from
       builtin type-expression sites to reserve-only builtin declaration
       payloads. The runner extracts unrecovered top-level `reserve` items with
-      bare builtin `set`/`object` heads into a checker-owned module
-      `BindingEnv`, one `DeclarationInput` per binding, binding-specific
-      `TypeExpressionInput` sites, `DeclarationChecker` output, `TypedAst`, and
-      `ResolvedTypedAst`. Shared source type ranges such as
+      bare builtin `set`/`object` heads into syntax-free source reserve
+      payloads. Checker task 48 owns the producer seam that turns those payloads
+      into a checker-owned module `BindingEnv`, one `DeclarationInput` per
+      binding, binding-specific `TypeExpressionInput` sites, and
+      `DeclarationChecker` output; the runner continues that handoff into
+      `TypedAst` and `ResolvedTypedAst`. Shared source type ranges such as
       `reserve x, y for set` keep distinct typed sites for each binding.
     - Unsupported non-builtin declarations, attributes, mode/structure
       payloads, terms, formulas, coercions, overload payloads, facts, CoreIr,

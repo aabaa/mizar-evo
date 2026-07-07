@@ -2,8 +2,10 @@
 
 use crate::{
     binding_env::{
-        BindingContextId, BindingContextLayer, BindingContextRecovery, BindingEnv, BindingId,
-        BindingKind, BindingStatus,
+        BinderIdentity, BindingContextDraft, BindingContextId, BindingContextLayer,
+        BindingContextRecovery, BindingContextTable, BindingDiagnosticTable, BindingDraft,
+        BindingEnv, BindingEnvParts, BindingId, BindingKind, BindingRecoveryState, BindingStatus,
+        BindingTable, BindingTypeSite, CapturedFreeVariables,
     },
     typed_ast::{
         BindingTypeRef, BuiltinRuleId, CoercionDraft, CoercionKind, CoercionProvenance,
@@ -16,14 +18,14 @@ use crate::{
         TypeDiagnosticClass, TypeDiagnosticDraft, TypeDiagnosticId, TypeDiagnosticSeverity,
         TypeDiagnosticTable, TypeEntryActual, TypeEntryDraft, TypeEntryId, TypeFactDraft,
         TypeFactId, TypeFactTable, TypePredicateRef, TypeProvenance, TypeRuleId, TypeStatus,
-        TypeTable, TypedSiteRef, TypedSubjectRef,
+        TypeTable, TypedNodeId, TypedSiteRef, TypedSubjectRef,
     },
 };
 use mizar_resolve::{
     env::{SymbolEnv, SymbolKind},
-    resolved_ast::SymbolId,
+    resolved_ast::{ModuleId, SymbolId},
 };
-use mizar_session::SourceRange;
+use mizar_session::{SourceId, SourceRange};
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt::Write as _,
@@ -2759,6 +2761,233 @@ impl DeclarationContextInput {
             site,
             source_range,
         }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceReserveDeclarationBridge {
+    source_id: SourceId,
+    module_id: ModuleId,
+    source_range: SourceRange,
+    bindings: Vec<SourceReserveBindingInput>,
+}
+
+impl SourceReserveDeclarationBridge {
+    pub fn new(
+        source_id: SourceId,
+        module_id: ModuleId,
+        source_range: SourceRange,
+        bindings: Vec<SourceReserveBindingInput>,
+    ) -> Result<Self, String> {
+        if bindings.is_empty() {
+            return Err("source reserve bridge requires at least one binding".to_owned());
+        }
+        if source_range.source_id != source_id {
+            return Err("source reserve bridge range uses a different source id".to_owned());
+        }
+        for (index, binding) in bindings.iter().enumerate() {
+            binding.validate(source_id, index)?;
+        }
+        Ok(Self {
+            source_id,
+            module_id,
+            source_range,
+            bindings,
+        })
+    }
+
+    pub const fn source_id(&self) -> SourceId {
+        self.source_id
+    }
+
+    pub const fn source_range(&self) -> SourceRange {
+        self.source_range
+    }
+
+    pub const fn module_id(&self) -> &ModuleId {
+        &self.module_id
+    }
+
+    pub fn bindings(&self) -> &[SourceReserveBindingInput] {
+        &self.bindings
+    }
+
+    pub const fn module_context(&self) -> BindingContextId {
+        BindingContextId::new(0)
+    }
+
+    pub fn root_node(&self) -> TypedNodeId {
+        TypedNodeId::new(self.bindings.len() * 2)
+    }
+
+    pub const fn type_node(&self, index: usize) -> TypedNodeId {
+        TypedNodeId::new(index * 2)
+    }
+
+    pub const fn declaration_node(&self, index: usize) -> TypedNodeId {
+        TypedNodeId::new(index * 2 + 1)
+    }
+
+    pub fn check(&self, symbols: &SymbolEnv) -> Result<SourceReserveDeclarationHandoff, String> {
+        if symbols.module_id() != &self.module_id {
+            return Err("source reserve bridge symbol environment module mismatch".to_owned());
+        }
+        let binding_env = self.binding_env()?;
+        let context_inputs = vec![DeclarationContextInput::new(
+            self.module_context(),
+            TypedSiteRef::Node(self.root_node()),
+            self.source_range,
+        )];
+        let declaration_inputs = self
+            .bindings
+            .iter()
+            .enumerate()
+            .map(|(index, binding)| {
+                let type_site = TypedSiteRef::Node(self.type_node(index));
+                DeclarationInput::new(
+                    BindingId::new(index),
+                    self.module_context(),
+                    TypedSiteRef::Node(self.declaration_node(index)),
+                    binding.binding_range,
+                    DeclarationKind::ReservedVariable,
+                )
+                .with_type_expression(TypeExpressionInput::new(
+                    type_site.clone(),
+                    binding.type_range,
+                    binding.type_spelling.clone(),
+                    binding.type_head.clone(),
+                ))
+                .with_reserved_default(ReservedDefaultPayload::new(type_site, false))
+            })
+            .collect::<Vec<_>>();
+        let declarations = DeclarationChecker::default().check(
+            symbols,
+            &binding_env,
+            context_inputs,
+            declaration_inputs,
+        );
+
+        Ok(SourceReserveDeclarationHandoff {
+            binding_env,
+            declarations,
+        })
+    }
+
+    fn binding_env(&self) -> Result<BindingEnv, String> {
+        let binding_ids = (0..self.bindings.len())
+            .map(BindingId::new)
+            .collect::<Vec<_>>();
+        let mut contexts = BindingContextTable::new();
+        contexts.insert(BindingContextDraft {
+            owner: crate::binding_env::BindingContextOwner::Module,
+            parent: None,
+            layer: BindingContextLayer::Module,
+            lexical_scope: None,
+            bindings: binding_ids.clone(),
+            visible_bindings: binding_ids,
+            recovery: BindingContextRecovery::Normal,
+        });
+
+        let mut bindings = BindingTable::new();
+        for (index, binding) in self.bindings.iter().enumerate() {
+            bindings.insert(BindingDraft {
+                spelling: binding.spelling.clone(),
+                kind: BindingKind::ReservedVariable,
+                identity: BinderIdentity::ReservedVariable {
+                    spelling: binding.spelling.clone(),
+                    declaration_range: binding.binding_range,
+                },
+                owner_context: self.module_context(),
+                declaration_range: binding.binding_range,
+                visible_after_ordinal: index,
+                type_site: BindingTypeSite::Source(binding.type_range),
+                status: BindingStatus::Reserved,
+                captured: CapturedFreeVariables::default(),
+                diagnostics: Vec::new(),
+                recovery: BindingRecoveryState::Normal,
+            });
+        }
+
+        BindingEnv::try_new(BindingEnvParts {
+            source_id: self.source_id,
+            module_id: self.module_id.clone(),
+            contexts,
+            bindings,
+            diagnostics: BindingDiagnosticTable::new(),
+        })
+        .map_err(|error| error.to_string())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceReserveBindingInput {
+    pub spelling: String,
+    pub binding_range: SourceRange,
+    pub type_range: SourceRange,
+    pub type_spelling: String,
+    pub type_head: TypeHeadInput,
+}
+
+impl SourceReserveBindingInput {
+    pub fn new(
+        spelling: impl Into<String>,
+        binding_range: SourceRange,
+        type_range: SourceRange,
+        type_spelling: impl Into<String>,
+        type_head: TypeHeadInput,
+    ) -> Self {
+        Self {
+            spelling: spelling.into(),
+            binding_range,
+            type_range,
+            type_spelling: type_spelling.into(),
+            type_head,
+        }
+    }
+
+    fn validate(&self, source_id: SourceId, index: usize) -> Result<(), String> {
+        if self.spelling.is_empty() {
+            return Err(format!("source reserve binding {index} has empty spelling"));
+        }
+        if self.type_spelling.is_empty() {
+            return Err(format!(
+                "source reserve binding {index} has empty type spelling"
+            ));
+        }
+        if self.binding_range.source_id != source_id || self.type_range.source_id != source_id {
+            return Err(format!(
+                "source reserve binding {index} range uses a different source id"
+            ));
+        }
+        if !matches!(
+            &self.type_head,
+            TypeHeadInput::BuiltinSet | TypeHeadInput::BuiltinObject
+        ) {
+            return Err(format!(
+                "source reserve binding {index} is not a supported builtin reserve type"
+            ));
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceReserveDeclarationHandoff {
+    binding_env: BindingEnv,
+    declarations: DeclarationCheckingOutput,
+}
+
+impl SourceReserveDeclarationHandoff {
+    pub const fn binding_env(&self) -> &BindingEnv {
+        &self.binding_env
+    }
+
+    pub const fn declarations(&self) -> &DeclarationCheckingOutput {
+        &self.declarations
+    }
+
+    pub fn into_parts(self) -> (BindingEnv, DeclarationCheckingOutput) {
+        (self.binding_env, self.declarations)
     }
 }
 
@@ -6202,6 +6431,168 @@ mod tests {
             !first
                 .debug_text()
                 .contains(concat!("active", "_refinement"))
+        );
+    }
+
+    #[test]
+    fn source_reserve_declaration_bridge_builds_checker_owned_handoff() {
+        let source = source_id();
+        let module = module_id();
+        let symbols = symbol_env(Vec::new());
+        let bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module,
+            range(source, 0, 40),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 8, 9),
+                    range(source, 17, 20),
+                    "set",
+                    TypeHeadInput::BuiltinSet,
+                ),
+                SourceReserveBindingInput::new(
+                    "y",
+                    range(source, 11, 12),
+                    range(source, 17, 20),
+                    "set",
+                    TypeHeadInput::BuiltinSet,
+                ),
+                SourceReserveBindingInput::new(
+                    "z",
+                    range(source, 29, 30),
+                    range(source, 35, 41),
+                    "object",
+                    TypeHeadInput::BuiltinObject,
+                ),
+            ],
+        )
+        .expect("reserve bridge inputs should validate");
+
+        let handoff = bridge
+            .check(&symbols)
+            .expect("checker-owned source reserve handoff should assemble");
+        let binding_env = handoff.binding_env();
+        let declarations = handoff.declarations();
+        let module_context = binding_env
+            .contexts()
+            .get(bridge.module_context())
+            .expect("module context should exist");
+
+        assert_eq!(
+            module_context.bindings,
+            vec![BindingId::new(0), BindingId::new(1), BindingId::new(2)]
+        );
+        assert_eq!(module_context.visible_bindings, module_context.bindings);
+        assert_eq!(binding_env.bindings().len(), 3);
+        assert_eq!(declarations.declarations().len(), 3);
+        assert_eq!(declarations.contexts().len(), 1);
+        assert!(declarations.diagnostics().is_empty());
+        assert_eq!(bridge.root_node(), TypedNodeId::new(6));
+        assert_ne!(bridge.type_node(0), bridge.type_node(1));
+
+        let checked = declarations_by_binding(declarations);
+        for (index, source_binding) in bridge.bindings().iter().enumerate() {
+            let binding_id = BindingId::new(index);
+            let binding = binding_env
+                .bindings()
+                .get(binding_id)
+                .expect("reserve binding should exist");
+            assert_eq!(binding.spelling, source_binding.spelling);
+            assert_eq!(binding.kind, BindingKind::ReservedVariable);
+            assert_eq!(binding.owner_context, bridge.module_context());
+            assert_eq!(
+                binding.type_site,
+                BindingTypeSite::Source(source_binding.type_range)
+            );
+            assert_eq!(binding.status, BindingStatus::Reserved);
+            assert_eq!(binding.visible_after_ordinal, index);
+            assert!(matches!(
+                &binding.identity,
+                BinderIdentity::ReservedVariable {
+                    spelling,
+                    declaration_range,
+                } if spelling == &source_binding.spelling
+                    && *declaration_range == source_binding.binding_range
+            ));
+
+            let declaration = checked
+                .get(&binding_id)
+                .expect("checked declaration should exist");
+            assert_eq!(declaration.kind, DeclarationKind::ReservedVariable);
+            assert_eq!(declaration.status, DeclarationStatus::Checked);
+            assert_eq!(
+                declaration.site,
+                TypedSiteRef::Node(bridge.declaration_node(index))
+            );
+            assert_eq!(
+                declaration.type_site,
+                Some(TypedSiteRef::Node(bridge.type_node(index)))
+            );
+            assert!(declaration.type_entry.is_some());
+        }
+    }
+
+    #[test]
+    fn source_reserve_declaration_bridge_rejects_non_builtin_or_mismatched_inputs() {
+        let source = source_id();
+        let module = module_id();
+        let mode = symbol_id("Mode/0", "pkg::main::Mode/0");
+        let non_builtin = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 10),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 8),
+                "Mode",
+                TypeHeadInput::Symbol(mode),
+            )],
+        );
+        assert!(
+            non_builtin.is_err(),
+            "non-builtin source reserve payloads must stay on the extraction gap"
+        );
+
+        let other_source = source_ids_pair().1;
+        let mismatched_range = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 10),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(other_source, 0, 1),
+                range(source, 4, 7),
+                "set",
+                TypeHeadInput::BuiltinSet,
+            )],
+        );
+        assert!(
+            mismatched_range.is_err(),
+            "source-derived payload ranges must belong to the bridge source"
+        );
+
+        let symbols = SymbolEnv::new(
+            ModuleId::new(PackageId::new("test"), ModulePath::new("other")),
+            SymbolEnvIndexes::default(),
+        );
+        let bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module,
+            range(source, 0, 10),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 7),
+                "set",
+                TypeHeadInput::BuiltinSet,
+            )],
+        )
+        .expect("builtin payload should validate");
+        assert!(
+            bridge.check(&symbols).is_err(),
+            "symbol environment module mismatches must fail closed"
         );
     }
 

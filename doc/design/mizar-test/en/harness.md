@@ -143,7 +143,7 @@ No exhaustive public enum exceptions are owned by this module.
 | metadata plan | discover sidecars and validate layout, expectation schema, and traceability without executing payloads |
 | parse-only | run active `.miz` parse-only cases through `mizar-frontend` and `MizarParserSeam` |
 | declaration-symbol | run active `.miz` declaration-symbol cases through frontend parsing and resolver declaration/symbol collection |
-| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, execute the supported reserve-only builtin declaration bridge through checker-owned `BindingEnv`, `DeclarationInput`, `TypedAst`, and `ResolvedTypedAst`, confirm `mizar-core` summary-readiness through `ResolvedTypedAstSummary::from_ast`, prepare binder-only `CoreContext` input from the same reserve bindings, and surface unsupported checker payload families as stable external dependency gaps |
+| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, extract supported reserve-only builtin declaration payloads, delegate checker-owned `BindingEnv`/`DeclarationInput`/`DeclarationChecker` handoff production to the syntax-free `mizar-checker` seam, continue through `TypedAst` and `ResolvedTypedAst`, confirm `mizar-core` summary-readiness through `ResolvedTypedAstSummary::from_ast`, prepare binder-only `CoreContext` input from the same reserve bindings, and surface unsupported checker payload families as stable external dependency gaps |
 | pass/fail | run `.miz` cases and match expected outcome |
 | snapshot | compare canonical snapshot hashes |
 | determinism | repeat runs and compare artifacts, diagnostics, and hashes |
@@ -162,7 +162,7 @@ fabricated coverage.
 |---|---|---|---|
 | `mizar-parser` task 3 | `parse_only` / `parse-only` | prepared/implemented; active `.miz` pass/fail sidecars use `active_parse_only`, and untagged parse-only metadata stays planned | Keep the transitional `SurfaceAst` snapshot shortcut until the general snapshot runner lands. |
 | `mizar-resolve` task 23 | `declaration_symbol` / `declaration-symbol` | prepared/implemented; active sidecars use `active_declaration_symbol`, public resolver diagnostic-code matching remains gated | Open public diagnostic-code assertions only after resolver diagnostic ranges are specified. |
-| `mizar-checker` task 12 plus task 16-20 source bridge continuation, reserve summary-readiness, and binder-only core context follow-up | `type_elaboration` / `type-elaboration` | prepared/implemented; active sidecars use `active_type_elaboration`, lower stages run first, reserve-only builtin `set`/`object` declarations are extracted into checker-owned `BindingEnv`, one `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites, `TypedAst`, checker-owned `ResolvedTypedAst`, a `mizar-core` `ResolvedTypedAstSummary::from_ast` read, and binder-only `CoreContext` preparation; unsupported checker payload families stay on `type_elaboration.external_dependency.ast_payload_extraction` | Broader type pass/fail semantic assertions wait for AST-wide source-to-checker payload extraction. |
+| `mizar-checker` task 12 plus task 16-20 and task 48 source bridge continuation, reserve summary-readiness, and binder-only core context follow-up | `type_elaboration` / `type-elaboration` | prepared/implemented; active sidecars use `active_type_elaboration`, lower stages run first, reserve-only builtin `set`/`object` declarations are extracted from `.miz` AST into syntax-free checker payloads, `mizar-checker` produces the checker-owned `BindingEnv`, one `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites, and `DeclarationChecker` output, then the runner continues through `TypedAst`, checker-owned `ResolvedTypedAst`, a `mizar-core` `ResolvedTypedAstSummary::from_ast` read, and binder-only `CoreContext` preparation; unsupported checker payload families stay on `type_elaboration.external_dependency.ast_payload_extraction` | Broader type pass/fail semantic assertions wait for AST-wide source-to-checker payload extraction. |
 | `mizar-checker` task 29 | `formula_statement` / `advanced_semantics` | paced/open; trace rows are deferred and no active fixture is fabricated | Add runner support only after statement/formula and advanced-semantics source payload seams exist. |
 | `mizar-vc` task 15 | `proof_verification` | paced/open; VC/proof-verification obligations are deferred | Add runner support only after source-to-core/source-to-VC extraction and downstream verification seams exist. |
 | `mizar-atp` task 20 | `advanced_semantics` metadata handoff | paced/open in `mizar-test`; metadata-only property fixtures may be consumed by `mizar-atp` Rust tests | Add active `.miz` ATP runner support only after source-derived ATP extraction and proof-policy/kernel handoff seams exist. |
@@ -247,20 +247,22 @@ parser-backed signature projection extractor, and symbol collector. This keeps
 type-elaboration cases honest about lower-stage prerequisites before checker
 payload extraction begins.
 
-After lower stages pass, the runner extracts checker-owned reserve declaration
+After lower stages pass, the runner extracts syntax-free reserve declaration
 payloads only for unrecovered reserve-only sources whose segments have one or
 more identifiers and exactly one bare builtin `set` or `object`
 type-expression, with no attributes, arguments, parameter prefixes, or
-non-builtin symbol heads. It builds a checker-owned module `BindingEnv`
-containing the reserve bindings, one `DeclarationInput` per binding, and
+non-builtin symbol heads. It passes source/module identity, reserve source
+range, binding spelling/ranges, and builtin type-expression spelling/ranges/
+heads to `mizar-checker`'s source reserve declaration seam. That checker-owned
+seam builds the module `BindingEnv`, one `DeclarationInput` per binding, and
 binding-specific `TypeExpressionInput` sites, so `reserve x, y for set` keeps
-the shared source range while giving each binding a distinct typed site. Those
-payloads are checked by `mizar-checker`'s `TypeNormalizer` and
-`DeclarationChecker` against the collected `SymbolEnv`, assembled into a
-checker-owned `TypedAst` with declaration and type-entry links, and projected
-into checker-owned `ResolvedTypedAst` using empty-but-real cluster/overload
-predecessor outputs plus source-preserved node hints and declaration expression
-metadata. The runner then passes that real `ResolvedTypedAst` payload to
+the shared source range while giving each binding a distinct typed site, and
+runs `DeclarationChecker` against the collected `SymbolEnv`. The runner then
+assembles the returned checker handoff into a checker-owned `TypedAst` with
+declaration and type-entry links and projects it into checker-owned
+`ResolvedTypedAst` using empty-but-real cluster/overload predecessor outputs
+plus source-preserved node hints and declaration expression metadata. The
+runner then passes that real `ResolvedTypedAst` payload to
 `mizar-core`'s `ResolvedTypedAstSummary::from_ast` and checks that the summary
 preserves the source/module identity and has no checker recovery/diagnostic
 sites for the successful reserve-only slice. It then prepares binder-only
@@ -273,7 +275,7 @@ construct `CoreIr`, `ControlFlowIr`, obligation seeds, VCs, or proof rows.
 Active pass cases may assert this supported
 source-derived slice with empty detail keys only when the source contains at
 least one supported reserve binding and runner regression evidence confirms
-that binding-env construction, declaration checking, `TypedAst` assembly,
+that checker handoff construction, declaration checking, `TypedAst` assembly,
 `ResolvedTypedAst` assembly, summary-readiness, and binder-only core context
 readiness were exercised.
 

@@ -645,7 +645,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | no task: the greedy `of`/`over` parse is deterministic and documented (spec 19.6.4); a scope-sensitivity lint belongs to the future diagnostics-adoption wave and is recorded in that wave, not here |
-| corpus seeds | task 48 activates the 16 audit fixtures plus the task-35 constructor-property seed, task-36 duplicate-coverage seed, task-37 ordinary/template-derived equivalent-root and same-return signature-conflict seeds, task-38 functorial-`for` guard seed, task-39 property-overlap coherence seed, and task-44 omitted-`reconsider`/ambiguous-redefinition-target seeds when the required runners, parser support, declaration-symbol support, and source-to-checker payload extraction land |
+| corpus seeds | task 49 activates the 16 audit fixtures plus the task-35 constructor-property seed, task-36 duplicate-coverage seed, task-37 ordinary/template-derived equivalent-root and same-return signature-conflict seeds, task-38 functorial-`for` guard seed, task-39 property-overlap coherence seed, and task-44 omitted-`reconsider`/ambiguous-redefinition-target seeds when the required runners, parser support, declaration-symbol support, and source-to-checker payload extraction land |
 
 35. **Spec decision: constructor property arguments vs extensionality (SSA-001).** [x]
     - Resolve the critical §5.5.1/§5.8.4/§5.8.5 inconsistency. Recommended
@@ -998,7 +998,36 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       coverage, artifacts, and active `.miz` fixtures remain deferred under
       MC-G018/MC-G020/MC-G021/MC-G025/MC-G026/MC-G030.
 
-48. **Audit-corpus activation and task-29 record revision.** [ ]
+48. **Reserve source declaration producer seam.** [x]
+    - Promote the existing reserve-only builtin declaration bridge into a
+      checker-owned, syntax-free producer seam in `type_checker`: consume
+      upstream-extracted source/module identity, reserve source range, binding
+      spelling/range, and bare builtin `set`/`object` type-expression
+      spelling/range/head; build the checker-owned `BindingEnv` and
+      `DeclarationCheckingOutput`; expose deterministic typed-site ids for the
+      active `mizar-test` runner to continue assembling `TypedAst`,
+      `ResolvedTypedAst`, summary-readiness, and binder-only core context
+      checks.
+    - Acceptance: `mizar-checker` keeps no direct `mizar-syntax` dependency;
+      non-builtin declarations, attributes, mode/structure payloads, terms,
+      formulas, coercions, overload evidence, facts, proof skeletons,
+      CoreIr/ControlFlowIr/VC/proof payloads, and new active `.miz` coverage
+      remain deferred under MC-G020; active `type-elaboration` results stay
+      byte-stable.
+    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
+    - Deps: task 47; external source families remain MC-G020. Refs:
+      Step 5 source-derived semantic bridge; mizar-test task 10.
+    - Completed in task 48: `type_checker.rs` now exposes
+      `SourceReserveDeclarationBridge`, `SourceReserveBindingInput`, and
+      `SourceReserveDeclarationHandoff` for the supported reserve-only builtin
+      slice. `mizar-test` still owns real `.miz` AST extraction and lower-stage
+      runner gating, then delegates checker handoff production through this
+      seam before its existing `TypedAst`/`ResolvedTypedAst`/core readiness
+      assertions. No `.miz` expectations, public diagnostic codes,
+      CoreIr/ControlFlowIr/VC/proof rows, or broader semantic payload families
+      were promoted.
+
+49. **Audit-corpus activation and task-29 record revision.** [ ]
     - When the `advanced_semantics`/`formula_statement` runners,
       property-implementation parser support, and source-to-checker payload
       extraction land (mizar-test runner growth +

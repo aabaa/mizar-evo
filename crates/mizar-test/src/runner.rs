@@ -6,10 +6,7 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use mizar_checker::binding_env::{
-    BinderIdentity, BindingContextDraft, BindingContextId, BindingContextLayer,
-    BindingContextOwner, BindingContextRecovery, BindingContextTable, BindingDiagnosticTable,
-    BindingDraft, BindingEnv, BindingEnvParts, BindingId, BindingKind, BindingRecoveryState,
-    BindingStatus, BindingTable, BindingTypeSite, CapturedFreeVariables,
+    BinderIdentity, BindingEnv, BindingId, BindingKind, BindingStatus, BindingTypeSite,
 };
 use mizar_checker::cluster_trace::ClusterFactTable;
 use mizar_checker::overload_resolution::{
@@ -24,13 +21,13 @@ use mizar_checker::resolved_typed_ast::{
     SourceNodeRole,
 };
 use mizar_checker::type_checker::{
-    DeclarationChecker, DeclarationCheckingOutput, DeclarationContextInput, DeclarationInput,
-    DeclarationKind, DeclarationStatus, ReservedDefaultPayload, TypeExpressionInput, TypeHeadInput,
+    DeclarationCheckingOutput, DeclarationKind, DeclarationStatus, SourceReserveBindingInput,
+    SourceReserveDeclarationBridge, TypeHeadInput,
 };
 use mizar_checker::typed_ast::{
     CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, TypeEntryId,
-    TypeStatus, TypeTable, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeId,
-    TypedNodeLinks, TypedSiteRef, TypingState,
+    TypeStatus, TypeTable, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeLinks,
+    TypedSiteRef, TypingState,
 };
 use mizar_core::{
     binder_normalization::{NormalizedVarClass, NormalizedVarSort},
@@ -76,7 +73,6 @@ const ACTIVE_TYPE_ELABORATION_TAG: &str = "active_type_elaboration";
 const ALLOW_FRONTEND_RECOVERY_DIAGNOSTICS_TAG: &str = "allow_frontend_recovery_diagnostics";
 const TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY: &str =
     "type_elaboration.external_dependency.ast_payload_extraction";
-const SOURCE_RESERVE_MODULE_CONTEXT: BindingContextId = BindingContextId::new(0);
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseOnlyRunReport {
@@ -733,15 +729,11 @@ fn source_type_elaboration_detail_keys(
     module: ResolverModuleId,
     symbols: &SymbolEnv,
 ) -> Vec<String> {
-    let Ok(source_reserve) = extract_builtin_source_reserve_declarations(ast) else {
+    let Ok(source_reserve) = extract_builtin_source_reserve_declarations(ast, module.clone())
+    else {
         return vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()];
     };
-    let handoff = match assemble_source_reserve_checker_handoff(
-        ast.source_id,
-        module,
-        symbols,
-        &source_reserve,
-    ) {
+    let handoff = match assemble_source_reserve_checker_handoff(symbols, &source_reserve) {
         Ok(handoff) => handoff,
         Err(_) => return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()],
     };
@@ -777,35 +769,6 @@ fn source_type_elaboration_detail_keys(
     Vec::new()
 }
 
-#[derive(Debug, Clone)]
-struct SourceReserveBridge {
-    bindings: Vec<SourceReserveBinding>,
-    source_range: SourceRange,
-}
-
-impl SourceReserveBridge {
-    fn root_node(&self) -> TypedNodeId {
-        TypedNodeId::new(self.bindings.len() * 2)
-    }
-
-    fn type_node(&self, index: usize) -> TypedNodeId {
-        TypedNodeId::new(index * 2)
-    }
-
-    fn declaration_node(&self, index: usize) -> TypedNodeId {
-        TypedNodeId::new(index * 2 + 1)
-    }
-}
-
-#[derive(Debug, Clone)]
-struct SourceReserveBinding {
-    spelling: String,
-    binding_range: SourceRange,
-    type_range: SourceRange,
-    type_spelling: String,
-    type_head: TypeHeadInput,
-}
-
 #[derive(Debug)]
 struct SourceReserveHandoff {
     binding_env: BindingEnv,
@@ -823,7 +786,8 @@ struct SourceTypeExpression {
 
 fn extract_builtin_source_reserve_declarations(
     ast: &SurfaceAst,
-) -> Result<SourceReserveBridge, ()> {
+    module: ResolverModuleId,
+) -> Result<SourceReserveDeclarationBridge, ()> {
     if ast
         .nodes()
         .iter()
@@ -864,10 +828,13 @@ fn extract_builtin_source_reserve_declarations(
     if bindings.is_empty() {
         return Err(());
     }
-    Ok(SourceReserveBridge {
+    SourceReserveDeclarationBridge::new(
+        ast.source_id,
+        module,
+        source_range.expect("reserve_items was non-empty"),
         bindings,
-        source_range: source_range.expect("reserve_items was non-empty"),
-    })
+    )
+    .map_err(|_| ())
 }
 
 fn is_supported_builtin_reserve_bridge_node(node: &SurfaceNode) -> bool {
@@ -887,7 +854,7 @@ fn is_supported_builtin_reserve_bridge_node(node: &SurfaceNode) -> bool {
 fn extract_builtin_reserve_segment(
     ast: &SurfaceAst,
     segment: &SurfaceNode,
-) -> Result<Vec<SourceReserveBinding>, ()> {
+) -> Result<Vec<SourceReserveBindingInput>, ()> {
     if subtree_has_recovery(ast, segment) {
         return Err(());
     }
@@ -928,12 +895,14 @@ fn extract_builtin_reserve_segment(
     let type_expression = type_expression.ok_or(())?;
     Ok(identifiers
         .into_iter()
-        .map(|(spelling, binding_range)| SourceReserveBinding {
-            spelling,
-            binding_range,
-            type_range: type_expression.range,
-            type_spelling: type_expression.spelling.clone(),
-            type_head: type_expression.head.clone(),
+        .map(|(spelling, binding_range)| {
+            SourceReserveBindingInput::new(
+                spelling,
+                binding_range,
+                type_expression.range,
+                type_expression.spelling.clone(),
+                type_expression.head.clone(),
+            )
         })
         .collect())
 }
@@ -983,48 +952,11 @@ fn subtree_has_recovery(ast: &SurfaceAst, node: &SurfaceNode) -> bool {
 }
 
 fn assemble_source_reserve_checker_handoff(
-    source_id: mizar_session::SourceId,
-    module: ResolverModuleId,
     symbols: &SymbolEnv,
-    source_reserve: &SourceReserveBridge,
+    source_reserve: &SourceReserveDeclarationBridge,
 ) -> Result<SourceReserveHandoff, String> {
-    let binding_env =
-        assemble_source_reserve_binding_env(source_id, module.clone(), source_reserve)?;
-    let context_inputs = vec![DeclarationContextInput::new(
-        SOURCE_RESERVE_MODULE_CONTEXT,
-        TypedSiteRef::Node(source_reserve.root_node()),
-        source_reserve.source_range,
-    )];
-    let declaration_inputs = source_reserve
-        .bindings
-        .iter()
-        .enumerate()
-        .map(|(index, binding)| {
-            let type_site = TypedSiteRef::Node(source_reserve.type_node(index));
-            DeclarationInput::new(
-                BindingId::new(index),
-                SOURCE_RESERVE_MODULE_CONTEXT,
-                TypedSiteRef::Node(source_reserve.declaration_node(index)),
-                binding.binding_range,
-                DeclarationKind::ReservedVariable,
-            )
-            .with_type_expression(TypeExpressionInput::new(
-                type_site.clone(),
-                binding.type_range,
-                binding.type_spelling.clone(),
-                binding.type_head.clone(),
-            ))
-            .with_reserved_default(ReservedDefaultPayload::new(type_site, false))
-        })
-        .collect::<Vec<_>>();
-    let declarations = DeclarationChecker::default().check(
-        symbols,
-        &binding_env,
-        context_inputs,
-        declaration_inputs,
-    );
-    let typed_ast =
-        assemble_source_reserve_typed_ast(source_id, module, source_reserve, &declarations)?;
+    let (binding_env, declarations) = source_reserve.check(symbols)?.into_parts();
+    let typed_ast = assemble_source_reserve_typed_ast(source_reserve, &declarations)?;
     let resolved = assemble_source_reserve_resolved_typed_ast(&typed_ast, source_reserve)
         .map_err(|error| error.to_string())?;
 
@@ -1036,58 +968,9 @@ fn assemble_source_reserve_checker_handoff(
     })
 }
 
-fn assemble_source_reserve_binding_env(
-    source_id: mizar_session::SourceId,
-    module: ResolverModuleId,
-    source_reserve: &SourceReserveBridge,
-) -> Result<BindingEnv, String> {
-    let binding_ids = (0..source_reserve.bindings.len())
-        .map(BindingId::new)
-        .collect::<Vec<_>>();
-    let mut contexts = BindingContextTable::new();
-    contexts.insert(BindingContextDraft {
-        owner: BindingContextOwner::Module,
-        parent: None,
-        layer: BindingContextLayer::Module,
-        lexical_scope: None,
-        bindings: binding_ids.clone(),
-        visible_bindings: binding_ids,
-        recovery: BindingContextRecovery::Normal,
-    });
-
-    let mut bindings = BindingTable::new();
-    for (index, binding) in source_reserve.bindings.iter().enumerate() {
-        bindings.insert(BindingDraft {
-            spelling: binding.spelling.clone(),
-            kind: BindingKind::ReservedVariable,
-            identity: BinderIdentity::ReservedVariable {
-                spelling: binding.spelling.clone(),
-                declaration_range: binding.binding_range,
-            },
-            owner_context: SOURCE_RESERVE_MODULE_CONTEXT,
-            declaration_range: binding.binding_range,
-            visible_after_ordinal: index,
-            type_site: BindingTypeSite::Source(binding.type_range),
-            status: BindingStatus::Reserved,
-            captured: CapturedFreeVariables::default(),
-            diagnostics: Vec::new(),
-            recovery: BindingRecoveryState::Normal,
-        });
-    }
-
-    BindingEnv::try_new(BindingEnvParts {
-        source_id,
-        module_id: module,
-        contexts,
-        bindings,
-        diagnostics: BindingDiagnosticTable::new(),
-    })
-    .map_err(|error| error.to_string())
-}
-
 fn assemble_source_reserve_resolved_typed_ast(
     typed_ast: &TypedAst,
-    source_reserve: &SourceReserveBridge,
+    source_reserve: &SourceReserveDeclarationBridge,
 ) -> Result<ResolvedTypedAst, String> {
     let cluster_facts = ClusterFactTable::new();
     let overload_collection = OverloadCollectionOutput::collect(
@@ -1104,7 +987,7 @@ fn assemble_source_reserve_resolved_typed_ast(
     let overload_selection =
         OverloadSelectionOutput::resolve(&specificity, Vec::<OverloadSiteResolutionInput>::new());
     let expressions = source_reserve
-        .bindings
+        .bindings()
         .iter()
         .enumerate()
         .map(|(index, _)| ExpressionMetadataInput {
@@ -1115,7 +998,7 @@ fn assemble_source_reserve_resolved_typed_ast(
         })
         .collect();
     let mut node_hints = Vec::new();
-    for (index, _) in source_reserve.bindings.iter().enumerate() {
+    for (index, _) in source_reserve.bindings().iter().enumerate() {
         node_hints.push(ResolvedNodeKindHint {
             typed_node: source_reserve.type_node(index),
             kind: ResolvedNodeKindHintKind::SourcePreserved {
@@ -1152,9 +1035,9 @@ fn assemble_source_reserve_resolved_typed_ast(
 
 fn assert_source_reserve_handoff(
     handoff: &SourceReserveHandoff,
-    source_reserve: &SourceReserveBridge,
+    source_reserve: &SourceReserveDeclarationBridge,
 ) -> Result<(), String> {
-    let expected_bindings = source_reserve.bindings.len();
+    let expected_bindings = source_reserve.bindings().len();
     let expected_nodes = expected_bindings * 2 + 1;
     if handoff.resolved.nodes().len() != expected_nodes
         || handoff.resolved.expr_metadata().len() != expected_bindings
@@ -1165,7 +1048,7 @@ fn assert_source_reserve_handoff(
     let module_context = handoff
         .binding_env
         .contexts()
-        .get(SOURCE_RESERVE_MODULE_CONTEXT)
+        .get(source_reserve.module_context())
         .ok_or_else(|| "missing source reserve module binding context".to_owned())?;
     let expected_binding_ids = (0..expected_bindings)
         .map(BindingId::new)
@@ -1185,7 +1068,7 @@ fn assert_source_reserve_handoff(
         return Err("source reserve local context missing".to_owned());
     }
 
-    for (index, source_binding) in source_reserve.bindings.iter().enumerate() {
+    for (index, source_binding) in source_reserve.bindings().iter().enumerate() {
         let binding = handoff
             .binding_env
             .bindings()
@@ -1193,7 +1076,7 @@ fn assert_source_reserve_handoff(
             .ok_or_else(|| format!("missing source reserve binding {index}"))?;
         if binding.spelling != source_binding.spelling
             || binding.kind != BindingKind::ReservedVariable
-            || binding.owner_context != SOURCE_RESERVE_MODULE_CONTEXT
+            || binding.owner_context != source_reserve.module_context()
             || binding.declaration_range != source_binding.binding_range
             || binding.visible_after_ordinal != index
             || binding.type_site != BindingTypeSite::Source(source_binding.type_range)
@@ -1322,12 +1205,12 @@ fn assert_source_reserve_core_summary_readiness(
 
 fn assert_source_reserve_core_context_readiness(
     handoff: &SourceReserveHandoff,
-    source_reserve: &SourceReserveBridge,
+    source_reserve: &SourceReserveDeclarationBridge,
 ) -> Result<(), String> {
     let summary = ResolvedTypedAstSummary::from_ast(&handoff.resolved);
     let mut input = CoreContextInput::new(summary);
 
-    for (index, source_binding) in source_reserve.bindings.iter().enumerate() {
+    for (index, source_binding) in source_reserve.bindings().iter().enumerate() {
         let binding_id = BindingId::new(index);
         let binding = handoff
             .binding_env
@@ -1370,13 +1253,13 @@ fn assert_source_reserve_core_context_readiness(
     {
         return Err("core context promoted unsupported work".to_owned());
     }
-    if context.binder_sources().iter().count() != source_reserve.bindings.len()
-        || context.binder_context().free_variables.len() != source_reserve.bindings.len()
+    if context.binder_sources().iter().count() != source_reserve.bindings().len()
+        || context.binder_context().free_variables.len() != source_reserve.bindings().len()
     {
         return Err("core context binding count mismatch".to_owned());
     }
 
-    for (index, source_binding) in source_reserve.bindings.iter().enumerate() {
+    for (index, source_binding) in source_reserve.bindings().iter().enumerate() {
         let var = CoreVarId::new(index);
         let binder_source = context
             .binder_sources()
@@ -1403,13 +1286,10 @@ fn assert_source_reserve_core_context_readiness(
 
 #[cfg(test)]
 fn assemble_source_checker_handoff(
-    source_id: mizar_session::SourceId,
-    module: ResolverModuleId,
     symbols: &SymbolEnv,
-    source_reserve: &SourceReserveBridge,
+    source_reserve: &SourceReserveDeclarationBridge,
 ) -> Result<SourceReserveHandoff, String> {
-    let handoff =
-        assemble_source_reserve_checker_handoff(source_id, module, symbols, source_reserve)?;
+    let handoff = assemble_source_reserve_checker_handoff(symbols, source_reserve)?;
     assert_source_reserve_handoff(&handoff, source_reserve)?;
     assert_source_reserve_core_summary_readiness(&handoff)?;
     assert_source_reserve_core_context_readiness(&handoff, source_reserve)?;
@@ -1417,12 +1297,10 @@ fn assemble_source_checker_handoff(
 }
 
 fn assemble_source_reserve_typed_ast(
-    source_id: mizar_session::SourceId,
-    module: ResolverModuleId,
-    source_reserve: &SourceReserveBridge,
+    source_reserve: &SourceReserveDeclarationBridge,
     output: &DeclarationCheckingOutput,
 ) -> Result<TypedAst, String> {
-    if source_reserve.bindings.is_empty() {
+    if source_reserve.bindings().is_empty() {
         return Err("source reserve bridge produced no bindings".to_owned());
     }
     let declarations_by_binding = output
@@ -1432,7 +1310,7 @@ fn assemble_source_reserve_typed_ast(
         .collect::<BTreeMap<_, _>>();
     let mut builder = TypedArenaBuilder::new();
     let mut declaration_nodes = Vec::new();
-    for (index, source_binding) in source_reserve.bindings.iter().enumerate() {
+    for (index, source_binding) in source_reserve.bindings().iter().enumerate() {
         let type_node_id = source_reserve.type_node(index);
         let type_site = TypedSiteRef::Node(type_node_id);
         let type_entry = type_entry_for_site(output.type_entries(), &type_site);
@@ -1491,7 +1369,7 @@ fn assemble_source_reserve_typed_ast(
         .push(
             TypedNode::new(
                 "source.reserve.module",
-                SourceAnchor::Range(source_reserve.source_range),
+                SourceAnchor::Range(source_reserve.source_range()),
             )
             .with_children(declaration_nodes)
             .with_recovery(NodeRecoveryState::Normal)
@@ -1506,8 +1384,8 @@ fn assemble_source_reserve_typed_ast(
         .finish(Some(root))
         .map_err(|error| error.to_string())?;
     TypedAst::try_new(TypedAstParts {
-        source_id,
-        module_id: module,
+        source_id: source_reserve.source_id(),
+        module_id: source_reserve.module_id().clone(),
         resolved_root: None,
         nodes,
         contexts: output.contexts().clone(),
@@ -2274,13 +2152,14 @@ mod tests {
                 reserve_item(vec!["z"], ReserveTypeShape::Builtin("object")),
             ],
         );
+        let module = ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
 
-        let source_reserve = extract_builtin_source_reserve_declarations(&ast)
+        let source_reserve = extract_builtin_source_reserve_declarations(&ast, module.clone())
             .expect("builtin reserve declarations should extract");
 
         assert_eq!(
             source_reserve
-                .bindings
+                .bindings()
                 .iter()
                 .map(|binding| (
                     binding.spelling.as_str(),
@@ -2317,7 +2196,7 @@ mod tests {
         );
 
         assert!(
-            extract_builtin_source_reserve_declarations(&non_builtin).is_err(),
+            extract_builtin_source_reserve_declarations(&non_builtin, module.clone()).is_err(),
             "non-builtin type heads must stay on the external gap"
         );
 
@@ -2327,7 +2206,7 @@ mod tests {
         );
 
         assert!(
-            extract_builtin_source_reserve_declarations(&unsupported).is_err(),
+            extract_builtin_source_reserve_declarations(&unsupported, module).is_err(),
             "attribute-bearing type expressions must stay on the external gap"
         );
     }
@@ -2342,12 +2221,12 @@ mod tests {
                 reserve_item(vec!["z"], ReserveTypeShape::Builtin("object")),
             ],
         );
-        let source_reserve = extract_builtin_source_reserve_declarations(&ast)
-            .expect("builtin reserve declarations should extract");
         let module = ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let source_reserve = extract_builtin_source_reserve_declarations(&ast, module.clone())
+            .expect("builtin reserve declarations should extract");
         let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
 
-        let handoff = assemble_source_checker_handoff(source_id, module, &symbols, &source_reserve)
+        let handoff = assemble_source_checker_handoff(&symbols, &source_reserve)
             .expect("source-derived checker handoff should reach ResolvedTypedAst");
         let resolved = &handoff.resolved;
 
@@ -2355,7 +2234,7 @@ mod tests {
         let module_context = handoff
             .binding_env
             .contexts()
-            .get(super::SOURCE_RESERVE_MODULE_CONTEXT)
+            .get(source_reserve.module_context())
             .expect("module binding context should exist");
         assert_eq!(
             module_context.bindings,
@@ -2378,10 +2257,10 @@ mod tests {
         );
         assert_ne!(source_reserve.type_node(0), source_reserve.type_node(1));
         assert_eq!(
-            source_reserve.bindings[0].type_range,
-            source_reserve.bindings[1].type_range
+            source_reserve.bindings()[0].type_range,
+            source_reserve.bindings()[1].type_range
         );
-        for index in 0..source_reserve.bindings.len() {
+        for index in 0..source_reserve.bindings().len() {
             let type_node = resolved
                 .nodes()
                 .node(ResolvedTypedNodeId::new(

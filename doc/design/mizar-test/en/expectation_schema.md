@@ -424,12 +424,13 @@ The supported source-derived pass slice is limited to reserve-only builtin
 segments have one or more identifiers and exactly one bare builtin
 type-expression head, with no attributes, arguments, parameter prefixes, or
 non-builtin symbol heads. Such pass cases must contain at least one reserve
-binding that the runner extracts into a checker-owned module `BindingEnv`, one
-`DeclarationInput` per binding, and binding-specific `TypeExpressionInput`
-sites. The runner checks those inputs through `TypeNormalizer`,
-`DeclarationChecker`, `TypedAst`, `ResolvedTypedAst`, and a summary-only
-`mizar-core` `ResolvedTypedAstSummary::from_ast` readiness read plus
-binder-only `CoreContext` preparation; multiple identifiers sharing one source
+binding that the runner extracts into syntax-free source reserve payloads. The
+checker-owned source reserve seam builds the module `BindingEnv`, one
+`DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites,
+and `DeclarationChecker` output; the runner then continues through `TypedAst`,
+`ResolvedTypedAst`, and a summary-only `mizar-core`
+`ResolvedTypedAstSummary::from_ast` readiness read plus binder-only
+`CoreContext` preparation. Multiple identifiers sharing one source
 type-expression range must still use distinct typed sites. The summary/context
 readiness checks must not be treated as `CoreIr`, `ControlFlowIr`, VC, or proof
 execution. The case must be covered by a pass-slice traceability row and assert

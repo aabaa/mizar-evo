@@ -609,7 +609,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
 | SSA-013, SSA-014 | task 43 |
 | SSA-015, SSA-017 | task 44 |
 | SSA-018 | タスク化しない: greedy `of`/`over` parse は決定的かつ文書化済み(spec 19.6.4)。scope 感度 lint は将来の diagnostics 採用 wave に属し、そこで記録する |
-| corpus seeds | task 48 が必要な runner、parser support、declaration-symbol support、source-to-checker payload extraction 到着時に、監査 fixture 16 件、task-35 constructor-property seed、task-36 duplicate-coverage seed、task-37 ordinary/template-derived equivalent-root seed と same-return signature-conflict seed、task-38 functorial-`for` guard seed、task-39 property-overlap coherence seed、task-44 omitted-`reconsider` / ambiguous-redefinition-target seed を活性化する |
+| corpus seeds | task 49 が必要な runner、parser support、declaration-symbol support、source-to-checker payload extraction 到着時に、監査 fixture 16 件、task-35 constructor-property seed、task-36 duplicate-coverage seed、task-37 ordinary/template-derived equivalent-root seed と same-return signature-conflict seed、task-38 functorial-`for` guard seed、task-39 property-overlap coherence seed、task-44 omitted-`reconsider` / ambiguous-redefinition-target seed を活性化する |
 
 35. **Spec 決定: constructor property 引数と extensionality(SSA-001)。** [x]
     - critical な §5.5.1/§5.8.4/§5.8.5 の不整合を解決する。推奨は解決策 1:
@@ -945,7 +945,34 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       parser/extraction coverage、artifact、active `.miz` fixture は
       MC-G018/MC-G020/MC-G021/MC-G025/MC-G026/MC-G030 の下で deferred のまま。
 
-48. **監査 corpus の活性化と task-29 record の改訂。** [ ]
+48. **Reserve source declaration producer seam。** [x]
+    - 既存 reserve-only builtin declaration bridge を `type_checker` の
+      checker-owned かつ syntax-free な producer seam へ昇格する。upstream が
+      抽出した source/module identity、reserve source range、binding
+      spelling/range、bare builtin `set` / `object` type-expression
+      spelling/range/head を消費し、checker-owned `BindingEnv` と
+      `DeclarationCheckingOutput` を構築する。active `mizar-test` runner が
+      引き続き `TypedAst`、`ResolvedTypedAst`、summary-readiness、binder-only core
+      context check を組み立てられるよう deterministic typed-site id を公開する。
+    - 受け入れ条件: `mizar-checker` は direct `mizar-syntax` dependency を持たない。
+      non-builtin declaration、attribute、mode/structure payload、term、
+      formula、coercion、overload evidence、fact、proof skeleton、
+      CoreIr/ControlFlowIr/VC/proof payload、新しい active `.miz` coverage は
+      MC-G020 の下で deferred のまま。active `type-elaboration` result は
+      byte-stable のまま。
+    - 検証: `cargo test -p mizar-checker`, `cargo test -p mizar-test`。
+    - 依存: task 47; 外部 source family は MC-G020 のまま。参照:
+      Step 5 source-derived semantic bridge; mizar-test task 10。
+    - task 48 で完了: `type_checker.rs` は対応済み reserve-only builtin slice
+      用の `SourceReserveDeclarationBridge`、`SourceReserveBindingInput`、
+      `SourceReserveDeclarationHandoff` を公開する。`mizar-test` は引き続き real
+      `.miz` AST extraction と lower-stage runner gating を所有し、その後この
+      seam を通じて checker handoff production を委譲してから既存の
+      `TypedAst` / `ResolvedTypedAst` / core readiness assertion を行う。
+      `.miz` expectation、public diagnostic code、CoreIr/ControlFlowIr/VC/proof
+      row、より広い semantic payload family は昇格していない。
+
+49. **監査 corpus の活性化と task-29 record の改訂。** [ ]
     - `advanced_semantics`/`formula_statement` runner、property-implementation
       parser support、source-to-checker payload 抽出(mizar-test runner 成長 +
       MC-G020/MC-G021/MC-G023/MC-G027、および task-39 seed については

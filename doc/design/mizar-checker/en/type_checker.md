@@ -219,6 +219,17 @@ not expose an AST-wide declaration/type-site table, reserve default payload,
 right-hand-side term payload, or definition body payload, so task 8 must not
 walk raw syntax to reconstruct them.
 
+Current source-derived producer seam: the `type_checker` module may accept a
+syntax-free reserve-only payload extracted by an upstream runner and build the
+checker-owned `BindingEnv` plus `DeclarationCheckingOutput` for bare builtin
+`set` / `object` reserve declarations. That payload must include source/module
+identity, the reserve item source range, each binding spelling and declaration
+range, and each builtin type-expression spelling/range/head. The seam exposes
+deterministic typed-site ids for the runner to assemble the existing
+`TypedAst` / `ResolvedTypedAst` readiness checks, but it does not authorize
+`mizar-checker` to import `mizar-syntax`, scan raw syntax, accept non-builtin
+declarations, or claim CoreIr / ControlFlowIr / VC / proof execution.
+
 Required behavior:
 
 - `let`, definition parameters, quantified variables, `given`, `consider`, and

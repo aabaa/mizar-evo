@@ -402,13 +402,14 @@ resolver symbol collection を実行する。
 declaration に限定する。対象は top-level の unrecovered reserve item で、segment が
 1 個以上の identifier と exactly one bare builtin type-expression head を持ち、
 attribute、argument、parameter prefix、non-builtin symbol head を含まないものだけである。
-この pass case は、runner が checker-owned module `BindingEnv`、binding ごとの
-`DeclarationInput`、binding 固有の `TypeExpressionInput` site へ抽出する reserve
-binding を少なくとも 1 つ含む必要がある。runner はその input を `TypeNormalizer`、
-`DeclarationChecker`、`TypedAst`、`ResolvedTypedAst`、summary-only の
-`mizar-core` `ResolvedTypedAstSummary::from_ast` readiness read と binder-only
-`CoreContext` preparation へ通す。同じ source type-expression range を共有する複数
-identifier でも distinct typed site を使わなければならない。
+この pass case は、runner が syntax-free な source reserve payload へ抽出する reserve
+binding を少なくとも 1 つ含む必要がある。checker-owned source reserve seam は
+module `BindingEnv`、binding ごとの `DeclarationInput`、binding 固有の
+`TypeExpressionInput` site、`DeclarationChecker` output を構築し、runner はその後
+`TypedAst`、`ResolvedTypedAst`、summary-only の `mizar-core`
+`ResolvedTypedAstSummary::from_ast` readiness read と binder-only `CoreContext`
+preparation へ継続する。同じ source type-expression range を共有する複数 identifier
+でも distinct typed site を使わなければならない。
 この summary/context readiness check を `CoreIr`、`ControlFlowIr`、VC、proof execution として扱ってはならない。
 pass-slice traceability row に cover され、empty `diagnostic_codes` と internal detail
 payload なしを assert する。

@@ -146,7 +146,9 @@ literal top-level public item:
   `DeclarationKind`, `ReservedDefaultPayload`,
   `DeclarationDeferredReason`, `DeclarationAssumptionInput`,
   `CheckedDeclarationTable`, `CheckedDeclarationId`,
-  `CheckedDeclaration`, `DeclarationStatus`, `TypeExpressionInput`,
+  `CheckedDeclaration`, `DeclarationStatus`,
+  `SourceReserveDeclarationBridge`, `SourceReserveBindingInput`,
+  `SourceReserveDeclarationHandoff`, `TypeExpressionInput`,
   `TypeHeadInput`, `AttributeInput`, `AttributePolarity`, `ModeExpansion`,
   `NormalizedTypeTable`, `NormalizedType`, `TypeHeadRef`,
   `TypeHeadErrorKind`, `AttributeSet`, `AttributeInstance`, `TypeSource`,
@@ -158,6 +160,7 @@ literal top-level public item:
 |---|---|---|---|
 | Type-expression normalization は mode、attribute、arity、unsupported input の degraded state を canonicalize し、cluster repair を行わない。 | `TypeNormalizer`, `TypeNormalizationOutput`, `TypeExpressionInput`, `ModeExpansion`, normalized type tables. | attribute/order/builtin/mode-expansion/degraded-head tests. | explicit payload について実装済み。MC-G014 は残る。 |
 | Declaration checking は explicit declaration と binding context を消費し、partial output を保持する。 | `DeclarationChecker`, `DeclarationCheckingOutput`, declaration input/status tables. | declaration deterministic/invalid/constrained/set/attributed/reconsider tests. | explicit payload について実装済み。MC-G016 は残る。 |
+| reserve-only source-derived producer seam は syntax-free な reserve payload を消費し、raw syntax を import せず checker-owned binding/declaration handoff data を構築する。 | `SourceReserveDeclarationBridge`, `SourceReserveBindingInput`, `SourceReserveDeclarationHandoff`. | `source_reserve_declaration_bridge_builds_checker_owned_handoff`, `source_reserve_declaration_bridge_rejects_non_builtin_or_mismatched_inputs`, active `mizar-test` type-elaboration runner regressions. | bare builtin `set`/`object` reserve declaration だけ実装済み。より広い AST-wide extraction は MC-G020 のまま。 |
 | Term/formula inference は checked table、expected constraint、open candidate、fact、recovery を記録する。 | `TermFormulaChecker`, term/formula input and checked tables. | term/formula/recovery tests. | explicit payload について実装済み。MC-G017/MC-G019 は残る。 |
 | Coercion と initial obligation は `VcId` や fabricated evidence なしで記録される。 | `CoercionObligationChecker`, `CoercionInput`, `InitialObligationInput`, justification/evidence/deferred enum. | coercion deterministic/missing evidence/alternate candidate tests; task 47 omitted-`reconsider` proof-free/requires-proof tests。 | explicit payload について実装済み。source-derived coercion/reconsider extraction について MC-G018/MC-G020 は残る。 |
 | Fact query は deterministic、visibility-scoped、non-mutating。 | `TypeFactQueryEngine`, `TypeFactQueryOutput`, `TypeFactQueryStatus`. | deterministic/provenance/visibility/contradiction tests. | 実装済み。 |
@@ -375,7 +378,7 @@ MC-G row はすべて次のように照合する。
 | MC-G017 | `external_dependency_gap` | term/formula payload table、built-in numeric payload、candidate signature、structure/selector payload、source `qua` evidence、sethood/non-emptiness evidence について active。 |
 | MC-G018 | `external_dependency_gap` | coercion request table、dependency-summary fact、inheritance graph、cluster evidence、sethood/non-emptiness evidence、proof-query result について active。 |
 | MC-G019 | `external_dependency_gap` | statement/proof assumption、theorem acceptance payload、phase-7 trace fact payload について active。 |
-| MC-G020 | `external_dependency_gap` / `deferred` | task 7-11 と後続 consumer の semantic pass fixture を妨げる source-to-checker extraction blocker として active。reserve-only builtin declaration slice は `BindingEnv`、`DeclarationInput`、`DeclarationChecker`、`TypedAst`、`ResolvedTypedAst` まで到達したが、より広い non-builtin declaration、attribute / mode / structure、term、formula、coercion、overload、recorded-fact、CoreIr、ControlFlowIr、VC、proof payload extraction は未解決のまま。 |
+| MC-G020 | `external_dependency_gap` / `deferred` | task 7-11 と後続 consumer の semantic pass fixture を妨げる source-to-checker extraction blocker として active。reserve-only builtin declaration slice は checker-owned syntax-free producer seam を使って `BindingEnv`、`DeclarationInput`、`DeclarationChecker` handoff data を作り、active runner で `TypedAst` と `ResolvedTypedAst` まで到達するが、より広い non-builtin declaration、attribute / mode / structure、term、formula、coercion、overload、recorded-fact、CoreIr、ControlFlowIr、VC、proof payload extraction は未解決のまま。 |
 | MC-G021 | `external_dependency_gap` / `deferred` | registration payload、accepted-status、source extraction blocker として active。registration code は explicit payload seam のみ消費する。 |
 | MC-G023 | `test_gap` / `external_dependency_gap` / `deferred` | source-derived cluster/reduction fixture、artifact/cache integration、source-derived normalization-result dependence、real trace extraction について active。task 46 は explicit-payload fatal contradiction と reduction trace-identity seam だけを cover する。 |
 | MC-G025 | `external_dependency_gap` / `deferred` | accepted registration status の proof/artifact production または import について active。 |

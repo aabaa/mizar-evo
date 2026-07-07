@@ -359,9 +359,11 @@ regression test を追加した。
     - 完了: active `type_elaboration` source bridge を builtin type-expression
       site から reserve-only builtin declaration payload へ拡張した。runner は
       bare builtin `set` / `object` head を持つ unrecovered top-level `reserve`
-      item を、checker-owned module `BindingEnv`、binding ごとの
+      item を syntax-free source reserve payload へ抽出する。checker task 48 は
+      その payload を checker-owned module `BindingEnv`、binding ごとの
       `DeclarationInput`、binding 固有の `TypeExpressionInput` site、
-      `DeclarationChecker` output、`TypedAst`、`ResolvedTypedAst` へ抽出する。
+      `DeclarationChecker` output へ変換する producer seam を所有し、runner は
+      その handoff を `TypedAst`、`ResolvedTypedAst` へ継続する。
       `reserve x, y for set` のように source type range を共有する場合も、binding
       ごとに distinct typed site を持つ。
     - 未対応の non-builtin declaration、attribute、mode / structure payload、
