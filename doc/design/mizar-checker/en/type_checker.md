@@ -307,10 +307,11 @@ checker consumes both real expansions and the reserve-head attributes, then
 fails closed with `checker.declaration.deferred.evidence_query` until real
 attributed-type existential evidence extraction exists; attributed roots whose
 one-edge dependency terminates in a local structure RHS remain outside task 64
-but are admitted by task 65, while attributed-builtin RHS terminals, deeper
-chains, mixed bare/attributed uses, imports, arguments, contextual or
-parameterized definitions, and positive attributed-type acceptance remain
-outside this slice.
+but are admitted by task 65, and attributed-builtin RHS terminals remain
+outside task 64 but are admitted by task 66, while deeper chains, mixed
+bare/attributed uses, imports, arguments, contextual or parameterized
+definitions, and positive attributed-type acceptance remain outside this
+slice.
 
 Task 65 permits the structure-RHS counterpart of the task-64 attributed-root
 chain: an attributed local-mode reserve head `marked A` may consume the real
@@ -327,6 +328,23 @@ evidence extraction exist; attributed-builtin RHS terminals, deeper chains,
 mixed bare/attributed uses, attributed dependencies, imports, arguments,
 ambiguous symbols, contextual or parameterized definitions, positive
 structure/attributed-type acceptance, CoreIr, ControlFlowIr, VC, and proof
+payloads remain outside this slice, except that task 66 separately admits
+one-edge attributed-builtin RHS terminals.
+
+Task 66 permits the attributed-builtin-RHS counterpart of the task-64/task-65
+attributed-root chains: an attributed local-mode reserve head `marked A` may
+consume the real one-edge chain `A -> B -> marked set` or
+`A -> B -> marked object` only when `A` is not also used as a bare reserve
+head, `B` is not used as an attributed reserve head, both mode definitions are
+unique, unrecovered, same-module, no-argument, and free of definition-local
+context, RHS attributes resolve to argument-free same-module attribute symbols,
+and the source order is `B -> A -> reserve`. The checker consumes both real
+expansions, the reserve-head attributes, and the terminal RHS attributes, then
+fails closed with `checker.declaration.deferred.evidence_query` until real
+full attributed-type existential evidence extraction exists; deeper chains,
+mixed bare/attributed uses, attributed dependencies, imports, ambiguous
+symbols, attribute or mode arguments, contextual or parameterized definitions,
+positive attributed-type acceptance, CoreIr, ControlFlowIr, VC, and proof
 payloads remain outside this slice.
 
 Task 60 additionally

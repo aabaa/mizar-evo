@@ -249,8 +249,10 @@ local mode attributed-builtin RHS evidence-gap slice when the real expansion
 is a direct attributed builtin RHS, and task 62 adding the one-edge bare local
 mode structure-RHS chain evidence-gap slice, and task 63 adding the one-edge
 bare local mode attributed-builtin-RHS chain evidence-gap slice, task 64 added
-the attributed local mode bare-builtin chain evidence-gap slice, and task 65
-added the attributed local mode structure-RHS chain evidence-gap slice).
+the attributed local mode bare-builtin chain evidence-gap slice, task 65 added
+the attributed local mode structure-RHS chain evidence-gap slice, and task 66
+added the attributed local mode attributed-builtin-RHS chain
+evidence-gap slice).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate
 semantic payloads; promote corpus rows only with prepared consumers.

@@ -1543,6 +1543,30 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       expressions; spec 05 structures; spec 06 attributes; spec 07 modes;
       spec 17 evidence.
 
+66. **Add source-derived attributed local mode attributed-builtin-RHS chain evidence-gap bridge.** [x]
+    - Extend the task-64/task-65 attributed-root chain producer only for
+      `reserve z for marked A` where `A is B`, `B is marked set` or
+      `B is marked object`, RHS attributes resolve to argument-free same-module
+      attribute symbols, both mode definitions are unique, unrecovered,
+      same-module, no-argument, and free of definition-local context, source
+      order is `B -> A -> reserve`, `A` is not also used as a bare reserve head,
+      and `B` is not used as an attributed reserve head in the same bridge input.
+    - Acceptance: runner unit coverage proves both real source-derived
+      `B -> marked set/object` and `A -> B` expansion payloads plus the
+      attributed reserve head are extracted from the same `SurfaceAst`; mixed
+      roots, attributed dependencies, deeper chains, imported/ambiguous symbols,
+      attribute or mode arguments, and contextual/parameterized/recovered
+      definitions remain withheld. The existing active attributed-RHS chain
+      `.miz` fixture must move from `checker.type.external.mode_expansion_payload`
+      to `type_elaboration.checker.checker.declaration.deferred.evidence_query`.
+      The checker emits no verified facts and positive attributed-type
+      acceptance remains deferred.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 50, 56, 61, 63, and 64. Full attributed-type existential
+      evidence and broader mode expansion remain MC-G020/MC-G026. Refs: Step 5
+      source-derived semantic bridge; mizar-test task 10; spec 03 type
+      expressions; spec 06 attributes; spec 07 modes; spec 17 evidence.
+
 ## Recommended Verification
 
 Run after each task:

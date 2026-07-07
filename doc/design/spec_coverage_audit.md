@@ -83,6 +83,18 @@ contextual/parameterized/recovered or deeper chains, positive
 structure/attributed-type acceptance, CoreIr, ControlFlowIr, VC, and proof
 payloads remain deferred.
 
+Task66 addendum for chapters `03.type_system.md`, `06.attributes.md`,
+`07.modes.md`, and `17.clusters_and_registrations.md`: checker task 66 adds
+active source-derived diagnostic coverage for an attributed local-mode reserve
+head whose one-edge dependency chain ends in an attributed builtin RHS. The
+active runner consumes the real expansion payloads, reserve-head attribute,
+and terminal RHS attributes, then stops at the missing full attributed-type
+evidence query instead of reporting a missing mode-expansion payload. This
+does not change the partial status of those chapters; deeper chains, mixed
+uses, attributed dependencies, imported/ambiguous/argument-bearing/contextual/
+parameterized/recovered definitions, positive attributed-type acceptance,
+CoreIr, ControlFlowIr, VC, and proof payloads remain deferred.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

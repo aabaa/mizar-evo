@@ -500,8 +500,10 @@ one-edge bare-builtin chains to stop at the evidence-query key because
 attributed-type existential evidence is still absent; task 65 permits attributed
 local-mode reserve heads with one-edge structure-RHS chains to stop at the
 evidence-query key because structure base-shape/constructor-witness and full
-attributed-type existential evidence are still absent. These are fail cases, not
-pass-slice coverage.
+attributed-type existential evidence are still absent; task 66 permits
+attributed local-mode reserve heads with one-edge attributed-builtin-RHS chains
+to stop at the evidence-query key because full attributed-type existential
+evidence is still absent. These are fail cases, not pass-slice coverage.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

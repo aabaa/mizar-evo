@@ -289,9 +289,9 @@ chain `A -> B -> set` / `object` を消費してよい。checker は両方の re
 reserve-head attribute を消費し、real attributed-type existential evidence extraction が
 存在するまで `checker.declaration.deferred.evidence_query` で fail closed する。
 one-edge dependency が local structure RHS に終端する attributed root は task 64 の外に
-残るが task 65 で許可される。attributed builtin RHS terminal、deeper chain、mixed
-bare/attributed use、import、argument、contextual / parameterized definition、
-positive attributed-type acceptance はこの slice の外に残る。
+残るが task 65 で許可される。attributed builtin RHS terminal は task 64 の外に残るが
+task 66 で許可される。deeper chain、mixed bare/attributed use、import、argument、
+contextual / parameterized definition、positive attributed-type acceptance はこの slice の外に残る。
 
 task 65 は task-64 attributed-root chain の structure-RHS counterpart を許可する:
 attributed local-mode reserve head `marked A` は、`A` が bare reserve head としても
@@ -305,7 +305,22 @@ full attributed-type existential evidence extraction が存在するまで
 `checker.declaration.deferred.evidence_query` で fail closed する。attributed-builtin RHS
 terminal、deeper chain、mixed bare/attributed use、attributed dependency、import、argument、
 ambiguous symbol、contextual / parameterized definition、positive structure /
-attributed-type acceptance、CoreIr、ControlFlowIr、VC、proof payload はこの slice の外に残る。
+attributed-type acceptance、CoreIr、ControlFlowIr、VC、proof payload はこの slice の外に残るが、
+task 66 は one-edge attributed-builtin RHS terminal を別途許可する。
+
+task 66 は task-64/task-65 attributed-root chain の attributed-builtin-RHS counterpart を
+許可する: attributed local-mode reserve head `marked A` は、`A` が bare reserve head としても
+使われておらず、`B` が attributed reserve head として使われておらず、両方の mode
+definition が unique / unrecovered / same-module / no-argument で definition-local
+context を持たず、RHS attribute が argument-free same-module attribute symbol に resolve し、
+source order が `B -> A -> reserve` である場合だけ、real one-edge chain
+`A -> B -> marked set` または `A -> B -> marked object` を消費してよい。checker は両方の
+real expansion、reserve-head attribute、terminal RHS attribute を消費し、real full
+attributed-type existential evidence extraction が存在するまで
+`checker.declaration.deferred.evidence_query` で fail closed する。deeper chain、mixed
+bare/attributed use、attributed dependency、import、ambiguous symbol、attribute / mode
+argument、contextual / parameterized definition、positive attributed-type acceptance、
+CoreIr、ControlFlowIr、VC、proof payload はこの slice の外に残る。
 
 task 60 はさらに、
 mode definition が unique / unrecovered / preceding / no-argument で definition-local

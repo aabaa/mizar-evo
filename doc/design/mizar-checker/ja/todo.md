@@ -1424,6 +1424,28 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       mizar-test task 10、spec 03 type expressions、spec 05 structures、spec 06 attributes、
       spec 07 modes、spec 17 evidence。
 
+66. **Source-derived attributed local mode attributed-builtin-RHS chain evidence-gap bridge を追加する。** [x]
+    - task-64/task-65 attributed-root chain producer を、`reserve z for marked A` に限定して
+      拡張する。`A is B`、`B is marked set` または `B is marked object` であり、RHS
+      attribute は argument-free same-module attribute symbol に resolve し、両方の mode
+      definition は unique / unrecovered / same-module / no-argument で definition-local
+      context を持たず、source order は `B -> A -> reserve` でなければならない。`A` は
+      同じ bridge input 内で bare reserve head としても使われておらず、`B` は attributed
+      reserve head として使われていないこと。
+    - Acceptance: runner unit coverage は同じ `SurfaceAst` から real source-derived
+      `B -> marked set/object` と `A -> B` expansion payload の両方、および attributed
+      reserve head が抽出されることを証明する。mixed root、attributed dependency、
+      deeper chain、imported / ambiguous symbol、attribute / mode argument、contextual /
+      parameterized / recovered definition は withheld のままにする。既存 active
+      attributed-RHS chain `.miz` fixture は `checker.type.external.mode_expansion_payload`
+      から `type_elaboration.checker.checker.declaration.deferred.evidence_query` へ移る。
+      checker は verified fact を出さず、positive attributed-type acceptance は deferred のまま。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、50、56、61、63、64。full attributed-type existential evidence と
+      broader mode expansion は MC-G020/MC-G026 のまま。参照: Step 5 source-derived
+      semantic bridge、mizar-test task 10、spec 03 type expressions、spec 06 attributes、
+      spec 07 modes、spec 17 evidence。
+
 ## 推奨検証
 
 各タスクの後で実行する:
