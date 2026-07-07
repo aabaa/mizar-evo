@@ -250,8 +250,9 @@ Keep `cargo test -p mizar-test` green after each task (see
       declaration-symbol seed plus exact SymbolEnv-derived declaration-symbol
       pass payload assertions, checker task 50's same-module attributed
       reserve evidence-query active fail slice, and checker task 51's
-      same-module local mode reserve missing-expansion active fail slice, as
-      prepared/implemented increments.
+      same-module local mode reserve missing-expansion active fail slice, and
+      checker task 52's same-module local structure reserve evidence-query
+      active fail slice, as prepared/implemented increments.
       Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
       `paced/open`; no placeholder runner or fake active fixture is created for
@@ -381,8 +382,10 @@ Keep `cargo test -p mizar-test` green after each task (see
       `DeclarationChecker` output; the runner continues that handoff into
       `TypedAst` and `ResolvedTypedAst`. Shared source type ranges such as
       `reserve x, y for set` keep distinct typed sites for each binding.
-    - Unsupported non-builtin declarations, attributes, mode/structure
-      payloads, terms, formulas, coercions, overload payloads, facts, CoreIr,
+    - Unsupported non-builtin declarations, imported attributes/modes/
+      structures, attribute arguments, attributed or argument-bearing
+      mode/structure heads, structure base-shape payloads, terms, formulas,
+      coercions, overload payloads, facts, CoreIr,
       ControlFlowIr, VC payloads, and proof evidence remain on the explicit
       `type_elaboration.external_dependency.ast_payload_extraction` gap. The
       CoreIr/ControlFlowIr/VC/proof rows are not promoted because no real

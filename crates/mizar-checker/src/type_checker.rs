@@ -2862,7 +2862,15 @@ impl SourceReserveDeclarationBridge {
                     .with_attributes(binding.type_attributes.clone()),
                 )
                 .with_reserved_default(ReservedDefaultPayload::new(type_site, false));
-                if !binding.type_attributes.is_empty() {
+                let symbol_head_kind = match &binding.type_head {
+                    TypeHeadInput::Symbol(symbol) => {
+                        symbols.symbols().get(symbol).map(|entry| entry.kind())
+                    }
+                    _ => None,
+                };
+                if !binding.type_attributes.is_empty()
+                    || matches!(symbol_head_kind, Some(SymbolKind::Structure))
+                {
                     declaration = declaration
                         .with_deferred(vec![DeclarationDeferredReason::MissingEvidenceQuery]);
                 }
@@ -2895,9 +2903,9 @@ impl SourceReserveDeclarationBridge {
             let entry = symbols.symbols().get(symbol).ok_or_else(|| {
                 format!("source reserve binding {index} symbol head is missing from SymbolEnv")
             })?;
-            if entry.kind() != SymbolKind::Mode {
+            if !matches!(entry.kind(), SymbolKind::Mode | SymbolKind::Structure) {
                 return Err(format!(
-                    "source reserve binding {index} symbol head is not a supported local mode"
+                    "source reserve binding {index} symbol head is not a supported local type head"
                 ));
             }
             let contribution = symbols
@@ -6671,7 +6679,7 @@ mod tests {
     }
 
     #[test]
-    fn source_reserve_declaration_bridge_validates_mode_heads_and_mismatched_inputs() {
+    fn source_reserve_declaration_bridge_validates_local_symbol_heads_and_mismatched_inputs() {
         let source = source_id();
         let module = module_id();
         let mode = symbol_id("Mode/0", "pkg::main::Mode/0");
@@ -6718,9 +6726,19 @@ mod tests {
         )
         .expect("symbol reserve payload shape should validate before SymbolEnv checks");
         let structure_symbols = symbol_env(vec![symbol_entry(structure, SymbolKind::Structure)]);
+        let structure_handoff = structure_bridge
+            .check(&structure_symbols)
+            .expect("local structure reserve payload should reach declaration checking");
+        assert_eq!(
+            diagnostic_ranges(
+                structure_handoff.declarations(),
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
         assert!(
-            structure_bridge.check(&structure_symbols).is_err(),
-            "non-mode symbol heads must fail before checker handoff production"
+            structure_handoff.declarations().facts().is_empty(),
+            "local structure reserve heads must not seed facts without base-shape evidence"
         );
 
         let attributed_mode = SourceReserveDeclarationBridge::new(

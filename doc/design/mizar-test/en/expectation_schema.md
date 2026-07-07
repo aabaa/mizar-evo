@@ -467,14 +467,17 @@ attributed builtin reserve heads to stop at
 51 permits unique same-module `LocalSource` `SymbolKind::Mode` reserve heads
 with no attributes or type arguments to stop at
 `type_elaboration.checker.checker.type.external.mode_expansion_payload`, with
-the paired recovery key when emitted. These are fail cases, not pass-slice
-coverage.
+the paired recovery key when emitted; task 52 permits unique same-module
+`LocalSource` `SymbolKind::Structure` reserve heads with no attributes or type
+arguments to stop at
+`type_elaboration.checker.checker.declaration.deferred.evidence_query`. These
+are fail cases, not pass-slice coverage.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source
 without inventing non-builtin declarations, imported symbols, unresolved or
-ambiguous symbols, attribute or mode arguments, attributed mode heads,
-structures, terms, formulas, coercions, facts, overload evidence, CoreIr,
+ambiguous symbols, attribute or mode/structure arguments, attributed mode or
+structure heads, structure payloads, terms, formulas, coercions, facts, overload evidence, CoreIr,
 ControlFlowIr, VC payloads, or proof evidence.
 
 ## Formula, Statement, And Proof Expectations

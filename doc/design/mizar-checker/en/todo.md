@@ -1009,8 +1009,9 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       `ResolvedTypedAst`, summary-readiness, and binder-only core context
       checks.
     - Acceptance: `mizar-checker` keeps no direct `mizar-syntax` dependency;
-      non-builtin declarations, attributes, mode/structure payloads, terms,
-      formulas, coercions, overload evidence, facts, proof skeletons,
+      non-builtin declarations, attributes, unsupported mode/structure
+      payloads outside promoted diagnostic slices, terms, formulas, coercions,
+      overload evidence, facts, proof skeletons,
       CoreIr/ControlFlowIr/VC/proof payloads, and new active `.miz` coverage
       remain deferred under MC-G020; active `type-elaboration` results stay
       byte-stable.
@@ -1058,7 +1059,8 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       checking; attributed reserve declarations remain active fail cases with
       `checker.declaration.deferred.evidence_query` until a real existential
       registration/evidence-query seam exists. Imported attribute symbols,
-      non-builtin heads, mode/structure payloads, terms, formulas, proof
+      non-builtin heads, unsupported mode/structure payloads outside promoted
+      diagnostic slices, terms, formulas, proof
       skeletons, CoreIr/ControlFlowIr/VC/proof payloads, and successful
       attributed declarations remain deferred under MC-G020/MC-G021/MC-G026.
     - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
@@ -1094,8 +1096,36 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       mode heads on the syntax-free reserve bridge and preserves the existing
       missing mode-expansion diagnostic rather than unfolding from raw syntax.
       `mizar-test` adds an active same-module local-mode reserve fail fixture,
-      while imported modes, local structures, and argument-bearing mode heads
-      remain on the broader extraction gap.
+      while imported modes and argument-bearing mode heads remain on the
+      broader extraction gap.
+
+52. **Source-derived local structure reserve evidence-gap bridge.** [x]
+    - Extend the task-48 reserve source declaration seam just far enough to
+      accept source-derived reserve type heads that resolve to a unique
+      same-module `LocalSource` structure symbol with no type arguments or
+      source attributes.
+    - Acceptance: the checker-owned bridge validates that symbol heads are
+      exact `SymbolKind::Structure` entries from the current module's local
+      source, marks those reserved-variable declarations with
+      `MissingEvidenceQuery`, and reaches
+      `checker.declaration.deferred.evidence_query` because real
+      base-shape/constructor-witness evidence extraction is not implemented.
+      Imported structures, structure arguments, attributed structure heads,
+      successful local-structure reserve declarations, structure field/default
+      payload extraction, CoreIr/ControlFlowIr/VC/proof payloads, and broader
+      semantic pass coverage remain deferred under MC-G020/MC-G026.
+    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
+    - Deps: task 48; external base-shape evidence remains MC-G020/MC-G026.
+      Refs: Step 5 source-derived semantic bridge; mizar-test task 10; spec 03
+      type expressions; spec 05 structures; spec 17 base-shape inhabitation
+      evidence.
+    - Completed in task 52: `type_checker.rs` validates local source-backed
+      structure heads on the syntax-free reserve bridge and preserves the
+      missing evidence-query diagnostic rather than inferring structure
+      inhabitation from a symbol. `mizar-test` adds an active same-module
+      local-structure reserve fail fixture with a real field-bearing local
+      `struct`, while imported structures and argument-bearing or attributed
+      structure heads remain on the broader extraction gap.
 
 ## Recommended Verification
 

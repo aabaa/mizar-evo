@@ -248,7 +248,8 @@ regression test を追加した。
       と exact SymbolEnv-derived declaration-symbol pass payload assertion、checker
       task 50 の same-module attributed reserve evidence-query active fail slice、
       checker task 51 の same-module local mode reserve missing-expansion active
-      fail slice を prepared/implemented increments として記録する。
+      fail slice、checker task 52 の same-module local structure reserve
+      evidence-query active fail slice を prepared/implemented increments として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
       runner や fake active fixture は作らない。
@@ -368,8 +369,10 @@ regression test を追加した。
       その handoff を `TypedAst`、`ResolvedTypedAst` へ継続する。
       `reserve x, y for set` のように source type range を共有する場合も、binding
       ごとに distinct typed site を持つ。
-    - 未対応の non-builtin declaration、attribute、mode / structure payload、
-      term、formula、coercion、overload payload、fact、CoreIr、ControlFlowIr、VC payload、proof
+    - 未対応の non-builtin declaration、imported attribute / mode / structure、
+      attribute argument、attributed / argument-bearing mode / structure head、
+      structure base-shape payload、term、formula、coercion、overload payload、fact、
+      CoreIr、ControlFlowIr、VC payload、proof
       evidence は明示的な `type_elaboration.external_dependency.ast_payload_extraction`
       gap のままにする。real source-derived payload がまだ downstream consumer へ
       lower されていないため、CoreIr / ControlFlowIr / VC / proof row は昇格しない。

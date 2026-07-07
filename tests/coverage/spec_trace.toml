@@ -1777,6 +1777,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.local_structure_evidence_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 52 source-derived local structure reserve evidence gap"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_structure_reserve_evidence_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.elaboration.choice_comprehension.lowering"
 source = "doc/design/architecture/en/06.elaboration_and_core_ir.md"
 section = "Surface Terms Lower Through Canonical Core Symbols"

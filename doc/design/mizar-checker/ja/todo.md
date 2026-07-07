@@ -955,8 +955,8 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       引き続き `TypedAst`、`ResolvedTypedAst`、summary-readiness、binder-only core
       context check を組み立てられるよう deterministic typed-site id を公開する。
     - 受け入れ条件: `mizar-checker` は direct `mizar-syntax` dependency を持たない。
-      non-builtin declaration、attribute、mode/structure payload、term、
-      formula、coercion、overload evidence、fact、proof skeleton、
+      non-builtin declaration、attribute、promoted diagnostic slice 外の unsupported
+      mode/structure payload、term、formula、coercion、overload evidence、fact、proof skeleton、
       CoreIr/ControlFlowIr/VC/proof payload、新しい active `.miz` coverage は
       MC-G020 の下で deferred のまま。active `type-elaboration` result は
       byte-stable のまま。
@@ -1001,8 +1001,8 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       attributed reserve declaration は real existential registration /
       evidence-query seam が存在するまで
       `checker.declaration.deferred.evidence_query` の active fail case に
-      留める。imported attribute symbol、non-builtin head、mode / structure
-      payload、term、formula、proof skeleton、CoreIr / ControlFlowIr / VC /
+      留める。imported attribute symbol、non-builtin head、promoted diagnostic slice 外の
+      unsupported mode / structure payload、term、formula、proof skeleton、CoreIr / ControlFlowIr / VC /
       proof payload、successful attributed declaration は MC-G020 / MC-G021 /
       MC-G026 の下で deferred のままにする。
     - 検証: `cargo test -p mizar-checker`、`cargo test -p mizar-test`。
@@ -1025,7 +1025,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       local source 由来の exact `SymbolKind::Mode` entry であることを検証し、その後
       declaration checking は real mode-expansion payload extraction が未実装なので
       既存の `checker.type.external.mode_expansion_payload` diagnostic に到達する。
-      imported mode、structure、mode argument、unresolved/ambiguous head、mode
+      imported mode、mode argument、unresolved/ambiguous head、mode
       expansion extraction、term、formula、CoreIr / ControlFlowIr / VC / proof
       payload、successful local-mode reserve declaration は MC-G020 の下で
       deferred のままにする。
@@ -1036,8 +1036,32 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - task 51 で完了: `type_checker.rs` は syntax-free reserve bridge 上で
       local source-backed mode head を検証し、raw syntax から unfold せず既存の
       missing mode-expansion diagnostic を保持する。`mizar-test` は same-module
-      local-mode reserve の active fail fixture を追加し、imported mode、local
-      structure、argument-bearing mode head は広い extraction gap のままにする。
+      local-mode reserve の active fail fixture を追加し、imported mode、
+      argument-bearing mode head は広い extraction gap のままにする。
+
+52. **Source-derived local structure reserve evidence-gap bridge.** [x]
+    - task 48 の reserve source declaration seam を、type argument や source
+      attribute を持たず、unique な same-module `LocalSource` structure symbol に
+      解決される source-derived reserve type head だけを受け取るところまで拡張する。
+    - 受け入れ条件: checker-owned bridge は symbol head が current module の
+      local source 由来の exact `SymbolKind::Structure` entry であることを検証し、
+      その reserved-variable declaration に `MissingEvidenceQuery` を付ける。
+      real base-shape / constructor-witness evidence extraction が未実装なので
+      declaration checking は `checker.declaration.deferred.evidence_query` に到達する。
+      imported structure、structure argument、attributed structure head、
+      successful local-structure reserve declaration、structure field / default payload
+      extraction、CoreIr / ControlFlowIr / VC / proof payload、より広い semantic pass
+      coverage は MC-G020 / MC-G026 の下で deferred のままにする。
+    - 検証: `cargo test -p mizar-checker`、`cargo test -p mizar-test`。
+    - 依存: task 48。external base-shape evidence は MC-G020 / MC-G026 のまま。
+      参照: Step 5 source-derived semantic bridge、mizar-test task 10、spec 03 type
+      expression、spec 05 structure、spec 17 base-shape inhabitation evidence。
+    - task 52 で完了: `type_checker.rs` は syntax-free reserve bridge 上で local
+      source-backed structure head を検証し、symbol だけから structure inhabitation を
+      推論せず missing evidence-query diagnostic を保持する。`mizar-test` は実 field を持つ
+      local `struct` を使った same-module local-structure reserve の active fail fixture を追加し、
+      imported structure、argument-bearing / attributed structure head は広い extraction gap
+      のままにする。
 
 ## 推奨検証
 

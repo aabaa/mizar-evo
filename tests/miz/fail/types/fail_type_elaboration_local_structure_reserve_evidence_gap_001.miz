@@ -1,0 +1,7 @@
+definition
+  struct LocalStruct where
+    field carrier -> set;
+  end;
+end;
+
+reserve s for LocalStruct;

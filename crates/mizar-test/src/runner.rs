@@ -860,6 +860,9 @@ fn is_supported_builtin_reserve_bridge_node(node: &SurfaceNode) -> bool {
             | SurfaceNodeKind::AttributePattern
             | SurfaceNodeKind::ModeDefinition
             | SurfaceNodeKind::ModePattern
+            | SurfaceNodeKind::StructureDefinition
+            | SurfaceNodeKind::StructurePattern
+            | SurfaceNodeKind::StructureField
             | SurfaceNodeKind::FormulaDefiniens
             | SurfaceNodeKind::FormulaCase
             | SurfaceNodeKind::FormulaExpression
@@ -987,7 +990,7 @@ fn extract_source_reserve_type_head(
     }
     if matches!(child.kind, SurfaceNodeKind::QualifiedSymbol) {
         let spelling = qualified_symbol_spelling(ast, child)?;
-        let symbol = resolve_visible_mode(symbols, module, &spelling)?;
+        let symbol = resolve_visible_type_head(symbols, module, &spelling)?;
         return Ok(TypeHeadInput::Symbol(symbol));
     }
     Err(())
@@ -1076,12 +1079,33 @@ fn resolve_visible_attribute(
     resolve_visible_local_symbol(symbols, module, spelling, SymbolKind::Attribute)
 }
 
-fn resolve_visible_mode(
+fn resolve_visible_type_head(
     symbols: &SymbolEnv,
     module: &ResolverModuleId,
     spelling: &str,
 ) -> Result<mizar_resolve::resolved_ast::SymbolId, ()> {
-    resolve_visible_local_symbol(symbols, module, spelling, SymbolKind::Mode)
+    let namespace = NamespacePath::new(module.path().as_str());
+    let candidates = symbols
+        .symbols()
+        .visible_candidates(&namespace, spelling)
+        .into_iter()
+        .filter(|entry| matches!(entry.kind(), SymbolKind::Mode | SymbolKind::Structure))
+        .filter(|entry| entry.symbol().module() == module)
+        .filter(|entry| {
+            symbols
+                .contributions()
+                .get(entry.contribution())
+                .is_some_and(|contribution| {
+                    contribution.module() == module
+                        && matches!(contribution.kind(), ContributionKind::LocalSource { .. })
+                })
+        })
+        .map(|entry| entry.symbol().clone())
+        .collect::<Vec<_>>();
+    match candidates.as_slice() {
+        [symbol] => Ok(symbol.clone()),
+        _ => Err(()),
+    }
 }
 
 fn resolve_visible_local_symbol(
@@ -2448,6 +2472,26 @@ mod tests {
             local_mode_reserve.bindings()[0].type_head,
             TypeHeadInput::Symbol(_)
         ));
+
+        let local_structure = reserve_ast(
+            source_id(195),
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("Struct"),
+            )],
+        );
+        let structure_symbols = source_structure_symbol_env(local_mode_reserve.module_id().clone());
+        let local_structure_reserve = extract_builtin_source_reserve_declarations(
+            &local_structure,
+            structure_symbols.module_id().clone(),
+            &structure_symbols,
+        )
+        .expect("same-module structure reserve type should extract");
+        assert_eq!(local_structure_reserve.bindings().len(), 1);
+        assert!(matches!(
+            local_structure_reserve.bindings()[0].type_head,
+            TypeHeadInput::Symbol(_)
+        ));
     }
 
     #[test]
@@ -2615,7 +2659,7 @@ mod tests {
             source_id,
             vec![reserve_item(
                 vec!["x"],
-                ReserveTypeShape::QualifiedSymbol("Mode"),
+                ReserveTypeShape::QualifiedSymbol("Struct"),
             )],
         );
         let structure_symbols = source_structure_symbol_env(symbols.module_id().clone());
@@ -2625,7 +2669,7 @@ mod tests {
                 structure_symbols.module_id().clone(),
                 &structure_symbols
             ),
-            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
         );
 
         let imported_mode_symbols = imported_mode_symbol_env(symbols.module_id().clone());
@@ -2638,12 +2682,33 @@ mod tests {
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
 
+        let imported_structure_symbols = imported_structure_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &local_structure,
+                imported_structure_symbols.module_id().clone(),
+                &imported_structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
         let ambiguous_mode_symbols = ambiguous_mode_symbol_env(symbols.module_id().clone());
         assert_eq!(
             source_type_elaboration_detail_keys(
                 &local_mode,
                 ambiguous_mode_symbols.module_id().clone(),
                 &ambiguous_mode_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let ambiguous_structure_symbols =
+            ambiguous_structure_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &local_structure,
+                ambiguous_structure_symbols.module_id().clone(),
+                &ambiguous_structure_symbols
             ),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
@@ -2664,6 +2729,22 @@ mod tests {
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
 
+        let structure_with_args = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbolWithArgs("Struct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &structure_with_args,
+                structure_symbols.module_id().clone(),
+                &structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
         let mode_attribute_symbols = source_mode_attribute_symbol_env(symbols.module_id().clone());
         let attributed_mode = reserve_ast(
             source_id,
@@ -2680,6 +2761,24 @@ mod tests {
             ),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
+
+        let structure_attribute_symbols =
+            source_structure_attribute_symbol_env(symbols.module_id().clone());
+        let attributed_structure = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedQualifiedSymbol("Struct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_structure,
+                structure_attribute_symbols.module_id().clone(),
+                &structure_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
     }
 
     fn source_symbol_env(module: ResolverModuleId) -> SymbolEnv {
@@ -2691,10 +2790,22 @@ mod tests {
     }
 
     fn source_structure_symbol_env(module: ResolverModuleId) -> SymbolEnv {
-        source_local_symbol_env(module, "Mode", SymbolKind::Structure)
+        source_local_symbol_env(module, "Struct", SymbolKind::Structure)
     }
 
     fn source_mode_attribute_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        source_symbol_pair_env(module, "Mode", SymbolKind::Mode)
+    }
+
+    fn source_structure_attribute_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        source_symbol_pair_env(module, "Struct", SymbolKind::Structure)
+    }
+
+    fn source_symbol_pair_env(
+        module: ResolverModuleId,
+        spelling: &'static str,
+        kind: SymbolKind,
+    ) -> SymbolEnv {
         let source = source_id(193);
         let mut indexes = SymbolEnvIndexes::default();
         let contribution = indexes.contributions.insert(
@@ -2702,10 +2813,9 @@ mod tests {
             ContributionKind::LocalSource { source_id: source },
             SourceAnchor::Range(range(source, 0, 10)),
         );
-        for (ordinal, (spelling, kind)) in
-            [("empty", SymbolKind::Attribute), ("Mode", SymbolKind::Mode)]
-                .into_iter()
-                .enumerate()
+        for (ordinal, (spelling, kind)) in [("empty", SymbolKind::Attribute), (spelling, kind)]
+            .into_iter()
+            .enumerate()
         {
             let symbol = ResolverSymbolId::new(
                 module.clone(),
@@ -2734,6 +2844,18 @@ mod tests {
     }
 
     fn ambiguous_mode_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        ambiguous_symbol_env(module, "Mode", SymbolKind::Mode)
+    }
+
+    fn ambiguous_structure_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        ambiguous_symbol_env(module, "Struct", SymbolKind::Structure)
+    }
+
+    fn ambiguous_symbol_env(
+        module: ResolverModuleId,
+        spelling: &'static str,
+        kind: SymbolKind,
+    ) -> SymbolEnv {
         let source = source_id(192);
         let mut indexes = SymbolEnvIndexes::default();
         let contribution = indexes.contributions.insert(
@@ -2744,15 +2866,18 @@ mod tests {
         for ordinal in 0..2 {
             let symbol = ResolverSymbolId::new(
                 module.clone(),
-                LocalSymbolId::new(format!("Mode/{ordinal}")),
-                FullyQualifiedName::new(format!("{}::Mode/{ordinal}", module.path().as_str())),
+                LocalSymbolId::new(format!("{spelling}/{ordinal}")),
+                FullyQualifiedName::new(format!(
+                    "{}::{spelling}/{ordinal}",
+                    module.path().as_str()
+                )),
             );
             indexes.symbols.insert(
                 SymbolEntry::new(
                     symbol,
-                    SymbolKind::Mode,
+                    kind,
                     NamespacePath::new(module.path().as_str()),
-                    "Mode",
+                    spelling,
                     SemanticOrigin::new(
                         source,
                         module.clone(),
@@ -2811,6 +2936,10 @@ mod tests {
 
     fn imported_mode_symbol_env(module: ResolverModuleId) -> SymbolEnv {
         imported_symbol_env(module, "Mode", SymbolKind::Mode)
+    }
+
+    fn imported_structure_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        imported_symbol_env(module, "Struct", SymbolKind::Structure)
     }
 
     fn imported_symbol_env(
