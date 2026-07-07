@@ -1664,6 +1664,21 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       mizar-test task 10、spec 03 type expressions、spec 05 structures、spec 11
       symbol management、spec 12 modules and namespaces。
 
+79. **Source-derived imported mode reserve extraction-gap boundary を追加する。** [x]
+    - 既存の `parser.type_fixtures` import summary が提供する imported mode
+      symbol を head とする reserve type の active fail coverage を追加する。
+    - Acceptance: active type-elaboration runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告し、
+      imported mode provenance、mode type-head payload、`ModeExpansion` payload、
+      positive mode elaboration、より広い imported mode semantics を捏造せず、
+      CoreIr、ControlFlowIr、VC、proof payload へ昇格しない。この fixture は
+      diagnostic boundary coverage のみであり、generic non-builtin imported-mode
+      gap の traceability だけを精密化する。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、51、55、78。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 03 type expressions、spec 07 modes、spec 11
+      symbol management、spec 12 modules and namespaces。
+
 ## 推奨検証
 
 各タスクの後で実行する:

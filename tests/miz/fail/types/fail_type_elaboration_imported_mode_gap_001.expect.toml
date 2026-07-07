@@ -1,0 +1,25 @@
+schema_version = 1
+id = "fail_type_elaboration_imported_mode_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_imported_mode_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "imported_mode_expansion_payload_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.03.type_expressions.imported_mode_type_head_payload_gap",
+  "spec.en.07.modes.imported_mode_expansion_payload_gap",
+  "spec.en.11.symbol_management.imported_mode_type_head_payload_gap",
+  "spec.en.12.modules.imported_mode_type_head_payload_gap",
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.imported_mode_gap",
+]
+notes = "Active type_elaboration runner boundary coverage for checker task 79: source containing an imported mode symbol from the documented parser.type_fixtures import summary and a reserve use such as `TypeCaseMode` is parser/resolver executable, but the checker-owned source bridge lacks real imported mode provenance and mode-expansion payload extraction, so it must stay on the source-to-checker payload extraction gap instead of accepting the imported mode type or promoting CoreIr/ControlFlowIr/VC/proof payloads."

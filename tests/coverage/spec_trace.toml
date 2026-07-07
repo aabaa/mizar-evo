@@ -552,6 +552,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.03.type_expressions.imported_mode_type_head_payload_gap"
+source = "doc/spec/en/03.type_system.md"
+section = "3.3 Type Expressions"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_imported_mode_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.03.type_expressions.imported_structure_type_head_payload_gap"
 source = "doc/spec/en/03.type_system.md"
 section = "3.3 Type Expressions"
@@ -743,6 +755,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.07.modes.imported_mode_expansion_payload_gap"
+source = "doc/spec/en/07.modes.md"
+section = "7.2 Syntax for Declaring and Using Modes; 7.3 Type Inference with Modes"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_imported_mode_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.07.modes.property_implementation.coherence.semantic"
 source = "doc/spec/en/07.modes.md"
 section = "7.4.1 Property Implementation; 7.8.2 Property Implementation Correctness; with 16.6.2 Coherence and Compatibility"
@@ -891,6 +915,18 @@ required = true
 coverage = "manual_review"
 tests = [
   "tests/property/lexical_environment_phase4_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.11.symbol_management.imported_mode_type_head_payload_gap"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.2.3 Imported Symbols; 11.3 Import Behavior and Conflict Resolution"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_imported_mode_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1066,6 +1102,18 @@ tests = [
   "tests/lexical/pass/pass_lexical_import_prescan_theorem_termination_001.expect.toml",
   "tests/lexical/fail/fail_lexical_import_prescan_missing_semicolon_001.expect.toml",
   "tests/lexical/pass/pass_lexical_import_prescan_rich_multi_path_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.12.modules.imported_mode_type_head_payload_gap"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3 Import Statements"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_imported_mode_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1966,6 +2014,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_attributed_reserve_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_bracket_mode_argument_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_bracket_structure_argument_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_mode_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mixed_reserve_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_non_builtin_type_gap_001.expect.toml",
@@ -2129,6 +2178,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_bracket_structure_argument_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.imported_mode_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 79 source-derived imported mode reserve extraction gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_imported_mode_gap_001.expect.toml",
 ]
 
 [[requirement]]

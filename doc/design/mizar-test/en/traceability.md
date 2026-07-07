@@ -365,10 +365,16 @@ boundary: the runner observes
 imported structure provenance, structure type-head payload extraction,
 base-shape or constructor-witness evidence, positive structure elaboration,
 CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 79 may credit only the imported-mode reserve-head external-gap boundary:
+the runner observes `type_elaboration.external_dependency.ast_payload_extraction`
+for the documented `parser.type_fixtures` imported mode summary and does not
+credit real imported mode provenance, mode type-head payload extraction,
+`ModeExpansion` payloads, positive mode elaboration, CoreIr, ControlFlowIr, VC,
+or proof payloads.
 The supported reserve slices above, excluding task 67, task 68, task 69, task
 70, task 71 external-gap boundary cases, the task 75/task 76/task 77
-lower-stage boundary cases, and the task 78 imported-structure external-gap
-case, are converted into a syntax-free checker source reserve payload, then the
+lower-stage boundary cases, the task 78 imported-structure external-gap case,
+and the task 79 imported-mode external-gap case, are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one
 `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites,
 and `DeclarationChecker` output.
@@ -443,7 +449,9 @@ bare local-mode chain bridge, and task 74 pass cases credit only the structural 
 expansion, structure/attributed-builtin terminals beyond the existing one-edge
 diagnostics, or CoreIr/ControlFlowIr/VC/proof promotion. Task 78 fail cases
 credit only the imported structure extraction-gap boundary and do not credit
-real imported structure provenance or structure evidence. Task 75/76/77 fail
+real imported structure provenance or structure evidence. Task 79 fail cases
+credit only the imported mode extraction-gap boundary and do not credit real
+imported mode provenance or mode expansion. Task 75/76/77 fail
 cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker
 `ModeExpansion`, structure type-head, base-shape, constructor-witness,

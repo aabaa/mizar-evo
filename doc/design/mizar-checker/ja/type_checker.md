@@ -303,6 +303,15 @@ runner まで到達し、
 imported structure provenance、structure type-head payload、base-shape /
 constructor-witness evidence、positive structure elaboration、CoreIr/
 ControlFlowIr/VC/proof payload を捏造してはならない。
+task 79 は imported-mode 類似 case を同じ external extraction-gap boundary
+として記録する。documented `parser.type_fixtures` import summary 由来の
+`TypeCaseMode` のような reserve head は active type-elaboration runner まで
+到達し、`type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+bridge はこの import summary を real imported module AST extraction と扱っては
+ならず、imported mode provenance、mode type-head payload、`ModeExpansion`
+payload、positive mode elaboration、CoreIr/ControlFlowIr/VC/proof payload を
+捏造してはならない。これは既存の generic non-builtin imported-mode gap を
+owned diagnostic boundary slice として精密化するだけである。
 task 57 はさらに、RHS が type argument を持たない same-module
 local structure head である bare same-module no-argument local mode expansion を許可する。
 この case は real `ModeExpansion` を消費するため missing mode-expansion payload diagnostic を
