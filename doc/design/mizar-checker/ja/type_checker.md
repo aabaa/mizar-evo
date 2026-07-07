@@ -224,16 +224,22 @@ attribute も付かない、unique な same-module `LocalSource` `SymbolKind::Mo
 type normalization に到達し、real mode-expansion provider / extraction seam が存在する
 まで `checker.type.external.mode_expansion_payload` で fail closed する。task 54 はその
 local-mode slice に same-module source-derived attribute を持たせることを
-許可する。この場合も `checker.type.external.mode_expansion_payload` で fail closed し、
-real mode-expansion payload が存在するまでは attributed mode に `MissingEvidenceQuery` を
-付けず、fully expanded attributed type の existential evidence も主張しない。task 55 は
+許可する。supported real mode-expansion payload が存在しない場合や、同じ local mode が
+bare reserve use と mixed の場合は `checker.type.external.mode_expansion_payload` で
+fail closed し、fully expanded attributed type の existential evidence は主張しない。
+task 55 は
 bare local-mode reserve use だけに 1 つの real mode-expansion producer slice を許可する:
 runner は、reserve type use より前に現れる unique / unrecovered / same-module /
 no-argument `ModeDefinition` で、definition-local parameter / assumption context を持たず、
 RHS が attribute や argument のない bare builtin `set` / `object` である場合に限り、
 `ModeExpansion` を供給してよい。runner は同じ local mode head に attribute を付ける
 reserve binding が source 内に 1 つでもある場合、その expansion を渡さないため、
-task 54 の attributed local-mode fail-closed behavior は維持される。task 56 はこの
+task 54 の attributed local-mode fail-closed behavior は task 59 まで維持される。task 59 は、
+同じ local mode が同じ bridge input 内で bare reserve head としても使われていない場合に限り、
+attributed local-mode reserve head に対して同じ real direct bare-builtin RHS expansion を許可する。
+expanded attributed declaration は、real attributed-type existential evidence がまだ無いため
+`checker.declaration.deferred.evidence_query` に到達する。mixed bare/attributed use は
+missing-expansion path に残る。task 56 はこの
 producer を 1 つの source-derived chain edge だけ拡張する: bare local-mode reserve
 head は、unique / preceding / same-module / no-argument mode definition の RHS が別の
 bare same-module no-argument local mode であり、その dependency mode が task 55 の

@@ -1217,6 +1217,37 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       CoreIr、ControlFlowIr、VC、proof payload、より広い semantic pass coverage は
       deferred のままにする。
 
+59. **Source-derived attributed local mode reserve evidence-gap bridge.** [x]
+    - task-55 bridge を、same-module attributed local-mode reserve head について、
+      unique な preceding same-module no-argument mode definition が direct bare builtin
+      `set` / `object` RHS を持ち、同じ mode が同じ bridge input 内で bare reserve head
+      としても使われていない場合の real `ModeExpansion` payload 生成まで最小限拡張する。
+    - 受け入れ条件: checker unit coverage は real `Mode -> set` expansion を持つ
+      `marked Mode` が `checker.type.external.mode_expansion_payload` を出さず、
+      normalized attribute を保持し、declaration を `MissingEvidenceQuery` 付き partial
+      にし、verified fact を export しないことを示す。runner unit coverage は single
+      attributed local-mode reserve use が real direct bare-builtin expansion を受け取り、
+      同じ mode の mixed bare/attributed use は引き続き expansion を withheld することを示す。
+      既存の active `type_elaboration` attributed local-mode reserve fixture は real `.miz`
+      source path を `type_elaboration.checker.checker.declaration.deferred.evidence_query`
+      で cover するよう更新する。mixed bare/attributed reserve use、imported /
+      argument-bearing attribute/mode、attributed dependency、chain、structure RHS、
+      attributed RHS、successful attributed-mode declaration、existential evidence はこの
+      slice の外に残す。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、50、54、55。full attributed-type existential evidence とより広い
+      mode expansion は MC-G020 / MC-G026 のまま。参照: Step 5 source-derived
+      semantic bridge、mizar-test task 10、spec 03 type expression、spec 07 mode、
+      spec 17 attributed-type evidence。
+    - task 59 で完了: `mizar-test` は同じ mode に mixed bare reserve use がない
+      same-module attributed reserve head について real AST-derived direct bare-builtin
+      local-mode expansion を抽出し、`mizar-checker` は expanded attributed reserve
+      declaration を missing expansion-payload diagnostic ではなく既存の missing
+      evidence-query diagnostic に route する。positive attributed-type acceptance、
+      existential evidence extraction、mixed attributed/bare use、attributed dependency
+      や chain、CoreIr、ControlFlowIr、VC、proof payload、より広い semantic pass coverage は
+      deferred のままにする。
+
 ## 推奨検証
 
 各タスクの後で実行する:

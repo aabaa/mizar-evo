@@ -16,6 +16,7 @@ diagnostic_payloads = [
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction.attributed_local_mode_expansion_gap",
   "spec.en.checker.type_elaboration.payload_extraction.local_mode_expansion_gap",
 ]
-notes = "Active type_elaboration runner coverage for checker task 55: a same-module bare local mode reserve use is deliberately paired with an attributed use of the same local mode head, so the runner withholds the otherwise available bare RHS expansion for that symbol and checker normalization fails closed on the missing mode-expansion payload."
+notes = "Active type_elaboration runner coverage for checker tasks 54 and 55: a same-module attributed local mode reserve use is deliberately paired with a bare use of the same local mode head, so the runner withholds the otherwise available bare RHS expansion for that symbol and checker normalization fails closed on the missing mode-expansion payload."

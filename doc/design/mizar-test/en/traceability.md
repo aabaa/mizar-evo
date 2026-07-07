@@ -303,9 +303,11 @@ including attributed local structures that lack full normalized attributed-type
 existential evidence, task-57 same-module local-mode expansions with local
 structure RHSs missing base-shape evidence, task-58 same-module local-mode
 expansions with attributed builtin RHSs missing attributed-type existential
-evidence, or same-module local mode reserve heads, including
-attributed local modes or mixed attributed/bare local-mode sources, missing
-mode-expansion payloads. Task 56's attributed-chain-dependency fail case is part
+evidence, task-59 attributed local-mode reserve heads with real direct
+bare-builtin expansions missing attributed-type existential evidence, or
+same-module local mode reserve heads, including mixed attributed/bare
+local-mode sources, missing mode-expansion payloads. Task 56's
+attributed-chain-dependency fail case is part
 of that same missing mode-expansion payload family and does not credit a partial
 chain expansion; attributed-RHS chains likewise remain outside task 58. Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and

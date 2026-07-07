@@ -7488,6 +7488,14 @@ mod tests {
             vec![(0, 1)]
         );
         assert!(
+            diagnostic_ranges(
+                attributed_mode_with_expansion_handoff.declarations(),
+                "checker.type.external.mode_expansion_payload"
+            )
+            .is_empty(),
+            "real mode expansion should move attributed mode uses past the missing-expansion gap"
+        );
+        assert!(
             attributed_mode_with_expansion_handoff
                 .declarations()
                 .facts()

@@ -1304,6 +1304,42 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       attributed-RHS chains, CoreIr, ControlFlowIr, VC, proof payloads, and
       broader semantic pass coverage remain deferred.
 
+59. **Source-derived attributed local mode reserve evidence-gap bridge.** [x]
+    - Extend the task-55 bridge just far enough to produce a real
+      `ModeExpansion` payload for a same-module attributed local-mode reserve
+      head when its unique preceding same-module no-argument mode definition
+      has a direct bare builtin `set` / `object` RHS and the same mode is not
+      also used as a bare reserve head in the same bridge input.
+    - Acceptance: checker unit coverage proves `marked Mode` with a real
+      `Mode -> set` expansion no longer emits
+      `checker.type.external.mode_expansion_payload`, preserves the normalized
+      attribute, marks the declaration partial with `MissingEvidenceQuery`,
+      and exports no verified facts. Runner unit coverage proves the single
+      attributed local-mode reserve use receives the real direct bare-builtin
+      expansion while mixed bare/attributed uses of the same mode still
+      withhold expansion. The existing active `type_elaboration` attributed
+      local-mode reserve fixture is updated to cover the real `.miz` source
+      path with
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query`.
+      Mixed bare/attributed reserve uses, imported or argument-bearing
+      attributes/modes, attributed dependencies, chains, structure RHSs,
+      attributed RHSs, successful attributed-mode declarations, and
+      existential evidence remain outside the slice.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 50, 54, and 55. Full attributed-type existential
+      evidence and broader mode expansion remain MC-G020/MC-G026. Refs: Step 5
+      source-derived semantic bridge; mizar-test task 10; spec 03 type
+      expressions; spec 07 modes; spec 17 attributed-type evidence.
+    - Completed in task 59: `mizar-test` extracts a real AST-derived direct
+      bare-builtin local-mode expansion for a same-module attributed reserve
+      head when the same mode has no mixed bare reserve use, and
+      `mizar-checker` routes the expanded attributed reserve declaration to
+      the existing missing evidence-query diagnostic rather than the missing
+      expansion-payload diagnostic. Positive attributed-type acceptance,
+      existential evidence extraction, mixed attributed/bare uses, attributed
+      dependencies or chains, CoreIr, ControlFlowIr, VC, proof payloads, and
+      broader semantic pass coverage remain deferred.
+
 ## Recommended Verification
 
 Run after each task:

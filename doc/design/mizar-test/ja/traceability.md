@@ -277,8 +277,10 @@ base-shape evidence diagnostic、full normalized attributed type の existential
 attributed local structure、task-57 の local structure RHS を持つ same-module local-mode
 expansion における missing base-shape evidence、task-58 の attributed builtin RHS を持つ
 same-module local-mode expansion における missing attributed-type existential evidence、
+task-59 の real direct bare-builtin expansion を持つ attributed local-mode reserve head
+における missing attributed-type existential evidence、
 または same-module local mode reserve head の missing
-mode-expansion payload diagnostic（attributed local mode や mixed attributed/bare
+mode-expansion payload diagnostic（mixed attributed/bare
 local-mode source を含む）の checker detail key を代わりに assert してよい。task 56 の
 attributed-chain-dependency fail case は同じ missing mode-expansion payload family に属し、
 partial chain expansion は credit しない。attributed-RHS chain も task 58 では credit しない。

@@ -914,6 +914,50 @@ fn extract_source_local_mode_expansions(
             _ => None,
         })
         .collect::<BTreeSet<_>>();
+    let bare_mode_heads = bridge
+        .bindings()
+        .iter()
+        .filter(|binding| binding.type_attributes.is_empty())
+        .filter_map(|binding| match &binding.type_head {
+            TypeHeadInput::Symbol(symbol)
+                if source_reserve_symbol_head_kind(symbols, module, symbol)
+                    == Some(SymbolKind::Mode) =>
+            {
+                Some(symbol.clone())
+            }
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+    let mixed_mode_heads = attributed_mode_heads
+        .intersection(&bare_mode_heads)
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let mut blocked_attributed_mode_heads = mixed_mode_heads;
+    let dependency_collector = AttributedModeDependencyCollector {
+        ast,
+        module,
+        symbols,
+        bridge,
+        attributed_mode_heads: &attributed_mode_heads,
+    };
+    for binding in bridge.bindings() {
+        if !binding.type_attributes.is_empty() {
+            continue;
+        }
+        let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
+            continue;
+        };
+        if source_reserve_symbol_head_kind(symbols, module, symbol) != Some(SymbolKind::Mode) {
+            continue;
+        }
+        let mut visiting = BTreeSet::new();
+        dependency_collector.collect(
+            symbol,
+            binding.type_range,
+            &mut visiting,
+            &mut blocked_attributed_mode_heads,
+        );
+    }
 
     let mut expansions = BTreeMap::new();
     let extractor = SourceLocalModeExpansionExtractor {
@@ -922,13 +966,13 @@ fn extract_source_local_mode_expansions(
         symbols,
         bridge,
         attributed_mode_heads: &attributed_mode_heads,
+        blocked_attributed_mode_heads: &blocked_attributed_mode_heads,
     };
     for binding in bridge.bindings() {
         let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
             continue;
         };
-        if !binding.type_attributes.is_empty()
-            || attributed_mode_heads.contains(symbol)
+        if blocked_attributed_mode_heads.contains(symbol)
             || expansions.contains_key(symbol)
             || source_reserve_symbol_head_kind(symbols, module, symbol) != Some(SymbolKind::Mode)
         {
@@ -952,6 +996,7 @@ struct SourceLocalModeExpansionExtractor<'a> {
     symbols: &'a SymbolEnv,
     bridge: &'a SourceReserveDeclarationBridge,
     attributed_mode_heads: &'a BTreeSet<ResolverSymbolId>,
+    blocked_attributed_mode_heads: &'a BTreeSet<ResolverSymbolId>,
 }
 
 impl SourceLocalModeExpansionExtractor<'_> {
@@ -966,8 +1011,10 @@ impl SourceLocalModeExpansionExtractor<'_> {
         if let Some(expansion) = expansions.get(symbol) {
             return depth < 1 || mode_expansion_is_safe_chain_terminal(expansion);
         }
+        let is_attributed_root = depth == 0 && self.attributed_mode_heads.contains(symbol);
         if !visiting.insert(symbol.clone())
-            || self.attributed_mode_heads.contains(symbol)
+            || self.blocked_attributed_mode_heads.contains(symbol)
+            || (depth > 0 && self.attributed_mode_heads.contains(symbol))
             || source_reserve_symbol_head_kind(self.symbols, self.module, symbol)
                 != Some(SymbolKind::Mode)
         {
@@ -984,6 +1031,13 @@ impl SourceLocalModeExpansionExtractor<'_> {
             visiting.remove(symbol);
             return false;
         };
+        if is_attributed_root
+            && (!mode_expansion_is_safe_chain_terminal(&candidate.expansion)
+                || !candidate.dependencies.is_empty())
+        {
+            visiting.remove(symbol);
+            return false;
+        }
         if depth >= 1
             && matches!(
                 candidate.expansion.radix.head,
@@ -1020,6 +1074,45 @@ impl SourceLocalModeExpansionExtractor<'_> {
         expansions.insert(symbol.clone(), candidate.expansion);
         visiting.remove(symbol);
         true
+    }
+}
+
+struct AttributedModeDependencyCollector<'a> {
+    ast: &'a SurfaceAst,
+    module: &'a ResolverModuleId,
+    symbols: &'a SymbolEnv,
+    bridge: &'a SourceReserveDeclarationBridge,
+    attributed_mode_heads: &'a BTreeSet<ResolverSymbolId>,
+}
+
+impl AttributedModeDependencyCollector<'_> {
+    fn collect(
+        &self,
+        symbol: &ResolverSymbolId,
+        reserve_type_range: SourceRange,
+        visiting: &mut BTreeSet<ResolverSymbolId>,
+        blocked: &mut BTreeSet<ResolverSymbolId>,
+    ) {
+        if !visiting.insert(symbol.clone()) {
+            return;
+        }
+        if let Some(candidate) = extract_source_local_mode_expansion(
+            self.ast,
+            self.module,
+            self.symbols,
+            symbol,
+            reserve_type_range,
+            self.bridge,
+        ) {
+            for dependency in &candidate.dependencies {
+                if self.attributed_mode_heads.contains(dependency) {
+                    blocked.insert(dependency.clone());
+                } else {
+                    self.collect(dependency, candidate.definition_range, visiting, blocked);
+                }
+            }
+        }
+        visiting.remove(symbol);
     }
 }
 
@@ -3104,6 +3197,56 @@ mod tests {
         assert!(
             attributed_extraction.mode_expansions().is_empty(),
             "any attributed reserve use in a local-mode chain withholds the chain expansion"
+        );
+
+        let attributed_root_symbols = source_mode_attribute_symbol_env(module.clone());
+        let attributed_root = mode_chain_reserve_ast(
+            source,
+            [mode_definition("Mode", ReserveTypeShape::Builtin("set"))],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("Mode"),
+            )],
+        );
+        let attributed_root_extraction = extract_builtin_source_reserve_declarations(
+            &attributed_root,
+            module.clone(),
+            &attributed_root_symbols,
+        )
+        .expect("single attributed local-mode reserve should still extract");
+        let attributed_root_mode =
+            resolve_visible_type_head(&attributed_root_symbols, &module, "Mode").unwrap();
+        assert_eq!(attributed_root_extraction.mode_expansions().len(), 1);
+        assert!(matches!(
+            attributed_root_extraction
+                .mode_expansions()
+                .get(&attributed_root_mode)
+                .map(|expansion| &expansion.radix.head),
+            Some(TypeHeadInput::BuiltinSet)
+        ));
+
+        let mixed_attributed_root = mode_chain_reserve_ast(
+            source,
+            [mode_definition("Mode", ReserveTypeShape::Builtin("set"))],
+            vec![
+                reserve_item(vec!["z"], ReserveTypeShape::QualifiedSymbol("Mode")),
+                reserve_item(
+                    vec!["y"],
+                    ReserveTypeShape::AttributedQualifiedSymbol("Mode"),
+                ),
+            ],
+        );
+        let mixed_attributed_root_extraction = extract_builtin_source_reserve_declarations(
+            &mixed_attributed_root,
+            module.clone(),
+            &attributed_root_symbols,
+        )
+        .expect("mixed local-mode reserve should still extract");
+        assert!(
+            mixed_attributed_root_extraction
+                .mode_expansions()
+                .is_empty(),
+            "mixed bare/attributed uses of the same local mode still withhold expansion"
         );
 
         let structure_rhs_module =

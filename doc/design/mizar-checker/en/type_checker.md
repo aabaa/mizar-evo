@@ -234,17 +234,23 @@ Those local-mode reserve declarations reach type normalization and fail closed
 with `checker.type.external.mode_expansion_payload` until a real
 mode-expansion provider/extraction seam exists. Task 54 permits that
 local-mode slice to carry same-module source-derived attributes, which still
-fail closed with `checker.type.external.mode_expansion_payload`; the bridge
-does not attach `MissingEvidenceQuery` to the attributed mode before real
-mode-expansion payloads exist, and it does not claim existential evidence for
-the fully expanded attributed type. Task 55 permits one real mode-expansion
+fail closed with `checker.type.external.mode_expansion_payload` when no
+supported real mode-expansion payload is available or the same local mode is
+mixed with a bare reserve use; the bridge does not claim existential evidence
+for the fully expanded attributed type. Task 55 permits one real mode-expansion
 producer slice for bare local-mode reserve uses only: the runner may provide a
 `ModeExpansion` for a unique unrecovered same-module no-argument
 `ModeDefinition` that precedes the reserve type use, has no definition-local
 parameter/assumption context, and has a bare builtin `set` / `object` RHS with
 no attributes or arguments. The runner withholds that expansion for sources
 where any reserve binding uses attributes on the same local mode head, so task
-54's attributed local-mode fail-closed behavior is preserved. Task 56 extends
+54's attributed local-mode fail-closed behavior is preserved until task 59.
+Task 59 then permits that same real direct bare-builtin RHS expansion for an
+attributed local-mode reserve head only when the same local mode is not also
+used as a bare reserve head in the same bridge input. The expanded attributed
+declaration reaches `checker.declaration.deferred.evidence_query` because
+real attributed-type existential evidence is still absent; mixed bare/
+attributed uses stay on the missing-expansion path. Task 56 extends
 that producer by one source-derived chain edge: a bare local-mode reserve head
 may expand through a unique preceding same-module no-argument mode definition
 whose RHS is another bare same-module no-argument local mode, but only when

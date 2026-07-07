@@ -7,15 +7,14 @@ source = "fail_type_elaboration_local_attributed_mode_reserve_expansion_gap_001.
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "missing_attributed_mode_expansion_payload"
-stable_detail_key = "type_elaboration.checker.checker.type.external.mode_expansion_payload"
+rejection_reason = "missing_attributed_mode_evidence_query"
+stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.checker.checker.type.external.mode_expansion_payload",
-  "type_elaboration.checker.checker.type.recovery",
+  "type_elaboration.checker.checker.declaration.deferred.evidence_query",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
-  "spec.en.checker.type_elaboration.payload_extraction.attributed_local_mode_expansion_gap",
+  "spec.en.checker.type_elaboration.payload_extraction.attributed_local_mode_evidence_gap",
 ]
-notes = "Active type_elaboration runner coverage for checker task 54: same-module source-derived attribute and mode symbols are extracted into a local mode reserve type-expression payload, then checker type normalization fails closed on the missing mode-expansion payload instead of accepting the declaration, fabricating existential evidence, or reporting the broader AST payload extraction gap."
+notes = "Active type_elaboration runner coverage for checker task 59: same-module source-derived attribute and mode symbols are extracted into a local mode reserve type-expression payload, the mode's direct bare builtin RHS is lowered into a real mode-expansion payload, and checker declaration checking fails closed on the missing attributed-type evidence query instead of accepting the declaration, fabricating existential evidence, or reporting the missing mode-expansion payload."
