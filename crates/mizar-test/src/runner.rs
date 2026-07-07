@@ -811,6 +811,11 @@ impl SourceReserveExtraction {
     fn declaration_node(&self, index: usize) -> mizar_checker::typed_ast::TypedNodeId {
         self.bridge.declaration_node(index)
     }
+
+    #[cfg(test)]
+    fn mode_expansions(&self) -> &BTreeMap<ResolverSymbolId, ModeExpansion> {
+        &self.mode_expansions
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -819,6 +824,13 @@ struct SourceTypeExpression {
     spelling: String,
     head: TypeHeadInput,
     attributes: Vec<AttributeInput>,
+}
+
+#[derive(Debug, Clone)]
+struct SourceModeExpansionCandidate {
+    definition_range: SourceRange,
+    expansion: ModeExpansion,
+    dependencies: Vec<ResolverSymbolId>,
 }
 
 fn extract_builtin_source_reserve_declarations(
@@ -904,6 +916,13 @@ fn extract_source_local_mode_expansions(
         .collect::<BTreeSet<_>>();
 
     let mut expansions = BTreeMap::new();
+    let extractor = SourceLocalModeExpansionExtractor {
+        ast,
+        module,
+        symbols,
+        bridge,
+        attributed_mode_heads: &attributed_mode_heads,
+    };
     for binding in bridge.bindings() {
         let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
             continue;
@@ -915,22 +934,88 @@ fn extract_source_local_mode_expansions(
         {
             continue;
         }
-        if let Some(expansion) =
-            extract_source_local_mode_expansion(ast, module, symbol, binding.type_range, bridge)
-        {
-            expansions.insert(symbol.clone(), expansion);
-        }
+        let mut visiting = BTreeSet::new();
+        let _ = extractor.insert(
+            symbol,
+            binding.type_range,
+            &mut visiting,
+            &mut expansions,
+            0,
+        );
     }
     expansions
+}
+
+struct SourceLocalModeExpansionExtractor<'a> {
+    ast: &'a SurfaceAst,
+    module: &'a ResolverModuleId,
+    symbols: &'a SymbolEnv,
+    bridge: &'a SourceReserveDeclarationBridge,
+    attributed_mode_heads: &'a BTreeSet<ResolverSymbolId>,
+}
+
+impl SourceLocalModeExpansionExtractor<'_> {
+    fn insert(
+        &self,
+        symbol: &ResolverSymbolId,
+        reserve_type_range: SourceRange,
+        visiting: &mut BTreeSet<ResolverSymbolId>,
+        expansions: &mut BTreeMap<ResolverSymbolId, ModeExpansion>,
+        depth: usize,
+    ) -> bool {
+        if let Some(expansion) = expansions.get(symbol) {
+            return depth < 1 || !matches!(expansion.radix.head, TypeHeadInput::Symbol(_));
+        }
+        if !visiting.insert(symbol.clone())
+            || self.attributed_mode_heads.contains(symbol)
+            || source_reserve_symbol_head_kind(self.symbols, self.module, symbol)
+                != Some(SymbolKind::Mode)
+        {
+            return false;
+        }
+        let Some(candidate) = extract_source_local_mode_expansion(
+            self.ast,
+            self.module,
+            self.symbols,
+            symbol,
+            reserve_type_range,
+            self.bridge,
+        ) else {
+            visiting.remove(symbol);
+            return false;
+        };
+        if depth >= 1 && !candidate.dependencies.is_empty() {
+            visiting.remove(symbol);
+            return false;
+        }
+        for dependency in &candidate.dependencies {
+            if self.attributed_mode_heads.contains(dependency)
+                || !self.insert(
+                    dependency,
+                    candidate.definition_range,
+                    visiting,
+                    expansions,
+                    depth + 1,
+                )
+            {
+                visiting.remove(symbol);
+                return false;
+            }
+        }
+        expansions.insert(symbol.clone(), candidate.expansion);
+        visiting.remove(symbol);
+        true
+    }
 }
 
 fn extract_source_local_mode_expansion(
     ast: &SurfaceAst,
     module: &ResolverModuleId,
+    symbols: &SymbolEnv,
     symbol: &ResolverSymbolId,
-    reserve_type_range: SourceRange,
+    use_site_range: SourceRange,
     bridge: &SourceReserveDeclarationBridge,
-) -> Option<ModeExpansion> {
+) -> Option<SourceModeExpansionCandidate> {
     if symbol.module() != module {
         return None;
     }
@@ -939,7 +1024,7 @@ fn extract_source_local_mode_expansion(
         .into_iter()
         .filter(|(id, node)| {
             !subtree_has_recovery(ast, node)
-                && node.range.end <= reserve_type_range.start
+                && node.range.end <= use_site_range.start
                 && !mode_definition_has_local_context(ast, *id)
                 && mode_definition_pattern_spelling(ast, node).as_deref() == Some(spelling)
         })
@@ -947,16 +1032,24 @@ fn extract_source_local_mode_expansion(
     let [(_, definition)] = definitions.as_slice() else {
         return None;
     };
-    let rhs = extract_bare_builtin_mode_rhs(ast, definition)?;
-    Some(ModeExpansion::new(
-        TypeExpressionInput::new(
-            TypedSiteRef::Node(bridge.root_node()),
-            rhs.range,
-            rhs.spelling,
-            rhs.head,
+    let rhs = extract_bare_source_mode_rhs(ast, definition, module, symbols)?;
+    let dependencies = match &rhs.head {
+        TypeHeadInput::Symbol(dependency) => vec![dependency.clone()],
+        _ => Vec::new(),
+    };
+    Some(SourceModeExpansionCandidate {
+        definition_range: definition.range,
+        expansion: ModeExpansion::new(
+            TypeExpressionInput::new(
+                TypedSiteRef::Node(bridge.root_node()),
+                rhs.range,
+                rhs.spelling,
+                rhs.head,
+            ),
+            Vec::new(),
         ),
-        Vec::new(),
-    ))
+        dependencies,
+    })
 }
 
 fn source_mode_symbol_spelling(symbol: &ResolverSymbolId) -> Option<&str> {
@@ -968,6 +1061,15 @@ fn source_mode_symbol_spelling(symbol: &ResolverSymbolId) -> Option<&str> {
             .unwrap_or(spelling)
     });
     let name = name.split_once(':').map_or(name, |(name, _)| name);
+    let mut slash_parts = name.split('/');
+    let first = slash_parts.next();
+    let second = slash_parts.next();
+    let third = slash_parts.next();
+    let name = match (first, second, third) {
+        (Some(_), Some(spelling), Some(_)) => spelling,
+        (Some(spelling), Some(_), None) => spelling,
+        _ => name,
+    };
     (!name.is_empty()).then_some(name)
 }
 
@@ -992,9 +1094,11 @@ fn mode_definition_pattern_spelling(ast: &SurfaceAst, node: &SurfaceNode) -> Opt
     }
 }
 
-fn extract_bare_builtin_mode_rhs(
+fn extract_bare_source_mode_rhs(
     ast: &SurfaceAst,
     node: &SurfaceNode,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
 ) -> Option<SourceTypeExpression> {
     let rhs_nodes = node
         .children
@@ -1009,7 +1113,7 @@ fn extract_bare_builtin_mode_rhs(
         return None;
     }
     let head = ast.node(rhs.children[0])?;
-    let head = extract_bare_builtin_type_head(ast, head)?;
+    let head = extract_bare_expansion_type_head(ast, head, module, symbols)?;
     Some(SourceTypeExpression {
         range: rhs.range,
         spelling: source_text_from_children(ast, rhs)?,
@@ -1018,15 +1122,31 @@ fn extract_bare_builtin_mode_rhs(
     })
 }
 
-fn extract_bare_builtin_type_head(ast: &SurfaceAst, node: &SurfaceNode) -> Option<TypeHeadInput> {
+fn extract_bare_expansion_type_head(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TypeHeadInput> {
     if !matches!(node.kind, SurfaceNodeKind::TypeHead) || node.children.len() != 1 {
         return None;
     }
-    match ast.node(node.children[0])?.token_text()? {
-        "set" => Some(TypeHeadInput::BuiltinSet),
-        "object" => Some(TypeHeadInput::BuiltinObject),
-        _ => None,
+    let child = ast.node(node.children[0])?;
+    if let Some(token) = child.token_text() {
+        return match token {
+            "set" => Some(TypeHeadInput::BuiltinSet),
+            "object" => Some(TypeHeadInput::BuiltinObject),
+            _ => None,
+        };
     }
+    if matches!(child.kind, SurfaceNodeKind::QualifiedSymbol) {
+        let spelling = qualified_symbol_spelling(ast, child).ok()?;
+        let symbol = resolve_visible_type_head(symbols, module, &spelling).ok()?;
+        if source_reserve_symbol_head_kind(symbols, module, &symbol) == Some(SymbolKind::Mode) {
+            return Some(TypeHeadInput::Symbol(symbol));
+        }
+    }
+    None
 }
 
 fn surface_nodes_with_kind(
@@ -2546,7 +2666,7 @@ mod tests {
     use super::{
         ParseOnlyImportProvider, TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY,
         assemble_source_checker_handoff, extract_builtin_source_reserve_declarations,
-        source_type_elaboration_detail_keys,
+        resolve_visible_type_head, source_type_elaboration_detail_keys,
     };
     use mizar_checker::binding_env::BindingId;
     use mizar_checker::resolved_typed_ast::{ResolvedTypedNodeId, ResolvedTypedNodeKind};
@@ -2858,6 +2978,220 @@ mod tests {
             attributed_structure_reserve.bindings()[0].type_head,
             TypeHeadInput::Symbol(_)
         ));
+    }
+
+    #[test]
+    fn source_reserve_extractor_preserves_local_mode_expansion_chain_payloads() {
+        let source = source_id(199);
+        let module = ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let symbols = source_mode_chain_symbol_env(module.clone());
+        let ast = mode_chain_reserve_ast(
+            source,
+            [
+                mode_definition("A", ReserveTypeShape::Builtin("set")),
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("A")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("B"),
+            )],
+        );
+
+        let extraction =
+            extract_builtin_source_reserve_declarations(&ast, module.clone(), &symbols)
+                .expect("mode chain reserve should extract");
+        let a = resolve_visible_type_head(&symbols, &module, "A").unwrap();
+        let b = resolve_visible_type_head(&symbols, &module, "B").unwrap();
+        assert_eq!(extraction.mode_expansions().len(), 2);
+        assert!(matches!(
+            extraction
+                .mode_expansions()
+                .get(&a)
+                .map(|expansion| &expansion.radix.head),
+            Some(TypeHeadInput::BuiltinSet)
+        ));
+        assert_eq!(
+            extraction
+                .mode_expansions()
+                .get(&b)
+                .map(|expansion| &expansion.radix.head),
+            Some(&TypeHeadInput::Symbol(a.clone()))
+        );
+
+        let attributed_dependency = mode_chain_reserve_ast(
+            source,
+            [
+                mode_definition("A", ReserveTypeShape::Builtin("set")),
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("A")),
+            ],
+            vec![
+                reserve_item(vec!["z"], ReserveTypeShape::QualifiedSymbol("B")),
+                reserve_item(vec!["y"], ReserveTypeShape::AttributedQualifiedSymbol("A")),
+            ],
+        );
+        let attributed_extraction = extract_builtin_source_reserve_declarations(
+            &attributed_dependency,
+            module.clone(),
+            &symbols,
+        )
+        .expect("attributed dependency reserve should still extract");
+        assert!(
+            attributed_extraction.mode_expansions().is_empty(),
+            "any attributed reserve use in a local-mode chain withholds the chain expansion"
+        );
+
+        let forward_dependency = mode_chain_reserve_ast(
+            source,
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("A")),
+                mode_definition("A", ReserveTypeShape::Builtin("set")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("B"),
+            )],
+        );
+        let forward_extraction =
+            extract_builtin_source_reserve_declarations(&forward_dependency, module, &symbols)
+                .expect("forward dependency reserve should still extract");
+        assert!(
+            forward_extraction.mode_expansions().is_empty(),
+            "mode expansion chains require each dependency definition to precede its use"
+        );
+
+        let deeper_symbols = source_local_symbols_env(
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
+            &[
+                ("A", SymbolKind::Mode),
+                ("B", SymbolKind::Mode),
+                ("C", SymbolKind::Mode),
+            ],
+        );
+        let deeper_module = deeper_symbols.module_id().clone();
+        let deeper_chain = mode_chain_reserve_ast(
+            source,
+            [
+                mode_definition("A", ReserveTypeShape::Builtin("set")),
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("A")),
+                mode_definition("C", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("C"),
+            )],
+        );
+        let deeper_extraction = extract_builtin_source_reserve_declarations(
+            &deeper_chain,
+            deeper_module,
+            &deeper_symbols,
+        )
+        .expect("deeper chain reserve should still extract");
+        assert!(
+            deeper_extraction.mode_expansions().is_empty(),
+            "task 56 admits only one local-mode dependency edge beyond the reserve head"
+        );
+
+        let cached_deeper_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge"));
+        let cached_deeper_symbols = source_local_symbols_env(
+            cached_deeper_module.clone(),
+            &[
+                ("A", SymbolKind::Mode),
+                ("B", SymbolKind::Mode),
+                ("C", SymbolKind::Mode),
+            ],
+        );
+        let cached_deeper_chain = mode_chain_reserve_ast(
+            source,
+            [
+                mode_definition("A", ReserveTypeShape::Builtin("set")),
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("A")),
+                mode_definition("C", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![
+                reserve_item(vec!["y"], ReserveTypeShape::QualifiedSymbol("B")),
+                reserve_item(vec!["z"], ReserveTypeShape::QualifiedSymbol("C")),
+            ],
+        );
+        let cached_deeper_extraction = extract_builtin_source_reserve_declarations(
+            &cached_deeper_chain,
+            cached_deeper_module.clone(),
+            &cached_deeper_symbols,
+        )
+        .expect("cached deeper chain reserve should still extract");
+        let cached_a =
+            resolve_visible_type_head(&cached_deeper_symbols, &cached_deeper_module, "A").unwrap();
+        let cached_b =
+            resolve_visible_type_head(&cached_deeper_symbols, &cached_deeper_module, "B").unwrap();
+        let cached_c =
+            resolve_visible_type_head(&cached_deeper_symbols, &cached_deeper_module, "C").unwrap();
+        assert!(
+            cached_deeper_extraction
+                .mode_expansions()
+                .contains_key(&cached_a)
+        );
+        assert!(
+            cached_deeper_extraction
+                .mode_expansions()
+                .contains_key(&cached_b)
+        );
+        assert!(
+            !cached_deeper_extraction
+                .mode_expansions()
+                .contains_key(&cached_c),
+            "cached one-edge expansion payloads must not let a deeper chain bypass the cap"
+        );
+
+        let cyclic_symbols = source_local_symbols_env(
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
+            &[("A", SymbolKind::Mode)],
+        );
+        let cyclic_module = cyclic_symbols.module_id().clone();
+        let cyclic_chain = mode_chain_reserve_ast(
+            source,
+            [mode_definition("A", ReserveTypeShape::QualifiedSymbol("A"))],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("A"),
+            )],
+        );
+        let cyclic_extraction = extract_builtin_source_reserve_declarations(
+            &cyclic_chain,
+            cyclic_module,
+            &cyclic_symbols,
+        )
+        .expect("cyclic chain reserve should still extract");
+        assert!(
+            cyclic_extraction.mode_expansions().is_empty(),
+            "cyclic local-mode RHS dependencies must not produce partial chain expansions"
+        );
+
+        let ambiguous_symbols = ambiguous_mode_chain_symbol_env(ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("bridge"),
+        ));
+        let ambiguous_module = ambiguous_symbols.module_id().clone();
+        let ambiguous_dependency = mode_chain_reserve_ast(
+            source,
+            [
+                mode_definition("A", ReserveTypeShape::Builtin("set")),
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("A")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("B"),
+            )],
+        );
+        let ambiguous_extraction = extract_builtin_source_reserve_declarations(
+            &ambiguous_dependency,
+            ambiguous_module,
+            &ambiguous_symbols,
+        )
+        .expect("ambiguous dependency reserve should still extract");
+        assert!(
+            ambiguous_extraction.mode_expansions().is_empty(),
+            "ambiguous local-mode RHS dependencies must not produce partial chain expansions"
+        );
     }
 
     #[test]
@@ -3273,6 +3607,17 @@ mod tests {
         source_local_symbol_env(module, "Mode", SymbolKind::Mode)
     }
 
+    fn source_mode_chain_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        source_local_symbols_env(
+            module,
+            &[
+                ("empty", SymbolKind::Attribute),
+                ("A", SymbolKind::Mode),
+                ("B", SymbolKind::Mode),
+            ],
+        )
+    }
+
     fn source_structure_symbol_env(module: ResolverModuleId) -> SymbolEnv {
         source_local_symbol_env(module, "Struct", SymbolKind::Structure)
     }
@@ -3450,6 +3795,44 @@ mod tests {
         ambiguous_symbol_env(module, "Mode", SymbolKind::Mode)
     }
 
+    fn ambiguous_mode_chain_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        let source = source_id(189);
+        let mut indexes = SymbolEnvIndexes::default();
+        let contribution = indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 5)),
+        );
+        for (ordinal, spelling) in ["A", "A", "B"].into_iter().enumerate() {
+            let symbol = ResolverSymbolId::new(
+                module.clone(),
+                LocalSymbolId::new(format!("Mode/{spelling}/{ordinal}")),
+                FullyQualifiedName::new(format!(
+                    "{}::{spelling}/{ordinal}",
+                    module.path().as_str()
+                )),
+            );
+            indexes.symbols.insert(
+                SymbolEntry::new(
+                    symbol,
+                    SymbolKind::Mode,
+                    NamespacePath::new(module.path().as_str()),
+                    spelling,
+                    SemanticOrigin::new(
+                        source,
+                        module.clone(),
+                        SourceAnchor::Range(range(source, ordinal, ordinal + 1)),
+                        Vec::new(),
+                    ),
+                    contribution,
+                )
+                .with_visibility(Visibility::Public)
+                .with_export_status(ExportStatus::Exported),
+            );
+        }
+        SymbolEnv::new(module, indexes)
+    }
+
     fn ambiguous_structure_symbol_env(module: ResolverModuleId) -> SymbolEnv {
         ambiguous_symbol_env(module, "Struct", SymbolKind::Structure)
     }
@@ -3501,6 +3884,13 @@ mod tests {
         spelling: &'static str,
         kind: SymbolKind,
     ) -> SymbolEnv {
+        source_local_symbols_env(module, &[(spelling, kind)])
+    }
+
+    fn source_local_symbols_env(
+        module: ResolverModuleId,
+        symbols: &[(&'static str, SymbolKind)],
+    ) -> SymbolEnv {
         let source = source_id(190);
         let mut indexes = SymbolEnvIndexes::default();
         let contribution = indexes.contributions.insert(
@@ -3508,28 +3898,30 @@ mod tests {
             ContributionKind::LocalSource { source_id: source },
             SourceAnchor::Range(range(source, 0, 1)),
         );
-        let symbol = ResolverSymbolId::new(
-            module.clone(),
-            LocalSymbolId::new(format!("{kind:?}/{spelling}/0")),
-            FullyQualifiedName::new(format!("{}::{spelling}/0", module.path().as_str())),
-        );
-        indexes.symbols.insert(
-            SymbolEntry::new(
-                symbol,
-                kind,
-                NamespacePath::new(module.path().as_str()),
-                spelling,
-                SemanticOrigin::new(
-                    source,
-                    module.clone(),
-                    SourceAnchor::Range(range(source, 0, 1)),
-                    Vec::new(),
-                ),
-                contribution,
+        for (ordinal, (spelling, kind)) in symbols.iter().copied().enumerate() {
+            let symbol = ResolverSymbolId::new(
+                module.clone(),
+                LocalSymbolId::new(format!("{kind:?}/{spelling}/0")),
+                FullyQualifiedName::new(format!("{}::{spelling}/0", module.path().as_str())),
+            );
+            indexes.symbols.insert(
+                SymbolEntry::new(
+                    symbol,
+                    kind,
+                    NamespacePath::new(module.path().as_str()),
+                    spelling,
+                    SemanticOrigin::new(
+                        source,
+                        module.clone(),
+                        SourceAnchor::Range(range(source, ordinal, ordinal + 1)),
+                        Vec::new(),
+                    ),
+                    contribution,
+                )
+                .with_visibility(Visibility::Public)
+                .with_export_status(ExportStatus::Exported),
             )
-            .with_visibility(Visibility::Public)
-            .with_export_status(ExportStatus::Exported),
-        );
+        }
         SymbolEnv::new(module, indexes)
     }
 
@@ -3606,6 +3998,12 @@ mod tests {
     }
 
     #[derive(Debug, Clone, Copy)]
+    struct ModeDefinitionSpec {
+        pattern: &'static str,
+        rhs_shape: ReserveTypeShape,
+    }
+
+    #[derive(Debug, Clone, Copy)]
     enum ReserveTypeShape {
         Builtin(&'static str),
         NonBuiltin(&'static str),
@@ -3621,48 +4019,100 @@ mod tests {
         ReserveItemSpec { names, type_shape }
     }
 
-    fn reserve_ast(source_id: SourceId, items: Vec<ReserveItemSpec>) -> SurfaceAst {
+    const fn mode_definition(
+        pattern: &'static str,
+        rhs_shape: ReserveTypeShape,
+    ) -> ModeDefinitionSpec {
+        ModeDefinitionSpec { pattern, rhs_shape }
+    }
+
+    fn mode_chain_reserve_ast(
+        source_id: SourceId,
+        modes: impl IntoIterator<Item = ModeDefinitionSpec>,
+        items: Vec<ReserveItemSpec>,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut root_children = Vec::new();
         let mut offset = 0;
-        for item in items {
-            let item_start = offset;
-            let reserve = add_token(
+        for mode in modes {
+            root_children.push(add_mode_definition_item(
                 &mut builder,
                 source_id,
                 &mut offset,
+                mode,
+            ));
+        }
+        root_children.extend(add_reserve_items(
+            &mut builder,
+            source_id,
+            &mut offset,
+            items,
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn reserve_ast(source_id: SourceId, items: Vec<ReserveItemSpec>) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn add_reserve_items(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        items: Vec<ReserveItemSpec>,
+    ) -> Vec<SurfaceBuilderNodeId> {
+        let mut root_children = Vec::new();
+        for item in items {
+            let item_start = *offset;
+            let reserve = add_token(
+                builder,
+                source_id,
+                offset,
                 SurfaceTokenKind::ReservedWord,
                 "reserve",
             );
-            let segment_start = offset;
+            let segment_start = *offset;
             let mut segment_children = Vec::new();
             for (index, name) in item.names.iter().enumerate() {
                 segment_children.push(add_token(
-                    &mut builder,
+                    builder,
                     source_id,
-                    &mut offset,
+                    offset,
                     SurfaceTokenKind::Identifier,
                     name,
                 ));
                 if index + 1 != item.names.len() {
                     segment_children.push(add_token(
-                        &mut builder,
+                        builder,
                         source_id,
-                        &mut offset,
+                        offset,
                         SurfaceTokenKind::ReservedSymbol,
                         ",",
                     ));
                 }
             }
             segment_children.push(add_token(
-                &mut builder,
+                builder,
                 source_id,
-                &mut offset,
+                offset,
                 SurfaceTokenKind::ReservedWord,
                 "for",
             ));
             let type_expression =
-                add_reserve_type_expression(&mut builder, source_id, &mut offset, item.type_shape);
+                add_reserve_type_expression(builder, source_id, offset, item.type_shape);
             segment_children.push(type_expression);
             let segment_end = builder
                 .node_range(type_expression)
@@ -3674,9 +4124,9 @@ mod tests {
                 segment_children,
             );
             let semicolon = add_token(
-                &mut builder,
+                builder,
                 source_id,
-                &mut offset,
+                offset,
                 SurfaceTokenKind::ReservedSymbol,
                 ";",
             );
@@ -3691,12 +4141,106 @@ mod tests {
             );
             root_children.push(reserve_item);
         }
-        let root = builder.add_node(
-            SurfaceNodeKind::Root,
-            range(source_id, 0, offset.saturating_sub(2)),
-            root_children,
+        root_children
+    }
+
+    fn add_mode_definition_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        mode: ModeDefinitionSpec,
+    ) -> SurfaceBuilderNodeId {
+        let item_start = *offset;
+        let definition = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "definition",
         );
-        builder.finish(Some(root), None)
+        let mode_start = *offset;
+        let mode_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "mode",
+        );
+        let label = format!("{}Def", mode.pattern);
+        let label_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            &label,
+        );
+        let colon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+        );
+        let pattern_start = *offset;
+        let pattern_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            mode.pattern,
+        );
+        let pattern = builder.add_node(
+            SurfaceNodeKind::ModePattern,
+            range(source_id, pattern_start, pattern_start + mode.pattern.len()),
+            vec![pattern_token],
+        );
+        let is = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "is",
+        );
+        let rhs = add_reserve_type_expression(builder, source_id, offset, mode.rhs_shape);
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let mode_end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        let mode_definition = builder.add_node(
+            SurfaceNodeKind::ModeDefinition,
+            range(source_id, mode_start, mode_end),
+            vec![mode_token, label_token, colon, pattern, is, rhs, semicolon],
+        );
+        let end = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "end",
+        );
+        let block_semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let item_end = builder
+            .node_range(block_semicolon)
+            .expect("just-created block semicolon should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::DefinitionBlockItem,
+            range(source_id, item_start, item_end),
+            vec![definition, mode_definition, end, block_semicolon],
+        )
     }
 
     fn add_reserve_type_expression(

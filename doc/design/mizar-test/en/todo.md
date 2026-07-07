@@ -256,7 +256,8 @@ Keep `cargo test -p mizar-test` green after each task (see
       reserve evidence-query active fail slice, and checker task 54's
       attributed local mode reserve missing-expansion active fail slice, and
       checker task 55's bare same-module local mode expansion active pass
-      slice, as prepared/implemented increments.
+      slice, and checker task 56's one-edge same-module local-mode expansion
+      chain active pass/gap slice, as prepared/implemented increments.
       Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
       `paced/open`; no placeholder runner or fake active fixture is created for

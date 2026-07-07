@@ -3437,8 +3437,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 14);
-    assert_eq!(report.passed_count(), 14);
+    assert_eq!(report.results.len(), 17);
+    assert_eq!(report.passed_count(), 17);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3482,6 +3482,15 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
                 ]
     }));
     assert!(report.results.iter().any(|result| {
+        result.id.0
+            == "fail_type_elaboration_local_mode_chain_dependency_attributed_expansion_gap_001"
+            && result.actual_detail_keys
+                == [
+                    "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+                    "type_elaboration.checker.checker.type.recovery",
+                ]
+    }));
+    assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_local_attributed_mode_reserve_expansion_gap_001"
             && result.actual_detail_keys
                 == [
@@ -3513,6 +3522,14 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_type_elaboration_local_object_mode_expansion_001"
+            && result.actual_detail_keys.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_type_elaboration_local_mode_chain_expansion_001"
+            && result.actual_detail_keys.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_type_elaboration_local_object_mode_chain_expansion_001"
             && result.actual_detail_keys.is_empty()
     }));
 }
@@ -6007,8 +6024,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 14"));
-    assert!(stdout.contains("passed: 14"));
+    assert!(stdout.contains("type-elaboration cases: 17"));
+    assert!(stdout.contains("passed: 17"));
     assert!(stdout.contains("failed: 0"));
 }
 

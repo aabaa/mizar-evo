@@ -1738,6 +1738,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.local_mode_expansion_chain_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 56 source-derived same-module local mode expansion chain bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_chain_expansion_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_object_mode_chain_expansion_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.local_mode_expansion_source_bridge"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 55 source-derived same-module local mode expansion bridge"
@@ -1799,6 +1812,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_local_attributed_reserve_evidence_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.local_mode_expansion_chain_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 56 source-derived local mode expansion chain gap"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_mode_chain_dependency_attributed_expansion_gap_001.expect.toml",
 ]
 
 [[requirement]]

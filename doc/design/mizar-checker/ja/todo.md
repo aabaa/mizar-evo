@@ -1137,6 +1137,29 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       new active pass fixture を追加し、attributed / mixed / attributed-RHS case は
       missing expansion または evidence gap で fail closed のままにする。
 
+56. **Source-derived local mode expansion chain bridge.** [x]
+    - task-55 bridge を、same-module bare local-mode reserve head が、accepted bare
+      builtin `set` / `object` RHS expansion を持つ preceding same-module no-argument
+      local mode へ expand する場合の real chained `ModeExpansion` payload 生成まで
+      最小限拡張する。
+    - 受け入れ条件: runner は checker-owned reserve seam の前に source-derived
+      expansion を両方挿入する。active pass fixture は `B -> A -> set` と
+      `B -> A -> object` を cover し、active fail fixture は attributed dependency で
+      chain 全体が withheld され missing mode-expansion diagnostic に到達することを示す。
+      forward reference、ambiguous / imported / cyclic dependency、accepted dependency
+      expansion を欠く partial chain、attributed use / RHS、argument、parameterized /
+      contextual definition、CoreIr / ControlFlowIr / VC / proof payload、より広い
+      semantic pass coverage は deferred のままにする。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、51、54、55。より広い mode expansion と existential evidence は
+      MC-G014 / MC-G020 / MC-G026 のまま。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 03 type expression、spec 07 mode、spec 17 base-shape
+      inhabitation evidence。
+    - task 56 で完了: `mizar-test` は narrow な one-edge source-derived local-mode
+      expansion chain を抽出し、`B -> A -> set` と `B -> A -> object` の active pass
+      coverage を追加する。attributed dependency chain は CoreIr、ControlFlowIr、VC、
+      proof payload へ昇格せず checker missing mode-expansion diagnostic で fail closed のままにする。
+
 ## 推奨検証
 
 各タスクの後で実行する:

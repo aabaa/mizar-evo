@@ -262,7 +262,12 @@ credit the narrow bare local-mode expansion pass slice: the reserve type head
 is an un-attributed argument-free same-module local mode, and the runner derives
 a real `ModeExpansion` from a unique unrecovered preceding same-module
 no-argument `ModeDefinition` whose RHS is bare builtin `set` / `object` and
-whose enclosing definition block has no definition-local context. Those sources
+whose enclosing definition block has no definition-local context. Task 56 may
+also credit the narrow one-edge local-mode expansion chain pass slice: the
+reserve type head expands to a preceding same-module no-argument local mode
+whose own preceding source definition has an accepted task-55 bare builtin RHS
+expansion, and the runner inserts both real source-derived expansions before the
+checker-owned reserve seam. Those sources
 are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one `DeclarationInput` per
 binding, binding-specific `TypeExpressionInput` sites, and `DeclarationChecker`
@@ -289,7 +294,9 @@ or same-module local structure reserve heads missing base-shape evidence,
 including attributed local structures that lack full normalized attributed-type
 existential evidence, or same-module local mode reserve heads, including
 attributed local modes or mixed attributed/bare local-mode sources, missing
-mode-expansion payloads. Those gap tests do not satisfy the broader task 7-11
+mode-expansion payloads. Task 56's attributed-chain-dependency fail case is part
+of that same missing mode-expansion payload family and does not credit a partial
+chain expansion. Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and
 `proof_verification` rows remain deferred until prepared consumer execution
 exists; the summary/context readiness read is not a CoreIr/ControlFlowIr/VC/

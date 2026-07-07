@@ -1215,6 +1215,32 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       mode expansion bridge, while attributed/mixed/attributed-RHS cases stay
       fail-closed on missing expansion or evidence gaps.
 
+56. **Source-derived local mode expansion chain bridge.** [x]
+    - Extend the task-55 bridge just far enough to produce real chained
+      `ModeExpansion` payloads when a same-module bare local-mode reserve head
+      expands to a preceding same-module no-argument local mode whose own
+      preceding source definition has an accepted bare builtin `set` /
+      `object` RHS expansion.
+    - Acceptance: the runner inserts both source-derived expansions before the
+      checker-owned reserve seam, active pass fixtures cover `B -> A -> set`
+      and `B -> A -> object`, and an active fail fixture proves an attributed
+      dependency withholds the whole chain and reaches the missing
+      mode-expansion diagnostic. Forward references, ambiguous/imported/cyclic
+      dependencies, partial chains without an accepted dependency expansion,
+      attributed uses/RHSs, arguments, parameterized/contextual definitions,
+      CoreIr/ControlFlowIr/VC/proof payloads, and broader semantic pass
+      coverage remain deferred.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 51, 54, and 55. Broader mode expansion and existential
+      evidence remain MC-G014/MC-G020/MC-G026. Refs: Step 5 source-derived
+      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
+      modes; spec 17 base-shape inhabitation evidence.
+    - Completed in task 56: `mizar-test` extracts the narrow one-edge
+      source-derived local-mode expansion chain, adds active pass coverage for
+      `B -> A -> set` and `B -> A -> object`, and keeps attributed dependency
+      chains fail-closed on the checker missing mode-expansion diagnostic
+      without promoting CoreIr, ControlFlowIr, VC, or proof payloads.
+
 ## Recommended Verification
 
 Run after each task:

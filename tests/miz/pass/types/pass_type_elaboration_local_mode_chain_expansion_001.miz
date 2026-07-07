@@ -1,0 +1,9 @@
+definition
+  mode BaseModeDef: BaseMode is set;
+end;
+
+definition
+  mode ChainModeDef: ChainMode is BaseMode;
+end;
+
+reserve z for ChainMode;

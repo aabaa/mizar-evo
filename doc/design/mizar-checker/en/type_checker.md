@@ -244,10 +244,18 @@ producer slice for bare local-mode reserve uses only: the runner may provide a
 parameter/assumption context, and has a bare builtin `set` / `object` RHS with
 no attributes or arguments. The runner withholds that expansion for sources
 where any reserve binding uses attributes on the same local mode head, so task
-54's attributed local-mode fail-closed behavior is preserved. Imported,
-argument-bearing, parameterized, contextual, or attributed-RHS mode definitions
-remain on the missing-expansion / extraction-gap path, and the checker-owned
-seam must not fabricate expansion or existential evidence. Task 52 additionally permits
+54's attributed local-mode fail-closed behavior is preserved. Task 56 extends
+that producer by one source-derived chain edge: a bare local-mode reserve head
+may expand through a unique preceding same-module no-argument mode definition
+whose RHS is another bare same-module no-argument local mode, but only when
+that dependency mode has its own accepted task-55 bare builtin `set` /
+`object` expansion, the dependency definition precedes the chain definition,
+both definition nodes are uniquely paired in the AST, and no reserve binding
+uses attributes on either chain symbol. Forward, ambiguous, partial,
+attributed, imported, argument-bearing, parameterized, contextual, cyclic, or
+attributed-RHS mode definitions remain on the missing-expansion /
+extraction-gap path, and the checker-owned seam must not fabricate expansion
+or existential evidence. Task 52 additionally permits
 un-attributed reserve type heads that resolve to a unique same-module
 `LocalSource` `SymbolKind::Structure` entry with no type arguments. Those
 local-structure reserve declarations reach declaration checking and fail
@@ -260,10 +268,12 @@ attributed type; bare-structure base-shape evidence would not be sufficient for
 positive acceptance. The payload must include source/module identity, the
 reserve item source range, each binding spelling and declaration range, and
 each supported type-expression spelling/range/head plus any supported
-same-module attribute symbol/range/polarity. The seam
+same-module attribute symbol/range/polarity and supported same-module
+local-mode expansion payloads. The seam
 exposes deterministic typed-site ids for the runner to assemble the existing
 `TypedAst` / `ResolvedTypedAst` readiness checks for the successful
-bare-builtin slice, but it does not authorize `mizar-checker` to import
+bare-builtin and supported local-mode expansion slices, but it does not
+authorize `mizar-checker` to import
 `mizar-syntax`, scan raw syntax, accept non-reserve declarations, invent
 imported symbols, fabricate mode expansions or existential/base-shape
 evidence, attach imported or argument-bearing source attributes to local mode

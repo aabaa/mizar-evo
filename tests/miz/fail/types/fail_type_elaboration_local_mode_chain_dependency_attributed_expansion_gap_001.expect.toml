@@ -1,0 +1,21 @@
+schema_version = 1
+id = "fail_type_elaboration_local_mode_chain_dependency_attributed_expansion_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_local_mode_chain_dependency_attributed_expansion_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_mode_expansion_payload"
+stable_detail_key = "type_elaboration.checker.checker.type.external.mode_expansion_payload"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+  "type_elaboration.checker.checker.type.recovery",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction.local_mode_expansion_chain_gap",
+]
+notes = "Active type_elaboration runner coverage for checker task 56: because a dependency mode in the expansion chain also appears in an attributed reserve use, the runner withholds the whole chain expansion and checker normalization fails closed on missing mode-expansion payload rather than changing task-54 attributed local-mode behavior."
