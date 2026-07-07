@@ -322,6 +322,19 @@ bare/attributed use、attributed dependency、import、ambiguous symbol、attrib
 argument、contextual / parameterized definition、positive attributed-type acceptance、
 CoreIr、ControlFlowIr、VC、proof payload はこの slice の外に残る。
 
+task 67 は reserve type expression 内の structure-qualified attribute reference の
+境界を記録する。`LocalStruct.marked LocalStruct` のような source expression は
+Chapter 3 と 6 の type-expression syntax として有効で、Chapter 5 の local structure
+declaration を使うが、現在の checker-owned `AttributeInput` payload は resolved
+attribute symbol、polarity、argument、range、spelling だけを保持し、structure
+qualifier や attribute-owner provenance を持たない。
+そのため active runner は structure-qualified attribute reference を unqualified
+same-module attribute payload に書き換えず、
+`type_elaboration.external_dependency.ast_payload_extraction` に残さなければならない。
+これは diagnostic boundary coverage に限る。real qualified attribute payload を
+昇格せず、same-module no-argument unqualified attribute slice を変更せず、
+existential evidence、CoreIr、ControlFlowIr、VC、proof payload も捏造しない。
+
 task 60 はさらに、
 mode definition が unique / unrecovered / preceding / no-argument で definition-local
 context を持たず、structure definition が unique / unrecovered / same-module で mode

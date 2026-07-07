@@ -1446,6 +1446,24 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       semantic bridge、mizar-test task 10、spec 03 type expressions、spec 06 attributes、
       spec 07 modes、spec 17 evidence。
 
+67. **Source-derived structure-qualified attribute gap boundary を追加する。** [x]
+    - same-module structure-qualified attribute reference を持つ reserve type
+      expression、たとえば `LocalStruct.marked LocalStruct` に対する active
+      `type_elaboration` boundary fixture を追加する。
+    - Acceptance: active runner は real `.miz` source path が parser/resolver
+      executable である一方、checker-owned attribute payload がまだ structure
+      qualifier や attribute-owner provenance を持たないため
+      `type_elaboration.external_dependency.ast_payload_extraction` に残ることを証明する。
+      bridge はこの reference を unqualified attribute payload に書き換えず、
+      positive attributed-structure acceptance、existential/evidence、CoreIr、
+      ControlFlowIr、VC、proof payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、50、52、53。qualified-attribute provenance、
+      attribute-owner resolution、full attributed-type existential evidence、
+      broader attribute extraction は MC-G020/MC-G026 のまま。参照: Step 5
+      source-derived semantic bridge、mizar-test task 10、spec 03 type expressions、
+      spec 05 structures、spec 06 attributes。
+
 ## 推奨検証
 
 各タスクの後で実行する:

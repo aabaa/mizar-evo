@@ -347,6 +347,21 @@ symbols, attribute or mode arguments, contextual or parameterized definitions,
 positive attributed-type acceptance, CoreIr, ControlFlowIr, VC, and proof
 payloads remain outside this slice.
 
+Task 67 records the boundary for structure-qualified attribute references in
+reserve type expressions. A source expression such as
+`LocalStruct.marked LocalStruct` is valid type-expression syntax by Chapters 3
+and 6 over a local structure declared by Chapter 5, but the current
+checker-owned `AttributeInput` payload carries only the resolved attribute
+symbol, polarity, arguments, range, and spelling; it has no structure-qualifier
+or attribute-owner provenance. The active runner therefore
+must leave structure-qualified attribute references on
+`type_elaboration.external_dependency.ast_payload_extraction` instead of
+rewriting them to an unqualified same-module attribute payload. This is
+diagnostic boundary coverage only: it does not promote a real qualified
+attribute payload, does not change the same-module no-argument unqualified
+attribute slices, and does not fabricate existential evidence, CoreIr,
+ControlFlowIr, VC, or proof payloads.
+
 Task 60 additionally
 permits that direct structure-RHS expansion for an attributed local-mode
 reserve head only when the mode definition is unique, unrecovered, preceding,

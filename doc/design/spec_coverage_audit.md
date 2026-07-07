@@ -95,6 +95,18 @@ uses, attributed dependencies, imported/ambiguous/argument-bearing/contextual/
 parameterized/recovered definitions, positive attributed-type acceptance,
 CoreIr, ControlFlowIr, VC, and proof payloads remain deferred.
 
+Task67 addendum for chapters `03.type_system.md`, `05.structures.md`, and
+`06.attributes.md`: checker task 67 adds active source-derived diagnostic
+boundary coverage for a same-module structure-qualified attribute reference in
+a reserve type expression. The active runner proves the real `.miz` path is
+parser/resolver executable, but leaves `LocalStruct.marked LocalStruct` on the
+source-to-checker payload extraction gap because checker-owned attribute
+payloads do not yet preserve real structure-qualifier or attribute-owner
+provenance. This does not change the partial status of those chapters;
+qualified attribute payloads, positive attributed-structure acceptance,
+existential evidence, CoreIr, ControlFlowIr, VC, and proof payloads remain
+deferred.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

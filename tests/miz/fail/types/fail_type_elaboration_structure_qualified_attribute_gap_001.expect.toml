@@ -1,0 +1,21 @@
+schema_version = 1
+id = "fail_type_elaboration_structure_qualified_attribute_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_structure_qualified_attribute_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "structure_qualified_attribute_payload_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.structure_qualified_attribute_gap",
+]
+notes = "Active type_elaboration runner boundary coverage for checker task 67: a same-module structure-qualified attribute reference in a reserve type expression is parser/resolver executable, but the checker-owned source bridge lacks real qualifier/attribute-owner provenance and must stay on the source-to-checker payload extraction gap instead of rewriting it to an unqualified attribute payload."

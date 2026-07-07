@@ -3437,8 +3437,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 27);
-    assert_eq!(report.passed_count(), 27);
+    assert_eq!(report.results.len(), 28);
+    assert_eq!(report.passed_count(), 28);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3447,6 +3447,11 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_attributed_reserve_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_structure_qualified_attribute_gap_001"
             && result.actual_detail_keys
                 == ["type_elaboration.external_dependency.ast_payload_extraction"]
     }));
@@ -5891,6 +5896,61 @@ tests = ["tests/miz/fail/types/fail_attributed_mode_attributed_rhs_expansion.exp
 }
 
 #[test]
+fn type_elaboration_runner_keeps_structure_qualified_attributes_on_external_gap() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/types/fail_structure_qualified_attribute_gap.miz",
+        "definition\n  let x be set;\n  attr MarkedDef: x is marked means thesis;\nend;\n\ndefinition\n  struct LocalStruct where\n    field carrier -> set;\n  end;\nend;\n\nreserve s for LocalStruct.marked LocalStruct;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/types/fail_structure_qualified_attribute_gap.expect.toml",
+        r#"schema_version = 1
+id = "fail_structure_qualified_attribute_gap"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_structure_qualified_attribute_gap.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "structure_qualified_attribute_payload_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration.structure_qualified_attribute_gap"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration.structure_qualified_attribute_gap"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = ["tests/miz/fail/types/fail_structure_qualified_attribute_gap.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert_eq!(
+        report.results[0].actual_detail_keys,
+        ["type_elaboration.external_dependency.ast_payload_extraction"]
+    );
+}
+
+#[test]
 fn type_elaboration_runner_keeps_non_builtin_type_expressions_on_external_gap() {
     let corpus = Corpus::new();
     corpus.write(
@@ -6514,8 +6574,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 27"));
-    assert!(stdout.contains("passed: 27"));
+    assert!(stdout.contains("type-elaboration cases: 28"));
+    assert!(stdout.contains("passed: 28"));
     assert!(stdout.contains("failed: 0"));
 }
 

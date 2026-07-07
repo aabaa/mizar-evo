@@ -258,7 +258,8 @@ regression test を追加した。
       same-module local-mode attributed-builtin-RHS evidence-query active fail slice、checker
       task 59 の same-module attributed local-mode reserve evidence-query active fail slice、checker
       task 60 の same-module attributed local-mode structure-RHS evidence-query active fail slice、checker task 61 の same-module attributed local-mode attributed-builtin-RHS evidence-query active fail slice、checker task 62 の same-module local-mode structure-RHS chain evidence-query active fail slice、checker task 63 の same-module local-mode attributed-RHS chain evidence-query active fail slice、checker task 64 の same-module attributed local-mode bare-builtin chain evidence-query active fail slice、checker task 65 の same-module attributed local-mode structure-RHS chain evidence-query active fail slice を
-      checker task 66 の same-module attributed local-mode attributed-builtin-RHS chain evidence-query active fail slice とともに
+      checker task 66 の same-module attributed local-mode attributed-builtin-RHS chain evidence-query active fail slice と
+      checker task 67 の structure-qualified attribute extraction-gap active boundary slice とともに
       prepared/implemented increments として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder

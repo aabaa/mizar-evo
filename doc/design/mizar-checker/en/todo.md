@@ -1567,6 +1567,25 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       source-derived semantic bridge; mizar-test task 10; spec 03 type
       expressions; spec 06 attributes; spec 07 modes; spec 17 evidence.
 
+67. **Add source-derived structure-qualified attribute gap boundary.** [x]
+    - Add an active `type_elaboration` boundary fixture for a same-module
+      structure-qualified attribute reference in a reserve type expression,
+      for example `LocalStruct.marked LocalStruct`.
+    - Acceptance: the active runner proves the real `.miz` source path is
+      parser/resolver executable but remains on
+      `type_elaboration.external_dependency.ast_payload_extraction` because the
+      checker-owned attribute payload does not yet carry structure-qualifier or
+      attribute-owner provenance. The bridge must not rewrite the reference to
+      an unqualified attribute payload, infer positive attributed-structure
+      acceptance, or fabricate existential/evidence, CoreIr, ControlFlowIr, VC,
+      or proof payloads.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 50, 52, and 53. Qualified-attribute provenance,
+      attribute-owner resolution, full attributed-type existential evidence,
+      and broader attribute extraction remain MC-G020/MC-G026. Refs: Step 5
+      source-derived semantic bridge; mizar-test task 10; spec 03 type
+      expressions; spec 05 structures; spec 06 attributes.
+
 ## Recommended Verification
 
 Run after each task:

@@ -312,8 +312,13 @@ and `B -> marked set` expansions from unique unrecovered preceding same-module
 definitions in source order with argument-free same-module RHS attributes while
 the root is not mixed with a bare reserve use and the dependency is not itself
 attributed, and the checker still reports the missing full attributed-type
-evidence query. Those sources
-are converted into a syntax-free checker source reserve payload, then the
+evidence query. Task 67 may credit the structure-qualified attribute
+extraction-gap boundary slice: a same-module structure-qualified attribute
+reference is parser/resolver executable, but the runner still asserts
+`type_elaboration.external_dependency.ast_payload_extraction` until checker
+payloads preserve real qualifier and attribute-owner provenance. The supported
+reserve slices above, excluding task 67's external-gap boundary case, are
+converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one `DeclarationInput` per
 binding, binding-specific `TypeExpressionInput` sites, and `DeclarationChecker`
 output.
@@ -330,8 +335,9 @@ being credited from the diagnostic external-gap row.
 Covered active fail tests may still assert the external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` when a case needs
 unsupported non-builtin declarations, imported symbols, attribute or
-mode/structure arguments, unresolved or ambiguous symbols, terms, formulas,
-coercions, overload payloads, facts, CoreIr, ControlFlowIr,
+mode/structure arguments, structure-qualified attribute provenance, unresolved
+or ambiguous symbols, terms, formulas, coercions, overload payloads, facts,
+CoreIr, ControlFlowIr,
 VC payloads, or proof payload extraction. Supported checker-owned fail slices
 may instead assert the checker
 detail keys for same-module attributed builtin reserve heads missing evidence
@@ -364,6 +370,9 @@ slices, task 63's bare one-edge chain slice, and task 66's attributed-root
 one-edge chain slice remain outside this bridge, and
 structure-RHS chains remain outside task 60's direct attributed-root slice, task
 62's bare one-edge chain slice, and task 65's attributed-root chain slice.
+Task 67 structure-qualified attribute cases are credited only as
+extraction-gap boundary coverage, not as real qualified attribute payload
+coverage.
 
 Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and
