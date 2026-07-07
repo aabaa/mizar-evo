@@ -532,6 +532,15 @@ when a reserve head names a later local declaration before it is active. Those
 sidecars do not credit checker `ModeExpansion`, structure type-head,
 base-shape, constructor-witness, `AttributeInput`, or attributed-type evidence
 production.
+Task 78 permits imported structure reserve-head fail sidecars to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "imported_structure_type_head_payload_gap"` and
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
+when the source reaches the active runner through the documented
+`parser.type_fixtures` import summary. These sidecars do not credit real
+imported module AST extraction, imported structure provenance, structure
+type-head payload extraction, base-shape or constructor-witness evidence,
+positive structure elaboration, CoreIr, ControlFlowIr, VC, or proof payloads.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

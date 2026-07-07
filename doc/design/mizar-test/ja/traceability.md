@@ -323,9 +323,16 @@ detail だけを credit し、checker structure type-head、base-shape、
 constructor-witness payload extraction を credit しない。task 77 は forward
 local-attribute reserve type expression について同じ lower-stage detail だけを
 credit し、checker `AttributeInput` payload extraction や attributed-type
-evidence query を credit しない。task 67、task 68、task 69、task 70、task 71 の
-external-gap boundary case と task 75/task 76/task 77 の lower-stage
-boundary case を除く上記の supported reserve slices を syntax-free checker source
+evidence query を credit しない。task 78 は imported-structure reserve-head
+external-gap boundary だけを credit する。runner は documented
+`parser.type_fixtures` imported structure summary について
+`type_elaboration.external_dependency.ast_payload_extraction` を観測し、real
+imported structure provenance、structure type-head payload extraction、
+base-shape / constructor-witness evidence、positive structure elaboration、
+CoreIr、ControlFlowIr、VC、proof payload を credit しない。task 67、task 68、
+task 69、task 70、task 71 の external-gap boundary case、task 75/task 76/task
+77 の lower-stage boundary case、task 78 の imported-structure external-gap
+case を除く上記の supported reserve slices を syntax-free checker source
 reserve payload へ変換し、checker-owned seam が module `BindingEnv`、binding ごとの
 `DeclarationInput`、binding 固有の `TypeExpressionInput` site、
 `DeclarationChecker` output を構築する。runner はその handoff を checker-owned
@@ -399,6 +406,9 @@ credit しない。task 75/76/77 の fail case は forward local-mode /
 local-structure / local-attribute reference の lower-stage active-range boundary だけを
 credit し、checker `ModeExpansion`、structure type-head、base-shape、
 constructor-witness、`AttributeInput`、attributed-type evidence production は credit しない。
+task 78 の fail case は imported structure extraction-gap boundary だけを
+credit し、real imported structure provenance や structure evidence は credit
+しない。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
 `proof_verification` row は deferred のままにする。summary/context readiness read は

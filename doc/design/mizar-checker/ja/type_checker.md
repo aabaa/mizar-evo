@@ -294,6 +294,15 @@ processing は checker handoff 前に
 expression を拒否する。runner は future attribute declaration から
 `AttributeInput`、attributed-type evidence query、successful reserve
 declaration、CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。
+task 78 は imported-structure 類似 case を checker payload ではなく external
+extraction-gap boundary として記録する。documented `parser.type_fixtures`
+import summary 由来の `R` のような reserve head は active type-elaboration
+runner まで到達し、
+`type_elaboration.external_dependency.ast_payload_extraction` を報告する。bridge
+はこの import summary を real imported module AST extraction と扱ってはならず、
+imported structure provenance、structure type-head payload、base-shape /
+constructor-witness evidence、positive structure elaboration、CoreIr/
+ControlFlowIr/VC/proof payload を捏造してはならない。
 task 57 はさらに、RHS が type argument を持たない same-module
 local structure head である bare same-module no-argument local mode expansion を許可する。
 この case は real `ModeExpansion` を消費するため missing mode-expansion payload diagnostic を

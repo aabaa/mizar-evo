@@ -1782,6 +1782,21 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       bridge; mizar-test task 10; spec 02 active range; spec 06 attributes;
       spec 11 symbol management.
 
+78. **Add source-derived imported structure reserve extraction-gap boundary.** [x]
+    - Add active fail coverage for a reserve type whose head is an imported
+      structure symbol supplied by the existing `parser.type_fixtures` import
+      summary.
+    - Acceptance: the active type-elaboration runner reports
+      `type_elaboration.external_dependency.ast_payload_extraction`, does not
+      fabricate imported structure provenance, structure type-head payloads,
+      base-shape/constructor-witness evidence, or positive structure
+      elaboration, and does not promote CoreIr, ControlFlowIr, VC, or proof
+      payloads. The fixture is diagnostic boundary coverage only.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 52, and 69. Refs: Step 5 source-derived semantic bridge;
+      mizar-test task 10; spec 03 type expressions; spec 05 structures; spec
+      11 symbol management; spec 12 modules and namespaces.
+
 ## Recommended Verification
 
 Run after each task:

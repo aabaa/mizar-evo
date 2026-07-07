@@ -309,6 +309,15 @@ type expression with the same
 checker handoff. The runner must not fabricate an `AttributeInput`,
 attributed-type evidence query, successful reserve declaration, or downstream
 CoreIr/ControlFlowIr/VC/proof payload from the future attribute declaration.
+Task 78 records the imported-structure analogue as an external extraction-gap
+boundary rather than a checker payload: a reserve head such as `R` from the
+documented `parser.type_fixtures` import summary reaches the active
+type-elaboration runner and reports
+`type_elaboration.external_dependency.ast_payload_extraction`. The bridge must
+not treat that imported summary as real imported module AST extraction, must not
+fabricate imported structure provenance, structure type-head payloads,
+base-shape/constructor-witness evidence, positive structure elaboration, or
+downstream CoreIr/ControlFlowIr/VC/proof payloads.
 Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case

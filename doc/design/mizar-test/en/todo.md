@@ -283,8 +283,9 @@ Keep `cargo test -p mizar-test` green after each task (see
       73's three-edge pass slice, checker task 74's structural bare
       local-mode chain active pass slice, checker task 75's lower-stage
       forward local-mode active-range boundary, checker task 76's lower-stage
-      forward local-structure active-range boundary, and checker task 77's
-      lower-stage forward local-attribute active-range boundary,
+      forward local-structure active-range boundary, checker task 77's
+      lower-stage forward local-attribute active-range boundary, and checker
+      task 78's imported structure reserve extraction-gap boundary,
       as
       prepared/implemented increments.
       Checker task 29, `mizar-vc` task 15,
@@ -417,7 +418,7 @@ Keep `cargo test -p mizar-test` green after each task (see
       `TypedAst` and `ResolvedTypedAst`. Shared source type ranges such as
       `reserve x, y for set` keep distinct typed sites for each binding.
     - Unsupported non-builtin declarations, imported attributes/modes/
-      structures, attribute arguments, attributed or argument-bearing
+      structures beyond the task-78 boundary, attribute arguments, attributed or argument-bearing
       mode/structure heads, structure base-shape payloads, terms, formulas,
       coercions, overload payloads, facts, CoreIr,
       ControlFlowIr, VC payloads, and proof evidence remain on the explicit

@@ -358,10 +358,18 @@ Task 77 may credit only the matching active-range/no-forward-reference
 boundary for a forward local-attribute reserve type expression: the runner
 observes the same lower-stage detail before checker handoff and does not credit
 checker `AttributeInput` payload extraction or attributed-type evidence queries.
+Task 78 may credit only the imported-structure reserve-head external-gap
+boundary: the runner observes
+`type_elaboration.external_dependency.ast_payload_extraction` for the documented
+`parser.type_fixtures` imported structure summary and does not credit real
+imported structure provenance, structure type-head payload extraction,
+base-shape or constructor-witness evidence, positive structure elaboration,
+CoreIr, ControlFlowIr, VC, or proof payloads.
 The supported reserve slices above, excluding task 67, task 68, task 69, task
-70, task 71 external-gap boundary cases, and the task 75/task 76/task 77
-lower-stage boundary cases, are converted into a syntax-free checker source reserve
-payload, then the checker-owned seam builds the module `BindingEnv`, one
+70, task 71 external-gap boundary cases, the task 75/task 76/task 77
+lower-stage boundary cases, and the task 78 imported-structure external-gap
+case, are converted into a syntax-free checker source reserve payload, then the
+checker-owned seam builds the module `BindingEnv`, one
 `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites,
 and `DeclarationChecker` output.
 The runner continues that handoff into checker-owned `TypedAst` and
@@ -433,7 +441,9 @@ Task 72 pass cases credit only the source-derived two-edge bare local-mode
 chain bridge, and task 73 pass cases credit only the corresponding three-edge
 bare local-mode chain bridge, and task 74 pass cases credit only the structural bare-chain bridge; unsupported chains do not credit broader mode
 expansion, structure/attributed-builtin terminals beyond the existing one-edge
-diagnostics, or CoreIr/ControlFlowIr/VC/proof promotion. Task 75/76/77 fail
+diagnostics, or CoreIr/ControlFlowIr/VC/proof promotion. Task 78 fail cases
+credit only the imported structure extraction-gap boundary and do not credit
+real imported structure provenance or structure evidence. Task 75/76/77 fail
 cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker
 `ModeExpansion`, structure type-head, base-shape, constructor-witness,
