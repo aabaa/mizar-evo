@@ -508,7 +508,9 @@ references to stop at the external extraction-gap key because real qualifier
 and attribute-owner provenance are still absent. Task 68 permits
 argument-bearing local-mode reserve heads to stop at the external
 extraction-gap key because real type-argument and term-argument provenance are
-still absent. These are fail cases, not
+still absent. Task 69 permits argument-bearing local-structure reserve heads to
+stop at the external extraction-gap key because real type-argument and
+term-argument provenance are still absent. These are fail cases, not
 pass-slice coverage.
 
 Detailed type assertion tables and broader type pass expectations remain

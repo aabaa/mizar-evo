@@ -374,6 +374,20 @@ diagnostic boundary coverage only: it does not promote mode arguments into
 `TypeExpressionInput`, does not fabricate term payloads, and does not promote
 CoreIr, ControlFlowIr, VC, or proof payloads.
 
+Task 69 records the matching boundary for argument-bearing structure heads in
+reserve type expressions. Source such as `LocalStruct of a` is valid
+type-expression syntax by Chapters 3 and 5 and can name a same-module
+structure declaration with an `of` parameter surface, but the current reserve
+source bridge still admits only argument-free local mode or structure heads and
+has no real term/type-argument provenance payload. The active runner therefore
+must leave this source family on
+`type_elaboration.external_dependency.ast_payload_extraction` before
+structure argument payload extraction, arity matching, base-shape or
+constructor-witness evidence, or positive structure type elaboration. This is
+diagnostic boundary coverage only: it does not promote structure arguments into
+`TypeExpressionInput`, does not fabricate term payloads, and does not promote
+CoreIr, ControlFlowIr, VC, or proof payloads.
+
 Task 60 additionally
 permits that direct structure-RHS expansion for an attributed local-mode
 reserve head only when the mode definition is unique, unrecovered, preceding,

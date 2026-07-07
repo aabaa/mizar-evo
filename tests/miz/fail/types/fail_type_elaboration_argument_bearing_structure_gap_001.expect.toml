@@ -1,0 +1,21 @@
+schema_version = 1
+id = "fail_type_elaboration_argument_bearing_structure_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_argument_bearing_structure_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "argument_bearing_structure_type_head_payload_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.argument_bearing_structure_gap",
+]
+notes = "Active type_elaboration runner boundary coverage for checker task 69: source containing a same-module structure declaration with an `of` parameter surface and a reserve use such as `LocalStruct of a` is parser/resolver executable, but the checker-owned source bridge lacks real type-argument and term-argument provenance and must stay on the source-to-checker payload extraction gap instead of reaching structure argument payload extraction, arity matching, base-shape evidence, or positive structure type elaboration."

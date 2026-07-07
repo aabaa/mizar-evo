@@ -296,7 +296,12 @@ slice として、`Element of a` のような same-module argument-bearing local
 reserve use が parser/resolver executable である一方、checker payload が real
 type-argument と term-argument provenance を保持するまで runner が
 `type_elaboration.external_dependency.ast_payload_extraction` を assert する場合を
-credit してよい。task 67 と task 68 の external-gap boundary case を除く上記の
+credit してよい。task 69 は argument-bearing structure reserve extraction-gap boundary
+slice として、`of` parameter surface を持つ same-module structure declaration と
+`LocalStruct of a` のような reserve use が parser/resolver executable である一方、
+checker payload が real type-argument と term-argument provenance を保持するまで
+runner が `type_elaboration.external_dependency.ast_payload_extraction` を assert する場合を
+credit してよい。task 67、task 68、task 69 の external-gap boundary case を除く上記の
 supported reserve slices を syntax-free
 checker source reserve payload へ変換し、checker-owned seam が module `BindingEnv`、
 binding ごとの `DeclarationInput`、binding 固有の `TypeExpressionInput` site、
@@ -351,7 +356,10 @@ credit しない。task 67 の structure-qualified attribute case は extraction
 boundary coverage としてだけ credit し、real qualified attribute payload coverage とは
 扱わない。task 68 の argument-bearing mode case は extraction-gap boundary coverage
 としてだけ credit し、real mode-argument payload、arity matching、mode expansion、
-positive type-elaboration coverage とは扱わない。
+positive type-elaboration coverage とは扱わない。task 69 の argument-bearing
+structure case は extraction-gap boundary coverage としてだけ credit し、real
+structure-argument payload、arity matching、base-shape evidence、positive structure
+type-elaboration coverage とは扱わない。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
 `proof_verification` row は deferred のままにする。summary/context readiness read は

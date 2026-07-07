@@ -321,8 +321,14 @@ credit the argument-bearing mode reserve extraction-gap boundary slice: a
 same-module argument-bearing local mode surface and reserve use such as
 `Element of a` are parser/resolver executable, but the runner still asserts
 `type_elaboration.external_dependency.ast_payload_extraction` until checker
-payloads preserve real type-argument and term-argument provenance. The supported
-reserve slices above, excluding task 67 and task 68 external-gap boundary
+payloads preserve real type-argument and term-argument provenance. Task 69 may
+credit the argument-bearing structure reserve extraction-gap boundary slice: a
+same-module structure declaration with an `of` parameter surface and reserve
+use such as `LocalStruct of a` are parser/resolver executable, but the runner
+still asserts `type_elaboration.external_dependency.ast_payload_extraction`
+until checker payloads preserve real type-argument and term-argument
+provenance. The supported
+reserve slices above, excluding task 67, task 68, and task 69 external-gap boundary
 cases, are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one `DeclarationInput` per
 binding, binding-specific `TypeExpressionInput` sites, and `DeclarationChecker`
@@ -379,7 +385,10 @@ Task 67 structure-qualified attribute cases are credited only as
 extraction-gap boundary coverage, not as real qualified attribute payload
 coverage. Task 68 argument-bearing mode cases are credited only as
 extraction-gap boundary coverage, not as real mode-argument payload, arity
-matching, mode expansion, or positive type-elaboration coverage.
+matching, mode expansion, or positive type-elaboration coverage. Task 69
+argument-bearing structure cases are credited only as extraction-gap boundary
+coverage, not as real structure-argument payload, arity matching, base-shape
+evidence, or positive structure type-elaboration coverage.
 
 Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and

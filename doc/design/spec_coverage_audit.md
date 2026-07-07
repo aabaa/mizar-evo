@@ -119,6 +119,20 @@ not change the partial status of the chapter; mode/structure arguments, arity
 matching, term payloads, mode expansion, positive type elaboration, CoreIr,
 ControlFlowIr, VC, and proof payloads remain deferred.
 
+Task69 addendum for chapters `03.type_system.md` and `05.structures.md`:
+checker task 69 adds active source-derived diagnostic boundary coverage for a
+reserve type expression whose same-module local structure declaration uses an
+`of` parameter surface and whose reserve head carries `of` type arguments, such
+as `LocalStruct of a`. Chapters 3 and 5 plus parser coverage already define
+this syntax; this addendum does not claim argument-bearing structure semantics.
+The active runner proves the source is parser/resolver executable but leaves it
+on the source-to-checker payload extraction gap because checker-owned reserve
+payloads do not yet preserve real type-argument or term-argument provenance.
+This does not change the partial status of those chapters; mode/structure
+arguments, arity matching, term payloads, base-shape/constructor-witness
+evidence, positive structure type elaboration, CoreIr, ControlFlowIr, VC, and
+proof payloads remain deferred.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

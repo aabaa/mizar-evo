@@ -478,6 +478,8 @@ task 67 は structure-qualified attribute reference が、real qualifier と att
 provenance 欠落のため external extraction-gap key で停止することを許可する。
 task 68 は argument-bearing local-mode reserve head が、real type-argument と
 term-argument provenance 欠落のため external extraction-gap key で停止することを許可する。
+task 69 は argument-bearing local-structure reserve head が、real type-argument と
+term-argument provenance 欠落のため external extraction-gap key で停止することを許可する。
 これらは fail case であり、pass-slice coverage ではない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source

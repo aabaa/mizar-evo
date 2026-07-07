@@ -345,6 +345,19 @@ matching、positive type elaboration へ進む前に、この source family を
 これは diagnostic boundary coverage に限る。mode argument を `TypeExpressionInput` に
 昇格せず、term payload を捏造せず、CoreIr、ControlFlowIr、VC、proof payload も昇格しない。
 
+task 69 は reserve type expression 内の argument-bearing structure head の対応する境界を
+記録する。`LocalStruct of a` のような source は Chapter 3 と Chapter 5 の
+type-expression syntax として有効で、`of` parameter surface を持つ same-module
+structure declaration を指せるが、現在の reserve source bridge は引き続き
+argument-free local mode / structure head だけを許可し、real term / type-argument
+provenance payload を持たない。そのため active runner は
+structure argument payload extraction、arity matching、base-shape /
+constructor-witness evidence、positive structure type elaboration へ進む前に、この
+source family を `type_elaboration.external_dependency.ast_payload_extraction` に残さなければ
+ならない。これは diagnostic boundary coverage に限る。structure argument を
+`TypeExpressionInput` に昇格せず、term payload を捏造せず、CoreIr、ControlFlowIr、VC、
+proof payload も昇格しない。
+
 task 60 はさらに、
 mode definition が unique / unrecovered / preceding / no-argument で definition-local
 context を持たず、structure definition が unique / unrecovered / same-module で mode
