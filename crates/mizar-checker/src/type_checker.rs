@@ -2829,6 +2829,22 @@ impl SourceReserveDeclarationBridge {
     }
 
     pub fn check(&self, symbols: &SymbolEnv) -> Result<SourceReserveDeclarationHandoff, String> {
+        self.check_with_type_normalizer(symbols, TypeNormalizer::default())
+    }
+
+    pub fn check_with_mode_expansions(
+        &self,
+        symbols: &SymbolEnv,
+        mode_expansions: impl IntoIterator<Item = (SymbolId, ModeExpansion)>,
+    ) -> Result<SourceReserveDeclarationHandoff, String> {
+        self.check_with_type_normalizer(symbols, TypeNormalizer::new(mode_expansions))
+    }
+
+    fn check_with_type_normalizer(
+        &self,
+        symbols: &SymbolEnv,
+        normalizer: TypeNormalizer,
+    ) -> Result<SourceReserveDeclarationHandoff, String> {
         if symbols.module_id() != &self.module_id {
             return Err("source reserve bridge symbol environment module mismatch".to_owned());
         }
@@ -2868,9 +2884,18 @@ impl SourceReserveDeclarationBridge {
                     }
                     _ => None,
                 };
+                let symbol_head_has_mode_expansion = match &binding.type_head {
+                    TypeHeadInput::Symbol(symbol)
+                        if matches!(symbol_head_kind, Some(SymbolKind::Mode)) =>
+                    {
+                        normalizer.mode_expansions.contains_key(symbol)
+                    }
+                    _ => false,
+                };
                 if matches!(symbol_head_kind, Some(SymbolKind::Structure))
                     || (!binding.type_attributes.is_empty()
-                        && !matches!(symbol_head_kind, Some(SymbolKind::Mode)))
+                        && (!matches!(symbol_head_kind, Some(SymbolKind::Mode))
+                            || symbol_head_has_mode_expansion))
                 {
                     declaration = declaration
                         .with_deferred(vec![DeclarationDeferredReason::MissingEvidenceQuery]);
@@ -2878,7 +2903,7 @@ impl SourceReserveDeclarationBridge {
                 declaration
             })
             .collect::<Vec<_>>();
-        let declarations = DeclarationChecker::default().check(
+        let declarations = DeclarationChecker::new(normalizer).check(
             symbols,
             &binding_env,
             context_inputs,
@@ -6740,6 +6765,66 @@ mod tests {
             vec![(4, 8)]
         );
 
+        let mode_expansion_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 10),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 8),
+                "Mode",
+                TypeHeadInput::Symbol(symbol_id("Mode/0", "pkg::main::Mode/0")),
+            )],
+        )
+        .expect("local mode reserve payload should validate source shape");
+        let mode_expansion_handoff = mode_expansion_bridge
+            .check_with_mode_expansions(
+                &mode_symbols,
+                [(
+                    symbol_id("Mode/0", "pkg::main::Mode/0"),
+                    ModeExpansion::new(
+                        TypeExpressionInput::new(
+                            site(777),
+                            range(source, 20, 23),
+                            "set",
+                            TypeHeadInput::BuiltinSet,
+                        ),
+                        Vec::new(),
+                    ),
+                )],
+            )
+            .expect("local mode expansion payload should reach declaration checking");
+        assert!(
+            diagnostic_ranges(
+                &mode_expansion_handoff.declarations,
+                "checker.type.external.mode_expansion_payload"
+            )
+            .is_empty()
+        );
+        assert!(
+            diagnostic_ranges(
+                &mode_expansion_handoff.declarations,
+                "checker.declaration.deferred.evidence_query"
+            )
+            .is_empty()
+        );
+        let expanded_mode_declaration =
+            declarations_by_binding(mode_expansion_handoff.declarations())
+                .remove(&BindingId::new(0))
+                .expect("checked expanded mode declaration should exist");
+        assert_eq!(expanded_mode_declaration.status, DeclarationStatus::Checked);
+        let expanded_mode_type_entry = mode_expansion_handoff
+            .declarations()
+            .type_entries()
+            .get(
+                expanded_mode_declaration
+                    .type_entry
+                    .expect("expanded mode declaration should keep a type entry"),
+            )
+            .expect("expanded mode type entry should exist");
+        assert_eq!(expanded_mode_type_entry.status, TypeStatus::Known);
+
         let structure = symbol_id("Struct/0", "pkg::main::Struct/0");
         let structure_bridge = SourceReserveDeclarationBridge::new(
             source,
@@ -7043,6 +7128,61 @@ mod tests {
         assert!(
             attributed_mode_handoff.declarations().facts().is_empty(),
             "attributed local mode reserve heads must not seed facts without mode expansion and existential evidence"
+        );
+
+        let attributed_mode_with_expansion = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 18),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 18),
+                    "non empty Mode",
+                    TypeHeadInput::Symbol(symbol_id("Mode/0", "pkg::main::Mode/0")),
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    symbol_id("empty/0", "pkg::main::empty/0"),
+                    AttributePolarity::Negative,
+                    range(source, 4, 13),
+                    "non empty",
+                )]),
+            ],
+        )
+        .expect("attributed mode reserve payload should validate before SymbolEnv checks");
+        let attributed_mode_with_expansion_handoff = attributed_mode_with_expansion
+            .check_with_mode_expansions(
+                &mode_attribute_symbols,
+                [(
+                    symbol_id("Mode/0", "pkg::main::Mode/0"),
+                    ModeExpansion::new(
+                        TypeExpressionInput::new(
+                            site(778),
+                            range(source, 20, 23),
+                            "set",
+                            TypeHeadInput::BuiltinSet,
+                        ),
+                        Vec::new(),
+                    ),
+                )],
+            )
+            .expect(
+                "attributed mode with real expansion should fail closed in declaration checking",
+            );
+        assert_eq!(
+            diagnostic_ranges(
+                attributed_mode_with_expansion_handoff.declarations(),
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        assert!(
+            attributed_mode_with_expansion_handoff
+                .declarations()
+                .facts()
+                .is_empty(),
+            "real mode expansion must not make attributed mode uses accepted without existential evidence"
         );
 
         let unresolved = SourceReserveDeclarationBridge::new(

@@ -1112,6 +1112,31 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       local-mode reserve の active fail fixture を追加し、imported / argument-bearing form は
       広い extraction gap のままにする。
 
+55. **Source-derived bare local mode expansion bridge.** [x]
+    - active type-elaboration source bridge を、unique な same-module `LocalSource`
+      no-argument mode definition の bare reserve use について real `ModeExpansion` を
+      生成する最小範囲まで拡張する。対象 mode definition は unrecovered source definition
+      として reserve use より前に現れ、definition-local parameter / assumption context を
+      持たず、RHS が bare builtin `set` / `object` でなければならない。
+    - 受け入れ条件: runner は expansion を `SurfaceAst` から抽出し、checker-owned
+      syntax-free reserve seam に渡す。結果として bare local-mode reserve declaration は
+      `BindingEnv`、`DeclarationChecker`、`TypedAst`、`ResolvedTypedAst`、
+      summary-readiness、binder-only `CoreContext` まで active pass case になる。runner は
+      attributed local-mode reserve use、mixed attributed/bare local-mode source、
+      attributed mode RHS、imported / argument-bearing / parameterized / contextual mode、
+      unresolved / ambiguous head、non-reserve declaration について mode expansion を渡さない。
+      これらの family は既存の missing-expansion または broader extraction gap に残す。
+    - 検証: `cargo test -p mizar-checker`、`cargo test -p mizar-test`。
+    - 依存: tasks 48、51、54。より広い mode expansion と existential evidence は
+      MC-G014 / MC-G020 / MC-G026 のまま。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 03 type expression、spec 07 mode、spec 17 base-shape
+      inhabitation evidence。
+    - task 55 で完了: `mizar-test` は narrow な bare local-mode reserve slice について
+      real AST-derived `ModeExpansion` を抽出し、checker source reserve seam は evidence を
+      捏造せず explicit mode-expansion payload を受け入れる。local mode expansion bridge の
+      new active pass fixture を追加し、attributed / mixed / attributed-RHS case は
+      missing expansion または evidence gap で fail closed のままにする。
+
 ## 推奨検証
 
 各タスクの後で実行する:

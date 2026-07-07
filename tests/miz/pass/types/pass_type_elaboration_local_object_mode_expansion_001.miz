@@ -1,0 +1,5 @@
+definition
+  mode LocalObjectModeDef: LocalObjectMode is object;
+end;
+
+reserve z for LocalObjectMode;

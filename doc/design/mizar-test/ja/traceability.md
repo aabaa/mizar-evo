@@ -233,11 +233,16 @@ diagnostic code が未仕様の間、fail coverage は resolver internal detail 
 type-elaboration stage では、active runner gate（`active_type_elaboration`、
 `stage = "type_elaboration"`、`expected_phase = "type_check"`、pass/fail outcome）
 を満たす `.miz` sidecar だけが executable coverage になる。task 16-20 bridge
-continuation が credit してよいのは狭い reserve-only builtin declaration slice だけである。
+continuation が credit してよいのは狭い reserve-only builtin declaration pass slice である。
 つまり unrecovered な top-level reserve item のうち、segment が 1 個以上の identifier と
 exactly one bare builtin `set` / `object` type-expression を持ち、attribute、argument、
-parameter prefix、non-builtin symbol head を持たないものを syntax-free checker
-source reserve payload へ変換し、checker-owned seam が module `BindingEnv`、
+parameter prefix、non-builtin symbol head を持たないものに限る。task 55 はさらに、
+un-attributed / argument-free の same-module local mode を reserve type head とし、
+runner が unique / unrecovered / preceding / same-module / no-argument `ModeDefinition`
+から、RHS が bare builtin `set` / `object` で enclosing definition block が
+definition-local context を持たない real `ModeExpansion` を導ける場合だけ、狭い bare
+local-mode expansion pass slice を credit してよい。これらの source を syntax-free
+checker source reserve payload へ変換し、checker-owned seam が module `BindingEnv`、
 binding ごとの `DeclarationInput`、binding 固有の `TypeExpressionInput` site、
 `DeclarationChecker` output を構築する。runner はその handoff を checker-owned
 `TypedAst`、checker-owned `ResolvedTypedAst` へ継続し、その後 `mizar-core` の
@@ -259,7 +264,8 @@ covered active fail test は引き続き external-gap detail key
 missing-evidence diagnostic、same-module local structure reserve head の missing
 base-shape evidence diagnostic、full normalized attributed type の existential evidence を欠く
 attributed local structure、または same-module local mode reserve head の missing
-mode-expansion payload diagnostic（attributed local mode を含む）の checker detail key を代わりに assert してよい。
+mode-expansion payload diagnostic（attributed local mode や mixed attributed/bare
+local-mode source を含む）の checker detail key を代わりに assert してよい。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
 `proof_verification` row は deferred のままにする。summary/context readiness read は

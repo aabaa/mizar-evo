@@ -1,0 +1,11 @@
+definition
+  let x be set;
+  attr MarkedModeDef: x is marked means thesis;
+end;
+
+definition
+  mode LocalModeDef: LocalMode is set;
+end;
+
+reserve x for LocalMode;
+reserve y for marked LocalMode;

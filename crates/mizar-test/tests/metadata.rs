@@ -3437,8 +3437,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 11);
-    assert_eq!(report.passed_count(), 11);
+    assert_eq!(report.results.len(), 14);
+    assert_eq!(report.passed_count(), 14);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3466,7 +3466,15 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
                 == ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
     }));
     assert!(report.results.iter().any(|result| {
-        result.id.0 == "fail_type_elaboration_local_mode_reserve_expansion_gap_001"
+        result.id.0 == "fail_type_elaboration_local_mode_attributed_rhs_expansion_gap_001"
+            && result.actual_detail_keys
+                == [
+                    "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+                    "type_elaboration.checker.checker.type.recovery",
+                ]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_local_mode_mixed_attributed_reserve_expansion_gap_001"
             && result.actual_detail_keys
                 == [
                     "type_elaboration.checker.checker.type.external.mode_expansion_payload",
@@ -3497,6 +3505,14 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_type_elaboration_multi_reserve_builtin_001"
+            && result.actual_detail_keys.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_type_elaboration_local_mode_expansion_001"
+            && result.actual_detail_keys.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_type_elaboration_local_object_mode_expansion_001"
             && result.actual_detail_keys.is_empty()
     }));
 }
@@ -5203,6 +5219,171 @@ tests = ["tests/miz/pass/types/pass_builtin_types.expect.toml"]
 }
 
 #[test]
+fn type_elaboration_runner_accepts_source_derived_local_mode_expansion() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/pass/types/pass_local_mode_expansion.miz",
+        "definition\n  mode LocalModeDef: LocalMode is set;\nend;\n\nreserve z for LocalMode;\n",
+    );
+    corpus.write(
+        "tests/miz/pass/types/pass_local_mode_expansion.expect.toml",
+        r#"schema_version = 1
+id = "pass_local_mode_expansion"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_local_mode_expansion.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration.local_mode_expansion"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration.local_mode_expansion"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = ["tests/miz/pass/types/pass_local_mode_expansion.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert!(report.results[0].actual_detail_keys.is_empty());
+}
+
+#[test]
+fn type_elaboration_runner_does_not_expand_mixed_attributed_local_mode_uses() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/types/fail_mixed_local_mode_expansion.miz",
+        "definition\n  let x be set;\n  attr MarkedDef: x is marked means thesis;\nend;\n\ndefinition\n  mode LocalModeDef: LocalMode is set;\nend;\n\nreserve x for LocalMode;\nreserve y for marked LocalMode;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/types/fail_mixed_local_mode_expansion.expect.toml",
+        r#"schema_version = 1
+id = "fail_mixed_local_mode_expansion"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_mixed_local_mode_expansion.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_mode_expansion_payload"
+stable_detail_key = "type_elaboration.checker.checker.type.external.mode_expansion_payload"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+  "type_elaboration.checker.checker.type.recovery",
+]
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration.local_mode_expansion_gap"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration.local_mode_expansion_gap"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = ["tests/miz/fail/types/fail_mixed_local_mode_expansion.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert_eq!(
+        report.results[0].actual_detail_keys,
+        [
+            "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+            "type_elaboration.checker.checker.type.recovery",
+        ]
+    );
+}
+
+#[test]
+fn type_elaboration_runner_does_not_expand_attributed_local_mode_rhs() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/types/fail_attributed_mode_rhs_expansion.miz",
+        "definition\n  let x be set;\n  attr MarkedDef: x is marked means thesis;\nend;\n\ndefinition\n  mode LocalModeDef: LocalMode is marked set;\nend;\n\nreserve z for LocalMode;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/types/fail_attributed_mode_rhs_expansion.expect.toml",
+        r#"schema_version = 1
+id = "fail_attributed_mode_rhs_expansion"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_attributed_mode_rhs_expansion.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_mode_expansion_payload"
+stable_detail_key = "type_elaboration.checker.checker.type.external.mode_expansion_payload"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+  "type_elaboration.checker.checker.type.recovery",
+]
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration.local_mode_expansion_gap"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration.local_mode_expansion_gap"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = ["tests/miz/fail/types/fail_attributed_mode_rhs_expansion.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert_eq!(
+        report.results[0].actual_detail_keys,
+        [
+            "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+            "type_elaboration.checker.checker.type.recovery",
+        ]
+    );
+}
+
+#[test]
 fn type_elaboration_runner_keeps_non_builtin_type_expressions_on_external_gap() {
     let corpus = Corpus::new();
     corpus.write(
@@ -5826,8 +6007,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 11"));
-    assert!(stdout.contains("passed: 11"));
+    assert!(stdout.contains("type-elaboration cases: 14"));
+    assert!(stdout.contains("passed: 14"));
     assert!(stdout.contains("failed: 0"));
 }
 

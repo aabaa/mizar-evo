@@ -1,0 +1,15 @@
+schema_version = 1
+id = "pass_type_elaboration_local_mode_expansion_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_local_mode_expansion_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.local_mode_expansion_source_bridge",
+]
+notes = "Active type_elaboration runner pass coverage for checker task 55: a same-module no-argument local mode with a real AST-derived bare builtin RHS expansion is extracted into the checker ModeExpansion provider, then a bare reserve declaration using that mode passes the existing source reserve BindingEnv, DeclarationChecker, TypedAst, ResolvedTypedAst, summary-readiness, and binder-only CoreContext checks. Attributed/imported/argument-bearing/contextual modes, attributed RHS mode definitions, CoreIr/ControlFlowIr/VC/proof payloads, and existential evidence remain deferred."

@@ -237,7 +237,17 @@ local-mode slice to carry same-module source-derived attributes, which still
 fail closed with `checker.type.external.mode_expansion_payload`; the bridge
 does not attach `MissingEvidenceQuery` to the attributed mode before real
 mode-expansion payloads exist, and it does not claim existential evidence for
-the fully expanded attributed type. Task 52 additionally permits
+the fully expanded attributed type. Task 55 permits one real mode-expansion
+producer slice for bare local-mode reserve uses only: the runner may provide a
+`ModeExpansion` for a unique unrecovered same-module no-argument
+`ModeDefinition` that precedes the reserve type use, has no definition-local
+parameter/assumption context, and has a bare builtin `set` / `object` RHS with
+no attributes or arguments. The runner withholds that expansion for sources
+where any reserve binding uses attributes on the same local mode head, so task
+54's attributed local-mode fail-closed behavior is preserved. Imported,
+argument-bearing, parameterized, contextual, or attributed-RHS mode definitions
+remain on the missing-expansion / extraction-gap path, and the checker-owned
+seam must not fabricate expansion or existential evidence. Task 52 additionally permits
 un-attributed reserve type heads that resolve to a unique same-module
 `LocalSource` `SymbolKind::Structure` entry with no type arguments. Those
 local-structure reserve declarations reach declaration checking and fail

@@ -226,7 +226,17 @@ type normalization に到達し、real mode-expansion provider / extraction seam
 local-mode slice に same-module source-derived attribute を持たせることを
 許可する。この場合も `checker.type.external.mode_expansion_payload` で fail closed し、
 real mode-expansion payload が存在するまでは attributed mode に `MissingEvidenceQuery` を
-付けず、fully expanded attributed type の existential evidence も主張しない。task 52 はさらに、
+付けず、fully expanded attributed type の existential evidence も主張しない。task 55 は
+bare local-mode reserve use だけに 1 つの real mode-expansion producer slice を許可する:
+runner は、reserve type use より前に現れる unique / unrecovered / same-module /
+no-argument `ModeDefinition` で、definition-local parameter / assumption context を持たず、
+RHS が attribute や argument のない bare builtin `set` / `object` である場合に限り、
+`ModeExpansion` を供給してよい。runner は同じ local mode head に attribute を付ける
+reserve binding が source 内に 1 つでもある場合、その expansion を渡さないため、
+task 54 の attributed local-mode fail-closed behavior は維持される。imported、
+argument-bearing、parameterized、contextual、または attributed-RHS の mode definition は
+missing-expansion / extraction-gap path に残り、checker-owned seam は expansion や
+existential evidence を捏造してはならない。task 52 はさらに、
 type argument を持たず attribute も付かない、unique な same-module `LocalSource`
 `SymbolKind::Structure` entry に解決された reserve type head を許可する。これら
 local-structure reserve declaration は declaration checking に到達し、real

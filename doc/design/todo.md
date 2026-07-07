@@ -236,7 +236,8 @@ slice, task 51 adding the same-module local mode reserve diagnostic slice, and
 task 52 adding the same-module local structure reserve diagnostic slice, and
 task 53 adding the same-module attributed local structure reserve diagnostic
 slice, and task 54 adding the same-module attributed local mode reserve
-diagnostic slice).
+diagnostic slice, and task 55 adding the same-module bare local mode expansion
+pass slice).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate
 semantic payloads; promote corpus rows only with prepared consumers.

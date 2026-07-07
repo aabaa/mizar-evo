@@ -22,7 +22,8 @@ use mizar_checker::resolved_typed_ast::{
 };
 use mizar_checker::type_checker::{
     AttributeInput, AttributePolarity, DeclarationCheckingOutput, DeclarationKind,
-    DeclarationStatus, SourceReserveBindingInput, SourceReserveDeclarationBridge, TypeHeadInput,
+    DeclarationStatus, ModeExpansion, SourceReserveBindingInput, SourceReserveDeclarationBridge,
+    TypeExpressionInput, TypeHeadInput,
 };
 use mizar_checker::typed_ast::{
     CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, TypeEntryId,
@@ -52,7 +53,7 @@ use mizar_resolve::env::{
     ContributionKind, DefinitionKind, ExportStatus, NamespacePath, SymbolEnv, SymbolKind,
     Visibility,
 };
-use mizar_resolve::resolved_ast::ModuleId as ResolverModuleId;
+use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
 use mizar_resolve::symbols::{
     SignatureProjectionExtractor, SymbolCollector, SymbolDiagnostic, SymbolDiagnosticClass,
 };
@@ -60,7 +61,7 @@ use mizar_session::{
     BuildSnapshotId, DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
     SourceAnchor, SourceInput, SourceOriginInput, SourceRange, normalize_path,
 };
-use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeKind, SurfaceTokenKind};
+use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
 use crate::expectation::{ExpectedOutcome, PipelinePhase};
@@ -735,7 +736,11 @@ fn source_type_elaboration_detail_keys(
     else {
         return vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()];
     };
-    let handoff = match assemble_source_reserve_checker_handoff(symbols, &source_reserve) {
+    let handoff = match assemble_source_reserve_checker_handoff(
+        symbols,
+        &source_reserve.bridge,
+        source_reserve.mode_expansions.clone(),
+    ) {
         Ok(handoff) => handoff,
         Err(_) => return vec!["type_elaboration.checker.typed_ast_invalid".to_owned()],
     };
@@ -750,7 +755,7 @@ fn source_type_elaboration_detail_keys(
         keys.dedup();
         return keys;
     }
-    if let Err(error) = assert_source_reserve_handoff(&handoff, &source_reserve) {
+    if let Err(error) = assert_source_reserve_handoff(&handoff, &source_reserve.bridge) {
         let detail_key = match error.as_str() {
             "resolved source reserve count mismatch" => {
                 "type_elaboration.checker.resolved_typed_ast_count_mismatch"
@@ -765,7 +770,7 @@ fn source_type_elaboration_detail_keys(
     if assert_source_reserve_core_summary_readiness(&handoff).is_err() {
         return vec!["type_elaboration.core.resolved_typed_ast_summary_invalid".to_owned()];
     }
-    if assert_source_reserve_core_context_readiness(&handoff, &source_reserve).is_err() {
+    if assert_source_reserve_core_context_readiness(&handoff, &source_reserve.bridge).is_err() {
         return vec!["type_elaboration.core.context_invalid".to_owned()];
     }
     Vec::new()
@@ -777,6 +782,35 @@ struct SourceReserveHandoff {
     declarations: DeclarationCheckingOutput,
     typed_ast: TypedAst,
     resolved: ResolvedTypedAst,
+}
+
+#[derive(Debug)]
+struct SourceReserveExtraction {
+    bridge: SourceReserveDeclarationBridge,
+    mode_expansions: BTreeMap<ResolverSymbolId, ModeExpansion>,
+}
+
+#[cfg(test)]
+impl SourceReserveExtraction {
+    fn bindings(&self) -> &[SourceReserveBindingInput] {
+        self.bridge.bindings()
+    }
+
+    fn module_id(&self) -> &ResolverModuleId {
+        self.bridge.module_id()
+    }
+
+    fn module_context(&self) -> mizar_checker::binding_env::BindingContextId {
+        self.bridge.module_context()
+    }
+
+    fn type_node(&self, index: usize) -> mizar_checker::typed_ast::TypedNodeId {
+        self.bridge.type_node(index)
+    }
+
+    fn declaration_node(&self, index: usize) -> mizar_checker::typed_ast::TypedNodeId {
+        self.bridge.declaration_node(index)
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -791,7 +825,7 @@ fn extract_builtin_source_reserve_declarations(
     ast: &SurfaceAst,
     module: ResolverModuleId,
     symbols: &SymbolEnv,
-) -> Result<SourceReserveDeclarationBridge, ()> {
+) -> Result<SourceReserveExtraction, ()> {
     if ast
         .nodes()
         .iter()
@@ -834,13 +868,245 @@ fn extract_builtin_source_reserve_declarations(
     if bindings.is_empty() {
         return Err(());
     }
-    SourceReserveDeclarationBridge::new(
+    let bridge = SourceReserveDeclarationBridge::new(
         ast.source_id,
-        module,
+        module.clone(),
         source_range.expect("reserve_items was non-empty"),
         bindings,
     )
-    .map_err(|_| ())
+    .map_err(|_| ())?;
+    let mode_expansions = extract_source_local_mode_expansions(ast, &module, symbols, &bridge);
+    Ok(SourceReserveExtraction {
+        bridge,
+        mode_expansions,
+    })
+}
+
+fn extract_source_local_mode_expansions(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+    bridge: &SourceReserveDeclarationBridge,
+) -> BTreeMap<ResolverSymbolId, ModeExpansion> {
+    let attributed_mode_heads = bridge
+        .bindings()
+        .iter()
+        .filter(|binding| !binding.type_attributes.is_empty())
+        .filter_map(|binding| match &binding.type_head {
+            TypeHeadInput::Symbol(symbol)
+                if source_reserve_symbol_head_kind(symbols, module, symbol)
+                    == Some(SymbolKind::Mode) =>
+            {
+                Some(symbol.clone())
+            }
+            _ => None,
+        })
+        .collect::<BTreeSet<_>>();
+
+    let mut expansions = BTreeMap::new();
+    for binding in bridge.bindings() {
+        let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
+            continue;
+        };
+        if !binding.type_attributes.is_empty()
+            || attributed_mode_heads.contains(symbol)
+            || expansions.contains_key(symbol)
+            || source_reserve_symbol_head_kind(symbols, module, symbol) != Some(SymbolKind::Mode)
+        {
+            continue;
+        }
+        if let Some(expansion) =
+            extract_source_local_mode_expansion(ast, module, symbol, binding.type_range, bridge)
+        {
+            expansions.insert(symbol.clone(), expansion);
+        }
+    }
+    expansions
+}
+
+fn extract_source_local_mode_expansion(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbol: &ResolverSymbolId,
+    reserve_type_range: SourceRange,
+    bridge: &SourceReserveDeclarationBridge,
+) -> Option<ModeExpansion> {
+    if symbol.module() != module {
+        return None;
+    }
+    let spelling = source_mode_symbol_spelling(symbol)?;
+    let definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition)
+        .into_iter()
+        .filter(|(id, node)| {
+            !subtree_has_recovery(ast, node)
+                && node.range.end <= reserve_type_range.start
+                && !mode_definition_has_local_context(ast, *id)
+                && mode_definition_pattern_spelling(ast, node).as_deref() == Some(spelling)
+        })
+        .collect::<Vec<_>>();
+    let [(_, definition)] = definitions.as_slice() else {
+        return None;
+    };
+    let rhs = extract_bare_builtin_mode_rhs(ast, definition)?;
+    Some(ModeExpansion::new(
+        TypeExpressionInput::new(
+            TypedSiteRef::Node(bridge.root_node()),
+            rhs.range,
+            rhs.spelling,
+            rhs.head,
+        ),
+        Vec::new(),
+    ))
+}
+
+fn source_mode_symbol_spelling(symbol: &ResolverSymbolId) -> Option<&str> {
+    let spelling = symbol.local().as_str();
+    let name = spelling.strip_prefix("name=").unwrap_or_else(|| {
+        spelling
+            .split_once(":name=")
+            .map(|(_, name)| name)
+            .unwrap_or(spelling)
+    });
+    let name = name.split_once(':').map_or(name, |(name, _)| name);
+    (!name.is_empty()).then_some(name)
+}
+
+fn mode_definition_pattern_spelling(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
+    if !matches!(node.kind, SurfaceNodeKind::ModeDefinition) {
+        return None;
+    }
+    let pattern = node
+        .children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .find(|child| matches!(child.kind, SurfaceNodeKind::ModePattern))?;
+    if pattern.children.len() != 1 {
+        return None;
+    }
+    let token_node = ast.node(pattern.children[0])?;
+    match &token_node.kind {
+        SurfaceNodeKind::Token(token) if token.kind == SurfaceTokenKind::Identifier => {
+            Some(token.text.to_string())
+        }
+        _ => None,
+    }
+}
+
+fn extract_bare_builtin_mode_rhs(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+) -> Option<SourceTypeExpression> {
+    let rhs_nodes = node
+        .children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .filter(|child| matches!(child.kind, SurfaceNodeKind::TypeExpression))
+        .collect::<Vec<_>>();
+    let [rhs] = rhs_nodes.as_slice() else {
+        return None;
+    };
+    if subtree_has_recovery(ast, rhs) || rhs.children.len() != 1 {
+        return None;
+    }
+    let head = ast.node(rhs.children[0])?;
+    let head = extract_bare_builtin_type_head(ast, head)?;
+    Some(SourceTypeExpression {
+        range: rhs.range,
+        spelling: source_text_from_children(ast, rhs)?,
+        head,
+        attributes: Vec::new(),
+    })
+}
+
+fn extract_bare_builtin_type_head(ast: &SurfaceAst, node: &SurfaceNode) -> Option<TypeHeadInput> {
+    if !matches!(node.kind, SurfaceNodeKind::TypeHead) || node.children.len() != 1 {
+        return None;
+    }
+    match ast.node(node.children[0])?.token_text()? {
+        "set" => Some(TypeHeadInput::BuiltinSet),
+        "object" => Some(TypeHeadInput::BuiltinObject),
+        _ => None,
+    }
+}
+
+fn surface_nodes_with_kind(
+    ast: &SurfaceAst,
+    kind: SurfaceNodeKind,
+) -> Vec<(SurfaceNodeId, &SurfaceNode)> {
+    let mut output = Vec::new();
+    if let Some(root) = ast.root() {
+        collect_surface_nodes_with_kind(ast, root, &kind, &mut output);
+    }
+    output
+}
+
+fn collect_surface_nodes_with_kind<'a>(
+    ast: &'a SurfaceAst,
+    id: SurfaceNodeId,
+    kind: &SurfaceNodeKind,
+    output: &mut Vec<(SurfaceNodeId, &'a SurfaceNode)>,
+) {
+    let Some(node) = ast.node(id) else {
+        return;
+    };
+    if &node.kind == kind {
+        output.push((id, node));
+    }
+    for child in &node.children {
+        collect_surface_nodes_with_kind(ast, *child, kind, output);
+    }
+}
+
+fn mode_definition_has_local_context(ast: &SurfaceAst, mode_id: SurfaceNodeId) -> bool {
+    let Some(block_id) = containing_definition_block(ast, mode_id) else {
+        return false;
+    };
+    ast.node(block_id)
+        .is_some_and(|block| subtree_has_definition_local_context(ast, block, mode_id))
+}
+
+fn containing_definition_block(ast: &SurfaceAst, target: SurfaceNodeId) -> Option<SurfaceNodeId> {
+    surface_nodes_with_kind(ast, SurfaceNodeKind::DefinitionBlockItem)
+        .into_iter()
+        .filter(|(id, _)| subtree_contains_node(ast, *id, target))
+        .min_by_key(|(_, node)| node.range.end.saturating_sub(node.range.start))
+        .map(|(id, _)| id)
+}
+
+fn subtree_contains_node(ast: &SurfaceAst, current: SurfaceNodeId, target: SurfaceNodeId) -> bool {
+    if current == target {
+        return true;
+    }
+    ast.node(current).is_some_and(|node| {
+        node.children
+            .iter()
+            .any(|child| subtree_contains_node(ast, *child, target))
+    })
+}
+
+fn subtree_has_definition_local_context(
+    ast: &SurfaceAst,
+    node: &SurfaceNode,
+    mode_id: SurfaceNodeId,
+) -> bool {
+    for child_id in &node.children {
+        if *child_id == mode_id {
+            continue;
+        }
+        let Some(child) = ast.node(*child_id) else {
+            continue;
+        };
+        if matches!(
+            child.kind,
+            SurfaceNodeKind::DefinitionParameter
+                | SurfaceNodeKind::AssumptionStatement
+                | SurfaceNodeKind::GivenStatement
+        ) || subtree_has_definition_local_context(ast, child, mode_id)
+        {
+            return true;
+        }
+    }
+    false
 }
 
 fn is_supported_builtin_reserve_bridge_node(node: &SurfaceNode) -> bool {
@@ -1219,8 +1485,12 @@ fn subtree_has_recovery(ast: &SurfaceAst, node: &SurfaceNode) -> bool {
 fn assemble_source_reserve_checker_handoff(
     symbols: &SymbolEnv,
     source_reserve: &SourceReserveDeclarationBridge,
+    mode_expansions: BTreeMap<ResolverSymbolId, ModeExpansion>,
 ) -> Result<SourceReserveHandoff, String> {
-    let (binding_env, declarations) = source_reserve.check(symbols)?.into_parts();
+    let (binding_env, declarations) = source_reserve
+        .check_with_mode_expansions(symbols, mode_expansions)
+        .map_err(|error| error.to_string())?
+        .into_parts();
     let typed_ast = assemble_source_reserve_typed_ast(source_reserve, &declarations)?;
     let resolved = assemble_source_reserve_resolved_typed_ast(&typed_ast, source_reserve)
         .map_err(|error| error.to_string())?;
@@ -1552,12 +1822,16 @@ fn assert_source_reserve_core_context_readiness(
 #[cfg(test)]
 fn assemble_source_checker_handoff(
     symbols: &SymbolEnv,
-    source_reserve: &SourceReserveDeclarationBridge,
+    source_reserve: &SourceReserveExtraction,
 ) -> Result<SourceReserveHandoff, String> {
-    let handoff = assemble_source_reserve_checker_handoff(symbols, source_reserve)?;
-    assert_source_reserve_handoff(&handoff, source_reserve)?;
+    let handoff = assemble_source_reserve_checker_handoff(
+        symbols,
+        &source_reserve.bridge,
+        source_reserve.mode_expansions.clone(),
+    )?;
+    assert_source_reserve_handoff(&handoff, &source_reserve.bridge)?;
     assert_source_reserve_core_summary_readiness(&handoff)?;
-    assert_source_reserve_core_context_readiness(&handoff, source_reserve)?;
+    assert_source_reserve_core_context_readiness(&handoff, &source_reserve.bridge)?;
     Ok(handoff)
 }
 

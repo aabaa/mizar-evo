@@ -1186,6 +1186,35 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       fixture and keeps imported/argument-bearing forms on the broader
       extraction gap.
 
+55. **Source-derived bare local mode expansion bridge.** [x]
+    - Extend the active type-elaboration source bridge just far enough to
+      produce a real `ModeExpansion` for bare reserve uses of a unique
+      same-module `LocalSource` no-argument mode definition whose unrecovered
+      source definition precedes the reserve use, has no definition-local
+      parameter/assumption context, and has a bare builtin `set` / `object`
+      RHS.
+    - Acceptance: the runner extracts the expansion from `SurfaceAst` and
+      passes it through the checker-owned syntax-free reserve seam; the
+      resulting bare local-mode reserve declaration is an active pass case
+      through `BindingEnv`, `DeclarationChecker`, `TypedAst`,
+      `ResolvedTypedAst`, summary-readiness, and binder-only `CoreContext`.
+      The runner withholds mode expansions for attributed local-mode reserve
+      uses, mixed attributed/bare local-mode sources, attributed mode RHSs,
+      imported/argument-bearing/parameterized/contextual modes, unresolved or
+      ambiguous heads, and non-reserve declarations. Those families remain on
+      the existing missing-expansion or broader extraction gaps.
+    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
+    - Deps: tasks 48, 51, and 54; broader mode expansion and existential
+      evidence remain MC-G014/MC-G020/MC-G026. Refs: Step 5 source-derived
+      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
+      modes; spec 17 base-shape inhabitation evidence.
+    - Completed in task 55: `mizar-test` extracts a real AST-derived
+      `ModeExpansion` for the narrow bare local-mode reserve slice and the
+      checker source reserve seam accepts explicit mode-expansion payloads
+      without fabricating evidence. A new active pass fixture covers the local
+      mode expansion bridge, while attributed/mixed/attributed-RHS cases stay
+      fail-closed on missing expansion or evidence gaps.
+
 ## Recommended Verification
 
 Run after each task:
