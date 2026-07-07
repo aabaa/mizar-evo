@@ -143,7 +143,7 @@ No exhaustive public enum exceptions are owned by this module.
 | metadata plan | discover sidecars and validate layout, expectation schema, and traceability without executing payloads |
 | parse-only | run active `.miz` parse-only cases through `mizar-frontend` and `MizarParserSeam` |
 | declaration-symbol | run active `.miz` declaration-symbol cases through frontend parsing and resolver declaration/symbol collection |
-| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, extract supported reserve-only declaration payloads, delegate checker-owned `BindingEnv`/`DeclarationInput`/`DeclarationChecker` handoff production to the syntax-free `mizar-checker` seam, continue successful bare-builtin cases through `TypedAst` and `ResolvedTypedAst`, confirm `mizar-core` summary-readiness through `ResolvedTypedAstSummary::from_ast`, prepare binder-only `CoreContext` input from the same reserve bindings, surface same-module attributed reserve declarations and local structure reserve heads as checker evidence-query gaps, surface same-module local mode reserve heads as checker mode-expansion payload gaps, and surface unsupported checker payload families as stable external dependency gaps |
+| type-elaboration | run active `.miz` type-elaboration cases through frontend parsing and resolver declaration/symbol collection, extract supported reserve-only declaration payloads, delegate checker-owned `BindingEnv`/`DeclarationInput`/`DeclarationChecker` handoff production to the syntax-free `mizar-checker` seam, continue successful bare-builtin cases through `TypedAst` and `ResolvedTypedAst`, confirm `mizar-core` summary-readiness through `ResolvedTypedAstSummary::from_ast`, prepare binder-only `CoreContext` input from the same reserve bindings, surface same-module attributed reserve declarations, local structure reserve heads, and attributed local structure reserve heads as checker evidence-query gaps, surface same-module local mode reserve heads as checker mode-expansion payload gaps, and surface unsupported checker payload families as stable external dependency gaps |
 | pass/fail | run `.miz` cases and match expected outcome |
 | snapshot | compare canonical snapshot hashes |
 | determinism | repeat runs and compare artifacts, diagnostics, and hashes |
@@ -162,7 +162,7 @@ fabricated coverage.
 |---|---|---|---|
 | `mizar-parser` task 3 | `parse_only` / `parse-only` | prepared/implemented; active `.miz` pass/fail sidecars use `active_parse_only`, and untagged parse-only metadata stays planned | Keep the transitional `SurfaceAst` snapshot shortcut until the general snapshot runner lands. |
 | `mizar-resolve` task 23 | `declaration_symbol` / `declaration-symbol` | prepared/implemented; active sidecars use `active_declaration_symbol`, public resolver diagnostic-code matching remains gated | Open public diagnostic-code assertions only after resolver diagnostic ranges are specified. |
-| `mizar-checker` task 12 plus task 16-20, task 48 source bridge continuation, task 50 attributed reserve evidence-gap bridge, task 51 local mode expansion-gap bridge, task 52 local structure evidence-gap bridge, reserve summary-readiness, and binder-only core context follow-up | `type_elaboration` / `type-elaboration` | prepared/implemented; active sidecars use `active_type_elaboration`, lower stages run first, reserve-only builtin `set`/`object` declarations are extracted from `.miz` AST into syntax-free checker payloads, same-module attribute symbols already present in `SymbolEnv` may be attached to builtin reserve type payloads, same-module local mode and structure symbols may be used as un-attributed argument-free reserve heads, `mizar-checker` produces the checker-owned `BindingEnv`, one `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites, and `DeclarationChecker` output, successful bare-builtin cases continue through `TypedAst`, checker-owned `ResolvedTypedAst`, a `mizar-core` `ResolvedTypedAstSummary::from_ast` read, and binder-only `CoreContext` preparation, while attributed reserve and local-structure cases stop at the checker `MissingEvidenceQuery` diagnostic and local-mode cases stop at the missing mode-expansion diagnostic; unsupported checker payload families stay on `type_elaboration.external_dependency.ast_payload_extraction` | Broader type pass/fail semantic assertions wait for AST-wide source-to-checker payload extraction and real existential/evidence-query/mode-expansion/base-shape inputs. |
+| `mizar-checker` task 12 plus task 16-20, task 48 source bridge continuation, task 50 attributed reserve evidence-gap bridge, task 51 local mode expansion-gap bridge, task 52 local structure evidence-gap bridge, task 53 attributed local structure evidence-gap bridge, reserve summary-readiness, and binder-only core context follow-up | `type_elaboration` / `type-elaboration` | prepared/implemented; active sidecars use `active_type_elaboration`, lower stages run first, reserve-only builtin `set`/`object` declarations are extracted from `.miz` AST into syntax-free checker payloads, same-module attribute symbols already present in `SymbolEnv` may be attached to builtin reserve type payloads and to same-module local structure reserve heads, same-module local mode and structure symbols may be used as argument-free reserve heads, `mizar-checker` produces the checker-owned `BindingEnv`, one `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites, and `DeclarationChecker` output, successful bare-builtin cases continue through `TypedAst`, checker-owned `ResolvedTypedAst`, a `mizar-core` `ResolvedTypedAstSummary::from_ast` read, and binder-only `CoreContext` preparation, while attributed reserve and local-structure cases stop at the checker `MissingEvidenceQuery` diagnostic and local-mode cases stop at the missing mode-expansion diagnostic; unsupported checker payload families stay on `type_elaboration.external_dependency.ast_payload_extraction` | Broader type pass/fail semantic assertions wait for AST-wide source-to-checker payload extraction and real existential/evidence-query/mode-expansion/base-shape inputs. |
 | `mizar-checker` task 29 | `formula_statement` / `advanced_semantics` | paced/open; trace rows are deferred and no active fixture is fabricated | Add runner support only after statement/formula and advanced-semantics source payload seams exist. |
 | `mizar-vc` task 15 | `proof_verification` | paced/open; VC/proof-verification obligations are deferred | Add runner support only after source-to-core/source-to-VC extraction and downstream verification seams exist. |
 | `mizar-atp` task 20 | `advanced_semantics` metadata handoff | paced/open in `mizar-test`; metadata-only property fixtures may be consumed by `mizar-atp` Rust tests | Add active `.miz` ATP runner support only after source-derived ATP extraction and proof-policy/kernel handoff seams exist. |
@@ -260,15 +260,20 @@ payload extraction gap. Task 51 adds a second active fail slice: a unique
 same-module local mode symbol with no attributes or type arguments may be used
 as the reserve type head, causing checker type normalization to emit
 `checker.type.external.mode_expansion_payload` because real mode-expansion
-payload extraction is still absent. Imported attributes, imported modes,
-unresolved or ambiguous symbols, attribute arguments, qualified attribute
-disambiguation, attributed mode or structure heads, mode/structure arguments,
-and non-reserve declarations remain outside this source bridge. Task 52 adds a
-third active fail slice: a unique same-module local structure symbol with no
+payload extraction is still absent. Task 52 adds a third active fail slice: a
+unique same-module local structure symbol with no
 attributes or type arguments may be used as the reserve type head, causing
 checker declaration checking to emit
 `checker.declaration.deferred.evidence_query` because real
-base-shape/constructor-witness evidence extraction is still absent.
+base-shape/constructor-witness evidence extraction is still absent. Task 53
+adds a fourth active fail slice: same-module source-derived attributes may be
+attached to that local structure head, still causing
+`checker.declaration.deferred.evidence_query` because Chapter 17 requires
+existential evidence for the full normalized attributed type. Imported
+attributes, imported modes or structures, unresolved or ambiguous symbols,
+attribute arguments, qualified attribute disambiguation, attributed mode heads,
+mode/structure arguments, and non-reserve declarations remain outside this
+source bridge.
 
 For extracted payloads, the runner passes source/module identity, reserve
 source range, binding spelling/ranges, supported type-expression spelling/
@@ -304,11 +309,12 @@ that checker handoff construction, declaration checking, `TypedAst` assembly,
 readiness were exercised.
 
 The runner still does not fabricate the missing AST-wide source-to-checker
-bridge. Non-builtin declarations, imported attributes, imported modes,
-attribute arguments, attributed mode or structure heads, mode/structure arguments, structure payloads,
-terms, formulas, coercion sites, overload evidence, recorded facts, CoreIr,
-ControlFlowIr, VC payloads, and proof evidence remain outside the supported
-extraction slice. When an active case needs one of those
+bridge. Non-builtin declarations, imported attributes, imported modes or
+structures, attribute arguments, attributed mode heads, mode/structure
+arguments, structure payloads, terms, formulas, coercion sites, overload
+evidence, recorded facts, CoreIr, ControlFlowIr, VC payloads, and proof
+evidence remain outside the supported extraction slice. When an active case
+needs one of those
 unsupported payload families, the runner reports the stable detail key
 `type_elaboration.external_dependency.ast_payload_extraction`. Active fail
 cases may assert that key through `diagnostic_payloads` or `stable_detail_key`;

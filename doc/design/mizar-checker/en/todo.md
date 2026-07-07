@@ -1110,10 +1110,11 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       `MissingEvidenceQuery`, and reaches
       `checker.declaration.deferred.evidence_query` because real
       base-shape/constructor-witness evidence extraction is not implemented.
-      Imported structures, structure arguments, attributed structure heads,
-      successful local-structure reserve declarations, structure field/default
-      payload extraction, CoreIr/ControlFlowIr/VC/proof payloads, and broader
-      semantic pass coverage remain deferred under MC-G020/MC-G026.
+      Imported structures, structure arguments, attributed structure heads
+      beyond the later promoted task-53 diagnostic slice, successful
+      local-structure reserve declarations, structure field/default payload
+      extraction, CoreIr/ControlFlowIr/VC/proof payloads, and broader semantic
+      pass coverage remain deferred under MC-G020/MC-G026.
     - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
     - Deps: task 48; external base-shape evidence remains MC-G020/MC-G026.
       Refs: Step 5 source-derived semantic bridge; mizar-test task 10; spec 03
@@ -1124,8 +1125,36 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       missing evidence-query diagnostic rather than inferring structure
       inhabitation from a symbol. `mizar-test` adds an active same-module
       local-structure reserve fail fixture with a real field-bearing local
-      `struct`, while imported structures and argument-bearing or attributed
-      structure heads remain on the broader extraction gap.
+      `struct`, while imported structures and argument-bearing structure heads
+      remain on the broader extraction gap.
+
+53. **Source-derived attributed local structure reserve evidence-gap bridge.** [x]
+    - Extend the task-48 reserve source declaration seam just far enough to
+      accept source-derived no-argument attribute payloads attached to a unique
+      same-module `LocalSource` structure reserve head with no type arguments.
+    - Acceptance: the checker-owned bridge validates exact local
+      `SymbolKind::Structure` provenance for the symbol head, keeps attributed
+      local mode heads on the broader extraction gap, marks the attributed
+      local-structure reserved-variable declaration with
+      `MissingEvidenceQuery`, and reaches
+      `checker.declaration.deferred.evidence_query` because real existential
+      evidence for the full normalized attributed type is not implemented.
+      Imported attributes or structures, attribute arguments, qualified
+      attribute disambiguation, structure arguments, successful attributed
+      structure reserve declarations, structure field/default/base-shape
+      extraction, CoreIr/ControlFlowIr/VC/proof payloads, and broader semantic
+      pass coverage remain deferred under MC-G020/MC-G026.
+    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
+    - Deps: tasks 48, 50, and 52; external full attributed-type existential
+      evidence remains MC-G020/MC-G026. Refs: Step 5 source-derived semantic
+      bridge; mizar-test task 10; spec 03 type expressions; spec 05
+      structures; spec 17 existential and base-shape inhabitation evidence.
+    - Completed in task 53: `type_checker.rs` admits same-module source
+      attributes only for local structure heads on the syntax-free reserve
+      bridge, while rejecting attributed local modes at checker validation.
+      `mizar-test` adds an active same-module attributed local-structure
+      reserve fail fixture and keeps imported/argument-bearing forms on the
+      broader extraction gap.
 
 ## Recommended Verification
 

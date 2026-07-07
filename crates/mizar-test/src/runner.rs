@@ -960,7 +960,9 @@ fn extract_builtin_source_type_expression(
     };
     let head =
         extract_source_reserve_type_head(ast, ast.node(head_id).ok_or(())?, module, symbols)?;
-    if matches!(head, TypeHeadInput::Symbol(_)) && !attributes.is_empty() {
+    if !attributes.is_empty()
+        && !is_supported_attributed_source_reserve_head(symbols, module, &head)
+    {
         return Err(());
     }
     Ok(SourceTypeExpression {
@@ -994,6 +996,40 @@ fn extract_source_reserve_type_head(
         return Ok(TypeHeadInput::Symbol(symbol));
     }
     Err(())
+}
+
+fn is_supported_attributed_source_reserve_head(
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+    head: &TypeHeadInput,
+) -> bool {
+    match head {
+        TypeHeadInput::BuiltinSet | TypeHeadInput::BuiltinObject => true,
+        TypeHeadInput::Symbol(symbol) => source_reserve_symbol_head_kind(symbols, module, symbol)
+            .is_some_and(|kind| matches!(kind, SymbolKind::Structure)),
+        _ => false,
+    }
+}
+
+fn source_reserve_symbol_head_kind(
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+    symbol: &mizar_resolve::resolved_ast::SymbolId,
+) -> Option<SymbolKind> {
+    if symbol.module() != module {
+        return None;
+    }
+    let entry = symbols.symbols().get(symbol)?;
+    if !matches!(entry.kind(), SymbolKind::Mode | SymbolKind::Structure) {
+        return None;
+    }
+    let contribution = symbols.contributions().get(entry.contribution())?;
+    if contribution.module() != module
+        || !matches!(contribution.kind(), ContributionKind::LocalSource { .. })
+    {
+        return None;
+    }
+    Some(entry.kind())
 }
 
 fn extract_builtin_source_attributes(
@@ -2492,6 +2528,33 @@ mod tests {
             local_structure_reserve.bindings()[0].type_head,
             TypeHeadInput::Symbol(_)
         ));
+
+        let attributed_structure = reserve_ast(
+            source_id(196),
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedQualifiedSymbol("Struct"),
+            )],
+        );
+        let structure_attribute_symbols =
+            source_structure_attribute_symbol_env(local_structure_reserve.module_id().clone());
+        let attributed_structure_reserve = extract_builtin_source_reserve_declarations(
+            &attributed_structure,
+            structure_attribute_symbols.module_id().clone(),
+            &structure_attribute_symbols,
+        )
+        .expect("same-module attributed structure reserve type should extract");
+        assert_eq!(attributed_structure_reserve.bindings().len(), 1);
+        assert_eq!(
+            attributed_structure_reserve.bindings()[0]
+                .type_attributes
+                .len(),
+            1
+        );
+        assert!(matches!(
+            attributed_structure_reserve.bindings()[0].type_head,
+            TypeHeadInput::Symbol(_)
+        ));
     }
 
     #[test]
@@ -2777,6 +2840,69 @@ mod tests {
                 structure_attribute_symbols.module_id().clone(),
                 &structure_attribute_symbols
             ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_structure,
+                structure_symbols.module_id().clone(),
+                &structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let imported_attribute_structure_symbols =
+            imported_attribute_structure_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_structure,
+                imported_attribute_structure_symbols.module_id().clone(),
+                &imported_attribute_structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let ambiguous_attribute_structure_symbols =
+            ambiguous_attribute_structure_symbol_env(symbols.module_id().clone());
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_structure,
+                ambiguous_attribute_structure_symbols.module_id().clone(),
+                &ambiguous_attribute_structure_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let attributed_structure_with_attribute_args = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedQualifiedSymbolWithAttributeArgs("Struct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_structure_with_attribute_args,
+                structure_attribute_symbols.module_id().clone(),
+                &structure_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
+        let qualified_attribute_structure = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedAttributeQualifiedSymbol("Struct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &qualified_attribute_structure,
+                structure_attribute_symbols.module_id().clone(),
+                &structure_attribute_symbols
+            ),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
     }
@@ -2799,6 +2925,113 @@ mod tests {
 
     fn source_structure_attribute_symbol_env(module: ResolverModuleId) -> SymbolEnv {
         source_symbol_pair_env(module, "Struct", SymbolKind::Structure)
+    }
+
+    fn imported_attribute_structure_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        let source = source_id(197);
+        let imported_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("imported"));
+        let mut indexes = SymbolEnvIndexes::default();
+        let local_contribution = indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 1)),
+        );
+        let imported_contribution = indexes.contributions.insert(
+            imported_module.clone(),
+            ContributionKind::ImportedSource { source_id: source },
+            SourceAnchor::Range(range(source, 1, 2)),
+        );
+        let structure = ResolverSymbolId::new(
+            module.clone(),
+            LocalSymbolId::new("Structure/Struct/0"),
+            FullyQualifiedName::new(format!("{}::Struct/0", module.path().as_str())),
+        );
+        indexes.symbols.insert(
+            SymbolEntry::new(
+                structure,
+                SymbolKind::Structure,
+                NamespacePath::new(module.path().as_str()),
+                "Struct",
+                SemanticOrigin::new(
+                    source,
+                    module.clone(),
+                    SourceAnchor::Range(range(source, 0, 1)),
+                    Vec::new(),
+                ),
+                local_contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        let attribute = ResolverSymbolId::new(
+            imported_module.clone(),
+            LocalSymbolId::new("Attribute/empty/0"),
+            FullyQualifiedName::new(format!("{}::empty/0", imported_module.path().as_str())),
+        );
+        indexes.symbols.insert(
+            SymbolEntry::new(
+                attribute,
+                SymbolKind::Attribute,
+                NamespacePath::new(module.path().as_str()),
+                "empty",
+                SemanticOrigin::new(
+                    source,
+                    imported_module,
+                    SourceAnchor::Range(range(source, 1, 2)),
+                    Vec::new(),
+                ),
+                imported_contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        SymbolEnv::new(module, indexes)
+    }
+
+    fn ambiguous_attribute_structure_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        let source = source_id(198);
+        let mut indexes = SymbolEnvIndexes::default();
+        let contribution = indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 3)),
+        );
+        for (ordinal, (spelling, kind)) in [
+            ("Struct", SymbolKind::Structure),
+            ("empty", SymbolKind::Attribute),
+            ("empty", SymbolKind::Attribute),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let symbol = ResolverSymbolId::new(
+                module.clone(),
+                LocalSymbolId::new(format!("{kind:?}/{spelling}/{ordinal}")),
+                FullyQualifiedName::new(format!(
+                    "{}::{spelling}/{ordinal}",
+                    module.path().as_str()
+                )),
+            );
+            indexes.symbols.insert(
+                SymbolEntry::new(
+                    symbol,
+                    kind,
+                    NamespacePath::new(module.path().as_str()),
+                    spelling,
+                    SemanticOrigin::new(
+                        source,
+                        module.clone(),
+                        SourceAnchor::Range(range(source, ordinal, ordinal + 1)),
+                        Vec::new(),
+                    ),
+                    contribution,
+                )
+                .with_visibility(Visibility::Public)
+                .with_export_status(ExportStatus::Exported),
+            );
+        }
+        SymbolEnv::new(module, indexes)
     }
 
     fn source_symbol_pair_env(
@@ -3009,6 +3242,8 @@ mod tests {
         QualifiedSymbol(&'static str),
         QualifiedSymbolWithArgs(&'static str),
         AttributedQualifiedSymbol(&'static str),
+        AttributedQualifiedSymbolWithAttributeArgs(&'static str),
+        QualifiedAttributeQualifiedSymbol(&'static str),
         AttributedSet,
     }
 
@@ -3122,7 +3357,19 @@ mod tests {
                 add_qualified_type_expression(builder, source_id, offset, head, true)
             }
             ReserveTypeShape::AttributedQualifiedSymbol(head) => {
-                add_attributed_qualified_type_expression(builder, source_id, offset, head)
+                add_attributed_qualified_type_expression(
+                    builder, source_id, offset, head, false, false,
+                )
+            }
+            ReserveTypeShape::AttributedQualifiedSymbolWithAttributeArgs(head) => {
+                add_attributed_qualified_type_expression(
+                    builder, source_id, offset, head, true, false,
+                )
+            }
+            ReserveTypeShape::QualifiedAttributeQualifiedSymbol(head) => {
+                add_attributed_qualified_type_expression(
+                    builder, source_id, offset, head, false, true,
+                )
             }
             ReserveTypeShape::AttributedSet => {
                 attributed_type_expression(builder, source_id, offset)
@@ -3295,6 +3542,8 @@ mod tests {
         source_id: SourceId,
         offset: &mut usize,
         head: &str,
+        with_attribute_args: bool,
+        qualified_attribute: bool,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let non = add_token(
@@ -3304,6 +3553,93 @@ mod tests {
             SurfaceTokenKind::ReservedWord,
             "non",
         );
+        let empty_symbol = add_attribute_symbol(builder, source_id, offset, qualified_attribute);
+        let mut attribute_end = builder
+            .node_range(empty_symbol)
+            .expect("just-created attribute symbol should exist")
+            .end;
+        let mut attribute_children = vec![non, empty_symbol];
+        if with_attribute_args {
+            let open = add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedSymbol,
+                "(",
+            );
+            let arg = add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                "x",
+            );
+            let close = add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedSymbol,
+                ")",
+            );
+            attribute_end = builder
+                .node_range(close)
+                .expect("just-created attribute argument close should exist")
+                .end;
+            attribute_children.extend([open, arg, close]);
+        }
+        let attribute = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, start, attribute_end),
+            attribute_children,
+        );
+        let attribute_chain = builder.add_node(
+            SurfaceNodeKind::AttributeChain,
+            range(source_id, start, attribute_end),
+            vec![attribute],
+        );
+        let (head_node, end) = add_qualified_type_head(builder, source_id, offset, head, false);
+        builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, start, end),
+            vec![attribute_chain, head_node],
+        )
+    }
+
+    fn add_attribute_symbol(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        qualified: bool,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let mut children = Vec::new();
+        if qualified {
+            let qualifier = "Struct";
+            let qualifier_start = *offset;
+            let qualifier_token = add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::UserSymbol,
+                qualifier,
+            );
+            children.push(builder.add_node(
+                SurfaceNodeKind::PathSegment,
+                range(
+                    source_id,
+                    qualifier_start,
+                    qualifier_start + qualifier.len(),
+                ),
+                vec![qualifier_token],
+            ));
+            children.push(add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedSymbol,
+                ".",
+            ));
+        }
         let empty_start = *offset;
         let empty = add_token(
             builder,
@@ -3317,26 +3653,11 @@ mod tests {
             range(source_id, empty_start, empty_start + "empty".len()),
             vec![empty],
         );
-        let empty_symbol = builder.add_node(
-            SurfaceNodeKind::QualifiedSymbol,
-            range(source_id, empty_start, empty_start + "empty".len()),
-            vec![empty_segment],
-        );
-        let attribute = builder.add_node(
-            SurfaceNodeKind::AttributeRef,
-            range(source_id, start, empty_start + "empty".len()),
-            vec![non, empty_symbol],
-        );
-        let attribute_chain = builder.add_node(
-            SurfaceNodeKind::AttributeChain,
-            range(source_id, start, empty_start + "empty".len()),
-            vec![attribute],
-        );
-        let (head_node, end) = add_qualified_type_head(builder, source_id, offset, head, false);
+        children.push(empty_segment);
         builder.add_node(
-            SurfaceNodeKind::TypeExpression,
-            range(source_id, start, end),
-            vec![attribute_chain, head_node],
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, start, empty_start + "empty".len()),
+            children,
         )
     }
 

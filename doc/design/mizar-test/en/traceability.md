@@ -274,17 +274,19 @@ being credited from the diagnostic external-gap row.
 Covered active fail tests may still assert the external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` when a case needs
 unsupported non-builtin declarations, imported symbols, attribute or
-mode/structure arguments, unresolved or ambiguous symbols, attributed mode or structure heads,
+mode/structure arguments, unresolved or ambiguous symbols, attributed mode heads,
 terms, formulas, coercions, overload payloads, facts, CoreIr, ControlFlowIr,
 VC payloads, or proof payload extraction. Supported checker-owned fail slices
 may instead assert the checker
 detail keys for same-module attributed builtin reserve heads missing evidence
-or same-module local structure reserve heads missing base-shape evidence, or
-same-module local mode reserve heads missing mode-expansion payloads. Those gap
-tests do not satisfy the broader task 7-11 semantic pass/fail coverage, and
-`CoreIr`, `ControlFlowIr`, and `proof_verification` rows remain deferred until
-prepared consumer execution exists; the summary/context readiness read is not a
-CoreIr/ControlFlowIr/VC/proof promotion.
+or same-module local structure reserve heads missing base-shape evidence,
+including attributed local structures that lack full normalized attributed-type
+existential evidence, or same-module local mode reserve heads missing
+mode-expansion payloads. Those gap tests do not satisfy the broader task 7-11
+semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and
+`proof_verification` rows remain deferred until prepared consumer execution
+exists; the summary/context readiness read is not a CoreIr/ControlFlowIr/VC/
+proof promotion.
 
 ## Reporting
 

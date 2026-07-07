@@ -448,12 +448,14 @@ reserve head が
 paired recovery key で停止することを許可する。task 52 は attribute や type argument のない
 unique な same-module `LocalSource` `SymbolKind::Structure` reserve head が
 `type_elaboration.checker.checker.declaration.deferred.evidence_query` で停止することを許可する。
+task 53 は same-module no-argument attribute payload をその local structure head に attach し、
+full attributed-type existential evidence がないため同じ evidence-query key で停止することを許可する。
 これらは fail case であり、pass-slice coverage ではない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
 から checker-owned payload を non-builtin declaration、imported symbol、unresolved /
-ambiguous symbol、attribute / mode / structure argument、attributed mode / structure head、
-structure payload、term、formula、
+ambiguous symbol、attribute / mode / structure argument、attributed mode head、
+imported attributed structure head、structure payload、term、formula、
 coercion、fact、overload evidence、CoreIr、ControlFlowIr、VC payload、proof evidence を捏造せず
 構築できるまで deferred のままにする。
 

@@ -1048,10 +1048,10 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       その reserved-variable declaration に `MissingEvidenceQuery` を付ける。
       real base-shape / constructor-witness evidence extraction が未実装なので
       declaration checking は `checker.declaration.deferred.evidence_query` に到達する。
-      imported structure、structure argument、attributed structure head、
-      successful local-structure reserve declaration、structure field / default payload
-      extraction、CoreIr / ControlFlowIr / VC / proof payload、より広い semantic pass
-      coverage は MC-G020 / MC-G026 の下で deferred のままにする。
+      imported structure、structure argument、task 53 の diagnostic slice 外の attributed
+      structure head、successful local-structure reserve declaration、structure field /
+      default payload extraction、CoreIr / ControlFlowIr / VC / proof payload、より広い
+      semantic pass coverage は MC-G020 / MC-G026 の下で deferred のままにする。
     - 検証: `cargo test -p mizar-checker`、`cargo test -p mizar-test`。
     - 依存: task 48。external base-shape evidence は MC-G020 / MC-G026 のまま。
       参照: Step 5 source-derived semantic bridge、mizar-test task 10、spec 03 type
@@ -1060,8 +1060,31 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       source-backed structure head を検証し、symbol だけから structure inhabitation を
       推論せず missing evidence-query diagnostic を保持する。`mizar-test` は実 field を持つ
       local `struct` を使った same-module local-structure reserve の active fail fixture を追加し、
-      imported structure、argument-bearing / attributed structure head は広い extraction gap
-      のままにする。
+      imported structure と argument-bearing structure head は広い extraction gap のままにする。
+
+53. **Source-derived attributed local structure reserve evidence-gap bridge.** [x]
+    - task 48 の reserve source declaration seam を、type argument を持たない unique な
+      same-module `LocalSource` structure reserve head に source-derived no-argument
+      attribute payload を付けるところまで拡張する。
+    - 受け入れ条件: checker-owned bridge は symbol head の exact local
+      `SymbolKind::Structure` provenance を検証し、attributed local mode head は広い
+      extraction gap のままにし、attributed local-structure reserved-variable declaration に
+      `MissingEvidenceQuery` を付ける。full normalized attributed type の real existential
+      evidence は未実装なので、`checker.declaration.deferred.evidence_query` に到達する。
+      imported attribute / structure、attribute argument、qualified attribute disambiguation、
+      structure argument、successful attributed structure reserve declaration、structure
+      field/default/base-shape extraction、CoreIr / ControlFlowIr / VC / proof payload、
+      より広い semantic pass coverage は MC-G020 / MC-G026 の下で deferred のままにする。
+    - 検証: `cargo test -p mizar-checker`、`cargo test -p mizar-test`。
+    - 依存: tasks 48、50、52。external full attributed-type existential evidence は
+      MC-G020 / MC-G026 のまま。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 03 type expression、spec 05 structure、spec 17
+      existential と base-shape inhabitation evidence。
+    - task 53 で完了: `type_checker.rs` は syntax-free reserve bridge 上で local
+      structure head に限って same-module source attribute を受け入れ、attributed local
+      mode は checker validation で拒否する。`mizar-test` は same-module attributed
+      local-structure reserve の active fail fixture を追加し、imported / argument-bearing
+      form は広い extraction gap のままにする。
 
 ## 推奨検証
 

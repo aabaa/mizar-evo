@@ -237,18 +237,22 @@ un-attributed reserve type heads that resolve to a unique same-module
 `LocalSource` `SymbolKind::Structure` entry with no type arguments. Those
 local-structure reserve declarations reach declaration checking and fail
 closed with `checker.declaration.deferred.evidence_query` until real
-base-shape/constructor-witness evidence extraction exists. The payload must include
-source/module identity, the reserve item source range, each binding spelling
-and declaration range, and each supported type-expression spelling/range/head
-plus any supported same-module attribute symbol/range/polarity. The seam
+base-shape/constructor-witness evidence extraction exists. Task 53 permits
+that local-structure slice to carry same-module source-derived attributes,
+which still fail closed with `checker.declaration.deferred.evidence_query`
+because Chapter 17 requires existential evidence for the full normalized
+attributed type; bare-structure base-shape evidence would not be sufficient for
+positive acceptance. The payload must include source/module identity, the
+reserve item source range, each binding spelling and declaration range, and
+each supported type-expression spelling/range/head plus any supported
+same-module attribute symbol/range/polarity. The seam
 exposes deterministic typed-site ids for the runner to assemble the existing
 `TypedAst` / `ResolvedTypedAst` readiness checks for the successful
 bare-builtin slice, but it does not authorize `mizar-checker` to import
 `mizar-syntax`, scan raw syntax, accept non-reserve declarations, invent
 imported symbols, fabricate mode expansions or existential/base-shape
-evidence, attach source attributes to symbol heads, or claim CoreIr /
-ControlFlowIr / VC / proof
-execution.
+evidence, attach source attributes to local mode heads, accept argument-bearing
+symbol heads, or claim CoreIr / ControlFlowIr / VC / proof execution.
 
 Required behavior:
 

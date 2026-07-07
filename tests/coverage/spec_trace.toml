@@ -1753,6 +1753,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.attributed_local_structure_evidence_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 53 source-derived attributed local structure reserve evidence gap"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_local_attributed_structure_reserve_evidence_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.attributed_reserve_evidence_gap"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 50 source-derived attributed reserve evidence-query bridge"

@@ -2892,6 +2892,39 @@ impl SourceReserveDeclarationBridge {
 
     fn validate_symbol_heads(&self, symbols: &SymbolEnv) -> Result<(), String> {
         for (index, binding) in self.bindings.iter().enumerate() {
+            for (attribute_index, attribute) in binding.type_attributes.iter().enumerate() {
+                if attribute.symbol.module() != &self.module_id {
+                    return Err(format!(
+                        "source reserve binding {index} attribute {attribute_index} is not local to the bridge module"
+                    ));
+                }
+                let entry = symbols.symbols().get(&attribute.symbol).ok_or_else(|| {
+                    format!(
+                        "source reserve binding {index} attribute {attribute_index} is missing from SymbolEnv"
+                    )
+                })?;
+                if !matches!(entry.kind(), SymbolKind::Attribute) {
+                    return Err(format!(
+                        "source reserve binding {index} attribute {attribute_index} is not a supported local attribute"
+                    ));
+                }
+                let contribution =
+                    symbols
+                        .contributions()
+                        .get(entry.contribution())
+                        .ok_or_else(|| {
+                            format!(
+                                "source reserve binding {index} attribute {attribute_index} contribution is missing from SymbolEnv"
+                            )
+                        })?;
+                if contribution.module() != &self.module_id
+                    || !matches!(contribution.kind(), ContributionKind::LocalSource { .. })
+                {
+                    return Err(format!(
+                        "source reserve binding {index} attribute {attribute_index} is not local source-backed"
+                    ));
+                }
+            }
             let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
                 continue;
             };
@@ -2906,6 +2939,12 @@ impl SourceReserveDeclarationBridge {
             if !matches!(entry.kind(), SymbolKind::Mode | SymbolKind::Structure) {
                 return Err(format!(
                     "source reserve binding {index} symbol head is not a supported local type head"
+                ));
+            }
+            if !binding.type_attributes.is_empty() && !matches!(entry.kind(), SymbolKind::Structure)
+            {
+                return Err(format!(
+                    "source reserve binding {index} attributed symbol head is not a supported local structure type head"
                 ));
             }
             let contribution = symbols
@@ -3026,11 +3065,6 @@ impl SourceReserveBindingInput {
         ) {
             return Err(format!(
                 "source reserve binding {index} is not a supported reserve type head"
-            ));
-        }
-        if matches!(&self.type_head, TypeHeadInput::Symbol(_)) && !self.type_attributes.is_empty() {
-            return Err(format!(
-                "source reserve binding {index} symbol head does not support source attributes yet"
             ));
         }
         for (attribute_index, attribute) in self.type_attributes.iter().enumerate() {
@@ -6741,6 +6775,197 @@ mod tests {
             "local structure reserve heads must not seed facts without base-shape evidence"
         );
 
+        let attributed_structure = symbol_id("Struct/0", "pkg::main::Struct/0");
+        let attributed_structure_attr = symbol_id("empty/0", "pkg::main::empty/0");
+        let attributed_structure_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 25),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 25),
+                    "non empty Struct",
+                    TypeHeadInput::Symbol(attributed_structure.clone()),
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    attributed_structure_attr.clone(),
+                    AttributePolarity::Negative,
+                    range(source, 4, 13),
+                    "non empty",
+                )]),
+            ],
+        )
+        .expect("attributed local structure reserve payload should validate source shape");
+        let attributed_structure_symbols = symbol_env(vec![
+            symbol_entry(attributed_structure, SymbolKind::Structure),
+            symbol_entry(attributed_structure_attr.clone(), SymbolKind::Attribute),
+        ]);
+        let attributed_structure_handoff = attributed_structure_bridge
+            .check(&attributed_structure_symbols)
+            .expect("attributed local structure reserve payload should reach declaration checking");
+        assert_eq!(
+            diagnostic_ranges(
+                attributed_structure_handoff.declarations(),
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        let attributed_structure_declaration =
+            declarations_by_binding(attributed_structure_handoff.declarations())
+                .remove(&BindingId::new(0))
+                .expect("checked attributed structure declaration should exist");
+        let attributed_structure_type_entry = attributed_structure_handoff
+            .declarations()
+            .type_entries()
+            .get(
+                attributed_structure_declaration
+                    .type_entry
+                    .expect("attributed structure declaration should keep a type entry"),
+            )
+            .expect("attributed structure type entry should exist");
+        let TypeEntryActual::Known(attributed_structure_normalized_id) =
+            attributed_structure_type_entry.actual
+        else {
+            panic!("attributed local structure should keep a normalized type");
+        };
+        let attributed_structure_normalized = attributed_structure_handoff
+            .declarations()
+            .normalized_types()
+            .get(attributed_structure_normalized_id)
+            .expect("normalized attributed local structure type should exist");
+        assert_eq!(
+            attributed_structure_normalized.status,
+            NormalizedTypeStatus::Known
+        );
+        assert_eq!(
+            attributed_structure_normalized.attributes.negative().len(),
+            1
+        );
+        assert_eq!(
+            attributed_structure_normalized.attributes.negative()[0].symbol,
+            attributed_structure_attr
+        );
+        assert!(
+            attributed_structure_normalized
+                .attributes
+                .positive()
+                .is_empty()
+        );
+        assert!(
+            attributed_structure_handoff
+                .declarations()
+                .facts()
+                .is_empty(),
+            "attributed local structure reserve heads must not seed facts without existential evidence"
+        );
+
+        let imported_attribute = SymbolId::new(
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("imported")),
+            LocalSymbolId::new("empty/0"),
+            FullyQualifiedName::new("pkg::imported::empty/0"),
+        );
+        let imported_attribute_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 25),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 25),
+                    "non empty Struct",
+                    TypeHeadInput::Symbol(symbol_id("Struct/0", "pkg::main::Struct/0")),
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    imported_attribute.clone(),
+                    AttributePolarity::Negative,
+                    range(source, 4, 13),
+                    "non empty",
+                )]),
+            ],
+        )
+        .expect("imported attribute payload shape should validate before SymbolEnv checks");
+        assert!(
+            imported_attribute_bridge
+                .check(&symbol_env_with_imported_attribute(
+                    symbol_id("Struct/0", "pkg::main::Struct/0"),
+                    imported_attribute.clone()
+                ))
+                .is_err(),
+            "imported source attribute payloads must fail closed at the checker seam"
+        );
+
+        let wrong_kind_attribute = symbol_id("empty/0", "pkg::main::empty/0");
+        let wrong_kind_attribute_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 25),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 25),
+                    "non empty Struct",
+                    TypeHeadInput::Symbol(symbol_id("Struct/0", "pkg::main::Struct/0")),
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    wrong_kind_attribute.clone(),
+                    AttributePolarity::Negative,
+                    range(source, 4, 13),
+                    "non empty",
+                )]),
+            ],
+        )
+        .expect("wrong-kind attribute payload shape should validate before SymbolEnv checks");
+        let wrong_kind_symbols = symbol_env(vec![
+            symbol_entry(
+                symbol_id("Struct/0", "pkg::main::Struct/0"),
+                SymbolKind::Structure,
+            ),
+            symbol_entry(wrong_kind_attribute, SymbolKind::Mode),
+        ]);
+        assert!(
+            wrong_kind_attribute_bridge
+                .check(&wrong_kind_symbols)
+                .is_err(),
+            "non-attribute symbol payloads must fail closed at the checker seam"
+        );
+
+        let attribute_args = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 25),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 25),
+                    "empty(x) Struct",
+                    TypeHeadInput::Symbol(symbol_id("Struct/0", "pkg::main::Struct/0")),
+                )
+                .with_type_attributes(vec![
+                    AttributeInput::new(
+                        symbol_id("empty/0", "pkg::main::empty/0"),
+                        AttributePolarity::Positive,
+                        range(source, 4, 12),
+                        "empty(x)",
+                    )
+                    .with_args(vec![TypeExpressionInput::new(
+                        TypedSiteRef::Node(TypedNodeId::new(999)),
+                        range(source, 10, 11),
+                        "set",
+                        TypeHeadInput::BuiltinSet,
+                    )]),
+                ]),
+            ],
+        );
+        assert!(
+            attribute_args.is_err(),
+            "attribute arguments must stay on the extraction gap"
+        );
+
         let attributed_mode = SourceReserveDeclarationBridge::new(
             source,
             module.clone(),
@@ -6760,10 +6985,18 @@ mod tests {
                     "non empty",
                 )]),
             ],
-        );
+        )
+        .expect("attributed local mode payload should validate before SymbolEnv checks");
+        let mode_attribute_symbols = symbol_env(vec![
+            symbol_entry(symbol_id("Mode/0", "pkg::main::Mode/0"), SymbolKind::Mode),
+            symbol_entry(
+                symbol_id("empty/0", "pkg::main::empty/0"),
+                SymbolKind::Attribute,
+            ),
+        ]);
         assert!(
-            attributed_mode.is_err(),
-            "symbol reserve heads with attributes must stay on the extraction gap"
+            attributed_mode.check(&mode_attribute_symbols).is_err(),
+            "attributed local mode reserve heads must stay on the extraction gap"
         );
 
         let unresolved = SourceReserveDeclarationBridge::new(
@@ -10147,6 +10380,77 @@ mod tests {
             module_id(),
             ContributionKind::LocalSource { source_id: source },
             SourceAnchor::Range(range(source, 0, 1)),
+        );
+        SymbolEnv::new(
+            module_id(),
+            SymbolEnvIndexes {
+                imports: ResolvedImportIndex::new(),
+                exports: ResolvedExportIndex::new(),
+                symbols,
+                labels: LabelIndex::new(),
+                definitions: DefinitionIndex::new(),
+                overloads: OverloadIndex::new(),
+                registrations: RegistrationIndex::new(),
+                lexical_summaries: ModuleLexicalSummaryIndex::new(),
+                namespace_graph: NamespaceGraph::new(),
+                declaration_dependencies: Default::default(),
+                contributions,
+                module_summaries: ModuleSummaryIndex::new(),
+            },
+        )
+    }
+
+    fn symbol_env_with_imported_attribute(
+        structure: SymbolId,
+        imported_attribute: SymbolId,
+    ) -> SymbolEnv {
+        let source = source_id();
+        let imported_module = imported_attribute.module().clone();
+        let mut contributions = SourceContributionIndex::new();
+        let local_contribution = contributions.insert(
+            module_id(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 1)),
+        );
+        let imported_contribution = contributions.insert(
+            imported_module.clone(),
+            ContributionKind::ImportedSource { source_id: source },
+            SourceAnchor::Range(range(source, 1, 2)),
+        );
+        let mut symbols = SymbolIndex::new();
+        symbols.insert(
+            SymbolEntry::new(
+                structure,
+                SymbolKind::Structure,
+                NamespacePath::new("main"),
+                "Struct",
+                SemanticOrigin::new(
+                    source,
+                    module_id(),
+                    SourceAnchor::Range(range(source, 0, 1)),
+                    Vec::new(),
+                ),
+                local_contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        symbols.insert(
+            SymbolEntry::new(
+                imported_attribute,
+                SymbolKind::Attribute,
+                NamespacePath::new("main"),
+                "empty",
+                SemanticOrigin::new(
+                    source,
+                    imported_module,
+                    SourceAnchor::Range(range(source, 1, 2)),
+                    Vec::new(),
+                ),
+                imported_contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
         );
         SymbolEnv::new(
             module_id(),
