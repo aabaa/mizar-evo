@@ -1549,15 +1549,16 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       cold path と cached dependency reuse の three-edge local-mode chain は当時
       `type_elaboration.checker.checker.type.external.mode_expansion_payload` に残し、
       two-edge cap が暗黙に広がらないようにした。task 73 は同じ seam を
-      three-edge へ昇格し、guard を four-edge へ移している。
+      three-edge へ昇格し、task 74 はその temporary depth guard を
+      AST-bounded structural rule に置き換えた。
     - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
     - 依存: tasks 48、55、56。attributed root / dependency、既存 one-edge
       diagnostic slice を超える structure / attributed-builtin terminal、
       imported / argument-bearing / parameterized / contextual / ambiguous /
-      cyclic / forward-reference definition、deeper chain、CoreIr、ControlFlowIr、
-      VC、proof payload、broader mode extraction は MC-G020/MC-G014 のまま。参照:
-      Step 5 source-derived semantic bridge、mizar-test task 10、spec 03 type
-      expressions、spec 07 modes。
+      cyclic / forward-reference definition、task 74 の structural guard 外の chain、
+      CoreIr、ControlFlowIr、VC、proof payload、broader mode extraction は
+      MC-G020/MC-G014 のまま。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 03 type expressions、spec 07 modes。
 
 73. **Source-derived three-edge bare local mode chain bridge を追加する。** [x]
     - task 72 の pass producer を、bare same-module no-argument local-mode chain
@@ -1567,17 +1568,44 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       attributes なし、arguments なしの条件で real `ModeExpansion` payload をすべて
       抽出し、reserve declaration は既存の `TypedAst`、`ResolvedTypedAst`、
       summary-readiness、binder-only `CoreContext` preparation path を通る。
-      cold path と cached dependency reuse の four-edge local-mode chain は
+      cold path と cached dependency reuse の four-edge local-mode chain は task 73 時点で
       `type_elaboration.checker.checker.type.external.mode_expansion_payload` に残し、
-      three-edge cap が暗黙に広がらないようにする。
+      three-edge cap が暗黙に広がらないようにした。task 74 はその temporary depth
+      guard を AST-bounded structural rule に置き換えた。
     - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
     - 依存: tasks 48、55、56、72。attributed root / dependency、既存 one-edge
       diagnostic slice を超える structure / attributed-builtin terminal、
       imported / argument-bearing / parameterized / contextual / ambiguous /
-      cyclic / forward-reference definition、deeper chain、CoreIr、ControlFlowIr、
-      VC、proof payload、broader mode extraction は MC-G020/MC-G014 のまま。参照:
-      Step 5 source-derived semantic bridge、mizar-test task 10、spec 03 type
-      expressions、spec 07 modes。
+      cyclic / forward-reference definition、task 74 の structural guard 外の chain、
+      CoreIr、ControlFlowIr、VC、proof payload、broader mode extraction は
+      MC-G020/MC-G014 のまま。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 03 type expressions、spec 07 modes。
+
+74. **Source-derived structural bare local mode chain bridge を追加する。** [x]
+    - task 73 の semantic chain-depth cap を、builtin `set` / `object` で終端する
+      bare same-module no-argument local-mode chain 向けの structural rule に
+      置き換える。
+    - Acceptance: active runner は、各 mode definition が unique / unrecovered /
+      same-module / no-argument / definition-local-context-free /
+      source-preceding / argument-free / attribute-free で、terminal RHS が exactly
+      builtin `set` / `object` である AST-bounded acyclic local-mode chain の各
+      link について real `ModeExpansion` payload を抽出する。producer は source
+      mode definition 数と等しい AST-derived traversal budget を持つため、resource
+      safety は semantic chain-length limit ではなく structural guard である。
+      four-edge、cached four-edge、object-terminal、long-chain active pass fixture
+      は既存の `TypedAst`、`ResolvedTypedAst`、summary-readiness、binder-only
+      `CoreContext` preparation path を通り、CoreIr、ControlFlowIr、VC、proof
+      payload は昇格しない。structural guard を満たさない chain は fail closed の
+      まま。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、55、56、72、73。attributed root / dependency、既存 one-edge
+      diagnostic slice を超える structure / attributed-builtin terminal、
+      imported / argument-bearing / parameterized / contextual / ambiguous /
+      cyclic / forward-reference definition、structure / attributed evidence、
+      CoreIr、ControlFlowIr、VC、proof payload、broader mode extraction は
+      MC-G020/MC-G014 のまま。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 03 type expressions、spec 07 modes、spec 17
+      base-shape inhabitation。
 
 ## 推奨検証
 

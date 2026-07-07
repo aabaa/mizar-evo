@@ -278,8 +278,10 @@ Keep `cargo test -p mizar-test` green after each task (see
       and checker task 69's argument-bearing local-structure reserve
       extraction-gap active boundary slice, and checker task 70's bracket-form
       local-mode reserve extraction-gap active boundary slice, checker task 71's bracket-form
-      local-structure reserve extraction-gap active boundary slice, and checker
-      task 72's two-edge bare local-mode chain active pass slice plus task 73's three-edge pass slice and cold/cached four-edge guard slice,
+      local-structure reserve extraction-gap active boundary slice, checker
+      task 72's two-edge bare local-mode chain active pass slice, checker task
+      73's three-edge pass slice, and checker task 74's structural bare
+      local-mode chain active pass slice,
       as
       prepared/implemented increments.
       Checker task 29, `mizar-vc` task 15,

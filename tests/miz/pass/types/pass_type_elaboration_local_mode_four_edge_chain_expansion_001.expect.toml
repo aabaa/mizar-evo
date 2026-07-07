@@ -1,0 +1,15 @@
+schema_version = 1
+id = "pass_type_elaboration_local_mode_four_edge_chain_expansion_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_local_mode_four_edge_chain_expansion_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.checker.type_elaboration.local_mode_structural_chain_source_bridge",
+]
+notes = "Active type_elaboration runner pass coverage for checker task 74: a same-module no-argument bare local mode chain `TooDeepMode -> OuterMode -> MiddleMode -> InnerMode -> BaseMode -> set` is expanded through real AST-derived ModeExpansion payloads for all five mode symbols, then a bare reserve declaration using the outermost mode passes the existing source reserve checker handoff/readiness checks. This proves the source-derived bare builtin-terminal chain rule is structural rather than capped at three edges. Attributed/imported/argument-bearing/contextual/cyclic/forward chains, structure/attributed-builtin terminals beyond the existing one-edge diagnostics, CoreIr/ControlFlowIr/VC/proof payloads, and existential evidence remain deferred."

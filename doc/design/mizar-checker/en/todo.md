@@ -1673,16 +1673,18 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       `ResolvedTypedAst`, summary-readiness, and binder-only `CoreContext`
       preparation path. Cold and cached three-edge local-mode chains remained on
       `type_elaboration.checker.checker.type.external.mode_expansion_payload`
-      so the two-edge cap could not silently broaden; task 73 later promotes
-      the same seam to three edges and moves the guard to four edges.
+      so the two-edge cap could not silently broaden; task 73 later promoted
+      the same seam to three edges, and task 74 later replaced the temporary
+      depth guard with the AST-bounded structural rule.
     - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
     - Deps: tasks 48, 55, and 56. Attributed roots or dependencies,
       structure/attributed-builtin terminals beyond the existing one-edge
       diagnostic slices, imported/argument-bearing/parameterized/contextual/
-      ambiguous/cyclic/forward-reference definitions, deeper chains, CoreIr,
-      ControlFlowIr, VC, proof payloads, and broader mode extraction remain
-      MC-G020/MC-G014. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 03 type expressions; spec 07 modes.
+      ambiguous/cyclic/forward-reference definitions, chains outside task 74's
+      structural guards, CoreIr, ControlFlowIr, VC, proof payloads, and broader
+      mode extraction remain MC-G020/MC-G014. Refs: Step 5 source-derived
+      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
+      modes.
 
 73. **Add source-derived three-edge bare local mode chain bridge.** [x]
     - Extend the task-72 pass producer only for bare same-module no-argument
@@ -1692,17 +1694,46 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       order, with no definition-local context, no attributes, and no arguments,
       then the reserve declaration follows the existing `TypedAst`,
       `ResolvedTypedAst`, summary-readiness, and binder-only `CoreContext`
-      preparation path. Cold and cached four-edge local-mode chains remain on
+      preparation path. Cold and cached four-edge local-mode chains remained on
       `type_elaboration.checker.checker.type.external.mode_expansion_payload`
-      so the three-edge cap cannot silently broaden.
+      for task 73; task 74 later replaced that temporary depth guard with the
+      AST-bounded structural rule.
     - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
     - Deps: tasks 48, 55, 56, and 72. Attributed roots or dependencies,
       structure/attributed-builtin terminals beyond the existing one-edge
       diagnostic slices, imported/argument-bearing/parameterized/contextual/
-      ambiguous/cyclic/forward-reference definitions, deeper chains, CoreIr,
-      ControlFlowIr, VC, proof payloads, and broader mode extraction remain
-      MC-G020/MC-G014. Refs: Step 5 source-derived semantic bridge; mizar-test
-      task 10; spec 03 type expressions; spec 07 modes.
+      ambiguous/cyclic/forward-reference definitions, chains outside task 74's
+      structural guards, CoreIr, ControlFlowIr, VC, proof payloads, and broader
+      mode extraction remain MC-G020/MC-G014. Refs: Step 5 source-derived
+      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
+      modes.
+
+74. **Add source-derived structural bare local mode chain bridge.** [x]
+    - Replace the task-73 semantic chain-depth cap with a structural rule for
+      bare same-module no-argument local-mode chains ending in builtin `set` /
+      `object`.
+    - Acceptance: the active runner extracts real `ModeExpansion` payloads for
+      every link in an AST-bounded acyclic local-mode chain when each mode
+      definition is unique, unrecovered, same-module, no-argument,
+      definition-local-context-free, source-preceding, argument-free, and
+      attribute-free, and the terminal RHS is exactly builtin `set` / `object`.
+      The producer carries an AST-derived traversal budget equal to the number
+      of source mode definitions, so resource safety is structural rather than
+      a semantic chain-length limit. Four-edge, cached four-edge,
+      object-terminal, and long-chain active pass fixtures continue through
+      the existing `TypedAst`, `ResolvedTypedAst`, summary-readiness, and
+      binder-only `CoreContext` preparation path without promoting CoreIr,
+      ControlFlowIr, VC, or proof payloads. Chains that violate the structural
+      guards remain fail-closed.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 55, 56, 72, and 73. Attributed roots or dependencies,
+      structure/attributed-builtin terminals beyond the existing one-edge
+      diagnostic slices, imported/argument-bearing/parameterized/contextual/
+      ambiguous/cyclic/forward-reference definitions, structure or attributed
+      evidence, CoreIr, ControlFlowIr, VC, proof payloads, and broader mode
+      extraction remain MC-G020/MC-G014. Refs: Step 5 source-derived semantic
+      bridge; mizar-test task 10; spec 03 type expressions; spec 07 modes;
+      spec 17 base-shape inhabitation.
 
 ## Recommended Verification
 

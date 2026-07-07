@@ -3437,8 +3437,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 38);
-    assert_eq!(report.passed_count(), 38);
+    assert_eq!(report.results.len(), 40);
+    assert_eq!(report.passed_count(), 40);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3526,22 +3526,6 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0
             == "fail_type_elaboration_local_mode_chain_dependency_attributed_expansion_gap_001"
-            && result.actual_detail_keys
-                == [
-                    "type_elaboration.checker.checker.type.external.mode_expansion_payload",
-                    "type_elaboration.checker.checker.type.recovery",
-                ]
-    }));
-    assert!(report.results.iter().any(|result| {
-        result.id.0 == "fail_type_elaboration_local_mode_four_edge_chain_expansion_gap_001"
-            && result.actual_detail_keys
-                == [
-                    "type_elaboration.checker.checker.type.external.mode_expansion_payload",
-                    "type_elaboration.checker.checker.type.recovery",
-                ]
-    }));
-    assert!(report.results.iter().any(|result| {
-        result.id.0 == "fail_type_elaboration_local_mode_cached_four_edge_chain_gap_001"
             && result.actual_detail_keys
                 == [
                     "type_elaboration.checker.checker.type.external.mode_expansion_payload",
@@ -3641,6 +3625,22 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_type_elaboration_local_object_mode_three_edge_chain_expansion_001"
+            && result.actual_detail_keys.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_type_elaboration_local_mode_four_edge_chain_expansion_001"
+            && result.actual_detail_keys.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_type_elaboration_local_mode_cached_four_edge_chain_expansion_001"
+            && result.actual_detail_keys.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_type_elaboration_local_object_mode_four_edge_chain_expansion_001"
+            && result.actual_detail_keys.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_type_elaboration_local_mode_long_chain_expansion_001"
             && result.actual_detail_keys.is_empty()
     }));
 }
@@ -5582,46 +5582,40 @@ tests = ["tests/miz/pass/types/pass_local_object_mode_three_edge_chain_expansion
 }
 
 #[test]
-fn type_elaboration_runner_keeps_four_edge_local_mode_chains_on_missing_expansion_gap() {
+fn type_elaboration_runner_accepts_source_derived_local_mode_four_edge_chain_expansion() {
     let corpus = Corpus::new();
     corpus.write(
-        "tests/miz/fail/types/fail_four_edge_local_mode_chain.miz",
+        "tests/miz/pass/types/pass_four_edge_local_mode_chain.miz",
         "definition\n  mode BaseModeDef: BaseMode is set;\nend;\n\ndefinition\n  mode InnerModeDef: InnerMode is BaseMode;\nend;\n\ndefinition\n  mode MiddleModeDef: MiddleMode is InnerMode;\nend;\n\ndefinition\n  mode OuterModeDef: OuterMode is MiddleMode;\nend;\n\ndefinition\n  mode TooDeepModeDef: TooDeepMode is OuterMode;\nend;\n\nreserve z for TooDeepMode;\n",
     );
     corpus.write(
-        "tests/miz/fail/types/fail_four_edge_local_mode_chain.expect.toml",
+        "tests/miz/pass/types/pass_four_edge_local_mode_chain.expect.toml",
         r#"schema_version = 1
-id = "fail_four_edge_local_mode_chain"
-kind = "fail"
+id = "pass_four_edge_local_mode_chain"
+kind = "pass"
 stage = "type_elaboration"
 domain = "checker.type_elaboration"
-source = "fail_four_edge_local_mode_chain.miz"
-expected_outcome = "fail"
+source = "pass_four_edge_local_mode_chain.miz"
+expected_outcome = "pass"
 expected_phase = "type_check"
-failure_category = "external_dependency_gap"
-rejection_reason = "missing_deeper_local_mode_chain_expansion_payload"
-stable_detail_key = "type_elaboration.checker.checker.type.external.mode_expansion_payload"
 diagnostic_codes = []
-diagnostic_payloads = [
-  "type_elaboration.checker.checker.type.external.mode_expansion_payload",
-  "type_elaboration.checker.checker.type.recovery",
-]
+diagnostic_payloads = []
 tags = ["active_type_elaboration"]
-spec_refs = ["spec.en.test.type_elaboration.local_mode_four_edge_chain_gap"]
+spec_refs = ["spec.en.test.type_elaboration.local_mode_structural_chain_expansion"]
 "#,
     );
     corpus.write(
         "tests/coverage/spec_trace.toml",
         r#"
 [[requirement]]
-id = "spec.en.test.type_elaboration.local_mode_four_edge_chain_gap"
+id = "spec.en.test.type_elaboration.local_mode_structural_chain_expansion"
 source = "doc/spec/en/test.md"
 section = "Test"
 stage = "type_elaboration"
 status = "covered"
 required = true
-coverage = "diagnostic"
-tests = ["tests/miz/fail/types/fail_four_edge_local_mode_chain.expect.toml"]
+coverage = "pass"
+tests = ["tests/miz/pass/types/pass_four_edge_local_mode_chain.expect.toml"]
 "#,
     );
     corpus.write("doc/spec/en/test.md", "# Test\n");
@@ -5631,56 +5625,44 @@ tests = ["tests/miz/fail/types/fail_four_edge_local_mode_chain.expect.toml"]
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
     assert_eq!(report.results.len(), 1);
     assert_eq!(report.passed_count(), 1);
-    assert_eq!(
-        report.results[0].actual_detail_keys,
-        [
-            "type_elaboration.checker.checker.type.external.mode_expansion_payload",
-            "type_elaboration.checker.checker.type.recovery",
-        ]
-    );
+    assert!(report.results[0].actual_detail_keys.is_empty());
 }
 
 #[test]
-fn type_elaboration_runner_keeps_cached_four_edge_local_mode_chains_on_missing_expansion_gap() {
+fn type_elaboration_runner_accepts_cached_local_mode_four_edge_chain_expansion() {
     let corpus = Corpus::new();
     corpus.write(
-        "tests/miz/fail/types/fail_cached_four_edge_local_mode_chain.miz",
+        "tests/miz/pass/types/pass_cached_four_edge_local_mode_chain.miz",
         "definition\n  mode BaseModeDef: BaseMode is set;\nend;\n\ndefinition\n  mode InnerModeDef: InnerMode is BaseMode;\nend;\n\ndefinition\n  mode MiddleModeDef: MiddleMode is InnerMode;\nend;\n\ndefinition\n  mode OuterModeDef: OuterMode is MiddleMode;\nend;\n\ndefinition\n  mode TooDeepModeDef: TooDeepMode is OuterMode;\nend;\n\nreserve y for OuterMode;\nreserve z for TooDeepMode;\n",
     );
     corpus.write(
-        "tests/miz/fail/types/fail_cached_four_edge_local_mode_chain.expect.toml",
+        "tests/miz/pass/types/pass_cached_four_edge_local_mode_chain.expect.toml",
         r#"schema_version = 1
-id = "fail_cached_four_edge_local_mode_chain"
-kind = "fail"
+id = "pass_cached_four_edge_local_mode_chain"
+kind = "pass"
 stage = "type_elaboration"
 domain = "checker.type_elaboration"
-source = "fail_cached_four_edge_local_mode_chain.miz"
-expected_outcome = "fail"
+source = "pass_cached_four_edge_local_mode_chain.miz"
+expected_outcome = "pass"
 expected_phase = "type_check"
-failure_category = "external_dependency_gap"
-rejection_reason = "missing_deeper_local_mode_chain_expansion_payload"
-stable_detail_key = "type_elaboration.checker.checker.type.external.mode_expansion_payload"
 diagnostic_codes = []
-diagnostic_payloads = [
-  "type_elaboration.checker.checker.type.external.mode_expansion_payload",
-  "type_elaboration.checker.checker.type.recovery",
-]
+diagnostic_payloads = []
 tags = ["active_type_elaboration"]
-spec_refs = ["spec.en.test.type_elaboration.cached_local_mode_four_edge_chain_gap"]
+spec_refs = ["spec.en.test.type_elaboration.cached_local_mode_structural_chain_expansion"]
 "#,
     );
     corpus.write(
         "tests/coverage/spec_trace.toml",
         r#"
 [[requirement]]
-id = "spec.en.test.type_elaboration.cached_local_mode_four_edge_chain_gap"
+id = "spec.en.test.type_elaboration.cached_local_mode_structural_chain_expansion"
 source = "doc/spec/en/test.md"
 section = "Test"
 stage = "type_elaboration"
 status = "covered"
 required = true
-coverage = "diagnostic"
-tests = ["tests/miz/fail/types/fail_cached_four_edge_local_mode_chain.expect.toml"]
+coverage = "pass"
+tests = ["tests/miz/pass/types/pass_cached_four_edge_local_mode_chain.expect.toml"]
 "#,
     );
     corpus.write("doc/spec/en/test.md", "# Test\n");
@@ -5690,13 +5672,54 @@ tests = ["tests/miz/fail/types/fail_cached_four_edge_local_mode_chain.expect.tom
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
     assert_eq!(report.results.len(), 1);
     assert_eq!(report.passed_count(), 1);
-    assert_eq!(
-        report.results[0].actual_detail_keys,
-        [
-            "type_elaboration.checker.checker.type.external.mode_expansion_payload",
-            "type_elaboration.checker.checker.type.recovery",
-        ]
+    assert!(report.results[0].actual_detail_keys.is_empty());
+}
+
+#[test]
+fn type_elaboration_runner_accepts_source_derived_local_mode_long_chain_expansion() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/pass/types/pass_long_local_mode_chain.miz",
+        "definition\n  mode BaseModeDef: BaseMode is set;\nend;\n\ndefinition\n  mode ChainMode1Def: ChainMode1 is BaseMode;\nend;\n\ndefinition\n  mode ChainMode2Def: ChainMode2 is ChainMode1;\nend;\n\ndefinition\n  mode ChainMode3Def: ChainMode3 is ChainMode2;\nend;\n\ndefinition\n  mode ChainMode4Def: ChainMode4 is ChainMode3;\nend;\n\ndefinition\n  mode ChainMode5Def: ChainMode5 is ChainMode4;\nend;\n\ndefinition\n  mode ChainMode6Def: ChainMode6 is ChainMode5;\nend;\n\nreserve z for ChainMode6;\n",
     );
+    corpus.write(
+        "tests/miz/pass/types/pass_long_local_mode_chain.expect.toml",
+        r#"schema_version = 1
+id = "pass_long_local_mode_chain"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_long_local_mode_chain.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration.local_mode_long_structural_chain_expansion"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration.local_mode_long_structural_chain_expansion"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = ["tests/miz/pass/types/pass_long_local_mode_chain.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert!(report.results[0].actual_detail_keys.is_empty());
 }
 
 #[test]
@@ -7152,8 +7175,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 38"));
-    assert!(stdout.contains("passed: 38"));
+    assert!(stdout.contains("type-elaboration cases: 40"));
+    assert!(stdout.contains("passed: 40"));
     assert!(stdout.contains("failed: 0"));
 }
 

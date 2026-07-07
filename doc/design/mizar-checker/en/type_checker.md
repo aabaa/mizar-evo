@@ -277,9 +277,16 @@ chains originally remained on the missing mode-expansion diagnostic for task
 72. Task 73 promotes the same source-derived seam one more dependency edge:
 `Outer -> Middle -> Inner -> Base -> set` / `object` may pass when all four
 mode definitions satisfy the same uniqueness, same-module, no-argument,
-definition-local-context-free, and source-preceding constraints. Cold and
-cached four-edge chains remain on the missing mode-expansion diagnostic so the
-cap is explicit.
+definition-local-context-free, and source-preceding constraints. Task 74 then
+replaces the temporary depth cap with a structural bare builtin-terminal rule:
+any AST-bounded acyclic chain of same-module no-argument local modes may pass
+when every mode definition is unique, unrecovered,
+definition-local-context-free, source-preceding, argument-free, and
+attribute-free, and the terminal RHS is exactly builtin `set` / `object`. The
+producer carries an AST-derived traversal budget equal to the number of source
+mode definitions; that budget is a resource guard, not a semantic chain-length
+limit. Chains that violate those structural guards remain on the
+missing-expansion / extraction-gap path.
 Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case

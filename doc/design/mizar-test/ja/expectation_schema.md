@@ -488,8 +488,7 @@ task 71 は bracket-form local-structure reserve head が、real bracket type-ar
 structure-head resolution の前に external extraction-gap key で停止することを許可する。
 task 67-71 は fail case であり、pass-slice coverage ではない。task 72 は two-edge
 bare local-mode chain の pass sidecar、task 73 は three-edge bare local-mode chain の
-pass sidecar について empty diagnostic payload list を許可し、task 73 の cold /
-cached four-edge guard の fail sidecar について checker missing mode-expansion
+pass sidecar、task 74 は structural bare local-mode chain の pass sidecar について empty diagnostic payload list を許可し、unsupported structural-guard failure について checker missing mode-expansion
 payload と recovery detail key を要求することを許可する。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source

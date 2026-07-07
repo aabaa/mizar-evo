@@ -841,7 +841,23 @@ struct SourceModeExpansionEntry {
     chain_terminal_is_safe_builtin: bool,
 }
 
-const MAX_BARE_LOCAL_MODE_CHAIN_DEPTH: usize = 3;
+#[derive(Debug, Clone, Copy)]
+struct SourceModeExpansionTraversalBudget {
+    mode_definition_count: usize,
+}
+
+impl SourceModeExpansionTraversalBudget {
+    fn from_ast(ast: &SurfaceAst) -> Self {
+        Self {
+            mode_definition_count: surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition)
+                .len(),
+        }
+    }
+
+    fn permits_depth(self, depth: usize) -> bool {
+        depth < self.mode_definition_count
+    }
+}
 
 fn extract_builtin_source_reserve_declarations(
     ast: &SurfaceAst,
@@ -943,12 +959,14 @@ fn extract_source_local_mode_expansions(
         .cloned()
         .collect::<BTreeSet<_>>();
     let mut blocked_attributed_mode_heads = mixed_mode_heads;
+    let traversal_budget = SourceModeExpansionTraversalBudget::from_ast(ast);
     let dependency_collector = AttributedModeDependencyCollector {
         ast,
         module,
         symbols,
         bridge,
         attributed_mode_heads: &attributed_mode_heads,
+        traversal_budget,
     };
     for binding in bridge.bindings() {
         if !binding.type_attributes.is_empty() {
@@ -966,6 +984,7 @@ fn extract_source_local_mode_expansions(
             binding.type_range,
             &mut visiting,
             &mut blocked_attributed_mode_heads,
+            0,
         );
     }
 
@@ -977,6 +996,7 @@ fn extract_source_local_mode_expansions(
         bridge,
         attributed_mode_heads: &attributed_mode_heads,
         blocked_attributed_mode_heads: &blocked_attributed_mode_heads,
+        traversal_budget,
     };
     for binding in bridge.bindings() {
         let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
@@ -1011,6 +1031,7 @@ struct SourceLocalModeExpansionExtractor<'a> {
     bridge: &'a SourceReserveDeclarationBridge,
     attributed_mode_heads: &'a BTreeSet<ResolverSymbolId>,
     blocked_attributed_mode_heads: &'a BTreeSet<ResolverSymbolId>,
+    traversal_budget: SourceModeExpansionTraversalBudget,
 }
 
 impl SourceLocalModeExpansionExtractor<'_> {
@@ -1023,6 +1044,9 @@ impl SourceLocalModeExpansionExtractor<'_> {
         depth: usize,
         root_is_attributed: bool,
     ) -> bool {
+        if !self.traversal_budget.permits_depth(depth) {
+            return false;
+        }
         if let Some(entry) = expansions.get(symbol) {
             if depth >= 1 && entry.definition_range.end > reserve_type_range.start {
                 return false;
@@ -1118,6 +1142,7 @@ struct AttributedModeDependencyCollector<'a> {
     symbols: &'a SymbolEnv,
     bridge: &'a SourceReserveDeclarationBridge,
     attributed_mode_heads: &'a BTreeSet<ResolverSymbolId>,
+    traversal_budget: SourceModeExpansionTraversalBudget,
 }
 
 impl AttributedModeDependencyCollector<'_> {
@@ -1127,7 +1152,11 @@ impl AttributedModeDependencyCollector<'_> {
         reserve_type_range: SourceRange,
         visiting: &mut BTreeSet<ResolverSymbolId>,
         blocked: &mut BTreeSet<ResolverSymbolId>,
+        depth: usize,
     ) {
+        if !self.traversal_budget.permits_depth(depth) {
+            return;
+        }
         if !visiting.insert(symbol.clone()) {
             return;
         }
@@ -1143,7 +1172,13 @@ impl AttributedModeDependencyCollector<'_> {
                 if self.attributed_mode_heads.contains(dependency) {
                     blocked.insert(dependency.clone());
                 } else {
-                    self.collect(dependency, candidate.definition_range, visiting, blocked);
+                    self.collect(
+                        dependency,
+                        candidate.definition_range,
+                        visiting,
+                        blocked,
+                        depth + 1,
+                    );
                 }
             }
         }
@@ -1154,7 +1189,10 @@ impl AttributedModeDependencyCollector<'_> {
 fn mode_expansion_is_safe_chain_terminal(expansion: &ModeExpansion) -> bool {
     expansion.attributes.is_empty()
         && expansion.radix.attributes.is_empty()
-        && !matches!(expansion.radix.head, TypeHeadInput::Symbol(_))
+        && matches!(
+            expansion.radix.head,
+            TypeHeadInput::BuiltinSet | TypeHeadInput::BuiltinObject
+        )
 }
 
 fn mode_expansion_is_chain_dependency_terminal(
@@ -1180,7 +1218,6 @@ fn mode_expansion_candidate_can_feed_chain_dependency(
         return candidate.dependencies.is_empty();
     }
     !root_is_attributed
-        && depth < MAX_BARE_LOCAL_MODE_CHAIN_DEPTH
         && candidate.dependencies.len() == 1
         && mode_expansion_is_bare_local_mode_dependency(
             &candidate.expansion,
@@ -1192,7 +1229,7 @@ fn mode_expansion_candidate_can_feed_chain_dependency(
 
 fn mode_expansion_can_feed_chain_dependency(
     expansion: &ModeExpansion,
-    chain_edges_to_terminal: usize,
+    _chain_edges_to_terminal: usize,
     chain_terminal_is_safe_builtin: bool,
     depth: usize,
     root_is_attributed: bool,
@@ -1202,8 +1239,6 @@ fn mode_expansion_can_feed_chain_dependency(
     mode_expansion_is_chain_dependency_terminal(expansion, symbols, module, depth)
         || (!root_is_attributed
             && chain_terminal_is_safe_builtin
-            && depth < MAX_BARE_LOCAL_MODE_CHAIN_DEPTH
-            && depth.saturating_add(chain_edges_to_terminal) <= MAX_BARE_LOCAL_MODE_CHAIN_DEPTH
             && mode_expansion_is_bare_local_mode_head(expansion, symbols, module))
 }
 
@@ -6236,7 +6271,7 @@ mod tests {
             "task 73 admits three local-mode dependency edges beyond the reserve head"
         );
 
-        let deeper_symbols = source_local_symbols_env(
+        let four_edge_symbols = source_local_symbols_env(
             ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
             &[
                 ("A", SymbolKind::Mode),
@@ -6246,8 +6281,8 @@ mod tests {
                 ("E", SymbolKind::Mode),
             ],
         );
-        let deeper_module = deeper_symbols.module_id().clone();
-        let deeper_chain = mode_chain_reserve_ast(
+        let four_edge_module = four_edge_symbols.module_id().clone();
+        let four_edge_chain = mode_chain_reserve_ast(
             source,
             [
                 mode_definition("A", ReserveTypeShape::Builtin("set")),
@@ -6261,15 +6296,79 @@ mod tests {
                 ReserveTypeShape::QualifiedSymbol("E"),
             )],
         );
-        let deeper_extraction = extract_builtin_source_reserve_declarations(
-            &deeper_chain,
-            deeper_module,
-            &deeper_symbols,
+        let four_edge_extraction = extract_builtin_source_reserve_declarations(
+            &four_edge_chain,
+            four_edge_module.clone(),
+            &four_edge_symbols,
         )
-        .expect("deeper chain reserve should still extract");
+        .expect("four-edge chain reserve should extract");
+        let four_edge_a =
+            resolve_visible_type_head(&four_edge_symbols, &four_edge_module, "A").unwrap();
+        let four_edge_b =
+            resolve_visible_type_head(&four_edge_symbols, &four_edge_module, "B").unwrap();
+        let four_edge_c =
+            resolve_visible_type_head(&four_edge_symbols, &four_edge_module, "C").unwrap();
+        let four_edge_d =
+            resolve_visible_type_head(&four_edge_symbols, &four_edge_module, "D").unwrap();
+        let four_edge_e =
+            resolve_visible_type_head(&four_edge_symbols, &four_edge_module, "E").unwrap();
+        assert_eq!(four_edge_extraction.mode_expansions().len(), 5);
+        for symbol in [
+            &four_edge_a,
+            &four_edge_b,
+            &four_edge_c,
+            &four_edge_d,
+            &four_edge_e,
+        ] {
+            assert!(
+                four_edge_extraction.mode_expansions().contains_key(symbol),
+                "task 74 admits structurally valid bare builtin-terminal local-mode chains"
+            );
+        }
+
+        let long_chain_symbols = source_local_symbols_env(
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
+            &[
+                ("A", SymbolKind::Mode),
+                ("B", SymbolKind::Mode),
+                ("C", SymbolKind::Mode),
+                ("D", SymbolKind::Mode),
+                ("E", SymbolKind::Mode),
+                ("F", SymbolKind::Mode),
+                ("G", SymbolKind::Mode),
+            ],
+        );
+        let long_chain_module = long_chain_symbols.module_id().clone();
+        let long_chain = mode_chain_reserve_ast(
+            source,
+            [
+                mode_definition("A", ReserveTypeShape::Builtin("set")),
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("A")),
+                mode_definition("C", ReserveTypeShape::QualifiedSymbol("B")),
+                mode_definition("D", ReserveTypeShape::QualifiedSymbol("C")),
+                mode_definition("E", ReserveTypeShape::QualifiedSymbol("D")),
+                mode_definition("F", ReserveTypeShape::QualifiedSymbol("E")),
+                mode_definition("G", ReserveTypeShape::QualifiedSymbol("F")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("G"),
+            )],
+        );
+        let long_chain_extraction = extract_builtin_source_reserve_declarations(
+            &long_chain,
+            long_chain_module.clone(),
+            &long_chain_symbols,
+        )
+        .expect("long chain reserve should extract");
+        let long_chain_g =
+            resolve_visible_type_head(&long_chain_symbols, &long_chain_module, "G").unwrap();
+        assert_eq!(long_chain_extraction.mode_expansions().len(), 7);
         assert!(
-            deeper_extraction.mode_expansions().is_empty(),
-            "task 73 admits only three local-mode dependency edges beyond the reserve head"
+            long_chain_extraction
+                .mode_expansions()
+                .contains_key(&long_chain_g),
+            "task 74 is structural and not capped at four local-mode dependency edges"
         );
 
         let cached_deeper_module =
@@ -6336,10 +6435,10 @@ mod tests {
             "cached three-edge expansion payloads remain available for the supported reserve"
         );
         assert!(
-            !cached_deeper_extraction
+            cached_deeper_extraction
                 .mode_expansions()
                 .contains_key(&cached_e),
-            "cached three-edge expansion payloads must not let a deeper chain bypass the cap"
+            "cached three-edge expansion payloads may feed a structurally valid four-edge chain"
         );
 
         let cached_structure_rhs_module =

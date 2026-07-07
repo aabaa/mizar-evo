@@ -11,9 +11,8 @@ Score caps applied: none。
 
 Post-closeout continuation: この report は original task-34 explicit-payload
 checker milestone の closeout のまま維持する。Step 5 source-derived bridge の
-task 48-73 は crate plan、TODO、source/spec audit、corpus traceability で追跡する
-post-closeout continuation task である。task 73 は source-derived three-edge bare
-local-mode chain pass slice と cold / cached four-edge guard を追加するが、original
+task 48-74 は crate plan、TODO、source/spec audit、corpus traceability で追跡する
+post-closeout continuation task である。task 74 は task 73 の three-edge bridge の後に AST-bounded structural bare local-mode chain pass slice を追加するが、original
 score を変更せず、AST-wide extraction、CoreIr/ControlFlowIr/VC、proof payload
 promotion を主張しない。
 
