@@ -298,6 +298,13 @@ argument-free same-module local mode, the runner derives both real `A -> B`
 and `B -> marked set` expansions from unique unrecovered preceding same-module
 definitions in source order with argument-free same-module RHS attributes, and
 the checker still reports the missing attributed-type existential evidence
+query. Task 65 may credit the one-edge attributed-root structure-RHS chain
+diagnostic-only fail slice: the reserve head is an attributed argument-free
+same-module local mode, the runner derives both real `A -> B` and
+`B -> LocalStruct` expansions from unique unrecovered preceding same-module
+definitions in source order while the root is not mixed with a bare reserve
+use and the dependency is not itself attributed, and the checker still reports
+the missing base-shape/constructor-witness plus full attributed-type evidence
 query. Those sources
 are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one `DeclarationInput` per
@@ -336,17 +343,20 @@ evidence, task-62 one-edge bare local-mode chains ending in local structure
 RHSs missing base-shape/constructor-witness evidence, task-63 one-edge bare
 local-mode chains ending in attributed builtin RHSs missing attributed-type
 existential evidence, task-64 attributed local-mode reserve heads with one-edge
-bare-builtin chains missing attributed-type existential evidence, or
+bare-builtin chains missing attributed-type existential evidence, task-65
+attributed local-mode reserve heads with one-edge structure-RHS chains missing
+base-shape/constructor-witness and full attributed-type existential evidence, or
 same-module local mode reserve heads, including mixed attributed/bare
 local-mode sources, missing mode-expansion payloads. Task 56's
 attributed-chain-dependency fail case is part
 of that same missing mode-expansion payload family and does not credit a partial
 chain expansion; attributed-RHS chains likewise remain outside the task-58 and
 task-61 direct slices plus task 63's bare one-edge chain slice, and
-structure-RHS chains remain outside task 60's direct attributed-root slice and
-task 62's bare one-edge chain slice. Attributed-root chains whose dependency
-terminates in a local structure RHS or attributed builtin RHS remain outside
-task 64.
+structure-RHS chains remain outside task 60's direct attributed-root slice, task
+62's bare one-edge chain slice, and task 65's attributed-root chain slice.
+Attributed-root chains whose dependency terminates in an attributed builtin RHS
+remain outside task 64's bare-builtin chain slice and task 65's structure-RHS
+chain slice.
 Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and
 `proof_verification` rows remain deferred until prepared consumer execution

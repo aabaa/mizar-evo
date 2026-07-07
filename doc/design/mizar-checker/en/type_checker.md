@@ -261,8 +261,9 @@ uses attributes on either chain symbol. Forward, ambiguous, partial, imported,
 argument-bearing, parameterized, contextual, cyclic, attributed-structure RHS
 outside the task-62 bare one-edge chain slice, attributed-RHS chains outside
 the task-58/task-61 direct slices and task-63 bare one-edge chain slice,
-attributed-root bare-builtin chains outside task 64, or broader
-attributed-builtin RHS mode definitions remain on the missing-expansion /
+attributed-root bare-builtin chains outside task 64, attributed-root
+structure-RHS chains outside task 65, or broader attributed-builtin RHS mode
+definitions remain on the missing-expansion /
 extraction-gap path, and the checker-owned seam must not fabricate expansion
 or existential evidence. Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
@@ -305,10 +306,28 @@ definition-local context, and the source order is `B -> A -> reserve`. The
 checker consumes both real expansions and the reserve-head attributes, then
 fails closed with `checker.declaration.deferred.evidence_query` until real
 attributed-type existential evidence extraction exists; attributed roots whose
-one-edge dependency terminates in a local structure RHS or attributed builtin
-RHS, deeper chains, mixed bare/attributed uses, imports, arguments, contextual
-or parameterized definitions, and positive attributed-type acceptance remain
+one-edge dependency terminates in a local structure RHS remain outside task 64
+but are admitted by task 65, while attributed-builtin RHS terminals, deeper
+chains, mixed bare/attributed uses, imports, arguments, contextual or
+parameterized definitions, and positive attributed-type acceptance remain
 outside this slice.
+
+Task 65 permits the structure-RHS counterpart of the task-64 attributed-root
+chain: an attributed local-mode reserve head `marked A` may consume the real
+one-edge chain `A -> B -> LocalStruct` only when `A` is not also used as a bare
+reserve head, `B` is not used as an attributed reserve head, `B is LocalStruct`
+and `A is B` are unique, unrecovered, same-module, no-argument, and free of
+definition-local context, the same-module structure definition is unique,
+unrecovered, and precedes `B`, and the source order is
+`LocalStruct -> B -> A -> reserve`. The checker consumes both real expansions
+and the reserve-head attributes, then fails closed with
+`checker.declaration.deferred.evidence_query` until real structure
+base-shape/constructor-witness evidence and full attributed-type existential
+evidence extraction exist; attributed-builtin RHS terminals, deeper chains,
+mixed bare/attributed uses, attributed dependencies, imports, arguments,
+ambiguous symbols, contextual or parameterized definitions, positive
+structure/attributed-type acceptance, CoreIr, ControlFlowIr, VC, and proof
+payloads remain outside this slice.
 
 Task 60 additionally
 permits that direct structure-RHS expansion for an attributed local-mode

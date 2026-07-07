@@ -1515,6 +1515,34 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       source-derived semantic bridge; mizar-test task 10; spec 03 type
       expressions; spec 06 attributes; spec 07 modes; spec 17 evidence.
 
+65. **Add source-derived attributed local mode structure-RHS chain evidence-gap bridge.** [x]
+    - Extend the task-64 attributed-root chain producer only for `reserve z for
+      marked A` where `A is B`, `B is LocalStruct`, `LocalStruct` is a unique
+      unrecovered same-module structure definition preceding `B`, both mode
+      definitions are unique, unrecovered, same-module, no-argument, and free of
+      definition-local context, source order is `LocalStruct -> B -> A -> reserve`,
+      `A` is not also used as a bare reserve head, and `B` is not used as an
+      attributed reserve head in the same bridge input.
+    - Acceptance: runner unit coverage proves both real source-derived
+      `B -> LocalStruct` and `A -> B` expansion payloads plus the attributed
+      reserve head are extracted from the same `SurfaceAst`; cached direct
+      structure-RHS dependency payloads may feed this one-edge attributed-root
+      chain, but attributed-builtin terminal dependencies, deeper chains,
+      attributed dependencies, mixed bare/attributed `A`, imported/ambiguous
+      symbols, arguments, and contextual/parameterized/recovered definitions
+      remain withheld. The existing active structure-RHS chain `.miz` fixture
+      must move from `checker.type.external.mode_expansion_payload` to
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query`.
+      The checker emits no verified facts and positive structure/attributed-type
+      acceptance remains deferred.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 50, 56, 60, 62, and 64. Structure base-shape /
+      constructor-witness evidence, full attributed-type existential evidence,
+      and broader mode expansion remain MC-G020/MC-G026. Refs: Step 5
+      source-derived semantic bridge; mizar-test task 10; spec 03 type
+      expressions; spec 05 structures; spec 06 attributes; spec 07 modes;
+      spec 17 evidence.
+
 ## Recommended Verification
 
 Run after each task:

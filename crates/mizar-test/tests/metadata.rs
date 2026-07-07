@@ -3512,12 +3512,9 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0
-            == "fail_type_elaboration_attributed_local_mode_structure_rhs_chain_expansion_gap_001"
+            == "fail_type_elaboration_attributed_local_mode_structure_rhs_chain_evidence_gap_001"
             && result.actual_detail_keys
-                == [
-                    "type_elaboration.checker.checker.type.external.mode_expansion_payload",
-                    "type_elaboration.checker.checker.type.recovery",
-                ]
+                == ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_local_attributed_mode_reserve_expansion_gap_001"
@@ -5551,6 +5548,61 @@ status = "covered"
 required = true
 coverage = "diagnostic"
 tests = ["tests/miz/fail/types/fail_local_mode_structure_rhs_chain.expect.toml"]
+"#,
+    );
+    corpus.write("doc/spec/en/test.md", "# Test\n");
+
+    let report = run_type_elaboration_corpus(&corpus.config()).unwrap();
+
+    assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
+    assert_eq!(report.results.len(), 1);
+    assert_eq!(report.passed_count(), 1);
+    assert_eq!(
+        report.results[0].actual_detail_keys,
+        ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
+    );
+}
+
+#[test]
+fn type_elaboration_runner_expands_attributed_local_mode_structure_rhs_chain_to_evidence_gap() {
+    let corpus = Corpus::new();
+    corpus.write(
+        "tests/miz/fail/types/fail_attributed_local_mode_structure_rhs_chain.miz",
+        "definition\n  let x be set;\n  attr MarkedStructChainDef: x is marked means thesis;\nend;\n\ndefinition\n  struct LocalStruct where\n    field carrier -> set;\n  end;\nend;\n\ndefinition\n  mode BaseStructChainDef: BaseStructChain is LocalStruct;\nend;\n\ndefinition\n  mode AttributedStructChainDef: AttributedStructChain is BaseStructChain;\nend;\n\nreserve z for marked AttributedStructChain;\n",
+    );
+    corpus.write(
+        "tests/miz/fail/types/fail_attributed_local_mode_structure_rhs_chain.expect.toml",
+        r#"schema_version = 1
+id = "fail_attributed_local_mode_structure_rhs_chain"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_attributed_local_mode_structure_rhs_chain.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "missing_attributed_structure_rhs_chain_evidence_query"
+stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.checker.checker.declaration.deferred.evidence_query",
+]
+tags = ["active_type_elaboration"]
+spec_refs = ["spec.en.test.type_elaboration.attributed_local_mode_structure_rhs_chain_evidence_gap"]
+"#,
+    );
+    corpus.write(
+        "tests/coverage/spec_trace.toml",
+        r#"
+[[requirement]]
+id = "spec.en.test.type_elaboration.attributed_local_mode_structure_rhs_chain_evidence_gap"
+source = "doc/spec/en/test.md"
+section = "Test"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = ["tests/miz/fail/types/fail_attributed_local_mode_structure_rhs_chain.expect.toml"]
 "#,
     );
     corpus.write("doc/spec/en/test.md", "# Test\n");

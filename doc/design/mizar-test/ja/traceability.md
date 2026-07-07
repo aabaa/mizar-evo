@@ -273,7 +273,13 @@ un-attributed argument-free same-module local mode で、runner が source order
 unique / unrecovered / preceding same-module definitions と argument-free same-module
 RHS attributes から real `A -> B` と `B -> marked set` expansion の両方を導出し、
 checker が missing attributed-type existential evidence query を報告する場合を credit
-してよい。これらの source を syntax-free
+してよい。task 65 は one-edge attributed-root structure-RHS chain diagnostic-only
+fail slice として、reserve head が attributed argument-free same-module local mode で、
+root が bare reserve use と mixed でなく dependency も attributed ではない場合に、
+runner が source order 上の unique / unrecovered / preceding same-module definitions
+から real `A -> B` と `B -> LocalStruct` expansion の両方を導出し、checker が
+missing base-shape / constructor-witness と full attributed-type evidence query を
+報告する場合を credit してよい。これらの source を syntax-free
 checker source reserve payload へ変換し、checker-owned seam が module `BindingEnv`、
 binding ごとの `DeclarationInput`、binding 固有の `TypeExpressionInput` site、
 `DeclarationChecker` output を構築する。runner はその handoff を checker-owned
@@ -311,15 +317,17 @@ task-63 の attributed builtin RHS で終端する one-edge bare local-mode chai
 missing attributed-type existential evidence、
 task-64 の bare-builtin chain を持つ attributed local-mode reserve head における
 missing attributed-type existential evidence、
+task-65 の structure-RHS chain を持つ attributed local-mode reserve head における
+missing base-shape / constructor-witness evidence と full attributed-type existential evidence、
 または same-module local mode reserve head の missing
 mode-expansion payload diagnostic（mixed attributed/bare
 local-mode source を含む）の checker detail key を代わりに assert してよい。task 56 の
 attributed-chain-dependency fail case は同じ missing mode-expansion payload family に属し、
 partial chain expansion は credit しない。attributed-RHS chain も task 58 / task 61 の
 direct slice と task 63 の bare one-edge chain slice の外では credit せず、structure-RHS chain も task 60 の direct attributed-root
-slice と task 62 の bare one-edge chain slice の外では credit しない。dependency が
-local structure RHS または attributed builtin RHS に終端する attributed-root chain は task
-64 の外に残る。
+slice、task 62 の bare one-edge chain slice、task 65 の attributed-root chain slice の外では
+credit しない。dependency が attributed builtin RHS に終端する attributed-root chain は task
+64 の bare-builtin chain slice と task 65 の structure-RHS chain slice の外に残る。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
 `proof_verification` row は deferred のままにする。summary/context readiness read は

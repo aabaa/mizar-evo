@@ -1398,6 +1398,32 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       semantic bridge、mizar-test task 10、spec 03 type expressions、spec 06 attributes、
       spec 07 modes、spec 17 evidence。
 
+65. **Source-derived attributed local mode structure-RHS chain evidence-gap bridge を追加する。** [x]
+    - task-64 attributed-root chain producer を、`reserve z for marked A` に限定して拡張する。
+      `A is B`、`B is LocalStruct` であり、`LocalStruct` は `B` より前に現れる unique /
+      unrecovered / same-module structure definition、両方の mode definition は unique /
+      unrecovered / same-module / no-argument で definition-local context を持たず、source
+      order は `LocalStruct -> B -> A -> reserve` でなければならない。`A` は同じ bridge
+      input 内で bare reserve head としても使われておらず、`B` は attributed reserve head
+      として使われていないこと。
+    - Acceptance: runner unit coverage は同じ `SurfaceAst` から real source-derived
+      `B -> LocalStruct` と `A -> B` expansion payload の両方、および attributed reserve
+      head が抽出されることを証明する。cached direct structure-RHS dependency payload はこの
+      one-edge attributed-root chain に使ってよいが、attributed-builtin terminal dependency、
+      deeper chain、attributed dependency、`A` の mixed bare/attributed use、
+      imported / ambiguous symbol、argument、contextual / parameterized / recovered
+      definition は withheld のままにする。既存 active structure-RHS chain `.miz` fixture は
+      `checker.type.external.mode_expansion_payload` から
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query` へ移る。
+      checker は verified fact を出さず、positive structure / attributed-type acceptance は
+      deferred のまま。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、50、56、60、62、64。structure base-shape /
+      constructor-witness evidence、full attributed-type existential evidence、broader mode
+      expansion は MC-G020/MC-G026 のまま。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 03 type expressions、spec 05 structures、spec 06 attributes、
+      spec 07 modes、spec 17 evidence。
+
 ## 推奨検証
 
 各タスクの後で実行する:

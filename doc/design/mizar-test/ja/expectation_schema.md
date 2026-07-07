@@ -469,6 +469,9 @@ task 63 は attributed builtin RHS で終端する one-edge bare local-mode chai
 attributed-type existential evidence 欠落のため evidence-query key で停止することを許可する。
 task 64 は one-edge bare-builtin chain を持つ attributed local-mode reserve head が、
 attributed-type existential evidence 欠落のため evidence-query key で停止することを許可する。
+task 65 は one-edge structure-RHS chain を持つ attributed local-mode reserve head が、
+structure base-shape / constructor-witness と full attributed-type existential evidence 欠落のため
+evidence-query key で停止することを許可する。
 これらは fail case であり、pass-slice coverage ではない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source

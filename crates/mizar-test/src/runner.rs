@@ -1159,8 +1159,7 @@ fn mode_expansion_is_chain_dependency_terminal(
     root_is_attributed: bool,
 ) -> bool {
     mode_expansion_is_safe_chain_terminal(expansion)
-        || (!root_is_attributed
-            && depth == 1
+        || (depth == 1
             && mode_expansion_is_direct_structure_rhs_terminal(expansion, symbols, module))
         || (!root_is_attributed
             && depth == 1
@@ -3735,15 +3734,703 @@ mod tests {
         let attributed_chain_structure_rhs_extraction =
             extract_builtin_source_reserve_declarations(
                 &attributed_chain_structure_rhs,
-                attributed_chain_structure_rhs_module,
+                attributed_chain_structure_rhs_module.clone(),
                 &attributed_chain_structure_rhs_symbols,
             )
             .expect("attributed mode chain ending in structure RHS should still extract");
-        assert!(
+        let attributed_chain_structure_b = resolve_visible_type_head(
+            &attributed_chain_structure_rhs_symbols,
+            &attributed_chain_structure_rhs_module,
+            "B",
+        )
+        .unwrap();
+        let attributed_chain_structure_a = resolve_visible_type_head(
+            &attributed_chain_structure_rhs_symbols,
+            &attributed_chain_structure_rhs_module,
+            "A",
+        )
+        .unwrap();
+        let attributed_chain_structure_struct = resolve_visible_type_head(
+            &attributed_chain_structure_rhs_symbols,
+            &attributed_chain_structure_rhs_module,
+            "Struct",
+        )
+        .unwrap();
+        assert_eq!(
+            attributed_chain_structure_rhs_extraction.bindings()[0]
+                .type_attributes
+                .len(),
+            1
+        );
+        assert_eq!(
             attributed_chain_structure_rhs_extraction
                 .mode_expansions()
+                .len(),
+            2
+        );
+        assert_eq!(
+            attributed_chain_structure_rhs_extraction
+                .mode_expansions()
+                .get(&attributed_chain_structure_b)
+                .map(|expansion| &expansion.radix.head),
+            Some(&TypeHeadInput::Symbol(attributed_chain_structure_struct))
+        );
+        assert_eq!(
+            attributed_chain_structure_rhs_extraction
+                .mode_expansions()
+                .get(&attributed_chain_structure_a)
+                .map(|expansion| &expansion.radix.head),
+            Some(&TypeHeadInput::Symbol(attributed_chain_structure_b.clone()))
+        );
+
+        let cached_attributed_chain_structure_rhs = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![
+                reserve_item(vec!["y"], ReserveTypeShape::QualifiedSymbol("B")),
+                reserve_item(vec!["z"], ReserveTypeShape::AttributedQualifiedSymbol("A")),
+            ],
+        );
+        let cached_attributed_chain_structure_rhs_extraction =
+            extract_builtin_source_reserve_declarations(
+                &cached_attributed_chain_structure_rhs,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("cached attributed structure-RHS chain reserve should still extract");
+        assert!(
+            cached_attributed_chain_structure_rhs_extraction
+                .mode_expansions()
+                .contains_key(&attributed_chain_structure_b)
+        );
+        assert!(
+            cached_attributed_chain_structure_rhs_extraction
+                .mode_expansions()
+                .contains_key(&attributed_chain_structure_a),
+            "cached direct structure-RHS payload may feed the attributed one-edge chain"
+        );
+
+        let mixed_attributed_chain_structure_rhs = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![
+                reserve_item(vec!["y"], ReserveTypeShape::QualifiedSymbol("A")),
+                reserve_item(vec!["z"], ReserveTypeShape::AttributedQualifiedSymbol("A")),
+            ],
+        );
+        let mixed_attributed_chain_structure_rhs_extraction =
+            extract_builtin_source_reserve_declarations(
+                &mixed_attributed_chain_structure_rhs,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("mixed attributed structure-RHS chain reserve should still extract");
+        assert!(
+            mixed_attributed_chain_structure_rhs_extraction
+                .mode_expansions()
                 .is_empty(),
-            "attributed structure-RHS expansions stay direct-root only"
+            "mixed bare/attributed uses of the attributed structure-chain root withhold expansion"
+        );
+
+        let attributed_dependency_for_structure_chain = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![
+                reserve_item(vec!["y"], ReserveTypeShape::AttributedQualifiedSymbol("B")),
+                reserve_item(vec!["z"], ReserveTypeShape::AttributedQualifiedSymbol("A")),
+            ],
+        );
+        let attributed_dependency_for_structure_chain_extraction =
+            extract_builtin_source_reserve_declarations(
+                &attributed_dependency_for_structure_chain,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("attributed dependency structure-RHS chain reserve should still extract");
+        assert!(
+            !attributed_dependency_for_structure_chain_extraction
+                .mode_expansions()
+                .contains_key(&attributed_chain_structure_a),
+            "an attributed dependency mode stays outside the attributed-root structure chain"
+        );
+
+        let deeper_attributed_chain_structure_symbols = source_local_symbols_env(
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
+            &[
+                ("empty", SymbolKind::Attribute),
+                ("Struct", SymbolKind::Structure),
+                ("B", SymbolKind::Mode),
+                ("A", SymbolKind::Mode),
+                ("C", SymbolKind::Mode),
+            ],
+        );
+        let deeper_attributed_chain_structure_module = deeper_attributed_chain_structure_symbols
+            .module_id()
+            .clone();
+        let deeper_attributed_chain_structure_rhs = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                mode_definition("C", ReserveTypeShape::QualifiedSymbol("A")),
+            ],
+            vec![
+                reserve_item(vec!["x"], ReserveTypeShape::QualifiedSymbol("B")),
+                reserve_item(vec!["y"], ReserveTypeShape::QualifiedSymbol("A")),
+                reserve_item(vec!["z"], ReserveTypeShape::AttributedQualifiedSymbol("C")),
+            ],
+        );
+        let deeper_attributed_chain_structure_rhs_extraction =
+            extract_builtin_source_reserve_declarations(
+                &deeper_attributed_chain_structure_rhs,
+                deeper_attributed_chain_structure_module.clone(),
+                &deeper_attributed_chain_structure_symbols,
+            )
+            .expect("deeper attributed structure-RHS chain reserve should still extract");
+        let deeper_attributed_chain_structure_c = resolve_visible_type_head(
+            &deeper_attributed_chain_structure_symbols,
+            &deeper_attributed_chain_structure_module,
+            "C",
+        )
+        .unwrap();
+        assert!(
+            !deeper_attributed_chain_structure_rhs_extraction
+                .mode_expansions()
+                .contains_key(&deeper_attributed_chain_structure_c),
+            "attributed local-mode structure chains remain capped at one dependency edge"
+        );
+
+        let duplicate_attributed_chain_structure_dependency =
+            mode_chain_reserve_ast_with_structures(
+                source,
+                ["Struct"],
+                [
+                    mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                    mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                    mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                ],
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::AttributedQualifiedSymbol("A"),
+                )],
+            );
+        let duplicate_attributed_chain_structure_dependency_extraction =
+            extract_builtin_source_reserve_declarations(
+                &duplicate_attributed_chain_structure_dependency,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("duplicate dependency structure-RHS chain reserve should still extract");
+        assert!(
+            duplicate_attributed_chain_structure_dependency_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 requires a unique dependency mode definition"
+        );
+
+        let duplicate_attributed_chain_structure_root = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("A"),
+            )],
+        );
+        let duplicate_attributed_chain_structure_root_extraction =
+            extract_builtin_source_reserve_declarations(
+                &duplicate_attributed_chain_structure_root,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("duplicate root structure-RHS chain reserve should still extract");
+        assert!(
+            duplicate_attributed_chain_structure_root_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 requires a unique attributed root mode definition"
+        );
+
+        let duplicate_attributed_chain_structure_definition =
+            mode_chain_reserve_ast_with_structures(
+                source,
+                ["Struct", "Struct"],
+                [
+                    mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                    mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                ],
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::AttributedQualifiedSymbol("A"),
+                )],
+            );
+        let duplicate_attributed_chain_structure_definition_extraction =
+            extract_builtin_source_reserve_declarations(
+                &duplicate_attributed_chain_structure_definition,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("duplicate structure definition reserve should still extract");
+        assert!(
+            duplicate_attributed_chain_structure_definition_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 requires a unique terminal structure definition"
+        );
+
+        let forward_attributed_chain_structure_dependency = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("A"),
+            )],
+        );
+        let forward_attributed_chain_structure_dependency_extraction =
+            extract_builtin_source_reserve_declarations(
+                &forward_attributed_chain_structure_dependency,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("forward dependency structure-RHS chain reserve should still extract");
+        assert!(
+            forward_attributed_chain_structure_dependency_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 requires the dependency definition to precede the attributed root definition"
+        );
+
+        let forward_attributed_chain_structure_terminal =
+            mode_chain_reserve_ast_with_trailing_structures(
+                source,
+                [
+                    mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                    mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                ],
+                ["Struct"],
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::AttributedQualifiedSymbol("A"),
+                )],
+            );
+        let forward_attributed_chain_structure_terminal_extraction =
+            extract_builtin_source_reserve_declarations(
+                &forward_attributed_chain_structure_terminal,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("forward terminal structure reserve should still extract");
+        assert!(
+            forward_attributed_chain_structure_terminal_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 requires the structure definition to precede the terminal mode definition"
+        );
+
+        let contextual_attributed_chain_structure_dependency =
+            mode_chain_reserve_ast_with_structures(
+                source,
+                ["Struct"],
+                [
+                    contextual_mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                    mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                ],
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::AttributedQualifiedSymbol("A"),
+                )],
+            );
+        let contextual_attributed_chain_structure_dependency_extraction =
+            extract_builtin_source_reserve_declarations(
+                &contextual_attributed_chain_structure_dependency,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("contextual dependency structure-RHS chain reserve should still extract");
+        assert!(
+            contextual_attributed_chain_structure_dependency_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 withholds contextual dependency mode definitions"
+        );
+
+        let contextual_attributed_chain_structure_root = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                contextual_mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("A"),
+            )],
+        );
+        let contextual_attributed_chain_structure_root_extraction =
+            extract_builtin_source_reserve_declarations(
+                &contextual_attributed_chain_structure_root,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("contextual root structure-RHS chain reserve should still extract");
+        assert!(
+            contextual_attributed_chain_structure_root_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 withholds contextual attributed root mode definitions"
+        );
+
+        let parameterized_attributed_chain_structure_dependency =
+            mode_chain_reserve_ast_with_structures(
+                source,
+                ["Struct"],
+                [
+                    parameterized_mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                    mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                ],
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::AttributedQualifiedSymbol("A"),
+                )],
+            );
+        let parameterized_attributed_chain_structure_dependency_extraction =
+            extract_builtin_source_reserve_declarations(
+                &parameterized_attributed_chain_structure_dependency,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("parameterized dependency structure-RHS chain reserve should still extract");
+        assert!(
+            parameterized_attributed_chain_structure_dependency_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 withholds parameterized dependency mode definitions"
+        );
+
+        let recovered_attributed_chain_structure_dependency =
+            mode_chain_reserve_ast_with_structures(
+                source,
+                ["Struct"],
+                [
+                    recovered_mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                    mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                ],
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::AttributedQualifiedSymbol("A"),
+                )],
+            );
+        let recovered_attributed_chain_structure_dependency_extraction =
+            extract_builtin_source_reserve_declarations(
+                &recovered_attributed_chain_structure_dependency,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("recovered dependency structure-RHS chain reserve should still extract");
+        assert!(
+            recovered_attributed_chain_structure_dependency_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 withholds recovered dependency mode definitions"
+        );
+
+        let argument_attributed_chain_structure_terminal = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbolWithArgs("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("A"),
+            )],
+        );
+        let argument_attributed_chain_structure_terminal_extraction =
+            extract_builtin_source_reserve_declarations(
+                &argument_attributed_chain_structure_terminal,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("argument-bearing terminal structure reserve should still extract");
+        assert!(
+            argument_attributed_chain_structure_terminal_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 withholds argument-bearing terminal structure RHSs"
+        );
+
+        let argument_attributed_chain_structure_dependency = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbolWithArgs("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("A"),
+            )],
+        );
+        let argument_attributed_chain_structure_dependency_extraction =
+            extract_builtin_source_reserve_declarations(
+                &argument_attributed_chain_structure_dependency,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .expect("argument-bearing dependency reserve should still extract");
+        assert!(
+            !argument_attributed_chain_structure_dependency_extraction
+                .mode_expansions()
+                .contains_key(&attributed_chain_structure_a),
+            "Task65 withholds argument-bearing dependency RHSs"
+        );
+
+        let reserve_attribute_args_attributed_chain_structure =
+            mode_chain_reserve_ast_with_structures(
+                source,
+                ["Struct"],
+                [
+                    mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                    mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                ],
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::AttributedQualifiedSymbolWithAttributeArgs("A"),
+                )],
+            );
+        assert!(
+            extract_builtin_source_reserve_declarations(
+                &reserve_attribute_args_attributed_chain_structure,
+                attributed_chain_structure_rhs_module.clone(),
+                &attributed_chain_structure_rhs_symbols,
+            )
+            .is_err(),
+            "Task65 withholds reserve-head attribute arguments"
+        );
+
+        let imported_attributed_chain_structure_root_symbols =
+            imported_structure_mode_chain_symbol_env(
+                ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
+                "A",
+            );
+        let imported_attributed_chain_structure_root_module =
+            imported_attributed_chain_structure_root_symbols
+                .module_id()
+                .clone();
+        let imported_attributed_chain_structure_root = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("A"),
+            )],
+        );
+        assert!(
+            extract_builtin_source_reserve_declarations(
+                &imported_attributed_chain_structure_root,
+                imported_attributed_chain_structure_root_module,
+                &imported_attributed_chain_structure_root_symbols,
+            )
+            .is_err(),
+            "Task65 withholds imported attributed roots"
+        );
+
+        let imported_attributed_chain_structure_dependency_symbols =
+            imported_structure_mode_chain_symbol_env(
+                ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
+                "B",
+            );
+        let imported_attributed_chain_structure_dependency_module =
+            imported_attributed_chain_structure_dependency_symbols
+                .module_id()
+                .clone();
+        let imported_attributed_chain_structure_dependency = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("A"),
+            )],
+        );
+        let imported_attributed_chain_structure_dependency_extraction =
+            extract_builtin_source_reserve_declarations(
+                &imported_attributed_chain_structure_dependency,
+                imported_attributed_chain_structure_dependency_module,
+                &imported_attributed_chain_structure_dependency_symbols,
+            )
+            .expect("imported dependency structure-RHS chain reserve should still extract");
+        assert!(
+            imported_attributed_chain_structure_dependency_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 withholds imported dependency modes"
+        );
+
+        let imported_attributed_chain_structure_terminal_symbols =
+            imported_structure_mode_chain_symbol_env(
+                ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
+                "Struct",
+            );
+        let imported_attributed_chain_structure_terminal_module =
+            imported_attributed_chain_structure_terminal_symbols
+                .module_id()
+                .clone();
+        let imported_attributed_chain_structure_terminal = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("A"),
+            )],
+        );
+        let imported_attributed_chain_structure_terminal_extraction =
+            extract_builtin_source_reserve_declarations(
+                &imported_attributed_chain_structure_terminal,
+                imported_attributed_chain_structure_terminal_module,
+                &imported_attributed_chain_structure_terminal_symbols,
+            )
+            .expect("imported terminal structure chain reserve should still extract");
+        assert!(
+            imported_attributed_chain_structure_terminal_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 withholds imported terminal structures"
+        );
+
+        let ambiguous_attributed_chain_structure_root_symbols =
+            ambiguous_attributed_structure_chain_symbol_env(
+                ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
+                "A",
+            );
+        let ambiguous_attributed_chain_structure_root_module =
+            ambiguous_attributed_chain_structure_root_symbols
+                .module_id()
+                .clone();
+        let ambiguous_attributed_chain_structure_root = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("A"),
+            )],
+        );
+        assert!(
+            extract_builtin_source_reserve_declarations(
+                &ambiguous_attributed_chain_structure_root,
+                ambiguous_attributed_chain_structure_root_module,
+                &ambiguous_attributed_chain_structure_root_symbols,
+            )
+            .is_err(),
+            "Task65 withholds ambiguous attributed roots"
+        );
+
+        let ambiguous_attributed_chain_structure_dependency_symbols =
+            ambiguous_attributed_structure_chain_symbol_env(
+                ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
+                "B",
+            );
+        let ambiguous_attributed_chain_structure_dependency_module =
+            ambiguous_attributed_chain_structure_dependency_symbols
+                .module_id()
+                .clone();
+        let ambiguous_attributed_chain_structure_dependency =
+            mode_chain_reserve_ast_with_structures(
+                source,
+                ["Struct"],
+                [
+                    mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                    mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+                ],
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::AttributedQualifiedSymbol("A"),
+                )],
+            );
+        let ambiguous_attributed_chain_structure_dependency_extraction =
+            extract_builtin_source_reserve_declarations(
+                &ambiguous_attributed_chain_structure_dependency,
+                ambiguous_attributed_chain_structure_dependency_module,
+                &ambiguous_attributed_chain_structure_dependency_symbols,
+            )
+            .expect("ambiguous dependency structure-RHS chain reserve should still extract");
+        assert!(
+            ambiguous_attributed_chain_structure_dependency_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 withholds ambiguous dependency modes"
+        );
+
+        let ambiguous_attributed_chain_structure_terminal_symbols =
+            ambiguous_attributed_structure_chain_symbol_env(
+                ResolverModuleId::new(PackageId::new("test"), ModulePath::new("bridge")),
+                "Struct",
+            );
+        let ambiguous_attributed_chain_structure_terminal_module =
+            ambiguous_attributed_chain_structure_terminal_symbols
+                .module_id()
+                .clone();
+        let ambiguous_attributed_chain_structure_terminal = mode_chain_reserve_ast_with_structures(
+            source,
+            ["Struct"],
+            [
+                mode_definition("B", ReserveTypeShape::QualifiedSymbol("Struct")),
+                mode_definition("A", ReserveTypeShape::QualifiedSymbol("B")),
+            ],
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::AttributedQualifiedSymbol("A"),
+            )],
+        );
+        let ambiguous_attributed_chain_structure_terminal_extraction =
+            extract_builtin_source_reserve_declarations(
+                &ambiguous_attributed_chain_structure_terminal,
+                ambiguous_attributed_chain_structure_terminal_module,
+                &ambiguous_attributed_chain_structure_terminal_symbols,
+            )
+            .expect("ambiguous terminal structure chain reserve should still extract");
+        assert!(
+            ambiguous_attributed_chain_structure_terminal_extraction
+                .mode_expansions()
+                .is_empty(),
+            "Task65 withholds ambiguous terminal structures"
         );
 
         let attributed_chain_bare_rhs_symbols = source_mode_chain_symbol_env(
@@ -5735,7 +6422,7 @@ mod tests {
     }
 
     fn imported_attribute_mode_chain_symbol_env(module: ResolverModuleId) -> SymbolEnv {
-        let source = source_id(187);
+        let source = source_id(200);
         let imported_module =
             ResolverModuleId::new(PackageId::new("test"), ModulePath::new("imported"));
         let mut indexes = SymbolEnvIndexes::default();
@@ -5799,7 +6486,7 @@ mod tests {
     }
 
     fn ambiguous_attribute_mode_chain_symbol_env(module: ResolverModuleId) -> SymbolEnv {
-        let source = source_id(188);
+        let source = source_id(201);
         let mut indexes = SymbolEnvIndexes::default();
         let contribution = indexes.contributions.insert(
             module.clone(),
@@ -5862,6 +6549,61 @@ mod tests {
         ]
         .into_iter()
         .chain(std::iter::once((ambiguous_mode, SymbolKind::Mode)))
+        .enumerate()
+        {
+            let symbol = ResolverSymbolId::new(
+                module.clone(),
+                LocalSymbolId::new(format!("{kind:?}/{spelling}/{ordinal}")),
+                FullyQualifiedName::new(format!(
+                    "{}::{spelling}/{ordinal}",
+                    module.path().as_str()
+                )),
+            );
+            indexes.symbols.insert(
+                SymbolEntry::new(
+                    symbol,
+                    kind,
+                    NamespacePath::new(module.path().as_str()),
+                    spelling,
+                    SemanticOrigin::new(
+                        source,
+                        module.clone(),
+                        SourceAnchor::Range(range(source, ordinal, ordinal + 1)),
+                        Vec::new(),
+                    ),
+                    contribution,
+                )
+                .with_visibility(Visibility::Public)
+                .with_export_status(ExportStatus::Exported),
+            );
+        }
+        SymbolEnv::new(module, indexes)
+    }
+
+    fn ambiguous_attributed_structure_chain_symbol_env(
+        module: ResolverModuleId,
+        ambiguous_spelling: &'static str,
+    ) -> SymbolEnv {
+        let source = source_id(188);
+        let mut indexes = SymbolEnvIndexes::default();
+        let contribution = indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 6)),
+        );
+        let ambiguous_kind = if ambiguous_spelling == "Struct" {
+            SymbolKind::Structure
+        } else {
+            SymbolKind::Mode
+        };
+        for (ordinal, (spelling, kind)) in [
+            ("empty", SymbolKind::Attribute),
+            ("A", SymbolKind::Mode),
+            ("B", SymbolKind::Mode),
+            ("Struct", SymbolKind::Structure),
+        ]
+        .into_iter()
+        .chain(std::iter::once((ambiguous_spelling, ambiguous_kind)))
         .enumerate()
         {
             let symbol = ResolverSymbolId::new(
@@ -6104,6 +6846,70 @@ mod tests {
         .enumerate()
         {
             let is_imported = kind == SymbolKind::Mode && spelling == imported_mode;
+            let symbol_module = if is_imported {
+                imported_module.clone()
+            } else {
+                module.clone()
+            };
+            let contribution = if is_imported {
+                imported_contribution
+            } else {
+                local_contribution
+            };
+            let symbol = ResolverSymbolId::new(
+                symbol_module.clone(),
+                LocalSymbolId::new(format!("{kind:?}/{spelling}/{ordinal}")),
+                FullyQualifiedName::new(format!("{}::{spelling}/0", symbol_module.path().as_str())),
+            );
+            indexes.symbols.insert(
+                SymbolEntry::new(
+                    symbol,
+                    kind,
+                    NamespacePath::new(module.path().as_str()),
+                    spelling,
+                    SemanticOrigin::new(
+                        source,
+                        symbol_module,
+                        SourceAnchor::Range(range(source, ordinal, ordinal + 1)),
+                        Vec::new(),
+                    ),
+                    contribution,
+                )
+                .with_visibility(Visibility::Public)
+                .with_export_status(ExportStatus::Exported),
+            );
+        }
+        SymbolEnv::new(module, indexes)
+    }
+
+    fn imported_structure_mode_chain_symbol_env(
+        module: ResolverModuleId,
+        imported_spelling: &'static str,
+    ) -> SymbolEnv {
+        let source = source_id(187);
+        let imported_module =
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("imported"));
+        let mut indexes = SymbolEnvIndexes::default();
+        let local_contribution = indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 2)),
+        );
+        let imported_contribution = indexes.contributions.insert(
+            imported_module.clone(),
+            ContributionKind::ImportedSource { source_id: source },
+            SourceAnchor::Range(range(source, 2, 3)),
+        );
+        for (ordinal, (spelling, kind)) in [
+            ("empty", SymbolKind::Attribute),
+            ("A", SymbolKind::Mode),
+            ("B", SymbolKind::Mode),
+            ("Struct", SymbolKind::Structure),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let is_imported = spelling == imported_spelling;
             let symbol_module = if is_imported {
                 imported_module.clone()
             } else {
