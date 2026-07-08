@@ -534,8 +534,8 @@ task 82 は同じ imported mode reserve-head sidecar について、runner が
 extraction だけを credit し、imported module AST extraction、`ModeExpansion`
 payload、positive mode elaboration、CoreIr、ControlFlowIr、VC、proof payload は
 引き続き credit しない。
-task 80 は task-84 `TypeCaseAttr` bridge と task-85 negative
-`empty`/builtin-`set` bridge 外の broader imported attribute reserve fail sidecar
+task 80 は task-84 `TypeCaseAttr` bridge、task-85 negative
+`empty`/builtin-`set` bridge、task-116 positive `empty`/builtin-`set` bridge 外の broader imported attribute reserve fail sidecar
 について、source が documented `parser.type_fixtures` import summary を通じて
 active runner に到達する場合に
 `failure_category = "external_dependency_gap"`、
@@ -555,21 +555,20 @@ imported attribute provenance と argument-free checker `AttributeInput` payload
 existential/evidence payload、positive imported attributed type elaboration、
 generic imported attribute、qualified owner provenance、attribute argument、CoreIr、
 ControlFlowIr、VC、proof payload を credit しない。
-task 85 は既存 `non empty set` sidecar について、active runner が real imported
-`empty` attribute provenance と builtin `set` 上の negative argument-free checker
-`AttributeInput` payload を渡した後に
+task 85 と task 116 は既存 `non empty set` と `empty set` sidecar について、
+active runner が real imported `empty` attribute provenance と builtin `set` 上の
+negative または positive argument-free checker `AttributeInput` payload を渡した後に
 `failure_category = "external_dependency_gap"`、
 `rejection_reason = "imported_empty_attribute_evidence_payload_gap"`、
 `stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"`
-を許可する。この sidecar は imported module AST extraction、attributed-type
-existential/evidence payload、positive `empty set`、non-`set` head 上の imported
-`empty`、broader imported attribute、qualified owner provenance、attribute
-argument、CoreIr、ControlFlowIr、VC、proof payload を credit しない。
-positive `empty set` と `non empty object` の task-85 boundary sidecar は別に
+を許可する。これらの sidecar は imported module AST extraction、attributed-type
+existential/evidence payload、non-`set` head 上の imported `empty`、broader imported
+attribute、qualified owner provenance、attribute argument、CoreIr、ControlFlowIr、VC、
+proof payload を credit しない。
+`non empty object` の remaining task-85 boundary sidecar は別に
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`、
-`rejection_reason = "positive_imported_empty_attribute_payload_gap"` または
-`"imported_empty_non_set_head_payload_gap"` を保持する。これらは未対応 payload
-shape を記録するもので、checker `AttributeInput` handoff は credit しない。
+`rejection_reason = "imported_empty_non_set_head_payload_gap"` を保持する。これは未対応
+payload shape を記録するもので、checker `AttributeInput` handoff は credit しない。
 task 86 は formula-only theorem fail sidecar が parser / resolver 実行へ到達する
 ことを許可する。task 115 は exact unrecovered
 `FormulaPayloadBoundary: thesis` sidecar だけを supersede し、その sidecar は

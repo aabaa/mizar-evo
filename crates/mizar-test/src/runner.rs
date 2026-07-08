@@ -3800,10 +3800,7 @@ fn supported_imported_fixture_reserve_attribute_use(
 ) -> bool {
     match imported_fixture_reserve_attribute_spelling(symbols, module, &attribute.symbol) {
         Some("TypeCaseAttr") => matches!(head, TypeHeadInput::BuiltinSet),
-        Some("empty") => {
-            matches!(head, TypeHeadInput::BuiltinSet)
-                && attribute.polarity == AttributePolarity::Negative
-        }
+        Some("empty") => matches!(head, TypeHeadInput::BuiltinSet),
         _ => false,
     }
 }
@@ -10365,6 +10362,21 @@ mod tests {
         assert_eq!(
             source_type_elaboration_detail_keys(
                 &imported_fixture_positive_empty_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+        let imported_fixture_positive_empty_object_attribute = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedObjectWithNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_positive_empty_object_attribute,
                 imported_fixture_empty_attribute_symbols.module_id().clone(),
                 &imported_fixture_empty_attribute_symbols
             ),

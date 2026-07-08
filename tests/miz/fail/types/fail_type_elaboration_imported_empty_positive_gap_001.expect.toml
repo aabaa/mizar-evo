@@ -7,18 +7,18 @@ source = "fail_type_elaboration_imported_empty_positive_gap_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "positive_imported_empty_attribute_payload_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "imported_empty_attribute_evidence_payload_gap"
+stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.checker.declaration.deferred.evidence_query",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
-  "spec.en.03.type_expressions.imported_attribute_payload_gap",
-  "spec.en.06.attributes.imported_attribute_payload_gap",
-  "spec.en.11.symbol_management.imported_attribute_payload_gap",
-  "spec.en.12.modules.imported_attribute_payload_gap",
-  "spec.en.checker.type_elaboration.payload_extraction.imported_attribute_gap",
+  "spec.en.03.type_expressions.imported_empty_attribute_provenance_bridge",
+  "spec.en.06.attributes.imported_empty_attribute_evidence_payload_gap",
+  "spec.en.11.symbol_management.imported_empty_attribute_provenance_bridge",
+  "spec.en.12.modules.imported_empty_attribute_provenance_bridge",
+  "spec.en.checker.type_elaboration.imported_empty_attribute_provenance_bridge",
 ]
-notes = "Active type_elaboration runner boundary coverage for checker task 85: the documented parser.type_fixtures imported attribute `empty` is parser/resolver executable as a positive `empty set` reserve type, but positive imported attributed type elaboration remains outside the imported negative-empty bridge and must stay on the source-to-checker payload extraction gap."
+notes = "Active type_elaboration runner bridge coverage for checker task 116: the documented parser.type_fixtures imported attribute `empty` is parser/resolver executable as a positive `empty set` reserve type, and the checker-owned source bridge carries the real imported positive AttributeInput payload to declaration checking. It still lacks imported module AST extraction and attributed-type existential/evidence payloads, so it must fail closed on the checker evidence-query diagnostic instead of accepting the attributed type or promoting CoreIr/ControlFlowIr/VC/proof payloads."

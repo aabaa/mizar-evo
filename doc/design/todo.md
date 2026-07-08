@@ -290,10 +290,12 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    arguments, and downstream payloads deferred, and task 85 promotes the
    imported negative `empty`/builtin-`set` reserve boundary just far enough to
    pass real imported attribute provenance/negative `AttributeInput` payloads
-   to the checker evidence-query diagnostic while keeping active positive
-   `empty set` and `non empty object` boundary sidecars, broader non-`set`
-   heads, imported module AST extraction, attributed-type evidence, owner
-   provenance, arguments, and downstream payloads on extraction/deferred gaps,
+   to the checker evidence-query diagnostic, task 116 promotes the matching
+   positive `empty`/builtin-`set` sidecar to a real positive `AttributeInput`
+   payload and the same evidence-query diagnostic, while `non empty object`,
+   broader non-`set` heads, imported module AST extraction, attributed-type
+   evidence, owner provenance, arguments, and downstream payloads remain on
+   extraction/deferred gaps,
    task 86 records a formula-only theorem source on the active
    source-to-checker boundary, task 115 supersedes that exact
    `FormulaPayloadBoundary: thesis` source by passing a checker recovery

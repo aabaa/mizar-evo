@@ -293,8 +293,9 @@ Keep `cargo test -p mizar-test` green after each task (see
       82's imported mode reserve provenance bridge, checker task 83's
       imported structure reserve provenance bridge, checker task 84's
       imported attribute reserve provenance bridge, checker task 85's
-      imported non-empty attribute reserve provenance bridge, and checker task
-      86's theorem formula extraction-gap boundary, checker task 106's
+      imported non-empty attribute reserve provenance bridge, checker task
+      116's imported positive empty attribute reserve provenance bridge, and
+      checker task 86's theorem formula extraction-gap boundary, checker task 106's
       builtin equality theorem term/formula checker bridge, checker task 110's imported predicate/functor
       theorem checker bridge, checker task 108's builtin
       membership theorem checker bridge, checker task 107's builtin
@@ -448,7 +449,8 @@ Keep `cargo test -p mizar-test` green after each task (see
       extraction-gap boundary, task 95's registration block extraction-gap boundary, task 94's proof-local inline definition boundary,
       task 93's proof-local declaration boundary, and task 92's mode/structure
       definition boundary, imported attribute provenance beyond
-      the task-84 `TypeCaseAttr` bridge, task-85 negative `empty`/builtin-`set`
+      the task-84 `TypeCaseAttr` bridge, task-85 negative
+      `empty`/builtin-`set` bridge, task-116 positive `empty`/builtin-`set`
       bridge, and task-80 boundary, imported structure provenance beyond the task-83
       `R` bridge, task-97 `TypeCaseStruct` bridge, and task-78 boundary, imported mode expansion payloads beyond
       task 82's provenance bridge, attribute argument payloads beyond the task-81 boundary,

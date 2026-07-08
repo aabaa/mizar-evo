@@ -266,7 +266,8 @@ regression test を追加した。
       checker task 71 の bracket-form local-structure reserve extraction-gap active boundary slice、
       checker task 72 の two-edge bare local-mode chain active pass slice、checker task 73 の three-edge bare local-mode chain active pass slice、checker task 74 の structural bare local-mode chain active pass slice、checker task 75 の lower-stage forward local-mode active-range boundary、checker task 76 の lower-stage forward local-structure active-range boundary、checker task 77 の lower-stage forward local-attribute active-range boundary、checker task 78 の imported structure reserve extraction-gap boundary、checker task 79 の imported mode reserve extraction-gap boundary、checker task 80 の imported attribute reserve extraction-gap boundary、checker task 81 の argument-bearing local attribute reserve extraction-gap boundary と declaration-symbol suffix projection、checker task 82 の imported mode reserve provenance bridge、checker task 83 の imported structure reserve provenance bridge、checker task 84 の imported attribute reserve provenance bridge とともに
       prepared/implemented increments として記録する。
-      checker task 85 の imported non-empty attribute reserve provenance bridge と
+      checker task 85 の imported non-empty attribute reserve provenance bridge、
+      checker task 116 の imported positive empty attribute reserve provenance bridge と
       checker task 86 の theorem formula extraction-gap boundary、checker task 106 の
       builtin equality theorem term/formula checker bridge、checker task 110 の imported predicate/functor
       theorem checker bridge、checker task 108 の builtin membership theorem

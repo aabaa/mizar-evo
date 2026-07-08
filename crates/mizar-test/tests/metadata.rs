@@ -3639,7 +3639,7 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_imported_empty_positive_gap_001"
             && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+                == ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_imported_empty_object_gap_001"

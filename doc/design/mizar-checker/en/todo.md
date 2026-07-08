@@ -1819,10 +1819,11 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Add active fail coverage for a reserve type whose attribute is an imported
       attribute symbol supplied by the existing `parser.type_fixtures` import
       summary.
-    - Acceptance: before tasks 84 and 85, the active type-elaboration runner
+    - Acceptance: before tasks 84, 85, and 116, the active type-elaboration runner
       reported `type_elaboration.external_dependency.ast_payload_extraction`.
       After task 84 supersedes the documented `TypeCaseAttr` portion and task
-      85 supersedes the negative `empty`/builtin-`set` portion, broader imported
+      85 supersedes the negative `empty`/builtin-`set` portion, and task 116
+      supersedes the positive `empty`/builtin-`set` portion, broader imported
       attributes outside those bridges still must not fabricate imported
       attribute provenance, `AttributeInput` payloads, attributed-type evidence,
       positive attributed type elaboration, or broader imported attribute
@@ -1943,8 +1944,8 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       existential/evidence payloads are not available. The task must not
       synthesize imported module AST extraction, attributed-type evidence,
       positive `empty set` elaboration, imported `empty` on non-`set` heads,
-      CoreIr, ControlFlowIr, VC, or proof payloads, and it must leave
-      active boundary sidecars for positive `empty set` and `non empty object`,
+      CoreIr, ControlFlowIr, VC, or proof payloads. Task 116 supersedes the
+      positive `empty set` sidecar; this task leaves `non empty object`,
       attribute arguments, qualified owner provenance, and broader imported
       attributes on their existing gaps.
     - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
@@ -1988,6 +1989,31 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Verify: `cargo test -p mizar-test`.
     - Deps: tasks 86 and 112. Refs: Step 5 source-derived semantic bridge;
       mizar-test task 10; spec 14 formulas; spec 16 theorems and proofs.
+
+116. **Add source-derived imported positive empty attribute reserve provenance bridge.** [x]
+    - Promote the existing task-80 positive imported-attribute reserve boundary
+      just far enough for the active `type_elaboration` runner to pass the
+      documented `parser.type_fixtures` import-summary `empty` attribute symbol
+      as a positive checker `AttributeInput` on builtin `set` for `empty set`.
+    - Acceptance: the checker reserve bridge validates that `empty` is visible
+      through `SymbolEnv`, has `SymbolKind::Attribute`, is backed by an
+      `ImportedSource` contribution from `parser.type_fixtures`, has positive
+      polarity, and is attached to builtin `set`. The existing
+      `fail_type_elaboration_imported_empty_positive_gap_001` fixture no
+      longer reports `type_elaboration.external_dependency.ast_payload_extraction`;
+      it reaches
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query`
+      because imported module AST extraction and attributed-type
+      existential/evidence payloads are not available. The task must not
+      synthesize imported module AST extraction, attributed-type evidence,
+      positive attributed-type acceptance, imported `empty` on non-`set` heads,
+      CoreIr, ControlFlowIr, VC, or proof payloads, and it must leave
+      `non empty object`, attribute arguments, qualified owner provenance, and
+      broader imported attributes on their existing gaps.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 50, 80, 84, and 85. Refs: Step 5 source-derived semantic
+      bridge; mizar-test task 10; spec 03 type expressions; spec 06
+      attributes; spec 11 symbol management; spec 12 modules and namespaces.
 
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula

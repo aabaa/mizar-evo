@@ -584,10 +584,9 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic, and task 85 supersedes only the documented negative `empty`/builtin-`set` fixture. This row is covered for the listed task-85 boundary fixtures, which prove positive `empty set` and imported `empty` on builtin `object` remain on the extraction gap. Broader imported attribute heads outside those fixtures still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
+notes = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic, task 85 supersedes the documented negative `empty`/builtin-`set` fixture, and task 116 supersedes the documented positive `empty`/builtin-`set` fixture. This row is covered for the remaining listed boundary fixture, which proves imported `empty` on builtin `object` remains on the extraction gap. Broader imported attribute heads outside those fixtures still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_empty_object_gap_001.expect.toml",
-  "tests/miz/fail/types/fail_type_elaboration_imported_empty_positive_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -613,6 +612,7 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_attributed_reserve_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mixed_reserve_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_empty_positive_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -868,10 +868,9 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic, and task 85 supersedes only the documented negative `empty`/builtin-`set` fixture. This row is covered for the listed task-85 boundary fixtures, which prove positive `empty set` and imported `empty` on builtin `object` remain on the extraction gap. Broader imported attributes outside those fixtures still lack real AttributeInput payload extraction; positive attributed-type acceptance and existential/evidence payloads remain deferred."
+notes = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic, task 85 supersedes the documented negative `empty`/builtin-`set` fixture, and task 116 supersedes the documented positive `empty`/builtin-`set` fixture. This row is covered for the remaining listed boundary fixture, which proves imported `empty` on builtin `object` remains on the extraction gap. Broader imported attributes outside those fixtures still lack real AttributeInput payload extraction; positive attributed-type acceptance and existential/evidence payloads remain deferred."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_empty_object_gap_001.expect.toml",
-  "tests/miz/fail/types/fail_type_elaboration_imported_empty_positive_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -885,6 +884,7 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_attributed_reserve_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mixed_reserve_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_empty_positive_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1149,10 +1149,9 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic, and task 85 supersedes only the documented negative `empty`/builtin-`set` fixture. This row is covered for the listed task-85 boundary fixtures, which prove positive `empty set` and imported `empty` on builtin `object` remain on the extraction gap. Broader imported attribute heads outside those fixtures still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
+notes = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic, task 85 supersedes the documented negative `empty`/builtin-`set` fixture, and task 116 supersedes the documented positive `empty`/builtin-`set` fixture. This row is covered for the remaining listed boundary fixture, which proves imported `empty` on builtin `object` remains on the extraction gap. Broader imported attribute heads outside those fixtures still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_empty_object_gap_001.expect.toml",
-  "tests/miz/fail/types/fail_type_elaboration_imported_empty_positive_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1178,6 +1177,7 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_attributed_reserve_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mixed_reserve_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_empty_positive_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1419,10 +1419,9 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic, and task 85 supersedes only the documented negative `empty`/builtin-`set` fixture. This row is covered for the listed task-85 boundary fixtures, which prove positive `empty set` and imported `empty` on builtin `object` remain on the extraction gap. Broader imported attribute heads outside those fixtures still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
+notes = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic, task 85 supersedes the documented negative `empty`/builtin-`set` fixture, and task 116 supersedes the documented positive `empty`/builtin-`set` fixture. This row is covered for the remaining listed boundary fixture, which proves imported `empty` on builtin `object` remains on the extraction gap. Broader imported attribute heads outside those fixtures still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_empty_object_gap_001.expect.toml",
-  "tests/miz/fail/types/fail_type_elaboration_imported_empty_positive_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1448,6 +1447,7 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_attributed_reserve_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mixed_reserve_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_empty_positive_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2539,7 +2539,7 @@ tests = [
 [[requirement]]
 id = "spec.en.checker.type_elaboration.imported_empty_attribute_provenance_bridge"
 source = "doc/design/mizar-checker/en/type_checker.md"
-section = "Task 85 source-derived imported non-empty attribute reserve provenance bridge"
+section = "Task 85 and task 116 source-derived imported empty attribute reserve provenance bridge"
 stage = "type_elaboration"
 status = "covered"
 required = true
@@ -2547,6 +2547,7 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_attributed_reserve_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mixed_reserve_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_empty_positive_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2943,10 +2944,9 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic, and task 85 supersedes only the documented negative `empty`/builtin-`set` fixture. This row is covered for the listed task-85 boundary fixtures, which prove positive `empty set` and imported `empty` on builtin `object` remain on the extraction gap. Broader imported attribute heads, including generic imported attributes outside those fixtures, still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
+notes = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic, task 85 supersedes the documented negative `empty`/builtin-`set` fixture, and task 116 supersedes the documented positive `empty`/builtin-`set` fixture. This row is covered for the remaining listed boundary fixture, which proves imported `empty` on builtin `object` remains on the extraction gap. Broader imported attribute heads, including generic imported attributes outside those fixtures, still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_empty_object_gap_001.expect.toml",
-  "tests/miz/fail/types/fail_type_elaboration_imported_empty_positive_gap_001.expect.toml",
 ]
 
 [[requirement]]
