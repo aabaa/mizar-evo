@@ -446,6 +446,7 @@ external-gap case, the task 87 term-bearing theorem formula external-gap
 case, the task 98 imported predicate/functor theorem formula external-gap
 case, the task 100 builtin membership theorem formula external-gap
 case, the task 101 builtin inequality theorem formula external-gap
+case, the task 102 builtin type-assertion theorem formula external-gap
 case, the task 99 connective/quantifier theorem formula external-gap
 case, the task 88 proof-block theorem external-gap case, the task 89
 statement-proof external-gap case, the task 90 predicate/functor definition
@@ -588,7 +589,13 @@ formula extraction-gap boundary after parser/resolver execution and do not
 credit checker term/formula payload extraction, inequality desugaring or
 equality semantic checking, formula checking, recorded facts, theorem
 acceptance, `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or
-proof payloads. Task 99 fail cases credit only the connective/quantifier theorem
+proof payloads. Task 102 fail cases credit only the builtin type-assertion
+theorem formula extraction-gap boundary after parser/resolver execution and do
+not credit checker term/formula payload extraction, type-assertion type payload
+extraction, term inference, type-assertion semantic checking, formula checking,
+recorded facts, theorem acceptance, `formula_statement` runner support, CoreIr,
+ControlFlowIr, VC, or proof payloads. Task 99 fail cases credit only the
+connective/quantifier theorem
 formula extraction-gap boundary after parser/resolver execution and do not
 credit checker formula payload extraction, quantifier binder/context payloads,
 formula checking, recorded facts, theorem acceptance, `formula_statement`

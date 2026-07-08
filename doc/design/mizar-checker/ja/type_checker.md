@@ -401,6 +401,14 @@ equality semantic checking、formula checking、recorded fact、theorem acceptan
 dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload が
 まだ存在しないため
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。
+task 102 は同じ term/formula boundary の builtin type-assertion variant を記録する:
+`theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` は Chapter 13 の numeral
+term と Chapter 14 の builtin type-assertion form を通じて parser / resolver 実行まで
+到達するが、real term/formula payload extraction、type-assertion type payload
+extraction、term inference、type-assertion semantic checking、formula checking、
+recorded fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
+ControlFlowIr、VC、proof payload がまだ存在しないため
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。
 task 99 は同じ theorem boundary の connective / quantifier formula variant を記録する:
 `theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`
 は Chapter 14 の implication、universal-quantifier、negation surface を通じて
