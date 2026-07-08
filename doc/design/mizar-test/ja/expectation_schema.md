@@ -578,26 +578,31 @@ task 86 は formula-only theorem fail sidecar について
 記録するが、`formula_statement` runner、checker theorem/formula payload
 extraction、recorded fact、proof skeleton、CoreIr、ControlFlowIr、VC、proof
 payload は credit しない。
-task 106、task 107、task 108 は exact equality/inequality/membership sidecar を supersede し、
+task 106、task 107、task 108、task 109 は exact
+equality/inequality/membership/type-assertion sidecar を supersede し、
 `failure_category = "external_dependency_gap"` のまま
 `rejection_reason = "numeric_type_payload_extraction_gap"` と checker detail key
 （missing numeric type payload と partial formula checking）を使う。
-task 98、task 102、task 103、task 104、task 105 は引き続き
+task 109 はさらに exact builtin `set` asserted type を real source-derived
+checker `TypeExpressionInput` として credit するが、より広い asserted type
+payload、type-assertion semantic checking、recorded fact、theorem acceptance、
+`formula_statement`、CoreIr、ControlFlowIr、VC、proof payload は credit しない。
+task 98、task 103、task 104、task 105 は引き続き
 term-bearing theorem formula fail sidecar について
 `rejection_reason = "term_formula_payload_extraction_gap"` と
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"` を
 許可する。これらの sidecar は、task 98 の imported predicate/functor
-application、task 102 の builtin type assertion、task 103 の imported attribute assertion、
-task 104 の attribute-level non-empty imported attribute assertion、task 105 の
-set-enumeration equality を含む Chapter 13 term surface と Chapter 14 atomic formula が
+application、task 103 の imported attribute assertion、task 104 の
+attribute-level non-empty imported attribute assertion、task 105 の
+set-enumeration equality を含む Chapter 13 term surface と Chapter 14 atomic
+formula が
 parser / resolver 実行へ到達したことを記録するが、imported semantic payload、
 set-enumeration term payload extraction、
 imported attribute assertion attribute-chain/provenance payload extraction、
 imported attribute-level non-empty assertion attribute-chain/provenance payload extraction、
 term/formula payload extraction、
 inequality desugaring または equality
-semantic checking、type-assertion type payload extraction、type-assertion semantic
-checking、attribute admissibility/semantic checking、negated attribute
+semantic checking、attribute admissibility/semantic checking、negated attribute
 admissibility/semantic checking、term inference、formula
 checking、recorded fact、theorem acceptance、imported module AST extraction、
 theorem formula 向け checker `AttributeInput` payload extraction、

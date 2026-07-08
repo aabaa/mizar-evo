@@ -564,6 +564,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.03.type_expressions.builtin_type_assertion_checker_bridge"
+source = "doc/spec/en/03.type_system.md"
+section = "3.3 Type Expressions"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+notes = "Task 109 supersedes the exact builtin-set portion of checker task 102 by carrying the source-derived `set` TypeExpression node from `BuiltinTypeAssertionPayloadBoundary: 1 is set` as a checker TypeExpressionInput before failing closed on the numeral numeric-type payload gap. Broader asserted types, attributes, arguments, facts, theorem acceptance, and type-assertion semantic checking remain deferred."
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_builtin_type_assertion_formula_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.03.type_expressions.imported_attribute_payload_gap"
 source = "doc/spec/en/03.type_system.md"
 section = "3.3 Type Expressions"
@@ -2870,7 +2883,7 @@ tests = [
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.builtin_type_assertion_formula_gap"
 source = "doc/design/mizar-checker/en/type_checker.md"
-section = "Task 102 source-derived builtin type assertion formula extraction gap boundary"
+section = "Task 109 source-derived builtin type assertion term/formula/type checker bridge"
 stage = "type_elaboration"
 status = "covered"
 required = true

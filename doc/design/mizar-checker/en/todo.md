@@ -2222,14 +2222,14 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       using the Chapter 14 builtin type-assertion form with a Chapter 13
       numeral term.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned term/formula payload extraction,
-      type-assertion type payload extraction, term inference, type-assertion
-      semantic checking, formula checking, recorded facts, theorem acceptance,
-      CoreIr, ControlFlowIr, VC, proof payloads, and the `formula_statement`
-      runner are not available. The task must not fabricate term payloads,
-      formula payloads, type-assertion facts, theorem acceptance, or downstream
+    - Task 109 supersedes only the exact builtin `set` theorem source with
+      source-derived checker `TermInput`, `FormulaInput`, and asserted
+      `TypeExpressionInput` payloads before failing closed on missing numeric
+      type payloads and partial formula checking. Broader asserted type payload
+      extraction, type-assertion semantic checking, recorded facts, theorem
+      acceptance, CoreIr, ControlFlowIr, VC, proof payloads, and the
+      `formula_statement` runner remain unavailable. The tasks must not
+      fabricate type-assertion facts, theorem acceptance, or downstream
       semantic payloads.
     - Verify: `cargo test -p mizar-test`.
     - Deps: tasks 86, 87, 98, 100, and 101. Refs: Step 5 source-derived

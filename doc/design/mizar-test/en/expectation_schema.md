@@ -613,17 +613,23 @@ These sidecars document that the source reached parser/resolver execution, but
 they do not credit a `formula_statement` runner, checker theorem/formula
 payload extraction, recorded facts, proof skeletons, CoreIr, ControlFlowIr, VC,
 or proof payloads.
-Tasks 106, 107, and 108 supersede their exact equality/inequality/membership sidecars: they still use
+Tasks 106, 107, 108, and 109 supersede their exact
+equality/inequality/membership/type-assertion sidecars: they still use
 `failure_category = "external_dependency_gap"`, but now use
 `rejection_reason = "numeric_type_payload_extraction_gap"` and checker detail
 keys for missing numeric type payloads plus partial formula checking.
-Tasks 98, 102, 103, 104, and 105 continue to permit term-bearing
+Task 109 additionally credits the exact builtin `set` asserted type as a real
+source-derived checker `TypeExpressionInput`, but still does not credit broader
+asserted type payloads, type-assertion semantic checking, recorded facts,
+theorem acceptance, `formula_statement`, CoreIr, ControlFlowIr, VC, or proof
+payloads.
+Tasks 98, 103, 104, and 105 continue to permit term-bearing
 theorem formula fail sidecars to use
 `rejection_reason = "term_formula_payload_extraction_gap"` and
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
 These sidecars document that a theorem formula containing Chapter 13 term
 surfaces and Chapter 14 atomic formulas, including task-98 imported
-predicate/functor applications, task-102 builtin type assertion, task-103 imported attribute
+predicate/functor applications, task-103 imported attribute
 assertion, task-104 attribute-level non-empty imported attribute assertion, and
 task-105 set-enumeration equality, reached parser/resolver execution,
 but they do not credit imported semantic payloads, set-enumeration term payload
@@ -631,8 +637,7 @@ extraction, imported attribute assertion
 attribute-chain/provenance payload extraction, imported attribute-level
 non-empty assertion attribute-chain/provenance payload extraction, term/formula payload
 extraction, inequality desugaring
-or equality semantic checking, type-assertion type payload extraction,
-type-assertion semantic checking, attribute admissibility/semantic checking,
+or equality semantic checking, attribute admissibility/semantic checking,
 negated attribute admissibility/semantic checking, term inference, formula checking, recorded facts, theorem acceptance, imported
 module AST extraction, checker `AttributeInput` payload extraction for theorem
 formulas, a `formula_statement` runner, proof skeletons, CoreIr, ControlFlowIr,

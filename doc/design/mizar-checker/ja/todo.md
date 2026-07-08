@@ -2064,14 +2064,14 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
 102. **Source-derived builtin type assertion formula extraction-gap boundary を追加する。** [x]
     - Chapter 14 の builtin type-assertion form と Chapter 13 の numeral term を
       使う theorem formula 専用の active `type_elaboration` boundary を追加する。
-    - Acceptance: parser と resolver は source を実行し、その後 active runner は
-      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
-      checker-owned term/formula payload extraction、type-assertion type payload
-      extraction、term inference、type-assertion semantic checking、formula
-      checking、recorded fact、theorem acceptance、CoreIr、ControlFlowIr、VC、
-      proof payload、`formula_statement` runner がまだ利用できないためである。
-      この task は term payload、formula payload、type-assertion fact、theorem
-      acceptance、downstream semantic payload を捏造してはならない。
+    - task 109 は exact builtin `set` theorem source だけを source-derived checker
+      `TermInput`、`FormulaInput`、asserted `TypeExpressionInput` payload に
+      supersede し、missing numeric type payload と partial formula checking で
+      fail closed する。より広い asserted type payload extraction、
+      type-assertion semantic checking、recorded fact、theorem acceptance、CoreIr、
+      ControlFlowIr、VC、proof payload、`formula_statement` runner はまだ利用
+      できない。これらの task は type-assertion fact、theorem acceptance、
+      downstream semantic payload を捏造してはならない。
     - 検証: `cargo test -p mizar-test`。
     - 依存: tasks 86、87、98、100、101。参照: Step 5 source-derived semantic
       bridge、mizar-test task 10、spec 13 term expressions、spec 14 formulas、

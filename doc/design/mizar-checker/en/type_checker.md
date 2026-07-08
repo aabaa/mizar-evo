@@ -429,13 +429,14 @@ then fails closed on
 payloads, inequality desugaring or equality semantic checking, recorded facts,
 theorem acceptance, the dedicated `formula_statement` runner, CoreIr,
 ControlFlowIr, VC, and proof payloads are still absent.
-Task 102 records the builtin type-assertion variant of that same term/formula
-boundary: `theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` reaches
-parser and resolver execution with a Chapter 13 numeral term and the Chapter
-14 builtin type-assertion form, then stays on
-`type_elaboration.external_dependency.ast_payload_extraction` because real
-term/formula payload extraction, type-assertion type payload extraction, term
-inference, type-assertion semantic checking, formula checking, recorded facts,
+Task 109 supersedes the exact builtin `set` portion of task 102:
+`theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` reaches parser and
+resolver execution with a Chapter 13 numeral term and the Chapter 14 builtin
+type-assertion form, then passes source-derived checker `TermInput`,
+`FormulaInput`, and asserted builtin `set` `TypeExpressionInput` payloads before
+failing on missing numeric type payloads and partial formula checking. Broader
+asserted type payload extraction, term inference, type-assertion semantic
+checking, formula checking beyond the partial-term diagnostic, recorded facts,
 theorem acceptance, the dedicated `formula_statement` runner, CoreIr,
 ControlFlowIr, VC, and proof payloads are still absent.
 Task 103 records the imported attribute assertion variant of that same

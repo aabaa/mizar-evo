@@ -298,8 +298,8 @@ Keep `cargo test -p mizar-test` green after each task (see
       builtin equality theorem term/formula checker bridge, checker task 98's imported predicate/functor
       term-formula extraction-gap boundary, checker task 108's builtin
       membership theorem checker bridge, checker task 107's builtin
-      inequality theorem checker bridge, checker task 102's builtin
-      type assertion formula extraction-gap boundary, checker task 103's imported
+      inequality theorem checker bridge, checker task 109's builtin
+      type assertion theorem term/formula/type checker bridge, checker task 103's imported
       attribute assertion formula extraction-gap boundary, checker task 104's
       attribute-level non-empty imported attribute assertion formula
       extraction-gap boundary, checker task 105's set-enumeration formula
@@ -455,14 +455,14 @@ Keep `cargo test -p mizar-test` green after each task (see
       attributed or argument-bearing
       mode/structure heads, structure base-shape payloads, definition payloads beyond the task-92 extraction-gap boundary, proof-local declaration payloads beyond the task-93 extraction-gap boundary, inline definition payloads beyond the task-94 extraction-gap boundary, registration payloads and activation/correctness payloads beyond the task-95 extraction-gap boundary, redefinition/notation payloads beyond the task-96 extraction-gap boundary, imported predicate/functor semantic payloads, quantifier binder/context payloads, terms and
       membership operand expected-type construction/checking, inequality desugaring or
-      equality semantic checking, type-assertion type payload extraction,
+      equality semantic checking, broader type-assertion type payload extraction,
       type-assertion semantic checking, imported attribute assertion
       attribute-chain/provenance payload extraction, imported attribute-level
       non-empty assertion attribute-chain/provenance payload extraction, set-enumeration
       term payload extraction, negated
       attribute admissibility/semantic checking, attribute admissibility/semantic
       checking, formula/theorem/proof payloads beyond the
-      task-106 builtin equality theorem checker bridge, task-107 builtin inequality theorem checker bridge, task-108 builtin membership theorem checker bridge, and task-86/task-98/task-102/task-103/task-104/task-105/task-99/task-88/task-89/task-93/task-94/task-95/task-96
+      task-106 builtin equality theorem checker bridge, task-107 builtin inequality theorem checker bridge, task-108 builtin membership theorem checker bridge, task-109 builtin type assertion theorem checker bridge, and task-86/task-98/task-103/task-104/task-105/task-99/task-88/task-89/task-93/task-94/task-95/task-96
       extraction-gap boundaries,
       coercions, overload payloads, facts, CoreIr,
       ControlFlowIr, VC payloads, and proof evidence remain on the explicit

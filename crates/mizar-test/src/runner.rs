@@ -26,8 +26,8 @@ use mizar_checker::resolved_typed_ast::{
 use mizar_checker::type_checker::{
     AttributeInput, AttributePolarity, DeclarationCheckingOutput, DeclarationKind,
     DeclarationStatus, FormulaInput, FormulaKind, ModeExpansion, SourceReserveBindingInput,
-    SourceReserveDeclarationBridge, TermFormulaChecker, TermInput, TermKind, TypeExpressionInput,
-    TypeHeadInput,
+    SourceReserveDeclarationBridge, TermFormulaChecker, TermFormulaInferenceOutput, TermInput,
+    TermKind, TypeExpressionInput, TypeHeadInput,
 };
 use mizar_checker::typed_ast::{
     CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, TypeEntryId,
@@ -903,6 +903,11 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) =
+        source_builtin_type_assertion_formula_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
     let Ok(source_reserve) =
         extract_builtin_source_reserve_declarations(ast, module.clone(), symbols)
     else {
@@ -992,6 +997,16 @@ struct SourceBuiltinBinaryTermFormula {
     right_range: SourceRange,
 }
 
+#[derive(Debug, Clone)]
+struct SourceBuiltinTypeAssertionFormula {
+    formula_site: TypedSiteRef,
+    formula_range: SourceRange,
+    subject_site: TypedSiteRef,
+    subject_range: SourceRange,
+    asserted_type_site: TypedSiteRef,
+    asserted_type: SourceTypeExpression,
+}
+
 fn source_builtin_binary_term_formula_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -1033,6 +1048,58 @@ fn source_builtin_binary_term_formula_detail_keys(
     keys.sort();
     keys.dedup();
     Some(keys)
+}
+
+fn source_builtin_type_assertion_formula_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output = source_builtin_type_assertion_formula_output(ast, module, symbols)?;
+    let mut keys = output
+        .diagnostics()
+        .canonical_iter()
+        .map(|(_, diagnostic)| format!("type_elaboration.checker.{}", diagnostic.message_key))
+        .collect::<Vec<_>>();
+    keys.sort();
+    keys.dedup();
+    Some(keys)
+}
+
+fn source_builtin_type_assertion_formula_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_builtin_type_assertion_formula(ast, &module, symbols)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let asserted_type = TypeExpressionInput::new(
+        payload.asserted_type_site,
+        payload.asserted_type.range,
+        payload.asserted_type.spelling,
+        payload.asserted_type.head,
+    )
+    .with_attributes(payload.asserted_type.attributes);
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [TermInput::new(
+            payload.subject_site.clone(),
+            context,
+            payload.subject_range,
+            TermKind::Numeral,
+        )],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::TypeAssertion,
+        )
+        .with_terms(vec![payload.subject_site])
+        .with_asserted_type(asserted_type)],
+    );
+    Some(output)
 }
 
 fn extract_source_builtin_binary_term_formula(
@@ -1119,6 +1186,89 @@ fn extract_source_builtin_binary_term_formula(
     })
 }
 
+fn extract_source_builtin_type_assertion_formula(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceBuiltinTypeAssertionFormula> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_builtin_type_assertion_theorem_bridge_node(node))
+    {
+        return None;
+    }
+    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let [(_, theorem)] = theorem_items.as_slice() else {
+        return None;
+    };
+    if subtree_has_recovery(ast, theorem) {
+        return None;
+    }
+    let theorem_tokens = direct_token_texts(ast, theorem);
+    if theorem_tokens.as_slice() != ["theorem", "BuiltinTypeAssertionPayloadBoundary", ":", ";"] {
+        return None;
+    }
+
+    let theorem_structural_children = structural_child_ids(ast, theorem);
+    let formula_expressions = theorem_structural_children
+        .iter()
+        .copied()
+        .filter(|id| {
+            ast.node(*id)
+                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::FormulaExpression))
+        })
+        .collect::<Vec<_>>();
+    if formula_expressions.len() != 1
+        || theorem_structural_children
+            .iter()
+            .any(|child| !formula_expressions.contains(child))
+    {
+        return None;
+    }
+    let formula_expression = ast.node(formula_expressions[0])?;
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::IsAssertion)
+        || subtree_has_recovery(ast, formula)
+        || direct_token_texts(ast, formula).as_slice() != ["is"]
+    {
+        return None;
+    }
+
+    let assertion_structural_children = structural_child_ids(ast, formula);
+    let [term_expression_id, type_expression_id] = assertion_structural_children.as_slice() else {
+        return None;
+    };
+    let term_expression = ast.node(*term_expression_id)?;
+    let type_expression = ast.node(*type_expression_id)?;
+    if !matches!(term_expression.kind, SurfaceNodeKind::TermExpression)
+        || !matches!(type_expression.kind, SurfaceNodeKind::TypeExpression)
+    {
+        return None;
+    }
+    let subject = exact_numeral_term_operand(ast, *term_expression_id, "1")?;
+    let asserted_type =
+        extract_builtin_source_type_expression(ast, type_expression, module, symbols).ok()?;
+    if asserted_type.spelling != "set"
+        || asserted_type.head != TypeHeadInput::BuiltinSet
+        || !asserted_type.attributes.is_empty()
+    {
+        return None;
+    }
+    Some(SourceBuiltinTypeAssertionFormula {
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+        subject_site: surface_site(subject.0),
+        subject_range: subject.1,
+        asserted_type_site: surface_site(*type_expression_id),
+        asserted_type,
+    })
+}
+
 fn exact_numeral_term_operand(
     ast: &SurfaceAst,
     term_expression_id: SurfaceNodeId,
@@ -1167,6 +1317,23 @@ fn is_supported_builtin_binary_theorem_bridge_node(node: &SurfaceNode) -> bool {
             | SurfaceNodeKind::BuiltinPredicateApplication
             | SurfaceNodeKind::TermExpression
             | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_builtin_type_assertion_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::IsAssertion
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::TypeHead
             | SurfaceNodeKind::Token(_)
     )
 }
@@ -3595,11 +3762,16 @@ mod tests {
     use super::{
         ParseOnlyImportProvider, TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY,
         assemble_source_checker_handoff, extract_builtin_source_reserve_declarations,
-        resolve_visible_attribute, resolve_visible_type_head, source_type_elaboration_detail_keys,
+        extract_source_builtin_type_assertion_formula, resolve_visible_attribute,
+        resolve_visible_type_head, source_builtin_type_assertion_formula_output,
+        source_type_elaboration_detail_keys,
     };
     use mizar_checker::binding_env::BindingId;
     use mizar_checker::resolved_typed_ast::{ResolvedTypedNodeId, ResolvedTypedNodeKind};
-    use mizar_checker::type_checker::{AttributePolarity, TypeHeadInput};
+    use mizar_checker::type_checker::{
+        AttributePolarity, FormulaKind, FormulaStatus, TermKind, TermStatus, TypeHeadInput,
+        TypeHeadRef,
+    };
     use mizar_checker::typed_ast::LocalTypeContextId;
     use mizar_core::elaborator::ResolvedTypedAstSummary;
     use mizar_frontend::lexical_env::{
@@ -7468,6 +7640,62 @@ mod tests {
                 "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
             ]
         );
+        let type_assertion_theorem = builtin_type_assertion_theorem_ast(
+            source_id,
+            "BuiltinTypeAssertionPayloadBoundary",
+            "1",
+            ReserveTypeShape::Builtin("set"),
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&type_assertion_theorem, module.clone(), &symbols),
+            vec![
+                "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+                "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            ]
+        );
+        let type_assertion_output = source_builtin_type_assertion_formula_output(
+            &type_assertion_theorem,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact builtin type assertion bridge should produce checker output");
+        let type_assertion_payload = extract_source_builtin_type_assertion_formula(
+            &type_assertion_theorem,
+            &module,
+            &symbols,
+        )
+        .expect("exact builtin type assertion bridge should extract source payload");
+        assert_eq!(type_assertion_output.terms().len(), 1);
+        let (_, checked_subject) = type_assertion_output
+            .terms()
+            .iter()
+            .next()
+            .expect("subject term should be checked");
+        assert_eq!(checked_subject.kind, TermKind::Numeral);
+        assert_eq!(checked_subject.status, TermStatus::Partial);
+        assert_eq!(checked_subject.site, type_assertion_payload.subject_site);
+        assert_eq!(type_assertion_output.formulas().len(), 1);
+        let (_, checked_formula) = type_assertion_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("type assertion formula should be checked");
+        assert_eq!(checked_formula.site, type_assertion_payload.formula_site);
+        assert_eq!(checked_formula.kind, FormulaKind::TypeAssertion);
+        assert_eq!(checked_formula.status, FormulaStatus::Partial);
+        assert_eq!(checked_formula.terms, vec![checked_subject.site.clone()]);
+        let asserted_type = checked_formula
+            .asserted_type
+            .and_then(|id| type_assertion_output.normalized_types().get(id))
+            .expect("type assertion bridge must pass the asserted type to the checker");
+        assert_eq!(asserted_type.head, TypeHeadRef::BuiltinSet);
+        assert!(asserted_type.attributes.positive().is_empty());
+        assert!(asserted_type.attributes.negative().is_empty());
+        assert_eq!(asserted_type.source.spelling, "set");
+        assert_eq!(
+            asserted_type.source.range,
+            type_assertion_payload.asserted_type.range
+        );
         let other_label_theorem =
             builtin_equality_theorem_ast(source_id, "OtherPayloadBoundary", "1", "1");
         assert_eq!(
@@ -7567,6 +7795,93 @@ mod tests {
         assert_eq!(
             source_type_elaboration_detail_keys(
                 &mixed_reserve_and_membership_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_type_assertion_label_theorem = builtin_type_assertion_theorem_ast(
+            source_id,
+            "OtherPayloadBoundary",
+            "1",
+            ReserveTypeShape::Builtin("set"),
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_type_assertion_label_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let status_prefixed_type_assertion_theorem = builtin_type_assertion_theorem_ast_with_status(
+            source_id,
+            "open",
+            "BuiltinTypeAssertionPayloadBoundary",
+            "1",
+            ReserveTypeShape::Builtin("set"),
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &status_prefixed_type_assertion_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_type_assertion_literal_theorem = builtin_type_assertion_theorem_ast(
+            source_id,
+            "BuiltinTypeAssertionPayloadBoundary",
+            "2",
+            ReserveTypeShape::Builtin("set"),
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_type_assertion_literal_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_type_assertion_type_theorem = builtin_type_assertion_theorem_ast(
+            source_id,
+            "BuiltinTypeAssertionPayloadBoundary",
+            "1",
+            ReserveTypeShape::Builtin("object"),
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_type_assertion_type_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let attributed_type_assertion_theorem = builtin_type_assertion_theorem_ast(
+            source_id,
+            "BuiltinTypeAssertionPayloadBoundary",
+            "1",
+            ReserveTypeShape::AttributedSet,
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &attributed_type_assertion_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let mixed_reserve_and_type_assertion_theorem =
+            reserve_then_builtin_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                "BuiltinTypeAssertionPayloadBoundary",
+                "1",
+                ReserveTypeShape::Builtin("set"),
+            );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &mixed_reserve_and_type_assertion_theorem,
                 module.clone(),
                 &symbols
             ),
@@ -9279,6 +9594,56 @@ mod tests {
         builder.finish(Some(root), None)
     }
 
+    fn builtin_type_assertion_theorem_ast(
+        source_id: SourceId,
+        label: &str,
+        subject: &str,
+        type_shape: ReserveTypeShape,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem = add_builtin_type_assertion_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            label,
+            subject,
+            type_shape,
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn builtin_type_assertion_theorem_ast_with_status(
+        source_id: SourceId,
+        status: &str,
+        label: &str,
+        subject: &str,
+        type_shape: ReserveTypeShape,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem = add_builtin_type_assertion_theorem_item_with_status(
+            &mut builder,
+            source_id,
+            &mut offset,
+            Some(status),
+            label,
+            subject,
+            type_shape,
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
     fn reserve_then_builtin_equality_theorem_ast(
         source_id: SourceId,
         items: Vec<ReserveItemSpec>,
@@ -9308,6 +9673,32 @@ mod tests {
             left,
             operator,
             right,
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn reserve_then_builtin_type_assertion_theorem_ast(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+        label: &str,
+        subject: &str,
+        type_shape: ReserveTypeShape,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
+        root_children.push(add_builtin_type_assertion_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            label,
+            subject,
+            type_shape,
         ));
         let root = builder.add_node(
             SurfaceNodeKind::Root,
@@ -9387,6 +9778,106 @@ mod tests {
             SurfaceNodeKind::TheoremItem,
             range(source_id, start, end),
             vec![theorem, label_token, colon, formula_expression, semicolon],
+        )
+    }
+
+    fn add_builtin_type_assertion_theorem_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        label: &str,
+        subject: &str,
+        type_shape: ReserveTypeShape,
+    ) -> SurfaceBuilderNodeId {
+        add_builtin_type_assertion_theorem_item_with_status(
+            builder, source_id, offset, None, label, subject, type_shape,
+        )
+    }
+
+    fn add_builtin_type_assertion_theorem_item_with_status(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        status: Option<&str>,
+        label: &str,
+        subject: &str,
+        type_shape: ReserveTypeShape,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let status_token = status.map(|status| {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                status,
+            )
+        });
+        let theorem = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+        );
+        let label_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            label,
+        );
+        let colon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+        );
+        let formula_start = *offset;
+        let subject_term = add_numeral_term_expression(builder, source_id, offset, subject);
+        let is_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "is",
+        );
+        let asserted_type = add_reserve_type_expression(builder, source_id, offset, type_shape);
+        let formula_end = builder
+            .node_range(asserted_type)
+            .expect("just-created asserted type should exist")
+            .end;
+        let formula = builder.add_node(
+            SurfaceNodeKind::IsAssertion,
+            range(source_id, formula_start, formula_end),
+            vec![subject_term, is_token, asserted_type],
+        );
+        let formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, formula_start, formula_end),
+            vec![formula],
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        let mut children = Vec::new();
+        if let Some(status_token) = status_token {
+            children.push(status_token);
+        }
+        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, start, end),
+            children,
         )
     }
 

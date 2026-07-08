@@ -445,8 +445,8 @@ local-attribute external-gap case, the task 86 formula-only theorem
 external-gap case, the task 106 builtin equality theorem checker-payload numeric-type gap
 case, the task 98 imported predicate/functor theorem formula external-gap
 case, the task 108 builtin membership theorem checker bridge, the task 107
-builtin inequality theorem checker bridge, the task 102 builtin type-assertion theorem formula external-gap
-case, the task 103 imported attribute assertion theorem formula external-gap
+builtin inequality theorem checker bridge, the task 109 builtin type-assertion theorem checker
+bridge, the task 103 imported attribute assertion theorem formula external-gap
 case, the task 104 attribute-level non-empty imported attribute assertion theorem formula external-gap
 case, the task 105 set-enumeration theorem formula external-gap
 case, the task 99 connective/quantifier theorem formula external-gap
@@ -594,11 +594,12 @@ supersedes the exact `BuiltinInequalityPayloadBoundary: 1 <> 2` sidecar by
 crediting real checker term/formula payload extraction while still failing
 closed before numeric type payloads, inequality desugaring or equality semantic
 checking, recorded facts, theorem acceptance, `formula_statement` runner
-support, CoreIr, ControlFlowIr, VC, or proof payloads. Task 102 fail cases credit only the builtin type-assertion
-theorem formula extraction-gap boundary after parser/resolver execution and do
-not credit checker term/formula payload extraction, type-assertion type payload
-extraction, term inference, type-assertion semantic checking, formula checking,
-recorded facts, theorem acceptance, `formula_statement` runner support, CoreIr,
+support, CoreIr, ControlFlowIr, VC, or proof payloads. Task 109 supersedes the exact
+builtin type-assertion sidecar from task 102 by crediting real checker
+term/formula payload extraction and the asserted builtin `set`
+`TypeExpressionInput` while still failing closed before numeric type payloads,
+broader asserted type payloads, type-assertion semantic checking, recorded
+facts, theorem acceptance, `formula_statement` runner support, CoreIr,
 ControlFlowIr, VC, or proof payloads. Task 103 fail cases credit only the
 imported attribute assertion theorem formula extraction-gap boundary after
 parser/resolver execution and do not credit checker term/formula payload

@@ -409,14 +409,15 @@ runner は Chapter 13 の 2 つの numeral operand から real source-derived ch
 numeric type payload、inequality desugaring または equality semantic checking、
 recorded fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
 ControlFlowIr、VC、proof payload はまだ存在しない。
-task 102 は同じ term/formula boundary の builtin type-assertion variant を記録する:
+task 109 は task 102 の exact builtin `set` portion を supersede する:
 `theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` は Chapter 13 の numeral
 term と Chapter 14 の builtin type-assertion form を通じて parser / resolver 実行まで
-到達するが、real term/formula payload extraction、type-assertion type payload
-extraction、term inference、type-assertion semantic checking、formula checking、
-recorded fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
-ControlFlowIr、VC、proof payload がまだ存在しないため
-`type_elaboration.external_dependency.ast_payload_extraction` に残す。
+到達し、source-derived checker `TermInput`、`FormulaInput`、asserted builtin
+`set` `TypeExpressionInput` payload を渡してから missing numeric type payload と
+partial formula checking で fail する。より広い asserted type payload extraction、
+term inference、type-assertion semantic checking、partial-term diagnostic を超える
+formula checking、recorded fact、theorem acceptance、dedicated `formula_statement`
+runner、CoreIr、ControlFlowIr、VC、proof payload はまだ存在しない。
 task 103 は同じ term/formula boundary の imported attribute assertion variant を
 記録する:
 `import parser.type_fixtures; theorem ImportedAttributeAssertionPayloadBoundary: 1 is empty;`
