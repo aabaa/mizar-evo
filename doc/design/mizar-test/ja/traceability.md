@@ -329,13 +329,22 @@ external-gap boundary だけを credit する。runner は documented
 `type_elaboration.external_dependency.ast_payload_extraction` を観測し、real
 imported structure provenance、structure type-head payload extraction、
 base-shape / constructor-witness evidence、positive structure elaboration、
-CoreIr、ControlFlowIr、VC、proof payload を credit しない。task 79 は
-imported-mode reserve-head external-gap boundary だけを credit する。runner は
-documented `parser.type_fixtures` imported mode summary について
-`type_elaboration.external_dependency.ast_payload_extraction` を観測し、real
+CoreIr、ControlFlowIr、VC、proof payload を credit しない。task 79 は task-82
+`TypeCaseMode` bridge 外の imported-mode reserve-head external-gap boundary
+だけを credit する。これらの case は documented `parser.type_fixtures`
+imported mode summary について
+`type_elaboration.external_dependency.ast_payload_extraction` を観測し、
 imported mode provenance、mode type-head payload extraction、`ModeExpansion`
 payload、positive mode elaboration、CoreIr、ControlFlowIr、VC、proof payload を
-credit しない。task 80 は imported-attribute reserve external-gap boundary
+credit しない。task 82 は imported-mode reserve-head provenance bridge だけを
+credit してよい。runner は同じ documented `parser.type_fixtures` imported mode
+summary について real imported `SymbolKind::Mode` symbol を checker type head
+として渡した後に
+`type_elaboration.checker.checker.type.external.mode_expansion_payload` を観測する。
+これは imported mode provenance と type-head payload extraction を credit するが、
+imported module AST extraction、`ModeExpansion` payload、positive mode
+elaboration、CoreIr、ControlFlowIr、VC、proof payload は credit しない。task 80 は
+imported-attribute reserve external-gap boundary
 だけを credit する。runner は documented `parser.type_fixtures` imported
 attribute summary について
 `type_elaboration.external_dependency.ast_payload_extraction` を観測し、real
@@ -433,8 +442,11 @@ credit し、checker `ModeExpansion`、structure type-head、base-shape、
 constructor-witness、`AttributeInput`、attributed-type evidence production は credit しない。
 task 78 の fail case は imported structure extraction-gap boundary だけを
 credit し、real imported structure provenance や structure evidence は credit
-しない。task 79 の fail case は imported mode extraction-gap boundary だけを
-credit し、real imported mode provenance や mode expansion は credit しない。
+しない。task 79 の fail case は task-82 `TypeCaseMode` bridge 外の imported
+mode extraction-gap boundary だけを credit する。task 82 の fail case は real
+imported mode provenance と checker type-head payload extraction だけを credit
+し、imported module AST extraction、imported mode expansion、arity checking、
+positive imported mode elaboration、downstream payload promotion は credit しない。
 task 80 の fail case は imported attribute extraction-gap boundary だけを
 credit し、real imported attribute provenance や attributed-type evidence は
 credit しない。

@@ -303,15 +303,14 @@ runner まで到達し、
 imported structure provenance、structure type-head payload、base-shape /
 constructor-witness evidence、positive structure elaboration、CoreIr/
 ControlFlowIr/VC/proof payload を捏造してはならない。
-task 79 は imported-mode 類似 case を同じ external extraction-gap boundary
-として記録する。documented `parser.type_fixtures` import summary 由来の
-`TypeCaseMode` のような reserve head は active type-elaboration runner まで
-到達し、`type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+task 79 は元々 imported-mode 類似 case を同じ external extraction-gap boundary
+として記録した。task 82 は documented `parser.type_fixtures` `TypeCaseMode`
+reserve head だけについて real imported `SymbolKind::Mode` を checker type head
+として渡すことで、その boundary を上書きする。task-82 bridge 外の imported
+mode は引き続き `type_elaboration.external_dependency.ast_payload_extraction` に残る。
 bridge はこの import summary を real imported module AST extraction と扱っては
-ならず、imported mode provenance、mode type-head payload、`ModeExpansion`
-payload、positive mode elaboration、CoreIr/ControlFlowIr/VC/proof payload を
-捏造してはならない。これは既存の generic non-builtin imported-mode gap を
-owned diagnostic boundary slice として精密化するだけである。
+ならず、`ModeExpansion` payload、positive mode elaboration、
+CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。
 task 80 は imported-attribute 類似 case を同じ external extraction-gap boundary
 として記録する。documented `parser.type_fixtures` import summary 由来の
 `TypeCaseAttr set` のような reserve type は active type-elaboration runner まで
@@ -334,6 +333,17 @@ payload extraction はまだ real term-argument provenance や
 checker-owned `AttributeInput` argument payload を保持しないためである。bridge は
 attribute argument、attributed-type evidence、positive parameterized attribute
 elaboration、CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。
+task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
+documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
+reserve head は、可視 resolver symbol が `SymbolKind::Mode` で
+`ImportedSource` contribution を持つ場合に checker-owned
+`TypeHeadInput::Symbol` として渡してよい。ただし real imported mode definition
+または module-summary expansion payload は存在しないため、runner は
+`ModeExpansion` payload を引き続き渡さず、active case は generic AST payload
+extraction gap ではなく `checker.type.external.mode_expansion_payload` に到達する。
+これは imported module AST extraction、arity checking、positive imported mode
+elaboration、imported structure、imported attribute、CoreIr、ControlFlowIr、VC、
+proof payload を主張しない。
 task 57 はさらに、RHS が type argument を持たない same-module
 local structure head である bare same-module no-argument local mode expansion を許可する。
 この case は real `ModeExpansion` を消費するため missing mode-expansion payload diagnostic を

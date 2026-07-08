@@ -1808,6 +1808,8 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       mode semantics, and does not promote CoreIr, ControlFlowIr, VC, or proof
       payloads. The fixture is diagnostic boundary coverage only and only
       refines traceability for the generic non-builtin imported-mode gap.
+      Task 82 supersedes only the documented `TypeCaseMode`
+      provenance/type-head slice.
     - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
     - Deps: tasks 48, 51, 55, and 78. Refs: Step 5 source-derived semantic
       bridge; mizar-test task 10; spec 03 type expressions; spec 07 modes; spec
@@ -1852,6 +1854,29 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       expressions; spec 06 attributes; spec 11 symbol management;
       mizar-lexer disambiguator design;
       mizar-resolve symbol projection design.
+
+82. **Add source-derived imported mode reserve provenance bridge.** [x]
+    - Promote the task-79 imported-mode reserve boundary just far enough for
+      the active `type_elaboration` runner to pass the real
+      `parser.type_fixtures` import-summary `ImportedSource` mode symbol as a
+      checker `TypeHeadInput`.
+    - Acceptance: the checker reserve bridge validates that the imported mode
+      symbol is visible through `SymbolEnv`, has `SymbolKind::Mode`, and is
+      backed by an `ImportedSource` contribution rather than local source.
+      The runner no longer reports
+      `type_elaboration.external_dependency.ast_payload_extraction` for
+      `TypeCaseMode`; it reaches
+      `type_elaboration.checker.checker.type.external.mode_expansion_payload`
+      because real imported mode-definition/module-summary expansion payloads
+      are not available. The task must not synthesize imported module AST
+      extraction, `ModeExpansion` payloads, arity checking, positive mode
+      elaboration, CoreIr, ControlFlowIr, VC, or proof payloads, and it must
+      leave imported structures, imported attributes, arguments, brackets,
+      qualified attributes, and imported evidence on their existing gaps.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 51, 55, 78, and 79. Refs: Step 5 source-derived
+      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
+      modes; spec 11 symbol management; spec 12 modules and namespaces.
 
 ## Recommended Verification
 

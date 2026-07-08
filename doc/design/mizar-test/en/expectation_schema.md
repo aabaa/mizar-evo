@@ -541,8 +541,8 @@ when the source reaches the active runner through the documented
 imported module AST extraction, imported structure provenance, structure
 type-head payload extraction, base-shape or constructor-witness evidence,
 positive structure elaboration, CoreIr, ControlFlowIr, VC, or proof payloads.
-Task 79 permits imported mode reserve-head fail sidecars to use
-`failure_category = "external_dependency_gap"` with
+Task 79 permits imported mode reserve-head fail sidecars outside the task-82
+`TypeCaseMode` bridge to use `failure_category = "external_dependency_gap"` with
 `rejection_reason = "imported_mode_expansion_payload_gap"` and
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
 when the source reaches the active runner through the documented
@@ -550,6 +550,13 @@ when the source reaches the active runner through the documented
 imported module AST extraction, imported mode provenance, mode type-head
 payload extraction, `ModeExpansion` payloads, positive mode elaboration, CoreIr,
 ControlFlowIr, VC, or proof payloads.
+Task 82 permits that same imported mode reserve-head sidecar to move to
+`stable_detail_key = "type_elaboration.checker.checker.type.external.mode_expansion_payload"`
+once the runner passes the real imported `SymbolKind::Mode` symbol head from
+`SymbolEnv`. It credits imported mode provenance and type-head payload
+extraction only; it still does not credit imported module AST extraction,
+`ModeExpansion` payloads, positive mode elaboration, CoreIr, ControlFlowIr, VC,
+or proof payloads.
 Task 80 permits imported attribute reserve fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "imported_attribute_payload_gap"` and

@@ -3501,7 +3501,10 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_imported_mode_gap_001"
             && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+                == [
+                    "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+                    "type_elaboration.checker.checker.type.recovery",
+                ]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_bracket_mode_argument_gap_001"
@@ -6660,7 +6663,7 @@ tests = ["tests/miz/fail/types/fail_imported_structure_gap.expect.toml"]
 }
 
 #[test]
-fn type_elaboration_runner_keeps_imported_mode_heads_on_external_gap() {
+fn type_elaboration_runner_bridges_imported_mode_heads_to_checker_gap() {
     let corpus = Corpus::new();
     corpus.write(
         "tests/miz/fail/types/fail_imported_mode_gap.miz",
@@ -6678,10 +6681,11 @@ expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
 rejection_reason = "imported_mode_expansion_payload_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+stable_detail_key = "type_elaboration.checker.checker.type.external.mode_expansion_payload"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+  "type_elaboration.checker.checker.type.recovery",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = ["spec.en.test.type_elaboration.imported_mode_gap"]
@@ -6710,7 +6714,10 @@ tests = ["tests/miz/fail/types/fail_imported_mode_gap.expect.toml"]
     assert_eq!(report.passed_count(), 1);
     assert_eq!(
         report.results[0].actual_detail_keys,
-        ["type_elaboration.external_dependency.ast_payload_extraction"]
+        [
+            "type_elaboration.checker.checker.type.external.mode_expansion_payload",
+            "type_elaboration.checker.checker.type.recovery",
+        ]
     );
 }
 

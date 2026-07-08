@@ -50,10 +50,13 @@ use mizar_frontend::parsing::MizarParserSeam;
 use mizar_frontend::source::{FrontendSourceLoader, SourceUnitRequest};
 use mizar_resolve::declarations::DeclarationShellCollector;
 use mizar_resolve::env::{
-    ContributionKind, DefinitionKind, ExportStatus, NamespacePath, SymbolEnv, SymbolKind,
-    Visibility,
+    ContributionKind, DefinitionKind, ExportStatus, NamespacePath, SymbolEntry, SymbolEnv,
+    SymbolEnvIndexes, SymbolKind, Visibility,
 };
-use mizar_resolve::resolved_ast::{ModuleId as ResolverModuleId, SymbolId as ResolverSymbolId};
+use mizar_resolve::resolved_ast::{
+    FullyQualifiedName, LocalSymbolId, ModuleId as ResolverModuleId, SemanticOrigin,
+    SymbolId as ResolverSymbolId,
+};
 use mizar_resolve::symbols::{
     SignatureProjectionExtractor, SymbolCollector, SymbolDiagnostic, SymbolDiagnosticClass,
 };
@@ -686,7 +689,8 @@ fn type_elaboration_detail_keys(
             .collect();
     }
 
-    source_type_elaboration_detail_keys(&ast, resolver.module, &resolver.env)
+    let symbols = augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+    source_type_elaboration_detail_keys(&ast, resolver.module, &symbols)
 }
 
 fn frontend_detail_keys(case: &TestCase, diagnostics: &[FrontendDiagnostic]) -> Vec<String> {
@@ -723,6 +727,159 @@ fn resolver_symbol_collection(
         module,
         env: result.into_env(),
         detail_keys,
+    }
+}
+
+fn augment_type_elaboration_import_summaries(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: SymbolEnv,
+) -> SymbolEnv {
+    let imported_modules = type_elaboration_imported_fixture_modules(ast, module);
+    if imported_modules.is_empty() {
+        return symbols;
+    }
+    let mut indexes = clone_symbol_env_indexes(&symbols);
+    for (imported_module, anchor) in imported_modules {
+        let frontend_module = ModuleId::new(imported_module.path().as_str());
+        let exported_symbols = parse_only_fixture_symbols(&frontend_module);
+        if exported_symbols.is_empty() {
+            continue;
+        }
+        let contribution = indexes.contributions.insert(
+            imported_module.clone(),
+            ContributionKind::ImportedSource {
+                source_id: ast.source_id,
+            },
+            SourceAnchor::Range(anchor),
+        );
+        for (ordinal, exported) in exported_symbols.iter().enumerate() {
+            if exported.kind != UserSymbolKind::Mode || exported.spelling != "TypeCaseMode" {
+                continue;
+            }
+            let Some(kind) = resolver_symbol_kind(exported.kind) else {
+                continue;
+            };
+            let symbol = ResolverSymbolId::new(
+                imported_module.clone(),
+                LocalSymbolId::new(format!("summary:{}:{ordinal}", exported.symbol_id.as_str())),
+                FullyQualifiedName::new(format!(
+                    "{}::{}#{}",
+                    imported_module.path().as_str(),
+                    exported.spelling,
+                    ordinal
+                )),
+            );
+            indexes.symbols.insert(
+                SymbolEntry::new(
+                    symbol.clone(),
+                    kind,
+                    NamespacePath::new(module.path().as_str()),
+                    exported.spelling.clone(),
+                    SemanticOrigin::new(
+                        ast.source_id,
+                        imported_module.clone(),
+                        SourceAnchor::Range(anchor),
+                        vec![ordinal as u32],
+                    ),
+                    contribution,
+                )
+                .with_visibility(Visibility::Public)
+                .with_export_status(ExportStatus::Exported),
+            );
+            indexes.contributions.add_symbol(contribution, symbol);
+        }
+    }
+    SymbolEnv::new(module.clone(), indexes)
+}
+
+fn clone_symbol_env_indexes(symbols: &SymbolEnv) -> SymbolEnvIndexes {
+    SymbolEnvIndexes {
+        imports: symbols.imports().clone(),
+        exports: symbols.exports().clone(),
+        symbols: symbols.symbols().clone(),
+        labels: symbols.labels().clone(),
+        definitions: symbols.definitions().clone(),
+        overloads: symbols.overloads().clone(),
+        registrations: symbols.registrations().clone(),
+        lexical_summaries: symbols.lexical_summaries().clone(),
+        namespace_graph: symbols.namespace_graph().clone(),
+        declaration_dependencies: symbols.declaration_dependencies().clone(),
+        contributions: symbols.contributions().clone(),
+        module_summaries: symbols.module_summaries().clone(),
+    }
+}
+
+fn type_elaboration_imported_fixture_modules(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+) -> Vec<(ResolverModuleId, SourceRange)> {
+    let mut modules = Vec::new();
+    for node in ast
+        .nodes()
+        .iter()
+        .filter(|node| matches!(node.kind, SurfaceNodeKind::ImportAliasDecl))
+    {
+        let Some(module_path) = node
+            .children
+            .iter()
+            .filter_map(|child| ast.node(*child))
+            .find(|child| matches!(child.kind, SurfaceNodeKind::ModulePath))
+        else {
+            continue;
+        };
+        let Ok(spelling) = module_path_spelling(ast, module_path) else {
+            continue;
+        };
+        let frontend_module = ModuleId::new(spelling.as_str());
+        if parse_only_fixture_symbols(&frontend_module).is_empty() {
+            continue;
+        }
+        let imported_module =
+            ResolverModuleId::new(module.package().clone(), ModulePath::new(spelling.as_str()));
+        if modules
+            .iter()
+            .any(|(existing, _)| existing == &imported_module)
+        {
+            continue;
+        }
+        modules.push((imported_module, module_path.range));
+    }
+    modules
+}
+
+fn module_path_spelling(ast: &SurfaceAst, node: &SurfaceNode) -> Result<String, ()> {
+    if !matches!(node.kind, SurfaceNodeKind::ModulePath) || node.children.is_empty() {
+        return Err(());
+    }
+    let mut segments = Vec::new();
+    for child_id in &node.children {
+        let child = ast.node(*child_id).ok_or(())?;
+        if !matches!(child.kind, SurfaceNodeKind::PathSegment) || child.children.len() != 1 {
+            continue;
+        }
+        let token = ast
+            .node(child.children[0])
+            .and_then(SurfaceNode::token_text)
+            .ok_or(())?;
+        segments.push(token.to_owned());
+    }
+    if segments.is_empty() {
+        return Err(());
+    }
+    Ok(segments.join("."))
+}
+
+fn resolver_symbol_kind(kind: UserSymbolKind) -> Option<SymbolKind> {
+    match kind {
+        UserSymbolKind::Functor => Some(SymbolKind::Functor),
+        UserSymbolKind::Predicate => Some(SymbolKind::Predicate),
+        UserSymbolKind::Mode => Some(SymbolKind::Mode),
+        UserSymbolKind::Attribute => Some(SymbolKind::Attribute),
+        UserSymbolKind::Structure => Some(SymbolKind::Structure),
+        UserSymbolKind::Selector => Some(SymbolKind::Selector),
+        UserSymbolKind::Constructor => None,
+        _ => None,
     }
 }
 
@@ -1624,6 +1781,7 @@ fn is_supported_builtin_reserve_bridge_node(node: &SurfaceNode) -> bool {
             | SurfaceNodeKind::CompilationUnit
             | SurfaceNodeKind::ItemList
             | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
             | SurfaceNodeKind::ModulePath
             | SurfaceNodeKind::PathSegment
             | SurfaceNodeKind::DefinitionBlockItem
@@ -1787,6 +1945,34 @@ fn is_supported_attributed_source_reserve_head(
     }
 }
 
+fn supported_source_reserve_type_head_kind(
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+    symbol: &mizar_resolve::resolved_ast::SymbolId,
+) -> Option<SymbolKind> {
+    let entry = symbols.symbols().get(symbol)?;
+    if !matches!(entry.kind(), SymbolKind::Mode | SymbolKind::Structure) {
+        return None;
+    }
+    let contribution = symbols.contributions().get(entry.contribution())?;
+    if symbol.module() == module
+        && contribution.module() == module
+        && matches!(contribution.kind(), ContributionKind::LocalSource { .. })
+    {
+        return Some(entry.kind());
+    }
+    if symbol.module() != module
+        && matches!(entry.kind(), SymbolKind::Mode)
+        && contribution.module() == symbol.module()
+        && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
+        && symbol.module().path().as_str() == "parser.type_fixtures"
+        && entry.primary_spelling() == "TypeCaseMode"
+    {
+        return Some(entry.kind());
+    }
+    None
+}
+
 fn source_reserve_symbol_head_kind(
     symbols: &SymbolEnv,
     module: &ResolverModuleId,
@@ -1897,25 +2083,30 @@ fn resolve_visible_type_head(
     spelling: &str,
 ) -> Result<mizar_resolve::resolved_ast::SymbolId, ()> {
     let namespace = NamespacePath::new(module.path().as_str());
-    let candidates = symbols
+    let mut local_candidates = Vec::new();
+    let mut imported_candidates = Vec::new();
+    for entry in symbols
         .symbols()
         .visible_candidates(&namespace, spelling)
         .into_iter()
         .filter(|entry| matches!(entry.kind(), SymbolKind::Mode | SymbolKind::Structure))
-        .filter(|entry| entry.symbol().module() == module)
         .filter(|entry| {
-            symbols
-                .contributions()
-                .get(entry.contribution())
-                .is_some_and(|contribution| {
-                    contribution.module() == module
-                        && matches!(contribution.kind(), ContributionKind::LocalSource { .. })
-                })
+            supported_source_reserve_type_head_kind(symbols, module, entry.symbol()).is_some()
         })
-        .map(|entry| entry.symbol().clone())
-        .collect::<Vec<_>>();
-    match candidates.as_slice() {
+    {
+        let symbol = entry.symbol().clone();
+        if symbol.module() == module {
+            local_candidates.push(symbol);
+        } else {
+            imported_candidates.push(symbol);
+        }
+    }
+    match local_candidates.as_slice() {
         [symbol] => Ok(symbol.clone()),
+        [] => match imported_candidates.as_slice() {
+            [symbol] => Ok(symbol.clone()),
+            _ => Err(()),
+        },
         _ => Err(()),
     }
 }
@@ -6970,6 +7161,37 @@ mod tests {
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
 
+        let shadowed_imported_mode_symbols =
+            local_and_imported_mode_symbol_env(symbols.module_id().clone(), "TypeCaseMode");
+        let shadowed_imported_mode = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("TypeCaseMode"),
+            )],
+        );
+        let resolved_shadowed_head = resolve_visible_type_head(
+            &shadowed_imported_mode_symbols,
+            shadowed_imported_mode_symbols.module_id(),
+            "TypeCaseMode",
+        )
+        .expect("a local mode should shadow an imported mode of the same spelling");
+        assert_eq!(
+            resolved_shadowed_head.module(),
+            shadowed_imported_mode_symbols.module_id()
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &shadowed_imported_mode,
+                shadowed_imported_mode_symbols.module_id().clone(),
+                &shadowed_imported_mode_symbols
+            ),
+            vec![
+                "type_elaboration.checker.checker.type.external.mode_expansion_payload".to_owned(),
+                "type_elaboration.checker.checker.type.recovery".to_owned(),
+            ]
+        );
+
         let imported_structure_symbols = imported_structure_symbol_env(symbols.module_id().clone());
         assert_eq!(
             source_type_elaboration_detail_keys(
@@ -7733,6 +7955,62 @@ mod tests {
 
     fn imported_mode_symbol_env(module: ResolverModuleId) -> SymbolEnv {
         imported_symbol_env(module, "Mode", SymbolKind::Mode)
+    }
+
+    fn local_and_imported_mode_symbol_env(
+        module: ResolverModuleId,
+        spelling: &'static str,
+    ) -> SymbolEnv {
+        let source = source_id(198);
+        let imported_module = ResolverModuleId::new(
+            module.package().clone(),
+            ModulePath::new("parser.type_fixtures"),
+        );
+        let mut indexes = SymbolEnvIndexes::default();
+        let local_contribution = indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 1)),
+        );
+        let imported_contribution = indexes.contributions.insert(
+            imported_module.clone(),
+            ContributionKind::ImportedSource { source_id: source },
+            SourceAnchor::Range(range(source, 1, 2)),
+        );
+        for (ordinal, (symbol_module, contribution)) in [
+            (module.clone(), local_contribution),
+            (imported_module, imported_contribution),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let symbol = ResolverSymbolId::new(
+                symbol_module.clone(),
+                LocalSymbolId::new(format!("Mode/{spelling}/{ordinal}")),
+                FullyQualifiedName::new(format!(
+                    "{}::{spelling}/{ordinal}",
+                    symbol_module.path().as_str()
+                )),
+            );
+            indexes.symbols.insert(
+                SymbolEntry::new(
+                    symbol,
+                    SymbolKind::Mode,
+                    NamespacePath::new(module.path().as_str()),
+                    spelling,
+                    SemanticOrigin::new(
+                        source,
+                        symbol_module,
+                        SourceAnchor::Range(range(source, ordinal, ordinal + 1)),
+                        Vec::new(),
+                    ),
+                    contribution,
+                )
+                .with_visibility(Visibility::Public)
+                .with_export_status(ExportStatus::Exported),
+            );
+        }
+        SymbolEnv::new(module, indexes)
     }
 
     fn imported_mode_chain_symbol_env(

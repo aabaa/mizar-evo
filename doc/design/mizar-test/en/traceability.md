@@ -365,12 +365,21 @@ boundary: the runner observes
 imported structure provenance, structure type-head payload extraction,
 base-shape or constructor-witness evidence, positive structure elaboration,
 CoreIr, ControlFlowIr, VC, or proof payloads.
-Task 79 may credit only the imported-mode reserve-head external-gap boundary:
-the runner observes `type_elaboration.external_dependency.ast_payload_extraction`
-for the documented `parser.type_fixtures` imported mode summary and does not
-credit real imported mode provenance, mode type-head payload extraction,
-`ModeExpansion` payloads, positive mode elaboration, CoreIr, ControlFlowIr, VC,
-or proof payloads.
+Task 79 may credit only the imported-mode reserve-head external-gap boundary
+outside the task-82 `TypeCaseMode` bridge: those cases observe
+`type_elaboration.external_dependency.ast_payload_extraction` for the
+documented `parser.type_fixtures` imported mode summary and do not credit
+imported mode provenance, mode type-head payload extraction, `ModeExpansion`
+payloads, positive mode elaboration, CoreIr, ControlFlowIr, VC, or proof
+payloads.
+Task 82 may credit the imported-mode reserve-head provenance bridge only: the
+runner observes
+`type_elaboration.checker.checker.type.external.mode_expansion_payload` for the
+same documented `parser.type_fixtures` imported mode summary after passing the
+real imported `SymbolKind::Mode` symbol as a checker type head. It credits
+imported mode provenance and type-head payload extraction, but not imported
+module AST extraction, `ModeExpansion` payloads, positive mode elaboration,
+CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 80 may credit only the imported-attribute reserve external-gap boundary:
 the runner observes `type_elaboration.external_dependency.ast_payload_extraction`
 for the documented `parser.type_fixtures` imported attribute summary and does
@@ -469,13 +478,17 @@ expansion, structure/attributed-builtin terminals beyond the existing one-edge
 diagnostics, or CoreIr/ControlFlowIr/VC/proof promotion. Task 78 fail cases
 credit only the imported structure extraction-gap boundary and do not credit
 real imported structure provenance or structure evidence. Task 79 fail cases
-credit only the imported mode extraction-gap boundary and do not credit real
-imported mode provenance or mode expansion. Task 80 fail cases credit only the
-imported attribute extraction-gap boundary and do not credit real imported
-attribute provenance or attributed-type evidence. Task 81 fail cases credit only
-the argument-bearing local-attribute extraction-gap boundary and do not credit
-real term-argument provenance, checker `AttributeInput` argument payloads,
-attributed-type evidence, or positive attributed type elaboration. Task
+credit only the imported mode extraction-gap boundary outside the task-82
+`TypeCaseMode` bridge. Task 82 fail cases credit real imported mode provenance
+and checker type-head payload extraction only; they do not credit imported
+module AST extraction, imported mode expansion, arity checking, positive
+imported mode elaboration, or downstream payload promotion. Task 80 fail cases
+credit only the imported attribute extraction-gap boundary and do not credit
+real imported attribute provenance or attributed-type evidence. Task 81 fail
+cases credit only the argument-bearing local-attribute extraction-gap boundary
+and do not credit real term-argument provenance, checker `AttributeInput`
+argument payloads, attributed-type evidence, or positive attributed type
+elaboration. Task
 75/76/77 fail
 cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker

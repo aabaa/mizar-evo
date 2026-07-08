@@ -1673,7 +1673,8 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       positive mode elaboration、より広い imported mode semantics を捏造せず、
       CoreIr、ControlFlowIr、VC、proof payload へ昇格しない。この fixture は
       diagnostic boundary coverage のみであり、generic non-builtin imported-mode
-      gap の traceability だけを精密化する。
+      gap の traceability だけを精密化する。task 82 は documented
+      `TypeCaseMode` provenance/type-head slice だけを上書きする。
     - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
     - 依存: tasks 48、51、55、78。参照: Step 5 source-derived semantic bridge、
       mizar-test task 10、spec 03 type expressions、spec 07 modes、spec 11
@@ -1716,6 +1717,28 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       expressions、spec 06 attributes、spec 11 symbol management、
       mizar-lexer disambiguator design、
       mizar-resolve symbol projection design。
+
+82. **Source-derived imported mode reserve provenance bridge を追加する。** [x]
+    - task-79 の imported-mode reserve boundary を、active `type_elaboration`
+      runner が real `parser.type_fixtures` import-summary 由来の
+      `ImportedSource` mode symbol を checker `TypeHeadInput` として渡せる
+      ところまでだけ昇格する。
+    - Acceptance: checker reserve bridge は imported mode symbol が `SymbolEnv`
+      で可視であり、`SymbolKind::Mode` を持ち、local source ではなく
+      `ImportedSource` contribution に裏付けられていることを検証する。
+      runner は `TypeCaseMode` について
+      `type_elaboration.external_dependency.ast_payload_extraction` ではなく
+      `type_elaboration.checker.checker.type.external.mode_expansion_payload`
+      に到達する。real imported mode-definition/module-summary expansion
+      payload はまだ存在しないためである。この task は imported module AST
+      extraction、`ModeExpansion` payload、arity checking、positive mode
+      elaboration、CoreIr、ControlFlowIr、VC、proof payload を捏造してはならず、
+      imported structure、imported attribute、argument、bracket、qualified
+      attribute、imported evidence は既存 gap に残す。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、51、55、78、79。参照: Step 5 source-derived semantic
+      bridge、mizar-test task 10、spec 03 type expressions、spec 07 modes、
+      spec 11 symbol management、spec 12 modules and namespaces。
 
 ## 推奨検証
 

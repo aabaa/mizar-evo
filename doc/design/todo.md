@@ -270,7 +270,11 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    the imported mode reserve-head extraction-gap boundary, task 80 added the
    imported attribute reserve extraction-gap boundary, and task 81 added the
    argument-bearing local attribute reserve extraction-gap boundary plus the
-   resolver suffix-primary projection needed for parameterized local attributes).
+   resolver suffix-primary projection needed for parameterized local attributes,
+   and task 82 promotes the imported mode reserve-head boundary just far enough
+   to pass real imported mode symbol provenance/type-head payloads to the
+   checker missing mode-expansion diagnostic while keeping imported expansions
+   and downstream payloads deferred).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate
 semantic payloads; promote corpus rows only with prepared consumers.

@@ -318,15 +318,15 @@ not treat that imported summary as real imported module AST extraction, must not
 fabricate imported structure provenance, structure type-head payloads,
 base-shape/constructor-witness evidence, positive structure elaboration, or
 downstream CoreIr/ControlFlowIr/VC/proof payloads.
-Task 79 records the imported-mode analogue as the same external extraction-gap
-boundary: a reserve head such as `TypeCaseMode` from the documented
-`parser.type_fixtures` import summary reaches the active type-elaboration
-runner and reports `type_elaboration.external_dependency.ast_payload_extraction`.
-The bridge must not treat that imported summary as real imported module AST
-extraction, must not fabricate imported mode provenance, mode type-head
-payloads, `ModeExpansion` payloads, positive mode elaboration, or downstream
-CoreIr/ControlFlowIr/VC/proof payloads. This only refines the existing generic
-non-builtin imported-mode gap into an owned diagnostic boundary slice.
+Task 79 originally recorded the imported-mode analogue as the same external
+extraction-gap boundary. Task 82 supersedes that boundary only for the
+documented `parser.type_fixtures` `TypeCaseMode` reserve head by passing the
+real imported `SymbolKind::Mode` as a checker type head; imported modes outside
+that Task82 bridge remain on
+`type_elaboration.external_dependency.ast_payload_extraction`. The bridge must
+not treat that imported summary as real imported module AST extraction, must
+not fabricate `ModeExpansion` payloads, positive mode elaboration, or
+downstream CoreIr/ControlFlowIr/VC/proof payloads.
 Task 80 records the imported-attribute analogue as the same external
 extraction-gap boundary: a reserve type such as `TypeCaseAttr set` from the
 documented `parser.type_fixtures` import summary reaches the active
@@ -350,6 +350,17 @@ payload extraction still does not preserve real term-argument provenance or
 checker-owned `AttributeInput` argument payloads. The bridge must not fabricate
 attribute arguments, attributed-type evidence, positive parameterized
 attribute elaboration, or downstream CoreIr/ControlFlowIr/VC/proof payloads.
+Task 82 promotes only the imported-mode provenance portion of task 79: a
+reserve head such as `TypeCaseMode` from the documented
+`parser.type_fixtures` import summary may be passed as a checker-owned
+`TypeHeadInput::Symbol` when the visible resolver symbol has
+`SymbolKind::Mode` and an `ImportedSource` contribution. The runner must still
+withhold `ModeExpansion` payloads because no real imported mode definition or
+module-summary expansion payload is available, so the active case reaches
+`checker.type.external.mode_expansion_payload` instead of the generic AST
+payload extraction gap. This does not claim imported module AST extraction,
+arity checking, positive imported mode elaboration, imported structures,
+imported attributes, CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 57 additionally permits a bare same-module
 no-argument local mode expansion whose RHS is a same-module local structure
 head with no type arguments. The real `ModeExpansion` is consumed, so the case

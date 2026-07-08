@@ -2967,17 +2967,12 @@ impl SourceReserveDeclarationBridge {
             let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
                 continue;
             };
-            if symbol.module() != &self.module_id {
-                return Err(format!(
-                    "source reserve binding {index} symbol head is not local to the bridge module"
-                ));
-            }
             let entry = symbols.symbols().get(symbol).ok_or_else(|| {
                 format!("source reserve binding {index} symbol head is missing from SymbolEnv")
             })?;
             if !matches!(entry.kind(), SymbolKind::Mode | SymbolKind::Structure) {
                 return Err(format!(
-                    "source reserve binding {index} symbol head is not a supported local type head"
+                    "source reserve binding {index} symbol head is not a supported source type head"
                 ));
             }
             let contribution = symbols
@@ -2988,11 +2983,18 @@ impl SourceReserveDeclarationBridge {
                         "source reserve binding {index} symbol head has an unknown source contribution"
                     )
                 })?;
-            if contribution.module() != &self.module_id
-                || !matches!(contribution.kind(), ContributionKind::LocalSource { .. })
-            {
+            let local_source_head = symbol.module() == &self.module_id
+                && contribution.module() == &self.module_id
+                && matches!(contribution.kind(), ContributionKind::LocalSource { .. });
+            let imported_mode_head = symbol.module() != &self.module_id
+                && matches!(entry.kind(), SymbolKind::Mode)
+                && contribution.module() == symbol.module()
+                && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
+                && symbol.module().path().as_str() == "parser.type_fixtures"
+                && entry.primary_spelling() == "TypeCaseMode";
+            if !local_source_head && !imported_mode_head {
                 return Err(format!(
-                    "source reserve binding {index} symbol head is not backed by local source"
+                    "source reserve binding {index} symbol head is not backed by supported source provenance"
                 ));
             }
         }
@@ -7760,26 +7762,134 @@ mod tests {
         );
 
         let imported_mode = SymbolId::new(
+            ModuleId::new(
+                PackageId::new("pkg"),
+                ModulePath::new("parser.type_fixtures"),
+            ),
+            LocalSymbolId::new("summary:TypeCaseMode/0"),
+            FullyQualifiedName::new("pkg::parser.type_fixtures::TypeCaseMode/0"),
+        );
+        let imported_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 16),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 16),
+                "TypeCaseMode",
+                TypeHeadInput::Symbol(imported_mode.clone()),
+            )],
+        )
+        .expect("symbol reserve payload shape should validate before local module checks");
+        let imported_handoff = imported_bridge
+            .check(&symbol_env_with_imported_symbol(
+                imported_mode.clone(),
+                SymbolKind::Mode,
+                "TypeCaseMode",
+            ))
+            .expect("imported mode source provenance should reach type normalization");
+        assert_eq!(
+            diagnostic_ranges(
+                imported_handoff.declarations(),
+                "checker.type.external.mode_expansion_payload"
+            ),
+            vec![(4, 16)]
+        );
+        assert_eq!(
+            diagnostic_ranges(imported_handoff.declarations(), "checker.type.recovery"),
+            vec![(4, 16)]
+        );
+        assert!(
+            imported_handoff.declarations().facts().is_empty(),
+            "imported mode heads must not seed facts without real expansion payloads"
+        );
+
+        let generic_imported_mode = SymbolId::new(
             ModuleId::new(PackageId::new("pkg"), ModulePath::new("imported")),
             LocalSymbolId::new("ImportedMode/0"),
             FullyQualifiedName::new("pkg::imported::ImportedMode/0"),
         );
-        let imported_bridge = SourceReserveDeclarationBridge::new(
+        let generic_imported_bridge = SourceReserveDeclarationBridge::new(
             source,
-            module,
+            module.clone(),
             range(source, 0, 15),
             vec![SourceReserveBindingInput::new(
                 "x",
                 range(source, 0, 1),
                 range(source, 4, 15),
                 "ImportedMode",
-                TypeHeadInput::Symbol(imported_mode),
+                TypeHeadInput::Symbol(generic_imported_mode.clone()),
             )],
         )
-        .expect("symbol reserve payload shape should validate before local module checks");
+        .expect("generic imported mode payload shape should validate before seam checks");
         assert!(
-            imported_bridge.check(&mode_symbols).is_err(),
-            "non-local symbol heads must fail closed"
+            generic_imported_bridge
+                .check(&symbol_env_with_imported_symbol(
+                    generic_imported_mode,
+                    SymbolKind::Mode,
+                    "ImportedMode",
+                ))
+                .is_err(),
+            "imported mode heads outside the TypeCaseMode bridge must stay fail-closed"
+        );
+
+        let foreign_local_mode = SymbolId::new(
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("imported")),
+            LocalSymbolId::new("ForeignLocalMode/0"),
+            FullyQualifiedName::new("pkg::imported::ForeignLocalMode/0"),
+        );
+        let foreign_local_mode_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 20),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 20),
+                "ForeignLocalMode",
+                TypeHeadInput::Symbol(foreign_local_mode.clone()),
+            )],
+        )
+        .expect("foreign mode payload shape should validate before provenance checks");
+        assert!(
+            foreign_local_mode_bridge
+                .check(&symbol_env_with_foreign_local_symbol(
+                    foreign_local_mode,
+                    SymbolKind::Mode,
+                    "ForeignLocalMode",
+                ))
+                .is_err(),
+            "foreign mode heads must require ImportedSource provenance"
+        );
+
+        let imported_structure = SymbolId::new(
+            ModuleId::new(PackageId::new("pkg"), ModulePath::new("imported")),
+            LocalSymbolId::new("ImportedStruct/0"),
+            FullyQualifiedName::new("pkg::imported::ImportedStruct/0"),
+        );
+        let imported_structure_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module,
+            range(source, 0, 17),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 17),
+                "ImportedStruct",
+                TypeHeadInput::Symbol(imported_structure.clone()),
+            )],
+        )
+        .expect("imported structure payload shape should validate before SymbolEnv checks");
+        assert!(
+            imported_structure_bridge
+                .check(&symbol_env_with_imported_symbol(
+                    imported_structure,
+                    SymbolKind::Structure,
+                    "ImportedStruct",
+                ))
+                .is_err(),
+            "imported structure source heads must remain fail-closed at the checker seam"
         );
     }
 
@@ -11131,6 +11241,106 @@ mod tests {
                     Vec::new(),
                 ),
                 imported_contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        SymbolEnv::new(
+            module_id(),
+            SymbolEnvIndexes {
+                imports: ResolvedImportIndex::new(),
+                exports: ResolvedExportIndex::new(),
+                symbols,
+                labels: LabelIndex::new(),
+                definitions: DefinitionIndex::new(),
+                overloads: OverloadIndex::new(),
+                registrations: RegistrationIndex::new(),
+                lexical_summaries: ModuleLexicalSummaryIndex::new(),
+                namespace_graph: NamespaceGraph::new(),
+                declaration_dependencies: Default::default(),
+                contributions,
+                module_summaries: ModuleSummaryIndex::new(),
+            },
+        )
+    }
+
+    fn symbol_env_with_imported_symbol(
+        imported_symbol: SymbolId,
+        kind: SymbolKind,
+        spelling: &'static str,
+    ) -> SymbolEnv {
+        let source = source_id();
+        let imported_module = imported_symbol.module().clone();
+        let mut contributions = SourceContributionIndex::new();
+        let imported_contribution = contributions.insert(
+            imported_module.clone(),
+            ContributionKind::ImportedSource { source_id: source },
+            SourceAnchor::Range(range(source, 1, 2)),
+        );
+        let mut symbols = SymbolIndex::new();
+        symbols.insert(
+            SymbolEntry::new(
+                imported_symbol,
+                kind,
+                NamespacePath::new("main"),
+                spelling,
+                SemanticOrigin::new(
+                    source,
+                    imported_module,
+                    SourceAnchor::Range(range(source, 1, 2)),
+                    Vec::new(),
+                ),
+                imported_contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        SymbolEnv::new(
+            module_id(),
+            SymbolEnvIndexes {
+                imports: ResolvedImportIndex::new(),
+                exports: ResolvedExportIndex::new(),
+                symbols,
+                labels: LabelIndex::new(),
+                definitions: DefinitionIndex::new(),
+                overloads: OverloadIndex::new(),
+                registrations: RegistrationIndex::new(),
+                lexical_summaries: ModuleLexicalSummaryIndex::new(),
+                namespace_graph: NamespaceGraph::new(),
+                declaration_dependencies: Default::default(),
+                contributions,
+                module_summaries: ModuleSummaryIndex::new(),
+            },
+        )
+    }
+
+    fn symbol_env_with_foreign_local_symbol(
+        foreign_symbol: SymbolId,
+        kind: SymbolKind,
+        spelling: &'static str,
+    ) -> SymbolEnv {
+        let source = source_id();
+        let foreign_module = foreign_symbol.module().clone();
+        let mut contributions = SourceContributionIndex::new();
+        let foreign_local_contribution = contributions.insert(
+            foreign_module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 1, 2)),
+        );
+        let mut symbols = SymbolIndex::new();
+        symbols.insert(
+            SymbolEntry::new(
+                foreign_symbol,
+                kind,
+                NamespacePath::new("main"),
+                spelling,
+                SemanticOrigin::new(
+                    source,
+                    foreign_module,
+                    SourceAnchor::Range(range(source, 1, 2)),
+                    Vec::new(),
+                ),
+                foreign_local_contribution,
             )
             .with_visibility(Visibility::Public)
             .with_export_status(ExportStatus::Exported),
