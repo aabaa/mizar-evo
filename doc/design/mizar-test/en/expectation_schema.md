@@ -649,6 +649,13 @@ execution, but they do not credit checker definition declaration payload
 extraction, definition-local context, formula/term body payloads, overload
 payloads, recorded facts, a `formula_statement` runner, CoreIr, ControlFlowIr,
 VC, or proof payloads.
+Task 91 permits attribute definition fail sidecars to use the same
+`failure_category`, `rejection_reason`, and `stable_detail_key`. These sidecars
+document that attribute definitions reached parser/resolver execution, but they
+do not credit checker attribute definition declaration payload extraction,
+definition-local context, formula-definiens payloads, attributed-type evidence,
+recorded facts, a `formula_statement` runner, CoreIr, ControlFlowIr, VC, or
+proof payloads.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

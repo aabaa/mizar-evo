@@ -400,6 +400,13 @@ definition declaration payload extraction、definition-local context、definiens
 formula/term payload、overload payload、recorded fact、dedicated
 `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ存在しないため
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。
+task 91 は attribute definition boundary を記録する:
+`attr AttributePayloadBoundary: x is marked means thesis;` を含む definition
+block は parser / resolver 実行まで到達するが、real attribute definition
+declaration payload extraction、definition-local context、formula-definiens
+payload、attributed-type evidence、recorded fact、dedicated
+`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ存在しないため
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。
 task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
 documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
 reserve head は、可視 resolver symbol が `SymbolKind::Mode` で

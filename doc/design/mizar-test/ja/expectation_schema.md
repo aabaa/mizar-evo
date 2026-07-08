@@ -612,6 +612,12 @@ task 90 は predicate/functor definition fail sidecar について
 extraction、definition-local context、formula/term body payload、overload payload、
 recorded fact、`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload
 は credit しない。
+task 91 は attribute definition fail sidecar について同じ
+`failure_category`、`rejection_reason`、`stable_detail_key` を許可する。これらの
+sidecar は attribute definition が parser / resolver 実行へ到達したことを記録するが、
+checker attribute definition declaration payload extraction、definition-local
+context、formula-definiens payload、attributed-type evidence、recorded fact、
+`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload は credit しない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
 から checker-owned payload を non-builtin declaration、imported symbol、unresolved /

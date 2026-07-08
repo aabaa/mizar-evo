@@ -1,0 +1,4 @@
+definition
+  let x be set;
+  attr AttributePayloadBoundary: x is marked means thesis;
+end;

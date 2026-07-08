@@ -294,9 +294,11 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    source-to-checker extraction gap, task 87 records a term-bearing equality
    theorem source on the same gap, task 88 records a theorem proof block on the
    same gap, task 89 records statement-level proof justifications on the same
-   gap, and task 90 records predicate/functor definitions on the same gap while
-   keeping definition declaration payloads, definition-local context,
-   definiens formula/term payloads, overload payloads, term/formula/proof
+   gap, task 90 records predicate/functor definitions on the same gap, and task
+   91 records attribute definitions on the same gap while keeping definition
+   declaration payloads, definition-local context, definiens formula/term
+   payloads, formula-definiens payloads, attributed-type evidence, overload
+   payloads, term/formula/proof
    skeleton/statement proof payloads, term inference, formula checking, proof
    context, recorded facts, `formula_statement`, CoreIr, ControlFlowIr, VC, and
    proof payloads deferred).

@@ -2033,6 +2033,21 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: task 89. Refs: Step 5 source-derived semantic bridge; mizar-test
       task 10; spec 09 predicate definitions; spec 10 functor definitions.
 
+91. **Add source-derived attribute definition extraction-gap boundary.** [x]
+    - Add a dedicated active `type_elaboration` boundary for a definition block
+      containing an attribute definition.
+    - Acceptance: parser and resolver execute the source, then the active
+      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
+      because checker-owned attribute definition declaration payload extraction,
+      definition-local contexts, formula-definiens payloads, attributed-type
+      evidence, recorded facts, CoreIr, ControlFlowIr, VC, proof payloads, and
+      the `formula_statement` runner are not available. The task must not
+      fabricate definition payloads, formula body payloads, evidence, facts, or
+      downstream semantic payloads.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: task 90. Refs: Step 5 source-derived semantic bridge; mizar-test
+      task 10; spec 06 attribute definitions.
+
 ## Recommended Verification
 
 Run after each task:

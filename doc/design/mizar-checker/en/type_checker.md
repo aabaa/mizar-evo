@@ -420,6 +420,14 @@ predicate/functor definition declaration payload extraction, definition-local
 context, definiens formula/term payloads, overload payloads, recorded facts,
 the dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof
 payloads are still absent.
+Task 91 records the attribute definition boundary: a definition block with
+`attr AttributePayloadBoundary: x is marked means thesis;` reaches parser and
+resolver execution, then stays on
+`type_elaboration.external_dependency.ast_payload_extraction` because real
+attribute definition declaration payload extraction, definition-local context,
+formula-definiens payloads, attributed-type evidence, recorded facts, the
+dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof
+payloads are still absent.
 Task 82 promotes only the imported-mode provenance portion of task 79: a
 reserve head such as `TypeCaseMode` from the documented
 `parser.type_fixtures` import summary may be passed as a checker-owned

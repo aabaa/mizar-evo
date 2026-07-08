@@ -773,6 +773,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.06.attribute_definitions.type_elaboration_payload_gap"
+source = "doc/spec/en/06.attributes.md"
+section = "6.2 Syntax; 6.9 Complete Syntax"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_attribute_definition_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.06.attributes.active_range.local_attribute_forward_reference"
 source = "doc/spec/en/06.attributes.md"
 section = "6.2 Syntax; 6.9 Complete Syntax"
@@ -2432,6 +2444,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_attribute_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_mode_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_structure_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_attribute_definition_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_bracket_mode_argument_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_bracket_structure_argument_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
@@ -2478,6 +2491,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_structure_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.attribute_definition_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 91 source-derived attribute definition extraction gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_attribute_definition_gap_001.expect.toml",
 ]
 
 [[requirement]]

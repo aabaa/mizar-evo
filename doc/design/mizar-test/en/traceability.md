@@ -440,8 +440,11 @@ lower-stage boundary cases, the task 78 imported-structure external-gap case,
 the task 79 imported-mode external-gap case, the task 80 imported-attribute
 external-gap case outside task 84 and task 85, the task 81 argument-bearing
 local-attribute external-gap case, the task 86 formula-only theorem
-external-gap case, and the task 87 term-bearing theorem formula external-gap
-case, but including the task 85 imported negative
+external-gap case, the task 87 term-bearing theorem formula external-gap
+case, the task 88 proof-block theorem external-gap case, the task 89
+statement-proof external-gap case, the task 90 predicate/functor definition
+external-gap case, and the task 91 attribute definition external-gap case,
+but including the task 85 imported negative
 `empty`/builtin-`set` provenance slice, are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one
 `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites,
@@ -458,7 +461,7 @@ being credited from the diagnostic external-gap row.
 
 Covered active fail tests may still assert the external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` when a case needs
-unsupported non-builtin declarations beyond task 90's predicate/functor definition boundary, imported symbols, attribute or
+unsupported non-builtin declarations beyond task 91's attribute definition boundary, imported symbols, attribute or
 mode/structure arguments, structure-qualified attribute provenance,
 type-argument or term-argument provenance, unresolved or ambiguous symbols,
 terms, formulas, coercions, overload payloads, facts, CoreIr, ControlFlowIr,
@@ -568,8 +571,12 @@ extraction-gap boundary after parser/resolver execution and do not credit
 checker definition declaration payload extraction, definition-local context,
 definiens formula/term payload extraction, overload payloads, recorded facts,
 `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
-payloads. Task
-75/76/77 fail
+payloads. Task 91 fail cases credit only the attribute definition
+extraction-gap boundary after parser/resolver execution and do not credit
+checker attribute definition declaration payload extraction, definition-local
+context, formula-definiens payload extraction, attributed-type evidence,
+recorded facts, `formula_statement` runner support, CoreIr, ControlFlowIr, VC,
+or proof payloads. Task 75/76/77 fail
 cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker
 `ModeExpansion`, structure type-head, base-shape, constructor-witness,
