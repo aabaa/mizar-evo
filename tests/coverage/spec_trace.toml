@@ -1759,7 +1759,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
 ]
-notes = "Task 112 supersedes task 99 only for the exact connective/quantifier theorem formula by passing source-derived checker FormulaInput shells for implication, universal quantification, and negation before failing closed on missing formula and quantifier payloads. Formula constants, child-formula graph payloads, binder/context payloads, formula checking, facts, theorem acceptance, and broader formula extraction remain deferred."
+notes = "Task 115 supersedes task 86 only for the exact formula-only theorem by passing the source-derived `thesis` formula constant site/range as a checker recovery FormulaInput before failing closed on missing formula payload and unsupported formula semantics. Task 112 supersedes task 99 only for the exact connective/quantifier theorem formula by passing source-derived checker FormulaInput shells for implication, universal quantification, and negation before failing closed on missing formula and quantifier payloads. Formula constant semantics, child-formula graph payloads, binder/context payloads, formula checking, facts, theorem acceptance, and broader formula extraction remain deferred."
 
 [[requirement]]
 id = "spec.en.15.reconsider.omitted_justification.parser"
@@ -2023,7 +2023,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_formula_connective_quantifier_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
 ]
-notes = "Task 112 supersedes task 99 only for the exact theorem formula shell handoff. The theorem declaration remains unaccepted and lacks formula_statement execution, recorded facts, proof skeletons, quantifier binder/context payloads, and downstream semantic payloads."
+notes = "Task 115 supersedes task 86 only for the exact formula-only theorem by passing the source-derived `thesis` formula constant site/range as a checker recovery FormulaInput before failing closed on missing formula payload and unsupported formula semantics. Task 112 supersedes task 99 only for the exact theorem formula shell handoff. The theorem declaration remains unaccepted and lacks formula_statement execution, recorded facts, proof skeletons, formula constant semantics, quantifier binder/context payloads, and downstream semantic payloads."
 
 [[requirement]]
 id = "spec.en.17.clusters.functorial_for_guard.semantic"
@@ -2912,7 +2912,7 @@ tests = [
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.formula_statement_gap"
 source = "doc/design/mizar-checker/en/type_checker.md"
-section = "Task 86 source-derived theorem formula extraction gap boundary"
+section = "Task 115 exact source-derived formula statement recovery checker bridge"
 stage = "type_elaboration"
 status = "covered"
 required = true
@@ -2920,6 +2920,7 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
 ]
+notes = "Task 115 supersedes task 86 only for the exact `FormulaPayloadBoundary: thesis` source by passing the source-derived `thesis` formula constant site/range as a checker recovery FormulaInput before failing closed on `checker.formula.external.formula_payload` and `checker.formula.unsupported_payload`. It does not credit formula constant semantic checking, child-formula graph payloads, theorem acceptance, facts, proof payloads, CoreIr, ControlFlowIr, VC, or formula_statement execution."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.imported_attribute_assertion_formula_gap"

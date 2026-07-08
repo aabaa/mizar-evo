@@ -365,11 +365,13 @@ attribute argument、attributed-type evidence、positive parameterized attribute
 elaboration、CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。
 task 86 は theorem/formula extraction-gap boundary を記録する:
 `theorem FormulaPayloadBoundary: thesis;` のような theorem formula だけを含む
-source は active type-elaboration runner まで到達できるが、checker-owned
-theorem/formula payload extraction、local proof context、recorded fact、dedicated
-`formula_statement` runner が存在するまでは
-`type_elaboration.external_dependency.ast_payload_extraction` に残す。この boundary は
-theorem acceptance、formula fact、proof skeleton、CoreIr、ControlFlowIr、VC、
+source は active type-elaboration runner まで到達できる。task 115 はこの exact
+source だけを supersede し、source-derived `thesis` formula constant site/range
+を `FormulaKind::Unsupported` と `MissingFormulaPayload` を持つ checker recovery
+`FormulaInput` として渡す。この bridge は missing formula payload と unsupported
+formula semantics で fail closed する。この boundary は引き続き formula constant
+semantics、child-formula graph payload、theorem acceptance、formula fact、proof
+skeleton、local proof context、`formula_statement`、CoreIr、ControlFlowIr、VC、
 proof payload を credit しない。
 task 106 は task 87 の generic boundary のうち、builtin equality theorem formula
 `theorem TermFormulaPayloadBoundary: 1 = 1;` の narrow slice を supersede する。

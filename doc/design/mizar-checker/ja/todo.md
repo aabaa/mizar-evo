@@ -1817,10 +1817,35 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
       checker-owned theorem/formula payload extraction、local proof context、
       recorded fact、theorem acceptance、CoreIr、ControlFlowIr、VC、proof payload、
-      `formula_statement` runner がまだ存在しないためである。この task は formula
-      payload、fact、proof skeleton、downstream semantic payload を捏造してはならない。
+      `formula_statement` runner がまだ存在しないためである。task 115 はこの exact
+      formula-only theorem source だけを supersede し、source-derived `thesis`
+      formula constant site/range を checker の recovery `FormulaInput` として渡す。
+      historical task は broader formula payload extraction、theorem acceptance、
+      fact、proof skeleton、downstream semantic payload と読んではならない。
     - 検証: `cargo test -p mizar-test`。
     - 依存: task 48。参照: Step 5 source-derived semantic bridge、mizar-test
+      task 10、spec 14 formulas、spec 16 theorems and proofs。
+
+115. **Exact source-derived formula statement recovery checker bridge を追加する。** [x]
+    - exact unrecovered source
+      `theorem FormulaPayloadBoundary: thesis;` についてのみ task 86 を supersede
+      する。
+    - Acceptance: parser と resolver は source を実行し、active runner は module が
+      1 つの theorem item だけを含み、その theorem が direct token text `thesis`
+      を持つ `FormulaConstant(Thesis)` だけを包む 1 つの `FormulaExpression`
+      child を持つことを検証する。そのうえで、その source site/range を
+      `FormulaKind::Unsupported` と `MissingFormulaPayload` を持つ checker recovery
+      `FormulaInput` として渡し、checker は
+      `type_elaboration.checker.checker.formula.external.formula_payload` と
+      `type_elaboration.checker.checker.formula.unsupported_payload` で fail closed
+      する。
+    - formula constant semantics、child-formula graph payload、theorem
+      acceptance、fact、proof skeleton/context/statement payload、
+      `formula_statement`、CoreIr、ControlFlowIr、VC、proof payload を捏造してはならない。
+      proof block や追加 item を含む non-exact shape は
+      `type_elaboration.external_dependency.ast_payload_extraction` に残す。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: tasks 86、112。参照: Step 5 source-derived semantic bridge、mizar-test
       task 10、spec 14 formulas、spec 16 theorems and proofs。
 
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]

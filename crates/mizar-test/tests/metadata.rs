@@ -3682,7 +3682,10 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_formula_statement_gap_001"
             && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+                == [
+                    "type_elaboration.checker.checker.formula.external.formula_payload",
+                    "type_elaboration.checker.checker.formula.unsupported_payload",
+                ]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_term_formula_gap_001"

@@ -7,11 +7,12 @@ source = "fail_type_elaboration_formula_statement_gap_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "formula_statement_payload_extraction_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "formula_statement_recovery_formula_payload_gap"
+stable_detail_key = "type_elaboration.checker.checker.formula.external.formula_payload"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.checker.formula.external.formula_payload",
+  "type_elaboration.checker.checker.formula.unsupported_payload",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
@@ -20,4 +21,4 @@ spec_refs = [
   "spec.en.checker.type_elaboration.payload_extraction",
   "spec.en.checker.type_elaboration.payload_extraction.formula_statement_gap",
 ]
-notes = "Active type_elaboration runner boundary coverage for checker task 86: a formula-only theorem source is parser/resolver executable, but the checker-owned source bridge lacks real theorem/formula payload extraction, local proof context, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and the dedicated formula_statement runner, so it must stay on the source-to-checker payload extraction gap."
+notes = "Active type_elaboration runner bridge coverage for checker task 115, superseding task 86 only for this exact source: a formula-only theorem source is parser/resolver executable and now passes the source-derived thesis formula site/range as a checker recovery FormulaInput before failing closed on missing formula payload and unsupported formula semantics. It still lacks formula constant semantic checking, child-formula payloads, local proof context, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and the dedicated formula_statement runner."

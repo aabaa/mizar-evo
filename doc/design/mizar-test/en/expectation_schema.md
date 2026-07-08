@@ -605,14 +605,19 @@ Separate task-85 boundary sidecars for positive `empty set` and
 with `rejection_reason = "positive_imported_empty_attribute_payload_gap"` or
 `"imported_empty_non_set_head_payload_gap"`; they document unsupported payload
 shapes and do not credit checker `AttributeInput` handoff.
-Task 86 permits formula-only theorem fail sidecars to use
-`failure_category = "external_dependency_gap"` with
-`rejection_reason = "formula_statement_payload_extraction_gap"` and
-`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
-These sidecars document that the source reached parser/resolver execution, but
-they do not credit a `formula_statement` runner, checker theorem/formula
-payload extraction, recorded facts, proof skeletons, CoreIr, ControlFlowIr, VC,
-or proof payloads.
+Task 86 permits formula-only theorem fail sidecars to reach parser/resolver
+execution. Task 115 supersedes the exact unrecovered
+`FormulaPayloadBoundary: thesis` sidecar, which now uses
+`failure_category = "external_dependency_gap"`,
+`rejection_reason = "formula_statement_recovery_formula_payload_gap"`, and
+`stable_detail_key = "type_elaboration.checker.checker.formula.external.formula_payload"`;
+its diagnostic payloads also include
+`type_elaboration.checker.checker.formula.unsupported_payload`. Non-exact
+formula-only theorem shapes remain on
+`type_elaboration.external_dependency.ast_payload_extraction`. These sidecars
+do not credit a `formula_statement` runner, formula constant semantics,
+child-formula graph payloads, checker theorem/formula semantic checking,
+recorded facts, proof skeletons, CoreIr, ControlFlowIr, VC, or proof payloads.
 Tasks 106, 107, 108, and 109 supersede their exact
 equality/inequality/membership/type-assertion sidecars: they still use
 `failure_category = "external_dependency_gap"`, but now use

@@ -1955,16 +1955,39 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
 86. **Add source-derived theorem formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a formula-only
       theorem source such as `theorem FormulaPayloadBoundary: thesis;`.
-    - Historical acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
+    - Historical acceptance: parser and resolver execute the source, then the
+      active runner reports `type_elaboration.external_dependency.ast_payload_extraction`
       because checker-owned theorem/formula payload extraction, local proof
       contexts, recorded facts, theorem acceptance, CoreIr, ControlFlowIr, VC,
       proof payloads, and the `formula_statement` runner are not available.
-      The task must not fabricate formula payloads, facts, proof skeletons, or
-      downstream semantic payloads.
+      Task 115 supersedes only this exact formula-only theorem source by
+      passing the source-derived `thesis` formula constant site/range to the
+      checker as a recovery `FormulaInput`. The historical task must not be
+      read as broader formula payload extraction, theorem acceptance, facts,
+      proof skeletons, or downstream semantic payloads.
     - Verify: `cargo test -p mizar-test`.
     - Deps: task 48. Refs: Step 5 source-derived semantic bridge; mizar-test
       task 10; spec 14 formulas; spec 16 theorems and proofs.
+
+115. **Add exact source-derived formula statement recovery checker bridge.** [x]
+    - Supersede task 86 only for the exact unrecovered source
+      `theorem FormulaPayloadBoundary: thesis;`.
+    - Acceptance: parser and resolver execute the source; the active runner
+      validates that the module contains exactly one theorem item with one
+      `FormulaExpression` child containing direct `FormulaConstant(Thesis)`
+      token text `thesis`, then passes that source site/range as a checker
+      recovery `FormulaInput` with `FormulaKind::Unsupported` and
+      `MissingFormulaPayload`. The checker fails closed on
+      `type_elaboration.checker.checker.formula.external.formula_payload` and
+      `type_elaboration.checker.checker.formula.unsupported_payload`.
+    - The task must not fabricate formula constant semantics, child-formula
+      graph payloads, theorem acceptance, facts, proof skeleton/context/
+      statement payloads, `formula_statement`, CoreIr, ControlFlowIr, VC, or
+      proof payloads. Non-exact shapes, including proof blocks and additional
+      items, remain on `type_elaboration.external_dependency.ast_payload_extraction`.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: tasks 86 and 112. Refs: Step 5 source-derived semantic bridge;
+      mizar-test task 10; spec 14 formulas; spec 16 theorems and proofs.
 
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula

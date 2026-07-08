@@ -905,6 +905,9 @@ fn source_type_elaboration_detail_keys(
     module: ResolverModuleId,
     symbols: &SymbolEnv,
 ) -> Vec<String> {
+    if let Some(keys) = source_formula_statement_detail_keys(ast, module.clone(), symbols) {
+        return keys;
+    }
     if let Some(keys) = source_builtin_binary_term_formula_detail_keys(ast, module.clone(), symbols)
     {
         return keys;
@@ -1085,6 +1088,21 @@ struct SourceFormulaConnectiveQuantifier {
     negation_range: SourceRange,
 }
 
+#[derive(Debug, Clone)]
+struct SourceFormulaStatement {
+    formula_site: TypedSiteRef,
+    formula_range: SourceRange,
+}
+
+fn source_formula_statement_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output = source_formula_statement_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
 fn source_builtin_binary_term_formula_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -1185,6 +1203,29 @@ fn term_formula_output_detail_keys(output: &TermFormulaInferenceOutput) -> Vec<S
     keys.sort();
     keys.dedup();
     keys
+}
+
+fn source_formula_statement_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_formula_statement(ast)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::Unsupported,
+        )
+        .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload])],
+    );
+    Some(output)
 }
 
 fn source_builtin_type_assertion_formula_output(
@@ -1403,6 +1444,54 @@ fn source_formula_connective_quantifier_output(
         ],
     );
     Some(output)
+}
+
+fn extract_source_formula_statement(ast: &SurfaceAst) -> Option<SourceFormulaStatement> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_formula_statement_theorem_bridge_node(node))
+    {
+        return None;
+    }
+    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let [(_, theorem)] = theorem_items.as_slice() else {
+        return None;
+    };
+    if subtree_has_recovery(ast, theorem) {
+        return None;
+    }
+    let theorem_tokens = direct_token_texts(ast, theorem);
+    if theorem_tokens.as_slice() != ["theorem", "FormulaPayloadBoundary", ":", ";"] {
+        return None;
+    }
+
+    let theorem_structural_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_structural_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(
+        formula.kind,
+        SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis)
+    ) || direct_token_texts(ast, formula).as_slice() != ["thesis"]
+        || !structural_child_ids(ast, formula).is_empty()
+    {
+        return None;
+    }
+
+    Some(SourceFormulaStatement {
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+    })
 }
 
 fn extract_source_builtin_binary_term_formula(
@@ -2248,6 +2337,19 @@ fn structural_child_ids(ast: &SurfaceAst, node: &SurfaceNode) -> Vec<SurfaceNode
                 .is_some_and(|child_node| !matches!(child_node.kind, SurfaceNodeKind::Token(_)))
         })
         .collect()
+}
+
+fn is_supported_formula_statement_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::FormulaConstant(_)
+            | SurfaceNodeKind::Token(_)
+    )
 }
 
 fn is_supported_builtin_binary_theorem_bridge_node(node: &SurfaceNode) -> bool {
@@ -4832,13 +4934,13 @@ mod tests {
         ParseOnlyImportProvider, TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY,
         assemble_source_checker_handoff, extract_builtin_source_reserve_declarations,
         extract_source_builtin_type_assertion_formula,
-        extract_source_formula_connective_quantifier,
+        extract_source_formula_connective_quantifier, extract_source_formula_statement,
         extract_source_imported_attribute_assertion_formula,
         extract_source_imported_non_empty_attribute_assertion_formula,
         extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
         resolve_visible_attribute, resolve_visible_type_head,
         source_builtin_type_assertion_formula_output, source_formula_connective_quantifier_output,
-        source_imported_attribute_assertion_formula_output,
+        source_formula_statement_output, source_imported_attribute_assertion_formula_output,
         source_imported_non_empty_attribute_assertion_formula_output,
         source_imported_predicate_functor_formula_output, source_set_enumeration_formula_output,
         source_type_elaboration_detail_keys, surface_nodes_with_kind, surface_site,
@@ -8682,6 +8784,77 @@ mod tests {
             source_type_elaboration_detail_keys(&non_builtin, module.clone(), &symbols),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
+        let formula_statement_theorem =
+            formula_statement_theorem_ast(source_id, exact_formula_statement_spec());
+        let formula_statement_detail_keys = vec![
+            "type_elaboration.checker.checker.formula.external.formula_payload".to_owned(),
+            "type_elaboration.checker.checker.formula.unsupported_payload".to_owned(),
+        ];
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &formula_statement_theorem,
+                module.clone(),
+                &symbols
+            ),
+            formula_statement_detail_keys
+        );
+        let formula_statement_output =
+            source_formula_statement_output(&formula_statement_theorem, module.clone(), &symbols)
+                .expect("exact formula statement bridge should produce checker output");
+        let formula_statement_payload =
+            extract_source_formula_statement(&formula_statement_theorem)
+                .expect("exact formula statement bridge should extract source payload");
+        let expected_formula_statement_range = range(source_id, 33, 39);
+        let expected_formula_statement_sites = surface_sites_for_kind_ranges(
+            &formula_statement_theorem,
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis),
+            &[expected_formula_statement_range],
+        );
+        assert_eq!(
+            formula_statement_payload.formula_site,
+            expected_formula_statement_sites[0]
+        );
+        assert_eq!(
+            formula_statement_payload.formula_range,
+            expected_formula_statement_range
+        );
+        assert_eq!(formula_statement_output.terms().len(), 0);
+        assert_eq!(formula_statement_output.formulas().len(), 1);
+        let (_, checked_formula_statement) = formula_statement_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("formula statement payload should be checked");
+        assert_eq!(
+            checked_formula_statement.site,
+            formula_statement_payload.formula_site
+        );
+        assert_eq!(checked_formula_statement.kind, FormulaKind::Unsupported);
+        assert_eq!(checked_formula_statement.status, FormulaStatus::Skipped);
+        assert_eq!(checked_formula_statement.context, BindingContextId::new(0));
+        assert!(checked_formula_statement.terms.is_empty());
+        assert!(checked_formula_statement.facts.is_empty());
+        assert_eq!(
+            checked_formula_statement.deferred,
+            vec![FormulaDeferredReason::MissingFormulaPayload]
+        );
+        for message_key in [
+            "checker.formula.external.formula_payload",
+            "checker.formula.unsupported_payload",
+        ] {
+            let diagnostic_ranges = formula_statement_output
+                .diagnostics()
+                .canonical_iter()
+                .filter_map(|(_, diagnostic)| {
+                    (diagnostic.message_key == message_key).then_some(diagnostic.source_range)
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                diagnostic_ranges,
+                vec![expected_formula_statement_range],
+                "diagnostic {message_key} should be anchored to thesis"
+            );
+        }
         let equality_theorem =
             builtin_equality_theorem_ast(source_id, "TermFormulaPayloadBoundary", "1", "1");
         assert_eq!(
@@ -9820,6 +9993,48 @@ mod tests {
             source_type_elaboration_detail_keys(&other_label_theorem, module.clone(), &symbols),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
+        let formula_statement_gap_cases = vec![
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..exact_formula_statement_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    constant: SurfaceFormulaConstant::Contradiction,
+                    ..exact_formula_statement_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    status: Some("open"),
+                    ..exact_formula_statement_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    recovered_label: true,
+                    ..exact_formula_statement_spec()
+                },
+            ),
+            reserve_then_formula_statement_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+            double_formula_statement_theorem_ast(source_id),
+            proof_block_formula_theorem_ast(source_id, "FormulaPayloadBoundary"),
+        ];
+        for gap_case in formula_statement_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
         let other_literal_theorem =
             builtin_equality_theorem_ast(source_id, "TermFormulaPayloadBoundary", "1", "2");
         assert_eq!(
@@ -12010,6 +12225,98 @@ mod tests {
     }
 
     #[derive(Clone, Copy)]
+    struct FormulaStatementTheoremSpec<'a> {
+        status: Option<&'a str>,
+        recovered_label: bool,
+        label: &'a str,
+        constant: SurfaceFormulaConstant,
+    }
+
+    fn exact_formula_statement_spec() -> FormulaStatementTheoremSpec<'static> {
+        FormulaStatementTheoremSpec {
+            status: None,
+            recovered_label: false,
+            label: "FormulaPayloadBoundary",
+            constant: SurfaceFormulaConstant::Thesis,
+        }
+    }
+
+    fn formula_statement_theorem_ast(
+        source_id: SourceId,
+        spec: FormulaStatementTheoremSpec<'_>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem =
+            add_formula_statement_theorem_item(&mut builder, source_id, &mut offset, spec);
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn reserve_then_formula_statement_theorem_ast(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
+        root_children.push(add_formula_statement_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            exact_formula_statement_spec(),
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn double_formula_statement_theorem_ast(source_id: SourceId) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let items = vec![
+            add_formula_statement_theorem_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                exact_formula_statement_spec(),
+            ),
+            add_formula_statement_theorem_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                exact_formula_statement_spec(),
+            ),
+        ];
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            items,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn proof_block_formula_theorem_ast(source_id: SourceId, label: &str) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem =
+            add_proof_block_formula_theorem_item(&mut builder, source_id, &mut offset, label);
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    #[derive(Clone, Copy)]
     struct FormulaConnectiveQuantifierTheoremSpec<'a> {
         status: Option<&'a str>,
         recovered_label: bool,
@@ -12867,6 +13174,87 @@ mod tests {
             SurfaceNodeKind::TheoremItem,
             range(source_id, start, end),
             vec![theorem, label_token, colon, formula_expression, semicolon],
+        )
+    }
+
+    fn add_formula_statement_theorem_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: FormulaStatementTheoremSpec<'_>,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let status_token = spec.status.map(|status| {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                status,
+            )
+        });
+        let theorem = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+        );
+        let label_token = if spec.recovered_label {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        };
+        let colon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+        );
+        let formula_start = *offset;
+        let formula = add_formula_constant(builder, source_id, offset, spec.constant);
+        let formula_end = builder
+            .node_range(formula)
+            .expect("just-created formula constant should exist")
+            .end;
+        let formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, formula_start, formula_end),
+            vec![formula],
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        let mut children = Vec::new();
+        if let Some(status_token) = status_token {
+            children.push(status_token);
+        }
+        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, start, end),
+            children,
         )
     }
 
