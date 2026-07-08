@@ -446,7 +446,7 @@ external-gap case, the task 106 builtin equality theorem checker-payload numeric
 case, the task 110 imported predicate/functor theorem checker bridge, the task 108 builtin membership theorem checker bridge, the task 107
 builtin inequality theorem checker bridge, the task 109 builtin type-assertion theorem checker
 bridge, the task 103 imported attribute assertion theorem formula external-gap
-case, the task 104 attribute-level non-empty imported attribute assertion theorem formula external-gap
+case outside the exact task 113 bridge, the task 113 imported attribute assertion theorem checker bridge, the task 104 attribute-level non-empty imported attribute assertion theorem formula external-gap
 case, the task 111 exact set-enumeration theorem checker bridge
 case, the task 112 connective/quantifier formula shell checker bridge
 case, the task 88 proof-block theorem external-gap case, the task 89
@@ -603,13 +603,13 @@ term/formula payload extraction and the asserted builtin `set`
 `TypeExpressionInput` while still failing closed before numeric type payloads,
 broader asserted type payloads, type-assertion semantic checking, recorded
 facts, theorem acceptance, `formula_statement` runner support, CoreIr,
-ControlFlowIr, VC, or proof payloads. Task 103 fail cases credit only the
-imported attribute assertion theorem formula extraction-gap boundary after
-parser/resolver execution and do not credit checker term/formula payload
-extraction, imported attribute assertion attribute-chain/provenance payload
+ControlFlowIr, VC, or proof payloads. Task 113 supersedes task 103 for the
+exact imported attribute assertion theorem formula by crediting imported
+`empty` provenance validation plus real checker term/formula payload handoff
+while still failing closed before numeric type payloads, attribute-chain
+semantic payload extraction, theorem-formula `AttributeInput` payload
 extraction, term inference, attribute admissibility/semantic checking, formula
 checking, recorded facts, theorem acceptance, imported module AST extraction,
-checker `AttributeInput` payload extraction for theorem formulas,
 `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
 payloads. Task 104 fail cases credit only the attribute-level non-empty
 imported attribute assertion theorem formula extraction-gap boundary after

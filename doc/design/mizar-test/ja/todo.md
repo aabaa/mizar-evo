@@ -272,8 +272,8 @@ regression test を追加した。
       theorem checker bridge、checker task 108 の builtin membership theorem
       checker bridge、checker task 107 の builtin inequality theorem checker
       bridge、checker task 109 の builtin type assertion theorem term/formula/type
-      checker bridge、checker task 103 の imported attribute assertion formula
-      extraction-gap boundary、checker task 104 の attribute-level non-empty
+      checker bridge、checker task 113 の imported attribute assertion theorem
+      checker bridge、checker task 104 の attribute-level non-empty
       imported attribute assertion formula extraction-gap boundary、checker task 111 の exact set-enumeration theorem
       checker bridge、checker task 112 の exact formula connective/quantifier shell
       checker bridge、checker task 88 の proof skeleton
@@ -406,7 +406,7 @@ regression test を追加した。
       negative `empty`/builtin-`set` bridge、task-80 boundary を超える imported attribute provenance、task-83 `R` bridge、task-97 `TypeCaseStruct` bridge、task-78 boundary を超える
       imported structure provenance、task 82 の provenance bridge を超える imported mode expansion payload、
       task-81 boundary を超える attribute argument payload、attributed / argument-bearing mode / structure head、
-      structure base-shape payload、task-92 extraction-gap boundary を超える definition payload、task-93 extraction-gap boundary を超える proof-local declaration payload、task-94 extraction-gap boundary を超える inline definition payload、task-95 extraction-gap boundary を超える registration payload / activation / correctness payload、task-96 extraction-gap boundary を超える redefinition/notation payload、task-106/task-107/task-108/task-109/task-110/task-111 を超える numeric/signature/result-type payload と equality/inequality/membership/type-assertion/imported predicate-functor/set-enumeration semantic checking、task-112 を超える formula child/binder semantics、および task-86/task-103/task-104/task-105/task-88/task-89/task-93/task-94/task-95/task-96 extraction-gap boundary と task-112 checker bridge を超える
+      structure base-shape payload、task-92 extraction-gap boundary を超える definition payload、task-93 extraction-gap boundary を超える proof-local declaration payload、task-94 extraction-gap boundary を超える inline definition payload、task-95 extraction-gap boundary を超える registration payload / activation / correctness payload、task-96 extraction-gap boundary を超える redefinition/notation payload、task-106/task-107/task-108/task-109/task-110/task-111 を超える numeric/signature/result-type payload と equality/inequality/membership/type-assertion/imported predicate-functor/set-enumeration semantic checking、task-112 を超える formula child/binder semantics、および task-86/task-104/task-105/task-88/task-89/task-93/task-94/task-95/task-96 extraction-gap boundary と task-112 / task-113 checker bridge を超える
       imported predicate/functor semantic payload、membership operand expected-type construction/checking、inequality desugaring または equality semantic checking、broader type-assertion type payload extraction、type-assertion semantic checking、imported attribute assertion attribute-chain/provenance payload extraction、imported attribute-level non-empty assertion attribute-chain/provenance payload extraction、set-enumeration result-type/sethood payload extraction beyond task 111、negated attribute admissibility/semantic checking、attribute admissibility/semantic checking、quantifier binder/context payload、term / formula / theorem / proof payload、coercion、overload payload、fact、
       CoreIr、ControlFlowIr、VC payload、proof
       evidence は明示的な `type_elaboration.external_dependency.ast_payload_extraction`

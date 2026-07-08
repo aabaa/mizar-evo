@@ -422,19 +422,20 @@ partial formula checking で fail する。より広い asserted type payload ex
 term inference、type-assertion semantic checking、partial-term diagnostic を超える
 formula checking、recorded fact、theorem acceptance、dedicated `formula_statement`
 runner、CoreIr、ControlFlowIr、VC、proof payload はまだ存在しない。
-task 103 は同じ term/formula boundary の imported attribute assertion variant を
-記録する:
+task 113 は task 103 の exact positive imported attribute assertion variant を
+supersede する:
 `import parser.type_fixtures; theorem ImportedAttributeAssertionPayloadBoundary: 1 is empty;`
 は Chapter 13 の numeral term、documented imported `parser.type_fixtures` の
 `empty` attribute、Chapter 14 の attribute-assertion form を通じて parser /
-resolver 実行まで到達するが、real term/formula payload extraction、imported
-attribute assertion attribute-chain/provenance payload extraction、term inference、
+resolver 実行まで到達し、imported `empty` provenance を検証してから
+source-derived checker `TermInput` / `FormulaInput` payload を渡し、missing
+numeric type payload、missing formula / attribute semantic payload、partial
+formula checking で fail closed する。これは imported module AST extraction、
+imported attribute assertion attribute-chain semantic payload extraction、theorem
+formula 向け checker `AttributeInput` payload extraction、term inference、
 attribute admissibility/semantic checking、formula checking、recorded fact、
 theorem acceptance、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、
-VC、proof payload がまだ存在しないため
-`type_elaboration.external_dependency.ast_payload_extraction` に残す。これは imported
-module AST extraction や theorem formula 向け checker `AttributeInput` payload
-extraction を credit しない。
+VC、proof payload を credit しない。
 task 104 は同じ term/formula boundary の attribute-level `non empty` imported
 attribute assertion variant を記録する:
 `import parser.type_fixtures; theorem ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty;`

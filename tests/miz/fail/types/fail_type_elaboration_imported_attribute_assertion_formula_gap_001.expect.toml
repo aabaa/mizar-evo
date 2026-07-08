@@ -7,11 +7,13 @@ source = "fail_type_elaboration_imported_attribute_assertion_formula_gap_001.miz
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "term_formula_payload_extraction_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "imported_attribute_assertion_formula_payload_gap"
+stable_detail_key = "type_elaboration.checker.checker.formula.external.formula_payload"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.checker.formula.external.formula_payload",
+  "type_elaboration.checker.checker.formula.term.partial",
+  "type_elaboration.checker.checker.term.external.numeric_type_payload",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
@@ -24,4 +26,4 @@ spec_refs = [
   "spec.en.checker.type_elaboration.payload_extraction",
   "spec.en.checker.type_elaboration.payload_extraction.imported_attribute_assertion_formula_gap",
 ]
-notes = "Active type_elaboration runner boundary coverage for checker task 103: a theorem formula importing parser.type_fixtures and using its documented `empty` attribute in the Chapter 14 attribute assertion form with a Chapter 13 numeral subject reaches parser/resolver execution, but the checker-owned source bridge lacks real term/formula payload extraction, imported attribute assertion attribute-chain/provenance payload extraction, term inference, attribute admissibility/semantic checking, formula checking, recorded facts, theorem acceptance, imported module AST extraction, checker AttributeInput payload extraction for theorem formulas, CoreIr/ControlFlowIr/VC/proof payloads, and the dedicated formula_statement runner, so it must stay on the source-to-checker payload extraction gap."
+notes = "Active type_elaboration runner boundary coverage for checker task 113, superseding task 103 for this exact source: a theorem formula importing parser.type_fixtures and using its documented `empty` attribute in the Chapter 14 attribute assertion form with a Chapter 13 numeral subject now validates imported `empty` attribute provenance and passes source-derived numeral and attribute-assertion formula checker payloads before failing closed on missing numeric type payload, partial formula checking, and missing attribute/formula semantic payload. It still lacks imported module AST extraction, imported attribute assertion attribute-chain semantic payload extraction, checker AttributeInput payload extraction for theorem formulas, term inference, attribute admissibility/semantic checking, formula checking, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and the dedicated formula_statement runner."

@@ -1224,7 +1224,7 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Checker task 110 supersedes task 98 for the exact documented parser.type_fixtures imported predicate/functor theorem formula by validating imported `divides`/`++` provenance, passing source-derived numeral, imported functor-application, and predicate-application checker payloads, and failing closed on missing numeric/signature payloads plus partial formula checking. Checker task 103 adds the imported attribute assertion theorem-formula variant for parser.type_fixtures `empty`, and checker task 104 adds the attribute-level `non empty` variant. These rows do not credit imported predicate/functor semantic signatures, imported attribute assertion semantic payloads, term inference, formula checking, facts, theorem acceptance, or downstream IR/proof payloads."
+notes = "Checker task 110 supersedes task 98 for the exact documented parser.type_fixtures imported predicate/functor theorem formula by validating imported `divides`/`++` provenance, passing source-derived numeral, imported functor-application, and predicate-application checker payloads, and failing closed on missing numeric/signature payloads plus partial formula checking. Checker task 113 supersedes task 103 for the exact imported `empty` attribute assertion theorem formula by validating imported attribute provenance and passing source-derived checker term/formula payloads before failing closed on missing numeric and formula/attribute semantic payloads plus partial formula checking. Checker task 104 adds the attribute-level `non empty` variant. These rows do not credit imported predicate/functor semantic signatures, imported attribute assertion semantic payloads, term inference, formula checking, facts, theorem acceptance, or downstream IR/proof payloads."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
@@ -1494,7 +1494,7 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Checker task 110 supersedes task 98 for the exact source importing parser.type_fixtures and using imported predicate/functor surface names inside a theorem formula: the active type_elaboration runner now validates imported `divides`/`++` provenance and passes source-derived checker term/formula payloads before failing closed on missing numeric/signature payloads plus partial formula checking. Checker task 103 adds the imported attribute assertion theorem-formula variant for parser.type_fixtures `empty`, and checker task 104 adds the attribute-level `non empty` variant. This row does not credit imported module AST extraction, semantic predicate/functor or attribute assertion payloads, accepted theorem facts, or downstream payloads."
+notes = "Checker task 110 supersedes task 98 for the exact source importing parser.type_fixtures and using imported predicate/functor surface names inside a theorem formula: the active type_elaboration runner now validates imported `divides`/`++` provenance and passes source-derived checker term/formula payloads before failing closed on missing numeric/signature payloads plus partial formula checking. Checker task 113 supersedes task 103 for the exact imported `empty` attribute assertion theorem formula by validating imported attribute provenance and passing source-derived checker term/formula payloads before failing closed on missing numeric and formula/attribute semantic payloads plus partial formula checking. Checker task 104 adds the attribute-level `non empty` variant. This row does not credit imported module AST extraction, semantic predicate/functor or attribute assertion payloads, accepted theorem facts, or downstream payloads."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
@@ -1743,7 +1743,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
-notes = "Task 111 supersedes task 105 only for the exact set-enumeration equality theorem by passing a real checker equality FormulaInput over the two source-derived set-enumeration TermInputs before failing closed on partial formula checking. Equality semantics, facts, theorem acceptance, and broader formula extraction remain deferred."
+notes = "Task 113 supersedes task 103 only for the exact imported attribute assertion theorem by passing a real checker AttributeAssertion FormulaInput over the source-derived numeral TermInput before failing closed on missing formula/attribute semantic payloads, partial formula checking, and missing numeric type payloads. Task 111 supersedes task 105 only for the exact set-enumeration equality theorem by passing a real checker equality FormulaInput over the two source-derived set-enumeration TermInputs before failing closed on partial formula checking. Attribute assertion semantics, equality semantics, facts, theorem acceptance, and broader formula extraction remain deferred."
 
 [[requirement]]
 id = "spec.en.14.formulas.type_elaboration_payload_gap"
@@ -2924,11 +2924,12 @@ tests = [
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.imported_attribute_assertion_formula_gap"
 source = "doc/design/mizar-checker/en/type_checker.md"
-section = "Task 103 source-derived imported attribute assertion formula extraction-gap boundary"
+section = "Task 113 exact source-derived imported attribute assertion theorem checker bridge"
 stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
+notes = "Task 113 supersedes task 103 for the exact `ImportedAttributeAssertionPayloadBoundary: 1 is empty` source by validating imported parser.type_fixtures `empty` attribute provenance, passing a source-derived numeral TermInput and AttributeAssertion FormulaInput, and failing closed on missing numeric type payload, missing formula/attribute semantic payload, and partial formula checking. It does not credit imported module AST extraction, theorem-formula AttributeInput payload extraction, attribute-chain semantic payloads, attribute admissibility/checking, theorem acceptance, formula_statement, or downstream payloads."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
 ]

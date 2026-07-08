@@ -310,8 +310,8 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    partial formula checking, task 109 supersedes task 102 for the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
    type payloads before failing on missing numeric type payloads and partial
-   formula checking, task 103 records imported
-   attribute assertion theorem formula surfaces on the same gap, task 104 records
+   formula checking, task 113 supersedes task 103 for the exact imported
+   attribute assertion theorem formula checker bridge, task 104 records
    attribute-level non-empty imported attribute assertion theorem formula
    surfaces on the same gap, task 111 supersedes task 105 for the exact
    set-enumeration theorem formula checker bridge, task 112 supersedes task 99

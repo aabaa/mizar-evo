@@ -919,6 +919,11 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) =
+        source_imported_attribute_assertion_formula_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
     if let Some(keys) = source_set_enumeration_formula_detail_keys(ast, module.clone(), symbols) {
         return keys;
     }
@@ -1043,6 +1048,15 @@ struct SourceImportedPredicateFunctorFormula {
 }
 
 #[derive(Debug, Clone)]
+struct SourceImportedAttributeAssertionFormula {
+    formula_site: TypedSiteRef,
+    formula_range: SourceRange,
+    subject_site: TypedSiteRef,
+    subject_range: SourceRange,
+    attribute_symbol: ResolverSymbolId,
+}
+
+#[derive(Debug, Clone)]
 struct SourceSetEnumerationFormula {
     formula_site: TypedSiteRef,
     formula_range: SourceRange,
@@ -1115,6 +1129,15 @@ fn source_imported_predicate_functor_formula_detail_keys(
     symbols: &SymbolEnv,
 ) -> Option<Vec<String>> {
     let output = source_imported_predicate_functor_formula_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
+fn source_imported_attribute_assertion_formula_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output = source_imported_attribute_assertion_formula_output(ast, module, symbols)?;
     Some(term_formula_output_detail_keys(&output))
 }
 
@@ -1229,6 +1252,36 @@ fn source_imported_predicate_functor_formula_output(
             FormulaKind::PredicateApplication,
         )
         .with_terms(vec![payload.left_site, payload.functor_site])],
+    );
+    Some(output)
+}
+
+fn source_imported_attribute_assertion_formula_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_imported_attribute_assertion_formula(ast, &module, symbols)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let _attribute_symbol = payload.attribute_symbol.clone();
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [TermInput::new(
+            payload.subject_site.clone(),
+            context,
+            payload.subject_range,
+            TermKind::Numeral,
+        )],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::AttributeAssertion,
+        )
+        .with_terms(vec![payload.subject_site])
+        .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload])],
     );
     Some(output)
 }
@@ -1608,6 +1661,119 @@ fn extract_source_imported_predicate_functor_formula(
         functor_left_range: functor.left.1,
         functor_right_site: surface_site(functor.right.0),
         functor_right_range: functor.right.1,
+    })
+}
+
+fn extract_source_imported_attribute_assertion_formula(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceImportedAttributeAssertionFormula> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_imported_attribute_assertion_theorem_bridge_node(node))
+    {
+        return None;
+    }
+
+    let item_list = exact_compilation_item_list(ast)?;
+    let item_children = structural_child_ids(ast, item_list);
+    let [import_item_id, theorem_id] = item_children.as_slice() else {
+        return None;
+    };
+    let import_item = ast.node(*import_item_id)?;
+    if !is_exact_parser_type_fixtures_import(ast, import_item) {
+        return None;
+    }
+
+    let theorem = ast.node(*theorem_id)?;
+    if !matches!(theorem.kind, SurfaceNodeKind::TheoremItem) || subtree_has_recovery(ast, theorem) {
+        return None;
+    }
+    let theorem_tokens = direct_token_texts(ast, theorem);
+    if theorem_tokens.as_slice()
+        != [
+            "theorem",
+            "ImportedAttributeAssertionPayloadBoundary",
+            ":",
+            ";",
+        ]
+    {
+        return None;
+    }
+
+    let theorem_structural_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_structural_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::IsAssertion)
+        || subtree_has_recovery(ast, formula)
+        || direct_token_texts(ast, formula).as_slice() != ["is"]
+    {
+        return None;
+    }
+
+    let assertion_structural_children = structural_child_ids(ast, formula);
+    let [term_expression_id, attribute_chain_id] = assertion_structural_children.as_slice() else {
+        return None;
+    };
+    let term_expression = ast.node(*term_expression_id)?;
+    let attribute_chain = ast.node(*attribute_chain_id)?;
+    if !matches!(term_expression.kind, SurfaceNodeKind::TermExpression)
+        || !matches!(attribute_chain.kind, SurfaceNodeKind::AttributeTestChain)
+        || !direct_token_texts(ast, attribute_chain).is_empty()
+    {
+        return None;
+    }
+
+    let attribute_children = structural_child_ids(ast, attribute_chain);
+    let [attribute_ref_id] = attribute_children.as_slice() else {
+        return None;
+    };
+    let attribute_ref = ast.node(*attribute_ref_id)?;
+    if !matches!(attribute_ref.kind, SurfaceNodeKind::AttributeRef)
+        || !direct_token_texts(ast, attribute_ref).is_empty()
+    {
+        return None;
+    }
+    let attribute_ref_children = structural_child_ids(ast, attribute_ref);
+    let [attribute_symbol_id] = attribute_ref_children.as_slice() else {
+        return None;
+    };
+    let attribute_symbol_node = ast.node(*attribute_symbol_id)?;
+    if !matches!(attribute_symbol_node.kind, SurfaceNodeKind::QualifiedSymbol)
+        || qualified_symbol_spelling(ast, attribute_symbol_node)
+            .ok()?
+            .as_str()
+            != "empty"
+    {
+        return None;
+    }
+    let attribute_symbol = resolve_imported_fixture_term_formula_symbol(
+        symbols,
+        module,
+        "empty",
+        SymbolKind::Attribute,
+    )
+    .ok()?;
+    let subject = exact_numeral_term_operand(ast, *term_expression_id, "1")?;
+
+    Some(SourceImportedAttributeAssertionFormula {
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+        subject_site: surface_site(subject.0),
+        subject_range: subject.1,
+        attribute_symbol,
     })
 }
 
@@ -2071,6 +2237,28 @@ fn is_supported_imported_predicate_functor_theorem_bridge_node(node: &SurfaceNod
             | SurfaceNodeKind::ParenthesizedTerm
             | SurfaceNodeKind::NumeralTerm
             | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_imported_attribute_assertion_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::IsAssertion
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::AttributeTestChain
+            | SurfaceNodeKind::AttributeRef
+            | SurfaceNodeKind::QualifiedSymbol
             | SurfaceNodeKind::Token(_)
     )
 }
@@ -4580,9 +4768,11 @@ mod tests {
         assemble_source_checker_handoff, extract_builtin_source_reserve_declarations,
         extract_source_builtin_type_assertion_formula,
         extract_source_formula_connective_quantifier,
+        extract_source_imported_attribute_assertion_formula,
         extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
         resolve_visible_attribute, resolve_visible_type_head,
         source_builtin_type_assertion_formula_output, source_formula_connective_quantifier_output,
+        source_imported_attribute_assertion_formula_output,
         source_imported_predicate_functor_formula_output, source_set_enumeration_formula_output,
         source_type_elaboration_detail_keys, surface_nodes_with_kind, surface_site,
     };
@@ -9015,6 +9205,173 @@ mod tests {
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
             );
         }
+        let imported_attribute_assertion_symbols =
+            imported_empty_fixture_attribute_symbol_env(symbols.module_id().clone());
+        let imported_attribute_assertion_theorem = imported_attribute_assertion_theorem_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            "ImportedAttributeAssertionPayloadBoundary",
+            "1",
+            "empty",
+        );
+        let imported_attribute_assertion_detail_keys = vec![
+            "type_elaboration.checker.checker.formula.external.formula_payload".to_owned(),
+            "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+            "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+        ];
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_attribute_assertion_theorem,
+                imported_attribute_assertion_symbols.module_id().clone(),
+                &imported_attribute_assertion_symbols
+            ),
+            imported_attribute_assertion_detail_keys
+        );
+        let imported_attribute_assertion_output =
+            source_imported_attribute_assertion_formula_output(
+                &imported_attribute_assertion_theorem,
+                imported_attribute_assertion_symbols.module_id().clone(),
+                &imported_attribute_assertion_symbols,
+            )
+            .expect("exact imported attribute assertion bridge should produce checker output");
+        let imported_attribute_assertion_payload =
+            extract_source_imported_attribute_assertion_formula(
+                &imported_attribute_assertion_theorem,
+                imported_attribute_assertion_symbols.module_id(),
+                &imported_attribute_assertion_symbols,
+            )
+            .expect("exact imported attribute assertion bridge should extract source payload");
+        assert_eq!(
+            imported_attribute_assertion_payload
+                .attribute_symbol
+                .module()
+                .path()
+                .as_str(),
+            "parser.type_fixtures"
+        );
+        assert_eq!(imported_attribute_assertion_output.terms().len(), 1);
+        let (_, checked_attribute_subject) = imported_attribute_assertion_output
+            .terms()
+            .iter()
+            .next()
+            .expect("attribute assertion subject term should be checked");
+        assert_eq!(checked_attribute_subject.kind, TermKind::Numeral);
+        assert_eq!(checked_attribute_subject.status, TermStatus::Partial);
+        assert_eq!(
+            checked_attribute_subject.site,
+            imported_attribute_assertion_payload.subject_site
+        );
+        assert_eq!(checked_attribute_subject.context, BindingContextId::new(0));
+        assert!(checked_attribute_subject.candidate_set.is_none());
+        assert_eq!(imported_attribute_assertion_output.formulas().len(), 1);
+        let (_, checked_attribute_formula) = imported_attribute_assertion_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("attribute assertion formula should be checked");
+        assert_eq!(
+            checked_attribute_formula.site,
+            imported_attribute_assertion_payload.formula_site
+        );
+        assert_eq!(
+            checked_attribute_formula.kind,
+            FormulaKind::AttributeAssertion
+        );
+        assert_eq!(checked_attribute_formula.status, FormulaStatus::Partial);
+        assert_eq!(checked_attribute_formula.context, BindingContextId::new(0));
+        assert_eq!(
+            checked_attribute_formula.terms,
+            vec![imported_attribute_assertion_payload.subject_site.clone()]
+        );
+        assert!(checked_attribute_formula.facts.is_empty());
+        assert_eq!(
+            checked_attribute_formula.deferred,
+            vec![FormulaDeferredReason::MissingFormulaPayload]
+        );
+        let imported_attribute_assertion_gap_cases = [
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "OtherPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedAttributeAssertionPayloadBoundary",
+                "2",
+                "empty",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedAttributeAssertionPayloadBoundary",
+                "1",
+                "TypeCaseAttr",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &[],
+                "ImportedAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["other.module"],
+                "ImportedAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures", "parser.type_fixtures"],
+                "ImportedAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            reserve_then_imported_attribute_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+        ];
+        for gap_case in imported_attribute_assertion_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &gap_case,
+                    imported_attribute_assertion_symbols.module_id().clone(),
+                    &imported_attribute_assertion_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for gap_symbols in [
+            source_local_symbol_env(
+                imported_attribute_assertion_symbols.module_id().clone(),
+                "empty",
+                SymbolKind::Attribute,
+            ),
+            local_and_imported_attribute_symbol_env(
+                imported_attribute_assertion_symbols.module_id().clone(),
+                "empty",
+            ),
+            imported_empty_fixture_wrong_kind_env(
+                imported_attribute_assertion_symbols.module_id().clone(),
+            ),
+            ambiguous_imported_attribute_assertion_env(
+                imported_attribute_assertion_symbols.module_id().clone(),
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &imported_attribute_assertion_theorem,
+                    gap_symbols.module_id().clone(),
+                    &gap_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
         let set_enumeration_gap_cases = [
             set_enumeration_equality_theorem_ast(
                 source_id,
@@ -10486,8 +10843,27 @@ mod tests {
         imported_symbol_env(module, "empty", SymbolKind::Attribute)
     }
 
+    fn imported_empty_fixture_attribute_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        imported_parser_fixture_symbol_env(module, "empty", SymbolKind::Attribute)
+    }
+
     fn imported_fixture_attribute_symbol_env(module: ResolverModuleId) -> SymbolEnv {
         imported_parser_fixture_symbol_env(module, "TypeCaseAttr", SymbolKind::Attribute)
+    }
+
+    fn imported_empty_fixture_wrong_kind_env(module: ResolverModuleId) -> SymbolEnv {
+        imported_parser_fixture_symbol_env(module, "empty", SymbolKind::Mode)
+    }
+
+    fn ambiguous_imported_attribute_assertion_env(module: ResolverModuleId) -> SymbolEnv {
+        term_formula_symbol_env(
+            module,
+            &[],
+            &[
+                ("empty", SymbolKind::Attribute),
+                ("empty", SymbolKind::Attribute),
+            ],
+        )
     }
 
     fn imported_mode_symbol_env(module: ResolverModuleId) -> SymbolEnv {
@@ -11469,6 +11845,59 @@ mod tests {
             vec![theorem],
         );
         builder.finish(Some(root), None)
+    }
+
+    fn imported_attribute_assertion_theorem_ast(
+        source_id: SourceId,
+        imports: &[&str],
+        label: &str,
+        subject: &str,
+        attribute: &str,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut items = imports
+            .iter()
+            .map(|import| add_import_item(&mut builder, source_id, &mut offset, import))
+            .collect::<Vec<_>>();
+        items.push(add_attribute_assertion_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            label,
+            subject,
+            attribute,
+        ));
+        finish_compilation_ast(builder, source_id, items)
+    }
+
+    fn reserve_then_imported_attribute_assertion_theorem_ast(
+        source_id: SourceId,
+        reserve_items: Vec<ReserveItemSpec>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut items = vec![add_import_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            "parser.type_fixtures",
+        )];
+        items.extend(add_reserve_items(
+            &mut builder,
+            source_id,
+            &mut offset,
+            reserve_items,
+        ));
+        items.push(add_attribute_assertion_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            "ImportedAttributeAssertionPayloadBoundary",
+            "1",
+            "empty",
+        ));
+        finish_compilation_ast(builder, source_id, items)
     }
 
     fn proof_block_formula_shell_label_ast(source_id: SourceId) -> SurfaceAst {

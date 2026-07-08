@@ -3538,13 +3538,13 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
         .find(|case| {
             case.id.0 == "fail_type_elaboration_imported_attribute_assertion_formula_gap_001"
         })
-        .expect("Task103 imported attribute assertion formula boundary should be active");
+        .expect("Task113 imported attribute assertion formula checker bridge should be active");
     assert_eq!(
         imported_attribute_assertion_case
             .expectation
             .rejection_reason
             .as_deref(),
-        Some("term_formula_payload_extraction_gap")
+        Some("imported_attribute_assertion_formula_payload_gap")
     );
     let imported_non_empty_attribute_assertion_case = active_type_elaboration_cases(&plan)
         .find(|case| {
@@ -3729,7 +3729,11 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_imported_attribute_assertion_formula_gap_001"
             && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+                == [
+                    "type_elaboration.checker.checker.formula.external.formula_payload",
+                    "type_elaboration.checker.checker.formula.term.partial",
+                    "type_elaboration.checker.checker.term.external.numeric_type_payload",
+                ]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0

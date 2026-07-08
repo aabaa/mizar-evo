@@ -634,23 +634,31 @@ payload. It documents that the runner extracted the source-derived
 credit imported module AST extraction, semantic predicate/functor signatures,
 term inference, formula checking, recorded facts, theorem acceptance, a
 `formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payloads.
-Tasks 103 and 104 continue to permit term-bearing theorem formula fail sidecars
-to use `rejection_reason = "term_formula_payload_extraction_gap"` and
+Task 113 supersedes task 103 for the exact
+`ImportedAttributeAssertionPayloadBoundary: 1 is empty` source. It uses
+`rejection_reason = "imported_attribute_assertion_formula_payload_gap"` and
+`stable_detail_key =
+"type_elaboration.checker.checker.formula.external.formula_payload"` with the
+sorted checker detail keys for missing formula/attribute payload, partial
+formula checking, and missing numeric type payload after validating imported
+`empty` provenance and passing real checker term/formula payloads. Task 104
+continues to permit its term-bearing theorem formula fail sidecar to use
+`rejection_reason = "term_formula_payload_extraction_gap"` and
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
-These sidecars document that theorem formulas containing Chapter 13 term
-surfaces and Chapter 14 atomic formulas reached parser/resolver execution. Task
-111 supersedes the task-105 set-enumeration equality sidecar only for the exact
+It documents that the attribute-level `non empty` imported attribute assertion
+reached parser/resolver execution. Task 111 supersedes the task-105
+set-enumeration equality sidecar only for the exact
 `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` source, which now uses
 `rejection_reason = "set_enumeration_result_type_payload_gap"` and
 `stable_detail_key =
 "type_elaboration.checker.checker.term.external.result_type_payload"` after
-real checker term/formula handoff. The remaining sidecars, including task-103
-imported attribute assertion and task-104 attribute-level non-empty imported
-attribute assertion, do not credit broader set-enumeration term payload
-extraction, imported attribute assertion attribute-chain/provenance payload
+real checker term/formula handoff. The remaining sidecars, including task-104
+attribute-level non-empty imported attribute assertion and task-113's deferred
+semantic portion, do not credit broader set-enumeration term payload
+extraction, imported attribute assertion attribute-chain semantic payload
 extraction, imported attribute-level non-empty assertion attribute-chain/provenance
-payload extraction, term/formula payload extraction, equality semantic checking,
-attribute admissibility/semantic checking, negated attribute
+payload extraction, equality semantic checking, attribute admissibility/semantic
+checking, negated attribute
 admissibility/semantic checking, term inference, formula checking, recorded
 facts, theorem acceptance, imported module AST extraction, checker
 `AttributeInput` payload extraction for theorem formulas, a `formula_statement`

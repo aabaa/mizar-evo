@@ -444,20 +444,20 @@ asserted type payload extraction, term inference, type-assertion semantic
 checking, formula checking beyond the partial-term diagnostic, recorded facts,
 theorem acceptance, the dedicated `formula_statement` runner, CoreIr,
 ControlFlowIr, VC, and proof payloads are still absent.
-Task 103 records the imported attribute assertion variant of that same
-term/formula boundary:
+Task 113 supersedes task 103 for the exact positive imported attribute
+assertion variant of that same term/formula boundary:
 `import parser.type_fixtures; theorem ImportedAttributeAssertionPayloadBoundary: 1 is empty;`
 reaches parser and resolver execution with a Chapter 13 numeral term, the
 documented imported `parser.type_fixtures` `empty` attribute, and the Chapter
-14 attribute-assertion form, then stays on
-`type_elaboration.external_dependency.ast_payload_extraction` because real
-term/formula payload extraction, imported attribute assertion
-attribute-chain/provenance payload extraction, term inference, attribute
-admissibility/semantic checking, formula checking, recorded facts, theorem
-acceptance, the dedicated `formula_statement` runner, CoreIr, ControlFlowIr,
-VC, and proof payloads are still absent. This does not credit imported module
-AST extraction or checker `AttributeInput` payload extraction for theorem
-formulas.
+14 attribute-assertion form, then validates imported `empty` provenance and
+passes source-derived checker `TermInput` and `FormulaInput` payloads before
+failing on missing numeric type payloads, missing formula/attribute semantic
+payload, and partial formula checking. This does not credit imported module AST
+extraction, imported attribute assertion attribute-chain semantic payload
+extraction, checker `AttributeInput` payload extraction for theorem formulas,
+term inference, attribute admissibility/semantic checking, formula checking,
+recorded facts, theorem acceptance, the dedicated `formula_statement` runner,
+CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 104 records the attribute-level `non empty` imported attribute assertion
 variant of that same term/formula boundary:
 `import parser.type_fixtures; theorem ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty;`
