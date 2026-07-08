@@ -3534,6 +3534,18 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
             .as_deref(),
         Some("term_formula_payload_extraction_gap")
     );
+    let imported_attribute_assertion_case = active_type_elaboration_cases(&plan)
+        .find(|case| {
+            case.id.0 == "fail_type_elaboration_imported_attribute_assertion_formula_gap_001"
+        })
+        .expect("Task103 imported attribute assertion formula boundary should be active");
+    assert_eq!(
+        imported_attribute_assertion_case
+            .expectation
+            .rejection_reason
+            .as_deref(),
+        Some("term_formula_payload_extraction_gap")
+    );
     let formula_connective_quantifier_case = active_type_elaboration_cases(&plan)
         .find(|case| case.id.0 == "fail_type_elaboration_formula_connective_quantifier_gap_001")
         .expect("Task99 formula connective/quantifier boundary should be active");
@@ -3548,8 +3560,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 66);
-    assert_eq!(report.passed_count(), 66);
+    assert_eq!(report.results.len(), 67);
+    assert_eq!(report.passed_count(), 67);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3671,6 +3683,11 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_builtin_type_assertion_formula_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_imported_attribute_assertion_formula_gap_001"
             && result.actual_detail_keys
                 == ["type_elaboration.external_dependency.ast_payload_extraction"]
     }));
@@ -7870,8 +7887,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 66"));
-    assert!(stdout.contains("passed: 66"));
+    assert!(stdout.contains("type-elaboration cases: 67"));
+    assert!(stdout.contains("passed: 67"));
     assert!(stdout.contains("failed: 0"));
 }
 

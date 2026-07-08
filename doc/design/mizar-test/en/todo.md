@@ -299,7 +299,8 @@ Keep `cargo test -p mizar-test` green after each task (see
       term-formula extraction-gap boundary, checker task 100's builtin
       membership formula extraction-gap boundary, checker task 101's builtin
       inequality formula extraction-gap boundary, checker task 102's builtin
-      type assertion formula extraction-gap boundary, checker task 99's formula
+      type assertion formula extraction-gap boundary, checker task 103's imported
+      attribute assertion formula extraction-gap boundary, checker task 99's formula
       connective/quantifier extraction-gap boundary, checker task 88's proof skeleton
       extraction-gap boundary, and checker task 89's statement proof
       extraction-gap boundary, and checker task 90's predicate/functor
@@ -452,8 +453,10 @@ Keep `cargo test -p mizar-test` green after each task (see
       mode/structure heads, structure base-shape payloads, definition payloads beyond the task-92 extraction-gap boundary, proof-local declaration payloads beyond the task-93 extraction-gap boundary, inline definition payloads beyond the task-94 extraction-gap boundary, registration payloads and activation/correctness payloads beyond the task-95 extraction-gap boundary, redefinition/notation payloads beyond the task-96 extraction-gap boundary, imported predicate/functor semantic payloads, quantifier binder/context payloads, terms and
       membership operand type inference/checking, inequality desugaring or
       equality semantic checking, type-assertion type payload extraction,
-      type-assertion semantic checking, formula/theorem/proof payloads beyond the
-      task-86/task-87/task-98/task-100/task-101/task-102/task-99/task-88/task-89/task-93/task-94/task-95/task-96
+      type-assertion semantic checking, imported attribute assertion
+      attribute-chain/provenance payload extraction, attribute admissibility/semantic
+      checking, formula/theorem/proof payloads beyond the
+      task-86/task-87/task-98/task-100/task-101/task-102/task-103/task-99/task-88/task-89/task-93/task-94/task-95/task-96
       extraction-gap boundaries,
       coercions, overload payloads, facts, CoreIr,
       ControlFlowIr, VC payloads, and proof evidence remain on the explicit

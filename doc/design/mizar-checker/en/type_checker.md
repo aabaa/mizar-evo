@@ -432,6 +432,20 @@ term/formula payload extraction, type-assertion type payload extraction, term
 inference, type-assertion semantic checking, formula checking, recorded facts,
 theorem acceptance, the dedicated `formula_statement` runner, CoreIr,
 ControlFlowIr, VC, and proof payloads are still absent.
+Task 103 records the imported attribute assertion variant of that same
+term/formula boundary:
+`import parser.type_fixtures; theorem ImportedAttributeAssertionPayloadBoundary: 1 is empty;`
+reaches parser and resolver execution with a Chapter 13 numeral term, the
+documented imported `parser.type_fixtures` `empty` attribute, and the Chapter
+14 attribute-assertion form, then stays on
+`type_elaboration.external_dependency.ast_payload_extraction` because real
+term/formula payload extraction, imported attribute assertion
+attribute-chain/provenance payload extraction, term inference, attribute
+admissibility/semantic checking, formula checking, recorded facts, theorem
+acceptance, the dedicated `formula_statement` runner, CoreIr, ControlFlowIr,
+VC, and proof payloads are still absent. This does not credit imported module
+AST extraction or checker `AttributeInput` payload extraction for theorem
+formulas.
 Task 99 records the connective/quantifier formula variant of that theorem
 boundary:
 `theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`

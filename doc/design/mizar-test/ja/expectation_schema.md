@@ -578,18 +578,22 @@ task 86 は formula-only theorem fail sidecar について
 記録するが、`formula_statement` runner、checker theorem/formula payload
 extraction、recorded fact、proof skeleton、CoreIr、ControlFlowIr、VC、proof
 payload は credit しない。
-task 87、task 98、task 100、task 101、task 102 は term-bearing theorem formula fail sidecar について
+task 87、task 98、task 100、task 101、task 102、task 103 は term-bearing theorem formula fail sidecar について
 `failure_category = "external_dependency_gap"`、
 `rejection_reason = "term_formula_payload_extraction_gap"`、
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
 を許可する。これらの sidecar は、task 87 の numeral / builtin equality、task 98 の
 imported predicate/functor application、task 100 の builtin membership、task 101 の
-builtin inequality、task 102 の builtin type assertion を含む Chapter 13 term
-surface と Chapter 14 atomic formula が parser / resolver 実行へ到達したことを
-記録するが、imported semantic payload、term/formula payload extraction、
+builtin inequality、task 102 の builtin type assertion、task 103 の imported
+attribute assertion を含む Chapter 13 term surface と Chapter 14 atomic formula が
+parser / resolver 実行へ到達したことを記録するが、imported semantic payload、
+imported attribute assertion attribute-chain/provenance payload extraction、
+term/formula payload extraction、
 membership operand type inference/checking、inequality desugaring または equality
 semantic checking、type-assertion type payload extraction、type-assertion semantic
-checking、term inference、formula checking、recorded fact、theorem acceptance、
+checking、attribute admissibility/semantic checking、term inference、formula
+checking、recorded fact、theorem acceptance、imported module AST extraction、
+theorem formula 向け checker `AttributeInput` payload extraction、
 `formula_statement` runner、proof skeleton、CoreIr、ControlFlowIr、VC、proof payload
 は credit しない。
 task 99 は formula connective / quantifier theorem fail sidecar について
