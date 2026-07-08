@@ -386,6 +386,14 @@ term inference、formula checking、recorded fact、theorem acceptance、dedicat
 `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ存在しないため
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。これは imported
 module AST extraction を credit しない。
+task 99 は同じ theorem boundary の connective / quantifier formula variant を記録する:
+`theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`
+は Chapter 14 の implication、universal-quantifier、negation surface を通じて
+parser / resolver 実行まで到達するが、real formula payload extraction、
+quantifier binder/context payload、formula checking、recorded fact、theorem
+acceptance、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof
+payload がまだ存在しないため
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。
 task 88 は対応する proof-block boundary を記録する:
 `theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` のような
 theorem は Chapter 16 の proof block と Chapter 15 の conclusion statement を伴って

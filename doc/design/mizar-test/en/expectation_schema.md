@@ -624,6 +624,15 @@ parser/resolver execution, but they do not credit imported semantic payloads,
 term/formula payload extraction, term inference, formula checking, recorded
 facts, theorem acceptance, a `formula_statement` runner, proof skeletons,
 CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 99 permits formula connective/quantifier theorem fail sidecars to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "formula_connective_quantifier_payload_extraction_gap"` and
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
+These sidecars document that Chapter 14 connective and quantifier formula
+surfaces reached parser/resolver execution inside a theorem declaration, but
+they do not credit formula payload extraction, quantifier binder/context
+payloads, formula checking, recorded facts, theorem acceptance, a
+`formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 88 permits proof-block theorem fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "proof_skeleton_payload_extraction_gap"` and

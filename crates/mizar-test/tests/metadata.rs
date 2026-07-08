@@ -3504,12 +3504,22 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
             .as_deref(),
         Some("term_formula_payload_extraction_gap")
     );
+    let formula_connective_quantifier_case = active_type_elaboration_cases(&plan)
+        .find(|case| case.id.0 == "fail_type_elaboration_formula_connective_quantifier_gap_001")
+        .expect("Task99 formula connective/quantifier boundary should be active");
+    assert_eq!(
+        formula_connective_quantifier_case
+            .expectation
+            .rejection_reason
+            .as_deref(),
+        Some("formula_connective_quantifier_payload_extraction_gap")
+    );
 
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 62);
-    assert_eq!(report.passed_count(), 62);
+    assert_eq!(report.results.len(), 63);
+    assert_eq!(report.passed_count(), 63);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3616,6 +3626,11 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_imported_predicate_functor_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_formula_connective_quantifier_gap_001"
             && result.actual_detail_keys
                 == ["type_elaboration.external_dependency.ast_payload_extraction"]
     }));
@@ -7810,8 +7825,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 62"));
-    assert!(stdout.contains("passed: 62"));
+    assert!(stdout.contains("type-elaboration cases: 63"));
+    assert!(stdout.contains("passed: 63"));
     assert!(stdout.contains("failed: 0"));
 }
 

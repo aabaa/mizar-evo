@@ -1704,12 +1704,13 @@ tests = [
 [[requirement]]
 id = "spec.en.14.formulas.type_elaboration_payload_gap"
 source = "doc/spec/en/14.formulas.md"
-section = "14.1 Overview; 14.3.6 Special Constants"
+section = "14.1 Overview; 14.3 Logical Connectives; 14.4 Quantified Formulas; 14.5 Special Formula Forms"
 stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
 tests = [
+  "tests/miz/fail/types/fail_type_elaboration_formula_connective_quantifier_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
@@ -1967,6 +1968,7 @@ status = "covered"
 required = true
 coverage = "diagnostic"
 tests = [
+  "tests/miz/fail/types/fail_type_elaboration_formula_connective_quantifier_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
 ]
 
@@ -2601,6 +2603,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_attribute_definition_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_bracket_mode_argument_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_bracket_structure_argument_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_formula_connective_quantifier_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_inline_definition_gap_001.expect.toml",
@@ -2797,6 +2800,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_bracket_structure_argument_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.formula_connective_quantifier_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 99 source-derived formula connective/quantifier extraction gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_formula_connective_quantifier_gap_001.expect.toml",
 ]
 
 [[requirement]]

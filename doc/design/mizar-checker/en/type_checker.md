@@ -405,6 +405,16 @@ extraction, term inference, formula checking, recorded facts, theorem
 acceptance, the dedicated `formula_statement` runner, CoreIr, ControlFlowIr,
 VC, and proof payloads are still absent. This does not credit imported module
 AST extraction.
+Task 99 records the connective/quantifier formula variant of that theorem
+boundary:
+`theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`
+reaches parser and resolver execution through the Chapter 14 implication,
+universal-quantifier, and negation surfaces, then stays on
+`type_elaboration.external_dependency.ast_payload_extraction` because real
+formula payload extraction, quantifier binder/context payloads, formula
+checking, recorded facts, theorem acceptance, the dedicated
+`formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof payloads are
+still absent.
 Task 88 records the matching proof-block boundary: a theorem such as
 `theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` reaches
 parser and resolver execution with a Chapter 16 proof block and Chapter 15
