@@ -2261,6 +2261,27 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       management; spec 12 modules and namespaces; spec 13 term expressions;
       spec 14 formulas; spec 16 theorems and proofs.
 
+104. **Add source-derived attribute-level non-empty imported attribute assertion formula extraction-gap boundary.** [x]
+    - Add a dedicated active `type_elaboration` boundary for a theorem formula
+      importing `parser.type_fixtures` and using its documented `empty`
+      attribute as an attribute-level `non empty` assertion in the Chapter 14
+      attribute-assertion form with a Chapter 13 numeral subject.
+    - Acceptance: parser and resolver execute the source, then the active
+      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
+      because checker-owned term/formula payload extraction, imported
+      attribute-level non-empty assertion attribute-chain/provenance payload
+      extraction, term inference, negated attribute admissibility/semantic
+      checking, formula checking, recorded facts, theorem acceptance, CoreIr,
+      ControlFlowIr, VC, proof payloads, and the `formula_statement` runner are
+      not available. The task must not fabricate term/formula payloads, imported
+      attribute-level non-empty assertion payloads, imported module AST
+      extraction, theorem acceptance, or downstream semantic payloads.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: tasks 86, 87, 98, 100, 101, 102, and 103. Refs: Step 5
+      source-derived semantic bridge; mizar-test task 10; spec 06 attributes;
+      spec 11 symbol management; spec 12 modules and namespaces; spec 13 term
+      expressions; spec 14 formulas; spec 16 theorems and proofs.
+
 ## Recommended Verification
 
 Run after each task:

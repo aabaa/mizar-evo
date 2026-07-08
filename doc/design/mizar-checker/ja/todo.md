@@ -2102,6 +2102,27 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       spec 12 modules and namespaces、spec 13 term expressions、spec 14 formulas、
       spec 16 theorems and proofs。
 
+104. **Source-derived attribute-level non-empty imported attribute assertion formula extraction-gap boundary を追加する。** [x]
+    - `parser.type_fixtures` を import し、documented `empty` attribute を
+      Chapter 14 の attribute-assertion form と Chapter 13 の numeral subject で
+      attribute-level `non empty` assertion として使う theorem formula 専用の
+      active `type_elaboration` boundary を追加する。
+    - Acceptance: parser と resolver は source を実行し、その後 active runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+      checker-owned term/formula payload extraction、imported attribute-level
+      non-empty assertion attribute-chain/provenance payload extraction、term
+      inference、negated attribute admissibility/semantic checking、formula
+      checking、recorded fact、theorem acceptance、CoreIr、ControlFlowIr、VC、
+      proof payload、`formula_statement` runner がまだ利用できないためである。
+      この task は term/formula payload、imported attribute-level non-empty
+      assertion payload、imported module AST extraction、theorem acceptance、
+      downstream semantic payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: tasks 86、87、98、100、101、102、103。参照: Step 5 source-derived
+      semantic bridge、mizar-test task 10、spec 06 attributes、spec 11 symbol
+      management、spec 12 modules and namespaces、spec 13 term expressions、
+      spec 14 formulas、spec 16 theorems and proofs。
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -422,6 +422,20 @@ VC、proof payload がまだ存在しないため
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。これは imported
 module AST extraction や theorem formula 向け checker `AttributeInput` payload
 extraction を credit しない。
+task 104 は同じ term/formula boundary の attribute-level `non empty` imported
+attribute assertion variant を記録する:
+`import parser.type_fixtures; theorem ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty;`
+は Chapter 13 の numeral term、documented imported `parser.type_fixtures` の
+`empty` attribute、Chapter 6 の attribute negation/composition、Chapter 14 の
+attribute-assertion form を通じて parser / resolver 実行まで到達するが、real
+term/formula payload extraction、imported attribute-level non-empty assertion
+attribute-chain/provenance payload extraction、term inference、negated attribute
+admissibility/semantic checking、formula checking、recorded fact、theorem
+acceptance、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、
+proof payload がまだ存在しないため
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。これは imported
+module AST extraction や theorem formula 向け checker `AttributeInput` payload
+extraction を credit しない。
 task 99 は同じ theorem boundary の connective / quantifier formula variant を記録する:
 `theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`
 は Chapter 14 の implication、universal-quantifier、negation surface を通じて

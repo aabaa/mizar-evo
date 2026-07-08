@@ -825,13 +825,14 @@ tests = [
 [[requirement]]
 id = "spec.en.06.attributes.attribute_assertion_formula_payload_gap"
 source = "doc/spec/en/06.attributes.md"
-section = "6.3.2 Property Testing; 6.8.1 Attributes as Predicates"
+section = "6.3.2 Property Testing; 6.3.3 Negation and Combinations; 6.8.1 Attributes as Predicates; 6.8.2 Negation Encoding"
 stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1210,9 +1211,10 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Checker task 98 records that theorem formula/term surfaces using documented parser.type_fixtures imported predicate/functor names can reach the active type_elaboration runner before stopping at the checker source-to-payload extraction gap. Checker task 103 adds the imported attribute assertion theorem-formula variant for parser.type_fixtures `empty`. These rows do not credit imported predicate/functor or imported attribute assertion semantic payloads, term/formula payload extraction, formula checking, facts, theorem acceptance, or downstream IR/proof payloads."
+notes = "Checker task 98 records that theorem formula/term surfaces using documented parser.type_fixtures imported predicate/functor names can reach the active type_elaboration runner before stopping at the checker source-to-payload extraction gap. Checker task 103 adds the imported attribute assertion theorem-formula variant for parser.type_fixtures `empty`, and checker task 104 adds the attribute-level `non empty` variant. These rows do not credit imported predicate/functor or imported attribute assertion semantic payloads, term/formula payload extraction, formula checking, facts, theorem acceptance, or downstream IR/proof payloads."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
 ]
 
@@ -1479,9 +1481,10 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Checker task 98 records that a source importing parser.type_fixtures can use imported predicate/functor surface names inside a theorem formula at the active type_elaboration boundary. Checker task 103 adds the imported attribute assertion theorem-formula variant for parser.type_fixtures `empty`. This row credits only import-prelude/parser-resolver reachability before the checker source-to-payload extraction gap, not imported module AST extraction, semantic predicate/functor or attribute assertion payloads, accepted theorem facts, or downstream payloads."
+notes = "Checker task 98 records that a source importing parser.type_fixtures can use imported predicate/functor surface names inside a theorem formula at the active type_elaboration boundary. Checker task 103 adds the imported attribute assertion theorem-formula variant for parser.type_fixtures `empty`, and checker task 104 adds the attribute-level `non empty` variant. This row credits only import-prelude/parser-resolver reachability before the checker source-to-payload extraction gap, not imported module AST extraction, semantic predicate/functor or attribute assertion payloads, accepted theorem facts, or downstream payloads."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
 ]
 
@@ -1666,6 +1669,7 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_builtin_inequality_formula_gap_001.expect.toml",
@@ -1719,6 +1723,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_builtin_membership_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_builtin_type_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
@@ -1981,6 +1986,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_builtin_membership_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_builtin_type_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
@@ -2635,6 +2641,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_formula_connective_quantifier_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_inline_definition_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mode_structure_definition_gap_001.expect.toml",
@@ -2916,6 +2923,18 @@ notes = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` f
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_empty_object_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_empty_positive_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.imported_non_empty_attribute_assertion_formula_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 104 source-derived attribute-level non-empty imported attribute assertion formula extraction-gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
 ]
 
 [[requirement]]

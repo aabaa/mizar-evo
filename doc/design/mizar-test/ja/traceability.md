@@ -554,6 +554,14 @@ formula checking、recorded fact、theorem acceptance、imported module AST
 extraction、theorem formula 向け checker `AttributeInput` payload extraction、
 `formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
 credit しない。
+task 104 の fail case は parser / resolver 実行後の attribute-level non-empty
+imported attribute assertion theorem formula extraction-gap boundary だけを
+credit し、checker term/formula payload extraction、imported attribute-level
+non-empty assertion attribute-chain/provenance payload extraction、term inference、
+negated attribute admissibility/semantic checking、formula checking、recorded
+fact、theorem acceptance、imported module AST extraction、theorem formula 向け
+checker `AttributeInput` payload extraction、`formula_statement` runner support、
+CoreIr、ControlFlowIr、VC、proof payload は credit しない。
 task 99 の fail case は parser / resolver 実行後の connective/quantifier theorem
 formula extraction-gap boundary だけを credit し、checker formula payload
 extraction、quantifier binder/context payload、formula checking、recorded fact、
