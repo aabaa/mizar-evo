@@ -1224,7 +1224,7 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Checker task 98 records that theorem formula/term surfaces using documented parser.type_fixtures imported predicate/functor names can reach the active type_elaboration runner before stopping at the checker source-to-payload extraction gap. Checker task 103 adds the imported attribute assertion theorem-formula variant for parser.type_fixtures `empty`, and checker task 104 adds the attribute-level `non empty` variant. These rows do not credit imported predicate/functor or imported attribute assertion semantic payloads, term/formula payload extraction, formula checking, facts, theorem acceptance, or downstream IR/proof payloads."
+notes = "Checker task 110 supersedes task 98 for the exact documented parser.type_fixtures imported predicate/functor theorem formula by validating imported `divides`/`++` provenance, passing source-derived numeral, imported functor-application, and predicate-application checker payloads, and failing closed on missing numeric/signature payloads plus partial formula checking. Checker task 103 adds the imported attribute assertion theorem-formula variant for parser.type_fixtures `empty`, and checker task 104 adds the attribute-level `non empty` variant. These rows do not credit imported predicate/functor semantic signatures, imported attribute assertion semantic payloads, term inference, formula checking, facts, theorem acceptance, or downstream IR/proof payloads."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
@@ -1494,7 +1494,7 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
-notes = "Checker task 98 records that a source importing parser.type_fixtures can use imported predicate/functor surface names inside a theorem formula at the active type_elaboration boundary. Checker task 103 adds the imported attribute assertion theorem-formula variant for parser.type_fixtures `empty`, and checker task 104 adds the attribute-level `non empty` variant. This row credits only import-prelude/parser-resolver reachability before the checker source-to-payload extraction gap, not imported module AST extraction, semantic predicate/functor or attribute assertion payloads, accepted theorem facts, or downstream payloads."
+notes = "Checker task 110 supersedes task 98 for the exact source importing parser.type_fixtures and using imported predicate/functor surface names inside a theorem formula: the active type_elaboration runner now validates imported `divides`/`++` provenance and passes source-derived checker term/formula payloads before failing closed on missing numeric/signature payloads plus partial formula checking. Checker task 103 adds the imported attribute assertion theorem-formula variant for parser.type_fixtures `empty`, and checker task 104 adds the attribute-level `non empty` variant. This row does not credit imported module AST extraction, semantic predicate/functor or attribute assertion payloads, accepted theorem facts, or downstream payloads."
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
@@ -2957,7 +2957,7 @@ tests = [
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.imported_predicate_functor_term_formula_gap"
 source = "doc/design/mizar-checker/en/type_checker.md"
-section = "Task 98 source-derived imported predicate/functor term-formula extraction gap boundary"
+section = "Task 110 source-derived imported predicate/functor theorem checker bridge"
 stage = "type_elaboration"
 status = "covered"
 required = true

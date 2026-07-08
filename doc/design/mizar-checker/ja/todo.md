@@ -2000,17 +2000,19 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       spec 11 symbol management、spec 12 modules and namespaces。
 
 98. **Source-derived imported predicate/functor term-formula extraction-gap boundary を追加する。** [x]
-    - `parser.type_fixtures` を import し、`divides` や `++` のような documented
-      imported predicate/functor surface を使う theorem formula 専用の active
-      `type_elaboration` boundary を追加する。
-    - Acceptance: parser と resolver は source を実行し、その後 active runner は
-      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
-      checker-owned imported predicate/functor term/formula payload extraction、
-      term inference、formula checking、recorded fact、theorem acceptance、CoreIr、
-      ControlFlowIr、VC、proof payload、`formula_statement` runner がまだ利用できないためである。
-      この task は imported predicate/functor semantic payload、term/formula
-      payload、fact、theorem acceptance、downstream semantic payload を捏造してはならず、
-      imported module AST extraction も主張してはならない。
+    - Historical boundary: `parser.type_fixtures` を import し、`divides` や
+      `++` のような documented imported predicate/functor surface を使う theorem
+      formula 専用の active `type_elaboration` boundary を追加した。
+    - task 110 は exact
+      `ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2)` source を
+      supersede し、real checker numeral、imported functor-application、
+      predicate-application payload を渡してから missing numeric/signature
+      payload と partial formula checking で fail closed する。task 98 は
+      parser / resolver executable な extraction-gap boundary として historical
+      に残り、imported module AST extraction、semantic predicate/functor
+      signature、term inference、formula checking、recorded fact、theorem
+      acceptance、CoreIr、ControlFlowIr、VC、proof payload、`formula_statement`
+      runner support として読んではならない。
     - 検証: `cargo test -p mizar-test`。
     - 依存: tasks 86、87。参照: Step 5 source-derived semantic bridge、
       mizar-test task 10、spec 11 symbol management、spec 12 modules and namespaces、
@@ -2171,6 +2173,24 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 86、87、98、100。参照: Step 5 source-derived semantic bridge、
       mizar-test task 10、spec 13 term expressions、spec 14 formulas、spec 16
       theorems and proofs。
+
+110. **Source-derived imported predicate/functor theorem checker bridge を追加する。** [x]
+    - `parser.type_fixtures` を import し、
+      `theorem ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2);`
+      を使う exact source だけを昇格する。
+    - Acceptance: active runner は imported `divides` と `++` の resolver
+      provenance を検証し、source-derived numeral term、imported
+      functor-application term、predicate-application formula を
+      `TermFormulaChecker` に渡し、missing numeric/signature payload と partial
+      formula checking で fail closed する。imported module AST extraction、
+      semantic predicate/functor signature、term inference、formula checking、
+      fact、theorem acceptance、`formula_statement`、downstream semantic payload は
+      捏造してはならない。
+    - 検証: `cargo test -p mizar-test --test metadata`。
+    - 依存: tasks 86、87、98。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 11 symbol management、spec 12 modules and
+      namespaces、spec 13 term expressions、spec 14 formulas、spec 16 theorems
+      and proofs。
 
 ## 推奨検証
 

@@ -587,21 +587,28 @@ task 109 はさらに exact builtin `set` asserted type を real source-derived
 checker `TypeExpressionInput` として credit するが、より広い asserted type
 payload、type-assertion semantic checking、recorded fact、theorem acceptance、
 `formula_statement`、CoreIr、ControlFlowIr、VC、proof payload は credit しない。
-task 98、task 103、task 104、task 105 は引き続き
-term-bearing theorem formula fail sidecar について
-`rejection_reason = "term_formula_payload_extraction_gap"` と
+task 110 は exact imported predicate/functor theorem formula sidecar について
+task 98 を supersede する。この sidecar は
+`rejection_reason = "imported_predicate_functor_signature_payload_gap"` と、
+missing predicate signature payload、partial formula term、missing numeric type
+payload、missing functor signature payload の sorted checker detail key を使う。
+runner は source-derived `1 divides (1 ++ 2)` term/formula site を抽出し、
+`parser.type_fixtures` の `divides` / `++` imported provenance を検証してから
+fail closed することを記録する。ただし imported module AST extraction、
+semantic predicate/functor signature、term inference、formula checking、recorded
+fact、theorem acceptance、`formula_statement` runner、CoreIr、ControlFlowIr、VC、
+proof payload は credit しない。
+task 103、task 104、task 105 は引き続き term-bearing theorem formula fail
+sidecar について `rejection_reason = "term_formula_payload_extraction_gap"` と
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"` を
-許可する。これらの sidecar は、task 98 の imported predicate/functor
-application、task 103 の imported attribute assertion、task 104 の
-attribute-level non-empty imported attribute assertion、task 105 の
+許可する。これらの sidecar は、task 103 の imported attribute assertion、
+task 104 の attribute-level non-empty imported attribute assertion、task 105 の
 set-enumeration equality を含む Chapter 13 term surface と Chapter 14 atomic
-formula が
-parser / resolver 実行へ到達したことを記録するが、imported semantic payload、
+formula が parser / resolver 実行へ到達したことを記録するが、
 set-enumeration term payload extraction、
 imported attribute assertion attribute-chain/provenance payload extraction、
 imported attribute-level non-empty assertion attribute-chain/provenance payload extraction、
-term/formula payload extraction、
-inequality desugaring または equality
+term/formula payload extraction、equality
 semantic checking、attribute admissibility/semantic checking、negated attribute
 admissibility/semantic checking、term inference、formula
 checking、recorded fact、theorem acceptance、imported module AST extraction、

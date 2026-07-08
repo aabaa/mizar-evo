@@ -27,7 +27,7 @@ use mizar_checker::type_checker::{
     AttributeInput, AttributePolarity, DeclarationCheckingOutput, DeclarationKind,
     DeclarationStatus, FormulaInput, FormulaKind, ModeExpansion, SourceReserveBindingInput,
     SourceReserveDeclarationBridge, TermFormulaChecker, TermFormulaInferenceOutput, TermInput,
-    TermKind, TypeExpressionInput, TypeHeadInput,
+    TermKind, TermReference, TypeExpressionInput, TypeHeadInput,
 };
 use mizar_checker::typed_ast::{
     CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, TypeEntryId,
@@ -765,6 +765,8 @@ fn augment_type_elaboration_import_summaries(
                     | (UserSymbolKind::Mode, "TypeCaseMode")
                     | (UserSymbolKind::Structure, "R")
                     | (UserSymbolKind::Structure, "TypeCaseStruct")
+                    | (UserSymbolKind::Predicate, "divides")
+                    | (UserSymbolKind::Functor, "++")
             ) {
                 continue;
             }
@@ -908,6 +910,11 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) =
+        source_imported_predicate_functor_formula_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
     let Ok(source_reserve) =
         extract_builtin_source_reserve_declarations(ast, module.clone(), symbols)
     else {
@@ -1007,6 +1014,22 @@ struct SourceBuiltinTypeAssertionFormula {
     asserted_type: SourceTypeExpression,
 }
 
+#[derive(Debug, Clone)]
+struct SourceImportedPredicateFunctorFormula {
+    formula_site: TypedSiteRef,
+    formula_range: SourceRange,
+    predicate_symbol: ResolverSymbolId,
+    left_site: TypedSiteRef,
+    left_range: SourceRange,
+    functor_site: TypedSiteRef,
+    functor_range: SourceRange,
+    functor_symbol: ResolverSymbolId,
+    functor_left_site: TypedSiteRef,
+    functor_left_range: SourceRange,
+    functor_right_site: TypedSiteRef,
+    functor_right_range: SourceRange,
+}
+
 fn source_builtin_binary_term_formula_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -1040,14 +1063,7 @@ fn source_builtin_binary_term_formula_detail_keys(
         )
         .with_terms(vec![payload.left_site, payload.right_site])],
     );
-    let mut keys = output
-        .diagnostics()
-        .canonical_iter()
-        .map(|(_, diagnostic)| format!("type_elaboration.checker.{}", diagnostic.message_key))
-        .collect::<Vec<_>>();
-    keys.sort();
-    keys.dedup();
-    Some(keys)
+    Some(term_formula_output_detail_keys(&output))
 }
 
 fn source_builtin_type_assertion_formula_detail_keys(
@@ -1056,6 +1072,19 @@ fn source_builtin_type_assertion_formula_detail_keys(
     symbols: &SymbolEnv,
 ) -> Option<Vec<String>> {
     let output = source_builtin_type_assertion_formula_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
+fn source_imported_predicate_functor_formula_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output = source_imported_predicate_functor_formula_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
+fn term_formula_output_detail_keys(output: &TermFormulaInferenceOutput) -> Vec<String> {
     let mut keys = output
         .diagnostics()
         .canonical_iter()
@@ -1063,7 +1092,7 @@ fn source_builtin_type_assertion_formula_detail_keys(
         .collect::<Vec<_>>();
     keys.sort();
     keys.dedup();
-    Some(keys)
+    keys
 }
 
 fn source_builtin_type_assertion_formula_output(
@@ -1098,6 +1127,56 @@ fn source_builtin_type_assertion_formula_output(
         )
         .with_terms(vec![payload.subject_site])
         .with_asserted_type(asserted_type)],
+    );
+    Some(output)
+}
+
+fn source_imported_predicate_functor_formula_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_imported_predicate_functor_formula(ast, &module, symbols)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let _predicate_symbol = payload.predicate_symbol.clone();
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [
+            TermInput::new(
+                payload.left_site.clone(),
+                context,
+                payload.left_range,
+                TermKind::Numeral,
+            ),
+            TermInput::new(
+                payload.functor_left_site.clone(),
+                context,
+                payload.functor_left_range,
+                TermKind::Numeral,
+            ),
+            TermInput::new(
+                payload.functor_right_site.clone(),
+                context,
+                payload.functor_right_range,
+                TermKind::Numeral,
+            ),
+            TermInput::new(
+                payload.functor_site.clone(),
+                context,
+                payload.functor_range,
+                TermKind::FunctorApplication,
+            )
+            .with_reference(TermReference::Symbol(payload.functor_symbol)),
+        ],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::PredicateApplication,
+        )
+        .with_terms(vec![payload.left_site, payload.functor_site])],
     );
     Some(output)
 }
@@ -1269,6 +1348,209 @@ fn extract_source_builtin_type_assertion_formula(
     })
 }
 
+fn extract_source_imported_predicate_functor_formula(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceImportedPredicateFunctorFormula> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_imported_predicate_functor_theorem_bridge_node(node))
+    {
+        return None;
+    }
+
+    let item_list = exact_compilation_item_list(ast)?;
+    let item_children = structural_child_ids(ast, item_list);
+    let [import_item_id, theorem_id] = item_children.as_slice() else {
+        return None;
+    };
+    let import_item = ast.node(*import_item_id)?;
+    if !is_exact_parser_type_fixtures_import(ast, import_item) {
+        return None;
+    }
+
+    let theorem = ast.node(*theorem_id)?;
+    if !matches!(theorem.kind, SurfaceNodeKind::TheoremItem) || subtree_has_recovery(ast, theorem) {
+        return None;
+    }
+    let theorem_tokens = direct_token_texts(ast, theorem);
+    if theorem_tokens.as_slice()
+        != [
+            "theorem",
+            "ImportedPredicateFunctorPayloadBoundary",
+            ":",
+            ";",
+        ]
+    {
+        return None;
+    }
+
+    let theorem_structural_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_structural_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::PredicateApplication)
+        || subtree_has_recovery(ast, formula)
+        || !direct_token_texts(ast, formula).is_empty()
+    {
+        return None;
+    }
+
+    let predicate_children = structural_child_ids(ast, formula);
+    let [segment_id] = predicate_children.as_slice() else {
+        return None;
+    };
+    let segment = ast.node(*segment_id)?;
+    if !matches!(segment.kind, SurfaceNodeKind::PredicateSegment)
+        || !direct_token_texts(ast, segment).is_empty()
+    {
+        return None;
+    }
+    let segment_children = structural_child_ids(ast, segment);
+    let [
+        left_term_expression_id,
+        predicate_head_id,
+        right_term_expression_id,
+    ] = segment_children.as_slice()
+    else {
+        return None;
+    };
+
+    let predicate_head = ast.node(*predicate_head_id)?;
+    if !matches!(predicate_head.kind, SurfaceNodeKind::PredicateHead)
+        || !direct_token_texts(ast, predicate_head).is_empty()
+    {
+        return None;
+    }
+    let predicate_head_children = structural_child_ids(ast, predicate_head);
+    let [predicate_symbol_id] = predicate_head_children.as_slice() else {
+        return None;
+    };
+    let predicate_symbol_node = ast.node(*predicate_symbol_id)?;
+    if !matches!(predicate_symbol_node.kind, SurfaceNodeKind::QualifiedSymbol)
+        || qualified_symbol_spelling(ast, predicate_symbol_node)
+            .ok()?
+            .as_str()
+            != "divides"
+    {
+        return None;
+    }
+    let predicate_symbol = resolve_imported_fixture_term_formula_symbol(
+        symbols,
+        module,
+        "divides",
+        SymbolKind::Predicate,
+    )
+    .ok()?;
+
+    let left = exact_numeral_term_operand(ast, *left_term_expression_id, "1")?;
+    let functor = exact_imported_infix_functor_term(ast, *right_term_expression_id)?;
+    let functor_symbol =
+        resolve_imported_fixture_term_formula_symbol(symbols, module, "++", SymbolKind::Functor)
+            .ok()?;
+
+    Some(SourceImportedPredicateFunctorFormula {
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+        predicate_symbol,
+        left_site: surface_site(left.0),
+        left_range: left.1,
+        functor_site: surface_site(functor.term_id),
+        functor_range: functor.term_range,
+        functor_symbol,
+        functor_left_site: surface_site(functor.left.0),
+        functor_left_range: functor.left.1,
+        functor_right_site: surface_site(functor.right.0),
+        functor_right_range: functor.right.1,
+    })
+}
+
+#[derive(Debug, Clone, Copy)]
+struct ExactImportedInfixFunctorTerm {
+    term_id: SurfaceNodeId,
+    term_range: SourceRange,
+    left: (SurfaceNodeId, SourceRange),
+    right: (SurfaceNodeId, SourceRange),
+}
+
+fn exact_imported_infix_functor_term(
+    ast: &SurfaceAst,
+    term_expression_id: SurfaceNodeId,
+) -> Option<ExactImportedInfixFunctorTerm> {
+    let term_expression = ast.node(term_expression_id)?;
+    if !matches!(term_expression.kind, SurfaceNodeKind::TermExpression)
+        || subtree_has_recovery(ast, term_expression)
+    {
+        return None;
+    }
+    let term_children = structural_child_ids(ast, term_expression);
+    let [parenthesized_id] = term_children.as_slice() else {
+        return None;
+    };
+    let parenthesized = ast.node(*parenthesized_id)?;
+    if !matches!(parenthesized.kind, SurfaceNodeKind::ParenthesizedTerm)
+        || direct_token_texts(ast, parenthesized).as_slice() != ["(", ")"]
+    {
+        return None;
+    }
+    let parenthesized_children = structural_child_ids(ast, parenthesized);
+    let [inner_expression_id] = parenthesized_children.as_slice() else {
+        return None;
+    };
+    let inner_expression = ast.node(*inner_expression_id)?;
+    if !matches!(inner_expression.kind, SurfaceNodeKind::TermExpression) {
+        return None;
+    }
+    let inner_children = structural_child_ids(ast, inner_expression);
+    let [infix_id] = inner_children.as_slice() else {
+        return None;
+    };
+    let infix = ast.node(*infix_id)?;
+    if !matches!(
+        &infix.kind,
+        SurfaceNodeKind::InfixExpression(operator) if operator.spelling.as_ref() == "++"
+    ) || direct_token_texts(ast, infix).as_slice() != ["++"]
+    {
+        return None;
+    }
+    let infix_children = structural_child_ids(ast, infix);
+    let [left_expression_id, right_expression_id] = infix_children.as_slice() else {
+        return None;
+    };
+    let left = exact_numeral_term_node_or_expression(ast, *left_expression_id, "1")?;
+    let right = exact_numeral_term_node_or_expression(ast, *right_expression_id, "2")?;
+    Some(ExactImportedInfixFunctorTerm {
+        term_id: *infix_id,
+        term_range: infix.range,
+        left,
+        right,
+    })
+}
+
+fn exact_numeral_term_node_or_expression(
+    ast: &SurfaceAst,
+    id: SurfaceNodeId,
+    expected_spelling: &str,
+) -> Option<(SurfaceNodeId, SourceRange)> {
+    let node = ast.node(id)?;
+    match node.kind {
+        SurfaceNodeKind::TermExpression => exact_numeral_term_operand(ast, id, expected_spelling),
+        SurfaceNodeKind::NumeralTerm => exact_numeral_term_node(ast, id, expected_spelling),
+        _ => None,
+    }
+}
+
 fn exact_numeral_term_operand(
     ast: &SurfaceAst,
     term_expression_id: SurfaceNodeId,
@@ -1284,15 +1566,77 @@ fn exact_numeral_term_operand(
     let [term_id] = term_children.as_slice() else {
         return None;
     };
-    let term = ast.node(*term_id)?;
+    exact_numeral_term_node(ast, *term_id, expected_spelling)
+}
+
+fn exact_numeral_term_node(
+    ast: &SurfaceAst,
+    term_id: SurfaceNodeId,
+    expected_spelling: &str,
+) -> Option<(SurfaceNodeId, SourceRange)> {
+    let term = ast.node(term_id)?;
     if matches!(term.kind, SurfaceNodeKind::NumeralTerm)
         && direct_token_texts(ast, term).as_slice() == [expected_spelling]
         && structural_child_ids(ast, term).is_empty()
     {
-        Some((*term_id, term.range))
+        Some((term_id, term.range))
     } else {
         None
     }
+}
+
+fn exact_compilation_item_list(ast: &SurfaceAst) -> Option<&SurfaceNode> {
+    let root = ast.node(ast.root()?)?;
+    if !matches!(root.kind, SurfaceNodeKind::Root) {
+        return None;
+    }
+    let root_children = structural_child_ids(ast, root);
+    let [compilation_unit_id] = root_children.as_slice() else {
+        return None;
+    };
+    let compilation_unit = ast.node(*compilation_unit_id)?;
+    if !matches!(compilation_unit.kind, SurfaceNodeKind::CompilationUnit) {
+        return None;
+    }
+    let compilation_children = structural_child_ids(ast, compilation_unit);
+    let [item_list_id] = compilation_children.as_slice() else {
+        return None;
+    };
+    let item_list = ast.node(*item_list_id)?;
+    if matches!(item_list.kind, SurfaceNodeKind::ItemList) {
+        Some(item_list)
+    } else {
+        None
+    }
+}
+
+fn is_exact_parser_type_fixtures_import(ast: &SurfaceAst, node: &SurfaceNode) -> bool {
+    if !matches!(node.kind, SurfaceNodeKind::ImportItem)
+        || subtree_has_recovery(ast, node)
+        || direct_token_texts(ast, node).as_slice() != ["import", ";"]
+    {
+        return false;
+    }
+    let import_children = structural_child_ids(ast, node);
+    let [decl_id] = import_children.as_slice() else {
+        return false;
+    };
+    let Some(decl) = ast.node(*decl_id) else {
+        return false;
+    };
+    if !matches!(decl.kind, SurfaceNodeKind::ImportAliasDecl)
+        || !direct_token_texts(ast, decl).is_empty()
+    {
+        return false;
+    }
+    let decl_children = structural_child_ids(ast, decl);
+    let [module_path_id] = decl_children.as_slice() else {
+        return false;
+    };
+    let Some(module_path) = ast.node(*module_path_id) else {
+        return false;
+    };
+    module_path_spelling(ast, module_path).is_ok_and(|spelling| spelling == "parser.type_fixtures")
 }
 
 fn structural_child_ids(ast: &SurfaceAst, node: &SurfaceNode) -> Vec<SurfaceNodeId> {
@@ -1334,6 +1678,30 @@ fn is_supported_builtin_type_assertion_theorem_bridge_node(node: &SurfaceNode) -
             | SurfaceNodeKind::NumeralTerm
             | SurfaceNodeKind::TypeExpression
             | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_imported_predicate_functor_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::ImportItem
+            | SurfaceNodeKind::ImportAliasDecl
+            | SurfaceNodeKind::ModulePath
+            | SurfaceNodeKind::PathSegment
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::PredicateApplication
+            | SurfaceNodeKind::PredicateSegment
+            | SurfaceNodeKind::PredicateHead
+            | SurfaceNodeKind::QualifiedSymbol
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::ParenthesizedTerm
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::InfixExpression(_)
             | SurfaceNodeKind::Token(_)
     )
 }
@@ -2592,6 +2960,50 @@ fn resolve_visible_type_head(
     }
 }
 
+fn resolve_imported_fixture_term_formula_symbol(
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+    spelling: &str,
+    kind: SymbolKind,
+) -> Result<ResolverSymbolId, ()> {
+    let namespace = NamespacePath::new(module.path().as_str());
+    let candidates = symbols
+        .symbols()
+        .visible_candidates(&namespace, spelling)
+        .into_iter()
+        .filter(|entry| entry.kind() == kind)
+        .collect::<Vec<_>>();
+    let [entry] = candidates.as_slice() else {
+        return Err(());
+    };
+    if is_imported_fixture_term_formula_symbol(symbols, module, entry.symbol(), spelling, kind) {
+        Ok(entry.symbol().clone())
+    } else {
+        Err(())
+    }
+}
+
+fn is_imported_fixture_term_formula_symbol(
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+    symbol: &ResolverSymbolId,
+    spelling: &str,
+    kind: SymbolKind,
+) -> bool {
+    let Some(entry) = symbols.symbols().get(symbol) else {
+        return false;
+    };
+    let Some(contribution) = symbols.contributions().get(entry.contribution()) else {
+        return false;
+    };
+    symbol.module() != module
+        && contribution.module() == symbol.module()
+        && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
+        && symbol.module().path().as_str() == "parser.type_fixtures"
+        && entry.kind() == kind
+        && entry.primary_spelling() == spelling
+}
+
 fn supported_source_reserve_attribute(
     symbols: &SymbolEnv,
     module: &ResolverModuleId,
@@ -3762,15 +4174,16 @@ mod tests {
     use super::{
         ParseOnlyImportProvider, TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY,
         assemble_source_checker_handoff, extract_builtin_source_reserve_declarations,
-        extract_source_builtin_type_assertion_formula, resolve_visible_attribute,
+        extract_source_builtin_type_assertion_formula,
+        extract_source_imported_predicate_functor_formula, resolve_visible_attribute,
         resolve_visible_type_head, source_builtin_type_assertion_formula_output,
-        source_type_elaboration_detail_keys,
+        source_imported_predicate_functor_formula_output, source_type_elaboration_detail_keys,
     };
     use mizar_checker::binding_env::BindingId;
     use mizar_checker::resolved_typed_ast::{ResolvedTypedNodeId, ResolvedTypedNodeKind};
     use mizar_checker::type_checker::{
-        AttributePolarity, FormulaKind, FormulaStatus, TermKind, TermStatus, TypeHeadInput,
-        TypeHeadRef,
+        AttributePolarity, FormulaKind, FormulaStatus, TermKind, TermReference, TermStatus,
+        TypeHeadInput, TypeHeadRef,
     };
     use mizar_checker::typed_ast::LocalTypeContextId;
     use mizar_core::elaborator::ResolvedTypedAstSummary;
@@ -7696,6 +8109,230 @@ mod tests {
             asserted_type.source.range,
             type_assertion_payload.asserted_type.range
         );
+        let imported_predicate_functor_symbols =
+            imported_predicate_functor_symbol_env(symbols.module_id().clone());
+        let imported_predicate_functor_theorem = imported_predicate_functor_theorem_ast(
+            source_id,
+            &["parser.type_fixtures"],
+            exact_imported_predicate_functor_theorem_spec(),
+        );
+        let imported_predicate_functor_detail_keys = vec![
+            "type_elaboration.checker.checker.formula.external.predicate_signature_payload"
+                .to_owned(),
+            "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+            "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            "type_elaboration.checker.checker.term.external.signature_payload".to_owned(),
+        ];
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_predicate_functor_theorem,
+                imported_predicate_functor_symbols.module_id().clone(),
+                &imported_predicate_functor_symbols
+            ),
+            imported_predicate_functor_detail_keys
+        );
+        let imported_predicate_functor_output = source_imported_predicate_functor_formula_output(
+            &imported_predicate_functor_theorem,
+            imported_predicate_functor_symbols.module_id().clone(),
+            &imported_predicate_functor_symbols,
+        )
+        .expect("exact imported predicate/functor bridge should produce checker output");
+        let imported_predicate_functor_payload = extract_source_imported_predicate_functor_formula(
+            &imported_predicate_functor_theorem,
+            imported_predicate_functor_symbols.module_id(),
+            &imported_predicate_functor_symbols,
+        )
+        .expect("exact imported predicate/functor bridge should extract source payload");
+        assert_eq!(
+            imported_predicate_functor_payload
+                .predicate_symbol
+                .module()
+                .path()
+                .as_str(),
+            "parser.type_fixtures"
+        );
+        assert_eq!(
+            imported_predicate_functor_payload
+                .functor_symbol
+                .module()
+                .path()
+                .as_str(),
+            "parser.type_fixtures"
+        );
+        assert_eq!(imported_predicate_functor_output.terms().len(), 4);
+        let checked_left = imported_predicate_functor_output
+            .terms()
+            .iter()
+            .map(|(_, term)| term)
+            .find(|term| term.site == imported_predicate_functor_payload.left_site)
+            .expect("left numeral term should be checked");
+        assert_eq!(checked_left.kind, TermKind::Numeral);
+        assert_eq!(checked_left.status, TermStatus::Partial);
+        let checked_functor_left = imported_predicate_functor_output
+            .terms()
+            .iter()
+            .map(|(_, term)| term)
+            .find(|term| term.site == imported_predicate_functor_payload.functor_left_site)
+            .expect("functor left numeral term should be checked");
+        assert_eq!(checked_functor_left.kind, TermKind::Numeral);
+        assert_eq!(checked_functor_left.status, TermStatus::Partial);
+        let checked_functor_right = imported_predicate_functor_output
+            .terms()
+            .iter()
+            .map(|(_, term)| term)
+            .find(|term| term.site == imported_predicate_functor_payload.functor_right_site)
+            .expect("functor right numeral term should be checked");
+        assert_eq!(checked_functor_right.kind, TermKind::Numeral);
+        assert_eq!(checked_functor_right.status, TermStatus::Partial);
+        let checked_functor = imported_predicate_functor_output
+            .terms()
+            .iter()
+            .map(|(_, term)| term)
+            .find(|term| term.site == imported_predicate_functor_payload.functor_site)
+            .expect("infix functor application term should be checked");
+        assert_eq!(checked_functor.kind, TermKind::FunctorApplication);
+        assert_eq!(checked_functor.status, TermStatus::Partial);
+        assert_eq!(
+            checked_functor.reference,
+            Some(TermReference::Symbol(
+                imported_predicate_functor_payload.functor_symbol.clone()
+            ))
+        );
+        assert!(checked_functor.candidate_set.is_none());
+        assert_eq!(imported_predicate_functor_output.formulas().len(), 1);
+        let (_, checked_predicate_formula) = imported_predicate_functor_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("predicate application formula should be checked");
+        assert_eq!(
+            checked_predicate_formula.site,
+            imported_predicate_functor_payload.formula_site
+        );
+        assert_eq!(
+            checked_predicate_formula.kind,
+            FormulaKind::PredicateApplication
+        );
+        assert_eq!(checked_predicate_formula.status, FormulaStatus::Partial);
+        assert_eq!(
+            checked_predicate_formula.terms,
+            vec![
+                imported_predicate_functor_payload.left_site.clone(),
+                imported_predicate_functor_payload.functor_site.clone(),
+            ]
+        );
+        assert!(checked_predicate_formula.candidate_set.is_none());
+        assert!(checked_predicate_formula.facts.is_empty());
+
+        let imported_predicate_functor_gap_cases = [
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    predicate: "<=",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    functor: "**",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    left: "2",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    functor_left: "2",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    functor_right: "1",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &[],
+                exact_imported_predicate_functor_theorem_spec(),
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["other.module"],
+                exact_imported_predicate_functor_theorem_spec(),
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures", "parser.type_fixtures"],
+                exact_imported_predicate_functor_theorem_spec(),
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures", "other.module"],
+                exact_imported_predicate_functor_theorem_spec(),
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    status: Some("open"),
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            reserve_then_imported_predicate_functor_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+        ];
+        for gap_case in imported_predicate_functor_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &gap_case,
+                    imported_predicate_functor_symbols.module_id().clone(),
+                    &imported_predicate_functor_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for gap_symbols in [
+            source_local_predicate_and_imported_functor_env(symbols.module_id().clone()),
+            source_local_functor_and_imported_predicate_env(symbols.module_id().clone()),
+            imported_predicate_wrong_functor_kind_env(symbols.module_id().clone()),
+            imported_functor_wrong_predicate_kind_env(symbols.module_id().clone()),
+            ambiguous_imported_predicate_functor_env(symbols.module_id().clone(), "divides"),
+            ambiguous_imported_predicate_functor_env(symbols.module_id().clone(), "++"),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &imported_predicate_functor_theorem,
+                    gap_symbols.module_id().clone(),
+                    &gap_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
         let other_label_theorem =
             builtin_equality_theorem_ast(source_id, "OtherPayloadBoundary", "1", "1");
         assert_eq!(
@@ -9331,6 +9968,170 @@ mod tests {
         SymbolEnv::new(module, indexes)
     }
 
+    fn imported_predicate_functor_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        term_formula_symbol_env(
+            module,
+            &[],
+            &[
+                ("divides", SymbolKind::Predicate),
+                ("++", SymbolKind::Functor),
+            ],
+        )
+    }
+
+    fn source_local_predicate_and_imported_functor_env(module: ResolverModuleId) -> SymbolEnv {
+        term_formula_symbol_env(
+            module,
+            &[("divides", SymbolKind::Predicate)],
+            &[
+                ("divides", SymbolKind::Predicate),
+                ("++", SymbolKind::Functor),
+            ],
+        )
+    }
+
+    fn source_local_functor_and_imported_predicate_env(module: ResolverModuleId) -> SymbolEnv {
+        term_formula_symbol_env(
+            module,
+            &[("++", SymbolKind::Functor)],
+            &[
+                ("divides", SymbolKind::Predicate),
+                ("++", SymbolKind::Functor),
+            ],
+        )
+    }
+
+    fn imported_predicate_wrong_functor_kind_env(module: ResolverModuleId) -> SymbolEnv {
+        term_formula_symbol_env(
+            module,
+            &[],
+            &[
+                ("divides", SymbolKind::Predicate),
+                ("++", SymbolKind::Predicate),
+            ],
+        )
+    }
+
+    fn imported_functor_wrong_predicate_kind_env(module: ResolverModuleId) -> SymbolEnv {
+        term_formula_symbol_env(
+            module,
+            &[],
+            &[
+                ("divides", SymbolKind::Functor),
+                ("++", SymbolKind::Functor),
+            ],
+        )
+    }
+
+    fn ambiguous_imported_predicate_functor_env(
+        module: ResolverModuleId,
+        spelling: &'static str,
+    ) -> SymbolEnv {
+        match spelling {
+            "divides" => term_formula_symbol_env(
+                module,
+                &[],
+                &[
+                    ("divides", SymbolKind::Predicate),
+                    ("divides", SymbolKind::Predicate),
+                    ("++", SymbolKind::Functor),
+                ],
+            ),
+            "++" => term_formula_symbol_env(
+                module,
+                &[],
+                &[
+                    ("divides", SymbolKind::Predicate),
+                    ("++", SymbolKind::Functor),
+                    ("++", SymbolKind::Functor),
+                ],
+            ),
+            _ => term_formula_symbol_env(module, &[], &[]),
+        }
+    }
+
+    fn term_formula_symbol_env(
+        module: ResolverModuleId,
+        local_symbols: &[(&'static str, SymbolKind)],
+        imported_symbols: &[(&'static str, SymbolKind)],
+    ) -> SymbolEnv {
+        let source = source_id(201);
+        let imported_module = ResolverModuleId::new(
+            module.package().clone(),
+            ModulePath::new("parser.type_fixtures"),
+        );
+        let mut indexes = SymbolEnvIndexes::default();
+        let local_contribution = indexes.contributions.insert(
+            module.clone(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 1)),
+        );
+        let imported_contribution = indexes.contributions.insert(
+            imported_module.clone(),
+            ContributionKind::ImportedSource { source_id: source },
+            SourceAnchor::Range(range(source, 1, 2)),
+        );
+        for (ordinal, (spelling, kind)) in local_symbols.iter().copied().enumerate() {
+            let symbol = ResolverSymbolId::new(
+                module.clone(),
+                LocalSymbolId::new(format!("local:{kind:?}:{spelling}:{ordinal}")),
+                FullyQualifiedName::new(format!(
+                    "{}::{spelling}/local/{ordinal}",
+                    module.path().as_str()
+                )),
+            );
+            indexes.symbols.insert(
+                SymbolEntry::new(
+                    symbol.clone(),
+                    kind,
+                    NamespacePath::new(module.path().as_str()),
+                    spelling,
+                    SemanticOrigin::new(
+                        source,
+                        module.clone(),
+                        SourceAnchor::Range(range(source, 0, 1)),
+                        vec![ordinal as u32],
+                    ),
+                    local_contribution,
+                )
+                .with_visibility(Visibility::Public)
+                .with_export_status(ExportStatus::Exported),
+            );
+            indexes.contributions.add_symbol(local_contribution, symbol);
+        }
+        for (ordinal, (spelling, kind)) in imported_symbols.iter().copied().enumerate() {
+            let symbol = ResolverSymbolId::new(
+                imported_module.clone(),
+                LocalSymbolId::new(format!("imported:{kind:?}:{spelling}:{ordinal}")),
+                FullyQualifiedName::new(format!(
+                    "{}::{spelling}/imported/{ordinal}",
+                    imported_module.path().as_str()
+                )),
+            );
+            indexes.symbols.insert(
+                SymbolEntry::new(
+                    symbol.clone(),
+                    kind,
+                    NamespacePath::new(module.path().as_str()),
+                    spelling,
+                    SemanticOrigin::new(
+                        source,
+                        imported_module.clone(),
+                        SourceAnchor::Range(range(source, 1, 2)),
+                        vec![ordinal as u32],
+                    ),
+                    imported_contribution,
+                )
+                .with_visibility(Visibility::Public)
+                .with_export_status(ExportStatus::Exported),
+            );
+            indexes
+                .contributions
+                .add_symbol(imported_contribution, symbol);
+        }
+        SymbolEnv::new(module, indexes)
+    }
+
     fn imported_symbol_env(
         module: ResolverModuleId,
         spelling: &'static str,
@@ -9708,6 +10509,419 @@ mod tests {
         builder.finish(Some(root), None)
     }
 
+    #[derive(Clone, Copy)]
+    struct ImportedPredicateFunctorTheoremSpec<'a> {
+        status: Option<&'a str>,
+        label: &'a str,
+        predicate: &'a str,
+        left: &'a str,
+        functor: &'a str,
+        functor_left: &'a str,
+        functor_right: &'a str,
+    }
+
+    fn exact_imported_predicate_functor_theorem_spec()
+    -> ImportedPredicateFunctorTheoremSpec<'static> {
+        ImportedPredicateFunctorTheoremSpec {
+            status: None,
+            label: "ImportedPredicateFunctorPayloadBoundary",
+            predicate: "divides",
+            left: "1",
+            functor: "++",
+            functor_left: "1",
+            functor_right: "2",
+        }
+    }
+
+    fn imported_predicate_functor_theorem_ast(
+        source_id: SourceId,
+        imports: &[&str],
+        spec: ImportedPredicateFunctorTheoremSpec<'_>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut items = imports
+            .iter()
+            .map(|import| add_import_item(&mut builder, source_id, &mut offset, import))
+            .collect::<Vec<_>>();
+        items.push(add_imported_predicate_functor_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            spec,
+        ));
+        finish_compilation_ast(builder, source_id, items)
+    }
+
+    fn reserve_then_imported_predicate_functor_theorem_ast(
+        source_id: SourceId,
+        reserve_items: Vec<ReserveItemSpec>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut items = vec![add_import_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            "parser.type_fixtures",
+        )];
+        items.extend(add_reserve_items(
+            &mut builder,
+            source_id,
+            &mut offset,
+            reserve_items,
+        ));
+        items.push(add_imported_predicate_functor_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            exact_imported_predicate_functor_theorem_spec(),
+        ));
+        finish_compilation_ast(builder, source_id, items)
+    }
+
+    fn finish_compilation_ast(
+        mut builder: SurfaceAstBuilder,
+        source_id: SourceId,
+        items: Vec<SurfaceBuilderNodeId>,
+    ) -> SurfaceAst {
+        let end = items
+            .last()
+            .and_then(|item| builder.node_range(*item))
+            .map_or(0, |range| range.end);
+        let item_list =
+            builder.add_node(SurfaceNodeKind::ItemList, range(source_id, 0, end), items);
+        let compilation_unit = builder.add_node(
+            SurfaceNodeKind::CompilationUnit,
+            range(source_id, 0, end),
+            vec![item_list],
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, end),
+            vec![compilation_unit],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn add_import_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        module_path: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let import = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "import",
+        );
+        let path = add_module_path(builder, source_id, offset, module_path);
+        let decl_end = builder
+            .node_range(path)
+            .expect("just-created module path should exist")
+            .end;
+        let decl = builder.add_node(
+            SurfaceNodeKind::ImportAliasDecl,
+            range(
+                source_id,
+                builder
+                    .node_range(path)
+                    .expect("just-created module path should exist")
+                    .start,
+                decl_end,
+            ),
+            vec![path],
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::ImportItem,
+            range(source_id, start, end),
+            vec![import, decl, semicolon],
+        )
+    }
+
+    fn add_module_path(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        module_path: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let mut children = Vec::new();
+        for (index, segment) in module_path.split('.').enumerate() {
+            if index != 0 {
+                children.push(add_token(
+                    builder,
+                    source_id,
+                    offset,
+                    SurfaceTokenKind::ReservedSymbol,
+                    ".",
+                ));
+            }
+            children.push(add_path_segment(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                segment,
+            ));
+        }
+        let end = children
+            .last()
+            .and_then(|child| builder.node_range(*child))
+            .map_or(start, |range| range.end);
+        builder.add_node(
+            SurfaceNodeKind::ModulePath,
+            range(source_id, start, end),
+            children,
+        )
+    }
+
+    fn add_path_segment(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        token_kind: SurfaceTokenKind,
+        spelling: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let token = add_token(builder, source_id, offset, token_kind, spelling);
+        let end = builder
+            .node_range(token)
+            .expect("just-created path-segment token should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::PathSegment,
+            range(source_id, start, end),
+            vec![token],
+        )
+    }
+
+    fn add_qualified_symbol(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spelling: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let segment = add_path_segment(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::UserSymbol,
+            spelling,
+        );
+        let end = builder
+            .node_range(segment)
+            .expect("just-created qualified-symbol segment should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::QualifiedSymbol,
+            range(source_id, start, end),
+            vec![segment],
+        )
+    }
+
+    fn add_imported_predicate_functor_theorem_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: ImportedPredicateFunctorTheoremSpec<'_>,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let status_token = spec.status.map(|status| {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                status,
+            )
+        });
+        let theorem = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+        );
+        let label_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            spec.label,
+        );
+        let colon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+        );
+        let formula_start = *offset;
+        let left_term = add_numeral_term_expression(builder, source_id, offset, spec.left);
+        let predicate_head = add_predicate_head(builder, source_id, offset, spec.predicate);
+        let right_term = add_parenthesized_infix_term_expression(
+            builder,
+            source_id,
+            offset,
+            spec.functor,
+            spec.functor_left,
+            spec.functor_right,
+        );
+        let formula_end = builder
+            .node_range(right_term)
+            .expect("just-created predicate right term should exist")
+            .end;
+        let segment = builder.add_node(
+            SurfaceNodeKind::PredicateSegment,
+            range(source_id, formula_start, formula_end),
+            vec![left_term, predicate_head, right_term],
+        );
+        let formula = builder.add_node(
+            SurfaceNodeKind::PredicateApplication,
+            range(source_id, formula_start, formula_end),
+            vec![segment],
+        );
+        let formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, formula_start, formula_end),
+            vec![formula],
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        let mut children = Vec::new();
+        if let Some(status_token) = status_token {
+            children.push(status_token);
+        }
+        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, start, end),
+            children,
+        )
+    }
+
+    fn add_predicate_head(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        predicate: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let symbol = add_qualified_symbol(builder, source_id, offset, predicate);
+        let end = builder
+            .node_range(symbol)
+            .expect("just-created predicate symbol should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::PredicateHead,
+            range(source_id, start, end),
+            vec![symbol],
+        )
+    }
+
+    fn add_parenthesized_infix_term_expression(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        operator: &str,
+        left: &str,
+        right: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let open = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            "(",
+        );
+        let inner = add_infix_term_expression(builder, source_id, offset, operator, left, right);
+        let close = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ")",
+        );
+        let end = builder
+            .node_range(close)
+            .expect("just-created parenthesized close should exist")
+            .end;
+        let parenthesized = builder.add_node(
+            SurfaceNodeKind::ParenthesizedTerm,
+            range(source_id, start, end),
+            vec![open, inner, close],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start, end),
+            vec![parenthesized],
+        )
+    }
+
+    fn add_infix_term_expression(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        operator: &str,
+        left: &str,
+        right: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let left_term = add_numeral_term(builder, source_id, offset, left);
+        let operator_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::UserSymbol,
+            operator,
+        );
+        let right_term = add_numeral_term(builder, source_id, offset, right);
+        let end = builder
+            .node_range(right_term)
+            .expect("just-created infix right term should exist")
+            .end;
+        let infix = builder.add_node(
+            SurfaceNodeKind::InfixExpression(mizar_syntax::SurfaceInfixOperator {
+                spelling: operator.into(),
+                precedence: 10,
+                associativity: mizar_syntax::SurfaceOperatorAssociativity::Left,
+            }),
+            range(source_id, start, end),
+            vec![left_term, operator_token, right_term],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start, end),
+            vec![infix],
+        )
+    }
+
     fn add_builtin_binary_theorem_item(
         builder: &mut SurfaceAstBuilder,
         source_id: SourceId,
@@ -9888,6 +11102,25 @@ mod tests {
         spelling: &str,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
+        let numeral = add_numeral_term(builder, source_id, offset, spelling);
+        let end = builder
+            .node_range(numeral)
+            .expect("just-created numeral term should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start, end),
+            vec![numeral],
+        )
+    }
+
+    fn add_numeral_term(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spelling: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
         let token = add_token(
             builder,
             source_id,
@@ -9899,15 +11132,10 @@ mod tests {
             .node_range(token)
             .expect("just-created numeral token should exist")
             .end;
-        let numeral = builder.add_node(
+        builder.add_node(
             SurfaceNodeKind::NumeralTerm,
             range(source_id, start, end),
             vec![token],
-        );
-        builder.add_node(
-            SurfaceNodeKind::TermExpression,
-            range(source_id, start, end),
-            vec![numeral],
         )
     }
 

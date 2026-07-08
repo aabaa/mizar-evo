@@ -295,8 +295,8 @@ Keep `cargo test -p mizar-test` green after each task (see
       imported attribute reserve provenance bridge, checker task 85's
       imported non-empty attribute reserve provenance bridge, and checker task
       86's theorem formula extraction-gap boundary, checker task 106's
-      builtin equality theorem term/formula checker bridge, checker task 98's imported predicate/functor
-      term-formula extraction-gap boundary, checker task 108's builtin
+      builtin equality theorem term/formula checker bridge, checker task 110's imported predicate/functor
+      theorem checker bridge, checker task 108's builtin
       membership theorem checker bridge, checker task 107's builtin
       inequality theorem checker bridge, checker task 109's builtin
       type assertion theorem term/formula/type checker bridge, checker task 103's imported
@@ -462,7 +462,7 @@ Keep `cargo test -p mizar-test` green after each task (see
       term payload extraction, negated
       attribute admissibility/semantic checking, attribute admissibility/semantic
       checking, formula/theorem/proof payloads beyond the
-      task-106 builtin equality theorem checker bridge, task-107 builtin inequality theorem checker bridge, task-108 builtin membership theorem checker bridge, task-109 builtin type assertion theorem checker bridge, and task-86/task-98/task-103/task-104/task-105/task-99/task-88/task-89/task-93/task-94/task-95/task-96
+      task-106 builtin equality theorem checker bridge, task-107 builtin inequality theorem checker bridge, task-108 builtin membership theorem checker bridge, task-109 builtin type assertion theorem checker bridge, task-110 imported predicate/functor theorem checker bridge, and task-86/task-103/task-104/task-105/task-99/task-88/task-89/task-93/task-94/task-95/task-96
       extraction-gap boundaries,
       coercions, overload payloads, facts, CoreIr,
       ControlFlowIr, VC payloads, and proof evidence remain on the explicit

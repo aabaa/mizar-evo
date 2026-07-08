@@ -399,15 +399,20 @@ and `type_elaboration.checker.checker.formula.term.partial` because numeric
 type payloads, equality checking, recorded facts, theorem acceptance, the
 dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof
 payloads are still absent.
-Task 98 records the imported predicate/functor variant of that same boundary:
+Task 98 originally recorded the imported predicate/functor variant of that same
+boundary:
 `theorem ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2);` reaches
 parser and resolver execution through the documented `parser.type_fixtures`
-surface, then stays on `type_elaboration.external_dependency.ast_payload_extraction`
-because imported predicate/functor semantic payloads, term/formula payload
-extraction, term inference, formula checking, recorded facts, theorem
-acceptance, the dedicated `formula_statement` runner, CoreIr, ControlFlowIr,
-VC, and proof payloads are still absent. This does not credit imported module
-AST extraction.
+surface. Task 110 supersedes that exact source by extracting real
+source-derived numeral `TermInput`s, a functor-application `TermInput` carrying
+the imported `++` symbol reference, and a predicate-application `FormulaInput`.
+The runner validates `divides`/`++` imported provenance, then fails closed on
+missing numeric type payload, missing functor signature payload, missing
+predicate signature payload, and partial formula checking. This does not credit
+imported module AST extraction, semantic predicate/functor signature payloads,
+term inference, formula checking, recorded facts, theorem acceptance, the
+dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof
+payloads.
 Task 108 supersedes the task 100 builtin membership generic boundary for the
 exact formula `theorem BuiltinMembershipPayloadBoundary: 1 in 1;`. The active
 runner now extracts real source-derived checker `TermInput` payloads for the

@@ -443,8 +443,7 @@ the task 79 imported-mode external-gap case, the task 80 imported-attribute
 external-gap case outside task 84 and task 85, the task 81 argument-bearing
 local-attribute external-gap case, the task 86 formula-only theorem
 external-gap case, the task 106 builtin equality theorem checker-payload numeric-type gap
-case, the task 98 imported predicate/functor theorem formula external-gap
-case, the task 108 builtin membership theorem checker bridge, the task 107
+case, the task 110 imported predicate/functor theorem checker bridge, the task 108 builtin membership theorem checker bridge, the task 107
 builtin inequality theorem checker bridge, the task 109 builtin type-assertion theorem checker
 bridge, the task 103 imported attribute assertion theorem formula external-gap
 case, the task 104 attribute-level non-empty imported attribute assertion theorem formula external-gap
@@ -577,12 +576,16 @@ supersedes the exact `TermFormulaPayloadBoundary: 1 = 1` sidecar by crediting
 real checker term/formula payload extraction while still failing closed before
 numeric type payloads, equality checking, recorded facts, theorem acceptance,
 proof skeletons, `formula_statement` runner support, CoreIr, ControlFlowIr, VC,
-or proof payloads. Task 98 fail cases credit only the imported predicate/functor theorem
-formula extraction-gap boundary after parser/resolver execution and do not
-credit imported semantic payloads, checker term/formula payload extraction, term
-inference, formula checking, recorded facts, theorem acceptance, proof
-skeletons, `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or
-proof payloads. Task 100 originally credited only the builtin membership theorem
+or proof payloads. Task 98 originally credited only the imported
+predicate/functor theorem formula extraction-gap boundary after parser/resolver
+execution. Task 110 supersedes the exact
+`ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2)` sidecar by
+crediting real checker numeral, imported functor-application, and
+predicate-application payload extraction, but still does not credit imported
+module AST extraction, semantic predicate/functor signatures, term inference,
+formula checking, recorded facts, theorem acceptance, proof skeletons,
+`formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
+payloads. Task 100 originally credited only the builtin membership theorem
 formula extraction-gap boundary after parser/resolver execution. Task 108
 supersedes the exact `BuiltinMembershipPayloadBoundary: 1 in 1` sidecar by
 crediting real checker term/formula payload extraction, but still does not

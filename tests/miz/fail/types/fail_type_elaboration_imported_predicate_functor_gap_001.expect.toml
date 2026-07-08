@@ -7,11 +7,14 @@ source = "fail_type_elaboration_imported_predicate_functor_gap_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "term_formula_payload_extraction_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "imported_predicate_functor_signature_payload_gap"
+stable_detail_key = "type_elaboration.checker.checker.formula.external.predicate_signature_payload"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.checker.formula.external.predicate_signature_payload",
+  "type_elaboration.checker.checker.formula.term.partial",
+  "type_elaboration.checker.checker.term.external.numeric_type_payload",
+  "type_elaboration.checker.checker.term.external.signature_payload",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
@@ -23,4 +26,4 @@ spec_refs = [
   "spec.en.checker.type_elaboration.payload_extraction",
   "spec.en.checker.type_elaboration.payload_extraction.imported_predicate_functor_term_formula_gap",
 ]
-notes = "Active type_elaboration runner boundary coverage for checker task 98: a theorem formula using imported parser.type_fixtures predicate and functor surfaces such as `divides` and `++` is parser/resolver executable, but the checker-owned source bridge lacks real imported predicate/functor term/formula payload extraction, term inference, formula checking, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and a dedicated formula_statement runner, so it must stay on the source-to-checker payload extraction gap."
+notes = "Active type_elaboration runner boundary coverage for checker task 110, superseding the task-98 extraction-gap-only boundary for the exact imported predicate/functor theorem formula. The runner extracts the source-derived `1 divides (1 ++ 2)` term/formula sites, validates parser.type_fixtures imported `divides`/`++` resolver provenance, and passes numeral, functor-application, and predicate-application checker inputs before failing closed on missing numeric, functor signature, predicate signature, and partial formula-term payloads. It still does not claim imported module AST extraction, semantic predicate/functor signatures, term inference, formula checking, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, or a dedicated formula_statement runner."

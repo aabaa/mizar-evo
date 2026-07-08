@@ -3496,13 +3496,13 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     );
     let imported_predicate_functor_case = active_type_elaboration_cases(&plan)
         .find(|case| case.id.0 == "fail_type_elaboration_imported_predicate_functor_gap_001")
-        .expect("Task98 imported predicate/functor term-formula boundary should be active");
+        .expect("Task110 imported predicate/functor checker bridge should be active");
     assert_eq!(
         imported_predicate_functor_case
             .expectation
             .rejection_reason
             .as_deref(),
-        Some("term_formula_payload_extraction_gap")
+        Some("imported_predicate_functor_signature_payload_gap")
     );
     let builtin_membership_case = active_type_elaboration_cases(&plan)
         .find(|case| case.id.0 == "fail_type_elaboration_builtin_membership_formula_gap_001")
@@ -3695,7 +3695,12 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_imported_predicate_functor_gap_001"
             && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+                == [
+                    "type_elaboration.checker.checker.formula.external.predicate_signature_payload",
+                    "type_elaboration.checker.checker.formula.term.partial",
+                    "type_elaboration.checker.checker.term.external.numeric_type_payload",
+                    "type_elaboration.checker.checker.term.external.signature_payload",
+                ]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_builtin_membership_formula_gap_001"

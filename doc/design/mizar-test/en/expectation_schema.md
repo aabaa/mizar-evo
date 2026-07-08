@@ -623,25 +623,33 @@ source-derived checker `TypeExpressionInput`, but still does not credit broader
 asserted type payloads, type-assertion semantic checking, recorded facts,
 theorem acceptance, `formula_statement`, CoreIr, ControlFlowIr, VC, or proof
 payloads.
-Tasks 98, 103, 104, and 105 continue to permit term-bearing
-theorem formula fail sidecars to use
-`rejection_reason = "term_formula_payload_extraction_gap"` and
+Task 110 supersedes task 98 for the exact imported predicate/functor theorem
+formula sidecar. That sidecar uses
+`rejection_reason = "imported_predicate_functor_signature_payload_gap"` and
+the sorted checker detail keys for missing predicate signature payload, partial
+formula terms, missing numeric type payload, and missing functor signature
+payload. It documents that the runner extracted the source-derived
+`1 divides (1 ++ 2)` term/formula sites and validated `parser.type_fixtures`
+`divides`/`++` imported provenance before failing closed. It still does not
+credit imported module AST extraction, semantic predicate/functor signatures,
+term inference, formula checking, recorded facts, theorem acceptance, a
+`formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payloads.
+Tasks 103, 104, and 105 continue to permit term-bearing theorem formula fail
+sidecars to use `rejection_reason = "term_formula_payload_extraction_gap"` and
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
-These sidecars document that a theorem formula containing Chapter 13 term
-surfaces and Chapter 14 atomic formulas, including task-98 imported
-predicate/functor applications, task-103 imported attribute
+These sidecars document that theorem formulas containing Chapter 13 term
+surfaces and Chapter 14 atomic formulas, including task-103 imported attribute
 assertion, task-104 attribute-level non-empty imported attribute assertion, and
-task-105 set-enumeration equality, reached parser/resolver execution,
-but they do not credit imported semantic payloads, set-enumeration term payload
-extraction, imported attribute assertion
-attribute-chain/provenance payload extraction, imported attribute-level
-non-empty assertion attribute-chain/provenance payload extraction, term/formula payload
-extraction, inequality desugaring
-or equality semantic checking, attribute admissibility/semantic checking,
-negated attribute admissibility/semantic checking, term inference, formula checking, recorded facts, theorem acceptance, imported
-module AST extraction, checker `AttributeInput` payload extraction for theorem
-formulas, a `formula_statement` runner, proof skeletons, CoreIr, ControlFlowIr,
-VC, or proof payloads.
+task-105 set-enumeration equality, reached parser/resolver execution, but they
+do not credit set-enumeration term payload extraction, imported attribute
+assertion attribute-chain/provenance payload extraction, imported
+attribute-level non-empty assertion attribute-chain/provenance payload
+extraction, term/formula payload extraction, equality semantic checking,
+attribute admissibility/semantic checking, negated attribute
+admissibility/semantic checking, term inference, formula checking, recorded
+facts, theorem acceptance, imported module AST extraction, checker
+`AttributeInput` payload extraction for theorem formulas, a `formula_statement`
+runner, proof skeletons, CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 99 permits formula connective/quantifier theorem fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "formula_connective_quantifier_payload_extraction_gap"` and

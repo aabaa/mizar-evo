@@ -298,8 +298,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    source-to-checker extraction gap, task 106 supersedes task 87 for the exact
    term-bearing builtin equality theorem source by passing real checker
    term/formula payloads before failing on missing numeric type payloads and
-   partial formula checking, task 98 records imported predicate/functor
-   theorem formula surfaces on the same gap, task 108 supersedes task 100 for
+   partial formula checking, task 110 supersedes task 98 for the exact imported
+   predicate/functor theorem formula by passing real checker term/formula
+   payloads before failing on missing numeric/signature payloads and partial
+   formula checking, task 108 supersedes task 100 for
    the exact builtin membership theorem source by passing real checker
    term/formula payloads before failing on missing numeric type payloads and
    partial formula checking, task 107 supersedes task 101 for
