@@ -3496,7 +3496,7 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_imported_structure_gap_001"
             && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+                == ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_imported_mode_gap_001"
@@ -6608,7 +6608,7 @@ tests = ["tests/miz/fail/types/fail_imported_attribute_gap.expect.toml"]
 }
 
 #[test]
-fn type_elaboration_runner_keeps_imported_structure_heads_on_external_gap() {
+fn type_elaboration_runner_bridges_imported_structure_heads_to_evidence_gap() {
     let corpus = Corpus::new();
     corpus.write(
         "tests/miz/fail/types/fail_imported_structure_gap.miz",
@@ -6625,11 +6625,11 @@ source = "fail_imported_structure_gap.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "imported_structure_type_head_payload_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "imported_structure_evidence_payload_gap"
+stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.checker.declaration.deferred.evidence_query",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = ["spec.en.test.type_elaboration.imported_structure_gap"]
@@ -6658,7 +6658,7 @@ tests = ["tests/miz/fail/types/fail_imported_structure_gap.expect.toml"]
     assert_eq!(report.passed_count(), 1);
     assert_eq!(
         report.results[0].actual_detail_keys,
-        ["type_elaboration.external_dependency.ast_payload_extraction"]
+        ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
     );
 }
 

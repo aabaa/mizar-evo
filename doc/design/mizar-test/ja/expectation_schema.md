@@ -499,15 +499,24 @@ active 前に名前参照する場合に
 を許可する。この sidecar は checker `ModeExpansion`、structure type-head、
 base-shape、constructor-witness、`AttributeInput`、attributed-type evidence
 production を credit しない。
-task 78 は imported structure reserve-head fail sidecar について、source が
-documented `parser.type_fixtures` import summary を通じて active runner に到達する
-場合に `failure_category = "external_dependency_gap"`、
+task 78 は task-83 `R` bridge 外の imported structure reserve-head fail sidecar
+について、source が documented `parser.type_fixtures` import summary を通じて
+active runner に到達する場合に `failure_category = "external_dependency_gap"`、
 `rejection_reason = "imported_structure_type_head_payload_gap"`、
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
 を許可する。この sidecar は real imported module AST extraction、imported
 structure provenance、structure type-head payload extraction、base-shape /
 constructor-witness evidence、positive structure elaboration、CoreIr、
 ControlFlowIr、VC、proof payload を credit しない。
+task 83 は documented imported structure `R` sidecar について、runner が real
+imported structure type head を checker に渡した後に
+`failure_category = "external_dependency_gap"`、
+`rejection_reason = "imported_structure_evidence_payload_gap"`、
+`stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"`
+を許可する。この sidecar は imported provenance/type-head extraction だけを
+credit し、imported module AST extraction、base-shape / constructor-witness
+evidence、positive imported structure elaboration、CoreIr、ControlFlowIr、VC、
+proof payload は credit しない。
 task 79 は task-82 `TypeCaseMode` bridge 外の imported mode reserve-head fail
 sidecar について、source が documented `parser.type_fixtures` import summary を
 通じて active runner に到達する場合に `failure_category = "external_dependency_gap"`、

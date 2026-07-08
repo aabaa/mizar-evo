@@ -274,6 +274,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    and task 82 promotes the imported mode reserve-head boundary just far enough
    to pass real imported mode symbol provenance/type-head payloads to the
    checker missing mode-expansion diagnostic while keeping imported expansions
+   and downstream payloads deferred, and task 83 promotes the imported
+   structure `R` reserve-head boundary just far enough to pass real imported
+   structure symbol provenance/type-head payloads to the checker evidence-query
+   diagnostic while keeping imported module AST extraction, structure evidence,
    and downstream payloads deferred).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate

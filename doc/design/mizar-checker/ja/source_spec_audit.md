@@ -231,7 +231,7 @@ literal top-level public item:
 |---|---|---|---|
 | Type-expression normalization は mode、attribute、arity、unsupported input の degraded state を canonicalize し、cluster repair を行わない。 | `TypeNormalizer`, `TypeNormalizationOutput`, `TypeExpressionInput`, `ModeExpansion`, normalized type tables. | attribute/order/builtin/mode-expansion/degraded-head tests. | explicit payload について実装済み。MC-G014 は残る。 |
 | Declaration checking は explicit declaration と binding context を消費し、partial output を保持する。 | `DeclarationChecker`, `DeclarationCheckingOutput`, declaration input/status tables. | declaration deterministic/invalid/constrained/set/attributed/reconsider tests. | explicit payload について実装済み。MC-G016 は残る。 |
-| reserve-only source-derived producer seam は syntax-free な reserve payload を消費し、raw syntax を import せず checker-owned binding/declaration handoff data を構築する。 | `SourceReserveDeclarationBridge`, `SourceReserveBindingInput`, `SourceReserveDeclarationHandoff`. | `source_reserve_declaration_bridge_builds_checker_owned_handoff`, `source_reserve_declaration_bridge_validates_local_symbol_heads_and_mismatched_inputs`, active `mizar-test` type-elaboration runner regressions. | successful bare builtin `set` / `object` reserve declaration、builtin `set` / `object` に終端する accepted same-module bare local-mode chain、および MC-G020 に記録された active diagnostic reserve/type-head boundary について実装済み。task 82 は imported-mode slice を拡張し、documented `parser.type_fixtures` の imported `TypeCaseMode` head が `ImportedSource` provenance 付き checker type-head payload になり、その後 missing imported `ModeExpansion` payload だけで fail closed する。imported structure / attribute、imported mode expansion、より広い AST-wide extraction は MC-G020 のまま。 |
+| reserve-only source-derived producer seam は syntax-free な reserve payload を消費し、raw syntax を import せず checker-owned binding/declaration handoff data を構築する。 | `SourceReserveDeclarationBridge`, `SourceReserveBindingInput`, `SourceReserveDeclarationHandoff`. | `source_reserve_declaration_bridge_builds_checker_owned_handoff`, `source_reserve_declaration_bridge_validates_local_symbol_heads_and_mismatched_inputs`, active `mizar-test` type-elaboration runner regressions. | successful bare builtin `set` / `object` reserve declaration、builtin `set` / `object` に終端する accepted same-module bare local-mode chain、および MC-G020 に記録された active diagnostic reserve/type-head boundary について実装済み。task 82 は imported-mode slice を拡張し、documented `parser.type_fixtures` の imported `TypeCaseMode` head が `ImportedSource` provenance 付き checker type-head payload になり、その後 missing imported `ModeExpansion` payload だけで fail closed する。task 83 は imported-structure slice を documented structure `R` に限って拡張し、imported `SymbolKind::Structure` head が checker type-head payload になり、その後 missing structure-evidence query だけで fail closed する。`R` を超える imported structure、imported attribute、imported mode expansion、imported module AST extraction、より広い AST-wide extraction は MC-G020 のまま。 |
 | Term/formula inference は checked table、expected constraint、open candidate、fact、recovery を記録する。 | `TermFormulaChecker`, term/formula input and checked tables. | term/formula/recovery tests. | explicit payload について実装済み。MC-G017/MC-G019 は残る。 |
 | Coercion と initial obligation は `VcId` や fabricated evidence なしで記録される。 | `CoercionObligationChecker`, `CoercionInput`, `InitialObligationInput`, justification/evidence/deferred enum. | coercion deterministic/missing evidence/alternate candidate tests; task 47 omitted-`reconsider` proof-free/requires-proof tests。 | explicit payload について実装済み。source-derived coercion/reconsider extraction について MC-G018/MC-G020 は残る。 |
 | Fact query は deterministic、visibility-scoped、non-mutating。 | `TypeFactQueryEngine`, `TypeFactQueryOutput`, `TypeFactQueryStatus`. | deterministic/provenance/visibility/contradiction tests. | 実装済み。 |
@@ -265,16 +265,25 @@ syntax/use surface だけを credit し、future declaration から checker
 `AttributeInput` extraction、attributed-type evidence query、CoreIr、
 ControlFlowIr、VC、proof payload coverage を主張しない。
 
-Task 78 addendum: active `mizar-test` type-elaboration runner は、documented
-`parser.type_fixtures` import summary 由来の structure symbol を持つ
-source-derived reserve head について
-`type_elaboration.external_dependency.ast_payload_extraction` を観測する。
-これは Chapter 3/5/11/12 の imported-structure reserve-head diagnostic
-boundary だけを credit し、import summary を real imported module AST
-extraction と扱わず、imported structure provenance、structure type-head
-payload extraction、base-shape / constructor-witness evidence、positive
-structure type elaboration、CoreIr、ControlFlowIr、VC、proof payload coverage
-を主張しない。
+Task 78 addendum: task 83 より前の active `mizar-test` type-elaboration runner
+は、documented `parser.type_fixtures` import summary 由来の structure symbol を
+持つ source-derived reserve head について
+`type_elaboration.external_dependency.ast_payload_extraction` を観測した。task 83
+は `R` imported provenance/type-head coverage だけについてこの boundary を上書きする。
+task-83 bridge 外の imported structure は、non-`R` の source-derived fixture が
+存在するまで deferred とする。これは
+import summary を real imported module AST extraction と扱わず、base-shape /
+constructor-witness evidence、positive structure type elaboration、CoreIr、
+ControlFlowIr、VC、proof payload coverage を主張しない。
+
+Task 83 addendum: active `mizar-test` type-elaboration runner は documented
+`parser.type_fixtures` imported structure symbol `R` を real `ImportedSource`
+checker type head として観測し、
+`type_elaboration.checker.checker.declaration.deferred.evidence_query` を報告する。
+これは imported structure provenance と type-head payload extraction だけを
+credit し、imported module AST extraction、base-shape / constructor-witness
+evidence、positive imported structure elaboration、CoreIr、ControlFlowIr、VC、
+proof payload coverage は credit しない。
 
 Task 79 addendum: task 82 より前の active `mizar-test` type-elaboration runner
 は、documented `parser.type_fixtures` import summary 由来の mode symbol を持つ
@@ -509,7 +518,7 @@ MC-G row はすべて次のように照合する。
 | MC-G017 | `external_dependency_gap` | term/formula payload table、built-in numeric payload、candidate signature、structure/selector payload、source `qua` evidence、sethood/non-emptiness evidence について active。 |
 | MC-G018 | `external_dependency_gap` | coercion request table、dependency-summary fact、inheritance graph、cluster evidence、sethood/non-emptiness evidence、proof-query result について active。 |
 | MC-G019 | `external_dependency_gap` | statement/proof assumption、theorem acceptance payload、phase-7 trace fact payload について active。 |
-| MC-G020 | `external_dependency_gap` / `deferred` | task 7-11 と後続 consumer の semantic pass fixture を妨げる source-to-checker extraction blocker として active。task 16 から task 81 までは reserve-only source-derived checker bridge を段階的に構築し、builtin reserve / type-expression payload は `TypedAst` と `ResolvedTypedAst` まで到達し、builtin `set` / `object` に終端する supported same-module bare local-mode expansion family は pass できる一方、local structure / attribute / argument / bracket / forward-reference / imported-structure / imported-attribute boundary は fabricated evidence なしの active diagnostic に留める。task 82 は task-79 imported mode source を一段進め、documented `parser.type_fixtures` 由来の imported `SymbolKind::Mode` を checker type-head payload として渡し、checker が `ImportedSource` provenance を検証してから missing imported `ModeExpansion` payload で fail closed する。より広い non-builtin declaration、task-78/task-80 diagnostic boundary を超える imported structure / attribute、task 82 provenance/type-head bridge を超える imported mode expansion、attribute argument、qualified attribute qualifier / owner provenance、mode / structure argument、bracket `type_arg_list` と `qua`-argument provenance、term-argument provenance、structure base-shape / full attributed-type existential evidence、broader / attributed / argument-bearing / parameterized / contextual / ambiguous / cyclic mode expansion、term、formula、coercion、overload、recorded fact、CoreIr、ControlFlowIr、VC、proof payload extraction は未解決のまま。 |
+| MC-G020 | `external_dependency_gap` / `deferred` | task 7-11 と後続 consumer の semantic pass fixture を妨げる source-to-checker extraction blocker として active。task 16 から task 81 までは reserve-only source-derived checker bridge を段階的に構築し、builtin reserve / type-expression payload は `TypedAst` と `ResolvedTypedAst` まで到達し、builtin `set` / `object` に終端する supported same-module bare local-mode expansion family は pass できる一方、local structure / attribute / argument / bracket / forward-reference / imported-attribute boundary は fabricated evidence なしの active diagnostic に留める。task 82 は task-79 imported mode source を一段進め、documented `parser.type_fixtures` 由来の imported `SymbolKind::Mode` を checker type-head payload として渡し、checker が `ImportedSource` provenance を検証してから missing imported `ModeExpansion` payload で fail closed する。task 83 は documented `parser.type_fixtures` imported structure `R` source を一段進め、checker が `ImportedSource` provenance を検証してから missing base-shape / constructor-witness evidence で fail closed する。より広い non-builtin declaration、task-80 diagnostic boundary を超える imported attribute、task 83 `R` provenance/type-head bridge を超える imported structure、task 82 provenance/type-head bridge を超える imported mode expansion、attribute argument、qualified attribute qualifier / owner provenance、mode / structure argument、bracket `type_arg_list` と `qua`-argument provenance、term-argument provenance、structure base-shape / full attributed-type existential evidence、broader / attributed / argument-bearing / parameterized / contextual / ambiguous / cyclic mode expansion、term、formula、coercion、overload、recorded fact、CoreIr、ControlFlowIr、VC、proof payload extraction は未解決のまま。 |
 | MC-G021 | `external_dependency_gap` / `deferred` | registration payload、accepted-status、source extraction blocker として active。registration code は explicit payload seam のみ消費する。 |
 | MC-G023 | `test_gap` / `external_dependency_gap` / `deferred` | source-derived cluster/reduction fixture、artifact/cache integration、source-derived normalization-result dependence、real trace extraction について active。task 46 は explicit-payload fatal contradiction と reduction trace-identity seam だけを cover する。 |
 | MC-G025 | `external_dependency_gap` / `deferred` | accepted registration status の proof/artifact production または import について active。 |

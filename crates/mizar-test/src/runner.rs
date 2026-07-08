@@ -754,7 +754,10 @@ fn augment_type_elaboration_import_summaries(
             SourceAnchor::Range(anchor),
         );
         for (ordinal, exported) in exported_symbols.iter().enumerate() {
-            if exported.kind != UserSymbolKind::Mode || exported.spelling != "TypeCaseMode" {
+            if !matches!(
+                (exported.kind, exported.spelling.as_str()),
+                (UserSymbolKind::Mode, "TypeCaseMode") | (UserSymbolKind::Structure, "R")
+            ) {
                 continue;
             }
             let Some(kind) = resolver_symbol_kind(exported.kind) else {
@@ -1967,6 +1970,15 @@ fn supported_source_reserve_type_head_kind(
         && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
         && symbol.module().path().as_str() == "parser.type_fixtures"
         && entry.primary_spelling() == "TypeCaseMode"
+    {
+        return Some(entry.kind());
+    }
+    if symbol.module() != module
+        && matches!(entry.kind(), SymbolKind::Structure)
+        && contribution.module() == symbol.module()
+        && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
+        && symbol.module().path().as_str() == "parser.type_fixtures"
+        && entry.primary_spelling() == "R"
     {
         return Some(entry.kind());
     }
@@ -7202,6 +7214,68 @@ mod tests {
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
 
+        let imported_fixture_structure_symbols =
+            imported_fixture_structure_symbol_env(symbols.module_id().clone());
+        let imported_fixture_structure = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("R"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_structure,
+                imported_fixture_structure_symbols.module_id().clone(),
+                &imported_fixture_structure_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        let shadowed_imported_structure_symbols =
+            local_and_imported_structure_symbol_env(symbols.module_id().clone(), "R");
+        let resolved_shadowed_structure_head = resolve_visible_type_head(
+            &shadowed_imported_structure_symbols,
+            shadowed_imported_structure_symbols.module_id(),
+            "R",
+        )
+        .expect("a local structure should shadow an imported structure of the same spelling");
+        assert_eq!(
+            resolved_shadowed_structure_head.module(),
+            shadowed_imported_structure_symbols.module_id()
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_structure,
+                shadowed_imported_structure_symbols.module_id().clone(),
+                &shadowed_imported_structure_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+
+        let imported_fixture_type_case_struct_symbols = imported_parser_fixture_symbol_env(
+            symbols.module_id().clone(),
+            "TypeCaseStruct",
+            SymbolKind::Structure,
+        );
+        let imported_fixture_type_case_struct = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("TypeCaseStruct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_type_case_struct,
+                imported_fixture_type_case_struct_symbols
+                    .module_id()
+                    .clone(),
+                &imported_fixture_type_case_struct_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+
         let ambiguous_mode_symbols = ambiguous_mode_symbol_env(symbols.module_id().clone());
         assert_eq!(
             source_type_elaboration_detail_keys(
@@ -7961,6 +8035,21 @@ mod tests {
         module: ResolverModuleId,
         spelling: &'static str,
     ) -> SymbolEnv {
+        local_and_imported_parser_fixture_symbol_env(module, spelling, SymbolKind::Mode)
+    }
+
+    fn local_and_imported_structure_symbol_env(
+        module: ResolverModuleId,
+        spelling: &'static str,
+    ) -> SymbolEnv {
+        local_and_imported_parser_fixture_symbol_env(module, spelling, SymbolKind::Structure)
+    }
+
+    fn local_and_imported_parser_fixture_symbol_env(
+        module: ResolverModuleId,
+        spelling: &'static str,
+        kind: SymbolKind,
+    ) -> SymbolEnv {
         let source = source_id(198);
         let imported_module = ResolverModuleId::new(
             module.package().clone(),
@@ -7986,7 +8075,7 @@ mod tests {
         {
             let symbol = ResolverSymbolId::new(
                 symbol_module.clone(),
-                LocalSymbolId::new(format!("Mode/{spelling}/{ordinal}")),
+                LocalSymbolId::new(format!("{kind:?}/{spelling}/{ordinal}")),
                 FullyQualifiedName::new(format!(
                     "{}::{spelling}/{ordinal}",
                     symbol_module.path().as_str()
@@ -7995,7 +8084,7 @@ mod tests {
             indexes.symbols.insert(
                 SymbolEntry::new(
                     symbol,
-                    SymbolKind::Mode,
+                    kind,
                     NamespacePath::new(module.path().as_str()),
                     spelling,
                     SemanticOrigin::new(
@@ -8142,6 +8231,51 @@ mod tests {
 
     fn imported_structure_symbol_env(module: ResolverModuleId) -> SymbolEnv {
         imported_symbol_env(module, "Struct", SymbolKind::Structure)
+    }
+
+    fn imported_fixture_structure_symbol_env(module: ResolverModuleId) -> SymbolEnv {
+        imported_parser_fixture_symbol_env(module, "R", SymbolKind::Structure)
+    }
+
+    fn imported_parser_fixture_symbol_env(
+        module: ResolverModuleId,
+        spelling: &'static str,
+        kind: SymbolKind,
+    ) -> SymbolEnv {
+        let source = source_id(199);
+        let imported_module = ResolverModuleId::new(
+            module.package().clone(),
+            ModulePath::new("parser.type_fixtures"),
+        );
+        let mut indexes = SymbolEnvIndexes::default();
+        let contribution = indexes.contributions.insert(
+            imported_module.clone(),
+            ContributionKind::ImportedSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 1)),
+        );
+        let symbol = ResolverSymbolId::new(
+            imported_module.clone(),
+            LocalSymbolId::new(format!("{kind:?}/{spelling}/0")),
+            FullyQualifiedName::new(format!("{}::{spelling}/0", imported_module.path().as_str())),
+        );
+        indexes.symbols.insert(
+            SymbolEntry::new(
+                symbol,
+                kind,
+                NamespacePath::new(module.path().as_str()),
+                spelling,
+                SemanticOrigin::new(
+                    source,
+                    imported_module,
+                    SourceAnchor::Range(range(source, 0, 1)),
+                    Vec::new(),
+                ),
+                contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        SymbolEnv::new(module, indexes)
     }
 
     fn imported_symbol_env(

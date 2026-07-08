@@ -323,13 +323,22 @@ detail だけを credit し、checker structure type-head、base-shape、
 constructor-witness payload extraction を credit しない。task 77 は forward
 local-attribute reserve type expression について同じ lower-stage detail だけを
 credit し、checker `AttributeInput` payload extraction や attributed-type
-evidence query を credit しない。task 78 は imported-structure reserve-head
-external-gap boundary だけを credit する。runner は documented
-`parser.type_fixtures` imported structure summary について
+evidence query を credit しない。task 78 は、task 83 がその `R` 部分を supersede する前の documented `R`
+imported-structure reserve-head external-gap boundary だけを historical に credit
+する。task-83 `R` bridge 外の broader imported structure は、non-`R` の
+source-derived fixture が存在するまで deferred とする。将来の active case は
 `type_elaboration.external_dependency.ast_payload_extraction` を観測し、real
 imported structure provenance、structure type-head payload extraction、
 base-shape / constructor-witness evidence、positive structure elaboration、
-CoreIr、ControlFlowIr、VC、proof payload を credit しない。task 79 は task-82
+CoreIr、ControlFlowIr、VC、proof payload を credit してはならない。task 83 は
+imported-structure reserve-head provenance bridge だけを credit してよい。runner は
+documented `parser.type_fixtures` imported structure `R` について real imported
+`SymbolKind::Structure` symbol を checker type head として渡した後に
+`type_elaboration.checker.checker.declaration.deferred.evidence_query` を観測する。
+これは imported structure provenance と type-head payload extraction を credit する
+が、imported module AST extraction、base-shape / constructor-witness evidence、
+positive structure elaboration、CoreIr、ControlFlowIr、VC、proof payload は credit
+しない。task 79 は task-82
 `TypeCaseMode` bridge 外の imported-mode reserve-head external-gap boundary
 だけを credit する。これらの case は documented `parser.type_fixtures`
 imported mode summary について
@@ -363,8 +372,8 @@ projection と suffix による imported-lexicon visibility を credit してよ
 これは checker argument payload extraction ではない。
 task 67、task 68、
 task 69、task 70、task 71 の external-gap boundary case、task 75/task 76/task
-77 の lower-stage boundary case、task 78 の imported-structure external-gap
-case、task 79 の imported-mode external-gap case、task 80 の imported-attribute
+77 の lower-stage boundary case、task 78 の historical imported-structure external-gap
+case（task 83 が `R` 部分を supersede し、broader non-`R` case は deferred）、task 79 の imported-mode external-gap case、task 80 の imported-attribute
 external-gap case、task 81 の argument-bearing local-attribute external-gap case
 を除く上記の supported reserve slices を syntax-free checker source
 reserve payload へ変換し、checker-owned seam が module `BindingEnv`、binding ごとの
@@ -440,8 +449,12 @@ credit しない。task 75/76/77 の fail case は forward local-mode /
 local-structure / local-attribute reference の lower-stage active-range boundary だけを
 credit し、checker `ModeExpansion`、structure type-head、base-shape、
 constructor-witness、`AttributeInput`、attributed-type evidence production は credit しない。
-task 78 の fail case は imported structure extraction-gap boundary だけを
-credit し、real imported structure provenance や structure evidence は credit
+task-83 `R` bridge 外の broader imported structure case は deferred とする。将来の
+fail case は imported structure extraction-gap boundary だけを credit し、real
+imported structure provenance や structure evidence は credit してはならない。task 83 の fail case は real imported
+structure provenance と checker type-head payload extraction だけを credit し、
+imported module AST extraction、base-shape / constructor-witness evidence、
+positive imported structure elaboration、downstream payload promotion は credit
 しない。task 79 の fail case は task-82 `TypeCaseMode` bridge 外の imported
 mode extraction-gap boundary だけを credit する。task 82 の fail case は real
 imported mode provenance と checker type-head payload extraction だけを credit

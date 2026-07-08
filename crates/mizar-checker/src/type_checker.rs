@@ -2992,7 +2992,13 @@ impl SourceReserveDeclarationBridge {
                 && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
                 && symbol.module().path().as_str() == "parser.type_fixtures"
                 && entry.primary_spelling() == "TypeCaseMode";
-            if !local_source_head && !imported_mode_head {
+            let imported_structure_head = symbol.module() != &self.module_id
+                && matches!(entry.kind(), SymbolKind::Structure)
+                && contribution.module() == symbol.module()
+                && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
+                && symbol.module().path().as_str() == "parser.type_fixtures"
+                && entry.primary_spelling() == "R";
+            if !local_source_head && !imported_mode_head && !imported_structure_head {
                 return Err(format!(
                     "source reserve binding {index} symbol head is not backed by supported source provenance"
                 ));
@@ -7832,6 +7838,81 @@ mod tests {
                 ))
                 .is_err(),
             "imported mode heads outside the TypeCaseMode bridge must stay fail-closed"
+        );
+
+        let imported_fixture_structure = SymbolId::new(
+            ModuleId::new(
+                PackageId::new("pkg"),
+                ModulePath::new("parser.type_fixtures"),
+            ),
+            LocalSymbolId::new("summary:R/0"),
+            FullyQualifiedName::new("pkg::parser.type_fixtures::R/0"),
+        );
+        let imported_fixture_structure_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 5),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 5),
+                "R",
+                TypeHeadInput::Symbol(imported_fixture_structure.clone()),
+            )],
+        )
+        .expect("imported fixture structure payload shape should validate");
+        let imported_fixture_structure_handoff = imported_fixture_structure_bridge
+            .check(&symbol_env_with_imported_symbol(
+                imported_fixture_structure,
+                SymbolKind::Structure,
+                "R",
+            ))
+            .expect("imported structure provenance should reach declaration checking");
+        assert_eq!(
+            diagnostic_ranges(
+                imported_fixture_structure_handoff.declarations(),
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        assert!(
+            imported_fixture_structure_handoff
+                .declarations()
+                .facts()
+                .is_empty(),
+            "imported structure heads must not seed facts without base-shape evidence"
+        );
+
+        let imported_fixture_type_case_struct = SymbolId::new(
+            ModuleId::new(
+                PackageId::new("pkg"),
+                ModulePath::new("parser.type_fixtures"),
+            ),
+            LocalSymbolId::new("summary:TypeCaseStruct/0"),
+            FullyQualifiedName::new("pkg::parser.type_fixtures::TypeCaseStruct/0"),
+        );
+        let imported_fixture_type_case_struct_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 18),
+            vec![SourceReserveBindingInput::new(
+                "x",
+                range(source, 0, 1),
+                range(source, 4, 18),
+                "TypeCaseStruct",
+                TypeHeadInput::Symbol(imported_fixture_type_case_struct.clone()),
+            )],
+        )
+        .expect("imported fixture structure payload shape should validate");
+        assert!(
+            imported_fixture_type_case_struct_bridge
+                .check(&symbol_env_with_imported_symbol(
+                    imported_fixture_type_case_struct,
+                    SymbolKind::Structure,
+                    "TypeCaseStruct",
+                ))
+                .is_err(),
+            "imported fixture structures outside the R bridge must stay fail-closed"
         );
 
         let foreign_local_mode = SymbolId::new(

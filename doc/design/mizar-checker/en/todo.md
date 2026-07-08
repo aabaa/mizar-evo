@@ -1878,6 +1878,29 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       semantic bridge; mizar-test task 10; spec 03 type expressions; spec 07
       modes; spec 11 symbol management; spec 12 modules and namespaces.
 
+83. **Add source-derived imported structure reserve provenance bridge.** [x]
+    - Promote the task-78 imported-structure reserve boundary just far enough
+      for the active `type_elaboration` runner to pass the documented
+      `parser.type_fixtures` import-summary `R` structure symbol as a checker
+      `TypeHeadInput`.
+    - Acceptance: the checker reserve bridge validates that `R` is visible
+      through `SymbolEnv`, has `SymbolKind::Structure`, and is backed by an
+      `ImportedSource` contribution from `parser.type_fixtures`. The runner no
+      longer reports `type_elaboration.external_dependency.ast_payload_extraction`
+      for `R`; it reaches
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query`
+      because imported module AST extraction and base-shape/constructor-witness
+      evidence are not available. The task must not synthesize imported module
+      AST extraction, base-shape/constructor-witness evidence, positive
+      structure elaboration, CoreIr, ControlFlowIr, VC, or proof payloads, and
+      it must leave generic imported structures, `TypeCaseStruct`, imported
+      attributes, arguments, brackets, qualified attributes, and imported
+      evidence on their existing gaps.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 52, 76, 78, and 82. Refs: Step 5 source-derived
+      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 05
+      structures; spec 11 symbol management; spec 12 modules and namespaces.
+
 ## Recommended Verification
 
 Run after each task:

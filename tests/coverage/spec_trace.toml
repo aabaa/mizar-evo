@@ -588,7 +588,7 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.03.type_expressions.imported_structure_type_head_payload_gap"
+id = "spec.en.03.type_expressions.imported_structure_provenance_bridge"
 source = "doc/spec/en/03.type_system.md"
 section = "3.3 Type Expressions"
 stage = "type_elaboration"
@@ -598,6 +598,17 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.03.type_expressions.imported_structure_type_head_payload_gap"
+source = "doc/spec/en/03.type_system.md"
+section = "3.3 Type Expressions"
+stage = "type_elaboration"
+status = "deferred"
+required = true
+coverage = "diagnostic"
+deferred_reason = "Task 83 supersedes the documented parser.type_fixtures `R` fixture by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside that fixture, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
+tests = []
 
 [[requirement]]
 id = "spec.en.03.type_expressions.parser"
@@ -667,7 +678,7 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.05.structures.imported_structure_type_head_payload_gap"
+id = "spec.en.05.structures.imported_structure_evidence_payload_gap"
 source = "doc/spec/en/05.structures.md"
 section = "5.2 Syntax"
 stage = "type_elaboration"
@@ -677,6 +688,17 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.05.structures.imported_structure_type_head_payload_gap"
+source = "doc/spec/en/05.structures.md"
+section = "5.2 Syntax"
+stage = "type_elaboration"
+status = "deferred"
+required = true
+coverage = "diagnostic"
+deferred_reason = "Task 83 supersedes the documented parser.type_fixtures `R` fixture by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside that fixture, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
+tests = []
 
 [[requirement]]
 id = "spec.en.05.structures.inheritance.semantic"
@@ -1002,7 +1024,7 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.11.symbol_management.imported_structure_type_head_payload_gap"
+id = "spec.en.11.symbol_management.imported_structure_provenance_bridge"
 source = "doc/spec/en/11.symbol_management.md"
 section = "11.2.3 Imported Symbols; 11.3 Import Behavior and Conflict Resolution"
 stage = "type_elaboration"
@@ -1012,6 +1034,17 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.11.symbol_management.imported_structure_type_head_payload_gap"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.2.3 Imported Symbols; 11.3 Import Behavior and Conflict Resolution"
+stage = "type_elaboration"
+status = "deferred"
+required = true
+coverage = "diagnostic"
+deferred_reason = "Task 83 supersedes the documented parser.type_fixtures `R` fixture by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside that fixture, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
+tests = []
 
 [[requirement]]
 id = "spec.en.11.symbol_management.signatures"
@@ -1202,7 +1235,7 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.12.modules.imported_structure_type_head_payload_gap"
+id = "spec.en.12.modules.imported_structure_provenance_bridge"
 source = "doc/spec/en/12.modules_and_namespaces.md"
 section = "12.3 Import Statements"
 stage = "type_elaboration"
@@ -1212,6 +1245,17 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.12.modules.imported_structure_type_head_payload_gap"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3 Import Statements"
+stage = "type_elaboration"
+status = "deferred"
+required = true
+coverage = "diagnostic"
+deferred_reason = "Task 83 supersedes the documented parser.type_fixtures `R` fixture by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside that fixture, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
+tests = []
 
 [[requirement]]
 id = "spec.en.12.modules.visibility.semantic"
@@ -2031,6 +2075,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.imported_structure_provenance_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 83 source-derived imported structure reserve provenance bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.local_mode_expansion_chain_source_bridge"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 56 source-derived same-module local mode expansion chain bridge"
@@ -2113,7 +2169,6 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_bracket_mode_argument_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_bracket_structure_argument_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_gap_001.expect.toml",
-  "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mixed_reserve_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_non_builtin_type_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_payload_extraction_gap_001.expect.toml",
@@ -2307,12 +2362,11 @@ id = "spec.en.checker.type_elaboration.payload_extraction.imported_structure_gap
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 78 source-derived imported structure reserve extraction gap boundary"
 stage = "type_elaboration"
-status = "covered"
+status = "deferred"
 required = true
 coverage = "diagnostic"
-tests = [
-  "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
-]
+deferred_reason = "Task 83 supersedes the documented parser.type_fixtures `R` fixture by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside that fixture, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
+tests = []
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.local_mode_attributed_rhs_chain_evidence_gap"

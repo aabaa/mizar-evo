@@ -11,7 +11,7 @@ Score caps applied: none.
 
 Post-closeout continuation: this report remains the closeout for the original
 task-34 explicit-payload checker milestone. Step 5 source-derived bridge tasks
-48-80 are post-closeout continuation tasks tracked in the crate plan, TODO,
+48-83 are post-closeout continuation tasks tracked in the crate plan, TODO,
 source/spec audit, and corpus traceability. Task 74 adds an AST-bounded
 structural bare local-mode chain pass slice after task 73's three-edge bridge;
 task 75 adds a lower-stage active-range boundary for forward local-mode reserve
@@ -20,9 +20,14 @@ heads, and task 77 adds the matching boundary for forward local-attribute
 reserve type expressions. Task 78 adds an imported structure reserve-head
 extraction-gap boundary, and task 79 adds the matching imported mode
 reserve-head extraction-gap boundary; task 80 adds the matching imported
-attribute reserve extraction-gap boundary. These additions do not change the
-original score or claim AST-wide extraction, CoreIr/ControlFlowIr/VC, or proof
-payload promotion.
+attribute reserve extraction-gap boundary. Task 81 adds the argument-bearing
+local-attribute reserve extraction-gap boundary and declaration-symbol suffix
+projection; task 82 promotes the documented imported mode head to a checker
+type-head provenance bridge; task 83 promotes only documented imported
+structure `R` to the matching provenance/type-head bridge. These additions do
+not change the original score or claim imported module AST extraction, positive
+imported structure/mode elaboration, AST-wide extraction, CoreIr/ControlFlowIr/VC,
+or proof payload promotion.
 
 ## Scope
 

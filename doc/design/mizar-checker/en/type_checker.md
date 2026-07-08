@@ -309,15 +309,21 @@ type expression with the same
 checker handoff. The runner must not fabricate an `AttributeInput`,
 attributed-type evidence query, successful reserve declaration, or downstream
 CoreIr/ControlFlowIr/VC/proof payload from the future attribute declaration.
-Task 78 records the imported-structure analogue as an external extraction-gap
-boundary rather than a checker payload: a reserve head such as `R` from the
-documented `parser.type_fixtures` import summary reaches the active
-type-elaboration runner and reports
-`type_elaboration.external_dependency.ast_payload_extraction`. The bridge must
-not treat that imported summary as real imported module AST extraction, must not
-fabricate imported structure provenance, structure type-head payloads,
+Task 78 historically recorded the imported-structure analogue as an external
+extraction-gap boundary rather than a checker payload. Task 83 supersedes that
+boundary only for the documented `parser.type_fixtures` `R` reserve head by
+passing the real imported `SymbolKind::Structure` as a checker type head;
+broader imported structures outside that Task83 bridge remain deferred until a
+non-`R` source-derived fixture exists. The bridge must not treat that imported
+summary as real imported module AST extraction, must not fabricate
 base-shape/constructor-witness evidence, positive structure elaboration, or
 downstream CoreIr/ControlFlowIr/VC/proof payloads.
+Task 83 records the imported-structure provenance bridge: `R` from the
+documented `parser.type_fixtures` import summary reaches declaration checking
+as an imported structure type head, then fails closed on
+`type_elaboration.checker.checker.declaration.deferred.evidence_query` because
+base-shape/constructor-witness evidence is still absent. This does not credit
+positive imported structure elaboration or imported module AST extraction.
 Task 79 originally recorded the imported-mode analogue as the same external
 extraction-gap boundary. Task 82 supersedes that boundary only for the
 documented `parser.type_fixtures` `TypeCaseMode` reserve head by passing the

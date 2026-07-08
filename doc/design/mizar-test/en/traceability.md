@@ -358,13 +358,22 @@ Task 77 may credit only the matching active-range/no-forward-reference
 boundary for a forward local-attribute reserve type expression: the runner
 observes the same lower-stage detail before checker handoff and does not credit
 checker `AttributeInput` payload extraction or attributed-type evidence queries.
-Task 78 may credit only the imported-structure reserve-head external-gap
-boundary: the runner observes
-`type_elaboration.external_dependency.ast_payload_extraction` for the documented
-`parser.type_fixtures` imported structure summary and does not credit real
-imported structure provenance, structure type-head payload extraction,
-base-shape or constructor-witness evidence, positive structure elaboration,
-CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 78 historically credited only the imported-structure reserve-head
+external-gap boundary for the documented `R` fixture before task 83 superseded
+that portion. Broader imported structures outside the task-83 `R` bridge are
+deferred until a non-`R` source-derived fixture exists; future active cases
+should observe `type_elaboration.external_dependency.ast_payload_extraction`
+and must not credit real imported structure provenance, structure type-head
+payload extraction, base-shape or constructor-witness evidence, positive
+structure elaboration, CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 83 may credit the imported-structure reserve-head provenance bridge only:
+the runner observes
+`type_elaboration.checker.checker.declaration.deferred.evidence_query` for the
+documented `parser.type_fixtures` imported structure `R` after passing the real
+imported `SymbolKind::Structure` symbol as a checker type head. It credits
+imported structure provenance and type-head payload extraction, but not imported
+module AST extraction, base-shape or constructor-witness evidence, positive
+structure elaboration, CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 79 may credit only the imported-mode reserve-head external-gap boundary
 outside the task-82 `TypeCaseMode` bridge: those cases observe
 `type_elaboration.external_dependency.ast_payload_extraction` for the
@@ -475,9 +484,13 @@ Task 72 pass cases credit only the source-derived two-edge bare local-mode
 chain bridge, and task 73 pass cases credit only the corresponding three-edge
 bare local-mode chain bridge, and task 74 pass cases credit only the structural bare-chain bridge; unsupported chains do not credit broader mode
 expansion, structure/attributed-builtin terminals beyond the existing one-edge
-diagnostics, or CoreIr/ControlFlowIr/VC/proof promotion. Task 78 fail cases
-credit only the imported structure extraction-gap boundary and do not credit
-real imported structure provenance or structure evidence. Task 79 fail cases
+diagnostics, or CoreIr/ControlFlowIr/VC/proof promotion. Broader imported-structure cases outside the task-83 `R` bridge are deferred;
+future fail cases should credit only the imported structure extraction-gap
+boundary and must not credit real imported structure provenance or structure
+evidence. Task 83 fail cases credit real imported structure provenance and
+checker type-head payload extraction only; they do not credit imported module
+AST extraction, base-shape or constructor-witness evidence, positive imported
+structure elaboration, or downstream payload promotion. Task 79 fail cases
 credit only the imported mode extraction-gap boundary outside the task-82
 `TypeCaseMode` bridge. Task 82 fail cases credit real imported mode provenance
 and checker type-head payload extraction only; they do not credit imported
