@@ -1,0 +1,3 @@
+import parser.type_fixtures;
+
+theorem ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2);

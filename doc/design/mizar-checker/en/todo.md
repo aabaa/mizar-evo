@@ -2153,6 +2153,25 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       semantic bridge; mizar-test task 10; spec 03 type expressions; spec 05
       structures; spec 11 symbol management; spec 12 modules and namespaces.
 
+98. **Add source-derived imported predicate/functor term-formula extraction-gap boundary.** [x]
+    - Add a dedicated active `type_elaboration` boundary for a theorem formula
+      that imports `parser.type_fixtures` and uses documented imported
+      predicate/functor surfaces such as `divides` and `++`.
+    - Acceptance: parser and resolver execute the source, then the active
+      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
+      because checker-owned imported predicate/functor term/formula payload
+      extraction, term inference, formula checking, recorded facts, theorem
+      acceptance, CoreIr, ControlFlowIr, VC, proof payloads, and the
+      `formula_statement` runner are not available. The task must not fabricate
+      imported predicate/functor semantic payloads, term/formula payloads,
+      facts, theorem acceptance, or downstream semantic payloads, and it must
+      not claim imported module AST extraction.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: tasks 86 and 87. Refs: Step 5 source-derived semantic bridge;
+      mizar-test task 10; spec 11 symbol management; spec 12 modules and
+      namespaces; spec 13 term expressions; spec 14 formulas; spec 16 theorems
+      and proofs.
+
 ## Recommended Verification
 
 Run after each task:

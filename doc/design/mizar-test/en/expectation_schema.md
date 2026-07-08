@@ -613,15 +613,17 @@ These sidecars document that the source reached parser/resolver execution, but
 they do not credit a `formula_statement` runner, checker theorem/formula
 payload extraction, recorded facts, proof skeletons, CoreIr, ControlFlowIr, VC,
 or proof payloads.
-Task 87 permits term-bearing theorem formula fail sidecars to use
+Tasks 87 and 98 permit term-bearing theorem formula fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "term_formula_payload_extraction_gap"` and
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
-These sidecars document that a theorem formula containing Chapter 13 numeral
-terms and Chapter 14 builtin equality reached parser/resolver execution, but
-they do not credit term/formula payload extraction, term inference, formula
-checking, recorded facts, theorem acceptance, a `formula_statement` runner,
-proof skeletons, CoreIr, ControlFlowIr, VC, or proof payloads.
+These sidecars document that a theorem formula containing Chapter 13 term
+surfaces and Chapter 14 atomic formulas, including task-87 numeral/builtin
+equality and task-98 imported predicate/functor applications, reached
+parser/resolver execution, but they do not credit imported semantic payloads,
+term/formula payload extraction, term inference, formula checking, recorded
+facts, theorem acceptance, a `formula_statement` runner, proof skeletons,
+CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 88 permits proof-block theorem fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "proof_skeleton_payload_extraction_gap"` and

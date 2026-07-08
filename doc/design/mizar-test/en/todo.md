@@ -441,11 +441,11 @@ Keep `cargo test -p mizar-test` green after each task (see
       definition boundary, imported attribute provenance beyond
       the task-84 `TypeCaseAttr` bridge, task-85 negative `empty`/builtin-`set`
       bridge, and task-80 boundary, imported structure provenance beyond the task-83
-      `R` bridge and task-78 boundary, imported mode expansion payloads beyond
+      `R` bridge, task-97 `TypeCaseStruct` bridge, and task-78 boundary, imported mode expansion payloads beyond
       task 82's provenance bridge, attribute argument payloads beyond the task-81 boundary,
       attributed or argument-bearing
-      mode/structure heads, structure base-shape payloads, definition payloads beyond the task-92 extraction-gap boundary, proof-local declaration payloads beyond the task-93 extraction-gap boundary, inline definition payloads beyond the task-94 extraction-gap boundary, registration payloads and activation/correctness payloads beyond the task-95 extraction-gap boundary, redefinition/notation payloads beyond the task-96 extraction-gap boundary, terms and
-      formula/theorem/proof payloads beyond the task-86/task-87/task-88/task-89/task-93/task-94/task-95/task-96
+      mode/structure heads, structure base-shape payloads, definition payloads beyond the task-92 extraction-gap boundary, proof-local declaration payloads beyond the task-93 extraction-gap boundary, inline definition payloads beyond the task-94 extraction-gap boundary, registration payloads and activation/correctness payloads beyond the task-95 extraction-gap boundary, redefinition/notation payloads beyond the task-96 extraction-gap boundary, imported predicate/functor semantic payloads, terms and
+      formula/theorem/proof payloads beyond the task-86/task-87/task-98/task-88/task-89/task-93/task-94/task-95/task-96
       extraction-gap boundaries,
       coercions, overload payloads, facts, CoreIr,
       ControlFlowIr, VC payloads, and proof evidence remain on the explicit

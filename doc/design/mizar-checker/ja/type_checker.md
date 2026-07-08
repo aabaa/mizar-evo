@@ -378,6 +378,14 @@ real term/formula payload extraction、term inference、formula checking、recor
 theorem acceptance、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、
 proof payload がまだ存在しないため
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。
+task 98 は同じ boundary の imported predicate/functor variant を記録する:
+`theorem ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2);` は documented
+`parser.type_fixtures` surface を通じて parser / resolver 実行まで到達するが、
+imported predicate/functor semantic payload、term/formula payload extraction、
+term inference、formula checking、recorded fact、theorem acceptance、dedicated
+`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ存在しないため
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。これは imported
+module AST extraction を credit しない。
 task 88 は対応する proof-block boundary を記録する:
 `theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` のような
 theorem は Chapter 16 の proof block と Chapter 15 の conclusion statement を伴って

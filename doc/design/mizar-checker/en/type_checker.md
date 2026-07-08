@@ -396,6 +396,15 @@ surface, then stays on `type_elaboration.external_dependency.ast_payload_extract
 because real term/formula payload extraction, term inference, formula checking,
 recorded facts, theorem acceptance, the dedicated `formula_statement` runner,
 CoreIr, ControlFlowIr, VC, and proof payloads are still absent.
+Task 98 records the imported predicate/functor variant of that same boundary:
+`theorem ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2);` reaches
+parser and resolver execution through the documented `parser.type_fixtures`
+surface, then stays on `type_elaboration.external_dependency.ast_payload_extraction`
+because imported predicate/functor semantic payloads, term/formula payload
+extraction, term inference, formula checking, recorded facts, theorem
+acceptance, the dedicated `formula_statement` runner, CoreIr, ControlFlowIr,
+VC, and proof payloads are still absent. This does not credit imported module
+AST extraction.
 Task 88 records the matching proof-block boundary: a theorem such as
 `theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` reaches
 parser and resolver execution with a Chapter 16 proof block and Chapter 15

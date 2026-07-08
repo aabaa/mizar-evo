@@ -525,6 +525,11 @@ extraction-gap boundary だけを credit し、checker term/formula payload extr
 term inference、formula checking、recorded fact、theorem acceptance、proof skeleton、
 `formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
 credit しない。
+task 98 の fail case は parser / resolver 実行後の imported predicate/functor
+theorem formula extraction-gap boundary だけを credit し、imported semantic payload、
+checker term/formula payload extraction、term inference、formula checking、recorded
+fact、theorem acceptance、proof skeleton、`formula_statement` runner support、
+CoreIr、ControlFlowIr、VC、proof payload は credit しない。
 task 88 の fail case は parser / resolver 実行後の proof-block / proof-skeleton
 extraction-gap boundary だけを credit し、checker proof skeleton payload extraction、
 local proof context、formula payload extraction、recorded fact、theorem acceptance、
