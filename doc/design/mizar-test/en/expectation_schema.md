@@ -641,20 +641,25 @@ Task 113 supersedes task 103 for the exact
 "type_elaboration.checker.checker.formula.external.formula_payload"` with the
 sorted checker detail keys for missing formula/attribute payload, partial
 formula checking, and missing numeric type payload after validating imported
-`empty` provenance and passing real checker term/formula payloads. Task 104
-continues to permit its term-bearing theorem formula fail sidecar to use
-`rejection_reason = "term_formula_payload_extraction_gap"` and
-`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
-It documents that the attribute-level `non empty` imported attribute assertion
-reached parser/resolver execution. Task 111 supersedes the task-105
+`empty` provenance and passing real checker term/formula payloads. Task 114
+supersedes task 104 for the exact attribute-level `non empty` imported
+attribute assertion sidecar. It uses
+`rejection_reason = "imported_non_empty_attribute_assertion_formula_payload_gap"`
+and `stable_detail_key =
+"type_elaboration.checker.checker.formula.external.formula_payload"` with the
+sorted checker detail keys for missing formula/attribute payload, partial
+formula checking, and missing numeric type payload after validating the direct
+`non` surface plus imported `empty` provenance and passing real checker
+term/formula payloads. Task 111 supersedes the task-105
 set-enumeration equality sidecar only for the exact
 `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` source, which now uses
 `rejection_reason = "set_enumeration_result_type_payload_gap"` and
 `stable_detail_key =
 "type_elaboration.checker.checker.term.external.result_type_payload"` after
-real checker term/formula handoff. The remaining sidecars, including task-104
-attribute-level non-empty imported attribute assertion and task-113's deferred
-semantic portion, do not credit broader set-enumeration term payload
+real checker term/formula handoff. The remaining sidecars, including
+non-exact task-104 attribute-level non-empty imported attribute assertion
+surfaces and the task-113/task-114 deferred semantic portions, do not credit
+broader set-enumeration term payload
 extraction, imported attribute assertion attribute-chain semantic payload
 extraction, imported attribute-level non-empty assertion attribute-chain/provenance
 payload extraction, equality semantic checking, attribute admissibility/semantic

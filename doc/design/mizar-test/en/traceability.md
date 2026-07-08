@@ -446,7 +446,7 @@ external-gap case, the task 106 builtin equality theorem checker-payload numeric
 case, the task 110 imported predicate/functor theorem checker bridge, the task 108 builtin membership theorem checker bridge, the task 107
 builtin inequality theorem checker bridge, the task 109 builtin type-assertion theorem checker
 bridge, the task 103 imported attribute assertion theorem formula external-gap
-case outside the exact task 113 bridge, the task 113 imported attribute assertion theorem checker bridge, the task 104 attribute-level non-empty imported attribute assertion theorem formula external-gap
+case outside the exact task 113 bridge, the task 113 imported attribute assertion theorem checker bridge, the task 114 exact attribute-level non-empty imported attribute assertion theorem checker bridge
 case, the task 111 exact set-enumeration theorem checker bridge
 case, the task 112 connective/quantifier formula shell checker bridge
 case, the task 88 proof-block theorem external-gap case, the task 89
@@ -611,15 +611,16 @@ semantic payload extraction, theorem-formula `AttributeInput` payload
 extraction, term inference, attribute admissibility/semantic checking, formula
 checking, recorded facts, theorem acceptance, imported module AST extraction,
 `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
-payloads. Task 104 fail cases credit only the attribute-level non-empty
-imported attribute assertion theorem formula extraction-gap boundary after
-parser/resolver execution and do not credit checker term/formula payload
-extraction, imported attribute-level non-empty assertion attribute-chain/provenance
-payload extraction, term inference, negated attribute admissibility/semantic
-checking, formula checking, recorded facts, theorem acceptance, imported module
-AST extraction, checker `AttributeInput` payload extraction for theorem
-formulas, `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or
-proof payloads. Task 111 fail cases credit only the exact
+payloads. Task 114 fail cases supersede task 104 only for the exact
+attribute-level non-empty imported attribute assertion theorem formula after
+parser/resolver execution: the runner validates the direct `non` surface and
+imported `empty` provenance, passes real checker term/formula payloads, and
+fails closed before numeric type payloads, negated attribute-chain semantic
+payload extraction, theorem-formula `AttributeInput` payload extraction, term
+inference, negated attribute admissibility/semantic checking, formula checking,
+recorded facts, theorem acceptance, imported module AST extraction,
+`formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
+payloads. Task 111 fail cases credit only the exact
 `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` checker handoff after
 parser/resolver execution: real checker payloads for four numeral item terms,
 two set-enumeration terms, and one equality formula. They do not credit broader

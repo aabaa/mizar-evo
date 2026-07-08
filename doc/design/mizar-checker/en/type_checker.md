@@ -458,20 +458,21 @@ extraction, checker `AttributeInput` payload extraction for theorem formulas,
 term inference, attribute admissibility/semantic checking, formula checking,
 recorded facts, theorem acceptance, the dedicated `formula_statement` runner,
 CoreIr, ControlFlowIr, VC, or proof payloads.
-Task 104 records the attribute-level `non empty` imported attribute assertion
-variant of that same term/formula boundary:
+Task 114 supersedes task 104 for the exact attribute-level `non empty`
+imported attribute assertion variant of that same term/formula boundary:
 `import parser.type_fixtures; theorem ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty;`
 reaches parser and resolver execution with a Chapter 13 numeral term, the
 documented imported `parser.type_fixtures` `empty` attribute, Chapter 6
 attribute negation/composition, and the Chapter 14 attribute-assertion form,
-then stays on `type_elaboration.external_dependency.ast_payload_extraction`
-because real term/formula payload extraction, imported attribute-level
-non-empty assertion attribute-chain/provenance payload extraction, term
+then validates the direct `non` surface and imported `empty` provenance and
+passes source-derived checker `TermInput` and `FormulaInput` payloads before
+failing closed on missing numeric type payload, missing formula/attribute
+semantic payload, and partial formula checking. This does not credit imported
+module AST extraction, negated attribute-chain semantic payload extraction,
+checker `AttributeInput` payload extraction for theorem formulas, term
 inference, negated attribute admissibility/semantic checking, formula checking,
 recorded facts, theorem acceptance, the dedicated `formula_statement` runner,
-CoreIr, ControlFlowIr, VC, and proof payloads are still absent. This does not
-credit imported module AST extraction or checker `AttributeInput` payload
-extraction for theorem formulas.
+CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 111 supersedes task 105 only for the exact set-enumeration theorem bridge:
 `theorem SetEnumerationPayloadBoundary: {1, 2} = {1, 2};` reaches parser and
 resolver execution with Chapter 13 set-enumeration term operands and Chapter 14

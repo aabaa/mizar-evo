@@ -300,9 +300,9 @@ Keep `cargo test -p mizar-test` green after each task (see
       membership theorem checker bridge, checker task 107's builtin
       inequality theorem checker bridge, checker task 109's builtin
       type assertion theorem term/formula/type checker bridge, checker task 113's imported
-      attribute assertion theorem checker bridge, checker task 104's
-      attribute-level non-empty imported attribute assertion formula
-      extraction-gap boundary, checker task 111's exact set-enumeration theorem
+      attribute assertion theorem checker bridge, checker task 114's exact
+      attribute-level non-empty imported attribute assertion theorem checker
+      bridge, checker task 111's exact set-enumeration theorem
       checker bridge, checker task 112's exact formula connective/quantifier
       shell checker bridge, checker task 88's proof skeleton
       extraction-gap boundary, and checker task 89's statement proof
@@ -462,7 +462,7 @@ Keep `cargo test -p mizar-test` green after each task (see
       term payload extraction, negated
       attribute admissibility/semantic checking, attribute admissibility/semantic
       checking, formula/theorem/proof payloads beyond the
-      task-106 builtin equality theorem checker bridge, task-107 builtin inequality theorem checker bridge, task-108 builtin membership theorem checker bridge, task-109 builtin type assertion theorem checker bridge, task-110 imported predicate/functor theorem checker bridge, task-111 set-enumeration theorem checker bridge, task-112 formula connective/quantifier shell checker bridge, task-113 imported attribute assertion theorem checker bridge, and task-86/task-104/task-105/task-88/task-89/task-93/task-94/task-95/task-96
+      task-106 builtin equality theorem checker bridge, task-107 builtin inequality theorem checker bridge, task-108 builtin membership theorem checker bridge, task-109 builtin type assertion theorem checker bridge, task-110 imported predicate/functor theorem checker bridge, task-111 set-enumeration theorem checker bridge, task-112 formula connective/quantifier shell checker bridge, task-113 imported attribute assertion theorem checker bridge, task-114 exact attribute-level non-empty imported attribute assertion theorem checker bridge, and task-86/task-105/task-88/task-89/task-93/task-94/task-95/task-96
       extraction-gap boundaries,
       coercions, overload payloads, facts, CoreIr,
       ControlFlowIr, VC payloads, and proof evidence remain on the explicit

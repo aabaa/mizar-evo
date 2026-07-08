@@ -606,20 +606,26 @@ supersede する。これは `rejection_reason =
 "type_elaboration.checker.checker.formula.external.formula_payload"` を使い、
 imported `empty` provenance を検証して real checker term/formula payload を渡した後、
 missing formula / attribute payload、partial formula checking、missing numeric
-type payload の sorted checker detail key を記録する。task 104 は引き続き
-term-bearing theorem formula fail sidecar について
-`rejection_reason = "term_formula_payload_extraction_gap"` と
-`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"` を
-許可し、attribute-level `non empty` imported attribute assertion が parser /
-resolver 実行へ到達したことを記録する。task 111 は task-105 set-enumeration
+type payload の sorted checker detail key を記録する。task 114 は exact
+attribute-level `non empty` imported attribute assertion sidecar について task
+104 を supersede する。これは
+`rejection_reason = "imported_non_empty_attribute_assertion_formula_payload_gap"` と
+`stable_detail_key =
+"type_elaboration.checker.checker.formula.external.formula_payload"` を使い、
+direct `non` surface と imported `empty` provenance を検証して real checker
+term/formula payload を渡した後、missing formula / attribute payload、partial
+formula checking、missing numeric type payload の sorted checker detail key を
+記録する。task 111 は task-105 set-enumeration
 equality sidecar の exact
 `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` source だけを supersede し、
 real checker term/formula handoff 後に
 `rejection_reason = "set_enumeration_result_type_payload_gap"` と
 `stable_detail_key =
 "type_elaboration.checker.checker.term.external.result_type_payload"` を使う。
-残る sidecar と task 113 の deferred semantic 部分は、broader set-enumeration
-term payload extraction、imported attribute assertion attribute-chain semantic
+残る sidecar、non-exact task-104 attribute-level non-empty imported attribute
+assertion surface、および task 113 / task 114 の deferred semantic 部分は、
+broader set-enumeration term payload extraction、imported attribute assertion
+attribute-chain semantic
 payload extraction、
 imported attribute-level non-empty assertion attribute-chain/provenance payload extraction、
 equality semantic checking、attribute admissibility/semantic checking、negated attribute

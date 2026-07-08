@@ -311,9 +311,9 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    type assertion theorem source by passing real checker term/formula/asserted
    type payloads before failing on missing numeric type payloads and partial
    formula checking, task 113 supersedes task 103 for the exact imported
-   attribute assertion theorem formula checker bridge, task 104 records
-   attribute-level non-empty imported attribute assertion theorem formula
-   surfaces on the same gap, task 111 supersedes task 105 for the exact
+   attribute assertion theorem formula checker bridge, task 114 supersedes task
+   104 for the exact attribute-level non-empty imported attribute assertion
+   theorem formula checker bridge, task 111 supersedes task 105 for the exact
    set-enumeration theorem formula checker bridge, task 112 supersedes task 99
    for the exact formula connective/quantifier shell checker bridge, task 88
    records a theorem proof block on the
@@ -339,8 +339,8 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    broader type-assertion type payload extraction, type-assertion semantic checking,
    overload payloads, term/formula/proof
    skeleton/statement proof payloads, term inference, formula checking,
-   recorded facts, imported attribute assertion payloads, imported
-   attribute-level non-empty assertion payloads, negated attribute
+   recorded facts, imported attribute assertion semantic payloads, imported
+   attribute-level non-empty assertion semantic payloads, negated attribute
    admissibility/semantic checking, attribute admissibility/semantic checking,
    set-enumeration result-type/sethood payload extraction beyond task 111,
    `formula_statement`, CoreIr, ControlFlowIr,

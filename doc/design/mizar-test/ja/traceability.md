@@ -402,7 +402,7 @@ external-gap case、task 81 の argument-bearing local-attribute external-gap ca
 task 86 の formula-only theorem external-gap case、task 87 の historical
 term-bearing theorem formula external-gap case（task 106 が exact
 `TermFormulaPayloadBoundary: 1 = 1` portion を checker term/formula payload
-bridge と numeric-type / partial-formula diagnostic へ supersede）、task 110 の imported predicate/functor theorem checker bridge、task 108 の builtin membership theorem checker bridge、task 107 の builtin inequality theorem checker bridge、task 109 の builtin type-assertion theorem checker bridge、task 103 の imported attribute assertion theorem formula external-gap case（exact task 113 bridge 外）、task 113 の imported attribute assertion theorem checker bridge、task 104 の attribute-level non-empty imported attribute assertion theorem formula external-gap case、task 111 の exact set-enumeration theorem checker bridge、task 112 の connective/quantifier formula shell checker bridge、task 88 の proof-block theorem external-gap case、
+bridge と numeric-type / partial-formula diagnostic へ supersede）、task 110 の imported predicate/functor theorem checker bridge、task 108 の builtin membership theorem checker bridge、task 107 の builtin inequality theorem checker bridge、task 109 の builtin type-assertion theorem checker bridge、task 103 の imported attribute assertion theorem formula external-gap case（exact task 113 bridge 外）、task 113 の imported attribute assertion theorem checker bridge、task 114 の exact attribute-level non-empty imported attribute assertion theorem checker bridge、task 111 の exact set-enumeration theorem checker bridge、task 112 の connective/quantifier formula shell checker bridge、task 88 の proof-block theorem external-gap case、
 task 89 の statement-proof external-gap case、task 90 の predicate/functor
 definition external-gap case、task 91 の attribute definition external-gap case、
 task 92 の mode/structure definition external-gap case、task 93 の
@@ -564,14 +564,15 @@ term inference、attribute admissibility/semantic checking、formula checking、
 recorded fact、theorem acceptance、imported module AST extraction、
 `formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
 credit しない。
-task 104 の fail case は parser / resolver 実行後の attribute-level non-empty
-imported attribute assertion theorem formula extraction-gap boundary だけを
-credit し、checker term/formula payload extraction、imported attribute-level
-non-empty assertion attribute-chain/provenance payload extraction、term inference、
-negated attribute admissibility/semantic checking、formula checking、recorded
-fact、theorem acceptance、imported module AST extraction、theorem formula 向け
-checker `AttributeInput` payload extraction、`formula_statement` runner support、
-CoreIr、ControlFlowIr、VC、proof payload は credit しない。
+task 114 の fail case は exact attribute-level non-empty imported attribute
+assertion theorem formula について task 104 だけを supersede する。parser /
+resolver 実行後に direct `non` surface と imported `empty` provenance を検証し、
+real checker term/formula payload を渡してから、numeric type payload、negated
+attribute-chain semantic payload extraction、theorem formula 向け checker
+`AttributeInput` payload extraction、term inference、negated attribute
+admissibility/semantic checking、formula checking、recorded fact、theorem
+acceptance、imported module AST extraction、`formula_statement` runner support、
+CoreIr、ControlFlowIr、VC、proof payload の手前で fail closed する。
 task 111 の fail case は parser / resolver 実行後の exact
 `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` checker handoff だけを credit
 する。つまり、4 つの numeral item term、2 つの set-enumeration term、1 つの

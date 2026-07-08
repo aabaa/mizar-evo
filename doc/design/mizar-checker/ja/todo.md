@@ -1813,7 +1813,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
 86. **Source-derived theorem formula extraction-gap boundary を追加する。** [x]
     - `theorem FormulaPayloadBoundary: thesis;` のような formula-only theorem
       source について、専用の active `type_elaboration` boundary を追加する。
-    - Acceptance: parser と resolver は source を実行し、その後 active runner は
+    - Historical acceptance: parser と resolver は source を実行し、その後 active runner は
       `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
       checker-owned theorem/formula payload extraction、local proof context、
       recorded fact、theorem acceptance、CoreIr、ControlFlowIr、VC、proof payload、
@@ -2128,11 +2128,34 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       この task は term/formula payload、imported attribute-level non-empty
       assertion payload、imported module AST extraction、theorem acceptance、
       downstream semantic payload を捏造してはならない。
+      task 114 は exact
+      `ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty`
+      source だけを real checker term/formula handoff で supersede する。
     - 検証: `cargo test -p mizar-test`。
     - 依存: tasks 86、87、98、100、101、102、103。参照: Step 5 source-derived
       semantic bridge、mizar-test task 10、spec 06 attributes、spec 11 symbol
       management、spec 12 modules and namespaces、spec 13 term expressions、
       spec 14 formulas、spec 16 theorems and proofs。
+
+114. **Exact source-derived attribute-level non-empty imported attribute assertion theorem checker bridge を追加する。** [x]
+    - exact active source
+      `import parser.type_fixtures; theorem ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty;`
+      だけで task 104 を supersede する。
+    - Acceptance: parser と resolver は source を実行する。active runner は
+      direct `non` surface と imported `empty` provenance を検証し、1 つの
+      source-derived numeral `TermInput` と 1 つの attribute-assertion
+      `FormulaInput` を抽出し、`TermFormulaChecker` は missing numeric type
+      payload、missing formula / attribute semantic payload、partial formula
+      checking を報告する。この task は imported module AST extraction、negated
+      attribute-chain semantic payload、theorem formula 向け checker
+      `AttributeInput` payload、negated attribute admissibility/semantic
+      checking、formula checking、theorem acceptance、`formula_statement`、
+      CoreIr、ControlFlowIr、VC、proof payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: tasks 86、87、98、100、101、102、103、104。参照: Step 5
+      source-derived semantic bridge、mizar-test task 10、spec 06 attributes、
+      spec 11 symbol management、spec 12 modules and namespaces、spec 13 term
+      expressions、spec 14 formulas、spec 16 theorems and proofs。
 
 105. **Source-derived set-enumeration formula extraction-gap boundary を追加する。** [x]
     - Chapter 13 の set-enumeration term operand と Chapter 14 の builtin

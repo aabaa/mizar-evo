@@ -924,6 +924,13 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) = source_imported_non_empty_attribute_assertion_formula_detail_keys(
+        ast,
+        module.clone(),
+        symbols,
+    ) {
+        return keys;
+    }
     if let Some(keys) = source_set_enumeration_formula_detail_keys(ast, module.clone(), symbols) {
         return keys;
     }
@@ -1141,6 +1148,16 @@ fn source_imported_attribute_assertion_formula_detail_keys(
     Some(term_formula_output_detail_keys(&output))
 }
 
+fn source_imported_non_empty_attribute_assertion_formula_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output =
+        source_imported_non_empty_attribute_assertion_formula_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
 fn source_set_enumeration_formula_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -1262,6 +1279,25 @@ fn source_imported_attribute_assertion_formula_output(
     symbols: &SymbolEnv,
 ) -> Option<TermFormulaInferenceOutput> {
     let payload = extract_source_imported_attribute_assertion_formula(ast, &module, symbols)?;
+    source_imported_attribute_assertion_formula_output_from_payload(ast, module, symbols, payload)
+}
+
+fn source_imported_non_empty_attribute_assertion_formula_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload =
+        extract_source_imported_non_empty_attribute_assertion_formula(ast, &module, symbols)?;
+    source_imported_attribute_assertion_formula_output_from_payload(ast, module, symbols, payload)
+}
+
+fn source_imported_attribute_assertion_formula_output_from_payload(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+    payload: SourceImportedAttributeAssertionFormula,
+) -> Option<TermFormulaInferenceOutput> {
     let binding_env = source_module_binding_env(ast, module).ok()?;
     let context = BindingContextId::new(0);
     let _attribute_symbol = payload.attribute_symbol.clone();
@@ -1669,6 +1705,36 @@ fn extract_source_imported_attribute_assertion_formula(
     module: &ResolverModuleId,
     symbols: &SymbolEnv,
 ) -> Option<SourceImportedAttributeAssertionFormula> {
+    extract_source_imported_attribute_assertion_formula_with_shape(
+        ast,
+        module,
+        symbols,
+        "ImportedAttributeAssertionPayloadBoundary",
+        false,
+    )
+}
+
+fn extract_source_imported_non_empty_attribute_assertion_formula(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceImportedAttributeAssertionFormula> {
+    extract_source_imported_attribute_assertion_formula_with_shape(
+        ast,
+        module,
+        symbols,
+        "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+        true,
+    )
+}
+
+fn extract_source_imported_attribute_assertion_formula_with_shape(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+    expected_label: &str,
+    negative_attribute: bool,
+) -> Option<SourceImportedAttributeAssertionFormula> {
     if ast
         .nodes()
         .iter()
@@ -1692,14 +1758,7 @@ fn extract_source_imported_attribute_assertion_formula(
         return None;
     }
     let theorem_tokens = direct_token_texts(ast, theorem);
-    if theorem_tokens.as_slice()
-        != [
-            "theorem",
-            "ImportedAttributeAssertionPayloadBoundary",
-            ":",
-            ";",
-        ]
-    {
+    if theorem_tokens.as_slice() != ["theorem", expected_label, ":", ";"] {
         return None;
     }
 
@@ -1741,9 +1800,15 @@ fn extract_source_imported_attribute_assertion_formula(
         return None;
     };
     let attribute_ref = ast.node(*attribute_ref_id)?;
-    if !matches!(attribute_ref.kind, SurfaceNodeKind::AttributeRef)
-        || !direct_token_texts(ast, attribute_ref).is_empty()
-    {
+    if !matches!(attribute_ref.kind, SurfaceNodeKind::AttributeRef) {
+        return None;
+    }
+    let attribute_ref_tokens = direct_token_texts(ast, attribute_ref);
+    if negative_attribute {
+        if attribute_ref_tokens.as_slice() != ["non"] {
+            return None;
+        }
+    } else if !attribute_ref_tokens.is_empty() {
         return None;
     }
     let attribute_ref_children = structural_child_ids(ast, attribute_ref);
@@ -4769,10 +4834,12 @@ mod tests {
         extract_source_builtin_type_assertion_formula,
         extract_source_formula_connective_quantifier,
         extract_source_imported_attribute_assertion_formula,
+        extract_source_imported_non_empty_attribute_assertion_formula,
         extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
         resolve_visible_attribute, resolve_visible_type_head,
         source_builtin_type_assertion_formula_output, source_formula_connective_quantifier_output,
         source_imported_attribute_assertion_formula_output,
+        source_imported_non_empty_attribute_assertion_formula_output,
         source_imported_predicate_functor_formula_output, source_set_enumeration_formula_output,
         source_type_elaboration_detail_keys, surface_nodes_with_kind, surface_site,
     };
@@ -9372,6 +9439,209 @@ mod tests {
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
             );
         }
+        let imported_non_empty_attribute_assertion_symbols =
+            imported_empty_fixture_attribute_symbol_env(symbols.module_id().clone());
+        let imported_non_empty_attribute_assertion_theorem =
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            );
+        let imported_non_empty_attribute_assertion_detail_keys = vec![
+            "type_elaboration.checker.checker.formula.external.formula_payload".to_owned(),
+            "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+            "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+        ];
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_non_empty_attribute_assertion_theorem,
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+                &imported_non_empty_attribute_assertion_symbols
+            ),
+            imported_non_empty_attribute_assertion_detail_keys
+        );
+        let imported_non_empty_attribute_assertion_output =
+            source_imported_non_empty_attribute_assertion_formula_output(
+                &imported_non_empty_attribute_assertion_theorem,
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+                &imported_non_empty_attribute_assertion_symbols,
+            )
+            .expect(
+                "exact imported non-empty attribute assertion bridge should produce checker output",
+            );
+        let imported_non_empty_attribute_assertion_payload =
+            extract_source_imported_non_empty_attribute_assertion_formula(
+                &imported_non_empty_attribute_assertion_theorem,
+                imported_non_empty_attribute_assertion_symbols.module_id(),
+                &imported_non_empty_attribute_assertion_symbols,
+            )
+            .expect("exact imported non-empty attribute assertion bridge should extract payload");
+        assert_eq!(
+            imported_non_empty_attribute_assertion_payload
+                .attribute_symbol
+                .module()
+                .path()
+                .as_str(),
+            "parser.type_fixtures"
+        );
+        assert_eq!(
+            imported_non_empty_attribute_assertion_output.terms().len(),
+            1
+        );
+        let (_, checked_non_empty_subject) = imported_non_empty_attribute_assertion_output
+            .terms()
+            .iter()
+            .next()
+            .expect("non-empty attribute assertion subject term should be checked");
+        assert_eq!(checked_non_empty_subject.kind, TermKind::Numeral);
+        assert_eq!(checked_non_empty_subject.status, TermStatus::Partial);
+        assert_eq!(
+            checked_non_empty_subject.site,
+            imported_non_empty_attribute_assertion_payload.subject_site
+        );
+        assert_eq!(checked_non_empty_subject.context, BindingContextId::new(0));
+        assert!(checked_non_empty_subject.candidate_set.is_none());
+        assert_eq!(
+            imported_non_empty_attribute_assertion_output
+                .formulas()
+                .len(),
+            1
+        );
+        let (_, checked_non_empty_formula) = imported_non_empty_attribute_assertion_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("non-empty attribute assertion formula should be checked");
+        assert_eq!(
+            checked_non_empty_formula.site,
+            imported_non_empty_attribute_assertion_payload.formula_site
+        );
+        assert_eq!(
+            checked_non_empty_formula.kind,
+            FormulaKind::AttributeAssertion
+        );
+        assert_eq!(checked_non_empty_formula.status, FormulaStatus::Partial);
+        assert_eq!(checked_non_empty_formula.context, BindingContextId::new(0));
+        assert_eq!(
+            checked_non_empty_formula.terms,
+            vec![
+                imported_non_empty_attribute_assertion_payload
+                    .subject_site
+                    .clone()
+            ]
+        );
+        assert!(checked_non_empty_formula.facts.is_empty());
+        assert_eq!(
+            checked_non_empty_formula.deferred,
+            vec![FormulaDeferredReason::MissingFormulaPayload]
+        );
+        let imported_non_empty_attribute_assertion_gap_cases = [
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "OtherPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "2",
+                "empty",
+            ),
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "TypeCaseAttr",
+            ),
+            imported_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &[],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["other.module"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                &["parser.type_fixtures", "parser.type_fixtures"],
+                "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            reserve_then_imported_non_empty_attribute_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+        ];
+        for gap_case in imported_non_empty_attribute_assertion_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &gap_case,
+                    imported_non_empty_attribute_assertion_symbols
+                        .module_id()
+                        .clone(),
+                    &imported_non_empty_attribute_assertion_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for gap_symbols in [
+            source_local_symbol_env(
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+                "empty",
+                SymbolKind::Attribute,
+            ),
+            local_and_imported_attribute_symbol_env(
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+                "empty",
+            ),
+            imported_empty_fixture_wrong_kind_env(
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+            ),
+            ambiguous_imported_attribute_assertion_env(
+                imported_non_empty_attribute_assertion_symbols
+                    .module_id()
+                    .clone(),
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &imported_non_empty_attribute_assertion_theorem,
+                    gap_symbols.module_id().clone(),
+                    &gap_symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
         let set_enumeration_gap_cases = [
             set_enumeration_equality_theorem_ast(
                 source_id,
@@ -11871,6 +12141,31 @@ mod tests {
         finish_compilation_ast(builder, source_id, items)
     }
 
+    fn imported_non_empty_attribute_assertion_theorem_ast(
+        source_id: SourceId,
+        imports: &[&str],
+        label: &str,
+        subject: &str,
+        attribute: &str,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut items = imports
+            .iter()
+            .map(|import| add_import_item(&mut builder, source_id, &mut offset, import))
+            .collect::<Vec<_>>();
+        items.push(add_attribute_assertion_theorem_item_with_polarity(
+            &mut builder,
+            source_id,
+            &mut offset,
+            label,
+            subject,
+            attribute,
+            true,
+        ));
+        finish_compilation_ast(builder, source_id, items)
+    }
+
     fn reserve_then_imported_attribute_assertion_theorem_ast(
         source_id: SourceId,
         reserve_items: Vec<ReserveItemSpec>,
@@ -11896,6 +12191,36 @@ mod tests {
             "ImportedAttributeAssertionPayloadBoundary",
             "1",
             "empty",
+        ));
+        finish_compilation_ast(builder, source_id, items)
+    }
+
+    fn reserve_then_imported_non_empty_attribute_assertion_theorem_ast(
+        source_id: SourceId,
+        reserve_items: Vec<ReserveItemSpec>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut items = vec![add_import_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            "parser.type_fixtures",
+        )];
+        items.extend(add_reserve_items(
+            &mut builder,
+            source_id,
+            &mut offset,
+            reserve_items,
+        ));
+        items.push(add_attribute_assertion_theorem_item_with_polarity(
+            &mut builder,
+            source_id,
+            &mut offset,
+            "ImportedNonEmptyAttributeAssertionPayloadBoundary",
+            "1",
+            "empty",
+            true,
         ));
         finish_compilation_ast(builder, source_id, items)
     }
@@ -12634,6 +12959,20 @@ mod tests {
         subject: &str,
         attribute: &str,
     ) -> SurfaceBuilderNodeId {
+        add_attribute_assertion_theorem_item_with_polarity(
+            builder, source_id, offset, label, subject, attribute, false,
+        )
+    }
+
+    fn add_attribute_assertion_theorem_item_with_polarity(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        label: &str,
+        subject: &str,
+        attribute: &str,
+        negative_attribute: bool,
+    ) -> SurfaceBuilderNodeId {
         let start = *offset;
         let theorem = add_token(
             builder,
@@ -12666,7 +13005,18 @@ mod tests {
             "is",
         );
         let attribute_start = *offset;
+        let mut attribute_children = Vec::new();
+        if negative_attribute {
+            attribute_children.push(add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                "non",
+            ));
+        }
         let attribute_symbol = add_attribute_symbol(builder, source_id, offset, attribute, false);
+        attribute_children.push(attribute_symbol);
         let attribute_end = builder
             .node_range(attribute_symbol)
             .expect("just-created attribute symbol should exist")
@@ -12674,7 +13024,7 @@ mod tests {
         let attribute_ref = builder.add_node(
             SurfaceNodeKind::AttributeRef,
             range(source_id, attribute_start, attribute_end),
-            vec![attribute_symbol],
+            attribute_children,
         );
         let attribute_chain = builder.add_node(
             SurfaceNodeKind::AttributeTestChain,

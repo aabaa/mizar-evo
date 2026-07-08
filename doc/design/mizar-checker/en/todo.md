@@ -1955,7 +1955,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
 86. **Add source-derived theorem formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a formula-only
       theorem source such as `theorem FormulaPayloadBoundary: thesis;`.
-    - Acceptance: parser and resolver execute the source, then the active
+    - Historical acceptance: parser and resolver execute the source, then the active
       runner reports `type_elaboration.external_dependency.ast_payload_extraction`
       because checker-owned theorem/formula payload extraction, local proof
       contexts, recorded facts, theorem acceptance, CoreIr, ControlFlowIr, VC,
@@ -2291,8 +2291,30 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       not available. The task must not fabricate term/formula payloads, imported
       attribute-level non-empty assertion payloads, imported module AST
       extraction, theorem acceptance, or downstream semantic payloads.
+      Task 114 supersedes only the exact
+      `ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty`
+      source with a real checker term/formula handoff.
     - Verify: `cargo test -p mizar-test`.
     - Deps: tasks 86, 87, 98, 100, 101, 102, and 103. Refs: Step 5
+      source-derived semantic bridge; mizar-test task 10; spec 06 attributes;
+      spec 11 symbol management; spec 12 modules and namespaces; spec 13 term
+      expressions; spec 14 formulas; spec 16 theorems and proofs.
+
+114. **Add exact source-derived attribute-level non-empty imported attribute assertion theorem checker bridge.** [x]
+    - Supersede task 104 only for the exact active source
+      `import parser.type_fixtures; theorem ImportedNonEmptyAttributeAssertionPayloadBoundary: 1 is non empty;`.
+    - Acceptance: parser and resolver execute the source; the active runner
+      validates the direct `non` surface and imported `empty` provenance,
+      extracts one source-derived numeral `TermInput` and one
+      attribute-assertion `FormulaInput`, and `TermFormulaChecker` reports
+      missing numeric type payload, missing formula/attribute semantic payload,
+      and partial formula checking. The task must not fabricate imported module
+      AST extraction, negated attribute-chain semantic payloads,
+      theorem-formula `AttributeInput` payloads, negated attribute
+      admissibility/semantic checking, formula checking, theorem acceptance,
+      `formula_statement`, CoreIr, ControlFlowIr, VC, or proof payloads.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: tasks 86, 87, 98, 100, 101, 102, 103, and 104. Refs: Step 5
       source-derived semantic bridge; mizar-test task 10; spec 06 attributes;
       spec 11 symbol management; spec 12 modules and namespaces; spec 13 term
       expressions; spec 14 formulas; spec 16 theorems and proofs.
