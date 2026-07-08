@@ -1533,7 +1533,7 @@ fn extract_source_builtin_binary_term_formula(
     let config = SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS
         .iter()
         .copied()
-        .find(|config| theorem_tokens.iter().any(|token| token == config.label))?;
+        .find(|config| theorem_tokens.as_slice() == ["theorem", config.label, ":", ";"])?;
 
     let theorem_structural_children = structural_child_ids(ast, theorem);
     let formula_expressions = theorem_structural_children
@@ -4950,9 +4950,9 @@ impl fmt::Display for TypeElaborationCaseStatus {
 #[cfg(test)]
 mod tests {
     use super::{
-        ParseOnlyImportProvider, TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY,
-        assemble_source_checker_handoff, extract_builtin_source_reserve_declarations,
-        extract_source_builtin_type_assertion_formula,
+        ParseOnlyImportProvider, SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS,
+        TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY, assemble_source_checker_handoff,
+        extract_builtin_source_reserve_declarations, extract_source_builtin_type_assertion_formula,
         extract_source_formula_connective_quantifier, extract_source_formula_statement,
         extract_source_imported_attribute_assertion_formula,
         extract_source_imported_non_empty_attribute_assertion_formula,
@@ -10212,6 +10212,26 @@ mod tests {
             ),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
+        for config in SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS {
+            let status_prefixed_builtin_binary_theorem = builtin_binary_theorem_ast_with_status(
+                source_id,
+                "open",
+                config.label,
+                config.left,
+                config.operator,
+                config.right,
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(
+                    &status_prefixed_builtin_binary_theorem,
+                    module.clone(),
+                    &symbols
+                ),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()],
+                "status-prefixed builtin binary theorem should not satisfy exact token guard for {}",
+                config.label
+            );
+        }
         let other_type_assertion_label_theorem = builtin_type_assertion_theorem_ast(
             source_id,
             "OtherPayloadBoundary",
@@ -12204,6 +12224,37 @@ mod tests {
         builder.finish(Some(root), None)
     }
 
+    fn builtin_binary_theorem_ast_with_status(
+        source_id: SourceId,
+        status: &str,
+        label: &str,
+        left: &str,
+        operator: &str,
+        right: &str,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let shape = BuiltinBinaryTheoremShape {
+            label,
+            left,
+            operator,
+            right,
+        };
+        let theorem = add_builtin_binary_theorem_item_with_status(
+            &mut builder,
+            source_id,
+            &mut offset,
+            Some(status),
+            shape,
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
     fn builtin_type_assertion_theorem_ast(
         source_id: SourceId,
         label: &str,
@@ -13207,7 +13258,39 @@ mod tests {
         operator: &str,
         right: &str,
     ) -> SurfaceBuilderNodeId {
+        let shape = BuiltinBinaryTheoremShape {
+            label,
+            left,
+            operator,
+            right,
+        };
+        add_builtin_binary_theorem_item_with_status(builder, source_id, offset, None, shape)
+    }
+
+    struct BuiltinBinaryTheoremShape<'a> {
+        label: &'a str,
+        left: &'a str,
+        operator: &'a str,
+        right: &'a str,
+    }
+
+    fn add_builtin_binary_theorem_item_with_status(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        status: Option<&str>,
+        shape: BuiltinBinaryTheoremShape<'_>,
+    ) -> SurfaceBuilderNodeId {
         let start = *offset;
+        let status_token = status.map(|status| {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                status,
+            )
+        });
         let theorem = add_token(
             builder,
             source_id,
@@ -13220,7 +13303,7 @@ mod tests {
             source_id,
             offset,
             SurfaceTokenKind::Identifier,
-            label,
+            shape.label,
         );
         let colon = add_token(
             builder,
@@ -13230,15 +13313,15 @@ mod tests {
             ":",
         );
         let formula_start = *offset;
-        let left_term = add_numeral_term_expression(builder, source_id, offset, left);
+        let left_term = add_numeral_term_expression(builder, source_id, offset, shape.left);
         let operator = add_token(
             builder,
             source_id,
             offset,
             SurfaceTokenKind::ReservedSymbol,
-            operator,
+            shape.operator,
         );
-        let right_term = add_numeral_term_expression(builder, source_id, offset, right);
+        let right_term = add_numeral_term_expression(builder, source_id, offset, shape.right);
         let formula_end = builder
             .node_range(right_term)
             .expect("just-created right term should exist")
@@ -13264,10 +13347,13 @@ mod tests {
             .node_range(semicolon)
             .expect("just-created semicolon should exist")
             .end;
+        let mut children = Vec::new();
+        children.extend(status_token);
+        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
         builder.add_node(
             SurfaceNodeKind::TheoremItem,
             range(source_id, start, end),
-            vec![theorem, label_token, colon, formula_expression, semicolon],
+            children,
         )
     }
 

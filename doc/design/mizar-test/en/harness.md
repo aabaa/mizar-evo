@@ -445,6 +445,12 @@ partial formula checking. It still does not satisfy the deferred
 desugaring/equality semantic checking, facts, theorem acceptance, CoreIr,
 ControlFlowIr, VC, or proof payloads.
 
+Task 118 tightens the shared builtin-binary theorem producer for tasks 106, 107,
+and 108: exact checker handoff remains limited to direct theorem tokens
+`theorem <label> : ;`, while status-prefixed or extra-token theorem shapes stay
+on `type_elaboration.external_dependency.ast_payload_extraction`. This is a
+guard repair only and does not add active sidecar or traceability coverage.
+
 Task 109 supersedes the exact builtin type-assertion sidecar from task 102:
 `BuiltinTypeAssertionPayloadBoundary: 1 is set` is executable through the
 active `type_elaboration` runner and now passes source-derived checker

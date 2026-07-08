@@ -433,6 +433,13 @@ partial formula checking で fail closed する。これは deferred
 equality semantic checking、fact、theorem acceptance、CoreIr、ControlFlowIr、VC、
 proof payload を credit しない。
 
+task 118 は task 106、107、108 が共有する builtin-binary theorem producer を
+厳密化する。exact checker handoff は direct theorem token が
+`theorem <label> : ;` である場合に限定され、status-prefixed または extra-token
+theorem shape は `type_elaboration.external_dependency.ast_payload_extraction`
+に残る。これは guard repair のみであり、active sidecar や traceability coverage
+は追加しない。
+
 task 109 は task 102 の exact builtin type-assertion theorem sidecar を
 supersede する。active `type_elaboration` runner は real source-derived checker
 `TermInput`、`FormulaInput`、asserted builtin `set` `TypeExpressionInput`

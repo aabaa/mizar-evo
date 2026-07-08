@@ -1896,6 +1896,26 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 86、99、112、115。参照: Step 5 source-derived semantic
       bridge、mizar-test task 10、spec 14 formulas、spec 16 theorems and proofs。
 
+118. **Builtin binary theorem exact-token guard を厳密化する。** [x]
+    - task 106/107/108 が共有する builtin-binary numeral theorem bridge の
+      source-derived producer guard を修正する。active runner は theorem item の
+      direct token slice が exact `theorem <label> : ;` である場合だけ equality、
+      inequality、membership config を選び、追加 theorem token の中に label が含まれる
+      だけでは選ばない。
+    - Acceptance: 既存の exact active `.miz` sidecar と checker term/formula
+      handoff payload は変更しない。status-prefixed または extra-token を持つ
+      builtin-binary theorem shape は
+      `type_elaboration.external_dependency.ast_payload_extraction` に残る。
+    - label、operator、literal、accepted theorem surface を広げてはならず、
+      numeric type payload、formula checking、fact、theorem acceptance、
+      `formula_statement`、CoreIr、ControlFlowIr、VC、proof payload を捏造しては
+      ならない。新しい active sidecar や spec coverage credit は追加しないため、
+      `doc/design/spec_coverage_audit.md` は変更しない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: tasks 106、107、108。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 13 term expressions、spec 14 formulas、spec 16
+      theorems and proofs。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

@@ -2042,6 +2042,27 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       bridge; mizar-test task 10; spec 14 formulas; spec 16 theorems and
       proofs.
 
+118. **Tighten builtin binary theorem exact-token guard.** [x]
+    - Repair the source-derived producer guard for the shared task 106/107/108
+      builtin-binary numeral theorem bridge. The active runner now selects an
+      equality, inequality, or membership config only when the theorem item has
+      the exact direct token slice `theorem <label> : ;`, not merely because the
+      label appears among additional theorem tokens.
+    - Acceptance: the existing exact active `.miz` sidecars and checker
+      term/formula handoff payloads remain unchanged; status-prefixed or
+      otherwise extra-token builtin-binary theorem shapes stay on
+      `type_elaboration.external_dependency.ast_payload_extraction`.
+    - This task must not broaden labels, operators, literals, or accepted
+      theorem surfaces, and must not fabricate numeric type payloads, formula
+      checking, facts, theorem acceptance, `formula_statement`, CoreIr,
+      ControlFlowIr, VC, or proof payloads. It adds no new active sidecar or
+      spec coverage credit, so `doc/design/spec_coverage_audit.md` is
+      unchanged.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: tasks 106, 107, and 108. Refs: Step 5 source-derived semantic
+      bridge; mizar-test task 10; spec 13 term expressions; spec 14 formulas;
+      spec 16 theorems and proofs.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

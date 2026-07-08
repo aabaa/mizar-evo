@@ -315,7 +315,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    partial formula checking, task 107 supersedes task 101 for
    the exact builtin inequality theorem source by passing real checker
    term/formula payloads before failing on missing numeric type payloads and
-   partial formula checking, task 109 supersedes task 102 for the exact builtin
+   partial formula checking, task 118 tightens the shared task 106/107/108
+   builtin-binary producer so only exact direct theorem tokens
+   `theorem <label> : ;` select those bridges, task 109 supersedes task 102 for
+   the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
    type payloads before failing on missing numeric type payloads and partial
    formula checking, task 113 supersedes task 103 for the exact imported

@@ -443,6 +443,12 @@ then fails closed on
 payloads, inequality desugaring or equality semantic checking, recorded facts,
 theorem acceptance, the dedicated `formula_statement` runner, CoreIr,
 ControlFlowIr, VC, and proof payloads are still absent.
+Task 118 tightens the shared task 106/107/108 builtin-binary theorem producer:
+equality, membership, and inequality configs are selected only when the direct
+theorem tokens are exactly `theorem <label> : ;`. Status-prefixed or otherwise
+extra-token theorem shapes remain on
+`type_elaboration.external_dependency.ast_payload_extraction`. This guard-only
+repair adds no new `.miz` sidecar coverage or spec coverage credit.
 Task 109 supersedes the exact builtin `set` portion of task 102:
 `theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` reaches parser and
 resolver execution with a Chapter 13 numeral term and the Chapter 14 builtin

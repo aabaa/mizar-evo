@@ -421,6 +421,12 @@ runner は Chapter 13 の 2 つの numeral operand から real source-derived ch
 numeric type payload、inequality desugaring または equality semantic checking、
 recorded fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
 ControlFlowIr、VC、proof payload はまだ存在しない。
+task 118 は task 106/107/108 が共有する builtin-binary theorem producer を
+厳密化し、direct theorem token が exact `theorem <label> : ;` である場合だけ
+equality、membership、inequality config を選ぶ。status-prefixed または extra-token
+を持つ theorem shape は
+`type_elaboration.external_dependency.ast_payload_extraction` に残る。この
+guard-only repair は新しい `.miz` sidecar coverage や spec coverage credit を追加しない。
 task 109 は task 102 の exact builtin `set` portion を supersede する:
 `theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` は Chapter 13 の numeral
 term と Chapter 14 の builtin type-assertion form を通じて parser / resolver 実行まで
