@@ -2033,6 +2033,23 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 86、87、98。参照: Step 5 source-derived semantic bridge、
       mizar-test task 10、spec 14 formulas、spec 16 theorems and proofs。
 
+100. **Source-derived builtin membership formula extraction-gap boundary を追加する。** [x]
+    - Chapter 14 の builtin membership predicate と Chapter 13 の numeral term
+      operand を使う theorem formula 専用の active `type_elaboration` boundary を
+      追加する。
+    - Acceptance: parser と resolver は source を実行し、その後 active runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+      checker-owned term/formula payload extraction、membership operand type
+      inference/checking、formula checking、recorded fact、theorem acceptance、
+      CoreIr、ControlFlowIr、VC、proof payload、`formula_statement` runner がまだ
+      利用できないためである。この task は term payload、formula payload、
+      membership fact、theorem acceptance、downstream semantic payload を捏造しては
+      ならない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: tasks 86、87、98。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 13 term expressions、spec 14 formulas、spec 16
+      theorems and proofs。
+
 ## 推奨検証
 
 各タスクの後で実行する:

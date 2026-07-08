@@ -400,7 +400,7 @@ task 69、task 70、task 71 の external-gap boundary case、task 75/task 76/tas
 case（task 83 が `R` 部分を supersede し、broader non-`R` case は deferred）、task 79 の imported-mode external-gap case、task 84 / task 85 外の task 80 imported-attribute
 external-gap case、task 81 の argument-bearing local-attribute external-gap case、
 task 86 の formula-only theorem external-gap case、task 87 の term-bearing
-theorem formula external-gap case、task 98 の imported predicate/functor theorem formula external-gap case、task 99 の connective/quantifier theorem formula external-gap case、task 88 の proof-block theorem external-gap case、
+theorem formula external-gap case、task 98 の imported predicate/functor theorem formula external-gap case、task 100 の builtin membership theorem formula external-gap case、task 99 の connective/quantifier theorem formula external-gap case、task 88 の proof-block theorem external-gap case、
 task 89 の statement-proof external-gap case、task 90 の predicate/functor
 definition external-gap case、task 91 の attribute definition external-gap case、
 task 92 の mode/structure definition external-gap case、task 93 の
@@ -530,6 +530,11 @@ theorem formula extraction-gap boundary だけを credit し、imported semantic
 checker term/formula payload extraction、term inference、formula checking、recorded
 fact、theorem acceptance、proof skeleton、`formula_statement` runner support、
 CoreIr、ControlFlowIr、VC、proof payload は credit しない。
+task 100 の fail case は parser / resolver 実行後の builtin membership theorem
+formula extraction-gap boundary だけを credit し、checker term/formula payload
+extraction、membership operand type inference/checking、formula checking、recorded
+fact、theorem acceptance、`formula_statement` runner support、CoreIr、ControlFlowIr、
+VC、proof payload は credit しない。
 task 99 の fail case は parser / resolver 実行後の connective/quantifier theorem
 formula extraction-gap boundary だけを credit し、checker formula payload
 extraction、quantifier binder/context payload、formula checking、recorded fact、

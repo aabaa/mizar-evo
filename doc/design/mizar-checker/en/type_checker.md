@@ -405,6 +405,15 @@ extraction, term inference, formula checking, recorded facts, theorem
 acceptance, the dedicated `formula_statement` runner, CoreIr, ControlFlowIr,
 VC, and proof payloads are still absent. This does not credit imported module
 AST extraction.
+Task 100 records the builtin membership variant of that same term/formula
+boundary: `theorem BuiltinMembershipPayloadBoundary: 1 in 1;` reaches parser
+and resolver execution with Chapter 13 numeral terms and the Chapter 14
+builtin membership predicate, then stays on
+`type_elaboration.external_dependency.ast_payload_extraction` because real
+term/formula payload extraction, membership operand type inference/checking,
+formula checking, recorded facts, theorem acceptance, the dedicated
+`formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof payloads are
+still absent.
 Task 99 records the connective/quantifier formula variant of that theorem
 boundary:
 `theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`

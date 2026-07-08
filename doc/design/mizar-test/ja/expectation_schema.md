@@ -578,16 +578,17 @@ task 86 は formula-only theorem fail sidecar について
 記録するが、`formula_statement` runner、checker theorem/formula payload
 extraction、recorded fact、proof skeleton、CoreIr、ControlFlowIr、VC、proof
 payload は credit しない。
-task 87 と task 98 は term-bearing theorem formula fail sidecar について
+task 87、task 98、task 100 は term-bearing theorem formula fail sidecar について
 `failure_category = "external_dependency_gap"`、
 `rejection_reason = "term_formula_payload_extraction_gap"`、
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
-を許可する。これらの sidecar は、task 87 の numeral / builtin equality と task 98 の
-imported predicate/functor application を含む Chapter 13 term surface と Chapter 14
-atomic formula が parser / resolver 実行へ到達したことを記録するが、imported semantic
-payload、term/formula payload extraction、term inference、formula checking、
-recorded fact、theorem acceptance、`formula_statement` runner、proof skeleton、CoreIr、
-ControlFlowIr、VC、proof payload は credit しない。
+を許可する。これらの sidecar は、task 87 の numeral / builtin equality、task 98 の
+imported predicate/functor application、task 100 の builtin membership を含む
+Chapter 13 term surface と Chapter 14 atomic formula が parser / resolver 実行へ
+到達したことを記録するが、imported semantic payload、term/formula payload extraction、
+membership operand type inference/checking、term inference、formula checking、
+recorded fact、theorem acceptance、`formula_statement` runner、proof skeleton、
+CoreIr、ControlFlowIr、VC、proof payload は credit しない。
 task 99 は formula connective / quantifier theorem fail sidecar について
 `failure_category = "external_dependency_gap"`、
 `rejection_reason = "formula_connective_quantifier_payload_extraction_gap"`、
