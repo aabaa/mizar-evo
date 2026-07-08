@@ -3455,8 +3455,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 47);
-    assert_eq!(report.passed_count(), 47);
+    assert_eq!(report.results.len(), 49);
+    assert_eq!(report.passed_count(), 49);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3466,7 +3466,12 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_attributed_reserve_gap_001"
             && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+                == ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_mixed_reserve_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_structure_qualified_attribute_gap_001"
@@ -3494,6 +3499,16 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
                 == ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
     }));
     assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_imported_empty_positive_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_imported_empty_object_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+    }));
+    assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_imported_structure_gap_001"
             && result.actual_detail_keys
                 == ["type_elaboration.checker.checker.declaration.deferred.evidence_query"]
@@ -3513,11 +3528,6 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_bracket_structure_argument_gap_001"
-            && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
-    }));
-    assert!(report.results.iter().any(|result| {
-        result.id.0 == "fail_type_elaboration_mixed_reserve_gap_001"
             && result.actual_detail_keys
                 == ["type_elaboration.external_dependency.ast_payload_extraction"]
     }));
@@ -7682,8 +7692,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 47"));
-    assert!(stdout.contains("passed: 47"));
+    assert!(stdout.contains("type-elaboration cases: 49"));
+    assert!(stdout.contains("passed: 49"));
     assert!(stdout.contains("failed: 0"));
 }
 

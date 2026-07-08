@@ -756,7 +756,8 @@ fn augment_type_elaboration_import_summaries(
         for (ordinal, exported) in exported_symbols.iter().enumerate() {
             if !matches!(
                 (exported.kind, exported.spelling.as_str()),
-                (UserSymbolKind::Attribute, "TypeCaseAttr")
+                (UserSymbolKind::Attribute, "empty")
+                    | (UserSymbolKind::Attribute, "TypeCaseAttr")
                     | (UserSymbolKind::Mode, "TypeCaseMode")
                     | (UserSymbolKind::Structure, "R")
             ) {
@@ -1903,11 +1904,10 @@ fn extract_builtin_source_type_expression(
     {
         return Err(());
     }
-    if attributes
-        .iter()
-        .any(|attribute| is_imported_fixture_reserve_attribute(symbols, module, &attribute.symbol))
-        && !matches!(head, TypeHeadInput::BuiltinSet)
-    {
+    if attributes.iter().any(|attribute| {
+        is_imported_fixture_reserve_attribute(symbols, module, &attribute.symbol)
+            && !supported_imported_fixture_reserve_attribute_use(symbols, module, &head, attribute)
+    }) {
         return Err(());
     }
     Ok(SourceTypeExpression {
@@ -2182,18 +2182,43 @@ fn is_imported_fixture_reserve_attribute(
     module: &ResolverModuleId,
     symbol: &mizar_resolve::resolved_ast::SymbolId,
 ) -> bool {
-    let Some(entry) = symbols.symbols().get(symbol) else {
-        return false;
-    };
-    let Some(contribution) = symbols.contributions().get(entry.contribution()) else {
-        return false;
-    };
-    symbol.module() != module
+    imported_fixture_reserve_attribute_spelling(symbols, module, symbol).is_some()
+}
+
+fn supported_imported_fixture_reserve_attribute_use(
+    symbols: &SymbolEnv,
+    module: &ResolverModuleId,
+    head: &TypeHeadInput,
+    attribute: &AttributeInput,
+) -> bool {
+    match imported_fixture_reserve_attribute_spelling(symbols, module, &attribute.symbol) {
+        Some("TypeCaseAttr") => matches!(head, TypeHeadInput::BuiltinSet),
+        Some("empty") => {
+            matches!(head, TypeHeadInput::BuiltinSet)
+                && attribute.polarity == AttributePolarity::Negative
+        }
+        _ => false,
+    }
+}
+
+fn imported_fixture_reserve_attribute_spelling<'a>(
+    symbols: &'a SymbolEnv,
+    module: &ResolverModuleId,
+    symbol: &mizar_resolve::resolved_ast::SymbolId,
+) -> Option<&'a str> {
+    let entry = symbols.symbols().get(symbol)?;
+    let contribution = symbols.contributions().get(entry.contribution())?;
+    if symbol.module() != module
         && contribution.module() == symbol.module()
         && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
         && symbol.module().path().as_str() == "parser.type_fixtures"
         && matches!(entry.kind(), SymbolKind::Attribute)
-        && entry.primary_spelling() == "TypeCaseAttr"
+        && matches!(entry.primary_spelling(), "TypeCaseAttr" | "empty")
+    {
+        Some(entry.primary_spelling())
+    } else {
+        None
+    }
 }
 
 fn source_text_from_children(ast: &SurfaceAst, node: &SurfaceNode) -> Option<String> {
@@ -7238,6 +7263,56 @@ mod tests {
                 &attributed,
                 imported_fixture_empty_attribute_symbols.module_id().clone(),
                 &imported_fixture_empty_attribute_symbols
+            ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+        let imported_fixture_positive_empty_attribute = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedSetWithNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_positive_empty_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_empty_object_attribute = reserve_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::AttributedObject)],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_empty_object_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let imported_fixture_empty_local_structure_symbols =
+            local_structure_and_imported_fixture_attribute_symbol_env(
+                symbols.module_id().clone(),
+                "Struct",
+                "empty",
+            );
+        let imported_fixture_empty_local_structure = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedQualifiedSymbol("Struct"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_empty_local_structure,
+                imported_fixture_empty_local_structure_symbols
+                    .module_id()
+                    .clone(),
+                &imported_fixture_empty_local_structure_symbols
             ),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );

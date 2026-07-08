@@ -336,11 +336,16 @@ downstream CoreIr/ControlFlowIr/VC/proof payloads.
 Task 80 historically recorded the imported-attribute analogue as the same
 external extraction-gap boundary. Task 84 supersedes that boundary only for the
 documented `parser.type_fixtures` `TypeCaseAttr` reserve attribute by passing
-the real imported `SymbolKind::Attribute` as a checker `AttributeInput`;
-broader imported attributes outside that Task84 bridge remain deferred until
-source-derived fixtures and payload producers exist. The bridge must not treat
-that imported summary as real imported module AST extraction, must not
-fabricate attributed-type evidence, positive attributed type elaboration, or
+the real imported `SymbolKind::Attribute` as a checker `AttributeInput`, and
+task 85 supersedes it only for the existing negative `empty`/builtin-`set`
+fixture by passing the real imported `empty` attribute as a negative checker
+`AttributeInput`; broader imported attributes outside those bridges remain
+deferred until source-derived fixtures and payload producers exist. Active
+runner sidecars now pin positive `empty set` and imported `empty` on builtin
+`object` to the external extraction-gap boundary. The bridge
+must not treat that imported summary as real imported module AST extraction,
+must not fabricate attributed-type evidence, positive attributed type
+elaboration, positive `empty set`, imported `empty` on non-`set` heads, or
 downstream CoreIr/ControlFlowIr/VC/proof payloads.
 Task 84 records the imported-attribute provenance bridge: `TypeCaseAttr` from
 the documented `parser.type_fixtures` import summary reaches declaration
@@ -350,6 +355,17 @@ attributed-type existential/evidence payloads are still absent. This does not
 credit positive imported attributed type elaboration, imported module AST
 extraction, generic imported attributes such as `empty`, structure-qualified
 attribute owner provenance, or attribute arguments.
+Task 85 records the next imported-attribute provenance slice: the existing
+`non empty set` fixture may pass the documented `parser.type_fixtures` imported
+attribute `empty` as a negative checker `AttributeInput` on builtin `set`, then
+fail closed on the same evidence-query diagnostic. This supersedes the broader
+task-80 payload gap only for that negative `empty`/builtin-`set` source shape.
+Positive `empty set` and imported attributes on `object` remain active
+external-gap boundary fixtures. It does not credit positive `empty set`,
+imported attributes on `object` or
+local symbol heads, imported module AST extraction, attributed-type evidence,
+positive imported attributed type elaboration, structure-qualified owner
+provenance, attribute arguments, or downstream payloads.
 Task 81 records the same extraction-gap boundary for a same-module
 argument-bearing local attribute surface: a declaration-site attribute written
 with Chapter 6 `param_prefix` syntax, such as `attr RankedDef: x is 2-ranked`,

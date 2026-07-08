@@ -568,7 +568,8 @@ extraction only; it still does not credit imported module AST extraction,
 `ModeExpansion` payloads, positive mode elaboration, CoreIr, ControlFlowIr, VC,
 or proof payloads.
 Task 80 permits broader imported attribute reserve fail sidecars outside the
-task-84 `TypeCaseAttr` bridge to use
+task-84 `TypeCaseAttr` bridge and task-85 negative `empty`/builtin-`set` bridge
+to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "imported_attribute_payload_gap"` and
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
@@ -587,6 +588,22 @@ imported module AST extraction, attributed-type existential/evidence payloads,
 positive imported attributed type elaboration, generic imported attributes,
 qualified owner provenance, attribute arguments, CoreIr, ControlFlowIr, VC, or
 proof payloads.
+Task 85 permits the existing `non empty set` sidecar to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "imported_empty_attribute_evidence_payload_gap"` and
+`stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"`
+after the active runner passes the real imported `empty` attribute provenance
+and negative no-argument checker `AttributeInput` payload over builtin `set`.
+This sidecar does not credit imported module AST extraction, attributed-type
+existential/evidence payloads, positive `empty set`, imported `empty` on
+non-`set` heads, broader imported attributes, qualified owner provenance,
+attribute arguments, CoreIr, ControlFlowIr, VC, or proof payloads.
+Separate task-85 boundary sidecars for positive `empty set` and
+`non empty object` keep
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
+with `rejection_reason = "positive_imported_empty_attribute_payload_gap"` or
+`"imported_empty_non_set_head_payload_gap"`; they document unsupported payload
+shapes and do not credit checker `AttributeInput` handoff.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

@@ -283,7 +283,13 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    imported attribute provenance/`AttributeInput` payloads to the checker
    evidence-query diagnostic while keeping imported module AST extraction,
    attributed-type evidence, generic imported attributes, owner provenance,
-   arguments, and downstream payloads deferred).
+   arguments, and downstream payloads deferred, and task 85 promotes the
+   imported negative `empty`/builtin-`set` reserve boundary just far enough to
+   pass real imported attribute provenance/negative `AttributeInput` payloads
+   to the checker evidence-query diagnostic while keeping active positive
+   `empty set` and `non empty object` boundary sidecars, broader non-`set`
+   heads, imported module AST extraction, attributed-type evidence, owner
+   provenance, arguments, and downstream payloads on extraction/deferred gaps).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate
 semantic payloads; promote corpus rows only with prepared consumers.

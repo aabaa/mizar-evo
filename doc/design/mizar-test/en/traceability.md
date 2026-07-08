@@ -390,11 +390,15 @@ imported mode provenance and type-head payload extraction, but not imported
 module AST extraction, `ModeExpansion` payloads, positive mode elaboration,
 CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 80 may credit only the imported-attribute reserve external-gap boundary
-outside the task-84 `TypeCaseAttr` bridge: future broader imported-attribute
-cases observe `type_elaboration.external_dependency.ast_payload_extraction` and
-do not credit real imported attribute provenance, `AttributeInput` payload
+outside the task-84 `TypeCaseAttr` bridge and task-85 negative
+`empty`/builtin-`set` bridge: future broader imported-attribute cases observe
+`type_elaboration.external_dependency.ast_payload_extraction` and do not credit
+real imported attribute provenance, `AttributeInput` payload
 extraction, attributed-type evidence, positive attributed type elaboration,
 CoreIr, ControlFlowIr, VC, or proof payloads.
+The task-85 positive `empty set` and `non empty object` sidecars are active
+members of this boundary, not evidence for the negative `empty`/builtin-`set`
+bridge.
 Task 84 may credit the imported-attribute provenance/`AttributeInput` bridge
 only: the runner observes
 `type_elaboration.checker.checker.declaration.deferred.evidence_query` for the
@@ -406,6 +410,19 @@ extraction, attributed-type existential/evidence payloads, positive imported
 attributed type elaboration, generic imported attributes such as `empty`,
 structure-qualified attribute owner provenance, attribute arguments, CoreIr,
 ControlFlowIr, VC, or proof payloads.
+Task 85 may credit the imported negative `empty` attribute provenance/
+`AttributeInput` bridge only: the runner observes
+`type_elaboration.checker.checker.declaration.deferred.evidence_query` for the
+existing `non empty set` fixture after passing the real imported
+`SymbolKind::Attribute` symbol `empty` as a negative checker `AttributeInput`
+over builtin `set`. It credits imported attribute provenance and argument-free
+negative `AttributeInput` payload extraction for that fixture only, but not
+imported module AST extraction, attributed-type existential/evidence payloads,
+positive `empty set`, imported `empty` on non-`set` heads, broader imported
+attributes, structure-qualified attribute owner provenance, attribute
+arguments, CoreIr, ControlFlowIr, VC, or proof payloads.
+The active positive and non-`set` fixtures therefore remain traceable to the
+task-80 external-gap row.
 Task 81 may credit only the argument-bearing local-attribute extraction-gap
 boundary: the runner observes
 `type_elaboration.external_dependency.ast_payload_extraction` for a
@@ -421,8 +438,9 @@ The supported reserve slices above, excluding task 67, task 68, task 69, task
 70, task 71 external-gap boundary cases, the task 75/task 76/task 77
 lower-stage boundary cases, the task 78 imported-structure external-gap case,
 the task 79 imported-mode external-gap case, the task 80 imported-attribute
-external-gap case outside task 84, and the task 81 argument-bearing local-attribute external-gap
-case, are converted into a syntax-free checker source reserve payload, then the
+external-gap case outside task 84 and task 85, and the task 81 argument-bearing
+local-attribute external-gap case, but including the task 85 imported negative
+`empty`/builtin-`set` provenance slice, are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one
 `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites,
 and `DeclarationChecker` output.
@@ -507,14 +525,20 @@ credit only the imported mode extraction-gap boundary outside the task-82
 and checker type-head payload extraction only; they do not credit imported
 module AST extraction, imported mode expansion, arity checking, positive
 imported mode elaboration, or downstream payload promotion. Task 80 fail cases
-outside the task-84 `TypeCaseAttr` bridge credit only the imported attribute
-extraction-gap boundary and do not credit real imported attribute provenance or
+outside the task-84 `TypeCaseAttr` bridge and task-85 negative
+`empty`/builtin-`set` bridge credit only the imported attribute extraction-gap
+boundary and do not credit real imported attribute provenance or
 attributed-type evidence. Task 84 fail cases credit real imported attribute
 provenance and checker `AttributeInput` payload extraction only; they do not
 credit imported module AST extraction, attributed-type existential/evidence
 payloads, positive imported attributed type elaboration, generic imported
 attributes, qualified owner provenance, attribute arguments, or downstream
-payload promotion. Task 81 fail
+payload promotion. Task 85 fail cases credit real imported negative `empty`
+provenance and checker `AttributeInput` payload extraction only for builtin
+`set`; positive `empty set`, `non empty object`, broader imported attributes,
+imported module AST extraction, attributed-type evidence, owner provenance,
+attribute arguments, and downstream payloads remain extraction/deferred gaps.
+Task 81 fail
 cases credit only the argument-bearing local-attribute extraction-gap boundary
 and do not credit real term-argument provenance, checker `AttributeInput`
 argument payloads, attributed-type evidence, or positive attributed type

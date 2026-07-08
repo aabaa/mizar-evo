@@ -321,11 +321,16 @@ task 80 は imported-attribute 類似 case を historical に同じ external
 extraction-gap boundary として記録した。task 84 は documented
 `parser.type_fixtures` `TypeCaseAttr` reserve attribute だけについて real
 imported `SymbolKind::Attribute` を checker `AttributeInput` として渡すことで、
-その boundary を上書きする。task-84 bridge 外の broader imported attribute は、
-source-derived fixture と payload producer が存在するまで deferred のままとする。
-bridge はこの import summary を real imported module AST extraction と扱っては
-ならず、attributed-type evidence、positive attributed type elaboration、
-CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。
+その boundary を上書きする。task 85 は既存 negative `empty`/builtin-`set`
+fixture だけについて real imported `empty` attribute を negative checker
+`AttributeInput` として渡すことで同じ boundary を上書きする。task-84 / task-85
+bridge 外の broader imported attribute は、source-derived fixture と payload producer
+が存在するまで deferred のままとする。active runner sidecar は positive
+`empty set` と builtin `object` 上の imported `empty` を external
+extraction-gap boundary に固定する。bridge はこの import summary を real
+imported module AST extraction と扱ってはならず、attributed-type evidence、positive
+attributed type elaboration、positive `empty set`、non-`set` head 上の imported
+`empty`、CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。
 task 84 は imported-attribute provenance bridge を記録する。documented
 `parser.type_fixtures` import summary 由来の `TypeCaseAttr` は builtin `set` 上の
 imported attribute payload として declaration checking に到達し、attributed-type
@@ -334,6 +339,16 @@ existential/evidence payload がまだ存在しないため
 closed する。これは positive imported attributed type elaboration、imported
 module AST extraction、`empty` のような generic imported attribute、
 structure-qualified attribute owner provenance、attribute argument を credit しない。
+task 85 は次の imported-attribute provenance slice を記録する。既存の
+`non empty set` fixture は、documented `parser.type_fixtures` imported attribute
+`empty` を builtin `set` 上の negative checker `AttributeInput` として渡してよく、
+同じ evidence-query diagnostic で fail closed する。これは broader task-80
+payload gap を、その negative `empty` / builtin-`set` source shape についてだけ
+上書きする。positive `empty set` と `object` 上の imported attribute は active
+external-gap boundary fixture のままである。positive `empty set`、`object` や
+local symbol head 上の imported attribute、imported module AST extraction、attributed-type evidence、positive
+imported attributed type elaboration、structure-qualified owner provenance、
+attribute argument、downstream payload は credit しない。
 task 81 は same-module argument-bearing local attribute surface について同じ
 extraction-gap boundary を記録する。`attr RankedDef: x is 2-ranked` のように
 Chapter 6 の `param_prefix` 構文で書かれた declaration-site attribute と、

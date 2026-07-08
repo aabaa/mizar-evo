@@ -290,10 +290,11 @@ Keep `cargo test -p mizar-test` green after each task (see
       task 80's imported attribute reserve extraction-gap boundary, checker
       task 81's argument-bearing local attribute reserve extraction-gap
       boundary plus declaration-symbol suffix projection, checker task
-      82's imported mode reserve provenance bridge, and checker task 83's
-      imported structure reserve provenance bridge, and checker task 84's
-      imported attribute reserve provenance bridge as prepared/implemented
-      increments.
+      82's imported mode reserve provenance bridge, checker task 83's
+      imported structure reserve provenance bridge, checker task 84's
+      imported attribute reserve provenance bridge, and checker task 85's
+      imported non-empty attribute reserve provenance bridge as
+      prepared/implemented increments.
       Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
       `paced/open`; no placeholder runner or fake active fixture is created for
@@ -424,7 +425,8 @@ Keep `cargo test -p mizar-test` green after each task (see
       `TypedAst` and `ResolvedTypedAst`. Shared source type ranges such as
       `reserve x, y for set` keep distinct typed sites for each binding.
     - Unsupported non-builtin declarations, imported attribute provenance beyond
-      the task-84 `TypeCaseAttr` bridge and task-80 boundary, imported structure provenance beyond the task-83
+      the task-84 `TypeCaseAttr` bridge, task-85 negative `empty`/builtin-`set`
+      bridge, and task-80 boundary, imported structure provenance beyond the task-83
       `R` bridge and task-78 boundary, imported mode expansion payloads beyond
       task 82's provenance bridge, attribute argument payloads beyond the task-81 boundary,
       attributed or argument-bearing

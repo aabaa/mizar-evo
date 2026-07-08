@@ -7,14 +7,18 @@ source = "fail_type_elaboration_mixed_reserve_gap_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "mixed_supported_and_unsupported_reserve_payloads"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "imported_empty_attribute_evidence_payload_gap"
+stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.checker.declaration.deferred.evidence_query",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
-  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.03.type_expressions.imported_empty_attribute_provenance_bridge",
+  "spec.en.06.attributes.imported_empty_attribute_evidence_payload_gap",
+  "spec.en.11.symbol_management.imported_empty_attribute_provenance_bridge",
+  "spec.en.12.modules.imported_empty_attribute_provenance_bridge",
+  "spec.en.checker.type_elaboration.imported_empty_attribute_provenance_bridge",
 ]
-notes = "Active type_elaboration runner boundary coverage: a source containing both supported builtin reserve declarations and an import-backed attributed reserve type must keep the whole handoff on the source-to-checker payload extraction gap instead of partially accepting the supported binding."
+notes = "Active type_elaboration runner boundary coverage for checker task 85: a source containing both supported builtin reserve declarations and an imported negative `empty` attribute over builtin `set` carries the real imported AttributeInput payload to declaration checking. It still lacks imported module AST extraction and attributed-type existential/evidence payloads, so it must fail closed on the checker evidence-query diagnostic instead of accepting the attributed type or promoting CoreIr/ControlFlowIr/VC/proof payloads."

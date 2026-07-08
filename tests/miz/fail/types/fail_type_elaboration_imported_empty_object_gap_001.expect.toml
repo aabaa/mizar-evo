@@ -1,0 +1,24 @@
+schema_version = 1
+id = "fail_type_elaboration_imported_empty_object_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_imported_empty_object_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "imported_empty_non_set_head_payload_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.03.type_expressions.imported_attribute_payload_gap",
+  "spec.en.06.attributes.imported_attribute_payload_gap",
+  "spec.en.11.symbol_management.imported_attribute_payload_gap",
+  "spec.en.12.modules.imported_attribute_payload_gap",
+  "spec.en.checker.type_elaboration.payload_extraction.imported_attribute_gap",
+]
+notes = "Active type_elaboration runner boundary coverage for checker task 85: the documented parser.type_fixtures imported attribute `empty` is parser/resolver executable as a negative attribute on builtin `object`, but imported `empty` on non-`set` heads remains outside the imported negative-empty bridge and must stay on the source-to-checker payload extraction gap."

@@ -1684,10 +1684,11 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 既存の `parser.type_fixtures` import summary が提供する imported
       attribute symbol を attribute として持つ reserve type の active fail coverage
       を追加する。
-    - Acceptance: task 84 より前は、active type-elaboration runner は
+    - Acceptance: task 84 / task 85 より前は、active type-elaboration runner は
       `type_elaboration.external_dependency.ast_payload_extraction` を報告した。
-      task 84 が documented `TypeCaseAttr` 部分を supersede した後も、その bridge
-      外の broader imported attribute は imported attribute provenance、
+      task 84 が documented `TypeCaseAttr` 部分を、task 85 が negative
+      `empty`/builtin-`set` 部分を supersede した後も、それらの bridge 外の
+      broader imported attribute は imported attribute provenance、
       `AttributeInput` payload、attributed-type evidence、positive attributed type
       elaboration、より広い imported attribute semantics を捏造せず、CoreIr、
       ControlFlowIr、VC、proof payload へ昇格しない。この task は generic
@@ -1783,6 +1784,30 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
     - 依存: tasks 48、50、67、80、83。参照: Step 5 source-derived semantic
       bridge、mizar-test task 10、spec 03 type expressions、spec 06 attributes、
+      spec 11 symbol management、spec 12 modules and namespaces。
+
+85. **Source-derived imported non-empty attribute reserve provenance bridge を追加する。** [x]
+    - 既存 task-80 の imported-attribute reserve boundary を、active
+      `type_elaboration` runner が `non empty set` について documented
+      `parser.type_fixtures` import-summary 由来の `empty` attribute symbol を
+      builtin `set` 上の negative checker `AttributeInput` として渡せるところまでだけ
+      昇格する。
+    - Acceptance: checker reserve bridge は `empty` が `SymbolEnv` で可視であり、
+      `SymbolKind::Attribute` を持ち、`parser.type_fixtures` の `ImportedSource`
+      contribution に裏付けられ、negative polarity で builtin `set` に付いていることを
+      検証する。既存 `fail_type_elaboration_attributed_reserve_gap_001` fixture は
+      `type_elaboration.external_dependency.ast_payload_extraction` ではなく
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query` に到達する。
+      imported module AST extraction と attributed-type existential/evidence payload は
+      まだ存在しないためである。この task は imported module AST extraction、
+      attributed-type evidence、positive `empty set` elaboration、non-`set` head 上の
+      imported `empty`、CoreIr、ControlFlowIr、VC、proof payload を捏造してはならず、
+      positive `empty set` と `non empty object` の active boundary sidecar、
+      attribute argument、qualified owner provenance、broader imported attribute は既存
+      gap に残す。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、50、80、84。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 03 type expressions、spec 06 attributes、
       spec 11 symbol management、spec 12 modules and namespaces。
 
 ## 推奨検証

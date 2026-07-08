@@ -2958,13 +2958,21 @@ impl SourceReserveDeclarationBridge {
                     && contribution.module() == attribute.symbol.module()
                     && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
                     && attribute.symbol.module().path().as_str() == "parser.type_fixtures"
-                    && entry.primary_spelling() == "TypeCaseAttr";
-                if imported_fixture_attribute
-                    && !matches!(binding.type_head, TypeHeadInput::BuiltinSet)
-                {
-                    return Err(format!(
-                        "source reserve binding {index} imported fixture attribute {attribute_index} is supported only on builtin set"
-                    ));
+                    && matches!(entry.primary_spelling(), "TypeCaseAttr" | "empty");
+                if imported_fixture_attribute {
+                    let supported_imported_fixture_attribute = match entry.primary_spelling() {
+                        "TypeCaseAttr" => matches!(binding.type_head, TypeHeadInput::BuiltinSet),
+                        "empty" => {
+                            matches!(binding.type_head, TypeHeadInput::BuiltinSet)
+                                && attribute.polarity == AttributePolarity::Negative
+                        }
+                        _ => false,
+                    };
+                    if !supported_imported_fixture_attribute {
+                        return Err(format!(
+                            "source reserve binding {index} imported fixture attribute {attribute_index} is not supported for this source type expression"
+                        ));
+                    }
                 }
                 if !local_source_attribute && !imported_fixture_attribute {
                     return Err(format!(
@@ -7408,6 +7416,37 @@ mod tests {
                 .is_err(),
             "imported source attribute payloads must fail closed at the checker seam"
         );
+        let generic_imported_set_attribute_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 17),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 17),
+                    "non empty set",
+                    TypeHeadInput::BuiltinSet,
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    imported_attribute.clone(),
+                    AttributePolarity::Negative,
+                    range(source, 4, 13),
+                    "non empty",
+                )]),
+            ],
+        )
+        .expect("generic imported attribute over builtin set should validate shape");
+        assert!(
+            generic_imported_set_attribute_bridge
+                .check(&symbol_env_with_imported_symbol(
+                    imported_attribute.clone(),
+                    SymbolKind::Attribute,
+                    "empty",
+                ))
+                .is_err(),
+            "generic imported attributes must not be accepted by the parser fixture bridge"
+        );
 
         let imported_fixture_attribute = SymbolId::new(
             ModuleId::new(
@@ -7561,6 +7600,192 @@ mod tests {
                 ))
                 .is_err(),
             "imported TypeCaseAttr must not bridge attributed local symbol heads"
+        );
+
+        let imported_fixture_empty_attribute = SymbolId::new(
+            ModuleId::new(
+                PackageId::new("pkg"),
+                ModulePath::new("parser.type_fixtures"),
+            ),
+            LocalSymbolId::new("empty/0"),
+            FullyQualifiedName::new("pkg::parser.type_fixtures::empty/0"),
+        );
+        let imported_fixture_empty_attribute_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 22),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 17),
+                    "non empty set",
+                    TypeHeadInput::BuiltinSet,
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    imported_fixture_empty_attribute.clone(),
+                    AttributePolarity::Negative,
+                    range(source, 4, 13),
+                    "non empty",
+                )]),
+            ],
+        )
+        .expect("imported fixture empty attribute payload shape should validate");
+        let imported_fixture_empty_attribute_handoff = imported_fixture_empty_attribute_bridge
+            .check(&symbol_env_with_imported_symbol(
+                imported_fixture_empty_attribute.clone(),
+                SymbolKind::Attribute,
+                "empty",
+            ))
+            .expect("imported negative empty over builtin set should pass provenance validation");
+        assert_eq!(
+            diagnostic_ranges(
+                imported_fixture_empty_attribute_handoff.declarations(),
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        let imported_fixture_empty_attribute_declaration =
+            declarations_by_binding(imported_fixture_empty_attribute_handoff.declarations())
+                .remove(&BindingId::new(0))
+                .expect("checked imported empty declaration should exist");
+        let imported_fixture_empty_attribute_type_entry = imported_fixture_empty_attribute_handoff
+            .declarations()
+            .type_entries()
+            .get(
+                imported_fixture_empty_attribute_declaration
+                    .type_entry
+                    .expect("imported empty declaration should keep a type entry"),
+            )
+            .expect("imported empty type entry should exist");
+        let TypeEntryActual::Known(imported_fixture_empty_attribute_normalized_id) =
+            imported_fixture_empty_attribute_type_entry.actual
+        else {
+            panic!("imported fixture empty should keep a normalized type");
+        };
+        let imported_fixture_empty_attribute_normalized = imported_fixture_empty_attribute_handoff
+            .declarations()
+            .normalized_types()
+            .get(imported_fixture_empty_attribute_normalized_id)
+            .expect("normalized imported fixture empty type should exist");
+        assert_eq!(
+            imported_fixture_empty_attribute_normalized.status,
+            NormalizedTypeStatus::Known
+        );
+        assert_eq!(
+            imported_fixture_empty_attribute_normalized
+                .attributes
+                .negative()
+                .len(),
+            1
+        );
+        assert_eq!(
+            imported_fixture_empty_attribute_normalized
+                .attributes
+                .negative()[0]
+                .symbol,
+            imported_fixture_empty_attribute
+        );
+        assert!(
+            imported_fixture_empty_attribute_handoff
+                .declarations()
+                .facts()
+                .is_empty(),
+            "imported negative empty reserve heads must not seed facts without evidence"
+        );
+        let imported_fixture_positive_empty_attribute_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 18),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 13),
+                    "empty set",
+                    TypeHeadInput::BuiltinSet,
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    imported_fixture_empty_attribute.clone(),
+                    AttributePolarity::Positive,
+                    range(source, 4, 9),
+                    "empty",
+                )]),
+            ],
+        )
+        .expect("positive imported fixture empty payload shape should validate");
+        assert!(
+            imported_fixture_positive_empty_attribute_bridge
+                .check(&symbol_env_with_imported_symbol(
+                    imported_fixture_empty_attribute.clone(),
+                    SymbolKind::Attribute,
+                    "empty",
+                ))
+                .is_err(),
+            "positive imported empty remains outside the task-85 bridge"
+        );
+        let imported_fixture_empty_object_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 25),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 20),
+                    "non empty object",
+                    TypeHeadInput::BuiltinObject,
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    imported_fixture_empty_attribute.clone(),
+                    AttributePolarity::Negative,
+                    range(source, 4, 13),
+                    "non empty",
+                )]),
+            ],
+        )
+        .expect("imported fixture empty over object should validate shape before provenance");
+        assert!(
+            imported_fixture_empty_object_bridge
+                .check(&symbol_env_with_imported_symbol(
+                    imported_fixture_empty_attribute.clone(),
+                    SymbolKind::Attribute,
+                    "empty",
+                ))
+                .is_err(),
+            "imported empty is source-supported only for negative builtin set"
+        );
+        let imported_fixture_empty_structure_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 25),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 20),
+                    "non empty Struct",
+                    TypeHeadInput::Symbol(symbol_id("Struct/0", "pkg::main::Struct/0")),
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    imported_fixture_empty_attribute.clone(),
+                    AttributePolarity::Negative,
+                    range(source, 4, 13),
+                    "non empty",
+                )]),
+            ],
+        )
+        .expect("imported fixture empty over a symbol head should validate shape");
+        assert!(
+            imported_fixture_empty_structure_bridge
+                .check(&symbol_env_with_local_structure_and_imported_symbol(
+                    symbol_id("Struct/0", "pkg::main::Struct/0"),
+                    imported_fixture_empty_attribute.clone(),
+                    SymbolKind::Attribute,
+                    "empty",
+                ))
+                .is_err(),
+            "imported empty must not bridge attributed local symbol heads"
         );
 
         let wrong_kind_attribute = symbol_id("empty/0", "pkg::main::empty/0");
