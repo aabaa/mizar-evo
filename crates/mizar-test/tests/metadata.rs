@@ -20,8 +20,8 @@ use mizar_session::{
 use mizar_test::{
     CoverageShape, DiscoveryConfig, ExpectedOutcome, PipelinePhase, RequirementStatus, Stage,
     TestKind, TestPlan, TestProfile, ValidationMode, active_parse_only_cases,
-    architecture22_scenario_specs, build_test_plan, run_declaration_symbol_corpus,
-    run_parse_only_corpus, run_type_elaboration_corpus,
+    active_type_elaboration_cases, architecture22_scenario_specs, build_test_plan,
+    run_declaration_symbol_corpus, run_parse_only_corpus, run_type_elaboration_corpus,
 };
 
 static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
@@ -3452,11 +3452,24 @@ fn plus_functor_declaration_symbol_payloads() -> Vec<String> {
 
 #[test]
 fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
-    let report = run_type_elaboration_corpus(&repository_config()).unwrap();
+    let config = repository_config();
+    let plan = build_test_plan(&config).unwrap();
+    let inline_definition_case = active_type_elaboration_cases(&plan)
+        .find(|case| case.id.0 == "fail_type_elaboration_inline_definition_gap_001")
+        .expect("Task94 inline definition boundary should be active");
+    assert_eq!(
+        inline_definition_case
+            .expectation
+            .rejection_reason
+            .as_deref(),
+        Some("inline_definition_payload_extraction_gap")
+    );
+
+    let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 57);
-    assert_eq!(report.passed_count(), 57);
+    assert_eq!(report.results.len(), 58);
+    assert_eq!(report.passed_count(), 58);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3568,6 +3581,11 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_proof_local_declaration_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_inline_definition_gap_001"
             && result.actual_detail_keys
                 == ["type_elaboration.external_dependency.ast_payload_extraction"]
     }));
@@ -7732,8 +7750,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 57"));
-    assert!(stdout.contains("passed: 57"));
+    assert!(stdout.contains("type-elaboration cases: 58"));
+    assert!(stdout.contains("passed: 58"));
     assert!(stdout.contains("failed: 0"));
 }
 

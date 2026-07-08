@@ -613,6 +613,15 @@ task 93 は proof-local declaration statement fail sidecar について
 context、formula/term payload、RHS term inference、reconsider coercion /
 obligation evidence、recorded fact、theorem acceptance、`formula_statement`
 runner、CoreIr、ControlFlowIr、VC、proof payload は credit しない。
+task 94 は proof-local inline definition fail sidecar について
+`failure_category = "external_dependency_gap"`、
+`rejection_reason = "inline_definition_payload_extraction_gap"`、
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
+を許可する。これらの sidecar は theorem proof 内の `deffunc` と `defpred`
+statement が parser / resolver 実行へ到達したことを記録するが、inline
+definition formal/body payload extraction、local abbreviation expansion、term /
+formula body payload、guard evidence、recorded fact、theorem acceptance、`formula_statement` runner、
+CoreIr、ControlFlowIr、VC、proof payload は credit しない。
 task 90 は predicate/functor definition fail sidecar について
 `failure_category = "external_dependency_gap"`、
 `rejection_reason = "definition_declaration_payload_extraction_gap"`、

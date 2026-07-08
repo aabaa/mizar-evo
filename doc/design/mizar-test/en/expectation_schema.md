@@ -650,6 +650,15 @@ execution, but they do not credit proof-local declaration payload extraction,
 local proof context, formula/term payloads, RHS term inference, reconsider
 coercion/obligation evidence, recorded facts, theorem acceptance, a
 `formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 94 permits proof-local inline definition fail sidecars to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "inline_definition_payload_extraction_gap"` and
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
+These sidecars document that `deffunc` and `defpred` statements inside a theorem
+proof reached parser/resolver execution, but they do not credit inline
+definition formal/body payload extraction, local abbreviation expansion,
+term/formula body payloads, guard evidence, recorded facts, theorem acceptance, a
+`formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 90 permits predicate/functor definition fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "definition_declaration_payload_extraction_gap"` and

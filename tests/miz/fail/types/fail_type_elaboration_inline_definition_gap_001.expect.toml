@@ -1,0 +1,23 @@
+schema_version = 1
+id = "fail_type_elaboration_inline_definition_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_inline_definition_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "inline_definition_payload_extraction_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.15.statements.inline_definition_payload_gap",
+  "spec.en.16.theorems_and_proofs.inline_definition_payload_gap",
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.inline_definition_gap",
+]
+notes = "Active type_elaboration runner boundary coverage for checker task 94: a theorem proof containing proof-local deffunc and defpred inline definitions is parser/resolver executable, but the checker-owned source bridge lacks real inline definition formal/body payload extraction, local abbreviation expansion, term and formula body payloads, guard evidence, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and the dedicated formula_statement runner, so it must stay on the source-to-checker payload extraction gap."

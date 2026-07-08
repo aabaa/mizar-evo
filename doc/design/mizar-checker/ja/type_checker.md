@@ -424,6 +424,13 @@ reconsider coercion / obligation evidence、recorded fact、dedicated
 `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ
 存在しないため `type_elaboration.external_dependency.ast_payload_extraction`
 に残す。
+task 94 は proof-local inline definition boundary を記録する: `deffunc` と
+`defpred` statement を含む theorem proof は parser / resolver 実行まで到達するが、
+real inline definition formal/body payload extraction、local abbreviation
+expansion、term / formula body payload、guard evidence、recorded fact、theorem acceptance、dedicated
+`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ
+存在しないため `type_elaboration.external_dependency.ast_payload_extraction`
+に残す。
 task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
 documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
 reserve head は、可視 resolver symbol が `SymbolKind::Mode` で

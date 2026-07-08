@@ -297,12 +297,14 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    gap, task 90 records predicate/functor definitions on the same gap, and task
    91 records attribute definitions on the same gap, task 92 records
    mode/structure definitions on the same gap, and task 93 records
-   proof-local declarations on the same gap while keeping definition
+   proof-local declarations on the same gap, and task 94 records proof-local
+   inline definitions on the same gap while keeping definition
    declaration payloads, definition-local context, definiens formula/term
    payloads, formula-definiens payloads, mode expansion, structure
    base-shape/constructor/selector evidence, proof-local declaration payloads,
-   local proof contexts, RHS term inference, reconsider coercion/obligation
-   evidence, attributed-type evidence, overload payloads, term/formula/proof
+   inline definition formal/body payloads, local proof contexts, RHS term
+   inference, reconsider coercion/obligation evidence, local abbreviation
+   expansion, theorem acceptance, attributed-type evidence, overload payloads, term/formula/proof
    skeleton/statement proof payloads, term inference, formula checking,
    recorded facts, `formula_statement`, CoreIr, ControlFlowIr, VC, and proof
    payloads deferred).

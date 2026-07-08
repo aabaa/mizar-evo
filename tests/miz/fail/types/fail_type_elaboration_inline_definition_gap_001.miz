@@ -1,0 +1,5 @@
+theorem InlineDefinitionPayloadBoundary: thesis proof
+  deffunc F(x be set) -> set equals x;
+  defpred P(y be set) means thesis;
+  thus thesis;
+end;
