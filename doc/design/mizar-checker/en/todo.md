@@ -2282,6 +2282,23 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       spec 11 symbol management; spec 12 modules and namespaces; spec 13 term
       expressions; spec 14 formulas; spec 16 theorems and proofs.
 
+105. **Add source-derived set-enumeration formula extraction-gap boundary.** [x]
+    - Add a dedicated active `type_elaboration` boundary for a theorem formula
+      using Chapter 13 set-enumeration term operands with Chapter 14 builtin
+      equality.
+    - Acceptance: parser and resolver execute the source, then the active
+      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
+      because checker-owned set-enumeration term payload extraction,
+      term/formula payload extraction, term inference, equality/formula
+      checking, recorded facts, theorem acceptance, CoreIr, ControlFlowIr, VC,
+      proof payloads, and the `formula_statement` runner are not available.
+      The task must not fabricate set-enumeration payloads, term/formula
+      payloads, theorem acceptance, or downstream semantic payloads.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: tasks 86, 87, 98, 100, 101, 102, 103, and 104. Refs: Step 5
+      source-derived semantic bridge; mizar-test task 10; spec 13 term
+      expressions; spec 14 formulas; spec 16 theorems and proofs.
+
 ## Recommended Verification
 
 Run after each task:

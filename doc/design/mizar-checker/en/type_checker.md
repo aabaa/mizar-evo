@@ -460,6 +460,15 @@ recorded facts, theorem acceptance, the dedicated `formula_statement` runner,
 CoreIr, ControlFlowIr, VC, and proof payloads are still absent. This does not
 credit imported module AST extraction or checker `AttributeInput` payload
 extraction for theorem formulas.
+Task 105 records the set-enumeration variant of that same term/formula
+boundary: `theorem SetEnumerationPayloadBoundary: {1, 2} = {1, 2};` reaches
+parser and resolver execution with Chapter 13 set-enumeration term operands
+and Chapter 14 builtin equality, then stays on
+`type_elaboration.external_dependency.ast_payload_extraction` because real
+set-enumeration term payload extraction, term/formula payload extraction, term
+inference, equality/formula checking, recorded facts, theorem acceptance, the
+dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof
+payloads are still absent.
 Task 99 records the connective/quantifier formula variant of that theorem
 boundary:
 `theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`

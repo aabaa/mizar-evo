@@ -436,6 +436,14 @@ proof payload がまだ存在しないため
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。これは imported
 module AST extraction や theorem formula 向け checker `AttributeInput` payload
 extraction を credit しない。
+task 105 は同じ term/formula boundary の set-enumeration variant を記録する:
+`theorem SetEnumerationPayloadBoundary: {1, 2} = {1, 2};` は Chapter 13 の
+set-enumeration term operand と Chapter 14 の builtin equality を伴って parser /
+resolver 実行まで到達するが、real set-enumeration term payload extraction、
+term/formula payload extraction、term inference、equality/formula checking、
+recorded fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
+ControlFlowIr、VC、proof payload がまだ存在しないため
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。
 task 99 は同じ theorem boundary の connective / quantifier formula variant を記録する:
 `theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`
 は Chapter 14 の implication、universal-quantifier、negation surface を通じて

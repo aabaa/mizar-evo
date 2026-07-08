@@ -613,7 +613,7 @@ These sidecars document that the source reached parser/resolver execution, but
 they do not credit a `formula_statement` runner, checker theorem/formula
 payload extraction, recorded facts, proof skeletons, CoreIr, ControlFlowIr, VC,
 or proof payloads.
-Tasks 87, 98, 100, 101, 102, 103, and 104 permit term-bearing theorem formula fail sidecars to use
+Tasks 87, 98, 100, 101, 102, 103, 104, and 105 permit term-bearing theorem formula fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "term_formula_payload_extraction_gap"` and
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
@@ -622,9 +622,10 @@ surfaces and Chapter 14 atomic formulas, including task-87 numeral/builtin
 equality, task-98 imported predicate/functor applications, task-100 builtin
 membership, task-101 builtin inequality, and task-102 builtin type assertion,
 task-103 imported attribute assertion, and task-104 attribute-level non-empty
-imported attribute assertion,
+imported attribute assertion, and task-105 set-enumeration equality,
 reached parser/resolver execution,
-but they do not credit imported semantic payloads, imported attribute assertion
+but they do not credit imported semantic payloads, set-enumeration term payload
+extraction, imported attribute assertion
 attribute-chain/provenance payload extraction, imported attribute-level
 non-empty assertion attribute-chain/provenance payload extraction, term/formula payload
 extraction, membership operand type inference/checking, inequality desugaring

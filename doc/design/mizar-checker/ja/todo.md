@@ -2123,6 +2123,23 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       management、spec 12 modules and namespaces、spec 13 term expressions、
       spec 14 formulas、spec 16 theorems and proofs。
 
+105. **Source-derived set-enumeration formula extraction-gap boundary を追加する。** [x]
+    - Chapter 13 の set-enumeration term operand と Chapter 14 の builtin
+      equality を使う theorem formula 専用の active `type_elaboration`
+      boundary を追加する。
+    - Acceptance: parser と resolver は source を実行し、その後 active runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+      checker-owned set-enumeration term payload extraction、term/formula
+      payload extraction、term inference、equality/formula checking、recorded
+      fact、theorem acceptance、CoreIr、ControlFlowIr、VC、proof payload、
+      `formula_statement` runner がまだ利用できないためである。この task は
+      set-enumeration payload、term/formula payload、theorem acceptance、
+      downstream semantic payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: tasks 86、87、98、100、101、102、103、104。参照: Step 5
+      source-derived semantic bridge、mizar-test task 10、spec 13 term
+      expressions、spec 14 formulas、spec 16 theorems and proofs。
+
 ## 推奨検証
 
 各タスクの後で実行する:

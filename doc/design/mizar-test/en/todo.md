@@ -302,6 +302,7 @@ Keep `cargo test -p mizar-test` green after each task (see
       type assertion formula extraction-gap boundary, checker task 103's imported
       attribute assertion formula extraction-gap boundary, checker task 104's
       attribute-level non-empty imported attribute assertion formula
+      extraction-gap boundary, checker task 105's set-enumeration formula
       extraction-gap boundary, checker task 99's formula
       connective/quantifier extraction-gap boundary, checker task 88's proof skeleton
       extraction-gap boundary, and checker task 89's statement proof
@@ -457,10 +458,11 @@ Keep `cargo test -p mizar-test` green after each task (see
       equality semantic checking, type-assertion type payload extraction,
       type-assertion semantic checking, imported attribute assertion
       attribute-chain/provenance payload extraction, imported attribute-level
-      non-empty assertion attribute-chain/provenance payload extraction, negated
+      non-empty assertion attribute-chain/provenance payload extraction, set-enumeration
+      term payload extraction, negated
       attribute admissibility/semantic checking, attribute admissibility/semantic
       checking, formula/theorem/proof payloads beyond the
-      task-86/task-87/task-98/task-100/task-101/task-102/task-103/task-104/task-99/task-88/task-89/task-93/task-94/task-95/task-96
+      task-86/task-87/task-98/task-100/task-101/task-102/task-103/task-104/task-105/task-99/task-88/task-89/task-93/task-94/task-95/task-96
       extraction-gap boundaries,
       coercions, overload payloads, facts, CoreIr,
       ControlFlowIr, VC payloads, and proof evidence remain on the explicit

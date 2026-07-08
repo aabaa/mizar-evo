@@ -578,7 +578,7 @@ task 86 は formula-only theorem fail sidecar について
 記録するが、`formula_statement` runner、checker theorem/formula payload
 extraction、recorded fact、proof skeleton、CoreIr、ControlFlowIr、VC、proof
 payload は credit しない。
-task 87、task 98、task 100、task 101、task 102、task 103、task 104 は term-bearing theorem formula fail sidecar について
+task 87、task 98、task 100、task 101、task 102、task 103、task 104、task 105 は term-bearing theorem formula fail sidecar について
 `failure_category = "external_dependency_gap"`、
 `rejection_reason = "term_formula_payload_extraction_gap"`、
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
@@ -586,8 +586,9 @@ task 87、task 98、task 100、task 101、task 102、task 103、task 104 は ter
 imported predicate/functor application、task 100 の builtin membership、task 101 の
 builtin inequality、task 102 の builtin type assertion、task 103 の imported
 attribute assertion、task 104 の attribute-level non-empty imported attribute assertion
-を含む Chapter 13 term surface と Chapter 14 atomic formula が
+、task 105 の set-enumeration equality を含む Chapter 13 term surface と Chapter 14 atomic formula が
 parser / resolver 実行へ到達したことを記録するが、imported semantic payload、
+set-enumeration term payload extraction、
 imported attribute assertion attribute-chain/provenance payload extraction、
 imported attribute-level non-empty assertion attribute-chain/provenance payload extraction、
 term/formula payload extraction、

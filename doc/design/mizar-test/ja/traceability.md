@@ -400,7 +400,7 @@ task 69、task 70、task 71 の external-gap boundary case、task 75/task 76/tas
 case（task 83 が `R` 部分を supersede し、broader non-`R` case は deferred）、task 79 の imported-mode external-gap case、task 84 / task 85 外の task 80 imported-attribute
 external-gap case、task 81 の argument-bearing local-attribute external-gap case、
 task 86 の formula-only theorem external-gap case、task 87 の term-bearing
-theorem formula external-gap case、task 98 の imported predicate/functor theorem formula external-gap case、task 100 の builtin membership theorem formula external-gap case、task 101 の builtin inequality theorem formula external-gap case、task 102 の builtin type-assertion theorem formula external-gap case、task 103 の imported attribute assertion theorem formula external-gap case、task 99 の connective/quantifier theorem formula external-gap case、task 88 の proof-block theorem external-gap case、
+theorem formula external-gap case、task 98 の imported predicate/functor theorem formula external-gap case、task 100 の builtin membership theorem formula external-gap case、task 101 の builtin inequality theorem formula external-gap case、task 102 の builtin type-assertion theorem formula external-gap case、task 103 の imported attribute assertion theorem formula external-gap case、task 104 の attribute-level non-empty imported attribute assertion theorem formula external-gap case、task 105 の set-enumeration theorem formula external-gap case、task 99 の connective/quantifier theorem formula external-gap case、task 88 の proof-block theorem external-gap case、
 task 89 の statement-proof external-gap case、task 90 の predicate/functor
 definition external-gap case、task 91 の attribute definition external-gap case、
 task 92 の mode/structure definition external-gap case、task 93 の
@@ -562,6 +562,12 @@ negated attribute admissibility/semantic checking、formula checking、recorded
 fact、theorem acceptance、imported module AST extraction、theorem formula 向け
 checker `AttributeInput` payload extraction、`formula_statement` runner support、
 CoreIr、ControlFlowIr、VC、proof payload は credit しない。
+task 105 の fail case は parser / resolver 実行後の set-enumeration theorem
+formula extraction-gap boundary だけを credit し、checker set-enumeration term
+payload extraction、term/formula payload extraction、term inference、
+equality/formula checking、recorded fact、theorem acceptance、
+`formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
+credit しない。
 task 99 の fail case は parser / resolver 実行後の connective/quantifier theorem
 formula extraction-gap boundary だけを credit し、checker formula payload
 extraction、quantifier binder/context payload、formula checking、recorded fact、

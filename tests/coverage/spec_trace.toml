@@ -1662,7 +1662,7 @@ tests = [
 [[requirement]]
 id = "spec.en.13.term_expressions.type_elaboration_payload_gap"
 source = "doc/spec/en/13.term_expression.md"
-section = "13.1 Primary Expressions; 13.1.4 Numerals; 13.4 Functor Applications"
+section = "13.1 Primary Expressions; 13.1.4 Numerals; 13.2 Functor Applications; 13.4 Set Expressions; 13.4.1 Set Enumeration"
 stage = "type_elaboration"
 status = "covered"
 required = true
@@ -1675,6 +1675,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_builtin_inequality_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_builtin_membership_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_builtin_type_assertion_formula_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1725,6 +1726,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
 
@@ -1988,6 +1990,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_non_empty_attribute_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_imported_predicate_functor_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
 
@@ -2652,6 +2655,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_redefinition_notation_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_registration_block_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_structure_qualified_attribute_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
@@ -3128,6 +3132,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_registration_block_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.set_enumeration_formula_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 105 source-derived set-enumeration theorem formula extraction-gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
 ]
 
 [[requirement]]
