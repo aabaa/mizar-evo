@@ -1,0 +1,3 @@
+theorem ProofSkeletonPayloadBoundary: thesis proof
+  thus thesis;
+end;

@@ -1,0 +1,24 @@
+schema_version = 1
+id = "fail_type_elaboration_proof_skeleton_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_proof_skeleton_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "proof_skeleton_payload_extraction_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.14.formulas.type_elaboration_payload_gap",
+  "spec.en.15.statements.proof_skeleton_payload_gap",
+  "spec.en.16.theorems_and_proofs.proof_skeleton_payload_gap",
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.proof_skeleton_gap",
+]
+notes = "Active type_elaboration runner boundary coverage for checker task 88: a theorem with a proof block and `thus thesis;` conclusion is parser/resolver executable, but the checker-owned source bridge lacks real proof skeleton payload extraction, local proof context, formula payloads, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and the dedicated formula_statement runner, so it must stay on the source-to-checker payload extraction gap."

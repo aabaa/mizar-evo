@@ -292,7 +292,8 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    provenance, arguments, and downstream payloads on extraction/deferred gaps,
    task 86 records a formula-only theorem source on the active
    source-to-checker extraction gap, and task 87 records a term-bearing equality
-   theorem source on the same gap while keeping term/formula payloads, term
+   theorem source on the same gap, and task 88 records a theorem proof block on
+   the same gap while keeping term/formula/proof skeleton payloads, term
    inference, formula checking, proof context, recorded facts,
    `formula_statement`, CoreIr, ControlFlowIr, VC, and proof payloads deferred).
 This wave has no fixed task list yet: it is promoted slice by slice, opening

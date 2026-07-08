@@ -621,6 +621,15 @@ terms and Chapter 14 builtin equality reached parser/resolver execution, but
 they do not credit term/formula payload extraction, term inference, formula
 checking, recorded facts, theorem acceptance, a `formula_statement` runner,
 proof skeletons, CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 88 permits proof-block theorem fail sidecars to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "proof_skeleton_payload_extraction_gap"` and
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
+These sidecars document that a theorem proof block with a `thus thesis;`
+conclusion reached parser/resolver execution, but they do not credit proof
+skeleton payload extraction, local proof context, formula payload extraction,
+recorded facts, theorem acceptance, a `formula_statement` runner, CoreIr,
+ControlFlowIr, VC, or proof payloads.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

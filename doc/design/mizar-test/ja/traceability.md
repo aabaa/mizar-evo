@@ -511,6 +511,11 @@ extraction-gap boundary だけを credit し、checker term/formula payload extr
 term inference、formula checking、recorded fact、theorem acceptance、proof skeleton、
 `formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
 credit しない。
+task 88 の fail case は parser / resolver 実行後の proof-block / proof-skeleton
+extraction-gap boundary だけを credit し、checker proof skeleton payload extraction、
+local proof context、formula payload extraction、recorded fact、theorem acceptance、
+`formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
+credit しない。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
 `proof_verification` row は deferred のままにする。summary/context readiness read は

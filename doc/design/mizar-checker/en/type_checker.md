@@ -394,6 +394,14 @@ surface, then stays on `type_elaboration.external_dependency.ast_payload_extract
 because real term/formula payload extraction, term inference, formula checking,
 recorded facts, theorem acceptance, the dedicated `formula_statement` runner,
 CoreIr, ControlFlowIr, VC, and proof payloads are still absent.
+Task 88 records the matching proof-block boundary: a theorem such as
+`theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` reaches
+parser and resolver execution with a Chapter 16 proof block and Chapter 15
+conclusion statement, then stays on
+`type_elaboration.external_dependency.ast_payload_extraction` because real proof
+skeleton payload extraction, local proof context, formula payload extraction,
+recorded facts, theorem acceptance, the dedicated `formula_statement` runner,
+CoreIr, ControlFlowIr, VC, and proof payloads are still absent.
 Task 82 promotes only the imported-mode provenance portion of task 79: a
 reserve head such as `TypeCaseMode` from the documented
 `parser.type_fixtures` import summary may be passed as a checker-owned

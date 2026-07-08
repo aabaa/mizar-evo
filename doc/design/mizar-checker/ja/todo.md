@@ -1838,6 +1838,21 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       task 10、spec 13 term expressions、spec 14 formulas、spec 16 theorems and
       proofs。
 
+88. **Source-derived proof skeleton extraction-gap boundary を追加する。** [x]
+    - `theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` の
+      ように proof block と conclusion statement を持つ theorem について、専用の
+      active `type_elaboration` boundary を追加する。
+    - Acceptance: parser と resolver は source を実行し、その後 active runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+      checker-owned proof skeleton payload extraction、local proof context、
+      formula payload extraction、recorded fact、theorem acceptance、CoreIr、
+      ControlFlowIr、VC、proof payload、`formula_statement` runner がまだ存在しないため
+      である。この task は proof skeleton payload、formula payload、local fact、
+      theorem acceptance、downstream semantic payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: task 87。参照: Step 5 source-derived semantic bridge、mizar-test
+      task 10、spec 14 formulas、spec 15 statements、spec 16 theorems and proofs。
+
 ## 推奨検証
 
 各タスクの後で実行する:

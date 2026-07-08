@@ -377,6 +377,13 @@ real term/formula payload extraction、term inference、formula checking、recor
 theorem acceptance、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、
 proof payload がまだ存在しないため
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。
+task 88 は対応する proof-block boundary を記録する:
+`theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` のような
+theorem は Chapter 16 の proof block と Chapter 15 の conclusion statement を伴って
+parser / resolver 実行まで到達するが、real proof skeleton payload extraction、
+local proof context、formula payload extraction、recorded fact、theorem acceptance、
+dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload が
+まだ存在しないため `type_elaboration.external_dependency.ast_payload_extraction` に残す。
 task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
 documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
 reserve head は、可視 resolver symbol が `SymbolKind::Mode` で

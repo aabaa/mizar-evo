@@ -553,7 +553,11 @@ formula extraction-gap boundary after parser/resolver execution and do not
 credit checker term/formula payload extraction, term inference, formula
 checking, recorded facts, theorem acceptance, proof skeletons,
 `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
-payloads. Task
+payloads. Task 88 fail cases credit only the proof-block/proof-skeleton
+extraction-gap boundary after parser/resolver execution and do not credit
+checker proof skeleton payload extraction, local proof context, formula payload
+extraction, recorded facts, theorem acceptance, `formula_statement` runner
+support, CoreIr, ControlFlowIr, VC, or proof payloads. Task
 75/76/77 fail
 cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker
