@@ -1,0 +1,7 @@
+definition
+  struct DefinitionStructPayloadBoundary where
+    field carrier -> set;
+  end;
+
+  mode DefinitionModePayloadBoundaryDef: DefinitionModePayloadBoundary is set;
+end;

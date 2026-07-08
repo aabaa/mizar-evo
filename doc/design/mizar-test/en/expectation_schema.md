@@ -656,6 +656,13 @@ do not credit checker attribute definition declaration payload extraction,
 definition-local context, formula-definiens payloads, attributed-type evidence,
 recorded facts, a `formula_statement` runner, CoreIr, ControlFlowIr, VC, or
 proof payloads.
+Task 92 permits mode/structure definition fail sidecars to use the same
+`failure_category`, `rejection_reason`, and `stable_detail_key`. These sidecars
+document that mode and structure definitions reached parser/resolver execution,
+but they do not credit checker mode/structure definition declaration payload
+extraction, mode expansion, structure base-shape/constructor/selector evidence,
+definition-local context, recorded facts, a `formula_statement` runner, CoreIr,
+ControlFlowIr, VC, or proof payloads.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

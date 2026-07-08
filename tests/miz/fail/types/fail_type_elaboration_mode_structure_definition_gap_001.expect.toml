@@ -1,0 +1,23 @@
+schema_version = 1
+id = "fail_type_elaboration_mode_structure_definition_gap_001"
+kind = "fail"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "fail_type_elaboration_mode_structure_definition_gap_001.miz"
+expected_outcome = "fail"
+expected_phase = "type_check"
+failure_category = "external_dependency_gap"
+rejection_reason = "definition_declaration_payload_extraction_gap"
+stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+diagnostic_codes = []
+diagnostic_payloads = [
+  "type_elaboration.external_dependency.ast_payload_extraction",
+]
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.05.structures.type_elaboration_payload_gap",
+  "spec.en.07.mode_definitions.type_elaboration_payload_gap",
+  "spec.en.checker.type_elaboration.payload_extraction",
+  "spec.en.checker.type_elaboration.payload_extraction.mode_structure_definition_gap",
+]
+notes = "Active type_elaboration runner boundary coverage for checker task 92: structure and mode definitions are parser/resolver executable, but the checker-owned source bridge lacks real mode/structure definition declaration payload extraction, mode expansion, structure base-shape/constructor/selector evidence, definition-local context, facts, CoreIr/ControlFlowIr/VC/proof payloads, and a dedicated formula_statement runner, so it must stay on the source-to-checker payload extraction gap."

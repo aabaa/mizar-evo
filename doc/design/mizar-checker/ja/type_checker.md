@@ -407,6 +407,15 @@ declaration payload extraction、definition-local context、formula-definiens
 payload、attributed-type evidence、recorded fact、dedicated
 `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ存在しないため
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。
+task 92 は mode/structure definition boundary を記録する:
+`struct DefinitionStructPayloadBoundary where ... end;` と
+`mode DefinitionModePayloadBoundaryDef: DefinitionModePayloadBoundary is set;`
+を含む definition block は parser / resolver 実行まで到達するが、real
+mode/structure definition declaration payload extraction、mode expansion、
+structure base-shape / constructor / selector evidence、definition-local context、
+recorded fact、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、
+proof payload がまだ存在しないため
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。
 task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
 documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
 reserve head は、可視 resolver symbol が `SymbolKind::Mode` で
