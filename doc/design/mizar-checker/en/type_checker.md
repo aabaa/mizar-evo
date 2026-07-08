@@ -312,18 +312,20 @@ CoreIr/ControlFlowIr/VC/proof payload from the future attribute declaration.
 Task 78 historically recorded the imported-structure analogue as an external
 extraction-gap boundary rather than a checker payload. Task 83 supersedes that
 boundary only for the documented `parser.type_fixtures` `R` reserve head by
-passing the real imported `SymbolKind::Structure` as a checker type head;
-broader imported structures outside that Task83 bridge remain deferred until a
-non-`R` source-derived fixture exists. The bridge must not treat that imported
-summary as real imported module AST extraction, must not fabricate
-base-shape/constructor-witness evidence, positive structure elaboration, or
-downstream CoreIr/ControlFlowIr/VC/proof payloads.
-Task 83 records the imported-structure provenance bridge: `R` from the
-documented `parser.type_fixtures` import summary reaches declaration checking
-as an imported structure type head, then fails closed on
-`type_elaboration.checker.checker.declaration.deferred.evidence_query` because
-base-shape/constructor-witness evidence is still absent. This does not credit
-positive imported structure elaboration or imported module AST extraction.
+passing the real imported `SymbolKind::Structure` as a checker type head. Task
+97 applies the same narrow bridge to the documented `TypeCaseStruct` fixture.
+Broader imported structures outside those task-83/task-97 fixtures remain
+deferred. The bridge must not treat that imported summary as real imported
+module AST extraction, must not fabricate base-shape/constructor-witness
+evidence, positive structure elaboration, or downstream
+CoreIr/ControlFlowIr/VC/proof payloads.
+Tasks 83 and 97 record the imported-structure provenance bridge: `R` and
+`TypeCaseStruct` from the documented `parser.type_fixtures` import summary
+reach declaration checking as imported structure type heads, then fail closed
+on `type_elaboration.checker.checker.declaration.deferred.evidence_query`
+because base-shape/constructor-witness evidence is still absent. This does not
+credit positive imported structure elaboration or imported module AST
+extraction.
 Task 79 originally recorded the imported-mode analogue as the same external
 extraction-gap boundary. Task 82 supersedes that boundary only for the
 documented `parser.type_fixtures` `TypeCaseMode` reserve head by passing the

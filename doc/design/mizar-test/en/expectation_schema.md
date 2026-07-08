@@ -533,7 +533,7 @@ sidecars do not credit checker `ModeExpansion`, structure type-head,
 base-shape, constructor-witness, `AttributeInput`, or attributed-type evidence
 production.
 Task 78 permits future imported structure reserve-head fail sidecars outside
-the task-83 `R` bridge to use
+the task-83 `R` and task-97 `TypeCaseStruct` bridges to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "imported_structure_type_head_payload_gap"` and
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
@@ -542,12 +542,13 @@ when the source reaches the active runner through the documented
 imported module AST extraction, imported structure provenance, structure
 type-head payload extraction, base-shape or constructor-witness evidence,
 positive structure elaboration, CoreIr, ControlFlowIr, VC, or proof payloads.
-Task 83 permits the documented imported structure `R` sidecar to use
+Tasks 83 and 97 permit the documented imported structure `R` and
+`TypeCaseStruct` sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "imported_structure_evidence_payload_gap"` and
 `stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"`
 after the runner passes the real imported structure type head to the checker.
-This sidecar credits only imported provenance/type-head extraction and does not
+These sidecars credit only imported provenance/type-head extraction and do not
 credit imported module AST extraction, base-shape/constructor-witness evidence,
 positive imported structure elaboration, CoreIr, ControlFlowIr, VC, or proof
 payloads.

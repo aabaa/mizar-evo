@@ -624,6 +624,7 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_type_case_struct_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -634,7 +635,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Task 83 supersedes the documented parser.type_fixtures `R` fixture by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside that fixture, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
+deferred_reason = "Tasks 83 and 97 supersede the documented parser.type_fixtures `R` and `TypeCaseStruct` fixtures by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside those fixtures, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
 tests = []
 
 [[requirement]]
@@ -714,6 +715,7 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_type_case_struct_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -724,7 +726,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Task 83 supersedes the documented parser.type_fixtures `R` fixture by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside that fixture, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
+deferred_reason = "Tasks 83 and 97 supersede the documented parser.type_fixtures `R` and `TypeCaseStruct` fixtures by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside those fixtures, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
 tests = []
 
 [[requirement]]
@@ -1174,6 +1176,7 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_type_case_struct_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1184,7 +1187,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Task 83 supersedes the documented parser.type_fixtures `R` fixture by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside that fixture, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
+deferred_reason = "Tasks 83 and 97 supersede the documented parser.type_fixtures `R` and `TypeCaseStruct` fixtures by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside those fixtures, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
 tests = []
 
 [[requirement]]
@@ -1428,6 +1431,7 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_type_case_struct_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1438,7 +1442,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Task 83 supersedes the documented parser.type_fixtures `R` fixture by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside that fixture, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
+deferred_reason = "Tasks 83 and 97 supersede the documented parser.type_fixtures `R` and `TypeCaseStruct` fixtures by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside those fixtures, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
 tests = []
 
 [[requirement]]
@@ -2476,13 +2480,14 @@ tests = [
 [[requirement]]
 id = "spec.en.checker.type_elaboration.imported_structure_provenance_bridge"
 source = "doc/design/mizar-checker/en/type_checker.md"
-section = "Task 83 source-derived imported structure reserve provenance bridge"
+section = "Task 83/97 source-derived imported structure reserve provenance bridge"
 stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_structure_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_imported_type_case_struct_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2798,7 +2803,7 @@ stage = "type_elaboration"
 status = "deferred"
 required = true
 coverage = "diagnostic"
-deferred_reason = "Task 83 supersedes the documented parser.type_fixtures `R` fixture by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside that fixture, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
+deferred_reason = "Tasks 83 and 97 supersede the documented parser.type_fixtures `R` and `TypeCaseStruct` fixtures by carrying imported structure provenance/type-head payloads to the checker evidence-query diagnostic. Broader imported structure heads, including generic imported structures outside those fixtures, still lack real imported type-head payload extraction and should use this row when new source-derived cases are added."
 tests = []
 
 [[requirement]]

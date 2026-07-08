@@ -760,6 +760,7 @@ fn augment_type_elaboration_import_summaries(
                     | (UserSymbolKind::Attribute, "TypeCaseAttr")
                     | (UserSymbolKind::Mode, "TypeCaseMode")
                     | (UserSymbolKind::Structure, "R")
+                    | (UserSymbolKind::Structure, "TypeCaseStruct")
             ) {
                 continue;
             }
@@ -1987,7 +1988,7 @@ fn supported_source_reserve_type_head_kind(
         && contribution.module() == symbol.module()
         && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
         && symbol.module().path().as_str() == "parser.type_fixtures"
-        && entry.primary_spelling() == "R"
+        && matches!(entry.primary_spelling(), "R" | "TypeCaseStruct")
     {
         return Some(entry.kind());
     }
@@ -7485,7 +7486,7 @@ mod tests {
                     .clone(),
                 &imported_fixture_type_case_struct_symbols
             ),
-            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
         );
 
         let ambiguous_mode_symbols = ambiguous_mode_symbol_env(symbols.module_id().clone());

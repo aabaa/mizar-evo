@@ -3013,7 +3013,7 @@ impl SourceReserveDeclarationBridge {
                 && contribution.module() == symbol.module()
                 && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
                 && symbol.module().path().as_str() == "parser.type_fixtures"
-                && entry.primary_spelling() == "R";
+                && matches!(entry.primary_spelling(), "R" | "TypeCaseStruct");
             if !local_source_head && !imported_mode_head && !imported_structure_head {
                 return Err(format!(
                     "source reserve binding {index} symbol head is not backed by supported source provenance"
@@ -8291,15 +8291,28 @@ mod tests {
             )],
         )
         .expect("imported fixture structure payload shape should validate");
+        let imported_fixture_type_case_struct_handoff = imported_fixture_type_case_struct_bridge
+            .check(&symbol_env_with_imported_symbol(
+                imported_fixture_type_case_struct,
+                SymbolKind::Structure,
+                "TypeCaseStruct",
+            ))
+            .expect(
+                "TypeCaseStruct imported structure provenance should reach declaration checking",
+            );
+        assert_eq!(
+            diagnostic_ranges(
+                imported_fixture_type_case_struct_handoff.declarations(),
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
         assert!(
-            imported_fixture_type_case_struct_bridge
-                .check(&symbol_env_with_imported_symbol(
-                    imported_fixture_type_case_struct,
-                    SymbolKind::Structure,
-                    "TypeCaseStruct",
-                ))
-                .is_err(),
-            "imported fixture structures outside the R bridge must stay fail-closed"
+            imported_fixture_type_case_struct_handoff
+                .declarations()
+                .facts()
+                .is_empty(),
+            "TypeCaseStruct heads must not seed facts without base-shape evidence"
         );
 
         let foreign_local_mode = SymbolId::new(

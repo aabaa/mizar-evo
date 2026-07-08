@@ -1756,9 +1756,9 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       imported module AST extraction と base-shape / constructor-witness evidence は
       まだ存在しないためである。この task は imported module AST extraction、
       base-shape / constructor-witness evidence、positive structure elaboration、
-      CoreIr、ControlFlowIr、VC、proof payload を捏造してはならず、generic
-      imported structure、`TypeCaseStruct`、imported attribute、argument、bracket、
-      qualified attribute、imported evidence は既存 gap に残す。
+      CoreIr、ControlFlowIr、VC、proof payload を捏造してはならず、later task-97
+      `TypeCaseStruct` slice 外の generic imported structure、imported attribute、
+      argument、bracket、qualified attribute、imported evidence は既存 gap に残す。
     - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
     - 依存: tasks 48、52、76、78、82。参照: Step 5 source-derived semantic
       bridge、mizar-test task 10、spec 03 type expressions、spec 05 structures、
@@ -1978,6 +1978,28 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-test`。
     - 依存: task 95。参照: Step 5 source-derived semantic bridge、mizar-test
       task 10、spec 11 symbol management、spec 19 overload resolution。
+
+97. **Source-derived imported TypeCaseStruct reserve provenance bridge を追加する。** [x]
+    - task-78 の imported-structure reserve boundary を、active
+      `type_elaboration` runner が documented `parser.type_fixtures`
+      import-summary 由来の `TypeCaseStruct` structure symbol を checker
+      `TypeHeadInput` として渡せるところまでだけ昇格する。
+    - Acceptance: checker reserve bridge は `TypeCaseStruct` が `SymbolEnv` で可視で
+      あり、`SymbolKind::Structure` を持ち、`parser.type_fixtures` の
+      `ImportedSource` contribution に裏付けられていることを検証する。runner は
+      `TypeCaseStruct` について
+      `type_elaboration.external_dependency.ast_payload_extraction` ではなく
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query` に到達する。
+      imported module AST extraction と base-shape / constructor-witness evidence は
+      まだ存在しないためである。この task は imported module AST extraction、
+      base-shape / constructor-witness evidence、positive structure elaboration、
+      CoreIr、ControlFlowIr、VC、proof payload を捏造してはならず、他の generic
+      imported structure、imported attribute、argument、bracket、qualified attribute、
+      imported evidence は既存 gap に残す。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、52、76、78、83。参照: Step 5 source-derived semantic
+      bridge、mizar-test task 10、spec 03 type expressions、spec 05 structures、
+      spec 11 symbol management、spec 12 modules and namespaces。
 
 ## 推奨検証
 

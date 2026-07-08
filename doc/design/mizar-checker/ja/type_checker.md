@@ -298,17 +298,18 @@ task 78 は imported-structure 類似 case を checker payload ではなく exte
 extraction-gap boundary として historical に記録した。task 83 は documented
 `parser.type_fixtures` `R` reserve head だけについて real imported
 `SymbolKind::Structure` を checker type head として渡すことで、その boundary を
-上書きする。task-83 bridge 外の broader imported structure は、non-`R` の
-source-derived fixture が存在するまで deferred のままとする。bridge はこの import
-summary を real imported module AST extraction と扱ってはならず、base-shape /
-constructor-witness evidence、positive structure elaboration、
-CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。task 83 は imported
-structure provenance bridge を記録する。documented `parser.type_fixtures` import
-summary 由来の `R` は imported structure type head として declaration checking
-に到達し、base-shape / constructor-witness evidence がまだ存在しないため
+上書きする。task 97 は同じ narrow bridge を documented `TypeCaseStruct` fixture
+に適用する。task-83 / task-97 fixture 外の broader imported structure は deferred
+のままとする。bridge はこの import summary を real imported module AST extraction
+と扱ってはならず、base-shape / constructor-witness evidence、positive structure
+elaboration、CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。task 83
+と task 97 は imported structure provenance bridge を記録する。documented
+`parser.type_fixtures` import summary 由来の `R` と `TypeCaseStruct` は imported
+structure type head として declaration checking に到達し、base-shape /
+constructor-witness evidence がまだ存在しないため
 `type_elaboration.checker.checker.declaration.deferred.evidence_query` で fail
-closed する。これは positive imported structure elaboration や imported module
-AST extraction を credit しない。
+closed する。これは positive imported structure elaboration や imported module AST
+extraction を credit しない。
 task 79 は元々 imported-mode 類似 case を同じ external extraction-gap boundary
 として記録した。task 82 は documented `parser.type_fixtures` `TypeCaseMode`
 reserve head だけについて real imported `SymbolKind::Mode` を checker type head
