@@ -414,6 +414,15 @@ term/formula payload extraction, membership operand type inference/checking,
 formula checking, recorded facts, theorem acceptance, the dedicated
 `formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof payloads are
 still absent.
+Task 101 records the builtin inequality variant of that same term/formula
+boundary: `theorem BuiltinInequalityPayloadBoundary: 1 <> 2;` reaches parser
+and resolver execution with Chapter 13 numeral terms and the Chapter 14
+builtin inequality predicate, then stays on
+`type_elaboration.external_dependency.ast_payload_extraction` because real
+term/formula payload extraction, inequality desugaring or equality semantic
+checking, formula checking, recorded facts, theorem acceptance, the dedicated
+`formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof payloads are
+still absent.
 Task 99 records the connective/quantifier formula variant of that theorem
 boundary:
 `theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`

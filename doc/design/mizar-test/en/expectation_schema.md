@@ -613,18 +613,19 @@ These sidecars document that the source reached parser/resolver execution, but
 they do not credit a `formula_statement` runner, checker theorem/formula
 payload extraction, recorded facts, proof skeletons, CoreIr, ControlFlowIr, VC,
 or proof payloads.
-Tasks 87, 98, and 100 permit term-bearing theorem formula fail sidecars to use
+Tasks 87, 98, 100, and 101 permit term-bearing theorem formula fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "term_formula_payload_extraction_gap"` and
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
 These sidecars document that a theorem formula containing Chapter 13 term
 surfaces and Chapter 14 atomic formulas, including task-87 numeral/builtin
-equality, task-98 imported predicate/functor applications, and task-100 builtin
-membership, reached parser/resolver execution, but they do not credit imported
-semantic payloads, term/formula payload extraction, membership operand type
-inference/checking, term inference, formula checking, recorded facts, theorem
-acceptance, a `formula_statement` runner, proof skeletons, CoreIr,
-ControlFlowIr, VC, or proof payloads.
+equality, task-98 imported predicate/functor applications, task-100 builtin
+membership, and task-101 builtin inequality, reached parser/resolver execution,
+but they do not credit imported semantic payloads, term/formula payload
+extraction, membership operand type inference/checking, inequality desugaring
+or equality semantic checking, term inference, formula checking, recorded
+facts, theorem acceptance, a `formula_statement` runner, proof skeletons,
+CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 99 permits formula connective/quantifier theorem fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "formula_connective_quantifier_payload_extraction_gap"` and
