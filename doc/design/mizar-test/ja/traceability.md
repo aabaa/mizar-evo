@@ -399,8 +399,10 @@ task 69、task 70、task 71 の external-gap boundary case、task 75/task 76/tas
 77 の lower-stage boundary case、task 78 の historical imported-structure external-gap
 case（task 83 が `R` 部分を supersede し、broader non-`R` case は deferred）、task 79 の imported-mode external-gap case、task 84 / task 85 外の task 80 imported-attribute
 external-gap case、task 81 の argument-bearing local-attribute external-gap case、
-task 86 の formula-only theorem external-gap case、task 87 の term-bearing
-theorem formula external-gap case、task 98 の imported predicate/functor theorem formula external-gap case、task 100 の builtin membership theorem formula external-gap case、task 101 の builtin inequality theorem formula external-gap case、task 102 の builtin type-assertion theorem formula external-gap case、task 103 の imported attribute assertion theorem formula external-gap case、task 104 の attribute-level non-empty imported attribute assertion theorem formula external-gap case、task 105 の set-enumeration theorem formula external-gap case、task 99 の connective/quantifier theorem formula external-gap case、task 88 の proof-block theorem external-gap case、
+task 86 の formula-only theorem external-gap case、task 87 の historical
+term-bearing theorem formula external-gap case（task 106 が exact
+`TermFormulaPayloadBoundary: 1 = 1` portion を checker term/formula payload
+bridge と numeric-type / partial-formula diagnostic へ supersede）、task 98 の imported predicate/functor theorem formula external-gap case、task 100 の builtin membership theorem formula external-gap case、task 101 の builtin inequality theorem formula external-gap case、task 102 の builtin type-assertion theorem formula external-gap case、task 103 の imported attribute assertion theorem formula external-gap case、task 104 の attribute-level non-empty imported attribute assertion theorem formula external-gap case、task 105 の set-enumeration theorem formula external-gap case、task 99 の connective/quantifier theorem formula external-gap case、task 88 の proof-block theorem external-gap case、
 task 89 の statement-proof external-gap case、task 90 の predicate/functor
 definition external-gap case、task 91 の attribute definition external-gap case、
 task 92 の mode/structure definition external-gap case、task 93 の
@@ -520,11 +522,12 @@ extraction-gap boundary だけを credit し、checker theorem/formula payload
 extraction、recorded fact、theorem acceptance、proof skeleton、
 `formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
 credit しない。
-task 87 の fail case は parser / resolver 実行後の term-bearing theorem formula
-extraction-gap boundary だけを credit し、checker term/formula payload extraction、
-term inference、formula checking、recorded fact、theorem acceptance、proof skeleton、
-`formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
-credit しない。
+task 87 の fail case は当初、parser / resolver 実行後の term-bearing theorem
+formula extraction-gap boundary だけを credit した。task 106 は exact
+`TermFormulaPayloadBoundary: 1 = 1` sidecar について real checker term/formula
+payload extraction を credit するが、numeric type payload、equality checking、
+recorded fact、theorem acceptance、proof skeleton、`formula_statement` runner
+support、CoreIr、ControlFlowIr、VC、proof payload は credit しない。
 task 98 の fail case は parser / resolver 実行後の imported predicate/functor
 theorem formula extraction-gap boundary だけを credit し、imported semantic payload、
 checker term/formula payload extraction、term inference、formula checking、recorded

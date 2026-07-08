@@ -389,13 +389,16 @@ theorem/formula payload extraction, local proof contexts, recorded facts, and
 the dedicated `formula_statement` runner exist. This boundary does not credit
 theorem acceptance, formula facts, proof skeletons, CoreIr, ControlFlowIr, VC,
 or proof payloads.
-Task 87 records the same boundary for a term-bearing theorem formula:
-`theorem TermFormulaPayloadBoundary: 1 = 1;` reaches parser and resolver
-execution with Chapter 13 numeral terms and the Chapter 14 builtin equality
-surface, then stays on `type_elaboration.external_dependency.ast_payload_extraction`
-because real term/formula payload extraction, term inference, formula checking,
-recorded facts, theorem acceptance, the dedicated `formula_statement` runner,
-CoreIr, ControlFlowIr, VC, and proof payloads are still absent.
+Task 106 supersedes the task 87 generic boundary for the narrow builtin
+equality theorem formula `theorem TermFormulaPayloadBoundary: 1 = 1;`. The
+active runner now extracts real source-derived checker `TermInput` payloads for
+the two Chapter 13 numeral operands and a real checker `FormulaInput` payload
+for the Chapter 14 equality formula under the module binding context, then
+fails closed on `type_elaboration.checker.checker.term.external.numeric_type_payload`
+and `type_elaboration.checker.checker.formula.term.partial` because numeric
+type payloads, equality checking, recorded facts, theorem acceptance, the
+dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof
+payloads are still absent.
 Task 98 records the imported predicate/functor variant of that same boundary:
 `theorem ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2);` reaches
 parser and resolver execution through the documented `parser.type_fixtures`

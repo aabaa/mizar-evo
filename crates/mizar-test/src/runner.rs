@@ -6,7 +6,10 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use mizar_checker::binding_env::{
-    BinderIdentity, BindingEnv, BindingId, BindingKind, BindingStatus, BindingTypeSite,
+    BinderIdentity, BindingContextDraft, BindingContextId, BindingContextLayer,
+    BindingContextOwner, BindingContextRecovery, BindingContextTable, BindingDiagnosticTable,
+    BindingEnv, BindingEnvParts, BindingId, BindingKind, BindingStatus, BindingTable,
+    BindingTypeSite,
 };
 use mizar_checker::cluster_trace::ClusterFactTable;
 use mizar_checker::overload_resolution::{
@@ -22,13 +25,14 @@ use mizar_checker::resolved_typed_ast::{
 };
 use mizar_checker::type_checker::{
     AttributeInput, AttributePolarity, DeclarationCheckingOutput, DeclarationKind,
-    DeclarationStatus, ModeExpansion, SourceReserveBindingInput, SourceReserveDeclarationBridge,
-    TypeExpressionInput, TypeHeadInput,
+    DeclarationStatus, FormulaInput, FormulaKind, ModeExpansion, SourceReserveBindingInput,
+    SourceReserveDeclarationBridge, TermFormulaChecker, TermInput, TermKind, TypeExpressionInput,
+    TypeHeadInput,
 };
 use mizar_checker::typed_ast::{
     CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, TypeEntryId,
-    TypeStatus, TypeTable, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeLinks,
-    TypedSiteRef, TypingState,
+    TypeStatus, TypeTable, TypedArenaBuilder, TypedAst, TypedAstParts, TypedNode, TypedNodeId,
+    TypedNodeLinks, TypedSiteRef, TypingState,
 };
 use mizar_core::{
     binder_normalization::{NormalizedVarClass, NormalizedVarSort},
@@ -895,6 +899,11 @@ fn source_type_elaboration_detail_keys(
     module: ResolverModuleId,
     symbols: &SymbolEnv,
 ) -> Vec<String> {
+    if let Some(keys) =
+        source_builtin_equality_term_formula_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
     let Ok(source_reserve) =
         extract_builtin_source_reserve_declarations(ast, module.clone(), symbols)
     else {
@@ -938,6 +947,232 @@ fn source_type_elaboration_detail_keys(
         return vec!["type_elaboration.core.context_invalid".to_owned()];
     }
     Vec::new()
+}
+
+#[derive(Debug, Clone)]
+struct SourceBuiltinEqualityTermFormula {
+    formula_site: TypedSiteRef,
+    formula_range: SourceRange,
+    left_site: TypedSiteRef,
+    left_range: SourceRange,
+    right_site: TypedSiteRef,
+    right_range: SourceRange,
+}
+
+fn source_builtin_equality_term_formula_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_builtin_equality_term_formula(ast)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [
+            TermInput::new(
+                payload.left_site.clone(),
+                context,
+                payload.left_range,
+                TermKind::Numeral,
+            ),
+            TermInput::new(
+                payload.right_site.clone(),
+                context,
+                payload.right_range,
+                TermKind::Numeral,
+            ),
+        ],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::Equality,
+        )
+        .with_terms(vec![payload.left_site, payload.right_site])],
+    );
+    let mut keys = output
+        .diagnostics()
+        .canonical_iter()
+        .map(|(_, diagnostic)| format!("type_elaboration.checker.{}", diagnostic.message_key))
+        .collect::<Vec<_>>();
+    keys.sort();
+    keys.dedup();
+    Some(keys)
+}
+
+fn extract_source_builtin_equality_term_formula(
+    ast: &SurfaceAst,
+) -> Option<SourceBuiltinEqualityTermFormula> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_builtin_equality_theorem_bridge_node(node))
+    {
+        return None;
+    }
+    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let [(_, theorem)] = theorem_items.as_slice() else {
+        return None;
+    };
+    if subtree_has_recovery(ast, theorem) {
+        return None;
+    }
+    if !direct_token_texts(ast, theorem)
+        .iter()
+        .any(|token| token == "TermFormulaPayloadBoundary")
+    {
+        return None;
+    }
+
+    let theorem_structural_children = structural_child_ids(ast, theorem);
+    let formula_expressions = theorem_structural_children
+        .iter()
+        .copied()
+        .filter(|id| {
+            ast.node(*id)
+                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::FormulaExpression))
+        })
+        .collect::<Vec<_>>();
+    if formula_expressions.len() != 1
+        || theorem_structural_children
+            .iter()
+            .any(|child| !formula_expressions.contains(child))
+    {
+        return None;
+    }
+    let formula_expression = ast.node(formula_expressions[0])?;
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    let operator_tokens = direct_token_texts(ast, formula);
+    if !matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+        || subtree_has_recovery(ast, formula)
+        || operator_tokens.len() != 1
+        || operator_tokens[0] != "="
+    {
+        return None;
+    }
+
+    let predicate_structural_children = structural_child_ids(ast, formula);
+    let term_expressions = predicate_structural_children
+        .iter()
+        .copied()
+        .filter(|id| {
+            ast.node(*id)
+                .is_some_and(|node| matches!(node.kind, SurfaceNodeKind::TermExpression))
+        })
+        .collect::<Vec<_>>();
+    if term_expressions.len() != 2
+        || predicate_structural_children
+            .iter()
+            .any(|child| !term_expressions.contains(child))
+    {
+        return None;
+    }
+
+    let left = exact_numeral_term_operand(ast, term_expressions[0], "1")?;
+    let right = exact_numeral_term_operand(ast, term_expressions[1], "1")?;
+    Some(SourceBuiltinEqualityTermFormula {
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+        left_site: surface_site(left.0),
+        left_range: left.1,
+        right_site: surface_site(right.0),
+        right_range: right.1,
+    })
+}
+
+fn exact_numeral_term_operand(
+    ast: &SurfaceAst,
+    term_expression_id: SurfaceNodeId,
+    expected_spelling: &str,
+) -> Option<(SurfaceNodeId, SourceRange)> {
+    let term_expression = ast.node(term_expression_id)?;
+    if !matches!(term_expression.kind, SurfaceNodeKind::TermExpression)
+        || subtree_has_recovery(ast, term_expression)
+    {
+        return None;
+    }
+    let term_children = structural_child_ids(ast, term_expression);
+    let [term_id] = term_children.as_slice() else {
+        return None;
+    };
+    let term = ast.node(*term_id)?;
+    if matches!(term.kind, SurfaceNodeKind::NumeralTerm)
+        && direct_token_texts(ast, term).as_slice() == [expected_spelling]
+        && structural_child_ids(ast, term).is_empty()
+    {
+        Some((*term_id, term.range))
+    } else {
+        None
+    }
+}
+
+fn structural_child_ids(ast: &SurfaceAst, node: &SurfaceNode) -> Vec<SurfaceNodeId> {
+    node.children
+        .iter()
+        .copied()
+        .filter(|child| {
+            ast.node(*child)
+                .is_some_and(|child_node| !matches!(child_node.kind, SurfaceNodeKind::Token(_)))
+        })
+        .collect()
+}
+
+fn is_supported_builtin_equality_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::BuiltinPredicateApplication
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn direct_token_texts(ast: &SurfaceAst, node: &SurfaceNode) -> Vec<String> {
+    node.children
+        .iter()
+        .filter_map(|child| ast.node(*child))
+        .filter_map(SurfaceNode::token_text)
+        .map(str::to_owned)
+        .collect()
+}
+
+fn surface_site(id: SurfaceNodeId) -> TypedSiteRef {
+    TypedSiteRef::Node(TypedNodeId::new(id.index()))
+}
+
+fn source_module_binding_env(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+) -> Result<BindingEnv, mizar_checker::binding_env::BindingEnvError> {
+    let mut contexts = BindingContextTable::new();
+    let context = contexts.insert(BindingContextDraft {
+        owner: BindingContextOwner::Module,
+        parent: None,
+        layer: BindingContextLayer::Module,
+        lexical_scope: None,
+        bindings: Vec::new(),
+        visible_bindings: Vec::new(),
+        recovery: BindingContextRecovery::Normal,
+    });
+    debug_assert_eq!(context, BindingContextId::new(0));
+    BindingEnv::try_new(BindingEnvParts {
+        source_id: ast.source_id,
+        module_id: module,
+        contexts,
+        bindings: BindingTable::new(),
+        diagnostics: BindingDiagnosticTable::new(),
+    })
 }
 
 #[derive(Debug)]
@@ -7163,6 +7398,42 @@ mod tests {
             source_type_elaboration_detail_keys(&non_builtin, module.clone(), &symbols),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
+        let equality_theorem =
+            builtin_equality_theorem_ast(source_id, "TermFormulaPayloadBoundary", "1", "1");
+        assert_eq!(
+            source_type_elaboration_detail_keys(&equality_theorem, module.clone(), &symbols),
+            vec![
+                "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+                "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            ]
+        );
+        let other_label_theorem =
+            builtin_equality_theorem_ast(source_id, "OtherPayloadBoundary", "1", "1");
+        assert_eq!(
+            source_type_elaboration_detail_keys(&other_label_theorem, module.clone(), &symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_literal_theorem =
+            builtin_equality_theorem_ast(source_id, "TermFormulaPayloadBoundary", "1", "2");
+        assert_eq!(
+            source_type_elaboration_detail_keys(&other_literal_theorem, module.clone(), &symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let mixed_reserve_and_theorem = reserve_then_builtin_equality_theorem_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            "TermFormulaPayloadBoundary",
+            "1",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &mixed_reserve_and_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
 
         let mixed = reserve_ast(
             source_id,
@@ -8802,6 +9073,158 @@ mod tests {
             root_children,
         );
         builder.finish(Some(root), None)
+    }
+
+    fn builtin_equality_theorem_ast(
+        source_id: SourceId,
+        label: &str,
+        left: &str,
+        right: &str,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem = add_builtin_equality_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            label,
+            left,
+            right,
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn reserve_then_builtin_equality_theorem_ast(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+        label: &str,
+        left: &str,
+        right: &str,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
+        root_children.push(add_builtin_equality_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            label,
+            left,
+            right,
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn add_builtin_equality_theorem_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        label: &str,
+        left: &str,
+        right: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let theorem = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+        );
+        let label_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            label,
+        );
+        let colon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+        );
+        let formula_start = *offset;
+        let left_term = add_numeral_term_expression(builder, source_id, offset, left);
+        let equality = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            "=",
+        );
+        let right_term = add_numeral_term_expression(builder, source_id, offset, right);
+        let formula_end = builder
+            .node_range(right_term)
+            .expect("just-created right term should exist")
+            .end;
+        let formula = builder.add_node(
+            SurfaceNodeKind::BuiltinPredicateApplication,
+            range(source_id, formula_start, formula_end),
+            vec![left_term, equality, right_term],
+        );
+        let formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, formula_start, formula_end),
+            vec![formula],
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, start, end),
+            vec![theorem, label_token, colon, formula_expression, semicolon],
+        )
+    }
+
+    fn add_numeral_term_expression(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spelling: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Numeral,
+            spelling,
+        );
+        let end = builder
+            .node_range(token)
+            .expect("just-created numeral token should exist")
+            .end;
+        let numeral = builder.add_node(
+            SurfaceNodeKind::NumeralTerm,
+            range(source_id, start, end),
+            vec![token],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start, end),
+            vec![numeral],
+        )
     }
 
     fn add_reserve_items(

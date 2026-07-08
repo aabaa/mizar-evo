@@ -295,8 +295,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    heads, imported module AST extraction, attributed-type evidence, owner
    provenance, arguments, and downstream payloads on extraction/deferred gaps,
    task 86 records a formula-only theorem source on the active
-   source-to-checker extraction gap, task 87 records a term-bearing equality
-   theorem source on the same gap, task 98 records imported predicate/functor
+   source-to-checker extraction gap, task 106 supersedes task 87 for the exact
+   term-bearing builtin equality theorem source by passing real checker
+   term/formula payloads before failing on missing numeric type payloads and
+   partial formula checking, task 98 records imported predicate/functor
    theorem formula surfaces on the same gap, task 100 records builtin membership
    theorem formula surfaces on the same gap, task 101 records builtin inequality
    theorem formula surfaces on the same gap, task 102 records builtin type

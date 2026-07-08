@@ -371,13 +371,16 @@ theorem/formula payload extraction、local proof context、recorded fact、dedic
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。この boundary は
 theorem acceptance、formula fact、proof skeleton、CoreIr、ControlFlowIr、VC、
 proof payload を credit しない。
-task 87 は term を含む theorem formula について同じ boundary を記録する:
-`theorem TermFormulaPayloadBoundary: 1 = 1;` は Chapter 13 の numeral term と
-Chapter 14 の builtin equality surface を伴って parser / resolver 実行まで到達するが、
-real term/formula payload extraction、term inference、formula checking、recorded fact、
-theorem acceptance、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、
-proof payload がまだ存在しないため
-`type_elaboration.external_dependency.ast_payload_extraction` に残す。
+task 106 は task 87 の generic boundary のうち、builtin equality theorem formula
+`theorem TermFormulaPayloadBoundary: 1 = 1;` の narrow slice を supersede する。
+active runner は Chapter 13 の 2 つの numeral operand から real checker
+`TermInput` を、Chapter 14 の equality formula から real checker `FormulaInput` を
+module binding context の下で抽出し、その後
+`type_elaboration.checker.checker.term.external.numeric_type_payload` と
+`type_elaboration.checker.checker.formula.term.partial` で fail closed する。
+numeric type payload、equality checking、recorded fact、theorem acceptance、
+dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload は
+まだ deferred のままである。
 task 98 は同じ boundary の imported predicate/functor variant を記録する:
 `theorem ImportedPredicateFunctorPayloadBoundary: 1 divides (1 ++ 2);` は documented
 `parser.type_fixtures` surface を通じて parser / resolver 実行まで到達するが、

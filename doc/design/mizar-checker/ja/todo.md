@@ -1827,12 +1827,10 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。
     - Acceptance: parser と resolver は source を実行し、その後 active runner は
-      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
-      checker-owned term/formula payload extraction、term inference、formula
-      checking、recorded fact、theorem acceptance、CoreIr、ControlFlowIr、VC、proof
-      payload、`formula_statement` runner がまだ存在しないためである。この task は
-      term payload、formula payload、fact、proof skeleton、downstream semantic
-      payload を捏造してはならない。
+      当初 `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+      task 106 はこの exact builtin equality slice を supersede し、real checker
+      term/formula payload を抽出したうえで missing numeric type payload と partial
+      formula checking で fail closed する。
     - 検証: `cargo test -p mizar-test`。
     - 依存: task 86。参照: Step 5 source-derived semantic bridge、mizar-test
       task 10、spec 13 term expressions、spec 14 formulas、spec 16 theorems and
@@ -2139,6 +2137,24 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 86、87、98、100、101、102、103、104。参照: Step 5
       source-derived semantic bridge、mizar-test task 10、spec 13 term
       expressions、spec 14 formulas、spec 16 theorems and proofs。
+
+106. **Source-derived builtin equality theorem term/formula checker bridge を追加する。** [x]
+    - unrecovered `TheoremItem -> FormulaExpression -> BuiltinPredicateApplication("=")`
+      source shape で、structural Chapter 13 `NumeralTerm` operand が 2 つだけの
+      場合に限って昇格する。
+    - Acceptance: active runner は real module-shell checker binding context を作り、
+      2 つの source-derived `TermInput` と 1 つの equality `FormulaInput` を
+      `TermFormulaChecker` に渡し、
+      `type_elaboration.checker.checker.term.external.numeric_type_payload` と
+      `type_elaboration.checker.checker.formula.term.partial` で fail closed する。
+      numeric type payload、equality fact/checking、theorem acceptance、
+      `formula_statement` runner、downstream semantic payload は捏造してはならず、
+      membership、inequality、type assertion、imported、set-enumeration、
+      connective/quantifier、proof theorem surface を昇格してはならない。
+    - 検証: `cargo test -p mizar-test --test metadata`。
+    - 依存: tasks 86、87。参照: Step 5 source-derived semantic bridge、mizar-test
+      task 10、spec 13 term expressions、spec 14 formulas、spec 16 theorems and
+      proofs。
 
 ## 推奨検証
 

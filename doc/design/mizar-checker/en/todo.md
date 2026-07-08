@@ -1971,12 +1971,10 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       containing source terms, such as
       `theorem TermFormulaPayloadBoundary: 1 = 1;`.
     - Acceptance: parser and resolver execute the source, then the active runner
-      reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned term/formula payload extraction, term inference,
-      formula checking, recorded facts, theorem acceptance, CoreIr, ControlFlowIr,
-      VC, proof payloads, and the `formula_statement` runner are not available.
-      The task must not fabricate term payloads, formula payloads, facts, proof
-      skeletons, or downstream semantic payloads.
+      originally reports `type_elaboration.external_dependency.ast_payload_extraction`.
+      Task 106 supersedes this exact builtin equality slice by extracting real
+      checker term/formula payloads while still failing closed on missing
+      numeric type payloads and partial formula checking.
     - Verify: `cargo test -p mizar-test`.
     - Deps: task 86. Refs: Step 5 source-derived semantic bridge; mizar-test
       task 10; spec 13 term expressions; spec 14 formulas; spec 16 theorems and
@@ -2298,6 +2296,26 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 86, 87, 98, 100, 101, 102, 103, and 104. Refs: Step 5
       source-derived semantic bridge; mizar-test task 10; spec 13 term
       expressions; spec 14 formulas; spec 16 theorems and proofs.
+
+106. **Add source-derived builtin equality theorem term/formula checker bridge.** [x]
+    - Promote only the unrecovered
+      `TheoremItem -> FormulaExpression -> BuiltinPredicateApplication("=")`
+      source shape with exactly two structural Chapter 13 `NumeralTerm`
+      operands.
+    - Acceptance: the active runner builds a real module-shell checker binding
+      context, passes two source-derived `TermInput`s and one equality
+      `FormulaInput` to `TermFormulaChecker`, and fails closed on
+      `type_elaboration.checker.checker.term.external.numeric_type_payload` plus
+      `type_elaboration.checker.checker.formula.term.partial`. The task must not
+      fabricate numeric type payloads, equality facts/checking, theorem
+      acceptance, `formula_statement` runner support, or downstream semantic
+      payloads, and it must not promote membership, inequality, type assertion,
+      imported, set-enumeration, connective/quantifier, or proof theorem
+      surfaces.
+    - Verify: `cargo test -p mizar-test --test metadata`.
+    - Deps: tasks 86 and 87. Refs: Step 5 source-derived semantic bridge;
+      mizar-test task 10; spec 13 term expressions; spec 14 formulas; spec 16
+      theorems and proofs.
 
 ## Recommended Verification
 

@@ -442,7 +442,7 @@ lower-stage boundary cases, the task 78 imported-structure external-gap case,
 the task 79 imported-mode external-gap case, the task 80 imported-attribute
 external-gap case outside task 84 and task 85, the task 81 argument-bearing
 local-attribute external-gap case, the task 86 formula-only theorem
-external-gap case, the task 87 term-bearing theorem formula external-gap
+external-gap case, the task 106 builtin equality theorem checker-payload numeric-type gap
 case, the task 98 imported predicate/functor theorem formula external-gap
 case, the task 100 builtin membership theorem formula external-gap
 case, the task 101 builtin inequality theorem formula external-gap
@@ -572,12 +572,13 @@ elaboration. Task 86 fail cases credit only the formula-only theorem
 extraction-gap boundary after parser/resolver execution and do not credit
 checker theorem/formula payload extraction, recorded facts, theorem acceptance,
 proof skeletons, `formula_statement` runner support, CoreIr, ControlFlowIr,
-VC, or proof payloads. Task 87 fail cases credit only the term-bearing theorem
-formula extraction-gap boundary after parser/resolver execution and do not
-credit checker term/formula payload extraction, term inference, formula
-checking, recorded facts, theorem acceptance, proof skeletons,
-`formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
-payloads. Task 98 fail cases credit only the imported predicate/functor theorem
+VC, or proof payloads. Task 87 originally credited only the term-bearing theorem
+formula extraction-gap boundary after parser/resolver execution. Task 106
+supersedes the exact `TermFormulaPayloadBoundary: 1 = 1` sidecar by crediting
+real checker term/formula payload extraction while still failing closed before
+numeric type payloads, equality checking, recorded facts, theorem acceptance,
+proof skeletons, `formula_statement` runner support, CoreIr, ControlFlowIr, VC,
+or proof payloads. Task 98 fail cases credit only the imported predicate/functor theorem
 formula extraction-gap boundary after parser/resolver execution and do not
 credit imported semantic payloads, checker term/formula payload extraction, term
 inference, formula checking, recorded facts, theorem acceptance, proof
