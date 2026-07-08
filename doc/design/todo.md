@@ -289,7 +289,11 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    to the checker evidence-query diagnostic while keeping active positive
    `empty set` and `non empty object` boundary sidecars, broader non-`set`
    heads, imported module AST extraction, attributed-type evidence, owner
-   provenance, arguments, and downstream payloads on extraction/deferred gaps).
+   provenance, arguments, and downstream payloads on extraction/deferred gaps,
+   and task 86 records a formula-only theorem source on the active
+   source-to-checker extraction gap while keeping theorem/formula payloads,
+   proof context, recorded facts, `formula_statement`, CoreIr, ControlFlowIr,
+   VC, and proof payloads deferred).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate
 semantic payloads; promote corpus rows only with prepared consumers.

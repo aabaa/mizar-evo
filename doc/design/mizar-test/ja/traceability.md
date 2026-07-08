@@ -397,7 +397,7 @@ task 69、task 70、task 71 の external-gap boundary case、task 75/task 76/tas
 77 の lower-stage boundary case、task 78 の historical imported-structure external-gap
 case（task 83 が `R` 部分を supersede し、broader non-`R` case は deferred）、task 79 の imported-mode external-gap case、task 84 / task 85 外の task 80 imported-attribute
 external-gap case、task 81 の argument-bearing local-attribute external-gap case
-を除き、task 85 の imported negative `empty`/builtin-`set` provenance slice を
+および task 86 の formula-only theorem external-gap case を除き、task 85 の imported negative `empty`/builtin-`set` provenance slice を
 含む上記の supported reserve slices を syntax-free checker source
 reserve payload へ変換し、checker-owned seam が module `BindingEnv`、binding ごとの
 `DeclarationInput`、binding 固有の `TypeExpressionInput` site、
@@ -500,6 +500,11 @@ task 81 の fail case は argument-bearing local-attribute extraction-gap bounda
 だけを credit し、real term-argument provenance、checker `AttributeInput`
 argument payload、attributed-type evidence、positive attributed type elaboration、
 CoreIr、ControlFlowIr、VC、proof payload は credit しない。
+task 86 の fail case は parser / resolver 実行後の formula-only theorem
+extraction-gap boundary だけを credit し、checker theorem/formula payload
+extraction、recorded fact、theorem acceptance、proof skeleton、
+`formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
+credit しない。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
 `proof_verification` row は deferred のままにする。summary/context readiness read は

@@ -1810,6 +1810,19 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       mizar-test task 10、spec 03 type expressions、spec 06 attributes、
       spec 11 symbol management、spec 12 modules and namespaces。
 
+86. **Source-derived theorem formula extraction-gap boundary を追加する。** [x]
+    - `theorem FormulaPayloadBoundary: thesis;` のような formula-only theorem
+      source について、専用の active `type_elaboration` boundary を追加する。
+    - Acceptance: parser と resolver は source を実行し、その後 active runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+      checker-owned theorem/formula payload extraction、local proof context、
+      recorded fact、theorem acceptance、CoreIr、ControlFlowIr、VC、proof payload、
+      `formula_statement` runner がまだ存在しないためである。この task は formula
+      payload、fact、proof skeleton、downstream semantic payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: task 48。参照: Step 5 source-derived semantic bridge、mizar-test
+      task 10、spec 14 formulas、spec 16 theorems and proofs。
+
 ## 推奨検証
 
 各タスクの後で実行する:

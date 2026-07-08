@@ -1570,6 +1570,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.14.formulas.type_elaboration_payload_gap"
+source = "doc/spec/en/14.formulas.md"
+section = "14.1 Overview; 14.3.6 Special Constants"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.15.reconsider.omitted_justification.parser"
 source = "doc/spec/en/15.statements.md"
 section = "15.5.1 Type Reconsideration (`reconsider`); 15.12 Complete Syntax; Appendix A.15 Reasoning Statements"
@@ -1701,6 +1713,18 @@ required = true
 coverage = "fail"
 tests = [
   "tests/miz/fail/resolve/fail_resolve_duplicate_theorem_symbol_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems_and_proofs.type_elaboration_payload_gap"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.2 Syntax of Theorem Declarations"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2300,6 +2324,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_argument_bearing_structure_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_bracket_mode_argument_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_bracket_structure_argument_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_non_builtin_type_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_payload_extraction_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_structure_qualified_attribute_gap_001.expect.toml",
@@ -2473,6 +2498,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_bracket_structure_argument_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.formula_statement_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 86 source-derived theorem formula extraction gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
 ]
 
 [[requirement]]

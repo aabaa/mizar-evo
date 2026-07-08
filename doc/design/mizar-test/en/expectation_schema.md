@@ -604,6 +604,14 @@ Separate task-85 boundary sidecars for positive `empty set` and
 with `rejection_reason = "positive_imported_empty_attribute_payload_gap"` or
 `"imported_empty_non_set_head_payload_gap"`; they document unsupported payload
 shapes and do not credit checker `AttributeInput` handoff.
+Task 86 permits formula-only theorem fail sidecars to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "formula_statement_payload_extraction_gap"` and
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
+These sidecars document that the source reached parser/resolver execution, but
+they do not credit a `formula_statement` runner, checker theorem/formula
+payload extraction, recorded facts, proof skeletons, CoreIr, ControlFlowIr, VC,
+or proof payloads.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

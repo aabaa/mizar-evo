@@ -1952,6 +1952,20 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       bridge; mizar-test task 10; spec 03 type expressions; spec 06
       attributes; spec 11 symbol management; spec 12 modules and namespaces.
 
+86. **Add source-derived theorem formula extraction-gap boundary.** [x]
+    - Add a dedicated active `type_elaboration` boundary for a formula-only
+      theorem source such as `theorem FormulaPayloadBoundary: thesis;`.
+    - Acceptance: parser and resolver execute the source, then the active
+      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
+      because checker-owned theorem/formula payload extraction, local proof
+      contexts, recorded facts, theorem acceptance, CoreIr, ControlFlowIr, VC,
+      proof payloads, and the `formula_statement` runner are not available.
+      The task must not fabricate formula payloads, facts, proof skeletons, or
+      downstream semantic payloads.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: task 48. Refs: Step 5 source-derived semantic bridge; mizar-test
+      task 10; spec 14 formulas; spec 16 theorems and proofs.
+
 ## Recommended Verification
 
 Run after each task:

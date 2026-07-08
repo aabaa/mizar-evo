@@ -292,8 +292,9 @@ Keep `cargo test -p mizar-test` green after each task (see
       boundary plus declaration-symbol suffix projection, checker task
       82's imported mode reserve provenance bridge, checker task 83's
       imported structure reserve provenance bridge, checker task 84's
-      imported attribute reserve provenance bridge, and checker task 85's
-      imported non-empty attribute reserve provenance bridge as
+      imported attribute reserve provenance bridge, checker task 85's
+      imported non-empty attribute reserve provenance bridge, and checker task
+      86's theorem formula extraction-gap boundary as
       prepared/implemented increments.
       Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
@@ -430,7 +431,8 @@ Keep `cargo test -p mizar-test` green after each task (see
       `R` bridge and task-78 boundary, imported mode expansion payloads beyond
       task 82's provenance bridge, attribute argument payloads beyond the task-81 boundary,
       attributed or argument-bearing
-      mode/structure heads, structure base-shape payloads, terms, formulas,
+      mode/structure heads, structure base-shape payloads, terms,
+      formula/theorem payloads beyond the task-86 extraction-gap boundary,
       coercions, overload payloads, facts, CoreIr,
       ControlFlowIr, VC payloads, and proof evidence remain on the explicit
       `type_elaboration.external_dependency.ast_payload_extraction` gap. The

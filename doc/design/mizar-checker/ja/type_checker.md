@@ -362,6 +362,14 @@ payload extraction はまだ real term-argument provenance や
 checker-owned `AttributeInput` argument payload を保持しないためである。bridge は
 attribute argument、attributed-type evidence、positive parameterized attribute
 elaboration、CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。
+task 86 は theorem/formula extraction-gap boundary を記録する:
+`theorem FormulaPayloadBoundary: thesis;` のような theorem formula だけを含む
+source は active type-elaboration runner まで到達できるが、checker-owned
+theorem/formula payload extraction、local proof context、recorded fact、dedicated
+`formula_statement` runner が存在するまでは
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。この boundary は
+theorem acceptance、formula fact、proof skeleton、CoreIr、ControlFlowIr、VC、
+proof payload を credit しない。
 task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
 documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
 reserve head は、可視 resolver symbol が `SymbolKind::Mode` で

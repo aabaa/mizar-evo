@@ -439,7 +439,8 @@ The supported reserve slices above, excluding task 67, task 68, task 69, task
 lower-stage boundary cases, the task 78 imported-structure external-gap case,
 the task 79 imported-mode external-gap case, the task 80 imported-attribute
 external-gap case outside task 84 and task 85, and the task 81 argument-bearing
-local-attribute external-gap case, but including the task 85 imported negative
+local-attribute external-gap case, and the task 86 formula-only theorem
+external-gap case, but including the task 85 imported negative
 `empty`/builtin-`set` provenance slice, are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one
 `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites,
@@ -542,7 +543,11 @@ Task 81 fail
 cases credit only the argument-bearing local-attribute extraction-gap boundary
 and do not credit real term-argument provenance, checker `AttributeInput`
 argument payloads, attributed-type evidence, or positive attributed type
-elaboration. Task
+elaboration. Task 86 fail cases credit only the formula-only theorem
+extraction-gap boundary after parser/resolver execution and do not credit
+checker theorem/formula payload extraction, recorded facts, theorem acceptance,
+proof skeletons, `formula_statement` runner support, CoreIr, ControlFlowIr,
+VC, or proof payloads. Task
 75/76/77 fail
 cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker
