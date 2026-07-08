@@ -353,13 +353,22 @@ summary について real imported `SymbolKind::Mode` symbol を checker type he
 これは imported mode provenance と type-head payload extraction を credit するが、
 imported module AST extraction、`ModeExpansion` payload、positive mode
 elaboration、CoreIr、ControlFlowIr、VC、proof payload は credit しない。task 80 は
-imported-attribute reserve external-gap boundary
-だけを credit する。runner は documented `parser.type_fixtures` imported
-attribute summary について
+task-84 `TypeCaseAttr` bridge 外の imported-attribute reserve external-gap
+boundary だけを credit する。将来の broader imported-attribute case は
 `type_elaboration.external_dependency.ast_payload_extraction` を観測し、real
 imported attribute provenance、`AttributeInput` payload extraction、
 attributed-type evidence、positive attributed type elaboration、CoreIr、
-ControlFlowIr、VC、proof payload を credit しない。task 81 は
+ControlFlowIr、VC、proof payload を credit しない。task 84 は imported-attribute
+provenance / `AttributeInput` bridge だけを credit してよい。runner は documented
+`parser.type_fixtures` imported attribute `TypeCaseAttr` を builtin `set` 上の
+real imported `SymbolKind::Attribute` checker `AttributeInput` として渡した後に
+`type_elaboration.checker.checker.declaration.deferred.evidence_query` を観測する。
+これは imported attribute provenance と argument-free `AttributeInput` payload
+extraction を credit するが、imported module AST extraction、attributed-type
+existential/evidence payload、positive imported attributed type elaboration、
+`empty` のような generic imported attribute、structure-qualified attribute owner
+provenance、attribute argument、CoreIr、ControlFlowIr、VC、proof payload は credit
+しない。task 81 は
 argument-bearing local-attribute extraction-gap boundary だけを credit する。
 runner は `param_prefix` 構文で宣言され `attribute_name(args)` として使われる
 same-module parameterized attribute について
@@ -373,7 +382,7 @@ projection と suffix による imported-lexicon visibility を credit してよ
 task 67、task 68、
 task 69、task 70、task 71 の external-gap boundary case、task 75/task 76/task
 77 の lower-stage boundary case、task 78 の historical imported-structure external-gap
-case（task 83 が `R` 部分を supersede し、broader non-`R` case は deferred）、task 79 の imported-mode external-gap case、task 80 の imported-attribute
+case（task 83 が `R` 部分を supersede し、broader non-`R` case は deferred）、task 79 の imported-mode external-gap case、task 84 外の task 80 imported-attribute
 external-gap case、task 81 の argument-bearing local-attribute external-gap case
 を除く上記の supported reserve slices を syntax-free checker source
 reserve payload へ変換し、checker-owned seam が module `BindingEnv`、binding ごとの
@@ -460,8 +469,13 @@ mode extraction-gap boundary だけを credit する。task 82 の fail case は
 imported mode provenance と checker type-head payload extraction だけを credit
 し、imported module AST extraction、imported mode expansion、arity checking、
 positive imported mode elaboration、downstream payload promotion は credit しない。
-task 80 の fail case は imported attribute extraction-gap boundary だけを
-credit し、real imported attribute provenance や attributed-type evidence は
+task 80 の fail case は task-84 `TypeCaseAttr` bridge 外の imported attribute
+extraction-gap boundary だけを credit し、real imported attribute provenance や
+attributed-type evidence は credit しない。task 84 の fail case は real imported
+attribute provenance と checker `AttributeInput` payload extraction だけを credit
+し、imported module AST extraction、attributed-type existential/evidence payload、
+positive imported attributed type elaboration、generic imported attribute、
+qualified owner provenance、attribute argument、downstream payload promotion は
 credit しない。
 task 81 の fail case は argument-bearing local-attribute extraction-gap boundary
 だけを credit し、real term-argument provenance、checker `AttributeInput`

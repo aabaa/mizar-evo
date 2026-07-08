@@ -2932,11 +2932,6 @@ impl SourceReserveDeclarationBridge {
     fn validate_symbol_heads(&self, symbols: &SymbolEnv) -> Result<(), String> {
         for (index, binding) in self.bindings.iter().enumerate() {
             for (attribute_index, attribute) in binding.type_attributes.iter().enumerate() {
-                if attribute.symbol.module() != &self.module_id {
-                    return Err(format!(
-                        "source reserve binding {index} attribute {attribute_index} is not local to the bridge module"
-                    ));
-                }
                 let entry = symbols.symbols().get(&attribute.symbol).ok_or_else(|| {
                     format!(
                         "source reserve binding {index} attribute {attribute_index} is missing from SymbolEnv"
@@ -2956,11 +2951,24 @@ impl SourceReserveDeclarationBridge {
                                 "source reserve binding {index} attribute {attribute_index} contribution is missing from SymbolEnv"
                             )
                         })?;
-                if contribution.module() != &self.module_id
-                    || !matches!(contribution.kind(), ContributionKind::LocalSource { .. })
+                let local_source_attribute = attribute.symbol.module() == &self.module_id
+                    && contribution.module() == &self.module_id
+                    && matches!(contribution.kind(), ContributionKind::LocalSource { .. });
+                let imported_fixture_attribute = attribute.symbol.module() != &self.module_id
+                    && contribution.module() == attribute.symbol.module()
+                    && matches!(contribution.kind(), ContributionKind::ImportedSource { .. })
+                    && attribute.symbol.module().path().as_str() == "parser.type_fixtures"
+                    && entry.primary_spelling() == "TypeCaseAttr";
+                if imported_fixture_attribute
+                    && !matches!(binding.type_head, TypeHeadInput::BuiltinSet)
                 {
                     return Err(format!(
-                        "source reserve binding {index} attribute {attribute_index} is not local source-backed"
+                        "source reserve binding {index} imported fixture attribute {attribute_index} is supported only on builtin set"
+                    ));
+                }
+                if !local_source_attribute && !imported_fixture_attribute {
+                    return Err(format!(
+                        "source reserve binding {index} attribute {attribute_index} is not backed by supported source provenance"
                     ));
                 }
             }
@@ -7401,6 +7409,160 @@ mod tests {
             "imported source attribute payloads must fail closed at the checker seam"
         );
 
+        let imported_fixture_attribute = SymbolId::new(
+            ModuleId::new(
+                PackageId::new("pkg"),
+                ModulePath::new("parser.type_fixtures"),
+            ),
+            LocalSymbolId::new("TypeCaseAttr/0"),
+            FullyQualifiedName::new("pkg::parser.type_fixtures::TypeCaseAttr/0"),
+        );
+        let imported_fixture_attribute_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 22),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 20),
+                    "TypeCaseAttr set",
+                    TypeHeadInput::BuiltinSet,
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    imported_fixture_attribute.clone(),
+                    AttributePolarity::Positive,
+                    range(source, 4, 16),
+                    "TypeCaseAttr",
+                )]),
+            ],
+        )
+        .expect("imported fixture attribute payload shape should validate");
+        let imported_fixture_attribute_handoff = imported_fixture_attribute_bridge
+            .check(&symbol_env_with_imported_symbol(
+                imported_fixture_attribute.clone(),
+                SymbolKind::Attribute,
+                "TypeCaseAttr",
+            ))
+            .expect("imported TypeCaseAttr should pass checker provenance validation");
+        assert_eq!(
+            diagnostic_ranges(
+                imported_fixture_attribute_handoff.declarations(),
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        let imported_fixture_attribute_declaration =
+            declarations_by_binding(imported_fixture_attribute_handoff.declarations())
+                .remove(&BindingId::new(0))
+                .expect("checked imported attribute declaration should exist");
+        let imported_fixture_attribute_type_entry = imported_fixture_attribute_handoff
+            .declarations()
+            .type_entries()
+            .get(
+                imported_fixture_attribute_declaration
+                    .type_entry
+                    .expect("imported attribute declaration should keep a type entry"),
+            )
+            .expect("imported attribute type entry should exist");
+        let TypeEntryActual::Known(imported_fixture_attribute_normalized_id) =
+            imported_fixture_attribute_type_entry.actual
+        else {
+            panic!("imported fixture attribute should keep a normalized type");
+        };
+        let imported_fixture_attribute_normalized = imported_fixture_attribute_handoff
+            .declarations()
+            .normalized_types()
+            .get(imported_fixture_attribute_normalized_id)
+            .expect("normalized imported fixture attribute type should exist");
+        assert_eq!(
+            imported_fixture_attribute_normalized.status,
+            NormalizedTypeStatus::Known
+        );
+        assert_eq!(
+            imported_fixture_attribute_normalized
+                .attributes
+                .positive()
+                .len(),
+            1
+        );
+        assert_eq!(
+            imported_fixture_attribute_normalized.attributes.positive()[0].symbol,
+            imported_fixture_attribute
+        );
+        assert!(
+            imported_fixture_attribute_handoff
+                .declarations()
+                .facts()
+                .is_empty(),
+            "imported attributed reserve heads must not seed facts without existential evidence"
+        );
+        let imported_fixture_attribute_object_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 25),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 25),
+                    "TypeCaseAttr object",
+                    TypeHeadInput::BuiltinObject,
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    imported_fixture_attribute.clone(),
+                    AttributePolarity::Positive,
+                    range(source, 4, 16),
+                    "TypeCaseAttr",
+                )]),
+            ],
+        )
+        .expect("imported fixture attribute over object should validate shape before provenance");
+        assert!(
+            imported_fixture_attribute_object_bridge
+                .check(&symbol_env_with_imported_symbol(
+                    imported_fixture_attribute.clone(),
+                    SymbolKind::Attribute,
+                    "TypeCaseAttr",
+                ))
+                .is_err(),
+            "imported TypeCaseAttr is source-supported only over builtin set"
+        );
+        let imported_fixture_attribute_structure_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 25),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 23),
+                    "TypeCaseAttr Struct",
+                    TypeHeadInput::Symbol(symbol_id("Struct/0", "pkg::main::Struct/0")),
+                )
+                .with_type_attributes(vec![AttributeInput::new(
+                    imported_fixture_attribute.clone(),
+                    AttributePolarity::Positive,
+                    range(source, 4, 16),
+                    "TypeCaseAttr",
+                )]),
+            ],
+        )
+        .expect(
+            "imported fixture attribute over a symbol head should validate shape before provenance",
+        );
+        assert!(
+            imported_fixture_attribute_structure_bridge
+                .check(&symbol_env_with_local_structure_and_imported_symbol(
+                    symbol_id("Struct/0", "pkg::main::Struct/0"),
+                    imported_fixture_attribute.clone(),
+                    SymbolKind::Attribute,
+                    "TypeCaseAttr",
+                ))
+                .is_err(),
+            "imported TypeCaseAttr must not bridge attributed local symbol heads"
+        );
+
         let wrong_kind_attribute = symbol_id("empty/0", "pkg::main::empty/0");
         let wrong_kind_attribute_bridge = SourceReserveDeclarationBridge::new(
             source,
@@ -11359,6 +11521,79 @@ mod tests {
             SourceAnchor::Range(range(source, 1, 2)),
         );
         let mut symbols = SymbolIndex::new();
+        symbols.insert(
+            SymbolEntry::new(
+                imported_symbol,
+                kind,
+                NamespacePath::new("main"),
+                spelling,
+                SemanticOrigin::new(
+                    source,
+                    imported_module,
+                    SourceAnchor::Range(range(source, 1, 2)),
+                    Vec::new(),
+                ),
+                imported_contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
+        SymbolEnv::new(
+            module_id(),
+            SymbolEnvIndexes {
+                imports: ResolvedImportIndex::new(),
+                exports: ResolvedExportIndex::new(),
+                symbols,
+                labels: LabelIndex::new(),
+                definitions: DefinitionIndex::new(),
+                overloads: OverloadIndex::new(),
+                registrations: RegistrationIndex::new(),
+                lexical_summaries: ModuleLexicalSummaryIndex::new(),
+                namespace_graph: NamespaceGraph::new(),
+                declaration_dependencies: Default::default(),
+                contributions,
+                module_summaries: ModuleSummaryIndex::new(),
+            },
+        )
+    }
+
+    fn symbol_env_with_local_structure_and_imported_symbol(
+        structure: SymbolId,
+        imported_symbol: SymbolId,
+        kind: SymbolKind,
+        spelling: &'static str,
+    ) -> SymbolEnv {
+        let source = source_id();
+        let imported_module = imported_symbol.module().clone();
+        let mut contributions = SourceContributionIndex::new();
+        let local_contribution = contributions.insert(
+            module_id(),
+            ContributionKind::LocalSource { source_id: source },
+            SourceAnchor::Range(range(source, 0, 1)),
+        );
+        let imported_contribution = contributions.insert(
+            imported_module.clone(),
+            ContributionKind::ImportedSource { source_id: source },
+            SourceAnchor::Range(range(source, 1, 2)),
+        );
+        let mut symbols = SymbolIndex::new();
+        symbols.insert(
+            SymbolEntry::new(
+                structure,
+                SymbolKind::Structure,
+                NamespacePath::new("main"),
+                "Struct",
+                SemanticOrigin::new(
+                    source,
+                    module_id(),
+                    SourceAnchor::Range(range(source, 0, 1)),
+                    Vec::new(),
+                ),
+                local_contribution,
+            )
+            .with_visibility(Visibility::Public)
+            .with_export_status(ExportStatus::Exported),
+        );
         symbols.insert(
             SymbolEntry::new(
                 imported_symbol,

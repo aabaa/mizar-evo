@@ -567,7 +567,8 @@ once the runner passes the real imported `SymbolKind::Mode` symbol head from
 extraction only; it still does not credit imported module AST extraction,
 `ModeExpansion` payloads, positive mode elaboration, CoreIr, ControlFlowIr, VC,
 or proof payloads.
-Task 80 permits imported attribute reserve fail sidecars to use
+Task 80 permits broader imported attribute reserve fail sidecars outside the
+task-84 `TypeCaseAttr` bridge to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "imported_attribute_payload_gap"` and
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
@@ -576,6 +577,16 @@ when the source reaches the active runner through the documented
 imported module AST extraction, imported attribute provenance, `AttributeInput`
 payload extraction, attributed-type evidence, positive attributed type
 elaboration, CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 84 permits the documented `TypeCaseAttr` sidecar to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "imported_attribute_evidence_payload_gap"` and
+`stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"`
+after the active runner passes the real imported attribute provenance and
+no-argument checker `AttributeInput` payload. This sidecar does not credit
+imported module AST extraction, attributed-type existential/evidence payloads,
+positive imported attributed type elaboration, generic imported attributes,
+qualified owner provenance, attribute arguments, CoreIr, ControlFlowIr, VC, or
+proof payloads.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

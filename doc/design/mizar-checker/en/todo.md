@@ -1819,14 +1819,15 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Add active fail coverage for a reserve type whose attribute is an imported
       attribute symbol supplied by the existing `parser.type_fixtures` import
       summary.
-    - Acceptance: the active type-elaboration runner reports
-      `type_elaboration.external_dependency.ast_payload_extraction`, does not
-      fabricate imported attribute provenance, `AttributeInput` payloads,
-      attributed-type evidence, positive attributed type elaboration, or broader
-      imported attribute semantics, and does not promote CoreIr, ControlFlowIr,
-      VC, or proof payloads. The fixture is diagnostic boundary coverage only
-      and only refines traceability for the generic import-backed attributed
-      reserve gap.
+    - Acceptance: before task 84, the active type-elaboration runner reported
+      `type_elaboration.external_dependency.ast_payload_extraction`. After task
+      84 supersedes the documented `TypeCaseAttr` portion, broader imported
+      attributes outside that bridge still must not fabricate imported
+      attribute provenance, `AttributeInput` payloads, attributed-type evidence,
+      positive attributed type elaboration, or broader imported attribute
+      semantics, and must not promote CoreIr, ControlFlowIr, VC, or proof
+      payloads. The task remains historical diagnostic boundary coverage for
+      the generic import-backed attributed reserve gap.
     - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
     - Deps: tasks 48, 50, 67, 78, and 79. Refs: Step 5 source-derived semantic
       bridge; mizar-test task 10; spec 03 type expressions; spec 06 attributes;
@@ -1900,6 +1901,29 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 48, 52, 76, 78, and 82. Refs: Step 5 source-derived
       semantic bridge; mizar-test task 10; spec 03 type expressions; spec 05
       structures; spec 11 symbol management; spec 12 modules and namespaces.
+
+84. **Add source-derived imported attribute reserve provenance bridge.** [x]
+    - Promote the task-80 imported-attribute reserve boundary just far enough
+      for the active `type_elaboration` runner to pass the documented
+      `parser.type_fixtures` import-summary `TypeCaseAttr` attribute symbol as
+      a checker `AttributeInput` on builtin `set`.
+    - Acceptance: the checker reserve bridge validates that `TypeCaseAttr` is
+      visible through `SymbolEnv`, has `SymbolKind::Attribute`, and is backed by
+      an `ImportedSource` contribution from `parser.type_fixtures`. The runner
+      no longer reports `type_elaboration.external_dependency.ast_payload_extraction`
+      for `TypeCaseAttr set`; it reaches
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query`
+      because imported module AST extraction and attributed-type
+      existential/evidence payloads are not available. The task must not
+      synthesize imported module AST extraction, attributed-type evidence,
+      positive attributed type elaboration, CoreIr, ControlFlowIr, VC, or proof
+      payloads, and it must leave generic imported attributes such as `empty`,
+      structure-qualified owner provenance, arguments, brackets, qualified
+      attributes, and imported evidence on their existing gaps.
+    - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
+    - Deps: tasks 48, 50, 67, 80, and 83. Refs: Step 5 source-derived
+      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 06
+      attributes; spec 11 symbol management; spec 12 modules and namespaces.
 
 ## Recommended Verification
 

@@ -278,7 +278,12 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    structure `R` reserve-head boundary just far enough to pass real imported
    structure symbol provenance/type-head payloads to the checker evidence-query
    diagnostic while keeping imported module AST extraction, structure evidence,
-   and downstream payloads deferred).
+   and downstream payloads deferred, and task 84 promotes the imported
+   attribute `TypeCaseAttr` reserve boundary just far enough to pass real
+   imported attribute provenance/`AttributeInput` payloads to the checker
+   evidence-query diagnostic while keeping imported module AST extraction,
+   attributed-type evidence, generic imported attributes, owner provenance,
+   arguments, and downstream payloads deferred).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate
 semantic payloads; promote corpus rows only with prepared consumers.

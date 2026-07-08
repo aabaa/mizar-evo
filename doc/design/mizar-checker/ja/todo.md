@@ -1684,13 +1684,15 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 既存の `parser.type_fixtures` import summary が提供する imported
       attribute symbol を attribute として持つ reserve type の active fail coverage
       を追加する。
-    - Acceptance: active type-elaboration runner は
-      `type_elaboration.external_dependency.ast_payload_extraction` を報告し、
-      imported attribute provenance、`AttributeInput` payload、attributed-type
-      evidence、positive attributed type elaboration、より広い imported attribute
-      semantics を捏造せず、CoreIr、ControlFlowIr、VC、proof payload へ昇格しない。
-      この fixture は diagnostic boundary coverage のみであり、generic
-      import-backed attributed reserve gap の traceability だけを精密化する。
+    - Acceptance: task 84 より前は、active type-elaboration runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告した。
+      task 84 が documented `TypeCaseAttr` 部分を supersede した後も、その bridge
+      外の broader imported attribute は imported attribute provenance、
+      `AttributeInput` payload、attributed-type evidence、positive attributed type
+      elaboration、より広い imported attribute semantics を捏造せず、CoreIr、
+      ControlFlowIr、VC、proof payload へ昇格しない。この task は generic
+      import-backed attributed reserve gap の historical diagnostic boundary
+      coverage として残る。
     - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
     - 依存: tasks 48、50、67、78、79。参照: Step 5 source-derived semantic
       bridge、mizar-test task 10、spec 03 type expressions、spec 06 attributes、
@@ -1759,6 +1761,28 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
     - 依存: tasks 48、52、76、78、82。参照: Step 5 source-derived semantic
       bridge、mizar-test task 10、spec 03 type expressions、spec 05 structures、
+      spec 11 symbol management、spec 12 modules and namespaces。
+
+84. **Source-derived imported attribute reserve provenance bridge を追加する。** [x]
+    - task-80 の imported-attribute reserve boundary を、active
+      `type_elaboration` runner が documented `parser.type_fixtures`
+      import-summary 由来の `TypeCaseAttr` attribute symbol を builtin `set` 上の
+      checker `AttributeInput` として渡せるところまでだけ昇格する。
+    - Acceptance: checker reserve bridge は `TypeCaseAttr` が `SymbolEnv` で可視で
+      あり、`SymbolKind::Attribute` を持ち、`parser.type_fixtures` の
+      `ImportedSource` contribution に裏付けられていることを検証する。runner は
+      `TypeCaseAttr set` について
+      `type_elaboration.external_dependency.ast_payload_extraction` ではなく
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query` に到達する。
+      imported module AST extraction と attributed-type existential/evidence payload は
+      まだ存在しないためである。この task は imported module AST extraction、
+      attributed-type evidence、positive attributed type elaboration、CoreIr、
+      ControlFlowIr、VC、proof payload を捏造してはならず、`empty` のような generic
+      imported attribute、structure-qualified owner provenance、argument、bracket、
+      qualified attribute、imported evidence は既存 gap に残す。
+    - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
+    - 依存: tasks 48、50、67、80、83。参照: Step 5 source-derived semantic
+      bridge、mizar-test task 10、spec 03 type expressions、spec 06 attributes、
       spec 11 symbol management、spec 12 modules and namespaces。
 
 ## 推奨検証

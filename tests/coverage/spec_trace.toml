@@ -568,6 +568,17 @@ id = "spec.en.03.type_expressions.imported_attribute_payload_gap"
 source = "doc/spec/en/03.type_system.md"
 section = "3.3 Type Expressions"
 stage = "type_elaboration"
+status = "deferred"
+required = true
+coverage = "diagnostic"
+deferred_reason = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Broader imported attribute heads, including generic imported attributes outside that fixture, still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
+tests = []
+
+[[requirement]]
+id = "spec.en.03.type_expressions.imported_attribute_provenance_bridge"
+source = "doc/spec/en/03.type_system.md"
+section = "3.3 Type Expressions"
+stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
@@ -770,7 +781,7 @@ tests = [
 ]
 
 [[requirement]]
-id = "spec.en.06.attributes.imported_attribute_payload_gap"
+id = "spec.en.06.attributes.imported_attribute_evidence_payload_gap"
 source = "doc/spec/en/06.attributes.md"
 section = "6.2 Syntax; 6.9 Complete Syntax"
 stage = "type_elaboration"
@@ -780,6 +791,17 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_imported_attribute_gap_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.06.attributes.imported_attribute_payload_gap"
+source = "doc/spec/en/06.attributes.md"
+section = "6.2 Syntax; 6.9 Complete Syntax"
+stage = "type_elaboration"
+status = "deferred"
+required = true
+coverage = "diagnostic"
+deferred_reason = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Broader imported attributes outside that fixture still lack real AttributeInput payload extraction; positive attributed-type acceptance and existential/evidence payloads remain deferred."
+tests = []
 
 [[requirement]]
 id = "spec.en.06.attributes.parameterized_attribute_declaration_symbol"
@@ -1004,6 +1026,17 @@ id = "spec.en.11.symbol_management.imported_attribute_payload_gap"
 source = "doc/spec/en/11.symbol_management.md"
 section = "11.2.3 Imported Symbols; 11.3 Import Behavior and Conflict Resolution"
 stage = "type_elaboration"
+status = "deferred"
+required = true
+coverage = "diagnostic"
+deferred_reason = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Broader imported attribute heads outside that fixture still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
+tests = []
+
+[[requirement]]
+id = "spec.en.11.symbol_management.imported_attribute_provenance_bridge"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.2.3 Imported Symbols; 11.3 Import Behavior and Conflict Resolution"
+stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "diagnostic"
@@ -1212,6 +1245,17 @@ tests = [
 
 [[requirement]]
 id = "spec.en.12.modules.imported_attribute_payload_gap"
+source = "doc/spec/en/12.modules_and_namespaces.md"
+section = "12.3 Import Statements"
+stage = "type_elaboration"
+status = "deferred"
+required = true
+coverage = "diagnostic"
+deferred_reason = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Broader imported attribute heads outside that fixture still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
+tests = []
+
+[[requirement]]
+id = "spec.en.12.modules.imported_attribute_provenance_bridge"
 source = "doc/spec/en/12.modules_and_namespaces.md"
 section = "12.3 Import Statements"
 stage = "type_elaboration"
@@ -2063,6 +2107,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.imported_attribute_provenance_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 84 source-derived imported attribute reserve provenance bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_imported_attribute_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.imported_mode_provenance_bridge"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 82 source-derived imported mode reserve provenance bridge"
@@ -2168,7 +2224,6 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_attributed_reserve_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_bracket_mode_argument_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_bracket_structure_argument_gap_001.expect.toml",
-  "tests/miz/fail/types/fail_type_elaboration_imported_attribute_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_mixed_reserve_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_non_builtin_type_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_payload_extraction_gap_001.expect.toml",
@@ -2350,12 +2405,11 @@ id = "spec.en.checker.type_elaboration.payload_extraction.imported_attribute_gap
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 80 source-derived imported attribute reserve extraction gap boundary"
 stage = "type_elaboration"
-status = "covered"
+status = "deferred"
 required = true
 coverage = "diagnostic"
-tests = [
-  "tests/miz/fail/types/fail_type_elaboration_imported_attribute_gap_001.expect.toml",
-]
+deferred_reason = "Task 84 supersedes the documented parser.type_fixtures `TypeCaseAttr` fixture by carrying imported attribute provenance/AttributeInput payloads to the checker evidence-query diagnostic. Broader imported attribute heads, including generic imported attributes outside that fixture, still lack real imported AttributeInput payload extraction and should use this row when new source-derived cases are added."
+tests = []
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.imported_structure_gap"

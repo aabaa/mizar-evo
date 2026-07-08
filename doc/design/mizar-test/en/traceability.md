@@ -389,12 +389,23 @@ real imported `SymbolKind::Mode` symbol as a checker type head. It credits
 imported mode provenance and type-head payload extraction, but not imported
 module AST extraction, `ModeExpansion` payloads, positive mode elaboration,
 CoreIr, ControlFlowIr, VC, or proof payloads.
-Task 80 may credit only the imported-attribute reserve external-gap boundary:
-the runner observes `type_elaboration.external_dependency.ast_payload_extraction`
-for the documented `parser.type_fixtures` imported attribute summary and does
-not credit real imported attribute provenance, `AttributeInput` payload
+Task 80 may credit only the imported-attribute reserve external-gap boundary
+outside the task-84 `TypeCaseAttr` bridge: future broader imported-attribute
+cases observe `type_elaboration.external_dependency.ast_payload_extraction` and
+do not credit real imported attribute provenance, `AttributeInput` payload
 extraction, attributed-type evidence, positive attributed type elaboration,
 CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 84 may credit the imported-attribute provenance/`AttributeInput` bridge
+only: the runner observes
+`type_elaboration.checker.checker.declaration.deferred.evidence_query` for the
+documented `parser.type_fixtures` imported attribute `TypeCaseAttr` after
+passing the real imported `SymbolKind::Attribute` symbol as a checker
+`AttributeInput` on builtin `set`. It credits imported attribute provenance and
+no-argument `AttributeInput` payload extraction, but not imported module AST
+extraction, attributed-type existential/evidence payloads, positive imported
+attributed type elaboration, generic imported attributes such as `empty`,
+structure-qualified attribute owner provenance, attribute arguments, CoreIr,
+ControlFlowIr, VC, or proof payloads.
 Task 81 may credit only the argument-bearing local-attribute extraction-gap
 boundary: the runner observes
 `type_elaboration.external_dependency.ast_payload_extraction` for a
@@ -409,8 +420,8 @@ the suffix, but this is not checker argument payload extraction.
 The supported reserve slices above, excluding task 67, task 68, task 69, task
 70, task 71 external-gap boundary cases, the task 75/task 76/task 77
 lower-stage boundary cases, the task 78 imported-structure external-gap case,
-the task 79 imported-mode external-gap case, and the task 80 imported-attribute
-external-gap case, and the task 81 argument-bearing local-attribute external-gap
+the task 79 imported-mode external-gap case, the task 80 imported-attribute
+external-gap case outside task 84, and the task 81 argument-bearing local-attribute external-gap
 case, are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one
 `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites,
@@ -496,8 +507,14 @@ credit only the imported mode extraction-gap boundary outside the task-82
 and checker type-head payload extraction only; they do not credit imported
 module AST extraction, imported mode expansion, arity checking, positive
 imported mode elaboration, or downstream payload promotion. Task 80 fail cases
-credit only the imported attribute extraction-gap boundary and do not credit
-real imported attribute provenance or attributed-type evidence. Task 81 fail
+outside the task-84 `TypeCaseAttr` bridge credit only the imported attribute
+extraction-gap boundary and do not credit real imported attribute provenance or
+attributed-type evidence. Task 84 fail cases credit real imported attribute
+provenance and checker `AttributeInput` payload extraction only; they do not
+credit imported module AST extraction, attributed-type existential/evidence
+payloads, positive imported attributed type elaboration, generic imported
+attributes, qualified owner provenance, attribute arguments, or downstream
+payload promotion. Task 81 fail
 cases credit only the argument-bearing local-attribute extraction-gap boundary
 and do not credit real term-argument provenance, checker `AttributeInput`
 argument payloads, attributed-type evidence, or positive attributed type

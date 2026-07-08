@@ -333,16 +333,23 @@ that Task82 bridge remain on
 not treat that imported summary as real imported module AST extraction, must
 not fabricate `ModeExpansion` payloads, positive mode elaboration, or
 downstream CoreIr/ControlFlowIr/VC/proof payloads.
-Task 80 records the imported-attribute analogue as the same external
-extraction-gap boundary: a reserve type such as `TypeCaseAttr set` from the
-documented `parser.type_fixtures` import summary reaches the active
-type-elaboration runner and reports
-`type_elaboration.external_dependency.ast_payload_extraction`. The bridge must
-not treat that imported summary as real imported module AST extraction, must not
-fabricate imported attribute provenance, `AttributeInput` payloads,
-attributed-type evidence, positive attributed type elaboration, or downstream
-CoreIr/ControlFlowIr/VC/proof payloads. This only refines the existing generic
-import-backed attributed reserve gap into an owned diagnostic boundary slice.
+Task 80 historically recorded the imported-attribute analogue as the same
+external extraction-gap boundary. Task 84 supersedes that boundary only for the
+documented `parser.type_fixtures` `TypeCaseAttr` reserve attribute by passing
+the real imported `SymbolKind::Attribute` as a checker `AttributeInput`;
+broader imported attributes outside that Task84 bridge remain deferred until
+source-derived fixtures and payload producers exist. The bridge must not treat
+that imported summary as real imported module AST extraction, must not
+fabricate attributed-type evidence, positive attributed type elaboration, or
+downstream CoreIr/ControlFlowIr/VC/proof payloads.
+Task 84 records the imported-attribute provenance bridge: `TypeCaseAttr` from
+the documented `parser.type_fixtures` import summary reaches declaration
+checking as an imported attribute payload on builtin `set`, then fails closed on
+`type_elaboration.checker.checker.declaration.deferred.evidence_query` because
+attributed-type existential/evidence payloads are still absent. This does not
+credit positive imported attributed type elaboration, imported module AST
+extraction, generic imported attributes such as `empty`, structure-qualified
+attribute owner provenance, or attribute arguments.
 Task 81 records the same extraction-gap boundary for a same-module
 argument-bearing local attribute surface: a declaration-site attribute written
 with Chapter 6 `param_prefix` syntax, such as `attr RankedDef: x is 2-ranked`,

@@ -533,8 +533,9 @@ task 82 は同じ imported mode reserve-head sidecar について、runner が
 extraction だけを credit し、imported module AST extraction、`ModeExpansion`
 payload、positive mode elaboration、CoreIr、ControlFlowIr、VC、proof payload は
 引き続き credit しない。
-task 80 は imported attribute reserve fail sidecar について、source が documented
-`parser.type_fixtures` import summary を通じて active runner に到達する場合に
+task 80 は task-84 `TypeCaseAttr` bridge 外の broader imported attribute reserve
+fail sidecar について、source が documented `parser.type_fixtures` import summary を
+通じて active runner に到達する場合に
 `failure_category = "external_dependency_gap"`、
 `rejection_reason = "imported_attribute_payload_gap"`、
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
@@ -542,6 +543,16 @@ task 80 は imported attribute reserve fail sidecar について、source が do
 attribute provenance、`AttributeInput` payload extraction、attributed-type evidence、
 positive attributed type elaboration、CoreIr、ControlFlowIr、VC、proof payload を
 credit しない。
+task 84 は documented `TypeCaseAttr` sidecar について、active runner が real
+imported attribute provenance と argument-free checker `AttributeInput` payload を
+渡した後に
+`failure_category = "external_dependency_gap"`、
+`rejection_reason = "imported_attribute_evidence_payload_gap"`、
+`stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"`
+を許可する。この sidecar は imported module AST extraction、attributed-type
+existential/evidence payload、positive imported attributed type elaboration、
+generic imported attribute、qualified owner provenance、attribute argument、CoreIr、
+ControlFlowIr、VC、proof payload を credit しない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
 から checker-owned payload を non-builtin declaration、imported symbol、unresolved /
