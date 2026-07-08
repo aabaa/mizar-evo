@@ -392,12 +392,12 @@ Task 86 records a theorem/formula extraction-gap boundary: a source containing
 only a theorem formula, for example `theorem FormulaPayloadBoundary: thesis;`,
 can reach the active type-elaboration runner. Task 115 supersedes only this
 exact source by passing the source-derived `thesis` formula constant site/range
-to the checker as a recovery `FormulaInput` with `FormulaKind::Unsupported` and
-`MissingFormulaPayload`; the bridge fails closed on missing formula payload and
-unsupported formula semantics. This boundary still does not credit formula
-constant semantics, child-formula graph payloads, theorem acceptance, formula
-facts, proof skeletons, local proof contexts, `formula_statement`, CoreIr,
-ControlFlowIr, VC, or proof payloads.
+to the checker as a recovery `FormulaInput`. Task 117 supersedes that recovery
+marker by using a real `FormulaKind::Thesis` checker payload while keeping the
+bridge fail-closed on missing formula payload. This boundary still does not
+credit formula constant semantics, child-formula graph payloads, theorem
+acceptance, formula facts, proof skeletons, local proof contexts,
+`formula_statement`, CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 106 supersedes the task 87 generic boundary for the narrow builtin
 equality theorem formula `theorem TermFormulaPayloadBoundary: 1 = 1;`. The
 active runner now extracts real source-derived checker `TermInput` payloads for
@@ -501,11 +501,14 @@ checker `FormulaInput` shells for the implication, quantified formula, and
 negation. The checker must fail closed with
 `FormulaDeferredReason::MissingFormulaPayload` for the implication and negation
 shells and `FormulaDeferredReason::MissingQuantifierPayload` for the quantified
-shell because formula constants, child-formula graph payloads, quantifier
-binder/context payloads, formula checking, recorded facts, theorem acceptance,
-the dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof
-payloads are still absent. This does not credit broader formula extraction or
-any accepted formula fact.
+shell because child-formula graph payloads, quantifier binder/context payloads,
+formula checking, recorded facts, theorem acceptance, the dedicated
+`formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof payloads are
+still absent. Task 117 extends only this exact source by additionally passing
+both source-derived `contradiction` constant sites/ranges as
+`FormulaKind::Contradiction` checker payloads before the same missing formula
+payload diagnostic. This does not credit formula constant semantic truth values,
+broader formula extraction, or any accepted formula fact.
 Task 88 records the matching proof-block boundary: a theorem such as
 `theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` reaches
 parser and resolver execution with a Chapter 16 proof block and Chapter 15

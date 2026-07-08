@@ -1520,6 +1520,8 @@ impl FormulaInput {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[non_exhaustive]
 pub enum FormulaKind {
+    Thesis,
+    Contradiction,
     PredicateApplication,
     Equality,
     Inequality,
@@ -4295,6 +4297,8 @@ fn term_kind_name(kind: TermKind) -> &'static str {
 
 fn formula_kind_name(kind: FormulaKind) -> &'static str {
     match kind {
+        FormulaKind::Thesis => "thesis",
+        FormulaKind::Contradiction => "contradiction",
         FormulaKind::PredicateApplication => "predicate_application",
         FormulaKind::Equality => "equality",
         FormulaKind::Inequality => "inequality",
@@ -9319,6 +9323,20 @@ mod tests {
                 range(source, 175, 180),
             )]),
             FormulaInput::new(
+                site(43),
+                BindingContextId::new(1),
+                range(source, 195, 196),
+                FormulaKind::Thesis,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
+            FormulaInput::new(
+                site(44),
+                BindingContextId::new(1),
+                range(source, 196, 197),
+                FormulaKind::Contradiction,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
+            FormulaInput::new(
                 site(36),
                 BindingContextId::new(1),
                 range(source, 180, 181),
@@ -9372,7 +9390,7 @@ mod tests {
         assert_eq!(first.debug_text(), second.debug_text());
         let output = first;
 
-        assert_eq!(output.formulas().len(), 13);
+        assert_eq!(output.formulas().len(), 15);
         assert_eq!(output.facts().len(), 2);
         let equality = formula_by_site(&output, site(30));
         assert_eq!(equality.expected_types.len(), 2);
@@ -9407,8 +9425,32 @@ mod tests {
             diagnostic_ranges(&output, "checker.formula.external.quantifier_payload"),
             vec![(185, 190)]
         );
+        for (formula, kind, range) in [
+            (
+                formula_by_site(&output, site(43)),
+                FormulaKind::Thesis,
+                (195, 196),
+            ),
+            (
+                formula_by_site(&output, site(44)),
+                FormulaKind::Contradiction,
+                (196, 197),
+            ),
+        ] {
+            assert_eq!(formula.kind, kind);
+            assert_eq!(formula.status, FormulaStatus::Partial);
+            assert_eq!(
+                diagnostic_ranges(&output, "checker.formula.external.formula_payload")
+                    .into_iter()
+                    .filter(|diagnostic_range| *diagnostic_range == range)
+                    .collect::<Vec<_>>(),
+                vec![range]
+            );
+        }
         let debug = output.debug_text();
         for expected in [
+            "kind=thesis",
+            "kind=contradiction",
             "kind=equality",
             "kind=inequality",
             "kind=membership",

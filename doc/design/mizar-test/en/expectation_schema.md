@@ -605,13 +605,13 @@ The remaining task-85 boundary sidecar for `non empty object` keeps
 with `rejection_reason = "imported_empty_non_set_head_payload_gap"`; it documents unsupported payload
 shapes and does not credit checker `AttributeInput` handoff.
 Task 86 permits formula-only theorem fail sidecars to reach parser/resolver
-execution. Task 115 supersedes the exact unrecovered
+execution. Task 117 supersedes task 115 for the exact unrecovered
 `FormulaPayloadBoundary: thesis` sidecar, which now uses
 `failure_category = "external_dependency_gap"`,
 `rejection_reason = "formula_statement_recovery_formula_payload_gap"`, and
 `stable_detail_key = "type_elaboration.checker.checker.formula.external.formula_payload"`;
-its diagnostic payloads also include
-`type_elaboration.checker.checker.formula.unsupported_payload`. Non-exact
+its diagnostic payloads contain that same missing formula payload key because
+the source now reaches a real `FormulaKind::Thesis` checker payload. Non-exact
 formula-only theorem shapes remain on
 `type_elaboration.external_dependency.ast_payload_extraction`. These sidecars
 do not credit a `formula_statement` runner, formula constant semantics,
@@ -672,17 +672,20 @@ admissibility/semantic checking, term inference, formula checking, recorded
 facts, theorem acceptance, imported module AST extraction, checker
 `AttributeInput` payload extraction for theorem formulas, a `formula_statement`
 runner, proof skeletons, CoreIr, ControlFlowIr, VC, or proof payloads.
-Task 112 supersedes task 99 for the exact formula connective/quantifier theorem
-fail sidecar. It uses `failure_category = "external_dependency_gap"` with
+Task 112 / task 117 supersede task 99 for the exact formula
+connective/quantifier theorem fail sidecar. It uses
+`failure_category = "external_dependency_gap"` with
 `rejection_reason = "formula_connective_quantifier_shell_payload_gap"` and
 `stable_detail_key =
 "type_elaboration.checker.checker.formula.external.quantifier_payload"` after
 the runner passes source-derived checker `FormulaInput` shells for implication,
-universal quantification, and negation. The diagnostic payload list must include
+universal quantification, and negation, plus exact `FormulaKind::Contradiction`
+payloads for the two source constants. The diagnostic payload list must include
 the formula payload and quantifier payload detail keys. This sidecar does not
-credit formula constants, child-formula graph payloads, quantifier
-binder/context payloads, formula checking, recorded facts, theorem acceptance,
-a `formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payloads.
+credit formula constant semantic truth values, child-formula graph payloads,
+quantifier binder/context payloads, formula checking, recorded facts, theorem
+acceptance, a `formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof
+payloads.
 Task 88 permits proof-block theorem fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "proof_skeleton_payload_extraction_gap"` and

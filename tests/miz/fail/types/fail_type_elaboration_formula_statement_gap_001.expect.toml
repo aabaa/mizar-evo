@@ -12,7 +12,6 @@ stable_detail_key = "type_elaboration.checker.checker.formula.external.formula_p
 diagnostic_codes = []
 diagnostic_payloads = [
   "type_elaboration.checker.checker.formula.external.formula_payload",
-  "type_elaboration.checker.checker.formula.unsupported_payload",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
@@ -21,4 +20,4 @@ spec_refs = [
   "spec.en.checker.type_elaboration.payload_extraction",
   "spec.en.checker.type_elaboration.payload_extraction.formula_statement_gap",
 ]
-notes = "Active type_elaboration runner bridge coverage for checker task 115, superseding task 86 only for this exact source: a formula-only theorem source is parser/resolver executable and now passes the source-derived thesis formula site/range as a checker recovery FormulaInput before failing closed on missing formula payload and unsupported formula semantics. It still lacks formula constant semantic checking, child-formula payloads, local proof context, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and the dedicated formula_statement runner."
+notes = "Active type_elaboration runner bridge coverage for checker task 117, superseding task 115 only for this exact source: a formula-only theorem source is parser/resolver executable and now passes the source-derived thesis formula site/range as a checker FormulaInput with FormulaKind::Thesis before failing closed on missing formula payload. It still lacks formula constant semantic checking, child-formula payloads, local proof context, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and the dedicated formula_statement runner."

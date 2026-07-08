@@ -1080,12 +1080,16 @@ struct SourceSetEnumerationFormula {
 
 #[derive(Debug, Clone)]
 struct SourceFormulaConnectiveQuantifier {
+    premise_constant_site: TypedSiteRef,
+    premise_constant_range: SourceRange,
     implication_site: TypedSiteRef,
     implication_range: SourceRange,
     quantified_site: TypedSiteRef,
     quantified_range: SourceRange,
     negation_site: TypedSiteRef,
     negation_range: SourceRange,
+    body_constant_site: TypedSiteRef,
+    body_constant_range: SourceRange,
 }
 
 #[derive(Debug, Clone)]
@@ -1221,7 +1225,7 @@ fn source_formula_statement_output(
             payload.formula_site,
             context,
             payload.formula_range,
-            FormulaKind::Unsupported,
+            FormulaKind::Thesis,
         )
         .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload])],
     );
@@ -1421,6 +1425,13 @@ fn source_formula_connective_quantifier_output(
         [],
         [
             FormulaInput::new(
+                payload.premise_constant_site,
+                context,
+                payload.premise_constant_range,
+                FormulaKind::Contradiction,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
+            FormulaInput::new(
                 payload.implication_site,
                 context,
                 payload.implication_range,
@@ -1439,6 +1450,13 @@ fn source_formula_connective_quantifier_output(
                 context,
                 payload.negation_range,
                 FormulaKind::Negation,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
+            FormulaInput::new(
+                payload.body_constant_site,
+                context,
+                payload.body_constant_range,
+                FormulaKind::Contradiction,
             )
             .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
         ],
@@ -2112,12 +2130,16 @@ fn extract_source_formula_connective_quantifier(
     }
 
     Some(SourceFormulaConnectiveQuantifier {
+        premise_constant_site: surface_site(*left_id),
+        premise_constant_range: left.range,
         implication_site: surface_site(*implication_id),
         implication_range: implication.range,
         quantified_site: surface_site(*quantified_id),
         quantified_range: quantified.range,
         negation_site: surface_site(*negation_id),
         negation_range: negation.range,
+        body_constant_site: surface_site(*negated_id),
+        body_constant_range: negated.range,
     })
 }
 
@@ -8783,10 +8805,8 @@ mod tests {
         );
         let formula_statement_theorem =
             formula_statement_theorem_ast(source_id, exact_formula_statement_spec());
-        let formula_statement_detail_keys = vec![
-            "type_elaboration.checker.checker.formula.external.formula_payload".to_owned(),
-            "type_elaboration.checker.checker.formula.unsupported_payload".to_owned(),
-        ];
+        let formula_statement_detail_keys =
+            vec!["type_elaboration.checker.checker.formula.external.formula_payload".to_owned()];
         assert_eq!(
             source_type_elaboration_detail_keys(
                 &formula_statement_theorem,
@@ -8826,8 +8846,8 @@ mod tests {
             checked_formula_statement.site,
             formula_statement_payload.formula_site
         );
-        assert_eq!(checked_formula_statement.kind, FormulaKind::Unsupported);
-        assert_eq!(checked_formula_statement.status, FormulaStatus::Skipped);
+        assert_eq!(checked_formula_statement.kind, FormulaKind::Thesis);
+        assert_eq!(checked_formula_statement.status, FormulaStatus::Partial);
         assert_eq!(checked_formula_statement.context, BindingContextId::new(0));
         assert!(checked_formula_statement.terms.is_empty());
         assert!(checked_formula_statement.facts.is_empty());
@@ -8835,23 +8855,19 @@ mod tests {
             checked_formula_statement.deferred,
             vec![FormulaDeferredReason::MissingFormulaPayload]
         );
-        for message_key in [
-            "checker.formula.external.formula_payload",
-            "checker.formula.unsupported_payload",
-        ] {
-            let diagnostic_ranges = formula_statement_output
-                .diagnostics()
-                .canonical_iter()
-                .filter_map(|(_, diagnostic)| {
-                    (diagnostic.message_key == message_key).then_some(diagnostic.source_range)
-                })
-                .collect::<Vec<_>>();
-            assert_eq!(
-                diagnostic_ranges,
-                vec![expected_formula_statement_range],
-                "diagnostic {message_key} should be anchored to thesis"
-            );
-        }
+        let diagnostic_ranges = formula_statement_output
+            .diagnostics()
+            .canonical_iter()
+            .filter_map(|(_, diagnostic)| {
+                (diagnostic.message_key == "checker.formula.external.formula_payload")
+                    .then_some(diagnostic.source_range)
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(
+            diagnostic_ranges,
+            vec![expected_formula_statement_range],
+            "missing formula payload diagnostic should be anchored to thesis"
+        );
         let equality_theorem =
             builtin_equality_theorem_ast(source_id, "TermFormulaPayloadBoundary", "1", "1");
         assert_eq!(
@@ -9149,8 +9165,18 @@ mod tests {
         )
         .expect("exact formula connective/quantifier bridge should extract source payload");
         let expected_implication_range = range(source_id, 53, 114);
+        let expected_premise_constant_range = range(source_id, 53, 66);
         let expected_quantified_range = range(source_id, 75, 114);
         let expected_negation_range = range(source_id, 97, 114);
+        let expected_body_constant_range = range(source_id, 101, 114);
+        let expected_contradiction_sites = surface_sites_for_kind_ranges(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            &[
+                expected_premise_constant_range,
+                expected_body_constant_range,
+            ],
+        );
         let expected_implication_sites = surface_sites_for_kind_ranges(
             &formula_connective_quantifier_theorem,
             SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator {
@@ -9168,6 +9194,14 @@ mod tests {
             &formula_connective_quantifier_theorem,
             SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not),
             &[expected_negation_range],
+        );
+        assert_eq!(
+            formula_shell_payload.premise_constant_site,
+            expected_contradiction_sites[0]
+        );
+        assert_eq!(
+            formula_shell_payload.premise_constant_range,
+            expected_premise_constant_range
         );
         assert_eq!(
             formula_shell_payload.implication_site,
@@ -9193,8 +9227,56 @@ mod tests {
             formula_shell_payload.negation_range,
             expected_negation_range
         );
+        assert_eq!(
+            formula_shell_payload.body_constant_site,
+            expected_contradiction_sites[1]
+        );
+        assert_eq!(
+            formula_shell_payload.body_constant_range,
+            expected_body_constant_range
+        );
         assert_eq!(formula_shell_output.terms().len(), 0);
-        assert_eq!(formula_shell_output.formulas().len(), 3);
+        assert_eq!(formula_shell_output.formulas().len(), 5);
+        for (site, range) in [
+            (
+                &formula_shell_payload.premise_constant_site,
+                expected_premise_constant_range,
+            ),
+            (
+                &formula_shell_payload.body_constant_site,
+                expected_body_constant_range,
+            ),
+        ] {
+            let checked_constant = formula_shell_output
+                .formulas()
+                .iter()
+                .map(|(_, formula)| formula)
+                .find(|formula| formula.site == *site)
+                .expect("contradiction constant formula should be checked");
+            assert_eq!(checked_constant.kind, FormulaKind::Contradiction);
+            assert_eq!(checked_constant.context, BindingContextId::new(0));
+            assert_eq!(checked_constant.status, FormulaStatus::Partial);
+            assert!(checked_constant.terms.is_empty());
+            assert!(checked_constant.facts.is_empty());
+            assert_eq!(
+                checked_constant.deferred,
+                vec![FormulaDeferredReason::MissingFormulaPayload]
+            );
+            let diagnostic_ranges = formula_shell_output
+                .diagnostics()
+                .canonical_iter()
+                .filter_map(|(_, diagnostic)| {
+                    (diagnostic.message_key == "checker.formula.external.formula_payload"
+                        && diagnostic.source_range == range)
+                        .then_some(diagnostic.source_range)
+                })
+                .collect::<Vec<_>>();
+            assert_eq!(
+                diagnostic_ranges,
+                vec![range],
+                "missing formula payload diagnostic should be anchored to contradiction constant"
+            );
+        }
         let checked_implication = formula_shell_output
             .formulas()
             .iter()

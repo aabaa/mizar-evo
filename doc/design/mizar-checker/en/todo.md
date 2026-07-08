@@ -1977,10 +1977,10 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       validates that the module contains exactly one theorem item with one
       `FormulaExpression` child containing direct `FormulaConstant(Thesis)`
       token text `thesis`, then passes that source site/range as a checker
-      recovery `FormulaInput` with `FormulaKind::Unsupported` and
-      `MissingFormulaPayload`. The checker fails closed on
-      `type_elaboration.checker.checker.formula.external.formula_payload` and
-      `type_elaboration.checker.checker.formula.unsupported_payload`.
+      recovery `FormulaInput` with the source-derived formula-constant site.
+      Task 117 supersedes this recovery marker by giving the same source a real
+      `FormulaKind::Thesis` payload while preserving the missing-formula
+      fail-closed diagnostic.
     - The task must not fabricate formula constant semantics, child-formula
       graph payloads, theorem acceptance, facts, proof skeleton/context/
       statement payloads, `formula_statement`, CoreIr, ControlFlowIr, VC, or
@@ -2014,6 +2014,33 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 48, 50, 80, 84, and 85. Refs: Step 5 source-derived semantic
       bridge; mizar-test task 10; spec 03 type expressions; spec 06
       attributes; spec 11 symbol management; spec 12 modules and namespaces.
+
+117. **Add source-derived formula constant kind checker bridge.** [x]
+    - Supersede task 115 for the exact unrecovered
+      `theorem FormulaPayloadBoundary: thesis;` source by passing the
+      source-derived formula constant as `FormulaKind::Thesis`, not the generic
+      unsupported recovery kind.
+    - Extend task 112 only for the exact unrecovered
+      `FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x
+      being set holds not contradiction` theorem source by passing both real
+      `contradiction` constant sites/ranges as `FormulaKind::Contradiction`
+      payloads alongside the existing implication, quantifier, and negation
+      shell payloads.
+    - Acceptance: parser and resolver execute the sources; the active runner
+      validates the exact supported AST shapes, passes source-derived checker
+      formula constant payloads to `TermFormulaChecker`, and still fails closed
+      on `type_elaboration.checker.checker.formula.external.formula_payload`
+      plus the existing quantifier payload diagnostic for the connective case.
+    - The task must not fabricate formula constant semantic truth values,
+      child-formula graph links, quantifier binder/context payloads, formula
+      checking, facts, theorem acceptance, proof skeleton/context/statement
+      payloads, `formula_statement`, CoreIr, ControlFlowIr, VC, or proof
+      payloads. Non-exact shapes remain on
+      `type_elaboration.external_dependency.ast_payload_extraction`.
+    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`.
+    - Deps: tasks 86, 99, 112, and 115. Refs: Step 5 source-derived semantic
+      bridge; mizar-test task 10; spec 14 formulas; spec 16 theorems and
+      proofs.
 
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
@@ -2245,10 +2272,11 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       real source sites/ranges for implication, universal quantification, and
       negation shells, passes those checker `FormulaInput`s to
       `TermFormulaChecker`, and fails closed on missing formula/quantifier
-      payloads. The bridge must not fabricate formula constants, child-formula
-      links, binder/context payloads, formula facts/checking, theorem
-      acceptance, `formula_statement`, CoreIr, ControlFlowIr, VC, or proof
-      payloads.
+      payloads. Task 117 later supersedes only the two exact contradiction
+      constants in this source as real formula constant kind payloads. The
+      bridge must not fabricate child-formula links, binder/context payloads,
+      formula facts/checking, theorem acceptance, `formula_statement`, CoreIr,
+      ControlFlowIr, VC, or proof payloads.
     - Verify: `cargo test -p mizar-test`.
     - Deps: tasks 86, 99, 106, 110, and 111. Refs: Step 5 source-derived
       semantic bridge; mizar-test task 10; spec 14 formulas; spec 16 theorems

@@ -1858,12 +1858,10 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - Acceptance: parser と resolver は source を実行し、active runner は module が
       1 つの theorem item だけを含み、その theorem が direct token text `thesis`
       を持つ `FormulaConstant(Thesis)` だけを包む 1 つの `FormulaExpression`
-      child を持つことを検証する。そのうえで、その source site/range を
-      `FormulaKind::Unsupported` と `MissingFormulaPayload` を持つ checker recovery
-      `FormulaInput` として渡し、checker は
-      `type_elaboration.checker.checker.formula.external.formula_payload` と
-      `type_elaboration.checker.checker.formula.unsupported_payload` で fail closed
-      する。
+      child を持つことを検証する。そのうえで、その source site/range を checker
+      recovery `FormulaInput` として渡す。task 117 はこの recovery marker を
+      real `FormulaKind::Thesis` payload に進め、missing formula payload の
+      fail-closed diagnostic を維持する。
     - formula constant semantics、child-formula graph payload、theorem
       acceptance、fact、proof skeleton/context/statement payload、
       `formula_statement`、CoreIr、ControlFlowIr、VC、proof payload を捏造してはならない。
@@ -1872,6 +1870,31 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-test`。
     - 依存: tasks 86、112。参照: Step 5 source-derived semantic bridge、mizar-test
       task 10、spec 14 formulas、spec 16 theorems and proofs。
+
+117. **Source-derived formula constant kind checker bridge を追加する。** [x]
+    - exact unrecovered `theorem FormulaPayloadBoundary: thesis;` source について
+      task 115 を supersede し、source-derived formula constant を generic
+      unsupported recovery kind ではなく `FormulaKind::Thesis` として渡す。
+    - exact unrecovered
+      `FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x
+      being set holds not contradiction` theorem source についてのみ task 112 を
+      拡張し、2 つの real `contradiction` constant site/range を existing
+      implication、quantifier、negation shell payload とともに
+      `FormulaKind::Contradiction` として渡す。
+    - Acceptance: parser と resolver は source を実行し、active runner は exact
+      supported AST shape を検証し、source-derived checker formula constant
+      payload を `TermFormulaChecker` に渡し、connective case では既存の
+      quantifier payload diagnostic とともに
+      `type_elaboration.checker.checker.formula.external.formula_payload` で
+      fail closed する。
+    - formula constant semantic truth value、child-formula graph link、
+      quantifier binder/context payload、formula checking、fact、theorem
+      acceptance、proof skeleton/context/statement payload、`formula_statement`、
+      CoreIr、ControlFlowIr、VC、proof payload を捏造してはならない。non-exact
+      shape は `type_elaboration.external_dependency.ast_payload_extraction` に残す。
+    - 検証: `cargo test -p mizar-checker`, `cargo test -p mizar-test`。
+    - 依存: tasks 86、99、112、115。参照: Step 5 source-derived semantic
+      bridge、mizar-test task 10、spec 14 formulas、spec 16 theorems and proofs。
 
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
@@ -2090,10 +2113,11 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - Acceptance: parser と resolver は source を実行し、runner は implication、
       universal quantification、negation shell の real source site/range を抽出し、
       それらの checker `FormulaInput` を `TermFormulaChecker` に渡して、
-      missing formula/quantifier payload で fail closed する。この bridge は
-      formula constant、child-formula link、binder/context payload、formula
-      fact/checking、theorem acceptance、`formula_statement`、CoreIr、
-      ControlFlowIr、VC、proof payload を捏造してはならない。
+      missing formula/quantifier payload で fail closed する。task 117 は後続で
+      この source 内の 2 つの exact contradiction constant だけを real formula
+      constant kind payload に進める。この bridge は child-formula link、
+      binder/context payload、formula fact/checking、theorem acceptance、
+      `formula_statement`、CoreIr、ControlFlowIr、VC、proof payload を捏造してはならない。
     - 検証: `cargo test -p mizar-test`。
     - 依存: tasks 86、99、106、110、111。参照: Step 5 source-derived semantic
       bridge、mizar-test task 10、spec 14 formulas、spec 16 theorems and proofs。

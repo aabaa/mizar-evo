@@ -299,8 +299,11 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    task 86 records a formula-only theorem source on the active
    source-to-checker boundary, task 115 supersedes that exact
    `FormulaPayloadBoundary: thesis` source by passing a checker recovery
-   `FormulaInput` before failing closed on missing formula payload and
-   unsupported formula semantics, task 106 supersedes task 87 for the exact
+   `FormulaInput`, task 117 supersedes that recovery marker by passing a real
+   `FormulaKind::Thesis` payload and also promotes the exact
+   connective/quantifier theorem's two `contradiction` constants to real
+   `FormulaKind::Contradiction` payloads while keeping formula semantics
+   deferred, task 106 supersedes task 87 for the exact
    term-bearing builtin equality theorem source by passing real checker
    term/formula payloads before failing on missing numeric type payloads and
    partial formula checking, task 110 supersedes task 98 for the exact imported
@@ -339,7 +342,7 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    expansion, registration item payloads, accepted activation/evidence status,
    redefinition payloads, notation alias relation payloads, redefinition target
    inference, coherence proof-obligation payloads, theorem acceptance,
-   formula constant semantic checking beyond task 115's exact recovery handoff,
+   formula constant semantic checking beyond task 117's exact constant-kind handoff,
    attributed-type evidence, imported predicate/functor semantic payloads,
    membership operand expected-type construction/checking beyond task 108, inequality desugaring/equality semantic checking beyond task 107,
    broader type-assertion type payload extraction, type-assertion semantic checking,

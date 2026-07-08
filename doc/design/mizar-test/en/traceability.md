@@ -632,13 +632,15 @@ two set-enumeration terms, and one equality formula. They do not credit broader
 set-enumeration term extraction, result-type/sethood payloads, term inference,
 equality/formula checking, recorded facts, theorem acceptance,
 `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
-payloads. Task 112 fail cases supersede task 99 only for the exact
+payloads. Task 112 / task 117 fail cases supersede task 99 only for the exact
 connective/quantifier theorem formula checker shell handoff after
 parser/resolver execution: real checker `FormulaInput` shells for implication,
-universal quantification, and negation. They do not credit formula constants,
-child-formula graph payloads, quantifier binder/context payloads, formula
-checking, recorded facts, theorem acceptance, `formula_statement` runner
-support, CoreIr, ControlFlowIr, VC, or proof payloads. Task 88 fail cases
+universal quantification, and negation, plus exact `FormulaKind::Contradiction`
+payloads for the two source constants. They do not credit formula constant
+semantic truth values, child-formula graph payloads, quantifier binder/context
+payloads, formula checking, recorded facts, theorem acceptance,
+`formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
+payloads. Task 88 fail cases
 credit only the proof-block/proof-skeleton
 extraction-gap boundary after parser/resolver execution and do not credit
 checker proof skeleton payload extraction, local proof context, formula payload

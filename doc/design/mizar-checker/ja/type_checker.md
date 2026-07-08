@@ -373,12 +373,12 @@ task 86 は theorem/formula extraction-gap boundary を記録する:
 `theorem FormulaPayloadBoundary: thesis;` のような theorem formula だけを含む
 source は active type-elaboration runner まで到達できる。task 115 はこの exact
 source だけを supersede し、source-derived `thesis` formula constant site/range
-を `FormulaKind::Unsupported` と `MissingFormulaPayload` を持つ checker recovery
-`FormulaInput` として渡す。この bridge は missing formula payload と unsupported
-formula semantics で fail closed する。この boundary は引き続き formula constant
-semantics、child-formula graph payload、theorem acceptance、formula fact、proof
-skeleton、local proof context、`formula_statement`、CoreIr、ControlFlowIr、VC、
-proof payload を credit しない。
+を checker recovery `FormulaInput` として渡す。task 117 はその recovery marker
+を real `FormulaKind::Thesis` checker payload に進め、missing formula payload
+で fail closed する。この boundary は引き続き formula constant semantics、
+child-formula graph payload、theorem acceptance、formula fact、proof skeleton、
+local proof context、`formula_statement`、CoreIr、ControlFlowIr、VC、proof
+payload を credit しない。
 task 106 は task 87 の generic boundary のうち、builtin equality theorem formula
 `theorem TermFormulaPayloadBoundary: 1 = 1;` の narrow slice を supersede する。
 active runner は Chapter 13 の 2 つの numeral operand から real checker
@@ -478,11 +478,14 @@ parser / resolver 実行まで到達し、implication、quantified formula、neg
 real source-derived checker `FormulaInput` shell を渡す。checker は implication と
 negation shell では `FormulaDeferredReason::MissingFormulaPayload`、quantified
 shell では `FormulaDeferredReason::MissingQuantifierPayload` で fail closed
-しなければならない。formula constant、child-formula graph payload、quantifier
-binder/context payload、formula checking、recorded fact、theorem acceptance、
-dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload は
-まだ存在しない。この bridge は broader formula extraction や accepted formula
-fact を credit しない。
+しなければならない。task 117 はこの exact source だけをさらに進め、2 つの
+source-derived `contradiction` constant site/range を
+`FormulaKind::Contradiction` checker payload として渡し、同じ missing formula
+payload diagnostic に留める。formula constant semantic truth value、
+child-formula graph payload、quantifier binder/context payload、formula checking、
+recorded fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
+ControlFlowIr、VC、proof payload はまだ存在しない。この bridge は broader formula
+extraction や accepted formula fact を credit しない。
 task 88 は対応する proof-block boundary を記録する:
 `theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` のような
 theorem は Chapter 16 の proof block と Chapter 15 の conclusion statement を伴って

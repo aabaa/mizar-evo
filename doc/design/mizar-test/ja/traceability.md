@@ -585,13 +585,14 @@ equality formula の real checker payload だけである。broader set-enumerat
 term extraction、result-type/sethood payload、term inference、equality/formula
 checking、recorded fact、theorem acceptance、`formula_statement` runner support、
 CoreIr、ControlFlowIr、VC、proof payload は credit しない。
-task 112 の fail case は parser / resolver 実行後の exact connective/quantifier
-theorem formula checker shell handoff についてだけ task 99 を supersede する。
-implication、universal quantification、negation の real checker `FormulaInput`
-shell だけを credit し、formula constant、child-formula graph payload、quantifier
-binder/context payload、formula checking、recorded fact、theorem acceptance、
-`formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
-credit しない。
+task 112 / task 117 の fail case は parser / resolver 実行後の exact
+connective/quantifier theorem formula checker shell handoff についてだけ task 99 を
+supersede する。implication、universal quantification、negation の real checker
+`FormulaInput` shell と、2 つの source constant に対応する exact
+`FormulaKind::Contradiction` payload だけを credit し、formula constant semantic
+truth value、child-formula graph payload、quantifier binder/context payload、
+formula checking、recorded fact、theorem acceptance、`formula_statement` runner
+support、CoreIr、ControlFlowIr、VC、proof payload は credit しない。
 task 88 の fail case は parser / resolver 実行後の proof-block / proof-skeleton
 extraction-gap boundary だけを credit し、checker proof skeleton payload extraction、
 local proof context、formula payload extraction、recorded fact、theorem acceptance、
