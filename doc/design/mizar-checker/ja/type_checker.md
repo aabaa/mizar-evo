@@ -392,6 +392,14 @@ context、formula payload extraction、label-reference semantic checking、recor
 fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
 ControlFlowIr、VC、proof payload がまだ存在しないため
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。
+task 90 は predicate/functor definition boundary を記録する:
+`pred DefinitionPredicatePayloadBoundary: x boundary_rel y means thesis;` と
+`func DefinitionFunctorPayloadBoundary: boundary_func x -> set equals x;` を含む
+definition block は parser / resolver 実行まで到達するが、real predicate/functor
+definition declaration payload extraction、definition-local context、definiens
+formula/term payload、overload payload、recorded fact、dedicated
+`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ存在しないため
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。
 task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
 documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
 reserve head は、可視 resolver symbol が `SymbolKind::Mode` で

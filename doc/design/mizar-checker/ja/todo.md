@@ -1871,6 +1871,21 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: task 88。参照: Step 5 source-derived semantic bridge、mizar-test
       task 10、spec 14 formulas、spec 15 statements、spec 16 theorems and proofs。
 
+90. **Source-derived predicate/functor definition extraction-gap boundary を追加する。** [x]
+    - predicate definition と functor definition を含む definition block について、
+      専用の active `type_elaboration` boundary を追加する。
+    - Acceptance: parser と resolver は source を実行し、その後 active runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+      checker-owned predicate/functor definition declaration payload extraction、
+      definition-local context、definiens formula/term payload、overload payload、
+      recorded fact、CoreIr、ControlFlowIr、VC、proof payload、
+      `formula_statement` runner がまだ存在しないためである。この task は
+      definition payload、formula/term body payload、overload payload、fact、
+      downstream semantic payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: task 89。参照: Step 5 source-derived semantic bridge、mizar-test
+      task 10、spec 09 predicate definitions、spec 10 functor definitions。
+
 ## 推奨検証
 
 各タスクの後で実行する:

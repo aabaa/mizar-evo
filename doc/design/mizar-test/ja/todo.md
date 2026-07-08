@@ -270,6 +270,7 @@ regression test を追加した。
       checker task 86 の theorem formula extraction-gap boundary、checker task 87 の
       term formula extraction-gap boundary、checker task 88 の proof skeleton
       extraction-gap boundary、checker task 89 の statement proof extraction-gap
+      boundary、checker task 90 の predicate/functor definition extraction-gap
       boundary も
       prepared/implemented increment として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
@@ -391,11 +392,11 @@ regression test を追加した。
       その handoff を `TypedAst`、`ResolvedTypedAst` へ継続する。
       `reserve x, y for set` のように source type range を共有する場合も、binding
       ごとに distinct typed site を持つ。
-    - 未対応の non-builtin declaration、task-84 `TypeCaseAttr` bridge、task-85
+    - 未対応の non-builtin declaration（task 90 の predicate/functor definition boundary を超えるもの）、task-84 `TypeCaseAttr` bridge、task-85
       negative `empty`/builtin-`set` bridge、task-80 boundary を超える imported attribute provenance、task-83 `R` bridge と task-78 boundary を超える
       imported structure provenance、task 82 の provenance bridge を超える imported mode expansion payload、
       task-81 boundary を超える attribute argument payload、attributed / argument-bearing mode / structure head、
-      structure base-shape payload、task-86/task-87/task-88/task-89 extraction-gap boundary を超える
+      structure base-shape payload、task-90 extraction-gap boundary を超える definition payload、task-86/task-87/task-88/task-89 extraction-gap boundary を超える
       term / formula / theorem / proof payload、coercion、overload payload、fact、
       CoreIr、ControlFlowIr、VC payload、proof
       evidence は明示的な `type_elaboration.external_dependency.ast_payload_extraction`

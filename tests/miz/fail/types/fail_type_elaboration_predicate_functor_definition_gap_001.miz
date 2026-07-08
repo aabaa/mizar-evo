@@ -1,0 +1,5 @@
+definition
+  let x, y be set;
+  pred DefinitionPredicatePayloadBoundary: x boundary_rel y means thesis;
+  func DefinitionFunctorPayloadBoundary: boundary_func x -> set equals x;
+end;

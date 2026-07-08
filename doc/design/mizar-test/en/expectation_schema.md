@@ -640,6 +640,15 @@ proof payload extraction, nested proof skeleton payloads, local proof context,
 formula payload extraction, label-reference semantic checking, recorded facts,
 theorem acceptance, a `formula_statement` runner, CoreIr, ControlFlowIr, VC, or
 proof payloads.
+Task 90 permits predicate/functor definition fail sidecars to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "definition_declaration_payload_extraction_gap"` and
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
+These sidecars document that definition declarations reached parser/resolver
+execution, but they do not credit checker definition declaration payload
+extraction, definition-local context, formula/term body payloads, overload
+payloads, recorded facts, a `formula_statement` runner, CoreIr, ControlFlowIr,
+VC, or proof payloads.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

@@ -458,7 +458,7 @@ being credited from the diagnostic external-gap row.
 
 Covered active fail tests may still assert the external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` when a case needs
-unsupported non-builtin declarations, imported symbols, attribute or
+unsupported non-builtin declarations beyond task 90's predicate/functor definition boundary, imported symbols, attribute or
 mode/structure arguments, structure-qualified attribute provenance,
 type-argument or term-argument provenance, unresolved or ambiguous symbols,
 terms, formulas, coercions, overload payloads, facts, CoreIr, ControlFlowIr,
@@ -563,7 +563,12 @@ after parser/resolver execution and do not credit checker statement proof
 payload extraction, nested proof skeleton payloads, local proof context, formula
 payload extraction, label-reference semantic checking, recorded facts, theorem
 acceptance, `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or
-proof payloads. Task
+proof payloads. Task 90 fail cases credit only the predicate/functor definition
+extraction-gap boundary after parser/resolver execution and do not credit
+checker definition declaration payload extraction, definition-local context,
+definiens formula/term payload extraction, overload payloads, recorded facts,
+`formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
+payloads. Task
 75/76/77 fail
 cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker

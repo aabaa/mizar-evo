@@ -2018,6 +2018,21 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       task 10; spec 14 formulas; spec 15 statements; spec 16 theorems and
       proofs.
 
+90. **Add source-derived predicate/functor definition extraction-gap boundary.** [x]
+    - Add a dedicated active `type_elaboration` boundary for a definition block
+      containing a predicate definition and a functor definition.
+    - Acceptance: parser and resolver execute the source, then the active
+      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
+      because checker-owned predicate/functor definition declaration payload
+      extraction, definition-local contexts, definiens formula/term payloads,
+      overload payloads, recorded facts, CoreIr, ControlFlowIr, VC, proof
+      payloads, and the `formula_statement` runner are not available. The task
+      must not fabricate definition payloads, formula/term body payloads,
+      overload payloads, facts, or downstream semantic payloads.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: task 89. Refs: Step 5 source-derived semantic bridge; mizar-test
+      task 10; spec 09 predicate definitions; spec 10 functor definitions.
+
 ## Recommended Verification
 
 Run after each task:
