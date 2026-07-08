@@ -603,6 +603,16 @@ statement が parser / resolver 実行へ到達したことを記録するが、
 payload extraction、nested proof skeleton payload、local proof context、formula payload
 extraction、label-reference semantic checking、recorded fact、theorem acceptance、
 `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload は credit しない。
+task 93 は proof-local declaration statement fail sidecar について
+`failure_category = "external_dependency_gap"`、
+`rejection_reason = "proof_local_declaration_payload_extraction_gap"`、
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
+を許可する。これらの sidecar は theorem proof 内の `let`、`given`、
+`consider`、`set`、`reconsider` statement が parser / resolver 実行へ到達した
+ことを記録するが、proof-local declaration payload extraction、local proof
+context、formula/term payload、RHS term inference、reconsider coercion /
+obligation evidence、recorded fact、theorem acceptance、`formula_statement`
+runner、CoreIr、ControlFlowIr、VC、proof payload は credit しない。
 task 90 は predicate/functor definition fail sidecar について
 `failure_category = "external_dependency_gap"`、
 `rejection_reason = "definition_declaration_payload_extraction_gap"`、

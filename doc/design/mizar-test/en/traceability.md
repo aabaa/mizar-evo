@@ -444,7 +444,8 @@ external-gap case, the task 87 term-bearing theorem formula external-gap
 case, the task 88 proof-block theorem external-gap case, the task 89
 statement-proof external-gap case, the task 90 predicate/functor definition
 external-gap case, the task 91 attribute definition external-gap case, and the
-task 92 mode/structure definition external-gap case, but including the task 85
+task 92 mode/structure definition external-gap case, and the task 93
+proof-local declaration external-gap case, but including the task 85
 imported negative
 `empty`/builtin-`set` provenance slice, are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one
@@ -462,11 +463,13 @@ being credited from the diagnostic external-gap row.
 
 Covered active fail tests may still assert the external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` when a case needs
-unsupported non-builtin declarations beyond task 92's mode/structure definition boundary, imported symbols, attribute or
-mode/structure arguments, structure-qualified attribute provenance,
-type-argument or term-argument provenance, unresolved or ambiguous symbols,
-terms, formulas, coercions, overload payloads, facts, CoreIr, ControlFlowIr,
-VC payloads, or proof payload extraction. Supported checker-owned fail slices
+unsupported non-builtin declarations beyond task 93's proof-local declaration
+boundary and task 92's mode/structure definition boundary, imported symbols,
+attribute or mode/structure arguments, structure-qualified attribute
+provenance, type-argument or term-argument provenance, unresolved or ambiguous
+symbols, proof-local declaration payloads, terms, formulas, coercions,
+overload payloads, facts, CoreIr, ControlFlowIr, VC payloads, or proof payload
+extraction. Supported checker-owned fail slices
 may instead assert the checker
 detail keys for same-module attributed builtin reserve heads missing evidence
 or same-module local structure reserve heads missing base-shape evidence,
@@ -582,7 +585,13 @@ extraction-gap boundary after parser/resolver execution and do not credit
 checker mode/structure definition declaration payload extraction, mode
 expansion, structure base-shape/constructor/selector evidence,
 definition-local context, recorded facts, `formula_statement` runner support,
-CoreIr, ControlFlowIr, VC, or proof payloads. Task 75/76/77 fail
+CoreIr, ControlFlowIr, VC, or proof payloads. Task 93 fail cases credit only
+the proof-local declaration statement extraction-gap boundary after
+parser/resolver execution and do not credit checker proof-local declaration
+payload extraction, local proof context, formula/term payload extraction, RHS
+term inference, reconsider coercion/obligation evidence, recorded facts,
+theorem acceptance, `formula_statement` runner support, CoreIr, ControlFlowIr,
+VC, or proof payloads. Task 75/76/77 fail
 cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker
 `ModeExpansion`, structure type-head, base-shape, constructor-witness,

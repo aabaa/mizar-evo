@@ -416,6 +416,14 @@ structure base-shape / constructor / selector evidence、definition-local contex
 recorded fact、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、
 proof payload がまだ存在しないため
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。
+task 93 は proof-local declaration statement boundary を記録する:
+`let`、`given`、`consider`、`set`、`reconsider` statement を含む theorem proof は
+parser / resolver 実行まで到達するが、real proof-local declaration payload
+extraction、local proof context、formula / term payload、RHS term inference、
+reconsider coercion / obligation evidence、recorded fact、dedicated
+`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ
+存在しないため `type_elaboration.external_dependency.ast_payload_extraction`
+に残す。
 task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
 documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
 reserve head は、可視 resolver symbol が `SymbolKind::Mode` で

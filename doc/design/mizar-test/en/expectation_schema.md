@@ -640,6 +640,16 @@ proof payload extraction, nested proof skeleton payloads, local proof context,
 formula payload extraction, label-reference semantic checking, recorded facts,
 theorem acceptance, a `formula_statement` runner, CoreIr, ControlFlowIr, VC, or
 proof payloads.
+Task 93 permits proof-local declaration statement fail sidecars to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "proof_local_declaration_payload_extraction_gap"` and
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
+These sidecars document that `let`, `given`, `consider`, `set`, and
+`reconsider` statements inside a theorem proof reached parser/resolver
+execution, but they do not credit proof-local declaration payload extraction,
+local proof context, formula/term payloads, RHS term inference, reconsider
+coercion/obligation evidence, recorded facts, theorem acceptance, a
+`formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 90 permits predicate/functor definition fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "definition_declaration_payload_extraction_gap"` and

@@ -1916,6 +1916,21 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: task 91。参照: Step 5 source-derived semantic bridge、mizar-test
       task 10、spec 05 structures、spec 07 mode definitions。
 
+93. **Source-derived proof-local declaration extraction-gap boundary を追加する。** [x]
+    - `let`、`given`、`consider`、`set`、`reconsider` statement を含む theorem
+      proof について、専用の active `type_elaboration` boundary を追加する。
+    - Acceptance: parser と resolver は source を実行し、その後 active runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+      checker-owned proof-local declaration payload extraction、local proof
+      context、formula/term payload、RHS term inference、reconsider coercion /
+      obligation evidence、recorded fact、CoreIr、ControlFlowIr、VC、proof
+      payload、`formula_statement` runner がまだ存在しないためである。この
+      task は proof-local declaration payload、formula/term payload、local
+      fact、theorem acceptance、downstream semantic payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: task 92。参照: Step 5 source-derived semantic bridge、mizar-test
+      task 10、spec 15 statements、spec 16 theorems and proofs。
+
 ## 推奨検証
 
 各タスクの後で実行する:

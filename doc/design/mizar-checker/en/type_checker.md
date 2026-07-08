@@ -437,6 +437,14 @@ mode/structure definition declaration payload extraction, mode expansion,
 structure base-shape/constructor/selector evidence, definition-local context,
 recorded facts, the dedicated `formula_statement` runner, CoreIr, ControlFlowIr,
 VC, and proof payloads are still absent.
+Task 93 records the proof-local declaration statement boundary: a theorem proof
+with `let`, `given`, `consider`, `set`, and `reconsider` statements reaches
+parser and resolver execution, then stays on
+`type_elaboration.external_dependency.ast_payload_extraction` because real
+proof-local declaration payload extraction, local proof context, formula and
+term payloads, RHS term inference, reconsider coercion/obligation evidence,
+recorded facts, the dedicated `formula_statement` runner, CoreIr, ControlFlowIr,
+VC, and proof payloads are still absent.
 Task 82 promotes only the imported-mode provenance portion of task 79: a
 reserve head such as `TypeCaseMode` from the documented
 `parser.type_fixtures` import summary may be passed as a checker-owned

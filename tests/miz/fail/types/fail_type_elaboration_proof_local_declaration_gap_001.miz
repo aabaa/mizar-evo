@@ -1,0 +1,11 @@
+theorem ProofLocalDeclarationPayloadBoundary: thesis proof
+  let x be set;
+  given y being set such that G: thesis;
+  A: thesis proof
+    thus thesis;
+  end;
+  consider z being set such that C: thesis by A;
+  set w = z;
+  reconsider v = w as set by A;
+  thus thesis by A;
+end;

@@ -2063,6 +2063,23 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: task 91. Refs: Step 5 source-derived semantic bridge; mizar-test
       task 10; spec 05 structures; spec 07 mode definitions.
 
+93. **Add source-derived proof-local declaration extraction-gap boundary.** [x]
+    - Add a dedicated active `type_elaboration` boundary for a theorem proof
+      containing `let`, `given`, `consider`, `set`, and `reconsider`
+      statements.
+    - Acceptance: parser and resolver execute the source, then the active
+      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
+      because checker-owned proof-local declaration payload extraction, local
+      proof context, formula/term payloads, RHS term inference, reconsider
+      coercion/obligation evidence, recorded facts, CoreIr, ControlFlowIr, VC,
+      proof payloads, and the `formula_statement` runner are not available. The
+      task must not fabricate proof-local declaration payloads, formula/term
+      payloads, local facts, theorem acceptance, or downstream semantic
+      payloads.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: task 92. Refs: Step 5 source-derived semantic bridge; mizar-test
+      task 10; spec 15 statements; spec 16 theorems and proofs.
+
 ## Recommended Verification
 
 Run after each task:

@@ -295,13 +295,17 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    theorem source on the same gap, task 88 records a theorem proof block on the
    same gap, task 89 records statement-level proof justifications on the same
    gap, task 90 records predicate/functor definitions on the same gap, and task
-   91 records attribute definitions on the same gap while keeping definition
+   91 records attribute definitions on the same gap, task 92 records
+   mode/structure definitions on the same gap, and task 93 records
+   proof-local declarations on the same gap while keeping definition
    declaration payloads, definition-local context, definiens formula/term
-   payloads, formula-definiens payloads, attributed-type evidence, overload
-   payloads, term/formula/proof
-   skeleton/statement proof payloads, term inference, formula checking, proof
-   context, recorded facts, `formula_statement`, CoreIr, ControlFlowIr, VC, and
-   proof payloads deferred).
+   payloads, formula-definiens payloads, mode expansion, structure
+   base-shape/constructor/selector evidence, proof-local declaration payloads,
+   local proof contexts, RHS term inference, reconsider coercion/obligation
+   evidence, attributed-type evidence, overload payloads, term/formula/proof
+   skeleton/statement proof payloads, term inference, formula checking,
+   recorded facts, `formula_statement`, CoreIr, ControlFlowIr, VC, and proof
+   payloads deferred).
 This wave has no fixed task list yet: it is promoted slice by slice, opening
 new numbered owner tasks as each payload family becomes real. Do not fabricate
 semantic payloads; promote corpus rows only with prepared consumers.
