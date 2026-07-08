@@ -7,11 +7,12 @@ source = "fail_type_elaboration_formula_connective_quantifier_gap_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "formula_connective_quantifier_payload_extraction_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "formula_connective_quantifier_shell_payload_gap"
+stable_detail_key = "type_elaboration.checker.checker.formula.external.quantifier_payload"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.checker.formula.external.formula_payload",
+  "type_elaboration.checker.checker.formula.external.quantifier_payload",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
@@ -20,4 +21,4 @@ spec_refs = [
   "spec.en.checker.type_elaboration.payload_extraction",
   "spec.en.checker.type_elaboration.payload_extraction.formula_connective_quantifier_gap",
 ]
-notes = "Active type_elaboration runner boundary coverage for checker task 99: a theorem formula using Chapter 14 implication, universal quantification, and formula negation is parser/resolver executable, but the checker-owned source bridge lacks real formula payload extraction, quantifier binder/context payloads, formula checking, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and a dedicated formula_statement runner, so it must stay on the source-to-checker payload extraction gap."
+notes = "Active type_elaboration runner boundary coverage for checker task 112: the exact theorem formula using Chapter 14 implication, universal quantification, and formula negation is parser/resolver executable and now passes source-derived checker FormulaInput shells for the implication, quantified formula, and negation. The checker must still fail closed on MissingFormulaPayload for implication/negation and MissingQuantifierPayload for the quantified shell because formula constants, child-formula graph payloads, quantifier binder/context payloads, formula checking, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and a dedicated formula_statement runner remain absent."

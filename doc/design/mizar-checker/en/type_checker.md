@@ -482,16 +482,20 @@ result-type/sethood payloads, and partial formula checking. This does not claim
 broader set-enumeration term extraction, term inference, equality/formula
 checking, recorded facts, theorem acceptance, the dedicated `formula_statement`
 runner, CoreIr, ControlFlowIr, VC, or proof payloads.
-Task 99 records the connective/quantifier formula variant of that theorem
-boundary:
+Task 112 supersedes task 99 only for the exact connective/quantifier theorem
+formula bridge:
 `theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`
 reaches parser and resolver execution through the Chapter 14 implication,
-universal-quantifier, and negation surfaces, then stays on
-`type_elaboration.external_dependency.ast_payload_extraction` because real
-formula payload extraction, quantifier binder/context payloads, formula
-checking, recorded facts, theorem acceptance, the dedicated
-`formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof payloads are
-still absent.
+universal-quantifier, and negation surfaces, then passes real source-derived
+checker `FormulaInput` shells for the implication, quantified formula, and
+negation. The checker must fail closed with
+`FormulaDeferredReason::MissingFormulaPayload` for the implication and negation
+shells and `FormulaDeferredReason::MissingQuantifierPayload` for the quantified
+shell because formula constants, child-formula graph payloads, quantifier
+binder/context payloads, formula checking, recorded facts, theorem acceptance,
+the dedicated `formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof
+payloads are still absent. This does not credit broader formula extraction or
+any accepted formula fact.
 Task 88 records the matching proof-block boundary: a theorem such as
 `theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` reaches
 parser and resolver execution with a Chapter 16 proof block and Chapter 15

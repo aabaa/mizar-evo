@@ -25,9 +25,10 @@ use mizar_checker::resolved_typed_ast::{
 };
 use mizar_checker::type_checker::{
     AttributeInput, AttributePolarity, DeclarationCheckingOutput, DeclarationKind,
-    DeclarationStatus, FormulaInput, FormulaKind, ModeExpansion, SourceReserveBindingInput,
-    SourceReserveDeclarationBridge, TermFormulaChecker, TermFormulaInferenceOutput, TermInput,
-    TermKind, TermReference, TypeExpressionInput, TypeHeadInput,
+    DeclarationStatus, FormulaDeferredReason, FormulaInput, FormulaKind, ModeExpansion,
+    SourceReserveBindingInput, SourceReserveDeclarationBridge, TermFormulaChecker,
+    TermFormulaInferenceOutput, TermInput, TermKind, TermReference, TypeExpressionInput,
+    TypeHeadInput,
 };
 use mizar_checker::typed_ast::{
     CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, TypeEntryId,
@@ -68,7 +69,10 @@ use mizar_session::{
     BuildSnapshotId, DiskSourceLoader, Edition, InMemorySessionIdAllocator, ModulePath, PackageId,
     SourceAnchor, SourceInput, SourceOriginInput, SourceRange, normalize_path,
 };
-use mizar_syntax::{SurfaceAst, SurfaceNode, SurfaceNodeId, SurfaceNodeKind, SurfaceTokenKind};
+use mizar_syntax::{
+    SurfaceAst, SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceFormulaPrefixOperator,
+    SurfaceNode, SurfaceNodeId, SurfaceNodeKind, SurfaceQuantifierKind, SurfaceTokenKind,
+};
 
 use crate::diagnostic::{ValidationDiagnostic, ValidationSeverity};
 use crate::expectation::{ExpectedOutcome, PipelinePhase};
@@ -918,6 +922,11 @@ fn source_type_elaboration_detail_keys(
     if let Some(keys) = source_set_enumeration_formula_detail_keys(ast, module.clone(), symbols) {
         return keys;
     }
+    if let Some(keys) =
+        source_formula_connective_quantifier_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
     let Ok(source_reserve) =
         extract_builtin_source_reserve_declarations(ast, module.clone(), symbols)
     else {
@@ -1045,6 +1054,16 @@ struct SourceSetEnumerationFormula {
     right_items: Vec<(TypedSiteRef, SourceRange)>,
 }
 
+#[derive(Debug, Clone)]
+struct SourceFormulaConnectiveQuantifier {
+    implication_site: TypedSiteRef,
+    implication_range: SourceRange,
+    quantified_site: TypedSiteRef,
+    quantified_range: SourceRange,
+    negation_site: TypedSiteRef,
+    negation_range: SourceRange,
+}
+
 fn source_builtin_binary_term_formula_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -1105,6 +1124,15 @@ fn source_set_enumeration_formula_detail_keys(
     symbols: &SymbolEnv,
 ) -> Option<Vec<String>> {
     let output = source_set_enumeration_formula_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
+fn source_formula_connective_quantifier_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output = source_formula_connective_quantifier_output(ast, module, symbols)?;
     Some(term_formula_output_detail_keys(&output))
 }
 
@@ -1245,6 +1273,45 @@ fn source_set_enumeration_formula_output(
             FormulaKind::Equality,
         )
         .with_terms(vec![payload.left_site, payload.right_site])],
+    );
+    Some(output)
+}
+
+fn source_formula_connective_quantifier_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_formula_connective_quantifier(ast, &module, symbols)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [],
+        [
+            FormulaInput::new(
+                payload.implication_site,
+                context,
+                payload.implication_range,
+                FormulaKind::Implication,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
+            FormulaInput::new(
+                payload.quantified_site,
+                context,
+                payload.quantified_range,
+                FormulaKind::Quantified,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingQuantifierPayload]),
+            FormulaInput::new(
+                payload.negation_site,
+                context,
+                payload.negation_range,
+                FormulaKind::Negation,
+            )
+            .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]),
+        ],
     );
     Some(output)
 }
@@ -1602,6 +1669,138 @@ fn extract_source_set_enumeration_formula(ast: &SurfaceAst) -> Option<SourceSetE
     })
 }
 
+fn extract_source_formula_connective_quantifier(
+    ast: &SurfaceAst,
+    module: &ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceFormulaConnectiveQuantifier> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_formula_connective_quantifier_theorem_bridge_node(node))
+    {
+        return None;
+    }
+    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let [(_, theorem)] = theorem_items.as_slice() else {
+        return None;
+    };
+    if subtree_has_recovery(ast, theorem) {
+        return None;
+    }
+    let theorem_tokens = direct_token_texts(ast, theorem);
+    if theorem_tokens.as_slice()
+        != [
+            "theorem",
+            "FormulaConnectiveQuantifierPayloadBoundary",
+            ":",
+            ";",
+        ]
+    {
+        return None;
+    }
+
+    let theorem_structural_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_structural_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [implication_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let implication = ast.node(*implication_id)?;
+    if !matches!(
+        implication.kind,
+        SurfaceNodeKind::BinaryFormula(operator)
+            if operator.connective == SurfaceFormulaConnective::Implies && !operator.repeated
+    ) || subtree_has_recovery(ast, implication)
+        || direct_token_texts(ast, implication).as_slice() != ["implies"]
+    {
+        return None;
+    }
+    let implication_children = structural_child_ids(ast, implication);
+    let [left_id, quantified_id] = implication_children.as_slice() else {
+        return None;
+    };
+    let left = ast.node(*left_id)?;
+    if !matches!(
+        left.kind,
+        SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction)
+    ) || direct_token_texts(ast, left).as_slice() != ["contradiction"]
+    {
+        return None;
+    }
+
+    let quantified = ast.node(*quantified_id)?;
+    if !matches!(
+        quantified.kind,
+        SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Universal)
+    ) || subtree_has_recovery(ast, quantified)
+        || direct_token_texts(ast, quantified).as_slice() != ["for", "holds"]
+    {
+        return None;
+    }
+    let quantified_children = structural_child_ids(ast, quantified);
+    let [segment_id, negation_id] = quantified_children.as_slice() else {
+        return None;
+    };
+    let segment = ast.node(*segment_id)?;
+    if !matches!(segment.kind, SurfaceNodeKind::QuantifierVariableSegment)
+        || subtree_has_recovery(ast, segment)
+        || direct_token_texts(ast, segment).as_slice() != ["x", "being"]
+    {
+        return None;
+    }
+    let segment_children = structural_child_ids(ast, segment);
+    let [type_expression_id] = segment_children.as_slice() else {
+        return None;
+    };
+    let type_expression = ast.node(*type_expression_id)?;
+    let binder_type =
+        extract_builtin_source_type_expression(ast, type_expression, module, symbols).ok()?;
+    if binder_type.spelling != "set"
+        || binder_type.head != TypeHeadInput::BuiltinSet
+        || !binder_type.attributes.is_empty()
+    {
+        return None;
+    }
+
+    let negation = ast.node(*negation_id)?;
+    if !matches!(
+        negation.kind,
+        SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not)
+    ) || subtree_has_recovery(ast, negation)
+        || direct_token_texts(ast, negation).as_slice() != ["not"]
+    {
+        return None;
+    }
+    let negation_children = structural_child_ids(ast, negation);
+    let [negated_id] = negation_children.as_slice() else {
+        return None;
+    };
+    let negated = ast.node(*negated_id)?;
+    if !matches!(
+        negated.kind,
+        SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction)
+    ) || direct_token_texts(ast, negated).as_slice() != ["contradiction"]
+    {
+        return None;
+    }
+
+    Some(SourceFormulaConnectiveQuantifier {
+        implication_site: surface_site(*implication_id),
+        implication_range: implication.range,
+        quantified_site: surface_site(*quantified_id),
+        quantified_range: quantified.range,
+        negation_site: surface_site(*negation_id),
+        negation_range: negation.range,
+    })
+}
+
 #[derive(Debug, Clone)]
 struct ExactSetEnumerationTerm {
     term_id: SurfaceNodeId,
@@ -1888,6 +2087,25 @@ fn is_supported_set_enumeration_theorem_bridge_node(node: &SurfaceNode) -> bool 
             | SurfaceNodeKind::TermExpression
             | SurfaceNodeKind::SetEnumeration
             | SurfaceNodeKind::NumeralTerm
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_formula_connective_quantifier_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::BinaryFormula(_)
+            | SurfaceNodeKind::QuantifiedFormula(_)
+            | SurfaceNodeKind::QuantifierVariableSegment
+            | SurfaceNodeKind::PrefixFormula(_)
+            | SurfaceNodeKind::FormulaConstant(_)
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::TypeHead
             | SurfaceNodeKind::Token(_)
     )
 }
@@ -4361,17 +4579,18 @@ mod tests {
         ParseOnlyImportProvider, TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY,
         assemble_source_checker_handoff, extract_builtin_source_reserve_declarations,
         extract_source_builtin_type_assertion_formula,
+        extract_source_formula_connective_quantifier,
         extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
         resolve_visible_attribute, resolve_visible_type_head,
-        source_builtin_type_assertion_formula_output,
+        source_builtin_type_assertion_formula_output, source_formula_connective_quantifier_output,
         source_imported_predicate_functor_formula_output, source_set_enumeration_formula_output,
         source_type_elaboration_detail_keys, surface_nodes_with_kind, surface_site,
     };
-    use mizar_checker::binding_env::BindingId;
+    use mizar_checker::binding_env::{BindingContextId, BindingId};
     use mizar_checker::resolved_typed_ast::{ResolvedTypedNodeId, ResolvedTypedNodeKind};
     use mizar_checker::type_checker::{
-        AttributePolarity, FormulaKind, FormulaStatus, TermKind, TermReference, TermStatus,
-        TypeHeadInput, TypeHeadRef,
+        AttributePolarity, FormulaDeferredReason, FormulaKind, FormulaStatus, TermKind,
+        TermReference, TermStatus, TypeHeadInput, TypeHeadRef,
     };
     use mizar_checker::typed_ast::{LocalTypeContextId, TypeStatus, TypedSiteRef};
     use mizar_core::elaborator::ResolvedTypedAstSummary;
@@ -4394,7 +4613,9 @@ mod tests {
     };
     use mizar_syntax::recovery::SyntaxRecoveryKind;
     use mizar_syntax::{
-        SurfaceAst, SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceNodeKind, SurfaceTokenKind,
+        SurfaceAst, SurfaceAstBuilder, SurfaceBuilderNodeId, SurfaceFormulaBinaryOperator,
+        SurfaceFormulaConnective, SurfaceFormulaConstant, SurfaceFormulaPrefixOperator,
+        SurfaceNodeKind, SurfaceQuantifierKind, SurfaceTokenKind,
     };
     use std::sync::Arc;
 
@@ -8474,6 +8695,124 @@ mod tests {
         );
         assert!(checked_set_formula.candidate_set.is_none());
         assert!(checked_set_formula.facts.is_empty());
+        let formula_connective_quantifier_theorem =
+            formula_connective_quantifier_theorem_ast(source_id, exact_formula_shell_spec());
+        let formula_shell_detail_keys = vec![
+            "type_elaboration.checker.checker.formula.external.formula_payload".to_owned(),
+            "type_elaboration.checker.checker.formula.external.quantifier_payload".to_owned(),
+        ];
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &formula_connective_quantifier_theorem,
+                module.clone(),
+                &symbols
+            ),
+            formula_shell_detail_keys
+        );
+        let formula_shell_output = source_formula_connective_quantifier_output(
+            &formula_connective_quantifier_theorem,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact formula connective/quantifier bridge should produce checker output");
+        let formula_shell_payload = extract_source_formula_connective_quantifier(
+            &formula_connective_quantifier_theorem,
+            &module,
+            &symbols,
+        )
+        .expect("exact formula connective/quantifier bridge should extract source payload");
+        let expected_implication_range = range(source_id, 53, 114);
+        let expected_quantified_range = range(source_id, 75, 114);
+        let expected_negation_range = range(source_id, 97, 114);
+        let expected_implication_sites = surface_sites_for_kind_ranges(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator {
+                connective: SurfaceFormulaConnective::Implies,
+                repeated: false,
+            }),
+            &[expected_implication_range],
+        );
+        let expected_quantified_sites = surface_sites_for_kind_ranges(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::QuantifiedFormula(SurfaceQuantifierKind::Universal),
+            &[expected_quantified_range],
+        );
+        let expected_negation_sites = surface_sites_for_kind_ranges(
+            &formula_connective_quantifier_theorem,
+            SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not),
+            &[expected_negation_range],
+        );
+        assert_eq!(
+            formula_shell_payload.implication_site,
+            expected_implication_sites[0]
+        );
+        assert_eq!(
+            formula_shell_payload.implication_range,
+            expected_implication_range
+        );
+        assert_eq!(
+            formula_shell_payload.quantified_site,
+            expected_quantified_sites[0]
+        );
+        assert_eq!(
+            formula_shell_payload.quantified_range,
+            expected_quantified_range
+        );
+        assert_eq!(
+            formula_shell_payload.negation_site,
+            expected_negation_sites[0]
+        );
+        assert_eq!(
+            formula_shell_payload.negation_range,
+            expected_negation_range
+        );
+        assert_eq!(formula_shell_output.terms().len(), 0);
+        assert_eq!(formula_shell_output.formulas().len(), 3);
+        let checked_implication = formula_shell_output
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .find(|formula| formula.site == formula_shell_payload.implication_site)
+            .expect("implication shell formula should be checked");
+        assert_eq!(checked_implication.kind, FormulaKind::Implication);
+        assert_eq!(checked_implication.context, BindingContextId::new(0));
+        assert_eq!(checked_implication.status, FormulaStatus::Partial);
+        assert!(checked_implication.terms.is_empty());
+        assert!(checked_implication.facts.is_empty());
+        assert_eq!(
+            checked_implication.deferred,
+            vec![FormulaDeferredReason::MissingFormulaPayload]
+        );
+        let checked_quantified = formula_shell_output
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .find(|formula| formula.site == formula_shell_payload.quantified_site)
+            .expect("quantified shell formula should be checked");
+        assert_eq!(checked_quantified.kind, FormulaKind::Quantified);
+        assert_eq!(checked_quantified.context, BindingContextId::new(0));
+        assert_eq!(checked_quantified.status, FormulaStatus::Partial);
+        assert!(checked_quantified.terms.is_empty());
+        assert!(checked_quantified.facts.is_empty());
+        assert_eq!(
+            checked_quantified.deferred,
+            vec![FormulaDeferredReason::MissingQuantifierPayload]
+        );
+        let checked_negation = formula_shell_output
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .find(|formula| formula.site == formula_shell_payload.negation_site)
+            .expect("negation shell formula should be checked");
+        assert_eq!(checked_negation.kind, FormulaKind::Negation);
+        assert_eq!(checked_negation.context, BindingContextId::new(0));
+        assert_eq!(checked_negation.status, FormulaStatus::Partial);
+        assert!(checked_negation.terms.is_empty());
+        assert!(checked_negation.facts.is_empty());
+        assert_eq!(
+            checked_negation.deferred,
+            vec![FormulaDeferredReason::MissingFormulaPayload]
+        );
         let imported_predicate_functor_output = source_imported_predicate_functor_formula_output(
             &imported_predicate_functor_theorem,
             imported_predicate_functor_symbols.module_id().clone(),
@@ -8727,6 +9066,117 @@ mod tests {
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
             );
         }
+        let formula_shell_gap_cases = [
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    connective: SurfaceFormulaConnective::Or,
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    quantifier: SurfaceQuantifierKind::Existential,
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    binder_type: ReserveTypeShape::Builtin("object"),
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    negated: false,
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    status: Some("open"),
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            formula_connective_quantifier_theorem_ast(
+                source_id,
+                FormulaConnectiveQuantifierTheoremSpec {
+                    recovered_label: true,
+                    ..exact_formula_shell_spec()
+                },
+            ),
+            reserve_then_formula_connective_quantifier_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+            double_formula_connective_quantifier_theorem_ast(source_id),
+            builtin_binary_theorem_ast(
+                source_id,
+                "FormulaConnectiveQuantifierPayloadBoundary",
+                "1",
+                "in",
+                "1",
+            ),
+            builtin_type_assertion_theorem_ast(
+                source_id,
+                "FormulaConnectiveQuantifierPayloadBoundary",
+                "1",
+                ReserveTypeShape::Builtin("set"),
+            ),
+            attribute_assertion_theorem_ast(
+                source_id,
+                "FormulaConnectiveQuantifierPayloadBoundary",
+                "1",
+                "empty",
+            ),
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "FormulaConnectiveQuantifierPayloadBoundary",
+                ["1", "2"],
+                "=",
+                ["1", "2"],
+            ),
+            imported_predicate_functor_theorem_ast(
+                source_id,
+                &["parser.type_fixtures"],
+                ImportedPredicateFunctorTheoremSpec {
+                    label: "FormulaConnectiveQuantifierPayloadBoundary",
+                    ..exact_imported_predicate_functor_theorem_spec()
+                },
+            ),
+            proof_block_formula_shell_label_ast(source_id),
+        ];
+        for gap_case in formula_shell_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let non_connective_same_label = builtin_equality_theorem_ast(
+            source_id,
+            "FormulaConnectiveQuantifierPayloadBoundary",
+            "1",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &non_connective_same_label,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
         let non_set_enumeration_equality =
             builtin_equality_theorem_ast(source_id, "SetEnumerationPayloadBoundary", "1", "1");
         assert_eq!(
@@ -10914,6 +11364,131 @@ mod tests {
     }
 
     #[derive(Clone, Copy)]
+    struct FormulaConnectiveQuantifierTheoremSpec<'a> {
+        status: Option<&'a str>,
+        recovered_label: bool,
+        label: &'a str,
+        connective: SurfaceFormulaConnective,
+        quantifier: SurfaceQuantifierKind,
+        binder_type: ReserveTypeShape,
+        negated: bool,
+    }
+
+    fn exact_formula_shell_spec() -> FormulaConnectiveQuantifierTheoremSpec<'static> {
+        FormulaConnectiveQuantifierTheoremSpec {
+            status: None,
+            recovered_label: false,
+            label: "FormulaConnectiveQuantifierPayloadBoundary",
+            connective: SurfaceFormulaConnective::Implies,
+            quantifier: SurfaceQuantifierKind::Universal,
+            binder_type: ReserveTypeShape::Builtin("set"),
+            negated: true,
+        }
+    }
+
+    fn formula_connective_quantifier_theorem_ast(
+        source_id: SourceId,
+        spec: FormulaConnectiveQuantifierTheoremSpec<'_>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem = add_formula_connective_quantifier_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            spec,
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn reserve_then_formula_connective_quantifier_theorem_ast(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
+        root_children.push(add_formula_connective_quantifier_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            exact_formula_shell_spec(),
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn double_formula_connective_quantifier_theorem_ast(source_id: SourceId) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let items = vec![
+            add_formula_connective_quantifier_theorem_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                exact_formula_shell_spec(),
+            ),
+            add_formula_connective_quantifier_theorem_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                exact_formula_shell_spec(),
+            ),
+        ];
+        finish_compilation_ast(builder, source_id, items)
+    }
+
+    fn attribute_assertion_theorem_ast(
+        source_id: SourceId,
+        label: &str,
+        subject: &str,
+        attribute: &str,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem = add_attribute_assertion_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            label,
+            subject,
+            attribute,
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn proof_block_formula_shell_label_ast(source_id: SourceId) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem = add_proof_block_formula_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            "FormulaConnectiveQuantifierPayloadBoundary",
+        );
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    #[derive(Clone, Copy)]
     struct SetEnumerationTheoremSpec<'a> {
         status: Option<&'a str>,
         recovered_label: bool,
@@ -11539,6 +12114,441 @@ mod tests {
             range(source_id, start, end),
             vec![theorem, label_token, colon, formula_expression, semicolon],
         )
+    }
+
+    fn add_formula_connective_quantifier_theorem_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: FormulaConnectiveQuantifierTheoremSpec<'_>,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let status_token = spec.status.map(|status| {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                status,
+            )
+        });
+        let theorem = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+        );
+        let label_token = if spec.recovered_label {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        };
+        let colon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+        );
+        let formula_start = *offset;
+        let formula = add_formula_connective_quantifier_formula(builder, source_id, offset, spec);
+        let formula_end = builder
+            .node_range(formula)
+            .expect("just-created connective/quantifier formula should exist")
+            .end;
+        let formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, formula_start, formula_end),
+            vec![formula],
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        let mut children = Vec::new();
+        if let Some(status_token) = status_token {
+            children.push(status_token);
+        }
+        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, start, end),
+            children,
+        )
+    }
+
+    fn add_attribute_assertion_theorem_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        label: &str,
+        subject: &str,
+        attribute: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let theorem = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+        );
+        let label_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            label,
+        );
+        let colon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+        );
+        let formula_start = *offset;
+        let subject_term = add_numeral_term_expression(builder, source_id, offset, subject);
+        let is_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "is",
+        );
+        let attribute_start = *offset;
+        let attribute_symbol = add_attribute_symbol(builder, source_id, offset, attribute, false);
+        let attribute_end = builder
+            .node_range(attribute_symbol)
+            .expect("just-created attribute symbol should exist")
+            .end;
+        let attribute_ref = builder.add_node(
+            SurfaceNodeKind::AttributeRef,
+            range(source_id, attribute_start, attribute_end),
+            vec![attribute_symbol],
+        );
+        let attribute_chain = builder.add_node(
+            SurfaceNodeKind::AttributeTestChain,
+            range(source_id, attribute_start, attribute_end),
+            vec![attribute_ref],
+        );
+        let formula = builder.add_node(
+            SurfaceNodeKind::IsAssertion,
+            range(source_id, formula_start, attribute_end),
+            vec![subject_term, is_token, attribute_chain],
+        );
+        let formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, formula_start, attribute_end),
+            vec![formula],
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, start, end),
+            vec![theorem, label_token, colon, formula_expression, semicolon],
+        )
+    }
+
+    fn add_proof_block_formula_theorem_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        label: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let theorem = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+        );
+        let label_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            label,
+        );
+        let colon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+        );
+        let formula_start = *offset;
+        let thesis =
+            add_formula_constant(builder, source_id, offset, SurfaceFormulaConstant::Thesis);
+        let formula_end = builder
+            .node_range(thesis)
+            .expect("just-created thesis formula should exist")
+            .end;
+        let formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, formula_start, formula_end),
+            vec![thesis],
+        );
+        let proof_start = *offset;
+        let proof = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "proof",
+        );
+        let end_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "end",
+        );
+        let proof_end = builder
+            .node_range(end_token)
+            .expect("just-created proof end should exist")
+            .end;
+        let proof_block = builder.add_node(
+            SurfaceNodeKind::ProofBlock,
+            range(source_id, proof_start, proof_end),
+            vec![proof, end_token],
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, start, end),
+            vec![
+                theorem,
+                label_token,
+                colon,
+                formula_expression,
+                proof_block,
+                semicolon,
+            ],
+        )
+    }
+
+    fn add_formula_connective_quantifier_formula(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: FormulaConnectiveQuantifierTheoremSpec<'_>,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let left = add_formula_constant(
+            builder,
+            source_id,
+            offset,
+            SurfaceFormulaConstant::Contradiction,
+        );
+        let connective = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            formula_connective_text(spec.connective),
+        );
+        let right = add_quantified_formula_shell(builder, source_id, offset, spec);
+        let end = builder
+            .node_range(right)
+            .expect("just-created quantified formula should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::BinaryFormula(SurfaceFormulaBinaryOperator {
+                connective: spec.connective,
+                repeated: false,
+            }),
+            range(source_id, start, end),
+            vec![left, connective, right],
+        )
+    }
+
+    fn add_quantified_formula_shell(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: FormulaConnectiveQuantifierTheoremSpec<'_>,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let quantifier = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            quantifier_text(spec.quantifier),
+        );
+        let segment_start = *offset;
+        let variable = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::Identifier,
+            "x",
+        );
+        let being = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "being",
+        );
+        let type_expression =
+            add_reserve_type_expression(builder, source_id, offset, spec.binder_type);
+        let segment_end = builder
+            .node_range(type_expression)
+            .expect("just-created quantified binder type should exist")
+            .end;
+        let segment = builder.add_node(
+            SurfaceNodeKind::QuantifierVariableSegment,
+            range(source_id, segment_start, segment_end),
+            vec![variable, being, type_expression],
+        );
+        let holds = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "holds",
+        );
+        let body = if spec.negated {
+            add_negated_formula_constant(
+                builder,
+                source_id,
+                offset,
+                SurfaceFormulaConstant::Contradiction,
+            )
+        } else {
+            add_formula_constant(
+                builder,
+                source_id,
+                offset,
+                SurfaceFormulaConstant::Contradiction,
+            )
+        };
+        let end = builder
+            .node_range(body)
+            .expect("just-created quantified body should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::QuantifiedFormula(spec.quantifier),
+            range(source_id, start, end),
+            vec![quantifier, segment, holds, body],
+        )
+    }
+
+    fn add_negated_formula_constant(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        constant: SurfaceFormulaConstant,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let not = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "not",
+        );
+        let formula = add_formula_constant(builder, source_id, offset, constant);
+        let end = builder
+            .node_range(formula)
+            .expect("just-created negated formula should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::PrefixFormula(SurfaceFormulaPrefixOperator::Not),
+            range(source_id, start, end),
+            vec![not, formula],
+        )
+    }
+
+    fn add_formula_constant(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        constant: SurfaceFormulaConstant,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            formula_constant_text(constant),
+        );
+        let end = builder
+            .node_range(token)
+            .expect("just-created formula constant token should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::FormulaConstant(constant),
+            range(source_id, start, end),
+            vec![token],
+        )
+    }
+
+    const fn formula_connective_text(connective: SurfaceFormulaConnective) -> &'static str {
+        match connective {
+            SurfaceFormulaConnective::And => "and",
+            SurfaceFormulaConnective::Or => "or",
+            SurfaceFormulaConnective::Implies => "implies",
+            SurfaceFormulaConnective::Iff => "iff",
+        }
+    }
+
+    const fn quantifier_text(quantifier: SurfaceQuantifierKind) -> &'static str {
+        match quantifier {
+            SurfaceQuantifierKind::Universal => "for",
+            SurfaceQuantifierKind::Existential => "ex",
+        }
+    }
+
+    const fn formula_constant_text(constant: SurfaceFormulaConstant) -> &'static str {
+        match constant {
+            SurfaceFormulaConstant::Thesis => "thesis",
+            SurfaceFormulaConstant::Contradiction => "contradiction",
+        }
     }
 
     fn add_set_enumeration_theorem_item(

@@ -2033,6 +2033,21 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 86、87、98。参照: Step 5 source-derived semantic bridge、
       mizar-test task 10、spec 14 formulas、spec 16 theorems and proofs。
 
+112. **Exact source-derived formula connective/quantifier shell checker bridge を追加する。** [x]
+    - exact unrecovered
+      `FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction`
+      theorem source だけについて task 99 を supersede する。
+    - Acceptance: parser と resolver は source を実行し、runner は implication、
+      universal quantification、negation shell の real source site/range を抽出し、
+      それらの checker `FormulaInput` を `TermFormulaChecker` に渡して、
+      missing formula/quantifier payload で fail closed する。この bridge は
+      formula constant、child-formula link、binder/context payload、formula
+      fact/checking、theorem acceptance、`formula_statement`、CoreIr、
+      ControlFlowIr、VC、proof payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: tasks 86、99、106、110、111。参照: Step 5 source-derived semantic
+      bridge、mizar-test task 10、spec 14 formulas、spec 16 theorems and proofs。
+
 100. **Source-derived builtin membership formula extraction-gap boundary を追加する。** [x]
     - Chapter 14 の builtin membership predicate と Chapter 13 の numeral term
       operand を使う theorem formula 専用の active `type_elaboration` boundary を

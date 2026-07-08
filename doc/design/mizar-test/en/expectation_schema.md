@@ -655,15 +655,17 @@ admissibility/semantic checking, term inference, formula checking, recorded
 facts, theorem acceptance, imported module AST extraction, checker
 `AttributeInput` payload extraction for theorem formulas, a `formula_statement`
 runner, proof skeletons, CoreIr, ControlFlowIr, VC, or proof payloads.
-Task 99 permits formula connective/quantifier theorem fail sidecars to use
-`failure_category = "external_dependency_gap"` with
-`rejection_reason = "formula_connective_quantifier_payload_extraction_gap"` and
-`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
-These sidecars document that Chapter 14 connective and quantifier formula
-surfaces reached parser/resolver execution inside a theorem declaration, but
-they do not credit formula payload extraction, quantifier binder/context
-payloads, formula checking, recorded facts, theorem acceptance, a
-`formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 112 supersedes task 99 for the exact formula connective/quantifier theorem
+fail sidecar. It uses `failure_category = "external_dependency_gap"` with
+`rejection_reason = "formula_connective_quantifier_shell_payload_gap"` and
+`stable_detail_key =
+"type_elaboration.checker.checker.formula.external.quantifier_payload"` after
+the runner passes source-derived checker `FormulaInput` shells for implication,
+universal quantification, and negation. The diagnostic payload list must include
+the formula payload and quantifier payload detail keys. This sidecar does not
+credit formula constants, child-formula graph payloads, quantifier
+binder/context payloads, formula checking, recorded facts, theorem acceptance,
+a `formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 88 permits proof-block theorem fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "proof_skeleton_payload_extraction_gap"` and

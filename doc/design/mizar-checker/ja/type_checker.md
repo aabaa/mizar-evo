@@ -460,14 +460,19 @@ payload、partial formula checking で fail closed する。broader
 set-enumeration term extraction、term inference、equality/formula checking、
 recorded fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
 ControlFlowIr、VC、proof payload は主張しない。
-task 99 は同じ theorem boundary の connective / quantifier formula variant を記録する:
+task 112 は task 99 のうち exact connective / quantifier theorem formula bridge
+だけを supersede する:
 `theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`
 は Chapter 14 の implication、universal-quantifier、negation surface を通じて
-parser / resolver 実行まで到達するが、real formula payload extraction、
-quantifier binder/context payload、formula checking、recorded fact、theorem
-acceptance、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof
-payload がまだ存在しないため
-`type_elaboration.external_dependency.ast_payload_extraction` に残す。
+parser / resolver 実行まで到達し、implication、quantified formula、negation の
+real source-derived checker `FormulaInput` shell を渡す。checker は implication と
+negation shell では `FormulaDeferredReason::MissingFormulaPayload`、quantified
+shell では `FormulaDeferredReason::MissingQuantifierPayload` で fail closed
+しなければならない。formula constant、child-formula graph payload、quantifier
+binder/context payload、formula checking、recorded fact、theorem acceptance、
+dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload は
+まだ存在しない。この bridge は broader formula extraction や accepted formula
+fact を credit しない。
 task 88 は対応する proof-block boundary を記録する:
 `theorem ProofSkeletonPayloadBoundary: thesis proof thus thesis; end;` のような
 theorem は Chapter 16 の proof block と Chapter 15 の conclusion statement を伴って

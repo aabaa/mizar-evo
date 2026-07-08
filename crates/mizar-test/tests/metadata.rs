@@ -3571,13 +3571,13 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     );
     let formula_connective_quantifier_case = active_type_elaboration_cases(&plan)
         .find(|case| case.id.0 == "fail_type_elaboration_formula_connective_quantifier_gap_001")
-        .expect("Task99 formula connective/quantifier boundary should be active");
+        .expect("Task112 formula connective/quantifier bridge should be active");
     assert_eq!(
         formula_connective_quantifier_case
             .expectation
             .rejection_reason
             .as_deref(),
-        Some("formula_connective_quantifier_payload_extraction_gap")
+        Some("formula_connective_quantifier_shell_payload_gap")
     );
 
     let report = run_type_elaboration_corpus(&config).unwrap();
@@ -3749,7 +3749,10 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_formula_connective_quantifier_gap_001"
             && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+                == [
+                    "type_elaboration.checker.checker.formula.external.formula_payload",
+                    "type_elaboration.checker.checker.formula.external.quantifier_payload",
+                ]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_proof_skeleton_gap_001"

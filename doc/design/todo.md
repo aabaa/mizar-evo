@@ -314,8 +314,9 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    attribute assertion theorem formula surfaces on the same gap, task 104 records
    attribute-level non-empty imported attribute assertion theorem formula
    surfaces on the same gap, task 111 supersedes task 105 for the exact
-   set-enumeration theorem formula checker bridge, task 99 records formula connective/quantifier
-   theorem formula surfaces on the same gap, task 88 records a theorem proof block on the
+   set-enumeration theorem formula checker bridge, task 112 supersedes task 99
+   for the exact formula connective/quantifier shell checker bridge, task 88
+   records a theorem proof block on the
    same gap, task 89 records statement-level proof justifications on the same
    gap, task 90 records predicate/functor definitions on the same gap, and task
    91 records attribute definitions on the same gap, task 92 records
@@ -324,7 +325,8 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    inline definitions on the same gap, task 95 records registration blocks on
    the same gap, and task 96 records redefinition/notation surfaces on the
    same gap while keeping definition
-   declaration payloads, quantifier binder/context payloads, definition-local context, definiens formula/term
+   declaration payloads, formula child/binder payloads beyond task 112,
+   definition-local context, definiens formula/term
    payloads, formula-definiens payloads, mode expansion, structure
    base-shape/constructor/selector evidence, proof-local declaration payloads,
    inline definition formal/body payloads, local proof contexts, RHS term

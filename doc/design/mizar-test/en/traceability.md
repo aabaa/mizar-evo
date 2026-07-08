@@ -448,7 +448,7 @@ builtin inequality theorem checker bridge, the task 109 builtin type-assertion t
 bridge, the task 103 imported attribute assertion theorem formula external-gap
 case, the task 104 attribute-level non-empty imported attribute assertion theorem formula external-gap
 case, the task 111 exact set-enumeration theorem checker bridge
-case, the task 99 connective/quantifier theorem formula external-gap
+case, the task 112 connective/quantifier formula shell checker bridge
 case, the task 88 proof-block theorem external-gap case, the task 89
 statement-proof external-gap case, the task 90 predicate/functor definition
 external-gap case, the task 91 attribute definition external-gap case, the task
@@ -626,12 +626,13 @@ two set-enumeration terms, and one equality formula. They do not credit broader
 set-enumeration term extraction, result-type/sethood payloads, term inference,
 equality/formula checking, recorded facts, theorem acceptance,
 `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
-payloads. Task 99 fail cases credit only the
-connective/quantifier theorem
-formula extraction-gap boundary after parser/resolver execution and do not
-credit checker formula payload extraction, quantifier binder/context payloads,
-formula checking, recorded facts, theorem acceptance, `formula_statement`
-runner support, CoreIr, ControlFlowIr, VC, or proof payloads. Task 88 fail cases
+payloads. Task 112 fail cases supersede task 99 only for the exact
+connective/quantifier theorem formula checker shell handoff after
+parser/resolver execution: real checker `FormulaInput` shells for implication,
+universal quantification, and negation. They do not credit formula constants,
+child-formula graph payloads, quantifier binder/context payloads, formula
+checking, recorded facts, theorem acceptance, `formula_statement` runner
+support, CoreIr, ControlFlowIr, VC, or proof payloads. Task 88 fail cases
 credit only the proof-block/proof-skeleton
 extraction-gap boundary after parser/resolver execution and do not credit
 checker proof skeleton payload extraction, local proof context, formula payload
