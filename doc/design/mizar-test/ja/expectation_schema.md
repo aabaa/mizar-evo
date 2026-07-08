@@ -578,16 +578,16 @@ task 86 は formula-only theorem fail sidecar について
 記録するが、`formula_statement` runner、checker theorem/formula payload
 extraction、recorded fact、proof skeleton、CoreIr、ControlFlowIr、VC、proof
 payload は credit しない。
-task 106 は task-87 の numeral / builtin equality sidecar を supersede し、
+task 106 と task 107 は exact equality/inequality sidecar を supersede し、
 `failure_category = "external_dependency_gap"` のまま
 `rejection_reason = "numeric_type_payload_extraction_gap"` と checker detail key
-（missing numeric type payload と partial equality formula checking）を使う。
-task 98、task 100、task 101、task 102、task 103、task 104、task 105 は引き続き
+（missing numeric type payload と partial formula checking）を使う。
+task 98、task 100、task 102、task 103、task 104、task 105 は引き続き
 term-bearing theorem formula fail sidecar について
 `rejection_reason = "term_formula_payload_extraction_gap"` と
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"` を
 許可する。これらの sidecar は、task 98 の imported predicate/functor
-application、task 100 の builtin membership、task 101 の builtin inequality、
+application、task 100 の builtin membership、
 task 102 の builtin type assertion、task 103 の imported attribute assertion、
 task 104 の attribute-level non-empty imported attribute assertion、task 105 の
 set-enumeration equality を含む Chapter 13 term surface と Chapter 14 atomic formula が

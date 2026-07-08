@@ -2846,7 +2846,7 @@ tests = [
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.builtin_inequality_formula_gap"
 source = "doc/design/mizar-checker/en/type_checker.md"
-section = "Task 101 source-derived builtin inequality formula extraction gap boundary"
+section = "Task 107 source-derived builtin inequality term/formula checker bridge"
 stage = "type_elaboration"
 status = "covered"
 required = true

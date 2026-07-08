@@ -2207,13 +2207,12 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       using the Chapter 14 builtin inequality predicate with Chapter 13 numeral
       term operands.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned term/formula payload extraction, inequality
-      desugaring or equality semantic checking, formula checking, recorded facts,
-      theorem acceptance, CoreIr, ControlFlowIr, VC, proof payloads, and the
-      `formula_statement` runner are not available. The task must not fabricate
-      term payloads, formula payloads, inequality facts, theorem acceptance, or
+    - Acceptance: parser and resolver execute the source. Task 107 supersedes
+      this exact sidecar by passing real checker term/formula payloads and
+      reporting missing numeric type payload plus partial formula checking. The
+      task must not fabricate numeric type payloads, inequality
+      desugaring/equality semantic checking, facts, theorem acceptance,
+      `formula_statement`, CoreIr, ControlFlowIr, VC, proof payloads, or
       downstream semantic payloads.
     - Verify: `cargo test -p mizar-test`.
     - Deps: tasks 86, 87, 98, and 100. Refs: Step 5 source-derived semantic

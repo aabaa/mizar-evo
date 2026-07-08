@@ -2052,14 +2052,12 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - Chapter 14 の builtin inequality predicate と Chapter 13 の numeral term
       operand を使う theorem formula 専用の active `type_elaboration` boundary を
       追加する。
-    - Acceptance: parser と resolver は source を実行し、その後 active runner は
-      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
-      checker-owned term/formula payload extraction、inequality desugaring または
-      equality semantic checking、formula checking、recorded fact、theorem
-      acceptance、CoreIr、ControlFlowIr、VC、proof payload、`formula_statement`
-      runner がまだ利用できないためである。この task は term payload、formula
-      payload、inequality fact、theorem acceptance、downstream semantic payload を
-      捏造してはならない。
+    - Acceptance: parser と resolver は source を実行する。task 107 はこの exact
+      sidecar を supersede し、real checker term/formula payload を渡して missing
+      numeric type payload と partial formula checking を報告する。この task は
+      numeric type payload、inequality desugaring / equality semantic checking、
+      fact、theorem acceptance、`formula_statement`、CoreIr、ControlFlowIr、VC、
+      proof payload、downstream semantic payload を捏造してはならない。
     - 検証: `cargo test -p mizar-test`。
     - 依存: tasks 86、87、98、100。参照: Step 5 source-derived semantic bridge、
       mizar-test task 10、spec 13 term expressions、spec 14 formulas、spec 16

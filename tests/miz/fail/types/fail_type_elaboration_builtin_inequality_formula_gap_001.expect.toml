@@ -7,11 +7,12 @@ source = "fail_type_elaboration_builtin_inequality_formula_gap_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "term_formula_payload_extraction_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "numeric_type_payload_extraction_gap"
+stable_detail_key = "type_elaboration.checker.checker.term.external.numeric_type_payload"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.checker.formula.term.partial",
+  "type_elaboration.checker.checker.term.external.numeric_type_payload",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
@@ -21,4 +22,4 @@ spec_refs = [
   "spec.en.checker.type_elaboration.payload_extraction",
   "spec.en.checker.type_elaboration.payload_extraction.builtin_inequality_formula_gap",
 ]
-notes = "Active type_elaboration runner boundary coverage for checker task 101: a theorem formula with numeral term operands and the Chapter 14 builtin inequality predicate is parser/resolver executable, but the checker-owned source bridge lacks real term/formula payload extraction, inequality desugaring or equality semantic checking, formula checking, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and the dedicated formula_statement runner, so it must stay on the source-to-checker payload extraction gap."
+notes = "Active type_elaboration runner bridge coverage for checker task 107 superseding the task 101 generic extraction-gap boundary: the exact builtin inequality theorem formula with numeral term operands is parser/resolver executable and now produces real checker TermInput/FormulaInput payloads from the source AST, but numeral terms still lack real numeric type payloads and the inequality formula remains partial. Inequality desugaring or equality semantic checking, recorded facts, theorem acceptance, CoreIr/ControlFlowIr/VC/proof payloads, and the dedicated formula_statement runner remain deferred."

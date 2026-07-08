@@ -3516,13 +3516,13 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     );
     let builtin_inequality_case = active_type_elaboration_cases(&plan)
         .find(|case| case.id.0 == "fail_type_elaboration_builtin_inequality_formula_gap_001")
-        .expect("Task101 builtin inequality formula boundary should be active");
+        .expect("Task107 builtin inequality checker bridge should be active");
     assert_eq!(
         builtin_inequality_case
             .expectation
             .rejection_reason
             .as_deref(),
-        Some("term_formula_payload_extraction_gap")
+        Some("numeric_type_payload_extraction_gap")
     );
     let builtin_type_assertion_case = active_type_elaboration_cases(&plan)
         .find(|case| case.id.0 == "fail_type_elaboration_builtin_type_assertion_formula_gap_001")
@@ -3705,7 +3705,10 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_builtin_inequality_formula_gap_001"
             && result.actual_detail_keys
-                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+                == [
+                    "type_elaboration.checker.checker.formula.term.partial",
+                    "type_elaboration.checker.checker.term.external.numeric_type_payload",
+                ]
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_builtin_type_assertion_formula_gap_001"

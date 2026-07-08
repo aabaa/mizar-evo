@@ -899,8 +899,7 @@ fn source_type_elaboration_detail_keys(
     module: ResolverModuleId,
     symbols: &SymbolEnv,
 ) -> Vec<String> {
-    if let Some(keys) =
-        source_builtin_equality_term_formula_detail_keys(ast, module.clone(), symbols)
+    if let Some(keys) = source_builtin_binary_term_formula_detail_keys(ast, module.clone(), symbols)
     {
         return keys;
     }
@@ -949,22 +948,49 @@ fn source_type_elaboration_detail_keys(
     Vec::new()
 }
 
+#[derive(Debug, Clone, Copy)]
+struct SourceBuiltinBinaryTermFormulaConfig {
+    label: &'static str,
+    operator: &'static str,
+    left: &'static str,
+    right: &'static str,
+    formula_kind: FormulaKind,
+}
+
+const SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS: &[SourceBuiltinBinaryTermFormulaConfig] = &[
+    SourceBuiltinBinaryTermFormulaConfig {
+        label: "TermFormulaPayloadBoundary",
+        operator: "=",
+        left: "1",
+        right: "1",
+        formula_kind: FormulaKind::Equality,
+    },
+    SourceBuiltinBinaryTermFormulaConfig {
+        label: "BuiltinInequalityPayloadBoundary",
+        operator: "<>",
+        left: "1",
+        right: "2",
+        formula_kind: FormulaKind::Inequality,
+    },
+];
+
 #[derive(Debug, Clone)]
-struct SourceBuiltinEqualityTermFormula {
+struct SourceBuiltinBinaryTermFormula {
     formula_site: TypedSiteRef,
     formula_range: SourceRange,
+    formula_kind: FormulaKind,
     left_site: TypedSiteRef,
     left_range: SourceRange,
     right_site: TypedSiteRef,
     right_range: SourceRange,
 }
 
-fn source_builtin_equality_term_formula_detail_keys(
+fn source_builtin_binary_term_formula_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
     symbols: &SymbolEnv,
 ) -> Option<Vec<String>> {
-    let payload = extract_source_builtin_equality_term_formula(ast)?;
+    let payload = extract_source_builtin_binary_term_formula(ast)?;
     let binding_env = source_module_binding_env(ast, module).ok()?;
     let context = BindingContextId::new(0);
     let output = TermFormulaChecker::default().infer(
@@ -988,7 +1014,7 @@ fn source_builtin_equality_term_formula_detail_keys(
             payload.formula_site,
             context,
             payload.formula_range,
-            FormulaKind::Equality,
+            payload.formula_kind,
         )
         .with_terms(vec![payload.left_site, payload.right_site])],
     );
@@ -1002,13 +1028,13 @@ fn source_builtin_equality_term_formula_detail_keys(
     Some(keys)
 }
 
-fn extract_source_builtin_equality_term_formula(
+fn extract_source_builtin_binary_term_formula(
     ast: &SurfaceAst,
-) -> Option<SourceBuiltinEqualityTermFormula> {
+) -> Option<SourceBuiltinBinaryTermFormula> {
     if ast
         .nodes()
         .iter()
-        .any(|node| !is_supported_builtin_equality_theorem_bridge_node(node))
+        .any(|node| !is_supported_builtin_binary_theorem_bridge_node(node))
     {
         return None;
     }
@@ -1019,12 +1045,11 @@ fn extract_source_builtin_equality_term_formula(
     if subtree_has_recovery(ast, theorem) {
         return None;
     }
-    if !direct_token_texts(ast, theorem)
+    let theorem_tokens = direct_token_texts(ast, theorem);
+    let config = SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS
         .iter()
-        .any(|token| token == "TermFormulaPayloadBoundary")
-    {
-        return None;
-    }
+        .copied()
+        .find(|config| theorem_tokens.iter().any(|token| token == config.label))?;
 
     let theorem_structural_children = structural_child_ids(ast, theorem);
     let formula_expressions = theorem_structural_children
@@ -1052,7 +1077,7 @@ fn extract_source_builtin_equality_term_formula(
     if !matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
         || subtree_has_recovery(ast, formula)
         || operator_tokens.len() != 1
-        || operator_tokens[0] != "="
+        || operator_tokens[0] != config.operator
     {
         return None;
     }
@@ -1074,11 +1099,12 @@ fn extract_source_builtin_equality_term_formula(
         return None;
     }
 
-    let left = exact_numeral_term_operand(ast, term_expressions[0], "1")?;
-    let right = exact_numeral_term_operand(ast, term_expressions[1], "1")?;
-    Some(SourceBuiltinEqualityTermFormula {
+    let left = exact_numeral_term_operand(ast, term_expressions[0], config.left)?;
+    let right = exact_numeral_term_operand(ast, term_expressions[1], config.right)?;
+    Some(SourceBuiltinBinaryTermFormula {
         formula_site: surface_site(*formula_id),
         formula_range: formula.range,
+        formula_kind: config.formula_kind,
         left_site: surface_site(left.0),
         left_range: left.1,
         right_site: surface_site(right.0),
@@ -1123,7 +1149,7 @@ fn structural_child_ids(ast: &SurfaceAst, node: &SurfaceNode) -> Vec<SurfaceNode
         .collect()
 }
 
-fn is_supported_builtin_equality_theorem_bridge_node(node: &SurfaceNode) -> bool {
+fn is_supported_builtin_binary_theorem_bridge_node(node: &SurfaceNode) -> bool {
     matches!(
         node.kind,
         SurfaceNodeKind::Root
@@ -7407,6 +7433,20 @@ mod tests {
                 "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
             ]
         );
+        let inequality_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinInequalityPayloadBoundary",
+            "1",
+            "<>",
+            "2",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&inequality_theorem, module.clone(), &symbols),
+            vec![
+                "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+                "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            ]
+        );
         let other_label_theorem =
             builtin_equality_theorem_ast(source_id, "OtherPayloadBoundary", "1", "1");
         assert_eq!(
@@ -7417,6 +7457,58 @@ mod tests {
             builtin_equality_theorem_ast(source_id, "TermFormulaPayloadBoundary", "1", "2");
         assert_eq!(
             source_type_elaboration_detail_keys(&other_literal_theorem, module.clone(), &symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_inequality_label_theorem =
+            builtin_binary_theorem_ast(source_id, "OtherPayloadBoundary", "1", "<>", "2");
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_inequality_label_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_inequality_literal_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinInequalityPayloadBoundary",
+            "1",
+            "<>",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_inequality_literal_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_operator_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinInequalityPayloadBoundary",
+            "1",
+            "=",
+            "2",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&other_operator_theorem, module.clone(), &symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let mixed_reserve_and_inequality_theorem = reserve_then_builtin_binary_theorem_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            "BuiltinInequalityPayloadBoundary",
+            "1",
+            "<>",
+            "2",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &mixed_reserve_and_inequality_theorem,
+                module.clone(),
+                &symbols
+            ),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
         let mixed_reserve_and_theorem = reserve_then_builtin_equality_theorem_ast(
@@ -9081,14 +9173,25 @@ mod tests {
         left: &str,
         right: &str,
     ) -> SurfaceAst {
+        builtin_binary_theorem_ast(source_id, label, left, "=", right)
+    }
+
+    fn builtin_binary_theorem_ast(
+        source_id: SourceId,
+        label: &str,
+        left: &str,
+        operator: &str,
+        right: &str,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut offset = 0;
-        let theorem = add_builtin_equality_theorem_item(
+        let theorem = add_builtin_binary_theorem_item(
             &mut builder,
             source_id,
             &mut offset,
             label,
             left,
+            operator,
             right,
         );
         let root = builder.add_node(
@@ -9106,15 +9209,27 @@ mod tests {
         left: &str,
         right: &str,
     ) -> SurfaceAst {
+        reserve_then_builtin_binary_theorem_ast(source_id, items, label, left, "=", right)
+    }
+
+    fn reserve_then_builtin_binary_theorem_ast(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+        label: &str,
+        left: &str,
+        operator: &str,
+        right: &str,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut offset = 0;
         let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
-        root_children.push(add_builtin_equality_theorem_item(
+        root_children.push(add_builtin_binary_theorem_item(
             &mut builder,
             source_id,
             &mut offset,
             label,
             left,
+            operator,
             right,
         ));
         let root = builder.add_node(
@@ -9125,12 +9240,13 @@ mod tests {
         builder.finish(Some(root), None)
     }
 
-    fn add_builtin_equality_theorem_item(
+    fn add_builtin_binary_theorem_item(
         builder: &mut SurfaceAstBuilder,
         source_id: SourceId,
         offset: &mut usize,
         label: &str,
         left: &str,
+        operator: &str,
         right: &str,
     ) -> SurfaceBuilderNodeId {
         let start = *offset;
@@ -9157,12 +9273,12 @@ mod tests {
         );
         let formula_start = *offset;
         let left_term = add_numeral_term_expression(builder, source_id, offset, left);
-        let equality = add_token(
+        let operator = add_token(
             builder,
             source_id,
             offset,
             SurfaceTokenKind::ReservedSymbol,
-            "=",
+            operator,
         );
         let right_term = add_numeral_term_expression(builder, source_id, offset, right);
         let formula_end = builder
@@ -9172,7 +9288,7 @@ mod tests {
         let formula = builder.add_node(
             SurfaceNodeKind::BuiltinPredicateApplication,
             range(source_id, formula_start, formula_end),
-            vec![left_term, equality, right_term],
+            vec![left_term, operator, right_term],
         );
         let formula_expression = builder.add_node(
             SurfaceNodeKind::FormulaExpression,

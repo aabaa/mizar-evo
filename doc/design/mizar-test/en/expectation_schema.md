@@ -613,18 +613,17 @@ These sidecars document that the source reached parser/resolver execution, but
 they do not credit a `formula_statement` runner, checker theorem/formula
 payload extraction, recorded facts, proof skeletons, CoreIr, ControlFlowIr, VC,
 or proof payloads.
-Task 106 supersedes the task-87 numeral/builtin equality sidecar: it still uses
-`failure_category = "external_dependency_gap"`, but now uses
+Tasks 106 and 107 supersede their exact equality/inequality sidecars: they still use
+`failure_category = "external_dependency_gap"`, but now use
 `rejection_reason = "numeric_type_payload_extraction_gap"` and checker detail
-keys for missing numeric type payloads plus partial equality formula checking.
-Tasks 98, 100, 101, 102, 103, 104, and 105 continue to permit term-bearing
+keys for missing numeric type payloads plus partial formula checking.
+Tasks 98, 100, 102, 103, 104, and 105 continue to permit term-bearing
 theorem formula fail sidecars to use
 `rejection_reason = "term_formula_payload_extraction_gap"` and
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
 These sidecars document that a theorem formula containing Chapter 13 term
 surfaces and Chapter 14 atomic formulas, including task-98 imported
-predicate/functor applications, task-100 builtin membership, task-101 builtin
-inequality, task-102 builtin type assertion, task-103 imported attribute
+predicate/functor applications, task-100 builtin membership, task-102 builtin type assertion, task-103 imported attribute
 assertion, task-104 attribute-level non-empty imported attribute assertion, and
 task-105 set-enumeration equality, reached parser/resolver execution,
 but they do not credit imported semantic payloads, set-enumeration term payload

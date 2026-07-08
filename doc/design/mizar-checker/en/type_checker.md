@@ -417,15 +417,17 @@ term/formula payload extraction, membership operand type inference/checking,
 formula checking, recorded facts, theorem acceptance, the dedicated
 `formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof payloads are
 still absent.
-Task 101 records the builtin inequality variant of that same term/formula
-boundary: `theorem BuiltinInequalityPayloadBoundary: 1 <> 2;` reaches parser
-and resolver execution with Chapter 13 numeral terms and the Chapter 14
-builtin inequality predicate, then stays on
-`type_elaboration.external_dependency.ast_payload_extraction` because real
-term/formula payload extraction, inequality desugaring or equality semantic
-checking, formula checking, recorded facts, theorem acceptance, the dedicated
-`formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof payloads are
-still absent.
+Task 107 supersedes the task 101 generic boundary for the exact builtin
+inequality theorem formula `theorem BuiltinInequalityPayloadBoundary: 1 <> 2;`.
+The active runner now extracts real source-derived checker `TermInput` payloads
+for the two Chapter 13 numeral operands and a real checker `FormulaInput`
+payload for the Chapter 14 inequality formula under the module binding context,
+then fails closed on
+`type_elaboration.checker.checker.term.external.numeric_type_payload` and
+`type_elaboration.checker.checker.formula.term.partial` because numeric type
+payloads, inequality desugaring or equality semantic checking, recorded facts,
+theorem acceptance, the dedicated `formula_statement` runner, CoreIr,
+ControlFlowIr, VC, and proof payloads are still absent.
 Task 102 records the builtin type-assertion variant of that same term/formula
 boundary: `theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` reaches
 parser and resolver execution with a Chapter 13 numeral term and the Chapter
