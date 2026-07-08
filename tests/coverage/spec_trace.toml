@@ -1690,6 +1690,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_builtin_type_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
 ]
+notes = "Task 111 supersedes task 105 only for the exact `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` source by passing real checker payloads for four numeral item terms and two set-enumeration terms before failing closed on missing numeric and result-type/sethood payloads. Broader set-enumeration term extraction and semantics remain deferred."
 
 [[requirement]]
 id = "spec.en.14.atomic_formula.parser"
@@ -1742,6 +1743,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
+notes = "Task 111 supersedes task 105 only for the exact set-enumeration equality theorem by passing a real checker equality FormulaInput over the two source-derived set-enumeration TermInputs before failing closed on partial formula checking. Equality semantics, facts, theorem acceptance, and broader formula extraction remain deferred."
 
 [[requirement]]
 id = "spec.en.14.formulas.type_elaboration_payload_gap"
@@ -2006,6 +2008,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
+notes = "Task 111 supersedes task 105 only for the exact set-enumeration theorem declaration source by carrying source-derived checker term/formula payloads before failing closed. The dedicated formula_statement runner, recorded facts, theorem acceptance, proof skeletons, and downstream payloads remain deferred."
 
 [[requirement]]
 id = "spec.en.16.theorems_and_proofs.type_elaboration_payload_gap"
@@ -3150,7 +3153,7 @@ tests = [
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.set_enumeration_formula_gap"
 source = "doc/design/mizar-checker/en/type_checker.md"
-section = "Task 105 source-derived set-enumeration theorem formula extraction-gap boundary"
+section = "Task 111 exact source-derived set-enumeration theorem checker bridge"
 stage = "type_elaboration"
 status = "covered"
 required = true
@@ -3158,6 +3161,7 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
 ]
+notes = "Task 111 supersedes task 105 only for `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` by carrying four numeral item TermInputs, two set-enumeration TermInputs, and one equality FormulaInput to TermFormulaChecker. Missing numeric type payloads, missing set-enumeration result-type/sethood payloads, and partial formula checking remain the expected fail-closed diagnostics."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.payload_extraction.statement_proof_gap"

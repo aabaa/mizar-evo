@@ -598,14 +598,19 @@ fail closed することを記録する。ただし imported module AST extracti
 semantic predicate/functor signature、term inference、formula checking、recorded
 fact、theorem acceptance、`formula_statement` runner、CoreIr、ControlFlowIr、VC、
 proof payload は credit しない。
-task 103、task 104、task 105 は引き続き term-bearing theorem formula fail
-sidecar について `rejection_reason = "term_formula_payload_extraction_gap"` と
+task 103 と task 104 は引き続き term-bearing theorem formula fail sidecar について
+`rejection_reason = "term_formula_payload_extraction_gap"` と
 `stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"` を
-許可する。これらの sidecar は、task 103 の imported attribute assertion、
-task 104 の attribute-level non-empty imported attribute assertion、task 105 の
-set-enumeration equality を含む Chapter 13 term surface と Chapter 14 atomic
-formula が parser / resolver 実行へ到達したことを記録するが、
-set-enumeration term payload extraction、
+許可する。task 111 は task-105 set-enumeration equality sidecar の exact
+`SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` source だけを supersede し、
+real checker term/formula handoff 後に
+`rejection_reason = "set_enumeration_result_type_payload_gap"` と
+`stable_detail_key =
+"type_elaboration.checker.checker.term.external.result_type_payload"` を使う。
+残る sidecar は、task 103 の imported attribute assertion、task 104 の
+attribute-level non-empty imported attribute assertion を含む Chapter 13 term
+surface と Chapter 14 atomic formula が parser / resolver 実行へ到達したことを
+記録するが、broader set-enumeration term payload extraction、
 imported attribute assertion attribute-chain/provenance payload extraction、
 imported attribute-level non-empty assertion attribute-chain/provenance payload extraction、
 term/formula payload extraction、equality

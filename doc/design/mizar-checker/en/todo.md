@@ -2284,7 +2284,7 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       using Chapter 13 set-enumeration term operands with Chapter 14 builtin
       equality.
-    - Acceptance: parser and resolver execute the source, then the active
+    - Historical acceptance: parser and resolver execute the source, then the active
       runner reports `type_elaboration.external_dependency.ast_payload_extraction`
       because checker-owned set-enumeration term payload extraction,
       term/formula payload extraction, term inference, equality/formula
@@ -2292,8 +2292,26 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       proof payloads, and the `formula_statement` runner are not available.
       The task must not fabricate set-enumeration payloads, term/formula
       payloads, theorem acceptance, or downstream semantic payloads.
+      Task 111 supersedes only the exact `{1, 2} = {1, 2}` source with a real
+      checker term/formula handoff.
     - Verify: `cargo test -p mizar-test`.
     - Deps: tasks 86, 87, 98, 100, 101, 102, 103, and 104. Refs: Step 5
+      source-derived semantic bridge; mizar-test task 10; spec 13 term
+      expressions; spec 14 formulas; spec 16 theorems and proofs.
+
+111. **Add exact source-derived set-enumeration theorem checker bridge.** [x]
+    - Supersede task 105 only for the exact active source
+      `theorem SetEnumerationPayloadBoundary: {1, 2} = {1, 2};`.
+    - Acceptance: parser and resolver execute the source; the active runner
+      extracts the four source-derived numeral item terms, two
+      set-enumeration `TermInput`s, and one builtin equality `FormulaInput`
+      from the AST; `TermFormulaChecker` then reports missing numeric type
+      payloads, missing set-enumeration result-type/sethood payloads, and
+      partial formula checking. The task must not fabricate sethood/result
+      types, equality facts/checking, theorem acceptance, `formula_statement`,
+      CoreIr, ControlFlowIr, VC, or proof payloads.
+    - Verify: `cargo test -p mizar-test`; final workspace verification.
+    - Deps: tasks 105, 106, 107, 108, 109, and 110. Refs: Step 5
       source-derived semantic bridge; mizar-test task 10; spec 13 term
       expressions; spec 14 formulas; spec 16 theorems and proofs.
 

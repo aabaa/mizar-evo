@@ -915,6 +915,9 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) = source_set_enumeration_formula_detail_keys(ast, module.clone(), symbols) {
+        return keys;
+    }
     let Ok(source_reserve) =
         extract_builtin_source_reserve_declarations(ast, module.clone(), symbols)
     else {
@@ -1030,6 +1033,18 @@ struct SourceImportedPredicateFunctorFormula {
     functor_right_range: SourceRange,
 }
 
+#[derive(Debug, Clone)]
+struct SourceSetEnumerationFormula {
+    formula_site: TypedSiteRef,
+    formula_range: SourceRange,
+    left_site: TypedSiteRef,
+    left_range: SourceRange,
+    left_items: Vec<(TypedSiteRef, SourceRange)>,
+    right_site: TypedSiteRef,
+    right_range: SourceRange,
+    right_items: Vec<(TypedSiteRef, SourceRange)>,
+}
+
 fn source_builtin_binary_term_formula_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -1081,6 +1096,15 @@ fn source_imported_predicate_functor_formula_detail_keys(
     symbols: &SymbolEnv,
 ) -> Option<Vec<String>> {
     let output = source_imported_predicate_functor_formula_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
+fn source_set_enumeration_formula_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output = source_set_enumeration_formula_output(ast, module, symbols)?;
     Some(term_formula_output_detail_keys(&output))
 }
 
@@ -1177,6 +1201,50 @@ fn source_imported_predicate_functor_formula_output(
             FormulaKind::PredicateApplication,
         )
         .with_terms(vec![payload.left_site, payload.functor_site])],
+    );
+    Some(output)
+}
+
+fn source_set_enumeration_formula_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_set_enumeration_formula(ast)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    let mut term_inputs = Vec::new();
+    for (site, range) in payload.left_items.iter().chain(payload.right_items.iter()) {
+        term_inputs.push(TermInput::new(
+            site.clone(),
+            context,
+            *range,
+            TermKind::Numeral,
+        ));
+    }
+    term_inputs.push(TermInput::new(
+        payload.left_site.clone(),
+        context,
+        payload.left_range,
+        TermKind::SetEnumeration,
+    ));
+    term_inputs.push(TermInput::new(
+        payload.right_site.clone(),
+        context,
+        payload.right_range,
+        TermKind::SetEnumeration,
+    ));
+    let output = TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        term_inputs,
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::Equality,
+        )
+        .with_terms(vec![payload.left_site, payload.right_site])],
     );
     Some(output)
 }
@@ -1476,6 +1544,108 @@ fn extract_source_imported_predicate_functor_formula(
     })
 }
 
+fn extract_source_set_enumeration_formula(ast: &SurfaceAst) -> Option<SourceSetEnumerationFormula> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_set_enumeration_theorem_bridge_node(node))
+    {
+        return None;
+    }
+    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let [(_, theorem)] = theorem_items.as_slice() else {
+        return None;
+    };
+    if subtree_has_recovery(ast, theorem) {
+        return None;
+    }
+    let theorem_tokens = direct_token_texts(ast, theorem);
+    if theorem_tokens.as_slice() != ["theorem", "SetEnumerationPayloadBoundary", ":", ";"] {
+        return None;
+    }
+
+    let theorem_structural_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_structural_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
+        || subtree_has_recovery(ast, formula)
+        || direct_token_texts(ast, formula).as_slice() != ["="]
+    {
+        return None;
+    }
+
+    let formula_structural_children = structural_child_ids(ast, formula);
+    let [left_expression_id, right_expression_id] = formula_structural_children.as_slice() else {
+        return None;
+    };
+    let left = exact_set_enumeration_term_operand(ast, *left_expression_id)?;
+    let right = exact_set_enumeration_term_operand(ast, *right_expression_id)?;
+    Some(SourceSetEnumerationFormula {
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+        left_site: surface_site(left.term_id),
+        left_range: left.term_range,
+        left_items: left.items,
+        right_site: surface_site(right.term_id),
+        right_range: right.term_range,
+        right_items: right.items,
+    })
+}
+
+#[derive(Debug, Clone)]
+struct ExactSetEnumerationTerm {
+    term_id: SurfaceNodeId,
+    term_range: SourceRange,
+    items: Vec<(TypedSiteRef, SourceRange)>,
+}
+
+fn exact_set_enumeration_term_operand(
+    ast: &SurfaceAst,
+    term_expression_id: SurfaceNodeId,
+) -> Option<ExactSetEnumerationTerm> {
+    let term_expression = ast.node(term_expression_id)?;
+    if !matches!(term_expression.kind, SurfaceNodeKind::TermExpression)
+        || subtree_has_recovery(ast, term_expression)
+    {
+        return None;
+    }
+    let term_children = structural_child_ids(ast, term_expression);
+    let [set_id] = term_children.as_slice() else {
+        return None;
+    };
+    let set = ast.node(*set_id)?;
+    if !matches!(set.kind, SurfaceNodeKind::SetEnumeration)
+        || subtree_has_recovery(ast, set)
+        || direct_token_texts(ast, set).as_slice() != ["{", ",", "}"]
+    {
+        return None;
+    }
+    let item_children = structural_child_ids(ast, set);
+    let [first_expression_id, second_expression_id] = item_children.as_slice() else {
+        return None;
+    };
+    let first = exact_numeral_term_operand(ast, *first_expression_id, "1")?;
+    let second = exact_numeral_term_operand(ast, *second_expression_id, "2")?;
+    Some(ExactSetEnumerationTerm {
+        term_id: *set_id,
+        term_range: set.range,
+        items: vec![
+            (surface_site(first.0), first.1),
+            (surface_site(second.0), second.1),
+        ],
+    })
+}
+
 #[derive(Debug, Clone, Copy)]
 struct ExactImportedInfixFunctorTerm {
     term_id: SurfaceNodeId,
@@ -1702,6 +1872,22 @@ fn is_supported_imported_predicate_functor_theorem_bridge_node(node: &SurfaceNod
             | SurfaceNodeKind::ParenthesizedTerm
             | SurfaceNodeKind::NumeralTerm
             | SurfaceNodeKind::InfixExpression(_)
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_set_enumeration_theorem_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::BuiltinPredicateApplication
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::SetEnumeration
+            | SurfaceNodeKind::NumeralTerm
             | SurfaceNodeKind::Token(_)
     )
 }
@@ -4175,9 +4361,11 @@ mod tests {
         ParseOnlyImportProvider, TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY,
         assemble_source_checker_handoff, extract_builtin_source_reserve_declarations,
         extract_source_builtin_type_assertion_formula,
-        extract_source_imported_predicate_functor_formula, resolve_visible_attribute,
-        resolve_visible_type_head, source_builtin_type_assertion_formula_output,
-        source_imported_predicate_functor_formula_output, source_type_elaboration_detail_keys,
+        extract_source_imported_predicate_functor_formula, extract_source_set_enumeration_formula,
+        resolve_visible_attribute, resolve_visible_type_head,
+        source_builtin_type_assertion_formula_output,
+        source_imported_predicate_functor_formula_output, source_set_enumeration_formula_output,
+        source_type_elaboration_detail_keys, surface_nodes_with_kind, surface_site,
     };
     use mizar_checker::binding_env::BindingId;
     use mizar_checker::resolved_typed_ast::{ResolvedTypedNodeId, ResolvedTypedNodeKind};
@@ -4185,7 +4373,7 @@ mod tests {
         AttributePolarity, FormulaKind, FormulaStatus, TermKind, TermReference, TermStatus,
         TypeHeadInput, TypeHeadRef,
     };
-    use mizar_checker::typed_ast::LocalTypeContextId;
+    use mizar_checker::typed_ast::{LocalTypeContextId, TypeStatus, TypedSiteRef};
     use mizar_core::elaborator::ResolvedTypedAstSummary;
     use mizar_frontend::lexical_env::{
         ExportedOperatorAssociativity, ExportedOperatorFixity, ExportedOperatorMetadata,
@@ -8131,6 +8319,161 @@ mod tests {
             ),
             imported_predicate_functor_detail_keys
         );
+        let set_enumeration_theorem = set_enumeration_equality_theorem_ast(
+            source_id,
+            "SetEnumerationPayloadBoundary",
+            ["1", "2"],
+            "=",
+            ["1", "2"],
+        );
+        let set_enumeration_detail_keys = vec![
+            "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+            "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            "type_elaboration.checker.checker.term.external.result_type_payload".to_owned(),
+        ];
+        assert_eq!(
+            source_type_elaboration_detail_keys(&set_enumeration_theorem, module.clone(), &symbols),
+            set_enumeration_detail_keys
+        );
+        let set_enumeration_output = source_set_enumeration_formula_output(
+            &set_enumeration_theorem,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact set-enumeration bridge should produce checker output");
+        let set_enumeration_payload =
+            extract_source_set_enumeration_formula(&set_enumeration_theorem)
+                .expect("exact set-enumeration bridge should extract source payload");
+        let expected_item_ranges = vec![
+            range(source_id, 42, 43),
+            range(source_id, 46, 47),
+            range(source_id, 54, 55),
+            range(source_id, 58, 59),
+        ];
+        let expected_set_ranges = vec![range(source_id, 40, 49), range(source_id, 52, 61)];
+        let expected_formula_range = range(source_id, 40, 61);
+        let expected_item_sites = surface_sites_for_kind_ranges(
+            &set_enumeration_theorem,
+            SurfaceNodeKind::NumeralTerm,
+            &expected_item_ranges,
+        );
+        let expected_set_sites = surface_sites_for_kind_ranges(
+            &set_enumeration_theorem,
+            SurfaceNodeKind::SetEnumeration,
+            &expected_set_ranges,
+        );
+        let expected_formula_sites = surface_sites_for_kind_ranges(
+            &set_enumeration_theorem,
+            SurfaceNodeKind::BuiltinPredicateApplication,
+            &[expected_formula_range],
+        );
+        assert_eq!(
+            set_enumeration_payload
+                .left_items
+                .iter()
+                .chain(set_enumeration_payload.right_items.iter())
+                .map(|(site, _)| site.clone())
+                .collect::<Vec<_>>(),
+            expected_item_sites
+        );
+        assert_eq!(
+            set_enumeration_payload
+                .left_items
+                .iter()
+                .chain(set_enumeration_payload.right_items.iter())
+                .map(|(_, range)| *range)
+                .collect::<Vec<_>>(),
+            expected_item_ranges
+        );
+        assert_eq!(
+            vec![
+                set_enumeration_payload.left_site.clone(),
+                set_enumeration_payload.right_site.clone(),
+            ],
+            expected_set_sites
+        );
+        assert_eq!(
+            vec![
+                set_enumeration_payload.left_range,
+                set_enumeration_payload.right_range,
+            ],
+            expected_set_ranges
+        );
+        assert_eq!(
+            set_enumeration_payload.formula_site,
+            expected_formula_sites[0]
+        );
+        assert_eq!(
+            set_enumeration_payload.formula_range,
+            expected_formula_range
+        );
+        assert_eq!(set_enumeration_output.terms().len(), 6);
+        for (site, _) in set_enumeration_payload
+            .left_items
+            .iter()
+            .chain(set_enumeration_payload.right_items.iter())
+        {
+            let checked_numeral = set_enumeration_output
+                .terms()
+                .iter()
+                .map(|(_, term)| term)
+                .find(|term| term.site == *site)
+                .expect("set-enumeration item numeral should be checked");
+            assert_eq!(checked_numeral.kind, TermKind::Numeral);
+            assert_eq!(checked_numeral.status, TermStatus::Partial);
+            assert_eq!(
+                set_enumeration_output
+                    .type_entries()
+                    .get(checked_numeral.type_entry)
+                    .expect("numeral term type entry should exist")
+                    .status,
+                TypeStatus::Unknown
+            );
+            assert!(checked_numeral.candidate_set.is_none());
+        }
+        for site in [
+            &set_enumeration_payload.left_site,
+            &set_enumeration_payload.right_site,
+        ] {
+            let checked_set = set_enumeration_output
+                .terms()
+                .iter()
+                .map(|(_, term)| term)
+                .find(|term| term.site == *site)
+                .expect("set-enumeration term should be checked");
+            assert_eq!(checked_set.kind, TermKind::SetEnumeration);
+            assert_eq!(checked_set.status, TermStatus::Partial);
+            assert_eq!(
+                set_enumeration_output
+                    .type_entries()
+                    .get(checked_set.type_entry)
+                    .expect("set-enumeration term type entry should exist")
+                    .status,
+                TypeStatus::Unknown
+            );
+            assert!(checked_set.candidate_set.is_none());
+        }
+        assert_eq!(set_enumeration_output.formulas().len(), 1);
+        let (_, checked_set_formula) = set_enumeration_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("set-enumeration equality formula should be checked");
+        assert_eq!(
+            checked_set_formula.site,
+            set_enumeration_payload.formula_site
+        );
+        assert_eq!(checked_set_formula.kind, FormulaKind::Equality);
+        assert_eq!(checked_set_formula.status, FormulaStatus::Partial);
+        assert_eq!(
+            checked_set_formula.terms,
+            vec![
+                set_enumeration_payload.left_site.clone(),
+                set_enumeration_payload.right_site.clone(),
+            ]
+        );
+        assert!(checked_set_formula.candidate_set.is_none());
+        assert!(checked_set_formula.facts.is_empty());
         let imported_predicate_functor_output = source_imported_predicate_functor_formula_output(
             &imported_predicate_functor_theorem,
             imported_predicate_functor_symbols.module_id().clone(),
@@ -8333,6 +8676,67 @@ mod tests {
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
             );
         }
+        let set_enumeration_gap_cases = [
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "OtherPayloadBoundary",
+                ["1", "2"],
+                "=",
+                ["1", "2"],
+            ),
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "SetEnumerationPayloadBoundary",
+                ["1", "2"],
+                "<>",
+                ["1", "2"],
+            ),
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "SetEnumerationPayloadBoundary",
+                ["2", "1"],
+                "=",
+                ["1", "2"],
+            ),
+            set_enumeration_equality_theorem_ast(
+                source_id,
+                "SetEnumerationPayloadBoundary",
+                ["1", "2"],
+                "=",
+                ["1", "1"],
+            ),
+            set_enumeration_equality_theorem_ast_with_status(
+                source_id,
+                "open",
+                "SetEnumerationPayloadBoundary",
+                ["1", "2"],
+                "=",
+                ["1", "2"],
+            ),
+            reserve_then_set_enumeration_equality_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            ),
+            import_then_set_enumeration_equality_theorem_ast(source_id, "parser.type_fixtures"),
+            double_set_enumeration_equality_theorem_ast(source_id),
+            recovered_set_enumeration_equality_theorem_ast(source_id),
+        ];
+        for gap_case in set_enumeration_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let non_set_enumeration_equality =
+            builtin_equality_theorem_ast(source_id, "SetEnumerationPayloadBoundary", "1", "1");
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &non_set_enumeration_equality,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
         let other_label_theorem =
             builtin_equality_theorem_ast(source_id, "OtherPayloadBoundary", "1", "1");
         assert_eq!(
@@ -10510,6 +10914,148 @@ mod tests {
     }
 
     #[derive(Clone, Copy)]
+    struct SetEnumerationTheoremSpec<'a> {
+        status: Option<&'a str>,
+        recovered_label: bool,
+        label: &'a str,
+        left: [&'a str; 2],
+        operator: &'a str,
+        right: [&'a str; 2],
+    }
+
+    fn exact_set_enumeration_theorem_spec() -> SetEnumerationTheoremSpec<'static> {
+        SetEnumerationTheoremSpec {
+            status: None,
+            recovered_label: false,
+            label: "SetEnumerationPayloadBoundary",
+            left: ["1", "2"],
+            operator: "=",
+            right: ["1", "2"],
+        }
+    }
+
+    fn set_enumeration_equality_theorem_ast(
+        source_id: SourceId,
+        label: &str,
+        left: [&str; 2],
+        operator: &str,
+        right: [&str; 2],
+    ) -> SurfaceAst {
+        let spec = SetEnumerationTheoremSpec {
+            status: None,
+            recovered_label: false,
+            label,
+            left,
+            operator,
+            right,
+        };
+        set_enumeration_theorem_ast(source_id, spec)
+    }
+
+    fn set_enumeration_equality_theorem_ast_with_status(
+        source_id: SourceId,
+        status: &str,
+        label: &str,
+        left: [&str; 2],
+        operator: &str,
+        right: [&str; 2],
+    ) -> SurfaceAst {
+        let spec = SetEnumerationTheoremSpec {
+            status: Some(status),
+            recovered_label: false,
+            label,
+            left,
+            operator,
+            right,
+        };
+        set_enumeration_theorem_ast(source_id, spec)
+    }
+
+    fn recovered_set_enumeration_equality_theorem_ast(source_id: SourceId) -> SurfaceAst {
+        set_enumeration_theorem_ast(
+            source_id,
+            SetEnumerationTheoremSpec {
+                recovered_label: true,
+                ..exact_set_enumeration_theorem_spec()
+            },
+        )
+    }
+
+    fn set_enumeration_theorem_ast(
+        source_id: SourceId,
+        spec: SetEnumerationTheoremSpec<'_>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let theorem = add_set_enumeration_theorem_item(&mut builder, source_id, &mut offset, spec);
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            vec![theorem],
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn reserve_then_set_enumeration_equality_theorem_ast(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
+        root_children.push(add_set_enumeration_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            exact_set_enumeration_theorem_spec(),
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn import_then_set_enumeration_equality_theorem_ast(
+        source_id: SourceId,
+        module_path: &str,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let items = vec![
+            add_import_item(&mut builder, source_id, &mut offset, module_path),
+            add_set_enumeration_theorem_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                exact_set_enumeration_theorem_spec(),
+            ),
+        ];
+        finish_compilation_ast(builder, source_id, items)
+    }
+
+    fn double_set_enumeration_equality_theorem_ast(source_id: SourceId) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let items = vec![
+            add_set_enumeration_theorem_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                exact_set_enumeration_theorem_spec(),
+            ),
+            add_set_enumeration_theorem_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                exact_set_enumeration_theorem_spec(),
+            ),
+        ];
+        finish_compilation_ast(builder, source_id, items)
+    }
+
+    #[derive(Clone, Copy)]
     struct ImportedPredicateFunctorTheoremSpec<'a> {
         status: Option<&'a str>,
         label: &'a str,
@@ -10995,6 +11541,101 @@ mod tests {
         )
     }
 
+    fn add_set_enumeration_theorem_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: SetEnumerationTheoremSpec<'_>,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let status_token = spec.status.map(|status| {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                status,
+            )
+        });
+        let theorem = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "theorem",
+        );
+        let label_token = if spec.recovered_label {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        };
+        let colon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ":",
+        );
+        let formula_start = *offset;
+        let left_term = add_set_enumeration_term_expression(builder, source_id, offset, spec.left);
+        let operator = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            spec.operator,
+        );
+        let right_term =
+            add_set_enumeration_term_expression(builder, source_id, offset, spec.right);
+        let formula_end = builder
+            .node_range(right_term)
+            .expect("just-created set-enumeration right term should exist")
+            .end;
+        let formula = builder.add_node(
+            SurfaceNodeKind::BuiltinPredicateApplication,
+            range(source_id, formula_start, formula_end),
+            vec![left_term, operator, right_term],
+        );
+        let formula_expression = builder.add_node(
+            SurfaceNodeKind::FormulaExpression,
+            range(source_id, formula_start, formula_end),
+            vec![formula],
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let end = builder
+            .node_range(semicolon)
+            .expect("just-created semicolon should exist")
+            .end;
+        let mut children = Vec::new();
+        if let Some(status_token) = status_token {
+            children.push(status_token);
+        }
+        children.extend([theorem, label_token, colon, formula_expression, semicolon]);
+        builder.add_node(
+            SurfaceNodeKind::TheoremItem,
+            range(source_id, start, end),
+            children,
+        )
+    }
+
     fn add_builtin_type_assertion_theorem_item(
         builder: &mut SurfaceAstBuilder,
         source_id: SourceId,
@@ -11092,6 +11733,66 @@ mod tests {
             SurfaceNodeKind::TheoremItem,
             range(source_id, start, end),
             children,
+        )
+    }
+
+    fn add_set_enumeration_term_expression(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        items: [&str; 2],
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let set = add_set_enumeration_term(builder, source_id, offset, items);
+        let end = builder
+            .node_range(set)
+            .expect("just-created set-enumeration term should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::TermExpression,
+            range(source_id, start, end),
+            vec![set],
+        )
+    }
+
+    fn add_set_enumeration_term(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        items: [&str; 2],
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let open = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            "{",
+        );
+        let first = add_numeral_term_expression(builder, source_id, offset, items[0]);
+        let comma = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ",",
+        );
+        let second = add_numeral_term_expression(builder, source_id, offset, items[1]);
+        let close = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            "}",
+        );
+        let end = builder
+            .node_range(close)
+            .expect("just-created set-enumeration close should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::SetEnumeration,
+            range(source_id, start, end),
+            vec![open, first, comma, second, close],
         )
     }
 
@@ -12019,6 +12720,34 @@ mod tests {
         let token = builder.add_token(kind, text, range(source_id, start, end));
         *offset = end + 1;
         token
+    }
+
+    fn add_recovered_token(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        kind: SurfaceTokenKind,
+        text: &str,
+    ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let end = start + text.len();
+        let token = builder.add_recovered_token(kind, text, range(source_id, start, end));
+        *offset = end + 1;
+        token
+    }
+
+    fn surface_sites_for_kind_ranges(
+        ast: &SurfaceAst,
+        kind: SurfaceNodeKind,
+        ranges: &[SourceRange],
+    ) -> Vec<TypedSiteRef> {
+        let sites = surface_nodes_with_kind(ast, kind)
+            .into_iter()
+            .filter(|(_, node)| ranges.contains(&node.range))
+            .map(|(id, _)| surface_site(id))
+            .collect::<Vec<_>>();
+        assert_eq!(sites.len(), ranges.len());
+        sites
     }
 
     const fn range(source_id: SourceId, start: usize, end: usize) -> SourceRange {

@@ -313,8 +313,8 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    formula checking, task 103 records imported
    attribute assertion theorem formula surfaces on the same gap, task 104 records
    attribute-level non-empty imported attribute assertion theorem formula
-   surfaces on the same gap, task 105 records set-enumeration theorem formula
-   surfaces on the same gap, task 99 records formula connective/quantifier
+   surfaces on the same gap, task 111 supersedes task 105 for the exact
+   set-enumeration theorem formula checker bridge, task 99 records formula connective/quantifier
    theorem formula surfaces on the same gap, task 88 records a theorem proof block on the
    same gap, task 89 records statement-level proof justifications on the same
    gap, task 90 records predicate/functor definitions on the same gap, and task
@@ -340,7 +340,7 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    recorded facts, imported attribute assertion payloads, imported
    attribute-level non-empty assertion payloads, negated attribute
    admissibility/semantic checking, attribute admissibility/semantic checking,
-   set-enumeration term payload extraction,
+   set-enumeration result-type/sethood payload extraction beyond task 111,
    `formula_statement`, CoreIr, ControlFlowIr,
    VC, and proof payloads deferred).
 This wave has no fixed task list yet: it is promoted slice by slice, opening

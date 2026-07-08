@@ -2123,7 +2123,7 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - Chapter 13 の set-enumeration term operand と Chapter 14 の builtin
       equality を使う theorem formula 専用の active `type_elaboration`
       boundary を追加する。
-    - Acceptance: parser と resolver は source を実行し、その後 active runner は
+    - Historical acceptance: parser と resolver は source を実行し、その後 active runner は
       `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
       checker-owned set-enumeration term payload extraction、term/formula
       payload extraction、term inference、equality/formula checking、recorded
@@ -2131,8 +2131,27 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       `formula_statement` runner がまだ利用できないためである。この task は
       set-enumeration payload、term/formula payload、theorem acceptance、
       downstream semantic payload を捏造してはならない。
+      task 111 は exact `{1, 2} = {1, 2}` source だけを real checker
+      term/formula handoff で supersede する。
     - 検証: `cargo test -p mizar-test`。
     - 依存: tasks 86、87、98、100、101、102、103、104。参照: Step 5
+      source-derived semantic bridge、mizar-test task 10、spec 13 term
+      expressions、spec 14 formulas、spec 16 theorems and proofs。
+
+111. **Exact source-derived set-enumeration theorem checker bridge を追加する。** [x]
+    - exact active source
+      `theorem SetEnumerationPayloadBoundary: {1, 2} = {1, 2};` だけで
+      task 105 を supersede する。
+    - Acceptance: parser と resolver は source を実行する。active runner は AST
+      から 4 つの source-derived numeral item term、2 つの set-enumeration
+      `TermInput`、1 つの builtin equality `FormulaInput` を抽出する。
+      `TermFormulaChecker` はその後 missing numeric type payload、missing
+      set-enumeration result-type/sethood payload、partial formula checking を
+      報告する。この task は sethood/result type、equality fact/checking、
+      theorem acceptance、`formula_statement`、CoreIr、ControlFlowIr、VC、proof
+      payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`; final workspace verification。
+    - 依存: tasks 105、106、107、108、109、110。参照: Step 5
       source-derived semantic bridge、mizar-test task 10、spec 13 term
       expressions、spec 14 formulas、spec 16 theorems and proofs。
 
