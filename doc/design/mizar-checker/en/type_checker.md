@@ -402,6 +402,15 @@ conclusion statement, then stays on
 skeleton payload extraction, local proof context, formula payload extraction,
 recorded facts, theorem acceptance, the dedicated `formula_statement` runner,
 CoreIr, ControlFlowIr, VC, and proof payloads are still absent.
+Task 89 records the statement-level proof-justification boundary: a theorem
+proof containing a labeled `A: thesis proof ... end;` statement and a final
+`thus thesis proof ... end;` conclusion reaches parser and resolver execution,
+then stays on `type_elaboration.external_dependency.ast_payload_extraction`
+because real statement proof payload extraction, nested proof skeleton payloads,
+local proof context, formula payload extraction, label-reference semantic
+checking, recorded facts, theorem acceptance, the dedicated
+`formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof payloads are
+still absent.
 Task 82 promotes only the imported-mode provenance portion of task 79: a
 reserve head such as `TypeCaseMode` from the documented
 `parser.type_fixtures` import summary may be passed as a checker-owned

@@ -630,6 +630,16 @@ conclusion reached parser/resolver execution, but they do not credit proof
 skeleton payload extraction, local proof context, formula payload extraction,
 recorded facts, theorem acceptance, a `formula_statement` runner, CoreIr,
 ControlFlowIr, VC, or proof payloads.
+Task 89 permits statement-proof theorem fail sidecars to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "statement_proof_payload_extraction_gap"` and
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
+These sidecars document that theorem proof statements justified by nested proof
+blocks reached parser/resolver execution, but they do not credit statement
+proof payload extraction, nested proof skeleton payloads, local proof context,
+formula payload extraction, label-reference semantic checking, recorded facts,
+theorem acceptance, a `formula_statement` runner, CoreIr, ControlFlowIr, VC, or
+proof payloads.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

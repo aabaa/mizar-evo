@@ -557,7 +557,13 @@ payloads. Task 88 fail cases credit only the proof-block/proof-skeleton
 extraction-gap boundary after parser/resolver execution and do not credit
 checker proof skeleton payload extraction, local proof context, formula payload
 extraction, recorded facts, theorem acceptance, `formula_statement` runner
-support, CoreIr, ControlFlowIr, VC, or proof payloads. Task
+support, CoreIr, ControlFlowIr, VC, or proof payloads. Task 89 fail cases
+credit only the statement-level proof-justification extraction-gap boundary
+after parser/resolver execution and do not credit checker statement proof
+payload extraction, nested proof skeleton payloads, local proof context, formula
+payload extraction, label-reference semantic checking, recorded facts, theorem
+acceptance, `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or
+proof payloads. Task
 75/76/77 fail
 cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker

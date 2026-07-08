@@ -1604,6 +1604,7 @@ coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_formula_statement_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1638,6 +1639,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.15.statements.statement_proof_payload_gap"
+source = "doc/spec/en/15.statements.md"
+section = "15.4.1 Direct Conclusion (`thus`); 15.8 Justification Forms; 15.12 Complete Syntax"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1762,6 +1775,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems_and_proofs.statement_proof_payload_gap"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.3 Proof Skeleton and Natural Deduction; 16.4.1 Proof Blocks; 16.5 Proof Justification"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2389,6 +2414,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_non_builtin_type_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_payload_extraction_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_structure_qualified_attribute_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
@@ -2696,6 +2722,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.statement_proof_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 89 source-derived statement proof extraction gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
 ]
 
 [[requirement]]

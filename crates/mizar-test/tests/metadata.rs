@@ -3455,8 +3455,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&repository_config()).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 52);
-    assert_eq!(report.passed_count(), 52);
+    assert_eq!(report.results.len(), 53);
+    assert_eq!(report.passed_count(), 53);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -3548,6 +3548,11 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_proof_skeleton_gap_001"
+            && result.actual_detail_keys
+                == ["type_elaboration.external_dependency.ast_payload_extraction"]
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "fail_type_elaboration_statement_proof_gap_001"
             && result.actual_detail_keys
                 == ["type_elaboration.external_dependency.ast_payload_extraction"]
     }));
@@ -7707,8 +7712,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 52"));
-    assert!(stdout.contains("passed: 52"));
+    assert!(stdout.contains("type-elaboration cases: 53"));
+    assert!(stdout.contains("passed: 53"));
     assert!(stdout.contains("failed: 0"));
 }
 

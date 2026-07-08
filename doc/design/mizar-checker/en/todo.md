@@ -1999,6 +1999,25 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       task 10; spec 14 formulas; spec 15 statements; spec 16 theorems and
       proofs.
 
+89. **Add source-derived statement proof extraction-gap boundary.** [x]
+    - Add a dedicated active `type_elaboration` boundary for a theorem proof
+      containing statement-level proof justifications, such as labeled
+      `A: thesis proof ... end;` and final `thus thesis proof ... end;`
+      proof blocks.
+    - Acceptance: parser and resolver execute the source, then the active
+      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
+      because checker-owned statement proof payload extraction, nested proof
+      skeleton payloads, local proof context, formula payload extraction,
+      label-reference semantic checking, recorded facts, theorem acceptance,
+      CoreIr, ControlFlowIr, VC, proof payloads, and the `formula_statement`
+      runner are not available. The task must not fabricate statement proof
+      payloads, proof skeleton payloads, formula payloads, local facts, theorem
+      acceptance, or downstream semantic payloads.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: task 88. Refs: Step 5 source-derived semantic bridge; mizar-test
+      task 10; spec 14 formulas; spec 15 statements; spec 16 theorems and
+      proofs.
+
 ## Recommended Verification
 
 Run after each task:

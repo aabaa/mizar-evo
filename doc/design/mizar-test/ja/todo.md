@@ -269,7 +269,8 @@ regression test を追加した。
       checker task 85 の imported non-empty attribute reserve provenance bridge と
       checker task 86 の theorem formula extraction-gap boundary、checker task 87 の
       term formula extraction-gap boundary、checker task 88 の proof skeleton
-      extraction-gap boundary も
+      extraction-gap boundary、checker task 89 の statement proof extraction-gap
+      boundary も
       prepared/implemented increment として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
@@ -394,7 +395,7 @@ regression test を追加した。
       negative `empty`/builtin-`set` bridge、task-80 boundary を超える imported attribute provenance、task-83 `R` bridge と task-78 boundary を超える
       imported structure provenance、task 82 の provenance bridge を超える imported mode expansion payload、
       task-81 boundary を超える attribute argument payload、attributed / argument-bearing mode / structure head、
-      structure base-shape payload、task-86/task-87/task-88 extraction-gap boundary を超える
+      structure base-shape payload、task-86/task-87/task-88/task-89 extraction-gap boundary を超える
       term / formula / theorem / proof payload、coercion、overload payload、fact、
       CoreIr、ControlFlowIr、VC payload、proof
       evidence は明示的な `type_elaboration.external_dependency.ast_payload_extraction`

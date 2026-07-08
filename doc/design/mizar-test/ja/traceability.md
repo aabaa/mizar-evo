@@ -516,6 +516,12 @@ extraction-gap boundary だけを credit し、checker proof skeleton payload ex
 local proof context、formula payload extraction、recorded fact、theorem acceptance、
 `formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
 credit しない。
+task 89 の fail case は parser / resolver 実行後の statement-level proof-justification
+extraction-gap boundary だけを credit し、checker statement proof payload extraction、
+nested proof skeleton payload、local proof context、formula payload extraction、
+label-reference semantic checking、recorded fact、theorem acceptance、
+`formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof payload は
+credit しない。
 これらの gap test はより広い task 7-11 semantic pass/fail coverage を満たさず、
 prepared consumer execution が存在するまで `CoreIr`、`ControlFlowIr`、
 `proof_verification` row は deferred のままにする。summary/context readiness read は

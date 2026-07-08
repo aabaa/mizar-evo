@@ -384,6 +384,14 @@ parser / resolver 実行まで到達するが、real proof skeleton payload extr
 local proof context、formula payload extraction、recorded fact、theorem acceptance、
 dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload が
 まだ存在しないため `type_elaboration.external_dependency.ast_payload_extraction` に残す。
+task 89 は statement-level proof-justification boundary を記録する:
+labeled `A: thesis proof ... end;` statement と final `thus thesis proof ... end;`
+conclusion を含む theorem proof は parser / resolver 実行まで到達するが、real
+statement proof payload extraction、nested proof skeleton payload、local proof
+context、formula payload extraction、label-reference semantic checking、recorded
+fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
+ControlFlowIr、VC、proof payload がまだ存在しないため
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。
 task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
 documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
 reserve head は、可視 resolver symbol が `SymbolKind::Mode` で

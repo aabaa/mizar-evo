@@ -594,6 +594,15 @@ task 88 は proof-block theorem fail sidecar について
 parser / resolver 実行へ到達したことを記録するが、proof skeleton payload extraction、
 local proof context、formula payload extraction、recorded fact、theorem acceptance、
 `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload は credit しない。
+task 89 は statement-proof theorem fail sidecar について
+`failure_category = "external_dependency_gap"`、
+`rejection_reason = "statement_proof_payload_extraction_gap"`、
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
+を許可する。これらの sidecar は nested proof block で justify される theorem proof
+statement が parser / resolver 実行へ到達したことを記録するが、statement proof
+payload extraction、nested proof skeleton payload、local proof context、formula payload
+extraction、label-reference semantic checking、recorded fact、theorem acceptance、
+`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload は credit しない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
 から checker-owned payload を non-builtin declaration、imported symbol、unresolved /
