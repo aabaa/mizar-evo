@@ -445,8 +445,9 @@ case, the task 88 proof-block theorem external-gap case, the task 89
 statement-proof external-gap case, the task 90 predicate/functor definition
 external-gap case, the task 91 attribute definition external-gap case, the task
 92 mode/structure definition external-gap case, the task 93 proof-local
-declaration external-gap case, and the task 94 proof-local inline definition
-external-gap case, but including the task 85
+declaration external-gap case, the task 94 proof-local inline definition
+external-gap case, the task 95 registration-block external-gap case, and the
+task 96 redefinition/notation external-gap case, but including the task 85
 imported negative
 `empty`/builtin-`set` provenance slice, are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one
@@ -464,14 +465,15 @@ being credited from the diagnostic external-gap row.
 
 Covered active fail tests may still assert the external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` when a case needs
-unsupported non-builtin declarations beyond task 95's registration block
-extraction-gap boundary, task 94's proof-local inline definition boundary,
+unsupported non-builtin declarations beyond task 96's redefinition/notation
+extraction-gap boundary, task 95's registration block extraction-gap boundary, task 94's proof-local inline definition boundary,
 task 93's proof-local declaration boundary, and task 92's mode/structure
 definition boundary, imported symbols, attribute or mode/structure arguments,
 structure-qualified attribute provenance, type-argument or term-argument
 provenance, unresolved or ambiguous symbols, proof-local declaration payloads,
 inline definition payloads, registration payloads, activation/correctness
-payloads, terms, formulas, coercions, overload payloads, facts, CoreIr,
+payloads, redefinition/notation payloads, notation alias relation payloads,
+target inference payloads, terms, formulas, coercions, overload payloads, facts, CoreIr,
 ControlFlowIr, VC payloads, or proof payload extraction. Supported checker-owned fail slices
 may instead assert the checker
 detail keys for same-module attributed builtin reserve heads missing evidence
@@ -610,6 +612,14 @@ payload extraction, correctness-condition/proof-obligation payloads, accepted
 activation/evidence status, cluster/reduction semantics, Chapter 17 semantic
 rows, facts, `formula_statement` or `advanced_semantics` runner support,
 CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 96 fail cases credit only the redefinition/notation extraction-gap
+boundary after parser/resolver execution and do not credit checker
+redefinition payload extraction, notation alias relation payloads,
+redefinition target inference, coherence proof-obligation payloads, overload
+candidate payloads, Chapter 11 alias semantic resolution, Chapter 19
+overload/redefinition semantics, facts, `formula_statement` or
+`advanced_semantics` runner support, CoreIr, ControlFlowIr, VC, or proof
+payloads.
 
 Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and

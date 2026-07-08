@@ -1,0 +1,18 @@
+import parser.type_fixtures;
+
+synonym Task96ModeAlias for TypeCaseMode;
+antonym Task96NonEmptyAlias for empty;
+
+definition
+  redefine attr Task96AttrRedef: x is empty means thesis;
+  coherence by Ref;
+
+  redefine pred Task96PredRedef: x divides y means thesis;
+  coherence by Ref;
+
+  redefine func Task96FuncRedef: x ++ y -> set equals x;
+  coherence by Ref;
+
+  synonym task96_empty for empty;
+  private antonym x task96_not_divides y for x divides y;
+end;

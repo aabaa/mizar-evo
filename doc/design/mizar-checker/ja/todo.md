@@ -1962,6 +1962,23 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: task 94。参照: Step 5 source-derived semantic bridge、mizar-test
       task 10、spec 17 clusters and registrations。
 
+96. **Source-derived redefinition / notation extraction-gap boundary を追加する。** [x]
+    - top-level と definition-local の synonym / antonym alias、および
+      attribute、predicate、functor redefinition declaration について、専用の
+      active `type_elaboration` boundary を追加する。
+    - Acceptance: parser と resolver は source を実行し、その後 active runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+      checker-owned redefinition payload extraction、notation alias relation
+      payload、target inference、coherence proof-obligation payload、overload
+      candidate payload、recorded fact、CoreIr、ControlFlowIr、VC、proof payload、
+      `formula_statement` / `advanced_semantics` runner がまだ存在しないためである。
+      この task は alias semantics、redefinition payload、overload fact、Chapter 11
+      alias semantic resolution、Chapter 19 overload / redefinition semantic
+      coverage、downstream semantic payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: task 95。参照: Step 5 source-derived semantic bridge、mizar-test
+      task 10、spec 11 symbol management、spec 19 overload resolution。
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -632,6 +632,17 @@ correctness-condition / proof-obligation payload、accepted activation / evidenc
 status、cluster / reduction semantics、Chapter 17 semantic row、
 `formula_statement` または `advanced_semantics` runner、CoreIr、ControlFlowIr、VC、
 proof payload は credit しない。
+task 96 は redefinition / notation fail sidecar について
+`failure_category = "external_dependency_gap"`、
+`rejection_reason = "redefinition_notation_payload_extraction_gap"`、
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
+を許可する。これらの sidecar は synonym / antonym alias と attribute、
+predicate、functor redefinition declaration が parser / resolver 実行へ到達した
+ことを記録するが、redefinition payload extraction、notation alias relation
+payload、redefinition target inference、coherence proof-obligation payload、
+overload candidate payload、Chapter 11 alias semantic resolution、Chapter 19
+overload / redefinition semantics、`formula_statement` または
+`advanced_semantics` runner、CoreIr、ControlFlowIr、VC、proof payload は credit しない。
 task 90 は predicate/functor definition fail sidecar について
 `failure_category = "external_dependency_gap"`、
 `rejection_reason = "definition_declaration_payload_extraction_gap"`、

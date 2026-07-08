@@ -1188,6 +1188,22 @@ deferred_reason = "Task 83 supersedes the documented parser.type_fixtures `R` fi
 tests = []
 
 [[requirement]]
+id = "spec.en.11.symbol_management.redefinition_notation.type_elaboration_payload_gap"
+source = "doc/spec/en/11.symbol_management.md"
+section = "11.1 Synonyms and Antonyms; 11.4 Public and Private Symbols"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+notes = "Checker task 96 covers only the parser/resolver-executable source boundary for synonym/antonym alias and redefinition/notation surfaces at the type_elaboration stage. It does not credit alias relation resolution, visibility/export semantics beyond declaration-symbol collection, semantic equivalence, overload payloads, or advanced_semantics runner support."
+depends_on = [
+  "spec.en.syntax.redefinition_notation.parser",
+]
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_redefinition_notation_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.11.symbol_management.signatures"
 source = "doc/spec/en/11.symbol_management.md"
 section = "11.2 Scope and Visibility"
@@ -2142,6 +2158,22 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.19.redefinition.type_elaboration_payload_gap"
+source = "doc/spec/en/19.overload_resolution.md"
+section = "19.4.1 Candidate Collection; 19.5 Symbol Redefinition"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+notes = "Checker task 96 covers only the parser/resolver-executable source boundary for attr/pred/func redefinition declarations at the type_elaboration stage. It does not credit target inference, coherence checking, overload candidate collection, active redefinition combination, accepted facts, or advanced_semantics runner support."
+depends_on = [
+  "spec.en.syntax.redefinition_notation.parser",
+]
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_redefinition_notation_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.20.algorithm_control_flow.parser"
 source = "doc/spec/en/20.algorithm_and_verification.md"
 section = "20.2 Control Flow; 20.2.1 Conditional; 20.2.2 Bounded Loop statement shell; 20.2.3 Range Loop statement shell; 20.2.4 Collection Loop statement shell; 20.2.5 AST Pattern Match; 20.2.6 break and continue statements; 20.11 Complete Syntax (EBNF) control-flow subset, with concrete loop verification clauses covered separately by parser task 34"
@@ -2543,6 +2575,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_predicate_functor_definition_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_proof_local_declaration_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_redefinition_notation_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_registration_block_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_structure_qualified_attribute_gap_001.expect.toml",
@@ -2912,6 +2945,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.redefinition_notation_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 96 source-derived redefinition/notation extraction gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_redefinition_notation_gap_001.expect.toml",
 ]
 
 [[requirement]]

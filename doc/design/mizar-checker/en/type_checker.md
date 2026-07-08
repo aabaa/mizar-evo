@@ -461,6 +461,17 @@ payloads, accepted activation/evidence status, cluster/reduction semantics,
 recorded facts, the dedicated `formula_statement` or `advanced_semantics`
 runners, CoreIr, ControlFlowIr, VC, and proof payloads are still absent. This
 does not credit Chapter 17 semantic cluster/reduction rows.
+Task 96 records the redefinition/notation boundary: top-level and
+definition-local synonym/antonym aliases plus attribute, predicate, and functor
+redefinition declarations reach parser and resolver execution using documented
+`parser.type_fixtures` symbols, then stay on
+`type_elaboration.external_dependency.ast_payload_extraction` because real
+redefinition payload extraction, notation alias relation payloads, redefinition
+target inference, coherence proof-obligation payloads, overload candidate
+payloads, recorded facts, the dedicated `formula_statement` or
+`advanced_semantics` runners, CoreIr, ControlFlowIr, VC, and proof payloads are
+still absent. This does not credit Chapter 11 alias semantic resolution or
+Chapter 19 overload/redefinition semantics.
 Task 82 promotes only the imported-mode provenance portion of task 79: a
 reserve head such as `TypeCaseMode` from the documented
 `parser.type_fixtures` import summary may be passed as a checker-owned

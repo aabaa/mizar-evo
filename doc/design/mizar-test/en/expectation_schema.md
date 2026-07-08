@@ -669,6 +669,17 @@ extraction, correctness-condition/proof-obligation payloads, accepted
 activation/evidence status, cluster/reduction semantics, Chapter 17 semantic
 rows, a `formula_statement` or `advanced_semantics` runner, CoreIr,
 ControlFlowIr, VC, or proof payloads.
+Task 96 permits redefinition/notation fail sidecars to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "redefinition_notation_payload_extraction_gap"` and
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
+These sidecars document that synonym/antonym aliases and attribute, predicate,
+and functor redefinition declarations reached parser/resolver execution, but
+they do not credit redefinition payload extraction, notation alias relation
+payloads, redefinition target inference, coherence proof-obligation payloads,
+overload candidate payloads, Chapter 11 alias semantic resolution, Chapter 19
+overload/redefinition semantics, a `formula_statement` or `advanced_semantics`
+runner, CoreIr, ControlFlowIr, VC, or proof payloads.
 Task 90 permits predicate/functor definition fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "definition_declaration_payload_extraction_gap"` and

@@ -273,7 +273,7 @@ regression test を追加した。
       boundary、checker task 90 の predicate/functor definition extraction-gap
       boundary、checker task 91 の attribute definition extraction-gap boundary、
       checker task 92 の mode/structure definition extraction-gap boundary、
-      checker task 93 の proof-local declaration extraction-gap boundary、checker task 94 の proof-local inline definition extraction-gap boundary、checker task 95 の registration block extraction-gap boundary も
+      checker task 93 の proof-local declaration extraction-gap boundary、checker task 94 の proof-local inline definition extraction-gap boundary、checker task 95 の registration block extraction-gap boundary、checker task 96 の redefinition/notation extraction-gap boundary も
       prepared/implemented increment として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
@@ -394,11 +394,11 @@ regression test を追加した。
       その handoff を `TypedAst`、`ResolvedTypedAst` へ継続する。
       `reserve x, y for set` のように source type range を共有する場合も、binding
       ごとに distinct typed site を持つ。
-    - 未対応の non-builtin declaration（task 95 の registration block extraction-gap boundary、task 94 の proof-local inline definition boundary、task 93 の proof-local declaration boundary、task 92 の mode/structure definition boundary を超えるもの）、task-84 `TypeCaseAttr` bridge、task-85
+    - 未対応の non-builtin declaration（task 96 の redefinition/notation extraction-gap boundary、task 95 の registration block extraction-gap boundary、task 94 の proof-local inline definition boundary、task 93 の proof-local declaration boundary、task 92 の mode/structure definition boundary を超えるもの）、task-84 `TypeCaseAttr` bridge、task-85
       negative `empty`/builtin-`set` bridge、task-80 boundary を超える imported attribute provenance、task-83 `R` bridge と task-78 boundary を超える
       imported structure provenance、task 82 の provenance bridge を超える imported mode expansion payload、
       task-81 boundary を超える attribute argument payload、attributed / argument-bearing mode / structure head、
-      structure base-shape payload、task-92 extraction-gap boundary を超える definition payload、task-93 extraction-gap boundary を超える proof-local declaration payload、task-94 extraction-gap boundary を超える inline definition payload、task-95 extraction-gap boundary を超える registration payload / activation / correctness payload、task-86/task-87/task-88/task-89/task-93/task-94/task-95 extraction-gap boundary を超える
+      structure base-shape payload、task-92 extraction-gap boundary を超える definition payload、task-93 extraction-gap boundary を超える proof-local declaration payload、task-94 extraction-gap boundary を超える inline definition payload、task-95 extraction-gap boundary を超える registration payload / activation / correctness payload、task-96 extraction-gap boundary を超える redefinition/notation payload、task-86/task-87/task-88/task-89/task-93/task-94/task-95/task-96 extraction-gap boundary を超える
       term / formula / theorem / proof payload、coercion、overload payload、fact、
       CoreIr、ControlFlowIr、VC payload、proof
       evidence は明示的な `type_elaboration.external_dependency.ast_payload_extraction`

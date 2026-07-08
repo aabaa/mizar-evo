@@ -2111,6 +2111,24 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: task 94. Refs: Step 5 source-derived semantic bridge; mizar-test
       task 10; spec 17 clusters and registrations.
 
+96. **Add source-derived redefinition/notation extraction-gap boundary.** [x]
+    - Add a dedicated active `type_elaboration` boundary for top-level and
+      definition-local synonym/antonym aliases plus attribute, predicate, and
+      functor redefinition declarations.
+    - Acceptance: parser and resolver execute the source, then the active
+      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
+      because checker-owned redefinition payload extraction, notation alias
+      relation payloads, target inference, coherence proof-obligation payloads,
+      overload candidate payloads, recorded facts, CoreIr, ControlFlowIr, VC,
+      proof payloads, and the `formula_statement` / `advanced_semantics`
+      runners are not available. The task must not fabricate alias semantics,
+      redefinition payloads, overload facts, Chapter 11 alias semantic
+      resolution, Chapter 19 overload/redefinition semantic coverage, or
+      downstream semantic payloads.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: task 95. Refs: Step 5 source-derived semantic bridge; mizar-test
+      task 10; spec 11 symbol management; spec 19 overload resolution.
+
 ## Recommended Verification
 
 Run after each task:

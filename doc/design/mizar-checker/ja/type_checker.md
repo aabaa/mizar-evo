@@ -439,6 +439,17 @@ reduction semantics、recorded fact、dedicated `formula_statement` または
 `advanced_semantics` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ
 存在しないため `type_elaboration.external_dependency.ast_payload_extraction`
 に残す。これは Chapter 17 semantic cluster / reduction row を credit しない。
+task 96 は redefinition / notation boundary を記録する: top-level と
+definition-local の synonym / antonym alias、および attribute、predicate、
+functor redefinition declaration は documented `parser.type_fixtures` symbol を
+使って parser / resolver 実行まで到達するが、real redefinition payload
+extraction、notation alias relation payload、redefinition target inference、
+coherence proof-obligation payload、overload candidate payload、recorded fact、
+dedicated `formula_statement` または `advanced_semantics` runner、CoreIr、
+ControlFlowIr、VC、proof payload がまだ存在しないため
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。これは
+Chapter 11 alias semantic resolution や Chapter 19 overload / redefinition
+semantics を credit しない。
 task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
 documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
 reserve head は、可視 resolver symbol が `SymbolKind::Mode` で
