@@ -452,6 +452,15 @@ because real inline definition formal/body payload extraction, local
 abbreviation expansion, term and formula body payloads, guard evidence,
 recorded facts, theorem acceptance, the dedicated `formula_statement` runner, CoreIr,
 ControlFlowIr, VC, and proof payloads are still absent.
+Task 95 records the registration block boundary: a top-level registration
+block with existential and conditional clusters reaches parser and resolver
+execution, then stays on
+`type_elaboration.external_dependency.ast_payload_extraction` because real
+registration-item payload extraction, correctness-condition/proof-obligation
+payloads, accepted activation/evidence status, cluster/reduction semantics,
+recorded facts, the dedicated `formula_statement` or `advanced_semantics`
+runners, CoreIr, ControlFlowIr, VC, and proof payloads are still absent. This
+does not credit Chapter 17 semantic cluster/reduction rows.
 Task 82 promotes only the imported-mode provenance portion of task 79: a
 reserve head such as `TypeCaseMode` from the documented
 `parser.type_fixtures` import summary may be passed as a checker-owned

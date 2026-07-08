@@ -1,0 +1,9 @@
+import parser.type_fixtures;
+
+registration
+  cluster RegistrationPayloadExists: non empty set;
+  existence by Ref;
+
+  cluster RegistrationPayloadImplication: empty -> empty for set;
+  coherence by Ref;
+end;

@@ -1997,6 +1997,22 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.17.clusters_and_registrations.type_elaboration_payload_gap"
+source = "doc/spec/en/17.clusters_and_registrations.md"
+section = "17.2 Registration Blocks; 17.3 Existential Clusters; 17.4 Conditional Clusters"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+notes = "Checker task 95 covers only the parser/resolver-executable source boundary for registration blocks at the type_elaboration stage. It does not credit Chapter 17 cluster/reduction semantics, registration activation, correctness-condition discharge, or advanced_semantics runner support."
+depends_on = [
+  "spec.en.17.clusters_and_registrations.parser",
+]
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_registration_block_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.17.reductions.termination_order.semantic"
 source = "doc/spec/en/17.clusters_and_registrations.md"
 section = "17.6.4 Termination, Determinism, and Traceability"
@@ -2527,6 +2543,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_predicate_functor_definition_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_proof_local_declaration_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_registration_block_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_statement_proof_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_structure_qualified_attribute_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
@@ -2895,6 +2912,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_proof_skeleton_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.registration_block_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 95 source-derived registration block extraction gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_registration_block_gap_001.expect.toml",
 ]
 
 [[requirement]]

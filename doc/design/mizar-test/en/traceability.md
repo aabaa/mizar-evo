@@ -464,14 +464,15 @@ being credited from the diagnostic external-gap row.
 
 Covered active fail tests may still assert the external-gap detail key
 `type_elaboration.external_dependency.ast_payload_extraction` when a case needs
-unsupported non-builtin declarations beyond task 94's proof-local inline
-definition boundary, task 93's proof-local declaration boundary, and task 92's
-mode/structure definition boundary, imported symbols, attribute or
-mode/structure arguments, structure-qualified attribute provenance,
-type-argument or term-argument provenance, unresolved or ambiguous symbols,
-proof-local declaration payloads, inline definition payloads, terms, formulas,
-coercions, overload payloads, facts, CoreIr, ControlFlowIr, VC payloads, or
-proof payload extraction. Supported checker-owned fail slices
+unsupported non-builtin declarations beyond task 95's registration block
+extraction-gap boundary, task 94's proof-local inline definition boundary,
+task 93's proof-local declaration boundary, and task 92's mode/structure
+definition boundary, imported symbols, attribute or mode/structure arguments,
+structure-qualified attribute provenance, type-argument or term-argument
+provenance, unresolved or ambiguous symbols, proof-local declaration payloads,
+inline definition payloads, registration payloads, activation/correctness
+payloads, terms, formulas, coercions, overload payloads, facts, CoreIr,
+ControlFlowIr, VC payloads, or proof payload extraction. Supported checker-owned fail slices
 may instead assert the checker
 detail keys for same-module attributed builtin reserve heads missing evidence
 or same-module local structure reserve heads missing base-shape evidence,
@@ -603,6 +604,12 @@ cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker
 `ModeExpansion`, structure type-head, base-shape, constructor-witness,
 `AttributeInput`, or attributed-type evidence production.
+Task 95 fail cases credit only the registration-block extraction-gap boundary
+after parser/resolver execution and do not credit checker registration-item
+payload extraction, correctness-condition/proof-obligation payloads, accepted
+activation/evidence status, cluster/reduction semantics, Chapter 17 semantic
+rows, facts, `formula_statement` or `advanced_semantics` runner support,
+CoreIr, ControlFlowIr, VC, or proof payloads.
 
 Those gap tests do not satisfy the broader task 7-11
 semantic pass/fail coverage, and `CoreIr`, `ControlFlowIr`, and

@@ -2095,6 +2095,22 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: task 93. Refs: Step 5 source-derived semantic bridge; mizar-test
       task 10; spec 15 statements.
 
+95. **Add source-derived registration block extraction-gap boundary.** [x]
+    - Add a dedicated active `type_elaboration` boundary for a top-level
+      `registration` block containing existential and conditional clusters.
+    - Acceptance: parser and resolver execute the source, then the active
+      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
+      because checker-owned registration-item payload extraction,
+      correctness-condition/proof-obligation payloads, accepted
+      activation/evidence status, cluster/reduction semantics, recorded facts,
+      CoreIr, ControlFlowIr, VC, proof payloads, and the `formula_statement` /
+      `advanced_semantics` runners are not available. The task must not
+      fabricate registration payloads, activation status, cluster/reduction
+      facts, Chapter 17 semantic coverage, or downstream semantic payloads.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: task 94. Refs: Step 5 source-derived semantic bridge; mizar-test
+      task 10; spec 17 clusters and registrations.
+
 ## Recommended Verification
 
 Run after each task:

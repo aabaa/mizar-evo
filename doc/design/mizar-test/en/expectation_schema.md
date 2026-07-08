@@ -659,6 +659,16 @@ proof reached parser/resolver execution, but they do not credit inline
 definition formal/body payload extraction, local abbreviation expansion,
 term/formula body payloads, guard evidence, recorded facts, theorem acceptance, a
 `formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payloads.
+Task 95 permits registration-block fail sidecars to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "registration_block_payload_extraction_gap"` and
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
+These sidecars document that a top-level `registration` block reached
+parser/resolver execution, but they do not credit registration-item payload
+extraction, correctness-condition/proof-obligation payloads, accepted
+activation/evidence status, cluster/reduction semantics, Chapter 17 semantic
+rows, a `formula_statement` or `advanced_semantics` runner, CoreIr,
+ControlFlowIr, VC, or proof payloads.
 Task 90 permits predicate/functor definition fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "definition_declaration_payload_extraction_gap"` and

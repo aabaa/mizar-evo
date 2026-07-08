@@ -431,6 +431,14 @@ expansion、term / formula body payload、guard evidence、recorded fact、theor
 `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ
 存在しないため `type_elaboration.external_dependency.ast_payload_extraction`
 に残す。
+task 95 は registration block boundary を記録する: existential cluster と
+conditional cluster を含む top-level registration block は parser / resolver
+実行まで到達するが、real registration-item payload extraction、correctness-condition /
+proof-obligation payload、accepted activation / evidence status、cluster /
+reduction semantics、recorded fact、dedicated `formula_statement` または
+`advanced_semantics` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ
+存在しないため `type_elaboration.external_dependency.ast_payload_extraction`
+に残す。これは Chapter 17 semantic cluster / reduction row を credit しない。
 task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
 documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
 reserve head は、可視 resolver symbol が `SymbolKind::Mode` で

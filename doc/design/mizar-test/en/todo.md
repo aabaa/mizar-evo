@@ -301,8 +301,9 @@ Keep `cargo test -p mizar-test` green after each task (see
       definition extraction-gap boundary, and checker task 91's attribute
       definition extraction-gap boundary, and checker task 92's mode/structure
       definition extraction-gap boundary, and checker task 93's proof-local
-      declaration extraction-gap boundary, and checker task 94's proof-local
-      inline definition extraction-gap boundary as
+      declaration extraction-gap boundary, checker task 94's proof-local
+      inline definition extraction-gap boundary, and checker task 95's
+      registration block extraction-gap boundary as
       prepared/implemented increments.
       Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
@@ -433,17 +434,17 @@ Keep `cargo test -p mizar-test` green after each task (see
       `DeclarationChecker` output; the runner continues that handoff into
       `TypedAst` and `ResolvedTypedAst`. Shared source type ranges such as
       `reserve x, y for set` keep distinct typed sites for each binding.
-    - Unsupported non-builtin declarations beyond task 94's proof-local
-      inline definition boundary and task 93's proof-local
-      declaration boundary and task 92's mode/structure
+    - Unsupported non-builtin declarations beyond task 95's registration block
+      extraction-gap boundary, task 94's proof-local inline definition boundary,
+      task 93's proof-local declaration boundary, and task 92's mode/structure
       definition boundary, imported attribute provenance beyond
       the task-84 `TypeCaseAttr` bridge, task-85 negative `empty`/builtin-`set`
       bridge, and task-80 boundary, imported structure provenance beyond the task-83
       `R` bridge and task-78 boundary, imported mode expansion payloads beyond
       task 82's provenance bridge, attribute argument payloads beyond the task-81 boundary,
       attributed or argument-bearing
-      mode/structure heads, structure base-shape payloads, definition payloads beyond the task-92 extraction-gap boundary, proof-local declaration payloads beyond the task-93 extraction-gap boundary, inline definition payloads beyond the task-94 extraction-gap boundary, terms and
-      formula/theorem/proof payloads beyond the task-86/task-87/task-88/task-89/task-93/task-94
+      mode/structure heads, structure base-shape payloads, definition payloads beyond the task-92 extraction-gap boundary, proof-local declaration payloads beyond the task-93 extraction-gap boundary, inline definition payloads beyond the task-94 extraction-gap boundary, registration payloads and activation/correctness payloads beyond the task-95 extraction-gap boundary, terms and
+      formula/theorem/proof payloads beyond the task-86/task-87/task-88/task-89/task-93/task-94/task-95
       extraction-gap boundaries,
       coercions, overload payloads, facts, CoreIr,
       ControlFlowIr, VC payloads, and proof evidence remain on the explicit

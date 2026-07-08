@@ -622,6 +622,16 @@ statement が parser / resolver 実行へ到達したことを記録するが、
 definition formal/body payload extraction、local abbreviation expansion、term /
 formula body payload、guard evidence、recorded fact、theorem acceptance、`formula_statement` runner、
 CoreIr、ControlFlowIr、VC、proof payload は credit しない。
+task 95 は registration-block fail sidecar について
+`failure_category = "external_dependency_gap"`、
+`rejection_reason = "registration_block_payload_extraction_gap"`、
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
+を許可する。これらの sidecar は top-level `registration` block が parser /
+resolver 実行へ到達したことを記録するが、registration-item payload extraction、
+correctness-condition / proof-obligation payload、accepted activation / evidence
+status、cluster / reduction semantics、Chapter 17 semantic row、
+`formula_statement` または `advanced_semantics` runner、CoreIr、ControlFlowIr、VC、
+proof payload は credit しない。
 task 90 は predicate/functor definition fail sidecar について
 `failure_category = "external_dependency_gap"`、
 `rejection_reason = "definition_declaration_payload_extraction_gap"`、

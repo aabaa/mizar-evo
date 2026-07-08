@@ -95,7 +95,7 @@ is its task 1). "Next work" points into the
 | mizar-frontend | Source loading and phase 1-3 orchestration | [x] complete | — | [todo](./mizar-frontend/en/todo.md) |
 | mizar-resolve | Module graph, namespaces, symbols, labels, signatures | [x] complete through task 29 | step 8 (task 30) | [todo](./mizar-resolve/en/todo.md) |
 | mizar-test | Corpus discovery, expectations, staged model, traceability, harness | [~] foundation complete through task 22 plus task 21 soundness vocabulary | step 5 (task 10) | [todo](./mizar-test/en/todo.md) |
-| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec-decision wave complete; step 4 tasks 45-47 complete; step 5 tasks 48 and 50-80 complete | step 5 source-derived bridge slices; task 49 remains dependency-gated | [todo](./mizar-checker/en/todo.md) |
+| mizar-checker | Type checking, cluster/registration resolution, overload resolution | [x] explicit-payload milestone complete; spec-decision wave complete; step 4 tasks 45-47 complete; step 5 tasks 48 and 50-95 complete | step 5 source-derived bridge slices; task 49 remains dependency-gated | [todo](./mizar-checker/en/todo.md) |
 | mizar-core | Elaboration, binder-normalized core logic, control-flow preparation | [x] core/control-flow milestone complete; F7 spec decision complete; step 4 tasks 27-30 complete | step 5 source-derived bridge | [todo](./mizar-core/en/todo.md) |
 | mizar-vc | VC IR, VC generation, deterministic pre-ATP discharge | [x] kernel-evidence handoff milestone complete | step 5; tasks 27-29 resolved | [todo](./mizar-vc/en/todo.md) |
 | mizar-kernel | Trusted certificate parsing and checking | [x] SAT-backed kernel milestone complete | step 4 task 35 resolved; task 32 parked; tasks 30-34 resolved | [todo](./mizar-kernel/en/todo.md) |
@@ -297,14 +297,16 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    gap, task 90 records predicate/functor definitions on the same gap, and task
    91 records attribute definitions on the same gap, task 92 records
    mode/structure definitions on the same gap, and task 93 records
-   proof-local declarations on the same gap, and task 94 records proof-local
-   inline definitions on the same gap while keeping definition
+   proof-local declarations on the same gap, task 94 records proof-local
+   inline definitions on the same gap, and task 95 records registration blocks
+   on the same gap while keeping definition
    declaration payloads, definition-local context, definiens formula/term
    payloads, formula-definiens payloads, mode expansion, structure
    base-shape/constructor/selector evidence, proof-local declaration payloads,
    inline definition formal/body payloads, local proof contexts, RHS term
    inference, reconsider coercion/obligation evidence, local abbreviation
-   expansion, theorem acceptance, attributed-type evidence, overload payloads, term/formula/proof
+   expansion, registration item payloads, accepted activation/evidence status,
+   theorem acceptance, attributed-type evidence, overload payloads, term/formula/proof
    skeleton/statement proof payloads, term inference, formula checking,
    recorded facts, `formula_statement`, CoreIr, ControlFlowIr, VC, and proof
    payloads deferred).

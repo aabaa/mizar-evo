@@ -1946,6 +1946,22 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: task 93。参照: Step 5 source-derived semantic bridge、mizar-test
       task 10、spec 15 statements。
 
+95. **Source-derived registration block extraction-gap boundary を追加する。** [x]
+    - existential cluster と conditional cluster を含む top-level
+      `registration` block について、専用の active `type_elaboration`
+      boundary を追加する。
+    - Acceptance: parser と resolver は source を実行し、その後 active runner は
+      `type_elaboration.external_dependency.ast_payload_extraction` を報告する。
+      checker-owned registration-item payload extraction、correctness-condition /
+      proof-obligation payload、accepted activation / evidence status、cluster /
+      reduction semantics、recorded fact、CoreIr、ControlFlowIr、VC、proof payload、
+      `formula_statement` / `advanced_semantics` runner がまだ存在しないためである。
+      この task は registration payload、activation status、cluster / reduction
+      fact、Chapter 17 semantic coverage、downstream semantic payload を捏造してはならない。
+    - 検証: `cargo test -p mizar-test`。
+    - 依存: task 94。参照: Step 5 source-derived semantic bridge、mizar-test
+      task 10、spec 17 clusters and registrations。
+
 ## 推奨検証
 
 各タスクの後で実行する:
