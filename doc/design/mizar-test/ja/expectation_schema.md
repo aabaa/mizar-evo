@@ -577,6 +577,15 @@ task 86 は formula-only theorem fail sidecar について
 記録するが、`formula_statement` runner、checker theorem/formula payload
 extraction、recorded fact、proof skeleton、CoreIr、ControlFlowIr、VC、proof
 payload は credit しない。
+task 87 は term-bearing theorem formula fail sidecar について
+`failure_category = "external_dependency_gap"`、
+`rejection_reason = "term_formula_payload_extraction_gap"`、
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
+を許可する。これらの sidecar は Chapter 13 numeral term と Chapter 14 builtin
+equality を含む theorem formula が parser / resolver 実行へ到達したことを記録するが、
+term/formula payload extraction、term inference、formula checking、recorded fact、
+theorem acceptance、`formula_statement` runner、proof skeleton、CoreIr、ControlFlowIr、
+VC、proof payload は credit しない。
 
 detailed type assertion table とより広い type pass expectation は、runner が `.miz` source
 から checker-owned payload を non-builtin declaration、imported symbol、unresolved /

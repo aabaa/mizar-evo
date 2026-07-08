@@ -1537,6 +1537,18 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.13.term_expressions.type_elaboration_payload_gap"
+source = "doc/spec/en/13.term_expression.md"
+section = "13.1 Primary Expressions; 13.1.4 Numerals"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
+]
+
+[[requirement]]
 id = "spec.en.14.atomic_formula.parser"
 source = "doc/spec/en/14.formulas.md"
 section = "14.2 Atomic Formulas; Appendix A.9 Predicates"
@@ -1567,6 +1579,18 @@ tests = [
   "tests/miz/fail/parser/fail_parser_formula_missing_st_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_formula_nonassoc_iff_001.expect.toml",
   "tests/miz/fail/parser/fail_parser_formula_unmatched_grouping_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.14.formulas.term_formula_payload_gap"
+source = "doc/spec/en/14.formulas.md"
+section = "14.2 Atomic Formulas; 14.5.2 Equality and Inequality"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -1713,6 +1737,18 @@ required = true
 coverage = "fail"
 tests = [
   "tests/miz/fail/resolve/fail_resolve_duplicate_theorem_symbol_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.16.theorems_and_proofs.term_formula_payload_gap"
+source = "doc/spec/en/16.theorems_and_proofs.md"
+section = "16.2 Syntax of Theorem Declarations"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2328,6 +2364,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_non_builtin_type_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_payload_extraction_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_structure_qualified_attribute_gap_001.expect.toml",
+  "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
 
 [[requirement]]
@@ -2633,6 +2670,18 @@ required = true
 coverage = "diagnostic"
 tests = [
   "tests/miz/fail/types/fail_type_elaboration_structure_qualified_attribute_gap_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.payload_extraction.term_formula_gap"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 87 source-derived term-bearing theorem formula extraction gap boundary"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "diagnostic"
+tests = [
+  "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
 
 [[requirement]]

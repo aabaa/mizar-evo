@@ -612,6 +612,15 @@ These sidecars document that the source reached parser/resolver execution, but
 they do not credit a `formula_statement` runner, checker theorem/formula
 payload extraction, recorded facts, proof skeletons, CoreIr, ControlFlowIr, VC,
 or proof payloads.
+Task 87 permits term-bearing theorem formula fail sidecars to use
+`failure_category = "external_dependency_gap"` with
+`rejection_reason = "term_formula_payload_extraction_gap"` and
+`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`.
+These sidecars document that a theorem formula containing Chapter 13 numeral
+terms and Chapter 14 builtin equality reached parser/resolver execution, but
+they do not credit term/formula payload extraction, term inference, formula
+checking, recorded facts, theorem acceptance, a `formula_statement` runner,
+proof skeletons, CoreIr, ControlFlowIr, VC, or proof payloads.
 
 Detailed type assertion tables and broader type pass expectations remain
 deferred until the runner can build checker-owned payloads from `.miz` source

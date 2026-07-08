@@ -370,6 +370,13 @@ theorem/formula payload extraction、local proof context、recorded fact、dedic
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。この boundary は
 theorem acceptance、formula fact、proof skeleton、CoreIr、ControlFlowIr、VC、
 proof payload を credit しない。
+task 87 は term を含む theorem formula について同じ boundary を記録する:
+`theorem TermFormulaPayloadBoundary: 1 = 1;` は Chapter 13 の numeral term と
+Chapter 14 の builtin equality surface を伴って parser / resolver 実行まで到達するが、
+real term/formula payload extraction、term inference、formula checking、recorded fact、
+theorem acceptance、dedicated `formula_statement` runner、CoreIr、ControlFlowIr、VC、
+proof payload がまだ存在しないため
+`type_elaboration.external_dependency.ast_payload_extraction` に残す。
 task 82 は task 79 の imported-mode provenance 部分だけを昇格する:
 documented `parser.type_fixtures` import summary 由来の `TypeCaseMode` のような
 reserve head は、可視 resolver symbol が `SymbolKind::Mode` で

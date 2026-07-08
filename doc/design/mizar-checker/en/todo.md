@@ -1966,6 +1966,22 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: task 48. Refs: Step 5 source-derived semantic bridge; mizar-test
       task 10; spec 14 formulas; spec 16 theorems and proofs.
 
+87. **Add source-derived term formula extraction-gap boundary.** [x]
+    - Add a dedicated active `type_elaboration` boundary for a theorem formula
+      containing source terms, such as
+      `theorem TermFormulaPayloadBoundary: 1 = 1;`.
+    - Acceptance: parser and resolver execute the source, then the active runner
+      reports `type_elaboration.external_dependency.ast_payload_extraction`
+      because checker-owned term/formula payload extraction, term inference,
+      formula checking, recorded facts, theorem acceptance, CoreIr, ControlFlowIr,
+      VC, proof payloads, and the `formula_statement` runner are not available.
+      The task must not fabricate term payloads, formula payloads, facts, proof
+      skeletons, or downstream semantic payloads.
+    - Verify: `cargo test -p mizar-test`.
+    - Deps: task 86. Refs: Step 5 source-derived semantic bridge; mizar-test
+      task 10; spec 13 term expressions; spec 14 formulas; spec 16 theorems and
+      proofs.
+
 ## Recommended Verification
 
 Run after each task:

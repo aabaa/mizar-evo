@@ -438,9 +438,10 @@ The supported reserve slices above, excluding task 67, task 68, task 69, task
 70, task 71 external-gap boundary cases, the task 75/task 76/task 77
 lower-stage boundary cases, the task 78 imported-structure external-gap case,
 the task 79 imported-mode external-gap case, the task 80 imported-attribute
-external-gap case outside task 84 and task 85, and the task 81 argument-bearing
-local-attribute external-gap case, and the task 86 formula-only theorem
-external-gap case, but including the task 85 imported negative
+external-gap case outside task 84 and task 85, the task 81 argument-bearing
+local-attribute external-gap case, the task 86 formula-only theorem
+external-gap case, and the task 87 term-bearing theorem formula external-gap
+case, but including the task 85 imported negative
 `empty`/builtin-`set` provenance slice, are converted into a syntax-free checker source reserve payload, then the
 checker-owned seam builds the module `BindingEnv`, one
 `DeclarationInput` per binding, binding-specific `TypeExpressionInput` sites,
@@ -547,7 +548,12 @@ elaboration. Task 86 fail cases credit only the formula-only theorem
 extraction-gap boundary after parser/resolver execution and do not credit
 checker theorem/formula payload extraction, recorded facts, theorem acceptance,
 proof skeletons, `formula_statement` runner support, CoreIr, ControlFlowIr,
-VC, or proof payloads. Task
+VC, or proof payloads. Task 87 fail cases credit only the term-bearing theorem
+formula extraction-gap boundary after parser/resolver execution and do not
+credit checker term/formula payload extraction, term inference, formula
+checking, recorded facts, theorem acceptance, proof skeletons,
+`formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
+payloads. Task
 75/76/77 fail
 cases credit only the lower-stage active-range boundary for forward local-mode,
 local-structure, or local-attribute references and do not credit checker

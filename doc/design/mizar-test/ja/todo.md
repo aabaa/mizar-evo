@@ -267,7 +267,8 @@ regression test を追加した。
       checker task 72 の two-edge bare local-mode chain active pass slice、checker task 73 の three-edge bare local-mode chain active pass slice、checker task 74 の structural bare local-mode chain active pass slice、checker task 75 の lower-stage forward local-mode active-range boundary、checker task 76 の lower-stage forward local-structure active-range boundary、checker task 77 の lower-stage forward local-attribute active-range boundary、checker task 78 の imported structure reserve extraction-gap boundary、checker task 79 の imported mode reserve extraction-gap boundary、checker task 80 の imported attribute reserve extraction-gap boundary、checker task 81 の argument-bearing local attribute reserve extraction-gap boundary と declaration-symbol suffix projection、checker task 82 の imported mode reserve provenance bridge、checker task 83 の imported structure reserve provenance bridge、checker task 84 の imported attribute reserve provenance bridge とともに
       prepared/implemented increments として記録する。
       checker task 85 の imported non-empty attribute reserve provenance bridge と
-      checker task 86 の theorem formula extraction-gap boundary も
+      checker task 86 の theorem formula extraction-gap boundary、checker task 87 の
+      term formula extraction-gap boundary も
       prepared/implemented increment として記録する。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
@@ -392,8 +393,8 @@ regression test を追加した。
       negative `empty`/builtin-`set` bridge、task-80 boundary を超える imported attribute provenance、task-83 `R` bridge と task-78 boundary を超える
       imported structure provenance、task 82 の provenance bridge を超える imported mode expansion payload、
       task-81 boundary を超える attribute argument payload、attributed / argument-bearing mode / structure head、
-      structure base-shape payload、term、task-86 extraction-gap boundary を超える
-      formula/theorem payload、coercion、overload payload、fact、
+      structure base-shape payload、task-86/task-87 extraction-gap boundary を超える
+      term / formula / theorem payload、coercion、overload payload、fact、
       CoreIr、ControlFlowIr、VC payload、proof
       evidence は明示的な `type_elaboration.external_dependency.ast_payload_extraction`
       gap のままにする。real source-derived payload がまだ downstream consumer へ

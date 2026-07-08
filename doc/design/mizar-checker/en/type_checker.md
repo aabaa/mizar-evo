@@ -387,6 +387,13 @@ theorem/formula payload extraction, local proof contexts, recorded facts, and
 the dedicated `formula_statement` runner exist. This boundary does not credit
 theorem acceptance, formula facts, proof skeletons, CoreIr, ControlFlowIr, VC,
 or proof payloads.
+Task 87 records the same boundary for a term-bearing theorem formula:
+`theorem TermFormulaPayloadBoundary: 1 = 1;` reaches parser and resolver
+execution with Chapter 13 numeral terms and the Chapter 14 builtin equality
+surface, then stays on `type_elaboration.external_dependency.ast_payload_extraction`
+because real term/formula payload extraction, term inference, formula checking,
+recorded facts, theorem acceptance, the dedicated `formula_statement` runner,
+CoreIr, ControlFlowIr, VC, and proof payloads are still absent.
 Task 82 promotes only the imported-mode provenance portion of task 79: a
 reserve head such as `TypeCaseMode` from the documented
 `parser.type_fixtures` import summary may be passed as a checker-owned
