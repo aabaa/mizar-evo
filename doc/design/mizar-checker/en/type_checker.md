@@ -408,15 +408,16 @@ extraction, term inference, formula checking, recorded facts, theorem
 acceptance, the dedicated `formula_statement` runner, CoreIr, ControlFlowIr,
 VC, and proof payloads are still absent. This does not credit imported module
 AST extraction.
-Task 100 records the builtin membership variant of that same term/formula
-boundary: `theorem BuiltinMembershipPayloadBoundary: 1 in 1;` reaches parser
-and resolver execution with Chapter 13 numeral terms and the Chapter 14
-builtin membership predicate, then stays on
-`type_elaboration.external_dependency.ast_payload_extraction` because real
-term/formula payload extraction, membership operand type inference/checking,
-formula checking, recorded facts, theorem acceptance, the dedicated
-`formula_statement` runner, CoreIr, ControlFlowIr, VC, and proof payloads are
-still absent.
+Task 108 supersedes the task 100 builtin membership generic boundary for the
+exact formula `theorem BuiltinMembershipPayloadBoundary: 1 in 1;`. The active
+runner now extracts real source-derived checker `TermInput` payloads for the
+two Chapter 13 numeral operands and a real checker `FormulaInput` payload for
+the Chapter 14 membership formula under the module binding context, then fails
+closed on `type_elaboration.checker.checker.term.external.numeric_type_payload`
+and `type_elaboration.checker.checker.formula.term.partial`. Numeric type
+payloads, membership operand expected-type construction/checking, recorded
+facts, theorem acceptance, the dedicated `formula_statement` runner, CoreIr,
+ControlFlowIr, VC, and proof payloads are still absent.
 Task 107 supersedes the task 101 generic boundary for the exact builtin
 inequality theorem formula `theorem BuiltinInequalityPayloadBoundary: 1 <> 2;`.
 The active runner now extracts real source-derived checker `TermInput` payloads

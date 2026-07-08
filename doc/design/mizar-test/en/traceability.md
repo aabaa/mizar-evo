@@ -444,8 +444,8 @@ external-gap case outside task 84 and task 85, the task 81 argument-bearing
 local-attribute external-gap case, the task 86 formula-only theorem
 external-gap case, the task 106 builtin equality theorem checker-payload numeric-type gap
 case, the task 98 imported predicate/functor theorem formula external-gap
-case, the task 100 builtin membership theorem formula external-gap
-case, the task 107 builtin inequality theorem checker bridge, the task 102 builtin type-assertion theorem formula external-gap
+case, the task 108 builtin membership theorem checker bridge, the task 107
+builtin inequality theorem checker bridge, the task 102 builtin type-assertion theorem formula external-gap
 case, the task 103 imported attribute assertion theorem formula external-gap
 case, the task 104 attribute-level non-empty imported attribute assertion theorem formula external-gap
 case, the task 105 set-enumeration theorem formula external-gap
@@ -582,12 +582,13 @@ formula extraction-gap boundary after parser/resolver execution and do not
 credit imported semantic payloads, checker term/formula payload extraction, term
 inference, formula checking, recorded facts, theorem acceptance, proof
 skeletons, `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or
-proof payloads. Task 100 fail cases credit only the builtin membership theorem
-formula extraction-gap boundary after parser/resolver execution and do not
-credit checker term/formula payload extraction, membership operand type
-inference/checking, formula checking, recorded facts, theorem acceptance,
-`formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
-payloads. Task 101 originally credited only the builtin inequality theorem
+proof payloads. Task 100 originally credited only the builtin membership theorem
+formula extraction-gap boundary after parser/resolver execution. Task 108
+supersedes the exact `BuiltinMembershipPayloadBoundary: 1 in 1` sidecar by
+crediting real checker term/formula payload extraction, but still does not
+credit numeric type payloads, membership operand expected-type
+construction/checking, recorded facts, theorem acceptance, `formula_statement`
+runner support, CoreIr, ControlFlowIr, VC, or proof payloads. Task 101 originally credited only the builtin inequality theorem
 formula extraction-gap boundary after parser/resolver execution. Task 107
 supersedes the exact `BuiltinInequalityPayloadBoundary: 1 <> 2` sidecar by
 crediting real checker term/formula payload extraction while still failing

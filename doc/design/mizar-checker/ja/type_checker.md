@@ -389,13 +389,16 @@ term inference、formula checking、recorded fact、theorem acceptance、dedicat
 `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ存在しないため
 `type_elaboration.external_dependency.ast_payload_extraction` に残す。これは imported
 module AST extraction を credit しない。
-task 100 は同じ term/formula boundary の builtin membership variant を記録する:
-`theorem BuiltinMembershipPayloadBoundary: 1 in 1;` は Chapter 13 の numeral term と
-Chapter 14 の builtin membership predicate を通じて parser / resolver 実行まで
-到達するが、real term/formula payload extraction、membership operand type
-inference/checking、formula checking、recorded fact、theorem acceptance、dedicated
-`formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload がまだ存在しないため
-`type_elaboration.external_dependency.ast_payload_extraction` に残す。
+task 108 は task 100 の builtin membership generic boundary のうち exact formula
+`theorem BuiltinMembershipPayloadBoundary: 1 in 1;` を supersede する。active
+runner は Chapter 13 の 2 つの numeral operand から real source-derived checker
+`TermInput` payload を、Chapter 14 の membership formula から real checker
+`FormulaInput` payload を module binding context の下で抽出し、
+`type_elaboration.checker.checker.term.external.numeric_type_payload` と
+`type_elaboration.checker.checker.formula.term.partial` で fail closed する。
+numeric type payload、membership operand expected-type construction/checking、
+recorded fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
+ControlFlowIr、VC、proof payload はまだ存在しない。
 task 107 は task 101 generic boundary の exact builtin inequality theorem formula
 `theorem BuiltinInequalityPayloadBoundary: 1 <> 2;` を supersede する。active
 runner は Chapter 13 の 2 つの numeral operand から real source-derived checker

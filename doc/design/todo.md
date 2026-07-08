@@ -299,8 +299,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    term-bearing builtin equality theorem source by passing real checker
    term/formula payloads before failing on missing numeric type payloads and
    partial formula checking, task 98 records imported predicate/functor
-   theorem formula surfaces on the same gap, task 100 records builtin membership
-   theorem formula surfaces on the same gap, task 107 supersedes task 101 for
+   theorem formula surfaces on the same gap, task 108 supersedes task 100 for
+   the exact builtin membership theorem source by passing real checker
+   term/formula payloads before failing on missing numeric type payloads and
+   partial formula checking, task 107 supersedes task 101 for
    the exact builtin inequality theorem source by passing real checker
    term/formula payloads before failing on missing numeric type payloads and
    partial formula checking, task 102 records builtin type
@@ -327,7 +329,7 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    redefinition payloads, notation alias relation payloads, redefinition target
    inference, coherence proof-obligation payloads, theorem acceptance,
    attributed-type evidence, imported predicate/functor semantic payloads,
-   membership operand type inference/checking, inequality desugaring/equality semantic checking beyond task 107,
+   membership operand expected-type construction/checking beyond task 108, inequality desugaring/equality semantic checking beyond task 107,
    type-assertion type payload extraction, type-assertion semantic checking,
    overload payloads, term/formula/proof
    skeleton/statement proof payloads, term inference, formula checking,

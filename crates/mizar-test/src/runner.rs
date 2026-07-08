@@ -972,6 +972,13 @@ const SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS: &[SourceBuiltinBinaryTermFormu
         right: "2",
         formula_kind: FormulaKind::Inequality,
     },
+    SourceBuiltinBinaryTermFormulaConfig {
+        label: "BuiltinMembershipPayloadBoundary",
+        operator: "in",
+        left: "1",
+        right: "1",
+        formula_kind: FormulaKind::Membership,
+    },
 ];
 
 #[derive(Debug, Clone)]
@@ -7447,6 +7454,20 @@ mod tests {
                 "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
             ]
         );
+        let membership_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinMembershipPayloadBoundary",
+            "1",
+            "in",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&membership_theorem, module.clone(), &symbols),
+            vec![
+                "type_elaboration.checker.checker.formula.term.partial".to_owned(),
+                "type_elaboration.checker.checker.term.external.numeric_type_payload".to_owned(),
+            ]
+        );
         let other_label_theorem =
             builtin_equality_theorem_ast(source_id, "OtherPayloadBoundary", "1", "1");
         assert_eq!(
@@ -7493,6 +7514,62 @@ mod tests {
         );
         assert_eq!(
             source_type_elaboration_detail_keys(&other_operator_theorem, module.clone(), &symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_membership_label_theorem =
+            builtin_binary_theorem_ast(source_id, "OtherPayloadBoundary", "1", "in", "1");
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_membership_label_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_membership_literal_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinMembershipPayloadBoundary",
+            "1",
+            "in",
+            "2",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_membership_literal_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let other_membership_operator_theorem = builtin_binary_theorem_ast(
+            source_id,
+            "BuiltinMembershipPayloadBoundary",
+            "1",
+            "=",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &other_membership_operator_theorem,
+                module.clone(),
+                &symbols
+            ),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+        let mixed_reserve_and_membership_theorem = reserve_then_builtin_binary_theorem_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            "BuiltinMembershipPayloadBoundary",
+            "1",
+            "in",
+            "1",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &mixed_reserve_and_membership_theorem,
+                module.clone(),
+                &symbols
+            ),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
         let mixed_reserve_and_inequality_theorem = reserve_then_builtin_binary_theorem_ast(

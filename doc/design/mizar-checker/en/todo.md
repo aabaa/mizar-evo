@@ -2190,13 +2190,12 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       using the Chapter 14 builtin membership predicate with Chapter 13 numeral
       term operands.
-    - Acceptance: parser and resolver execute the source, then the active
-      runner reports `type_elaboration.external_dependency.ast_payload_extraction`
-      because checker-owned term/formula payload extraction, membership operand
-      type inference/checking, formula checking, recorded facts, theorem
-      acceptance, CoreIr, ControlFlowIr, VC, proof payloads, and the
-      `formula_statement` runner are not available. The task must not fabricate
-      term payloads, formula payloads, membership facts, theorem acceptance, or
+    - Acceptance: parser and resolver execute the source. Task 108 supersedes
+      this exact sidecar by passing real checker term/formula payloads and
+      reporting missing numeric type payload plus partial formula checking. The
+      task must not fabricate numeric type payloads, membership operand
+      expected-type construction/checking, facts, theorem acceptance,
+      `formula_statement`, CoreIr, ControlFlowIr, VC, proof payloads, or
       downstream semantic payloads.
     - Verify: `cargo test -p mizar-test`.
     - Deps: tasks 86, 87, and 98. Refs: Step 5 source-derived semantic bridge;
@@ -2315,6 +2314,26 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 86 and 87. Refs: Step 5 source-derived semantic bridge;
       mizar-test task 10; spec 13 term expressions; spec 14 formulas; spec 16
       theorems and proofs.
+
+108. **Add source-derived builtin membership theorem term/formula checker bridge.** [x]
+    - Promote only the unrecovered
+      `TheoremItem -> FormulaExpression -> BuiltinPredicateApplication("in")`
+      source shape with label `BuiltinMembershipPayloadBoundary` and exactly two
+      structural Chapter 13 `NumeralTerm` operands spelling `1` and `1`.
+    - Acceptance: the active runner builds a real module-shell checker binding
+      context, passes two source-derived `TermInput`s and one membership
+      `FormulaInput` to `TermFormulaChecker`, and fails closed on
+      `type_elaboration.checker.checker.term.external.numeric_type_payload` plus
+      `type_elaboration.checker.checker.formula.term.partial`. The task must not
+      fabricate numeric type payloads, membership operand expected types,
+      membership facts, theorem acceptance, `formula_statement` runner support,
+      or downstream semantic payloads, and it must not promote equality,
+      inequality, type assertion, imported, set-enumeration, connective/
+      quantifier, or proof theorem surfaces.
+    - Verify: `cargo test -p mizar-test --test metadata`.
+    - Deps: tasks 86, 87, 98, and 100. Refs: Step 5 source-derived semantic
+      bridge; mizar-test task 10; spec 13 term expressions; spec 14 formulas;
+      spec 16 theorems and proofs.
 
 ## Recommended Verification
 
