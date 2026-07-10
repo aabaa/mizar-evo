@@ -290,6 +290,9 @@ regression test を追加した。
       checker task 125 の left `object`、right/expected `set`、2 normalized
       semantic identity を持つ exact heterogeneous-reserve membership active
       pass bridge、
+      checker task 126 の 4 raw local-mode result/expected input と real
+      expansion RHS から normalized された 1 builtin-`set` identity を持つ exact
+      direct-local-mode reserved-variable equality active pass bridge、
       checker task 88 の proof skeleton
       extraction-gap boundary、checker task 89 の statement proof extraction-gap
       boundary、checker task 90 の predicate/functor definition extraction-gap

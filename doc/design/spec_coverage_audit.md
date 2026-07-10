@@ -162,6 +162,20 @@ partial status. Membership truth/facts, object/set coercion evidence, implicit
 closure/order, theorem acceptance, broader formulas, proof, CoreIr,
 ControlFlowIr, and VC remain deferred.
 
+Task126 current-state override for chapters 04, 07, 13, 14, and 16: the exact
+`definition mode LocalModeFormulaDef: LocalModeFormula is set; end; reserve x for LocalModeFormula; theorem LocalModeReservedVariableEqualityPayloadBoundary: x = x;`
+pass combines task 55's real AST-derived direct bare-set mode-expansion
+producer with task 119's reserved-variable equality consumer. Four raw
+result/expected inputs retain the written local-mode symbol and reserve range,
+while normalization consumes the expansion table and interns one builtin-`set`
+identity whose canonical source is the real expansion RHS. Production
+validation, an exact near-miss matrix, and a real frontend/resolver sidecar
+guard this `test_gap`, `source_drift`, and `design_drift` repair. This does not
+change the chapters' partial status or credit mode-definition declaration
+checking/acceptance, inhabitation evidence, implicit closure/order,
+truth/facts, theorem acceptance, broader/chained/imported mode formulas, proof,
+CoreIr, ControlFlowIr, or VC; those remain deferred.
+
 Task64 addendum for chapters `03.type_system.md`, `06.attributes.md`,
 `07.modes.md`, and `17.clusters_and_registrations.md`: checker task 64 adds
 active source-derived diagnostic coverage for an attributed local-mode reserve

@@ -519,6 +519,16 @@ invalid-payload key, near misses, and a real frontend/resolver sidecar cover the
 seam. This is type/well-formedness only: membership truth/facts, object/set
 coercion evidence, implicit closure/order, theorem acceptance,
 `formula_statement`, proof, CoreIr, ControlFlowIr, and VC remain deferred.
+Task 126 adds the exact direct-local-mode equality sibling. Four raw
+result/expected inputs retain the reserve's `LocalModeFormula` symbol and range,
+while `TermFormulaChecker` receives the exact AST-derived direct bare-`set`
+`ModeExpansion` and normalizes all roles to one builtin-set identity. The
+normalized canonical source is the expansion RHS; original mode provenance
+remains reviewable in the raw inputs. Exact guards, an invalid key, withheld-
+family near misses, and a real sidecar guard the bridge. Mode declaration
+checking/acceptance, inhabitation evidence, broader modes, closure/order,
+truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
+deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

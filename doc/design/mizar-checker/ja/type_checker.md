@@ -494,6 +494,15 @@ guard、task-specific invalid-payload key、near miss、real frontend/resolver s
 が seam を cover する。これは type/well-formedness だけであり、membership
 truth/fact、object/set coercion evidence、implicit closure/order、theorem acceptance、
 `formula_statement`、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
+task 126 は exact direct-local-mode equality sibling を追加する。4 raw
+result/expected input は reserve の `LocalModeFormula` symbol/range を保持し、
+`TermFormulaChecker` は exact AST-derived direct bare-`set` `ModeExpansion` を受け、
+全 role を 1 builtin-set identity に normalize する。normalized canonical source は
+expansion RHS であり、original mode provenance は raw input で review できる。exact
+guard、invalid key、withheld-family near miss、real sidecar が bridge を guard する。
+mode declaration checking/acceptance、inhabitation evidence、broader mode、
+closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
+deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

@@ -29,6 +29,7 @@ use mizar_checker::type_checker::{
     FormulaStatus, ModeExpansion, NormalizedTypeStatus, SourceReserveBindingInput,
     SourceReserveDeclarationBridge, TermFormulaChecker, TermFormulaInferenceOutput, TermInput,
     TermKind, TermReference, TermStatus, TypeExpressionInput, TypeHeadInput, TypeHeadRef,
+    TypeNormalizer,
 };
 use mizar_checker::typed_ast::{
     CoercionTable, InitialObligationTable, LocalTypeContextId, NodeRecoveryState, NormalizedTypeId,
@@ -90,6 +91,8 @@ const TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: 
     "type_elaboration.checker.distinct_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_HETEROGENEOUS_RESERVE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.heterogeneous_reserve_membership.invalid_payload";
+const TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.local_mode_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.multiple_reserve_declaration_equality.invalid_payload";
 const TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
@@ -920,6 +923,11 @@ fn source_type_elaboration_detail_keys(
     symbols: &SymbolEnv,
 ) -> Vec<String> {
     if let Some(keys) =
+        source_local_mode_reserved_variable_equality_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
+    if let Some(keys) =
         source_heterogeneous_reserve_membership_detail_keys(ast, module.clone(), symbols)
     {
         return keys;
@@ -1155,6 +1163,9 @@ struct SourceReservedVariableBinaryFormulaConfig {
     reserve_item_count: usize,
     binding_spellings: &'static [&'static str],
     binding_types: &'static [SourceReservedVariableBuiltinType],
+    binding_source_mode_spellings: &'static [Option<&'static str>],
+    mode_definition_count: usize,
+    mode_definition_label: Option<&'static str>,
     left_binding_index: usize,
     right_binding_index: usize,
     require_shared_type_range: bool,
@@ -1203,6 +1214,9 @@ const SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG: SourceReservedVariableBinaryForm
         reserve_item_count: 1,
         binding_spellings: &["x"],
         binding_types: &[SourceReservedVariableBuiltinType::Set],
+        binding_source_mode_spellings: &[None],
+        mode_definition_count: 0,
+        mode_definition_label: None,
         left_binding_index: 0,
         right_binding_index: 0,
         require_shared_type_range: false,
@@ -1222,6 +1236,9 @@ const SOURCE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG: SourceReservedVariableBinaryFo
         reserve_item_count: 1,
         binding_spellings: &["x"],
         binding_types: &[SourceReservedVariableBuiltinType::Set],
+        binding_source_mode_spellings: &[None],
+        mode_definition_count: 0,
+        mode_definition_label: None,
         left_binding_index: 0,
         right_binding_index: 0,
         require_shared_type_range: false,
@@ -1241,6 +1258,9 @@ const SOURCE_RESERVED_VARIABLE_INEQUALITY_CONFIG: SourceReservedVariableBinaryFo
         reserve_item_count: 1,
         binding_spellings: &["x"],
         binding_types: &[SourceReservedVariableBuiltinType::Set],
+        binding_source_mode_spellings: &[None],
+        mode_definition_count: 0,
+        mode_definition_label: None,
         left_binding_index: 0,
         right_binding_index: 0,
         require_shared_type_range: false,
@@ -1264,6 +1284,9 @@ const SOURCE_DISTINCT_RESERVED_VARIABLE_EQUALITY_CONFIG: SourceReservedVariableB
             SourceReservedVariableBuiltinType::Set,
             SourceReservedVariableBuiltinType::Set,
         ],
+        binding_source_mode_spellings: &[None, None],
+        mode_definition_count: 0,
+        mode_definition_label: None,
         left_binding_index: 0,
         right_binding_index: 1,
         require_shared_type_range: true,
@@ -1286,6 +1309,9 @@ const SOURCE_MULTIPLE_RESERVE_DECLARATION_EQUALITY_CONFIG:
         SourceReservedVariableBuiltinType::Set,
         SourceReservedVariableBuiltinType::Set,
     ],
+    binding_source_mode_spellings: &[None, None],
+    mode_definition_count: 0,
+    mode_definition_label: None,
     left_binding_index: 0,
     right_binding_index: 1,
     require_shared_type_range: false,
@@ -1308,6 +1334,9 @@ const SOURCE_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG: SourceReservedVariableBina
             SourceReservedVariableBuiltinType::Object,
             SourceReservedVariableBuiltinType::Set,
         ],
+        binding_source_mode_spellings: &[None, None],
+        mode_definition_count: 0,
+        mode_definition_label: None,
         left_binding_index: 0,
         right_binding_index: 1,
         require_shared_type_range: false,
@@ -1317,6 +1346,28 @@ const SOURCE_HETEROGENEOUS_RESERVE_MEMBERSHIP_CONFIG: SourceReservedVariableBina
         left_expected_role: None,
         right_expected_role: Some("heterogeneous-reserve-membership-right-expected"),
     };
+
+const SOURCE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "LocalModeReservedVariableEqualityPayloadBoundary",
+    operator: "=",
+    formula_kind: FormulaKind::Equality,
+    invalid_payload_key: TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["x"],
+    binding_types: &[SourceReservedVariableBuiltinType::Set],
+    binding_source_mode_spellings: &[Some("LocalModeFormula")],
+    mode_definition_count: 1,
+    mode_definition_label: Some("LocalModeFormulaDef"),
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "local-mode-reserved-variable-left-result",
+    right_result_role: "local-mode-reserved-variable-right-result",
+    left_expected_role: Some("local-mode-reserved-variable-left-expected"),
+    right_expected_role: Some("local-mode-reserved-variable-right-expected"),
+};
 
 #[derive(Debug)]
 struct SourceReservedVariableBinaryFormula {
@@ -1403,6 +1454,18 @@ fn source_heterogeneous_reserve_membership_detail_keys(
     Some(source_reserved_variable_formula_result_detail_keys(
         build_source_reserved_variable_formula_output(payload, symbols),
         TYPE_ELABORATION_HETEROGENEOUS_RESERVE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+fn source_local_mode_reserved_variable_equality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_local_mode_reserved_variable_equality(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
     ))
 }
 
@@ -1565,6 +1628,16 @@ fn source_heterogeneous_reserve_membership_output(
     symbols: &SymbolEnv,
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload = extract_source_heterogeneous_reserve_membership(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_local_mode_reserved_variable_equality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload = extract_source_local_mode_reserved_variable_equality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -1794,36 +1867,38 @@ fn build_source_reserved_variable_formula_output(
             payload.right_range,
         ));
     }
-    let term_formula = TermFormulaChecker::default().infer(
-        symbols,
-        &handoff.binding_env,
-        [
-            TermInput::new(
-                payload.left_site.clone(),
-                context,
-                payload.left_range,
-                TermKind::Variable,
-            )
-            .with_reference(TermReference::Binding(left_binding))
-            .with_result_type(left_result_type),
-            TermInput::new(
-                payload.right_site.clone(),
-                context,
-                payload.right_range,
-                TermKind::Variable,
-            )
-            .with_reference(TermReference::Binding(right_binding))
-            .with_result_type(right_result_type),
-        ],
-        [FormulaInput::new(
-            payload.formula_site.clone(),
-            context,
-            payload.formula_range,
-            payload.config.formula_kind,
-        )
-        .with_terms(vec![payload.left_site.clone(), payload.right_site.clone()])
-        .with_expected_types(expected_types)],
-    );
+    let term_formula =
+        TermFormulaChecker::new(TypeNormalizer::new(payload.reserve.mode_expansions.clone()))
+            .infer(
+                symbols,
+                &handoff.binding_env,
+                [
+                    TermInput::new(
+                        payload.left_site.clone(),
+                        context,
+                        payload.left_range,
+                        TermKind::Variable,
+                    )
+                    .with_reference(TermReference::Binding(left_binding))
+                    .with_result_type(left_result_type),
+                    TermInput::new(
+                        payload.right_site.clone(),
+                        context,
+                        payload.right_range,
+                        TermKind::Variable,
+                    )
+                    .with_reference(TermReference::Binding(right_binding))
+                    .with_result_type(right_result_type),
+                ],
+                [FormulaInput::new(
+                    payload.formula_site.clone(),
+                    context,
+                    payload.formula_range,
+                    payload.config.formula_kind,
+                )
+                .with_terms(vec![payload.left_site.clone(), payload.right_site.clone()])
+                .with_expected_types(expected_types)],
+            );
 
     Ok(SourceReservedVariableBinaryFormulaOutput {
         payload,
@@ -2014,6 +2089,7 @@ fn assert_source_reserved_variable_formula_output(
     let source_bindings = payload.reserve.bridge.bindings();
     if source_bindings.len() != payload.config.binding_spellings.len()
         || source_bindings.len() != payload.config.binding_types.len()
+        || source_bindings.len() != payload.config.binding_source_mode_spellings.len()
     {
         return Err("reserved-variable formula binding count mismatch".to_owned());
     }
@@ -2024,6 +2100,8 @@ fn assert_source_reserved_variable_formula_output(
             || !source_binding_matches_reserved_builtin_type(
                 binding,
                 payload.config.binding_types[index],
+                payload.config.binding_source_mode_spellings[index],
+                &payload.reserve.mode_expansions,
             )
     }) || (payload.config.require_shared_type_range
         && source_bindings
@@ -2138,7 +2216,16 @@ fn assert_source_reserved_variable_formula_output(
         || !term_formula.diagnostics().is_empty()
         || term_formula.type_entries().len() != 4 + expected_type_count
     {
-        return Err("reserved-variable formula checker count mismatch".to_owned());
+        return Err(format!(
+            "reserved-variable formula checker count mismatch: terms={} formulas={} candidates={} facts={} diagnostics={} type_entries={} expected_type_entries={}",
+            term_formula.terms().len(),
+            term_formula.formulas().len(),
+            term_formula.candidate_sets().len(),
+            term_formula.facts().len(),
+            term_formula.diagnostics().len(),
+            term_formula.type_entries().len(),
+            4 + expected_type_count,
+        ));
     }
     let mut term_actuals = BTreeMap::new();
     let mut semantic_ids_by_type = BTreeMap::new();
@@ -2292,19 +2379,36 @@ fn assert_source_reserved_variable_formula_output(
         return Err("reserved-variable formula semantic type identity mismatch".to_owned());
     }
     for (expected_type, semantic_id) in semantic_ids_by_type {
-        let canonical_source_binding = source_bindings
+        let canonical_source = source_bindings
             .iter()
             .enumerate()
             .filter(|(index, _)| payload.config.binding_types[*index] == expected_type)
-            .map(|(_, binding)| binding)
-            .min_by_key(|binding| (binding.type_range.start, binding.type_range.end))
+            .filter_map(|(index, binding)| {
+                let Some(_) = payload.config.binding_source_mode_spellings[index] else {
+                    return Some((binding.type_range, binding.type_spelling.as_str()));
+                };
+                let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
+                    return None;
+                };
+                payload
+                    .reserve
+                    .mode_expansions
+                    .get(symbol)
+                    .map(|expansion| {
+                        (
+                            expansion.radix.source_range,
+                            expansion.radix.spelling.as_str(),
+                        )
+                    })
+            })
+            .min_by_key(|(range, _)| (range.start, range.end))
             .ok_or_else(|| "reserved-variable formula canonical source missing".to_owned())?;
         let normalized = term_formula
             .normalized_types()
             .get(semantic_id)
             .ok_or_else(|| "reserved-variable formula normalized type missing".to_owned())?;
-        if normalized.source.range != canonical_source_binding.type_range
-            || normalized.source.spelling != canonical_source_binding.type_spelling
+        if normalized.source.range != canonical_source.0
+            || normalized.source.spelling != canonical_source.1
         {
             return Err("reserved-variable formula canonical source mismatch".to_owned());
         }
@@ -2333,10 +2437,26 @@ fn source_type_projection_matches(
 fn source_binding_matches_reserved_builtin_type(
     binding: &SourceReserveBindingInput,
     expected_type: SourceReservedVariableBuiltinType,
+    source_mode_spelling: Option<&str>,
+    mode_expansions: &BTreeMap<ResolverSymbolId, ModeExpansion>,
 ) -> bool {
-    binding.type_spelling == expected_type.spelling()
-        && binding.type_head == expected_type.input_head()
-        && binding.type_attributes.is_empty()
+    if !binding.type_attributes.is_empty() {
+        return false;
+    }
+    let Some(source_mode_spelling) = source_mode_spelling else {
+        return binding.type_spelling == expected_type.spelling()
+            && binding.type_head == expected_type.input_head();
+    };
+    let TypeHeadInput::Symbol(symbol) = &binding.type_head else {
+        return false;
+    };
+    binding.type_spelling == source_mode_spelling
+        && mode_expansions.get(symbol).is_some_and(|expansion| {
+            expansion.attributes.is_empty()
+                && expansion.radix.head == expected_type.input_head()
+                && expansion.radix.args.is_empty()
+                && expansion.radix.attributes.is_empty()
+        })
 }
 
 fn assert_reserved_variable_builtin_type_entry(
@@ -2851,6 +2971,19 @@ fn extract_source_heterogeneous_reserve_membership(
     )
 }
 
+fn extract_source_local_mode_reserved_variable_equality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    )
+}
+
 fn extract_source_multiple_reserve_declaration_equality(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -3000,20 +3133,30 @@ fn extract_source_reserved_variable_binary_formula(
     symbols: &SymbolEnv,
     config: &'static SourceReservedVariableBinaryFormulaConfig,
 ) -> Option<SourceReservedVariableBinaryFormula> {
-    if ast
-        .nodes()
-        .iter()
-        .any(|node| !is_supported_reserved_variable_binary_formula_bridge_node(node))
-    {
+    if ast.nodes().iter().any(|node| {
+        !(is_supported_reserved_variable_binary_formula_bridge_node(node)
+            || config.mode_definition_count > 0
+                && matches!(
+                    node.kind,
+                    SurfaceNodeKind::DefinitionBlockItem
+                        | SurfaceNodeKind::ModeDefinition
+                        | SurfaceNodeKind::ModePattern
+                        | SurfaceNodeKind::QualifiedSymbol
+                        | SurfaceNodeKind::PathSegment
+                ))
+    }) {
         return None;
     }
 
     let reserve_items = surface_nodes_with_kind(ast, SurfaceNodeKind::ReserveItem);
     let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let mode_definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition);
     let [(_, theorem)] = theorem_items.as_slice() else {
         return None;
     };
     if reserve_items.len() != config.reserve_item_count
+        || mode_definitions.len() != config.mode_definition_count
+        || !source_reserved_variable_binary_formula_mode_definition_is_exact(ast, config)
         || reserve_items
             .last()
             .is_none_or(|(_, item)| item.range.end > theorem.range.start)
@@ -3031,11 +3174,14 @@ fn extract_source_reserved_variable_binary_formula(
     let source_bindings = reserve.bridge.bindings();
     if source_bindings.len() != config.binding_spellings.len()
         || source_bindings.len() != config.binding_types.len()
+        || source_bindings.len() != config.binding_source_mode_spellings.len()
         || source_bindings.iter().enumerate().any(|(index, binding)| {
             binding.spelling != config.binding_spellings[index]
                 || !source_binding_matches_reserved_builtin_type(
                     binding,
                     config.binding_types[index],
+                    config.binding_source_mode_spellings[index],
+                    &reserve.mode_expansions,
                 )
         })
         || (config.require_shared_type_range
@@ -3102,6 +3248,48 @@ fn extract_source_reserved_variable_binary_formula(
         right_spelling,
         right_lookup_ordinal,
     })
+}
+
+fn source_reserved_variable_binary_formula_mode_definition_is_exact(
+    ast: &SurfaceAst,
+    config: &SourceReservedVariableBinaryFormulaConfig,
+) -> bool {
+    let definition_blocks = surface_nodes_with_kind(ast, SurfaceNodeKind::DefinitionBlockItem);
+    let mode_definitions = surface_nodes_with_kind(ast, SurfaceNodeKind::ModeDefinition);
+    let Some(expected_label) = config.mode_definition_label else {
+        return definition_blocks.is_empty() && mode_definitions.is_empty();
+    };
+    let [(_, block)] = definition_blocks.as_slice() else {
+        return false;
+    };
+    let [(definition_id, definition)] = mode_definitions.as_slice() else {
+        return false;
+    };
+    if subtree_has_recovery(ast, block)
+        || direct_token_texts(ast, block).as_slice() != ["definition", "end", ";"]
+        || structural_child_ids(ast, block).as_slice() != [*definition_id]
+        || direct_token_texts(ast, definition).as_slice()
+            != ["mode", expected_label, ":", "is", ";"]
+    {
+        return false;
+    }
+    let definition_children = structural_child_ids(ast, definition);
+    let [pattern_id, rhs_id] = definition_children.as_slice() else {
+        return false;
+    };
+    let Some(pattern) = ast.node(*pattern_id) else {
+        return false;
+    };
+    let Some(rhs) = ast.node(*rhs_id) else {
+        return false;
+    };
+    let [Some(expected_mode_spelling)] = config.binding_source_mode_spellings else {
+        return false;
+    };
+    matches!(pattern.kind, SurfaceNodeKind::ModePattern)
+        && matches!(rhs.kind, SurfaceNodeKind::TypeExpression)
+        && mode_definition_pattern_spelling(ast, definition).as_deref()
+            == Some(expected_mode_spelling)
 }
 
 fn exact_identifier_term_operand(
@@ -6668,6 +6856,7 @@ mod tests {
         ParseOnlyImportProvider, SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS,
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_HETEROGENEOUS_RESERVE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY, active_type_elaboration_cases,
         assemble_source_checker_handoff, assert_source_reserved_variable_formula_output,
@@ -6681,6 +6870,7 @@ mod tests {
         extract_source_imported_attribute_assertion_formula,
         extract_source_imported_non_empty_attribute_assertion_formula,
         extract_source_imported_predicate_functor_formula,
+        extract_source_local_mode_reserved_variable_equality,
         extract_source_multiple_reserve_declaration_equality,
         extract_source_reserved_variable_equality, extract_source_reserved_variable_inequality,
         extract_source_reserved_variable_membership,
@@ -6693,6 +6883,7 @@ mod tests {
         source_imported_attribute_assertion_formula_output,
         source_imported_non_empty_attribute_assertion_formula_output,
         source_imported_predicate_functor_formula_output,
+        source_local_mode_reserved_variable_equality_output,
         source_multiple_reserve_declaration_equality_output,
         source_reserved_variable_equality_output,
         source_reserved_variable_formula_output_detail_keys,
@@ -11447,6 +11638,235 @@ mod tests {
     }
 
     #[test]
+    fn source_local_mode_reserved_variable_equality_consumes_real_expansion() {
+        let source_id = source_id(126);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("local_mode_reserved_variable_equality"),
+        );
+        let symbols =
+            source_local_symbols_env(module.clone(), &[("LocalModeFormula", SymbolKind::Mode)]);
+        let theorem = IdentifierBinaryTheoremSpec {
+            status: None,
+            label: "LocalModeReservedVariableEqualityPayloadBoundary",
+            left: "x",
+            operator: "=",
+            right: "x",
+            recovered_label: false,
+        };
+        let exact = mode_then_reserve_identifier_binary_theorem_ast(
+            source_id,
+            [mode_definition(
+                "LocalModeFormula",
+                ReserveTypeShape::Builtin("set"),
+            )],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("LocalModeFormula"),
+            )],
+            theorem,
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload =
+            extract_source_local_mode_reserved_variable_equality(&exact, module.clone(), &symbols)
+                .expect("exact local-mode reserved-variable equality should extract");
+        assert_eq!(payload.reserve.mode_expansions.len(), 1);
+        assert_eq!(payload.reserve.bridge.bindings().len(), 1);
+        assert_eq!(
+            payload.reserve.bridge.bindings()[0].type_spelling,
+            "LocalModeFormula"
+        );
+        assert!(matches!(
+            payload.reserve.bridge.bindings()[0].type_head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_eq!(payload.left_lookup_ordinal, 1);
+        assert_eq!(payload.right_lookup_ordinal, 2);
+
+        let output =
+            source_local_mode_reserved_variable_equality_output(&exact, module.clone(), &symbols)
+                .expect("exact local-mode equality should reach TermFormulaChecker");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("local-mode equality invariants should hold");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(0));
+        for input in [
+            &output.left_result_input,
+            &output.right_result_input,
+            output
+                .left_expected_input
+                .as_ref()
+                .expect("left expected input should exist"),
+            output
+                .right_expected_input
+                .as_ref()
+                .expect("right expected input should exist"),
+        ] {
+            assert_eq!(input.spelling, "LocalModeFormula");
+            assert!(matches!(input.head, TypeHeadInput::Symbol(_)));
+        }
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+
+        let mut invalid_output =
+            source_local_mode_reserved_variable_equality_output(&exact, module.clone(), &symbols)
+                .expect("exact source should produce a second checker output");
+        invalid_output.payload.reserve.mode_expansions.clear();
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&invalid_output),
+            vec![
+                TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY
+                    .to_owned()
+            ]
+        );
+
+        let gap_modes = [
+            mode_definition("LocalModeFormula", ReserveTypeShape::Builtin("object")),
+            mode_definition("LocalModeFormula", ReserveTypeShape::AttributedSet),
+            contextual_mode_definition("LocalModeFormula", ReserveTypeShape::Builtin("set")),
+            parameterized_mode_definition("LocalModeFormula", ReserveTypeShape::Builtin("set")),
+            recovered_mode_definition("LocalModeFormula", ReserveTypeShape::Builtin("set")),
+        ];
+        for mode in gap_modes {
+            let near_miss = mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode],
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbol("LocalModeFormula"),
+                )],
+                theorem,
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for near_miss in [
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "OtherMode",
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbol("LocalModeFormula"),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [
+                    mode_definition("LocalModeFormula", ReserveTypeShape::Builtin("set")),
+                    mode_definition("LocalModeFormula", ReserveTypeShape::Builtin("set")),
+                ],
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbol("LocalModeFormula"),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition_with_label(
+                    "LocalModeFormula",
+                    "OtherDef",
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbol("LocalModeFormula"),
+                )],
+                theorem,
+            ),
+            mode_then_empty_definition_reserve_identifier_binary_theorem_ast(
+                source_id,
+                mode_definition("LocalModeFormula", ReserveTypeShape::Builtin("set")),
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbol("LocalModeFormula"),
+                )],
+                theorem,
+            ),
+            reserve_then_mode_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbol("LocalModeFormula"),
+                )],
+                mode_definition("LocalModeFormula", ReserveTypeShape::Builtin("set")),
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "LocalModeFormula",
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbolWithArgs("LocalModeFormula"),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [
+                    mode_definition("BaseMode", ReserveTypeShape::Builtin("set")),
+                    mode_definition(
+                        "LocalModeFormula",
+                        ReserveTypeShape::QualifiedSymbol("BaseMode"),
+                    ),
+                ],
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbol("LocalModeFormula"),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "LocalModeFormula",
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbol("LocalModeFormula"),
+                )],
+                IdentifierBinaryTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "LocalModeFormula",
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbol("LocalModeFormula"),
+                )],
+                IdentifierBinaryTheoremSpec {
+                    operator: "<>",
+                    ..theorem
+                },
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
     fn source_reserved_variable_membership_bridge_uses_real_binding_and_type_payloads() {
         let source_id = source_id(97);
         let module = ResolverModuleId::new(
@@ -12071,6 +12491,55 @@ mod tests {
         assert_eq!(output.right_result_input.head, TypeHeadInput::BuiltinSet);
         assert!(output.left_expected_input.is_none());
         assert_eq!(output.term_formula.normalized_types().len(), 2);
+    }
+
+    #[test]
+    fn active_local_mode_reserved_variable_equality_fixture_consumes_real_expansion() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0 == "pass_type_elaboration_local_mode_reserved_variable_equality_001"
+            })
+            .expect("Task 126 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 126 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 126 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output =
+            source_local_mode_reserved_variable_equality_output(&ast, resolver.module, &symbols)
+                .expect("Task 126 real AST should reach the local-mode equality seam");
+        assert!(
+            output.term_formula.diagnostics().is_empty(),
+            "{}",
+            output.term_formula.debug_text()
+        );
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("Task 126 real AST should preserve every checked payload invariant");
+        assert_eq!(output.payload.reserve.mode_expansions.len(), 1);
+        assert!(matches!(
+            output.left_result_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
     }
 
     #[test]
@@ -15415,6 +15884,7 @@ mod tests {
     #[derive(Debug, Clone, Copy)]
     struct ModeDefinitionSpec {
         pattern: &'static str,
+        label: Option<&'static str>,
         rhs_shape: ReserveTypeShape,
         local_context: bool,
         parameterized_pattern: bool,
@@ -15448,6 +15918,7 @@ mod tests {
     ) -> ModeDefinitionSpec {
         ModeDefinitionSpec {
             pattern,
+            label: None,
             rhs_shape,
             local_context: false,
             parameterized_pattern: false,
@@ -15461,6 +15932,7 @@ mod tests {
     ) -> ModeDefinitionSpec {
         ModeDefinitionSpec {
             pattern,
+            label: None,
             rhs_shape,
             local_context: true,
             parameterized_pattern: false,
@@ -15474,6 +15946,7 @@ mod tests {
     ) -> ModeDefinitionSpec {
         ModeDefinitionSpec {
             pattern,
+            label: None,
             rhs_shape,
             local_context: false,
             parameterized_pattern: true,
@@ -15487,10 +15960,26 @@ mod tests {
     ) -> ModeDefinitionSpec {
         ModeDefinitionSpec {
             pattern,
+            label: None,
             rhs_shape,
             local_context: false,
             parameterized_pattern: false,
             recovered: true,
+        }
+    }
+
+    const fn mode_definition_with_label(
+        pattern: &'static str,
+        label: &'static str,
+        rhs_shape: ReserveTypeShape,
+    ) -> ModeDefinitionSpec {
+        ModeDefinitionSpec {
+            pattern,
+            label: Some(label),
+            rhs_shape,
+            local_context: false,
+            parameterized_pattern: false,
+            recovered: false,
         }
     }
 
@@ -15500,6 +15989,111 @@ mod tests {
         items: Vec<ReserveItemSpec>,
     ) -> SurfaceAst {
         mode_chain_reserve_ast_with_order(source_id, [], modes, [], items)
+    }
+
+    fn mode_then_reserve_identifier_binary_theorem_ast(
+        source_id: SourceId,
+        modes: impl IntoIterator<Item = ModeDefinitionSpec>,
+        items: Vec<ReserveItemSpec>,
+        theorem: IdentifierBinaryTheoremSpec<'_>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut root_children = Vec::new();
+        let mut offset = 0;
+        for mode in modes {
+            root_children.push(add_mode_definition_item(
+                &mut builder,
+                source_id,
+                &mut offset,
+                mode,
+            ));
+        }
+        root_children.extend(add_reserve_items(
+            &mut builder,
+            source_id,
+            &mut offset,
+            items,
+        ));
+        root_children.push(add_identifier_binary_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            theorem,
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn reserve_then_mode_identifier_binary_theorem_ast(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+        mode: ModeDefinitionSpec,
+        theorem: IdentifierBinaryTheoremSpec<'_>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
+        root_children.push(add_mode_definition_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            mode,
+        ));
+        root_children.push(add_identifier_binary_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            theorem,
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn mode_then_empty_definition_reserve_identifier_binary_theorem_ast(
+        source_id: SourceId,
+        mode: ModeDefinitionSpec,
+        items: Vec<ReserveItemSpec>,
+        theorem: IdentifierBinaryTheoremSpec<'_>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut root_children = vec![add_mode_definition_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            mode,
+        )];
+        root_children.push(add_empty_definition_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+        ));
+        root_children.extend(add_reserve_items(
+            &mut builder,
+            source_id,
+            &mut offset,
+            items,
+        ));
+        root_children.push(add_identifier_binary_theorem_item(
+            &mut builder,
+            source_id,
+            &mut offset,
+            theorem,
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
     }
 
     fn mode_chain_reserve_ast_with_structures(
@@ -18229,7 +18823,10 @@ mod tests {
             SurfaceTokenKind::ReservedWord,
             "mode",
         );
-        let label = format!("{}Def", mode.pattern);
+        let label = mode
+            .label
+            .map(str::to_owned)
+            .unwrap_or_else(|| format!("{}Def", mode.pattern));
         let label_token = add_token(
             builder,
             source_id,
@@ -18346,6 +18943,44 @@ mod tests {
             SurfaceNodeKind::DefinitionBlockItem,
             range(source_id, item_start, item_end),
             block_children,
+        )
+    }
+
+    fn add_empty_definition_item(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+    ) -> SurfaceBuilderNodeId {
+        let item_start = *offset;
+        let definition = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "definition",
+        );
+        let end = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            "end",
+        );
+        let semicolon = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedSymbol,
+            ";",
+        );
+        let item_end = builder
+            .node_range(semicolon)
+            .expect("just-created definition semicolon should exist")
+            .end;
+        builder.add_node(
+            SurfaceNodeKind::DefinitionBlockItem,
+            range(source_id, item_start, item_end),
+            vec![definition, end, semicolon],
         )
     }
 

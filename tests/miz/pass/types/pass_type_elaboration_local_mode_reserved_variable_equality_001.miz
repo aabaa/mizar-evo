@@ -1,0 +1,6 @@
+definition
+  mode LocalModeFormulaDef: LocalModeFormula is set;
+end;
+
+reserve x for LocalModeFormula;
+theorem LocalModeReservedVariableEqualityPayloadBoundary: x = x;

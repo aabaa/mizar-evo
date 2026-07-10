@@ -511,6 +511,14 @@ gap. The pass does not credit membership truth/facts, object/set coercion,
 implicit closure/order, theorem acceptance, `formula_statement`, proof,
 CoreIr, ControlFlowIr, or VC.
 
+Task 126 adds the exact direct-local-mode reserved-variable equality pass. The
+runner admits one task-55-compatible mode definition, retains four raw
+`LocalModeFormula` inputs, and supplies its real AST-derived bare-set expansion
+to `TermFormulaChecker`; all roles normalize to one builtin-set identity. An
+invalid key, withheld-mode near misses, and a real sidecar guard the slice. Mode
+declaration acceptance/inhabitation, broader modes, closure/order, facts/truth,
+theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

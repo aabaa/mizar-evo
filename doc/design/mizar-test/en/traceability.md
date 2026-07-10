@@ -631,6 +631,16 @@ The left result retains `object`; the right result and only expected input retai
 identity across both right roles. This credits exact heterogeneous membership
 type/well-formedness only, not membership truth/facts, object/set coercion,
 implicit closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, or VC.
+Task 126 adds the exact direct-local-mode pass row
+`definition mode LocalModeFormulaDef: LocalModeFormula is set; end; reserve x for LocalModeFormula; theorem LocalModeReservedVariableEqualityPayloadBoundary: x = x;`.
+All four raw result/expected inputs retain the written local-mode symbol and
+reserve range. The checker consumes the real AST-derived bare-set mode
+expansion, anchors the single normalized builtin-`set` identity at that
+expansion RHS, and records two `Inferred` variables plus one fact-free
+`Checked` equality. This credits only the exact direct local-mode
+type/well-formedness handoff, not mode-definition declaration checking or
+acceptance, inhabitation evidence, implicit closure/order, equality
+truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, or VC.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

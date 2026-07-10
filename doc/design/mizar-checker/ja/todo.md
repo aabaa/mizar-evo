@@ -2051,6 +2051,28 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       `crates/mizar-checker/src/` が変わらない限り checker source-layout update は不要。
     - 依存: tasks 20、120、124。mizar-test と full workspace を検証する。
 
+126. **Exact direct-local-mode reserved-variable equality checker bridge を追加する。** [x]
+    - bare builtin `set` RHS を持つ unique、unrecovered、source-preceding、
+      no-argument local mode definition 1 個、その mode の `reserve x`、
+      `theorem LocalModeReservedVariableEqualityPayloadBoundary: x = x;` だけを
+      含む spec-derived active pass fixture を追加する。
+    - 受入条件: task-55 real AST-derived `ModeExpansion` を再利用し、4 個すべての
+      pre-normalization result/expected input に local-mode symbol/range を保持し、
+      extracted expansion で `TermFormulaChecker` を構築する。両 source-order lookup
+      は `BindingId(0)` を解決し、checker は全 role を 1 builtin-`set` identity に
+      normalize する。
+    - 2 `Inferred` variable、1 fact-free `Checked` equality、production invariant
+      validation、task-specific invalid key、withheld mode-definition family 全体の near
+      miss、real frontend/resolver sidecar test を要求する。既存 expectation を
+      rebaseline しない。
+    - exact mode-backed identifier equality type/well-formedness slice だけを credit
+      する。mode definition declaration checking、accepted mode status/inhabitation
+      evidence、broader/chained mode、closure/order、truth/fact、theorem acceptance、
+      `formula_statement`、proof、CoreIr、ControlFlowIr、VC を credit しない。
+    - spec coverage audit の Chapter 4、7、13、14、16 を更新する。
+      `crates/mizar-checker/src/` が変わらない限り source-layout update は不要。
+    - 依存: tasks 55、119。mizar-test と full workspace を検証する。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

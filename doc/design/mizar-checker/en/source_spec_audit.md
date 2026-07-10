@@ -447,6 +447,14 @@ exact type/well-formedness slice. Membership truth/facts, object/set coercion
 evidence, closure/order, theorem acceptance, broader sources, proof, CoreIr,
 ControlFlowIr, and VC remain open.
 
+Task 126 MC-G020 current-state override: the exact direct-local-mode equality
+source combines task 55's real AST-derived bare-set expansion with task 119's
+equality consumer. Four raw inputs retain local-mode provenance; the checker
+consumes the expansion and records one builtin-set identity, two `Inferred`
+terms, and one fact-free `Checked` equality. Mode declaration checking or
+acceptance, inhabitation evidence, broader modes, closure/order, truth/facts,
+theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

@@ -496,6 +496,14 @@ extraction gap に残る。この pass は membership truth/fact、object/set co
 implicit closure/order、theorem acceptance、`formula_statement`、proof、CoreIr、
 ControlFlowIr、VC を credit しない。
 
+task 126 は exact direct-local-mode reserved-variable equality pass を追加する。
+runner は task-55-compatible mode definition 1 個を受理し、4 raw
+`LocalModeFormula` input を保持して、その real AST-derived bare-set expansion を
+`TermFormulaChecker` に渡す。全 role は 1 builtin-set identity に normalize される。
+invalid key、withheld-mode near miss、real sidecar が slice を guard する。mode
+declaration acceptance/inhabitation、broader mode、closure/order、fact/truth、
+theorem acceptance、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

@@ -440,6 +440,14 @@ representative を検証する。これは classified `test_gap` / `source_drift
 truth/fact、object/set coercion evidence、closure/order、theorem acceptance、broader
 source、proof、CoreIr、ControlFlowIr、VC は open のままである。
 
+Task 126 MC-G020 current-state override: exact direct-local-mode equality source
+は task 55 の real AST-derived bare-set expansion と task 119 の equality consumer
+を結合する。4 raw input は local-mode provenance を保持し、checker は expansion を
+消費して 1 builtin-set identity、2 `Inferred` term、1 fact-free `Checked` equality
+を記録する。mode declaration checking/acceptance、inhabitation evidence、broader
+mode、closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、
+VC は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

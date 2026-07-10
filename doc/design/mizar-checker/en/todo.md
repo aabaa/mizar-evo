@@ -2202,6 +2202,29 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       changes.
     - Deps: tasks 20, 120, and 124. Verify mizar-test and the full workspace.
 
+126. **Add exact direct-local-mode reserved-variable equality checker bridge.** [x]
+    - Add a spec-derived active pass fixture containing exactly one unique,
+      unrecovered, source-preceding no-argument local mode definition with bare
+      builtin `set` RHS, `reserve x` for that mode, and
+      `theorem LocalModeReservedVariableEqualityPayloadBoundary: x = x;`.
+    - Acceptance: reuse the task-55 real AST-derived `ModeExpansion`, preserve
+      the local-mode symbol/range in all four pre-normalization result/expected
+      inputs, and construct `TermFormulaChecker` with the extracted expansion.
+      Both source-order lookups resolve `BindingId(0)` and the checker normalizes
+      every role to one builtin-`set` identity.
+    - Require two `Inferred` variables, one fact-free `Checked` equality,
+      production invariant validation, a task-specific invalid key, near misses
+      for every withheld mode-definition family, and a real frontend/resolver
+      sidecar test. Existing expectations must not be rebaselined.
+    - Credit only the exact mode-backed identifier equality type/well-formedness
+      slice. Do not credit mode definition declaration checking, accepted mode
+      status or inhabitation evidence, broader/chained modes, closure/order,
+      truth/facts, theorem acceptance, `formula_statement`, proof, CoreIr,
+      ControlFlowIr, or VC.
+    - Update Chapters 4, 7, 13, 14, and 16 in the spec coverage audit. No checker
+      source-layout update is required unless `crates/mizar-checker/src/` changes.
+    - Deps: tasks 55 and 119. Verify mizar-test and the full workspace.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as
