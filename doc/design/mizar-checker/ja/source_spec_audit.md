@@ -448,6 +448,15 @@ Task 126 MC-G020 current-state override: exact direct-local-mode equality source
 mode、closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、
 VC は open のままである。
 
+Task 127 MC-G020 current-state override: exact one-edge local-mode-chain equality
+source は task 56 の real AST-derived expansion 2 個と task 126 の equality consumer
+を結合する。4 raw input は outer-mode provenance を保持し、checker は両 link を
+recursively 消費して real terminal `set` RHS に anchor された 1 builtin-set
+identity、2 `Inferred` term、1 fact-free `Checked` equality を記録する。mode
+declaration checking/acceptance、inhabitation evidence、object terminal、
+longer-chain formula、closure/order、truth/fact、theorem acceptance、proof、CoreIr、
+ControlFlowIr、VC は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

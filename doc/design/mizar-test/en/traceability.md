@@ -641,6 +641,16 @@ expansion RHS, and records two `Inferred` variables plus one fact-free
 type/well-formedness handoff, not mode-definition declaration checking or
 acceptance, inhabitation evidence, implicit closure/order, equality
 truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, or VC.
+Task 127 adds the exact one-edge local-mode-chain pass row
+`definition mode BaseModeFormulaDef: BaseModeFormula is set; end; definition mode ChainModeFormulaDef: ChainModeFormula is BaseModeFormula; end; reserve x for ChainModeFormula; theorem ChainedLocalModeReservedVariableEqualityPayloadBoundary: x = x;`.
+All four raw result/expected inputs retain the written outer-mode symbol and
+reserve range. The checker consumes both real AST-derived expansion links,
+anchors the single normalized builtin-`set` identity at the terminal `set` RHS,
+and records two `Inferred` variables plus one fact-free `Checked` equality. This
+credits only the exact one-edge-chain type/well-formedness handoff, not mode-
+definition declaration checking/acceptance, inhabitation evidence, object
+terminals, longer-chain formulas, closure/order, equality truth/facts, theorem
+acceptance, proof, CoreIr, ControlFlowIr, or VC.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

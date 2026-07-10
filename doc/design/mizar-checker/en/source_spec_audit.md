@@ -455,6 +455,15 @@ terms, and one fact-free `Checked` equality. Mode declaration checking or
 acceptance, inhabitation evidence, broader modes, closure/order, truth/facts,
 theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
 
+Task 127 MC-G020 current-state override: the exact one-edge local-mode-chain
+equality source combines task 56's two real AST-derived expansions with task
+126's equality consumer. Four raw inputs retain outer-mode provenance; the
+checker recursively consumes both links and records one terminal builtin-set
+identity anchored at the real `set` RHS, two `Inferred` terms, and one fact-free
+`Checked` equality. Mode declaration checking/acceptance, inhabitation evidence,
+object terminals, longer-chain formulas, closure/order, truth/facts, theorem
+acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

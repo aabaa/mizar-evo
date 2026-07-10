@@ -2225,6 +2225,30 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       source-layout update is required unless `crates/mizar-checker/src/` changes.
     - Deps: tasks 55 and 119. Verify mizar-test and the full workspace.
 
+127. **Add exact one-edge local-mode-chain reserved-variable equality checker bridge.** [x]
+    - Add a spec-derived active pass fixture with exactly two separate unique,
+      unrecovered, source-preceding, no-argument mode definitions
+      `BaseModeFormula -> set` and `ChainModeFormula -> BaseModeFormula`, one
+      `reserve x for ChainModeFormula`, and theorem
+      `ChainedLocalModeReservedVariableEqualityPayloadBoundary: x = x;`.
+    - Acceptance: reuse both real task-56 AST-derived `ModeExpansion` entries,
+      retain the outer `ChainModeFormula` symbol/range in all four raw
+      result/expected inputs, and recursively normalize every role to one
+      builtin-`set` identity whose canonical source is the terminal `set` RHS.
+      Both source-order lookups must resolve `BindingId(0)`.
+    - Require two `Inferred` variables, one fact-free `Checked` equality,
+      production invariant validation, a task-specific invalid key, an exact
+      withheld-family near-miss matrix, and a real frontend/resolver sidecar.
+      Existing expectations must not be rebaselined.
+    - Credit only this exact one-edge-chain identifier equality
+      type/well-formedness slice. Keep mode declaration checking/acceptance,
+      inhabitation evidence, object terminals, longer-chain formulas,
+      closure/order, truth/facts, theorem acceptance, `formula_statement`, proof,
+      CoreIr, ControlFlowIr, and VC deferred.
+    - Update Chapters 4, 7, 13, 14, and 16 in the spec coverage audit. No checker
+      source-layout update is required unless `crates/mizar-checker/src/` changes.
+    - Deps: tasks 56 and 126. Verify mizar-test and the full workspace.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

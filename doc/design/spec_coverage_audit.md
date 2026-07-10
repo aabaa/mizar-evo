@@ -176,6 +176,20 @@ checking/acceptance, inhabitation evidence, implicit closure/order,
 truth/facts, theorem acceptance, broader/chained/imported mode formulas, proof,
 CoreIr, ControlFlowIr, or VC; those remain deferred.
 
+Task127 current-state override for chapters 04, 07, 13, 14, and 16: the exact
+`definition mode BaseModeFormulaDef: BaseModeFormula is set; end; definition mode ChainModeFormulaDef: ChainModeFormula is BaseModeFormula; end; reserve x for ChainModeFormula; theorem ChainedLocalModeReservedVariableEqualityPayloadBoundary: x = x;`
+pass combines task 56's real AST-derived one-edge mode-expansion-chain producer
+with task 126's equality consumer. Four raw result/expected inputs retain the
+written outer-mode symbol and reserve range, while recursive normalization
+consumes both real expansion entries and interns one builtin-`set` identity
+whose canonical source is the terminal `set` RHS. Production validation,
+invalid-link corruption, an exact near-miss matrix, and a real
+frontend/resolver sidecar guard this `test_gap`, `source_drift`, and
+`design_drift` repair. This does not change the chapters' partial status or
+credit mode-definition declaration checking/acceptance, inhabitation evidence,
+object terminals, longer-chain formulas, closure/order, truth/facts, theorem
+acceptance, proof, CoreIr, ControlFlowIr, or VC; those remain deferred.
+
 Task64 addendum for chapters `03.type_system.md`, `06.attributes.md`,
 `07.modes.md`, and `17.clusters_and_registrations.md`: checker task 64 adds
 active source-derived diagnostic coverage for an attributed local-mode reserve

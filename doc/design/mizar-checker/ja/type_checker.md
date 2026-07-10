@@ -503,6 +503,17 @@ guard、invalid key、withheld-family near miss、real sidecar が bridge を gu
 mode declaration checking/acceptance、inhabitation evidence、broader mode、
 closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
 deferred のままである。
+task 127 は exact one-edge bare local-mode-chain equality sibling を追加する。active
+source は `BaseModeFormula -> set` と
+`ChainModeFormula -> BaseModeFormula` の separate definition block 2 個、outer-mode
+reserve 1 個、`ChainedLocalModeReservedVariableEqualityPayloadBoundary: x = x;` を
+持つ。runner は 4 raw outer-mode input を保持し、既存 recursive `TypeNormalizer`
+は task-56 real expansion 2 個を消費し、terminal `set` RHS を 1 normalized
+identity の canonical source として保持する。exact label/block structure/chain
+link、invalid-link corruption、withheld-family near miss が route を guard する。mode
+declaration acceptance/inhabitation、object terminal、longer-chain formula、
+closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
+deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

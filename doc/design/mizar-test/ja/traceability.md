@@ -590,7 +590,16 @@ exact direct-local-mode pass row
 これは exact direct local-mode type/well-formedness handoff だけを credit し、mode
 definition declaration checking/acceptance、inhabitation evidence、implicit
 closure/order、equality truth/fact、theorem acceptance、proof、CoreIr、
-ControlFlowIr、VC は credit しない。task 120 は
+ControlFlowIr、VC は credit しない。task 127 は exact one-edge local-mode-chain pass row
+`definition mode BaseModeFormulaDef: BaseModeFormula is set; end; definition mode ChainModeFormulaDef: ChainModeFormula is BaseModeFormula; end; reserve x for ChainModeFormula; theorem ChainedLocalModeReservedVariableEqualityPayloadBoundary: x = x;`
+を追加する。4 raw result/expected input はすべて記述された outer-mode symbol と
+reserve range を保持する。checker は real AST-derived expansion link 2 個を消費し、
+1 normalized builtin-`set` identity を terminal `set` RHS に anchor して、2
+`Inferred` variable と 1 fact-free `Checked` equality を記録する。これは exact
+one-edge-chain type/well-formedness handoff だけを credit し、mode-definition
+declaration checking/acceptance、inhabitation evidence、object terminal、
+longer-chain formula、closure/order、equality truth/fact、theorem acceptance、proof、
+CoreIr、ControlFlowIr、VC は credit しない。task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。両 identifier result と右 membership expected type は記述された

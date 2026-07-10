@@ -529,6 +529,17 @@ family near misses, and a real sidecar guard the bridge. Mode declaration
 checking/acceptance, inhabitation evidence, broader modes, closure/order,
 truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
 deferred.
+Task 127 adds the exact one-edge bare local-mode-chain equality sibling. The
+active source has two separate definition blocks for
+`BaseModeFormula -> set` and `ChainModeFormula -> BaseModeFormula`, then one
+outer-mode reserve and `ChainedLocalModeReservedVariableEqualityPayloadBoundary:
+x = x;`. The runner preserves four raw outer-mode inputs while the existing
+recursive `TypeNormalizer` consumes both real task-56 expansions and keeps the
+terminal `set` RHS as the one normalized identity's canonical source. Exact
+labels/block structure/chain links, invalid-link corruption, and withheld-family
+near misses guard the route. Mode declaration acceptance/inhabitation, object terminals, longer
+chain formulas, closure/order, truth/facts, theorem acceptance, proof, CoreIr,
+ControlFlowIr, and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

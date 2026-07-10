@@ -2073,6 +2073,29 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       `crates/mizar-checker/src/` が変わらない限り source-layout update は不要。
     - 依存: tasks 55、119。mizar-test と full workspace を検証する。
 
+127. **Exact one-edge local-mode-chain reserved-variable equality checker bridge を追加する。** [x]
+    - separate、unique、unrecovered、source-preceding、no-argument mode definition
+      `BaseModeFormula -> set` と `ChainModeFormula -> BaseModeFormula` を exact に
+      2 個、`reserve x for ChainModeFormula` 1 個、theorem
+      `ChainedLocalModeReservedVariableEqualityPayloadBoundary: x = x;` を持つ
+      spec-derived active pass fixture を追加する。
+    - 受入条件: task-56 real AST-derived `ModeExpansion` entry 2 個を再利用し、4 raw
+      result/expected input すべてに outer `ChainModeFormula` symbol/range を保持し、
+      全 role を terminal `set` RHS を canonical source とする 1 builtin-`set`
+      identity へ recursively normalize する。両 source-order lookup は
+      `BindingId(0)` を解決する。
+    - 2 `Inferred` variable、1 fact-free `Checked` equality、production invariant
+      validation、task-specific invalid key、exact withheld-family near-miss matrix、
+      real frontend/resolver sidecar を要求する。既存 expectation を rebaseline しない。
+    - exact one-edge-chain identifier equality type/well-formedness slice だけを
+      credit する。mode declaration checking/acceptance、inhabitation evidence、
+      object terminal、longer-chain formula、closure/order、truth/fact、theorem
+      acceptance、`formula_statement`、proof、CoreIr、ControlFlowIr、VC は deferred
+      のままにする。
+    - spec coverage audit の Chapter 4、7、13、14、16 を更新する。
+      `crates/mizar-checker/src/` が変わらない限り source-layout update は不要。
+    - 依存: tasks 56、126。mizar-test と full workspace を検証する。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

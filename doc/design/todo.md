@@ -348,6 +348,11 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    mode while one normalized builtin-`set` identity is anchored at the real
    expansion RHS, without mode-definition acceptance, facts, or theorem
    acceptance,
+   task 127 adds the exact one-edge local-mode-chain equality pass by combining
+   task 56's real `ChainModeFormula -> BaseModeFormula -> set` producer with
+   task 126's equality consumer, retaining four raw outer-mode inputs while
+   both real links normalize to one terminal-RHS builtin-`set` identity without
+   mode-definition acceptance, facts, or theorem acceptance,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -392,7 +397,8 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    well-formedness checking beyond task 119's exact same-binding equality,
    task 123's exact distinct-binding equality, and task 124's exact
    multiple-reserve-declaration equality, and task 125's exact heterogeneous
-   reserve membership, and task 126's exact direct-local-mode equality,
+   reserve membership, task 126's exact direct-local-mode equality, and task
+   127's exact one-edge local-mode-chain equality,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,

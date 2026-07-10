@@ -519,6 +519,16 @@ invalid key, withheld-mode near misses, and a real sidecar guard the slice. Mode
 declaration acceptance/inhabitation, broader modes, closure/order, facts/truth,
 theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred.
 
+Task 127 adds the exact one-edge local-mode-chain reserved-variable equality
+pass. The runner admits two exact source-preceding definition blocks, retains
+four raw outer `ChainModeFormula` inputs, and supplies both real task-56
+expansions to `TermFormulaChecker`; recursive normalization yields one
+builtin-set identity anchored at the terminal `set` RHS. An invalid-link key,
+exact chain guards, withheld-family near misses, and a real sidecar guard the
+slice. Mode declaration acceptance/inhabitation, object terminals, longer-chain
+formulas, closure/order, facts/truth, theorem acceptance, proof, CoreIr,
+ControlFlowIr, and VC remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

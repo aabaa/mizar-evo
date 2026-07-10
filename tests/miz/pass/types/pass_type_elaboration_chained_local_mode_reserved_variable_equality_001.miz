@@ -1,0 +1,10 @@
+definition
+  mode BaseModeFormulaDef: BaseModeFormula is set;
+end;
+
+definition
+  mode ChainModeFormulaDef: ChainModeFormula is BaseModeFormula;
+end;
+
+reserve x for ChainModeFormula;
+theorem ChainedLocalModeReservedVariableEqualityPayloadBoundary: x = x;
