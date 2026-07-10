@@ -475,6 +475,23 @@ CoreIr, ControlFlowIr, or VC payloads. Non-exact labels, operands, reserve
 bindings/types, attributed types, operators, status/extra tokens, additional
 reserve or theorem items, source-order reversal, recovery, or numeral-term shapes
 remain on `type_elaboration.external_dependency.ast_payload_extraction`.
+Task 120 extends that real identifier-term seam only for the exact source
+`reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
+The same source-range event ordering derives distinct lookup ordinals 1 and 2,
+and two independent `BindingEnv::lookup` calls resolve both identifier terms to
+the written reserve binding. The shared producer projects builtin `set` to two
+result roles and, following the existing checker membership contract, one
+expected-type role owned by the right operand. Production validation requires
+two `Inferred` variable terms, one `Checked` `FormulaKind::Membership`, exactly
+that single right expected-type constraint, the three exact role owners with
+source range/spelling/head intact, and empty candidate/fact/deferred/diagnostic
+output. Any matched-source construction or invariant failure reports
+`type_elaboration.checker.reserved_variable_membership.invalid_payload`.
+`Checked` remains type/well-formedness only: task 120 does not record membership
+truth/facts, materialize implicit closure, accept the theorem, activate
+`formula_statement`, or produce proof, CoreIr, ControlFlowIr, or VC payloads.
+Non-exact labels, operators, operands, reserve shapes, item counts/order,
+recovery/status tokens, and numeral operands remain on the extraction gap.
 Task 109 supersedes the exact builtin `set` portion of task 102:
 `theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` reaches parser and
 resolver execution with a Chapter 13 numeral term and the Chapter 14 builtin

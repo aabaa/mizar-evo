@@ -322,7 +322,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    equality slice by resolving both `x` identifier terms through the real
    reserve `BindingEnv`, reusing the written builtin `set` type for term result
    and equality expected-type payloads, and checking formula well-formedness
-   without facts or theorem acceptance, and task 109 supersedes task 102 for
+   without facts or theorem acceptance, task 120 adds the matching exact
+   reserved-variable membership well-formedness pass with two source-derived
+   result roles and only the right operand's expected-`set` role, also without
+   facts or theorem acceptance, and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
    type payloads before failing on missing numeric type payloads and partial
@@ -352,12 +355,14 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    inference, coherence proof-obligation payloads, theorem acceptance,
    formula constant semantic checking beyond task 117's exact constant-kind handoff,
    attributed-type evidence, imported predicate/functor semantic payloads,
-   membership operand expected-type construction/checking beyond task 108, inequality desugaring/equality semantic checking beyond task 107,
+   membership operand expected-type construction/checking beyond task 120's
+   exact right-operand expected-`set` slice (task 108's numeral bridge still
+   lacks it), inequality desugaring/equality semantic checking beyond task 107,
    broader type-assertion type payload extraction, type-assertion semantic checking,
    overload payloads, broader term/formula/proof
    skeleton/statement proof payloads, term inference and formula
    well-formedness checking beyond task 119's exact reserved-variable equality
-   slice,
+   and task 120 exact reserved-variable membership slices,
    recorded facts, imported attribute assertion semantic payloads, imported
    attribute-level non-empty assertion semantic payloads, negated attribute
    admissibility/semantic checking, attribute admissibility/semantic checking,

@@ -453,6 +453,23 @@ CoreIr、ControlFlowIr、VC payload を生成しない。non-exact label、opera
 binding/type、attributed type、operator、status/extra token、追加 reserve/theorem
 item、source-order reversal、recovery、numeral-term shape は
 `type_elaboration.external_dependency.ast_payload_extraction` に残る。
+task 120 は exact source
+`reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
+だけについて、その real identifier-term seam を拡張する。同じ source-range event
+ordering から distinct lookup ordinal 1 と 2 を導出し、2 回の独立した
+`BindingEnv::lookup` call が両 identifier term を記述された reserve binding に
+解決する。shared producer は builtin `set` を 2 つの result role と、既存 checker
+membership contract に従う右 operand 所有の 1 つの expected-type role に投影する。
+production validation は 2 つの `Inferred` variable term、1 つの `Checked`
+`FormulaKind::Membership`、右 operand の exact single expected-type constraint、
+source range/spelling/head を保つ 3 つの exact role owner、empty
+candidate/fact/deferred/diagnostic output を要求する。matched source の
+construction または invariant failure は
+`type_elaboration.checker.reserved_variable_membership.invalid_payload` を報告する。
+`Checked` は type/well-formedness だけを表し、task 120 は membership truth/fact、
+implicit closure、theorem acceptance、`formula_statement`、proof、CoreIr、
+ControlFlowIr、VC payload を生成しない。non-exact label/operator/operand/reserve
+shape/item count/order/recovery/status token/numeral operand は extraction gap に残る。
 task 109 は task 102 の exact builtin `set` portion を supersede する:
 `theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` は Chapter 13 の numeral
 term と Chapter 14 の builtin type-assertion form を通じて parser / resolver 実行まで

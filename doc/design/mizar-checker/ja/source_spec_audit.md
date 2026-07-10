@@ -377,6 +377,16 @@ unit test は active sidecar の real frontend/resolver AST に対して同じ a
 theorem acceptance、`formula_statement` runner、proof skeleton、CoreIr、
 ControlFlowIr、VC、broader source extraction は credit しない。
 
+Task 120 MC-G020 current-state override: exact active membership source
+`reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
+は task 119 の real binding/use event ordinal と independent lookup を再利用する。
+既存 API が要求する checker-owned membership payload、すなわち 2 つの known
+source-derived `set` variable result、右 operand の 1 つの expected-`set` role、
+1 つの no-fact `Checked` membership formula だけを追加する。production
+invariant、task-specific invalid-payload key、real frontend/resolver sidecar test が
+slice を guard する。membership truth/fact、implicit closure、theorem acceptance、
+proof、CoreIr、ControlFlowIr、VC、broader source extraction は credit しない。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

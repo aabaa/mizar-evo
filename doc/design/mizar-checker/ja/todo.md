@@ -1936,6 +1936,24 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       mizar-test task 10、spec 04 reserved variables、spec 13 term expressions、
       spec 14 formulas、spec 16 theorems and proofs。
 
+120. **Exact source-derived reserved-variable membership checker bridge を追加する。** [x]
+    - exact unrecovered source
+      `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
+      だけを昇格する。
+    - Acceptance: task 119 の real reserve handoff と independent source-order
+      `BindingEnv` lookup を再利用し、2 つの known builtin-`set` variable result
+      payload、右 operand の single expected-`set` payload、membership
+      `FormulaInput` を `TermFormulaChecker` に渡す。2 つの `Inferred` term、1 つの
+      no-fact `Checked` membership、exact 3 role owner、empty
+      candidate/deferred/diagnostic output、task-specific invalid-payload key、real
+      frontend/resolver active-sidecar payload test を要求する。
+    - `Checked` は type/well-formedness だけである。membership truth/fact、
+      implicit closure、theorem acceptance、`formula_statement`、proof、CoreIr、
+      ControlFlowIr、VC payload を捏造しない。non-exact source は extraction gap
+      に残す。
+    - 検証: `cargo test -p mizar-test`、最終 workspace verification。
+    - 依存: tasks 108、119。参照: Step 5、mizar-test task 10、spec 04、13、14、16。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

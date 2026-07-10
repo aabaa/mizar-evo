@@ -560,7 +560,12 @@ payload は credit しない。task 119 は separate exact pass row
 result type と equality expected type は記述された builtin `set` reserve から
 導かれ、checker type/well-formedness は diagnostic/fact なしで完了する。implicit
 universal closure、equality truth、theorem acceptance、`formula_statement`、proof、
-CoreIr、ControlFlowIr、VC は credit しない。
+CoreIr、ControlFlowIr、VC は credit しない。task 120 は matching exact pass row
+`reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
+を追加する。両 identifier result と右 membership expected type は記述された
+`set` reserve から導かれ、no-fact `Checked` membership は type/well-formedness
+だけを記録する。membership truth/fact、implicit closure、theorem acceptance、
+proof、CoreIr、ControlFlowIr、VC は credit しない。
 task 109 は task 102 の exact builtin type-assertion sidecar を supersede し、
 real checker term/formula payload extraction と asserted builtin `set`
 `TypeExpressionInput` を credit するが、numeric type payload、より広い

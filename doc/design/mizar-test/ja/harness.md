@@ -455,6 +455,20 @@ real frontend/resolver が生成した AST について同じ payload assertion 
 `formula_statement`、proof、CoreIr、ControlFlowIr、VC consumer を activate
 しない。non-exact shape は extraction-gap key を報告し続ける。
 
+task 120 は matching exact membership pass case
+`reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
+を追加する。active runner は task 119 の match-before-build と独立した source-order
+lookup path を共有するが、membership の exact payload shape、すなわち 2 つの known
+`set` variable result、右 operand だけの expected-`set` constraint、3 つの exact
+source-anchored role、1 つの `Checked` membership、empty
+candidate/fact/deferred/diagnostic を要求する。matched-source construction または
+invariant drift は
+`type_elaboration.checker.reserved_variable_membership.invalid_payload` を報告し、
+その他の near-miss は extraction gap に残る。real frontend/resolver unit test は
+active sidecar payload を観測する。これは well-formedness coverage だけであり、
+membership truth、recorded fact、implicit closure、theorem acceptance、
+proof/Core/ControlFlow/VC promotion ではない。
+
 task 109 は task 102 の exact builtin type-assertion theorem sidecar を
 supersede する。active `type_elaboration` runner は real source-derived checker
 `TermInput`、`FormulaInput`、asserted builtin `set` `TypeExpressionInput`

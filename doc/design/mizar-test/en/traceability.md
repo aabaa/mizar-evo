@@ -609,7 +609,13 @@ both identifier terms resolve through the real reserve `BindingEnv`, their
 result and equality-expected types derive from the written builtin `set`
 reserve, and checker type/well-formedness completes without diagnostics or
 facts. It does not credit implicit universal closure, equality truth, theorem
-acceptance, `formula_statement`, proof, CoreIr, ControlFlowIr, or VC. Task 109
+acceptance, `formula_statement`, proof, CoreIr, ControlFlowIr, or VC. Task 120
+adds the matching exact pass row for
+`reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
+both identifier results and the right membership expected type derive from the
+written `set` reserve, and a no-fact `Checked` membership records
+type/well-formedness only. Membership truth/facts, implicit closure, theorem
+acceptance, proof, CoreIr, ControlFlowIr, and VC remain uncredited. Task 109
 supersedes the exact
 builtin type-assertion sidecar from task 102 by crediting real checker
 term/formula payload extraction and the asserted builtin `set`

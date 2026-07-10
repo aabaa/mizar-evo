@@ -380,6 +380,17 @@ only for that exact slice. It does not claim implicit universal-closure nodes,
 equality truth/facts, theorem acceptance, a `formula_statement` runner, proof
 skeletons, CoreIr, ControlFlowIr, VC, or broader source extraction.
 
+Task 120 MC-G020 current-state override: the exact active membership source
+`reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
+reuses task 119's real binding/use event ordinals and independent lookups. It
+adds only the checker-owned membership payload demanded by existing APIs: two
+known source-derived `set` variable results, the right operand's one
+expected-`set` role, and one no-fact `Checked` membership formula. Production
+invariants, a task-specific invalid-payload key, and a real frontend/resolver
+sidecar test guard the slice. This does not credit membership truth/facts,
+implicit closure, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, or
+broader source extraction.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

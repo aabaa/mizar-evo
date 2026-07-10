@@ -2083,6 +2083,24 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       bridge; mizar-test task 10; spec 04 reserved variables; spec 13 term
       expressions; spec 14 formulas; spec 16 theorems and proofs.
 
+120. **Add exact source-derived reserved-variable membership checker bridge.** [x]
+    - Promote only the exact unrecovered source
+      `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
+    - Acceptance: reuse task 119's real reserve handoff and independent
+      source-order `BindingEnv` lookups; pass two known builtin-`set` variable
+      result payloads, the right operand's single expected-`set` payload, and a
+      membership `FormulaInput` to `TermFormulaChecker`. Require two `Inferred`
+      terms, one no-fact `Checked` membership, exact three role owners, empty
+      candidate/deferred/diagnostic output, a task-specific invalid-payload key,
+      and a real frontend/resolver active-sidecar payload test.
+    - `Checked` is type/well-formedness only. Do not fabricate membership
+      truth/facts, implicit closure, theorem acceptance, `formula_statement`,
+      proof, CoreIr, ControlFlowIr, or VC payloads. Non-exact sources remain on
+      the extraction gap.
+    - Verify: `cargo test -p mizar-test`; final workspace verification.
+    - Deps: tasks 108, 119. Refs: Step 5; mizar-test task 10; spec 04, 13, 14,
+      and 16.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

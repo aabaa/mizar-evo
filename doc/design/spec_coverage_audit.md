@@ -79,6 +79,21 @@ not include implicit universal-closure nodes, equality truth/facts, theorem
 acceptance, `formula_statement`, proof skeletons, CoreIr, ControlFlowIr, VC, or
 broader identifier/equality extraction; those remain deferred.
 
+Task120 current-state override for chapters `04.variables_and_constants.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 120 adds the exact active membership
+pass source
+`reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
+Both identifier results and the right operand's expected `set` type are
+source-anchored projections of the written reserve, and independent real
+`BindingEnv` lookups resolve the two uses. The checker records two `Inferred`
+variables and one no-fact type/well-formedness `Checked` membership. Production
+invariants and the real frontend/resolver sidecar payload test guard the slice.
+This credit does not include membership truth/facts, implicit closure, theorem
+acceptance, proof, CoreIr, ControlFlowIr, VC, or broader term/formula extraction;
+those remain deferred. The generic matrix gap wording is qualified by task 119
+equality and task 120 membership only.
+
 Task64 addendum for chapters `03.type_system.md`, `06.attributes.md`,
 `07.modes.md`, and `17.clusters_and_registrations.md`: checker task 64 adds
 active source-derived diagnostic coverage for an attributed local-mode reserve

@@ -88,6 +88,8 @@ const TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY: &str =
     "type_elaboration.external_dependency.ast_payload_extraction";
 const TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.reserved_variable_equality.invalid_payload";
+const TYPE_ELABORATION_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.reserved_variable_membership.invalid_payload";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseOnlyRunReport {
@@ -911,6 +913,11 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) =
+        source_reserved_variable_membership_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
     if let Some(keys) = source_formula_statement_detail_keys(ast, module.clone(), symbols) {
         return keys;
     }
@@ -1105,8 +1112,45 @@ struct SourceFormulaStatement {
 }
 
 #[derive(Debug)]
-struct SourceReservedVariableEquality {
+struct SourceReservedVariableBinaryFormulaConfig {
+    label: &'static str,
+    operator: &'static str,
+    formula_kind: FormulaKind,
+    invalid_payload_key: &'static str,
+    left_result_role: &'static str,
+    right_result_role: &'static str,
+    left_expected_role: Option<&'static str>,
+    right_expected_role: Option<&'static str>,
+}
+
+const SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG: SourceReservedVariableBinaryFormulaConfig =
+    SourceReservedVariableBinaryFormulaConfig {
+        label: "ReservedVariableEqualityPayloadBoundary",
+        operator: "=",
+        formula_kind: FormulaKind::Equality,
+        invalid_payload_key: TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+        left_result_role: "reserved-variable-left-result",
+        right_result_role: "reserved-variable-right-result",
+        left_expected_role: Some("reserved-variable-left-expected"),
+        right_expected_role: Some("reserved-variable-right-expected"),
+    };
+
+const SOURCE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG: SourceReservedVariableBinaryFormulaConfig =
+    SourceReservedVariableBinaryFormulaConfig {
+        label: "ReservedVariableMembershipPayloadBoundary",
+        operator: "in",
+        formula_kind: FormulaKind::Membership,
+        invalid_payload_key: TYPE_ELABORATION_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+        left_result_role: "reserved-variable-membership-left-result",
+        right_result_role: "reserved-variable-membership-right-result",
+        left_expected_role: None,
+        right_expected_role: Some("reserved-variable-membership-right-expected"),
+    };
+
+#[derive(Debug)]
+struct SourceReservedVariableBinaryFormula {
     reserve: SourceReserveExtraction,
+    config: &'static SourceReservedVariableBinaryFormulaConfig,
     formula_site: TypedSiteRef,
     formula_range: SourceRange,
     left_site: TypedSiteRef,
@@ -1120,8 +1164,8 @@ struct SourceReservedVariableEquality {
 }
 
 #[derive(Debug)]
-struct SourceReservedVariableEqualityOutput {
-    payload: SourceReservedVariableEquality,
+struct SourceReservedVariableBinaryFormulaOutput {
+    payload: SourceReservedVariableBinaryFormula,
     handoff: SourceReserveHandoff,
     left_binding: BindingId,
     right_binding: BindingId,
@@ -1134,27 +1178,39 @@ fn source_reserved_variable_equality_detail_keys(
     symbols: &SymbolEnv,
 ) -> Option<Vec<String>> {
     let payload = extract_source_reserved_variable_equality(ast, module, symbols)?;
-    Some(source_reserved_variable_equality_result_detail_keys(
-        build_source_reserved_variable_equality_output(payload, symbols),
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
     ))
 }
 
-fn source_reserved_variable_equality_result_detail_keys(
-    output: Result<SourceReservedVariableEqualityOutput, String>,
+fn source_reserved_variable_membership_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_reserved_variable_membership(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+fn source_reserved_variable_formula_result_detail_keys(
+    output: Result<SourceReservedVariableBinaryFormulaOutput, String>,
+    invalid_payload_key: &str,
 ) -> Vec<String> {
     match output {
-        Ok(output) => source_reserved_variable_equality_output_detail_keys(&output),
-        Err(_) => {
-            vec![TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY.to_owned()]
-        }
+        Ok(output) => source_reserved_variable_formula_output_detail_keys(&output),
+        Err(_) => vec![invalid_payload_key.to_owned()],
     }
 }
 
-fn source_reserved_variable_equality_output_detail_keys(
-    output: &SourceReservedVariableEqualityOutput,
+fn source_reserved_variable_formula_output_detail_keys(
+    output: &SourceReservedVariableBinaryFormulaOutput,
 ) -> Vec<String> {
-    if assert_source_reserved_variable_equality_output(output).is_err() {
-        return vec![TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY.to_owned()];
+    if assert_source_reserved_variable_formula_output(output).is_err() {
+        return vec![output.payload.config.invalid_payload_key.to_owned()];
     }
     let mut keys = output
         .handoff
@@ -1182,15 +1238,25 @@ fn source_reserved_variable_equality_output(
     ast: &SurfaceAst,
     module: ResolverModuleId,
     symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableEqualityOutput> {
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload = extract_source_reserved_variable_equality(ast, module, symbols)?;
-    build_source_reserved_variable_equality_output(payload, symbols).ok()
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
-fn build_source_reserved_variable_equality_output(
-    payload: SourceReservedVariableEquality,
+#[cfg(test)]
+fn source_reserved_variable_membership_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
     symbols: &SymbolEnv,
-) -> Result<SourceReservedVariableEqualityOutput, String> {
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload = extract_source_reserved_variable_membership(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+fn build_source_reserved_variable_formula_output(
+    payload: SourceReservedVariableBinaryFormula,
+    symbols: &SymbolEnv,
+) -> Result<SourceReservedVariableBinaryFormulaOutput, String> {
     let handoff = assemble_source_reserve_checker_handoff(
         symbols,
         &payload.reserve.bridge,
@@ -1210,9 +1276,7 @@ fn build_source_reserved_variable_equality_output(
     {
         BindingLookupResult::Local(binding) => binding,
         _ => {
-            return Err(
-                "left reserved-variable equality lookup did not resolve locally".to_owned(),
-            );
+            return Err("left reserved-variable formula lookup did not resolve locally".to_owned());
         }
     };
     let right_binding = match handoff
@@ -1228,47 +1292,52 @@ fn build_source_reserved_variable_equality_output(
         BindingLookupResult::Local(binding) => binding,
         _ => {
             return Err(
-                "right reserved-variable equality lookup did not resolve locally".to_owned(),
+                "right reserved-variable formula lookup did not resolve locally".to_owned(),
             );
         }
     };
     if left_binding != BindingId::new(0) || right_binding != left_binding {
-        return Err("reserved-variable equality binding identity mismatch".to_owned());
+        return Err("reserved-variable formula binding identity mismatch".to_owned());
     }
     let source_binding = payload
         .reserve
         .bridge
         .bindings()
         .get(left_binding.index())
-        .ok_or_else(|| "reserved-variable equality source binding missing".to_owned())?;
+        .ok_or_else(|| "reserved-variable formula source binding missing".to_owned())?;
     if source_binding.spelling != "x"
         || source_binding.type_spelling != "set"
         || source_binding.type_head != TypeHeadInput::BuiltinSet
         || !source_binding.type_attributes.is_empty()
     {
-        return Err("reserved-variable equality source binding shape mismatch".to_owned());
+        return Err("reserved-variable formula source binding shape mismatch".to_owned());
     }
 
     let left_result_type = source_reserved_type_projection(
         source_binding,
         payload.left_site.node(),
-        "reserved-variable-left-result",
+        payload.config.left_result_role,
     );
     let right_result_type = source_reserved_type_projection(
         source_binding,
         payload.right_site.node(),
-        "reserved-variable-right-result",
+        payload.config.right_result_role,
     );
-    let left_expected_type = source_reserved_type_projection(
-        source_binding,
-        payload.left_site.node(),
-        "reserved-variable-left-expected",
-    );
-    let right_expected_type = source_reserved_type_projection(
-        source_binding,
-        payload.right_site.node(),
-        "reserved-variable-right-expected",
-    );
+    let mut expected_types = Vec::new();
+    if let Some(role) = payload.config.left_expected_role {
+        expected_types.push(ExpectedTypeInput::new(
+            payload.left_site.clone(),
+            source_reserved_type_projection(source_binding, payload.left_site.node(), role),
+            payload.left_range,
+        ));
+    }
+    if let Some(role) = payload.config.right_expected_role {
+        expected_types.push(ExpectedTypeInput::new(
+            payload.right_site.clone(),
+            source_reserved_type_projection(source_binding, payload.right_site.node(), role),
+            payload.right_range,
+        ));
+    }
     let term_formula = TermFormulaChecker::default().infer(
         symbols,
         &handoff.binding_env,
@@ -1294,24 +1363,13 @@ fn build_source_reserved_variable_equality_output(
             payload.formula_site.clone(),
             context,
             payload.formula_range,
-            FormulaKind::Equality,
+            payload.config.formula_kind,
         )
         .with_terms(vec![payload.left_site.clone(), payload.right_site.clone()])
-        .with_expected_types(vec![
-            ExpectedTypeInput::new(
-                payload.left_site.clone(),
-                left_expected_type,
-                payload.left_range,
-            ),
-            ExpectedTypeInput::new(
-                payload.right_site.clone(),
-                right_expected_type,
-                payload.right_range,
-            ),
-        ])],
+        .with_expected_types(expected_types)],
     );
 
-    Ok(SourceReservedVariableEqualityOutput {
+    Ok(SourceReservedVariableBinaryFormulaOutput {
         payload,
         handoff,
         left_binding,
@@ -1320,12 +1378,12 @@ fn build_source_reserved_variable_equality_output(
     })
 }
 
-fn assert_source_reserved_variable_equality_output(
-    output: &SourceReservedVariableEqualityOutput,
+fn assert_source_reserved_variable_formula_output(
+    output: &SourceReservedVariableBinaryFormulaOutput,
 ) -> Result<(), String> {
     let payload = &output.payload;
     let [source_binding] = payload.reserve.bridge.bindings() else {
-        return Err("reserved-variable equality binding count mismatch".to_owned());
+        return Err("reserved-variable formula binding count mismatch".to_owned());
     };
     assert_source_reserve_handoff(&output.handoff, &payload.reserve.bridge)?;
     if source_binding.spelling != "x"
@@ -1344,7 +1402,7 @@ fn assert_source_reserved_variable_equality_output(
         || !output.handoff.declarations.facts().is_empty()
         || !output.handoff.declarations.diagnostics().is_empty()
     {
-        return Err("reserved-variable equality declaration payload mismatch".to_owned());
+        return Err("reserved-variable formula declaration payload mismatch".to_owned());
     }
 
     let expected_ordinals = source_binding_use_ordinals(
@@ -1355,7 +1413,7 @@ fn assert_source_reserved_variable_equality_output(
         || output.left_binding != BindingId::new(0)
         || output.right_binding != BindingId::new(0)
     {
-        return Err("reserved-variable equality lookup metadata mismatch".to_owned());
+        return Err("reserved-variable formula lookup metadata mismatch".to_owned());
     }
     for (spelling, ordinal, expected_binding) in [
         (
@@ -1381,20 +1439,23 @@ fn assert_source_reserved_variable_equality_output(
             .map_err(|error| error.to_string())?
         {
             BindingLookupResult::Local(binding) if binding == expected_binding => {}
-            _ => return Err("reserved-variable equality lookup result mismatch".to_owned()),
+            _ => return Err("reserved-variable formula lookup result mismatch".to_owned()),
         }
     }
 
     let term_formula = &output.term_formula;
+    let expected_type_count = usize::from(payload.config.left_expected_role.is_some())
+        + usize::from(payload.config.right_expected_role.is_some());
     if term_formula.terms().len() != 2
         || term_formula.formulas().len() != 1
         || !term_formula.candidate_sets().is_empty()
         || !term_formula.facts().is_empty()
         || !term_formula.diagnostics().is_empty()
-        || term_formula.type_entries().len() != 6
+        || term_formula.type_entries().len() != 4 + expected_type_count
     {
-        return Err("reserved-variable equality checker count mismatch".to_owned());
+        return Err("reserved-variable formula checker count mismatch".to_owned());
     }
+    let mut term_actuals = BTreeMap::new();
     for (site, binding) in [
         (&payload.left_site, output.left_binding),
         (&payload.right_site, output.right_binding),
@@ -1404,7 +1465,7 @@ fn assert_source_reserved_variable_equality_output(
             .iter()
             .map(|(_, term)| term)
             .find(|term| &term.site == site)
-            .ok_or_else(|| "reserved-variable equality term missing".to_owned())?;
+            .ok_or_else(|| "reserved-variable formula term missing".to_owned())?;
         if term.context != payload.reserve.bridge.module_context()
             || term.kind != TermKind::Variable
             || term.reference != Some(TermReference::Binding(binding))
@@ -1413,14 +1474,15 @@ fn assert_source_reserved_variable_equality_output(
             || term.status != TermStatus::Inferred
             || !term.deferred.is_empty()
         {
-            return Err("reserved-variable equality term payload mismatch".to_owned());
+            return Err("reserved-variable formula term payload mismatch".to_owned());
         }
-        assert_builtin_set_type_entry(
+        let actual = assert_builtin_set_type_entry(
             term_formula,
             &term.site,
             source_binding,
             Some(term.type_entry),
         )?;
+        term_actuals.insert(term.site.clone(), actual);
     }
 
     let formula = term_formula
@@ -1428,32 +1490,38 @@ fn assert_source_reserved_variable_equality_output(
         .iter()
         .map(|(_, formula)| formula)
         .next()
-        .ok_or_else(|| "reserved-variable equality formula missing".to_owned())?;
+        .ok_or_else(|| "reserved-variable formula missing".to_owned())?;
     if formula.site != payload.formula_site
         || formula.context != payload.reserve.bridge.module_context()
-        || formula.kind != FormulaKind::Equality
+        || formula.kind != payload.config.formula_kind
         || formula.terms != [payload.left_site.clone(), payload.right_site.clone()]
         || formula.asserted_type.is_some()
         || formula.candidate_set.is_some()
         || formula.status != FormulaStatus::Checked
         || !formula.facts.is_empty()
         || !formula.deferred.is_empty()
-        || formula.expected_types.len() != 2
+        || formula.expected_types.len() != expected_type_count
     {
-        return Err("reserved-variable equality formula payload mismatch".to_owned());
+        return Err("reserved-variable formula payload mismatch".to_owned());
     }
-    for (constraint, site, range) in [
-        (
-            &formula.expected_types[0],
-            &payload.left_site,
-            payload.left_range,
-        ),
-        (
-            &formula.expected_types[1],
-            &payload.right_site,
-            payload.right_range,
-        ),
-    ] {
+    let expected_constraints = [
+        payload
+            .config
+            .left_expected_role
+            .map(|role| (&payload.left_site, payload.left_range, role)),
+        payload
+            .config
+            .right_expected_role
+            .map(|role| (&payload.right_site, payload.right_range, role)),
+    ]
+    .into_iter()
+    .flatten()
+    .collect::<Vec<_>>();
+    for (constraint, (site, range, role)) in formula
+        .expected_types
+        .iter()
+        .zip(expected_constraints.iter().copied())
+    {
         if &constraint.term != site
             || constraint.source_range != range
             || constraint.status != TypeStatus::Known
@@ -1463,21 +1531,31 @@ fn assert_source_reserved_variable_equality_output(
                 source_binding,
             )
         {
-            return Err("reserved-variable equality expected type mismatch".to_owned());
+            return Err("reserved-variable formula expected type mismatch".to_owned());
+        }
+        let owner = TypedSiteRef::Role {
+            node: site.node(),
+            role: TypeRole::new(role),
+        };
+        let role_actual =
+            assert_builtin_set_type_entry(term_formula, &owner, source_binding, None)?;
+        if role_actual != constraint.expected {
+            return Err("reserved-variable expected role is not referenced".to_owned());
         }
     }
-
     for (site, role) in [
-        (&payload.left_site, "reserved-variable-left-result"),
-        (&payload.right_site, "reserved-variable-right-result"),
-        (&payload.left_site, "reserved-variable-left-expected"),
-        (&payload.right_site, "reserved-variable-right-expected"),
+        (&payload.left_site, payload.config.left_result_role),
+        (&payload.right_site, payload.config.right_result_role),
     ] {
         let owner = TypedSiteRef::Role {
             node: site.node(),
             role: TypeRole::new(role),
         };
-        assert_builtin_set_type_entry(term_formula, &owner, source_binding, None)?;
+        let role_actual =
+            assert_builtin_set_type_entry(term_formula, &owner, source_binding, None)?;
+        if term_actuals.get(site) != Some(&role_actual) {
+            return Err("reserved-variable result role is not referenced".to_owned());
+        }
     }
     Ok(())
 }
@@ -1487,7 +1565,7 @@ fn assert_builtin_set_type_entry(
     owner: &TypedSiteRef,
     source_binding: &SourceReserveBindingInput,
     expected_id: Option<TypeEntryId>,
-) -> Result<(), String> {
+) -> Result<NormalizedTypeId, String> {
     let (id, entry) = output
         .type_entries()
         .iter()
@@ -1505,7 +1583,7 @@ fn assert_builtin_set_type_entry(
     if !normalized_type_is_source_builtin_set(output, actual, source_binding) {
         return Err("reserved-variable equality normalized type mismatch".to_owned());
     }
-    Ok(())
+    Ok(actual)
 }
 
 fn normalized_type_is_source_builtin_set(
@@ -1961,11 +2039,38 @@ fn extract_source_reserved_variable_equality(
     ast: &SurfaceAst,
     module: ResolverModuleId,
     symbols: &SymbolEnv,
-) -> Option<SourceReservedVariableEquality> {
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    )
+}
+
+fn extract_source_reserved_variable_membership(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    )
+}
+
+fn extract_source_reserved_variable_binary_formula(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+    config: &'static SourceReservedVariableBinaryFormulaConfig,
+) -> Option<SourceReservedVariableBinaryFormula> {
     if ast
         .nodes()
         .iter()
-        .any(|node| !is_supported_reserved_variable_equality_bridge_node(node))
+        .any(|node| !is_supported_reserved_variable_binary_formula_bridge_node(node))
     {
         return None;
     }
@@ -1980,13 +2085,7 @@ fn extract_source_reserved_variable_equality(
     if reserve_item.range.end > theorem.range.start
         || subtree_has_recovery(ast, reserve_item)
         || subtree_has_recovery(ast, theorem)
-        || direct_token_texts(ast, theorem).as_slice()
-            != [
-                "theorem",
-                "ReservedVariableEqualityPayloadBoundary",
-                ":",
-                ";",
-            ]
+        || direct_token_texts(ast, theorem).as_slice() != ["theorem", config.label, ":", ";"]
     {
         return None;
     }
@@ -2018,7 +2117,7 @@ fn extract_source_reserved_variable_equality(
     };
     let formula = ast.node(*formula_id)?;
     if !matches!(formula.kind, SurfaceNodeKind::BuiltinPredicateApplication)
-        || direct_token_texts(ast, formula).as_slice() != ["="]
+        || direct_token_texts(ast, formula).as_slice() != [config.operator]
         || subtree_has_recovery(ast, formula)
     {
         return None;
@@ -2040,8 +2139,9 @@ fn extract_source_reserved_variable_equality(
     let [left_lookup_ordinal, right_lookup_ordinal] =
         source_binding_use_ordinals(reserve.bridge.bindings(), [left_range, right_range]).ok()?;
 
-    Some(SourceReservedVariableEquality {
+    Some(SourceReservedVariableBinaryFormula {
         reserve,
+        config,
         formula_site: surface_site(*formula_id),
         formula_range: formula.range,
         left_site: surface_site(left_id),
@@ -2994,7 +3094,7 @@ fn is_supported_formula_statement_theorem_bridge_node(node: &SurfaceNode) -> boo
     )
 }
 
-fn is_supported_reserved_variable_equality_bridge_node(node: &SurfaceNode) -> bool {
+fn is_supported_reserved_variable_binary_formula_bridge_node(node: &SurfaceNode) -> bool {
     matches!(
         node.kind,
         SurfaceNodeKind::Root
@@ -5599,24 +5699,24 @@ mod tests {
     use super::{
         ParseOnlyImportProvider, SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS,
         TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY, active_type_elaboration_cases,
-        assemble_source_checker_handoff, assert_source_reserved_variable_equality_output,
-        augment_type_elaboration_import_summaries, build_source_reserved_variable_equality_output,
+        assemble_source_checker_handoff, assert_source_reserved_variable_formula_output,
+        augment_type_elaboration_import_summaries, build_source_reserved_variable_formula_output,
         extract_builtin_source_reserve_declarations, extract_source_builtin_type_assertion_formula,
         extract_source_formula_connective_quantifier, extract_source_formula_statement,
         extract_source_imported_attribute_assertion_formula,
         extract_source_imported_non_empty_attribute_assertion_formula,
         extract_source_imported_predicate_functor_formula,
-        extract_source_reserved_variable_equality, extract_source_set_enumeration_formula,
-        resolve_visible_attribute, resolve_visible_type_head, resolver_symbol_collection,
-        run_frontend, source_builtin_type_assertion_formula_output,
-        source_formula_connective_quantifier_output, source_formula_statement_output,
-        source_imported_attribute_assertion_formula_output,
+        extract_source_reserved_variable_equality, extract_source_reserved_variable_membership,
+        extract_source_set_enumeration_formula, resolve_visible_attribute,
+        resolve_visible_type_head, resolver_symbol_collection, run_frontend,
+        source_builtin_type_assertion_formula_output, source_formula_connective_quantifier_output,
+        source_formula_statement_output, source_imported_attribute_assertion_formula_output,
         source_imported_non_empty_attribute_assertion_formula_output,
         source_imported_predicate_functor_formula_output, source_reserved_variable_equality_output,
-        source_reserved_variable_equality_output_detail_keys,
-        source_reserved_variable_equality_result_detail_keys,
-        source_set_enumeration_formula_output, source_type_elaboration_detail_keys,
-        surface_nodes_with_kind, surface_site,
+        source_reserved_variable_formula_output_detail_keys,
+        source_reserved_variable_formula_result_detail_keys,
+        source_reserved_variable_membership_output, source_set_enumeration_formula_output,
+        source_type_elaboration_detail_keys, surface_nodes_with_kind, surface_site,
     };
     use crate::harness::{DiscoveryConfig, TestProfile, ValidationMode, build_test_plan};
     use mizar_checker::binding_env::{BindingContextId, BindingId};
@@ -9482,7 +9582,7 @@ mod tests {
 
         let output = source_reserved_variable_equality_output(&ast, module.clone(), &symbols)
             .expect("exact reserved-variable equality source should reach the checker");
-        assert_source_reserved_variable_equality_output(&output)
+        assert_source_reserved_variable_formula_output(&output)
             .expect("reserved-variable equality output invariants should hold");
         assert_eq!(output.handoff.binding_env.bindings().len(), 1);
         assert_eq!(output.handoff.declarations.declarations().len(), 1);
@@ -9547,7 +9647,7 @@ mod tests {
                 .expect("exact source should produce a second checker output");
         invalid_output.left_binding = BindingId::new(1);
         assert_eq!(
-            source_reserved_variable_equality_output_detail_keys(&invalid_output),
+            source_reserved_variable_formula_output_detail_keys(&invalid_output),
             vec![super::TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY.to_owned()]
         );
         let pre_output_payload =
@@ -9558,11 +9658,12 @@ mod tests {
             SymbolEnvIndexes::default(),
         );
         assert_eq!(
-            source_reserved_variable_equality_result_detail_keys(
-                build_source_reserved_variable_equality_output(
+            source_reserved_variable_formula_result_detail_keys(
+                build_source_reserved_variable_formula_output(
                     pre_output_payload,
                     &mismatched_symbols,
-                )
+                ),
+                super::TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
             ),
             vec![super::TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY.to_owned()]
         );
@@ -9674,6 +9775,225 @@ mod tests {
     }
 
     #[test]
+    fn source_reserved_variable_membership_bridge_uses_real_binding_and_type_payloads() {
+        let source_id = source_id(97);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("reserved_variable_membership"),
+        );
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let ast = reserve_then_identifier_binary_theorem_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            "ReservedVariableMembershipPayloadBoundary",
+            "x",
+            "in",
+            "x",
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&ast, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload = extract_source_reserved_variable_membership(&ast, module.clone(), &symbols)
+            .expect("exact reserved-variable membership source should extract");
+        assert_eq!(payload.config.formula_kind, FormulaKind::Membership);
+        assert_eq!(payload.left_spelling, "x");
+        assert_eq!(payload.right_spelling, "x");
+        assert_eq!(payload.left_lookup_ordinal, 1);
+        assert_eq!(payload.right_lookup_ordinal, 2);
+
+        let output = source_reserved_variable_membership_output(&ast, module.clone(), &symbols)
+            .expect("exact reserved-variable membership source should reach the checker");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("reserved-variable membership output invariants should hold");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(0));
+        assert_eq!(output.term_formula.terms().len(), 2);
+        let (_, formula) = output
+            .term_formula
+            .formulas()
+            .iter()
+            .next()
+            .expect("membership formula should be checked");
+        assert_eq!(formula.kind, FormulaKind::Membership);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(formula.expected_types.len(), 1);
+        assert_eq!(formula.expected_types[0].term, payload.right_site);
+        assert!(formula.facts.is_empty());
+        assert!(output.term_formula.facts().is_empty());
+        assert_eq!(output.term_formula.type_entries().len(), 5);
+
+        let role_owners = output
+            .term_formula
+            .type_entries()
+            .iter()
+            .filter_map(|(_, entry)| match &entry.owner {
+                TypedSiteRef::Role { node, role } => Some((node.index(), role.as_str().to_owned())),
+                _ => None,
+            })
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            role_owners,
+            BTreeSet::from([
+                (
+                    payload.left_site.node().index(),
+                    "reserved-variable-membership-left-result".to_owned(),
+                ),
+                (
+                    payload.right_site.node().index(),
+                    "reserved-variable-membership-right-expected".to_owned(),
+                ),
+                (
+                    payload.right_site.node().index(),
+                    "reserved-variable-membership-right-result".to_owned(),
+                ),
+            ])
+        );
+
+        let pre_output_payload =
+            extract_source_reserved_variable_membership(&ast, module.clone(), &symbols)
+                .expect("exact source should produce a pre-output payload");
+        let mismatched_symbols = SymbolEnv::new(
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("other_module")),
+            SymbolEnvIndexes::default(),
+        );
+        assert_eq!(
+            source_reserved_variable_formula_result_detail_keys(
+                build_source_reserved_variable_formula_output(
+                    pre_output_payload,
+                    &mismatched_symbols,
+                ),
+                super::TYPE_ELABORATION_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+            ),
+            vec![
+                super::TYPE_ELABORATION_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY.to_owned()
+            ]
+        );
+
+        let gap_cases = [
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                "OtherPayloadBoundary",
+                "x",
+                "in",
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                "ReservedVariableMembershipPayloadBoundary",
+                "x",
+                "in",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                "ReservedVariableMembershipPayloadBoundary",
+                "y",
+                "in",
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                "ReservedVariableMembershipPayloadBoundary",
+                "x",
+                "=",
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("object"))],
+                "ReservedVariableMembershipPayloadBoundary",
+                "x",
+                "in",
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x", "y"],
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                "ReservedVariableMembershipPayloadBoundary",
+                "x",
+                "in",
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::AttributedSet)],
+                "ReservedVariableMembershipPayloadBoundary",
+                "x",
+                "in",
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                "ReservedVariableMembershipPayloadBoundary",
+                "x",
+                "in",
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast_with_options(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                IdentifierBinaryTheoremSpec {
+                    status: Some("registration"),
+                    label: "ReservedVariableMembershipPayloadBoundary",
+                    left: "x",
+                    operator: "in",
+                    right: "x",
+                    recovered_label: false,
+                },
+            ),
+            reserve_then_identifier_binary_theorem_ast_with_options(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                IdentifierBinaryTheoremSpec {
+                    status: None,
+                    label: "ReservedVariableMembershipPayloadBoundary",
+                    left: "x",
+                    operator: "in",
+                    right: "x",
+                    recovered_label: true,
+                },
+            ),
+            reserve_then_two_identifier_binary_theorems_ast(
+                source_id,
+                "ReservedVariableMembershipPayloadBoundary",
+                "in",
+            ),
+            theorem_then_reserve_identifier_binary_ast(
+                source_id,
+                "ReservedVariableMembershipPayloadBoundary",
+                "in",
+            ),
+            reserve_then_builtin_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                "ReservedVariableMembershipPayloadBoundary",
+                "1",
+                "in",
+                "1",
+            ),
+        ];
+        for gap_case in gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
     fn active_reserved_variable_equality_fixture_preserves_real_checker_payload() {
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -9704,8 +10024,43 @@ mod tests {
             augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
         let output = source_reserved_variable_equality_output(&ast, resolver.module, &symbols)
             .expect("Task 119 real AST should reach the reserved-variable equality checker seam");
-        assert_source_reserved_variable_equality_output(&output)
+        assert_source_reserved_variable_formula_output(&output)
             .expect("Task 119 real AST should preserve every checked payload invariant");
+    }
+
+    #[test]
+    fn active_reserved_variable_membership_fixture_preserves_real_checker_payload() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| case.id.0 == "pass_type_elaboration_reserved_variable_membership_001")
+            .expect("Task 120 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 120 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 120 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_reserved_variable_membership_output(&ast, resolver.module, &symbols)
+            .expect("Task 120 real AST should reach the reserved-variable membership checker seam");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("Task 120 real AST should preserve every checked payload invariant");
     }
 
     #[test]
@@ -13288,6 +13643,18 @@ mod tests {
     }
 
     fn reserve_then_two_identifier_equality_theorems_ast(source_id: SourceId) -> SurfaceAst {
+        reserve_then_two_identifier_binary_theorems_ast(
+            source_id,
+            "ReservedVariableEqualityPayloadBoundary",
+            "=",
+        )
+    }
+
+    fn reserve_then_two_identifier_binary_theorems_ast(
+        source_id: SourceId,
+        label: &str,
+        operator: &str,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut offset = 0;
         let mut root_children = add_reserve_items(
@@ -13303,9 +13670,9 @@ mod tests {
                 &mut offset,
                 IdentifierBinaryTheoremSpec {
                     status: None,
-                    label: "ReservedVariableEqualityPayloadBoundary",
+                    label,
                     left: "x",
-                    operator: "=",
+                    operator,
                     right: "x",
                     recovered_label: false,
                 },
@@ -13320,6 +13687,18 @@ mod tests {
     }
 
     fn theorem_then_reserve_identifier_equality_ast(source_id: SourceId) -> SurfaceAst {
+        theorem_then_reserve_identifier_binary_ast(
+            source_id,
+            "ReservedVariableEqualityPayloadBoundary",
+            "=",
+        )
+    }
+
+    fn theorem_then_reserve_identifier_binary_ast(
+        source_id: SourceId,
+        label: &str,
+        operator: &str,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut offset = 0;
         let theorem = add_identifier_binary_theorem_item(
@@ -13328,9 +13707,9 @@ mod tests {
             &mut offset,
             IdentifierBinaryTheoremSpec {
                 status: None,
-                label: "ReservedVariableEqualityPayloadBoundary",
+                label,
                 left: "x",
-                operator: "=",
+                operator,
                 right: "x",
                 recovered_label: false,
             },

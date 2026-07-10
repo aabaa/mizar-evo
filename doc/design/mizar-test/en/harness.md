@@ -467,6 +467,20 @@ hand-built syntax tree. The pass result is not theorem acceptance and does not
 activate implicit closure, `formula_statement`, proof, CoreIr, ControlFlowIr,
 or VC consumers. Non-exact shapes continue to report the extraction-gap key.
 
+Task 120 adds the matching exact membership pass case
+`reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
+The active runner shares Task 119's match-before-build and independent
+source-order lookup path, but requires membership's exact payload shape: two
+known `set` variable results, only the right operand's expected-`set`
+constraint, three exact source-anchored roles, one `Checked` membership, and
+empty candidates/facts/deferred reasons/diagnostics. Matched-source construction
+or invariant drift reports
+`type_elaboration.checker.reserved_variable_membership.invalid_payload`; other
+near-misses remain on the extraction gap. A real frontend/resolver unit test
+observes the active sidecar payload. This is well-formedness coverage only, not
+membership truth, a recorded fact, implicit closure, theorem acceptance, or a
+proof/Core/ControlFlow/VC promotion.
+
 Task 109 supersedes the exact builtin type-assertion sidecar from task 102:
 `BuiltinTypeAssertionPayloadBoundary: 1 is set` is executable through the
 active `type_elaboration` runner and now passes source-derived checker
