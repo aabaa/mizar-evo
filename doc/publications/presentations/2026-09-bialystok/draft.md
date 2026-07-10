@@ -261,7 +261,16 @@ Message:
 - Mizar's readability is not a nostalgic asset. It is exactly what makes safe
   AI assistance possible.
 
-### Frame 1.5 - The Design Rule
+### Frame 1.5 - Three Pressures, One Design
+
+![Three pressures on a proven design](figures/three_pressures.pdf)
+
+Message:
+
+- None of the three pressures argues that Mizar's design was wrong.
+  Together they argue for evolving its boundaries.
+
+### Frame 1.6 - The Design Rule
 
 Slide text:
 
@@ -369,16 +378,7 @@ Bullets:
 
 ### Frame 2.5 - Migrating The Environment [deep dive]
 
-Migration map:
-
-| Current environ role | Evo target |
-|---|---|
-| vocabularies | exported symbols and lexical metadata |
-| notations | imported notation metadata |
-| constructors | visible definitions and constructors |
-| registrations | import-scoped registration index |
-| requirements | package or prelude policy |
-| article theorem labels | module-qualified theorem identities |
+![Environment-to-import migration map](figures/environ_migration.pdf)
 
 Message:
 
@@ -504,12 +504,13 @@ inherit DoubleLoopStr extends AddLoopStr;
 inherit DoubleLoopStr extends MulLoopStr;
 ```
 
+![The diamond, with checkable joins](figures/diamond_inheritance.pdf)
+
 Message:
 
-- The analyzer must check that both inheritance paths introduce the same
-  components: `add -> LoopStr.binop -> Magma.binop` along path one must agree
-  with `add -> AddMagma.add -> Magma.binop` along path two.
-- Diamond inheritance becomes a diagnostic with source spans, not a silent
+- the verifier traces `from` chains to root declarations; both paths must
+  introduce the same components (the shared `carrier` above);
+- diamond inheritance becomes a diagnostic with source spans, not a silent
   merge decided by declaration order.
 
 ### Frame 3.6 - What Is Preserved, What We Ask
@@ -665,16 +666,7 @@ Key rules:
 
 ### Frame 5.3 - Certificates, Not Success Bits
 
-```text
-Certificate
-  target VC fingerprint
-  kernel profile
-  imported facts and hashes
-  generated clauses
-  substitutions
-  resolution trace
-  final goal
-```
+![A certificate and its kernel replay](figures/certificate_replay.pdf)
 
 Bullets:
 
@@ -769,6 +761,8 @@ Bullets:
   statements and statuses are unchanged;
 - independent modules, obligations, ATP runs, and kernel checks run in
   parallel; results are published in canonical order.
+
+![The fingerprint graph: what a change re-verifies](figures/fingerprint_graph.pdf)
 
 Rule:
 
@@ -1212,15 +1206,16 @@ Message:
 
 ### Frame 11.1 - Migration Is A Research Program
 
+![Roadmap timeline](figures/roadmap_timeline.pdf)
+
 Phases:
 
 1. End of 2026, alpha: frontend and parser for a core subset, import and
    module resolution prototype, structured diagnostics, early artifacts.
 2. 2027, migration laboratory: 3-5 representative MML articles translated by
    hand and by script; every mismatch recorded as a classified issue.
-3. 2027-2028, expansion: foundational set and relation fragments, functions
-   and binary operations, algebraic structures, then dependency cones around
-   successful fragments.
+3. 2027-2028, expansion: foundational set and relation fragments, then
+   algebraic structures and dependency cones around successful fragments.
 
 Non-goals for the alpha:
 
@@ -1341,18 +1336,24 @@ slides.
 Required diagrams for the final deck (`figures/*.tex`, TikZ standalone;
 build each with `pdflatex` inside `figures/`):
 
-1. Three pressures on a proven design (Part 1). [to be produced]
-2. Environment-to-import migration (story 1). [to be produced]
-3. Structure inheritance and diamond coherence (story 2). [to be produced]
+1. Three pressures on a proven design (Part 1).
+   [done: `figures/three_pressures.pdf`, used in frame 1.5]
+2. Environment-to-import migration (story 1).
+   [done: `figures/environ_migration.pdf`, used in frame 2.5]
+3. Structure inheritance and diamond coherence (story 2).
+   [done: `figures/diamond_inheritance.pdf`, used in frame 3.5]
 4. Reasoning boundary: semantics / ATP search / kernel checking (story 4).
    [done: `figures/reasoning_boundary.pdf`, used in frame 5.2]
-5. Certificate object and replay (story 4). [to be produced]
-6. Incremental fingerprint graph (story 5). [to be produced]
+5. Certificate object and replay (story 4).
+   [done: `figures/certificate_replay.pdf`, used in frame 5.3]
+6. Incremental fingerprint graph (story 5).
+   [done: `figures/fingerprint_graph.pdf`, used in frame 6.2]
 7. Formalized Mathematics article-to-library link model (story 8).
    [done: `figures/fm_links.pdf`, used in frame 9.2]
 8. Full pipeline with story overlay (Part 10).
    [done: `figures/pipeline.pdf`, used in frame 10.1]
-9. Roadmap timeline (Part 11). [to be produced]
+9. Roadmap timeline (Part 11).
+   [done: `figures/roadmap_timeline.pdf`, used in frame 11.1]
 
 ## Backup D. Paper Outline Seed
 

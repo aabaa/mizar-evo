@@ -23,9 +23,11 @@ EBNF is intentionally absent; `doc/spec/en/` remains the grammar authority.
   deck with presenter notes.
 - `references.bib` - seed bibliography for the talk and the paper outline
   (Backup D); entries must be verified against publishers before final use.
-- `figures/` - TikZ standalone sources and compiled PDFs. Produced so far:
-  `reasoning_boundary`, `pipeline`, `fm_links`; the remaining diagrams are
-  listed in Backup C of `draft.md`.
+- `figures/` - TikZ standalone sources and compiled PDFs. All nine diagrams
+  from Backup C of `draft.md` are produced: `three_pressures`,
+  `environ_migration`, `diamond_inheritance`, `reasoning_boundary`,
+  `certificate_replay`, `fingerprint_graph`, `fm_links`, `pipeline`,
+  `roadmap_timeline`.
 
 ## Two-Tier Pacing
 

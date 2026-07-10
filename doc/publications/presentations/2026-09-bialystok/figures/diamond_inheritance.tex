@@ -1,0 +1,39 @@
+% Figure: diamond inheritance with checkable joins (story 2).
+% Build: pdflatex diamond_inheritance.tex  (run inside figures/)
+\documentclass[tikz,border=6pt]{standalone}
+\usetikzlibrary{positioning,arrows.meta}
+\begin{document}
+\begin{tikzpicture}[
+  font=\sffamily,
+  struct/.style={draw, rounded corners=2pt, align=center, minimum width=34mm,
+                 minimum height=11mm, line width=0.7pt, fill=blue!10,
+                 draw=blue!50!black, font=\sffamily\small},
+  inh/.style={-{Stealth[length=2.8mm]}, line width=0.9pt, black!70},
+  map/.style={font=\sffamily\footnotesize\ttfamily, text=black!60, align=center},
+  check/.style={font=\sffamily\footnotesize, align=left},
+]
+  \node[struct] (magma) {\textbf{Magma}\\ \footnotesize\texttt{carrier, binop}};
+  \node[struct, below left=11mm and 12mm of magma] (add)
+    {\textbf{AddLoopStr}\\ \footnotesize\texttt{zero}};
+  \node[struct, below right=11mm and 12mm of magma] (mul)
+    {\textbf{MulLoopStr}\\ \footnotesize\texttt{one}};
+  \node[struct, below=32mm of magma] (dbl)
+    {\textbf{DoubleLoopStr}\\ \footnotesize\texttt{add, mul, zero, one}};
+
+  \draw[inh] (add) -- node[map, above left=-1mm and -3mm] {add from binop} (magma);
+  \draw[inh] (mul) -- node[map, above right=-1mm and -3mm] {mul from binop} (magma);
+  \draw[inh] (dbl) -- (add);
+  \draw[inh] (dbl) -- (mul);
+
+  \node[check, right=10mm of magma, align=left, text width=52mm]
+    {\textcolor{green!40!black}{\textbf{checked join:}} \texttt{carrier}
+     reached along both paths must be the same component};
+  \node[check, right=10mm of dbl, align=left, text width=52mm]
+    {\textcolor{blue!50!black}{\textbf{distinct views:}} \texttt{add} and
+     \texttt{mul} are renamed edges and stay separate};
+
+  \node[font=\sffamily\footnotesize\itshape, text=black!60, below=4mm of dbl]
+    {the verifier traces \texttt{from} chains to root declarations ---
+     disagreement is a diagnostic with source spans};
+\end{tikzpicture}
+\end{document}

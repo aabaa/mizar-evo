@@ -365,7 +365,33 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{1.5 - The Design Rule}
+\begin{frame}[fragile,t]{1.5 - Three Pressures, One Design}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/three_pressures.pdf}
+\end{center}
+\smallskip
+\textbf{Message:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item None of the three pressures argues that Mizar's design was wrong. Together they argue for evolving its boundaries.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Presenter script:}
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item None of the three pressures argues that Mizar's design was wrong. Together they argue for evolving its boundaries.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{1.6 - The Design Rule}
 \smallskip
 \textbf{Key Phrase:}
 \begin{center}
@@ -557,25 +583,9 @@ After the example, say which design obligation the syntax makes visible.
 \end{frame}
 
 \begin{frame}[fragile,t]{2.5 - Migrating The Environment\deepdivetag}
-\smallskip
-\textbf{Migration map:}
-\begin{footnotesize}
-\setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.15}
-\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
-\toprule
-\textbf{Current environ role} & \textbf{Evo target} \\
-\midrule
-vocabularies & exported symbols and lexical metadata \\
-notations & imported notation metadata \\
-constructors & visible definitions and constructors \\
-registrations & import-scoped registration index \\
-requirements & package or prelude policy \\
-article theorem labels & module-qualified theorem identities \\
-\bottomrule
-\end{tabularx}
-\end{footnotesize}
-
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/environ_migration.pdf}
+\end{center}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -595,8 +605,6 @@ article theorem labels & module-qualified theorem identities \\
 \setlength{\parskip}{0pt}
 \item this is not a mechanical rename: current environments mix semantic, syntactic, and automation-facing roles, and migration reports must explain what each imported module actually contributes.
 \end{itemize}
-For the table, read the row labels first, then the design reason.
-
 }
 \end{frame}
 
@@ -804,7 +812,7 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{3.5 - The Evo Answer: Diamonds Become Checkable}
+\begin{frame}[fragile,t]{3.5 - The Evo Answer: Diamonds Become Checkable (1/2)}
 \smallskip
 \textbf{Mizar Evo}~\badgeSpec
 \begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
@@ -819,14 +827,28 @@ end;
 inherit DoubleLoopStr extends AddLoopStr;
 inherit DoubleLoopStr extends MulLoopStr;
 \end{lstlisting}
+\note{
+\smallskip
+\textbf{Presenter script:}
+After the example, say which design obligation the syntax makes visible.
+
+Use this as the transition: The Evo Answer: Diamonds Become Checkable (1/2). Point to the visible example, question, or diagram before moving on.
+
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{3.5 - The Evo Answer: Diamonds Become Checkable (2/2)}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/diamond_inheritance.pdf}
+\end{center}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item The analyzer must check that both inheritance paths introduce the same components: \texttt{add -> LoopStr.binop -> Magma.binop} along path one must agree with \texttt{add -> AddMagma.add -> Magma.binop} along path two.
-\item Diamond inheritance becomes a diagnostic with source spans, not a silent merge decided by declaration order.
+\item the verifier traces \texttt{from} chains to root declarations; both paths must introduce the same components (the shared \texttt{carrier} above);
+\item diamond inheritance becomes a diagnostic with source spans, not a silent merge decided by declaration order.
 \end{itemize}
 \note{
 \smallskip
@@ -837,11 +859,9 @@ inherit DoubleLoopStr extends MulLoopStr;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item The analyzer must check that both inheritance paths introduce the same components: add -> LoopStr.binop -> Magma.binop along path one must agree with add -> AddMagma.add -> Magma.binop along path two.
-\item Diamond inheritance becomes a diagnostic with source spans, not a silent merge decided by declaration order.
+\item the verifier traces from chains to root declarations; both paths must introduce the same components (the shared carrier above);
+\item diamond inheritance becomes a diagnostic with source spans, not a silent merge decided by declaration order.
 \end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
 }
 \end{frame}
 
@@ -1111,7 +1131,7 @@ After the example, say which design obligation the syntax makes visible.
 
 \begin{frame}[fragile,t]{5.2 - The Evo Answer: A Reasoning Boundary}
 \begin{center}
-\includegraphics[width=\textwidth,height=0.62\textheight,keepaspectratio]{figures/reasoning_boundary.pdf}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/reasoning_boundary.pdf}
 \end{center}
 \smallskip
 \textbf{Key rules:}
@@ -1139,17 +1159,19 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{5.3 - Certificates, Not Success Bits}
-\begin{lstlisting}[language={},basicstyle=\ttfamily\footnotesize]
-Certificate
-  target VC fingerprint
-  kernel profile
-  imported facts and hashes
-  generated clauses
-  substitutions
-  resolution trace
-  final goal
-\end{lstlisting}
+\begin{frame}[fragile,t]{5.3 - Certificates, Not Success Bits (1/2)}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/certificate_replay.pdf}
+\end{center}
+\note{
+\smallskip
+\textbf{Presenter script:}
+Use this as the transition: Certificates, Not Success Bits (1/2). Point to the visible example, question, or diagram before moving on.
+
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{5.3 - Certificates, Not Success Bits (2/2)}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -1173,8 +1195,6 @@ Certificate
 \item the kernel checks imported facts, substitutions, clause well-formedness, and the resolution/SAT trace - it does not trust a solver's exit code, so unsoundness in search cannot become unsoundness in accepted results;
 \item a proof accepted under one dependency slice cannot silently migrate to another: the hashes pin it down.
 \end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
 }
 \end{frame}
 
@@ -1334,7 +1354,7 @@ For the table, read the row labels first, then the design reason.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{6.2 - The Evo Answer: Fingerprints And Incrementality}
+\begin{frame}[fragile,t]{6.2 - The Evo Answer: Fingerprints And Incrementality (1/2)}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -1346,13 +1366,6 @@ For the table, read the row labels first, then the design reason.
 \item a proof-body-only change does not rebuild importers, because public statements and statuses are unchanged;
 \item independent modules, obligations, ATP runs, and kernel checks run in parallel; results are published in canonical order.
 \end{itemize}
-\smallskip
-\textbf{Rule:}
-\begin{center}
-\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
-\centering\itshape Cache reuse is never proof authority.\\ A clean build must always be able to reproduce every acceptance.
-\end{beamercolorbox}
-\end{center}
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -1365,8 +1378,28 @@ For the table, read the row labels first, then the design reason.
 \item hash the source, the dependency interfaces, the generated obligations, and the proof witnesses;
 \item reuse a result only when fingerprints and verifier policy match;
 \item a proof-body-only change does not rebuild importers, because public statements and statuses are unchanged;
+\item independent modules, obligations, ATP runs, and kernel checks run in parallel; results are published in canonical order.
 \end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{6.2 - The Evo Answer: Fingerprints And Incrementality (2/2)}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/fingerprint_graph.pdf}
+\end{center}
+\smallskip
+\textbf{Rule:}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape Cache reuse is never proof authority.\\ A clean build must always be able to reproduce every acceptance.
+\end{beamercolorbox}
+\end{center}
+\note{
+\smallskip
+\textbf{Presenter script:}
 After the example, say which design obligation the syntax makes visible.
+
+Use this as the transition: The Evo Answer: Fingerprints And Incrementality (2/2). Point to the visible example, question, or diagram before moving on.
 
 }
 \end{frame}
@@ -1989,7 +2022,7 @@ After the example, say which design obligation the syntax makes visible.
 
 \begin{frame}[fragile,t]{9.2 - The Evo Answer: Linked, Not Merged}
 \begin{center}
-\includegraphics[width=\textwidth,height=0.62\textheight,keepaspectratio]{figures/fm_links.pdf}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/fm_links.pdf}
 \end{center}
 \smallskip
 \textbf{Message:}
@@ -2078,7 +2111,7 @@ Use this as the transition: Who Gains What. Point to the visible example, questi
 \section{Part 10. Architecture In One Picture}
 \begin{frame}[fragile,t]{10.1 - The Pipeline}
 \begin{center}
-\includegraphics[width=\textwidth,height=0.62\textheight,keepaspectratio]{figures/pipeline.pdf}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/pipeline.pdf}
 \end{center}
 \smallskip
 \textbf{Message:}
@@ -2249,6 +2282,9 @@ After the example, say which design obligation the syntax makes visible.
 \end{frame}
 
 \begin{frame}[fragile,t]{11.2 - Migration Is A Research Program}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.52\textheight,keepaspectratio]{figures/roadmap_timeline.pdf}
+\end{center}
 \smallskip
 \textbf{Phases:}
 \begin{enumerate}
@@ -2257,7 +2293,7 @@ After the example, say which design obligation the syntax makes visible.
 \setlength{\parskip}{0pt}
 \item End of 2026, alpha: frontend and parser for a core subset, import and module resolution prototype, structured diagnostics, early artifacts.
 \item 2027, migration laboratory: 3-5 representative MML articles translated by hand and by script; every mismatch recorded as a classified issue.
-\item 2027-2028, expansion: foundational set and relation fragments, functions and binary operations, algebraic structures, then dependency cones around successful fragments.
+\item 2027-2028, expansion: foundational set and relation fragments, then algebraic structures and dependency cones around successful fragments.
 \end{enumerate}
 \smallskip
 \textbf{Non-goals for the alpha:}
@@ -2278,7 +2314,7 @@ After the example, say which design obligation the syntax makes visible.
 \setlength{\parskip}{0pt}
 \item End of 2026, alpha: frontend and parser for a core subset, import and module resolution prototype, structured diagnostics, early artifacts.
 \item 2027, migration laboratory: 3-5 representative MML articles translated by hand and by script; every mismatch recorded as a classified issue.
-\item 2027-2028, expansion: foundational set and relation fragments, functions and binary operations, algebraic structures, then dependency cones around successful fragments.
+\item 2027-2028, expansion: foundational set and relation fragments, then algebraic structures and dependency cones around successful fragments.
 \item full MML verification, final compatibility layer, stable AI protocol.
 \end{itemize}
 }
@@ -2611,7 +2647,7 @@ Use this as the transition: Backup B. Specification Reference Map (2/2). Point t
 \end{frame}
 
 \section{Backup C. Diagram List}
-\begin{frame}[fragile,t]{Backup C. Diagram List}
+\begin{frame}[fragile,t]{Backup C. Diagram List (1/2)}
 Required diagrams for the final deck (\texttt{figures/*.tex}, TikZ standalone;
 
 \smallskip
@@ -2620,22 +2656,11 @@ Required diagrams for the final deck (\texttt{figures/*.tex}, TikZ standalone;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Three pressures on a proven design (Part 1). [to be produced]
-\item Environment-to-import migration (story 1). [to be produced]
-\item Structure inheritance and diamond coherence (story 2). [to be produced]
+\item Three pressures on a proven design (Part 1). [done: \texttt{figures/three\_pressures.pdf}, used in frame 1.5]
+\item Environment-to-import migration (story 1). [done: \texttt{figures/environ\_migration.pdf}, used in frame 2.5]
+\item Structure inheritance and diamond coherence (story 2). [done: \texttt{figures/diamond\_inheritance.pdf}, used in frame 3.5]
 \item Reasoning boundary: semantics / ATP search / kernel checking (story 4). [done: \texttt{figures/reasoning\_boundary.pdf}, used in frame 5.2]
-\item Certificate object and replay (story 4). [to be produced]
-\item Incremental fingerprint graph (story 5). [to be produced]
-\item Formalized Mathematics article-to-library link model (story 8). [done: \texttt{figures/fm\_links.pdf}, used in frame 9.2]
-\end{enumerate}
-\smallskip
-\textbf{build each with \texttt{pdflatex} inside \texttt{figures/}):}
-\begin{enumerate}
-\setlength{\itemsep}{1pt}
-\setlength{\parsep}{0pt}
-\setlength{\parskip}{0pt}
-\item Full pipeline with story overlay (Part 10). [done: \texttt{figures/pipeline.pdf}, used in frame 10.1]
-\item Roadmap timeline (Part 11). [to be produced]
+\item Certificate object and replay (story 4). [done: \texttt{figures/certificate\_replay.pdf}, used in frame 5.3]
 \end{enumerate}
 \note{
 \smallskip
@@ -2647,10 +2672,39 @@ Required diagrams for the final deck (\texttt{figures/*.tex}, TikZ standalone;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item Required diagrams for the final deck (figures/*.tex, TikZ standalone;
-\item Three pressures on a proven design (Part 1). [to be produced]
-\item Environment-to-import migration (story 1). [to be produced]
-\item Structure inheritance and diamond coherence (story 2). [to be produced]
+\item Three pressures on a proven design (Part 1). [done: figures/three\_pressures.pdf, used in frame 1.5]
+\item Environment-to-import migration (story 1). [done: figures/environ\_migration.pdf, used in frame 2.5]
+\item Structure inheritance and diamond coherence (story 2). [done: figures/diamond\_inheritance.pdf, used in frame 3.5]
 \item Reasoning boundary: semantics / ATP search / kernel checking (story 4). [done: figures/reasoning\_boundary.pdf, used in frame 5.2]
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{Backup C. Diagram List (2/2)}
+\smallskip
+\textbf{build each with \texttt{pdflatex} inside \texttt{figures/}):}
+\begin{enumerate}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Incremental fingerprint graph (story 5). [done: \texttt{figures/fingerprint\_graph.pdf}, used in frame 6.2]
+\item Formalized Mathematics article-to-library link model (story 8). [done: \texttt{figures/fm\_links.pdf}, used in frame 9.2]
+\item Full pipeline with story overlay (Part 10). [done: \texttt{figures/pipeline.pdf}, used in frame 10.1]
+\item Roadmap timeline (Part 11). [done: \texttt{figures/roadmap\_timeline.pdf}, used in frame 11.1]
+\end{enumerate}
+\note{
+\smallskip
+\textbf{Presenter script:}
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Incremental fingerprint graph (story 5). [done: figures/fingerprint\_graph.pdf, used in frame 6.2]
+\item Formalized Mathematics article-to-library link model (story 8). [done: figures/fm\_links.pdf, used in frame 9.2]
+\item Full pipeline with story overlay (Part 10). [done: figures/pipeline.pdf, used in frame 10.1]
+\item Roadmap timeline (Part 11). [done: figures/roadmap\_timeline.pdf, used in frame 11.1]
 \end{itemize}
 }
 \end{frame}

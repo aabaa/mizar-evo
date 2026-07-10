@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import re
 import sys
+import zlib
 from pathlib import Path
 
 
@@ -455,12 +456,16 @@ def split_list_block(block: list[str]) -> list[list[str]]:
             current.append(line)
     if current:
         items.append(current)
-    if len(items) <= MAX_LIST_ITEMS_PER_BLOCK:
+    continuation_lines = sum(len(item) - 1 for item in items)
+    item_limit = MAX_LIST_ITEMS_PER_BLOCK
+    if continuation_lines > len(items) // 2:
+        item_limit = 5
+    if len(items) <= item_limit:
         return [block]
     chunks: list[list[str]] = []
-    for start in range(0, len(items), MAX_LIST_ITEMS_PER_BLOCK):
+    for start in range(0, len(items), item_limit):
         part: list[str] = []
-        for item in items[start : start + MAX_LIST_ITEMS_PER_BLOCK]:
+        for item in items[start : start + item_limit]:
             part.extend(item)
         chunks.append(prefix + [""] + part if prefix else part)
     return chunks
@@ -546,8 +551,9 @@ def block_weight(block: list[str]) -> float:
         stripped = line.strip()
         if not stripped:
             continue
-        if IMAGE_RE.match(stripped):
-            weight += 9.0
+        image = IMAGE_RE.match(stripped)
+        if image:
+            weight += image_weight(image.group(2))
         elif stripped.startswith("### ") or SECTION_LABEL_RE.match(stripped):
             weight += 1.0
         else:
@@ -612,10 +618,38 @@ def append_verbatim_block(out: list[str], code_lines: list[str], lang: str = "")
     out.append(r"\end{lstlisting}")
 
 
+def image_weight(path: str) -> float:
+    """Estimate frame weight from the figure's displayed height.
+
+    Mirrors append_image: width=\\textwidth (~138mm) capped at
+    0.52*textheight (~72mm body height); weight scales the displayed
+    height to the FRAME_WEIGHT_LIMIT budget.
+    """
+    try:
+        data = (ROOT / path).read_bytes()
+        match = re.search(rb"/MediaBox\s*\[([\d. ]+)\]", data)
+        if match is None:
+            # pdflatex stores page objects in compressed object streams
+            for stream in re.finditer(rb"stream\r?\n(.*?)endstream", data, re.S):
+                try:
+                    decoded = zlib.decompress(stream.group(1))
+                except zlib.error:
+                    continue
+                match = re.search(rb"/MediaBox\s*\[([\d. ]+)\]", decoded)
+                if match:
+                    break
+        nums = [float(x) for x in match.group(1).split()]
+        aspect = (nums[2] - nums[0]) / (nums[3] - nums[1])
+    except (OSError, AttributeError, ZeroDivisionError, ValueError):
+        return 10.0
+    displayed_height = min(138.0 / aspect, 0.52 * 72.0)
+    return 1.5 + displayed_height / 72.0 * FRAME_WEIGHT_LIMIT
+
+
 def append_image(out: list[str], path: str) -> None:
     out.append(r"\begin{center}")
     out.append(
-        rf"\includegraphics[width=\textwidth,height=0.62\textheight,"
+        rf"\includegraphics[width=\textwidth,height=0.52\textheight,"
         rf"keepaspectratio]{{{path}}}"
     )
     out.append(r"\end{center}")

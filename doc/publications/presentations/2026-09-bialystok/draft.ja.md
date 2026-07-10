@@ -226,7 +226,15 @@ still recognizes it as Mizar?
 
 - Mizar の可読性は懐古的な資産ではない。安全な AI 支援を可能にするものそのものである。
 
-### Frame 1.5 - 設計原則
+### Frame 1.5 - 3つの圧力、1つの設計
+
+![実証済みの設計にかかる3つの圧力](figures/three_pressures.pdf)
+
+メッセージ:
+
+- 3つの圧力のどれも、Mizar の設計が間違っていたと言うものではない。3つ合わせて、境界を進化させるべきだと言っている。
+
+### Frame 1.6 - 設計原則
 
 スライドテキスト:
 
@@ -330,16 +338,7 @@ topology = { version = "^0.9", features = ["metric"] }
 
 ### Frame 2.5 - 環境の移行 [deep dive]
 
-移行対応表:
-
-| 現行 environ の役割 | Evo での対応先 |
-|---|---|
-| vocabularies | エクスポートされた記号と字句メタデータ |
-| notations | インポートされる記法メタデータ |
-| constructors | 可視な定義と構成子 |
-| registrations | import スコープの registration 索引 |
-| requirements | パッケージまたは prelude ポリシー |
-| 記事の定理ラベル | モジュール修飾された定理識別子 |
+![environ から import への移行対応](figures/environ_migration.pdf)
 
 メッセージ:
 
@@ -458,9 +457,11 @@ inherit DoubleLoopStr extends AddLoopStr;
 inherit DoubleLoopStr extends MulLoopStr;
 ```
 
+![検査可能な結合を持つダイアモンド](figures/diamond_inheritance.pdf)
+
 メッセージ:
 
-- 解析器は、両方の継承経路が同じ構成要素を導入することを検査しなければならない。経路1の `add -> LoopStr.binop -> Magma.binop` と、経路2の `add -> AddMagma.add -> Magma.binop` が一致する必要がある。
+- 検証器は `from` の連鎖をルート宣言まで辿る。両方の経路が同じ構成要素を導入しなければならない(上図の共有される `carrier`)。
 - ダイアモンド継承は、宣言順で決まる無言のマージではなく、ソース位置付きの診断になる。
 
 ### Frame 3.6 - 保存されるもの、問いたいこと
@@ -598,16 +599,7 @@ without trusting the searcher?
 
 ### Frame 5.3 - 成功ビットではなく証明書
 
-```text
-Certificate
-  target VC fingerprint
-  kernel profile
-  imported facts and hashes
-  generated clauses
-  substitutions
-  resolution trace
-  final goal
-```
+![証明書とカーネルによる再生](figures/certificate_replay.pdf)
 
 要点:
 
@@ -688,6 +680,8 @@ Bialystok への問い:
 - フィンガープリントと検証器ポリシーが一致するときだけ結果を再利用する。
 - 証明本体のみの変更はインポート側を再ビルドしない。公開される主張とステータスが不変だからである。
 - 独立なモジュール、証明義務、ATP 実行、カーネル検査は並列に走り、結果は正準順で公開される。
+
+![フィンガープリントグラフ: 変更が何を再検証するか](figures/fingerprint_graph.pdf)
 
 規則:
 
@@ -1080,11 +1074,13 @@ Accept everything that should pass
 
 ### Frame 11.1 - 移行は研究プログラムである
 
+![ロードマップ年表](figures/roadmap_timeline.pdf)
+
 フェーズ:
 
 1. 2026年末、アルファ: コアサブセットのフロントエンドとパーサ、import とモジュール解決のプロトタイプ、構造化診断、初期の成果物。
 2. 2027年、移行ラボ: 代表的な MML 記事3〜5本を手作業とスクリプトで翻訳し、すべての不一致を分類済み課題として記録する。
-3. 2027〜2028年、拡大: 基礎的な集合・関係の断片、関数と二項演算、代数構造、そして成功した断片の依存錐へ。
+3. 2027〜2028年、拡大: 基礎的な集合・関係の断片、次いで代数構造と、成功した断片の依存錐へ。
 
 アルファの非目標:
 
@@ -1204,15 +1200,15 @@ Beamer 化のために用意した短い抜粋:
 
 最終版デッキに必要な図(`figures/*.tex`、TikZ standalone。各図は `figures/` 内で `pdflatex` でビルド):
 
-1. 実証済みの設計にかかる3つの圧力(Part 1)。[未作成]
-2. environ から import への移行(物語1)。[未作成]
-3. 構造体継承とダイアモンドの整合性(物語2)。[未作成]
+1. 実証済みの設計にかかる3つの圧力(Part 1)。[作成済み: `figures/three_pressures.pdf`、Frame 1.5 で使用]
+2. environ から import への移行(物語1)。[作成済み: `figures/environ_migration.pdf`、Frame 2.5 で使用]
+3. 構造体継承とダイアモンドの整合性(物語2)。[作成済み: `figures/diamond_inheritance.pdf`、Frame 3.5 で使用]
 4. 推論境界: 意味論 / ATP 探索 / カーネル検査(物語4)。[作成済み: `figures/reasoning_boundary.pdf`、Frame 5.2 で使用]
-5. 証明書オブジェクトと再生(物語4)。[未作成]
-6. 差分検証のフィンガープリントグラフ(物語5)。[未作成]
+5. 証明書オブジェクトと再生(物語4)。[作成済み: `figures/certificate_replay.pdf`、Frame 5.3 で使用]
+6. 差分検証のフィンガープリントグラフ(物語5)。[作成済み: `figures/fingerprint_graph.pdf`、Frame 6.2 で使用]
 7. Formalized Mathematics の記事-ライブラリ リンクモデル(物語8)。[作成済み: `figures/fm_links.pdf`、Frame 9.2 で使用]
 8. 物語を重ねた全パイプライン(Part 10)。[作成済み: `figures/pipeline.pdf`、Frame 10.1 で使用]
-9. ロードマップ年表(Part 11)。[未作成]
+9. ロードマップ年表(Part 11)。[作成済み: `figures/roadmap_timeline.pdf`、Frame 11.1 で使用]
 
 ## Backup D. 論文アウトラインの種
 
