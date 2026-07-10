@@ -449,6 +449,32 @@ theorem tokens are exactly `theorem <label> : ;`. Status-prefixed or otherwise
 extra-token theorem shapes remain on
 `type_elaboration.external_dependency.ast_payload_extraction`. This guard-only
 repair adds no new `.miz` sidecar coverage or spec coverage credit.
+Task 119 adds the first no-diagnostic source-derived identifier-term/equality
+slice for the exact source
+`reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`.
+The runner reuses the real reserve `BindingEnv`, resolves both identifier-term
+sites through independent `BindingEnv::lookup` calls. Their lookup ordinals
+are assigned by sorting the source binding and the two use ranges as one
+binding/use event stream, so the exact fixture derives ordinals 1 and 2 after
+the reserve binding at ordinal 0 instead of supplying a shared synthetic use
+ordinal. The runner projects the written reserve type's
+range, spelling, and builtin `set` head into four distinct checker role sites:
+the two term result types and the two equality expected-type constraints.
+`TermFormulaChecker` records both variable terms as `Inferred` and the equality
+formula as `Checked` with no diagnostics or facts. The active producer validates
+the complete checker payload before reporting a pass: declaration/binding
+identity, both lookup results, term/formula sites and statuses, expected-type
+ranges, all four role owners, normalized source spelling/range/head, and empty
+candidate/fact/deferred/diagnostic tables must agree. Any mismatch reports the
+stable `type_elaboration.checker.reserved_variable_equality.invalid_payload`
+detail key. Here `Checked` means only
+that the source-derived term/type/formula payload is well formed; task 119 does
+not materialize implicit universal-closure nodes, prove or accept the theorem,
+record equality facts, activate `formula_statement`, or produce proof,
+CoreIr, ControlFlowIr, or VC payloads. Non-exact labels, operands, reserve
+bindings/types, attributed types, operators, status/extra tokens, additional
+reserve or theorem items, source-order reversal, recovery, or numeral-term shapes
+remain on `type_elaboration.external_dependency.ast_payload_extraction`.
 Task 109 supersedes the exact builtin `set` portion of task 102:
 `theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` reaches parser and
 resolver execution with a Chapter 13 numeral term and the Chapter 14 builtin

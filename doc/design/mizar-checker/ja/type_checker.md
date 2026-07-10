@@ -427,6 +427,32 @@ equality、membership、inequality config を選ぶ。status-prefixed または 
 を持つ theorem shape は
 `type_elaboration.external_dependency.ast_payload_extraction` に残る。この
 guard-only repair は新しい `.miz` sidecar coverage や spec coverage credit を追加しない。
+task 119 は exact source
+`reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`
+について、diagnostic を出さない最初の source-derived identifier-term / equality
+slice を追加する。runner は real reserve `BindingEnv` を再利用し、2 つの
+identifier-term site を独立した `BindingEnv::lookup` call で解決する。lookup
+ordinal は source binding range と 2 つの use range を 1 つの binding/use event
+stream として source 順に sort して割り当てるため、exact fixture では ordinal 0
+の reserve binding に続く ordinal 1 と 2 を導出し、shared synthetic use ordinal
+を供給しない。記述された reserve type の
+range、spelling、builtin `set` head を、左右 term result type と左右 equality
+expected-type constraint の 4 つの distinct checker role site に投影する。
+`TermFormulaChecker` は 2 つの variable term を `Inferred`、equality formula を
+`Checked` として diagnostic/fact なしで記録する。active producer は pass を
+報告する前に declaration/binding identity、両 lookup result、term/formula site と
+status、expected-type range、4 つすべての role owner、normalized source
+spelling/range/head、empty candidate/fact/deferred/diagnostic table を検証する。
+不一致は stable
+`type_elaboration.checker.reserved_variable_equality.invalid_payload` detail key を
+報告する。ここで `Checked` は
+source-derived term/type/formula payload の well-formedness だけを意味し、task
+119 は implicit universal-closure node を materialize せず、theorem を証明・受理
+せず、equality fact を記録せず、`formula_statement` を activate せず、proof、
+CoreIr、ControlFlowIr、VC payload を生成しない。non-exact label、operand、reserve
+binding/type、attributed type、operator、status/extra token、追加 reserve/theorem
+item、source-order reversal、recovery、numeral-term shape は
+`type_elaboration.external_dependency.ast_payload_extraction` に残る。
 task 109 は task 102 の exact builtin `set` portion を supersede する:
 `theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` は Chapter 13 の numeral
 term と Chapter 14 の builtin type-assertion form を通じて parser / resolver 実行まで

@@ -359,6 +359,24 @@ local proof context、recorded fact、theorem acceptance、dedicated
 `formula_statement` runner、CoreIr、ControlFlowIr、VC、proof payload coverage は
 主張しない。
 
+Task 119 MC-G020 current-state override: exact active source
+`reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`
+は real reserve declaration handoff と source-derived identifier-term / equality
+payload を組み合わせる。2 つの use ordinal は reserve binding range と両
+identifier range の順序から独立に導出し、checker-owned `BindingEnv` は各 use を
+別々に解決する。記述された builtin `set` type は distinct source-anchored role
+owner を通じて 2 つの term result type と 2 つの equality expected-type
+constraint を供給する。production runner は 2 つの `Inferred` variable term、
+type/well-formedness だけを表す 1 つの `Checked` equality、exact normalized type
+source range/spelling/head、empty candidate/fact/deferred/diagnostic output を要求し、
+payload drift は stable
+`type_elaboration.checker.reserved_variable_equality.invalid_payload` key を報告する。
+unit test は active sidecar の real frontend/resolver AST に対して同じ assertion を
+反復する。これは MC-G020 の generic term/formula gap wording をその exact slice
+だけについて override する。implicit universal-closure node、equality truth/fact、
+theorem acceptance、`formula_statement` runner、proof skeleton、CoreIr、
+ControlFlowIr、VC、broader source extraction は credit しない。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

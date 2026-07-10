@@ -554,7 +554,13 @@ theorem formula extraction-gap boundary だけを credit した。task 107 は e
 term/formula payload extraction を credit するが、numeric type payload、
 inequality desugaring または equality semantic checking、recorded fact、theorem
 acceptance、`formula_statement` runner support、CoreIr、ControlFlowIr、VC、proof
-payload は credit しない。
+payload は credit しない。task 119 は separate exact pass row
+`reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`
+を追加する。2 つの identifier term は real reserve `BindingEnv` で解決され、
+result type と equality expected type は記述された builtin `set` reserve から
+導かれ、checker type/well-formedness は diagnostic/fact なしで完了する。implicit
+universal closure、equality truth、theorem acceptance、`formula_statement`、proof、
+CoreIr、ControlFlowIr、VC は credit しない。
 task 109 は task 102 の exact builtin type-assertion sidecar を supersede し、
 real checker term/formula payload extraction と asserted builtin `set`
 `TypeExpressionInput` を credit するが、numeric type payload、より広い

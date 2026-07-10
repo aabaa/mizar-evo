@@ -602,7 +602,15 @@ supersedes the exact `BuiltinInequalityPayloadBoundary: 1 <> 2` sidecar by
 crediting real checker term/formula payload extraction while still failing
 closed before numeric type payloads, inequality desugaring or equality semantic
 checking, recorded facts, theorem acceptance, `formula_statement` runner
-support, CoreIr, ControlFlowIr, VC, or proof payloads. Task 109 supersedes the exact
+support, CoreIr, ControlFlowIr, VC, or proof payloads. Task 119 adds a separate
+exact pass row for
+`reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`:
+both identifier terms resolve through the real reserve `BindingEnv`, their
+result and equality-expected types derive from the written builtin `set`
+reserve, and checker type/well-formedness completes without diagnostics or
+facts. It does not credit implicit universal closure, equality truth, theorem
+acceptance, `formula_statement`, proof, CoreIr, ControlFlowIr, or VC. Task 109
+supersedes the exact
 builtin type-assertion sidecar from task 102 by crediting real checker
 term/formula payload extraction and the asserted builtin `set`
 `TypeExpressionInput` while still failing closed before numeric type payloads,

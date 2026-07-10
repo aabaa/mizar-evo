@@ -277,7 +277,9 @@ regression test を追加した。
       checker bridge、checker task 114 の exact attribute-level non-empty
       imported attribute assertion theorem checker bridge、checker task 111 の exact set-enumeration theorem
       checker bridge、checker task 112 の exact formula connective/quantifier shell
-      checker bridge、checker task 88 の proof skeleton
+      checker bridge、checker task 117 の exact formula constant kind checker
+      bridge、checker task 118 の builtin-binary exact-token guard、checker task
+      119 の exact reserved-variable equality active pass bridge、checker task 88 の proof skeleton
       extraction-gap boundary、checker task 89 の statement proof extraction-gap
       boundary、checker task 90 の predicate/functor definition extraction-gap
       boundary、checker task 91 の attribute definition extraction-gap boundary、

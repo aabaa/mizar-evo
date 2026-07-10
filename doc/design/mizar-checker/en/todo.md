@@ -2063,6 +2063,26 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       bridge; mizar-test task 10; spec 13 term expressions; spec 14 formulas;
       spec 16 theorems and proofs.
 
+119. **Add exact source-derived reserved-variable equality checker bridge.** [x]
+    - Promote only the exact unrecovered source
+      `reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`.
+    - Acceptance: parser and resolver execute the source; the runner reuses the
+      real reserve declaration handoff, resolves both identifier terms through
+      checker-owned `BindingEnv::lookup`, projects the written builtin `set`
+      reserve type into distinct result/expected-type role sites, and passes two
+      variable `TermInput`s plus one equality `FormulaInput` to
+      `TermFormulaChecker`. Both terms are `Inferred`, the formula is `Checked`,
+      and the active type-elaboration pass case has no diagnostics or facts.
+    - `Checked` is limited to type/well-formedness. The task must not fabricate
+      implicit universal-closure nodes, equality facts/truth, theorem
+      acceptance, proof skeletons, `formula_statement`, CoreIr, ControlFlowIr,
+      VC, or proof payloads. Non-exact sources remain on the payload-extraction
+      gap.
+    - Verify: `cargo test -p mizar-test`; final workspace verification.
+    - Deps: tasks 20, 48, 106, and 118. Refs: Step 5 source-derived semantic
+      bridge; mizar-test task 10; spec 04 reserved variables; spec 13 term
+      expressions; spec 14 formulas; spec 16 theorems and proofs.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

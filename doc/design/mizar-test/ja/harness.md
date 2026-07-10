@@ -440,6 +440,21 @@ theorem shape は `type_elaboration.external_dependency.ast_payload_extraction`
 に残る。これは guard repair のみであり、active sidecar や traceability coverage
 は追加しない。
 
+task 119 は exact な diagnostic なしの `type-elaboration` pass case
+`reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`
+を追加する。runner は 2 つの identifier term を source 順から別々に導出した
+use ordinal で real reserve `BindingEnv` に問い合わせ、4 つの distinct
+source-anchored result/expected type role site を保持し、2 つの `Inferred` term と
+1 つの `Checked` equality、empty candidate/diagnostic/deferred/fact を要求する。
+production runner validation は exact binding/reference identity、すべての role
+owner、normalized type の source range/spelling/head を検証し、不一致なら
+`type_elaboration.checker.reserved_variable_equality.invalid_payload` を報告する。
+runner unit test は active sidecar を discover し、hand-built syntax tree だけでなく
+real frontend/resolver が生成した AST について同じ payload assertion を反復する。
+この pass result は theorem acceptance ではなく、implicit closure、
+`formula_statement`、proof、CoreIr、ControlFlowIr、VC consumer を activate
+しない。non-exact shape は extraction-gap key を報告し続ける。
+
 task 109 は task 102 の exact builtin type-assertion theorem sidecar を
 supersede する。active `type_elaboration` runner は real source-derived checker
 `TermInput`、`FormulaInput`、asserted builtin `set` `TypeExpressionInput`

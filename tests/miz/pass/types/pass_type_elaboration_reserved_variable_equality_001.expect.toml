@@ -1,0 +1,19 @@
+schema_version = 1
+id = "pass_type_elaboration_reserved_variable_equality_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_reserved_variable_equality_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.reserved_variable_equality_source_bridge",
+]
+notes = "Active type_elaboration runner pass coverage for checker task 119: the exact reserved-variable equality theorem source reuses the real reserve BindingEnv and builtin set type payload, resolves both source identifier terms through BindingEnv::lookup, projects four distinct source-anchored result/expected type role sites, and reaches two Inferred variable terms plus one Checked equality formula without diagnostics. Checked means type/well-formedness checked only; implicit universal-closure nodes, equality facts, theorem acceptance, formula_statement, proof skeletons, CoreIr, ControlFlowIr, VC, and proof payloads remain deferred."

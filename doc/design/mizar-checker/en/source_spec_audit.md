@@ -362,6 +362,24 @@ local proof context, recorded facts, theorem acceptance, a dedicated
 `formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof payload
 coverage.
 
+Task 119 MC-G020 current-state override: the exact active source
+`reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`
+now combines the real reserve declaration handoff with source-derived
+identifier-term and equality payloads. The two use ordinals are independently
+derived by ordering the reserve binding range and both identifier ranges, and
+the checker-owned `BindingEnv` resolves each use separately. The written
+builtin `set` type supplies the two term result types and two equality
+expected-type constraints through distinct source-anchored role owners. The
+production runner requires two `Inferred` variable terms, one type/well-formedness
+`Checked` equality, exact normalized type source range/spelling/head, and empty
+candidate/fact/deferred/diagnostic output; payload drift reports the stable
+`type_elaboration.checker.reserved_variable_equality.invalid_payload` key. A
+unit test repeats these assertions on the active sidecar's real
+frontend/resolver AST. This overrides MC-G020's generic term/formula gap wording
+only for that exact slice. It does not claim implicit universal-closure nodes,
+equality truth/facts, theorem acceptance, a `formula_statement` runner, proof
+skeletons, CoreIr, ControlFlowIr, VC, or broader source extraction.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

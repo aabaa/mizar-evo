@@ -451,6 +451,22 @@ and 108: exact checker handoff remains limited to direct theorem tokens
 on `type_elaboration.external_dependency.ast_payload_extraction`. This is a
 guard repair only and does not add active sidecar or traceability coverage.
 
+Task 119 adds one exact no-diagnostic `type-elaboration` pass case:
+`reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`.
+The runner resolves both identifier terms through the real reserve
+`BindingEnv` with separate source-order-derived use ordinals, preserves four
+distinct source-anchored result/expected type role sites, and requires two
+`Inferred` terms plus one `Checked` equality with empty candidates,
+diagnostics, deferred reasons, and facts. Production runner validation checks
+the exact binding/reference identities plus every role owner and normalized
+type source range/spelling/head; an invariant mismatch reports
+`type_elaboration.checker.reserved_variable_equality.invalid_payload`. A runner
+unit test discovers the active sidecar and repeats these payload assertions on
+the AST produced by the real frontend and resolver, rather than only on a
+hand-built syntax tree. The pass result is not theorem acceptance and does not
+activate implicit closure, `formula_statement`, proof, CoreIr, ControlFlowIr,
+or VC consumers. Non-exact shapes continue to report the extraction-gap key.
+
 Task 109 supersedes the exact builtin type-assertion sidecar from task 102:
 `BuiltinTypeAssertionPayloadBoundary: 1 is set` is executable through the
 active `type_elaboration` runner and now passes source-derived checker

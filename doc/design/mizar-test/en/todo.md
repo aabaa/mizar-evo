@@ -305,7 +305,10 @@ Keep `cargo test -p mizar-test` green after each task (see
       attribute-level non-empty imported attribute assertion theorem checker
       bridge, checker task 111's exact set-enumeration theorem
       checker bridge, checker task 112's exact formula connective/quantifier
-      shell checker bridge, checker task 88's proof skeleton
+      shell checker bridge, checker task 117's exact formula constant kind
+      checker bridge, checker task 118's builtin-binary exact-token guard,
+      checker task 119's exact reserved-variable equality active pass bridge,
+      checker task 88's proof skeleton
       extraction-gap boundary, and checker task 89's statement proof
       extraction-gap boundary, and checker task 90's predicate/functor
       definition extraction-gap boundary, and checker task 91's attribute

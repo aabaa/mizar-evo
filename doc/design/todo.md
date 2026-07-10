@@ -317,7 +317,12 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    term/formula payloads before failing on missing numeric type payloads and
    partial formula checking, task 118 tightens the shared task 106/107/108
    builtin-binary producer so only exact direct theorem tokens
-   `theorem <label> : ;` select those bridges, task 109 supersedes task 102 for
+   `theorem <label> : ;` select those bridges, task 119 adds an exact
+   no-diagnostic reserved-variable
+   equality slice by resolving both `x` identifier terms through the real
+   reserve `BindingEnv`, reusing the written builtin `set` type for term result
+   and equality expected-type payloads, and checking formula well-formedness
+   without facts or theorem acceptance, and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
    type payloads before failing on missing numeric type payloads and partial
@@ -349,8 +354,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    attributed-type evidence, imported predicate/functor semantic payloads,
    membership operand expected-type construction/checking beyond task 108, inequality desugaring/equality semantic checking beyond task 107,
    broader type-assertion type payload extraction, type-assertion semantic checking,
-   overload payloads, term/formula/proof
-   skeleton/statement proof payloads, term inference, formula checking,
+   overload payloads, broader term/formula/proof
+   skeleton/statement proof payloads, term inference and formula
+   well-formedness checking beyond task 119's exact reserved-variable equality
+   slice,
    recorded facts, imported attribute assertion semantic payloads, imported
    attribute-level non-empty assertion semantic payloads, negated attribute
    admissibility/semantic checking, attribute admissibility/semantic checking,

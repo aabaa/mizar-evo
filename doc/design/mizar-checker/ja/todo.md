@@ -1916,6 +1916,26 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       mizar-test task 10、spec 13 term expressions、spec 14 formulas、spec 16
       theorems and proofs。
 
+119. **Exact source-derived reserved-variable equality checker bridge を追加する。** [x]
+    - exact unrecovered source
+      `reserve x for set; theorem ReservedVariableEqualityPayloadBoundary: x = x;`
+      だけを昇格する。
+    - Acceptance: parser と resolver は source を実行する。runner は real reserve
+      declaration handoff を再利用し、2 つの identifier term を checker-owned
+      `BindingEnv::lookup` で解決し、記述された builtin `set` reserve type を
+      distinct result/expected-type role site に投影して、2 つの variable
+      `TermInput` と 1 つの equality `FormulaInput` を `TermFormulaChecker` に渡す。
+      2 term は `Inferred`、formula は `Checked` となり、active
+      type-elaboration pass case は diagnostic/fact を持たない。
+    - `Checked` は type/well-formedness に限定する。implicit universal-closure
+      node、equality fact/truth、theorem acceptance、proof skeleton、
+      `formula_statement`、CoreIr、ControlFlowIr、VC、proof payload を捏造しては
+      ならない。non-exact source は payload-extraction gap に残す。
+    - 検証: `cargo test -p mizar-test`、最終 workspace verification。
+    - 依存: tasks 20、48、106、118。参照: Step 5 source-derived semantic bridge、
+      mizar-test task 10、spec 04 reserved variables、spec 13 term expressions、
+      spec 14 formulas、spec 16 theorems and proofs。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。
