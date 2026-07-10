@@ -284,6 +284,9 @@ regression test を追加した。
       reserved-variable inequality active pass bridge、checker task 122 の reflexive
       type-assertion gate と exact reserved-variable type-assertion active pass bridge、
       checker task 123 の exact distinct reserved-variable equality active pass bridge、
+      checker task 124 の distinct pre-normalization source range と 1 semantic
+      normalized type を持つ exact multiple-reserve-declaration equality active
+      pass bridge、
       checker task 88 の proof skeleton
       extraction-gap boundary、checker task 89 の statement proof extraction-gap
       boundary、checker task 90 の predicate/functor definition extraction-gap

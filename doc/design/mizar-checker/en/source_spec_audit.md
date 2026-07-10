@@ -423,6 +423,18 @@ distinct-binding type/well-formedness. Implicit closure/order nodes, equality
 truth/facts, theorem acceptance, broader source shapes, proof, CoreIr,
 ControlFlowIr, and VC remain open.
 
+Task 124 MC-G020 current-state override: the exact multiple-reserve-declaration
+equality source reuses the same real declaration, binding, lookup, term, and
+formula consumers while keeping the two written builtin `set` ranges distinct
+in all four operand-specific pre-normalization result/expected inputs. The
+checker interns those semantically equal inputs to one `NormalizedTypeId` with
+the deterministic earliest source representative; that representative does not
+replace either original input's provenance. Production invariants, an exact
+near-miss matrix, and a real frontend/resolver sidecar guard this
+`test_gap` / `source_drift` / `design_drift` repair. Implicit closure/order,
+truth/facts, theorem acceptance, broader sources, proof, CoreIr, ControlFlowIr,
+and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

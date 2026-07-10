@@ -471,6 +471,17 @@ status/recovery、numeral operand を extraction gap に残す。これは
 type/well-formedness だけであり、implicit universal closure と quantifier order、
 equality truth/fact、theorem acceptance、`formula_statement`、proof、CoreIr、
 ControlFlowIr、VC は deferred のままである。
+task 124 は exact multiple-declaration sibling
+`reserve x for set; reserve y for set; theorem MultipleReserveDeclarationEqualityPayloadBoundary: x = y;`
+を追加する。reserve producer は 2 binding identity と 2 distinct written type
+range を保持する。operand ごとの 4 pre-normalization result/expected input は、
+checker が同一の builtin `set` semantics を deterministic な最初の source
+representative を持つ 1 normalized type に intern する前に、それぞれの range を
+保持する。validation は original input を独立に検証するため、normalized interning
+は duplicate type を捏造せず、written provenance も消去しない。exact shape guard、
+task-specific invalid-payload key、near miss、real frontend/resolver sidecar が seam
+を cover する。implicit closure/order、truth/fact、theorem acceptance、
+`formula_statement`、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

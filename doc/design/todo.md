@@ -333,6 +333,11 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    task 123 adds the exact distinct-binding equality pass for `x = y` from one
    `reserve x, y for set` segment while preserving both binding identities and
    the shared written type range without facts or theorem acceptance,
+   task 124 adds the exact multiple-reserve-declaration equality pass for
+   `reserve x for set; reserve y for set; ... x = y`, preserving both distinct
+   written type ranges in four pre-normalization inputs while allowing their
+   identical builtin `set` semantics to intern to one deterministic normalized
+   type, also without facts or theorem acceptance,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -374,8 +379,9 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    attribute admissibility,
    overload payloads, broader term/formula/proof
    skeleton/statement proof payloads, term inference and formula
-   well-formedness checking beyond task 119's exact same-binding equality and
-   task 123's exact distinct-binding equality,
+   well-formedness checking beyond task 119's exact same-binding equality,
+   task 123's exact distinct-binding equality, and task 124's exact
+   multiple-reserve-declaration equality,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,

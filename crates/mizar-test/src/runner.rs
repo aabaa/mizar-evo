@@ -88,6 +88,8 @@ const TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY: &str =
     "type_elaboration.external_dependency.ast_payload_extraction";
 const TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.distinct_reserved_variable_equality.invalid_payload";
+const TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.multiple_reserve_declaration_equality.invalid_payload";
 const TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
@@ -916,6 +918,11 @@ fn source_type_elaboration_detail_keys(
     symbols: &SymbolEnv,
 ) -> Vec<String> {
     if let Some(keys) =
+        source_multiple_reserve_declaration_equality_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
+    if let Some(keys) =
         source_distinct_reserved_variable_equality_detail_keys(ast, module.clone(), symbols)
     {
         return keys;
@@ -1138,10 +1145,12 @@ struct SourceReservedVariableBinaryFormulaConfig {
     operator: &'static str,
     formula_kind: FormulaKind,
     invalid_payload_key: &'static str,
+    reserve_item_count: usize,
     binding_spellings: &'static [&'static str],
     left_binding_index: usize,
     right_binding_index: usize,
     require_shared_type_range: bool,
+    require_distinct_type_ranges: bool,
     left_result_role: &'static str,
     right_result_role: &'static str,
     left_expected_role: Option<&'static str>,
@@ -1154,10 +1163,12 @@ const SOURCE_RESERVED_VARIABLE_EQUALITY_CONFIG: SourceReservedVariableBinaryForm
         operator: "=",
         formula_kind: FormulaKind::Equality,
         invalid_payload_key: TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+        reserve_item_count: 1,
         binding_spellings: &["x"],
         left_binding_index: 0,
         right_binding_index: 0,
         require_shared_type_range: false,
+        require_distinct_type_ranges: false,
         left_result_role: "reserved-variable-left-result",
         right_result_role: "reserved-variable-right-result",
         left_expected_role: Some("reserved-variable-left-expected"),
@@ -1170,10 +1181,12 @@ const SOURCE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG: SourceReservedVariableBinaryFo
         operator: "in",
         formula_kind: FormulaKind::Membership,
         invalid_payload_key: TYPE_ELABORATION_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+        reserve_item_count: 1,
         binding_spellings: &["x"],
         left_binding_index: 0,
         right_binding_index: 0,
         require_shared_type_range: false,
+        require_distinct_type_ranges: false,
         left_result_role: "reserved-variable-membership-left-result",
         right_result_role: "reserved-variable-membership-right-result",
         left_expected_role: None,
@@ -1186,10 +1199,12 @@ const SOURCE_RESERVED_VARIABLE_INEQUALITY_CONFIG: SourceReservedVariableBinaryFo
         operator: "<>",
         formula_kind: FormulaKind::Inequality,
         invalid_payload_key: TYPE_ELABORATION_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+        reserve_item_count: 1,
         binding_spellings: &["x"],
         left_binding_index: 0,
         right_binding_index: 0,
         require_shared_type_range: false,
+        require_distinct_type_ranges: false,
         left_result_role: "reserved-variable-inequality-left-result",
         right_result_role: "reserved-variable-inequality-right-result",
         left_expected_role: Some("reserved-variable-inequality-left-expected"),
@@ -1203,15 +1218,35 @@ const SOURCE_DISTINCT_RESERVED_VARIABLE_EQUALITY_CONFIG: SourceReservedVariableB
         formula_kind: FormulaKind::Equality,
         invalid_payload_key:
             TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+        reserve_item_count: 1,
         binding_spellings: &["x", "y"],
         left_binding_index: 0,
         right_binding_index: 1,
         require_shared_type_range: true,
+        require_distinct_type_ranges: false,
         left_result_role: "distinct-reserved-variable-left-result",
         right_result_role: "distinct-reserved-variable-right-result",
         left_expected_role: Some("distinct-reserved-variable-left-expected"),
         right_expected_role: Some("distinct-reserved-variable-right-expected"),
     };
+
+const SOURCE_MULTIPLE_RESERVE_DECLARATION_EQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "MultipleReserveDeclarationEqualityPayloadBoundary",
+    operator: "=",
+    formula_kind: FormulaKind::Equality,
+    invalid_payload_key: TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 2,
+    binding_spellings: &["x", "y"],
+    left_binding_index: 0,
+    right_binding_index: 1,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: true,
+    left_result_role: "multiple-reserve-declaration-left-result",
+    right_result_role: "multiple-reserve-declaration-right-result",
+    left_expected_role: Some("multiple-reserve-declaration-left-expected"),
+    right_expected_role: Some("multiple-reserve-declaration-right-expected"),
+};
 
 #[derive(Debug)]
 struct SourceReservedVariableBinaryFormula {
@@ -1235,6 +1270,10 @@ struct SourceReservedVariableBinaryFormulaOutput {
     handoff: SourceReserveHandoff,
     left_binding: BindingId,
     right_binding: BindingId,
+    left_result_input: TypeExpressionInput,
+    right_result_input: TypeExpressionInput,
+    left_expected_input: Option<TypeExpressionInput>,
+    right_expected_input: Option<TypeExpressionInput>,
     term_formula: TermFormulaInferenceOutput,
 }
 
@@ -1282,6 +1321,18 @@ fn source_distinct_reserved_variable_equality_detail_keys(
     Some(source_reserved_variable_formula_result_detail_keys(
         build_source_reserved_variable_formula_output(payload, symbols),
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+fn source_multiple_reserve_declaration_equality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_multiple_reserve_declaration_equality(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY,
     ))
 }
 
@@ -1422,6 +1473,16 @@ fn source_distinct_reserved_variable_equality_output(
     symbols: &SymbolEnv,
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload = extract_source_distinct_reserved_variable_equality(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_multiple_reserve_declaration_equality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload = extract_source_multiple_reserve_declaration_equality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -1618,18 +1679,26 @@ fn build_source_reserved_variable_formula_output(
         payload.right_site.node(),
         payload.config.right_result_role,
     );
+    let left_result_input = left_result_type.clone();
+    let right_result_input = right_result_type.clone();
     let mut expected_types = Vec::new();
-    if let Some(role) = payload.config.left_expected_role {
+    let left_expected_input = payload.config.left_expected_role.map(|role| {
+        source_reserved_type_projection(left_source_binding, payload.left_site.node(), role)
+    });
+    let right_expected_input = payload.config.right_expected_role.map(|role| {
+        source_reserved_type_projection(right_source_binding, payload.right_site.node(), role)
+    });
+    if let Some(expected) = &left_expected_input {
         expected_types.push(ExpectedTypeInput::new(
             payload.left_site.clone(),
-            source_reserved_type_projection(left_source_binding, payload.left_site.node(), role),
+            expected.clone(),
             payload.left_range,
         ));
     }
-    if let Some(role) = payload.config.right_expected_role {
+    if let Some(expected) = &right_expected_input {
         expected_types.push(ExpectedTypeInput::new(
             payload.right_site.clone(),
-            source_reserved_type_projection(right_source_binding, payload.right_site.node(), role),
+            expected.clone(),
             payload.right_range,
         ));
     }
@@ -1669,6 +1738,10 @@ fn build_source_reserved_variable_formula_output(
         handoff,
         left_binding,
         right_binding,
+        left_result_input,
+        right_result_input,
+        left_expected_input,
+        right_expected_input,
         term_formula,
     })
 }
@@ -1919,6 +1992,50 @@ fn assert_source_reserved_variable_formula_output(
         }
     }
 
+    for (input, source_binding, node, role) in [
+        (
+            &output.left_result_input,
+            &source_bindings[payload.config.left_binding_index],
+            payload.left_site.node(),
+            payload.config.left_result_role,
+        ),
+        (
+            &output.right_result_input,
+            &source_bindings[payload.config.right_binding_index],
+            payload.right_site.node(),
+            payload.config.right_result_role,
+        ),
+    ] {
+        if !source_type_projection_matches(input, source_binding, node, role) {
+            return Err("reserved-variable formula result input provenance mismatch".to_owned());
+        }
+    }
+    for (input, source_binding, node, role) in [
+        (
+            output.left_expected_input.as_ref(),
+            &source_bindings[payload.config.left_binding_index],
+            payload.left_site.node(),
+            payload.config.left_expected_role,
+        ),
+        (
+            output.right_expected_input.as_ref(),
+            &source_bindings[payload.config.right_binding_index],
+            payload.right_site.node(),
+            payload.config.right_expected_role,
+        ),
+    ] {
+        match (input, role) {
+            (Some(input), Some(role))
+                if source_type_projection_matches(input, source_binding, node, role) => {}
+            (None, None) => {}
+            _ => {
+                return Err(
+                    "reserved-variable formula expected input provenance mismatch".to_owned(),
+                );
+            }
+        }
+    }
+
     let term_formula = &output.term_formula;
     let expected_type_count = usize::from(payload.config.left_expected_role.is_some())
         + usize::from(payload.config.right_expected_role.is_some());
@@ -1932,21 +2049,9 @@ fn assert_source_reserved_variable_formula_output(
         return Err("reserved-variable formula checker count mismatch".to_owned());
     }
     let mut term_actuals = BTreeMap::new();
-    for (site, binding, source_binding) in [
-        (
-            &payload.left_site,
-            output.left_binding,
-            source_bindings
-                .get(output.left_binding.index())
-                .ok_or_else(|| "left reserved-variable source binding missing".to_owned())?,
-        ),
-        (
-            &payload.right_site,
-            output.right_binding,
-            source_bindings
-                .get(output.right_binding.index())
-                .ok_or_else(|| "right reserved-variable source binding missing".to_owned())?,
-        ),
+    for (site, binding) in [
+        (&payload.left_site, output.left_binding),
+        (&payload.right_site, output.right_binding),
     ] {
         let term = term_formula
             .terms()
@@ -1964,12 +2069,8 @@ fn assert_source_reserved_variable_formula_output(
         {
             return Err("reserved-variable formula term payload mismatch".to_owned());
         }
-        let actual = assert_builtin_set_type_entry(
-            term_formula,
-            &term.site,
-            source_binding,
-            Some(term.type_entry),
-        )?;
+        let actual =
+            assert_builtin_set_type_entry(term_formula, &term.site, Some(term.type_entry))?;
         term_actuals.insert(term.site.clone(), actual);
     }
 
@@ -1993,27 +2094,19 @@ fn assert_source_reserved_variable_formula_output(
         return Err("reserved-variable formula payload mismatch".to_owned());
     }
     let expected_constraints = [
-        payload.config.left_expected_role.map(|role| {
-            (
-                &payload.left_site,
-                payload.left_range,
-                role,
-                &source_bindings[payload.config.left_binding_index],
-            )
-        }),
-        payload.config.right_expected_role.map(|role| {
-            (
-                &payload.right_site,
-                payload.right_range,
-                role,
-                &source_bindings[payload.config.right_binding_index],
-            )
-        }),
+        payload
+            .config
+            .left_expected_role
+            .map(|role| (&payload.left_site, payload.left_range, role)),
+        payload
+            .config
+            .right_expected_role
+            .map(|role| (&payload.right_site, payload.right_range, role)),
     ]
     .into_iter()
     .flatten()
     .collect::<Vec<_>>();
-    for (constraint, (site, range, role, source_binding)) in formula
+    for (constraint, (site, range, role)) in formula
         .expected_types
         .iter()
         .zip(expected_constraints.iter().copied())
@@ -2021,11 +2114,7 @@ fn assert_source_reserved_variable_formula_output(
         if &constraint.term != site
             || constraint.source_range != range
             || constraint.status != TypeStatus::Known
-            || !normalized_type_is_source_builtin_set(
-                term_formula,
-                constraint.expected,
-                source_binding,
-            )
+            || !normalized_type_is_builtin_set(term_formula, constraint.expected)
         {
             return Err("reserved-variable formula expected type mismatch".to_owned());
         }
@@ -2033,41 +2122,69 @@ fn assert_source_reserved_variable_formula_output(
             node: site.node(),
             role: TypeRole::new(role),
         };
-        let role_actual =
-            assert_builtin_set_type_entry(term_formula, &owner, source_binding, None)?;
+        let role_actual = assert_builtin_set_type_entry(term_formula, &owner, None)?;
         if role_actual != constraint.expected {
             return Err("reserved-variable expected role is not referenced".to_owned());
         }
     }
-    for (site, role, source_binding) in [
-        (
-            &payload.left_site,
-            payload.config.left_result_role,
-            &source_bindings[payload.config.left_binding_index],
-        ),
-        (
-            &payload.right_site,
-            payload.config.right_result_role,
-            &source_bindings[payload.config.right_binding_index],
-        ),
+    for (site, role) in [
+        (&payload.left_site, payload.config.left_result_role),
+        (&payload.right_site, payload.config.right_result_role),
     ] {
         let owner = TypedSiteRef::Role {
             node: site.node(),
             role: TypeRole::new(role),
         };
-        let role_actual =
-            assert_builtin_set_type_entry(term_formula, &owner, source_binding, None)?;
+        let role_actual = assert_builtin_set_type_entry(term_formula, &owner, None)?;
         if term_actuals.get(site) != Some(&role_actual) {
             return Err("reserved-variable result role is not referenced".to_owned());
         }
     }
+    let semantic_ids = term_actuals.values().copied().collect::<BTreeSet<_>>();
+    if semantic_ids.len() != 1 {
+        return Err("reserved-variable formula semantic type identity mismatch".to_owned());
+    }
+    let semantic_id = *semantic_ids
+        .iter()
+        .next()
+        .expect("one semantic type id was required above");
+    let canonical_source_binding = source_bindings
+        .iter()
+        .min_by_key(|binding| (binding.type_range.start, binding.type_range.end))
+        .ok_or_else(|| "reserved-variable formula canonical source missing".to_owned())?;
+    let normalized = term_formula
+        .normalized_types()
+        .get(semantic_id)
+        .ok_or_else(|| "reserved-variable formula normalized type missing".to_owned())?;
+    if normalized.source.range != canonical_source_binding.type_range
+        || normalized.source.spelling != canonical_source_binding.type_spelling
+    {
+        return Err("reserved-variable formula canonical source mismatch".to_owned());
+    }
     Ok(())
+}
+
+fn source_type_projection_matches(
+    input: &TypeExpressionInput,
+    source_binding: &SourceReserveBindingInput,
+    node: TypedNodeId,
+    role: &str,
+) -> bool {
+    input.site
+        == (TypedSiteRef::Role {
+            node,
+            role: TypeRole::new(role),
+        })
+        && input.source_range == source_binding.type_range
+        && input.spelling == source_binding.type_spelling
+        && input.head == source_binding.type_head
+        && input.args.is_empty()
+        && input.attributes == source_binding.type_attributes
 }
 
 fn assert_builtin_set_type_entry(
     output: &TermFormulaInferenceOutput,
     owner: &TypedSiteRef,
-    source_binding: &SourceReserveBindingInput,
     expected_id: Option<TypeEntryId>,
 ) -> Result<NormalizedTypeId, String> {
     let (id, entry) = output
@@ -2084,16 +2201,15 @@ fn assert_builtin_set_type_entry(
     let TypeEntryActual::Known(actual) = entry.actual else {
         return Err("reserved-variable equality type entry is not known".to_owned());
     };
-    if !normalized_type_is_source_builtin_set(output, actual, source_binding) {
+    if !normalized_type_is_builtin_set(output, actual) {
         return Err("reserved-variable equality normalized type mismatch".to_owned());
     }
     Ok(actual)
 }
 
-fn normalized_type_is_source_builtin_set(
+fn normalized_type_is_builtin_set(
     output: &TermFormulaInferenceOutput,
     id: NormalizedTypeId,
-    source_binding: &SourceReserveBindingInput,
 ) -> bool {
     matches!(
         output.normalized_types().get(id),
@@ -2102,8 +2218,6 @@ fn normalized_type_is_source_builtin_set(
                 && normalized.args.is_empty()
                 && normalized.attributes.positive().is_empty()
                 && normalized.attributes.negative().is_empty()
-                && normalized.source.spelling == source_binding.type_spelling
-                && normalized.source.range == source_binding.type_range
                 && normalized.status == NormalizedTypeStatus::Known
     )
 }
@@ -2565,6 +2679,19 @@ fn extract_source_distinct_reserved_variable_equality(
     )
 }
 
+fn extract_source_multiple_reserve_declaration_equality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_MULTIPLE_RESERVE_DECLARATION_EQUALITY_CONFIG,
+    )
+}
+
 fn extract_source_reserved_variable_membership(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -2711,13 +2838,16 @@ fn extract_source_reserved_variable_binary_formula(
 
     let reserve_items = surface_nodes_with_kind(ast, SurfaceNodeKind::ReserveItem);
     let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
-    let ([(_, reserve_item)], [(_, theorem)]) =
-        (reserve_items.as_slice(), theorem_items.as_slice())
-    else {
+    let [(_, theorem)] = theorem_items.as_slice() else {
         return None;
     };
-    if reserve_item.range.end > theorem.range.start
-        || subtree_has_recovery(ast, reserve_item)
+    if reserve_items.len() != config.reserve_item_count
+        || reserve_items
+            .last()
+            .is_none_or(|(_, item)| item.range.end > theorem.range.start)
+        || reserve_items
+            .iter()
+            .any(|(_, item)| subtree_has_recovery(ast, item))
         || subtree_has_recovery(ast, theorem)
         || direct_token_texts(ast, theorem).as_slice() != ["theorem", config.label, ":", ";"]
     {
@@ -2741,6 +2871,10 @@ fn extract_source_reserved_variable_binary_formula(
             && source_bindings
                 .windows(2)
                 .any(|pair| pair[0].type_range != pair[1].type_range))
+        || (config.require_distinct_type_ranges
+            && source_bindings
+                .windows(2)
+                .any(|pair| pair[0].type_range == pair[1].type_range))
     {
         return None;
     }
@@ -6362,6 +6496,7 @@ mod tests {
     use super::{
         ParseOnlyImportProvider, SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS,
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY, active_type_elaboration_cases,
         assemble_source_checker_handoff, assert_source_reserved_variable_formula_output,
         assert_source_reserved_variable_type_assertion_output,
@@ -6373,6 +6508,7 @@ mod tests {
         extract_source_imported_attribute_assertion_formula,
         extract_source_imported_non_empty_attribute_assertion_formula,
         extract_source_imported_predicate_functor_formula,
+        extract_source_multiple_reserve_declaration_equality,
         extract_source_reserved_variable_equality, extract_source_reserved_variable_inequality,
         extract_source_reserved_variable_membership,
         extract_source_reserved_variable_type_assertion, extract_source_set_enumeration_formula,
@@ -6382,7 +6518,9 @@ mod tests {
         source_formula_connective_quantifier_output, source_formula_statement_output,
         source_imported_attribute_assertion_formula_output,
         source_imported_non_empty_attribute_assertion_formula_output,
-        source_imported_predicate_functor_formula_output, source_reserved_variable_equality_output,
+        source_imported_predicate_functor_formula_output,
+        source_multiple_reserve_declaration_equality_output,
+        source_reserved_variable_equality_output,
         source_reserved_variable_formula_output_detail_keys,
         source_reserved_variable_formula_result_detail_keys,
         source_reserved_variable_inequality_output, source_reserved_variable_membership_output,
@@ -10670,6 +10808,223 @@ mod tests {
     }
 
     #[test]
+    fn source_multiple_reserve_declaration_equality_bridge_preserves_source_provenance() {
+        let source_id = source_id(124);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("multiple_reserve_declaration_equality"),
+        );
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let exact = reserve_then_identifier_equality_theorem_ast(
+            source_id,
+            vec![
+                reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+            ],
+            "MultipleReserveDeclarationEqualityPayloadBoundary",
+            "x",
+            "y",
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload =
+            extract_source_multiple_reserve_declaration_equality(&exact, module.clone(), &symbols)
+                .expect("exact multiple-reserve equality source should extract");
+        assert_eq!(payload.reserve.bridge.bindings().len(), 2);
+        assert_eq!(payload.reserve.bridge.bindings()[0].spelling, "x");
+        assert_eq!(payload.reserve.bridge.bindings()[1].spelling, "y");
+        assert_ne!(
+            payload.reserve.bridge.bindings()[0].type_range,
+            payload.reserve.bridge.bindings()[1].type_range
+        );
+        assert_eq!(payload.left_lookup_ordinal, 2);
+        assert_eq!(payload.right_lookup_ordinal, 3);
+
+        let output =
+            source_multiple_reserve_declaration_equality_output(&exact, module.clone(), &symbols)
+                .expect("exact multiple-reserve equality should reach the checker");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("multiple-reserve equality invariants should hold");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(1));
+        let source_bindings = output.payload.reserve.bridge.bindings();
+        assert_eq!(
+            output.left_result_input.source_range,
+            source_bindings[0].type_range
+        );
+        assert_eq!(
+            output
+                .left_expected_input
+                .as_ref()
+                .expect("left expected type input should exist")
+                .source_range,
+            source_bindings[0].type_range
+        );
+        assert_eq!(
+            output.right_result_input.source_range,
+            source_bindings[1].type_range
+        );
+        assert_eq!(
+            output
+                .right_expected_input
+                .as_ref()
+                .expect("right expected type input should exist")
+                .source_range,
+            source_bindings[1].type_range
+        );
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        let type_roles = output
+            .term_formula
+            .type_entries()
+            .iter()
+            .filter_map(|(_, entry)| match &entry.owner {
+                TypedSiteRef::Role { role, .. } => Some(role.as_str().to_owned()),
+                _ => None,
+            })
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            type_roles,
+            BTreeSet::from([
+                "multiple-reserve-declaration-left-expected".to_owned(),
+                "multiple-reserve-declaration-left-result".to_owned(),
+                "multiple-reserve-declaration-right-expected".to_owned(),
+                "multiple-reserve-declaration-right-result".to_owned(),
+            ])
+        );
+
+        let mut invalid_output =
+            source_multiple_reserve_declaration_equality_output(&exact, module.clone(), &symbols)
+                .expect("exact source should produce a second checker output");
+        invalid_output.right_result_input.source_range = source_bindings[0].type_range;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&invalid_output),
+            vec![
+                TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY
+                    .to_owned()
+            ]
+        );
+
+        let near_misses = [
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x", "y"],
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                "MultipleReserveDeclarationEqualityPayloadBoundary",
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                ],
+                "MultipleReserveDeclarationEqualityPayloadBoundary",
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                "MultipleReserveDeclarationEqualityPayloadBoundary",
+                "y",
+                "x",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("object")),
+                ],
+                "MultipleReserveDeclarationEqualityPayloadBoundary",
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["z"], ReserveTypeShape::Builtin("set")),
+                ],
+                "MultipleReserveDeclarationEqualityPayloadBoundary",
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                "MultipleReserveDeclarationEqualityPayloadBoundary",
+                "x",
+                "<>",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast_with_options(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                IdentifierBinaryTheoremSpec {
+                    status: Some("registration"),
+                    label: "MultipleReserveDeclarationEqualityPayloadBoundary",
+                    left: "x",
+                    operator: "=",
+                    right: "y",
+                    recovered_label: false,
+                },
+            ),
+            reserve_then_identifier_binary_theorem_ast_with_options(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                IdentifierBinaryTheoremSpec {
+                    status: None,
+                    label: "MultipleReserveDeclarationEqualityPayloadBoundary",
+                    left: "x",
+                    operator: "=",
+                    right: "y",
+                    recovered_label: true,
+                },
+            ),
+            reserve_then_two_identifier_binary_theorems_ast(
+                source_id,
+                "MultipleReserveDeclarationEqualityPayloadBoundary",
+                "=",
+            ),
+            reserve_then_builtin_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                "MultipleReserveDeclarationEqualityPayloadBoundary",
+                "1",
+                "1",
+            ),
+        ];
+        for near_miss in near_misses {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
     fn source_reserved_variable_membership_bridge_uses_real_binding_and_type_payloads() {
         let source_id = source_id(97);
         let module = ResolverModuleId::new(
@@ -11207,6 +11562,50 @@ mod tests {
             output.payload.reserve.bridge.bindings()[0].type_range,
             output.payload.reserve.bridge.bindings()[1].type_range
         );
+    }
+
+    #[test]
+    fn active_multiple_reserve_declaration_equality_fixture_preserves_real_checker_payload() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0 == "pass_type_elaboration_multiple_reserve_declaration_equality_001"
+            })
+            .expect("Task 124 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 124 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 124 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output =
+            source_multiple_reserve_declaration_equality_output(&ast, resolver.module, &symbols)
+                .expect("Task 124 real AST should reach the multiple-reserve equality seam");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("Task 124 real AST should preserve every checked payload invariant");
+        assert_ne!(output.left_binding, output.right_binding);
+        assert_ne!(
+            output.payload.reserve.bridge.bindings()[0].type_range,
+            output.payload.reserve.bridge.bindings()[1].type_range
+        );
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
     }
 
     #[test]

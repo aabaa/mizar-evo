@@ -2006,6 +2006,28 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       inventory の更新は不要である。
     - 依存: tasks 20、119。mizar-test と full workspace を検証する。
 
+124. **Exact source-derived multiple-reserve-declaration equality checker bridge を追加する。** [x]
+    - `reserve x for set; reserve y for set; theorem MultipleReserveDeclarationEqualityPayloadBoundary: x = y;`
+      だけを対象とする spec-derived active pass fixture を追加する。
+    - 受入条件: parser と resolver が 2 reserve declaration と theorem を実行し、
+      runner は real two-binding handoff を再利用して `BindingId(0)` / `BindingId(1)`
+      を保持し、両 source binding 後の use ordinal を導出し、operand ごとの
+      pre-normalization result/expected `TypeExpressionInput` に distinct written
+      type range を保持する。
+    - semantic builtin `set` は、source が deterministic canonical representative
+      である 1 `NormalizedTypeId` に intern されてよい。normalization 前の両 original
+      input を検証し、両 source range の付与だけを目的に duplicate normalized node
+      を要求・捏造してはならない。
+    - 2 `Inferred` variable term と 1 fact-free `Checked` equality、production
+      invariant validation、task-specific invalid key、near-miss matrix、real
+      frontend/resolver sidecar test を要求する。既存 expectation を rebaseline しない。
+    - exact multiple-declaration type/well-formedness だけを credit する。implicit
+      closure/order、equality truth/fact、theorem acceptance、`formula_statement`、
+      proof、CoreIr、ControlFlowIr、VC を materialize しない。
+    - spec coverage audit の Chapter 4、13、14、16 を更新する。
+      `crates/mizar-checker/src/` が変わらない限り checker source-layout update は不要。
+    - 依存: tasks 20、119、123。mizar-test と full workspace を検証する。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

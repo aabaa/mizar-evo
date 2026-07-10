@@ -2151,6 +2151,30 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       update is required unless `crates/mizar-checker/src/` changes.
     - Deps: tasks 20 and 119. Verify mizar-test and the full workspace.
 
+124. **Add exact source-derived multiple-reserve-declaration equality checker bridge.** [x]
+    - Add a spec-derived active pass fixture for only
+      `reserve x for set; reserve y for set; theorem MultipleReserveDeclarationEqualityPayloadBoundary: x = y;`.
+    - Acceptance: parser and resolver execute both reserve declarations and the
+      theorem; the runner reuses the real two-binding handoff, preserves
+      `BindingId(0)` / `BindingId(1)`, derives use ordinals after both source
+      bindings, and retains distinct written type ranges in operand-specific
+      pre-normalization result and expected `TypeExpressionInput`s.
+    - Semantic builtin `set` may intern to one `NormalizedTypeId` whose source
+      is the deterministic canonical representative. Validate both original
+      inputs before normalization; do not require or fabricate duplicate
+      normalized nodes merely to attach both source ranges.
+    - Require two `Inferred` variable terms and one fact-free `Checked`
+      equality, production invariant validation, a task-specific invalid key,
+      a near-miss matrix, and a real frontend/resolver sidecar test. Existing
+      expectations must not be rebaselined.
+    - Credit exact multiple-declaration type/well-formedness only. Do not
+      materialize implicit closure/order, equality truth/facts, theorem
+      acceptance, `formula_statement`, proof, CoreIr, ControlFlowIr, or VC.
+    - Update Chapters 4, 13, 14, and 16 in the spec coverage audit. No checker
+      source-layout update is required unless `crates/mizar-checker/src/`
+      changes.
+    - Deps: tasks 20, 119, and 123. Verify mizar-test and the full workspace.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

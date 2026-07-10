@@ -1,0 +1,3 @@
+reserve x for set;
+reserve y for set;
+theorem MultipleReserveDeclarationEqualityPayloadBoundary: x = y;

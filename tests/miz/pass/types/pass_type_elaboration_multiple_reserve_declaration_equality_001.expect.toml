@@ -1,0 +1,19 @@
+schema_version = 1
+id = "pass_type_elaboration_multiple_reserve_declaration_equality_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_multiple_reserve_declaration_equality_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.multiple_reserve_declaration_equality_source_bridge",
+]
+notes = "Active type_elaboration runner pass coverage for checker task 124: the exact equality theorem reuses the real two-declaration reserve handoff, preserves distinct x/y checker binding identities and distinct written builtin set type ranges in operand-specific pre-normalization result/expected inputs, and reaches two Inferred variable terms plus one fact-free Checked equality. Semantic builtin set remains one interned normalized identity with a canonical source representative; the pass does not duplicate normalized types to fabricate provenance. Checked means type/well-formedness only; implicit universal closure/order, equality truth/facts, theorem acceptance, formula_statement, proof skeletons, CoreIr, ControlFlowIr, VC, and proof payloads remain deferred."

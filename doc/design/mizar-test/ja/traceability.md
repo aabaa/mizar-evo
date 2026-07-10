@@ -567,7 +567,14 @@ pass row
 builtin `set` type range 1 個を保存し、independent source-order lookup と operand
 ごとの result/expected role は fact-free `Checked` equality へ到達する。implicit
 closure/order、equality truth/fact、theorem acceptance、proof、CoreIr、
-ControlFlowIr、VC は credit しない。task 120 は matching exact pass row
+ControlFlowIr、VC は credit しない。task 124 は separate exact pass row
+`reserve x for set; reserve y for set; theorem MultipleReserveDeclarationEqualityPayloadBoundary: x = y;`
+を追加する。この row は 2 declaration 固有の written type range を 4
+pre-normalization result/expected input に保持し、checker は同一の builtin `set`
+semantics を deterministic に 1 normalized type へ intern する。exact
+multiple-declaration type/well-formedness だけを credit し、implicit closure/order、
+equality truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は credit
+しない。task 120 は matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。両 identifier result と右 membership expected type は記述された
 `set` reserve から導かれ、no-fact `Checked` membership は type/well-formedness

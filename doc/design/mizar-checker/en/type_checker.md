@@ -494,6 +494,18 @@ bindings/items, status/recovery, and numeral operands on the extraction gap.
 This is type/well-formedness only: implicit universal closure and quantifier
 order, equality truth/facts, theorem acceptance, `formula_statement`, proof,
 CoreIr, ControlFlowIr, and VC remain deferred.
+Task 124 adds the exact multiple-declaration sibling
+`reserve x for set; reserve y for set; theorem MultipleReserveDeclarationEqualityPayloadBoundary: x = y;`.
+The reserve producer retains two binding identities and two distinct written
+type ranges. Four operand-specific pre-normalization result/expected inputs
+retain those respective ranges before the checker interns their identical
+builtin `set` semantics to one normalized type with the earliest deterministic
+source representative. Validation checks the original inputs independently,
+so normalized interning neither fabricates a duplicate type nor erases written
+provenance. Exact shape guards, a task-specific invalid-payload key, near misses,
+and a real frontend/resolver sidecar cover the seam. Implicit closure/order,
+truth/facts, theorem acceptance, `formula_statement`, proof, CoreIr,
+ControlFlowIr, and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

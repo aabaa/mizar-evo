@@ -481,6 +481,21 @@ the extraction gap. The pass does not credit implicit closure/order, equality
 truth/facts, theorem acceptance, `formula_statement`, proof, CoreIr,
 ControlFlowIr, or VC.
 
+Task 124 adds the exact multiple-reserve-declaration equality pass case
+`reserve x for set; reserve y for set; theorem MultipleReserveDeclarationEqualityPayloadBoundary: x = y;`.
+The runner accepts exactly two ordered reserve items, keeps `BindingId(0)` and
+`BindingId(1)`, and retains each declaration's distinct written builtin `set`
+range in that operand's result and expected pre-normalization inputs. The real
+checker interns the semantically equal inputs to one normalized type whose
+canonical source is the earliest written range; production validation checks
+the four original inputs before relying on that semantic identity. A dedicated
+invalid-payload key, near-miss matrix, and real frontend/resolver active-sidecar
+test guard the exact seam. Shared multi-name segments, reversed directives or
+operands, mixed/extra declarations, wrong operators, status/recovery, extra
+theorems, and numeral operands stay on the extraction gap. The pass does not
+credit implicit closure/order, equality truth/facts, theorem acceptance,
+`formula_statement`, proof, CoreIr, ControlFlowIr, or VC.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

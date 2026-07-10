@@ -616,8 +616,15 @@ the real multi-reserve producer preserves two binding identities and one shared
 written builtin `set` type range, while independent source-order lookups and
 operand-specific result/expected roles reach a fact-free `Checked` equality.
 It does not credit implicit closure/order, equality truth/facts, theorem
-acceptance, proof, CoreIr, ControlFlowIr, or VC. Task 120
-adds the matching exact pass row for
+acceptance, proof, CoreIr, ControlFlowIr, or VC. Task 124 adds a separate exact
+pass row
+`reserve x for set; reserve y for set; theorem MultipleReserveDeclarationEqualityPayloadBoundary: x = y;`.
+That row preserves two declaration-specific written type ranges across four
+pre-normalization result/expected inputs, while the checker deterministically
+interns their identical builtin `set` semantics to one normalized type. It
+credits only exact multiple-declaration type/well-formedness and does not credit
+implicit closure/order, equality truth/facts, theorem acceptance, proof,
+CoreIr, ControlFlowIr, or VC. Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
 written `set` reserve, and a no-fact `Checked` membership records

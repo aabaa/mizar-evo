@@ -468,6 +468,20 @@ status/recovery、numeral は extraction gap に残る。この pass は implici
 closure/order、equality truth/fact、theorem acceptance、`formula_statement`、proof、
 CoreIr、ControlFlowIr、VC を credit しない。
 
+task 124 は exact multiple-reserve-declaration equality pass case
+`reserve x for set; reserve y for set; theorem MultipleReserveDeclarationEqualityPayloadBoundary: x = y;`
+を追加する。runner は exact 2 ordered reserve item だけを受理し、`BindingId(0)` と
+`BindingId(1)` を保持し、各 declaration の distinct written builtin `set` range を
+対応する operand の result/expected pre-normalization input に保持する。real checker
+は semantically equal input を、最初の written range を canonical source とする
+1 normalized type に intern する。production validation はその semantic identity に
+依存する前に 4 original input を検証する。専用 invalid-payload key、near-miss
+matrix、real frontend/resolver active-sidecar test が exact seam を guard する。
+shared multi-name segment、reversed directive/operand、mixed/extra declaration、wrong
+operator、status/recovery、extra theorem、numeral operand は extraction gap に残る。
+この pass は implicit closure/order、equality truth/fact、theorem acceptance、
+`formula_statement`、proof、CoreIr、ControlFlowIr、VC を credit しない。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order
