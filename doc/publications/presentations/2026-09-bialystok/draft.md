@@ -65,12 +65,25 @@ The MML plain-text files state GPL-3.0-or-later / CC-BY-SA-3.0-or-later
 distribution terms; the final deck must keep article attribution, source URLs,
 and line numbers in speaker notes.
 
+Specification examples re-checked against `doc/spec/en/` on July 10, 2026:
+the standard-library namespace root is now unified as `mml` (Chapter 12),
+reduction rule selection is pattern subsumption, then guard specificity, then
+FQN tie-break (Chapter 17, §17.6.4), and template parameter inference is
+settled as unique-declared-type only, with `qua` never inferred (Chapter 18,
+§18.2.7).
+
 ## Deck Shape
 
 Thirteen sections: opening, motivation, eight stories, architecture synthesis,
 roadmap, closing. Roughly 60-70 frames; the seminar is informal, so depth is
 preferred over strict time discipline. Every story ends with questions that
 only the Bialystok team can answer.
+
+Two-tier pacing: frames marked `[deep dive]` in their headings can be skipped
+without breaking any story arc. The unmarked core path is roughly 48 frames
+(about 60-75 minutes plus discussion); deep-dive frames are taken when the
+room's interest warrants them. The generated deck renders a small "deep dive"
+tag on those frames.
 
 ## Part 0. Opening
 
@@ -147,7 +160,7 @@ What this talk does not claim:
 - AI assistance is not a substitute for proof checking.
 - The current Mizar system's achievements are the baseline, not the problem.
 
-### Frame 0.4 - How To Read The Examples
+### Frame 0.4 - How To Read The Examples [deep dive]
 
 Every code example is labeled:
 
@@ -296,7 +309,7 @@ Speaker note:
 - The point is not that `environ` is bad; it successfully drove decades of
   library growth. The point is what it costs at today's scale.
 
-### Frame 2.2 - Why It Hurts
+### Frame 2.2 - Why It Hurts [deep dive]
 
 Bullets:
 
@@ -334,7 +347,7 @@ Rules that make this deterministic:
   and theorem is traceable to exactly one import;
 - stable fully-qualified names are derived from package and module paths.
 
-### Frame 2.4 - The Evo Answer: Packages
+### Frame 2.4 - The Evo Answer: Packages [deep dive]
 
 Mizar Evo (specification example):
 
@@ -354,7 +367,7 @@ Bullets:
 - a manifest plus a lockfile makes every build reproducible;
 - versioned reuse (SemVer) replaces ad hoc copying between article sets.
 
-### Frame 2.5 - Migrating The Environment
+### Frame 2.5 - Migrating The Environment [deep dive]
 
 Migration map:
 
@@ -413,7 +426,7 @@ Speaker note:
 - Acknowledge that this compactness was a feature: structures stayed close to
   informal mathematical writing.
 
-### Frame 3.2 - Why It Hurts
+### Frame 3.2 - Why It Hurts [deep dive]
 
 Bullets:
 
@@ -536,7 +549,7 @@ Speaker note:
 - Registrations are one of Mizar's best ideas: adjectives propagate silently
   and proofs stay short. The pain is not the mechanism but its opacity.
 
-### Frame 4.2 - Why It Hurts
+### Frame 4.2 - Why It Hurts [deep dive]
 
 Bullets:
 
@@ -574,7 +587,7 @@ Bullets:
 - `@show_resolution` and explanation artifacts answer "why (not)?" with the
   actual chain, e.g. empty -> finite -> countable.
 
-### Frame 4.4 - The Evo Answer: Oriented Reductions
+### Frame 4.4 - The Evo Answer: Oriented Reductions [deep dive]
 
 Mizar Evo (specification example):
 
@@ -594,7 +607,8 @@ Bullets:
 
 - a reduction is an oriented simplification backed by an equality proof;
 - the right side must be strictly smaller, so imported rules cannot loop,
-  and rule selection is deterministic (specificity first, FQN tie-break);
+  and rule selection is deterministic (pattern subsumption, then guard
+  specificity, then FQN tie-break);
 - unoriented identification idioms become auditable `reduce` items.
 
 ### Frame 4.5 - What Is Preserved, What We Ask
@@ -622,6 +636,8 @@ Bullets:
   that must be trusted.
 - External provers (ATPs) are strong exactly where Mizar's core is
   first-order - and they are the least auditable component of all.
+- MizAR and the MPTP line of work already showed that ATP search is powerful
+  on MML premises; the open question is trust, not power.
 
 Slide text:
 
@@ -630,16 +646,15 @@ How do we get modern proof search
 without trusting the searcher?
 ```
 
+Speaker note:
+
+- Acknowledge MizAR, MPTP, and the hammer line of research explicitly: they
+  demonstrated the search power on MML. Mizar Evo's contribution is the
+  boundary that lets that power in without enlarging the trusted base.
+
 ### Frame 5.2 - The Evo Answer: A Reasoning Boundary
 
-```text
-Mizar-side semantics
-  -> well-typed, resolved obligations
-ATP-side search
-  -> candidate proof evidence
-kernel-side checking
-  -> accepted or rejected proof status
-```
+![The reasoning boundary: semantics, untrusted search, trusted checking](figures/reasoning_boundary.pdf)
 
 Key rules:
 
@@ -696,7 +711,7 @@ Speaker note:
 - The agent proposes; the verifier and kernel decide. The assistant's
   strength never enters the trusted base.
 
-### Frame 5.5 - Edit Classes: Green, Yellow, Red
+### Frame 5.5 - Edit Classes: Green, Yellow, Red [deep dive]
 
 | Class | Examples | Policy |
 |---|---|---|
@@ -762,7 +777,7 @@ Cache reuse is never proof authority.
 A clean build must always be able to reproduce every acceptance.
 ```
 
-### Frame 6.3 - The Evo Answer: A Memory Contract
+### Frame 6.3 - The Evo Answer: A Memory Contract [deep dive]
 
 ```text
 resident memory should scale with:
@@ -859,7 +874,7 @@ Bullets:
 - readable shorthands survive: `Module over R` is an automatic synonym for
   `Module[R]`, `Subset of X` for `Subset[X]`.
 
-### Frame 7.4 - Bounded Parameters And Generic Theorems
+### Frame 7.4 - Bounded Parameters And Generic Theorems [deep dive]
 
 Mizar Evo (specification example):
 
@@ -880,7 +895,7 @@ Message:
   before any proof search begins;
 - the theorem is proved once, for every commutative operation.
 
-### Frame 7.5 - One Proof, Many Instantiations
+### Frame 7.5 - One Proof, Many Instantiations [deep dive]
 
 Instantiation (specification example):
 
@@ -899,7 +914,7 @@ Message:
   paths - and notation follows the view: the generic `*` displays as `+`
   under the additive instantiation.
 
-### Frame 7.6 - Schemes Become Ordinary Templates
+### Frame 7.6 - Schemes Become Ordinary Templates [deep dive]
 
 Mizar Evo (specification example):
 
@@ -934,7 +949,10 @@ Questions for Bialystok:
 - Which MML schemes should be the first migration targets?
 - Are brackets acceptable as the canonical identity form, with `of`/`over`
   as display forms?
-- Where should parameter inference stop and demand explicit `[T]` or `qua`?
+- The specification settles inference conservatively: a parameter is
+  inferred only when the declared argument types determine it uniquely, and
+  `qua` views are never inferred. Is that conservatism right for real MML
+  idioms, or does it demand too many explicit `[T]`?
 
 ## Part 8. Story 7: Verified Computation With Algorithms
 
@@ -1011,7 +1029,7 @@ Bullets:
 - imported algorithms are opaque: downstream proofs may use only their
   `ensures` contract, never their body.
 
-### Frame 8.4 - The Evo Answer: Termination Buys Recursion
+### Frame 8.4 - The Evo Answer: Termination Buys Recursion [deep dive]
 
 Mizar Evo (specification example):
 
@@ -1029,14 +1047,13 @@ end;
 
 Bullets:
 
-- ordinary `func` definitions are first-order definitional extensions and
-  cannot be recursive;
-- a `terminating` algorithm - once its termination obligations are
-  discharged - is promoted to a genuine functor, usable in any proof;
+- ordinary `func` definitions are definitional extensions: never recursive;
+- once its termination obligations are discharged, a `terminating`
+  algorithm is promoted to a genuine functor, usable in any proof;
 - this is the only door through which recursion enters the mathematical
   layer, and it is a proof-shaped door.
 
-### Frame 8.5 - Computation Never Redefines Truth
+### Frame 8.5 - Computation Never Redefines Truth [deep dive]
 
 Bullets:
 
@@ -1084,14 +1101,7 @@ Bullets:
 
 ### Frame 9.2 - The Evo Answer: Linked, Not Merged
 
-```text
-Formalized Mathematics theorem
-  -> library package (name, version)
-  -> module path and theorem FQN
-  -> statement fingerprint
-  -> verified artifact hash
-  -> origin id (e.g. mizar:GROUP_1:...)
-```
+![The article-to-library link model](figures/fm_links.pdf)
 
 Message:
 
@@ -1099,7 +1109,7 @@ Message:
   location, semantic drift detection, reproducible verification, and
   historical continuity with MML and past Formalized Mathematics volumes.
 
-### Frame 9.3 - Who Gains What
+### Frame 9.3 - Who Gains What [deep dive]
 
 | Audience | Gain |
 |---|---|
@@ -1126,19 +1136,14 @@ Questions for Bialystok:
 
 ### Frame 10.1 - The Pipeline
 
-```text
-Source
-  -> TokenStream -> SurfaceAst -> ResolvedAst -> TypedAst
-  -> CoreIr -> VcIr -> AtpProblem -> ProofCertificate
-  -> VerifiedArtifact
-```
+![The pipeline, with responsibility groups](figures/pipeline.pdf)
 
 Message:
 
 - every boundary states who owns a fact, which artifact records it, and
   what must be recomputed when it changes - that is the entire point.
 
-### Frame 10.2 - Responsibility Split
+### Frame 10.2 - Responsibility Split [deep dive]
 
 | Layer | Responsibility |
 |---|---|
@@ -1167,7 +1172,7 @@ Message:
 - the stories are not eight separate projects; they are one pipeline seen
   from eight user-visible pains.
 
-### Frame 10.4 - Testing The Trust Boundary
+### Frame 10.4 - Testing The Trust Boundary [deep dive]
 
 Slide text:
 
@@ -1185,6 +1190,26 @@ Bullets:
 
 ## Part 11. Roadmap And Collaboration
 
+### Frame 11.0 - Where The Project Stands Today
+
+Bullets:
+
+- bilingual language specification: 24 chapters plus appendices, English
+  canonical with Japanese companions (`doc/spec/`);
+- architecture specification: 24 documents covering the pipeline, kernel,
+  certificate format, and AI agent interface (`doc/design/architecture/`);
+- a Rust workspace of 20 crates - lexer, parser, resolver, checker, VC
+  generator, ATP bridge, kernel, build system - roughly 400k lines including
+  tests;
+- focused audits completed in 2026: kernel soundness, template logic
+  encoding, SAT solver dependency;
+- the roadmap is decomposed into small, independently verifiable tasks.
+
+Message:
+
+- The end-of-2026 alpha is a milestone on a running track, not a promise on
+  an empty page.
+
 ### Frame 11.1 - Migration Is A Research Program
 
 Phases:
@@ -1201,7 +1226,7 @@ Non-goals for the alpha:
 
 - full MML verification, final compatibility layer, stable AI protocol.
 
-### Frame 11.2 - What We Will Measure
+### Frame 11.2 - What We Will Measure [deep dive]
 
 Bullets:
 
@@ -1211,7 +1236,7 @@ Bullets:
 - memory and wall-clock per module, incremental versus clean;
 - compatibility decisions that required human judgment.
 
-### Frame 11.3 - Compatibility Policy And Risks
+### Frame 11.3 - Compatibility Policy And Risks [deep dive]
 
 Policy:
 
@@ -1313,17 +1338,21 @@ slides.
 
 ## Backup C. Diagram List
 
-Required diagrams for the final deck:
+Required diagrams for the final deck (`figures/*.tex`, TikZ standalone;
+build each with `pdflatex` inside `figures/`):
 
-1. Three pressures on a proven design (Part 1).
-2. Environment-to-import migration (story 1).
-3. Structure inheritance and diamond coherence (story 2).
+1. Three pressures on a proven design (Part 1). [to be produced]
+2. Environment-to-import migration (story 1). [to be produced]
+3. Structure inheritance and diamond coherence (story 2). [to be produced]
 4. Reasoning boundary: semantics / ATP search / kernel checking (story 4).
-5. Certificate object and replay (story 4).
-6. Incremental fingerprint graph (story 5).
+   [done: `figures/reasoning_boundary.pdf`, used in frame 5.2]
+5. Certificate object and replay (story 4). [to be produced]
+6. Incremental fingerprint graph (story 5). [to be produced]
 7. Formalized Mathematics article-to-library link model (story 8).
+   [done: `figures/fm_links.pdf`, used in frame 9.2]
 8. Full pipeline with story overlay (Part 10).
-9. Roadmap timeline (Part 11).
+   [done: `figures/pipeline.pdf`, used in frame 10.1]
+9. Roadmap timeline (Part 11). [to be produced]
 
 ## Backup D. Paper Outline Seed
 
@@ -1359,3 +1388,20 @@ Use this checklist before converting to Beamer:
 - Are Red AI edits clearly forbidden?
 - Are migration claims measurable?
 - Is EBNF absent from all frames?
+
+## Backup F. Anticipated Objections
+
+Prepared answers for objections the stories do not raise themselves:
+
+| Objection | Prepared answer |
+|---|---|
+| Why not improve current Mizar incrementally? | The pains are boundary-shaped: article granularity, monolithic trust, implicit environments. Boundaries cannot be moved incrementally, but everything above them is deliberately conservative. |
+| What happens to authorship and credit of MML articles? | Origin metadata preserves article identity and authorship through migration; the `pub` namespace keeps published articles frozen and citable. |
+| Is this a fork of the community? | It is a proposal to the community; this visit is its first review. The namespace governance model assumes the Mizar team governs the `mml` root. |
+| What about GPL / CC-BY-SA obligations? | Migration preserves license and attribution of MML content; toolchain licensing is open for discussion. |
+| Is the AI angle hype? | AI assistance is an optional layer that never enters the trusted base; every proposal stands without it. |
+| Why a new kernel instead of the existing checker? | Certificate replay needs a small, auditable core. The existing checker's semantics remain the reference for obligation generation. |
+
+Speaker note:
+
+- Use these only if raised; do not present them proactively.

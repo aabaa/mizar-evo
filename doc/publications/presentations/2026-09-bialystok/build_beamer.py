@@ -46,9 +46,22 @@ LABEL_REWRITES = {
 }
 
 SECTION_LABEL_RE = re.compile(r"^[A-Za-z][A-Za-z0-9 `/'()&.,-]{0,80}:$")
+IMAGE_RE = re.compile(r"^!\[([^\]]*)\]\(([^)]+)\)$")
+DEEP_DIVE_TAG = " [deep dive]"
 FRAME_WEIGHT_LIMIT = 18.5
 MAX_CODE_LINES_PER_BLOCK = 15
 MAX_LIST_ITEMS_PER_BLOCK = 7
+
+CODE_STATUS_RE = re.compile(
+    r"^(?P<pre>.*?)\s*\((?P<status>exact MML excerpt|specification example|sketch)"
+    r"(?P<rest>[^)]*)\)$"
+)
+
+STATUS_BADGES = {
+    "exact MML excerpt": r"\badgeMML",
+    "specification example": r"\badgeSpec",
+    "sketch": r"\badgeSketch",
+}
 
 
 SPECIALS = {
@@ -189,21 +202,22 @@ def table_to_tex(rows: list[str]) -> list[str]:
             out.append(rf"\item[{label}] " + r" \par ".join(parts))
         out.extend([r"\end{description}", rf"\end{{{font_env}}}"])
         return out
-    spec = "|" + "|".join([r">{\raggedright\arraybackslash}X"] * cols) + "|"
+    spec = "".join([r">{\raggedright\arraybackslash}X"] * cols)
     out = [
         rf"\begin{{{font_env}}}",
-        r"\setlength{\tabcolsep}{1.5pt}",
-        r"\renewcommand{\arraystretch}{1.0}",
+        r"\setlength{\tabcolsep}{3pt}",
+        r"\renewcommand{\arraystretch}{1.15}",
         rf"\begin{{tabularx}}{{\textwidth}}{{{spec}}}",
-        r"\hline",
+        r"\toprule",
     ]
-    out.append(" & ".join(inline_tex(cell) for cell in header) + r" \\")
-    out.append(r"\hline")
+    out.append(
+        " & ".join(rf"\textbf{{{inline_tex(cell)}}}" for cell in header) + r" \\"
+    )
+    out.append(r"\midrule")
     for row in body:
         padded = row + [""] * (cols - len(row))
         out.append(" & ".join(inline_tex(cell) for cell in padded[:cols]) + r" \\")
-        out.append(r"\hline")
-    out.extend([r"\end{tabularx}", rf"\end{{{font_env}}}"])
+    out.extend([r"\bottomrule", r"\end{tabularx}", rf"\end{{{font_env}}}"])
     return out
 
 
@@ -216,8 +230,18 @@ def flush_paragraph(paragraph: list[str], out: list[str]) -> None:
         return
     if text.endswith(":") and len(text) <= 80:
         label = LABEL_REWRITES.get(text[:-1], text[:-1])
+        status = CODE_STATUS_RE.match(label)
         out.append(r"\smallskip")
-        out.append(rf"\textbf{{{inline_tex(label)}:}}")
+        if status:
+            pre = status.group("pre").strip()
+            badge = STATUS_BADGES[status.group("status")]
+            rest = status.group("rest").strip().lstrip(",").strip()
+            line = rf"\textbf{{{inline_tex(pre)}}}~{badge}"
+            if rest:
+                line += rf"~{{\footnotesize({inline_tex(rest)})}}"
+            out.append(line)
+        else:
+            out.append(rf"\textbf{{{inline_tex(label)}:}}")
     else:
         out.append(inline_tex(text))
         out.append("")
@@ -393,6 +417,14 @@ def split_table_block(block: list[str]) -> list[list[str]]:
     rows = block[table_index:]
     columns = len(split_table_row(rows[0])) if rows else 0
     row_limit = 3 if columns >= 4 else 5 if columns == 3 else 7
+    body_rows = rows[2:]
+    if body_rows:
+        max_row_len = max(
+            sum(len(plain_text(cell)) for cell in split_table_row(row))
+            for row in body_rows
+        )
+        if max_row_len > 110:
+            row_limit = min(row_limit, 3)
     if len(rows) <= row_limit + 2:
         return [block]
     header = rows[:2]
@@ -487,7 +519,7 @@ def block_weight(block: list[str]) -> float:
     code_lines = count_code_lines(block)
     if code_lines:
         prefix_lines = sum(1 for line in block if line.strip() and not is_code_fence(line)) - code_lines
-        return 2.2 + prefix_lines * 0.9 + code_lines * 0.75
+        return 2.5 + prefix_lines * 0.9 + code_lines * 0.78
 
     table_rows = sum(1 for line in block if line.lstrip().startswith("|"))
     if table_rows:
@@ -507,14 +539,16 @@ def block_weight(block: list[str]) -> float:
             for line in block
             if line.strip() and not is_list_marker(line) and not SECTION_LABEL_RE.match(line.strip())
         )
-        return 1.0 + list_items * 1.35 + continuation * 0.35
+        return 1.0 + list_items * 1.35 + continuation * 0.8
 
     weight = 0.0
     for line in block:
         stripped = line.strip()
         if not stripped:
             continue
-        if stripped.startswith("### ") or SECTION_LABEL_RE.match(stripped):
+        if IMAGE_RE.match(stripped):
+            weight += 9.0
+        elif stripped.startswith("### ") or SECTION_LABEL_RE.match(stripped):
             weight += 1.0
         else:
             weight += max(1.0, len(plain_text(stripped)) / 74.0)
@@ -546,14 +580,45 @@ def split_frame_lines(lines: list[str]) -> list[list[str]]:
     return chunks or [[]]
 
 
-def append_verbatim_block(out: list[str], code_lines: list[str]) -> None:
+def is_key_phrase_block(code_lines: list[str], lang: str) -> bool:
+    if lang != "text" or not code_lines or len(code_lines) > 4:
+        return False
+    for line in code_lines:
+        if "->" in line or line.startswith("  ") or len(line) > 72:
+            return False
+    return True
+
+
+def append_key_phrase(out: list[str], code_lines: list[str]) -> None:
+    body = r"\\ ".join(inline_tex(line.strip()) for line in code_lines if line.strip())
+    out.append(r"\begin{center}")
+    out.append(r"\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}")
+    out.append(rf"\centering\itshape {body}")
+    out.append(r"\end{beamercolorbox}")
+    out.append(r"\end{center}")
+
+
+def append_verbatim_block(out: list[str], code_lines: list[str], lang: str = "") -> None:
+    if is_key_phrase_block(code_lines, lang):
+        append_key_phrase(out, code_lines)
+        return
     font_size = verbatim_font_size(code_lines)
+    language = {"mizar": "mizar", "toml": "toml"}.get(lang, "")
     out.append(
-        rf"\begin{{Verbatim}}[fontsize={font_size},frame=single,framesep=0.8mm,"
-        r"framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]"
+        rf"\begin{{lstlisting}}[language={{{language}}},"
+        rf"basicstyle=\ttfamily{font_size}]"
     )
     out.extend(code_lines)
-    out.append(r"\end{Verbatim}")
+    out.append(r"\end{lstlisting}")
+
+
+def append_image(out: list[str], path: str) -> None:
+    out.append(r"\begin{center}")
+    out.append(
+        rf"\includegraphics[width=\textwidth,height=0.62\textheight,"
+        rf"keepaspectratio]{{{path}}}"
+    )
+    out.append(r"\end{center}")
 
 
 def split_speaker_notes(lines: list[str]) -> tuple[list[str], list[str]]:
@@ -602,6 +667,9 @@ def extract_key_points(lines: list[str], max_points: int = 5) -> tuple[list[str]
         if in_code:
             continue
         if not stripped:
+            flush_current()
+            continue
+        if IMAGE_RE.match(stripped):
             flush_current()
             continue
         if stripped.startswith("|"):
@@ -681,6 +749,7 @@ def render_frame_body(lines: list[str]) -> list[str]:
     paragraph: list[str] = []
     index = 0
     in_code = False
+    code_lang = ""
     code_lines: list[str] = []
 
     while index < len(lines):
@@ -691,15 +760,23 @@ def render_frame_body(lines: list[str]) -> list[str]:
             flush_paragraph(paragraph, out)
             if not in_code:
                 in_code = True
+                code_lang = stripped[3:].strip()
                 code_lines = []
             else:
-                append_verbatim_block(out, code_lines)
+                append_verbatim_block(out, code_lines, code_lang)
                 in_code = False
             index += 1
             continue
 
         if in_code:
             code_lines.append(line)
+            index += 1
+            continue
+
+        image = IMAGE_RE.match(stripped)
+        if image:
+            flush_paragraph(paragraph, out)
+            append_image(out, image.group(2))
             index += 1
             continue
 
@@ -766,7 +843,7 @@ def render_frame_body(lines: list[str]) -> list[str]:
 
     flush_paragraph(paragraph, out)
     if in_code:
-        append_verbatim_block(out, code_lines)
+        append_verbatim_block(out, code_lines, code_lang)
     return out
 
 
@@ -785,6 +862,11 @@ def parse_markdown(path: Path) -> tuple[str, list[tuple[str, str | None, list[st
         nonlocal current_title, current_lines
         if current_title is not None and include_current_section:
             heading = current_title
+            if plain_frame_title(heading) == "Title":
+                units.append(("title", heading, current_lines))
+                current_title = None
+                current_lines = []
+                return
             if current_part_number is not None and heading.startswith("Frame "):
                 frame_counters[current_part_number] = frame_counters.get(current_part_number, 0) + 1
                 heading = renumber_frame_heading(
@@ -855,12 +937,49 @@ def parse_markdown(path: Path) -> tuple[str, list[tuple[str, str | None, list[st
     return title, units
 
 
+def extract_code_blocks(lines: list[str]) -> list[list[str]]:
+    blocks: list[list[str]] = []
+    current: list[str] | None = None
+    for line in lines:
+        if is_code_fence(line):
+            if current is None:
+                current = []
+            else:
+                blocks.append(current)
+                current = None
+            continue
+        if current is not None:
+            current.append(line.rstrip("\n"))
+    return blocks
+
+
+def title_page_fields(units: list[tuple[str, str | None, list[str]]]) -> tuple[str, str, list[str]]:
+    """Extract \\title, \\subtitle, and title-page notes from the Title frame."""
+    for kind, _, body in units:
+        if kind != "title":
+            continue
+        visible, notes = split_speaker_notes(body)
+        blocks = extract_code_blocks(visible)
+        title_lines = [line.strip() for line in (blocks[0] if blocks else []) if line.strip()]
+        subtitle_lines = [
+            line.strip() for line in (blocks[1] if len(blocks) > 1 else []) if line.strip()
+        ]
+        main_title = inline_tex(title_lines[0]) if title_lines else "Mizar Evo"
+        subtitle_parts = title_lines[1:] + subtitle_lines
+        subtitle = r"\\ ".join(inline_tex(part) for part in subtitle_parts)
+        return main_title, subtitle, notes
+    return "Mizar Evo", "", []
+
+
 def emit_beamer(
     title: str,
     units: list[tuple[str, str | None, list[str]]],
     *,
     show_notes: bool = False,
 ) -> str:
+    main_title, subtitle, title_notes = title_page_fields(units)
+    if show_notes:
+        subtitle = subtitle + r"\\ \textit{presenter notes edition}" if subtitle else r"\textit{presenter notes edition}"
     out: list[str] = [
         r"\documentclass[aspectratio=169,11pt]{beamer}",
         r"\usetheme{Madrid}",
@@ -873,28 +992,38 @@ def emit_beamer(
         r"\setbeamerfont{frametitle}{size=\large}",
         r"\setbeamerfont{normal text}{size=\normalsize}",
         r"\setbeamersize{text margin left=8mm,text margin right=8mm}",
+        r"\setbeamercolor{keyphrase}{bg=blue!8,fg=black!85}",
         r"\setbeameroption{show notes}" if show_notes else r"\setbeameroption{hide notes}",
         r"\usepackage[T1]{fontenc}",
         r"\usepackage{tabularx}",
         r"\usepackage{array}",
+        r"\usepackage{booktabs}",
+        r"\usepackage{listings}",
         r"\usepackage{hyperref}",
         r"\usepackage{fancyvrb}",
+        r"\lstdefinelanguage{mizar}{morekeywords={definition,end,struct,field,property,inherit,extends,where,from,let,be,being,mode,theorem,proof,thus,hence,by,registration,cluster,coherence,reduce,reducibility,import,for,holds,st,is,func,pred,attribute,algorithm,terminating,requires,ensures,do,while,invariant,decreasing,return,var,const,if,scheme,provided,environ,vocabularies,notations,constructors,registrations,theorems,begin,qua,reconsider,consider,such,that,not,or,and,implies,per,cases,set,thesis},sensitive=true,morecomment=[l]{::}}",
+        "\\lstdefinelanguage{toml}{morecomment=[l]{\\#},morestring=[b]\"}",
+        r"\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{blue!50!black}\bfseries,commentstyle=\color{green!35!black}\itshape,stringstyle=\color{violet!70!black},showstringspaces=false,columns=fullflexible,keepspaces=true,backgroundcolor=\color{black!4},frame=single,rulecolor=\color{black!20},framesep=0.7mm,framerule=0.3pt,xleftmargin=1mm,xrightmargin=1mm,aboveskip=0.6mm,belowskip=0.8mm}",
+        r"\newcommand{\statusbadge}[2]{\colorbox{#1}{\textcolor{white}{\strut\scriptsize\sffamily\bfseries #2}}}",
+        r"\newcommand{\badgeMML}{\statusbadge{blue!45!black}{exact MML excerpt}}",
+        r"\newcommand{\badgeSpec}{\statusbadge{green!35!black}{specification example}}",
+        r"\newcommand{\badgeSketch}{\statusbadge{orange!75!black}{sketch}}",
+        r"\newcommand{\deepdivetag}{\hfill\colorbox{black!15}{\textcolor{black!65}{\strut\scriptsize\sffamily deep dive}}}",
         r"\pdfstringdefDisableCommands{\def\translate#1{#1}}",
-        r"\title{Mizar Evo}",
-        (
-            r"\subtitle{Detailed discussion deck with presenter notes for the Bia\l{}ystok Mizar team}"
-            if show_notes
-            else r"\subtitle{Detailed discussion deck for the Bia\l{}ystok Mizar team}"
-        ),
+        rf"\title{{{main_title}}}",
+        rf"\subtitle{{{subtitle}}}",
         r"\author{Mizar Evo project}",
         r"\date{September 2026}",
         "",
         r"\begin{document}",
         r"\begin{frame}",
         r"\titlepage",
-        r"\end{frame}",
-        "",
     ]
+    if title_notes:
+        out.append(r"\note{")
+        out.extend(render_frame_body(["Presenter script:", ""] + title_notes))
+        out.append(r"}")
+    out.extend([r"\end{frame}", ""])
 
     for kind, heading, body in units:
         if kind == "appendix":
@@ -904,16 +1033,21 @@ def emit_beamer(
             out.append(rf"\section{{{inline_tex(heading or '')}}}")
             continue
         if kind == "frame":
+            is_deep = DEEP_DIVE_TAG in (heading or "")
+            heading = (heading or "").replace(DEEP_DIVE_TAG, "")
             visible_body, explicit_notes = split_speaker_notes(body)
             chunks = split_frame_lines(visible_body)
             for chunk_index, chunk in enumerate(chunks):
-                chunk_heading = heading or ""
+                chunk_heading = heading
                 if len(chunks) > 1:
                     chunk_heading = f"{chunk_heading} ({chunk_index + 1}/{len(chunks)})"
                 chunk_notes = explicit_notes if chunk_index == 0 else []
                 body_tex = render_frame_body(chunk)
                 note_tex = render_frame_body(make_talk_track(chunk_heading, chunk, chunk_notes))
-                out.append(rf"\begin{{frame}}[fragile,t]{{{frame_title(chunk_heading)}}}")
+                title_tex = frame_title(chunk_heading)
+                if is_deep:
+                    title_tex += r"\deepdivetag"
+                out.append(rf"\begin{{frame}}[fragile,t]{{{title_tex}}}")
                 out.extend(body_tex or [r"\vfill"])
                 out.append(r"\note{")
                 out.extend(note_tex or [r"\vfill"])

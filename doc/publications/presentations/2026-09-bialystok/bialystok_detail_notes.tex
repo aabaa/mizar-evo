@@ -9,42 +9,35 @@
 \setbeamerfont{frametitle}{size=\large}
 \setbeamerfont{normal text}{size=\normalsize}
 \setbeamersize{text margin left=8mm,text margin right=8mm}
+\setbeamercolor{keyphrase}{bg=blue!8,fg=black!85}
 \setbeameroption{show notes}
 \usepackage[T1]{fontenc}
 \usepackage{tabularx}
 \usepackage{array}
+\usepackage{booktabs}
+\usepackage{listings}
 \usepackage{hyperref}
 \usepackage{fancyvrb}
+\lstdefinelanguage{mizar}{morekeywords={definition,end,struct,field,property,inherit,extends,where,from,let,be,being,mode,theorem,proof,thus,hence,by,registration,cluster,coherence,reduce,reducibility,import,for,holds,st,is,func,pred,attribute,algorithm,terminating,requires,ensures,do,while,invariant,decreasing,return,var,const,if,scheme,provided,environ,vocabularies,notations,constructors,registrations,theorems,begin,qua,reconsider,consider,such,that,not,or,and,implies,per,cases,set,thesis},sensitive=true,morecomment=[l]{::}}
+\lstdefinelanguage{toml}{morecomment=[l]{\#},morestring=[b]"}
+\lstset{basicstyle=\ttfamily\small,keywordstyle=\color{blue!50!black}\bfseries,commentstyle=\color{green!35!black}\itshape,stringstyle=\color{violet!70!black},showstringspaces=false,columns=fullflexible,keepspaces=true,backgroundcolor=\color{black!4},frame=single,rulecolor=\color{black!20},framesep=0.7mm,framerule=0.3pt,xleftmargin=1mm,xrightmargin=1mm,aboveskip=0.6mm,belowskip=0.8mm}
+\newcommand{\statusbadge}[2]{\colorbox{#1}{\textcolor{white}{\strut\scriptsize\sffamily\bfseries #2}}}
+\newcommand{\badgeMML}{\statusbadge{blue!45!black}{exact MML excerpt}}
+\newcommand{\badgeSpec}{\statusbadge{green!35!black}{specification example}}
+\newcommand{\badgeSketch}{\statusbadge{orange!75!black}{sketch}}
+\newcommand{\deepdivetag}{\hfill\colorbox{black!15}{\textcolor{black!65}{\strut\scriptsize\sffamily deep dive}}}
 \pdfstringdefDisableCommands{\def\translate#1{#1}}
 \title{Mizar Evo}
-\subtitle{Detailed discussion deck with presenter notes for the Bia\l{}ystok Mizar team}
+\subtitle{Readable, AI-Ready, Scalable Formal Mathematics\\ Eight problems, eight proposals\\ A discussion with the Bialystok Mizar team, September 2026\\ \textit{presenter notes edition}}
 \author{Mizar Evo project}
 \date{September 2026}
 
 \begin{document}
 \begin{frame}
 \titlepage
-\end{frame}
-
-\section{Part 0. Opening}
-\begin{frame}[fragile,t]{0.1 - Title}
-\smallskip
-\textbf{Title:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-Mizar Evo
-Readable, AI-Ready, Scalable Formal Mathematics
-\end{Verbatim}
-\smallskip
-\textbf{Subtitle:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-Eight problems, eight proposals
-A discussion with the Bialystok Mizar team, September 2026
-\end{Verbatim}
 \note{
 \smallskip
 \textbf{Presenter script:}
-\smallskip
-\textbf{Say:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
@@ -56,18 +49,19 @@ A discussion with the Bialystok Mizar team, September 2026
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{0.2 - A First Look}
+\section{Part 0. Opening}
+\begin{frame}[fragile,t]{0.1 - A First Look}
 \smallskip
-\textbf{Legacy Mizar (exact MML excerpt):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Legacy Mizar}~\badgeMML
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 definition
   struct (1-sorted) addMagma (# carrier -> set, addF -> BinOp of the carrier
   #);
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 definition
   struct AddMagma where
     field carrier -> set;
@@ -79,7 +73,7 @@ definition
     field add from binop;    :: renamed view
   end;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -95,13 +89,14 @@ end;
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{0.3 - The Proposal In One Sentence}
+\begin{frame}[fragile,t]{0.2 - The Proposal In One Sentence}
 \smallskip
 \textbf{Key Phrase:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-Preserve Mizar's mathematical vernacular.
-Modernize the compiler, verifier, artifact, and publication layers.
-\end{Verbatim}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape Preserve Mizar's mathematical vernacular.\\ Modernize the compiler, verifier, artifact, and publication layers.
+\end{beamercolorbox}
+\end{center}
 \smallskip
 \textbf{What this talk does not claim:}
 \begin{itemize}
@@ -131,22 +126,20 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{0.4 - How To Read The Examples}
+\begin{frame}[fragile,t]{0.3 - How To Read The Examples\deepdivetag}
 \smallskip
 \textbf{Every code example is labeled:}
 \begin{footnotesize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Label & Meaning \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Label} & \textbf{Meaning} \\
+\midrule
 exact MML excerpt & verbatim current MML text, with article and line numbers \\
-\hline
 specification example & from the Mizar Evo language specification \\
-\hline
 sketch & illustrative; not yet fixed by the specification \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{footnotesize}
 
@@ -174,7 +167,7 @@ For the table, read the row labels first, then the design reason.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{0.5 - What We Need From This Visit}
+\begin{frame}[fragile,t]{0.4 - What We Need From This Visit}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -189,10 +182,11 @@ For the table, read the row labels first, then the design reason.
 \end{itemize}
 \smallskip
 \textbf{Running question:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-What must Mizar Evo preserve so that the Mizar community
-still recognizes it as Mizar?
-\end{Verbatim}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape What must Mizar Evo preserve so that the Mizar community\\ still recognizes it as Mizar?
+\end{beamercolorbox}
+\end{center}
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -374,25 +368,24 @@ After the example, say which design obligation the syntax makes visible.
 \begin{frame}[fragile,t]{1.5 - The Design Rule}
 \smallskip
 \textbf{Key Phrase:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-Do not trade away readability to gain automation.
-Use automation to protect and extend readability.
-\end{Verbatim}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape Do not trade away readability to gain automation.\\ Use automation to protect and extend readability.
+\end{beamercolorbox}
+\end{center}
 \smallskip
 \textbf{Three pillars, one test:}
 \begin{footnotesize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Pillar & Test for every feature \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Pillar} & \textbf{Test for every feature} \\
+\midrule
 Readability & does proof text still read as mathematics? \\
-\hline
 AI-readiness & can a tool see bounded, auditable context? \\
-\hline
 Scalability & do boundaries stay stable as the library grows? \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{footnotesize}
 
@@ -415,8 +408,8 @@ For the table, read the row labels first, then the design reason.
 \section{Part 2. Story 1: Dependencies You Can See}
 \begin{frame}[fragile,t]{2.1 - The Pain}
 \smallskip
-\textbf{Legacy Mizar (exact MML excerpt):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Legacy Mizar}~\badgeMML
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 environ
 
  vocabularies XBOOLE_0, SUBSET_1, BINOP_1, ZFMISC_1, STRUCT_0, ARYTM_3,
@@ -428,7 +421,7 @@ environ
  theorems STRUCT_0;
 
 begin :: Additive structures
-\end{Verbatim}
+\end{lstlisting}
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -445,7 +438,7 @@ begin :: Additive structures
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.2 - Why It Hurts}
+\begin{frame}[fragile,t]{2.2 - Why It Hurts\deepdivetag}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -485,8 +478,8 @@ begin :: Additive structures
 
 \begin{frame}[fragile,t]{2.3 - The Evo Answer: Import Prelude}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 import .function;
 import mml.algebra.structure.sorted;
 
@@ -495,7 +488,7 @@ definition
   mode BinOpDef: BinOp of S is
     Function of [: S.carrier, S.carrier :], S.carrier;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Rules that make this deterministic:}
 \begin{itemize}
@@ -524,10 +517,10 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.4 - The Evo Answer: Packages}
+\begin{frame}[fragile,t]{2.4 - The Evo Answer: Packages\deepdivetag}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={toml},basicstyle=\ttfamily\footnotesize]
 [package]
 name    = "algebra"
 version = "2.3.1"
@@ -536,7 +529,7 @@ edition = "2025"
 [dependencies]
 mml_core = "^1.0"
 topology = { version = "^0.9", features = ["metric"] }
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -563,28 +556,23 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{2.5 - Migrating The Environment}
+\begin{frame}[fragile,t]{2.5 - Migrating The Environment\deepdivetag}
 \smallskip
 \textbf{Migration map:}
 \begin{footnotesize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Current environ role & Evo target \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Current environ role} & \textbf{Evo target} \\
+\midrule
 vocabularies & exported symbols and lexical metadata \\
-\hline
 notations & imported notation metadata \\
-\hline
 constructors & visible definitions and constructors \\
-\hline
 registrations & import-scoped registration index \\
-\hline
 requirements & package or prelude policy \\
-\hline
 article theorem labels & module-qualified theorem identities \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{footnotesize}
 
@@ -653,13 +641,13 @@ For the table, read the row labels first, then the design reason.
 \section{Part 3. Story 2: Structures Without Hidden Merges}
 \begin{frame}[fragile,t]{3.1 - The Pain}
 \smallskip
-\textbf{Legacy Mizar (exact MML excerpt):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Legacy Mizar}~\badgeMML
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 definition
   struct (1-sorted) addMagma (# carrier -> set, addF -> BinOp of the carrier
   #);
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -696,7 +684,7 @@ end;
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{3.2 - Why It Hurts}
+\begin{frame}[fragile,t]{3.2 - Why It Hurts\deepdivetag}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -734,8 +722,8 @@ end;
 
 \begin{frame}[fragile,t]{3.3 - The Evo Answer: Field, Property, Attribute}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 definition
   struct AddLoopStr where
     field carrier -> set;
@@ -743,22 +731,20 @@ definition
     property zero -> Element of carrier;
   end;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Three distinct concepts:}
 \begin{footnotesize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Concept & Meaning & Consequence \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Concept} & \textbf{Meaning} & \textbf{Consequence} \\
+\midrule
 \texttt{field} & intrinsic data supplied by the value & constructor shape, equality \\
-\hline
 \texttt{property} & uniquely determined canonical value & existence/uniqueness obligations \\
-\hline
 \texttt{attribute} & predicate-style refinement & cluster propagation, not layout \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{footnotesize}
 
@@ -776,8 +762,8 @@ Use this as the transition: The Evo Answer: Field, Property, Attribute. Point to
 
 \begin{frame}[fragile,t]{3.4 - The Evo Answer: Explicit Inheritance}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 definition
   struct AddMagma where
     field carrier -> set;
@@ -789,7 +775,7 @@ definition
     field add from binop;    :: renamed
   end;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -820,8 +806,8 @@ After the example, say which design obligation the syntax makes visible.
 
 \begin{frame}[fragile,t]{3.5 - The Evo Answer: Diamonds Become Checkable}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 struct DoubleLoopStr where
   field carrier -> set;
   field add -> BinOp of carrier;
@@ -832,7 +818,7 @@ end;
 
 inherit DoubleLoopStr extends AddLoopStr;
 inherit DoubleLoopStr extends MulLoopStr;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -900,8 +886,8 @@ After the example, say which design obligation the syntax makes visible.
 \section{Part 4. Story 3: Automation You Can Audit}
 \begin{frame}[fragile,t]{4.1 - The Pain}
 \smallskip
-\textbf{Legacy Mizar (exact MML excerpt):}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Legacy Mizar}~\badgeMML
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 registration
   let M be addMagma;
   cluster right_add-cancelable left_add-cancelable -> add-cancelable for
@@ -909,7 +895,7 @@ Element
     of M;
   coherence;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -925,7 +911,7 @@ end;
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{4.2 - Why It Hurts}
+\begin{frame}[fragile,t]{4.2 - Why It Hurts\deepdivetag}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -963,8 +949,8 @@ end;
 
 \begin{frame}[fragile,t]{4.3 - The Evo Answer: Labeled, Traceable Registrations}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 registration
   cluster EmptyImpliesFinite: empty -> finite for set;
   coherence proof ... end;
@@ -972,7 +958,7 @@ registration
   cluster FiniteImpliesCountable: finite -> countable for set;
   coherence proof ... end;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -1001,10 +987,10 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{4.4 - The Evo Answer: Oriented Reductions}
+\begin{frame}[fragile,t]{4.4 - The Evo Answer: Oriented Reductions\deepdivetag}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 registration
   let n be Nat;
   reduce NatAddZero: n + 0 to n;
@@ -1014,7 +1000,7 @@ registration
     thus n + 0 = n by mml.number.natural.Nat_add_zero;
   end;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -1022,7 +1008,7 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item a reduction is an oriented simplification backed by an equality proof;
-\item the right side must be strictly smaller, so imported rules cannot loop, and rule selection is deterministic (specificity first, FQN tie-break);
+\item the right side must be strictly smaller, so imported rules cannot loop, and rule selection is deterministic (pattern subsumption, then guard specificity, then FQN tie-break);
 \item unoriented identification idioms become auditable \texttt{reduce} items.
 \end{itemize}
 \note{
@@ -1035,7 +1021,7 @@ end;
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
 \item a reduction is an oriented simplification backed by an equality proof;
-\item the right side must be strictly smaller, so imported rules cannot loop, and rule selection is deterministic (specificity first, FQN tie-break);
+\item the right side must be strictly smaller, so imported rules cannot loop, and rule selection is deterministic (pattern subsumption, then guard specificity, then FQN tie-break);
 \item unoriented identification idioms become auditable reduce items.
 \end{itemize}
 After the example, say which design obligation the syntax makes visible.
@@ -1090,16 +1076,26 @@ After the example, say which design obligation the syntax makes visible.
 \item Users want stronger automation: bigger \texttt{by} steps, hammer-style search.
 \item But in a monolithic verifier, every gain in search power grows the code that must be trusted.
 \item External provers (ATPs) are strong exactly where Mizar's core is first-order - and they are the least auditable component of all.
+\item MizAR and the MPTP line of work already showed that ATP search is powerful on MML premises; the open question is trust, not power.
 \end{itemize}
 \smallskip
 \textbf{Key Phrase:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-How do we get modern proof search
-without trusting the searcher?
-\end{Verbatim}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape How do we get modern proof search\\ without trusting the searcher?
+\end{beamercolorbox}
+\end{center}
 \note{
 \smallskip
 \textbf{Presenter script:}
+\smallskip
+\textbf{Say:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Acknowledge MizAR, MPTP, and the hammer line of research explicitly: they demonstrated the search power on MML. Mizar Evo's contribution is the boundary that lets that power in without enlarging the trusted base.
+\end{itemize}
 \smallskip
 \textbf{Read aloud:}
 \begin{itemize}
@@ -1110,20 +1106,13 @@ without trusting the searcher?
 \item But in a monolithic verifier, every gain in search power grows the code that must be trusted.
 \item External provers (ATPs) are strong exactly where Mizar's core is first-order - and they are the least auditable component of all.
 \end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
 }
 \end{frame}
 
 \begin{frame}[fragile,t]{5.2 - The Evo Answer: A Reasoning Boundary}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-Mizar-side semantics
-  -> well-typed, resolved obligations
-ATP-side search
-  -> candidate proof evidence
-kernel-side checking
-  -> accepted or rejected proof status
-\end{Verbatim}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.62\textheight,keepaspectratio]{figures/reasoning_boundary.pdf}
+\end{center}
 \smallskip
 \textbf{Key rules:}
 \begin{itemize}
@@ -1147,13 +1136,11 @@ kernel-side checking
 \item the kernel never searches for proofs;
 \item deterministic pre-ATP discharge needs replayable evidence too - nothing is accepted because an earlier phase said "done".
 \end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
 }
 \end{frame}
 
 \begin{frame}[fragile,t]{5.3 - Certificates, Not Success Bits}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{lstlisting}[language={},basicstyle=\ttfamily\footnotesize]
 Certificate
   target VC fingerprint
   kernel profile
@@ -1162,7 +1149,7 @@ Certificate
   substitutions
   resolution trace
   final goal
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -1193,8 +1180,8 @@ After the example, say which design obligation the syntax makes visible.
 
 \begin{frame}[fragile,t]{5.4 - The Same Boundary Tames AI}
 \smallskip
-\textbf{Legacy Mizar (exact MML excerpt):}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Legacy Mizar}~\badgeMML
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 theorem
   for F being non degenerated ZeroOneStr holds 1.F in NonZero F
 proof
@@ -1202,7 +1189,7 @@ proof
   not 1.F in {0.F} by TARSKI:def 1;
   hence thesis by XBOOLE_0:def 5;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -1234,29 +1221,27 @@ end;
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{5.5 - Edit Classes: Green, Yellow, Red}
+\begin{frame}[fragile,t]{5.5 - Edit Classes: Green, Yellow, Red\deepdivetag}
 \begin{footnotesize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Class & Examples & Policy \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Class} & \textbf{Examples} & \textbf{Policy} \\
+\midrule
 Green & add citation, insert \texttt{qua}, info annotation & auto-proposable, still verified \\
-\hline
 Yellow & add import, local lemma, registration & proposed with human review \\
-\hline
 Red & weaken theorem, change definition, add axiom & forbidden to ordinary agents \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{footnotesize}
 
 \smallskip
-\textbf{Forbidden repair (sketch):}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Forbidden repair}~\badgeSketch
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 theorem
   for x be Nat holds x + 0 = x or x = 0;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -1363,10 +1348,11 @@ For the table, read the row labels first, then the design reason.
 \end{itemize}
 \smallskip
 \textbf{Rule:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-Cache reuse is never proof authority.
-A clean build must always be able to reproduce every acceptance.
-\end{Verbatim}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape Cache reuse is never proof authority.\\ A clean build must always be able to reproduce every acceptance.
+\end{beamercolorbox}
+\end{center}
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -1385,8 +1371,8 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{6.3 - The Evo Answer: A Memory Contract}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\begin{frame}[fragile,t]{6.3 - The Evo Answer: A Memory Contract\deepdivetag}
+\begin{lstlisting}[language={},basicstyle=\ttfamily\footnotesize]
 resident memory should scale with:
   active source
   imported public interfaces
@@ -1397,7 +1383,7 @@ not with:
   imported proof bodies
   private lemmas outside the interface
   registration data outside the import closure
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -1461,14 +1447,14 @@ After the example, say which design obligation the syntax makes visible.
 \section{Part 7. Story 6: Templates For Generic Mathematics}
 \begin{frame}[fragile,t]{7.1 - The Pain, Part One: Schemes Are Fenced Off}
 \smallskip
-\textbf{Legacy Mizar (exact MML excerpt):}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Legacy Mizar}~\badgeMML
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 scheme
   NatInd { P[Nat] } : for k being Nat holds P[k]
 provided
 A1: P[0] and
 A2: for k be Nat st P[k] holds P[k + 1]
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -1539,8 +1525,8 @@ A2: for k be Nat st P[k] holds P[k + 1]
 
 \begin{frame}[fragile,t]{7.3 - The Evo Answer: Templates}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 definition
   let T be type;
   struct MagmaStr[T] where
@@ -1548,7 +1534,7 @@ definition
     field binop -> BinOp of T;
   end;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -1577,10 +1563,10 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{7.4 - Bounded Parameters And Generic Theorems}
+\begin{frame}[fragile,t]{7.4 - Bounded Parameters And Generic Theorems\deepdivetag}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 definition
   let T be type extends commutative Magma;
   theorem PermProduct[T]:
@@ -1589,7 +1575,7 @@ definition
     holds Product[T](s) = Product[T](s * p)
   proof ... end;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -1616,17 +1602,17 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{7.5 - One Proof, Many Instantiations}
+\begin{frame}[fragile,t]{7.5 - One Proof, Many Instantiations\deepdivetag}
 \smallskip
-\textbf{Instantiation (specification example):}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Instantiation}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 PermProduct[AddMagma]              :: additive form
 PermProduct[commutative MulMagma]  :: multiplicative form
 
 let R be commutative Ring;
 PermProduct[R qua AddMagma]        :: R's additive view
 PermProduct[R qua MulMagma]        :: R's multiplicative view
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -1651,10 +1637,10 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{7.6 - Schemes Become Ordinary Templates}
+\begin{frame}[fragile,t]{7.6 - Schemes Become Ordinary Templates\deepdivetag}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 definition
   let P be pred(Nat);
   theorem NatInduction[P]:
@@ -1662,7 +1648,7 @@ definition
     implies for n being Nat holds P(n)
   proof ... end;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -1710,7 +1696,7 @@ After the example, say which design obligation the syntax makes visible.
 \setlength{\parskip}{0pt}
 \item Which MML schemes should be the first migration targets?
 \item Are brackets acceptable as the canonical identity form, with \texttt{of}/\texttt{over} as display forms?
-\item Where should parameter inference stop and demand explicit \texttt{[T]} or \texttt{qua}?
+\item The specification settles inference conservatively: a parameter is inferred only when the declared argument types determine it uniquely, and \texttt{qua} views are never inferred. Is that conservatism right for real MML idioms, or does it demand too many explicit \texttt{[T]}?
 \end{itemize}
 \note{
 \smallskip
@@ -1744,10 +1730,11 @@ After the example, say which design obligation the syntax makes visible.
 \end{itemize}
 \smallskip
 \textbf{Key Phrase:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-The library describes computation.
-It cannot perform or export it.
-\end{Verbatim}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape The library describes computation.\\ It cannot perform or export it.
+\end{beamercolorbox}
+\end{center}
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -1768,8 +1755,8 @@ After the example, say which design obligation the syntax makes visible.
 
 \begin{frame}[fragile,t]{8.2 - The Evo Answer: Algorithms With Contracts}
 \smallskip
-\textbf{Mizar Evo (specification example, condensed from spec section 20.12):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec~{\footnotesize(condensed from spec section 20.12)}
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 definition
   let a, b be Nat;
   terminating algorithm euclid_gcd(a, b) -> Nat
@@ -1785,7 +1772,7 @@ definition
     return x;
   end;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -1818,8 +1805,8 @@ end;
 
 \begin{frame}[fragile,t]{8.3 - The Evo Answer: Proof By Computation}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\small]
 theorem EuclidGcd12_8:  euclid_gcd(12, 8)  = 4  by computation;
 theorem EuclidGcd100_75: euclid_gcd(100, 75) = 25 by computation;
 
@@ -1827,7 +1814,7 @@ theorem Fact10: factorial(10) = 3628800
 proof
   thus thesis by computation(steps: 100000);
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -1856,10 +1843,10 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{8.4 - The Evo Answer: Termination Buys Recursion}
+\begin{frame}[fragile,t]{8.4 - The Evo Answer: Termination Buys Recursion\deepdivetag}
 \smallskip
-\textbf{Mizar Evo (specification example):}
-\begin{Verbatim}[fontsize=\footnotesize,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
+\textbf{Mizar Evo}~\badgeSpec
+\begin{lstlisting}[language={mizar},basicstyle=\ttfamily\footnotesize]
 definition
   let n be Nat;
   terminating algorithm factorial(n) -> Nat
@@ -1869,15 +1856,15 @@ definition
     return n * factorial(n - 1);
   end;
 end;
-\end{Verbatim}
+\end{lstlisting}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item ordinary \texttt{func} definitions are first-order definitional extensions and cannot be recursive;
-\item a \texttt{terminating} algorithm - once its termination obligations are discharged - is promoted to a genuine functor, usable in any proof;
+\item ordinary \texttt{func} definitions are definitional extensions: never recursive;
+\item once its termination obligations are discharged, a \texttt{terminating} algorithm is promoted to a genuine functor, usable in any proof;
 \item this is the only door through which recursion enters the mathematical layer, and it is a proof-shaped door.
 \end{itemize}
 \note{
@@ -1889,8 +1876,8 @@ end;
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item ordinary func definitions are first-order definitional extensions and cannot be recursive;
-\item a terminating algorithm - once its termination obligations are discharged - is promoted to a genuine functor, usable in any proof;
+\item ordinary func definitions are definitional extensions: never recursive;
+\item once its termination obligations are discharged, a terminating algorithm is promoted to a genuine functor, usable in any proof;
 \item this is the only door through which recursion enters the mathematical layer, and it is a proof-shaped door.
 \end{itemize}
 After the example, say which design obligation the syntax makes visible.
@@ -1898,7 +1885,7 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{8.5 - Computation Never Redefines Truth}
+\begin{frame}[fragile,t]{8.5 - Computation Never Redefines Truth\deepdivetag}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -2001,14 +1988,9 @@ After the example, say which design obligation the syntax makes visible.
 \end{frame}
 
 \begin{frame}[fragile,t]{9.2 - The Evo Answer: Linked, Not Merged}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-Formalized Mathematics theorem
-  -> library package (name, version)
-  -> module path and theorem FQN
-  -> statement fingerprint
-  -> verified artifact hash
-  -> origin id (e.g. mizar:GROUP_1:...)
-\end{Verbatim}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.62\textheight,keepaspectratio]{figures/fm_links.pdf}
+\end{center}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -2028,27 +2010,22 @@ Formalized Mathematics theorem
 \setlength{\parskip}{0pt}
 \item each layer answers a different question: scholarly citation, current location, semantic drift detection, reproducible verification, and historical continuity with MML and past Formalized Mathematics volumes.
 \end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{9.3 - Who Gains What}
+\begin{frame}[fragile,t]{9.3 - Who Gains What\deepdivetag}
 \begin{footnotesize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Audience & Gain \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Audience} & \textbf{Gain} \\
+\midrule
 readers & prose stays primary; formal source is one click away \\
-\hline
 maintainers & refactoring no longer rewrites published exposition \\
-\hline
 authors & articles cite stable identities, not file layouts \\
-\hline
 AI tools & prose for retrieval, fingerprints for exact context \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{footnotesize}
 
@@ -2100,12 +2077,9 @@ Use this as the transition: Who Gains What. Point to the visible example, questi
 
 \section{Part 10. Architecture In One Picture}
 \begin{frame}[fragile,t]{10.1 - The Pipeline}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-Source
-  -> TokenStream -> SurfaceAst -> ResolvedAst -> TypedAst
-  -> CoreIr -> VcIr -> AtpProblem -> ProofCertificate
-  -> VerifiedArtifact
-\end{Verbatim}
+\begin{center}
+\includegraphics[width=\textwidth,height=0.62\textheight,keepaspectratio]{figures/pipeline.pdf}
+\end{center}
 \smallskip
 \textbf{Message:}
 \begin{itemize}
@@ -2125,33 +2099,25 @@ Source
 \setlength{\parskip}{0pt}
 \item every boundary states who owns a fact, which artifact records it, and what must be recomputed when it changes - that is the entire point.
 \end{itemize}
-After the example, say which design obligation the syntax makes visible.
-
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{10.2 - Responsibility Split}
+\begin{frame}[fragile,t]{10.2 - Responsibility Split\deepdivetag}
 \begin{footnotesize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Layer & Responsibility \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Layer} & \textbf{Responsibility} \\
+\midrule
 frontend & lexing, parsing, recovery \\
-\hline
 resolver & imports, names, labels, namespaces \\
-\hline
 checker & soft types, clusters, registrations, overloads \\
-\hline
 elaborator & core logical representation \\
-\hline
 VC generator & proof and algorithm obligations \\
-\hline
 ATP layer plus kernel & untrusted search, then acceptance by checking \\
-\hline
 artifact emitter & stable outputs for tools and dependents \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{footnotesize}
 
@@ -2167,26 +2133,20 @@ Use this as the transition: Responsibility Split. Point to the visible example, 
 
 \begin{frame}[fragile,t]{10.3 - Where The Eight Stories Live}
 \begin{footnotesize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Story & Pipeline home \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Story} & \textbf{Pipeline home} \\
+\midrule
 dependencies & resolver, package manager \\
-\hline
 structures and automation & checker (inheritance and cluster graphs, traces) \\
-\hline
 search vs trust & ATP layer, kernel, certificates \\
-\hline
 scale & artifacts, fingerprints, scheduler \\
-\hline
 templates & elaborator (checked instantiation) \\
-\hline
 algorithms & VC generator, MVM \\
-\hline
 publication & artifact emitter, doc generation \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{footnotesize}
 
@@ -2214,14 +2174,14 @@ For the table, read the row labels first, then the design reason.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{10.4 - Testing The Trust Boundary}
+\begin{frame}[fragile,t]{10.4 - Testing The Trust Boundary\deepdivetag}
 \smallskip
 \textbf{Key Phrase:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-Reject what must not pass
-before
-Accept everything that should pass
-\end{Verbatim}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape Reject what must not pass\\ before\\ Accept everything that should pass
+\end{beamercolorbox}
+\end{center}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -2249,7 +2209,46 @@ After the example, say which design obligation the syntax makes visible.
 \end{frame}
 
 \section{Part 11. Roadmap And Collaboration}
-\begin{frame}[fragile,t]{11.1 - Migration Is A Research Program}
+\begin{frame}[fragile,t]{11.1 - Where The Project Stands Today}
+\smallskip
+\textbf{Key Points:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item bilingual language specification: 24 chapters plus appendices, English canonical with Japanese companions (\texttt{doc/spec/});
+\item architecture specification: 24 documents covering the pipeline, kernel, certificate format, and AI agent interface (\texttt{doc/design/architecture/});
+\item a Rust workspace of 20 crates - lexer, parser, resolver, checker, VC generator, ATP bridge, kernel, build system - roughly 400k lines including tests;
+\item focused audits completed in 2026: kernel soundness, template logic encoding, SAT solver dependency;
+\item the roadmap is decomposed into small, independently verifiable tasks.
+\end{itemize}
+\smallskip
+\textbf{Message:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item The end-of-2026 alpha is a milestone on a running track, not a promise on an empty page.
+\end{itemize}
+\note{
+\smallskip
+\textbf{Presenter script:}
+\smallskip
+\textbf{Read aloud:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item bilingual language specification: 24 chapters plus appendices, English canonical with Japanese companions (doc/spec/);
+\item architecture specification: 24 documents covering the pipeline, kernel, certificate format, and AI agent interface (doc/design/architecture/);
+\item a Rust workspace of 20 crates - lexer, parser, resolver, checker, VC generator, ATP bridge, kernel, build system - roughly 400k lines including tests;
+\item focused audits completed in 2026: kernel soundness, template logic encoding, SAT solver dependency;
+\item the roadmap is decomposed into small, independently verifiable tasks.
+\end{itemize}
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{11.2 - Migration Is A Research Program}
 \smallskip
 \textbf{Phases:}
 \begin{enumerate}
@@ -2285,7 +2284,7 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{11.2 - What We Will Measure}
+\begin{frame}[fragile,t]{11.3 - What We Will Measure\deepdivetag}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -2316,7 +2315,7 @@ After the example, say which design obligation the syntax makes visible.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{11.3 - Compatibility Policy And Risks}
+\begin{frame}[fragile,t]{11.4 - Compatibility Policy And Risks\deepdivetag}
 \smallskip
 \textbf{Policy:}
 \begin{itemize}
@@ -2328,20 +2327,17 @@ After the example, say which design obligation the syntax makes visible.
 \item record every divergence from old behavior with a reason and a test.
 \end{itemize}
 \begin{footnotesize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Risk & Mitigation \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Risk} & \textbf{Mitigation} \\
+\midrule
 compatibility work consumes the project & representative slices first, no big-bang translation \\
-\hline
 registrations behave differently & trace artifacts and comparison reports early \\
-\hline
 package layout breaks journal links & origin metadata, article-to-library identifiers \\
-\hline
 AI edits hide migration mistakes & Red edits stay forbidden; verifier artifacts required \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{footnotesize}
 
@@ -2363,7 +2359,7 @@ For the table, read the row labels first, then the design reason.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{11.4 - What September 2026 Should Produce}
+\begin{frame}[fragile,t]{11.5 - What September 2026 Should Produce}
 \smallskip
 \textbf{Key Points:}
 \begin{itemize}
@@ -2394,7 +2390,7 @@ For the table, read the row labels first, then the design reason.
 }
 \end{frame}
 
-\begin{frame}[fragile,t]{11.5 - What We Ask Of You}
+\begin{frame}[fragile,t]{11.6 - What We Ask Of You}
 \smallskip
 \textbf{Questions:}
 \begin{itemize}
@@ -2427,10 +2423,11 @@ For the table, read the row labels first, then the design reason.
 \begin{frame}[fragile,t]{12.1 - The Running Question, Again}
 \smallskip
 \textbf{Slide question:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-What must Mizar Evo preserve so that the Mizar community
-still recognizes it as Mizar?
-\end{Verbatim}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape What must Mizar Evo preserve so that the Mizar community\\ still recognizes it as Mizar?
+\end{beamercolorbox}
+\end{center}
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -2449,10 +2446,11 @@ still recognizes it as Mizar?
 \begin{frame}[fragile,t]{12.2 - Closing}
 \smallskip
 \textbf{Final slide:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-Mizar Evo should be modern where scale demands it,
-and conservative where Mizar's mathematical identity depends on it.
-\end{Verbatim}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape Mizar Evo should be modern where scale demands it,\\ and conservative where Mizar's mathematical identity depends on it.
+\end{beamercolorbox}
+\end{center}
 \note{
 \smallskip
 \textbf{Presenter script:}
@@ -2469,34 +2467,31 @@ Use this as the transition: Closing. Point to the visible example, question, or 
 \smallskip
 \textbf{Prepared short excerpts for Beamer conversion:}
 \begin{scriptsize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Purpose & Source & Lines & Used in \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Purpose} & \textbf{Source} & \textbf{Lines} & \textbf{Used in} \\
+\midrule
 Structure definition & \texttt{algstr\_0.miz} & 37-40 & Frames 0.2, 3.1 \\
-\hline
 Article environment & \texttt{algstr\_0.miz} & 15-25 & Frame 2.1 \\
-\hline
 Registration/cluster & \texttt{algstr\_0.miz} & 104-109 & Frame 4.1 \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{scriptsize}
 
 \smallskip
 \textbf{Prepared short excerpts for Beamer conversion:}
 \begin{scriptsize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Purpose & Source & Lines & Used in \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Purpose} & \textbf{Source} & \textbf{Lines} & \textbf{Used in} \\
+\midrule
 Proof citation & \texttt{struct\_0.miz} & 637-643 & Frame 5.4 \\
-\hline
 Induction scheme & \texttt{nat\_1.miz} & near 90 & Frame 7.1 \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{scriptsize}
 
@@ -2556,26 +2551,20 @@ For the table, read the row labels first, then the design reason.
 The slides show examples only. The authoritative grammar and semantics live in the specification; this map replaces the EBNF that earlier drafts put on slides.
 
 \begin{footnotesize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Topic & Specification source (under \texttt{doc/spec/en/}) \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Topic} & \textbf{Specification source (under \texttt{doc/spec/en/})} \\
+\midrule
 Modules and imports & \texttt{12.modules\_and\_namespaces.md} \\
-\hline
 Structures and inheritance & \texttt{05.structures.md} \\
-\hline
 Attributes and modes & \texttt{06.attributes.md}, \texttt{07.modes.md} \\
-\hline
 Registrations and reductions & \texttt{17.clusters\_and\_registrations.md} \\
-\hline
 Templates and schemes & \texttt{18.templates.md} \\
-\hline
 Algorithms and MVM & \texttt{20.algorithm\_and\_verification.md} \\
-\hline
 Packages and artifacts & \texttt{23.package\_management\_and\_build\_system.md} \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{footnotesize}
 
@@ -2599,16 +2588,15 @@ For the table, read the row labels first, then the design reason.
 
 \begin{frame}[fragile,t]{Backup B. Specification Reference Map (2/2)}
 \begin{footnotesize}
-\setlength{\tabcolsep}{1.5pt}
-\renewcommand{\arraystretch}{1.0}
-\begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}X|}
-\hline
-Topic & Specification source (under \texttt{doc/spec/en/}) \\
-\hline
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Topic} & \textbf{Specification source (under \texttt{doc/spec/en/})} \\
+\midrule
 Cross-chapter grammar & \texttt{appendix\_a.grammar\_summary.md} \\
-\hline
 Worked library sketches & \texttt{sample\_codes.md} \\
-\hline
+\bottomrule
 \end{tabularx}
 \end{footnotesize}
 
@@ -2624,28 +2612,30 @@ Use this as the transition: Backup B. Specification Reference Map (2/2). Point t
 
 \section{Backup C. Diagram List}
 \begin{frame}[fragile,t]{Backup C. Diagram List}
+Required diagrams for the final deck (\texttt{figures/*.tex}, TikZ standalone;
+
 \smallskip
-\textbf{Required diagrams for the final deck:}
+\textbf{build each with \texttt{pdflatex} inside \texttt{figures/}):}
 \begin{enumerate}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Three pressures on a proven design (Part 1).
-\item Environment-to-import migration (story 1).
-\item Structure inheritance and diamond coherence (story 2).
-\item Reasoning boundary: semantics / ATP search / kernel checking (story 4).
-\item Certificate object and replay (story 4).
-\item Incremental fingerprint graph (story 5).
-\item Formalized Mathematics article-to-library link model (story 8).
+\item Three pressures on a proven design (Part 1). [to be produced]
+\item Environment-to-import migration (story 1). [to be produced]
+\item Structure inheritance and diamond coherence (story 2). [to be produced]
+\item Reasoning boundary: semantics / ATP search / kernel checking (story 4). [done: \texttt{figures/reasoning\_boundary.pdf}, used in frame 5.2]
+\item Certificate object and replay (story 4). [to be produced]
+\item Incremental fingerprint graph (story 5). [to be produced]
+\item Formalized Mathematics article-to-library link model (story 8). [done: \texttt{figures/fm\_links.pdf}, used in frame 9.2]
 \end{enumerate}
 \smallskip
-\textbf{Required diagrams for the final deck:}
+\textbf{build each with \texttt{pdflatex} inside \texttt{figures/}):}
 \begin{enumerate}
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Full pipeline with story overlay (Part 10).
-\item Roadmap timeline (Part 11).
+\item Full pipeline with story overlay (Part 10). [done: \texttt{figures/pipeline.pdf}, used in frame 10.1]
+\item Roadmap timeline (Part 11). [to be produced]
 \end{enumerate}
 \note{
 \smallskip
@@ -2656,11 +2646,11 @@ Use this as the transition: Backup B. Specification Reference Map (2/2). Point t
 \setlength{\itemsep}{1pt}
 \setlength{\parsep}{0pt}
 \setlength{\parskip}{0pt}
-\item Three pressures on a proven design (Part 1).
-\item Environment-to-import migration (story 1).
-\item Structure inheritance and diamond coherence (story 2).
-\item Reasoning boundary: semantics / ATP search / kernel checking (story 4).
-\item Certificate object and replay (story 4).
+\item Required diagrams for the final deck (figures/*.tex, TikZ standalone;
+\item Three pressures on a proven design (Part 1). [to be produced]
+\item Environment-to-import migration (story 1). [to be produced]
+\item Structure inheritance and diamond coherence (story 2). [to be produced]
+\item Reasoning boundary: semantics / ATP search / kernel checking (story 4). [done: figures/reasoning\_boundary.pdf, used in frame 5.2]
 \end{itemize}
 }
 \end{frame}
@@ -2669,9 +2659,11 @@ Use this as the transition: Backup B. Specification Reference Map (2/2). Point t
 \begin{frame}[fragile,t]{Backup D. Paper Outline Seed (1/2)}
 \smallskip
 \textbf{Possible paper title:}
-\begin{Verbatim}[fontsize=\small,frame=single,framesep=0.8mm,framerule=0.35pt,rulecolor=\color{black!45},xleftmargin=0.5mm,xrightmargin=0.5mm]
-Mizar Evo: Readable, AI-Ready, and Scalable Formal Mathematics
-\end{Verbatim}
+\begin{center}
+\begin{beamercolorbox}[rounded=true,sep=2.5mm,wd=0.9\textwidth]{keyphrase}
+\centering\itshape Mizar Evo: Readable, AI-Ready, and Scalable Formal Mathematics
+\end{beamercolorbox}
+\end{center}
 \smallskip
 \textbf{Possible sections:}
 \begin{enumerate}
@@ -2770,6 +2762,67 @@ After the example, say which design obligation the syntax makes visible.
 \item Is every exact excerpt attributed with article and line numbers?
 \item Does every story end with questions the audience can actually answer?
 \end{itemize}
+}
+\end{frame}
+
+\section{Backup F. Anticipated Objections}
+\begin{frame}[fragile,t]{Backup F. Anticipated Objections (1/2)}
+\smallskip
+\textbf{Prepared answers for objections the stories do not raise themselves:}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Objection} & \textbf{Prepared answer} \\
+\midrule
+Why not improve current Mizar incrementally? & The pains are boundary-shaped: article granularity, monolithic trust, implicit environments. Boundaries cannot be moved incrementally, but everything above them is deliberately conservative. \\
+What happens to authorship and credit of MML articles? & Origin metadata preserves article identity and authorship through migration; the \texttt{pub} namespace keeps published articles frozen and citable. \\
+Is this a fork of the community? & It is a proposal to the community; this visit is its first review. The namespace governance model assumes the Mizar team governs the \texttt{mml} root. \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+\note{
+\smallskip
+\textbf{Presenter script:}
+\smallskip
+\textbf{Say:}
+\begin{itemize}
+\setlength{\itemsep}{1pt}
+\setlength{\parsep}{0pt}
+\setlength{\parskip}{0pt}
+\item Use these only if raised; do not present them proactively.
+\end{itemize}
+For the table, read the row labels first, then the design reason.
+
+}
+\end{frame}
+
+\begin{frame}[fragile,t]{Backup F. Anticipated Objections (2/2)}
+\smallskip
+\textbf{Prepared answers for objections the stories do not raise themselves:}
+\begin{footnotesize}
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+\textbf{Objection} & \textbf{Prepared answer} \\
+\midrule
+What about GPL / CC-BY-SA obligations? & Migration preserves license and attribution of MML content; toolchain licensing is open for discussion. \\
+Is the AI angle hype? & AI assistance is an optional layer that never enters the trusted base; every proposal stands without it. \\
+Why a new kernel instead of the existing checker? & Certificate replay needs a small, auditable core. The existing checker's semantics remain the reference for obligation generation. \\
+\bottomrule
+\end{tabularx}
+\end{footnotesize}
+
+\note{
+\smallskip
+\textbf{Presenter script:}
+For the table, read the row labels first, then the design reason.
+
+Use this as the transition: Backup F. Anticipated Objections (2/2). Point to the visible example, question, or diagram before moving on.
+
 }
 \end{frame}
 
