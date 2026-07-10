@@ -317,6 +317,9 @@ Keep `cargo test -p mizar-test` green after each task (see
       checker task 124's exact multiple-reserve-declaration equality active pass
       bridge with distinct pre-normalization source ranges and one semantic
       normalized type,
+      checker task 125's exact heterogeneous-reserve membership active pass
+      bridge with left `object`, right/expected `set`, and two normalized
+      semantic identities,
       checker task 88's proof skeleton
       extraction-gap boundary, and checker task 89's statement proof
       extraction-gap boundary, and checker task 90's predicate/functor

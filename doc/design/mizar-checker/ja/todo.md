@@ -2028,6 +2028,29 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       `crates/mizar-checker/src/` が変わらない限り checker source-layout update は不要。
     - 依存: tasks 20、119、123。mizar-test と full workspace を検証する。
 
+125. **Exact source-derived heterogeneous-reserve membership checker bridge を追加する。** [x]
+    - `reserve x for object; reserve y for set; theorem HeterogeneousReserveMembershipPayloadBoundary: x in y;`
+      だけを対象とする spec-derived active pass fixture を追加する。
+    - 受入条件: parser と resolver が 2 reserve declaration と theorem を実行し、
+      runner は real mixed-builtin two-binding handoff を再利用して `BindingId(0)` /
+      `BindingId(1)` と source-derived lookup ordinal を保持し、両 distinct written
+      type range を左 `object` result input、右 `set` result input、右
+      expected-`set` input に保持する。
+    - exactly two normalized semantic identity を要求する。右 result/expected input
+      は `set` identity を共有し、左 `object` identity は distinct のままでなければ
+      ならない。各 normalized source representative は original written input から
+      導出し、2 type を collapse したり duplicate semantic node を捏造したりしない。
+    - 2 `Inferred` variable term、1 fact-free `Checked` membership、production
+      invariant validation、task-specific invalid key、exact near-miss matrix、real
+      frontend/resolver sidecar test を要求する。既存 expectation を rebaseline しない。
+    - exact heterogeneous membership type/well-formedness だけを credit する。
+      membership truth/fact、object/set coercion evidence、implicit closure/order、
+      theorem acceptance、`formula_statement`、proof、CoreIr、ControlFlowIr、VC を
+      materialize しない。
+    - spec coverage audit の Chapter 3、4、13、14、16 を更新する。
+      `crates/mizar-checker/src/` が変わらない限り checker source-layout update は不要。
+    - 依存: tasks 20、120、124。mizar-test と full workspace を検証する。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

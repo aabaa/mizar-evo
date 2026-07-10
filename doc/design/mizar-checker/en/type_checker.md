@@ -506,6 +506,19 @@ provenance. Exact shape guards, a task-specific invalid-payload key, near misses
 and a real frontend/resolver sidecar cover the seam. Implicit closure/order,
 truth/facts, theorem acceptance, `formula_statement`, proof, CoreIr,
 ControlFlowIr, and VC remain deferred.
+Task 125 adds the exact heterogeneous membership sibling
+`reserve x for object; reserve y for set; theorem HeterogeneousReserveMembershipPayloadBoundary: x in y;`.
+The generalized binary bridge retains binding-specific builtin shapes rather
+than assuming every reserved operand is `set`: the left result input is
+source-derived `object`, while the right result and sole expected input are
+source-derived `set`. Production validation requires two normalized identities,
+with the right result/expected roles sharing the `set` identity and the left
+`object` identity remaining distinct; each identity keeps the deterministic
+canonical source from its written declaration. Exact guards, a task-specific
+invalid-payload key, near misses, and a real frontend/resolver sidecar cover the
+seam. This is type/well-formedness only: membership truth/facts, object/set
+coercion evidence, implicit closure/order, theorem acceptance,
+`formula_statement`, proof, CoreIr, ControlFlowIr, and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

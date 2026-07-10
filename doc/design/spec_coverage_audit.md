@@ -92,8 +92,9 @@ invariants and the real frontend/resolver sidecar payload test guard the slice.
 This credit does not include membership truth/facts, implicit closure, theorem
 acceptance, proof, CoreIr, ControlFlowIr, VC, or broader term/formula extraction;
 those remain deferred. The generic matrix gap wording is qualified by tasks
-119 through 124 for exact same-binding equality, membership, inequality, type
-assertion, distinct-binding equality, and multiple-declaration equality.
+119 through 125 for exact same-binding equality, membership, inequality, type
+assertion, distinct-binding equality, multiple-declaration equality, and
+heterogeneous-reserve membership.
 
 Task121 current-state override for chapters 04, 13, 14, and 16: the exact
 reserved-variable `x <> x` pass adds two source-derived linked result/expected
@@ -146,6 +147,20 @@ frontend/resolver sidecar guard this `test_gap`, `source_drift`, and
 Implicit universal-closure/order nodes, truth/facts, theorem acceptance,
 broader reserved-variable formulas, proof, CoreIr, ControlFlowIr, and VC remain
 deferred.
+
+Task125 current-state override for chapters 03, 04, 13, 14, and 16: the exact
+`reserve x for object; reserve y for set; theorem HeterogeneousReserveMembershipPayloadBoundary: x in y;`
+pass combines the real mixed-builtin two-declaration reserve producer with task
+120's membership consumer. The left result retains its written builtin `object`
+range, while the right result and sole expected input retain the written builtin
+`set` range. Production validation requires two normalized identities, with the
+right roles sharing `set`, the left `object` remaining distinct, and both
+identities keeping deterministic per-type source representatives. An exact
+near-miss matrix and real frontend/resolver sidecar guard this `test_gap`,
+`source_drift`, and `design_drift` repair. This does not change the chapters'
+partial status. Membership truth/facts, object/set coercion evidence, implicit
+closure/order, theorem acceptance, broader formulas, proof, CoreIr,
+ControlFlowIr, and VC remain deferred.
 
 Task64 addendum for chapters `03.type_system.md`, `06.attributes.md`,
 `07.modes.md`, and `17.clusters_and_registrations.md`: checker task 64 adds

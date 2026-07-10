@@ -624,7 +624,14 @@ pre-normalization result/expected inputs, while the checker deterministically
 interns their identical builtin `set` semantics to one normalized type. It
 credits only exact multiple-declaration type/well-formedness and does not credit
 implicit closure/order, equality truth/facts, theorem acceptance, proof,
-CoreIr, ControlFlowIr, or VC. Task 120 adds the matching exact pass row for
+CoreIr, ControlFlowIr, or VC. Task 125 adds the heterogeneous exact pass row
+`reserve x for object; reserve y for set; theorem HeterogeneousReserveMembershipPayloadBoundary: x in y;`.
+The left result retains `object`; the right result and only expected input retain
+`set`. The checker records two normalized identities and shares the `set`
+identity across both right roles. This credits exact heterogeneous membership
+type/well-formedness only, not membership truth/facts, object/set coercion,
+implicit closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, or VC.
+Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
 written `set` reserve, and a no-fact `Checked` membership records

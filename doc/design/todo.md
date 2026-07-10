@@ -338,6 +338,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    written type ranges in four pre-normalization inputs while allowing their
    identical builtin `set` semantics to intern to one deterministic normalized
    type, also without facts or theorem acceptance,
+   task 125 adds the exact heterogeneous membership pass for
+   `reserve x for object; reserve y for set; ... x in y`, retaining distinct
+   object/set result identities and only the right expected-`set` role without
+   membership facts, coercion evidence, or theorem acceptance,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -381,7 +385,8 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    skeleton/statement proof payloads, term inference and formula
    well-formedness checking beyond task 119's exact same-binding equality,
    task 123's exact distinct-binding equality, and task 124's exact
-   multiple-reserve-declaration equality,
+   multiple-reserve-declaration equality, and task 125's exact heterogeneous
+   reserve membership,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,

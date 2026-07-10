@@ -429,6 +429,17 @@ frontend/resolver sidecar がこの `test_gap` / `source_drift` / `design_drift`
 を guard する。implicit closure/order、truth/fact、theorem acceptance、broader
 source、proof、CoreIr、ControlFlowIr、VC は open のままである。
 
+Task 125 MC-G020 current-state override: exact heterogeneous-reserve membership
+source は既存の real mixed-builtin reserve producer と task 120 の right-expected-type
+membership consumer を結合する。runner は 2 distinct declaration range と binding
+id にわたり、左 `object` result input と右 `set` result/expected input を保持する。
+checker は 2 semantic identity を生成し、右の両 role は `set` を共有する。
+production invariant は identity partition と deterministic な type ごとの source
+representative を検証する。これは classified `test_gap` / `source_drift` /
+`design_drift` を exact type/well-formedness slice についてだけ閉じる。membership
+truth/fact、object/set coercion evidence、closure/order、theorem acceptance、broader
+source、proof、CoreIr、ControlFlowIr、VC は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

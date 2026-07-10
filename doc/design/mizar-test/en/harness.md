@@ -496,6 +496,21 @@ theorems, and numeral operands stay on the extraction gap. The pass does not
 credit implicit closure/order, equality truth/facts, theorem acceptance,
 `formula_statement`, proof, CoreIr, ControlFlowIr, or VC.
 
+Task 125 adds the exact heterogeneous-reserve membership pass case
+`reserve x for object; reserve y for set; theorem HeterogeneousReserveMembershipPayloadBoundary: x in y;`.
+The runner accepts exactly two ordered reserve items, preserves `x` as a real
+builtin-`object` binding and `y` as a real builtin-`set` binding, and retains
+the two written ranges in the left result, right result, and sole right expected
+input. Production validation requires two normalized identities: the right
+result/expected roles share `set`, while the left `object` identity stays
+distinct and both identities keep deterministic source representatives. A
+task-specific invalid key, exact near-miss matrix, and real frontend/resolver
+active-sidecar test guard the seam. Non-exact types/order/operands/operators,
+extra declarations, status/recovery, and numeral operands stay on the extraction
+gap. The pass does not credit membership truth/facts, object/set coercion,
+implicit closure/order, theorem acceptance, `formula_statement`, proof,
+CoreIr, ControlFlowIr, or VC.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

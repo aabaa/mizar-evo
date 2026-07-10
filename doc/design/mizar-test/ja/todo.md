@@ -287,6 +287,9 @@ regression test を追加した。
       checker task 124 の distinct pre-normalization source range と 1 semantic
       normalized type を持つ exact multiple-reserve-declaration equality active
       pass bridge、
+      checker task 125 の left `object`、right/expected `set`、2 normalized
+      semantic identity を持つ exact heterogeneous-reserve membership active
+      pass bridge、
       checker task 88 の proof skeleton
       extraction-gap boundary、checker task 89 の statement proof extraction-gap
       boundary、checker task 90 の predicate/functor definition extraction-gap

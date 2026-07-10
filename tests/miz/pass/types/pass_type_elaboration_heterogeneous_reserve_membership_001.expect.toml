@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_heterogeneous_reserve_membership_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_heterogeneous_reserve_membership_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.builtin_type_expression_source_bridge",
+  "spec.en.checker.type_elaboration.heterogeneous_reserve_membership_source_bridge",
+]
+notes = "Active type_elaboration runner pass coverage for checker task 125: the exact membership theorem reuses the real heterogeneous two-declaration reserve handoff, preserves distinct x/object and y/set checker binding identities and written type ranges in a left object result input, right set result input, and right expected-set input, and reaches two Inferred variable terms plus one fact-free Checked membership. The right result/expected inputs share one normalized set identity while the left object remains a second identity. Checked means type/well-formedness only; membership truth/facts, object/set coercion evidence, implicit universal closure/order, theorem acceptance, formula_statement, proof skeletons, CoreIr, ControlFlowIr, VC, and proof payloads remain deferred."

@@ -574,7 +574,14 @@ pre-normalization result/expected input に保持し、checker は同一の buil
 semantics を deterministic に 1 normalized type へ intern する。exact
 multiple-declaration type/well-formedness だけを credit し、implicit closure/order、
 equality truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は credit
-しない。task 120 は matching exact pass row
+しない。task 125 は heterogeneous exact pass row
+`reserve x for object; reserve y for set; theorem HeterogeneousReserveMembershipPayloadBoundary: x in y;`
+を追加する。左 result は `object`、右 result と唯一の expected input は `set` を
+保持する。checker は 2 normalized identity を記録し、右の両 role で `set`
+identity を共有する。exact heterogeneous membership type/well-formedness だけを
+credit し、membership truth/fact、object/set coercion、implicit closure/order、
+theorem acceptance、proof、CoreIr、ControlFlowIr、VC は credit しない。task 120 は
+matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。両 identifier result と右 membership expected type は記述された
 `set` reserve から導かれ、no-fact `Checked` membership は type/well-formedness

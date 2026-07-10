@@ -1,0 +1,3 @@
+reserve x for object;
+reserve y for set;
+theorem HeterogeneousReserveMembershipPayloadBoundary: x in y;

@@ -482,6 +482,20 @@ operator、status/recovery、extra theorem、numeral operand は extraction gap 
 この pass は implicit closure/order、equality truth/fact、theorem acceptance、
 `formula_statement`、proof、CoreIr、ControlFlowIr、VC を credit しない。
 
+task 125 は exact heterogeneous-reserve membership pass case
+`reserve x for object; reserve y for set; theorem HeterogeneousReserveMembershipPayloadBoundary: x in y;`
+を追加する。runner は exactly two ordered reserve item だけを受理し、`x` を real
+builtin-`object` binding、`y` を real builtin-`set` binding として保持し、2 written
+range を左 result、右 result、唯一の右 expected input に保持する。production
+validation は 2 normalized identity を要求する。右 result/expected role は `set` を
+共有し、左 `object` identity は distinct のままで、両 identity は deterministic
+source representative を保持する。task-specific invalid key、exact near-miss matrix、
+real frontend/resolver active-sidecar test が seam を guard する。non-exact
+type/order/operand/operator、extra declaration、status/recovery、numeral operand は
+extraction gap に残る。この pass は membership truth/fact、object/set coercion、
+implicit closure/order、theorem acceptance、`formula_statement`、proof、CoreIr、
+ControlFlowIr、VC を credit しない。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

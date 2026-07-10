@@ -435,6 +435,18 @@ near-miss matrix, and a real frontend/resolver sidecar guard this
 truth/facts, theorem acceptance, broader sources, proof, CoreIr, ControlFlowIr,
 and VC remain open.
 
+Task 125 MC-G020 current-state override: the exact heterogeneous-reserve
+membership source combines the existing real mixed-builtin reserve producer
+with task 120's right-expected-type membership consumer. The runner retains a
+left `object` result input and right `set` result/expected inputs across two
+distinct declaration ranges and binding ids. The checker produces two semantic
+identities, with both right roles sharing `set`; production invariants validate
+the identity partition and deterministic per-type source representatives. This
+closes only the classified `test_gap` / `source_drift` / `design_drift` for the
+exact type/well-formedness slice. Membership truth/facts, object/set coercion
+evidence, closure/order, theorem acceptance, broader sources, proof, CoreIr,
+ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

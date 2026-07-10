@@ -700,13 +700,14 @@ required = true
 coverage = "pass"
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_type_assertion_001.expect.toml",
 ]
-notes = "Tasks 119-123 cover only the exact reserved-variable equality, membership, inequality, type-assertion, and distinct-binding equality source-derived checker slices. Identifier terms resolve through source-order-derived checker-owned BindingEnv lookups and reuse the source reserve's builtin set result-type payload. Task 123 preserves two distinct bindings from one multi-name reserve segment while both bindings retain the shared written type range. Task 122 independently retains the formula-side asserted set source node and accepts only normalized reflexive identity. Implicit universal-closure/order nodes, theorem acceptance, formula truth or facts, general type reachability/widening, inequality desugaring, proof payloads, and broader reserved-variable theorem extraction remain deferred."
+notes = "Tasks 119-125 cover only the exact reserved-variable same-binding equality, membership, inequality, type assertion, distinct-binding equality, multiple-declaration equality, and heterogeneous multiple-declaration membership source-derived checker slices. Identifier terms resolve through source-order-derived checker-owned BindingEnv lookups and retain source reserve result/expected-type payloads. Task 123 preserves two distinct bindings from one multi-name reserve segment with a shared written type range; task 124 preserves two distinct written set ranges while retaining one normalized semantic identity; task 125 preserves distinct object/set ranges and semantic identities while only the right membership operand carries the expected-set input. Task 122 independently retains the formula-side asserted set source node and accepts only normalized reflexive identity. Implicit universal-closure/order nodes, theorem acceptance, formula truth or facts, general type reachability/widening, inequality desugaring, coercion evidence, proof payloads, and broader reserved-variable theorem extraction remain deferred."
 
 [[requirement]]
 id = "spec.en.05.structures.active_range.local_structure_forward_reference"
@@ -1701,6 +1702,7 @@ required = true
 coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
@@ -1715,7 +1717,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_builtin_type_assertion_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
 ]
-notes = "Tasks 119-123 add exact pass coverage for reserved-variable identifier terms whose binding and builtin set result/expected type payloads come from the real source reserve declaration: equality and inequality each own two linked result and two expected roles, membership owns two result roles and only the right expected-set role, type assertion owns one ready result role plus an independently source-anchored asserted type, and task 123's equality operands resolve to distinct bindings from one multi-name reserve segment while retaining its shared written type range. Task 122 checks only normalized reflexive identity. Task 111 supersedes task 105 only for the exact `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` source by passing real checker payloads for four numeral item terms and two set-enumeration terms before failing closed on missing numeric and result-type/sethood payloads. Broader identifier, numeral, functor, type reachability/widening, and set-enumeration term extraction and semantics remain deferred."
+notes = "Tasks 119-125 add exact pass coverage for reserved-variable identifier terms whose binding and result/expected type payloads come from real source reserve declarations: equality and inequality own linked result/expected roles, membership owns two results and only the right expected-set role, and type assertion owns one ready result plus an independently source-anchored asserted type. Task 123 preserves distinct bindings over one shared multi-name set range; task 124 preserves two written set ranges across four raw inputs while they intern to one semantic identity; task 125 preserves a left object result plus right result/expected set inputs across two semantic identities. Task 122 checks only normalized reflexive identity. Task 111 supersedes task 105 only for the exact `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` source by passing real checker payloads for four numeral item terms and two set-enumeration terms before failing closed on missing numeric and result-type/sethood payloads. Broader identifier, numeral, functor, type reachability/widening, coercion, and set-enumeration term extraction and semantics remain deferred."
 
 [[requirement]]
 id = "spec.en.14.atomic_formula.parser"
@@ -1760,6 +1762,7 @@ required = true
 coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
@@ -1774,7 +1777,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
-notes = "Task 119 adds exact same-binding equality coverage with two expected constraints, task 123 adds exact distinct-binding equality over a shared multi-name reserve type range, task 120 adds exact membership with only the right expected-set constraint, task 121 adds exact inequality with two linked expected constraints, and task 122 adds exact type-assertion coverage for a ready reserved-variable subject and an independently source-derived asserted set. Task 122 repairs the checker so TypeAssertion remains Checked only for normalized reflexive identity; known non-identical types fail closed on the external reachability payload gap. These slices create no formula facts, perform no inequality desugaring, and accept no theorem. Task 113 supersedes task 103 only for the exact imported attribute assertion theorem by passing a real checker AttributeAssertion FormulaInput over the source-derived numeral TermInput before failing closed on missing formula/attribute semantic payloads, partial formula checking, and missing numeric type payloads. Task 114 supersedes task 104 only for the exact attribute-level `non empty` imported attribute assertion theorem by passing a real checker AttributeAssertion FormulaInput over the source-derived numeral TermInput before failing closed on missing formula/attribute semantic payloads, partial formula checking, and missing numeric type payloads. Task 111 supersedes task 105 only for the exact set-enumeration equality theorem by passing a real checker equality FormulaInput over the two source-derived set-enumeration TermInputs before failing closed on partial formula checking. General reserved-variable formulas and closure materialization, type reachability/widening, formula truth/facts, inequality desugaring, theorem acceptance, attribute assertion semantics, negated attribute admissibility, and broader formula extraction remain deferred."
+notes = "Tasks 119-125 add exact reserved-variable formula type/well-formedness coverage: task 119 same-binding equality, task 120 right-expected-set membership, task 121 inequality, task 122 reflexive type assertion, task 123 distinct-binding equality over a shared set range, task 124 multiple-declaration equality over two written set ranges and one semantic identity, and task 125 heterogeneous membership with left object, right/expected set, and two semantic identities. Task 122 keeps TypeAssertion Checked only for normalized reflexive identity; known non-identical types fail closed on the external reachability payload gap. These slices create no formula facts, perform no inequality desugaring or object/set coercion, and accept no theorem. Task 113 supersedes task 103 only for the exact imported attribute assertion theorem by passing a real checker AttributeAssertion FormulaInput over the source-derived numeral TermInput before failing closed on missing formula/attribute semantic payloads, partial formula checking, and missing numeric type payloads. Task 114 supersedes task 104 only for the exact attribute-level `non empty` imported attribute assertion theorem by passing a real checker AttributeAssertion FormulaInput over the source-derived numeral TermInput before failing closed on missing formula/attribute semantic payloads, partial formula checking, and missing numeric type payloads. Task 111 supersedes task 105 only for the exact set-enumeration equality theorem by passing a real checker equality FormulaInput over the two source-derived set-enumeration TermInputs before failing closed on partial formula checking. General reserved-variable formulas and closure materialization, type reachability/widening, formula truth/facts, inequality desugaring, theorem acceptance, attribute assertion semantics, negated attribute admissibility, and broader formula extraction remain deferred."
 
 [[requirement]]
 id = "spec.en.14.formulas.type_elaboration_payload_gap"
@@ -2032,6 +2035,7 @@ required = true
 coverage = "pass_and_fail"
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
@@ -2046,7 +2050,7 @@ tests = [
   "tests/miz/fail/types/fail_type_elaboration_set_enumeration_formula_gap_001.expect.toml",
   "tests/miz/fail/types/fail_type_elaboration_term_formula_gap_001.expect.toml",
 ]
-notes = "Tasks 119-123 add exact type-elaboration pass coverage for same-binding equality, distinct-binding equality over one multi-name reserve segment, membership, inequality, and reflexive type-assertion theorem declarations without accepting or proving any theorem and without inequality desugaring. Task 122 checks normalized reflexive type identity only; general reachability/widening remains external. Task 111 supersedes task 105 only for the exact set-enumeration theorem declaration source by carrying source-derived checker term/formula payloads before failing closed. The dedicated formula_statement runner, implicit universal-closure/order representation, recorded facts, theorem acceptance, proof skeletons, and downstream payloads remain deferred."
+notes = "Tasks 119-125 add exact type-elaboration pass coverage for same-binding equality, membership, inequality, reflexive type assertion, distinct-binding equality over one multi-name reserve segment, multiple-declaration equality over two written set ranges and one semantic identity, and heterogeneous membership with left object, right/expected set, and two semantic identities. None accepts or proves a theorem, records facts, materializes closure/order, performs inequality desugaring, or invents object/set coercion. Task 122 checks normalized reflexive type identity only; general reachability/widening remains external. Task 111 supersedes task 105 only for the exact set-enumeration theorem declaration source by carrying source-derived checker term/formula payloads before failing closed. The dedicated formula_statement runner, implicit universal-closure/order representation, recorded facts, theorem acceptance, proof skeletons, and downstream payloads remain deferred."
 
 [[requirement]]
 id = "spec.en.16.theorems_and_proofs.type_elaboration_payload_gap"
@@ -2558,6 +2562,7 @@ required = true
 coverage = "pass"
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_builtin_type_expression_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multi_reserve_builtin_001.expect.toml",
 ]
 
@@ -2571,6 +2576,18 @@ required = true
 coverage = "pass"
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_equality_001.expect.toml",
+]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.heterogeneous_reserve_membership_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 125 exact source-derived heterogeneous-reserve membership checker bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
 ]
 
 [[requirement]]

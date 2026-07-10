@@ -2175,6 +2175,33 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       changes.
     - Deps: tasks 20, 119, and 123. Verify mizar-test and the full workspace.
 
+125. **Add exact source-derived heterogeneous-reserve membership checker bridge.** [x]
+    - Add a spec-derived active pass fixture for only
+      `reserve x for object; reserve y for set; theorem HeterogeneousReserveMembershipPayloadBoundary: x in y;`.
+    - Acceptance: parser and resolver execute both reserve declarations and the
+      theorem; the runner reuses the real mixed-builtin two-binding handoff,
+      preserves `BindingId(0)` / `BindingId(1)` and source-derived lookup
+      ordinals, and retains both distinct written type ranges in a left
+      `object` result input, right `set` result input, and right expected-`set`
+      input.
+    - Require exactly two normalized semantic identities: the right result and
+      expected inputs must share the `set` identity, while the left `object`
+      identity remains distinct. Each normalized source representative must be
+      derived from its original written input; do not collapse the two types or
+      fabricate duplicate semantic nodes.
+    - Require two `Inferred` variable terms, one fact-free `Checked` membership,
+      production invariant validation, a task-specific invalid key, an exact
+      near-miss matrix, and a real frontend/resolver sidecar test. Existing
+      expectations must not be rebaselined.
+    - Credit exact heterogeneous membership type/well-formedness only. Do not
+      materialize membership truth/facts, object/set coercion evidence,
+      implicit closure/order, theorem acceptance, `formula_statement`, proof,
+      CoreIr, ControlFlowIr, or VC.
+    - Update Chapters 3, 4, 13, 14, and 16 in the spec coverage audit. No
+      checker source-layout update is required unless `crates/mizar-checker/src/`
+      changes.
+    - Deps: tasks 20, 120, and 124. Verify mizar-test and the full workspace.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as
