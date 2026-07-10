@@ -1965,6 +1965,22 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       CoreIr、ControlFlowIr、VC を主張しない。
     - 依存: tasks 107、119、120。mizar-test と full workspace で検証する。
 
+122. **Checker の reflexive type-assertion admissibility と exact reserved-variable source bridge を追加する。** [x]
+    - `TermFormulaChecker` を修正し、type assertion は one ready subject と one
+      asserted type を要求し、normalized identity だけを現時点で supported な
+      reflexive reachability として受理する。known non-identical type は
+      `checker.formula.external.type_assertion_reachability_payload` で defer する。
+    - task 119 の real reserve lookup/result producer と task 109 の formula-side
+      asserted-type AST producer を結合し、
+      `reserve x for set; theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;`
+      だけを昇格する。normalization 前の両 input と independent source anchor を
+      保持・検証する。
+    - 1 `Inferred` variable と 1 fact-free `Checked` type assertion を要求し、general
+      reachability/widening/`qua`、attribute、truth/fact、implicit closure、theorem
+      acceptance、`formula_statement`、proof、CoreIr、ControlFlowIr、VC は deferred
+      のままにする。
+    - 依存: tasks 109、119。mizar-checker、mizar-test、full workspace で検証する。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

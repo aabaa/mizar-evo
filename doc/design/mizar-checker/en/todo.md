@@ -2111,6 +2111,22 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       acceptance, proof, CoreIr, ControlFlowIr, or VC.
     - Deps: tasks 107, 119, 120. Verify mizar-test and full workspace.
 
+122. **Add checker reflexive type-assertion admissibility and its exact reserved-variable source bridge.** [x]
+    - Repair `TermFormulaChecker` so type assertions require one ready subject
+      and one asserted type, accept normalized identity only as the currently
+      supported reflexive reachability case, and defer known non-identical types
+      on `checker.formula.external.type_assertion_reachability_payload`.
+    - Promote only
+      `reserve x for set; theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;`
+      by combining task 119's real reserve lookup/result producer with task
+      109's formula-side asserted-type AST producer. Preserve both
+      pre-normalization inputs and validate their independent source anchors.
+    - Require one `Inferred` variable and one fact-free `Checked` type assertion;
+      keep general reachability/widening/`qua`, attributes, truth/facts,
+      implicit closure, theorem acceptance, `formula_statement`, proof, CoreIr,
+      ControlFlowIr, and VC deferred.
+    - Deps: tasks 109, 119. Verify mizar-checker, mizar-test, and full workspace.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

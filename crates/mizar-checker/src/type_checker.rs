@@ -1542,6 +1542,7 @@ pub enum FormulaKind {
 pub enum FormulaDeferredReason {
     MissingPredicateSignaturePayload,
     MissingExpectedTypePayload,
+    MissingTypeAssertionReachabilityPayload,
     MissingQuantifierPayload,
     MissingFormulaPayload,
 }
@@ -2197,6 +2198,14 @@ impl TermFormulaCheckingState<'_> {
             )
         });
 
+        self.check_type_assertion_admissibility(
+            &input,
+            asserted_type,
+            &mut status,
+            &mut recovery,
+            &mut deferred,
+        );
+
         let expected_types = input
             .expected_types
             .iter()
@@ -2276,6 +2285,73 @@ impl TermFormulaCheckingState<'_> {
             deferred: deferred.into_iter().collect(),
         });
         let _ = recovery;
+    }
+
+    fn check_type_assertion_admissibility(
+        &mut self,
+        input: &FormulaInput,
+        asserted_type: Option<NormalizedTypeId>,
+        status: &mut FormulaStatus,
+        recovery: &mut Option<TypeDiagnosticId>,
+        deferred: &mut BTreeSet<FormulaDeferredReason>,
+    ) {
+        if input.kind != FormulaKind::TypeAssertion {
+            return;
+        }
+        let [subject] = input.terms.as_slice() else {
+            *recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::TypeEntry,
+                TypeDiagnosticSeverity::Error,
+                "checker.formula.type_assertion.subject_arity",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            *status = status.max_error();
+            return;
+        };
+        if input.asserted_type.is_none() {
+            *recovery = Some(self.diagnostic(
+                Some(input.site.clone()),
+                input.source_range,
+                TypeDiagnosticClass::TypeEntry,
+                TypeDiagnosticSeverity::Error,
+                "checker.formula.missing_asserted_type",
+                DiagnosticRecoveryState::Degraded,
+            ));
+            *status = status.max_partial();
+            return;
+        }
+        if !matches!(
+            self.checked_term_state(subject),
+            Some(CheckedTermState {
+                readiness: CheckedTermReadiness::Ready,
+                ..
+            })
+        ) {
+            return;
+        }
+        let Some(asserted_type) = asserted_type else {
+            return;
+        };
+        if self
+            .normalized_types
+            .get(asserted_type)
+            .is_none_or(|normalized| normalized.status != NormalizedTypeStatus::Known)
+        {
+            return;
+        }
+        let Some(actual_type) = self.checked_term_actual_type(subject) else {
+            return;
+        };
+        if actual_type == asserted_type {
+            return;
+        }
+
+        let reason = FormulaDeferredReason::MissingTypeAssertionReachabilityPayload;
+        deferred.insert(reason);
+        *recovery = Some(self.formula_deferred_diagnostic(input, reason));
+        *status = status.max_partial();
     }
 
     fn check_formula_terms(
@@ -2368,6 +2444,19 @@ impl TermFormulaCheckingState<'_> {
             context: term.context,
             readiness,
         })
+    }
+
+    fn checked_term_actual_type(&self, site: &TypedSiteRef) -> Option<NormalizedTypeId> {
+        let term = self
+            .terms
+            .iter()
+            .map(|(_, term)| term)
+            .find(|term| &term.site == site)?;
+        let entry = self.type_entries.get(term.type_entry)?;
+        match entry.actual {
+            TypeEntryActual::Known(actual) => Some(actual),
+            TypeEntryActual::CandidateSet(_) | TypeEntryActual::Absent => None,
+        }
     }
 
     fn context_can_see_term(
@@ -4254,6 +4343,9 @@ fn formula_deferred_message_key(reason: FormulaDeferredReason) -> &'static str {
         FormulaDeferredReason::MissingExpectedTypePayload => {
             "checker.formula.external.expected_type_payload"
         }
+        FormulaDeferredReason::MissingTypeAssertionReachabilityPayload => {
+            "checker.formula.external.type_assertion_reachability_payload"
+        }
         FormulaDeferredReason::MissingQuantifierPayload => {
             "checker.formula.external.quantifier_payload"
         }
@@ -4436,6 +4528,9 @@ fn formula_deferred_reason_name(reason: FormulaDeferredReason) -> &'static str {
             "missing_predicate_signature_payload"
         }
         FormulaDeferredReason::MissingExpectedTypePayload => "missing_expected_type_payload",
+        FormulaDeferredReason::MissingTypeAssertionReachabilityPayload => {
+            "missing_type_assertion_reachability_payload"
+        }
         FormulaDeferredReason::MissingQuantifierPayload => "missing_quantifier_payload",
         FormulaDeferredReason::MissingFormulaPayload => "missing_formula_payload",
     }
@@ -9468,6 +9563,143 @@ mod tests {
         }
         assert!(!debug.contains("obligation#"));
         assert!(!debug.contains("registration"));
+    }
+
+    #[test]
+    fn type_assertion_requires_reflexive_or_external_reachability_payload() {
+        let source = source_id();
+        let symbols = symbol_env(Vec::new());
+        let binding_env = binding_env_for_declarations(
+            source,
+            vec![binding_spec(
+                "let_x",
+                BindingKind::LetBinding,
+                BindingStatus::Active,
+            )],
+        );
+        let subject = term_with_type(source, 10, TermKind::Variable, 100)
+            .with_reference(TermReference::Binding(BindingId::new(0)));
+        let compatible = FormulaInput::new(
+            site(30),
+            BindingContextId::new(1),
+            range(source, 150, 155),
+            FormulaKind::TypeAssertion,
+        )
+        .with_terms(vec![site(10)])
+        .with_asserted_type(type_expression(source, 200, TypeHeadInput::BuiltinSet));
+        let incompatible = FormulaInput::new(
+            site(31),
+            BindingContextId::new(1),
+            range(source, 155, 160),
+            FormulaKind::TypeAssertion,
+        )
+        .with_terms(vec![site(10)])
+        .with_asserted_type(TypeExpressionInput::new(
+            site(201),
+            range(source, 160, 163),
+            "object",
+            TypeHeadInput::BuiltinObject,
+        ));
+        let missing_asserted = FormulaInput::new(
+            site(32),
+            BindingContextId::new(1),
+            range(source, 165, 170),
+            FormulaKind::TypeAssertion,
+        )
+        .with_terms(vec![site(10)]);
+        let missing_subject = FormulaInput::new(
+            site(33),
+            BindingContextId::new(1),
+            range(source, 170, 175),
+            FormulaKind::TypeAssertion,
+        )
+        .with_asserted_type(type_expression(source, 202, TypeHeadInput::BuiltinSet));
+        let multiple_subjects = FormulaInput::new(
+            site(34),
+            BindingContextId::new(1),
+            range(source, 175, 180),
+            FormulaKind::TypeAssertion,
+        )
+        .with_terms(vec![site(10), site(10)])
+        .with_asserted_type(type_expression(source, 203, TypeHeadInput::BuiltinSet));
+        let incompatible_with_other_deferred = FormulaInput::new(
+            site(35),
+            BindingContextId::new(1),
+            range(source, 180, 185),
+            FormulaKind::TypeAssertion,
+        )
+        .with_terms(vec![site(10)])
+        .with_asserted_type(TypeExpressionInput::new(
+            site(204),
+            range(source, 185, 188),
+            "object",
+            TypeHeadInput::BuiltinObject,
+        ))
+        .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload]);
+
+        let output = TermFormulaChecker::default().infer(
+            &symbols,
+            &binding_env,
+            [subject],
+            [
+                compatible,
+                incompatible,
+                missing_asserted,
+                missing_subject,
+                multiple_subjects,
+                incompatible_with_other_deferred,
+            ],
+        );
+
+        let compatible = formula_by_site(&output, site(30));
+        assert_eq!(compatible.status, FormulaStatus::Checked);
+        assert!(compatible.deferred.is_empty());
+        assert!(compatible.facts.is_empty());
+
+        let incompatible = formula_by_site(&output, site(31));
+        assert_eq!(incompatible.status, FormulaStatus::Partial);
+        assert_eq!(
+            incompatible.deferred,
+            vec![FormulaDeferredReason::MissingTypeAssertionReachabilityPayload]
+        );
+        assert_eq!(
+            diagnostic_ranges(
+                &output,
+                "checker.formula.external.type_assertion_reachability_payload"
+            ),
+            vec![(155, 160), (180, 185)]
+        );
+
+        assert_eq!(
+            formula_by_site(&output, site(32)).status,
+            FormulaStatus::Partial
+        );
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.formula.missing_asserted_type"),
+            vec![(165, 170)]
+        );
+        for formula_site in [site(33), site(34)] {
+            assert_eq!(
+                formula_by_site(&output, formula_site).status,
+                FormulaStatus::Error
+            );
+        }
+        assert_eq!(
+            diagnostic_ranges(&output, "checker.formula.type_assertion.subject_arity"),
+            vec![(170, 175), (175, 180)]
+        );
+        assert_eq!(
+            formula_by_site(&output, site(35)).deferred,
+            vec![
+                FormulaDeferredReason::MissingTypeAssertionReachabilityPayload,
+                FormulaDeferredReason::MissingFormulaPayload,
+            ]
+        );
+        assert!(
+            output
+                .debug_text()
+                .contains("missing_type_assertion_reachability_payload")
+        );
     }
 
     #[test]

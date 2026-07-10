@@ -92,6 +92,8 @@ const TYPE_ELABORATION_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.reserved_variable_membership.invalid_payload";
 const TYPE_ELABORATION_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.reserved_variable_inequality.invalid_payload";
+const TYPE_ELABORATION_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.reserved_variable_type_assertion.invalid_payload";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseOnlyRunReport {
@@ -925,6 +927,11 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) =
+        source_reserved_variable_type_assertion_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
     if let Some(keys) = source_formula_statement_detail_keys(ast, module.clone(), symbols) {
         return keys;
     }
@@ -1191,6 +1198,29 @@ struct SourceReservedVariableBinaryFormulaOutput {
     term_formula: TermFormulaInferenceOutput,
 }
 
+#[derive(Debug)]
+struct SourceReservedVariableTypeAssertion {
+    reserve: SourceReserveExtraction,
+    formula_site: TypedSiteRef,
+    formula_range: SourceRange,
+    subject_site: TypedSiteRef,
+    subject_range: SourceRange,
+    subject_spelling: String,
+    subject_lookup_ordinal: usize,
+    asserted_type_site: TypedSiteRef,
+    asserted_type: SourceTypeExpression,
+}
+
+#[derive(Debug)]
+struct SourceReservedVariableTypeAssertionOutput {
+    payload: SourceReservedVariableTypeAssertion,
+    handoff: SourceReserveHandoff,
+    subject_binding: BindingId,
+    subject_result_input: TypeExpressionInput,
+    asserted_type_input: TypeExpressionInput,
+    term_formula: TermFormulaInferenceOutput,
+}
+
 fn source_reserved_variable_equality_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -1225,6 +1255,65 @@ fn source_reserved_variable_inequality_detail_keys(
         build_source_reserved_variable_formula_output(payload, symbols),
         TYPE_ELABORATION_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
     ))
+}
+
+fn source_reserved_variable_type_assertion_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_reserved_variable_type_assertion(ast, module, symbols)?;
+    Some(source_reserved_variable_type_assertion_result_detail_keys(
+        build_source_reserved_variable_type_assertion_output(payload, symbols),
+    ))
+}
+
+fn source_reserved_variable_type_assertion_result_detail_keys(
+    output: Result<SourceReservedVariableTypeAssertionOutput, String>,
+) -> Vec<String> {
+    match output.and_then(|output| {
+        assert_source_reserved_variable_type_assertion_output(&output)?;
+        Ok(output)
+    }) {
+        Ok(output) => source_reserved_variable_type_assertion_output_detail_keys(&output),
+        Err(_) => {
+            vec![TYPE_ELABORATION_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY.to_owned()]
+        }
+    }
+}
+
+fn source_reserved_variable_type_assertion_output_detail_keys(
+    output: &SourceReservedVariableTypeAssertionOutput,
+) -> Vec<String> {
+    let mut keys = output
+        .handoff
+        .binding_env
+        .diagnostics()
+        .canonical_iter()
+        .map(|(_, diagnostic)| format!("type_elaboration.checker.{}", diagnostic.message_key))
+        .chain(
+            output
+                .handoff
+                .declarations
+                .diagnostics()
+                .canonical_iter()
+                .map(|(_, diagnostic)| {
+                    format!("type_elaboration.checker.{}", diagnostic.message_key)
+                }),
+        )
+        .chain(
+            output
+                .term_formula
+                .diagnostics()
+                .canonical_iter()
+                .map(|(_, diagnostic)| {
+                    format!("type_elaboration.checker.{}", diagnostic.message_key)
+                }),
+        )
+        .collect::<Vec<_>>();
+    keys.sort();
+    keys.dedup();
+    keys
 }
 
 fn source_reserved_variable_formula_result_detail_keys(
@@ -1292,6 +1381,103 @@ fn source_reserved_variable_inequality_output(
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload = extract_source_reserved_variable_inequality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_reserved_variable_type_assertion_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertionOutput> {
+    let payload = extract_source_reserved_variable_type_assertion(ast, module, symbols)?;
+    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
+}
+
+fn build_source_reserved_variable_type_assertion_output(
+    payload: SourceReservedVariableTypeAssertion,
+    symbols: &SymbolEnv,
+) -> Result<SourceReservedVariableTypeAssertionOutput, String> {
+    let handoff = assemble_source_reserve_checker_handoff(
+        symbols,
+        &payload.reserve.bridge,
+        payload.reserve.mode_expansions.clone(),
+    )?;
+    let context = payload.reserve.bridge.module_context();
+    let subject_binding = match handoff
+        .binding_env
+        .lookup(&BindingLookupSite::new(
+            payload.subject_spelling.clone(),
+            context,
+            None,
+            payload.subject_lookup_ordinal,
+        ))
+        .map_err(|error| error.to_string())?
+    {
+        BindingLookupResult::Local(binding) => binding,
+        _ => {
+            return Err(
+                "reserved-variable type assertion lookup did not resolve locally".to_owned(),
+            );
+        }
+    };
+    if subject_binding != BindingId::new(0) {
+        return Err("reserved-variable type assertion binding identity mismatch".to_owned());
+    }
+    let source_binding = payload
+        .reserve
+        .bridge
+        .bindings()
+        .get(subject_binding.index())
+        .ok_or_else(|| "reserved-variable type assertion source binding missing".to_owned())?;
+    if source_binding.spelling != "x"
+        || source_binding.type_spelling != "set"
+        || source_binding.type_head != TypeHeadInput::BuiltinSet
+        || !source_binding.type_attributes.is_empty()
+    {
+        return Err("reserved-variable type assertion source binding mismatch".to_owned());
+    }
+
+    let subject_result_input = source_reserved_type_projection(
+        source_binding,
+        payload.subject_site.node(),
+        "reserved-variable-type-assertion-subject-result",
+    );
+    let asserted_type_input = TypeExpressionInput::new(
+        payload.asserted_type_site.clone(),
+        payload.asserted_type.range,
+        payload.asserted_type.spelling.clone(),
+        payload.asserted_type.head.clone(),
+    )
+    .with_attributes(payload.asserted_type.attributes.clone());
+    let term_formula = TermFormulaChecker::default().infer(
+        symbols,
+        &handoff.binding_env,
+        [TermInput::new(
+            payload.subject_site.clone(),
+            context,
+            payload.subject_range,
+            TermKind::Variable,
+        )
+        .with_reference(TermReference::Binding(subject_binding))
+        .with_result_type(subject_result_input.clone())],
+        [FormulaInput::new(
+            payload.formula_site.clone(),
+            context,
+            payload.formula_range,
+            FormulaKind::TypeAssertion,
+        )
+        .with_terms(vec![payload.subject_site.clone()])
+        .with_asserted_type(asserted_type_input.clone())],
+    );
+
+    Ok(SourceReservedVariableTypeAssertionOutput {
+        payload,
+        handoff,
+        subject_binding,
+        subject_result_input,
+        asserted_type_input,
+        term_formula,
+    })
 }
 
 fn build_source_reserved_variable_formula_output(
@@ -1417,6 +1603,175 @@ fn build_source_reserved_variable_formula_output(
         right_binding,
         term_formula,
     })
+}
+
+fn assert_source_reserved_variable_type_assertion_output(
+    output: &SourceReservedVariableTypeAssertionOutput,
+) -> Result<(), String> {
+    let payload = &output.payload;
+    let [source_binding] = payload.reserve.bridge.bindings() else {
+        return Err("reserved-variable type assertion binding count mismatch".to_owned());
+    };
+    assert_source_reserve_handoff(&output.handoff, &payload.reserve.bridge)?;
+    if source_binding.spelling != "x"
+        || source_binding.type_spelling != "set"
+        || source_binding.type_head != TypeHeadInput::BuiltinSet
+        || !source_binding.type_attributes.is_empty()
+        || output.subject_binding != BindingId::new(0)
+        || output.handoff.binding_env.bindings().len() != 1
+        || !output.handoff.binding_env.diagnostics().is_empty()
+        || output.handoff.declarations.declarations().len() != 1
+        || !output.handoff.declarations.facts().is_empty()
+        || !output.handoff.declarations.diagnostics().is_empty()
+    {
+        return Err("reserved-variable type assertion handoff mismatch".to_owned());
+    }
+    let [expected_ordinal] =
+        source_binding_use_ordinals(payload.reserve.bridge.bindings(), [payload.subject_range])?;
+    if payload.subject_lookup_ordinal != expected_ordinal {
+        return Err("reserved-variable type assertion lookup ordinal mismatch".to_owned());
+    }
+    match output
+        .handoff
+        .binding_env
+        .lookup(&BindingLookupSite::new(
+            payload.subject_spelling.clone(),
+            payload.reserve.bridge.module_context(),
+            None,
+            payload.subject_lookup_ordinal,
+        ))
+        .map_err(|error| error.to_string())?
+    {
+        BindingLookupResult::Local(binding) if binding == output.subject_binding => {}
+        _ => return Err("reserved-variable type assertion lookup result mismatch".to_owned()),
+    }
+
+    if output.subject_result_input.site
+        != (TypedSiteRef::Role {
+            node: payload.subject_site.node(),
+            role: TypeRole::new("reserved-variable-type-assertion-subject-result"),
+        })
+        || output.subject_result_input.source_range != source_binding.type_range
+        || output.subject_result_input.spelling != source_binding.type_spelling
+        || output.subject_result_input.head != source_binding.type_head
+        || !output.subject_result_input.args.is_empty()
+        || !output.subject_result_input.attributes.is_empty()
+        || output.asserted_type_input.site != payload.asserted_type_site
+        || output.asserted_type_input.source_range != payload.asserted_type.range
+        || output.asserted_type_input.spelling != payload.asserted_type.spelling
+        || output.asserted_type_input.head != payload.asserted_type.head
+        || !output.asserted_type_input.args.is_empty()
+        || !output.asserted_type_input.attributes.is_empty()
+        || output.asserted_type_input.source_range == output.subject_result_input.source_range
+    {
+        return Err("reserved-variable type assertion input provenance mismatch".to_owned());
+    }
+
+    let term_formula = &output.term_formula;
+    if term_formula.terms().len() != 1
+        || term_formula.formulas().len() != 1
+        || term_formula.type_entries().len() != 3
+        || term_formula.normalized_types().len() != 1
+        || !term_formula.candidate_sets().is_empty()
+        || !term_formula.facts().is_empty()
+        || !term_formula.diagnostics().is_empty()
+    {
+        return Err("reserved-variable type assertion checker count mismatch".to_owned());
+    }
+    let term = term_formula
+        .terms()
+        .iter()
+        .map(|(_, term)| term)
+        .next()
+        .ok_or_else(|| "reserved-variable type assertion subject missing".to_owned())?;
+    if term.site != payload.subject_site
+        || term.context != payload.reserve.bridge.module_context()
+        || term.kind != TermKind::Variable
+        || term.reference != Some(TermReference::Binding(output.subject_binding))
+        || term.expected_type.is_some()
+        || term.candidate_set.is_some()
+        || term.status != TermStatus::Inferred
+        || !term.deferred.is_empty()
+    {
+        return Err("reserved-variable type assertion subject mismatch".to_owned());
+    }
+    let subject_entry = term_formula
+        .type_entries()
+        .get(term.type_entry)
+        .ok_or_else(|| "reserved-variable type assertion term type entry missing".to_owned())?;
+    if subject_entry.owner != payload.subject_site
+        || subject_entry.expected.is_some()
+        || subject_entry.status != TypeStatus::Known
+    {
+        return Err("reserved-variable type assertion subject type entry mismatch".to_owned());
+    }
+    let TypeEntryActual::Known(subject_actual) = subject_entry.actual else {
+        return Err("reserved-variable type assertion subject type unknown".to_owned());
+    };
+    let result_role_actual = type_entry_known_actual_for_owner(
+        term_formula,
+        &output.subject_result_input.site,
+        "reserved-variable type assertion result role",
+    )?;
+    let asserted_role_actual = type_entry_known_actual_for_owner(
+        term_formula,
+        &output.asserted_type_input.site,
+        "reserved-variable type assertion asserted role",
+    )?;
+
+    let formula = term_formula
+        .formulas()
+        .iter()
+        .map(|(_, formula)| formula)
+        .next()
+        .ok_or_else(|| "reserved-variable type assertion formula missing".to_owned())?;
+    if formula.site != payload.formula_site
+        || formula.context != payload.reserve.bridge.module_context()
+        || formula.kind != FormulaKind::TypeAssertion
+        || formula.terms != [payload.subject_site.clone()]
+        || formula.asserted_type != Some(asserted_role_actual)
+        || !formula.expected_types.is_empty()
+        || formula.candidate_set.is_some()
+        || !formula.facts.is_empty()
+        || formula.status != FormulaStatus::Checked
+        || !formula.deferred.is_empty()
+        || subject_actual != result_role_actual
+        || subject_actual != asserted_role_actual
+    {
+        return Err("reserved-variable type assertion formula mismatch".to_owned());
+    }
+    let normalized = term_formula
+        .normalized_types()
+        .get(subject_actual)
+        .ok_or_else(|| "reserved-variable type assertion normalized type missing".to_owned())?;
+    if normalized.head != TypeHeadRef::BuiltinSet
+        || !normalized.args.is_empty()
+        || !normalized.attributes.positive().is_empty()
+        || !normalized.attributes.negative().is_empty()
+        || normalized.status != NormalizedTypeStatus::Known
+    {
+        return Err("reserved-variable type assertion normalized type mismatch".to_owned());
+    }
+    Ok(())
+}
+
+fn type_entry_known_actual_for_owner(
+    output: &TermFormulaInferenceOutput,
+    owner: &TypedSiteRef,
+    description: &str,
+) -> Result<NormalizedTypeId, String> {
+    let (_, entry) = output
+        .type_entries()
+        .iter()
+        .find(|(_, entry)| &entry.owner == owner)
+        .ok_or_else(|| format!("{description} type entry missing"))?;
+    if entry.expected.is_some() || entry.status != TypeStatus::Known {
+        return Err(format!("{description} type entry mismatch"));
+    }
+    match entry.actual {
+        TypeEntryActual::Known(actual) => Ok(actual),
+        _ => Err(format!("{description} type entry unknown")),
+    }
 }
 
 fn assert_source_reserved_variable_formula_output(
@@ -2113,6 +2468,110 @@ fn extract_source_reserved_variable_inequality(
         symbols,
         &SOURCE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     )
+}
+
+fn extract_source_reserved_variable_type_assertion(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertion> {
+    if ast
+        .nodes()
+        .iter()
+        .any(|node| !is_supported_reserved_variable_type_assertion_bridge_node(node))
+    {
+        return None;
+    }
+    let reserve_items = surface_nodes_with_kind(ast, SurfaceNodeKind::ReserveItem);
+    let theorem_items = surface_nodes_with_kind(ast, SurfaceNodeKind::TheoremItem);
+    let ([(_, reserve_item)], [(_, theorem)]) =
+        (reserve_items.as_slice(), theorem_items.as_slice())
+    else {
+        return None;
+    };
+    if reserve_item.range.end > theorem.range.start
+        || subtree_has_recovery(ast, reserve_item)
+        || subtree_has_recovery(ast, theorem)
+        || direct_token_texts(ast, theorem).as_slice()
+            != [
+                "theorem",
+                "ReservedVariableTypeAssertionPayloadBoundary",
+                ":",
+                ";",
+            ]
+    {
+        return None;
+    }
+
+    let reserve =
+        extract_builtin_source_reserve_declarations_after_node_guard(ast, module.clone(), symbols)
+            .ok()?;
+    let [source_binding] = reserve.bridge.bindings() else {
+        return None;
+    };
+    if source_binding.spelling != "x"
+        || source_binding.type_spelling != "set"
+        || source_binding.type_head != TypeHeadInput::BuiltinSet
+        || !source_binding.type_attributes.is_empty()
+    {
+        return None;
+    }
+
+    let theorem_children = structural_child_ids(ast, theorem);
+    let [formula_expression_id] = theorem_children.as_slice() else {
+        return None;
+    };
+    let formula_expression = ast.node(*formula_expression_id)?;
+    if !matches!(formula_expression.kind, SurfaceNodeKind::FormulaExpression) {
+        return None;
+    }
+    let formula_children = structural_child_ids(ast, formula_expression);
+    let [formula_id] = formula_children.as_slice() else {
+        return None;
+    };
+    let formula = ast.node(*formula_id)?;
+    if !matches!(formula.kind, SurfaceNodeKind::IsAssertion)
+        || subtree_has_recovery(ast, formula)
+        || direct_token_texts(ast, formula).as_slice() != ["is"]
+    {
+        return None;
+    }
+    let assertion_children = structural_child_ids(ast, formula);
+    let [subject_expression_id, asserted_type_id] = assertion_children.as_slice() else {
+        return None;
+    };
+    let (subject_id, subject_range, subject_spelling) =
+        exact_identifier_term_operand(ast, *subject_expression_id)?;
+    if subject_spelling != source_binding.spelling {
+        return None;
+    }
+    let asserted_type_node = ast.node(*asserted_type_id)?;
+    if !matches!(asserted_type_node.kind, SurfaceNodeKind::TypeExpression) {
+        return None;
+    }
+    let asserted_type =
+        extract_builtin_source_type_expression(ast, asserted_type_node, &module, symbols).ok()?;
+    if asserted_type.spelling != "set"
+        || asserted_type.head != TypeHeadInput::BuiltinSet
+        || !asserted_type.attributes.is_empty()
+        || asserted_type.range == source_binding.type_range
+    {
+        return None;
+    }
+    let [subject_lookup_ordinal] =
+        source_binding_use_ordinals(reserve.bridge.bindings(), [subject_range]).ok()?;
+
+    Some(SourceReservedVariableTypeAssertion {
+        reserve,
+        formula_site: surface_site(*formula_id),
+        formula_range: formula.range,
+        subject_site: surface_site(subject_id),
+        subject_range,
+        subject_spelling,
+        subject_lookup_ordinal,
+        asserted_type_site: surface_site(*asserted_type_id),
+        asserted_type,
+    })
 }
 
 fn extract_source_reserved_variable_binary_formula(
@@ -3161,6 +3620,25 @@ fn is_supported_reserved_variable_binary_formula_bridge_node(node: &SurfaceNode)
             | SurfaceNodeKind::TheoremItem
             | SurfaceNodeKind::FormulaExpression
             | SurfaceNodeKind::BuiltinPredicateApplication
+            | SurfaceNodeKind::TermExpression
+            | SurfaceNodeKind::TermReference
+            | SurfaceNodeKind::Token(_)
+    )
+}
+
+fn is_supported_reserved_variable_type_assertion_bridge_node(node: &SurfaceNode) -> bool {
+    matches!(
+        node.kind,
+        SurfaceNodeKind::Root
+            | SurfaceNodeKind::CompilationUnit
+            | SurfaceNodeKind::ItemList
+            | SurfaceNodeKind::ReserveItem
+            | SurfaceNodeKind::ReserveSegment
+            | SurfaceNodeKind::TypeExpression
+            | SurfaceNodeKind::TypeHead
+            | SurfaceNodeKind::TheoremItem
+            | SurfaceNodeKind::FormulaExpression
+            | SurfaceNodeKind::IsAssertion
             | SurfaceNodeKind::TermExpression
             | SurfaceNodeKind::TermReference
             | SurfaceNodeKind::Token(_)
@@ -5754,14 +6232,17 @@ mod tests {
         ParseOnlyImportProvider, SOURCE_BUILTIN_BINARY_TERM_FORMULA_CONFIGS,
         TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY, active_type_elaboration_cases,
         assemble_source_checker_handoff, assert_source_reserved_variable_formula_output,
+        assert_source_reserved_variable_type_assertion_output,
         augment_type_elaboration_import_summaries, build_source_reserved_variable_formula_output,
+        build_source_reserved_variable_type_assertion_output,
         extract_builtin_source_reserve_declarations, extract_source_builtin_type_assertion_formula,
         extract_source_formula_connective_quantifier, extract_source_formula_statement,
         extract_source_imported_attribute_assertion_formula,
         extract_source_imported_non_empty_attribute_assertion_formula,
         extract_source_imported_predicate_functor_formula,
         extract_source_reserved_variable_equality, extract_source_reserved_variable_inequality,
-        extract_source_reserved_variable_membership, extract_source_set_enumeration_formula,
+        extract_source_reserved_variable_membership,
+        extract_source_reserved_variable_type_assertion, extract_source_set_enumeration_formula,
         resolve_visible_attribute, resolve_visible_type_head, resolver_symbol_collection,
         run_frontend, source_builtin_type_assertion_formula_output,
         source_formula_connective_quantifier_output, source_formula_statement_output,
@@ -5771,6 +6252,8 @@ mod tests {
         source_reserved_variable_formula_output_detail_keys,
         source_reserved_variable_formula_result_detail_keys,
         source_reserved_variable_inequality_output, source_reserved_variable_membership_output,
+        source_reserved_variable_type_assertion_output,
+        source_reserved_variable_type_assertion_result_detail_keys,
         source_set_enumeration_formula_output, source_type_elaboration_detail_keys,
         surface_nodes_with_kind, surface_site,
     };
@@ -10116,6 +10599,183 @@ mod tests {
     }
 
     #[test]
+    fn source_reserved_variable_type_assertion_bridge_checks_reflexive_admissibility() {
+        let source_id = source_id(99);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("reserved_variable_type_assertion"),
+        );
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let ast = reserve_then_identifier_type_assertion_theorem_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            exact_identifier_type_assertion_spec(),
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&ast, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload =
+            extract_source_reserved_variable_type_assertion(&ast, module.clone(), &symbols)
+                .expect("exact reserved-variable type assertion should extract");
+        assert_eq!(payload.subject_spelling, "x");
+        assert_eq!(payload.subject_lookup_ordinal, 1);
+        assert_eq!(payload.asserted_type.spelling, "set");
+        assert_eq!(payload.asserted_type.head, TypeHeadInput::BuiltinSet);
+        assert_ne!(
+            payload.reserve.bridge.bindings()[0].type_range,
+            payload.asserted_type.range
+        );
+
+        let output = source_reserved_variable_type_assertion_output(&ast, module.clone(), &symbols)
+            .expect("exact reserved-variable type assertion should reach the checker");
+        assert_source_reserved_variable_type_assertion_output(&output)
+            .expect("reserved-variable type assertion invariants should hold");
+        assert_eq!(output.subject_binding, BindingId::new(0));
+        assert_ne!(
+            output.subject_result_input.source_range,
+            output.asserted_type_input.source_range
+        );
+        assert!(output.subject_result_input.args.is_empty());
+        assert!(output.asserted_type_input.args.is_empty());
+        let (_, formula) = output.term_formula.formulas().iter().next().unwrap();
+        assert_eq!(formula.kind, FormulaKind::TypeAssertion);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+
+        let pre_output =
+            extract_source_reserved_variable_type_assertion(&ast, module.clone(), &symbols)
+                .expect("exact source should produce a pre-output payload");
+        let mismatched_symbols = SymbolEnv::new(
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("other_module")),
+            SymbolEnvIndexes::default(),
+        );
+        assert_eq!(
+            source_reserved_variable_type_assertion_result_detail_keys(
+                build_source_reserved_variable_type_assertion_output(
+                    pre_output,
+                    &mismatched_symbols,
+                )
+            ),
+            vec![
+                super::TYPE_ELABORATION_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY
+                    .to_owned()
+            ]
+        );
+
+        let exact = exact_identifier_type_assertion_spec();
+        let gap_cases = [
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                IdentifierTypeAssertionTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..exact
+                },
+            ),
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                IdentifierTypeAssertionTheoremSpec {
+                    subject: "y",
+                    ..exact
+                },
+            ),
+            reserve_then_builtin_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                exact.label,
+                "1",
+                ReserveTypeShape::Builtin("set"),
+            ),
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("object"))],
+                exact,
+            ),
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x", "y"],
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                exact,
+            ),
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::AttributedSet)],
+                exact,
+            ),
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::Builtin("object"),
+                    ..exact
+                },
+            ),
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::AttributedSet,
+                    ..exact
+                },
+            ),
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                IdentifierTypeAssertionTheoremSpec {
+                    negated: true,
+                    ..exact
+                },
+            ),
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                IdentifierTypeAssertionTheoremSpec {
+                    status: Some("open"),
+                    ..exact
+                },
+            ),
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                IdentifierTypeAssertionTheoremSpec {
+                    status: Some("registration"),
+                    ..exact
+                },
+            ),
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                IdentifierTypeAssertionTheoremSpec {
+                    recovered_label: true,
+                    ..exact
+                },
+            ),
+            reserve_then_identifier_type_assertion_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                exact,
+            ),
+            reserve_then_two_identifier_type_assertion_theorems_ast(source_id),
+            identifier_type_assertion_theorem_then_reserve_ast(source_id),
+        ];
+        for gap_case in gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
     fn active_reserved_variable_equality_fixture_preserves_real_checker_payload() {
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -10218,6 +10878,44 @@ mod tests {
             .expect("Task 121 real AST should reach the reserved-variable inequality seam");
         assert_source_reserved_variable_formula_output(&output)
             .expect("Task 121 real AST should preserve every checked payload invariant");
+    }
+
+    #[test]
+    fn active_reserved_variable_type_assertion_fixture_preserves_real_checker_payload() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0 == "pass_type_elaboration_reserved_variable_type_assertion_001"
+            })
+            .expect("Task 122 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 122 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 122 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output =
+            source_reserved_variable_type_assertion_output(&ast, resolver.module, &symbols)
+                .expect("Task 122 real AST should reach the reserved-variable type assertion seam");
+        assert_source_reserved_variable_type_assertion_output(&output)
+            .expect("Task 122 real AST should preserve every checked payload invariant");
     }
 
     #[test]
@@ -14056,6 +14754,103 @@ mod tests {
     }
 
     #[derive(Clone, Copy)]
+    struct IdentifierTypeAssertionTheoremSpec<'a> {
+        status: Option<&'a str>,
+        label: &'a str,
+        subject: &'a str,
+        asserted_type: ReserveTypeShape,
+        recovered_label: bool,
+        negated: bool,
+    }
+
+    fn exact_identifier_type_assertion_spec() -> IdentifierTypeAssertionTheoremSpec<'static> {
+        IdentifierTypeAssertionTheoremSpec {
+            status: None,
+            label: "ReservedVariableTypeAssertionPayloadBoundary",
+            subject: "x",
+            asserted_type: ReserveTypeShape::Builtin("set"),
+            recovered_label: false,
+            negated: false,
+        }
+    }
+
+    fn reserve_then_identifier_type_assertion_theorem_ast(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+        spec: IdentifierTypeAssertionTheoremSpec<'_>,
+    ) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
+        root_children.push(add_type_assertion_theorem_item_with_status(
+            &mut builder,
+            source_id,
+            &mut offset,
+            spec,
+            true,
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn reserve_then_two_identifier_type_assertion_theorems_ast(source_id: SourceId) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let mut root_children = add_reserve_items(
+            &mut builder,
+            source_id,
+            &mut offset,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+        );
+        let spec = exact_identifier_type_assertion_spec();
+        for _ in 0..2 {
+            root_children.push(add_type_assertion_theorem_item_with_status(
+                &mut builder,
+                source_id,
+                &mut offset,
+                spec,
+                true,
+            ));
+        }
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    fn identifier_type_assertion_theorem_then_reserve_ast(source_id: SourceId) -> SurfaceAst {
+        let mut builder = SurfaceAstBuilder::new(source_id);
+        let mut offset = 0;
+        let spec = exact_identifier_type_assertion_spec();
+        let theorem = add_type_assertion_theorem_item_with_status(
+            &mut builder,
+            source_id,
+            &mut offset,
+            spec,
+            true,
+        );
+        let mut root_children = vec![theorem];
+        root_children.extend(add_reserve_items(
+            &mut builder,
+            source_id,
+            &mut offset,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+        ));
+        let root = builder.add_node(
+            SurfaceNodeKind::Root,
+            range(source_id, 0, offset.saturating_sub(2)),
+            root_children,
+        );
+        builder.finish(Some(root), None)
+    }
+
+    #[derive(Clone, Copy)]
     struct FormulaStatementTheoremSpec<'a> {
         status: Option<&'a str>,
         recovered_label: bool,
@@ -15805,8 +16600,31 @@ mod tests {
         subject: &str,
         type_shape: ReserveTypeShape,
     ) -> SurfaceBuilderNodeId {
+        add_type_assertion_theorem_item_with_status(
+            builder,
+            source_id,
+            offset,
+            IdentifierTypeAssertionTheoremSpec {
+                status,
+                label,
+                subject,
+                asserted_type: type_shape,
+                recovered_label: false,
+                negated: false,
+            },
+            false,
+        )
+    }
+
+    fn add_type_assertion_theorem_item_with_status(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        spec: IdentifierTypeAssertionTheoremSpec<'_>,
+        identifier_subject: bool,
+    ) -> SurfaceBuilderNodeId {
         let start = *offset;
-        let status_token = status.map(|status| {
+        let status_token = spec.status.map(|status| {
             add_token(
                 builder,
                 source_id,
@@ -15822,13 +16640,23 @@ mod tests {
             SurfaceTokenKind::ReservedWord,
             "theorem",
         );
-        let label_token = add_token(
-            builder,
-            source_id,
-            offset,
-            SurfaceTokenKind::Identifier,
-            label,
-        );
+        let label_token = if spec.recovered_label {
+            add_recovered_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        } else {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::Identifier,
+                spec.label,
+            )
+        };
         let colon = add_token(
             builder,
             source_id,
@@ -15837,7 +16665,11 @@ mod tests {
             ":",
         );
         let formula_start = *offset;
-        let subject_term = add_numeral_term_expression(builder, source_id, offset, subject);
+        let subject_term = if identifier_subject {
+            add_identifier_term_expression(builder, source_id, offset, spec.subject)
+        } else {
+            add_numeral_term_expression(builder, source_id, offset, spec.subject)
+        };
         let is_token = add_token(
             builder,
             source_id,
@@ -15845,15 +16677,30 @@ mod tests {
             SurfaceTokenKind::ReservedWord,
             "is",
         );
-        let asserted_type = add_reserve_type_expression(builder, source_id, offset, type_shape);
+        let not_token = spec.negated.then(|| {
+            add_token(
+                builder,
+                source_id,
+                offset,
+                SurfaceTokenKind::ReservedWord,
+                "not",
+            )
+        });
+        let asserted_type =
+            add_reserve_type_expression(builder, source_id, offset, spec.asserted_type);
         let formula_end = builder
             .node_range(asserted_type)
             .expect("just-created asserted type should exist")
             .end;
+        let mut formula_children = vec![subject_term, is_token];
+        if let Some(not_token) = not_token {
+            formula_children.push(not_token);
+        }
+        formula_children.push(asserted_type);
         let formula = builder.add_node(
             SurfaceNodeKind::IsAssertion,
             range(source_id, formula_start, formula_end),
-            vec![subject_term, is_token, asserted_type],
+            formula_children,
         );
         let formula_expression = builder.add_node(
             SurfaceNodeKind::FormulaExpression,

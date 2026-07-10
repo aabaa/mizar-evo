@@ -623,7 +623,16 @@ The checker-owned inequality API supplies two expected-type slots while task
 linked result/expected role pairs and one fact-free pre-desugaring `Checked`
 inequality. Task 107's numeral inequality bridge remains partial without
 expected types. Inequality desugaring/truth/facts, implicit closure, theorem
-acceptance, proof, CoreIr, ControlFlowIr, and VC remain uncredited. Task 109
+acceptance, proof, CoreIr, ControlFlowIr, and VC remain uncredited. Task 122
+adds the exact pass row
+`reserve x for set; theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;`.
+Task 119 supplies the real reserve lookup/result input and task 109 supplies the
+independently source-anchored formula asserted-type input. The checker accepts
+only normalized reflexive identity and records one fact-free `Checked` type
+assertion; known non-identical types remain partial on the external reachability
+payload gap. General reachability/widening/`qua`, attributes, truth/facts,
+implicit closure, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC
+remain uncredited. Task 109
 supersedes the exact
 builtin type-assertion sidecar from task 102 by crediting real checker
 term/formula payload extraction and the asserted builtin `set`

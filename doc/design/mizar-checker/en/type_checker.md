@@ -514,6 +514,26 @@ asserted type payload extraction, term inference, type-assertion semantic
 checking, formula checking beyond the partial-term diagnostic, recorded facts,
 theorem acceptance, the dedicated `formula_statement` runner, CoreIr,
 ControlFlowIr, VC, and proof payloads are still absent.
+Task 122 combines that formula-side asserted-type producer with task 119's real
+reserved-variable producer for the exact source
+`reserve x for set; theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;`.
+It also repairs the checker-owned type-assertion admissibility gate: exactly one
+ready subject and one normalized asserted type are required, semantic normalized
+identity preserves `Checked`, and a known non-identical pair becomes `Partial`
+with `FormulaDeferredReason::MissingTypeAssertionReachabilityPayload` and
+`checker.formula.external.type_assertion_reachability_payload` instead of
+inventing widening evidence. Missing asserted payload and invalid subject arity
+use `checker.formula.missing_asserted_type` (`Partial`) and
+`checker.formula.type_assertion.subject_arity` (`Error`) respectively. The
+source runner independently retains the reserve-derived subject result input
+and formula-node-derived asserted input before normalization, validates their
+distinct source anchors and empty arguments/attributes, and then requires the
+checker to link both to the same reflexive builtin-`set` semantic id. It records
+one `Inferred` variable and one fact-free `Checked` type assertion. Task 109's
+numeric subject remains partial with its exact existing two diagnostics.
+General reachability/widening/`qua`, broader asserted types or attributes,
+truth/facts, implicit closure, theorem acceptance, `formula_statement`, proof,
+CoreIr, ControlFlowIr, and VC remain deferred.
 Task 113 supersedes task 103 for the exact positive imported attribute
 assertion variant of that same term/formula boundary:
 `import parser.type_fixtures; theorem ImportedAttributeAssertionPayloadBoundary: 1 is empty;`
@@ -968,8 +988,12 @@ Formula rules:
   candidate groups for phase 8 when final root selection is ambiguous;
 - built-in `=`, `<>`, and `in` forms check term well-formedness and add
   appropriate expected-type constraints;
-- type and attribute assertions check admissibility of the subject term against
-  the normalized asserted type or attribute chain;
+- type assertions require exactly one ready subject and a normalized asserted
+  type; normalized identity is reflexively admissible, while non-identical
+  known types remain partial on the explicit external reachability payload gap
+  until widening/`qua` evidence exists; attribute-assertion admissibility remains
+  deferred until real radix/parameter and attribute-chain semantic payloads
+  exist;
 - logical connectives preserve formula type/well-formedness state and combine
   facts only through explicit assumption/conclusion rules owned by statements;
 - quantified formulas create binder contexts through `BindingEnv` and check the

@@ -492,6 +492,20 @@ task-specific invalid-payload key, full near-miss matrix, and real
 frontend/resolver payload test guard the slice. No inequality desugaring,
 truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, or VC is credited.
 
+Task 122 adds the exact type-assertion sibling
+`reserve x for set; theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;`.
+The active producer combines task 119's real reserve lookup/result input with
+task 109's formula-side asserted-type AST input, preserves their distinct
+pre-normalization source anchors, and requires the checker to admit only their
+normalized reflexive identity. The output has one `Inferred` variable, one
+fact-free `Checked` type assertion, and empty candidates/deferred reasons/
+diagnostics. Known non-identical types use
+`checker.formula.external.type_assertion_reachability_payload` and remain
+partial. A task-specific invalid-payload key, the enumerated near-miss matrix,
+and a real frontend/resolver payload test guard the slice. General
+reachability/widening/`qua`, attributes, truth/facts, implicit closure, theorem
+acceptance, proof, CoreIr, ControlFlowIr, and VC are not credited.
+
 Task 109 supersedes the exact builtin type-assertion sidecar from task 102:
 `BuiltinTypeAssertionPayloadBoundary: 1 is set` is executable through the
 active `type_elaboration` runner and now passes source-derived checker

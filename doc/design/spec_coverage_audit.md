@@ -92,7 +92,8 @@ invariants and the real frontend/resolver sidecar payload test guard the slice.
 This credit does not include membership truth/facts, implicit closure, theorem
 acceptance, proof, CoreIr, ControlFlowIr, VC, or broader term/formula extraction;
 those remain deferred. The generic matrix gap wording is qualified by tasks
-119 through 121 for exact equality, membership, and inequality respectively.
+119 through 122 for exact equality, membership, inequality, and type assertion
+respectively.
 
 Task121 current-state override for chapters 04, 13, 14, and 16: the exact
 reserved-variable `x <> x` pass adds two source-derived linked result/expected
@@ -103,6 +104,19 @@ numeral inequality bridge without expected types. Production invariants and a
 real sidecar test guard the slice. Inequality desugaring/truth/facts, implicit
 closure, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, and broader
 extraction remain deferred.
+
+Task122 current-state override for chapters 03, 04, 13, 14, and 16: the exact
+`reserve x for set; theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;`
+pass combines task 119's real reserve lookup/result producer with task 109's
+formula-side asserted builtin-`set` source node. `TermFormulaChecker` now
+requires one ready subject and one asserted type, accepts normalized semantic
+identity as the reflexive admissibility case, and keeps known non-identical
+types `Partial` on the external reachability payload gap instead of inventing
+widening. Production invariants independently preserve the two
+pre-normalization source anchors and require one `Inferred` variable plus one
+fact-free `Checked` type assertion. General reachability/widening/`qua`,
+attributes, truth/facts, implicit closure, theorem acceptance, proof, CoreIr,
+ControlFlowIr, VC, and broader extraction remain deferred.
 
 Task64 addendum for chapters `03.type_system.md`, `06.attributes.md`,
 `07.modes.md`, and `17.clusters_and_registrations.md`: checker task 64 adds

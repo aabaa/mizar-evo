@@ -574,6 +574,14 @@ linked result/expected role pair と 1 つの fact-free pre-desugaring `Checked`
 inequality を記録する。task 107 の numeral inequality bridge は expected type
 なしの partial のままである。inequality desugaring/truth/fact、implicit closure、
 theorem acceptance、proof、CoreIr、ControlFlowIr、VC は credit しない。
+task 122 は exact pass row
+`reserve x for set; theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;`
+を追加する。task 119 が real reserve lookup/result input、task 109 が independently
+source-anchored な formula asserted-type input を供給する。checker は normalized
+reflexive identity だけを受理し、1 fact-free `Checked` type assertion を記録する。
+known non-identical type は external reachability payload gap 上の partial に残る。
+general reachability/widening/`qua`、attribute、truth/fact、implicit closure、
+theorem acceptance、proof、CoreIr、ControlFlowIr、VC は credit しない。
 task 109 は task 102 の exact builtin type-assertion sidecar を supersede し、
 real checker term/formula payload extraction と asserted builtin `set`
 `TypeExpressionInput` を credit するが、numeric type payload、より広い

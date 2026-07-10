@@ -310,6 +310,8 @@ Keep `cargo test -p mizar-test` green after each task (see
       checker task 119's exact reserved-variable equality active pass bridge,
       checker task 120's exact reserved-variable membership active pass bridge,
       checker task 121's exact reserved-variable inequality active pass bridge,
+      checker task 122's reflexive type-assertion gate and exact
+      reserved-variable type-assertion active pass bridge,
       checker task 88's proof skeleton
       extraction-gap boundary, and checker task 89's statement proof
       extraction-gap boundary, and checker task 90's predicate/functor

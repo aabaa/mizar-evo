@@ -327,7 +327,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    result roles and only the right operand's expected-`set` role, also without
    facts or theorem acceptance, task 121 adds the exact reserved-variable
    inequality pre-desugaring well-formedness pass with two linked result/expected
-   role pairs and no facts, and task 109 supersedes task 102 for
+   role pairs and no facts, task 122 repairs the checker reflexive type-assertion
+   admissibility gate and adds the exact reserved-variable `x is set` pass from
+   independent reserve-result and formula-asserted source inputs without facts,
+   and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
    type payloads before failing on missing numeric type payloads and partial
@@ -363,12 +366,15 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    exact reserved-variable pre-desugaring slice (task 107's numeral bridge
    remains partial without expected types), inequality desugaring/equality
    semantic checking beyond task 121,
-   broader type-assertion type payload extraction, type-assertion semantic checking,
+   type-assertion reachability/widening/`qua` beyond task 122's exact normalized
+   reflexive identity slice, broader asserted-type payload extraction and
+   attribute admissibility,
    overload payloads, broader term/formula/proof
    skeleton/statement proof payloads, term inference and formula
    well-formedness checking beyond task 119's exact reserved-variable equality,
    task 120 exact reserved-variable membership, and task 121 exact
-   reserved-variable inequality slices,
+   reserved-variable inequality, and task 122 exact reserved-variable type-
+   assertion slices,
    recorded facts, imported attribute assertion semantic payloads, imported
    attribute-level non-empty assertion semantic payloads, negated attribute
    admissibility/semantic checking, attribute admissibility/semantic checking,

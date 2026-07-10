@@ -281,7 +281,9 @@ regression test を追加した。
       bridge、checker task 118 の builtin-binary exact-token guard、checker task
       119 の exact reserved-variable equality active pass bridge、checker task 120 の
       exact reserved-variable membership active pass bridge、checker task 121 の exact
-      reserved-variable inequality active pass bridge、checker task 88 の proof skeleton
+      reserved-variable inequality active pass bridge、checker task 122 の reflexive
+      type-assertion gate と exact reserved-variable type-assertion active pass bridge、
+      checker task 88 の proof skeleton
       extraction-gap boundary、checker task 89 の statement proof extraction-gap
       boundary、checker task 90 の predicate/functor definition extraction-gap
       boundary、checker task 91 の attribute definition extraction-gap boundary、

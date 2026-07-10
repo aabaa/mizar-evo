@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_reserved_variable_type_assertion_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_reserved_variable_type_assertion_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.03.type_expressions.builtin_type_assertion_checker_bridge",
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.reserved_variable_type_assertion_source_bridge",
+]
+notes = "Active Task 122 pass coverage for the exact reserved-variable type assertion theorem. The source-derived reserved variable has a known builtin set result and the formula-side asserted builtin set type is independently extracted from its own AST node. The checker admits only their normalized reflexive identity and records a fact-free Checked TypeAssertion. General reachability/widening, truth/facts, implicit closure, theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, and VC remain deferred."

@@ -480,6 +480,20 @@ task-specific invalid-payload key、full near-miss matrix、real frontend/resolv
 payload test が slice を guard する。inequality desugaring、truth/fact、theorem
 acceptance、proof、CoreIr、ControlFlowIr、VC は credit しない。
 
+task 122 は exact type-assertion sibling
+`reserve x for set; theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;`
+を追加する。active producer は task 119 の real reserve lookup/result input と
+task 109 の formula-side asserted-type AST input を結合し、normalization 前の
+distinct source anchor を保持して、checker が normalized reflexive identity
+だけを受理することを要求する。output は 1 `Inferred` variable、1 fact-free
+`Checked` type assertion、empty candidate/deferred/diagnostic を持つ。known
+non-identical type は
+`checker.formula.external.type_assertion_reachability_payload` を使って partial
+に残る。task-specific invalid-payload key、列挙済み near-miss matrix、real
+frontend/resolver payload test が slice を guard する。general
+reachability/widening/`qua`、attribute、truth/fact、implicit closure、theorem
+acceptance、proof、CoreIr、ControlFlowIr、VC は credit しない。
+
 task 109 は task 102 の exact builtin type-assertion theorem sidecar を
 supersede する。active `type_elaboration` runner は real source-derived checker
 `TermInput`、`FormulaInput`、asserted builtin `set` `TypeExpressionInput`

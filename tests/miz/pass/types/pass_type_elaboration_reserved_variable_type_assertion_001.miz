@@ -1,0 +1,2 @@
+reserve x for set;
+theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;

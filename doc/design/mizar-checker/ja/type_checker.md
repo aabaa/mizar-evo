@@ -491,6 +491,26 @@ partial formula checking で fail する。より広い asserted type payload ex
 term inference、type-assertion semantic checking、partial-term diagnostic を超える
 formula checking、recorded fact、theorem acceptance、dedicated `formula_statement`
 runner、CoreIr、ControlFlowIr、VC、proof payload はまだ存在しない。
+task 122 はその formula-side asserted-type producer と task 119 の real
+reserved-variable producer を exact source
+`reserve x for set; theorem ReservedVariableTypeAssertionPayloadBoundary: x is set;`
+について結合する。また checker-owned type-assertion admissibility gate を修正し、
+exactly one ready subject と one normalized asserted type を要求する。semantic
+normalized identity だけが `Checked` を維持し、known non-identical pair は widening
+evidence を捏造せず、
+`FormulaDeferredReason::MissingTypeAssertionReachabilityPayload` と
+`checker.formula.external.type_assertion_reachability_payload` を持つ `Partial`
+になる。missing asserted payload は `checker.formula.missing_asserted_type`
+(`Partial`)、invalid subject arity は
+`checker.formula.type_assertion.subject_arity` (`Error`) を使う。source runner は
+normalization 前の reserve-derived subject result input と formula node-derived
+asserted input を独立に保持し、distinct source anchor と empty argument/attribute
+を検証してから、checker が両者を同じ reflexive builtin-`set` semantic id に
+link することを要求する。1 `Inferred` variable と 1 fact-free `Checked` type
+assertion を記録する。task 109 の numeric subject は exact existing two
+diagnostics のまま partial である。general reachability/widening/`qua`、broader
+asserted type/attribute、truth/fact、implicit closure、theorem acceptance、
+`formula_statement`、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
 task 113 は task 103 の exact positive imported attribute assertion variant を
 supersede する:
 `import parser.type_fixtures; theorem ImportedAttributeAssertionPayloadBoundary: 1 is empty;`
@@ -902,8 +922,11 @@ formula rules:
   ambiguous な場合は phase 8 のため candidate group を保持する;
 - built-in `=`、`<>`、`in` form は term well-formedness を check し、appropriate
   expected-type constraint を追加する;
-- type / attribute assertion は subject term が normalized asserted type または
-  attribute chain に admissible かを check する;
+- type assertion は exactly one ready subject と normalized asserted type を要求し、
+  normalized identity を reflexive admissible とする。known non-identical type は
+  widening/`qua` evidence が得られるまで explicit external reachability payload gap
+  上の partial に残す。attribute-assertion admissibility は real radix/parameter と
+  attribute-chain semantic payload が得られるまで deferred のままにする;
 - logical connective は formula type/well-formedness state を保持し、fact の結合は
   statement が所有する explicit assumption/conclusion rule を通じてのみ行う;
 - quantified formula は `BindingEnv` を通じて binder context を作り、その下で body を check する。
