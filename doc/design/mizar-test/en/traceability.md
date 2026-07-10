@@ -609,7 +609,14 @@ both identifier terms resolve through the real reserve `BindingEnv`, their
 result and equality-expected types derive from the written builtin `set`
 reserve, and checker type/well-formedness completes without diagnostics or
 facts. It does not credit implicit universal closure, equality truth, theorem
-acceptance, `formula_statement`, proof, CoreIr, ControlFlowIr, or VC. Task 120
+acceptance, `formula_statement`, proof, CoreIr, ControlFlowIr, or VC. Task 123
+adds the distinct-binding exact pass row
+`reserve x, y for set; theorem DistinctReservedVariableEqualityPayloadBoundary: x = y;`:
+the real multi-reserve producer preserves two binding identities and one shared
+written builtin `set` type range, while independent source-order lookups and
+operand-specific result/expected roles reach a fact-free `Checked` equality.
+It does not credit implicit closure/order, equality truth/facts, theorem
+acceptance, proof, CoreIr, ControlFlowIr, or VC. Task 120
 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

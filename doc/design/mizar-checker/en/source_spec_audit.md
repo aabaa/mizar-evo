@@ -411,6 +411,18 @@ one `Inferred` variable and one fact-free `Checked` type assertion. General
 reachability/widening/`qua`, attributes, truth/facts, implicit closure, theorem
 acceptance, proof, CoreIr, ControlFlowIr, VC, and broader extraction remain open.
 
+Task 123 MC-G020 current-state override: the exact distinct reserved-variable
+equality source combines the existing real multi-reserve declaration producer
+with task 119's equality consumer. The one written builtin `set` range backs
+two source bindings, but source-order lookup resolves `x` and `y` to distinct
+checker binding ids before operand-specific result/expected roles reach a
+fact-free `Checked` equality. Production invariants, a near-miss matrix, and a
+real frontend/resolver sidecar guard the exact bridge. This closes the
+classified `test_gap` / `source_drift` / `design_drift` only for exact
+distinct-binding type/well-formedness. Implicit closure/order nodes, equality
+truth/facts, theorem acceptance, broader source shapes, proof, CoreIr,
+ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

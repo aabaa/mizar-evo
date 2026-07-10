@@ -406,6 +406,18 @@ source runner は normalization 前の 2 input と distinct source anchor を独
 reachability/widening/`qua`、attribute、truth/fact、implicit closure、theorem
 acceptance、proof、CoreIr、ControlFlowIr、VC、broader extraction は open のままである。
 
+Task 123 MC-G020 current-state override: exact distinct reserved-variable
+equality source は、既存の real multi-reserve declaration producer と task 119 の
+equality consumer を結合する。記述された builtin `set` range 1 個が 2 個の
+source binding を裏付けるが、source-order lookup は operand ごとの
+result/expected role が fact-free `Checked` equality に到達する前に `x` と `y`
+を distinct checker binding id に解決する。production invariant、near-miss
+matrix、real frontend/resolver sidecar が exact bridge を guard する。これは
+classified `test_gap` / `source_drift` / `design_drift` を exact distinct-binding
+type/well-formedness についてだけ閉じる。implicit closure/order node、equality
+truth/fact、theorem acceptance、broader source shape、proof、CoreIr、
+ControlFlowIr、VC は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

@@ -467,6 +467,20 @@ hand-built syntax tree. The pass result is not theorem acceptance and does not
 activate implicit closure, `formula_statement`, proof, CoreIr, ControlFlowIr,
 or VC consumers. Non-exact shapes continue to report the extraction-gap key.
 
+Task 123 adds the exact distinct-binding equality pass case
+`reserve x, y for set; theorem DistinctReservedVariableEqualityPayloadBoundary: x = y;`.
+The active runner preserves the real two-binding reserve handoff and shared
+written builtin `set` range, derives lookup ordinals 2 and 3 after both source
+bindings, and resolves the operands to distinct checker binding ids.
+Operand-specific result/expected roles reach two `Inferred` variables and one
+fact-free `Checked` equality. A task-specific invalid-payload key, near-miss
+matrix, and real frontend/resolver active-sidecar test validate the exact seam.
+Separate reserve items, reversed or identical operands, wrong labels,
+operators, types, extra bindings/items, status/recovery, and numerals stay on
+the extraction gap. The pass does not credit implicit closure/order, equality
+truth/facts, theorem acceptance, `formula_statement`, proof, CoreIr,
+ControlFlowIr, or VC.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

@@ -1981,6 +1981,31 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       のままにする。
     - 依存: tasks 109、119。mizar-checker、mizar-test、full workspace で検証する。
 
+123. **Exact source-derived distinct reserved-variable equality checker bridge を追加する。** [x]
+    - `reserve x, y for set; theorem DistinctReservedVariableEqualityPayloadBoundary: x = y;`
+      だけを対象とする spec-derived active pass fixture を追加する。
+    - 受入条件: parser と resolver が source を実行し、runner は real
+      multi-reserve declaration handoff を再利用する。記述された 1 個の
+      `set` type を指す source type range を共有しつつ、checker の異なる
+      binding identity 2 個を保存し、source-order の `BindingEnv::lookup`
+      site で `x` と `y` を独立に解決する。operand ごとの result と
+      expected-type role input は、candidate、deferred reason、diagnostic を
+      持たない 2 個の `Inferred` variable term と、fact を持たない 1 個の
+      `Checked` equality に到達しなければならない。
+    - production invariant validation、near-miss matrix、real
+      frontend/resolver active-sidecar payload test を追加する。既存
+      expectation を rebaseline してはならない。新規 pass expectation は
+      spec 4.3、13.1.1、14.5.2 と theorem declaration contract から導く。
+    - この task が credit するのは exact distinct-binding
+      type/well-formedness だけである。implicit universal-closure または
+      quantifier-order node、equality truth/fact、theorem acceptance、
+      `formula_statement`、proof、CoreIr、ControlFlowIr、VC payload を捏造して
+      はならない。non-exact multi-binding source は extraction gap のままにする。
+    - `doc/design/spec_coverage_audit.md` の Chapter 4、13、14、16 row を更新する。
+      `crates/mizar-checker/src/` が変わらない限り checker source-layout
+      inventory の更新は不要である。
+    - 依存: tasks 20、119。mizar-test と full workspace を検証する。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

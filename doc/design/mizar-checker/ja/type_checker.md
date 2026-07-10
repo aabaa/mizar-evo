@@ -453,6 +453,24 @@ CoreIr、ControlFlowIr、VC payload を生成しない。non-exact label、opera
 binding/type、attributed type、operator、status/extra token、追加 reserve/theorem
 item、source-order reversal、recovery、numeral-term shape は
 `type_elaboration.external_dependency.ast_payload_extraction` に残る。
+task 123 は exact distinct-binding sibling
+`reserve x, y for set; theorem DistinctReservedVariableEqualityPayloadBoundary: x = y;`
+を追加する。real multi-reserve handoff は、両 source binding が同じ記述上の
+builtin `set` type range を指していても、checker binding 2 個を所有する。
+source binding/use ordering は binding ordinal 0 と 1 の後に lookup ordinal 2 と
+3 を導出し、independent `BindingEnv::lookup` call は operand を collapse せず
+`BindingId(0)` と `BindingId(1)` に解決する。operand ごとの result/expected
+role は対応する source binding provenance を保持し、checker は 2 `Inferred`
+variable term と 1 fact-free `Checked` equality を記録する。production invariant
+は distinct identity、shared type range、exact source shape、role ownership、empty
+candidate/fact/deferred/diagnostic output を検証する。drift は
+`type_elaboration.checker.distinct_reserved_variable_equality.invalid_payload` を
+報告し、near-miss matrix と real frontend/resolver sidecar は separate reserve
+item、reversed/same operand、wrong label/operator/type、extra binding/item、
+status/recovery、numeral operand を extraction gap に残す。これは
+type/well-formedness だけであり、implicit universal closure と quantifier order、
+equality truth/fact、theorem acceptance、`formula_statement`、proof、CoreIr、
+ControlFlowIr、VC は deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

@@ -455,6 +455,19 @@ real frontend/resolver が生成した AST について同じ payload assertion 
 `formula_statement`、proof、CoreIr、ControlFlowIr、VC consumer を activate
 しない。non-exact shape は extraction-gap key を報告し続ける。
 
+task 123 は exact distinct-binding equality pass case
+`reserve x, y for set; theorem DistinctReservedVariableEqualityPayloadBoundary: x = y;`
+を追加する。active runner は real two-binding reserve handoff と共有された記述上の
+builtin `set` range を保持し、両 source binding の後に lookup ordinal 2 と 3 を
+導出して、operand を distinct checker binding id に解決する。operand ごとの
+result/expected role は 2 `Inferred` variable と 1 fact-free `Checked` equality
+へ到達する。task-specific invalid-payload key、near-miss matrix、real
+frontend/resolver active-sidecar test が exact seam を検証する。separate reserve
+item、reversed/identical operand、wrong label/operator/type、extra binding/item、
+status/recovery、numeral は extraction gap に残る。この pass は implicit
+closure/order、equality truth/fact、theorem acceptance、`formula_statement`、proof、
+CoreIr、ControlFlowIr、VC を credit しない。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

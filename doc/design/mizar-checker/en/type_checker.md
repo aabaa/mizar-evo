@@ -475,6 +475,25 @@ CoreIr, ControlFlowIr, or VC payloads. Non-exact labels, operands, reserve
 bindings/types, attributed types, operators, status/extra tokens, additional
 reserve or theorem items, source-order reversal, recovery, or numeral-term shapes
 remain on `type_elaboration.external_dependency.ast_payload_extraction`.
+Task 123 adds the exact distinct-binding sibling
+`reserve x, y for set; theorem DistinctReservedVariableEqualityPayloadBoundary: x = y;`.
+The real multi-reserve handoff owns two checker bindings even though both
+source bindings point to the same written builtin `set` type range. Source
+binding/use ordering derives lookup ordinals 2 and 3 after binding ordinals 0
+and 1, and independent `BindingEnv::lookup` calls resolve the operands to
+`BindingId(0)` and `BindingId(1)` rather than collapsing them. Operand-specific
+result and expected roles retain the corresponding source binding provenance;
+the checker records two `Inferred` variable terms and one fact-free `Checked`
+equality. Production invariants validate the distinct identities, shared type
+range, exact source shape, role ownership, and empty
+candidate/fact/deferred/diagnostic output. Drift reports
+`type_elaboration.checker.distinct_reserved_variable_equality.invalid_payload`,
+and a near-miss matrix plus real frontend/resolver sidecar keep separate
+reserve items, reversed/same operands, wrong labels/operators/types, extra
+bindings/items, status/recovery, and numeral operands on the extraction gap.
+This is type/well-formedness only: implicit universal closure and quantifier
+order, equality truth/facts, theorem acceptance, `formula_statement`, proof,
+CoreIr, ControlFlowIr, and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,
