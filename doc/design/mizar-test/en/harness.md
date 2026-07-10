@@ -481,6 +481,17 @@ observes the active sidecar payload. This is well-formedness coverage only, not
 membership truth, a recorded fact, implicit closure, theorem acceptance, or a
 proof/Core/ControlFlow/VC promotion.
 
+Task 121 adds the exact inequality sibling
+`reserve x for set; theorem ReservedVariableInequalityPayloadBoundary: x <> x;`.
+The checker-owned inequality API supplies two expected-type slots while task
+119 supplies the real reserve binding/use producer; task 107's numeral
+inequality bridge remains partial without expected types. The shared active
+producer requires two linked result roles, two linked expected roles, two
+`Inferred` variables, and one fact-free pre-desugaring `Checked` inequality. A
+task-specific invalid-payload key, full near-miss matrix, and real
+frontend/resolver payload test guard the slice. No inequality desugaring,
+truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, or VC is credited.
+
 Task 109 supersedes the exact builtin type-assertion sidecar from task 102:
 `BuiltinTypeAssertionPayloadBoundary: 1 is set` is executable through the
 active `type_elaboration` runner and now passes source-derived checker

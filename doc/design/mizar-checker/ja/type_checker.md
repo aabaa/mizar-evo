@@ -470,6 +470,18 @@ construction または invariant failure は
 implicit closure、theorem acceptance、`formula_statement`、proof、CoreIr、
 ControlFlowIr、VC payload を生成しない。non-exact label/operator/operand/reserve
 shape/item count/order/recovery/status token/numeral operand は extraction gap に残る。
+task 121 は exact sibling
+`reserve x for set; theorem ReservedVariableInequalityPayloadBoundary: x <> x;`
+を追加する。shared producer は independently resolved な 2 つの known-`set`
+variable、2 result role、checker output に link された 2 expected role を供給する。
+1 つの fact-free `Checked` `FormulaKind::Inequality` は pre-desugaring
+type/well-formedness だけを記録する。construction/invariant drift は
+`type_elaboration.checker.reserved_variable_inequality.invalid_payload` を報告し、
+real frontend/resolver active-sidecar test が payload を guard する。two-expected-type
+contract の根拠は checker-owned API coverage と task 119 の real role producer で、
+task 107 は expected type を持たない partial numeral bridge のままである。task 121
+は `not equality` desugaring、truth/fact、implicit closure、theorem acceptance、
+proof、CoreIr、ControlFlowIr、VC を実装しない。
 task 109 は task 102 の exact builtin `set` portion を supersede する:
 `theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` は Chapter 13 の numeral
 term と Chapter 14 の builtin type-assertion form を通じて parser / resolver 実行まで

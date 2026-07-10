@@ -1954,6 +1954,17 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-test`、最終 workspace verification。
     - 依存: tasks 108、119。参照: Step 5、mizar-test task 10、spec 04、13、14、16。
 
+121. **Exact source-derived reserved-variable inequality checker bridge を追加する。** [x]
+    - `reserve x for set; theorem ReservedVariableInequalityPayloadBoundary: x <> x;`
+      だけを昇格する。
+    - shared real lookup/type producer を 2 linked result role、2 expected role、
+      2 `Inferred` term、1 fact-free pre-desugaring `Checked` inequality に再利用し、
+      task-specific invalid key、near-miss matrix、real frontend/resolver payload
+      test で guard する。
+    - inequality desugaring/truth/fact、implicit closure、theorem acceptance、proof、
+      CoreIr、ControlFlowIr、VC を主張しない。
+    - 依存: tasks 107、119、120。mizar-test と full workspace で検証する。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

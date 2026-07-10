@@ -387,6 +387,14 @@ invariant、task-specific invalid-payload key、real frontend/resolver sidecar t
 slice を guard する。membership truth/fact、implicit closure、theorem acceptance、
 proof、CoreIr、ControlFlowIr、VC、broader source extraction は credit しない。
 
+Task 121 MC-G020 current-state override: exact reserved-variable inequality
+source は real binding/use producer を共有し、2 linked result role と 2 linked
+expected role を fact-free pre-desugaring `Checked` inequality に渡す。production
+invariant と real sidecar payload test が guard する。expected type shape の根拠は
+checker-owned API coverage と task 119 であり、task 107 の partial numeral bridge
+ではない。desugaring/truth/fact、implicit closure、theorem acceptance、proof、
+CoreIr、ControlFlowIr、VC、broader extraction は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

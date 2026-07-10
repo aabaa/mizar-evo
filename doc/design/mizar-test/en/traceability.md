@@ -615,6 +615,14 @@ adds the matching exact pass row for
 both identifier results and the right membership expected type derive from the
 written `set` reserve, and a no-fact `Checked` membership records
 type/well-formedness only. Membership truth/facts, implicit closure, theorem
+acceptance, proof, CoreIr, ControlFlowIr, and VC remain uncredited. Task 121
+adds the exact pass row
+`reserve x for set; theorem ReservedVariableInequalityPayloadBoundary: x <> x;`.
+The checker-owned inequality API supplies two expected-type slots while task
+119 supplies the real reserve binding/use producer, so the runner records two
+linked result/expected role pairs and one fact-free pre-desugaring `Checked`
+inequality. Task 107's numeral inequality bridge remains partial without
+expected types. Inequality desugaring/truth/facts, implicit closure, theorem
 acceptance, proof, CoreIr, ControlFlowIr, and VC remain uncredited. Task 109
 supersedes the exact
 builtin type-assertion sidecar from task 102 by crediting real checker

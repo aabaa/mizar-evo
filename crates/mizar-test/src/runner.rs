@@ -90,6 +90,8 @@ const TYPE_ELABORATION_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.reserved_variable_membership.invalid_payload";
+const TYPE_ELABORATION_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.reserved_variable_inequality.invalid_payload";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ParseOnlyRunReport {
@@ -918,6 +920,11 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) =
+        source_reserved_variable_inequality_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
     if let Some(keys) = source_formula_statement_detail_keys(ast, module.clone(), symbols) {
         return keys;
     }
@@ -1147,6 +1154,18 @@ const SOURCE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG: SourceReservedVariableBinaryFo
         right_expected_role: Some("reserved-variable-membership-right-expected"),
     };
 
+const SOURCE_RESERVED_VARIABLE_INEQUALITY_CONFIG: SourceReservedVariableBinaryFormulaConfig =
+    SourceReservedVariableBinaryFormulaConfig {
+        label: "ReservedVariableInequalityPayloadBoundary",
+        operator: "<>",
+        formula_kind: FormulaKind::Inequality,
+        invalid_payload_key: TYPE_ELABORATION_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+        left_result_role: "reserved-variable-inequality-left-result",
+        right_result_role: "reserved-variable-inequality-right-result",
+        left_expected_role: Some("reserved-variable-inequality-left-expected"),
+        right_expected_role: Some("reserved-variable-inequality-right-expected"),
+    };
+
 #[derive(Debug)]
 struct SourceReservedVariableBinaryFormula {
     reserve: SourceReserveExtraction,
@@ -1193,6 +1212,18 @@ fn source_reserved_variable_membership_detail_keys(
     Some(source_reserved_variable_formula_result_detail_keys(
         build_source_reserved_variable_formula_output(payload, symbols),
         TYPE_ELABORATION_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+fn source_reserved_variable_inequality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_reserved_variable_inequality(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
     ))
 }
 
@@ -1250,6 +1281,16 @@ fn source_reserved_variable_membership_output(
     symbols: &SymbolEnv,
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload = extract_source_reserved_variable_membership(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_reserved_variable_inequality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload = extract_source_reserved_variable_inequality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -2058,6 +2099,19 @@ fn extract_source_reserved_variable_membership(
         module,
         symbols,
         &SOURCE_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    )
+}
+
+fn extract_source_reserved_variable_inequality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     )
 }
 
@@ -5706,17 +5760,19 @@ mod tests {
         extract_source_imported_attribute_assertion_formula,
         extract_source_imported_non_empty_attribute_assertion_formula,
         extract_source_imported_predicate_functor_formula,
-        extract_source_reserved_variable_equality, extract_source_reserved_variable_membership,
-        extract_source_set_enumeration_formula, resolve_visible_attribute,
-        resolve_visible_type_head, resolver_symbol_collection, run_frontend,
-        source_builtin_type_assertion_formula_output, source_formula_connective_quantifier_output,
-        source_formula_statement_output, source_imported_attribute_assertion_formula_output,
+        extract_source_reserved_variable_equality, extract_source_reserved_variable_inequality,
+        extract_source_reserved_variable_membership, extract_source_set_enumeration_formula,
+        resolve_visible_attribute, resolve_visible_type_head, resolver_symbol_collection,
+        run_frontend, source_builtin_type_assertion_formula_output,
+        source_formula_connective_quantifier_output, source_formula_statement_output,
+        source_imported_attribute_assertion_formula_output,
         source_imported_non_empty_attribute_assertion_formula_output,
         source_imported_predicate_functor_formula_output, source_reserved_variable_equality_output,
         source_reserved_variable_formula_output_detail_keys,
         source_reserved_variable_formula_result_detail_keys,
-        source_reserved_variable_membership_output, source_set_enumeration_formula_output,
-        source_type_elaboration_detail_keys, surface_nodes_with_kind, surface_site,
+        source_reserved_variable_inequality_output, source_reserved_variable_membership_output,
+        source_set_enumeration_formula_output, source_type_elaboration_detail_keys,
+        surface_nodes_with_kind, surface_site,
     };
     use crate::harness::{DiscoveryConfig, TestProfile, ValidationMode, build_test_plan};
     use mizar_checker::binding_env::{BindingContextId, BindingId};
@@ -9994,6 +10050,72 @@ mod tests {
     }
 
     #[test]
+    fn source_reserved_variable_inequality_bridge_uses_real_binding_and_type_payloads() {
+        let source_id = source_id(98);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("reserved_variable_inequality"),
+        );
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let ast = reserve_then_identifier_binary_theorem_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+            "ReservedVariableInequalityPayloadBoundary",
+            "x",
+            "<>",
+            "x",
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&ast, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload = extract_source_reserved_variable_inequality(&ast, module.clone(), &symbols)
+            .expect("exact reserved-variable inequality source should extract");
+        assert_eq!(payload.config.formula_kind, FormulaKind::Inequality);
+        assert_eq!(
+            [payload.left_lookup_ordinal, payload.right_lookup_ordinal],
+            [1, 2]
+        );
+        let output = source_reserved_variable_inequality_output(&ast, module.clone(), &symbols)
+            .expect("exact reserved-variable inequality should reach the checker");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("reserved-variable inequality invariants should hold");
+        let (_, formula) = output.term_formula.formulas().iter().next().unwrap();
+        assert_eq!(formula.kind, FormulaKind::Inequality);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(formula.expected_types.len(), 2);
+        assert!(formula.facts.is_empty());
+        assert_eq!(output.term_formula.type_entries().len(), 6);
+
+        let pre_output =
+            extract_source_reserved_variable_inequality(&ast, module.clone(), &symbols)
+                .expect("exact source should produce a pre-output payload");
+        let mismatched_symbols = SymbolEnv::new(
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("other_module")),
+            SymbolEnvIndexes::default(),
+        );
+        assert_eq!(
+            source_reserved_variable_formula_result_detail_keys(
+                build_source_reserved_variable_formula_output(pre_output, &mismatched_symbols),
+                super::TYPE_ELABORATION_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+            ),
+            vec![
+                super::TYPE_ELABORATION_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY.to_owned()
+            ]
+        );
+        for gap_case in reserved_variable_binary_gap_cases(
+            source_id,
+            "ReservedVariableInequalityPayloadBoundary",
+            "<>",
+        ) {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
     fn active_reserved_variable_equality_fixture_preserves_real_checker_payload() {
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -10061,6 +10183,41 @@ mod tests {
             .expect("Task 120 real AST should reach the reserved-variable membership checker seam");
         assert_source_reserved_variable_formula_output(&output)
             .expect("Task 120 real AST should preserve every checked payload invariant");
+    }
+
+    #[test]
+    fn active_reserved_variable_inequality_fixture_preserves_real_checker_payload() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| case.id.0 == "pass_type_elaboration_reserved_variable_inequality_001")
+            .expect("Task 121 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 121 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 121 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_reserved_variable_inequality_output(&ast, resolver.module, &symbols)
+            .expect("Task 121 real AST should reach the reserved-variable inequality seam");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("Task 121 real AST should preserve every checked payload invariant");
     }
 
     #[test]
@@ -13728,6 +13885,120 @@ mod tests {
             root_children,
         );
         builder.finish(Some(root), None)
+    }
+
+    fn reserved_variable_binary_gap_cases(
+        source_id: SourceId,
+        label: &'static str,
+        operator: &'static str,
+    ) -> Vec<SurfaceAst> {
+        let reserve = || vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))];
+        vec![
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                reserve(),
+                "OtherPayloadBoundary",
+                "x",
+                operator,
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                reserve(),
+                label,
+                "y",
+                operator,
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                reserve(),
+                label,
+                "x",
+                operator,
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                reserve(),
+                label,
+                "x",
+                if operator == "=" { "<>" } else { "=" },
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("object"))],
+                label,
+                "x",
+                operator,
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x", "y"],
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                label,
+                "x",
+                operator,
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::AttributedSet)],
+                label,
+                "x",
+                operator,
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                label,
+                "x",
+                operator,
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast_with_options(
+                source_id,
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    status: Some("registration"),
+                    label,
+                    left: "x",
+                    operator,
+                    right: "x",
+                    recovered_label: false,
+                },
+            ),
+            reserve_then_identifier_binary_theorem_ast_with_options(
+                source_id,
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    status: None,
+                    label,
+                    left: "x",
+                    operator,
+                    right: "x",
+                    recovered_label: true,
+                },
+            ),
+            reserve_then_two_identifier_binary_theorems_ast(source_id, label, operator),
+            theorem_then_reserve_identifier_binary_ast(source_id, label, operator),
+            reserve_then_builtin_binary_theorem_ast(
+                source_id,
+                reserve(),
+                label,
+                "1",
+                operator,
+                "1",
+            ),
+        ]
     }
 
     fn reserve_then_builtin_binary_theorem_ast(

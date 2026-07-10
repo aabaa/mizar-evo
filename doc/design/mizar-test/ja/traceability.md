@@ -566,6 +566,14 @@ CoreIr、ControlFlowIr、VC は credit しない。task 120 は matching exact p
 `set` reserve から導かれ、no-fact `Checked` membership は type/well-formedness
 だけを記録する。membership truth/fact、implicit closure、theorem acceptance、
 proof、CoreIr、ControlFlowIr、VC は credit しない。
+task 121 は exact pass row
+`reserve x for set; theorem ReservedVariableInequalityPayloadBoundary: x <> x;`
+を追加する。checker-owned inequality API が 2 つの expected-type slot を提供し、
+task 119 が real reserve binding/use producer を提供するため、runner は 2 組の
+linked result/expected role pair と 1 つの fact-free pre-desugaring `Checked`
+inequality を記録する。task 107 の numeral inequality bridge は expected type
+なしの partial のままである。inequality desugaring/truth/fact、implicit closure、
+theorem acceptance、proof、CoreIr、ControlFlowIr、VC は credit しない。
 task 109 は task 102 の exact builtin type-assertion sidecar を supersede し、
 real checker term/formula payload extraction と asserted builtin `set`
 `TypeExpressionInput` を credit するが、numeric type payload、より広い

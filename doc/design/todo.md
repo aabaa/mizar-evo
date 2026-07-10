@@ -325,7 +325,9 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    without facts or theorem acceptance, task 120 adds the matching exact
    reserved-variable membership well-formedness pass with two source-derived
    result roles and only the right operand's expected-`set` role, also without
-   facts or theorem acceptance, and task 109 supersedes task 102 for
+   facts or theorem acceptance, task 121 adds the exact reserved-variable
+   inequality pre-desugaring well-formedness pass with two linked result/expected
+   role pairs and no facts, and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
    type payloads before failing on missing numeric type payloads and partial
@@ -357,12 +359,16 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    attributed-type evidence, imported predicate/functor semantic payloads,
    membership operand expected-type construction/checking beyond task 120's
    exact right-operand expected-`set` slice (task 108's numeral bridge still
-   lacks it), inequality desugaring/equality semantic checking beyond task 107,
+   lacks it), inequality expected-type construction/checking beyond task 121's
+   exact reserved-variable pre-desugaring slice (task 107's numeral bridge
+   remains partial without expected types), inequality desugaring/equality
+   semantic checking beyond task 121,
    broader type-assertion type payload extraction, type-assertion semantic checking,
    overload payloads, broader term/formula/proof
    skeleton/statement proof payloads, term inference and formula
-   well-formedness checking beyond task 119's exact reserved-variable equality
-   and task 120 exact reserved-variable membership slices,
+   well-formedness checking beyond task 119's exact reserved-variable equality,
+   task 120 exact reserved-variable membership, and task 121 exact
+   reserved-variable inequality slices,
    recorded facts, imported attribute assertion semantic payloads, imported
    attribute-level non-empty assertion semantic payloads, negated attribute
    admissibility/semantic checking, attribute admissibility/semantic checking,

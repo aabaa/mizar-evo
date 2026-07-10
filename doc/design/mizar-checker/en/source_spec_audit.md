@@ -391,6 +391,14 @@ sidecar test guard the slice. This does not credit membership truth/facts,
 implicit closure, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, or
 broader source extraction.
 
+Task 121 MC-G020 current-state override: the exact reserved-variable inequality
+source shares the real binding/use producer and supplies two linked result and
+two linked expected roles to a fact-free pre-desugaring `Checked` inequality.
+Production invariants and a real sidecar payload test guard it. The expected
+type shape comes from checker-owned API coverage and task 119, not task 107's
+partial numeral bridge. Desugaring/truth/facts, implicit closure, theorem
+acceptance, proof, CoreIr, ControlFlowIr, VC, and broader extraction remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

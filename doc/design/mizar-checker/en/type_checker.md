@@ -492,6 +492,18 @@ truth/facts, materialize implicit closure, accept the theorem, activate
 `formula_statement`, or produce proof, CoreIr, ControlFlowIr, or VC payloads.
 Non-exact labels, operators, operands, reserve shapes, item counts/order,
 recovery/status tokens, and numeral operands remain on the extraction gap.
+Task 121 adds the exact sibling
+`reserve x for set; theorem ReservedVariableInequalityPayloadBoundary: x <> x;`.
+The shared producer supplies two independently resolved known-`set` variables,
+two result roles, and two expected roles linked to the checker outputs. One
+fact-free `Checked` `FormulaKind::Inequality` records pre-desugaring
+type/well-formedness only. Construction/invariant drift reports
+`type_elaboration.checker.reserved_variable_inequality.invalid_payload`, and a
+real frontend/resolver active-sidecar test guards the payload. The source of the
+two-expected-type contract is checker-owned API coverage plus task 119's real
+role producer; task 107 remains the partial numeral bridge without expected
+types. Task 121 does not implement `not equality` desugaring, truth/facts,
+implicit closure, theorem acceptance, proof, CoreIr, ControlFlowIr, or VC.
 Task 109 supersedes the exact builtin `set` portion of task 102:
 `theorem BuiltinTypeAssertionPayloadBoundary: 1 is set;` reaches parser and
 resolver execution with a Chapter 13 numeral term and the Chapter 14 builtin

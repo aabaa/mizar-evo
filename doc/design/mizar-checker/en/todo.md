@@ -2101,6 +2101,16 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 108, 119. Refs: Step 5; mizar-test task 10; spec 04, 13, 14,
       and 16.
 
+121. **Add exact source-derived reserved-variable inequality checker bridge.** [x]
+    - Promote only `reserve x for set; theorem ReservedVariableInequalityPayloadBoundary: x <> x;`.
+    - Reuse the shared real lookup/type producer for two linked result and two
+      expected roles, two `Inferred` terms, and one fact-free pre-desugaring
+      `Checked` inequality. Guard it with a task-specific invalid key, near-miss
+      matrix, and real frontend/resolver payload test.
+    - Do not claim inequality desugaring/truth/facts, implicit closure, theorem
+      acceptance, proof, CoreIr, ControlFlowIr, or VC.
+    - Deps: tasks 107, 119, 120. Verify mizar-test and full workspace.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

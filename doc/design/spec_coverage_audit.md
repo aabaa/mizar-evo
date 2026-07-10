@@ -91,8 +91,18 @@ variables and one no-fact type/well-formedness `Checked` membership. Production
 invariants and the real frontend/resolver sidecar payload test guard the slice.
 This credit does not include membership truth/facts, implicit closure, theorem
 acceptance, proof, CoreIr, ControlFlowIr, VC, or broader term/formula extraction;
-those remain deferred. The generic matrix gap wording is qualified by task 119
-equality and task 120 membership only.
+those remain deferred. The generic matrix gap wording is qualified by tasks
+119 through 121 for exact equality, membership, and inequality respectively.
+
+Task121 current-state override for chapters 04, 13, 14, and 16: the exact
+reserved-variable `x <> x` pass adds two source-derived linked result/expected
+role pairs and one fact-free pre-desugaring `Checked` inequality. The two
+expected-type slots come from the checker-owned inequality API and the real
+reserve binding/use producer comes from task 119; task 107 remains a partial
+numeral inequality bridge without expected types. Production invariants and a
+real sidecar test guard the slice. Inequality desugaring/truth/facts, implicit
+closure, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, and broader
+extraction remain deferred.
 
 Task64 addendum for chapters `03.type_system.md`, `06.attributes.md`,
 `07.modes.md`, and `17.clusters_and_registrations.md`: checker task 64 adds
