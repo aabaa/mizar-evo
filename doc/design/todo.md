@@ -581,6 +581,18 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    assertion, without mode declaration acceptance/inhabitation, formula-side
    local-mode asserted heads, general reachability/widening/`qua`, object/set
    coercion, closure/order, or theorem acceptance,
+   task 154 adds the test-first exact three-edge local-mode-chain reserved-
+   variable equality contract by combining task 73's real
+   `OuterThreeEdgeModeEquality -> MiddleThreeEdgeModeEquality -> InnerThreeEdgeModeEquality -> BaseThreeEdgeModeEquality -> set`
+   producer with task 134's equality consumer. The intended slice retains four
+   raw outer-mode result/expected inputs, resolves both operands to
+   `BindingId(0)` at ordinals 1 and 2, and consumes all four real expansions to
+   normalize every role to one terminal-RHS builtin-set identity before two
+   inferred variables and one fact/deferred-free checked equality, without
+   mode declaration acceptance/inhabitation, equality truth/facts, closure/
+   order, or theorem acceptance. The production route, full near-miss/
+   corruption matrix, and real frontend/resolver sidecar now guard the active
+   105th case,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

@@ -2454,6 +2454,12 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, object/set coercion, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
     - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 74, 122, 151, and 152.
 
+154. **Add exact three-edge local-mode-chain reserved-variable equality checker bridge.** [x]
+    - Add only the spec-derived `OuterThreeEdgeModeEquality -> MiddleThreeEdgeModeEquality -> InnerThreeEdgeModeEquality -> BaseThreeEdgeModeEquality -> set`, one reserve `z` for the outer mode, and `z = z` theorem source.
+    - Preserve all four raw outer-mode result/expected inputs, resolve both operands independently to `BindingId(0)` at source-order ordinals 1 and 2, consume all four real expansions, and recursively normalize every role to one terminal-RHS builtin-set identity before two `Inferred` variables and one fact/deferred-free `Checked` equality. Exact independent definition/radix/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
+    - Keep mode declaration acceptance/inhabitation, equality truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
+    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 73 and 134.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

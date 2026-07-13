@@ -904,6 +904,17 @@ mode asserted heads, general reachability/widening/`qua`, object/set coercion,
 truth/facts, closure/order, theorem acceptance, proof, Core, and VC remain
 uncredited. Exact source guards, independent definition/five-link corruption,
 and the real frontend/resolver sidecar protect the active row.
+Task 154 adds the following test-first exact three-edge local-mode-chain
+reserved-variable equality pass row:
+`definition mode BaseThreeEdgeModeEqualityDef: BaseThreeEdgeModeEquality is set; end; definition mode InnerThreeEdgeModeEqualityDef: InnerThreeEdgeModeEquality is BaseThreeEdgeModeEquality; end; definition mode MiddleThreeEdgeModeEqualityDef: MiddleThreeEdgeModeEquality is InnerThreeEdgeModeEquality; end; definition mode OuterThreeEdgeModeEqualityDef: OuterThreeEdgeModeEquality is MiddleThreeEdgeModeEquality; end; reserve z for OuterThreeEdgeModeEquality; theorem ThreeEdgeLocalModeReservedVariableEqualityPayloadBoundary: z = z;`.
+Four raw result/expected inputs retain the written outer-mode provenance; both
+operands resolve to `BindingId(0)` at ordinals 1 and 2, and all four real
+expansions normalize every role to one terminal-RHS builtin-set identity before
+two `Inferred` terms and one fact/deferred-free `Checked` equality credit exact
+type/well-formedness only. Mode declaration acceptance/inhabitation, equality
+truth/facts, closure/order, theorem acceptance, proof, Core, and VC remain
+uncredited. The trace row, production route, independent corruption matrix,
+and real frontend/resolver sidecar now protect the active row.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

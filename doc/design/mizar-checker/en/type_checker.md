@@ -892,6 +892,22 @@ asserted-head extraction, general reachability/widening/`qua`, object/set
 coercion, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC
 remain deferred. Exact source guards, independent definition/five-link
 corruption, and the real frontend/resolver sidecar protect the active route.
+Task 154 adds only the exact three-edge bare-set local-mode-chain reserved-
+variable equality bridge
+`BaseThreeEdgeModeEquality -> set; InnerThreeEdgeModeEquality -> BaseThreeEdgeModeEquality; MiddleThreeEdgeModeEquality -> InnerThreeEdgeModeEquality; OuterThreeEdgeModeEquality -> MiddleThreeEdgeModeEquality; reserve z for OuterThreeEdgeModeEquality; theorem ...: z = z;`.
+All four raw result/expected inputs retain their written outer-mode source;
+both identifier uses resolve independently to `BindingId(0)` at source-order
+ordinals 1 and 2. The four real Task 73 expansions recursively normalize all
+roles to one builtin-set identity canonically anchored at the terminal RHS
+before two `Inferred` variable terms and one fact/deferred-free `Checked`
+equality are recorded. Every definition label, every chain radix, and every
+expansion entry requires an independent guard; non-exact definition, reserve,
+formula, or withheld chain/terminal shapes fail closed. This is equality type/
+well-formedness only: mode declaration acceptance/inhabitation, equality truth
+or facts, implicit closure/order, theorem acceptance, proof, CoreIr,
+ControlFlowIr, and VC remain deferred. The exact source guards, independent
+definition/radix/expansion corruption matrix, production route, and real
+frontend/resolver sidecar now protect the active bridge.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

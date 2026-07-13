@@ -852,6 +852,17 @@ widening/`qua`、object/set coercion、truth/fact、closure/order、theorem
 acceptance、proof/Core/VC は credit しない。exact source guard、独立した
 definition/five-link corruption、real frontend/resolver sidecar で active row
 を保護する。
+task 154 は次の test-first exact three-edge local-mode-chain reserved-variable
+equality pass row を追加する:
+`definition mode BaseThreeEdgeModeEqualityDef: BaseThreeEdgeModeEquality is set; end; definition mode InnerThreeEdgeModeEqualityDef: InnerThreeEdgeModeEquality is BaseThreeEdgeModeEquality; end; definition mode MiddleThreeEdgeModeEqualityDef: MiddleThreeEdgeModeEquality is InnerThreeEdgeModeEquality; end; definition mode OuterThreeEdgeModeEqualityDef: OuterThreeEdgeModeEquality is MiddleThreeEdgeModeEquality; end; reserve z for OuterThreeEdgeModeEquality; theorem ThreeEdgeLocalModeReservedVariableEqualityPayloadBoundary: z = z;`
+raw result/expected input 4 個は written outer-mode provenance を保持し、両
+operand は ordinal 1、2 で `BindingId(0)` へ解決し、real expansion 4 本は全
+role を terminal-RHS builtin-set identity 1 個へ normalize してから 2
+`Inferred` term と 1 fact/deferred-free `Checked` equality が exact type/well-
+formedness だけを credit する。mode declaration acceptance/inhabitation、
+equality truth/fact、closure/order、theorem acceptance、proof/Core/VC は credit
+しない。trace row、production route、独立した corruption matrix、real
+frontend/resolver sidecar が active row を保護する。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

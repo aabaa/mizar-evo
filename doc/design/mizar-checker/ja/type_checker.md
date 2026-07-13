@@ -845,6 +845,21 @@ inhabitation、formula-side local asserted-head、general reachability/widening/
 ControlFlow/VC は deferred のままである。exact source guard、independent
 definition/five-link corruption、real frontend/resolver sidecar で active route
 を保護する。
+task 154 は exact three-edge bare-set local-mode-chain reserved-variable
+equality bridge
+`BaseThreeEdgeModeEquality -> set; InnerThreeEdgeModeEquality -> BaseThreeEdgeModeEquality; MiddleThreeEdgeModeEquality -> InnerThreeEdgeModeEquality; OuterThreeEdgeModeEquality -> MiddleThreeEdgeModeEquality; reserve z for OuterThreeEdgeModeEquality; theorem ...: z = z;`
+だけを規定する。raw result/expected input 4 個は written outer-mode source を
+保持し、両 identifier use は source-order ordinal 1、2 で独立に
+`BindingId(0)` へ解決する。task 73 の real expansion 4 本は全 role を terminal
+RHS に canonical anchor された builtin-set identity 1 個へ再帰的に normalize
+してから、2 `Inferred` variable term と 1 fact/deferred-free `Checked` equality
+を記録する。全 definition label、chain radix、expansion entry を独立に guard
+し、non-exact definition/reserve/formula と withheld chain/terminal shape は
+fail closed とする。これは equality type/well-formedness だけであり、mode
+declaration acceptance/inhabitation、equality truth/fact、closure/order、theorem
+acceptance、proof/Core/ControlFlow/VC は deferred のままである。exact source
+guard、独立した definition/radix/expansion corruption matrix、production route、
+real frontend/resolver sidecar が active bridge を保護する。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

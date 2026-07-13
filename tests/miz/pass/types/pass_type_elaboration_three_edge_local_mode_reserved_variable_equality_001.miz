@@ -1,0 +1,18 @@
+definition
+  mode BaseThreeEdgeModeEqualityDef: BaseThreeEdgeModeEquality is set;
+end;
+
+definition
+  mode InnerThreeEdgeModeEqualityDef: InnerThreeEdgeModeEquality is BaseThreeEdgeModeEquality;
+end;
+
+definition
+  mode MiddleThreeEdgeModeEqualityDef: MiddleThreeEdgeModeEquality is InnerThreeEdgeModeEquality;
+end;
+
+definition
+  mode OuterThreeEdgeModeEqualityDef: OuterThreeEdgeModeEquality is MiddleThreeEdgeModeEquality;
+end;
+
+reserve z for OuterThreeEdgeModeEquality;
+theorem ThreeEdgeLocalModeReservedVariableEqualityPayloadBoundary: z = z;
