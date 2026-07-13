@@ -1,0 +1,6 @@
+definition
+  mode LocalObjectModeTypeAssertionDef: LocalObjectModeTypeAssertion is object;
+end;
+
+reserve x for LocalObjectModeTypeAssertion;
+theorem LocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;

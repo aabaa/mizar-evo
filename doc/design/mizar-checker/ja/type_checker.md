@@ -708,6 +708,20 @@ projection を独立に guard する。missing/non-exact definition、reserve、
 は fail closed する。mode declaration acceptance/inhabitation、membership
 truth/fact、implicit closure/order、theorem acceptance、proof、CoreIr、
 ControlFlowIr、VC は deferred のままである。
+task 145 は exact direct bare-object local-mode reserved-variable
+normalized-reflexive type assertion bridge
+`LocalObjectModeTypeAssertion -> object; reserve x for LocalObjectModeTypeAssertion; theorem ...: x is object;`
+を規定する。raw subject result は written local-mode symbol/range、asserted
+builtin `object` は独立した formula source node を保持する。real Task 55
+expansion 1 本を `TermFormulaChecker` に渡し、両 input を definition RHS を
+canonical source とする builtin-object identity 1 個へ normalize してから、1
+`Inferred` variable term と 1 fact-free `Checked` type assertion を記録する。
+exact contract は `BindingId(0)` と source-order use ordinal 1 を要求する。
+definition label と expansion entry を独立に guard し、missing/non-exact
+definition、reserve、formula は fail closed する。mode declaration
+acceptance/inhabitation、formula-side local-mode asserted-head extraction、
+general reachability/widening/`qua`、object/set coercion、truth/fact、theorem
+acceptance、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

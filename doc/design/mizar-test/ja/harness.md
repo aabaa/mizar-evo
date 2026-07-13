@@ -680,6 +680,20 @@ slice を保護する。mode declaration acceptance/inhabitation、membership
 truth/fact、implicit closure/order、theorem/proof/Core/VC、broader semantics は
 deferred のままである。active type-elaboration runner は 95 cases である。
 
+task 145 は exact direct object-terminal local-mode reserved-variable
+normalized-reflexive type assertion pass を追加する。runner は raw
+`LocalObjectModeTypeAssertion` subject result と独立した formula-side
+builtin-object asserted source を保持し、real Task 55 compatible expansion 1
+本を `TermFormulaChecker` に渡し、terminal-RHS-anchored builtin-object identity
+1 個、`BindingId(0)`、source-order use ordinal 1、1 `Inferred` term、1
+fact-free `Checked` type assertion を general reachability / object-set coercion
+なしで要求する。exact source guard、独立した definition/expansion
+corruption、withheld-family near miss、real frontend/resolver sidecar が slice
+を保護する。mode declaration acceptance/inhabitation、formula-side local-mode
+asserted head、general reachability/widening/`qua`、truth/fact、closure/order、
+theorem/proof/Core/VC、broader semantics は deferred のままである。active
+type-elaboration runner は 96 cases である。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

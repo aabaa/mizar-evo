@@ -652,6 +652,22 @@ coercion. Mode declaration acceptance/inhabitation, membership truth/facts,
 implicit closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and
 VC remain open.
 
+Task 145 MC-G020 current-state override: the exact direct object-terminal
+local-mode reserved-variable type assertion composes task 55's real
+AST-derived `LocalObjectModeTypeAssertion -> object` expansion with tasks 122
+and 138's identifier-result and independently formula-anchored asserted-type
+consumer. The raw subject result retains its written local-mode provenance,
+while the asserted builtin `object` retains its independent formula source
+node. The one real expansion normalizes both inputs to one builtin-object
+identity canonically anchored at the definition RHS before one `Inferred`
+term and one fact-free `Checked` type assertion are recorded. This exact slice
+requires `BindingId(0)` and source-order use ordinal 1 and fails closed on
+non-exact definitions, reserves, formulas, or expansion payloads. Mode
+declaration acceptance/inhabitation, formula-side local-mode asserted-head
+extraction, general reachability/widening/`qua`, object/set coercion,
+truth/facts, implicit closure/order, theorem acceptance, proof, CoreIr,
+ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

@@ -843,6 +843,23 @@ Coverage remains partial: mode declaration acceptance/inhabitation, membership
 truth/facts, implicit closure/order, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC are not credited.
 
+Task145 addendum for chapters `03.type_system.md`, `04.variables_and_constants.md`,
+`07.modes.md`, `13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 145 adds only the exact active
+normalized-reflexive type/well-formedness pass for a direct object-terminal
+local-mode reserved-variable subject asserted as formula-side builtin
+`object`. The raw subject result retains its written local-mode provenance,
+while the asserted type retains its independent formula source node. The one
+real AST-derived expansion normalizes both inputs to one builtin-object
+identity canonically anchored at the definition RHS before one inferred term
+and one fact-free checked type assertion are recorded. The classified changes
+are `test_gap`, `source_drift`, and `design_drift`; no specification intent or
+existing expectation changes. Coverage remains partial: mode declaration
+acceptance/inhabitation, formula-side local-mode asserted heads, general
+reachability/widening/`qua`, object/set coercion, truth/facts, implicit
+closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC are not
+credited.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

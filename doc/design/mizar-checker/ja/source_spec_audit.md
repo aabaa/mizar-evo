@@ -639,6 +639,21 @@ fact-free `Checked` membership を記録する。mode declaration acceptance/
 inhabitation、membership truth/fact、implicit closure/order、theorem
 acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
 
+Task 145 MC-G020 current-state override: exact direct object-terminal
+local-mode reserved-variable type assertion は task 55 の real AST-derived
+`LocalObjectModeTypeAssertion -> object` expansion と tasks 122 / 138 の
+identifier-result / 独立した formula-anchored asserted-type consumer を compose
+する。raw subject result は written local-mode provenance、asserted builtin
+`object` は独立した formula source node を保持する。real expansion 1 本が両
+input を definition RHS を canonical source とする builtin-object identity 1
+個へ normalize してから、1 `Inferred` term と 1 fact-free `Checked` type
+assertion を記録する。この exact slice は `BindingId(0)` と source-order use
+ordinal 1 を要求し、non-exact definition、reserve、formula、expansion payload
+は fail closed する。mode declaration acceptance/inhabitation、formula-side
+local-mode asserted-head extraction、general reachability/widening/`qua`、
+object/set coercion、truth/fact、implicit closure/order、theorem acceptance、
+proof、CoreIr、ControlFlowIr、VC は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

@@ -794,6 +794,17 @@ explicit-reserve-anchored builtin-set identity. Two `Inferred` terms and one
 fact-free `Checked` membership credit only exact type/well-formedness, not mode
 declaration acceptance/inhabitation, membership truth/facts, object/set
 coercion, implicit closure/order, theorem acceptance, proof, Core, or VC.
+Task 145 adds the exact direct local-object-mode reserved-variable type
+assertion pass row
+`definition mode LocalObjectModeTypeAssertionDef: LocalObjectModeTypeAssertion is object; end; reserve x for LocalObjectModeTypeAssertion; theorem LocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;`.
+The raw subject result retains its written local-mode provenance, while the
+asserted builtin `object` retains its independently formula-anchored source
+node. The one real expansion normalizes both inputs to one terminal-RHS
+builtin-object identity before one `Inferred` term and one fact-free `Checked`
+type assertion credit exact normalized-reflexive type/well-formedness only.
+Mode declaration acceptance/inhabitation, formula-side local-mode asserted
+heads, general reachability/widening/`qua`, object/set coercion, truth/facts,
+closure/order, theorem acceptance, proof, Core, and VC remain uncredited.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

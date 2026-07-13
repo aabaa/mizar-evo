@@ -745,6 +745,17 @@ role は distinct explicit-reserve-anchored builtin-set identity へ直接 norma
 type/well-formedness だけを credit し、mode declaration acceptance/
 inhabitation、membership truth/fact、object/set coercion、implicit closure/
 order、theorem acceptance、proof、Core、VC は credit しない。
+task 145 は exact direct local-object-mode reserved-variable type assertion
+pass row
+`definition mode LocalObjectModeTypeAssertionDef: LocalObjectModeTypeAssertion is object; end; reserve x for LocalObjectModeTypeAssertion; theorem LocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;`
+を追加する。raw subject result は written local-mode provenance、asserted
+builtin `object` は独立した formula-anchored source node を保持する。real
+expansion 1 本が両 input を terminal-RHS builtin-object identity 1 個へ normalize
+してから、1 `Inferred` term と 1 fact-free `Checked` type assertion が exact
+normalized-reflexive type/well-formedness だけを credit する。mode declaration
+acceptance/inhabitation、formula-side local-mode asserted head、general
+reachability/widening/`qua`、object/set coercion、truth/fact、closure/order、
+theorem acceptance、proof、Core、VC は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

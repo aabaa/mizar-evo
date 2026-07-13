@@ -747,6 +747,21 @@ are guarded independently. Missing or non-exact definitions, reserves, or
 formulas fail closed. Mode declaration acceptance/inhabitation, membership
 truth/facts, implicit closure/order, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC remain deferred.
+Task 145 specifies the exact direct bare-object local-mode reserved-variable
+normalized-reflexive type assertion bridge
+`LocalObjectModeTypeAssertion -> object; reserve x for LocalObjectModeTypeAssertion; theorem ...: x is object;`.
+The raw subject result retains its written local-mode symbol/range, while the
+asserted builtin `object` retains its independent formula source node. The one
+real Task 55 expansion must reach `TermFormulaChecker`; both inputs normalize
+to one builtin-object identity canonically anchored at the definition RHS
+before one `Inferred` variable term and one fact-free `Checked` type assertion
+are recorded. The exact contract requires `BindingId(0)` and source-order use
+ordinal 1. The definition label and expansion entry are guarded independently;
+missing or non-exact definitions, reserves, and formulas fail closed. Mode
+declaration acceptance/inhabitation, formula-side local-mode asserted-head
+extraction, general reachability/widening/`qua`, object/set coercion,
+truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
+deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,
