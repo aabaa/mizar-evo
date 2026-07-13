@@ -560,6 +560,11 @@ withheld-family near misses, and a real sidecar protect the route. Mode
 declaration acceptance/inhabitation, longer-chain formulas, closure/order,
 truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
 deferred.
+Task 130 is limited to exact direct bare-set local-mode inequality. It preserves
+four raw `LocalModeInequality` inputs, consumes the real expansion, and anchors
+one builtin-set identity at the RHS before recording a fact-free
+pre-desugaring `Checked` inequality. Non-exact shapes fail closed; declaration
+acceptance, desugaring, truth/facts, theorem/proof/Core/VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

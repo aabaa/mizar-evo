@@ -616,7 +616,13 @@ task 129 は exact one-edge local-object-mode-chain pass row
 anchor された 1 builtin-object identity に normalize される。exact
 type/well-formedness だけを credit し、declaration acceptance/inhabitation、longer
 chain、closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、
-VC は credit しない。task 120 は
+VC は credit しない。
+task 130 は exact direct local-mode inequality pass row
+`definition mode LocalModeInequalityDef: LocalModeInequality is set; end; reserve x for LocalModeInequality; theorem LocalModeReservedVariableInequalityPayloadBoundary: x <> x;`
+を追加する。4 raw role は real RHS expansion 1 本を通じて builtin-set identity
+1 個に normalize され、fact-free pre-desugaring `Checked` inequality は exact
+type/well-formedness だけを credit する。declaration acceptance、truth、proof、
+Core、VC は credit しない。task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。両 identifier result と右 membership expected type は記述された

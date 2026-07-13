@@ -547,6 +547,13 @@ misses, and a real sidecar guard the exact slice. Declaration
 acceptance/inhabitation, longer chains, closure/order, facts/truth, theorem
 acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred.
 
+Task 130 adds the exact direct local-mode inequality pass. The runner retains
+four raw `LocalModeInequality` inputs, supplies the real direct expansion to
+`TermFormulaChecker`, anchors one builtin-set identity at the RHS, and requires
+one fact-free pre-desugaring `Checked` inequality. Exact guards, corruption
+coverage, and a real sidecar protect the slice; downstream semantics remain
+deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

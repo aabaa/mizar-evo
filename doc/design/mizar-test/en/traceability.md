@@ -668,6 +668,11 @@ builtin-object identity anchored at the terminal RHS. This credits exact
 type/well-formedness only, not declaration acceptance/inhabitation, longer
 chains, closure/order, truth/facts, theorem acceptance, proof, CoreIr,
 ControlFlowIr, or VC.
+Task 130 adds the exact direct local-mode inequality pass row
+`definition mode LocalModeInequalityDef: LocalModeInequality is set; end; reserve x for LocalModeInequality; theorem LocalModeReservedVariableInequalityPayloadBoundary: x <> x;`.
+Four raw roles normalize through one real RHS expansion to one builtin-set
+identity; a fact-free pre-desugaring `Checked` inequality credits only exact
+type/well-formedness, not declaration acceptance, truth, proof, Core, or VC.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

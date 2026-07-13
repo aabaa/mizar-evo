@@ -2291,6 +2291,17 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       checker source-layout update is required unless checker source changes.
     - Deps: tasks 56, 127, and 128. Verify mizar-test and the full workspace.
 
+130. **Add exact direct-local-mode reserved-variable inequality checker bridge.** [x]
+    - Add the spec-derived active pass source with exact bare-set
+      `LocalModeInequality`, one reserve, and `x <> x` theorem.
+    - Preserve four raw mode-headed result/expected inputs, consume the one real
+      expansion, anchor one builtin-set identity at the RHS, resolve both uses
+      to `BindingId(0)`, and require a fact-free pre-desugaring `Checked`
+      inequality. Exact/near-miss/corruption and real-sidecar guards are required.
+    - Keep declaration acceptance/inhabitation, desugaring, closure/order,
+      truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
+    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 55 and 121.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

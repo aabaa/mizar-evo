@@ -2138,6 +2138,17 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       source が変わらない限り source-layout 更新は不要である。
     - 依存: tasks 56、127、128。mizar-test と full workspace を検証する。
 
+130. **Exact direct-local-mode reserved-variable inequality checker bridge を追加する。** [x]
+    - exact bare-set `LocalModeInequality`、reserve 1 個、`x <> x` theorem を持つ
+      spec-derived active pass source を追加する。
+    - 4 raw mode-headed result/expected input を保持し、real expansion 1 本を
+      消費し、RHS 起点の builtin-set identity 1 個、両 `BindingId(0)` use、
+      fact-free pre-desugaring `Checked` inequality を要求する。exact/near-miss/
+      corruption と real-sidecar guard を必須とする。
+    - declaration acceptance/inhabitation、desugaring、closure/order、truth/fact、
+      theorem acceptance、proof/Core/ControlFlow/VC は deferred のままにする。
+    - Chapter 4、7、13、14、16 を更新する。依存: tasks 55、121。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

@@ -363,6 +363,11 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    equality/object consumers, retaining four raw outer-mode inputs while both
    links normalize to one terminal-RHS builtin-object identity without
    declaration acceptance, facts, or theorem acceptance,
+   task 130 adds the exact direct local-mode inequality pass by combining task
+   55's real `LocalModeInequality -> set` producer with task 121's
+   pre-desugaring inequality consumer, retaining four raw mode inputs and one
+   real RHS-anchored builtin-set identity without desugaring, facts, or theorem
+   acceptance,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -410,7 +415,8 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    reserve membership, task 126's exact direct-local-mode equality, and task
    127's exact one-edge local-mode-chain equality, task 128's exact direct
    local-object-mode equality, and task 129's exact one-edge
-   local-object-mode-chain equality,
+   local-object-mode-chain equality, and task 130's exact direct-local-mode
+   inequality,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,

@@ -619,6 +619,18 @@ not imported module AST extraction, imported mode-definition/module-summary
 expansion payloads, arity checking, positive imported mode elaboration, CoreIr,
 ControlFlowIr, VC, or proof payload promotion.
 
+Task130 addendum for chapters `04.variables_and_constants.md`, `07.modes.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 130 adds only the exact active
+type/well-formedness pass for a reserved identifier with a real direct bare-set
+local-mode expansion used in pre-desugaring inequality. Four raw mode-headed
+roles normalize through the one AST-derived expansion to a terminal-RHS
+builtin-set identity, producing two inferred variables and one fact-free
+checked inequality. Coverage remains partial: mode declaration
+acceptance/inhabitation, inequality desugaring, implicit closure/order,
+truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC are not
+credited.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

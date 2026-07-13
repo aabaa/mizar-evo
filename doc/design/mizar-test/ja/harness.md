@@ -514,6 +514,12 @@ declaration acceptance/inhabitation、object terminal、longer-chain formula、
 closure/order、fact/truth、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
 deferred のままである。
 
+task 130 は exact direct local-mode inequality pass を追加する。runner は 4 raw
+`LocalModeInequality` input を保持し、real direct expansion を
+`TermFormulaChecker` に渡して RHS 起点の builtin-set identity 1 個と fact-free
+pre-desugaring `Checked` inequality を要求する。exact guard、corruption coverage、
+real sidecar が slice を保護し、downstream semantics は deferred のままである。
+
 task 128 は exact direct local-object-mode reserved-variable equality pass を
 追加する。runner は task-55-compatible `LocalObjectMode -> object` definition 1 個を
 受理し、4 raw local object-mode input を保持して、その real AST-derived expansion

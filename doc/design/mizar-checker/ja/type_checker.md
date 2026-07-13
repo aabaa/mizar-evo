@@ -532,6 +532,11 @@ order/chain link、invalid-link corruption、withheld-family near miss、real si
 で route を保護する。mode declaration acceptance/inhabitation、
 longer-chain formula、closure/order、truth/fact、theorem acceptance、proof、CoreIr、
 ControlFlowIr、VC は deferred のままである。
+task 130 は exact direct bare-set local-mode inequality に限定する。4 raw
+`LocalModeInequality` input を保持し、real expansion を消費して RHS 起点の
+builtin-set identity 1 個と fact-free pre-desugaring `Checked` inequality を
+記録する。non-exact shape は fail closed とし、declaration acceptance、
+desugaring、truth/fact、theorem/proof/Core/VC は deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

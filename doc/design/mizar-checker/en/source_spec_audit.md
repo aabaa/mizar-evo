@@ -484,6 +484,14 @@ identity at the terminal RHS and yields two `Inferred` terms plus one fact-free
 closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
 and VC remain open.
 
+Task 130 MC-G020 current-state override: exact direct local-mode inequality
+combines task 55's real `LocalModeInequality -> set` expansion with task 121's
+pre-desugaring consumer. Four raw inputs retain mode provenance; one normalized
+builtin-set identity is anchored at the real RHS; two `Inferred` terms and one
+fact-free `Checked` inequality result. Declaration acceptance/inhabitation,
+desugaring, closure/order, truth/facts, theorem acceptance, proof/Core/VC remain
+open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin
