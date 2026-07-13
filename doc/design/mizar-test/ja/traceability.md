@@ -778,6 +778,17 @@ assertion が exact normalized-reflexive type/well-formedness だけを credit �
 mode declaration acceptance/inhabitation、formula-side local-mode asserted
 head、general reachability/widening/`qua`、object/set coercion、truth/fact、
 closure/order、theorem acceptance、proof、Core、VC は credit しない。
+task 148 は exact two-edge local-mode-chain reserved-variable type assertion
+pass row
+`definition mode BaseTwoEdgeModeTypeAssertionDef: BaseTwoEdgeModeTypeAssertion is set; end; definition mode MiddleTwoEdgeModeTypeAssertionDef: MiddleTwoEdgeModeTypeAssertion is BaseTwoEdgeModeTypeAssertion; end; definition mode OuterTwoEdgeModeTypeAssertionDef: OuterTwoEdgeModeTypeAssertion is MiddleTwoEdgeModeTypeAssertion; end; reserve x for OuterTwoEdgeModeTypeAssertion; theorem TwoEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;`
+を追加する。raw subject result は written outer-mode provenance、asserted
+builtin `set` は独立した formula-anchored source node を保持する。
+real expansion 3 本が両 input を terminal-RHS builtin-set identity 1 個へ再帰的に
+normalize してから、1 `Inferred` term と 1 fact-free `Checked` type assertion
+が exact normalized-reflexive type/well-formedness だけを credit する。mode
+declaration acceptance/inhabitation、formula-side local-mode asserted head、
+general reachability/widening/`qua`、truth/fact、closure/order、theorem
+acceptance、proof、Core、VC は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

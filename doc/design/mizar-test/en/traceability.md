@@ -828,6 +828,17 @@ formedness only. Mode declaration acceptance/inhabitation, formula-side local-
 mode asserted heads, general reachability/widening/`qua`, object/set coercion,
 truth/facts, closure/order, theorem acceptance, proof, Core, and VC remain
 uncredited.
+Task 148 adds the exact two-edge local-mode-chain reserved-variable type
+assertion pass row
+`definition mode BaseTwoEdgeModeTypeAssertionDef: BaseTwoEdgeModeTypeAssertion is set; end; definition mode MiddleTwoEdgeModeTypeAssertionDef: MiddleTwoEdgeModeTypeAssertion is BaseTwoEdgeModeTypeAssertion; end; definition mode OuterTwoEdgeModeTypeAssertionDef: OuterTwoEdgeModeTypeAssertion is MiddleTwoEdgeModeTypeAssertion; end; reserve x for OuterTwoEdgeModeTypeAssertion; theorem TwoEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;`.
+The raw subject result retains its written outer-mode provenance, while the
+asserted builtin `set` retains its independently formula-anchored source node.
+All three real expansions recursively normalize both inputs to one
+terminal-RHS builtin-set identity before one `Inferred` term and one fact-free
+`Checked` type assertion are recorded for exact normalized-reflexive type/well-
+formedness only. Mode declaration acceptance/inhabitation, formula-side local-
+mode asserted heads, general reachability/widening/`qua`, truth/facts,
+closure/order, theorem acceptance, proof, Core, and VC remain uncredited.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

@@ -1,0 +1,14 @@
+definition
+  mode BaseTwoEdgeModeTypeAssertionDef: BaseTwoEdgeModeTypeAssertion is set;
+end;
+
+definition
+  mode MiddleTwoEdgeModeTypeAssertionDef: MiddleTwoEdgeModeTypeAssertion is BaseTwoEdgeModeTypeAssertion;
+end;
+
+definition
+  mode OuterTwoEdgeModeTypeAssertionDef: OuterTwoEdgeModeTypeAssertion is MiddleTwoEdgeModeTypeAssertion;
+end;
+
+reserve x for OuterTwoEdgeModeTypeAssertion;
+theorem TwoEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;
