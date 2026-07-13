@@ -864,6 +864,13 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    and task 165's exact active four-edge object-terminal local-mode-chain left
    membership over the real five-expansion producer and task 163's object-left/
    set-right membership consumer,
+   and task 166's exact active four-edge set-terminal local-mode-chain equality,
+   and task 167's exact active four-edge object-terminal local-mode-chain
+   equality,
+   and task 168's exact active four-edge set-terminal local-mode-chain
+   inequality,
+   and task 169's exact active four-edge object-terminal local-mode-chain
+   inequality,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,
