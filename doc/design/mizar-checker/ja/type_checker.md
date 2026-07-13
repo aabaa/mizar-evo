@@ -1116,6 +1116,18 @@ attributed/argument-bearing または別 chain shape、general unbounded semanti
 は deferred のままである。fixture、expectation、trace backlink 6 件、
 production route、full near-miss/corruption matrix、real frontend/resolver
 sidecar が active runner 121 を保護する。
+task 173 は同じ definition 7 本と `reserve z for ChainMode6;` の後に
+`LongLocalModeReservedVariableInequalityPayloadBoundary: z <> z;` だけが続く
+exact sibling source を規定する。real expansion 7 本すべてと同じ raw
+provenance、ordinal 1/2 の `BindingId(0)`、terminal `BaseMode` RHS identity、
+2 `Inferred` variable、ordered operand-owned expected constraint 2 個を保持
+してから、1 fact/deferred-free pre-desugaring `Checked` inequality を生成する。
+task 172 と同じ exact/near-miss/corruption/real-sidecar guard breadth を必須と
+する。inequality desugaring/truth/fact、acceptance、closure/order、theorem/
+proof/Core/ControlFlow/VC、別 chain shape、general unbounded semantics は
+deferred のままである。
+fixture、expectation、backlink 6 件、exact routing、shared full guard matrix、
+task 173 corruption test、real sidecar が active runner 122 を保護する。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

@@ -1177,6 +1177,19 @@ attributed/argument-bearing or other chain shapes, and general unbounded
 semantics remain deferred. The fixture, expectation, six trace backlinks,
 production route, full near-miss/corruption matrix, and real frontend/resolver
 sidecar now protect active runner 121.
+Task 173 specifies the sibling exact source with the same seven definitions and
+`reserve z for ChainMode6;`, followed only by
+`LongLocalModeReservedVariableInequalityPayloadBoundary: z <> z;`. It must use
+all seven real expansions and retain the same raw provenance, ordinal 1/2
+`BindingId(0)`, terminal-`BaseMode`-RHS identity, two `Inferred` variables, and
+two ordered operand-owned expected constraints before one fact/deferred-free
+pre-desugaring `Checked` inequality. The Task 172 exact/near-miss/corruption/
+real-sidecar guard breadth is mandatory. Inequality desugaring/truth/facts,
+acceptance, closure/order, theorem/proof/Core/ControlFlow/VC, other chain shapes,
+and general unbounded semantics remain deferred.
+The fixture, expectation, six backlinks, exact routing, shared full guard
+matrix, Task 173 corruption tests, and real sidecar now protect active runner
+122.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

@@ -1053,6 +1053,16 @@ acceptance、proof/Core/ControlFlow/VC payload、imported/attributed/argument-
 bearing または別 chain shape、general unbounded semantics は open のままで
 ある。
 
+Task 173 MC-G020 current-state override: exact set-terminal local-mode long-chain
+inequality を `spec_gap` ではなく `test_gap`、`source_drift`、`design_drift`
+と分類する。Chapter 4、7、13、14.5.2、16 が source を支え、task 74 が real
+expansion 7 本、task 168 が real pre-desugaring inequality consumer を提供する。
+raw `ChainMode6` role 4 個、ordinal 1/2 の `BindingId(0)`、terminal `BaseMode`
+RHS identity 1 個、2 `Inferred` term、1 fact/deferred-free checked inequality、
+ordered constraint 2 個を保持する。exact routing、full guard、real sidecar が
+active runner 122 を保護する。desugaring/truth/fact、acceptance、closure/order、theorem/proof/
+Core/ControlFlow/VC、別 chain、general semantics は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

@@ -140,6 +140,9 @@ const TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_P
     "type_elaboration.checker.four_edge_local_mode_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.local_mode_long_chain_reserved_variable_equality.invalid_payload";
+const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
+    &str =
+    "type_elaboration.checker.local_mode_long_chain_reserved_variable_inequality.invalid_payload";
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.four_edge_local_mode_reserved_variable_inequality.invalid_payload";
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY:
@@ -1054,6 +1057,13 @@ fn source_type_elaboration_detail_keys(
         return keys;
     }
     if let Some(keys) = source_local_mode_long_chain_reserved_variable_equality_detail_keys(
+        ast,
+        module.clone(),
+        symbols,
+    ) {
+        return keys;
+    }
+    if let Some(keys) = source_local_mode_long_chain_reserved_variable_inequality_detail_keys(
         ast,
         module.clone(),
         symbols,
@@ -2838,6 +2848,44 @@ const SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
     right_expected_role: Some("four-edge-local-mode-reserved-variable-right-expected"),
 };
 
+const SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS: &[SourceReservedVariableModeDefinition] = &[
+    SourceReservedVariableModeDefinition {
+        label: "BaseModeDef",
+        spelling: "BaseMode",
+        radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
+    },
+    SourceReservedVariableModeDefinition {
+        label: "ChainMode1Def",
+        spelling: "ChainMode1",
+        radix: SourceReservedVariableModeRadix::Mode("BaseMode"),
+    },
+    SourceReservedVariableModeDefinition {
+        label: "ChainMode2Def",
+        spelling: "ChainMode2",
+        radix: SourceReservedVariableModeRadix::Mode("ChainMode1"),
+    },
+    SourceReservedVariableModeDefinition {
+        label: "ChainMode3Def",
+        spelling: "ChainMode3",
+        radix: SourceReservedVariableModeRadix::Mode("ChainMode2"),
+    },
+    SourceReservedVariableModeDefinition {
+        label: "ChainMode4Def",
+        spelling: "ChainMode4",
+        radix: SourceReservedVariableModeRadix::Mode("ChainMode3"),
+    },
+    SourceReservedVariableModeDefinition {
+        label: "ChainMode5Def",
+        spelling: "ChainMode5",
+        radix: SourceReservedVariableModeRadix::Mode("ChainMode4"),
+    },
+    SourceReservedVariableModeDefinition {
+        label: "ChainMode6Def",
+        spelling: "ChainMode6",
+        radix: SourceReservedVariableModeRadix::Mode("ChainMode5"),
+    },
+];
+
 const SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_CONFIG:
     SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
     label: "LongLocalModeReservedVariableEqualityPayloadBoundary",
@@ -2849,43 +2897,7 @@ const SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_CONFIG:
     binding_spellings: &["z"],
     binding_types: &[SourceReservedVariableBuiltinType::Set],
     binding_source_mode_spellings: &[Some("ChainMode6")],
-    mode_definitions: &[
-        SourceReservedVariableModeDefinition {
-            label: "BaseModeDef",
-            spelling: "BaseMode",
-            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "ChainMode1Def",
-            spelling: "ChainMode1",
-            radix: SourceReservedVariableModeRadix::Mode("BaseMode"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "ChainMode2Def",
-            spelling: "ChainMode2",
-            radix: SourceReservedVariableModeRadix::Mode("ChainMode1"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "ChainMode3Def",
-            spelling: "ChainMode3",
-            radix: SourceReservedVariableModeRadix::Mode("ChainMode2"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "ChainMode4Def",
-            spelling: "ChainMode4",
-            radix: SourceReservedVariableModeRadix::Mode("ChainMode3"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "ChainMode5Def",
-            spelling: "ChainMode5",
-            radix: SourceReservedVariableModeRadix::Mode("ChainMode4"),
-        },
-        SourceReservedVariableModeDefinition {
-            label: "ChainMode6Def",
-            spelling: "ChainMode6",
-            radix: SourceReservedVariableModeRadix::Mode("ChainMode5"),
-        },
-    ],
+    mode_definitions: SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS,
     left_binding_index: 0,
     right_binding_index: 0,
     require_shared_type_range: false,
@@ -2894,6 +2906,28 @@ const SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_CONFIG:
     right_result_role: "long-local-mode-reserved-variable-right-result",
     left_expected_role: Some("long-local-mode-reserved-variable-left-expected"),
     right_expected_role: Some("long-local-mode-reserved-variable-right-expected"),
+};
+
+const SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "LongLocalModeReservedVariableInequalityPayloadBoundary",
+    operator: "<>",
+    formula_kind: FormulaKind::Inequality,
+    invalid_payload_key:
+        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["z"],
+    binding_types: &[SourceReservedVariableBuiltinType::Set],
+    binding_source_mode_spellings: &[Some("ChainMode6")],
+    mode_definitions: SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS,
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "long-local-mode-reserved-variable-inequality-left-result",
+    right_result_role: "long-local-mode-reserved-variable-inequality-right-result",
+    left_expected_role: Some("long-local-mode-reserved-variable-inequality-left-expected"),
+    right_expected_role: Some("long-local-mode-reserved-variable-inequality-right-expected"),
 };
 
 const SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG:
@@ -3788,6 +3822,19 @@ fn source_local_mode_long_chain_reserved_variable_equality_detail_keys(
     ))
 }
 
+fn source_local_mode_long_chain_reserved_variable_inequality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_local_mode_long_chain_reserved_variable_inequality(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
 fn source_four_edge_local_mode_reserved_variable_inequality_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -4509,6 +4556,17 @@ fn source_local_mode_long_chain_reserved_variable_equality_output(
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload =
         extract_source_local_mode_long_chain_reserved_variable_equality(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_local_mode_long_chain_reserved_variable_inequality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload =
+        extract_source_local_mode_long_chain_reserved_variable_inequality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -6443,6 +6501,19 @@ fn extract_source_local_mode_long_chain_reserved_variable_equality(
         module,
         symbols,
         &SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    )
+}
+
+fn extract_source_local_mode_long_chain_reserved_variable_inequality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     )
 }
 
@@ -10743,6 +10814,7 @@ mod tests {
         TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_HETEROGENEOUS_RESERVE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
@@ -10801,6 +10873,7 @@ mod tests {
         extract_source_imported_non_empty_attribute_assertion_formula,
         extract_source_imported_predicate_functor_formula,
         extract_source_local_mode_long_chain_reserved_variable_equality,
+        extract_source_local_mode_long_chain_reserved_variable_inequality,
         extract_source_local_mode_reserved_variable_equality,
         extract_source_local_mode_reserved_variable_inequality,
         extract_source_local_mode_reserved_variable_membership,
@@ -10857,6 +10930,7 @@ mod tests {
         source_imported_non_empty_attribute_assertion_formula_output,
         source_imported_predicate_functor_formula_output,
         source_local_mode_long_chain_reserved_variable_equality_output,
+        source_local_mode_long_chain_reserved_variable_inequality_output,
         source_local_mode_reserved_variable_equality_output,
         source_local_mode_reserved_variable_inequality_output,
         source_local_mode_reserved_variable_membership_output,
@@ -42435,6 +42509,285 @@ mod tests {
         assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
         assert_eq!(normalized.source.range, terminal.source_range);
         assert_eq!(normalized.source.spelling, terminal.spelling);
+    }
+    #[test]
+    fn source_local_mode_long_chain_reserved_variable_inequality_consumes_seven_expansions() {
+        let source_id = source_id(173);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("local_mode_long_chain_reserved_variable_inequality"),
+        );
+        let symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                ("BaseMode", SymbolKind::Mode),
+                ("ChainMode1", SymbolKind::Mode),
+                ("ChainMode2", SymbolKind::Mode),
+                ("ChainMode3", SymbolKind::Mode),
+                ("ChainMode4", SymbolKind::Mode),
+                ("ChainMode5", SymbolKind::Mode),
+                ("ChainMode6", SymbolKind::Mode),
+            ],
+        );
+        let exact_modes = || {
+            vec![
+                mode_definition_with_label(
+                    "BaseMode",
+                    "BaseModeDef",
+                    ReserveTypeShape::Builtin("set"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode1",
+                    "ChainMode1Def",
+                    ReserveTypeShape::QualifiedSymbol("BaseMode"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode2",
+                    "ChainMode2Def",
+                    ReserveTypeShape::QualifiedSymbol("ChainMode1"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode3",
+                    "ChainMode3Def",
+                    ReserveTypeShape::QualifiedSymbol("ChainMode2"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode4",
+                    "ChainMode4Def",
+                    ReserveTypeShape::QualifiedSymbol("ChainMode3"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode5",
+                    "ChainMode5Def",
+                    ReserveTypeShape::QualifiedSymbol("ChainMode4"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode6",
+                    "ChainMode6Def",
+                    ReserveTypeShape::QualifiedSymbol("ChainMode5"),
+                ),
+            ]
+        };
+        let reserve = || {
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("ChainMode6"),
+            )]
+        };
+        let theorem = IdentifierBinaryTheoremSpec {
+            status: None,
+            label: "LongLocalModeReservedVariableInequalityPayloadBoundary",
+            left: "z",
+            operator: "<>",
+            right: "z",
+            recovered_label: false,
+        };
+        let exact = mode_then_reserve_identifier_binary_theorem_ast(
+            source_id,
+            exact_modes(),
+            reserve(),
+            theorem,
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload = extract_source_local_mode_long_chain_reserved_variable_inequality(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact long-chain inequality should extract");
+        assert_eq!(payload.reserve.mode_expansions.len(), 7);
+        assert_eq!(payload.left_lookup_ordinal, 1);
+        assert_eq!(payload.right_lookup_ordinal, 2);
+        let output = source_local_mode_long_chain_reserved_variable_inequality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact long-chain inequality should reach TermFormulaChecker");
+        assert_source_reserved_variable_formula_output(&output).unwrap();
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(0));
+        for input in [
+            &output.left_result_input,
+            &output.right_result_input,
+            output.left_expected_input.as_ref().unwrap(),
+            output.right_expected_input.as_ref().unwrap(),
+        ] {
+            assert_eq!(input.spelling, "ChainMode6");
+            assert!(matches!(input.head, TypeHeadInput::Symbol(_)));
+            assert_eq!(
+                input.source_range,
+                output.payload.reserve.bridge.bindings()[0].type_range
+            );
+        }
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some("BaseMode"))
+            .map(|(_, expansion)| &expansion.radix)
+            .unwrap();
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .unwrap();
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        let (_, formula) = output.term_formula.formulas().iter().next().unwrap();
+        assert_eq!(formula.kind, FormulaKind::Inequality);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(formula.expected_types.len(), 2);
+        assert_eq!(
+            formula.expected_types[0].source_range,
+            output.payload.left_range
+        );
+        assert_eq!(
+            formula.expected_types[1].source_range,
+            output.payload.right_range
+        );
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+
+        let invalid_key = || {
+            vec![TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY.to_owned()]
+        };
+        for removed in [
+            "BaseMode",
+            "ChainMode1",
+            "ChainMode2",
+            "ChainMode3",
+            "ChainMode4",
+            "ChainMode5",
+            "ChainMode6",
+        ] {
+            let mut invalid = source_local_mode_long_chain_reserved_variable_inequality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .unwrap();
+            invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .retain(|symbol, _| source_mode_symbol_spelling(symbol) != Some(removed));
+            assert_eq!(
+                source_reserved_variable_formula_output_detail_keys(&invalid),
+                invalid_key()
+            );
+        }
+        for clear_left in [true, false] {
+            let mut invalid = source_local_mode_long_chain_reserved_variable_inequality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .unwrap();
+            if clear_left {
+                invalid.left_expected_input = None;
+            } else {
+                invalid.right_expected_input = None;
+            }
+            assert_eq!(
+                source_reserved_variable_formula_output_detail_keys(&invalid),
+                invalid_key()
+            );
+        }
+        for near_miss in [
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    operator: "=",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    status: Some("open"),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::QualifiedSymbolWithArgs("ChainMode6"),
+                )],
+                theorem,
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+    #[test]
+    fn active_local_mode_long_chain_reserved_variable_inequality_fixture_consumes_seven_expansions()
+    {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan).enumerate()
+            .find(|(_, case)| case.id.0 == "pass_type_elaboration_local_mode_long_chain_reserved_variable_inequality_001")
+            .expect("Task 173 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 173 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 173 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_local_mode_long_chain_reserved_variable_inequality_output(
+            &ast,
+            resolver.module,
+            &symbols,
+        )
+        .expect("Task 173 real AST should reach long-chain inequality");
+        assert_source_reserved_variable_formula_output(&output).unwrap();
+        assert_eq!(output.payload.reserve.mode_expansions.len(), 7);
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some("BaseMode"))
+            .map(|(_, expansion)| &expansion.radix)
+            .unwrap();
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .unwrap();
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
     }
     #[test]
     fn source_four_edge_local_mode_reserved_variable_inequality_consumes_five_expansions() {

@@ -1073,6 +1073,15 @@ imported/attributed/argument-bearing or other chain shapes, and general
 unbounded semantics remain deferred. Production routing, full guards, and the
 real sidecar now protect active runner 121.
 
+Task 173 records the test-first long-chain inequality sibling. The production
+runner must accept only the same seven definitions and `ChainMode6` reserve
+with exact `z <> z`; consume seven real expansions; retain four raw roles;
+resolve ordinal 1/2 `BindingId(0)`; and require one terminal-`BaseMode`-RHS
+identity, two `Inferred` variables, two ordered constraints, and one fact/
+deferred-free pre-desugaring `Checked` inequality. Task 172's full guard matrix
+and real sidecar breadth now protect active runner 122. Desugaring/truth/facts
+and downstream or general semantics remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

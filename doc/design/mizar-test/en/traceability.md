@@ -1130,6 +1130,14 @@ sidecar now protect active count 121. Declaration acceptance/inhabitation,
 truth/facts, closure/order, theorem/proof/Core/ControlFlow/VC, imported/attributed/argument-
 bearing or other chain shapes, and general unbounded semantics receive no
 credit.
+Task 173 adds the exact sibling active row ending in
+`LongLocalModeReservedVariableInequalityPayloadBoundary: z <> z;`, with the
+same Chapter 4/7/13/14.5.2/16 and structural-chain links plus a dedicated
+checker row. Intended credit is seven real expansions, four raw `ChainMode6`
+roles, ordinal 1/2 `BindingId(0)`, one terminal-`BaseMode`-RHS identity, two
+inferred variables, two ordered constraints, and one fact/deferred-free pre-
+desugaring checked inequality. Six backlinks, full guards, and a real sidecar
+now protect active count 122; desugaring/truth/facts and broader semantics receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

@@ -3090,6 +3090,21 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 74 and 166. Refs: Step 5; mizar-test task 10; specs 4, 7,
       13, 14.5.2, and 16.
 
+173. **Add exact local-mode long-chain inequality checker bridge.** [x]
+    - Promote only the task-74 seven-definition set-terminal chain, one
+      `ChainMode6` reserve, and the exact `z <> z` theorem label from the
+      test-first fixture through task 168's real inequality consumer.
+    - Acceptance: preserve seven real expansions, four raw `ChainMode6`
+      result/expected inputs, ordinal 1/2 `BindingId(0)`, one terminal-
+      `BaseMode`-RHS builtin-set identity, two inferred terms, one fact/
+      deferred-free pre-desugaring checked inequality, and two ordered operand-
+      owned expected constraints. Require full exact/near-miss/corruption/real-
+      sidecar guards; do not fabricate desugaring, truth, acceptance, closure,
+      theorem/proof/CoreIr/ControlFlowIr/VC, or general unbounded semantics.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 74 and 168. Refs: Step 5; mizar-test task 10; specs 4, 7,
+      13, 14.5.2, and 16.
+
 ## Recommended Verification
 
 Run after each task:

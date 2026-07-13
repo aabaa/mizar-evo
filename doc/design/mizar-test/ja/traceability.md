@@ -1065,6 +1065,14 @@ routing、corruption/near-miss coverage、real frontend/resolver sidecar が act
 count 121 を保護する。declaration acceptance/inhabitation、truth/fact、closure/
 order、theorem/proof/Core/ControlFlow/VC、imported/attributed/argument-bearing または別 chain
 shape、general unbounded semantics は credit しない。
+task 173 は exact sibling active row
+`LongLocalModeReservedVariableInequalityPayloadBoundary: z <> z;` を追加し、
+同じ Chapter 4/7/13/14.5.2/16、structural-chain link、dedicated checker row を
+参照する。intended credit は real expansion 7 本、raw `ChainMode6` role 4 個、
+ordinal 1/2 の `BindingId(0)`、terminal `BaseMode` RHS identity 1 個、2 inferred
+variable、ordered constraint 2 個、1 fact/deferred-free pre-desugaring checked
+inequality だけである。backlink 6 件、full guard、real sidecar が active count
+122 を保護し、desugaring/truth/fact と broader semantics は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

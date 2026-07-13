@@ -1032,6 +1032,15 @@ imported/attributed/argument-bearing または別 chain shape、general unbounde
 semantics は deferred のままである。
 production routing、full guard、real sidecar が active runner 121 を保護する。
 
+task 173 は test-first long-chain inequality sibling を記録する。production
+runner は同じ definition 7 本と `ChainMode6` reserve に exact `z <> z` だけを
+受理し、real expansion 7 本、raw role 4 個、ordinal 1/2 の `BindingId(0)`、
+terminal `BaseMode` RHS identity 1 個、2 `Inferred` variable、ordered
+constraint 2 個、1 fact/deferred-free pre-desugaring `Checked` inequality を
+要求する。task 172 の full guard matrix と real sidecar breadth が active
+runner 122 を保護する。desugaring/truth/fact と downstream/general semantics は deferred のままで
+ある。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

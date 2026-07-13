@@ -1301,6 +1301,18 @@ Declaration acceptance/inhabitation, truth/facts, closure/order, theorem accepta
 CoreIr, ControlFlowIr, VC, imported/attributed/argument-bearing or other chain
 shapes, and general unbounded semantics receive no credit.
 
+Task173 addendum for chapters `04.variables_and_constants.md`, `07.modes.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 173 classifies the exact set-terminal
+local-mode long-chain inequality seam as `test_gap`, `source_drift`, and
+`design_drift`. It composes task 74's seven real expansions with task 168's
+pre-desugaring inequality consumer. Intended credit is four raw `ChainMode6`
+roles, ordinal 1/2 `BindingId(0)`, one terminal-`BaseMode`-RHS identity, two
+inferred terms, two ordered constraints, and one fact/deferred-free checked
+inequality. Six backlinks, full guards, and a real sidecar now protect active runner 122;
+desugaring/truth/facts, acceptance, proof/Core/ControlFlow/VC, other chains,
+and general semantics receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

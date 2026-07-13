@@ -1099,6 +1099,17 @@ acceptance/inhabitation, truth/facts, closure/order, theorem acceptance, proof/C
 ControlFlow/VC payloads, imported/attributed/argument-bearing or other chain
 shapes, and general unbounded semantics remain open.
 
+Task 173 MC-G020 current-state override: classify the exact set-terminal local-
+mode long-chain inequality as `test_gap`, `source_drift`, and `design_drift`,
+not `spec_gap`. Chapters 4, 7, 13, 14.5.2, and 16 support the source; task 74
+provides seven real expansions and task 168 the real pre-desugaring inequality
+consumer. Preserve four raw `ChainMode6` roles, ordinal 1/2 `BindingId(0)`, one
+terminal-`BaseMode`-RHS identity, two `Inferred` terms, one fact/deferred-free
+checked inequality, and two ordered constraints. Exact routing, full guards,
+and a real sidecar now protect active runner 122. Desugaring/truth/facts, acceptance, closure/
+order, theorem/proof/Core/ControlFlow/VC, other chains, and general semantics
+remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

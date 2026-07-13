@@ -775,6 +775,13 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    Declaration acceptance/inhabitation, truth/facts, closure/order, theorem/
    proof/Core/ControlFlow/VC, imported/attributed/argument-bearing or other
    chain shapes, and general unbounded semantics remain deferred,
+   task 173 specifies the exact long-chain inequality sibling by composing task
+   74's seven-expansion producer with task 168's pre-desugaring consumer. It
+   preserves four raw `ChainMode6` roles, ordinal 1/2 `BindingId(0)`, one
+   terminal-`BaseMode`-RHS identity, two inferred variables, two ordered
+   constraints, and one fact/deferred-free checked inequality. Six backlinks,
+   full guards, and a real sidecar now protect active case 122; desugaring/truth/facts,
+   downstream payloads, other chains, and general semantics remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
