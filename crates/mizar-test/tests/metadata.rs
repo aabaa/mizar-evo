@@ -3907,12 +3907,28 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
             .expected_outcome,
         ExpectedOutcome::Pass
     );
+    let four_edge_local_mode_reserved_variable_type_assertion_case = active_type_elaboration_cases(
+        &plan,
+    )
+    .find(|case| {
+        case.id.0
+            == "pass_type_elaboration_four_edge_local_mode_reserved_variable_type_assertion_001"
+    })
+    .expect(
+        "Task152 four-edge local-mode reserved-variable type assertion bridge should be active",
+    );
+    assert_eq!(
+        four_edge_local_mode_reserved_variable_type_assertion_case
+            .expectation
+            .expected_outcome,
+        ExpectedOutcome::Pass
+    );
 
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 102);
-    assert_eq!(report.passed_count(), 102);
+    assert_eq!(report.results.len(), 103);
+    assert_eq!(report.passed_count(), 103);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -8355,8 +8371,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 102"));
-    assert!(stdout.contains("passed: 102"));
+    assert!(stdout.contains("type-elaboration cases: 103"));
+    assert!(stdout.contains("passed: 103"));
     assert!(stdout.contains("failed: 0"));
 }
 

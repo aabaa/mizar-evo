@@ -808,6 +808,21 @@ widening/`qua`, object/set coercion, truth/facts, closure/order, theorem/proof/
 Core/VC, and broader semantics remain deferred. The active type-elaboration
 runner contains 102 cases after the production route and real sidecar pass.
 
+Task 152 adds the exact four-edge set-terminal local-mode-chain reserved-
+variable normalized-reflexive type assertion source. The runner must retain the
+raw `TooDeepFourEdgeModeTypeAssertion` subject result and independent formula-
+side builtin-set asserted source, supply all five real Task-74-compatible
+expansions to `TermFormulaChecker`, and require one terminal-RHS-anchored
+builtin-set identity, `BindingId(0)`, source-order use ordinal 1, one
+`Inferred` term, and one fact-free `Checked` type assertion without general
+reachability. Exact source guards, independent definition/five-link corruption,
+withheld-family near misses, and a real frontend/resolver sidecar must protect
+the slice; mode declaration acceptance/inhabitation, formula-side local-mode
+asserted heads, general reachability/widening/`qua`, truth/facts, closure/order,
+theorem/proof/Core/VC, and broader semantics remain deferred. The production
+route and real sidecar pass, so the active type-elaboration runner contains 103
+cases.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

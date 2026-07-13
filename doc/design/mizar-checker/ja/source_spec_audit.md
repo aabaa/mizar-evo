@@ -739,6 +739,24 @@ acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
 production route と real frontend/resolver sidecar が exact active slice を
 guard する。
 
+Task 152 MC-G020 current-state override: exact four-edge set-terminal local-mode-chain
+reserved-variable type assertion は task 74 の real AST-derived
+`TooDeepFourEdgeModeTypeAssertion -> OuterFourEdgeModeTypeAssertion -> MiddleFourEdgeModeTypeAssertion -> InnerFourEdgeModeTypeAssertion -> BaseFourEdgeModeTypeAssertion -> set`
+expansion 5 本と、tasks 122 / 150 / 151 の identifier-result および独立した
+formula-anchored asserted-type consumer を composition する。raw subject result
+は written outermost-mode provenance、asserted builtin `set` は独立した formula
+source node を保持する。expansion 5 本が両 input を terminal definition RHS を
+canonical source とする builtin-set identity 1 個へ再帰的に normalize してから
+1 `Inferred` term と 1 fact-free `Checked` type assertion を記録する。この exact
+slice は `BindingId(0)` と source-order use ordinal 1 を要求し、non-exact
+definition、reserve、formula、各 expansion payload は fail closed する。分類は
+`test_gap`、`source_drift`、`design_drift` であり、`spec_gap` ではない。mode
+declaration acceptance/inhabitation、formula-side local-mode asserted-head
+extraction、general reachability/widening/`qua`、truth/fact、implicit closure/
+order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open のままで
+ある。production route と real frontend/resolver sidecar が exact active slice
+を guard する。
+
 Task 151 MC-G020 current-state override: exact three-edge object-terminal local-mode-
 chain reserved-variable type assertion は task 73 の real AST-derived
 `OuterThreeEdgeObjectModeTypeAssertion -> MiddleThreeEdgeObjectModeTypeAssertion -> InnerThreeEdgeObjectModeTypeAssertion -> BaseThreeEdgeObjectModeTypeAssertion -> object`

@@ -156,6 +156,8 @@ const TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_IN
     &str = "type_elaboration.checker.three_edge_local_mode_reserved_variable_type_assertion.invalid_payload";
 const TYPE_ELABORATION_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str = "type_elaboration.checker.three_edge_local_object_mode_reserved_variable_type_assertion.invalid_payload";
+const TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
+    &str = "type_elaboration.checker.four_edge_local_mode_reserved_variable_type_assertion.invalid_payload";
 const TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str =
     "type_elaboration.checker.local_object_mode_reserved_variable_type_assertion.invalid_payload";
@@ -1085,6 +1087,13 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) = source_four_edge_local_mode_reserved_variable_type_assertion_detail_keys(
+        ast,
+        module.clone(),
+        symbols,
+    ) {
+        return keys;
+    }
     if let Some(keys) =
         source_two_edge_local_object_mode_reserved_variable_type_assertion_detail_keys(
             ast,
@@ -1676,6 +1685,45 @@ const SOURCE_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFI
     asserted_type: SourceReservedVariableBuiltinType::Object,
     subject_result_role:
         "three-edge-local-object-mode-reserved-variable-type-assertion-subject-result",
+};
+
+const SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
+    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
+    label: "FourEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary",
+    invalid_payload_key:
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
+    binding_spelling: "x",
+    binding_type: SourceReservedVariableBuiltinType::Set,
+    binding_source_mode_spelling: Some("TooDeepFourEdgeModeTypeAssertion"),
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseFourEdgeModeTypeAssertionDef",
+            spelling: "BaseFourEdgeModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "InnerFourEdgeModeTypeAssertionDef",
+            spelling: "InnerFourEdgeModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Mode("BaseFourEdgeModeTypeAssertion"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleFourEdgeModeTypeAssertionDef",
+            spelling: "MiddleFourEdgeModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Mode("InnerFourEdgeModeTypeAssertion"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterFourEdgeModeTypeAssertionDef",
+            spelling: "OuterFourEdgeModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleFourEdgeModeTypeAssertion"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "TooDeepFourEdgeModeTypeAssertionDef",
+            spelling: "TooDeepFourEdgeModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Mode("OuterFourEdgeModeTypeAssertion"),
+        },
+    ],
+    asserted_type: SourceReservedVariableBuiltinType::Set,
+    subject_result_role: "four-edge-local-mode-reserved-variable-type-assertion-subject-result",
 };
 
 const SOURCE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
@@ -2928,6 +2976,20 @@ fn source_three_edge_local_object_mode_reserved_variable_type_assertion_detail_k
     ))
 }
 
+fn source_four_edge_local_mode_reserved_variable_type_assertion_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_four_edge_local_mode_reserved_variable_type_assertion(ast, module, symbols)?;
+    let invalid_payload_key = payload.config.invalid_payload_key;
+    Some(source_reserved_variable_type_assertion_result_detail_keys(
+        build_source_reserved_variable_type_assertion_output(payload, symbols),
+        invalid_payload_key,
+    ))
+}
+
 fn source_local_object_mode_reserved_variable_type_assertion_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -3371,6 +3433,17 @@ fn source_three_edge_local_object_mode_reserved_variable_type_assertion_output(
     let payload = extract_source_three_edge_local_object_mode_reserved_variable_type_assertion(
         ast, module, symbols,
     )?;
+    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_four_edge_local_mode_reserved_variable_type_assertion_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertionOutput> {
+    let payload =
+        extract_source_four_edge_local_mode_reserved_variable_type_assertion(ast, module, symbols)?;
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
 }
 
@@ -5110,6 +5183,19 @@ fn extract_source_three_edge_local_object_mode_reserved_variable_type_assertion(
         module,
         symbols,
         &SOURCE_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
+    )
+}
+
+fn extract_source_four_edge_local_mode_reserved_variable_type_assertion(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertion> {
+    extract_source_reserved_variable_type_assertion_with_config(
+        ast,
+        module,
+        symbols,
+        &SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     )
 }
 
@@ -9022,6 +9108,7 @@ mod tests {
         TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_HETEROGENEOUS_RESERVE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
@@ -9058,6 +9145,7 @@ mod tests {
         extract_source_chained_local_object_mode_reserved_variable_type_assertion,
         extract_source_distinct_reserved_variable_equality,
         extract_source_formula_connective_quantifier, extract_source_formula_statement,
+        extract_source_four_edge_local_mode_reserved_variable_type_assertion,
         extract_source_heterogeneous_reserve_membership,
         extract_source_imported_attribute_assertion_formula,
         extract_source_imported_non_empty_attribute_assertion_formula,
@@ -9095,6 +9183,7 @@ mod tests {
         source_chained_local_object_mode_reserved_variable_type_assertion_output,
         source_distinct_reserved_variable_equality_output,
         source_formula_connective_quantifier_output, source_formula_statement_output,
+        source_four_edge_local_mode_reserved_variable_type_assertion_output,
         source_heterogeneous_reserve_membership_output,
         source_imported_attribute_assertion_formula_output,
         source_imported_non_empty_attribute_assertion_formula_output,
@@ -23379,6 +23468,367 @@ mod tests {
     }
 
     #[test]
+    fn source_four_edge_local_mode_reserved_variable_type_assertion_consumes_five_expansions() {
+        let source_id = source_id(152);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("four_edge_local_mode_reserved_variable_type_assertion"),
+        );
+        let symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                ("BaseFourEdgeModeTypeAssertion", SymbolKind::Mode),
+                ("InnerFourEdgeModeTypeAssertion", SymbolKind::Mode),
+                ("MiddleFourEdgeModeTypeAssertion", SymbolKind::Mode),
+                ("OuterFourEdgeModeTypeAssertion", SymbolKind::Mode),
+                ("TooDeepFourEdgeModeTypeAssertion", SymbolKind::Mode),
+                ("ExtraFourEdgeModeTypeAssertion", SymbolKind::Mode),
+            ],
+        );
+        let theorem = exact_four_edge_local_mode_identifier_type_assertion_spec();
+        let exact_modes = || {
+            vec![
+                mode_definition_with_label(
+                    "BaseFourEdgeModeTypeAssertion",
+                    "BaseFourEdgeModeTypeAssertionDef",
+                    ReserveTypeShape::Builtin("set"),
+                ),
+                mode_definition_with_label(
+                    "InnerFourEdgeModeTypeAssertion",
+                    "InnerFourEdgeModeTypeAssertionDef",
+                    ReserveTypeShape::QualifiedSymbol("BaseFourEdgeModeTypeAssertion"),
+                ),
+                mode_definition_with_label(
+                    "MiddleFourEdgeModeTypeAssertion",
+                    "MiddleFourEdgeModeTypeAssertionDef",
+                    ReserveTypeShape::QualifiedSymbol("InnerFourEdgeModeTypeAssertion"),
+                ),
+                mode_definition_with_label(
+                    "OuterFourEdgeModeTypeAssertion",
+                    "OuterFourEdgeModeTypeAssertionDef",
+                    ReserveTypeShape::QualifiedSymbol("MiddleFourEdgeModeTypeAssertion"),
+                ),
+                mode_definition_with_label(
+                    "TooDeepFourEdgeModeTypeAssertion",
+                    "TooDeepFourEdgeModeTypeAssertionDef",
+                    ReserveTypeShape::QualifiedSymbol("OuterFourEdgeModeTypeAssertion"),
+                ),
+            ]
+        };
+        let reserve = || {
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("TooDeepFourEdgeModeTypeAssertion"),
+            )]
+        };
+        let exact = mode_then_reserve_identifier_type_assertion_theorem_ast(
+            source_id,
+            exact_modes(),
+            reserve(),
+            theorem,
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload = extract_source_four_edge_local_mode_reserved_variable_type_assertion(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact four-edge local-mode reserved-variable type assertion should extract");
+        assert_eq!(payload.reserve.mode_expansions.len(), 5);
+        assert_eq!(payload.reserve.bridge.bindings().len(), 1);
+        assert_eq!(
+            payload.reserve.bridge.bindings()[0].type_spelling,
+            "TooDeepFourEdgeModeTypeAssertion"
+        );
+        assert_eq!(payload.asserted_type.spelling, "set");
+        assert_eq!(payload.asserted_type.head, TypeHeadInput::BuiltinSet);
+        assert_ne!(
+            payload.reserve.bridge.bindings()[0].type_range,
+            payload.asserted_type.range
+        );
+        assert_eq!(payload.subject_lookup_ordinal, 1);
+
+        let output = source_four_edge_local_mode_reserved_variable_type_assertion_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact four-edge local-mode type assertion should reach TermFormulaChecker");
+        assert_source_reserved_variable_type_assertion_output(&output)
+            .expect("four-edge local-mode type assertion invariants should hold");
+        assert_eq!(output.subject_binding, BindingId::new(0));
+        assert_eq!(
+            output.subject_result_input.spelling,
+            "TooDeepFourEdgeModeTypeAssertion"
+        );
+        assert!(matches!(
+            output.subject_result_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_eq!(output.asserted_type_input.spelling, "set");
+        assert_eq!(output.asserted_type_input.head, TypeHeadInput::BuiltinSet);
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseFourEdgeModeTypeAssertion")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("base mode terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("one normalized builtin-set type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+        let (_, formula) = output.term_formula.formulas().iter().next().unwrap();
+        assert_eq!(formula.kind, FormulaKind::TypeAssertion);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+
+        for removed in [
+            "BaseFourEdgeModeTypeAssertion",
+            "InnerFourEdgeModeTypeAssertion",
+            "MiddleFourEdgeModeTypeAssertion",
+            "OuterFourEdgeModeTypeAssertion",
+            "TooDeepFourEdgeModeTypeAssertion",
+        ] {
+            let mut invalid = source_four_edge_local_mode_reserved_variable_type_assertion_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a five-expansion corruption target");
+            invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .retain(|symbol, _| source_mode_symbol_spelling(symbol) != Some(removed));
+            let invalid_result =
+                assert_source_reserved_variable_type_assertion_output(&invalid).map(|()| invalid);
+            assert_eq!(
+                source_reserved_variable_type_assertion_result_detail_keys(
+                    invalid_result,
+                    TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
+                ),
+                vec![
+                    TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY
+                        .to_owned()
+                ]
+            );
+        }
+
+        let assert_extraction_gap = |modes| {
+            let near_miss = mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                modes,
+                reserve(),
+                theorem,
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        };
+
+        for index in 0..5 {
+            let mut missing = exact_modes();
+            missing.remove(index);
+            assert_extraction_gap(missing);
+
+            let mut wrong_label = exact_modes();
+            wrong_label[index].label = Some("OtherDef");
+            assert_extraction_gap(wrong_label);
+
+            let mut recovered = exact_modes();
+            recovered[index].recovered = true;
+            assert_extraction_gap(recovered);
+
+            let mut contextual = exact_modes();
+            contextual[index].local_context = true;
+            assert_extraction_gap(contextual);
+
+            let mut parameterized = exact_modes();
+            parameterized[index].parameterized_pattern = true;
+            assert_extraction_gap(parameterized);
+        }
+
+        for (index, radix) in [
+            "BaseFourEdgeModeTypeAssertion",
+            "InnerFourEdgeModeTypeAssertion",
+            "MiddleFourEdgeModeTypeAssertion",
+            "OuterFourEdgeModeTypeAssertion",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let index = index + 1;
+            let mut argument_bearing = exact_modes();
+            argument_bearing[index].rhs_shape = ReserveTypeShape::QualifiedSymbolWithArgs(radix);
+            assert_extraction_gap(argument_bearing);
+
+            let mut wrong_radix = exact_modes();
+            wrong_radix[index].rhs_shape =
+                ReserveTypeShape::QualifiedSymbol("ExtraFourEdgeModeTypeAssertion");
+            assert_extraction_gap(wrong_radix);
+        }
+
+        let mut duplicate = exact_modes();
+        duplicate.push(duplicate[0]);
+        assert_extraction_gap(duplicate);
+
+        let mut attributed_terminal = exact_modes();
+        attributed_terminal[0].rhs_shape = ReserveTypeShape::AttributedSet;
+        assert_extraction_gap(attributed_terminal);
+
+        let mut object_terminal = exact_modes();
+        object_terminal[0].rhs_shape = ReserveTypeShape::Builtin("object");
+        assert_extraction_gap(object_terminal);
+
+        let mut reverse_order = exact_modes();
+        reverse_order.reverse();
+        assert_extraction_gap(reverse_order);
+
+        let mut direct_outermost_radix = exact_modes();
+        direct_outermost_radix[4].rhs_shape = ReserveTypeShape::Builtin("set");
+        assert_extraction_gap(direct_outermost_radix);
+
+        let mut one_edge_outermost_radix = exact_modes();
+        one_edge_outermost_radix[4].rhs_shape =
+            ReserveTypeShape::QualifiedSymbol("BaseFourEdgeModeTypeAssertion");
+        assert_extraction_gap(one_edge_outermost_radix);
+
+        let mut two_edge_outermost_radix = exact_modes();
+        two_edge_outermost_radix[4].rhs_shape =
+            ReserveTypeShape::QualifiedSymbol("InnerFourEdgeModeTypeAssertion");
+        assert_extraction_gap(two_edge_outermost_radix);
+
+        let mut three_edge_outermost_radix = exact_modes();
+        three_edge_outermost_radix[4].rhs_shape =
+            ReserveTypeShape::QualifiedSymbol("MiddleFourEdgeModeTypeAssertion");
+        assert_extraction_gap(three_edge_outermost_radix);
+
+        let mut cyclic = exact_modes();
+        cyclic[0].rhs_shape = ReserveTypeShape::QualifiedSymbol("TooDeepFourEdgeModeTypeAssertion");
+        assert_extraction_gap(cyclic);
+
+        assert_extraction_gap(vec![
+            exact_modes()[0],
+            mode_definition_with_label(
+                "ExtraFourEdgeModeTypeAssertion",
+                "ExtraFourEdgeModeTypeAssertionDef",
+                ReserveTypeShape::QualifiedSymbol("BaseFourEdgeModeTypeAssertion"),
+            ),
+            mode_definition_with_label(
+                "InnerFourEdgeModeTypeAssertion",
+                "InnerFourEdgeModeTypeAssertionDef",
+                ReserveTypeShape::QualifiedSymbol("ExtraFourEdgeModeTypeAssertion"),
+            ),
+            exact_modes()[2],
+            exact_modes()[3],
+            exact_modes()[4],
+        ]);
+
+        for near_miss in [
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbolWithArgs("TooDeepFourEdgeModeTypeAssertion"),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    subject: "y",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::Builtin("object"),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(
+                        "TooDeepFourEdgeModeTypeAssertion",
+                    ),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    negated: true,
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    status: Some("open"),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    recovered_label: true,
+                    ..theorem
+                },
+            ),
+            modes_then_empty_definition_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                theorem,
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
     fn source_three_edge_local_object_mode_reserved_variable_type_assertion_consumes_four_expansions()
      {
         let source_id = source_id(151);
@@ -25448,6 +25898,70 @@ mod tests {
             .next()
             .expect("Task 151 normalized object type should exist");
         assert_eq!(normalized.head, TypeHeadRef::BuiltinObject);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+    }
+
+    #[test]
+    fn active_four_edge_local_mode_reserved_variable_type_assertion_fixture_consumes_five_expansions()
+     {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0
+                    == "pass_type_elaboration_four_edge_local_mode_reserved_variable_type_assertion_001"
+            })
+            .expect("Task 152 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 152 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 152 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_four_edge_local_mode_reserved_variable_type_assertion_output(
+            &ast,
+            resolver.module,
+            &symbols,
+        )
+        .expect("Task 152 real AST should reach the four-edge local-mode type assertion seam");
+        assert_source_reserved_variable_type_assertion_output(&output)
+            .expect("Task 152 real AST should preserve every checked payload invariant");
+        assert_eq!(output.payload.reserve.mode_expansions.len(), 5);
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseFourEdgeModeTypeAssertion")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("Task 152 base terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("Task 152 normalized set type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
         assert_eq!(normalized.source.range, terminal.source_range);
         assert_eq!(normalized.source.spelling, terminal.spelling);
     }
@@ -29616,6 +30130,18 @@ mod tests {
             label: "ThreeEdgeLocalObjectModeReservedVariableTypeAssertionPayloadBoundary",
             subject: "x",
             asserted_type: ReserveTypeShape::Builtin("object"),
+            recovered_label: false,
+            negated: false,
+        }
+    }
+
+    fn exact_four_edge_local_mode_identifier_type_assertion_spec()
+    -> IdentifierTypeAssertionTheoremSpec<'static> {
+        IdentifierTypeAssertionTheoremSpec {
+            status: None,
+            label: "FourEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary",
+            subject: "x",
+            asserted_type: ReserveTypeShape::Builtin("set"),
             recovered_label: false,
             negated: false,
         }

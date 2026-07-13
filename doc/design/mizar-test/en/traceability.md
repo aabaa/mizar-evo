@@ -878,6 +878,19 @@ mode asserted heads, general reachability/widening/`qua`, object/set coercion,
 truth/facts, closure/order, theorem acceptance, proof, Core, and VC remain
 uncredited. Exact source guards, independent definition/four-link corruption,
 and the real frontend/resolver sidecar protect the active row.
+Task 152 adds the following exact four-edge local-mode-chain reserved-variable
+type assertion pass row:
+`definition mode BaseFourEdgeModeTypeAssertionDef: BaseFourEdgeModeTypeAssertion is set; end; definition mode InnerFourEdgeModeTypeAssertionDef: InnerFourEdgeModeTypeAssertion is BaseFourEdgeModeTypeAssertion; end; definition mode MiddleFourEdgeModeTypeAssertionDef: MiddleFourEdgeModeTypeAssertion is InnerFourEdgeModeTypeAssertion; end; definition mode OuterFourEdgeModeTypeAssertionDef: OuterFourEdgeModeTypeAssertion is MiddleFourEdgeModeTypeAssertion; end; definition mode TooDeepFourEdgeModeTypeAssertionDef: TooDeepFourEdgeModeTypeAssertion is OuterFourEdgeModeTypeAssertion; end; reserve x for TooDeepFourEdgeModeTypeAssertion; theorem FourEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;`.
+The raw subject result must retain its written outermost-mode provenance, while
+the asserted builtin `set` retains its independently formula-anchored source
+node. All five real expansions must recursively normalize both inputs to one
+terminal-RHS builtin-set identity before one `Inferred` term and one fact-free
+`Checked` type assertion credit exact normalized-reflexive type/well-formedness
+only. Mode declaration acceptance/inhabitation, formula-side local-mode
+asserted heads, general reachability/widening/`qua`, truth/facts, closure/order,
+theorem acceptance, proof, Core, and VC remain uncredited. Exact source guards,
+independent definition/five-link corruption, and the real frontend/resolver
+sidecar protect the active row.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

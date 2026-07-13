@@ -827,6 +827,18 @@ widening/`qua`、object/set coercion、truth/fact、closure/order、theorem
 acceptance、proof、Core、VC は credit しない。exact source guard、独立した
 definition/four-link corruption、real frontend/resolver sidecar で active row
 を保護する。
+task 152 は次の exact four-edge local-mode-chain reserved-variable type
+assertion pass row を追加する:
+`definition mode BaseFourEdgeModeTypeAssertionDef: BaseFourEdgeModeTypeAssertion is set; end; definition mode InnerFourEdgeModeTypeAssertionDef: InnerFourEdgeModeTypeAssertion is BaseFourEdgeModeTypeAssertion; end; definition mode MiddleFourEdgeModeTypeAssertionDef: MiddleFourEdgeModeTypeAssertion is InnerFourEdgeModeTypeAssertion; end; definition mode OuterFourEdgeModeTypeAssertionDef: OuterFourEdgeModeTypeAssertion is MiddleFourEdgeModeTypeAssertion; end; definition mode TooDeepFourEdgeModeTypeAssertionDef: TooDeepFourEdgeModeTypeAssertion is OuterFourEdgeModeTypeAssertion; end; reserve x for TooDeepFourEdgeModeTypeAssertion; theorem FourEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;`
+raw subject result は written outermost-mode provenance、asserted builtin `set`
+は独立した formula-anchored source node を保持する。real expansion 5 本が両
+input を terminal-RHS builtin-set identity 1 個へ再帰的に normalize してから、
+1 `Inferred` term と 1 fact-free `Checked` type assertion が exact normalized-
+reflexive type/well-formedness だけを credit する。mode declaration acceptance/
+inhabitation、formula-side local-mode asserted head、general reachability/
+widening/`qua`、truth/fact、closure/order、theorem acceptance、proof、Core、VC
+は credit しない。exact source guard、独立した definition/five-link
+corruption、real frontend/resolver sidecar で active row を保護する。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
