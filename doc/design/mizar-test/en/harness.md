@@ -570,6 +570,15 @@ family near misses, and a real sidecar protect the slice; declaration
 acceptance/inhabitation, desugaring, closure/order, theorem/proof/Core/VC, and
 broader semantics remain deferred.
 
+Task 133 adds the exact one-edge object-terminal local-mode-chain inequality
+pass. The runner retains four raw `ChainObjectModeInequality` inputs, supplies
+both real expansions to `TermFormulaChecker`, anchors one builtin-object
+identity at the terminal `object` RHS, and requires one fact-free
+pre-desugaring `Checked` inequality. Exact chain guards, missing-link
+corruption, withheld-family near misses, and a real sidecar protect the slice;
+declaration acceptance/inhabitation, desugaring, closure/order, truth/facts,
+theorem/proof/Core/VC, and broader semantics remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

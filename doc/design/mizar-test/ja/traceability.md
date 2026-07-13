@@ -636,6 +636,13 @@ terminal-RHS builtin-set identity 1 個に normalize され、fact-free
 pre-desugaring `Checked` inequality は exact type/well-formedness だけを credit
 する。declaration acceptance/inhabitation、desugaring、truth、proof、Core、VC は
 credit しない。
+task 133 は exact one-edge local-object-mode-chain inequality pass row
+`definition mode BaseObjectModeInequalityDef: BaseObjectModeInequality is object; end; definition mode ChainObjectModeInequalityDef: ChainObjectModeInequality is BaseObjectModeInequality; end; reserve z for ChainObjectModeInequality; theorem ChainedLocalObjectModeReservedVariableInequalityPayloadBoundary: z <> z;`
+を追加する。4 raw outer-mode role は real expansion link 2 本を通じて
+terminal-RHS builtin-object identity 1 個に normalize され、fact-free
+pre-desugaring `Checked` inequality は exact type/well-formedness だけを credit
+する。declaration acceptance/inhabitation、desugaring、truth、proof、Core、VC は
+credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

@@ -509,6 +509,15 @@ inequality. Declaration acceptance/inhabitation, object terminals, direct or
 longer chains, desugaring, closure/order, truth/facts, theorem acceptance,
 proof, CoreIr, ControlFlowIr, and VC remain open.
 
+Task 133 MC-G020 current-state override: exact one-edge object-terminal
+mode-chain inequality composes task 129's two real AST-derived expansions with
+task 131's pre-desugaring builtin-object inequality consumer. Four raw inputs
+retain outer-mode provenance; recursive normalization anchors one
+terminal-RHS builtin-object identity and yields two `Inferred` terms plus one
+fact-free `Checked` inequality. Declaration acceptance/inhabitation,
+set-terminal, direct or longer chains, desugaring, closure/order, truth/facts,
+theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

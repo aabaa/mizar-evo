@@ -553,6 +553,14 @@ outer-mode input は記述された provenance を保持し、real AST-derived e
 または non-exact link、object-terminal、direct、longer shape は fail closed とし、
 mode declaration acceptance/inhabitation、desugaring、closure/order、truth/fact、
 theorem acceptance、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
+task 133 はその consumer を exact one-edge bare-object chain
+`ChainObjectModeInequality -> BaseObjectModeInequality -> object` に適用する。
+4 raw outer-mode input は記述された provenance を保持し、real AST-derived
+expansion 2 本が terminal-RHS builtin-object identity 1 個へ normalize してから、
+2 `Inferred` variable term と 1 fact-free `Checked` inequality を記録する。
+missing/non-exact link、set-terminal、direct、longer shape は fail closed とし、
+declaration acceptance/inhabitation、desugaring、closure/order、truth/fact、theorem
+acceptance、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

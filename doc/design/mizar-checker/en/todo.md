@@ -2328,6 +2328,12 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       proof/Core/ControlFlow/VC deferred.
     - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 56, 121, 127, and 130.
 
+133. **Add exact one-edge local-object-mode-chain reserved-variable inequality checker bridge.** [x]
+    - Add only the spec-derived `ChainObjectModeInequality -> BaseObjectModeInequality -> object`, one outer reserve, and `z <> z` theorem source.
+    - Preserve four raw outer-mode inputs and `BindingId(0)`, consume both real expansions, anchor one terminal-RHS builtin-object identity, and require two `Inferred` terms plus one fact-free pre-desugaring `Checked` inequality. Exact, link-corruption, withheld-family near-miss, and real-sidecar guards are required.
+    - Keep declaration acceptance/inhabitation, desugaring, closure/order, truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
+    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 121, 129, and 131.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

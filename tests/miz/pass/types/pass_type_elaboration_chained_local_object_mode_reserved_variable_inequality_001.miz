@@ -1,0 +1,10 @@
+definition
+  mode BaseObjectModeInequalityDef: BaseObjectModeInequality is object;
+end;
+
+definition
+  mode ChainObjectModeInequalityDef: ChainObjectModeInequality is BaseObjectModeInequality;
+end;
+
+reserve z for ChainObjectModeInequality;
+theorem ChainedLocalObjectModeReservedVariableInequalityPayloadBoundary: z <> z;
