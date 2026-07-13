@@ -474,6 +474,14 @@ real RHS 起点の builtin-set identity 1 個、2 `Inferred` term、1 fact-free
 `Checked` inequality を得る。declaration acceptance/inhabitation、desugaring、
 closure/order、truth/fact、theorem acceptance、proof/Core/VC は open のままである。
 
+Task 131 MC-G020 current-state override: exact direct local-object-mode
+inequality は task 55 の real `LocalObjectModeInequality -> object` expansion と
+task 121/130 の pre-desugaring consumer を結合する。4 raw input は object-mode
+provenance を保持し、real RHS 起点の builtin-object identity 1 個、2
+`Inferred` term、1 fact-free `Checked` inequality を得る。mode declaration
+acceptance/inhabitation、desugaring、closure/order、truth/fact、theorem
+acceptance、proof/Core/VC は open のままである。
+
 Task 129 MC-G020 current-state override: exact one-edge object-terminal
 mode-chain equality は task 56 の real AST-derived expansion 2 個と task 127/128 の
 equality / builtin-object consumer を結合する。4 raw input は outer-mode provenance

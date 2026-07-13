@@ -537,6 +537,14 @@ task 130 は exact direct bare-set local-mode inequality に限定する。4 raw
 builtin-set identity 1 個と fact-free pre-desugaring `Checked` inequality を
 記録する。non-exact shape は fail closed とし、declaration acceptance、
 desugaring、truth/fact、theorem/proof/Core/VC は deferred のままである。
+task 131 はその exact inequality consumer を direct bare-object
+`LocalObjectModeInequality -> object` producer に適用する。4 raw object-mode
+input は記述された provenance を保持し、real expansion 1 本がそれらを RHS
+起点の builtin-object identity 1 個へ normalize してから、2 `Inferred`
+variable term と 1 fact-free pre-desugaring `Checked` inequality を記録する。
+non-exact shape は fail closed とし、mode declaration acceptance/inhabitation、
+desugaring、closure/order、truth/fact、theorem acceptance、proof、CoreIr、
+ControlFlowIr、VC は deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

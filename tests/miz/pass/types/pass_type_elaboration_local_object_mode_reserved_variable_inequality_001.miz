@@ -1,0 +1,6 @@
+definition
+  mode LocalObjectModeInequalityDef: LocalObjectModeInequality is object;
+end;
+
+reserve x for LocalObjectModeInequality;
+theorem LocalObjectModeReservedVariableInequalityPayloadBoundary: x <> x;

@@ -2149,6 +2149,18 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       theorem acceptance、proof/Core/ControlFlow/VC は deferred のままにする。
     - Chapter 4、7、13、14、16 を更新する。依存: tasks 55、121。
 
+131. **Exact direct-local-object-mode reserved-variable inequality checker bridge を追加する。** [x]
+    - exact bare-object `LocalObjectModeInequality`、reserve 1 個、`x <> x`
+      theorem を持つ spec-derived active pass source を追加する。
+    - 4 raw object-mode-headed result/expected input を保持し、real expansion
+      1 本を消費し、RHS 起点の builtin-object identity 1 個、両
+      `BindingId(0)` use、fact-free pre-desugaring `Checked` inequality を要求する。
+      exact/near-miss/corruption と real-sidecar guard を必須とする。
+    - mode declaration acceptance/inhabitation、desugaring、closure/order、
+      truth/fact、theorem acceptance、proof/Core/ControlFlow/VC は deferred の
+      ままにする。
+    - Chapter 3、4、7、13、14、16 を更新する。依存: tasks 55、121、128、130。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

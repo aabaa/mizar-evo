@@ -554,6 +554,13 @@ one fact-free pre-desugaring `Checked` inequality. Exact guards, corruption
 coverage, and a real sidecar protect the slice; downstream semantics remain
 deferred.
 
+Task 131 adds the exact direct local-object-mode inequality pass. The runner
+retains four raw `LocalObjectModeInequality` inputs, supplies the real direct
+expansion to `TermFormulaChecker`, anchors one builtin-object identity at the
+RHS, and requires one fact-free pre-desugaring `Checked` inequality. Exact
+guards, present/missing expansion corruption coverage, and a real sidecar
+protect the slice; downstream semantics remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

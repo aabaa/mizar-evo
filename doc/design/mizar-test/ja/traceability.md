@@ -622,7 +622,14 @@ task 130 は exact direct local-mode inequality pass row
 を追加する。4 raw role は real RHS expansion 1 本を通じて builtin-set identity
 1 個に normalize され、fact-free pre-desugaring `Checked` inequality は exact
 type/well-formedness だけを credit する。declaration acceptance、truth、proof、
-Core、VC は credit しない。task 120 は
+Core、VC は credit しない。
+task 131 は exact direct local-object-mode inequality pass row
+`definition mode LocalObjectModeInequalityDef: LocalObjectModeInequality is object; end; reserve x for LocalObjectModeInequality; theorem LocalObjectModeReservedVariableInequalityPayloadBoundary: x <> x;`
+を追加する。4 raw object-mode role は real RHS expansion 1 本を通じて
+builtin-object identity 1 個に normalize され、fact-free pre-desugaring
+`Checked` inequality は exact type/well-formedness だけを credit する。mode
+declaration acceptance/inhabitation、truth、proof、Core、VC は credit しない。
+task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。両 identifier result と右 membership expected type は記述された

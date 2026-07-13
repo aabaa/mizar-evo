@@ -565,6 +565,14 @@ four raw `LocalModeInequality` inputs, consumes the real expansion, and anchors
 one builtin-set identity at the RHS before recording a fact-free
 pre-desugaring `Checked` inequality. Non-exact shapes fail closed; declaration
 acceptance, desugaring, truth/facts, theorem/proof/Core/VC remain deferred.
+Task 131 applies that exact inequality consumer to the direct bare-object
+`LocalObjectModeInequality -> object` producer. Four raw object-mode inputs
+retain their written provenance while one real expansion normalizes them to a
+single RHS-anchored builtin-object identity before two `Inferred` variable terms
+and one fact-free pre-desugaring `Checked` inequality are recorded. Non-exact
+shapes fail closed; mode declaration acceptance/inhabitation, desugaring,
+closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
+and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

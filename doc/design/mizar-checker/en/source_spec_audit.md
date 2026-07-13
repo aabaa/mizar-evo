@@ -492,6 +492,14 @@ fact-free `Checked` inequality result. Declaration acceptance/inhabitation,
 desugaring, closure/order, truth/facts, theorem acceptance, proof/Core/VC remain
 open.
 
+Task 131 MC-G020 current-state override: exact direct local-object-mode
+inequality combines task 55's real `LocalObjectModeInequality -> object`
+expansion with the task 121/130 pre-desugaring consumer. Four raw inputs retain
+object-mode provenance; one normalized builtin-object identity is anchored at
+the real RHS; two `Inferred` terms and one fact-free `Checked` inequality
+result. Mode declaration acceptance/inhabitation, desugaring, closure/order,
+truth/facts, theorem acceptance, proof/Core/VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

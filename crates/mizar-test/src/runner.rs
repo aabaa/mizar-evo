@@ -95,6 +95,8 @@ const TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY
     "type_elaboration.checker.local_mode_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.local_mode_reserved_variable_inequality.invalid_payload";
+const TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.local_object_mode_reserved_variable_inequality.invalid_payload";
 const TYPE_ELABORATION_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.chained_local_mode_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY:
@@ -962,6 +964,13 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) = source_local_object_mode_reserved_variable_inequality_detail_keys(
+        ast,
+        module.clone(),
+        symbols,
+    ) {
+        return keys;
+    }
     if let Some(keys) =
         source_heterogeneous_reserve_membership_detail_keys(ast, module.clone(), symbols)
     {
@@ -1439,6 +1448,32 @@ const SOURCE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG:
     right_expected_role: Some("local-mode-reserved-variable-inequality-right-expected"),
 };
 
+const SOURCE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "LocalObjectModeReservedVariableInequalityPayloadBoundary",
+    operator: "<>",
+    formula_kind: FormulaKind::Inequality,
+    invalid_payload_key:
+        TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["x"],
+    binding_types: &[SourceReservedVariableBuiltinType::Object],
+    binding_source_mode_spellings: &[Some("LocalObjectModeInequality")],
+    mode_definitions: &[SourceReservedVariableModeDefinition {
+        label: "LocalObjectModeInequalityDef",
+        spelling: "LocalObjectModeInequality",
+        radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Object),
+    }],
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "local-object-mode-reserved-variable-inequality-left-result",
+    right_result_role: "local-object-mode-reserved-variable-inequality-right-result",
+    left_expected_role: Some("local-object-mode-reserved-variable-inequality-left-expected"),
+    right_expected_role: Some("local-object-mode-reserved-variable-inequality-right-expected"),
+};
+
 const SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
     SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
     label: "ChainedLocalModeReservedVariableEqualityPayloadBoundary",
@@ -1642,6 +1677,19 @@ fn source_local_mode_reserved_variable_inequality_detail_keys(
     Some(source_reserved_variable_formula_result_detail_keys(
         build_source_reserved_variable_formula_output(payload, symbols),
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
+fn source_local_object_mode_reserved_variable_inequality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_local_object_mode_reserved_variable_inequality(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
     ))
 }
 
@@ -1863,6 +1911,17 @@ fn source_local_mode_reserved_variable_inequality_output(
     symbols: &SymbolEnv,
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload = extract_source_local_mode_reserved_variable_inequality(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_local_object_mode_reserved_variable_inequality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload =
+        extract_source_local_object_mode_reserved_variable_inequality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -3274,6 +3333,19 @@ fn extract_source_local_mode_reserved_variable_inequality(
         module,
         symbols,
         &SOURCE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    )
+}
+
+fn extract_source_local_object_mode_reserved_variable_inequality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     )
 }
 
@@ -7239,6 +7311,7 @@ mod tests {
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY, active_type_elaboration_cases,
         assemble_source_checker_handoff, assert_source_reserved_variable_formula_output,
@@ -7256,6 +7329,7 @@ mod tests {
         extract_source_local_mode_reserved_variable_equality,
         extract_source_local_mode_reserved_variable_inequality,
         extract_source_local_object_mode_reserved_variable_equality,
+        extract_source_local_object_mode_reserved_variable_inequality,
         extract_source_multiple_reserve_declaration_equality,
         extract_source_reserved_variable_equality, extract_source_reserved_variable_inequality,
         extract_source_reserved_variable_membership,
@@ -7271,7 +7345,8 @@ mod tests {
         source_imported_predicate_functor_formula_output,
         source_local_mode_reserved_variable_equality_output,
         source_local_mode_reserved_variable_inequality_output,
-        source_local_object_mode_reserved_variable_equality_output, source_mode_symbol_spelling,
+        source_local_object_mode_reserved_variable_equality_output,
+        source_local_object_mode_reserved_variable_inequality_output, source_mode_symbol_spelling,
         source_multiple_reserve_declaration_equality_output,
         source_reserved_variable_equality_output,
         source_reserved_variable_formula_output_detail_keys,
@@ -12557,6 +12632,346 @@ mod tests {
     }
 
     #[test]
+    fn source_local_object_mode_reserved_variable_inequality_consumes_real_expansion() {
+        let source_id = source_id(131);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("local_object_mode_reserved_variable_inequality"),
+        );
+        let symbols = source_local_symbols_env(
+            module.clone(),
+            &[("LocalObjectModeInequality", SymbolKind::Mode)],
+        );
+        let theorem = IdentifierBinaryTheoremSpec {
+            status: None,
+            label: "LocalObjectModeReservedVariableInequalityPayloadBoundary",
+            left: "x",
+            operator: "<>",
+            right: "x",
+            recovered_label: false,
+        };
+        let reserve = || {
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("LocalObjectModeInequality"),
+            )]
+        };
+        let exact = mode_then_reserve_identifier_binary_theorem_ast(
+            source_id,
+            [mode_definition(
+                "LocalObjectModeInequality",
+                ReserveTypeShape::Builtin("object"),
+            )],
+            reserve(),
+            theorem,
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload = extract_source_local_object_mode_reserved_variable_inequality(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact local object-mode reserved-variable inequality should extract");
+        assert_eq!(payload.reserve.mode_expansions.len(), 1);
+        assert_eq!(payload.reserve.bridge.bindings().len(), 1);
+        assert_eq!(
+            payload.reserve.bridge.bindings()[0].type_spelling,
+            "LocalObjectModeInequality"
+        );
+        assert_eq!(payload.left_lookup_ordinal, 1);
+        assert_eq!(payload.right_lookup_ordinal, 2);
+
+        let output = source_local_object_mode_reserved_variable_inequality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact local object-mode inequality should reach TermFormulaChecker");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("local object-mode inequality invariants should hold");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(0));
+        let reserve_range = output.payload.reserve.bridge.bindings()[0].type_range;
+        for input in [
+            &output.left_result_input,
+            &output.right_result_input,
+            output.left_expected_input.as_ref().expect("left expected"),
+            output
+                .right_expected_input
+                .as_ref()
+                .expect("right expected"),
+        ] {
+            assert_eq!(input.spelling, "LocalObjectModeInequality");
+            assert_eq!(input.source_range, reserve_range);
+            assert!(matches!(input.head, TypeHeadInput::Symbol(_)));
+        }
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .values()
+            .next()
+            .expect("real direct object expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("one normalized object type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinObject);
+        assert_eq!(normalized.source.range, terminal.radix.source_range);
+        assert_eq!(normalized.source.spelling, terminal.radix.spelling);
+        let formula = output
+            .term_formula
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .next()
+            .expect("inequality formula should be checked");
+        assert_eq!(formula.kind, FormulaKind::Inequality);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+
+        let mut corrupted_output = source_local_object_mode_reserved_variable_inequality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a corrupted checker output");
+        corrupted_output
+            .payload
+            .reserve
+            .mode_expansions
+            .values_mut()
+            .next()
+            .expect("direct object expansion should exist")
+            .radix
+            .head = TypeHeadInput::BuiltinSet;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&corrupted_output),
+            vec![
+                TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY
+                    .to_owned()
+            ]
+        );
+
+        let mut invalid_output = source_local_object_mode_reserved_variable_inequality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a second checker output");
+        invalid_output.payload.reserve.mode_expansions.clear();
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&invalid_output),
+            vec![
+                TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY
+                    .to_owned()
+            ]
+        );
+
+        for mode in [
+            mode_definition(
+                "LocalObjectModeInequality",
+                ReserveTypeShape::Builtin("set"),
+            ),
+            mode_definition(
+                "LocalObjectModeInequality",
+                ReserveTypeShape::AttributedObject,
+            ),
+            contextual_mode_definition(
+                "LocalObjectModeInequality",
+                ReserveTypeShape::Builtin("object"),
+            ),
+            parameterized_mode_definition(
+                "LocalObjectModeInequality",
+                ReserveTypeShape::Builtin("object"),
+            ),
+            recovered_mode_definition(
+                "LocalObjectModeInequality",
+                ReserveTypeShape::Builtin("object"),
+            ),
+        ] {
+            let near_miss = mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode],
+                reserve(),
+                theorem,
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for near_miss in [
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                Vec::<ModeDefinitionSpec>::new(),
+                reserve(),
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "OtherMode",
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                reserve(),
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition_with_label(
+                    "LocalObjectModeInequality",
+                    "OtherDef",
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                reserve(),
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [
+                    mode_definition(
+                        "LocalObjectModeInequality",
+                        ReserveTypeShape::Builtin("object"),
+                    ),
+                    mode_definition(
+                        "LocalObjectModeInequality",
+                        ReserveTypeShape::Builtin("object"),
+                    ),
+                ],
+                reserve(),
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [
+                    mode_definition("OtherMode", ReserveTypeShape::Builtin("object")),
+                    mode_definition(
+                        "LocalObjectModeInequality",
+                        ReserveTypeShape::Builtin("object"),
+                    ),
+                ],
+                reserve(),
+                theorem,
+            ),
+            reserve_then_mode_identifier_binary_theorem_ast(
+                source_id,
+                reserve(),
+                mode_definition(
+                    "LocalObjectModeInequality",
+                    ReserveTypeShape::Builtin("object"),
+                ),
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "LocalObjectModeInequality",
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("object"))],
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "LocalObjectModeInequality",
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbolWithArgs("LocalObjectModeInequality"),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [
+                    mode_definition("BaseMode", ReserveTypeShape::Builtin("object")),
+                    mode_definition(
+                        "LocalObjectModeInequality",
+                        ReserveTypeShape::QualifiedSymbol("BaseMode"),
+                    ),
+                ],
+                reserve(),
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "LocalObjectModeInequality",
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "LocalObjectModeInequality",
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    operator: "=",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "LocalObjectModeInequality",
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    left: "y",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "LocalObjectModeInequality",
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    recovered_label: true,
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [mode_definition(
+                    "LocalObjectModeInequality",
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    status: Some("registration"),
+                    ..theorem
+                },
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
     fn source_chained_local_mode_reserved_variable_equality_consumes_both_expansions() {
         let source_id = source_id(127);
         let module = ResolverModuleId::new(
@@ -14187,6 +14602,50 @@ mod tests {
                 .expect("Task 130 real AST should reach the local-mode inequality seam");
         assert_source_reserved_variable_formula_output(&output)
             .expect("Task 130 real AST should preserve checked payload invariants");
+        assert_eq!(output.payload.reserve.mode_expansions.len(), 1);
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+    }
+
+    #[test]
+    fn active_local_object_mode_reserved_variable_inequality_fixture_consumes_real_expansion() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0
+                    == "pass_type_elaboration_local_object_mode_reserved_variable_inequality_001"
+            })
+            .expect("Task 131 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 131 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 131 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_local_object_mode_reserved_variable_inequality_output(
+            &ast,
+            resolver.module,
+            &symbols,
+        )
+        .expect("Task 131 real AST should reach the local object-mode inequality seam");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("Task 131 real AST should preserve checked payload invariants");
         assert_eq!(output.payload.reserve.mode_expansions.len(), 1);
         assert_eq!(output.term_formula.normalized_types().len(), 1);
     }

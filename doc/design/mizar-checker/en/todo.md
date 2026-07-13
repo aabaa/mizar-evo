@@ -2302,6 +2302,18 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
     - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 55 and 121.
 
+131. **Add exact direct-local-object-mode reserved-variable inequality checker bridge.** [x]
+    - Add the spec-derived active pass source with exact bare-object
+      `LocalObjectModeInequality`, one reserve, and `x <> x` theorem.
+    - Preserve four raw object-mode-headed result/expected inputs, consume the
+      one real expansion, anchor one builtin-object identity at the RHS,
+      resolve both uses to `BindingId(0)`, and require a fact-free
+      pre-desugaring `Checked` inequality. Exact/near-miss/corruption and
+      real-sidecar guards are required.
+    - Keep mode declaration acceptance/inhabitation, desugaring, closure/order,
+      truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
+    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 55, 121, 128, and 130.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

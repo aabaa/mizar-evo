@@ -673,6 +673,12 @@ Task 130 adds the exact direct local-mode inequality pass row
 Four raw roles normalize through one real RHS expansion to one builtin-set
 identity; a fact-free pre-desugaring `Checked` inequality credits only exact
 type/well-formedness, not declaration acceptance, truth, proof, Core, or VC.
+Task 131 adds the exact direct local-object-mode inequality pass row
+`definition mode LocalObjectModeInequalityDef: LocalObjectModeInequality is object; end; reserve x for LocalObjectModeInequality; theorem LocalObjectModeReservedVariableInequalityPayloadBoundary: x <> x;`.
+Four raw object-mode roles normalize through one real RHS expansion to one
+builtin-object identity; a fact-free pre-desugaring `Checked` inequality credits
+only exact type/well-formedness, not mode declaration acceptance/inhabitation,
+truth, proof, Core, or VC.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
