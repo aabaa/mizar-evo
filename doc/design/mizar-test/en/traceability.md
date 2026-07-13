@@ -738,6 +738,18 @@ identity. Two `Inferred` terms and one fact-free `Checked` membership credit
 only exact type/well-formedness, not mode declaration acceptance/inhabitation,
 membership truth/facts, implicit closure/order, theorem acceptance, proof,
 Core, or VC.
+Task 140 adds the exact direct local-object-mode left reserved-variable
+membership pass row
+`definition mode LocalObjectModeMembershipDef: LocalObjectModeMembership is object; end; reserve x for LocalObjectModeMembership; reserve y for set; theorem LocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`.
+The raw left result retains its written local object-mode provenance, while the
+right result and sole expected-set input retain the independent explicit
+reserve provenance. One real expansion normalizes the left to a terminal-RHS
+builtin-object identity, while the right roles normalize directly to a
+distinct explicit-reserve-anchored builtin-set identity. Two `Inferred` terms
+and one fact-free `Checked` membership credit only exact
+type/well-formedness, not mode declaration acceptance/inhabitation, membership
+truth/facts, object/set coercion, implicit closure/order, theorem acceptance,
+proof, Core, or VC.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

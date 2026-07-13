@@ -659,6 +659,23 @@ corruption tests report the task-specific invalid-payload key. Missing/non-
 exact modes, reserves, or formulas fail closed; mode declaration
 acceptance/inhabitation, membership truth/facts, implicit closure/order,
 theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred.
+Task 140 exact direct local-object-mode left reserved-variable membership
+checker bridge applies Task 125's right-only expected-`set`, two-binding
+membership consumer to
+`LocalObjectModeMembership -> object; reserve x for LocalObjectModeMembership; reserve y for set; theorem ...: x in y;`.
+The raw left result retains its written local object-mode symbol/range, while
+the right result and sole expected-`set` input retain their independent
+explicit reserve range. The one real AST-derived expansion normalizes the left
+result to a builtin-object identity canonically anchored at the definition
+RHS; the two right roles normalize directly to one distinct builtin-set
+identity anchored at their explicit reserve. Production validation requires
+`BindingId(0/1)`, two `Inferred` variables, one fact-free `Checked` membership,
+exactly one right-owned expected constraint, no left expected input, and no
+object/set coercion. Independent expansion and right expected-`set` corruption
+tests report the task-specific invalid-payload key. Missing/non-exact modes,
+reserves, or formulas fail closed; mode declaration acceptance/inhabitation,
+membership truth/facts, implicit closure/order, theorem acceptance, proof,
+CoreIr, ControlFlowIr, and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

@@ -2215,6 +2215,12 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - mode declaration acceptance/inhabitation、membership truth/fact、implicit closure/order、theorem acceptance、proof/Core/ControlFlow/VC は deferred のままにする。
     - Chapter 4、7、13、14、16 を更新する。依存: tasks 55、120、125。
 
+140. **Exact direct-local-object-mode left reserved-variable membership checker bridge を追加する。** [x]
+    - spec-derived `LocalObjectModeMembership -> object`、その mode の `x` と explicit `set` の `y` から成る ordered reserve、`x in y` theorem source だけを追加する。
+    - raw local-object-mode left result と独立した right result/expected-set input、`BindingId(0/1)` を保持し、real expansion 1 本を消費して distinct terminal-RHS builtin-object identity と explicit-reserve builtin-set identity、2 `Inferred` term、right expected constraint だけを持つ 1 fact-free `Checked` membership を要求する。exact、expansion/right-expected corruption、withheld-family near-miss、real-sidecar guard を必須とする。
+    - mode declaration acceptance/inhabitation、membership truth/fact、object/set coercion、implicit closure/order、theorem acceptance、proof/Core/ControlFlow/VC は deferred のままにする。
+    - Chapter 3、4、7、13、14、16 を更新する。依存: tasks 55、125、139。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

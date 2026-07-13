@@ -690,6 +690,17 @@ normalize され、3 role すべてが terminal-RHS builtin-set identity 1 個�
 type/well-formedness だけを credit し、mode declaration
 acceptance/inhabitation、membership truth/fact、implicit closure/order、theorem
 acceptance、proof、Core、VC は credit しない。
+task 140 は exact direct local-object-mode left reserved-variable membership
+pass row
+`definition mode LocalObjectModeMembershipDef: LocalObjectModeMembership is object; end; reserve x for LocalObjectModeMembership; reserve y for set; theorem LocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`
+を追加する。raw left result は記述された local object-mode provenance、right
+result と sole expected-set input は独立した explicit reserve provenance を保持する。
+real expansion 1 本が left を terminal-RHS builtin-object identity へ normalize
+し、right role は distinct explicit-reserve-anchored builtin-set identity へ直接
+normalize する。2 `Inferred` term と 1 fact-free `Checked` membership は exact
+type/well-formedness だけを credit し、mode declaration
+acceptance/inhabitation、membership truth/fact、object/set coercion、implicit
+closure/order、theorem acceptance、proof、Core、VC は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

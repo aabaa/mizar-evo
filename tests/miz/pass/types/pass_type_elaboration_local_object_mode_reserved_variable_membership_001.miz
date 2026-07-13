@@ -1,0 +1,7 @@
+definition
+  mode LocalObjectModeMembershipDef: LocalObjectModeMembership is object;
+end;
+
+reserve x for LocalObjectModeMembership;
+reserve y for set;
+theorem LocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;

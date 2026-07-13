@@ -581,6 +581,20 @@ declaration acceptance/inhabitation, membership truth/facts, implicit
 closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
 open.
 
+Task 140 MC-G020 current-state override: the exact direct object-terminal
+local-mode left membership composes task 55's real AST-derived
+`LocalObjectModeMembership -> object` expansion with task 125's right-only
+expected-set, two-binding distinct-source membership consumer. The raw left
+result retains local object-mode provenance, while the independent right
+result and sole expected-set input retain their explicit reserve provenance.
+One real expansion normalizes the left role to a terminal-RHS builtin-object
+identity; the right builtin-set roles normalize directly to a distinct
+explicit-reserve-anchored identity. Two `Inferred` terms and one fact-free
+`Checked` membership are recorded with exactly one right-owned constraint and
+no left expected type. Mode declaration acceptance/inhabitation, membership
+truth/facts, object/set coercion, implicit closure/order, theorem acceptance,
+proof, CoreIr, ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

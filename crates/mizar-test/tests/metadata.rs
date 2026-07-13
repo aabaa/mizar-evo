@@ -3624,6 +3624,17 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
             .expected_outcome,
         ExpectedOutcome::Pass
     );
+    let local_object_mode_reserved_variable_membership_case = active_type_elaboration_cases(&plan)
+        .find(|case| {
+            case.id.0 == "pass_type_elaboration_local_object_mode_reserved_variable_membership_001"
+        })
+        .expect("Task140 local-object-mode reserved-variable membership bridge should be active");
+    assert_eq!(
+        local_object_mode_reserved_variable_membership_case
+            .expectation
+            .expected_outcome,
+        ExpectedOutcome::Pass
+    );
     let chained_local_mode_reserved_variable_equality_case = active_type_elaboration_cases(&plan)
         .find(|case| {
             case.id.0 == "pass_type_elaboration_chained_local_mode_reserved_variable_equality_001"
@@ -3744,8 +3755,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 90);
-    assert_eq!(report.passed_count(), 90);
+    assert_eq!(report.results.len(), 91);
+    assert_eq!(report.passed_count(), 91);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -4101,6 +4112,10 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_type_elaboration_local_mode_reserved_variable_membership_001"
+            && result.actual_detail_keys.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_type_elaboration_local_object_mode_reserved_variable_membership_001"
             && result.actual_detail_keys.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
@@ -8175,8 +8190,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 90"));
-    assert!(stdout.contains("passed: 90"));
+    assert!(stdout.contains("type-elaboration cases: 91"));
+    assert!(stdout.contains("passed: 91"));
     assert!(stdout.contains("failed: 0"));
 }
 

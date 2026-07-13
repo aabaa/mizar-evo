@@ -624,6 +624,22 @@ invalid-payload key を報告する。missing/non-exact mode/reserve/formula は
 closed とし、mode declaration acceptance/inhabitation、membership truth/fact、
 implicit closure/order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
 deferred のままである。
+task 140 exact direct local-object-mode left reserved-variable membership
+checker bridge は task 125 の right-only expected-`set`、two-binding membership
+consumer を
+`LocalObjectModeMembership -> object; reserve x for LocalObjectModeMembership; reserve y for set; theorem ...: x in y;`
+に適用する。raw left result は written local object-mode symbol/range、right
+result と sole expected-`set` input は独立した explicit reserve range を保持する。
+real AST-derived expansion 1 本は left result を definition RHS を canonical
+source とする builtin-object identity 1 個へ normalize し、right role 2 個は
+explicit reserve 起点の distinct builtin-set identity 1 個へ直接 normalize される。
+production validation は `BindingId(0/1)`、2 `Inferred` variable、1 fact-free
+`Checked` membership、right 所有の expected constraint 1 個だけ、left expected
+input なし、object/set coercion なしを要求する。independent expansion と right
+expected-`set` corruption test は task-specific invalid-payload key を報告する。
+missing/non-exact mode/reserve/formula は fail closed とし、mode declaration
+acceptance/inhabitation、membership truth/fact、implicit closure/order、theorem
+acceptance、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event
