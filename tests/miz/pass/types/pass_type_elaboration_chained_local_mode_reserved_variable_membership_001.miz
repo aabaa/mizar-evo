@@ -1,0 +1,11 @@
+definition
+  mode BaseModeMembershipDef: BaseModeMembership is set;
+end;
+
+definition
+  mode ChainModeMembershipDef: ChainModeMembership is BaseModeMembership;
+end;
+
+reserve x for ChainModeMembership;
+reserve y for set;
+theorem ChainedLocalModeReservedVariableMembershipPayloadBoundary: x in y;

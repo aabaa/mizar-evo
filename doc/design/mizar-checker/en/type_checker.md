@@ -676,6 +676,23 @@ tests report the task-specific invalid-payload key. Missing/non-exact modes,
 reserves, or formulas fail closed; mode declaration acceptance/inhabitation,
 membership truth/facts, implicit closure/order, theorem acceptance, proof,
 CoreIr, ControlFlowIr, and VC remain deferred.
+Task 141 exact one-edge local-mode-chain left reserved-variable membership
+checker bridge applies Task 139's right-only expected-`set`, two-binding
+membership consumer to
+`ChainModeMembership -> BaseModeMembership -> set; reserve x for ChainModeMembership; reserve y for set; theorem ...: x in y;`.
+The raw left result retains its written outer-mode symbol/range, while the
+right result and sole expected-`set` input retain their independent explicit
+reserve range. Both real AST-derived expansions recursively normalize the left
+result to one builtin-set identity canonically anchored at the terminal `set`
+RHS; the two right roles normalize directly and intern to that identity.
+Production validation requires `BindingId(0/1)`, two `Inferred` variables, one
+fact-free `Checked` membership, exactly one right-owned expected constraint,
+and no left expected input. Independent corruption of either chain link and
+the right expected-`set` projection reports the task-specific invalid-payload
+key. Missing/non-exact modes, reserves, or formulas fail closed; mode
+declaration acceptance/inhabitation, membership truth/facts, implicit
+closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
+deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

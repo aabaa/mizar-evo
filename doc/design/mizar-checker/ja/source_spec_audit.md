@@ -576,6 +576,19 @@ acceptance/inhabitation、membership truth/fact、object/set coercion、implicit
 closure/order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open の
 ままである。
 
+Task 141 MC-G020 current-state override: exact one-edge set-terminal
+local-mode-chain left membership は task 56 の real AST-derived
+`ChainModeMembership -> BaseModeMembership -> set` expansion 2 本と task 139
+の right-only expected-set / two-binding membership consumer を結合する。raw
+left result は outer-mode provenance、独立した right result と sole expected-set
+input は explicit reserve provenance を保持する。real expansion 2 本が left role
+を recursive に normalize し、right builtin-set role は直接 normalize され、3
+role すべてが terminal-RHS builtin-set identity 1 個へ intern する。right-owned
+constraint 1 個だけ、left expected type なしで 2 `Inferred` term と 1 fact-free
+`Checked` membership を記録する。mode declaration acceptance/inhabitation、
+membership truth/fact、implicit closure/order、theorem acceptance、proof、
+CoreIr、ControlFlowIr、VC は open のままである。
+
 Task 129 MC-G020 current-state override: exact one-edge object-terminal
 mode-chain equality は task 56 の real AST-derived expansion 2 個と task 127/128 の
 equality / builtin-object consumer を結合する。4 raw input は outer-mode provenance

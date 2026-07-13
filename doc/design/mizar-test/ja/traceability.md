@@ -701,6 +701,17 @@ normalize する。2 `Inferred` term と 1 fact-free `Checked` membership は ex
 type/well-formedness だけを credit し、mode declaration
 acceptance/inhabitation、membership truth/fact、object/set coercion、implicit
 closure/order、theorem acceptance、proof、Core、VC は credit しない。
+task 141 は exact one-edge local-mode-chain left reserved-variable membership
+pass row
+`definition mode BaseModeMembershipDef: BaseModeMembership is set; end; definition mode ChainModeMembershipDef: ChainModeMembership is BaseModeMembership; end; reserve x for ChainModeMembership; reserve y for set; theorem ChainedLocalModeReservedVariableMembershipPayloadBoundary: x in y;`
+を追加する。raw left result は written outer-mode provenance、right result と sole
+expected-set input は独立した explicit reserve provenance を保持する。real
+expansion 2 本が left を terminal set RHS へ recursive に normalize し、right
+role は直接 normalize され、3 role すべてが terminal-RHS builtin-set identity 1
+個へ intern する。2 `Inferred` term と 1 fact-free `Checked` membership は exact
+type/well-formedness だけを credit し、mode declaration
+acceptance/inhabitation、membership truth/fact、implicit closure/order、theorem
+acceptance、proof、Core、VC は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

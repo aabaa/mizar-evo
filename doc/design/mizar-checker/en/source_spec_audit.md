@@ -595,6 +595,19 @@ no left expected type. Mode declaration acceptance/inhabitation, membership
 truth/facts, object/set coercion, implicit closure/order, theorem acceptance,
 proof, CoreIr, ControlFlowIr, and VC remain open.
 
+Task 141 MC-G020 current-state override: the exact one-edge set-terminal
+local-mode-chain left membership composes task 56's two real AST-derived
+`ChainModeMembership -> BaseModeMembership -> set` expansions with task 139's
+right-only expected-set, two-binding membership consumer. The raw left result
+retains outer-mode provenance, while the independent right result and sole
+expected-set input retain explicit reserve provenance. Both real expansions
+recursively normalize the left role; the right builtin-set roles normalize
+directly, and all three intern to one terminal-RHS builtin-set identity. Two
+`Inferred` terms and one fact-free `Checked` membership are recorded with
+exactly one right-owned constraint and no left expected type. Mode declaration
+acceptance/inhabitation, membership truth/facts, implicit closure/order,
+theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin
