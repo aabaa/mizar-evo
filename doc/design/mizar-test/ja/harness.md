@@ -527,6 +527,14 @@ pre-desugaring `Checked` inequality を要求する。exact guard、present/miss
 expansion corruption coverage、real sidecar が slice を保護し、downstream
 semantics は deferred のままである。
 
+task 132 は exact one-edge set-terminal local-mode-chain inequality pass を追加する。
+runner は 4 raw `ChainModeInequality` input を保持し、task-56-compatible real
+expansion 2 本を `TermFormulaChecker` に渡して terminal `set` RHS 起点の
+builtin-set identity 1 個と fact-free pre-desugaring `Checked` inequality を
+要求する。exact chain guard、missing-link corruption、withheld-family near miss、
+real sidecar が slice を保護し、declaration acceptance/inhabitation、desugaring、
+closure/order、theorem/proof/Core/VC、broader semantics は deferred のままである。
+
 task 128 は exact direct local-object-mode reserved-variable equality pass を
 追加する。runner は task-55-compatible `LocalObjectMode -> object` definition 1 個を
 受理し、4 raw local object-mode input を保持して、その real AST-derived expansion

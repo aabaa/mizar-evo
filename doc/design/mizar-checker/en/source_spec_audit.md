@@ -500,6 +500,15 @@ the real RHS; two `Inferred` terms and one fact-free `Checked` inequality
 result. Mode declaration acceptance/inhabitation, desugaring, closure/order,
 truth/facts, theorem acceptance, proof/Core/VC remain open.
 
+Task 132 MC-G020 current-state override: exact one-edge set-terminal mode-chain
+inequality combines task 56/127's two real AST-derived expansions with task
+121/130's pre-desugaring inequality consumer. Four raw inputs retain outer-mode
+provenance; recursive normalization anchors one builtin-set identity at the
+terminal RHS and yields two `Inferred` terms plus one fact-free `Checked`
+inequality. Declaration acceptance/inhabitation, object terminals, direct or
+longer chains, desugaring, closure/order, truth/facts, theorem acceptance,
+proof, CoreIr, ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

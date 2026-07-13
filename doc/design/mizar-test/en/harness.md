@@ -561,6 +561,15 @@ RHS, and requires one fact-free pre-desugaring `Checked` inequality. Exact
 guards, present/missing expansion corruption coverage, and a real sidecar
 protect the slice; downstream semantics remain deferred.
 
+Task 132 adds the exact one-edge set-terminal local-mode-chain inequality pass.
+The runner retains four raw `ChainModeInequality` inputs, supplies both real
+task-56-compatible expansions to `TermFormulaChecker`, anchors one builtin-set
+identity at the terminal `set` RHS, and requires one fact-free pre-desugaring
+`Checked` inequality. Exact chain guards, missing-link corruption, withheld-
+family near misses, and a real sidecar protect the slice; declaration
+acceptance/inhabitation, desugaring, closure/order, theorem/proof/Core/VC, and
+broader semantics remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

@@ -1,0 +1,10 @@
+definition
+  mode BaseModeInequalityDef: BaseModeInequality is set;
+end;
+
+definition
+  mode ChainModeInequalityDef: ChainModeInequality is BaseModeInequality;
+end;
+
+reserve x for ChainModeInequality;
+theorem ChainedLocalModeReservedVariableInequalityPayloadBoundary: x <> x;

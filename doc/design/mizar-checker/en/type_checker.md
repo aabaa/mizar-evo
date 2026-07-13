@@ -573,6 +573,15 @@ and one fact-free pre-desugaring `Checked` inequality are recorded. Non-exact
 shapes fail closed; mode declaration acceptance/inhabitation, desugaring,
 closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
 and VC remain deferred.
+Task 132 applies the same pre-desugaring inequality consumer to the exact
+one-edge bare-set chain `ChainModeInequality -> BaseModeInequality -> set`.
+Four raw outer-mode inputs retain their written provenance while both real
+AST-derived expansions normalize them to one terminal-RHS builtin-set identity
+before two `Inferred` variable terms and one fact-free `Checked` inequality are
+recorded. Missing or non-exact links and object-terminal, direct, or longer
+shapes fail closed; mode declaration acceptance/inhabitation, desugaring,
+closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
+and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

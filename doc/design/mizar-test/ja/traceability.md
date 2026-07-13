@@ -629,6 +629,13 @@ task 131 は exact direct local-object-mode inequality pass row
 builtin-object identity 1 個に normalize され、fact-free pre-desugaring
 `Checked` inequality は exact type/well-formedness だけを credit する。mode
 declaration acceptance/inhabitation、truth、proof、Core、VC は credit しない。
+task 132 は exact one-edge local-mode-chain inequality pass row
+`definition mode BaseModeInequalityDef: BaseModeInequality is set; end; definition mode ChainModeInequalityDef: ChainModeInequality is BaseModeInequality; end; reserve x for ChainModeInequality; theorem ChainedLocalModeReservedVariableInequalityPayloadBoundary: x <> x;`
+を追加する。4 raw outer-mode role は real expansion link 2 本を通じて
+terminal-RHS builtin-set identity 1 個に normalize され、fact-free
+pre-desugaring `Checked` inequality は exact type/well-formedness だけを credit
+する。declaration acceptance/inhabitation、desugaring、truth、proof、Core、VC は
+credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
