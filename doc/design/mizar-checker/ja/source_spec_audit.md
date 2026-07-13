@@ -509,6 +509,16 @@ acceptance/inhabitation、object terminal、direct/one-edge/longer chain、impli
 closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
 open のままである。
 
+Task 135 MC-G020 current-state override: exact two-edge object-terminal
+mode-chain equality は task 72 の real AST-derived expansion 3 個と task 134 の
+equality consumer および builtin-object terminal support を結合する。4 raw input
+は outer-mode provenance を保持し、recursive normalization は terminal RHS に 1
+builtin-object identity を anchor して 2 `Inferred` term と 1 fact-free `Checked`
+equality を生成する。declaration acceptance/inhabitation、task 134 を超える
+set-terminal sibling semantics、direct/one-edge/longer chain、implicit
+closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
+open のままである。
+
 Task 129 MC-G020 current-state override: exact one-edge object-terminal
 mode-chain equality は task 56 の real AST-derived expansion 2 個と task 127/128 の
 equality / builtin-object consumer を結合する。4 raw input は outer-mode provenance

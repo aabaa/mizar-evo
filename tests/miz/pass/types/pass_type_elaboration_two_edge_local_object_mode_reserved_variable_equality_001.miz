@@ -1,0 +1,14 @@
+definition
+  mode BaseTwoEdgeObjectModeEqualityDef: BaseTwoEdgeObjectModeEquality is object;
+end;
+
+definition
+  mode MiddleTwoEdgeObjectModeEqualityDef: MiddleTwoEdgeObjectModeEquality is BaseTwoEdgeObjectModeEquality;
+end;
+
+definition
+  mode OuterTwoEdgeObjectModeEqualityDef: OuterTwoEdgeObjectModeEquality is MiddleTwoEdgeObjectModeEquality;
+end;
+
+reserve z for OuterTwoEdgeObjectModeEquality;
+theorem TwoEdgeLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;

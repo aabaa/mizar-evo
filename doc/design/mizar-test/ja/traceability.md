@@ -650,6 +650,13 @@ terminal-RHS builtin-set identity 1 個に normalize され、fact-free `Checked
 equality は exact type/well-formedness だけを credit する。declaration
 acceptance/inhabitation、implicit closure/order、truth、proof、Core、VC は credit
 しない。
+task 135 は exact two-edge local-object-mode-chain equality pass row
+`definition mode BaseTwoEdgeObjectModeEqualityDef: BaseTwoEdgeObjectModeEquality is object; end; definition mode MiddleTwoEdgeObjectModeEqualityDef: MiddleTwoEdgeObjectModeEquality is BaseTwoEdgeObjectModeEquality; end; definition mode OuterTwoEdgeObjectModeEqualityDef: OuterTwoEdgeObjectModeEquality is MiddleTwoEdgeObjectModeEquality; end; reserve z for OuterTwoEdgeObjectModeEquality; theorem TwoEdgeLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;`
+を追加する。4 raw outer-mode role は real expansion link 3 本を通じて
+terminal-RHS builtin-object identity 1 個に normalize され、fact-free `Checked`
+equality は exact type/well-formedness だけを credit する。declaration
+acceptance/inhabitation、implicit closure/order、truth、proof、Core、VC は credit
+しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

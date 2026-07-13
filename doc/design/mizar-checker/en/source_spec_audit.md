@@ -527,6 +527,16 @@ acceptance/inhabitation, object terminals, direct, one-edge, or longer chains,
 implicit closure/order, truth/facts, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC remain open.
 
+Task 135 MC-G020 current-state override: exact two-edge object-terminal
+mode-chain equality composes task 72's three real AST-derived expansions with
+task 134's equality consumer and builtin-object terminal support. Four raw
+inputs retain outer-mode provenance; recursive normalization anchors one
+terminal-RHS builtin-object identity and yields two `Inferred` terms plus one
+fact-free `Checked` equality. Declaration acceptance/inhabitation, set-terminal
+sibling semantics beyond task 134, direct, one-edge, or longer chains, implicit
+closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
+and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

@@ -588,6 +588,15 @@ near misses, and a real sidecar protect the slice; declaration
 acceptance/inhabitation, implicit closure/order, theorem/proof/Core/VC, and
 broader semantics remain deferred.
 
+Task 135 adds the exact two-edge object-terminal local-mode-chain equality
+pass. The runner retains four raw `OuterTwoEdgeObjectModeEquality` inputs,
+supplies all three real Task-72-compatible expansions to `TermFormulaChecker`,
+anchors one builtin-object identity at the terminal `object` RHS, and requires
+one fact-free `Checked` equality. Exact chain guards, missing-link corruption,
+withheld-family near misses, and a real sidecar protect the slice; declaration
+acceptance/inhabitation, implicit closure/order, theorem/proof/Core/VC, and
+broader semantics remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

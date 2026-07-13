@@ -570,6 +570,15 @@ missing/non-exact link、object-terminal、direct、one-edge、longer shape は 
 closed とし、declaration acceptance/inhabitation、implicit closure/order、
 truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は deferred の
 ままである。
+task 135 は同じ equality consumer を exact two-edge bare-object chain
+`OuterTwoEdgeObjectModeEquality -> MiddleTwoEdgeObjectModeEquality -> BaseTwoEdgeObjectModeEquality -> object`
+に適用する。4 raw outer-mode input は記述された provenance を保持し、real
+AST-derived expansion 3 本が terminal-RHS builtin-object identity 1 個へ normalize
+してから、2 `Inferred` variable term と 1 fact-free `Checked` equality を記録する。
+missing/non-exact link、set-terminal、direct、one-edge、longer shape は fail
+closed とし、declaration acceptance/inhabitation、implicit closure/order、
+truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は deferred の
+ままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

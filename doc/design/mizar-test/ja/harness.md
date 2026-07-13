@@ -551,6 +551,14 @@ guard、missing-link corruption、withheld-family near miss、real sidecar が s
 保護し、declaration acceptance/inhabitation、implicit closure/order、
 theorem/proof/Core/VC、broader semantics は deferred のままである。
 
+task 135 は exact two-edge object-terminal local-mode-chain equality pass を
+追加する。runner は 4 raw `OuterTwoEdgeObjectModeEquality` input を保持し、
+Task-72-compatible real expansion 3 本を `TermFormulaChecker` に渡して terminal
+`object` RHS 起点の builtin-object identity 1 個と fact-free `Checked` equality を
+要求する。exact chain guard、missing-link corruption、withheld-family near miss、
+real sidecar が slice を保護し、declaration acceptance/inhabitation、implicit
+closure/order、theorem/proof/Core/VC、broader semantics は deferred のままである。
+
 task 128 は exact direct local-object-mode reserved-variable equality pass を
 追加する。runner は task-55-compatible `LocalObjectMode -> object` definition 1 個を
 受理し、4 raw local object-mode input を保持して、その real AST-derived expansion
