@@ -625,6 +625,19 @@ acceptance/inhabitation、membership truth/fact、implicit closure/order、
 theorem/proof/Core/VC、broader semantics は deferred のままである。active
 type-elaboration runner は 92 件である。
 
+task 142 は exact one-edge object-terminal local-mode-chain left reserved-
+variable membership pass を追加する。runner は raw
+`ChainObjectModeMembership` left result と独立した explicit-set right
+result/expected input を保持し、Task-56-compatible real expansion 2 本を
+`TermFormulaChecker` に渡して、distinct terminal-RHS builtin-object / explicit-
+reserve builtin-set identity、`BindingId(0/1)`、2 `Inferred` term、1 fact-free
+`Checked` membership、right expected constraint だけ、left expected input なし
+を要求する。exact source guard、独立した chain-link/right-expected corruption、
+withheld-family near miss、real sidecar が slice を保護し、mode declaration
+acceptance/inhabitation、membership truth/fact、object/set coercion、implicit
+closure/order、theorem/proof/Core/VC、broader semantics は deferred のままで
+ある。active type-elaboration runner は 93 件である。
+
 task 128 は exact direct local-object-mode reserved-variable equality pass を
 追加する。runner は task-55-compatible `LocalObjectMode -> object` definition 1 個を
 受理し、4 raw local object-mode input を保持して、その real AST-derived expansion

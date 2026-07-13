@@ -664,6 +664,20 @@ mode declaration acceptance/inhabitation, membership truth/facts, implicit
 closure/order, theorem/proof/Core/VC, and broader semantics remain deferred.
 The active type-elaboration runner contains 92 cases.
 
+Task 142 adds the exact one-edge object-terminal local-mode-chain left
+reserved-variable membership pass. The runner retains the raw
+`ChainObjectModeMembership` left result and independent explicit-set right
+result/expected input, supplies both real Task-56-compatible expansions to
+`TermFormulaChecker`, and requires distinct terminal-RHS builtin-object and
+explicit-reserve builtin-set identities, `BindingId(0/1)`, two `Inferred`
+terms, one fact-free `Checked` membership, only the right expected constraint,
+and no left expected input. Exact source guards, independent chain-link/right-
+expected corruption, withheld-family near misses, and a real sidecar protect
+the slice; mode declaration acceptance/inhabitation, membership truth/facts,
+object/set coercion, implicit closure/order, theorem/proof/Core/VC, and broader
+semantics remain deferred. The active type-elaboration runner contains 93
+cases.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

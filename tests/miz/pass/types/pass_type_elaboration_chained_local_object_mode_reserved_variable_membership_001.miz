@@ -1,0 +1,11 @@
+definition
+  mode BaseObjectModeMembershipDef: BaseObjectModeMembership is object;
+end;
+
+definition
+  mode ChainObjectModeMembershipDef: ChainObjectModeMembership is BaseObjectModeMembership;
+end;
+
+reserve x for ChainObjectModeMembership;
+reserve y for set;
+theorem ChainedLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;

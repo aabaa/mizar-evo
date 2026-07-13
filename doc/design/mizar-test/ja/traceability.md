@@ -712,6 +712,17 @@ role は直接 normalize され、3 role すべてが terminal-RHS builtin-set i
 type/well-formedness だけを credit し、mode declaration
 acceptance/inhabitation、membership truth/fact、implicit closure/order、theorem
 acceptance、proof、Core、VC は credit しない。
+task 142 は exact one-edge local-object-mode-chain left reserved-variable
+membership pass row
+`definition mode BaseObjectModeMembershipDef: BaseObjectModeMembership is object; end; definition mode ChainObjectModeMembershipDef: ChainObjectModeMembership is BaseObjectModeMembership; end; reserve x for ChainObjectModeMembership; reserve y for set; theorem ChainedLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`
+を追加する。raw left result は written outer-mode provenance、right result と sole
+expected-set input は独立した explicit reserve provenance を保持する。real
+expansion 2 本が left を terminal object RHS へ recursive に normalize し、right
+role は直接 distinct explicit-reserve-anchored builtin-set identity 1 個へ
+normalize される。2 `Inferred` term と 1 fact-free `Checked` membership は exact
+type/well-formedness だけを credit し、mode declaration
+acceptance/inhabitation、membership truth/fact、object/set coercion、implicit
+closure/order、theorem acceptance、proof、Core、VC は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
