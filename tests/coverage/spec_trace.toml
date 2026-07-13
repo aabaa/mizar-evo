@@ -752,6 +752,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_inequality_001.expect.toml",
@@ -1755,6 +1756,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_inequality_001.expect.toml",
@@ -1859,6 +1861,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_inequality_001.expect.toml",
@@ -2176,6 +2179,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_inequality_001.expect.toml",
@@ -3092,6 +3096,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.local_mode_long_chain_reserved_variable_equality_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 172 exact local-mode long-chain reserved-variable equality checker bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_reserved_variable_equality_001.expect.toml",
+]
+notes = "Task 172 coverage is limited to the exact active seven-expansion set-terminal equality type/well-formedness slice. The production route preserves four raw ChainMode6 result/expected inputs, BindingId(0) at ordinals 1 and 2, one terminal-set-RHS identity, two inferred variables, one fact/deferred-free checked equality, and two ordered operand-owned expected constraints. Full near-miss/corruption coverage and a real frontend/resolver sidecar guard active runner 121; declaration acceptance/inhabitation, truth, closure/order, theorem acceptance, proof, imported/attributed/argument-bearing or other chain shapes, general unbounded semantics, and downstream payloads remain uncredited."
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.local_mode_reserved_variable_equality_source_bridge"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 126 exact direct-local-mode reserved-variable equality checker bridge"
@@ -3157,6 +3174,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_inequality_001.expect.toml",

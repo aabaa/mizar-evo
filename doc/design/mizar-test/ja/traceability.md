@@ -1052,6 +1052,19 @@ production routing、corruption/near-miss coverage、real sidecar が active
 count 120 を保護する。declaration acceptance/inhabitation、inequality desugaring/
 truth/fact、closure/order、theorem/proof/Core/VC、set-terminal behavior、他
 depth、broader shape は credit しない。
+task 172 は `BaseMode -> set` で終端する definition chain 7 本、
+`reserve z for ChainMode6;`、
+`LongLocalModeReservedVariableEqualityPayloadBoundary: z = z;` だけの active
+row を追加する。Chapter 4、7、13、14.5.2、16 を既存 Chapter 4/13/14/16
+requirement row、structural-chain row、dedicated checker row を介して参照する。
+intended credit は real AST-derived expansion 7 本、raw `ChainMode6` result/
+expected input 4 個、ordinal 1/2 の `BindingId(0)`、terminal `BaseMode` RHS の
+builtin-set identity 1 個、2 inferred variable、1 fact/deferred-free checked
+equality、ordered operand-owned expected constraint 2 個だけである。exact
+routing、corruption/near-miss coverage、real frontend/resolver sidecar が active
+count 121 を保護する。declaration acceptance/inhabitation、truth/fact、closure/
+order、theorem/proof/Core/ControlFlow/VC、imported/attributed/argument-bearing または別 chain
+shape、general unbounded semantics は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

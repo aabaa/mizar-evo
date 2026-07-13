@@ -3074,6 +3074,22 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 74, 153, and 157. Refs: Step 5; mizar-test task 10; specs 3,
       4, 7, 13, 14.5.2, and 16.
 
+172. **Add exact local-mode long-chain equality checker bridge.** [x]
+    - Promote only the spec-derived seven-definition set-terminal chain already
+      exercised by task 74, one `ChainMode6` reserve, and the exact `z = z`
+      theorem label recorded in the test-first fixture.
+    - Acceptance: preserve seven real AST-derived expansions, four raw
+      `ChainMode6` result/expected inputs, `BindingId(0)` at ordinals 1/2, one
+      terminal-`BaseMode`-RHS builtin-set identity, two inferred terms, one
+      fact/deferred-free checked equality, and two ordered operand-owned
+      expected constraints. Add exact, corruption, near-miss, and real
+      frontend/resolver tests; do not fabricate declaration acceptance, truth,
+      closure, theorem, proof, general unbounded semantics, CoreIr,
+      ControlFlowIr, or VC.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 74 and 166. Refs: Step 5; mizar-test task 10; specs 4, 7,
+      13, 14.5.2, and 16.
+
 ## Recommended Verification
 
 Run after each task:

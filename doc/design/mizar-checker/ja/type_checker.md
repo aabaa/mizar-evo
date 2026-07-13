@@ -1097,6 +1097,25 @@ fact、closure/order、theorem acceptance、proof/Core/VC、set-terminal behavio
 他 depth、broader shape は deferred のままである。fixture/expectation、trace
 backlink 6 件、exact routing、full near-miss/corruption coverage、real frontend/
 resolver sidecar が active runner 120 を保護する。
+task 172 が規定するのは、unique / unrecovered / same-module / argument-free /
+source-preceding な mode definition 7 本が `ChainMode6 -> ChainMode5 ->
+ChainMode4 -> ChainMode3 -> ChainMode2 -> ChainMode1 -> BaseMode -> set` を
+形成し、その後に `reserve z for ChainMode6;` と
+`LongLocalModeReservedVariableEqualityPayloadBoundary: z = z;` が続く exact
+test-first source だけである。implementation は real AST-derived expansion
+7 本すべてを消費し、両方の use を ordinal 1/2 の `BindingId(0)` に解決し、
+raw `ChainMode6` result/expected input 4 個を保持して、全 role を terminal
+`BaseMode` builtin-set RHS に anchor された identity 1 個へ normalize する。
+2 `Inferred` variable、1 fact/deferred-free `Checked` equality、ordered
+operand-owned expected constraint 2 個を要求する。exact route order、definition/
+link/order/depth/recovery/context/parameterization ごとの near miss、matched-
+output / expansion corruption、real frontend/resolver sidecar を必須とする。
+declaration acceptance/inhabitation、equality truth/fact、closure/order、theorem
+acceptance、formula-statement/proof/Core/ControlFlow/VC payload、imported/
+attributed/argument-bearing または別 chain shape、general unbounded semantics
+は deferred のままである。fixture、expectation、trace backlink 6 件、
+production route、full near-miss/corruption matrix、real frontend/resolver
+sidecar が active runner 121 を保護する。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

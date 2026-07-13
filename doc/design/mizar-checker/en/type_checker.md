@@ -1158,6 +1158,25 @@ desugaring/truth/facts, closure/order, theorem acceptance, proof/Core/VC, set-
 terminal behavior, other depths, and broader shapes stay deferred. Fixture/
 expectation, six trace backlinks, exact routing, full near-miss/corruption
 coverage, and the real frontend/resolver sidecar now protect active runner 120.
+Task 172 specifies only the test-first source whose seven unique, unrecovered,
+same-module, argument-free, source-preceding mode definitions form
+`ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 ->
+ChainMode1 -> BaseMode -> set`, followed by `reserve z for ChainMode6;` and
+`LongLocalModeReservedVariableEqualityPayloadBoundary: z = z;`. The
+implementation must consume all seven real AST-derived expansions, resolve
+both uses to `BindingId(0)` at ordinals 1/2, retain four raw `ChainMode6`
+result/expected inputs, and normalize every role to one identity anchored at
+the terminal `BaseMode` builtin-set RHS. It must require two `Inferred`
+variables, one fact/deferred-free `Checked` equality, and two ordered operand-
+owned expected constraints. Exact route order, per-definition/link/order/depth/
+recovery/context/parameterization near misses, matched-output and expansion
+corruption, and a real frontend/resolver sidecar are mandatory. Declaration
+acceptance/inhabitation, equality truth/facts, closure/order, theorem
+acceptance, formula-statement/proof/Core/ControlFlow/VC payloads, imported/
+attributed/argument-bearing or other chain shapes, and general unbounded
+semantics remain deferred. The fixture, expectation, six trace backlinks,
+production route, full near-miss/corruption matrix, and real frontend/resolver
+sidecar now protect active runner 121.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

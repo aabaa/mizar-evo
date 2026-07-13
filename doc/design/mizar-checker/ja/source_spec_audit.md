@@ -1037,6 +1037,22 @@ inhabitation、desugaring/truth/fact、closure/order、theorem acceptance、proo
 Core/ControlFlow/VC、set-terminal behavior、他 depth、broader shape は open の
 ままである。
 
+Task 172 MC-G020 current-state override: exact set-terminal local-mode long-chain
+reserved-variable equality を `spec_gap` ではなく `test_gap`、`source_drift`、
+`design_drift` と分類する。Chapter 4、7、13、14.5.2、16 が test-first source
+を支え、task 74 が active long-chain fixture で既に実行する real seven-
+expansion producer、task 166 が equality consumer を提供する。contract は
+ordinal 1/2 の `BindingId(0)`、raw `ChainMode6` result/expected input 4 個、
+source-derived expansion 7 本、terminal `BaseMode` RHS の builtin-set identity
+1 個、2 `Inferred` term、1 fact/deferred-free `Checked` equality、ordered
+operand-owned expected constraint 2 個を保持する。exact source routing、full
+near-miss / corruption coverage、real frontend/resolver sidecar が active
+runner 121 を保護する。
+declaration acceptance/inhabitation、truth/fact、closure/order、theorem
+acceptance、proof/Core/ControlFlow/VC payload、imported/attributed/argument-
+bearing または別 chain shape、general unbounded semantics は open のままで
+ある。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

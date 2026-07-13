@@ -2900,6 +2900,21 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 74、153、157。参照: Step 5、mizar-test task 10、specs 3、4、
       7、13、14.5.2、16。
 
+172. **Exact local-mode long-chain equality checker bridge を追加する。** [x]
+    - task 74 が既に実行する spec-derived set-terminal definition chain 7 本、
+      `ChainMode6` reserve 1 個、test-first fixture に記録した exact `z = z`
+      theorem label だけを昇格する。
+    - Acceptance: real AST-derived expansion 7 本、raw `ChainMode6` result/
+      expected input 4 個、ordinal 1/2 の `BindingId(0)`、terminal `BaseMode`
+      RHS の builtin-set identity 1 個、2 inferred term、1 fact/deferred-free
+      checked equality、ordered operand-owned expected constraint 2 個を保持
+      する。exact/corruption/near-miss/real frontend-resolver test を追加し、
+      declaration acceptance、truth、closure、theorem、proof、general
+      unbounded semantics、CoreIr、ControlFlowIr、VC を捏造しない。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 74、166。参照: Step 5、mizar-test task 10、specs 4、7、13、
+      14.5.2、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

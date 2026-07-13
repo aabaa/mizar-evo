@@ -1058,6 +1058,21 @@ broader shapes remain deferred. The fixture, expectation, six trace backlinks,
 production route, full guard matrix, and real sidecar now protect active runner
 120.
 
+Task 172 records the test-first exact local-mode long-chain equality source.
+The production runner must accept only the seven-definition set-terminal chain,
+one `ChainMode6` reserve, and the exact `z = z` label; consume all seven real
+AST-derived expansions; retain four raw `ChainMode6` result/expected inputs;
+resolve `BindingId(0)` at ordinals 1/2; and require one terminal-`BaseMode`-RHS
+builtin-set identity, two `Inferred` variables, one fact/deferred-free
+`Checked` equality, and two ordered operand-owned expected constraints. Full
+matched-output, definition/link/order/depth/recovery/context/parameterization/
+terminal/reserve/formula/symbol and expansion-corruption guards plus a real
+frontend/resolver sidecar fail closed. Declaration acceptance/
+inhabitation, truth/facts, closure/order, theorem/proof/Core/ControlFlow/VC,
+imported/attributed/argument-bearing or other chain shapes, and general
+unbounded semantics remain deferred. Production routing, full guards, and the
+real sidecar now protect active runner 121.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

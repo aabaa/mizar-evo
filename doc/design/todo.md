@@ -762,6 +762,19 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    inhabitation, inequality desugaring/truth/facts, closure/order, theorem/
    proof/Core/ControlFlow/VC, set-terminal behavior, other depths, and broader
    shapes remain deferred,
+   task 172 specifies the exact local-mode long-chain set-terminal reserved-
+   variable equality seam by composing task 74's real seven-expansion producer
+   with task 166's equality consumer. The test-first contract requires four raw
+   `ChainMode6` result/expected inputs, ordinal 1/2 `BindingId(0)`, all seven
+   real AST-derived expansions, one terminal-`BaseMode`-RHS builtin-set
+   identity, two inferred variables, one fact/deferred-free checked equality,
+   and two ordered operand-owned expected constraints. Exact fixture/
+   expectation, six trace backlinks, production routing, full corruption/
+   near-miss guards, and a real frontend/resolver sidecar now protect active
+   case 121.
+   Declaration acceptance/inhabitation, truth/facts, closure/order, theorem/
+   proof/Core/ControlFlow/VC, imported/attributed/argument-bearing or other
+   chain shapes, and general unbounded semantics remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

@@ -1116,6 +1116,20 @@ routing, corruption/near-miss coverage, and a real sidecar now protect active
 count 120. Declaration acceptance/inhabitation, inequality desugaring/
 truth/facts, closure/order, theorem/proof/Core/VC, set-terminal behavior, other
 depths, and broader shapes receive no credit.
+Task 172 adds an active row for exactly the seven-definition set-terminal chain
+ending in `BaseMode -> set`, `reserve z for ChainMode6;`, and
+`LongLocalModeReservedVariableEqualityPayloadBoundary: z = z;`. It references
+Chapters 4, 7, 13, 14.5.2, and 16 through the existing Chapter 4/13/14/16
+requirement rows plus the structural-chain and dedicated checker rows. Intended
+credit is limited to seven real AST-derived expansions, four raw `ChainMode6`
+result/expected inputs, `BindingId(0)` at ordinals 1/2, one terminal-
+`BaseMode`-RHS builtin-set identity, two inferred variables, one fact/deferred-
+free checked equality, and two ordered operand-owned expected constraints.
+Exact routing, corruption/near-miss coverage, and a real frontend/resolver
+sidecar now protect active count 121. Declaration acceptance/inhabitation,
+truth/facts, closure/order, theorem/proof/Core/ControlFlow/VC, imported/attributed/argument-
+bearing or other chain shapes, and general unbounded semantics receive no
+credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

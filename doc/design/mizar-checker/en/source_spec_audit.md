@@ -1084,6 +1084,21 @@ acceptance/inhabitation, desugaring/truth/facts,
 closure/order, theorem acceptance, proof/Core/ControlFlow/VC, set-terminal
 behavior, other depths, and broader shapes remain open.
 
+Task 172 MC-G020 current-state override: classify the exact set-terminal local-
+mode long-chain reserved-variable equality as `test_gap`, `source_drift`, and
+`design_drift`, not `spec_gap`. Chapters 4, 7, 13, 14.5.2, and 16 support the
+test-first source. Task 74 provides the real seven-expansion producer already
+exercised by the active long-chain fixture, and task 166 provides the equality
+consumer. The contract preserves `BindingId(0)` at ordinals 1/2, four raw
+`ChainMode6` result/expected inputs, all seven source-derived expansions, one
+terminal-`BaseMode`-RHS builtin-set identity, two `Inferred` terms, one fact/
+deferred-free `Checked` equality, and two ordered operand-owned expected
+constraints. Exact source routing, full near-miss and corruption coverage, and
+a real frontend/resolver sidecar now protect active runner 121. Declaration
+acceptance/inhabitation, truth/facts, closure/order, theorem acceptance, proof/Core/
+ControlFlow/VC payloads, imported/attributed/argument-bearing or other chain
+shapes, and general unbounded semantics remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

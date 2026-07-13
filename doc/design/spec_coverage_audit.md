@@ -1285,6 +1285,22 @@ Declaration acceptance/inhabitation, inequality desugaring/truth/facts,
 closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, set-
 terminal behavior, other depths, and broader shapes receive no credit.
 
+Task172 addendum for chapters `04.variables_and_constants.md`, `07.modes.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 172 classifies the exact set-terminal
+local-mode long-chain reserved-variable equality seam as `test_gap`,
+`source_drift`, and `design_drift`. The test-first contract composes task 74's
+existing real seven-expansion producer with task 166's real equality consumer.
+Intended credit is limited to four raw `ChainMode6` result/expected inputs,
+`BindingId(0)` at ordinals 1/2, all seven real AST-derived expansions, one
+terminal-`BaseMode`-RHS builtin-set identity, two inferred terms, one fact/
+deferred-free checked equality, and two ordered operand-owned expected
+constraints. Six trace backlinks, exact routing, full corruption/near-miss
+coverage, and a real frontend/resolver sidecar now protect active runner 121.
+Declaration acceptance/inhabitation, truth/facts, closure/order, theorem acceptance, proof,
+CoreIr, ControlFlowIr, VC, imported/attributed/argument-bearing or other chain
+shapes, and general unbounded semantics receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |
