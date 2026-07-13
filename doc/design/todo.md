@@ -810,6 +810,16 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    full guards, and a real sidecar now protect active case 125. Truth/facts,
    downstream payloads, other chains, and general
    semantics remain deferred,
+   task 177 specifies the matching builtin-object-terminal long-chain inequality
+   sibling by composing task 74's real AST-bounded chain producer with task
+   169's object-normalizing pre-desugaring inequality consumer. It requires four
+   raw `ChainObjectMode6` result/expected inputs, ordinal 1/2 `BindingId(0)`,
+   seven real expansions, one terminal-`BaseObjectMode`-RHS identity, two
+   inferred terms, two ordered constraints, and one fact/deferred-free pre-
+   desugaring checked inequality without object/set coercion. The fixture and
+   six backlinks, production routing, full guards, and the real sidecar now
+   protect active case 126. Desugaring, truth/facts, downstream
+   payloads, other chains, and general semantics remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

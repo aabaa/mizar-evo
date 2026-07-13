@@ -1153,6 +1153,20 @@ Truth/facts, acceptance,
 closure/order, theorem/proof/Core/ControlFlow/VC, other chains, and general
 semantics remain open.
 
+Task 177 MC-G020 current-state override: classify the exact builtin-object-terminal
+local-mode long-chain reserved-variable inequality as `test_gap`, `source_drift`,
+and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.5.2, and 16 support
+the test-first source; Task 74 provides the real AST-bounded object-terminal
+chain producer and Task 169 the object-normalizing pre-desugaring inequality
+consumer. Preserve four raw `ChainObjectMode6` result/expected inputs, ordinal
+1/2 `BindingId(0)`, all seven real expansions, one terminal-
+`BaseObjectMode`-RHS identity, two `Inferred` terms, one fact/deferred-free
+checked inequality, and two ordered constraints without object/set coercion.
+The exact production route, Task 172 shared structural guards, object-specific
+corruption tests, and real frontend/resolver sidecar protect active runner 126.
+Desugaring, truth/facts, acceptance, closure/order, theorem/proof/Core/
+ControlFlow/VC, other chains, and general semantics remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

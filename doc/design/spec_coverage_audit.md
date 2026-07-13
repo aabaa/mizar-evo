@@ -1356,6 +1356,21 @@ production routing, full guards, and the real sidecar now protect active runner
 125. Truth/facts, acceptance, proof/Core/ControlFlow/VC, other chains, and
 general semantics receive no credit.
 
+Task177 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 177 classifies
+the exact builtin-object-terminal local-mode long-chain reserved-variable
+inequality seam as `test_gap`, `source_drift`, and `design_drift`. It composes
+Task 74's real AST-bounded object-terminal chain producer with Task 169's
+object-normalizing pre-desugaring inequality consumer. Intended credit is four
+raw `ChainObjectMode6` result/expected inputs, ordinal 1/2 `BindingId(0)`, seven
+real expansions, one terminal-`BaseObjectMode`-RHS identity, two inferred
+terms, two ordered operand-owned constraints, and one fact/deferred-free pre-
+desugaring checked inequality without object/set coercion. Six backlinks are
+present; production routing, full guards, and the real sidecar now protect
+active runner 126. Desugaring, truth/facts, acceptance, proof/Core/ControlFlow/
+VC, other chains, and general semantics receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

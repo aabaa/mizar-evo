@@ -1102,6 +1102,16 @@ identity 1 個、2 inferred term、ordered operand-owned constraint 2 個、obje
 coercion を用いない 1 fact/deferred-free checked equality だけである。backlink
 6 件、production routing、full guard、real sidecar が active count 125 を保護する。
 truth/fact と broader semantics は credit しない。
+task 177 は matching exact test-first sibling row
+`LongLocalObjectModeReservedVariableInequalityPayloadBoundary: z <> z;` を追加し、
+Chapter 4/13/14.5.2/16、structural-chain link、dedicated checker row を参照する。
+intended credit は real expansion 7 本、raw `ChainObjectMode6` result/expected
+input 4 個、ordinal 1/2 の `BindingId(0)`、terminal `BaseObjectMode` RHS
+identity 1 個、2 inferred term、ordered operand-owned constraint 2 個、object/set
+coercion を用いない 1 fact/deferred-free pre-desugaring checked inequality
+だけである。backlink 6 件、production routing、full guard、real sidecar が
+active count 126 を保護する。desugaring、truth/fact、broader semantics は
+credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

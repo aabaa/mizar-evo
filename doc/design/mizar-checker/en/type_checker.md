@@ -1238,6 +1238,22 @@ proof/Core/ControlFlow/VC, other chain shapes, and general semantics remain
 deferred. The test-first fixture, expectation, and six backlinks are present;
 production routing, object-specific corruption coverage, and the real sidecar
 now protect active runner 125.
+Task 177 specifies only the matching seven-definition builtin-object-terminal
+long-chain sibling ending in
+`LongLocalObjectModeReservedVariableInequalityPayloadBoundary: z <> z;`. The
+production route composes Task 74's AST-bounded source producer with Task 169's
+pre-desugaring inequality consumer, consumes all seven real expansions,
+preserves four raw `ChainObjectMode6` result/expected inputs, resolves ordinal
+1/2 `BindingId(0)`, and normalizes all roles to one terminal-
+`BaseObjectMode`-RHS builtin-object identity. It records two `Inferred` terms,
+two ordered operand-owned constraints, and one fact/deferred-free pre-desugaring `Checked`
+inequality without object/set coercion. Task 172's shared seven-definition
+structural guard pattern plus Task 177 object-terminal/matched-output corruption
+and real-sidecar tests are mandatory. Inequality desugaring, truth/facts,
+acceptance, closure/order, theorem/proof/Core/ControlFlow/VC, other chain shapes,
+and general semantics remain deferred. The test-first fixture, expectation, and
+six backlinks plus production routing, object-specific corruption coverage, and
+the real sidecar now protect active runner 126.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,
