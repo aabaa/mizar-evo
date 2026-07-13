@@ -1208,6 +1208,21 @@ runner 116. Truth/facts, object/set coercion, closure/order,
 theorem acceptance, proof, CoreIr, ControlFlowIr, VC, other depths, and broader
 shapes receive no credit.
 
+Task166 addendum for chapters `04.variables_and_constants.md`, `07.modes.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 166 classifies the exact four-edge
+set-terminal local-mode-chain reserved-variable equality seam as `test_gap`,
+`source_drift`, and `design_drift`. The test-first contract composes the existing
+real five-expansion set-terminal producer with the real equality consumer.
+Active credit is limited to four raw outermost-mode result/expected inputs,
+`BindingId(0)` at ordinals 1/2, all five expansions, one terminal-set-RHS
+identity, two inferred terms, one fact/deferred-free checked equality, and two
+ordered operand-owned expected constraints. Six trace backlinks, production
+routing, full corruption/near-miss coverage, and a real sidecar now protect
+active runner 117. Declaration acceptance/inhabitation, truth/
+facts, closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, VC,
+object-terminal behavior, other depths, and broader shapes receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

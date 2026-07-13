@@ -962,6 +962,19 @@ coercion、closure/order、theorem/proof/Core/VC、他 depth、broader shape は
 deferred のままである。production routing、full guard、real sidecar が active
 runner 116 を保護する。
 
+task 166 は active exact four-edge local-mode equality source を記録する。
+production runner は set-terminal definition chain 5 本、outermost mode reserve
+1 個、exact `z = z` label だけを受理し、real expansion 5 本を消費し、raw
+result/expected input 4 個、ordinal 1/2 の `BindingId(0)`、terminal-set-RHS
+identity 1 個、2 `Inferred` variable、1 fact/deferred-free `Checked` equality、
+ordered operand-owned expected constraint 2 個を要求しなければならない。
+matched-output corruption、各 definition/link/order/
+depth near miss、real frontend/resolver sidecar は fail closed でなければならない。
+declaration acceptance/inhabitation、truth/fact、closure/order、theorem/proof/
+Core/VC、object-terminal behavior、他 depth、broader shape は deferred のまま
+である。production routing、full guard、real sidecar が active runner 117 を
+保護する。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

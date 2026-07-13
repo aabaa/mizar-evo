@@ -1055,6 +1055,19 @@ right-owned constraint. Six trace backlinks, production routing, corruption/
 near-miss coverage, and a real sidecar now guard active count 116. Truth/facts,
 object/set coercion, closure/order,
 theorem/proof/Core/VC, other depths, and broader shapes remain uncredited.
+Task 166 adds an active row for exactly the five-definition set-terminal
+chain ending in `set`, `reserve z for TooDeepFourEdgeModeEquality;`, and
+`FourEdgeLocalModeReservedVariableEqualityPayloadBoundary: z = z;`. It
+references Chapters 4, 7, 13, 14.5.2, and 16 through the existing Chapter
+4/13/14/16 requirement rows plus the structural-chain and dedicated checker
+rows. Intended credit is limited to five real expansions, four raw outermost-
+mode result/expected inputs, `BindingId(0)` at ordinals 1/2, one terminal-set-
+RHS identity, two inferred variables, one fact/deferred-free checked equality,
+and two ordered operand-owned expected constraints. Six trace backlinks,
+production routing, corruption/near-miss coverage, and a real sidecar now
+protect active count 117. Declaration acceptance/
+inhabitation, truth/facts, closure/order, theorem/proof/Core/VC, object-terminal
+behavior, other depths, and broader shapes receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

@@ -996,6 +996,19 @@ membership だけである。trace backlink 6 件、production route、corruptio
 near-miss coverage、real sidecar が active count 116 を保護する。truth/fact、
 object/set coercion、closure/order、theorem/proof/Core/VC、
 他 depth、broader shape は credit しない。
+task 166 は `set` に終端する definition chain 5 本、
+`reserve z for TooDeepFourEdgeModeEquality;`、
+`FourEdgeLocalModeReservedVariableEqualityPayloadBoundary: z = z;` だけの
+active row を追加する。Chapter 4、7、13、14.5.2、16 を既存 Chapter
+4/13/14/16 requirement row、structural-chain row、dedicated checker row を介して
+参照する。intended credit は real expansion 5 本、raw outermost-mode result/
+expected input 4 個、ordinal 1/2 の `BindingId(0)`、terminal-set-RHS identity
+1 個、2 inferred variable、1 fact/deferred-free checked equality、ordered
+operand-owned expected constraint 2 個だけである。trace backlink 6 件、
+production routing、corruption/near-miss coverage、real sidecar が active count
+117 を保護する。declaration acceptance/
+inhabitation、truth/fact、closure/order、theorem/proof/Core/VC、object-terminal
+behavior、他 depth、broader shape は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

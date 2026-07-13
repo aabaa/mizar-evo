@@ -2997,6 +2997,20 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 74, 153, and 163. Refs: Step 5; mizar-test task 10; specs 3,
       4, 7, 13, 14.5.3, and 16.
 
+166. **Add exact four-edge local-mode equality checker bridge.** [x]
+    - Promote only the spec-derived five-definition set-terminal chain, one
+      outermost-mode reserve, and exact `z = z` theorem label recorded in the
+      crate plan and test-first fixture.
+    - Acceptance: preserve all five real expansions, four raw result/expected
+      inputs, `BindingId(0)` at ordinals 1/2, one terminal-set-RHS normalized
+      identity, two inferred terms, and one fact/deferred-free checked equality.
+      Add exact, corruption, near-miss, and real frontend/resolver tests; do not
+      fabricate declaration acceptance, truth, closure, theorem, proof, CoreIr,
+      ControlFlowIr, or VC.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 74, 152, and 154. Refs: Step 5; mizar-test task 10; specs 4,
+      7, 13, 14.5.2, and 16.
+
 ## Recommended Verification
 
 Run after each task:

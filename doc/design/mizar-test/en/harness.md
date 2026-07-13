@@ -1000,6 +1000,19 @@ closed. Truth/facts, object/set coercion, closure/order, theorem/proof/Core/VC,
 other depths, and broader shapes remain deferred. Production routing, full
 guards, and the real sidecar now protect active runner 116.
 
+Task 166 records the active exact four-edge local-mode equality source. The
+production runner must accept only the five-definition set-terminal chain, one
+outermost-mode reserve, and the exact `z = z` label; consume all five real
+expansions; retain four raw result/expected inputs; resolve `BindingId(0)` at
+ordinals 1/2; and require one terminal-set-RHS identity, two `Inferred`
+variables, one fact/deferred-free `Checked` equality, and two ordered operand-
+owned expected constraints. Matched-output
+corruption, every definition/link/order/depth near miss, and a real frontend/
+resolver sidecar must fail closed. Declaration acceptance/inhabitation, truth/
+facts, closure/order, theorem/proof/Core/VC, object-terminal behavior, other
+depths, and broader shapes remain deferred. Production routing, full guards,
+and the real sidecar now protect active runner 117.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

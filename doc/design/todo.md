@@ -712,6 +712,17 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    free checked membership with exactly one right-owned constraint. Fixture/
    expectation, six trace backlinks, production routing, full guards, and a
    real sidecar now guard active case 116,
+   task 166 adds the exact active four-edge set-terminal local-mode-chain
+   reserved-variable equality seam by composing tasks 74/152's real five-
+   expansion producer with task 154's equality consumer. The contract requires
+   four raw outermost-mode result/expected inputs, ordinal 1/2 `BindingId(0)`,
+   all five expansions, one terminal-set-RHS identity, two inferred variables,
+   one fact/deferred-free checked equality, and two ordered operand-owned
+   expected constraints. Six trace backlinks, exact production routing, full
+   corruption/near-miss guards, and a real sidecar now protect active case 117.
+   Declaration acceptance/inhabitation,
+   truth/facts, closure/order, theorem/proof/Core/ControlFlow/VC, object-terminal
+   behavior, other depths, and broader shapes remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
