@@ -816,6 +816,18 @@ type assertion credit exact normalized-reflexive type/well-formedness only.
 Mode declaration acceptance/inhabitation, formula-side local-mode asserted
 heads, general reachability/widening/`qua`, truth/facts, closure/order, theorem
 acceptance, proof, Core, and VC remain uncredited.
+Task 147 adds the exact one-edge local-object-mode-chain reserved-variable
+type assertion pass row
+`definition mode BaseObjectModeTypeAssertionDef: BaseObjectModeTypeAssertion is object; end; definition mode ChainObjectModeTypeAssertionDef: ChainObjectModeTypeAssertion is BaseObjectModeTypeAssertion; end; reserve x for ChainObjectModeTypeAssertion; theorem ChainedLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;`.
+The raw subject result retains its written outer-mode provenance, while the
+asserted builtin `object` retains its independently formula-anchored source
+node. Both real expansions recursively normalize both inputs to one
+terminal-RHS builtin-object identity before one `Inferred` term and one fact-
+free `Checked` type assertion credit exact normalized-reflexive type/well-
+formedness only. Mode declaration acceptance/inhabitation, formula-side local-
+mode asserted heads, general reachability/widening/`qua`, object/set coercion,
+truth/facts, closure/order, theorem acceptance, proof, Core, and VC remain
+uncredited.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

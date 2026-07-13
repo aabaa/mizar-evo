@@ -670,6 +670,22 @@ asserted-head extraction、general reachability/widening/`qua`、truth/fact、
 implicit closure/order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
 open のままである。
 
+Task 147 MC-G020 current-state override: exact one-edge object-terminal local-
+mode-chain reserved-variable type assertion は task 56 の real AST-derived
+`ChainObjectModeTypeAssertion -> BaseObjectModeTypeAssertion -> object`
+expansion 2 本と、tasks 122 / 145 / 146 の identifier-result / 独立した formula-
+anchored asserted-type consumer を compose する。raw subject result は written
+outer-mode provenance、asserted builtin `object` は独立した formula source node
+を保持する。real expansion 2 本が subject と asserted input を terminal
+definition RHS を canonical source とする builtin-object identity 1 個へ再帰的に
+normalize してから、1 `Inferred` term と 1 fact-free `Checked` type assertion
+を記録する。この exact slice は `BindingId(0)` と source-order use ordinal 1
+を要求し、non-exact definition、reserve、formula、各 expansion payload は fail
+closed する。mode declaration acceptance/inhabitation、formula-side local-mode
+asserted-head extraction、general reachability/widening/`qua`、object/set
+coercion、truth/fact、implicit closure/order、theorem acceptance、proof、CoreIr、
+ControlFlowIr、VC は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

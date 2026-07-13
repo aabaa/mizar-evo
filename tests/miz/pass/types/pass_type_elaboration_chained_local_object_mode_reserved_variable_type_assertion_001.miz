@@ -1,0 +1,10 @@
+definition
+  mode BaseObjectModeTypeAssertionDef: BaseObjectModeTypeAssertion is object;
+end;
+
+definition
+  mode ChainObjectModeTypeAssertionDef: ChainObjectModeTypeAssertion is BaseObjectModeTypeAssertion;
+end;
+
+reserve x for ChainObjectModeTypeAssertion;
+theorem ChainedLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;

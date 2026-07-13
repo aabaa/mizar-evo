@@ -144,6 +144,9 @@ const TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLO
 const TYPE_ELABORATION_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str =
     "type_elaboration.checker.chained_local_mode_reserved_variable_type_assertion.invalid_payload";
+const TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
+    &str =
+    "type_elaboration.checker.chained_local_object_mode_reserved_variable_type_assertion.invalid_payload";
 const TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str =
     "type_elaboration.checker.local_object_mode_reserved_variable_type_assertion.invalid_payload";
@@ -1041,6 +1044,15 @@ fn source_type_elaboration_detail_keys(
     ) {
         return keys;
     }
+    if let Some(keys) =
+        source_chained_local_object_mode_reserved_variable_type_assertion_detail_keys(
+            ast,
+            module.clone(),
+            symbols,
+        )
+    {
+        return keys;
+    }
     if let Some(keys) = source_local_object_mode_reserved_variable_type_assertion_detail_keys(
         ast,
         module.clone(),
@@ -1458,6 +1470,33 @@ const SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
     ],
     asserted_type: SourceReservedVariableBuiltinType::Set,
     subject_result_role: "chained-local-mode-reserved-variable-type-assertion-subject-result",
+};
+
+const SOURCE_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
+    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
+    label: "ChainedLocalObjectModeReservedVariableTypeAssertionPayloadBoundary",
+    invalid_payload_key:
+        TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
+    binding_spelling: "x",
+    binding_type: SourceReservedVariableBuiltinType::Object,
+    binding_source_mode_spelling: Some("ChainObjectModeTypeAssertion"),
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseObjectModeTypeAssertionDef",
+            spelling: "BaseObjectModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Builtin(
+                SourceReservedVariableBuiltinType::Object,
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "ChainObjectModeTypeAssertionDef",
+            spelling: "ChainObjectModeTypeAssertion",
+            radix: SourceReservedVariableModeRadix::Mode("BaseObjectModeTypeAssertion"),
+        },
+    ],
+    asserted_type: SourceReservedVariableBuiltinType::Object,
+    subject_result_role:
+        "chained-local-object-mode-reserved-variable-type-assertion-subject-result",
 };
 
 const SOURCE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
@@ -2636,6 +2675,21 @@ fn source_chained_local_mode_reserved_variable_type_assertion_detail_keys(
     ))
 }
 
+fn source_chained_local_object_mode_reserved_variable_type_assertion_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_chained_local_object_mode_reserved_variable_type_assertion(
+        ast, module, symbols,
+    )?;
+    let invalid_payload_key = payload.config.invalid_payload_key;
+    Some(source_reserved_variable_type_assertion_result_detail_keys(
+        build_source_reserved_variable_type_assertion_output(payload, symbols),
+        invalid_payload_key,
+    ))
+}
+
 fn source_local_object_mode_reserved_variable_type_assertion_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -3020,6 +3074,18 @@ fn source_chained_local_mode_reserved_variable_type_assertion_output(
 ) -> Option<SourceReservedVariableTypeAssertionOutput> {
     let payload =
         extract_source_chained_local_mode_reserved_variable_type_assertion(ast, module, symbols)?;
+    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_chained_local_object_mode_reserved_variable_type_assertion_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertionOutput> {
+    let payload = extract_source_chained_local_object_mode_reserved_variable_type_assertion(
+        ast, module, symbols,
+    )?;
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
 }
 
@@ -4694,6 +4760,19 @@ fn extract_source_chained_local_mode_reserved_variable_type_assertion(
         module,
         symbols,
         &SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
+    )
+}
+
+fn extract_source_chained_local_object_mode_reserved_variable_type_assertion(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertion> {
+    extract_source_reserved_variable_type_assertion_with_config(
+        ast,
+        module,
+        symbols,
+        &SOURCE_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG,
     )
 }
 
@@ -8604,6 +8683,7 @@ mod tests {
         TYPE_ELABORATION_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_HETEROGENEOUS_RESERVE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
@@ -8634,6 +8714,7 @@ mod tests {
         extract_source_chained_local_mode_reserved_variable_type_assertion,
         extract_source_chained_local_object_mode_reserved_variable_inequality,
         extract_source_chained_local_object_mode_reserved_variable_membership,
+        extract_source_chained_local_object_mode_reserved_variable_type_assertion,
         extract_source_distinct_reserved_variable_equality,
         extract_source_formula_connective_quantifier, extract_source_formula_statement,
         extract_source_heterogeneous_reserve_membership,
@@ -8666,6 +8747,7 @@ mod tests {
         source_chained_local_mode_reserved_variable_type_assertion_output,
         source_chained_local_object_mode_reserved_variable_inequality_output,
         source_chained_local_object_mode_reserved_variable_membership_output,
+        source_chained_local_object_mode_reserved_variable_type_assertion_output,
         source_distinct_reserved_variable_equality_output,
         source_formula_connective_quantifier_output, source_formula_statement_output,
         source_heterogeneous_reserve_membership_output,
@@ -21418,6 +21500,354 @@ mod tests {
     }
 
     #[test]
+    fn source_chained_local_object_mode_reserved_variable_type_assertion_consumes_both_expansions()
+    {
+        let source_id = source_id(147);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("chained_local_object_mode_reserved_variable_type_assertion"),
+        );
+        let symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                ("BaseObjectModeTypeAssertion", SymbolKind::Mode),
+                ("ChainObjectModeTypeAssertion", SymbolKind::Mode),
+                ("ExtraObjectModeTypeAssertion", SymbolKind::Mode),
+            ],
+        );
+        let theorem = exact_chained_local_object_mode_identifier_type_assertion_spec();
+        let exact_modes = || {
+            vec![
+                mode_definition_with_label(
+                    "BaseObjectModeTypeAssertion",
+                    "BaseObjectModeTypeAssertionDef",
+                    ReserveTypeShape::Builtin("object"),
+                ),
+                mode_definition_with_label(
+                    "ChainObjectModeTypeAssertion",
+                    "ChainObjectModeTypeAssertionDef",
+                    ReserveTypeShape::QualifiedSymbol("BaseObjectModeTypeAssertion"),
+                ),
+            ]
+        };
+        let reserve = || {
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("ChainObjectModeTypeAssertion"),
+            )]
+        };
+        let exact = mode_then_reserve_identifier_type_assertion_theorem_ast(
+            source_id,
+            exact_modes(),
+            reserve(),
+            theorem,
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload = extract_source_chained_local_object_mode_reserved_variable_type_assertion(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact chained local-object-mode reserved-variable type assertion should extract");
+        assert_eq!(payload.reserve.mode_expansions.len(), 2);
+        assert_eq!(payload.reserve.bridge.bindings().len(), 1);
+        assert_eq!(
+            payload.reserve.bridge.bindings()[0].type_spelling,
+            "ChainObjectModeTypeAssertion"
+        );
+        assert_eq!(payload.asserted_type.spelling, "object");
+        assert_eq!(payload.asserted_type.head, TypeHeadInput::BuiltinObject);
+        assert_ne!(
+            payload.reserve.bridge.bindings()[0].type_range,
+            payload.asserted_type.range
+        );
+        assert_eq!(payload.subject_lookup_ordinal, 1);
+
+        let output = source_chained_local_object_mode_reserved_variable_type_assertion_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact chained local-object-mode type assertion should reach TermFormulaChecker");
+        assert_source_reserved_variable_type_assertion_output(&output)
+            .expect("chained local-object-mode type assertion invariants should hold");
+        assert_eq!(output.subject_binding, BindingId::new(0));
+        assert_eq!(
+            output.subject_result_input.spelling,
+            "ChainObjectModeTypeAssertion"
+        );
+        assert!(matches!(
+            output.subject_result_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_eq!(output.asserted_type_input.spelling, "object");
+        assert_eq!(
+            output.asserted_type_input.head,
+            TypeHeadInput::BuiltinObject
+        );
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseObjectModeTypeAssertion")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("base object mode terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("one normalized builtin-object type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinObject);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+        let (_, formula) = output.term_formula.formulas().iter().next().unwrap();
+        assert_eq!(formula.kind, FormulaKind::TypeAssertion);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+
+        for removed in [
+            "BaseObjectModeTypeAssertion",
+            "ChainObjectModeTypeAssertion",
+        ] {
+            let mut invalid =
+                source_chained_local_object_mode_reserved_variable_type_assertion_output(
+                    &exact,
+                    module.clone(),
+                    &symbols,
+                )
+                .expect("exact source should produce an object-chain corruption target");
+            invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .retain(|symbol, _| source_mode_symbol_spelling(symbol) != Some(removed));
+            let invalid_result =
+                assert_source_reserved_variable_type_assertion_output(&invalid).map(|()| invalid);
+            assert_eq!(
+                source_reserved_variable_type_assertion_result_detail_keys(
+                    invalid_result,
+                    TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
+                ),
+                vec![
+                    TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY
+                        .to_owned()
+                ]
+            );
+        }
+
+        let near_miss_modes = [
+            vec![exact_modes()[1]],
+            vec![exact_modes()[0]],
+            {
+                let mut modes = exact_modes();
+                modes.push(modes[0]);
+                modes
+            },
+            vec![
+                mode_definition_with_label(
+                    "BaseObjectModeTypeAssertion",
+                    "OtherDef",
+                    ReserveTypeShape::Builtin("object"),
+                ),
+                exact_modes()[1],
+            ],
+            vec![
+                exact_modes()[0],
+                mode_definition_with_label(
+                    "ChainObjectModeTypeAssertion",
+                    "OtherDef",
+                    ReserveTypeShape::QualifiedSymbol("BaseObjectModeTypeAssertion"),
+                ),
+            ],
+            vec![
+                recovered_mode_definition(
+                    "BaseObjectModeTypeAssertion",
+                    ReserveTypeShape::Builtin("object"),
+                ),
+                exact_modes()[1],
+            ],
+            vec![
+                exact_modes()[0],
+                recovered_mode_definition(
+                    "ChainObjectModeTypeAssertion",
+                    ReserveTypeShape::QualifiedSymbol("BaseObjectModeTypeAssertion"),
+                ),
+            ],
+            vec![
+                contextual_mode_definition(
+                    "BaseObjectModeTypeAssertion",
+                    ReserveTypeShape::Builtin("object"),
+                ),
+                exact_modes()[1],
+            ],
+            vec![
+                exact_modes()[0],
+                parameterized_mode_definition(
+                    "ChainObjectModeTypeAssertion",
+                    ReserveTypeShape::QualifiedSymbol("BaseObjectModeTypeAssertion"),
+                ),
+            ],
+            vec![
+                exact_modes()[0],
+                mode_definition(
+                    "ChainObjectModeTypeAssertion",
+                    ReserveTypeShape::QualifiedSymbolWithArgs("BaseObjectModeTypeAssertion"),
+                ),
+            ],
+            vec![
+                mode_definition(
+                    "BaseObjectModeTypeAssertion",
+                    ReserveTypeShape::AttributedObject,
+                ),
+                exact_modes()[1],
+            ],
+            vec![
+                mode_definition(
+                    "BaseObjectModeTypeAssertion",
+                    ReserveTypeShape::Builtin("set"),
+                ),
+                exact_modes()[1],
+            ],
+            vec![exact_modes()[1], exact_modes()[0]],
+            vec![mode_definition_with_label(
+                "ChainObjectModeTypeAssertion",
+                "ChainObjectModeTypeAssertionDef",
+                ReserveTypeShape::Builtin("object"),
+            )],
+            vec![
+                mode_definition_with_label(
+                    "BaseObjectModeTypeAssertion",
+                    "BaseObjectModeTypeAssertionDef",
+                    ReserveTypeShape::QualifiedSymbol("ChainObjectModeTypeAssertion"),
+                ),
+                exact_modes()[1],
+            ],
+            vec![
+                exact_modes()[0],
+                mode_definition_with_label(
+                    "ExtraObjectModeTypeAssertion",
+                    "ExtraObjectModeTypeAssertionDef",
+                    ReserveTypeShape::QualifiedSymbol("BaseObjectModeTypeAssertion"),
+                ),
+                mode_definition_with_label(
+                    "ChainObjectModeTypeAssertion",
+                    "ChainObjectModeTypeAssertionDef",
+                    ReserveTypeShape::QualifiedSymbol("ExtraObjectModeTypeAssertion"),
+                ),
+            ],
+        ];
+        for modes in near_miss_modes {
+            let near_miss = mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                modes,
+                reserve(),
+                theorem,
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+
+        for near_miss in [
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbolWithArgs("ChainObjectModeTypeAssertion"),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    subject: "y",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::Builtin("set"),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(
+                        "ChainObjectModeTypeAssertion",
+                    ),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    negated: true,
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    status: Some("open"),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    recovered_label: true,
+                    ..theorem
+                },
+            ),
+            modes_then_empty_definition_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                theorem,
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
     fn active_reserved_variable_equality_fixture_preserves_real_checker_payload() {
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -22801,6 +23231,70 @@ mod tests {
             .next()
             .expect("Task 146 normalized set type should exist");
         assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+    }
+
+    #[test]
+    fn active_chained_local_object_mode_reserved_variable_type_assertion_fixture_consumes_both_expansions()
+     {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0
+                    == "pass_type_elaboration_chained_local_object_mode_reserved_variable_type_assertion_001"
+            })
+            .expect("Task 147 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 147 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 147 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_chained_local_object_mode_reserved_variable_type_assertion_output(
+            &ast,
+            resolver.module,
+            &symbols,
+        )
+        .expect("Task 147 real AST should reach the chained local-object-mode type assertion seam");
+        assert_source_reserved_variable_type_assertion_output(&output)
+            .expect("Task 147 real AST should preserve every checked payload invariant");
+        assert_eq!(output.payload.reserve.mode_expansions.len(), 2);
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseObjectModeTypeAssertion")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("Task 147 base object terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("Task 147 normalized object type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinObject);
         assert_eq!(normalized.source.range, terminal.source_range);
         assert_eq!(normalized.source.spelling, terminal.spelling);
     }
@@ -26909,6 +27403,18 @@ mod tests {
             label: "ChainedLocalModeReservedVariableTypeAssertionPayloadBoundary",
             subject: "x",
             asserted_type: ReserveTypeShape::Builtin("set"),
+            recovered_label: false,
+            negated: false,
+        }
+    }
+
+    fn exact_chained_local_object_mode_identifier_type_assertion_spec()
+    -> IdentifierTypeAssertionTheoremSpec<'static> {
+        IdentifierTypeAssertionTheoremSpec {
+            status: None,
+            label: "ChainedLocalObjectModeReservedVariableTypeAssertionPayloadBoundary",
+            subject: "x",
+            asserted_type: ReserveTypeShape::Builtin("object"),
             recovered_label: false,
             negated: false,
         }
