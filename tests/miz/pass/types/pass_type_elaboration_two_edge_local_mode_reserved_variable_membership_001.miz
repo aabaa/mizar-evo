@@ -1,0 +1,15 @@
+definition
+  mode BaseTwoEdgeModeMembershipDef: BaseTwoEdgeModeMembership is set;
+end;
+
+definition
+  mode MiddleTwoEdgeModeMembershipDef: MiddleTwoEdgeModeMembership is BaseTwoEdgeModeMembership;
+end;
+
+definition
+  mode OuterTwoEdgeModeMembershipDef: OuterTwoEdgeModeMembership is MiddleTwoEdgeModeMembership;
+end;
+
+reserve x for OuterTwoEdgeModeMembership;
+reserve y for set;
+theorem TwoEdgeLocalModeReservedVariableMembershipPayloadBoundary: x in y;

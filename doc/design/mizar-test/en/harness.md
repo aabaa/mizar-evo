@@ -678,6 +678,19 @@ object/set coercion, implicit closure/order, theorem/proof/Core/VC, and broader
 semantics remain deferred. The active type-elaboration runner contains 93
 cases.
 
+Task 143 adds the exact two-edge set-terminal local-mode-chain left reserved-
+variable membership pass. The runner retains the raw
+`OuterTwoEdgeModeMembership` left result and independent explicit-set right
+result/expected input, supplies all three real Task-72-compatible expansions
+to `TermFormulaChecker`, and requires one terminal-RHS builtin-set identity,
+`BindingId(0/1)`, two `Inferred` terms, one fact-free `Checked` membership,
+only the right expected constraint, and no left expected input. Exact source
+guards, independent three-link/right-expected corruption, withheld-family near
+misses, and a real sidecar protect the slice; mode declaration
+acceptance/inhabitation, membership truth/facts, implicit closure/order,
+theorem/proof/Core/VC, and broader semantics remain deferred. The active
+type-elaboration runner contains 94 cases.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

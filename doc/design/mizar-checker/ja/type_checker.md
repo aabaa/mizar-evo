@@ -673,6 +673,23 @@ task-specific invalid-payload key を報告しなければならない。missing
 mode/reserve/formula は fail closed とし、mode declaration
 acceptance/inhabitation、membership truth/fact、implicit closure/order、theorem
 acceptance、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
+task 143 は exact two-edge set-terminal local-mode-chain left reserved-variable
+membership bridge を規定する。source は unique、unrecovered、source-preceding、
+no-argument/attribute definition 3 個
+`OuterTwoEdgeModeMembership -> MiddleTwoEdgeModeMembership -> BaseTwoEdgeModeMembership -> set`、
+outer mode の `x` と explicit `set` の `y` から成る ordered reserve、
+`TwoEdgeLocalModeReservedVariableMembershipPayloadBoundary: x in y;` を持つ。
+raw left result は outer symbol/range、right result と sole expected-set input は
+独立した explicit reserve range を保持する。real Task 72 expansion 3 本が left
+role を再帰的に normalize し、right builtin-set role は直接 normalize され、3
+role すべてが terminal-RHS-anchored builtin-set identity 1 個へ intern する。
+exact contract は `BindingId(0/1)`、2 `Inferred` term、1 fact-free `Checked`
+membership、right-owned expected constraint 1 個だけ、left expected type なしを
+要求する。各 definition label、両 chain radix、expansion entry 3 本、right
+expected-set projection を独立に guard する。missing/non-exact definition、
+reserve、formula は fail closed する。mode declaration acceptance/inhabitation、
+membership truth/fact、implicit closure/order、theorem acceptance、proof、
+CoreIr、ControlFlowIr、VC は deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

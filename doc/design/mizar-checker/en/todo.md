@@ -2388,6 +2388,12 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Keep mode declaration acceptance/inhabitation, membership truth/facts, object/set coercion, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
     - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 56, 125, 140, and 141.
 
+143. **Add exact two-edge local-mode-chain left reserved-variable membership checker bridge.** [x]
+    - Add only the spec-derived `OuterTwoEdgeModeMembership -> MiddleTwoEdgeModeMembership -> BaseTwoEdgeModeMembership -> set`, ordered reserves `x` for the outer mode and `y` for explicit `set`, and `x in y` theorem source.
+    - Preserve the raw outer-mode left result and independent right result/expected-set inputs plus `BindingId(0/1)`, consume all three real expansions, anchor one terminal-RHS builtin-set identity, and require two `Inferred` terms plus one fact-free `Checked` membership with only the right expected constraint. Exact, independent three-link/right-expected corruption, withheld-family near-miss, and real-sidecar guards are required.
+    - Keep mode declaration acceptance/inhabitation, membership truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
+    - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 72, 125, 139, and 141.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as
