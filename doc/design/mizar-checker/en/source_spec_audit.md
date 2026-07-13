@@ -1001,6 +1001,22 @@ fixture, expectation, six trace backlinks, exact production route, corruption/
 near-miss coverage, and a real frontend/resolver sidecar now protect active
 runner 115.
 
+Task 165 MC-G020 current-state override: classify the exact four-edge object-
+terminal local-mode-chain left membership as `test_gap`, `source_drift`, and
+`design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.5.3, and 16 directly
+support the test-first source. Tasks 74/153 provide the real five-expansion
+object-terminal producer and task 163 provides the real object-left/set-right
+membership consumer. The exact contract preserves `BindingId(0/1)` at ordinals
+2/3, raw outermost-mode left provenance, independent explicit-set right result/
+sole expected provenance, no left expected input, all five source-derived
+expansions, distinct terminal-object-RHS and explicit-set identities, two
+`Inferred` terms, and one fact/deferred-free `Checked` membership with exactly
+one right-owned constraint. Truth/facts, object/set coercion, closure/order,
+theorem acceptance, proof/Core/ControlFlow/VC, other depths, and broader shapes
+remain open. The fixture, expectation, six trace backlinks, exact production
+route, corruption/near-miss coverage, and a real frontend/resolver sidecar now
+protect active runner 116.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

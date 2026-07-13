@@ -1191,6 +1191,23 @@ Truth/facts, closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr,
 VC, object-terminal behavior, other depths, and broader shapes receive no
 credit.
 
+Task165 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 165 classifies
+the exact four-edge object-terminal local-mode-chain left membership seam as
+`test_gap`, `source_drift`, and `design_drift`. The test-first contract composes
+the existing real five-expansion object-terminal producer with the real object-
+left/set-right membership consumer. Intended credit is limited to raw
+outermost-mode left provenance, independent explicit-set right result/sole
+expected provenance, no left expected input, `BindingId(0/1)` at ordinals 2/3,
+all five expansions, distinct terminal-object-RHS and explicit-set identities,
+two inferred terms, and one fact/deferred-free checked membership with exactly
+one right-owned constraint. The fixture, six trace backlinks, production
+routing, corruption/near-miss coverage, and a real sidecar now guard active
+runner 116. Truth/facts, object/set coercion, closure/order,
+theorem acceptance, proof, CoreIr, ControlFlowIr, VC, other depths, and broader
+shapes receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

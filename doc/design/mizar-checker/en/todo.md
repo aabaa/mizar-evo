@@ -2982,6 +2982,21 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 74, 152, and 158. Refs: Step 5; mizar-test task 10; specs 4,
       7, 13, 14.5.3, and 16.
 
+165. **Add exact four-edge local-object-mode membership checker bridge.** [x]
+    - Promote only the spec-derived five-definition object-terminal chain,
+      ordered outermost-mode/set reserves, and exact `x in y` theorem label
+      recorded in the crate plan and test-first fixture.
+    - Acceptance: preserve all five real expansions, raw left and explicit-set
+      right provenance, `BindingId(0/1)` at ordinals 2/3, distinct terminal-
+      object-RHS and explicit-set normalized identities, no left expected type,
+      two inferred terms, and one fact-free checked membership with exactly one
+      right-owned constraint. Add exact, corruption, near-miss, and real
+      frontend/resolver tests; do not fabricate object/set coercion, truth,
+      closure, theorem, proof, CoreIr, ControlFlowIr, or VC.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 74, 153, and 163. Refs: Step 5; mizar-test task 10; specs 3,
+      4, 7, 13, 14.5.3, and 16.
+
 ## Recommended Verification
 
 Run after each task:

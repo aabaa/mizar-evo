@@ -987,6 +987,19 @@ theorem/proof/Core/VC, object-terminal behavior, other depths, and broader
 shapes remain deferred. The exact route, full corruption/near-miss matrix, and
 real sidecar now guard active runner 115.
 
+Task 165 records the active exact four-edge local-object-mode membership
+source. The production runner must accept only the five-definition object-
+terminal chain plus ordered outermost-mode/set reserves and the exact `x in y`
+label; consume all five real expansions; retain raw left and explicit-set right
+provenance; resolve `BindingId(0/1)` at ordinals 2/3; and require distinct
+terminal-object-RHS and explicit-set identities, no left expected input, two
+`Inferred` variables, and one fact/deferred-free `Checked` membership with
+exactly one right-owned constraint. Matched-output corruption, every definition-
+link/order/depth near miss, and a real frontend/resolver sidecar must fail
+closed. Truth/facts, object/set coercion, closure/order, theorem/proof/Core/VC,
+other depths, and broader shapes remain deferred. Production routing, full
+guards, and the real sidecar now protect active runner 116.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

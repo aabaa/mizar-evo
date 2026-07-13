@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_four_edge_local_object_mode_reserved_variable_membership_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_four_edge_local_object_mode_reserved_variable_membership_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_structural_chain_source_bridge",
+  "spec.en.checker.type_elaboration.four_edge_local_object_mode_reserved_variable_membership_source_bridge",
+]
+notes = "Spec-derived Task 165 intent for the exact four-edge object-terminal local-mode-chain left reserved-variable membership with an independently reserved builtin-set right operand. The left result retains its written TooDeepFourEdgeObjectModeMembership symbol and range, while the right result and sole expected-set input retain the explicit set reserve range. Five real AST-derived expansions recursively normalize the left outermost-mode result through OuterFourEdgeObjectModeMembership, MiddleFourEdgeObjectModeMembership, InnerFourEdgeObjectModeMembership, and BaseFourEdgeObjectModeMembership to builtin object; the right builtin-set roles normalize directly, producing distinct terminal-RHS-anchored object and explicit-reserve-anchored set identities. The checker resolves x/y to BindingId(0/1) at source-order ordinals 2/3, records two Inferred variables and one fact/deferred-free Checked Membership with exactly one right-owned constraint, and projects no expected type onto the left. This does not credit mode declaration checking/acceptance/inhabitation, membership truth/facts, object/set coercion, implicit closure/order, theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, VC, other chain depths, or broader formula shapes."

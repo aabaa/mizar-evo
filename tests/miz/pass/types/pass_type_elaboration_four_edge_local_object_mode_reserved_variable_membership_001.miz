@@ -1,0 +1,23 @@
+definition
+  mode BaseFourEdgeObjectModeMembershipDef: BaseFourEdgeObjectModeMembership is object;
+end;
+
+definition
+  mode InnerFourEdgeObjectModeMembershipDef: InnerFourEdgeObjectModeMembership is BaseFourEdgeObjectModeMembership;
+end;
+
+definition
+  mode MiddleFourEdgeObjectModeMembershipDef: MiddleFourEdgeObjectModeMembership is InnerFourEdgeObjectModeMembership;
+end;
+
+definition
+  mode OuterFourEdgeObjectModeMembershipDef: OuterFourEdgeObjectModeMembership is MiddleFourEdgeObjectModeMembership;
+end;
+
+definition
+  mode TooDeepFourEdgeObjectModeMembershipDef: TooDeepFourEdgeObjectModeMembership is OuterFourEdgeObjectModeMembership;
+end;
+
+reserve x for TooDeepFourEdgeObjectModeMembership;
+reserve y for set;
+theorem FourEdgeLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;

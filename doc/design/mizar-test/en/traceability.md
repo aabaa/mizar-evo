@@ -1041,6 +1041,20 @@ backlinks, production routing, corruption/near-miss coverage, and a real
 sidecar now guard active count 115. Truth/facts, closure/order,
 theorem/proof/Core/VC, object-terminal behavior, other depths, and broader
 shapes remain uncredited.
+Task 165 adds an active row for exactly the five-definition object-terminal
+chain ending in `object`,
+`reserve x for TooDeepFourEdgeObjectModeMembership;`, `reserve y for set;`, and
+`FourEdgeLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`.
+It references Chapters 3, 4, 7, 13, 14.5.3, and 16 through the existing Chapter
+4/13/14/16 requirement rows plus the structural-chain and dedicated checker
+rows. Intended credit is limited to five real expansions, raw left and
+explicit-set right provenance, `BindingId(0/1)` at ordinals 2/3, distinct
+terminal-object-RHS and explicit-set identities, no left expected input, two
+inferred variables, and one fact-free checked membership with exactly one
+right-owned constraint. Six trace backlinks, production routing, corruption/
+near-miss coverage, and a real sidecar now guard active count 116. Truth/facts,
+object/set coercion, closure/order,
+theorem/proof/Core/VC, other depths, and broader shapes remain uncredited.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
