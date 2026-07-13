@@ -833,6 +833,20 @@ coercion、equality truth/fact、closure/order、theorem/proof/Core/VC は defer
 のままである。production route、full near-miss/corruption matrix、real
 frontend/resolver sidecar が pass したため active runner は 106 cases である。
 
+task 156 は test-first exact three-edge set-terminal local-mode-chain reserved-
+variable inequality source を追加する。runner は raw
+`OuterThreeEdgeModeInequality` result/expected input 4 個を保持し、両 `z`
+operand を ordinal 1、2 で独立に `BindingId(0)` へ解決し、real task 73
+compatible expansion 4 本を `TermFormulaChecker` へ渡して terminal-RHS
+builtin-set identity 1 個、2 `Inferred` variable、1 fact/deferred-free pre-
+desugaring `Checked` inequality を要求する。exact source、独立した definition/
+radix/expansion corruption、withheld-family near miss、real frontend/resolver
+sidecar で slice を保護する。mode declaration acceptance/inhabitation、
+inequality desugaring、truth/fact、closure/order、theorem/proof/Core/VC は
+deferred のままである。production route、full near-miss/corruption matrix、
+real frontend/resolver sidecar が pass したため active runner は 107 cases で
+ある。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

@@ -605,6 +605,18 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    truth/facts, closure/order, or theorem acceptance. The production route,
    full near-miss/corruption matrix, and real frontend/resolver sidecar now
    guard the active 106th case,
+   task 156 adds the test-first exact three-edge local-mode-chain reserved-
+   variable inequality contract by combining task 73's real
+   `OuterThreeEdgeModeInequality -> MiddleThreeEdgeModeInequality -> InnerThreeEdgeModeInequality -> BaseThreeEdgeModeInequality -> set`
+   producer with task 136's pre-desugaring inequality consumer. The intended
+   slice retains four raw outer-mode result/expected inputs, resolves both
+   operands to `BindingId(0)` at ordinals 1 and 2, and consumes all four real
+   expansions to normalize every role to one terminal-RHS builtin-set identity
+   before two inferred variables and one fact/deferred-free pre-desugaring
+   checked inequality, without mode declaration acceptance/inhabitation,
+   inequality desugaring, truth/facts, closure/order, or theorem acceptance.
+   The production route, full near-miss/corruption matrix, and real frontend/
+   resolver sidecar now guard the active 107th case,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

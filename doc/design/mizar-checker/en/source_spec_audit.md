@@ -856,6 +856,25 @@ CoreIr, ControlFlowIr, and VC remain open. The fixture, expectation, trace row,
 production route, full near-miss/corruption matrix, and real frontend/resolver
 sidecar now guard the exact slice, so the active count is 106.
 
+Task 156 MC-G020 implementation specification: the exact three-edge set-
+terminal local-mode-chain reserved-variable inequality composes Task 73's four
+real AST-derived
+`OuterThreeEdgeModeInequality -> MiddleThreeEdgeModeInequality -> InnerThreeEdgeModeInequality -> BaseThreeEdgeModeInequality -> set`
+expansions with Task 136's pre-desugaring inequality consumer. Four raw result/
+expected inputs must retain the written outer-mode provenance, both operands
+must resolve to `BindingId(0)` with source-order ordinals 1 and 2, and all four
+expansions must recursively normalize every role to one terminal-RHS builtin-
+set identity before two `Inferred` terms and one fact/deferred-free pre-
+desugaring `Checked` inequality are recorded. Exact definition/radix/expansion
+corruption, withheld-family near misses, and a real frontend/resolver sidecar
+are required. The classified changes are `test_gap`, `source_drift`, and
+`design_drift`; there is no `spec_gap`. Mode declaration acceptance/
+inhabitation, inequality desugaring, truth/facts, implicit closure/order,
+theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open. The
+fixture, expectation, trace row, production route, full near-miss/corruption
+matrix, and real frontend/resolver sidecar now guard the exact slice, so the
+active count is 107.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

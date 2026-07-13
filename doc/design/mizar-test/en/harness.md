@@ -866,6 +866,20 @@ and broader semantics remain deferred. The production route, full near-miss/
 corruption matrix, and real frontend/resolver sidecar now pass, so the active
 type-elaboration runner contains 106 cases.
 
+Task 156 adds the test-first exact three-edge set-terminal local-mode-chain
+reserved-variable inequality source. The runner must retain four raw
+`OuterThreeEdgeModeInequality` result/expected inputs, resolve both `z` operands
+independently to `BindingId(0)` at ordinals 1 and 2, supply all four real Task-
+73-compatible expansions to `TermFormulaChecker`, and require one terminal-RHS
+builtin-set identity, two `Inferred` variables, and one fact/deferred-free pre-
+desugaring `Checked` inequality. Exact source, independent definition/radix/
+expansion corruption, withheld-family near misses, and a real frontend/resolver
+sidecar must protect the slice; mode declaration acceptance/inhabitation,
+inequality desugaring, truth/facts, closure/order, theorem/proof/Core/VC, and
+broader semantics remain deferred. The production route, full near-miss/
+corruption matrix, and real frontend/resolver sidecar now pass, so the active
+type-elaboration runner contains 107 cases.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

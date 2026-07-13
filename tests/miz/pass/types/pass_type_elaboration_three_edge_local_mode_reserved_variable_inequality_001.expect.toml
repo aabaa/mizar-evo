@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_three_edge_local_mode_reserved_variable_inequality_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_three_edge_local_mode_reserved_variable_inequality_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_three_edge_chain_source_bridge",
+  "spec.en.checker.type_elaboration.three_edge_local_mode_reserved_variable_inequality_source_bridge",
+]
+notes = "Spec-derived Task 156 intent for the exact three-edge set-terminal local-mode-chain reserved-variable inequality. Four raw OuterThreeEdgeModeInequality result/expected inputs retain their written reserve provenance, both z terms resolve independently to BindingId(0) with source-order ordinals 1 and 2, and all four real AST-derived expansions recursively normalize every role to one builtin-set identity canonically anchored at the terminal definition RHS before two Inferred variables and one fact/deferred-free pre-desugaring Checked Inequality are recorded. This does not credit mode declaration acceptance/inhabitation, object-terminal or other chain depths, inequality desugaring, truth/facts, implicit closure/order, theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, or VC payloads."
