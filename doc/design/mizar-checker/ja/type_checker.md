@@ -1051,6 +1051,24 @@ truth/fact、closure/order、theorem acceptance、proof/Core/VC、set-terminal
 behavior、他 depth、broader shape は deferred のままである。fixture/
 expectation、trace backlink 6 件、exact routing、full near-miss/corruption
 matrix、real frontend/resolver sidecar が active runner 118 を保護する。
+task 168 は unique / unrecovered / same-module / argument-free / source-
+preceding な mode definition 5 個が
+`TooDeepFourEdgeModeInequality -> OuterFourEdgeModeInequality ->
+MiddleFourEdgeModeInequality -> InnerFourEdgeModeInequality ->
+BaseFourEdgeModeInequality -> set` を成し、outermost mode の `reserve z` と
+`FourEdgeLocalModeReservedVariableInequalityPayloadBoundary: z <> z;` を続ける
+test-first source だけを規定する。実装は両 use を ordinal 1/2 の
+`BindingId(0)` へ解決し、raw result/expected input 4 個を保持し、real
+expansion 5 本を消費して全 role を terminal-set-RHS identity 1 個へ normalize
+しなければならない。その後 2 `Inferred` variable、1 fact/deferred-free
+pre-desugaring `Checked` inequality、ordered operand-owned expected constraint 2
+個を要求する。exact route-order、near-miss、matched-output、expansion-
+corruption、real sidecar guard を必須とする。declaration acceptance/
+inhabitation、inequality desugaring/truth/fact、closure/order、theorem
+acceptance、proof/Core/VC、object-terminal behavior、他 depth、broader shape は
+deferred のままである。fixture/expectation、trace backlink 6 件、exact routing、
+full near-miss/corruption coverage、real frontend/resolver sidecar が active
+runner 119 を保護する。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

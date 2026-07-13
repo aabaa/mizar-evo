@@ -2852,6 +2852,21 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 74、153、155。参照: Step 5、mizar-test task 10、specs 3、4、
       7、13、14.5.2、16。
 
+168. **Exact four-edge local-mode inequality checker bridge を追加する。** [x]
+    - crate plan と test-first fixture に記録した spec-derived set-terminal
+      definition chain 5 本、outermost mode reserve 1 個、exact `z <> z`
+      theorem label だけを昇格する。
+    - Acceptance: real expansion 5 本、raw result/expected input 4 個、ordinal
+      1/2 の `BindingId(0)`、terminal-set-RHS normalized identity 1 個、2
+      inferred term、1 fact/deferred-free pre-desugaring checked inequality、
+      ordered operand-owned expected constraint 2 個を保持する。exact/
+      corruption/near-miss/real sidecar test を追加し、desugaring、truth、
+      declaration acceptance、closure、theorem、proof、CoreIr、ControlFlowIr、
+      VC を捏造しない。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 74、152、156。参照: Step 5、mizar-test task 10、specs 4、7、
+      13、14.5.2、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

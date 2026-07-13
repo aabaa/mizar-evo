@@ -138,6 +138,8 @@ const TYPE_ELABORATION_THREE_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_
     "type_elaboration.checker.three_edge_local_mode_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.four_edge_local_mode_reserved_variable_equality.invalid_payload";
+const TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.four_edge_local_mode_reserved_variable_inequality.invalid_payload";
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY:
     &str = "type_elaboration.checker.four_edge_local_object_mode_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_THREE_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY:
@@ -1012,6 +1014,13 @@ fn source_type_elaboration_detail_keys(
     module: ResolverModuleId,
     symbols: &SymbolEnv,
 ) -> Vec<String> {
+    if let Some(keys) = source_four_edge_local_mode_reserved_variable_inequality_detail_keys(
+        ast,
+        module.clone(),
+        symbols,
+    ) {
+        return keys;
+    }
     if let Some(keys) = source_three_edge_local_mode_reserved_variable_inequality_detail_keys(
         ast,
         module.clone(),
@@ -2811,6 +2820,54 @@ const SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
     right_expected_role: Some("four-edge-local-mode-reserved-variable-right-expected"),
 };
 
+const SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "FourEdgeLocalModeReservedVariableInequalityPayloadBoundary",
+    operator: "<>",
+    formula_kind: FormulaKind::Inequality,
+    invalid_payload_key:
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["z"],
+    binding_types: &[SourceReservedVariableBuiltinType::Set],
+    binding_source_mode_spellings: &[Some("TooDeepFourEdgeModeInequality")],
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseFourEdgeModeInequalityDef",
+            spelling: "BaseFourEdgeModeInequality",
+            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "InnerFourEdgeModeInequalityDef",
+            spelling: "InnerFourEdgeModeInequality",
+            radix: SourceReservedVariableModeRadix::Mode("BaseFourEdgeModeInequality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleFourEdgeModeInequalityDef",
+            spelling: "MiddleFourEdgeModeInequality",
+            radix: SourceReservedVariableModeRadix::Mode("InnerFourEdgeModeInequality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterFourEdgeModeInequalityDef",
+            spelling: "OuterFourEdgeModeInequality",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleFourEdgeModeInequality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "TooDeepFourEdgeModeInequalityDef",
+            spelling: "TooDeepFourEdgeModeInequality",
+            radix: SourceReservedVariableModeRadix::Mode("OuterFourEdgeModeInequality"),
+        },
+    ],
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "four-edge-local-mode-reserved-variable-inequality-left-result",
+    right_result_role: "four-edge-local-mode-reserved-variable-inequality-right-result",
+    left_expected_role: Some("four-edge-local-mode-reserved-variable-inequality-left-expected"),
+    right_expected_role: Some("four-edge-local-mode-reserved-variable-inequality-right-expected"),
+};
+
 const SOURCE_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
     SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
     label: "FourEdgeLocalObjectModeReservedVariableEqualityPayloadBoundary",
@@ -3588,6 +3645,19 @@ fn source_four_edge_local_mode_reserved_variable_equality_detail_keys(
     ))
 }
 
+fn source_four_edge_local_mode_reserved_variable_inequality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_four_edge_local_mode_reserved_variable_inequality(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
 fn source_four_edge_local_object_mode_reserved_variable_equality_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -4271,6 +4341,17 @@ fn source_four_edge_local_mode_reserved_variable_equality_output(
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload =
         extract_source_four_edge_local_mode_reserved_variable_equality(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_four_edge_local_mode_reserved_variable_inequality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload =
+        extract_source_four_edge_local_mode_reserved_variable_inequality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -6169,6 +6250,19 @@ fn extract_source_four_edge_local_mode_reserved_variable_equality(
         module,
         symbols,
         &SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    )
+}
+
+fn extract_source_four_edge_local_mode_reserved_variable_inequality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     )
 }
 
@@ -10422,6 +10516,7 @@ mod tests {
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
@@ -10474,6 +10569,7 @@ mod tests {
         extract_source_distinct_reserved_variable_membership,
         extract_source_formula_connective_quantifier, extract_source_formula_statement,
         extract_source_four_edge_local_mode_reserved_variable_equality,
+        extract_source_four_edge_local_mode_reserved_variable_inequality,
         extract_source_four_edge_local_mode_reserved_variable_membership,
         extract_source_four_edge_local_mode_reserved_variable_type_assertion,
         extract_source_four_edge_local_object_mode_reserved_variable_equality,
@@ -10527,6 +10623,7 @@ mod tests {
         source_distinct_reserved_variable_membership_output,
         source_formula_connective_quantifier_output, source_formula_statement_output,
         source_four_edge_local_mode_reserved_variable_equality_output,
+        source_four_edge_local_mode_reserved_variable_inequality_output,
         source_four_edge_local_mode_reserved_variable_membership_output,
         source_four_edge_local_mode_reserved_variable_type_assertion_output,
         source_four_edge_local_object_mode_reserved_variable_equality_output,
@@ -41549,6 +41646,495 @@ mod tests {
             .iter()
             .next()
             .expect("Task 166 normalized set type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+    }
+    #[test]
+    fn source_four_edge_local_mode_reserved_variable_inequality_consumes_five_expansions() {
+        let source_id = source_id(168);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("four_edge_local_mode_reserved_variable_inequality"),
+        );
+        let symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                ("BaseFourEdgeModeInequality", SymbolKind::Mode),
+                ("InnerFourEdgeModeInequality", SymbolKind::Mode),
+                ("MiddleFourEdgeModeInequality", SymbolKind::Mode),
+                ("OuterFourEdgeModeInequality", SymbolKind::Mode),
+                ("TooDeepFourEdgeModeInequality", SymbolKind::Mode),
+                ("ExtraFourEdgeModeInequality", SymbolKind::Mode),
+            ],
+        );
+        let theorem = IdentifierBinaryTheoremSpec {
+            status: None,
+            label: "FourEdgeLocalModeReservedVariableInequalityPayloadBoundary",
+            left: "z",
+            operator: "<>",
+            right: "z",
+            recovered_label: false,
+        };
+        let exact_modes = || {
+            vec![
+                mode_definition_with_label(
+                    "BaseFourEdgeModeInequality",
+                    "BaseFourEdgeModeInequalityDef",
+                    ReserveTypeShape::Builtin("set"),
+                ),
+                mode_definition_with_label(
+                    "InnerFourEdgeModeInequality",
+                    "InnerFourEdgeModeInequalityDef",
+                    ReserveTypeShape::QualifiedSymbol("BaseFourEdgeModeInequality"),
+                ),
+                mode_definition_with_label(
+                    "MiddleFourEdgeModeInequality",
+                    "MiddleFourEdgeModeInequalityDef",
+                    ReserveTypeShape::QualifiedSymbol("InnerFourEdgeModeInequality"),
+                ),
+                mode_definition_with_label(
+                    "OuterFourEdgeModeInequality",
+                    "OuterFourEdgeModeInequalityDef",
+                    ReserveTypeShape::QualifiedSymbol("MiddleFourEdgeModeInequality"),
+                ),
+                mode_definition_with_label(
+                    "TooDeepFourEdgeModeInequality",
+                    "TooDeepFourEdgeModeInequalityDef",
+                    ReserveTypeShape::QualifiedSymbol("OuterFourEdgeModeInequality"),
+                ),
+            ]
+        };
+        let reserve = || {
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("TooDeepFourEdgeModeInequality"),
+            )]
+        };
+        let exact = mode_then_reserve_identifier_binary_theorem_ast(
+            source_id,
+            exact_modes(),
+            reserve(),
+            theorem,
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload = extract_source_four_edge_local_mode_reserved_variable_inequality(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact four-edge local-mode reserved-variable inequality should extract");
+        assert_eq!(payload.reserve.mode_expansions.len(), 5);
+        assert_eq!(payload.reserve.bridge.bindings().len(), 1);
+        assert_eq!(payload.reserve.bridge.bindings()[0].spelling, "z");
+        assert_eq!(
+            payload.reserve.bridge.bindings()[0].type_spelling,
+            "TooDeepFourEdgeModeInequality"
+        );
+        assert_eq!(payload.left_lookup_ordinal, 1);
+        assert_eq!(payload.right_lookup_ordinal, 2);
+
+        let output = source_four_edge_local_mode_reserved_variable_inequality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact four-edge local-mode inequality should reach TermFormulaChecker");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("four-edge local-mode inequality invariants should hold");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(0));
+        for input in [
+            &output.left_result_input,
+            &output.right_result_input,
+            output
+                .left_expected_input
+                .as_ref()
+                .expect("left expected input should exist"),
+            output
+                .right_expected_input
+                .as_ref()
+                .expect("right expected input should exist"),
+        ] {
+            assert_eq!(input.spelling, "TooDeepFourEdgeModeInequality");
+            assert!(matches!(input.head, TypeHeadInput::Symbol(_)));
+            assert_eq!(
+                input.source_range,
+                payload.reserve.bridge.bindings()[0].type_range
+            );
+        }
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseFourEdgeModeInequality")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("base mode terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("one normalized terminal type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+        assert_ne!(
+            payload.reserve.bridge.bindings()[0].type_range,
+            terminal.source_range
+        );
+        assert_eq!(output.term_formula.terms().len(), 2);
+        for (_, term) in output.term_formula.terms().iter() {
+            assert_eq!(term.kind, TermKind::Variable);
+            assert_eq!(
+                term.reference,
+                Some(TermReference::Binding(BindingId::new(0)))
+            );
+            assert_eq!(term.status, TermStatus::Inferred);
+        }
+        let (_, formula) = output
+            .term_formula
+            .formulas()
+            .iter()
+            .next()
+            .expect("inequality formula should be checked");
+        assert_eq!(formula.kind, FormulaKind::Inequality);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(formula.expected_types.len(), 2);
+        assert_eq!(formula.expected_types[0].source_range, payload.left_range);
+        assert_eq!(formula.expected_types[1].source_range, payload.right_range);
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+        assert!(output.term_formula.facts().is_empty());
+        assert!(output.term_formula.diagnostics().is_empty());
+
+        let invalid_key = || {
+            vec![
+                TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY
+                    .to_owned(),
+            ]
+        };
+        let mut missing_left_expected =
+            source_four_edge_local_mode_reserved_variable_inequality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a missing-left-expected corruption target");
+        missing_left_expected.left_expected_input = None;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&missing_left_expected),
+            invalid_key()
+        );
+        let mut missing_right_expected =
+            source_four_edge_local_mode_reserved_variable_inequality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a missing-right-expected corruption target");
+        missing_right_expected.right_expected_input = None;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&missing_right_expected),
+            invalid_key()
+        );
+
+        for removed in [
+            "BaseFourEdgeModeInequality",
+            "InnerFourEdgeModeInequality",
+            "MiddleFourEdgeModeInequality",
+            "OuterFourEdgeModeInequality",
+            "TooDeepFourEdgeModeInequality",
+        ] {
+            let mut invalid = source_four_edge_local_mode_reserved_variable_inequality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a five-expansion corruption target");
+            invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .retain(|symbol, _| source_mode_symbol_spelling(symbol) != Some(removed));
+            assert_eq!(
+                source_reserved_variable_formula_output_detail_keys(&invalid),
+                vec![
+                    TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY
+                        .to_owned()
+                ]
+            );
+        }
+
+        let assert_extraction_gap = |modes| {
+            let near_miss = mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                modes,
+                reserve(),
+                theorem,
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        };
+
+        for index in 0..5 {
+            let mut missing = exact_modes();
+            missing.remove(index);
+            assert_extraction_gap(missing);
+
+            let mut wrong_label = exact_modes();
+            wrong_label[index].label = Some("OtherDef");
+            assert_extraction_gap(wrong_label);
+
+            let mut recovered = exact_modes();
+            recovered[index].recovered = true;
+            assert_extraction_gap(recovered);
+
+            let mut contextual = exact_modes();
+            contextual[index].local_context = true;
+            assert_extraction_gap(contextual);
+
+            let mut parameterized = exact_modes();
+            parameterized[index].parameterized_pattern = true;
+            assert_extraction_gap(parameterized);
+        }
+
+        for (index, radix) in [
+            "BaseFourEdgeModeInequality",
+            "InnerFourEdgeModeInequality",
+            "MiddleFourEdgeModeInequality",
+            "OuterFourEdgeModeInequality",
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let index = index + 1;
+            let mut argument_bearing = exact_modes();
+            argument_bearing[index].rhs_shape = ReserveTypeShape::QualifiedSymbolWithArgs(radix);
+            assert_extraction_gap(argument_bearing);
+
+            let mut wrong_radix = exact_modes();
+            wrong_radix[index].rhs_shape =
+                ReserveTypeShape::QualifiedSymbol("ExtraFourEdgeModeInequality");
+            assert_extraction_gap(wrong_radix);
+        }
+
+        let mut duplicate = exact_modes();
+        duplicate.push(duplicate[0]);
+        assert_extraction_gap(duplicate);
+
+        let mut attributed_terminal = exact_modes();
+        attributed_terminal[0].rhs_shape = ReserveTypeShape::AttributedSet;
+        assert_extraction_gap(attributed_terminal);
+
+        let mut object_terminal = exact_modes();
+        object_terminal[0].rhs_shape = ReserveTypeShape::Builtin("object");
+        assert_extraction_gap(object_terminal);
+
+        let mut forward_order = exact_modes();
+        forward_order.reverse();
+        assert_extraction_gap(forward_order);
+
+        let mut direct_outermost_radix = exact_modes();
+        direct_outermost_radix[4].rhs_shape = ReserveTypeShape::Builtin("set");
+        assert_extraction_gap(direct_outermost_radix);
+
+        let mut one_edge_outermost_radix = exact_modes();
+        one_edge_outermost_radix[4].rhs_shape =
+            ReserveTypeShape::QualifiedSymbol("BaseFourEdgeModeInequality");
+        assert_extraction_gap(one_edge_outermost_radix);
+
+        let mut two_edge_outermost_radix = exact_modes();
+        two_edge_outermost_radix[4].rhs_shape =
+            ReserveTypeShape::QualifiedSymbol("InnerFourEdgeModeInequality");
+        assert_extraction_gap(two_edge_outermost_radix);
+
+        let mut three_edge_outermost_radix = exact_modes();
+        three_edge_outermost_radix[4].rhs_shape =
+            ReserveTypeShape::QualifiedSymbol("MiddleFourEdgeModeInequality");
+        assert_extraction_gap(three_edge_outermost_radix);
+
+        let mut cyclic = exact_modes();
+        cyclic[0].rhs_shape = ReserveTypeShape::QualifiedSymbol("TooDeepFourEdgeModeInequality");
+        assert_extraction_gap(cyclic);
+
+        assert_extraction_gap(vec![
+            exact_modes()[0],
+            mode_definition_with_label(
+                "ExtraFourEdgeModeInequality",
+                "ExtraFourEdgeModeInequalityDef",
+                ReserveTypeShape::QualifiedSymbol("BaseFourEdgeModeInequality"),
+            ),
+            mode_definition_with_label(
+                "InnerFourEdgeModeInequality",
+                "InnerFourEdgeModeInequalityDef",
+                ReserveTypeShape::QualifiedSymbol("ExtraFourEdgeModeInequality"),
+            ),
+            exact_modes()[2],
+            exact_modes()[3],
+            exact_modes()[4],
+        ]);
+
+        for near_miss in [
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::QualifiedSymbolWithArgs("TooDeepFourEdgeModeInequality"),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    left: "y",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    right: "y",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    operator: "=",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    status: Some("open"),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    recovered_label: true,
+                    ..theorem
+                },
+            ),
+            modes_then_empty_definition_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                theorem,
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+
+        let unresolved_symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module, &unresolved_symbols),
+            vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+        );
+    }
+    #[test]
+    fn active_four_edge_local_mode_reserved_variable_inequality_fixture_consumes_five_expansions() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0
+                    == "pass_type_elaboration_four_edge_local_mode_reserved_variable_inequality_001"
+            })
+            .expect("Task 168 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 168 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 168 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_four_edge_local_mode_reserved_variable_inequality_output(
+            &ast,
+            resolver.module,
+            &symbols,
+        )
+        .expect("Task 168 real AST should reach the four-edge local-mode inequality seam");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("Task 168 real AST should preserve every checked payload invariant");
+        assert_eq!(output.payload.reserve.mode_expansions.len(), 5);
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(0));
+        assert!(matches!(
+            output.left_result_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert!(matches!(
+            output.right_result_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseFourEdgeModeInequality")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("Task 168 base terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("Task 168 normalized set type should exist");
         assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
         assert_eq!(normalized.source.range, terminal.source_range);
         assert_eq!(normalized.source.spelling, terminal.spelling);
