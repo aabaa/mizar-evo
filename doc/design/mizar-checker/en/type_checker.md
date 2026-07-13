@@ -1254,6 +1254,23 @@ acceptance, closure/order, theorem/proof/Core/ControlFlow/VC, other chain shapes
 and general semantics remain deferred. The test-first fixture, expectation, and
 six backlinks plus production routing, object-specific corruption coverage, and
 the real sidecar now protect active runner 126.
+Task 178 specifies only the matching seven-definition builtin-object-terminal
+left-membership sibling ending in
+`LongLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`. The
+production route must compose Task 74's AST-bounded chain producer with Task
+165's object-left/set-right membership consumer, consume all seven real
+expansions, preserve the raw `ChainObjectMode6` left result and independent
+explicit-set right result/sole right expected input, resolve ordinal 2/3
+`BindingId(0/1)`, and normalize them to distinct terminal-`BaseObjectMode`-RHS
+builtin-object and explicit-set identities. It must record no left expected
+input, two `Inferred` terms, exactly one right-owned constraint, and one fact/
+deferred-free `Checked` membership without object/set coercion. Task 172's
+shared seven-definition structural guard pattern plus Task 178 membership/
+object-specific matched-output corruption and real-sidecar tests protect the route.
+Truth/facts, acceptance, closure/order, theorem/proof/Core/ControlFlow/VC, other
+chain shapes, and general semantics remain deferred. The fixture, expectation,
+six backlinks, production routing, full guards, and real sidecar protect active
+runner 127.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

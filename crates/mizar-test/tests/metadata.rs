@@ -4188,6 +4188,19 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
             .expected_outcome,
         ExpectedOutcome::Pass
     );
+    let local_object_mode_long_chain_reserved_variable_membership_case =
+        active_type_elaboration_cases(&plan)
+            .find(|case| {
+                case.id.0
+                    == "pass_type_elaboration_local_object_mode_long_chain_reserved_variable_membership_001"
+            })
+            .expect("Task178 local-object-mode long-chain membership bridge should be active");
+    assert_eq!(
+        local_object_mode_long_chain_reserved_variable_membership_case
+            .expectation
+            .expected_outcome,
+        ExpectedOutcome::Pass
+    );
     let distinct_reserved_variable_membership_case = active_type_elaboration_cases(&plan)
         .find(|case| case.id.0 == "pass_type_elaboration_distinct_reserved_variable_membership_001")
         .expect("Task159 distinct reserved-variable membership bridge should be active");
@@ -4232,8 +4245,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 126);
-    assert_eq!(report.passed_count(), 126);
+    assert_eq!(report.results.len(), 127);
+    assert_eq!(report.passed_count(), 127);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -8684,8 +8697,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 126"));
-    assert!(stdout.contains("passed: 126"));
+    assert!(stdout.contains("type-elaboration cases: 127"));
+    assert!(stdout.contains("passed: 127"));
     assert!(stdout.contains("failed: 0"));
 }
 

@@ -1371,6 +1371,21 @@ present; production routing, full guards, and the real sidecar now protect
 active runner 126. Desugaring, truth/facts, acceptance, proof/Core/ControlFlow/
 VC, other chains, and general semantics receive no credit.
 
+Task178 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 178 classifies
+the exact builtin-object-terminal local-mode long-chain left reserved-variable
+membership seam as `test_gap`, `source_drift`, and `design_drift`. It composes
+Task 74's real AST-bounded object-terminal chain producer with Task 165's real
+object-left/set-right membership consumer. Intended credit is the raw
+`ChainObjectMode6` left result, independent explicit-set right result/sole
+expected input, ordinal 2/3 `BindingId(0/1)`, seven real expansions, distinct
+terminal-object-RHS and explicit-set identities, no left expected input, two
+inferred terms, one right-owned constraint, and one fact/deferred-free checked
+membership without object/set coercion. Six backlinks, production routing, full
+guards, and the real sidecar protect active runner 127. Truth/facts, acceptance, proof/
+Core/ControlFlow/VC, other chains, and general semantics receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

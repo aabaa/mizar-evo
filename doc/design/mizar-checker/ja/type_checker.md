@@ -1188,6 +1188,22 @@ theorem/proof/Core/ControlFlow/VC、別 chain shape、general semantics は defe
 のままである。test-first fixture、expectation、backlink 6 件、production
 routing、object-specific corruption coverage、real sidecar が active runner 126
 を保護する。
+task 178 は
+`LongLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;` で終わる
+matching exact builtin-object-terminal definition chain 7 本の left-membership
+sibling だけを規定する。production route は task 74 の AST-bounded chain producer
+と task 165 の object-left/set-right membership consumer を合成し、real expansion
+7 本、raw `ChainObjectMode6` left result、独立した explicit-set right result/sole
+right expected input、ordinal 2/3 の `BindingId(0/1)` を保持し、distinct terminal
+`BaseObjectMode` RHS builtin-object identity と explicit-set identity へ normalize
+しなければならない。left expected input なし、2 `Inferred` term、right-owned
+constraint 1 個、object/set coercion を用いない 1 fact/deferred-free `Checked`
+membership を記録する。task 172 の shared seven-definition structural guard
+pattern、task 178 の membership/object-specific matched-output corruption、real-
+sidecar test が route を保護する。truth/fact、acceptance、closure/order、theorem/proof/
+Core/ControlFlow/VC、別 chain shape、general semantics は deferred のままである。
+fixture、expectation、backlink 6 件、production routing、full guard、real sidecar が
+active runner 127 を保護する。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

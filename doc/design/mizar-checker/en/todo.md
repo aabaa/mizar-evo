@@ -3173,6 +3173,24 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 74 and 169. Refs: Step 5; mizar-test task 10; specs 3, 4, 7,
       13, 14.5.2, and 16.
 
+178. **Add exact local-object-mode long-chain membership checker bridge.** [x]
+    - Promote only the Task 74 AST-bounded seven-definition object-terminal
+      chain, ordered reserves `x` for `ChainObjectMode6` and `y` for explicit
+      `set`, and the exact `x in y` theorem label from the test-first fixture
+      through Task 165's real object-left/set-right membership consumer.
+    - Acceptance: preserve seven real expansions, the raw `ChainObjectMode6`
+      left result and independent explicit-set right result/sole right expected
+      input, ordinal 2/3 `BindingId(0/1)`, distinct terminal-
+      `BaseObjectMode`-RHS builtin-object and explicit-set identities, no left
+      expected input, two inferred terms, one fact/deferred-free checked
+      membership, and exactly one right-owned constraint without object/set
+      coercion. Require full exact/near-miss/corruption/real-sidecar guards; do
+      not fabricate truth/facts, acceptance, closure, theorem/proof/CoreIr/
+      ControlFlowIr/VC, or general unbounded semantics.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 74 and 165. Refs: Step 5; mizar-test task 10; specs 3, 4, 7,
+      13, 14.5.3, and 16.
+
 ## Recommended Verification
 
 Run after each task:

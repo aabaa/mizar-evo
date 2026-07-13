@@ -1130,6 +1130,19 @@ truth/facts, and downstream or general semantics remain deferred. The test-first
 row, production support, full guards, and the real sidecar now protect active
 runner 126.
 
+Task 178 supports the builtin-object-terminal long-chain left-
+membership sibling. The production runner must accept only the exact seven
+definitions, ordered `x`/`y` reserves for `ChainObjectMode6`/explicit `set`, and
+exact `x in y`; consume seven real expansions; retain the raw left and
+independent right result/sole expected input; resolve ordinal 2/3
+`BindingId(0/1)`; and require distinct terminal-object-RHS and explicit-set
+identities, no left expected input, two `Inferred` terms, one right-owned
+constraint, and one fact/deferred-free `Checked` membership without object/set
+coercion. Task 172's shared full structural guard matrix plus membership/object-
+specific corruption and a real sidecar fail closed. Truth/facts and downstream/
+general semantics remain deferred. The fixture, production support, and guards
+protect active runner 127.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

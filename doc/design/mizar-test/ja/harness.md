@@ -1086,6 +1086,18 @@ sidecar は fail closed する。inequality desugaring、truth/fact、
 downstream/general semantics は deferred のままである。test-first row は存在し、
 production support、full guard、real sidecar が active runner 126 を保護する。
 
+task 178 は builtin-object-terminal long-chain left-membership sibling を support
+する。production runner は exact definition 7 本、ordered `x`/`y` reserve
+for `ChainObjectMode6`/explicit `set`、exact `x in y` だけを受理し、real
+expansion 7 本、raw left result、独立した right result/sole expected input、
+ordinal 2/3 の `BindingId(0/1)`、distinct terminal-object-RHS と explicit-set
+identity、left expected input なし、2 `Inferred` term、right-owned constraint 1
+個、object/set coercion を用いない 1 fact/deferred-free `Checked` membership を
+要求しなければならない。task 172 の shared full structural guard matrix、
+membership/object-specific corruption、real sidecar は fail closed する。truth/fact、
+downstream/general semantics は deferred のままである。fixture、production
+support、guard が active runner 127 を保護する。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

@@ -1167,6 +1167,21 @@ corruption tests, and real frontend/resolver sidecar protect active runner 126.
 Desugaring, truth/facts, acceptance, closure/order, theorem/proof/Core/
 ControlFlow/VC, other chains, and general semantics remain open.
 
+Task 178 MC-G020 current-state override: classify the exact builtin-object-terminal
+local-mode long-chain left reserved-variable membership as `test_gap`,
+`source_drift`, and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13,
+14.5.3, and 16 support the test-first source; Task 74 provides the real AST-
+bounded object-terminal chain producer and Task 165 the object-left/set-right
+membership consumer. Preserve the raw `ChainObjectMode6` left result,
+independent explicit-set right result/sole expected input, ordinal 2/3
+`BindingId(0/1)`, all seven expansions, distinct terminal-object-RHS and
+explicit-set identities, no left expected input, two `Inferred` terms, one
+fact/deferred-free checked membership, and one right-owned constraint without
+object/set coercion. The exact route, Task 172 shared guards, membership/object-
+specific corruption tests, and real sidecar protect active runner 127.
+Truth/facts, acceptance, closure/order, theorem/proof/Core/ControlFlow/VC, other
+chains, and general semantics remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

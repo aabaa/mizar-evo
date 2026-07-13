@@ -1112,6 +1112,17 @@ coercion を用いない 1 fact/deferred-free pre-desugaring checked inequality
 だけである。backlink 6 件、production routing、full guard、real sidecar が
 active count 126 を保護する。desugaring、truth/fact、broader semantics は
 credit しない。
+task 178 は matching exact active sibling row
+`LongLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;` を追加し、
+Chapter 4/13/14.5.3/16、structural-chain link、dedicated checker row を参照する。
+intended credit は real expansion 7 本、raw `ChainObjectMode6` left result、独立
+した explicit-set right result/sole expected input、ordinal 2/3 の
+`BindingId(0/1)`、distinct terminal-object-RHS と explicit-set identity、left
+expected input なし、2 inferred term、right-owned constraint 1 個、object/set
+coercion を用いない 1 fact/deferred-free checked membership だけである。
+backlink 6 件、production routing、full guard、real sidecar が active count 127 を
+保護する。
+truth/fact と broader semantics は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

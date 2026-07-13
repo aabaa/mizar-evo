@@ -1117,6 +1117,20 @@ sidecar が active runner 126 を保護する。desugaring、truth/fact、
 acceptance、closure/order、theorem/proof/Core/ControlFlow/VC、別 chain、general
 semantics は open のままである。
 
+Task 178 MC-G020 current-state override: exact builtin-object-terminal local-mode
+long-chain left reserved-variable membership を `spec_gap` ではなく `test_gap`、
+`source_drift`、`design_drift` と分類する。Chapter 3、4、7、13、14.5.3、16 が
+test-first source を支え、task 74 が real AST-bounded object-terminal chain
+producer、task 165 が object-left/set-right membership consumer を提供する。raw
+`ChainObjectMode6` left result、独立した explicit-set right result/sole expected
+input、ordinal 2/3 の `BindingId(0/1)`、real expansion 7 本、distinct terminal-
+object-RHS と explicit-set identity、left expected input なし、2 `Inferred`
+term、1 fact/deferred-free checked membership、right-owned constraint 1 個を
+object/set coercion なしで保持する。exact route、task 172 shared guard、
+membership/object-specific corruption test、real sidecar が active runner 127 を
+保護する。truth/fact、acceptance、closure/order、theorem/proof/
+Core/ControlFlow/VC、別 chain、general semantics は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

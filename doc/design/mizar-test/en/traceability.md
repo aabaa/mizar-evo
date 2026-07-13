@@ -1177,6 +1177,17 @@ fact/deferred-free pre-desugaring checked inequality without object/set
 coercion. Six backlinks, production routing, full guards, and the real sidecar
 now protect active count 126. Desugaring, truth/facts, and broader semantics
 receive no credit.
+Task 178 adds the matching exact active sibling row ending in
+`LongLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`, with
+Chapter 4/13/14.5.3/16 and structural-chain links plus a dedicated checker row.
+Intended credit is seven real expansions, a raw `ChainObjectMode6` left result,
+an independent explicit-set right result/sole expected input, ordinal 2/3
+`BindingId(0/1)`, distinct terminal-object-RHS and explicit-set identities, no
+left expected input, two inferred terms, one right-owned constraint, and one
+fact/deferred-free checked membership without object/set coercion. Six
+backlinks, production routing, full guards, and the real sidecar protect active
+count 127.
+Truth/facts and broader semantics receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
