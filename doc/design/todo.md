@@ -581,10 +581,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    assertion, without mode declaration acceptance/inhabitation, formula-side
    local-mode asserted heads, general reachability/widening/`qua`, object/set
    coercion, closure/order, or theorem acceptance,
-   task 154 adds the test-first exact three-edge local-mode-chain reserved-
+   task 154 adds the exact active three-edge local-mode-chain reserved-
    variable equality contract by combining task 73's real
    `OuterThreeEdgeModeEquality -> MiddleThreeEdgeModeEquality -> InnerThreeEdgeModeEquality -> BaseThreeEdgeModeEquality -> set`
-   producer with task 134's equality consumer. The intended slice retains four
+   producer with task 134's equality consumer. The active slice retains four
    raw outer-mode result/expected inputs, resolves both operands to
    `BindingId(0)` at ordinals 1 and 2, and consumes all four real expansions to
    normalize every role to one terminal-RHS builtin-set identity before two
@@ -593,10 +593,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    order, or theorem acceptance. The production route, full near-miss/
    corruption matrix, and real frontend/resolver sidecar now guard the active
    105th case,
-   task 155 adds the test-first exact three-edge local-object-mode-chain
+   task 155 adds the exact active three-edge local-object-mode-chain
    reserved-variable equality contract by combining task 73's real
    `OuterThreeEdgeObjectModeEquality -> MiddleThreeEdgeObjectModeEquality -> InnerThreeEdgeObjectModeEquality -> BaseThreeEdgeObjectModeEquality -> object`
-   producer with task 135's equality consumer. The intended slice retains four
+   producer with task 135's equality consumer. The active slice retains four
    raw outer-mode result/expected inputs, resolves both operands to
    `BindingId(0)` at ordinals 1 and 2, and consumes all four real expansions to
    normalize every role to one terminal-RHS builtin-object identity before two
@@ -605,10 +605,10 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    truth/facts, closure/order, or theorem acceptance. The production route,
    full near-miss/corruption matrix, and real frontend/resolver sidecar now
    guard the active 106th case,
-   task 156 adds the test-first exact three-edge local-mode-chain reserved-
+   task 156 adds the exact active three-edge local-mode-chain reserved-
    variable inequality contract by combining task 73's real
    `OuterThreeEdgeModeInequality -> MiddleThreeEdgeModeInequality -> InnerThreeEdgeModeInequality -> BaseThreeEdgeModeInequality -> set`
-   producer with task 136's pre-desugaring inequality consumer. The intended
+   producer with task 136's pre-desugaring inequality consumer. The active
    slice retains four raw outer-mode result/expected inputs, resolves both
    operands to `BindingId(0)` at ordinals 1 and 2, and consumes all four real
    expansions to normalize every role to one terminal-RHS builtin-set identity
@@ -621,7 +621,7 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    reserved-variable inequality contract by combining task 73's real
    `OuterThreeEdgeObjectModeInequality -> MiddleThreeEdgeObjectModeInequality -> InnerThreeEdgeObjectModeInequality -> BaseThreeEdgeObjectModeInequality -> object`
    producer with task 137's builtin-object pre-desugaring inequality consumer.
-   The intended slice retains four raw outer-mode result/expected inputs,
+   The active slice retains four raw outer-mode result/expected inputs,
    resolves both operands to `BindingId(0)` at ordinals 1 and 2, and consumes
    all four real expansions to normalize every role to one terminal-RHS
    builtin-object identity before two inferred variables and one fact/deferred-
@@ -634,7 +634,7 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    variable membership contract by combining task 73's real
    `OuterThreeEdgeModeMembership -> MiddleThreeEdgeModeMembership -> InnerThreeEdgeModeMembership -> BaseThreeEdgeModeMembership -> set`
    producer with task 143's two-binding right-only expected-set membership
-   consumer. The intended slice retains the raw outer-mode left result and
+   consumer. The active slice retains the raw outer-mode left result and
    independent explicit-set right result/sole expected input, has no left
    expected type, resolves `x/y` to `BindingId(0/1)` at ordinals 2/3, and
    consumes all four real expansions to normalize all three roles to one
@@ -723,6 +723,11 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    reflexive type assertion,
    and task 153's exact four-edge local-object-mode-chain normalized-
    reflexive type assertion,
+   and task 154's exact three-edge local-mode-chain equality,
+   and task 155's exact three-edge local-object-mode-chain equality,
+   and task 156's exact three-edge local-mode-chain inequality,
+   and task 157's exact three-edge local-object-mode-chain inequality,
+   and task 158's exact three-edge local-mode-chain left membership,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,
