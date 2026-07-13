@@ -1108,6 +1108,24 @@ so the active runner contains 110 cases. Chapter 3, membership truth/facts, clos
 order, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, separate reserve
 declarations, non-set types, and broader source shapes receive no credit.
 
+Task160 addendum for chapters `04.variables_and_constants.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 160 adds an active contract only
+for the exact distinct-binding shared-reserve inequality source. One multi-name
+reserve item must create `BindingId(0/1)` over one written builtin-set range;
+the two uses resolve at ordinals 2/3, and that range must survive across both
+bindings and both operand result/expected pairs. The four roles then intern to
+one shared-source-anchored builtin-set identity before two inferred terms and
+one fact/deferred-free pre-desugaring checked inequality with two ordered
+operand-owned constraints. The classified changes are `test_gap`,
+`source_drift`, and `design_drift`; specification intent and existing
+expectations do not change. Production routing, corruption/near-miss coverage,
+and a real frontend/resolver sidecar now guard the exact slice, so the active
+runner contains 111 cases. Chapter 3, inequality desugaring/truth/
+facts, closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, VC,
+separate declarations, non-set types, and broader source shapes receive no
+credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

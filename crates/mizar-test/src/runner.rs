@@ -89,6 +89,8 @@ const TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY: &str =
     "type_elaboration.external_dependency.ast_payload_extraction";
 const TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.distinct_reserved_variable_equality.invalid_payload";
+const TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.distinct_reserved_variable_inequality.invalid_payload";
 const TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.distinct_reserved_variable_membership.invalid_payload";
 const TYPE_ELABORATION_HETEROGENEOUS_RESERVE_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
@@ -1238,6 +1240,11 @@ fn source_type_elaboration_detail_keys(
         return keys;
     }
     if let Some(keys) =
+        source_distinct_reserved_variable_inequality_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
+    if let Some(keys) =
         source_multiple_reserve_declaration_equality_detail_keys(ast, module.clone(), symbols)
     {
         return keys;
@@ -1937,6 +1944,30 @@ const SOURCE_DISTINCT_RESERVED_VARIABLE_EQUALITY_CONFIG: SourceReservedVariableB
         left_expected_role: Some("distinct-reserved-variable-left-expected"),
         right_expected_role: Some("distinct-reserved-variable-right-expected"),
     };
+
+const SOURCE_DISTINCT_RESERVED_VARIABLE_INEQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "DistinctReservedVariableInequalityPayloadBoundary",
+    operator: "<>",
+    formula_kind: FormulaKind::Inequality,
+    invalid_payload_key: TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["x", "y"],
+    binding_types: &[
+        SourceReservedVariableBuiltinType::Set,
+        SourceReservedVariableBuiltinType::Set,
+    ],
+    binding_source_mode_spellings: &[None, None],
+    mode_definitions: &[],
+    left_binding_index: 0,
+    right_binding_index: 1,
+    require_shared_type_range: true,
+    require_distinct_type_ranges: false,
+    left_result_role: "distinct-reserved-variable-inequality-left-result",
+    right_result_role: "distinct-reserved-variable-inequality-right-result",
+    left_expected_role: Some("distinct-reserved-variable-inequality-left-expected"),
+    right_expected_role: Some("distinct-reserved-variable-inequality-right-expected"),
+};
 
 const SOURCE_DISTINCT_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
     SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
@@ -2948,6 +2979,18 @@ fn source_distinct_reserved_variable_membership_detail_keys(
     ))
 }
 
+fn source_distinct_reserved_variable_inequality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_distinct_reserved_variable_inequality(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
 fn source_heterogeneous_reserve_membership_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -3565,6 +3608,16 @@ fn source_distinct_reserved_variable_membership_output(
     symbols: &SymbolEnv,
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload = extract_source_distinct_reserved_variable_membership(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_distinct_reserved_variable_inequality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload = extract_source_distinct_reserved_variable_inequality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -5336,6 +5389,19 @@ fn extract_source_distinct_reserved_variable_membership(
         module,
         symbols,
         &SOURCE_DISTINCT_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
+    )
+}
+
+fn extract_source_distinct_reserved_variable_inequality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_DISTINCT_RESERVED_VARIABLE_INEQUALITY_CONFIG,
     )
 }
 
@@ -9729,6 +9795,7 @@ mod tests {
         TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
@@ -9772,6 +9839,7 @@ mod tests {
         extract_source_chained_local_object_mode_reserved_variable_membership,
         extract_source_chained_local_object_mode_reserved_variable_type_assertion,
         extract_source_distinct_reserved_variable_equality,
+        extract_source_distinct_reserved_variable_inequality,
         extract_source_distinct_reserved_variable_membership,
         extract_source_formula_connective_quantifier, extract_source_formula_statement,
         extract_source_four_edge_local_mode_reserved_variable_type_assertion,
@@ -9817,6 +9885,7 @@ mod tests {
         source_chained_local_object_mode_reserved_variable_membership_output,
         source_chained_local_object_mode_reserved_variable_type_assertion_output,
         source_distinct_reserved_variable_equality_output,
+        source_distinct_reserved_variable_inequality_output,
         source_distinct_reserved_variable_membership_output,
         source_formula_connective_quantifier_output, source_formula_statement_output,
         source_four_edge_local_mode_reserved_variable_type_assertion_output,
@@ -14126,6 +14195,361 @@ mod tests {
                 "DistinctReservedVariableEqualityPayloadBoundary",
                 "1",
                 "1",
+            ),
+        ];
+        for near_miss in near_misses {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
+    fn source_distinct_reserved_variable_inequality_bridge_preserves_shared_provenance() {
+        let source_id = source_id(160);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("distinct_reserved_variable_inequality"),
+        );
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let shared_reserve = || {
+            vec![reserve_item(
+                vec!["x", "y"],
+                ReserveTypeShape::Builtin("set"),
+            )]
+        };
+        let exact = reserve_then_identifier_binary_theorem_ast(
+            source_id,
+            shared_reserve(),
+            "DistinctReservedVariableInequalityPayloadBoundary",
+            "x",
+            "<>",
+            "y",
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload =
+            extract_source_distinct_reserved_variable_inequality(&exact, module.clone(), &symbols)
+                .expect("exact distinct reserved-variable inequality source should extract");
+        assert_eq!(payload.reserve.bridge.bindings().len(), 2);
+        assert_eq!(payload.reserve.bridge.bindings()[0].spelling, "x");
+        assert_eq!(payload.reserve.bridge.bindings()[1].spelling, "y");
+        assert_eq!(
+            payload.reserve.bridge.bindings()[0].type_range,
+            payload.reserve.bridge.bindings()[1].type_range
+        );
+        assert_eq!(payload.left_lookup_ordinal, 2);
+        assert_eq!(payload.right_lookup_ordinal, 3);
+
+        let output =
+            source_distinct_reserved_variable_inequality_output(&exact, module.clone(), &symbols)
+                .expect("exact distinct reserved-variable inequality should reach the checker");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("distinct reserved-variable inequality invariants should hold");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(1));
+        assert_ne!(output.left_binding, output.right_binding);
+        assert_eq!(output.handoff.binding_env.bindings().len(), 2);
+        assert_eq!(output.handoff.declarations.declarations().len(), 2);
+        let shared_type_range = output.payload.reserve.bridge.bindings()[0].type_range;
+        assert_eq!(output.left_result_input.source_range, shared_type_range);
+        assert_eq!(output.right_result_input.source_range, shared_type_range);
+        assert_eq!(
+            output
+                .left_expected_input
+                .as_ref()
+                .expect("left expected input should exist")
+                .source_range,
+            shared_type_range
+        );
+        assert_eq!(
+            output
+                .right_expected_input
+                .as_ref()
+                .expect("right expected input should exist")
+                .source_range,
+            shared_type_range
+        );
+        assert_eq!(output.term_formula.type_entries().len(), 6);
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        assert!(output.term_formula.candidate_sets().is_empty());
+        assert!(output.term_formula.facts().is_empty());
+        assert!(output.term_formula.diagnostics().is_empty());
+        for (site, binding) in [
+            (&output.payload.left_site, output.left_binding),
+            (&output.payload.right_site, output.right_binding),
+        ] {
+            let term = output
+                .term_formula
+                .terms()
+                .iter()
+                .map(|(_, term)| term)
+                .find(|term| &term.site == site)
+                .expect("distinct reserved-variable inequality term should be checked");
+            assert_eq!(term.reference, Some(TermReference::Binding(binding)));
+            assert_eq!(term.status, TermStatus::Inferred);
+            assert!(term.deferred.is_empty());
+        }
+        let formula = output
+            .term_formula
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .next()
+            .expect("distinct reserved-variable inequality formula should be checked");
+        assert_eq!(formula.kind, FormulaKind::Inequality);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(formula.expected_types.len(), 2);
+        assert_eq!(formula.expected_types[0].term, output.payload.left_site);
+        assert_eq!(formula.expected_types[1].term, output.payload.right_site);
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+        let type_roles = output
+            .term_formula
+            .type_entries()
+            .iter()
+            .filter_map(|(_, entry)| match &entry.owner {
+                TypedSiteRef::Role { role, .. } => Some(role.as_str().to_owned()),
+                _ => None,
+            })
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            type_roles,
+            BTreeSet::from([
+                "distinct-reserved-variable-inequality-left-expected".to_owned(),
+                "distinct-reserved-variable-inequality-left-result".to_owned(),
+                "distinct-reserved-variable-inequality-right-expected".to_owned(),
+                "distinct-reserved-variable-inequality-right-result".to_owned(),
+            ])
+        );
+
+        let invalid_key = || {
+            vec![
+                TYPE_ELABORATION_DISTINCT_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY
+                    .to_owned(),
+            ]
+        };
+        let mut collapsed_binding =
+            source_distinct_reserved_variable_inequality_output(&exact, module.clone(), &symbols)
+                .expect("exact source should produce a second checker output");
+        collapsed_binding.right_binding = BindingId::new(0);
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&collapsed_binding),
+            invalid_key()
+        );
+
+        let mut corrupted_result =
+            source_distinct_reserved_variable_inequality_output(&exact, module.clone(), &symbols)
+                .expect("exact source should produce a third checker output");
+        corrupted_result.right_result_input.source_range = corrupted_result.payload.right_range;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&corrupted_result),
+            invalid_key()
+        );
+
+        let mut missing_left_expected =
+            source_distinct_reserved_variable_inequality_output(&exact, module.clone(), &symbols)
+                .expect("exact source should produce a fourth checker output");
+        missing_left_expected.left_expected_input = None;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&missing_left_expected),
+            invalid_key()
+        );
+
+        let mut missing_right_expected =
+            source_distinct_reserved_variable_inequality_output(&exact, module.clone(), &symbols)
+                .expect("exact source should produce a fifth checker output");
+        missing_right_expected.right_expected_input = None;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&missing_right_expected),
+            invalid_key()
+        );
+
+        let mut swapped_expected =
+            source_distinct_reserved_variable_inequality_output(&exact, module.clone(), &symbols)
+                .expect("exact source should produce a sixth checker output");
+        std::mem::swap(
+            &mut swapped_expected.left_expected_input,
+            &mut swapped_expected.right_expected_input,
+        );
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&swapped_expected),
+            invalid_key()
+        );
+
+        let mut corrupted_expected =
+            source_distinct_reserved_variable_inequality_output(&exact, module.clone(), &symbols)
+                .expect("exact source should produce a seventh checker output");
+        corrupted_expected
+            .right_expected_input
+            .as_mut()
+            .expect("right expected input should exist")
+            .head = TypeHeadInput::BuiltinObject;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&corrupted_expected),
+            invalid_key()
+        );
+
+        let near_misses = [
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                shared_reserve(),
+                "OtherPayloadBoundary",
+                "x",
+                "<>",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                shared_reserve(),
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "y",
+                "<>",
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                shared_reserve(),
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "x",
+                "<>",
+                "x",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "x",
+                "<>",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "x",
+                "<>",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x", "y"],
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "x",
+                "<>",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x", "y"],
+                    ReserveTypeShape::AttributedSet,
+                )],
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "x",
+                "<>",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x", "y"],
+                    ReserveTypeShape::NonBuiltin("Thing"),
+                )],
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "x",
+                "<>",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x", "y"],
+                    ReserveTypeShape::QualifiedSymbolWithArgs("Mode"),
+                )],
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "x",
+                "<>",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x", "y", "z"],
+                    ReserveTypeShape::Builtin("set"),
+                )],
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "x",
+                "<>",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                shared_reserve(),
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "x",
+                "=",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast_with_options(
+                source_id,
+                shared_reserve(),
+                IdentifierBinaryTheoremSpec {
+                    status: Some("registration"),
+                    label: "DistinctReservedVariableInequalityPayloadBoundary",
+                    left: "x",
+                    operator: "<>",
+                    right: "y",
+                    recovered_label: false,
+                },
+            ),
+            reserve_then_identifier_binary_theorem_ast_with_options(
+                source_id,
+                shared_reserve(),
+                IdentifierBinaryTheoremSpec {
+                    status: None,
+                    label: "DistinctReservedVariableInequalityPayloadBoundary",
+                    left: "x",
+                    operator: "<>",
+                    right: "y",
+                    recovered_label: true,
+                },
+            ),
+            reserve_then_two_identifier_binary_theorems_ast(
+                source_id,
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "<>",
+            ),
+            reserve_then_builtin_binary_theorem_ast(
+                source_id,
+                shared_reserve(),
+                "DistinctReservedVariableInequalityPayloadBoundary",
+                "1",
+                "<>",
+                "1",
+            ),
+            modes_then_empty_definition_reserve_identifier_binary_theorem_ast(
+                source_id,
+                [],
+                shared_reserve(),
+                IdentifierBinaryTheoremSpec {
+                    status: None,
+                    label: "DistinctReservedVariableInequalityPayloadBoundary",
+                    left: "x",
+                    operator: "<>",
+                    right: "y",
+                    recovered_label: false,
+                },
             ),
         ];
         for near_miss in near_misses {
@@ -27662,6 +28086,71 @@ mod tests {
             output.payload.reserve.bridge.bindings()[0].type_range,
             output.payload.reserve.bridge.bindings()[1].type_range
         );
+    }
+
+    #[test]
+    fn active_distinct_reserved_variable_inequality_fixture_preserves_real_checker_payload() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0 == "pass_type_elaboration_distinct_reserved_variable_inequality_001"
+            })
+            .expect("Task 160 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 160 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 160 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output =
+            source_distinct_reserved_variable_inequality_output(&ast, resolver.module, &symbols)
+                .expect("Task 160 real AST should reach the distinct-binding inequality seam");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("Task 160 real AST should preserve every checked payload invariant");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(1));
+        assert_eq!(output.payload.left_lookup_ordinal, 2);
+        assert_eq!(output.payload.right_lookup_ordinal, 3);
+        assert_eq!(
+            output.payload.reserve.bridge.bindings()[0].type_range,
+            output.payload.reserve.bridge.bindings()[1].type_range
+        );
+        assert_eq!(output.term_formula.type_entries().len(), 6);
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        let formula = output
+            .term_formula
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .next()
+            .expect("Task 160 inequality formula should be checked");
+        assert_eq!(formula.kind, FormulaKind::Inequality);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(formula.expected_types.len(), 2);
+        assert_eq!(formula.expected_types[0].term, output.payload.left_site);
+        assert_eq!(formula.expected_types[1].term, output.payload.right_site);
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+        assert!(output.term_formula.candidate_sets().is_empty());
+        assert!(output.term_formula.facts().is_empty());
+        assert!(output.term_formula.diagnostics().is_empty());
     }
 
     #[test]

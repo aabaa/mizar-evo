@@ -978,6 +978,18 @@ coverage, and a real frontend/resolver sidecar now protect the active row.
 Chapter 3, truth/facts, closure/order, theorem acceptance,
 proof/Core/VC, separate declarations, and broader source shapes remain
 uncredited.
+Task 160 adds an active row for exactly
+`reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`.
+It credits Chapters 4, 13, 14.5.2, and 16 only: one reserve item creates
+distinct bindings over one shared written set range, the two identifier uses
+resolve at ordinals 2/3, and both result/expected role pairs must preserve that
+range before interning to one shared-source-anchored builtin-set identity. The
+intended checker result is two `Inferred` variables and one fact/deferred-free
+pre-desugaring `Checked` inequality with two ordered operand-owned constraints.
+Production routing, corruption/near-miss coverage, and the real frontend/
+resolver sidecar now protect the active row. Chapter 3,
+desugaring/truth/facts, closure/order, theorem acceptance, proof/Core/VC,
+separate declarations, and broader source shapes remain uncredited.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

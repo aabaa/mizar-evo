@@ -2335,6 +2335,12 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - non-exact reserve/formula と matched-output corruption を拒否する。truth/fact、closure/order、theorem/proof/Core/ControlFlow/VC、separate declaration、broader shape は deferred のままとする。
     - fixture/expectation/trace、unit/near-miss/corruption/real-sidecar test、metadata、bilingual docs、audit を更新した。active runner は 110 件である。Chapter 4、13、14、16。Deps: tasks 120、123、125。
 
+160. **Exact distinct-binding shared-reserve inequality checker bridge を追加する。** [x]
+    - `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;` だけを追加する。
+    - ordinal 2/3 の `BindingId(0/1)` と result/expected role pair 2 組に written set range 1 個を保持し、normalized builtin-set identity 1 個、2 `Inferred` variable、2 ordered operand-owned constraint を持つ 1 fact/deferred-free pre-desugaring `Checked` inequality を要求する。
+    - non-exact reserve/formula shape、route collision、matched-output corruption を拒否する。desugaring/truth/fact、closure/order、theorem/proof/Core/ControlFlow/VC、separate declaration、broader shape は deferred のままとする。
+    - fixture/expectation/trace contract に production route、unit/near-miss/corruption/real-sidecar test、metadata、bilingual docs、audit を追加した。active runner は 111 件である。Chapter 4、13、14、16。Deps: tasks 121、123。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

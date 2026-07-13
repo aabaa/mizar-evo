@@ -1,0 +1,2 @@
+reserve x, y for set;
+theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;

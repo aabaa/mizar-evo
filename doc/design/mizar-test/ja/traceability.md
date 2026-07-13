@@ -924,6 +924,18 @@ production routing、corruption/near-miss coverage、real frontend/resolver
 sidecar が active row を保護する。Chapter 3、
 truth/fact、closure/order、theorem acceptance、proof/Core/VC、separate
 declaration、broader source shape は credit しない。
+task 160 は exact `reserve x, y for set; theorem
+DistinctReservedVariableInequalityPayloadBoundary: x <> y;` の active row
+を追加する。credit は Chapter 4、13、14.5.2、16 だけである。reserve item 1 個は
+shared written set range 1 個を持つ distinct binding を作り、identifier use 2 個は
+ordinal 2/3 で解決され、result/expected role pair 2 組は shared-source-anchored
+builtin-set identity 1 個へ intern する前にその range を保持しなければならない。
+intended checker result は 2 `Inferred` variable と 2 ordered operand-owned constraint
+を持つ 1 fact/deferred-free pre-desugaring `Checked` inequality である。production
+route、corruption/near-miss coverage、real frontend/resolver sidecar が active row を
+保護する。Chapter 3、desugaring/truth/fact、closure/order、
+theorem acceptance、proof/Core/VC、separate declaration、broader source shape は
+credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

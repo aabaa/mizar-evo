@@ -928,6 +928,20 @@ broader shapes remain open. The fixture/expectation/trace row, production
 route, full near-miss/corruption matrix, and real sidecar now guard the exact
 slice, so the active count is 110.
 
+Task 160 MC-G020 current-state override: the exact distinct-binding shared-
+reserve inequality composes task 123's one-item/two-binding/shared-range
+producer with task 121's pre-desugaring inequality consumer. `x/y` must resolve
+to `BindingId(0/1)` at ordinals 2/3; both bindings and all four left/right
+result/expected roles must retain one written set range and normalize to one
+shared-source builtin-set identity before two `Inferred` terms and one fact/
+deferred-free `Checked` inequality with two ordered operand-owned constraints.
+Classification is `test_gap`, `source_drift`, and `design_drift`, not
+`spec_gap`. Desugaring/truth/facts, closure/order, theorem acceptance, proof/
+Core/ControlFlow/VC, separate declarations, and broader shapes remain open.
+The fixture/expectation/trace contract, production route, near-miss/corruption
+guards, and real sidecar now protect the exact slice, so the active count is
+111.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

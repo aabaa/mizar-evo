@@ -937,6 +937,18 @@ membership truth/fact、closure/order、theorem acceptance、proof/Core/VC、
 separate declaration、broader shape は deferred のままである。source/trace
 contract、production route、独立した corruption matrix、real frontend/resolver
 sidecar が active bridge を保護する。
+task 160 は source
+`reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
+だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct
+`BindingId(0/1)` と ordinal 2/3 の独立 lookup を生成しなければならない。両
+operand result と operand-owned expected role 2 個はその range を保持して shared-
+source builtin-set identity 1 個へ normalize し、2 `Inferred` variable と 2 ordered
+constraint を持つ 1 fact/deferred-free pre-desugaring `Checked` inequality を生成する。
+exact source、route order、matched output、corruption guard を必須とする。
+inequality desugaring/truth/fact、closure/order、theorem acceptance、proof/Core/VC、
+separate declaration、broader shape は deferred のままである。source/trace
+contract、production route、独立した corruption coverage、real frontend/resolver
+sidecar が active bridge を保護する。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

@@ -988,6 +988,18 @@ Membership truth/facts, closure/order, theorem acceptance, proof/Core/VC,
 separate declarations, and broader shapes remain deferred. The source/trace
 contract, production route, independent corruption matrix, and real frontend/
 resolver sidecar now protect the active bridge.
+Task 160 specifies only the source
+`reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`.
+One reserve item must create distinct `BindingId(0/1)` values with one shared
+written set range and independent lookups at ordinals 2/3. Both operand results
+and both operand-owned expected roles must retain that range, normalize to one
+shared-source builtin-set identity, and produce two `Inferred` variables plus
+one fact/deferred-free pre-desugaring `Checked` inequality with two ordered
+constraints. Exact source, route-order, matched-output, and corruption guards
+are required. Inequality desugaring/truth/facts, closure/order, theorem
+acceptance, proof/Core/VC, separate declarations, and broader shapes remain
+deferred. The source/trace contract, production route, independent corruption
+coverage, and real frontend/resolver sidecar now protect the active bridge.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

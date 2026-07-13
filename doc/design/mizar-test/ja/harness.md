@@ -888,6 +888,18 @@ matrix、real frontend/resolver sidecar が contract を guard するため acti
 runner は 110 cases である。truth/fact、closure/order、theorem/proof/Core/VC、
 separate declaration、non-set type、broader source shape は deferred のままにする。
 
+task 160 は exact active distinct-binding shared-reserve inequality source
+`reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
+を規定する。runner は ordinal 2/3 の distinct `BindingId(0/1)` lookup と、両 binding
+および operand-owned result/expected role 4 個にわたる shared written set range 1 個
+を保持し、それらを shared-source-anchored builtin-set identity 1 個へ intern して、
+2 `Inferred` variable と 2 ordered constraint を持つ 1 fact/deferred-free pre-
+desugaring `Checked` inequality を要求しなければならない。exact route guard、
+corruption/near-miss matrix、real frontend/resolver sidecar が contract を guard する
+ため active type-elaboration runner は 111 cases である。desugaring/truth/fact、closure/
+order、theorem/proof/Core/VC、separate declaration、non-set type、broader source shape
+は deferred のままにする。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

@@ -654,6 +654,16 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    constraint. Production routing, the full near-miss/corruption matrix, and a
    real frontend/resolver sidecar now guard the exact contract as the 110th
    active case, and Chapter 3 receives no new credit,
+   task 160 adds the exact active distinct-binding shared-reserve inequality
+   contract by composing task 123's one-item/two-binding/shared-range reserve
+   producer with task 121's pre-desugaring inequality consumer. It preserves
+   `BindingId(0/1)` at ordinals 2/3 and the same written builtin-set range
+   across both bindings and all four operand result/expected roles, and
+   requires one shared-source-anchored identity, two inferred variables, one
+   fact/deferred-free checked inequality, and two ordered operand-owned
+   constraints. Production routing, the full near-miss/corruption matrix, and
+   a real frontend/resolver sidecar now guard the exact contract as the 111th
+   active case, and Chapter 3 receives no new credit,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -740,6 +750,9 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    and task 157's exact three-edge local-object-mode-chain inequality,
    and task 158's exact three-edge local-mode-chain left membership,
    and task 159's exact distinct-binding shared-reserve membership,
+   and task 160's exact active distinct-binding shared-reserve inequality over
+   task 123's shared-range producer and task 121's pre-desugaring inequality
+   consumer,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,

@@ -2490,6 +2490,12 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Reject non-exact reserve/formula and matched-output corruption. Keep truth/facts, closure/order, theorem/proof/Core/ControlFlow/VC, separate declarations, and broader shapes deferred.
     - Added fixture/expectation/trace, unit/near-miss/corruption/real-sidecar tests, metadata, bilingual docs, and audit updates. The active runner now contains 110 cases. Updated Chapters 4, 13, 14, and 16. Deps: tasks 120, 123, and 125.
 
+160. **Add exact distinct-binding shared-reserve inequality checker bridge.** [x]
+    - Add only `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`.
+    - Preserve one written set range across `BindingId(0/1)` at ordinals 2/3 and both result/expected role pairs; require one normalized builtin-set identity, two `Inferred` variables, and one fact/deferred-free pre-desugaring `Checked` inequality with two ordered operand-owned constraints.
+    - Reject non-exact reserve/formula shapes, route collisions, and matched-output corruption. Keep desugaring/truth/facts, closure/order, theorem/proof/Core/ControlFlow/VC, separate declarations, and broader shapes deferred.
+    - Added production routing, unit/near-miss/corruption/real-sidecar tests, metadata, bilingual docs, and audit updates for the fixture/expectation/trace contract. The active runner now contains 111 cases. Chapters 4, 13, 14, and 16. Deps: tasks 121 and 123.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as
