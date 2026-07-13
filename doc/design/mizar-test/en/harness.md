@@ -529,6 +529,16 @@ slice. Mode declaration acceptance/inhabitation, object terminals, longer-chain
 formulas, closure/order, facts/truth, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC remain deferred.
 
+Task 128 adds the exact direct local-object-mode reserved-variable equality
+pass. The runner admits one task-55-compatible `LocalObjectMode -> object`
+definition, retains four raw local object-mode inputs, and supplies its real
+AST-derived expansion to `TermFormulaChecker`; all roles normalize to one
+builtin-object identity anchored at the real `object` RHS. An invalid key,
+exact block/label guards, withheld-family near misses, and a real sidecar guard
+the slice. Mode declaration acceptance/inhabitation, broader object-mode
+formulas, closure/order, facts/truth, theorem acceptance, proof, CoreIr,
+ControlFlowIr, and VC remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

@@ -464,6 +464,17 @@ identity anchored at the real `set` RHS, two `Inferred` terms, and one fact-free
 object terminals, longer-chain formulas, closure/order, truth/facts, theorem
 acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
 
+Task 128 MC-G020 current-state override: the exact direct local-object-mode
+equality source combines task 55's real AST-derived `LocalObjectMode -> object`
+expansion with task 126's equality consumer. Four raw inputs retain object-mode
+provenance; the checker consumes the real expansion and records one
+builtin-object identity anchored at the real `object` RHS, two `Inferred`
+terms, and one fact-free `Checked` equality. Exact production guards,
+invalid-expansion corruption, withheld-family near misses, and a real sidecar
+guard the route. Mode declaration checking/acceptance, inhabitation evidence,
+broader object-mode formulas, closure/order, truth/facts, theorem acceptance,
+proof, CoreIr, ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

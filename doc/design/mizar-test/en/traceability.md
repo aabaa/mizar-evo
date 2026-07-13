@@ -651,6 +651,16 @@ credits only the exact one-edge-chain type/well-formedness handoff, not mode-
 definition declaration checking/acceptance, inhabitation evidence, object
 terminals, longer-chain formulas, closure/order, equality truth/facts, theorem
 acceptance, proof, CoreIr, ControlFlowIr, or VC.
+Task 128 adds the exact direct local-object-mode pass row
+`definition mode LocalObjectModeDef: LocalObjectMode is object; end; reserve x for LocalObjectMode; theorem LocalObjectModeReservedVariableEqualityPayloadBoundary: x = x;`.
+All four raw result/expected inputs retain the written object-mode symbol and
+reserve range. The checker consumes the real AST-derived expansion, anchors
+the single normalized builtin-`object` identity at the real `object` RHS, and
+records two `Inferred` variables plus one fact-free `Checked` equality. This
+credits only the exact direct local-object-mode type/well-formedness handoff,
+not mode-definition declaration checking/acceptance, inhabitation evidence,
+broader object-mode formulas, closure/order, equality truth/facts, theorem
+acceptance, proof, CoreIr, ControlFlowIr, or VC.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

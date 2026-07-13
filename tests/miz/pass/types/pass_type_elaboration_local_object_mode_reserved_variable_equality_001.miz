@@ -1,0 +1,6 @@
+definition
+  mode LocalObjectModeDef: LocalObjectMode is object;
+end;
+
+reserve x for LocalObjectMode;
+theorem LocalObjectModeReservedVariableEqualityPayloadBoundary: x = x;

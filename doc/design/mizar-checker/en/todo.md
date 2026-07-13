@@ -2249,6 +2249,27 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       source-layout update is required unless `crates/mizar-checker/src/` changes.
     - Deps: tasks 56 and 126. Verify mizar-test and the full workspace.
 
+128. **Add exact direct local-object-mode reserved-variable equality checker bridge.** [x]
+    - Add a spec-derived active pass fixture with exactly one unique,
+      unrecovered, source-preceding, no-argument definition
+      `mode LocalObjectModeDef: LocalObjectMode is object;`, one
+      `reserve x for LocalObjectMode`, and theorem
+      `LocalObjectModeReservedVariableEqualityPayloadBoundary: x = x;`.
+    - Acceptance: reuse the real task-55 AST-derived object `ModeExpansion`,
+      retain `LocalObjectMode` symbol/range in all four raw result/expected
+      inputs, normalize every role to one builtin-`object` identity whose
+      canonical source is the real RHS, and resolve both uses to `BindingId(0)`.
+    - Require two `Inferred` variables, one fact-free `Checked` equality,
+      production validation, task invalid key, withheld-family near misses, and
+      a real frontend/resolver sidecar. Do not rebaseline existing expectations.
+    - Credit only this exact direct object-mode equality type/well-formedness
+      slice. Keep mode declaration checking/acceptance, inhabitation evidence,
+      closure/order, truth/facts, theorem acceptance, `formula_statement`, proof,
+      CoreIr, ControlFlowIr, and VC deferred.
+    - Update Chapters 3, 4, 7, 13, 14, and 16 in the spec coverage audit. No
+      checker source-layout update is required unless checker source changes.
+    - Deps: tasks 55 and 126. Verify mizar-test and the full workspace.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

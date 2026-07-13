@@ -514,6 +514,15 @@ declaration acceptance/inhabitation、object terminal、longer-chain formula、
 closure/order、fact/truth、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
 deferred のままである。
 
+task 128 は exact direct local-object-mode reserved-variable equality pass を
+追加する。runner は task-55-compatible `LocalObjectMode -> object` definition 1 個を
+受理し、4 raw local object-mode input を保持して、その real AST-derived expansion
+を `TermFormulaChecker` に渡す。全 role は real `object` RHS に anchor された 1
+builtin-object identity に normalize される。invalid key、exact block/label guard、
+withheld-family near miss、real sidecar が slice を guard する。mode declaration
+acceptance/inhabitation、broader object-mode formula、closure/order、fact/truth、
+theorem acceptance、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

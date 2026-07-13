@@ -457,6 +457,16 @@ declaration checking/acceptance、inhabitation evidence、object terminal、
 longer-chain formula、closure/order、truth/fact、theorem acceptance、proof、CoreIr、
 ControlFlowIr、VC は open のままである。
 
+Task 128 MC-G020 current-state override: exact direct local-object-mode equality
+source は task 55 の real AST-derived `LocalObjectMode -> object` expansion と task
+126 の equality consumer を結合する。4 raw input は object-mode provenance を保持し、
+checker は real expansion を消費して real `object` RHS に anchor された 1
+builtin-object identity、2 `Inferred` term、1 fact-free `Checked` equality を記録する。
+exact production guard、invalid-expansion corruption、withheld-family near miss、
+real sidecar が route を guard する。mode declaration checking/acceptance、
+inhabitation evidence、broader object-mode formula、closure/order、truth/fact、
+theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

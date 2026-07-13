@@ -296,6 +296,9 @@ regression test を追加した。
       checker task 127 の 4 raw outer-mode input、2 real expansion link、terminal
       RHS normalized provenance を持つ exact one-edge local-mode-chain
       reserved-variable equality active pass bridge、
+      checker task 128 の 4 raw object-mode input と real expansion RHS から
+      normalized された 1 builtin-`object` identity を持つ exact direct
+      local-object-mode reserved-variable equality active pass bridge、
       checker task 88 の proof skeleton
       extraction-gap boundary、checker task 89 の statement proof extraction-gap
       boundary、checker task 90 の predicate/functor definition extraction-gap

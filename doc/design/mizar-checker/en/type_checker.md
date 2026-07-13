@@ -540,6 +540,15 @@ labels/block structure/chain links, invalid-link corruption, and withheld-family
 near misses guard the route. Mode declaration acceptance/inhabitation, object terminals, longer
 chain formulas, closure/order, truth/facts, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC remain deferred.
+Task 128 is limited to the exact direct local-object-mode equality sibling.
+The source reuses the task-55 `LocalObjectMode -> object` definition,
+adds one reserve and `LocalObjectModeReservedVariableEqualityPayloadBoundary:
+x = x;`, preserves four raw object-mode inputs, and requires the existing
+`TypeNormalizer` to anchor one builtin-object identity at the real expansion
+RHS. Exact block/label guards, an invalid key, withheld-family near misses, and
+a real sidecar protect the route. Mode declaration acceptance/inhabitation,
+closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
+and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,
