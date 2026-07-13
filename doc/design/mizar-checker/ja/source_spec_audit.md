@@ -529,6 +529,16 @@ terminal、direct/one-edge/longer chain、inequality desugaring、implicit
 closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
 open のままである。
 
+Task 137 MC-G020 current-state override: exact two-edge object-terminal
+mode-chain inequality は task 72 の real AST-derived expansion 3 個と task 133 の
+builtin-object pre-desugaring inequality consumer を結合する。4 raw input は
+outer-mode provenance を保持し、recursive normalization は terminal RHS に 1
+builtin-object identity を anchor して 2 `Inferred` term と 1 fact-free
+pre-desugaring `Checked` inequality を生成する。declaration
+acceptance/inhabitation、set terminal、direct/one-edge/longer chain、inequality
+desugaring、implicit closure/order、truth/fact、theorem acceptance、proof、CoreIr、
+ControlFlowIr、VC は open のままである。
+
 Task 129 MC-G020 current-state override: exact one-edge object-terminal
 mode-chain equality は task 56 の real AST-derived expansion 2 個と task 127/128 の
 equality / builtin-object consumer を結合する。4 raw input は outer-mode provenance

@@ -354,6 +354,10 @@ Keep `cargo test -p mizar-test` green after each task (see
       checker task 136's exact two-edge local-mode-chain inequality active pass
       bridge with four raw outer-mode inputs, three real expansions, terminal
       set-RHS provenance, and a fact-free pre-desugaring checked inequality,
+      checker task 137's exact two-edge local-object-mode-chain inequality
+      active pass bridge with four raw outer-mode inputs, three real expansions,
+      terminal object-RHS provenance, and a fact-free pre-desugaring checked
+      inequality,
       checker task 88's proof skeleton
       extraction-gap boundary, and checker task 89's statement proof
       extraction-gap boundary, and checker task 90's predicate/functor

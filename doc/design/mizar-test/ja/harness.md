@@ -568,6 +568,15 @@ near miss、real sidecar が slice を保護し、mode declaration
 acceptance/inhabitation、inequality desugaring、implicit closure/order、
 theorem/proof/Core/VC、broader semantics は deferred のままである。
 
+task 137 は exact two-edge object-terminal local-mode-chain inequality pass を
+追加する。runner は 4 raw `OuterTwoEdgeObjectModeInequality` input を保持し、
+Task-72-compatible real expansion 3 本を `TermFormulaChecker` に渡して terminal
+`object` RHS 起点の builtin-object identity 1 個と fact-free pre-desugaring
+`Checked` inequality を要求する。exact chain guard、missing-link corruption、
+withheld-family near miss、real sidecar が slice を保護し、declaration
+acceptance/inhabitation、inequality desugaring、implicit closure/order、
+theorem/proof/Core/VC、broader semantics は deferred のままである。
+
 task 128 は exact direct local-object-mode reserved-variable equality pass を
 追加する。runner は task-55-compatible `LocalObjectMode -> object` definition 1 個を
 受理し、4 raw local object-mode input を保持して、その real AST-derived expansion
