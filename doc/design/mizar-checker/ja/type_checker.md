@@ -690,6 +690,24 @@ expected-set projection を独立に guard する。missing/non-exact definition
 reserve、formula は fail closed する。mode declaration acceptance/inhabitation、
 membership truth/fact、implicit closure/order、theorem acceptance、proof、
 CoreIr、ControlFlowIr、VC は deferred のままである。
+task 144 は exact two-edge object-terminal local-mode-chain left
+reserved-variable membership bridge を規定する。source は unique、unrecovered、
+source-preceding、no-argument/attribute definition 3 個
+`OuterTwoEdgeObjectModeMembership -> MiddleTwoEdgeObjectModeMembership -> BaseTwoEdgeObjectModeMembership -> object`、
+outer mode の `x` と explicit `set` の `y` から成る ordered reserve、
+`TwoEdgeLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;` を
+持つ。raw left result は outer symbol/range、right result と sole expected-set
+input は独立した explicit reserve range を保持する。real Task 72 expansion 3
+本が left role を terminal-RHS-anchored builtin-object identity 1 個へ再帰的に
+normalize し、right builtin-set role は直接 distinct explicit-reserve-anchored
+identity 1 個へ normalize される。exact contract は `BindingId(0/1)`、2
+`Inferred` term、1 fact-free `Checked` membership、right-owned expected
+constraint 1 個だけ、left expected type なし、object/set coercion なしを要求する。
+各 definition label、両 chain radix、expansion entry 3 本、right expected-set
+projection を独立に guard する。missing/non-exact definition、reserve、formula
+は fail closed する。mode declaration acceptance/inhabitation、membership
+truth/fact、implicit closure/order、theorem acceptance、proof、CoreIr、
+ControlFlowIr、VC は deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

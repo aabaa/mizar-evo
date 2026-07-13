@@ -637,6 +637,21 @@ right-owned constraint and no left expected type. Mode declaration
 acceptance/inhabitation, membership truth/facts, implicit closure/order,
 theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
 
+Task 144 MC-G020 current-state override: the exact two-edge object-terminal
+local-mode-chain left membership composes task 72's three real AST-derived
+`OuterTwoEdgeObjectModeMembership -> MiddleTwoEdgeObjectModeMembership -> BaseTwoEdgeObjectModeMembership -> object`
+expansions with the right-only expected-set, two-binding membership consumer
+from tasks 125, 140, 142, and 143. The raw left result retains outer-mode
+provenance, while the independent right result and sole expected-set input
+retain explicit reserve provenance. All three real expansions recursively
+normalize the left to a terminal-RHS builtin-object identity; the right roles
+normalize directly to a distinct explicit-reserve builtin-set identity. Two
+`Inferred` terms and one fact-free `Checked` membership are recorded with
+exactly one right-owned constraint, no left expected type, and no object/set
+coercion. Mode declaration acceptance/inhabitation, membership truth/facts,
+implicit closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and
+VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

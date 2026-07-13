@@ -472,6 +472,17 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    terminal-RHS builtin-set identity, without mode declaration
    acceptance/inhabitation, membership truth/facts, closure/order, or theorem
    acceptance,
+   task 144 adds the exact two-edge local-object-mode-chain left reserved-
+   variable membership pass by combining task 72's real
+   `OuterTwoEdgeObjectModeMembership -> MiddleTwoEdgeObjectModeMembership -> BaseTwoEdgeObjectModeMembership -> object`
+   producer with tasks 125/140/142/143's right-only expected-set two-binding
+   membership consumer, retaining the raw outer-mode left result and
+   independent right result/expected-set provenance while all three real
+   expansions recursively normalize the left to a terminal-RHS builtin-object
+   identity and the right roles normalize directly to a distinct explicit-
+   reserve builtin-set identity, without mode declaration acceptance/
+   inhabitation, membership truth/facts, object/set coercion, closure/order, or
+   theorem acceptance,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -533,6 +544,7 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    and task 141's exact one-edge local-mode-chain left membership,
    and task 142's exact one-edge local-object-mode-chain left membership,
    and task 143's exact two-edge local-mode-chain left membership,
+   and task 144's exact two-edge local-object-mode-chain left membership,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,

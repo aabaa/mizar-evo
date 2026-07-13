@@ -728,6 +728,25 @@ right expected-set projection are guarded independently. Missing or non-exact
 definitions, reserves, or formulas fail closed. Mode declaration
 acceptance/inhabitation, membership truth/facts, implicit closure/order,
 theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred.
+Task 144 specifies the exact two-edge object-terminal local-mode-chain left
+reserved-variable membership bridge. The source contains three unique,
+unrecovered, source-preceding, no-argument/attribute definitions
+`OuterTwoEdgeObjectModeMembership -> MiddleTwoEdgeObjectModeMembership -> BaseTwoEdgeObjectModeMembership -> object`,
+then ordered reserves `x` for the outer mode and `y` for explicit `set`, and
+`TwoEdgeLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`.
+The raw left result retains the outer symbol/range, while the right result and
+sole expected-set input retain the independent explicit reserve range. All
+three real Task 72 expansions must recursively normalize the left role to one
+terminal-RHS-anchored builtin-object identity; the right builtin-set roles
+normalize directly to one distinct explicit-reserve-anchored identity. The
+exact contract requires `BindingId(0/1)`, two `Inferred` terms, one fact-free
+`Checked` membership, exactly one right-owned expected constraint, no left
+expected type, and no object/set coercion. Each definition label, both chain
+radices, all three expansion entries, and the right expected-set projection
+are guarded independently. Missing or non-exact definitions, reserves, or
+formulas fail closed. Mode declaration acceptance/inhabitation, membership
+truth/facts, implicit closure/order, theorem acceptance, proof, CoreIr,
+ControlFlowIr, and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

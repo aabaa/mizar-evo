@@ -734,6 +734,17 @@ intern する。2 `Inferred` term と 1 fact-free `Checked` membership は exact
 type/well-formedness だけを credit し、mode declaration acceptance/inhabitation、
 membership truth/fact、implicit closure/order、theorem acceptance、proof、Core、
 VC は credit しない。
+task 144 は exact two-edge local-object-mode-chain left reserved-variable
+membership pass row
+`definition mode BaseTwoEdgeObjectModeMembershipDef: BaseTwoEdgeObjectModeMembership is object; end; definition mode MiddleTwoEdgeObjectModeMembershipDef: MiddleTwoEdgeObjectModeMembership is BaseTwoEdgeObjectModeMembership; end; definition mode OuterTwoEdgeObjectModeMembershipDef: OuterTwoEdgeObjectModeMembership is MiddleTwoEdgeObjectModeMembership; end; reserve x for OuterTwoEdgeObjectModeMembership; reserve y for set; theorem TwoEdgeLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`
+を追加する。raw left result は written outer-mode provenance、right result と sole
+expected-set input は独立した explicit reserve provenance を保持する。real
+expansion 3 本が left を terminal object RHS へ再帰的に normalize し、right
+role は distinct explicit-reserve-anchored builtin-set identity へ直接 normalize
+される。2 `Inferred` term と 1 fact-free `Checked` membership は exact
+type/well-formedness だけを credit し、mode declaration acceptance/
+inhabitation、membership truth/fact、object/set coercion、implicit closure/
+order、theorem acceptance、proof、Core、VC は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

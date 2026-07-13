@@ -667,6 +667,19 @@ acceptance/inhabitation、membership truth/fact、implicit closure/order、
 theorem/proof/Core/VC、broader semantics は deferred のままである。active
 type-elaboration runner は 94 cases である。
 
+task 144 は exact two-edge object-terminal local-mode-chain left reserved-
+variable membership pass を追加する。runner は raw
+`OuterTwoEdgeObjectModeMembership` left result と独立した explicit-set right
+result/expected input を保持し、real Task 72 compatible expansion 3 本を
+`TermFormulaChecker` に渡し、distinct terminal-object-RHS builtin-object /
+explicit-reserve builtin-set identity、`BindingId(0/1)`、2 `Inferred` term、1
+fact-free `Checked` membership、right expected constraint だけ、left expected
+input なし、object/set coercion なしを要求する。exact source guard、独立した
+3 link/right-expected corruption、withheld-family near miss、real sidecar が
+slice を保護する。mode declaration acceptance/inhabitation、membership
+truth/fact、implicit closure/order、theorem/proof/Core/VC、broader semantics は
+deferred のままである。active type-elaboration runner は 95 cases である。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

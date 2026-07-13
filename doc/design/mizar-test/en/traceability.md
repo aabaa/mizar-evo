@@ -783,6 +783,17 @@ one terminal-RHS builtin-set identity. Two `Inferred` terms and one fact-free
 `Checked` membership credit only exact type/well-formedness, not mode
 declaration acceptance/inhabitation, membership truth/facts, implicit
 closure/order, theorem acceptance, proof, Core, or VC.
+Task 144 adds the exact two-edge local-object-mode-chain left reserved-variable
+membership pass row
+`definition mode BaseTwoEdgeObjectModeMembershipDef: BaseTwoEdgeObjectModeMembership is object; end; definition mode MiddleTwoEdgeObjectModeMembershipDef: MiddleTwoEdgeObjectModeMembership is BaseTwoEdgeObjectModeMembership; end; definition mode OuterTwoEdgeObjectModeMembershipDef: OuterTwoEdgeObjectModeMembership is MiddleTwoEdgeObjectModeMembership; end; reserve x for OuterTwoEdgeObjectModeMembership; reserve y for set; theorem TwoEdgeLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`.
+The raw left result retains its written outer-mode provenance, while the right
+result and sole expected-set input retain independent explicit reserve
+provenance. All three real expansions recursively normalize the left to the
+terminal object RHS; the right roles normalize directly to a distinct
+explicit-reserve-anchored builtin-set identity. Two `Inferred` terms and one
+fact-free `Checked` membership credit only exact type/well-formedness, not mode
+declaration acceptance/inhabitation, membership truth/facts, object/set
+coercion, implicit closure/order, theorem acceptance, proof, Core, or VC.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

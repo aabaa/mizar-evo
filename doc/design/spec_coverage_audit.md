@@ -826,6 +826,23 @@ expectation changes. Coverage remains partial: mode declaration
 acceptance/inhabitation, membership truth/facts, implicit closure/order,
 theorem acceptance, proof, CoreIr, ControlFlowIr, and VC are not credited.
 
+Task144 addendum for chapters `03.type_system.md`, `04.variables_and_constants.md`,
+`07.modes.md`, `13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 144 adds only the exact active
+type/well-formedness pass for a two-edge object-terminal local-mode-chain left
+membership operand with an independent explicit-set right operand. The raw
+left result retains outer-mode provenance, while the right result and sole
+expected-set role retain their explicit reserve provenance. All three real
+AST-derived chain expansions recursively normalize the left to a terminal-RHS
+builtin-object identity, while the right roles normalize directly to a
+distinct explicit-reserve builtin-set identity. The result is two inferred
+variables and one fact-free checked membership with no left expected type or
+object/set coercion. The classified changes are `test_gap`, `source_drift`,
+and `design_drift`; no specification intent or existing expectation changes.
+Coverage remains partial: mode declaration acceptance/inhabitation, membership
+truth/facts, implicit closure/order, theorem acceptance, proof, CoreIr,
+ControlFlowIr, and VC are not credited.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

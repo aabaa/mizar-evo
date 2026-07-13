@@ -625,6 +625,20 @@ declaration acceptance/inhabitation、membership truth/fact、implicit
 closure/order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open の
 ままである。
 
+Task 144 MC-G020 current-state override: exact two-edge object-terminal
+local-mode-chain left membership は task 72 の real AST-derived expansion 3 本
+`OuterTwoEdgeObjectModeMembership -> MiddleTwoEdgeObjectModeMembership -> BaseTwoEdgeObjectModeMembership -> object`
+と、tasks 125 / 140 / 142 / 143 の right-only expected-set two-binding
+membership consumer を compose する。raw left result は outer-mode provenance、
+独立した right result と sole expected-set input は explicit reserve provenance
+を保持する。real expansion 3 本が left を terminal-RHS builtin-object identity
+へ再帰的に normalize し、right role は distinct explicit-reserve builtin-set
+identity へ直接 normalize される。right-owned constraint 1 個だけ、left
+expected type なし、object/set coercion なしで 2 `Inferred` term と 1
+fact-free `Checked` membership を記録する。mode declaration acceptance/
+inhabitation、membership truth/fact、implicit closure/order、theorem
+acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral
