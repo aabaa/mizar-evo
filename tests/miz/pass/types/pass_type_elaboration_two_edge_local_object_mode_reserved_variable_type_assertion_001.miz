@@ -1,0 +1,14 @@
+definition
+  mode BaseTwoEdgeObjectModeTypeAssertionDef: BaseTwoEdgeObjectModeTypeAssertion is object;
+end;
+
+definition
+  mode MiddleTwoEdgeObjectModeTypeAssertionDef: MiddleTwoEdgeObjectModeTypeAssertion is BaseTwoEdgeObjectModeTypeAssertion;
+end;
+
+definition
+  mode OuterTwoEdgeObjectModeTypeAssertionDef: OuterTwoEdgeObjectModeTypeAssertion is MiddleTwoEdgeObjectModeTypeAssertion;
+end;
+
+reserve x for OuterTwoEdgeObjectModeTypeAssertion;
+theorem TwoEdgeLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;

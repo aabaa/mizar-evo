@@ -807,6 +807,23 @@ missing or non-exact definitions, reserves, and formulas fail closed. Mode
 declaration acceptance/inhabitation, formula-side local-mode asserted-head
 extraction, general reachability/widening/`qua`, truth/facts, theorem
 acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred.
+Task 149 specifies only the exact two-edge bare-object local-mode-chain
+reserved-variable normalized-reflexive type assertion bridge
+`BaseTwoEdgeObjectModeTypeAssertion -> object; MiddleTwoEdgeObjectModeTypeAssertion -> BaseTwoEdgeObjectModeTypeAssertion; OuterTwoEdgeObjectModeTypeAssertion -> MiddleTwoEdgeObjectModeTypeAssertion; reserve x for OuterTwoEdgeObjectModeTypeAssertion; theorem ...: x is object;`.
+The raw subject result must retain its written outer-mode symbol/range, while
+the asserted builtin `object` retains its independent formula source node. All
+three real Task 72 expansions must reach `TermFormulaChecker`; the inputs must
+recursively normalize to one builtin-object identity canonically anchored at
+the terminal definition RHS before one `Inferred` variable term and one fact-
+free `Checked` type assertion are recorded. The exact contract requires
+`BindingId(0)` and source-order use ordinal 1. All three definition labels,
+both chain radices, and all three expansion entries require independent guards;
+missing or non-exact definitions, reserves, and formulas fail closed. Mode
+declaration acceptance/inhabitation, formula-side local-mode asserted-head
+extraction, general reachability/widening/`qua`, object/set coercion, truth/
+facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
+deferred. Exact source guards, independent definition/three-link corruption,
+and the real frontend/resolver sidecar protect the production route.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

@@ -719,6 +719,26 @@ declaration acceptance/inhabitation, formula-side local-mode asserted-head
 extraction, general reachability/widening/`qua`, truth/facts, implicit closure/
 order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
 
+Task 149 MC-G020 current-state override: the exact two-edge object-
+terminal local-mode-chain reserved-variable type assertion composes task 72's
+three real AST-derived
+`OuterTwoEdgeObjectModeTypeAssertion -> MiddleTwoEdgeObjectModeTypeAssertion -> BaseTwoEdgeObjectModeTypeAssertion -> object`
+expansions with tasks 122, 145, 147, and 148's identifier-result and independently
+formula-anchored asserted-type consumer. The raw subject result retains
+its written outer-mode provenance, while the asserted builtin `object` retains
+its independent formula source node. All three expansions must recursively
+normalize both inputs to one builtin-object identity canonically anchored at
+the terminal definition RHS before one `Inferred` term and one fact-free
+`Checked` type assertion are recorded. This exact slice requires `BindingId(0)`
+and source-order use ordinal 1 and fails closed on non-exact definitions,
+reserves, formulas, or any of the three expansion payloads. The classified
+changes are `test_gap`, `source_drift`, and `design_drift`; there is no
+`spec_gap`. Mode declaration acceptance/inhabitation, formula-side local-mode
+asserted-head extraction, general reachability/widening/`qua`, object/set
+coercion, truth/facts, implicit closure/order, theorem acceptance, proof,
+CoreIr, ControlFlowIr, and VC remain open. The production route and real
+frontend/resolver sidecar now guard the exact active slice.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

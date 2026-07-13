@@ -525,6 +525,18 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    declaration acceptance/inhabitation, formula-side local-mode asserted
    heads, general reachability/widening/`qua`, closure/order, or theorem
    acceptance,
+   task 149 adds the exact two-edge
+   local-object-mode-chain reserved-variable normalized-reflexive type
+   assertion pass, combining task 72's real
+   `OuterTwoEdgeObjectModeTypeAssertion -> MiddleTwoEdgeObjectModeTypeAssertion -> BaseTwoEdgeObjectModeTypeAssertion -> object`
+   producer with tasks 122/145/147/148's identifier-result and independently
+   formula-anchored asserted-type consumer. The intended slice retains raw
+   outer-mode subject and asserted-type provenance while all three real
+   expansions recursively normalize both inputs to a terminal-RHS builtin-
+   object identity before one inferred term and one fact-free checked type
+   assertion, without mode declaration acceptance/inhabitation, formula-side
+   local-mode asserted heads, general reachability/widening/`qua`, object/set
+   coercion, closure/order, or theorem acceptance,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -594,6 +606,8 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    and task 147's exact one-edge local-object-mode-chain normalized-reflexive
    type assertion,
    and task 148's exact two-edge local-mode-chain normalized-reflexive
+   type assertion,
+   and task 149's exact two-edge local-object-mode-chain normalized-reflexive
    type assertion,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-

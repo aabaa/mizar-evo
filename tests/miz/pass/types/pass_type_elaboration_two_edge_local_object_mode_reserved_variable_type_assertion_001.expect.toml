@@ -1,0 +1,21 @@
+schema_version = 1
+id = "pass_type_elaboration_two_edge_local_object_mode_reserved_variable_type_assertion_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_two_edge_local_object_mode_reserved_variable_type_assertion_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.03.type_expressions.builtin_type_assertion_checker_bridge",
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_two_edge_chain_source_bridge",
+  "spec.en.checker.type_elaboration.two_edge_local_object_mode_reserved_variable_type_assertion_source_bridge",
+]
+notes = "Spec-derived Task 149 intent for the exact two-edge bare-object local-mode-chain reserved-variable normalized-reflexive type assertion. The subject result retains its written OuterTwoEdgeObjectModeTypeAssertion symbol and reserve range, while the formula-side asserted builtin object retains its independent source node. All three real AST-derived expansions recursively normalize the subject to the same builtin-object identity as the asserted type, canonically anchored at the terminal definition RHS. The checker resolves x to BindingId(0), records one Inferred variable and one fact-free Checked TypeAssertion, and uses no general reachability or object/set coercion. This does not credit formula-side local-mode asserted-head extraction, mode declaration checking/acceptance/inhabitation, widening or qua, truth/facts, implicit closure/order, theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, or VC."

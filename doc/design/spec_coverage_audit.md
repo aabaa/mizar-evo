@@ -911,6 +911,23 @@ side local-mode asserted heads, general reachability/widening/`qua`, truth/
 facts, implicit closure/order, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC are not credited.
 
+Task149 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 149 specifies
+only the exact normalized-reflexive type/well-formedness pass for a two-edge
+object-terminal local-mode-chain reserved-variable subject asserted as
+formula-side builtin `object`. The raw subject result must retain its written
+outer-mode provenance, while the asserted type retains its independent formula
+source node. All three real AST-derived expansions must recursively normalize
+both inputs to one builtin-object identity canonically anchored at the terminal
+definition RHS before one inferred term and one fact-free checked type
+assertion are recorded. The classified changes are `test_gap`, `source_drift`,
+and `design_drift`; there is no specification intent or existing expectation
+change. Coverage remains partial: mode declaration acceptance/inhabitation,
+formula-side local-mode asserted heads, general reachability/widening/`qua`,
+object/set coercion, truth/facts, implicit closure/order, theorem acceptance,
+proof, CoreIr, ControlFlowIr, and VC are not credited.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

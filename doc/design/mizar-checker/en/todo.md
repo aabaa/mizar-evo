@@ -2424,6 +2424,12 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
     - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 72, 122, 146, and 147.
 
+149. **Add exact two-edge local-object-mode-chain reserved-variable normalized-reflexive type assertion checker bridge.** [x]
+    - Add only the spec-derived `OuterTwoEdgeObjectModeTypeAssertion -> MiddleTwoEdgeObjectModeTypeAssertion -> BaseTwoEdgeObjectModeTypeAssertion -> object`, one reserve `x` for the outer mode, and `x is object` theorem source.
+    - Preserve the raw outer-mode subject result and independently formula-anchored builtin-object asserted type, require `BindingId(0)` and source-order use ordinal 1, consume all three real expansions, and recursively normalize both inputs to one terminal-RHS builtin-object identity before one `Inferred` term and one fact-free `Checked` type assertion. Exact, independent definition/expansion corruption, withheld-family near-miss, and real-sidecar guards are required.
+    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, object/set coercion, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
+    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 72, 122, 145, 147, and 148.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

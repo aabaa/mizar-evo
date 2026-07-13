@@ -789,6 +789,19 @@ normalize してから、1 `Inferred` term と 1 fact-free `Checked` type assert
 declaration acceptance/inhabitation、formula-side local-mode asserted head、
 general reachability/widening/`qua`、truth/fact、closure/order、theorem
 acceptance、proof、Core、VC は credit しない。
+task 149 は次の exact two-edge local-object-mode-chain reserved-variable type
+assertion pass row を追加する:
+`definition mode BaseTwoEdgeObjectModeTypeAssertionDef: BaseTwoEdgeObjectModeTypeAssertion is object; end; definition mode MiddleTwoEdgeObjectModeTypeAssertionDef: MiddleTwoEdgeObjectModeTypeAssertion is BaseTwoEdgeObjectModeTypeAssertion; end; definition mode OuterTwoEdgeObjectModeTypeAssertionDef: OuterTwoEdgeObjectModeTypeAssertion is MiddleTwoEdgeObjectModeTypeAssertion; end; reserve x for OuterTwoEdgeObjectModeTypeAssertion; theorem TwoEdgeLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;`
+raw subject result は written outer-mode provenance、asserted
+builtin `object` は独立した formula-anchored source node を保持する。real
+expansion 3 本が両 input を terminal-RHS builtin-object identity 1 個へ再帰的に
+normalize してから、1 `Inferred` term と 1 fact-free `Checked` type assertion が
+exact normalized-reflexive type/well-formedness だけを credit する。mode
+declaration acceptance/inhabitation、formula-side local-mode asserted head、
+general reachability/widening/`qua`、object/set coercion、truth/fact、closure/
+order、theorem acceptance、proof、Core、VC は credit しない。exact source
+guard、独立した definition/three-link corruption、real frontend/resolver
+sidecar が active row を保護する。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

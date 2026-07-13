@@ -839,6 +839,19 @@ terminal-RHS builtin-set identity before one `Inferred` term and one fact-free
 formedness only. Mode declaration acceptance/inhabitation, formula-side local-
 mode asserted heads, general reachability/widening/`qua`, truth/facts,
 closure/order, theorem acceptance, proof, Core, and VC remain uncredited.
+Task 149 adds the following exact two-edge local-object-mode-chain reserved-
+variable type assertion pass row:
+`definition mode BaseTwoEdgeObjectModeTypeAssertionDef: BaseTwoEdgeObjectModeTypeAssertion is object; end; definition mode MiddleTwoEdgeObjectModeTypeAssertionDef: MiddleTwoEdgeObjectModeTypeAssertion is BaseTwoEdgeObjectModeTypeAssertion; end; definition mode OuterTwoEdgeObjectModeTypeAssertionDef: OuterTwoEdgeObjectModeTypeAssertion is MiddleTwoEdgeObjectModeTypeAssertion; end; reserve x for OuterTwoEdgeObjectModeTypeAssertion; theorem TwoEdgeLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;`.
+The raw subject result retains its written outer-mode provenance,
+while the asserted builtin `object` retains its independently formula-anchored
+source node. All three real expansions must recursively normalize both inputs
+to one terminal-RHS builtin-object identity before one `Inferred` term and one
+fact-free `Checked` type assertion credit exact normalized-reflexive type/well-
+formedness only. Mode declaration acceptance/inhabitation, formula-side local-
+mode asserted heads, general reachability/widening/`qua`, object/set coercion,
+truth/facts, closure/order, theorem acceptance, proof, Core, and VC remain
+uncredited. Exact source guards, independent definition/three-link corruption,
+and the real frontend/resolver sidecar protect the active row.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
