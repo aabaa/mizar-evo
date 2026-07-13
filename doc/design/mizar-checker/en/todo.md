@@ -2008,11 +2008,32 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       synthesize imported module AST extraction, attributed-type evidence,
       positive attributed-type acceptance, imported `empty` on non-`set` heads,
       CoreIr, ControlFlowIr, VC, or proof payloads, and it must leave
-      `non empty object`, attribute arguments, qualified owner provenance, and
-      broader imported attributes on their existing gaps.
+      Task 171 later supersedes the exact `non empty object` sidecar only;
+      attribute arguments, qualified owner provenance, and broader imported
+      attributes remain on their existing gaps.
     - Verify: `cargo test -p mizar-test`, `cargo test -p mizar-checker`.
     - Deps: tasks 48, 50, 80, 84, and 85. Refs: Step 5 source-derived semantic
       bridge; mizar-test task 10; spec 03 type expressions; spec 06
+      attributes; spec 11 symbol management; spec 12 modules and namespaces.
+
+171. **Add source-derived imported negative empty object reserve provenance bridge.** [x]
+    - Promote only the existing
+      `fail_type_elaboration_imported_empty_object_gap_001` source containing
+      `import parser.type_fixtures; reserve x for non empty object;`.
+    - Acceptance: parser and resolver supply the real imported `empty`
+      `SymbolKind::Attribute` with `ImportedSource` provenance; the source
+      extractor preserves negative polarity and builtin `object`; the
+      checker-owned reserve bridge accepts that exact provenance/polarity/head
+      combination and passes one negative `AttributeInput` to declaration
+      checking; the active case then fails closed on
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query`.
+      Positive `empty object`, imported attributes on symbol heads, attribute
+      admissibility/evidence, accepted attributed types, imported module AST
+      extraction, CoreIr, ControlFlowIr, VC, and proof payloads remain deferred.
+    - Verify: `cargo test -p mizar-checker`, `cargo test -p mizar-test`; final
+      workspace verification.
+    - Deps: tasks 48, 50, 80, 84, 85, and 116. Refs: Step 5 source-derived
+      semantic bridge; mizar-test task 10; spec 03 type expressions; spec 06
       attributes; spec 11 symbol management; spec 12 modules and namespaces.
 
 117. **Add source-derived formula constant kind checker bridge.** [x]

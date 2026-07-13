@@ -407,14 +407,16 @@ Task80 addendum for chapters `03.type_system.md`, `06.attributes.md`,
 historically added active source-derived diagnostic coverage for reserve types
 whose attribute symbols come from the documented `parser.type_fixtures` import
 summary and observed `type_elaboration.external_dependency.ast_payload_extraction`.
-Task84, Task85, and Task116 supersede that boundary only in narrow slices:
+Tasks 84, 85, 116, and 171 supersede that boundary only in narrow slices:
 Task84 for `TypeCaseAttr` imported provenance and `AttributeInput` payload
 extraction, Task85 for the negative `empty`/builtin-`set` fixture, and Task116
-for the positive `empty`/builtin-`set` fixture. Broader imported attributes
-outside these bridges still credit only the extraction-gap boundary until
-source-derived fixtures and payload producers exist. Task80 keeps the active
-boundary sidecar for `non empty object` on that extraction-gap row; it does not
-credit the `empty`/builtin-`set` bridges. This does not treat the import summary as real
+for the positive `empty`/builtin-`set` fixture, and Task171 for the negative
+`empty`/builtin-`object` fixture. Broader imported attributes outside these
+bridges remain deferred on the extraction gap with no current fixture credit
+until source-derived fixtures and payload producers exist. Positive
+`empty object` and imported attributes on symbol heads are likewise deferred
+and untested.
+This does not treat the import summary as real
 imported module AST extraction and does not credit attributed-type evidence,
 positive attributed type elaboration, CoreIr, ControlFlowIr, VC, or proof
 payload promotion.
@@ -443,7 +445,7 @@ negative checker `AttributeInput` on builtin `set` and observes
 credits imported attribute provenance and no-argument negative
 `AttributeInput` payload extraction only for that fixture. It does not credit
 imported module AST extraction, attributed-type existential/evidence payloads,
-imported `empty` on non-`set` heads, broader imported
+positive `empty object`, imported attributes on symbol heads, broader imported
 attributes, structure-qualified attribute owner provenance, attribute
 arguments, CoreIr, ControlFlowIr, VC, or proof payload promotion.
 Task116 addendum for chapters `03.type_system.md`, `06.attributes.md`,
@@ -456,11 +458,21 @@ positive checker `AttributeInput` on builtin `set` and observes
 credits imported attribute provenance and no-argument positive
 `AttributeInput` payload extraction only for that fixture. It does not credit
 imported module AST extraction, attributed-type existential/evidence payloads,
-positive attributed-type acceptance, imported `empty` on non-`set` heads,
+positive attributed-type acceptance, positive `empty object`, imported
+attributes on symbol heads,
 broader imported attributes, structure-qualified attribute owner provenance,
 attribute arguments, CoreIr, ControlFlowIr, VC, or proof payload promotion.
-The accompanying `non empty object` sidecar remains external-gap coverage under
-the Task80 row.
+Task171 addendum for chapters `03.type_system.md`, `06.attributes.md`,
+`11.symbol_management.md`, and `12.modules_and_namespaces.md`: checker task 171
+promotes only the existing `non empty object` fixture. The active runner passes
+the imported `empty` `ImportedSource` symbol as a negative checker
+`AttributeInput` on builtin `object` and observes the same evidence-query
+diagnostic. This credits exact imported provenance, negative polarity, and
+argument-free checker handoff only. Positive `empty object`, imported
+attributes on symbol heads, imported module AST extraction, attribute
+admissibility/evidence, accepted attributed types, and downstream payloads
+remain deferred. This current-state addendum supersedes the earlier coverage-
+matrix clauses that list only Tasks 84, 85, and 116.
 
 Task86 / Task115 / Task117 addendum for chapters `14.formulas.md` and
 `16.theorems_and_proofs.md`: checker task 86 adds active source-derived

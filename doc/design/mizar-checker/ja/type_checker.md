@@ -327,12 +327,15 @@ fixture だけについて real imported `empty` attribute を negative checker
 `AttributeInput` として渡すことで同じ boundary を上書きする。task 116 は既存
 positive `empty`/builtin-`set` fixture だけについて同じ imported attribute を
 positive checker `AttributeInput` として渡すことで同じ boundary を上書きする。
-task-84 / task-85 / task-116 bridge 外の broader imported attribute は、
+task 171 は既存 negative `empty`/builtin-`object` fixture だけについて real
+imported attribute を negative checker `AttributeInput` として渡すことで同じ
+boundary を上書きする。task-84 / task-85 / task-116 / task-171 bridge 外の
+broader imported attribute は、
 source-derived fixture と payload producer が存在するまで deferred のままとする。
-active runner sidecar は builtin `object` 上の imported `empty` を external
-extraction-gap boundary に固定する。bridge はこの import summary を real
+bridge はこの import summary を real
 imported module AST extraction と扱ってはならず、attributed-type evidence、positive
-attributed type elaboration、non-`set` head 上の imported `empty`、
+attributed type elaboration、builtin `object` 上の positive `empty`、symbol head
+上の imported `empty`、
 CoreIr/ControlFlowIr/VC/proof payload を捏造してはならない。
 task 84 は imported-attribute provenance bridge を記録する。documented
 `parser.type_fixtures` import summary 由来の `TypeCaseAttr` は builtin `set` 上の
@@ -352,10 +355,16 @@ payload gap を、その negative `empty` / builtin-`set` source shape につい
 builtin `set` 上の positive checker `AttributeInput` として渡してよく、同じ
 evidence-query diagnostic で fail closed する。これは broader task-80 payload gap を、
 その positive `empty` / builtin-`set` source shape についてだけ上書きする。
-`object` 上の imported attribute は active external-gap boundary fixture のままである。
-`object` や local symbol head 上の imported attribute、imported module AST extraction、
-attributed-type evidence、positive imported attributed type elaboration、
-structure-qualified owner provenance、attribute argument、downstream payload は credit しない。
+task 171 は matching negative builtin-object provenance slice を規定する。既存
+`non empty object` fixture は documented imported `empty` attribute を builtin
+`object` 上の negative checker `AttributeInput` として渡し、`ImportedSource`
+provenance と written polarity を保持した後、同じ evidence-query diagnostic で
+fail closed しなければならない。これは task-80 payload gap を exact source shape
+だけについて上書きする。positive `empty object` と symbol head 上の imported
+attribute は extraction gap のままである。tasks 85、116、171 は attribute
+admissibility、attributed-type evidence / acceptance、imported module AST extraction、
+structure-qualified owner provenance、attribute argument、downstream payload を
+credit しない。
 task 81 は same-module argument-bearing local attribute surface について同じ
 extraction-gap boundary を記録する。`attr RankedDef: x is 2-ranked` のように
 Chapter 6 の `param_prefix` 構文で書かれた declaration-site attribute と、

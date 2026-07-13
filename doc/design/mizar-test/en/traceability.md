@@ -391,17 +391,15 @@ real imported `SymbolKind::Mode` symbol as a checker type head. It credits
 imported mode provenance and type-head payload extraction, but not imported
 module AST extraction, `ModeExpansion` payloads, positive mode elaboration,
 CoreIr, ControlFlowIr, VC, or proof payloads.
-Task 80 may credit only the imported-attribute reserve external-gap boundary
-outside the task-84 `TypeCaseAttr` bridge, task-85 negative
-`empty`/builtin-`set` bridge, and task-116 positive `empty`/builtin-`set`
-bridge: future broader imported-attribute cases observe
-`type_elaboration.external_dependency.ast_payload_extraction` and do not credit
-real imported attribute provenance, `AttributeInput` payload
-extraction, attributed-type evidence, positive attributed type elaboration,
-CoreIr, ControlFlowIr, VC, or proof payloads.
-The task-85 `non empty object` sidecar remains an active member of this
-boundary, not evidence for the `empty`/builtin-`set`
-bridge.
+Task 80 historically credited the imported-attribute reserve external-gap
+boundary before the exact task-84 `TypeCaseAttr`, task-85 negative
+`empty`/builtin-`set`, task-116 positive `empty`/builtin-`set`, and task-171
+negative `empty`/builtin-`object` bridges superseded all active fixtures on that
+row. Positive `empty object`, imported attributes on symbol heads, and broader
+source shapes remain deferred extraction gaps without active fixture credit;
+future tests must stay deferred until real source-derived payload producers
+exist and must not credit imported provenance, `AttributeInput` extraction,
+evidence, acceptance, or downstream payloads prematurely.
 Task 84 may credit the imported-attribute provenance/`AttributeInput` bridge
 only: the runner observes
 `type_elaboration.checker.checker.declaration.deferred.evidence_query` for the
@@ -421,12 +419,16 @@ existing `non empty set` fixture after passing the real imported
 over builtin `set`. It credits imported attribute provenance and argument-free
 negative `AttributeInput` payload extraction for that fixture only, but not
 imported module AST extraction, attributed-type existential/evidence payloads,
-imported `empty` on non-`set` heads, broader imported attributes,
+broader imported attributes,
 structure-qualified attribute owner provenance, attribute arguments, CoreIr,
 ControlFlowIr, VC, or proof payloads. Task 116 may credit the matching positive
 `empty`/builtin-`set` provenance/`AttributeInput` bridge for the existing
-`empty set` fixture and the same evidence-query diagnostic. The active
-non-`set` fixture remains traceable to the task-80 external-gap row.
+`empty set` fixture and the same evidence-query diagnostic. Task 171 may credit
+the exact negative `empty`/builtin-`object` provenance/`AttributeInput` bridge
+for the existing `non empty object` fixture and the same evidence-query
+diagnostic. Neither task credits attribute admissibility/evidence, positive
+`empty object`, imported attributes on symbol heads, or accepted attributed
+types.
 Task 81 may credit only the argument-bearing local-attribute extraction-gap
 boundary: the runner observes
 `type_elaboration.external_dependency.ast_payload_extraction` for a
@@ -563,10 +565,12 @@ payloads, positive imported attributed type elaboration, generic imported
 attributes, qualified owner provenance, attribute arguments, or downstream
 payload promotion. Task 85 fail cases credit real imported negative `empty`
 provenance and checker `AttributeInput` payload extraction only for builtin
-`set`; task 116 credits the matching positive `empty`/builtin-`set` payload.
-`non empty object`, broader imported attributes, imported module AST
-extraction, attributed-type evidence, owner provenance, attribute arguments,
-and downstream payloads remain extraction/deferred gaps.
+`set`; task 116 credits the matching positive `empty`/builtin-`set` payload;
+task 171 credits the exact negative `empty`/builtin-`object` payload. Positive
+`empty object`, imported attributes on symbol heads, broader imported
+attributes, imported module AST extraction, attributed-type evidence, owner
+provenance, attribute arguments, and downstream payloads remain extraction/
+deferred gaps.
 Task 81 fail
 cases credit only the argument-bearing local-attribute extraction-gap boundary
 and do not credit real term-argument provenance, checker `AttributeInput`

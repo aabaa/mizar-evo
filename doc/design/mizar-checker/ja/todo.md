@@ -1828,11 +1828,30 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       まだ存在しないためである。この task は imported module AST extraction、
       attributed-type evidence、positive attributed-type acceptance、non-`set` head 上の
       imported `empty`、CoreIr、ControlFlowIr、VC、proof payload を捏造してはならず、
-      `non empty object`、attribute argument、qualified owner provenance、broader
-      imported attribute は既存 gap に残す。
+      task 171 は後で exact `non empty object` sidecar だけを supersede する。
+      attribute argument、qualified owner provenance、broader imported attribute
+      は既存 gap に残す。
     - 検証: `cargo test -p mizar-test`、`cargo test -p mizar-checker`。
     - 依存: tasks 48、50、80、84、85。参照: Step 5 source-derived semantic bridge、
       mizar-test task 10、spec 03 type expressions、spec 06 attributes、
+      spec 11 symbol management、spec 12 modules and namespaces。
+
+171. **Source-derived imported negative empty object reserve provenance bridge を追加する。** [x]
+    - `import parser.type_fixtures; reserve x for non empty object;` を含む既存
+      `fail_type_elaboration_imported_empty_object_gap_001` source だけを昇格する。
+    - Acceptance: parser / resolver は real imported `empty`
+      `SymbolKind::Attribute` と `ImportedSource` provenance を供給し、source
+      extractor は negative polarity と builtin `object` を保持する。checker-owned
+      reserve bridge はその exact provenance/polarity/head combination を受理して
+      negative `AttributeInput` 1 個を declaration checking へ渡し、active case は
+      `type_elaboration.checker.checker.declaration.deferred.evidence_query` で fail
+      closed する。positive `empty object`、symbol head 上の imported attribute、
+      attribute admissibility/evidence、accepted attributed type、imported module AST
+      extraction、CoreIr、ControlFlowIr、VC、proof payload は deferred のままとする。
+    - 検証: `cargo test -p mizar-checker`、`cargo test -p mizar-test`、final
+      workspace verification。
+    - 依存: tasks 48、50、80、84、85、116。参照: Step 5 source-derived semantic
+      bridge、mizar-test task 10、spec 03 type expressions、spec 06 attributes、
       spec 11 symbol management、spec 12 modules and namespaces。
 
 86. **Source-derived theorem formula extraction-gap boundary を追加する。** [x]

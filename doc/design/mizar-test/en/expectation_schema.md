@@ -589,21 +589,21 @@ imported module AST extraction, attributed-type existential/evidence payloads,
 positive imported attributed type elaboration, generic imported attributes,
 qualified owner provenance, attribute arguments, CoreIr, ControlFlowIr, VC, or
 proof payloads.
-Task 85 and task 116 permit the existing `non empty set` and `empty set`
-sidecars to use
+Tasks 85, 116, and 171 permit the existing `non empty set`, `empty set`, and
+`non empty object` sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "imported_empty_attribute_evidence_payload_gap"` and
 `stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"`
 after the active runner passes the real imported `empty` attribute provenance
-and negative or positive no-argument checker `AttributeInput` payload over
-builtin `set`. These sidecars do not credit imported module AST extraction,
-attributed-type existential/evidence payloads, imported `empty` on non-`set`
-heads, broader imported attributes, qualified owner provenance,
+and a negative or positive no-argument checker `AttributeInput` payload over
+builtin `set`, or the exact negative payload over builtin `object`. These
+sidecars do not credit imported module AST extraction, attributed-type
+existential/evidence payloads, positive `empty object`, imported attributes on
+symbol heads, broader imported attributes, qualified owner provenance,
 attribute arguments, CoreIr, ControlFlowIr, VC, or proof payloads.
-The remaining task-85 boundary sidecar for `non empty object` keeps
-`stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"`
-with `rejection_reason = "imported_empty_non_set_head_payload_gap"`; it documents unsupported payload
-shapes and does not credit checker `AttributeInput` handoff.
+Task 171 credits only the exact negative `empty`/builtin-`object` provenance
+and checker handoff; positive `empty object` and symbol-head shapes remain on
+`type_elaboration.external_dependency.ast_payload_extraction`.
 Task 86 permits formula-only theorem fail sidecars to reach parser/resolver
 execution. Task 117 supersedes task 115 for the exact unrecovered
 `FormulaPayloadBoundary: thesis` sidecar, which now uses

@@ -210,14 +210,15 @@ type elaboration, generic imported attributes such as `empty`,
 structure-qualified attribute owner provenance, attribute arguments, CoreIr,
 ControlFlowIr, VC, or proof payloads.
 
-Task 85 / task 116 addendum for `type-elaboration`: the documented
+Task 85 / task 116 / task 171 addendum for `type-elaboration`: the documented
 `parser.type_fixtures` imported attribute `empty` may be passed as a
-checker-owned imported negative or positive `AttributeInput` only on builtin
-`set` for the existing `non empty set` and `empty set` fixtures. The runner expects
+checker-owned imported `AttributeInput` only for negative/positive builtin
+`set` on the existing `non empty set` / `empty set` fixtures and negative
+builtin `object` on the existing `non empty object` fixture. The runner expects
 `type_elaboration.checker.checker.declaration.deferred.evidence_query` and must
 not treat the summary as imported module AST extraction or synthesize
-attributed-type existential/evidence payloads, imported `empty` on non-`set`
-heads, positive imported attributed type elaboration,
+attributed-type existential/evidence payloads, positive `empty object`, imported
+`empty` on symbol heads, positive imported attributed type elaboration,
 structure-qualified attribute owner provenance, attribute arguments, CoreIr,
 ControlFlowIr, VC, or proof payloads.
 
@@ -382,13 +383,14 @@ fabricated coverage.
 | `mizar-atp` task 20 | `advanced_semantics` metadata handoff | paced/open in `mizar-test`; metadata-only property fixtures may be consumed by `mizar-atp` Rust tests | Add active `.miz` ATP runner support only after source-derived ATP extraction and proof-policy/kernel handoff seams exist. |
 | `mizar-kernel` task 17 | proof/certificate/kernel evidence | paced/open; fail/soundness metadata is validated without active proof/certificate/kernel execution | Add runner support only after source-to-evidence or certificate execution seams exist. |
 
-Task 85 and task 116 refine the `type_elaboration` consumer row above: the
+Tasks 85, 116, and 171 refine the `type_elaboration` consumer row above: the
 imported attribute gap list now excludes the documented negative and positive
-`empty` over builtin `set` fixtures in addition to task 84's `TypeCaseAttr`
-fixture. The runner keeps the active external-gap sidecar for imported `empty`
-on builtin `object`, while generic imported attributes, imported module AST
-extraction, attribute arguments, owner provenance, evidence payloads, CoreIr,
-ControlFlowIr, VC, and proof rows stay outside the supported slice.
+`empty` over builtin `set` fixtures and the exact negative `empty` over builtin
+`object` fixture, in addition to task 84's `TypeCaseAttr` fixture. Positive
+`empty object`, imported attributes on symbol heads, generic imported
+attributes, imported module AST extraction, arguments, owner provenance,
+evidence payloads, CoreIr, ControlFlowIr, VC, and proof rows stay outside the
+supported slice.
 
 Task 86 refines the same row by proving formula-only theorem sources are
 executable through the active `type_elaboration` runner. Task 115 supersedes

@@ -9147,7 +9147,13 @@ fn extract_builtin_source_type_expression(
     }
     if attributes.iter().any(|attribute| {
         is_imported_fixture_reserve_attribute(symbols, module, &attribute.symbol)
-            && !supported_imported_fixture_reserve_attribute_use(symbols, module, &head, attribute)
+            && !supported_imported_fixture_reserve_attribute_use(
+                symbols,
+                module,
+                &head,
+                attribute,
+                attributes.len(),
+            )
     }) {
         return Err(());
     }
@@ -9475,10 +9481,16 @@ fn supported_imported_fixture_reserve_attribute_use(
     module: &ResolverModuleId,
     head: &TypeHeadInput,
     attribute: &AttributeInput,
+    attribute_count: usize,
 ) -> bool {
     match imported_fixture_reserve_attribute_spelling(symbols, module, &attribute.symbol) {
         Some("TypeCaseAttr") => matches!(head, TypeHeadInput::BuiltinSet),
-        Some("empty") => matches!(head, TypeHeadInput::BuiltinSet),
+        Some("empty") => {
+            matches!(head, TypeHeadInput::BuiltinSet)
+                || (matches!(head, TypeHeadInput::BuiltinObject)
+                    && attribute_count == 1
+                    && matches!(attribute.polarity, AttributePolarity::Negative))
+        }
         _ => false,
     }
 }
@@ -35703,6 +35715,21 @@ mod tests {
                 imported_fixture_empty_attribute_symbols.module_id().clone(),
                 &imported_fixture_empty_attribute_symbols
             ),
+            vec!["type_elaboration.checker.checker.declaration.deferred.evidence_query".to_owned()]
+        );
+        let imported_fixture_duplicate_empty_object_attribute = reserve_ast(
+            source_id,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::AttributedObjectWithDuplicateNamedAttribute("empty"),
+            )],
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(
+                &imported_fixture_duplicate_empty_object_attribute,
+                imported_fixture_empty_attribute_symbols.module_id().clone(),
+                &imported_fixture_empty_attribute_symbols
+            ),
             vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
         );
         let imported_fixture_empty_local_structure_symbols =
@@ -37241,6 +37268,13 @@ mod tests {
     }
 
     #[derive(Debug, Clone, Copy)]
+    enum TypeAttributeShape {
+        Positive,
+        Negative,
+        DuplicateNegative,
+    }
+
+    #[derive(Debug, Clone, Copy)]
     enum ReserveTypeShape {
         Builtin(&'static str),
         NonBuiltin(&'static str),
@@ -37248,6 +37282,7 @@ mod tests {
         QualifiedSymbolWithArgs(&'static str),
         AttributedSetWithNamedAttribute(&'static str),
         AttributedObjectWithNamedAttribute(&'static str),
+        AttributedObjectWithDuplicateNamedAttribute(&'static str),
         AttributedQualifiedSymbolWithNamedAttribute(&'static str, &'static str),
         AttributedQualifiedSymbol(&'static str),
         AttributedQualifiedSymbolWithAttributeArgs(&'static str),
@@ -40781,12 +40816,35 @@ mod tests {
             }
             ReserveTypeShape::AttributedSetWithNamedAttribute(attribute) => {
                 attributed_type_expression_with_attribute(
-                    builder, source_id, offset, attribute, "set", false, false,
+                    builder,
+                    source_id,
+                    offset,
+                    attribute,
+                    "set",
+                    false,
+                    TypeAttributeShape::Positive,
                 )
             }
             ReserveTypeShape::AttributedObjectWithNamedAttribute(attribute) => {
                 attributed_type_expression_with_attribute(
-                    builder, source_id, offset, attribute, "object", false, false,
+                    builder,
+                    source_id,
+                    offset,
+                    attribute,
+                    "object",
+                    false,
+                    TypeAttributeShape::Positive,
+                )
+            }
+            ReserveTypeShape::AttributedObjectWithDuplicateNamedAttribute(attribute) => {
+                attributed_type_expression_with_attribute(
+                    builder,
+                    source_id,
+                    offset,
+                    attribute,
+                    "object",
+                    false,
+                    TypeAttributeShape::DuplicateNegative,
                 )
             }
             ReserveTypeShape::AttributedQualifiedSymbolWithNamedAttribute(attribute, head) => {
@@ -40934,7 +40992,7 @@ mod tests {
             "empty",
             head,
             with_attribute_args,
-            true,
+            TypeAttributeShape::Negative,
         )
     }
 
@@ -40945,8 +41003,64 @@ mod tests {
         attribute: &str,
         head: &str,
         with_attribute_args: bool,
-        include_non: bool,
+        attribute_shape: TypeAttributeShape,
     ) -> SurfaceBuilderNodeId {
+        let start = *offset;
+        let include_non = !matches!(attribute_shape, TypeAttributeShape::Positive);
+        let (attribute_node, mut attribute_end) = add_type_attribute_ref(
+            builder,
+            source_id,
+            offset,
+            attribute,
+            with_attribute_args,
+            include_non,
+        );
+        let mut attribute_chain_children = vec![attribute_node];
+        if matches!(attribute_shape, TypeAttributeShape::DuplicateNegative) {
+            let (duplicate, duplicate_end) = add_type_attribute_ref(
+                builder,
+                source_id,
+                offset,
+                attribute,
+                with_attribute_args,
+                include_non,
+            );
+            attribute_chain_children.push(duplicate);
+            attribute_end = duplicate_end;
+        }
+        let head_start = *offset;
+        let head_token = add_token(
+            builder,
+            source_id,
+            offset,
+            SurfaceTokenKind::ReservedWord,
+            head,
+        );
+        let attribute_chain = builder.add_node(
+            SurfaceNodeKind::AttributeChain,
+            range(source_id, start, attribute_end),
+            attribute_chain_children,
+        );
+        let type_head = builder.add_node(
+            SurfaceNodeKind::TypeHead,
+            range(source_id, head_start, head_start + head.len()),
+            vec![head_token],
+        );
+        builder.add_node(
+            SurfaceNodeKind::TypeExpression,
+            range(source_id, start, head_start + head.len()),
+            vec![attribute_chain, type_head],
+        )
+    }
+
+    fn add_type_attribute_ref(
+        builder: &mut SurfaceAstBuilder,
+        source_id: SourceId,
+        offset: &mut usize,
+        attribute: &str,
+        with_attribute_args: bool,
+        include_non: bool,
+    ) -> (SurfaceBuilderNodeId, usize) {
         let start = *offset;
         let mut attribute_children = Vec::new();
         if include_non {
@@ -41014,34 +41128,12 @@ mod tests {
                 .end;
             attribute_children.extend([open, arg, close]);
         }
-        let head_start = *offset;
-        let head_token = add_token(
-            builder,
-            source_id,
-            offset,
-            SurfaceTokenKind::ReservedWord,
-            head,
-        );
         let attribute = builder.add_node(
             SurfaceNodeKind::AttributeRef,
             range(source_id, start, attribute_end),
             attribute_children,
         );
-        let attribute_chain = builder.add_node(
-            SurfaceNodeKind::AttributeChain,
-            range(source_id, start, attribute_end),
-            vec![attribute],
-        );
-        let type_head = builder.add_node(
-            SurfaceNodeKind::TypeHead,
-            range(source_id, head_start, head_start + head.len()),
-            vec![head_token],
-        );
-        builder.add_node(
-            SurfaceNodeKind::TypeExpression,
-            range(source_id, start, head_start + head.len()),
-            vec![attribute_chain, type_head],
-        )
+        (attribute, attribute_end)
     }
 
     fn add_attributed_qualified_type_expression(

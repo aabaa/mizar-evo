@@ -299,20 +299,21 @@ the import summary as real imported module AST extraction and does not claim
 `ModeExpansion` payloads, positive mode elaboration, CoreIr, ControlFlowIr, VC,
 or proof coverage.
 
-Task 80 addendum: before tasks 84, 85, and 116, the active `mizar-test`
+Task 80 addendum: before tasks 84, 85, 116, and 171, the active `mizar-test`
 type-elaboration runner observed source-derived reserve types whose attribute
 symbols come from the documented `parser.type_fixtures` import summary and
 reported `type_elaboration.external_dependency.ast_payload_extraction`. Task
 84 supersedes that boundary only for `TypeCaseAttr` imported provenance and
 `AttributeInput` payload coverage; task 85 supersedes it only for the negative
 `empty`/builtin-`set` fixture; task 116 supersedes it only for the positive
-`empty`/builtin-`set` fixture. Imported attributes outside those bridges are
+`empty`/builtin-`set` fixture; task 171 supersedes it only for the negative
+`empty`/builtin-`object` fixture. Imported attributes outside those bridges are
 deferred until source-derived fixtures and payload producers exist. This does
 not treat the import summary as real imported module AST extraction and does
 not claim attributed-type evidence, positive attributed type elaboration,
-CoreIr, ControlFlowIr, VC, or proof coverage.
-Task 80 still keeps `non empty object` as an active external-gap boundary
-sidecar.
+CoreIr, ControlFlowIr, VC, or proof coverage. Positive `empty object` and
+imported attributes on symbol heads remain deferred extraction gaps without
+active fixture credit.
 
 Task 84 addendum: the active `mizar-test` type-elaboration runner observes the
 documented `parser.type_fixtures` imported attribute symbol `TypeCaseAttr` as a
@@ -333,7 +334,7 @@ existing `non empty set` fixture and reports
 credits imported attribute provenance and argument-free negative
 `AttributeInput` payload extraction only for that fixture, not imported module
 AST extraction, attributed-type existential/evidence payloads, imported
-`empty` on non-`set` heads, broader imported attributes,
+positive `empty object`, imported attributes on symbol heads, broader imported attributes,
 structure-qualified attribute owner provenance, attribute arguments, CoreIr,
 ControlFlowIr, VC, or proof coverage.
 Task 116 addendum: the active `mizar-test` type-elaboration runner observes the
@@ -343,12 +344,18 @@ existing `empty set` fixture and reports
 `type_elaboration.checker.checker.declaration.deferred.evidence_query`. This
 credits imported attribute provenance and argument-free positive
 `AttributeInput` payload extraction only for that fixture, not imported module
-AST extraction, attributed-type existential/evidence payloads, imported `empty`
-on non-`set` heads, broader imported attributes, structure-qualified attribute
+AST extraction, attributed-type existential/evidence payloads, positive
+`empty object`, imported attributes on symbol heads, broader imported attributes, structure-qualified attribute
 owner provenance, attribute arguments, positive attributed-type acceptance,
 CoreIr, ControlFlowIr, VC, or proof coverage.
-`non empty object` therefore remains an active extraction-gap sidecar, not part
-of either imported `empty`/builtin-`set` provenance bridge.
+Task 171 addendum: the active runner observes the same imported `empty` symbol
+as a real `ImportedSource` negative checker `AttributeInput` on builtin
+`object` for the existing `non empty object` fixture and reports the same
+evidence-query diagnostic. This credits only exact imported provenance,
+negative polarity, and argument-free checker handoff. It does not credit
+positive `empty object`, imported attributes on symbol heads, imported module
+AST extraction, attributed-type admissibility/evidence or acceptance, or
+downstream payloads.
 
 Task 86 / task 115 / task 117 addendum: task 86 records the formula-only theorem source
 `theorem FormulaPayloadBoundary: thesis;` after parser and resolver execution as
@@ -1510,6 +1517,13 @@ reconciles all crate-plan MC-G rows as follows.
 Resolved setup-history rows remain closed: MC-G001, MC-G010, MC-G012,
 MC-G013, MC-G015, MC-G022, MC-G024, MC-G028, and MC-G029 have task commits
 and no reopened source/spec mismatch in this audit.
+
+Task 171 current-state override: the gap row's earlier statement that the
+`non empty object` sidecar remains on the extraction gap is superseded. The
+exact negative imported `empty`/builtin-`object` source now reaches the checker
+evidence-query diagnostic; positive `empty object`, imported attributes on
+symbol heads, imported module AST extraction, attribute evidence/acceptance,
+and downstream payloads remain deferred.
 
 ## Task 32 Classification
 

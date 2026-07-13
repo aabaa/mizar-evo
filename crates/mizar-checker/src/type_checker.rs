@@ -3053,7 +3053,12 @@ impl SourceReserveDeclarationBridge {
                 if imported_fixture_attribute {
                     let supported_imported_fixture_attribute = match entry.primary_spelling() {
                         "TypeCaseAttr" => matches!(binding.type_head, TypeHeadInput::BuiltinSet),
-                        "empty" => matches!(binding.type_head, TypeHeadInput::BuiltinSet),
+                        "empty" => {
+                            matches!(binding.type_head, TypeHeadInput::BuiltinSet)
+                                || (matches!(binding.type_head, TypeHeadInput::BuiltinObject)
+                                    && binding.type_attributes.len() == 1
+                                    && matches!(attribute.polarity, AttributePolarity::Negative))
+                        }
                         _ => false,
                     };
                     if !supported_imported_fixture_attribute {
@@ -7899,15 +7904,114 @@ mod tests {
             ],
         )
         .expect("imported fixture empty over object should validate shape before provenance");
+        let imported_fixture_empty_object_handoff = imported_fixture_empty_object_bridge
+            .check(&symbol_env_with_imported_symbol(
+                imported_fixture_empty_attribute.clone(),
+                SymbolKind::Attribute,
+                "empty",
+            ))
+            .expect(
+                "negative imported empty over builtin object should reach declaration checking",
+            );
+        assert_eq!(
+            diagnostic_ranges(
+                imported_fixture_empty_object_handoff.declarations(),
+                "checker.declaration.deferred.evidence_query"
+            ),
+            vec![(0, 1)]
+        );
+        let imported_fixture_empty_object_declaration =
+            declarations_by_binding(imported_fixture_empty_object_handoff.declarations())
+                .remove(&BindingId::new(0))
+                .expect("checked negative imported empty object declaration should exist");
+        let imported_fixture_empty_object_type_entry = imported_fixture_empty_object_handoff
+            .declarations()
+            .type_entries()
+            .get(
+                imported_fixture_empty_object_declaration
+                    .type_entry
+                    .expect("negative imported empty object declaration should keep a type entry"),
+            )
+            .expect("negative imported empty object type entry should exist");
+        let TypeEntryActual::Known(imported_fixture_empty_object_normalized_id) =
+            imported_fixture_empty_object_type_entry.actual
+        else {
+            panic!("negative imported empty object should keep a normalized type");
+        };
+        let imported_fixture_empty_object_normalized = imported_fixture_empty_object_handoff
+            .declarations()
+            .normalized_types()
+            .get(imported_fixture_empty_object_normalized_id)
+            .expect("normalized negative imported empty object type should exist");
+        assert!(matches!(
+            imported_fixture_empty_object_normalized.head,
+            TypeHeadRef::BuiltinObject
+        ));
+        assert_eq!(
+            imported_fixture_empty_object_normalized
+                .attributes
+                .negative()
+                .len(),
+            1
+        );
+        assert_eq!(
+            imported_fixture_empty_object_normalized
+                .attributes
+                .negative()[0]
+                .symbol,
+            imported_fixture_empty_attribute
+        );
         assert!(
-            imported_fixture_empty_object_bridge
+            imported_fixture_empty_object_normalized
+                .attributes
+                .positive()
+                .is_empty()
+        );
+        assert!(
+            imported_fixture_empty_object_handoff
+                .declarations()
+                .facts()
+                .is_empty(),
+            "negative imported empty object reserve heads must not seed facts without evidence"
+        );
+        let imported_fixture_duplicate_empty_object_bridge = SourceReserveDeclarationBridge::new(
+            source,
+            module.clone(),
+            range(source, 0, 35),
+            vec![
+                SourceReserveBindingInput::new(
+                    "x",
+                    range(source, 0, 1),
+                    range(source, 4, 30),
+                    "non empty non empty object",
+                    TypeHeadInput::BuiltinObject,
+                )
+                .with_type_attributes(vec![
+                    AttributeInput::new(
+                        imported_fixture_empty_attribute.clone(),
+                        AttributePolarity::Negative,
+                        range(source, 4, 13),
+                        "non empty",
+                    ),
+                    AttributeInput::new(
+                        imported_fixture_empty_attribute.clone(),
+                        AttributePolarity::Negative,
+                        range(source, 14, 23),
+                        "non empty",
+                    ),
+                ]),
+            ],
+        )
+        .expect("duplicate imported empty object payload should validate shape");
+        assert!(
+            imported_fixture_duplicate_empty_object_bridge
                 .check(&symbol_env_with_imported_symbol(
                     imported_fixture_empty_attribute.clone(),
                     SymbolKind::Attribute,
                     "empty",
                 ))
                 .is_err(),
-            "imported empty is source-supported only for builtin set"
+            "duplicate imported empty object attributes must remain unsupported"
         );
         let imported_fixture_positive_empty_object_bridge = SourceReserveDeclarationBridge::new(
             source,

@@ -7,18 +7,18 @@ source = "fail_type_elaboration_imported_empty_object_gap_001.miz"
 expected_outcome = "fail"
 expected_phase = "type_check"
 failure_category = "external_dependency_gap"
-rejection_reason = "imported_empty_non_set_head_payload_gap"
-stable_detail_key = "type_elaboration.external_dependency.ast_payload_extraction"
+rejection_reason = "imported_empty_attribute_evidence_payload_gap"
+stable_detail_key = "type_elaboration.checker.checker.declaration.deferred.evidence_query"
 diagnostic_codes = []
 diagnostic_payloads = [
-  "type_elaboration.external_dependency.ast_payload_extraction",
+  "type_elaboration.checker.checker.declaration.deferred.evidence_query",
 ]
 tags = ["active_type_elaboration"]
 spec_refs = [
-  "spec.en.03.type_expressions.imported_attribute_payload_gap",
-  "spec.en.06.attributes.imported_attribute_payload_gap",
-  "spec.en.11.symbol_management.imported_attribute_payload_gap",
-  "spec.en.12.modules.imported_attribute_payload_gap",
-  "spec.en.checker.type_elaboration.payload_extraction.imported_attribute_gap",
+  "spec.en.03.type_expressions.imported_empty_attribute_provenance_bridge",
+  "spec.en.06.attributes.imported_empty_attribute_evidence_payload_gap",
+  "spec.en.11.symbol_management.imported_empty_attribute_provenance_bridge",
+  "spec.en.12.modules.imported_empty_attribute_provenance_bridge",
+  "spec.en.checker.type_elaboration.imported_empty_attribute_provenance_bridge",
 ]
-notes = "Active type_elaboration runner boundary coverage for checker task 85: the documented parser.type_fixtures imported attribute `empty` is parser/resolver executable as a negative attribute on builtin `object`, but imported `empty` on non-`set` heads remains outside the imported negative-empty bridge and must stay on the source-to-checker payload extraction gap."
+notes = "Active type_elaboration runner bridge coverage for checker task 171: the documented parser.type_fixtures imported attribute `empty` is parser/resolver executable as a negative `AttributeInput` on builtin `object` for the existing `non empty object` reserve type. The checker-owned source bridge must preserve real ImportedSource provenance and negative polarity, then fail closed on the attributed-type evidence query. This does not credit imported module AST extraction, attribute admissibility or evidence, positive `empty object`, imported attributes on symbol heads, accepted attributed types, CoreIr, ControlFlowIr, VC, or proof payloads."

@@ -355,15 +355,13 @@ summary について real imported `SymbolKind::Mode` symbol を checker type he
 これは imported mode provenance と type-head payload extraction を credit するが、
 imported module AST extraction、`ModeExpansion` payload、positive mode
 elaboration、CoreIr、ControlFlowIr、VC、proof payload は credit しない。task 80 は
-task-84 `TypeCaseAttr` bridge、task-85 negative `empty`/builtin-`set` bridge、
-task-116 positive `empty`/builtin-`set` bridge 外の imported-attribute reserve
-external-gap boundary だけを credit する。将来の broader imported-attribute case は
-`type_elaboration.external_dependency.ast_payload_extraction`
-を観測し、real imported attribute provenance、`AttributeInput` payload extraction、
-attributed-type evidence、positive attributed type elaboration、CoreIr、
-ControlFlowIr、VC、proof payload を credit しない。task-85 の `non empty object`
-sidecar はこの boundary の active member であり、`empty`/builtin-`set` bridge の
-evidence ではない。task 84 は imported-attribute
+historically imported-attribute reserve external-gap boundary を credit したが、
+task-84 `TypeCaseAttr`、task-85 negative `empty`/builtin-`set`、task-116 positive
+`empty`/builtin-`set`、task-171 negative `empty`/builtin-`object` bridge がその row
+の全 active fixture を supersede した。positive `empty object`、symbol head 上の
+imported attribute、broader source shape は active fixture credit のない deferred
+extraction gap に残り、real source-derived payload producer が存在するまで将来の
+test も deferred とする。task 84 は imported-attribute
 provenance / `AttributeInput` bridge だけを credit してよい。runner は documented
 `parser.type_fixtures` imported attribute `TypeCaseAttr` を builtin `set` 上の
 real imported `SymbolKind::Attribute` checker `AttributeInput` として渡した後に
@@ -380,13 +378,16 @@ fixture について real imported `SymbolKind::Attribute` symbol `empty` を bu
 `type_elaboration.checker.checker.declaration.deferred.evidence_query` を観測する。
 これはその fixture の imported attribute provenance と argument-free negative
 `AttributeInput` payload extraction だけを credit し、imported module AST extraction、
-attributed-type existential/evidence payload、non-`set` head 上の imported `empty`、
-broader imported attribute、structure-qualified attribute owner provenance、attribute
+attributed-type existential/evidence payload、broader imported attribute、
+structure-qualified attribute owner provenance、attribute
 argument、CoreIr、ControlFlowIr、VC、proof payload は credit しない。task 116 は
 existing `empty set` fixture について、matching positive `empty`/builtin-`set`
 provenance / `AttributeInput` bridge と同じ evidence-query diagnostic だけを credit
-してよい。したがって active non-`set` fixture は task-80 external-gap row に trace
-される。task 81 は
+してよい。task 171 は existing `non empty object` fixture について exact negative
+`empty`/builtin-`object` provenance / `AttributeInput` bridge と同じ evidence-query
+diagnostic だけを credit してよい。attribute admissibility/evidence、positive
+`empty object`、symbol head 上の imported attribute、accepted attributed type は
+credit しない。task 81 は
 argument-bearing local-attribute extraction-gap boundary だけを credit する。
 runner は `param_prefix` 構文で宣言され `attribute_name(args)` として使われる
 same-module parameterized attribute について
@@ -514,10 +515,11 @@ positive imported attributed type elaboration、generic imported attribute、
 qualified owner provenance、attribute argument、downstream payload promotion は
 credit しない。task 85 の fail case は builtin `set` について real imported
 negative `empty` provenance と checker `AttributeInput` payload extraction だけを
-credit し、task 116 は matching positive `empty`/builtin-`set` payload を credit する。
-`non empty object`、broader imported attribute、imported module AST extraction、
-attributed-type evidence、owner provenance、attribute argument、downstream payload は
-extraction/deferred gap に残す。
+credit し、task 116 は matching positive `empty`/builtin-`set` payload、task 171
+は exact negative `empty`/builtin-`object` payload を credit する。positive
+`empty object`、symbol head 上の imported attribute、broader imported attribute、
+imported module AST extraction、attributed-type evidence、owner provenance、
+attribute argument、downstream payload は extraction/deferred gap に残す。
 task 81 の fail case は argument-bearing local-attribute extraction-gap boundary
 だけを credit し、real term-argument provenance、checker `AttributeInput`
 argument payload、attributed-type evidence、positive attributed type elaboration、
