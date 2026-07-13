@@ -1012,6 +1012,20 @@ matched-output, and corruption guards are required. Desugaring/truth/facts,
 closure/order, theorem acceptance, proof/Core/VC, shared ranges, and broader
 shapes remain deferred. The source/trace contract, production route,
 corruption coverage, and real sidecar now protect the active bridge.
+Task 162 specifies only the active source `reserve x for set; reserve y for
+set; theorem MultipleReserveDeclarationMembershipPayloadBoundary: x in y;`.
+Two reserve items must create distinct `BindingId(0/1)` values with distinct
+written set ranges and independent lookups at ordinals 2/3. The left result
+retains the first range; the right result and sole right expected role retain
+the second; no left expected role exists. All three roles normalize to one
+canonical builtin-set identity anchored at the earlier `x` range before two
+`Inferred` variables and one fact/deferred-free `Checked` membership with
+exactly one right-owned constraint. Exact source, route-order, matched-output,
+and corruption guards are required. Membership truth/facts, closure/order,
+theorem acceptance, proof/Core/VC, shared ranges, and broader shapes remain
+deferred. The production route, independent corruption/near-miss coverage, and
+real frontend/resolver sidecar now implement and guard the contract, so the
+active count is 113.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

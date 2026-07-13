@@ -1143,6 +1143,22 @@ desugaring/
 truth/facts, closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr,
 VC, non-set types, and broader shapes receive no credit.
 
+Task162 addendum for chapters `04.variables_and_constants.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 162 classifies the exact two-reserve-
+declaration membership seam as `test_gap`, `source_drift`, and `design_drift`.
+The active contract combines Task 124's distinct written-range producer with
+Tasks 120/159's right-only expected-set membership consumer: the left result
+retains the first range, the right result and sole right expected input retain
+the second, no left expected input exists, and all three roles normalize to one
+canonical builtin-set identity anchored at the earlier `x` range before two
+inferred terms and one checked membership with exactly one right-owned
+constraint. The fixture and five backlinks, production routing, corruption/
+near-miss coverage, and a real sidecar now guard the exact slice, so active
+coverage contains 113 cases. Chapter 3, shared-range behavior, membership truth/
+facts, closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, and
+broader shapes receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

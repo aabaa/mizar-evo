@@ -949,6 +949,19 @@ corruption guard を必須とする。desugaring/truth/fact、closure/order、th
 acceptance、proof/Core/VC、shared range、broader shape は deferred のままである。
 source/trace contract、production route、corruption coverage、real sidecar が
 active bridge を保護する。
+task 162 は active source `reserve x for set; reserve y for set; theorem
+MultipleReserveDeclarationMembershipPayloadBoundary: x in y;` だけを規定する。
+reserve item 2 個は distinct written set range を持つ distinct `BindingId(0/1)` と
+ordinal 2/3 の独立 lookup を生成しなければならない。left result は first range、
+right result と sole right expected role は second range を保持し、left expected
+role は持たない。3 role は earlier `x` range に canonical anchor された builtin-
+set identity 1 個へ normalize されてから、2 `Inferred` variable と exactly one
+right-owned constraint を持つ 1 fact/deferred-free `Checked` membership を生成する。
+exact source、route order、matched output、corruption guard を必須とする。
+membership truth/fact、closure/order、theorem acceptance、proof/Core/VC、shared
+range、broader shape は deferred のままである。production route、独立した
+corruption/near-miss coverage、real frontend/resolver sidecar が contract を実装し
+guard するため active count は 113 件である。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

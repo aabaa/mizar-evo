@@ -1002,6 +1002,18 @@ routing, corruption/near-miss coverage, and the real sidecar now protect the
 active row. Chapter 3, shared-range behavior, desugaring/truth/
 facts, closure/order, theorem acceptance, proof/Core/VC, and broader shapes
 remain uncredited.
+Task 162 adds an active row for exactly `reserve x for set; reserve y for
+set; theorem MultipleReserveDeclarationMembershipPayloadBoundary: x in y;`.
+It references Chapters 4, 13, 14.5.3, and 16 only: two reserve items create
+distinct bindings and written ranges; uses resolve at ordinals 2/3; the left
+result retains the first range while the right result and sole right expected
+input retain the second, and no left expected input exists. The intended result
+is one earlier-x-anchored canonical builtin-set identity, two `Inferred`
+variables, and one fact/deferred-free `Checked` membership with exactly one
+right-owned constraint. Production routing, corruption/near-miss coverage, and
+the real sidecar now protect the active row, so active credit contains 113
+cases. Chapter 3, shared-range behavior, membership truth/facts, closure/order,
+theorem acceptance, proof/Core/VC, and broader shapes remain uncredited.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

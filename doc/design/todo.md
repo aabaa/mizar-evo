@@ -674,6 +674,16 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    Production routing, full near-miss/corruption coverage, and a real sidecar
    now guard the exact contract as the 112th active case, and Chapter 3 receives
    no new credit,
+   task 162 adds the exact active multiple-reserve-declaration
+   membership seam by composing task 124's distinct-written-range producer with
+   tasks 120/159's right-only expected-set membership consumer. The active
+   contract retains the first range on the left result, the second range on the
+   right result and sole right expected input, has no left expected input, and
+   interns all three roles to one earlier-x-anchored builtin-set identity before
+   two inferred variables and one checked membership with exactly one right-owned
+   constraint. Production routing, full near-miss/corruption coverage, and a
+   real sidecar now guard the exact contract as the 113th active case, and
+   Chapter 3 receives no new credit,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -766,6 +776,9 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    and task 161's exact active multiple-reserve-declaration inequality over task
    124's distinct-written-range producer and task 160's pre-desugaring
    inequality consumer,
+   and task 162's exact active multiple-reserve-declaration membership over task
+   124's distinct-written-range producer and tasks 120/159's right-only expected-
+   set membership consumer,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,

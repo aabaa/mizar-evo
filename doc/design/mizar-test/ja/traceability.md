@@ -947,6 +947,18 @@ pre-desugaring `Checked` inequality である。production route、corruption/ne
 coverage、real sidecar が active row を保護する。
 Chapter 3、shared-range behavior、desugaring/truth/fact、closure/order、theorem
 acceptance、proof/Core/VC、broader shape は credit しない。
+task 162 は exact `reserve x for set; reserve y for set; theorem
+MultipleReserveDeclarationMembershipPayloadBoundary: x in y;` の active row
+を追加する。参照は Chapter 4、13、14.5.3、16 だけである。reserve item 2 個は
+distinct binding/written range を作り、use は ordinal 2/3 で解決され、left result
+は first range、right result と sole right expected input は second range を保持し、
+left expected input は持たない。intended result は earlier `x` range に canonical
+anchor された builtin-set identity 1 個、2 `Inferred` variable、exactly one right-
+owned constraint を持つ 1 fact/deferred-free `Checked` membership である。
+production routing、corruption/near-miss coverage、real sidecar が active row を
+保護するため active credit は 113 cases である。Chapter 3、shared-range
+behavior、membership truth/fact、closure/order、theorem acceptance、proof/Core/
+VC、broader shape は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

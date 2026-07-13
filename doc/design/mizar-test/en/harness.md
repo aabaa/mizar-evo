@@ -949,6 +949,19 @@ miss coverage, and a real sidecar now guard the contract, so active type-
 elaboration contains 112 cases. Shared ranges, non-set types, desugaring/truth/facts,
 closure/order, theorem/proof/Core/VC, and broader shapes remain deferred.
 
+Task 162 adds the exact active multiple-reserve-declaration membership
+source `reserve x for set; reserve y for set; theorem
+MultipleReserveDeclarationMembershipPayloadBoundary: x in y;`. The runner must
+retain `BindingId(0/1)` at ordinals 2/3, the first written range on the left
+result, and the second on the right result plus sole right expected input, with
+no left expected input. All three roles must intern to one canonical builtin-
+set identity anchored at the earlier `x` range before two `Inferred` variables
+and one fact/deferred-free `Checked` membership with exactly one right-owned
+constraint. Exact route guards, corruption/near-miss coverage, and a real
+frontend/resolver sidecar now guard the contract, so active type-elaboration
+contains 113 cases. Shared ranges, non-set types, membership truth/facts,
+closure/order, theorem/proof/Core/VC, and broader shapes remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

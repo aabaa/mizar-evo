@@ -911,6 +911,19 @@ exact route guard、corruption/near-miss coverage、real sidecar が contract �
 ため active type-elaboration は 112 cases である。shared range、non-set type、desugaring/
 truth/fact、closure/order、theorem/proof/Core/VC、broader shape は deferred のままとする。
 
+task 162 は exact active multiple-reserve-declaration membership source
+`reserve x for set; reserve y for set; theorem
+MultipleReserveDeclarationMembershipPayloadBoundary: x in y;` を記録する。runner
+は ordinal 2/3 の `BindingId(0/1)`、first written range を left result、second
+range を right result と sole right expected input に保持し、left expected input を
+持たない。3 role は earlier `x` range に canonical anchor された builtin-set
+identity 1 個へ intern してから、2 `Inferred` variable と exactly one right-owned
+constraint を持つ 1 fact/deferred-free `Checked` membership を生成する。exact
+route guard、corruption/near-miss coverage、real frontend/resolver sidecar が
+contract を guard するため active type-elaboration は 113 cases である。shared
+range、non-set type、membership truth/fact、closure/order、theorem/proof/Core/VC、
+broader shape は deferred のままとする。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order
