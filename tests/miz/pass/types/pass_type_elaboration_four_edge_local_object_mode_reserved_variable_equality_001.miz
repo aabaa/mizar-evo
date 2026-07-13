@@ -1,0 +1,22 @@
+definition
+  mode BaseFourEdgeObjectModeEqualityDef: BaseFourEdgeObjectModeEquality is object;
+end;
+
+definition
+  mode InnerFourEdgeObjectModeEqualityDef: InnerFourEdgeObjectModeEquality is BaseFourEdgeObjectModeEquality;
+end;
+
+definition
+  mode MiddleFourEdgeObjectModeEqualityDef: MiddleFourEdgeObjectModeEquality is InnerFourEdgeObjectModeEquality;
+end;
+
+definition
+  mode OuterFourEdgeObjectModeEqualityDef: OuterFourEdgeObjectModeEquality is MiddleFourEdgeObjectModeEquality;
+end;
+
+definition
+  mode TooDeepFourEdgeObjectModeEqualityDef: TooDeepFourEdgeObjectModeEquality is OuterFourEdgeObjectModeEquality;
+end;
+
+reserve z for TooDeepFourEdgeObjectModeEquality;
+theorem FourEdgeLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;

@@ -4065,6 +4065,21 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
             .expected_outcome,
         ExpectedOutcome::Pass
     );
+    let four_edge_local_object_mode_reserved_variable_equality_case =
+        active_type_elaboration_cases(&plan)
+            .find(|case| {
+                case.id.0
+                    == "pass_type_elaboration_four_edge_local_object_mode_reserved_variable_equality_001"
+            })
+            .expect(
+                "Task167 four-edge local-object-mode reserved-variable equality bridge should be active",
+            );
+    assert_eq!(
+        four_edge_local_object_mode_reserved_variable_equality_case
+            .expectation
+            .expected_outcome,
+        ExpectedOutcome::Pass
+    );
     let distinct_reserved_variable_membership_case = active_type_elaboration_cases(&plan)
         .find(|case| case.id.0 == "pass_type_elaboration_distinct_reserved_variable_membership_001")
         .expect("Task159 distinct reserved-variable membership bridge should be active");
@@ -4109,8 +4124,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 117);
-    assert_eq!(report.passed_count(), 117);
+    assert_eq!(report.results.len(), 118);
+    assert_eq!(report.passed_count(), 118);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -8561,8 +8576,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 117"));
-    assert!(stdout.contains("passed: 117"));
+    assert!(stdout.contains("type-elaboration cases: 118"));
+    assert!(stdout.contains("passed: 118"));
     assert!(stdout.contains("failed: 0"));
 }
 

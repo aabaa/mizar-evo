@@ -1223,6 +1223,22 @@ active runner 117. Declaration acceptance/inhabitation, truth/
 facts, closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, VC,
 object-terminal behavior, other depths, and broader shapes receive no credit.
 
+Task167 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 167 classifies
+the exact four-edge object-terminal local-mode-chain reserved-variable equality
+seam as `test_gap`, `source_drift`, and `design_drift`. The test-first contract
+composes the existing real five-expansion object-terminal producer with the
+real equality consumer. Intended credit is limited to four raw outermost-mode
+result/expected inputs, `BindingId(0)` at ordinals 1/2, all five expansions,
+one terminal-object-RHS identity, two inferred terms, one fact/deferred-free
+checked equality, and two ordered operand-owned expected constraints without
+object/set coercion. The fixture, six trace backlinks, production routing,
+full corruption/near-miss coverage, and a real sidecar now protect active
+runner 118. Declaration acceptance/inhabitation,
+truth/facts, closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr,
+VC, set-terminal behavior, other depths, and broader shapes receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_four_edge_local_object_mode_reserved_variable_equality_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_four_edge_local_object_mode_reserved_variable_equality_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_structural_chain_source_bridge",
+  "spec.en.checker.type_elaboration.four_edge_local_object_mode_reserved_variable_equality_source_bridge",
+]
+notes = "Spec-derived Task 167 intent for the exact four-edge object-terminal local-mode-chain reserved-variable equality. Four raw TooDeepFourEdgeObjectModeEquality result/expected inputs retain their written reserve provenance, both z terms resolve independently to BindingId(0) with source-order ordinals 1 and 2, and all five real AST-derived expansions recursively normalize every role to one builtin-object identity canonically anchored at the terminal definition RHS before two Inferred variables, two ordered operand-owned expected constraints, and one fact/deferred-free Checked Equality are recorded. This does not credit mode declaration acceptance/inhabitation, set-terminal or other chain depths, object/set coercion, equality truth/facts, implicit closure/order, theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, or VC payloads."
