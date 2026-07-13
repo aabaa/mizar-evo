@@ -915,6 +915,18 @@ type/well-formedness only. Mode declaration acceptance/inhabitation, equality
 truth/facts, closure/order, theorem acceptance, proof, Core, and VC remain
 uncredited. The trace row, production route, independent corruption matrix,
 and real frontend/resolver sidecar now protect the active row.
+Task 155 adds the following test-first exact three-edge local-object-mode-chain
+reserved-variable equality pass row:
+`definition mode BaseThreeEdgeObjectModeEqualityDef: BaseThreeEdgeObjectModeEquality is object; end; definition mode InnerThreeEdgeObjectModeEqualityDef: InnerThreeEdgeObjectModeEquality is BaseThreeEdgeObjectModeEquality; end; definition mode MiddleThreeEdgeObjectModeEqualityDef: MiddleThreeEdgeObjectModeEquality is InnerThreeEdgeObjectModeEquality; end; definition mode OuterThreeEdgeObjectModeEqualityDef: OuterThreeEdgeObjectModeEquality is MiddleThreeEdgeObjectModeEquality; end; reserve z for OuterThreeEdgeObjectModeEquality; theorem ThreeEdgeLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;`.
+Four raw result/expected inputs retain the written outer-mode provenance; both
+operands resolve to `BindingId(0)` at ordinals 1 and 2, and all four real
+expansions normalize every role to one terminal-RHS builtin-object identity
+before two `Inferred` terms and one fact/deferred-free `Checked` equality
+credit exact type/well-formedness only. Mode declaration acceptance/
+inhabitation, object/set coercion, equality truth/facts, closure/order, theorem
+acceptance, proof, Core, and VC remain uncredited. The trace row, production
+route, independent corruption matrix, and real frontend/resolver sidecar now
+protect the active row.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

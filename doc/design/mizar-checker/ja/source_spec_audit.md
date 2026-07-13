@@ -809,6 +809,22 @@ acceptance、proof/Core/ControlFlow/VC は open のままである。fixture、e
 trace row、production route、full near-miss/corruption matrix、real frontend/
 resolver sidecar が exact slice を guard し、active count は 105 件である。
 
+Task 155 MC-G020 implementation specification: exact three-edge object-terminal
+local-mode-chain reserved-variable equality は task 73 の real AST-derived
+`OuterThreeEdgeObjectModeEquality -> MiddleThreeEdgeObjectModeEquality -> InnerThreeEdgeObjectModeEquality -> BaseThreeEdgeObjectModeEquality -> object`
+expansion 4 本と task 135 の equality consumer を合成する。raw result/expected
+input 4 個は written outer-mode provenance を保持し、両 operand は ordinal 1、2
+で `BindingId(0)` へ解決し、全 role は terminal-RHS builtin-object identity 1 個
+へ normalize されてから 2 `Inferred` term と 1 fact/deferred-free `Checked`
+equality を記録する。exact definition/radix/expansion corruption、withheld-
+family near miss、real frontend/resolver sidecar を必須とする。分類は
+`test_gap`、`source_drift`、`design_drift` であり `spec_gap` ではない。mode
+declaration acceptance/inhabitation、object/set coercion、equality truth/fact、
+closure/order、theorem acceptance、proof/Core/ControlFlow/VC は open のままで
+ある。fixture、expectation、trace row、production route、full near-miss/
+corruption matrix、real frontend/resolver sidecar が exact slice を guard し、
+active count は 106 件である。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

@@ -2305,6 +2305,12 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - mode declaration acceptance/inhabitation、equality truth/fact、closure/order、theorem acceptance、proof/Core/ControlFlow/VC は deferred のままにする。
     - Chapter 4、7、13、14、16 を更新する。依存: tasks 73、134。
 
+155. **Exact three-edge local-object-mode-chain reserved-variable equality checker bridge を追加する。** [x]
+    - spec-derived `OuterThreeEdgeObjectModeEquality -> MiddleThreeEdgeObjectModeEquality -> InnerThreeEdgeObjectModeEquality -> BaseThreeEdgeObjectModeEquality -> object`、outer mode の reserve `z` 1 個、`z = z` theorem source だけを追加する。
+    - raw outer-mode result/expected input 4 個を保持し、両 operand を source-order ordinal 1、2 で独立に `BindingId(0)` へ解決し、real expansion 4 本を消費して全 role を terminal-RHS builtin-object identity 1 個へ normalize してから 2 `Inferred` variable と 1 fact/deferred-free `Checked` equality を要求する。exact definition/radix/expansion corruption、withheld-family near-miss、real-sidecar guard を必須とする。
+    - mode declaration acceptance/inhabitation、object/set coercion、equality truth/fact、closure/order、theorem acceptance、proof/Core/ControlFlow/VC は deferred のままとする。
+    - Chapter 4、7、13、14、16 を更新する。依存: tasks 73、135。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

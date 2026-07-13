@@ -863,6 +863,17 @@ formedness だけを credit する。mode declaration acceptance/inhabitation、
 equality truth/fact、closure/order、theorem acceptance、proof/Core/VC は credit
 しない。trace row、production route、独立した corruption matrix、real
 frontend/resolver sidecar が active row を保護する。
+task 155 は次の test-first exact three-edge local-object-mode-chain reserved-
+variable equality pass row を追加する:
+`definition mode BaseThreeEdgeObjectModeEqualityDef: BaseThreeEdgeObjectModeEquality is object; end; definition mode InnerThreeEdgeObjectModeEqualityDef: InnerThreeEdgeObjectModeEquality is BaseThreeEdgeObjectModeEquality; end; definition mode MiddleThreeEdgeObjectModeEqualityDef: MiddleThreeEdgeObjectModeEquality is InnerThreeEdgeObjectModeEquality; end; definition mode OuterThreeEdgeObjectModeEqualityDef: OuterThreeEdgeObjectModeEquality is MiddleThreeEdgeObjectModeEquality; end; reserve z for OuterThreeEdgeObjectModeEquality; theorem ThreeEdgeLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;`
+raw result/expected input 4 個は written outer-mode provenance を保持し、両
+operand は ordinal 1、2 で `BindingId(0)` へ解決し、real expansion 4 本は全
+role を terminal-RHS builtin-object identity 1 個へ normalize してから 2
+`Inferred` term と 1 fact/deferred-free `Checked` equality が exact type/well-
+formedness だけを credit する。mode declaration acceptance/inhabitation、
+object/set coercion、equality truth/fact、closure/order、theorem acceptance、
+proof/Core/VC は credit しない。trace row、production route、独立した corruption
+matrix、real frontend/resolver sidecar が active row を保護する。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
