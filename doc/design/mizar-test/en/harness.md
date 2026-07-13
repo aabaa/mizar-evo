@@ -793,6 +793,21 @@ closure/order, theorem/proof/Core/VC, and broader semantics remain deferred.
 The production route and real sidecar pass, so the active type-elaboration
 runner contains 101 cases.
 
+Task 151 adds the exact three-edge object-terminal local-mode-chain reserved-
+variable normalized-reflexive type assertion source. The runner must retain the
+raw `OuterThreeEdgeObjectModeTypeAssertion` subject result and independent
+formula-side builtin-object asserted source, supply all four real Task-73-
+compatible expansions to `TermFormulaChecker`, and require one terminal-RHS-
+anchored builtin-object identity, `BindingId(0)`, source-order use ordinal 1,
+one `Inferred` term, and one fact-free `Checked` type assertion without general
+reachability or object/set coercion. Exact source guards, independent
+definition/four-link corruption, withheld-family near misses, and a real
+frontend/resolver sidecar protect the slice; mode declaration acceptance/
+inhabitation, formula-side local-mode asserted heads, general reachability/
+widening/`qua`, object/set coercion, truth/facts, closure/order, theorem/proof/
+Core/VC, and broader semantics remain deferred. The active type-elaboration
+runner contains 102 cases after the production route and real sidecar pass.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

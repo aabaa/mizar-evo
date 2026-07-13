@@ -1,0 +1,18 @@
+definition
+  mode BaseThreeEdgeObjectModeTypeAssertionDef: BaseThreeEdgeObjectModeTypeAssertion is object;
+end;
+
+definition
+  mode InnerThreeEdgeObjectModeTypeAssertionDef: InnerThreeEdgeObjectModeTypeAssertion is BaseThreeEdgeObjectModeTypeAssertion;
+end;
+
+definition
+  mode MiddleThreeEdgeObjectModeTypeAssertionDef: MiddleThreeEdgeObjectModeTypeAssertion is InnerThreeEdgeObjectModeTypeAssertion;
+end;
+
+definition
+  mode OuterThreeEdgeObjectModeTypeAssertionDef: OuterThreeEdgeObjectModeTypeAssertion is MiddleThreeEdgeObjectModeTypeAssertion;
+end;
+
+reserve x for OuterThreeEdgeObjectModeTypeAssertion;
+theorem ThreeEdgeLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;

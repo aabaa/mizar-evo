@@ -759,6 +759,27 @@ order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
 The production route and real frontend/resolver sidecar now guard the exact
 active slice.
 
+Task 151 MC-G020 current-state override: the exact three-edge object-terminal local-
+mode-chain reserved-variable type assertion composes Task 73's four real AST-
+derived
+`OuterThreeEdgeObjectModeTypeAssertion -> MiddleThreeEdgeObjectModeTypeAssertion -> InnerThreeEdgeObjectModeTypeAssertion -> BaseThreeEdgeObjectModeTypeAssertion -> object`
+expansions with Tasks 122, 149, and 150's identifier-result and independently
+formula-anchored asserted-type consumer. The raw subject result must retain its
+written outer-mode provenance, while the asserted builtin `object` retains its
+independent formula source node. All four expansions must recursively normalize
+both inputs to one builtin-object identity canonically anchored at the terminal
+definition RHS before one `Inferred` term and one fact-free `Checked` type
+assertion are recorded. This exact slice requires `BindingId(0)` and source-
+order use ordinal 1 and must fail closed on non-exact definitions, reserves,
+formulas, or any of the four expansion payloads. The classified changes are
+`test_gap`, `source_drift`, and `design_drift`; there is no `spec_gap`. Mode
+declaration acceptance/inhabitation, formula-side local-mode asserted-head
+extraction, general reachability/widening/`qua`, object/set coercion, truth/
+facts, implicit closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr,
+and VC remain open.
+The production route and real frontend/resolver sidecar now guard the exact
+active slice.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin
