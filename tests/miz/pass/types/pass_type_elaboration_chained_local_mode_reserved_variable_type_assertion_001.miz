@@ -1,0 +1,10 @@
+definition
+  mode BaseModeTypeAssertionDef: BaseModeTypeAssertion is set;
+end;
+
+definition
+  mode ChainModeTypeAssertionDef: ChainModeTypeAssertion is BaseModeTypeAssertion;
+end;
+
+reserve x for ChainModeTypeAssertion;
+theorem ChainedLocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;

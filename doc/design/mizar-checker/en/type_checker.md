@@ -762,6 +762,21 @@ declaration acceptance/inhabitation, formula-side local-mode asserted-head
 extraction, general reachability/widening/`qua`, object/set coercion,
 truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
 deferred.
+Task 146 specifies the exact one-edge bare-set local-mode-chain reserved-
+variable normalized-reflexive type assertion bridge
+`BaseModeTypeAssertion -> set; ChainModeTypeAssertion -> BaseModeTypeAssertion; reserve x for ChainModeTypeAssertion; theorem ...: x is set;`.
+The raw subject result retains its written outer-mode symbol/range, while the
+asserted builtin `set` retains its independent formula source node. Both real
+Task 56 expansions must reach `TermFormulaChecker`; the inputs recursively
+normalize to one builtin-set identity canonically anchored at the terminal
+definition RHS before one `Inferred` variable term and one fact-free `Checked`
+type assertion are recorded. The exact contract requires `BindingId(0)` and
+source-order use ordinal 1. Both definition labels, the chain radix, and both
+expansion entries are guarded independently; missing or non-exact definitions,
+reserves, and formulas fail closed. Mode declaration acceptance/inhabitation,
+formula-side local-mode asserted-head extraction, general reachability/
+widening/`qua`, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
+and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

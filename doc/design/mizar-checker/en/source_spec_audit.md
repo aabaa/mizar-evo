@@ -668,6 +668,22 @@ extraction, general reachability/widening/`qua`, object/set coercion,
 truth/facts, implicit closure/order, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC remain open.
 
+Task 146 MC-G020 current-state override: the exact one-edge set-terminal
+local-mode-chain reserved-variable type assertion composes task 56's two real
+AST-derived `ChainModeTypeAssertion -> BaseModeTypeAssertion -> set`
+expansions with tasks 122 and 138's identifier-result and independently
+formula-anchored asserted-type consumer. The raw subject result retains its
+written outer-mode provenance, while the asserted builtin `set` retains its
+independent formula source node. Both real expansions recursively normalize
+the subject and asserted input to one builtin-set identity canonically anchored
+at the terminal definition RHS before one `Inferred` term and one fact-free
+`Checked` type assertion are recorded. This exact slice requires
+`BindingId(0)` and source-order use ordinal 1 and fails closed on non-exact
+definitions, reserves, formulas, or either expansion payload. Mode declaration
+acceptance/inhabitation, formula-side local-mode asserted-head extraction,
+general reachability/widening/`qua`, truth/facts, implicit closure/order,
+theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin
