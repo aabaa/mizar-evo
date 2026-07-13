@@ -1148,6 +1148,16 @@ input, two inferred variables, one right-owned constraint, and one fact/
 deferred-free checked membership. Six backlinks, production routing, full
 guards, and the real sidecar now protect active count 123. Membership truth/
 facts and broader semantics receive no credit.
+Task 175 adds the exact test-first sibling row ending in
+`LongLocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;`, with
+Chapter 3/4/7/13/14.2.3/16 and structural-chain links plus a dedicated checker
+row. Intended credit is seven real expansions, a raw `ChainMode6` subject
+result, independent formula-side builtin-set asserted input, ordinal 1
+`BindingId(0)`, one terminal-`BaseMode`-RHS identity, one inferred variable,
+and one fact/deferred-free normalized-reflexive checked type assertion without
+general reachability. Seven backlinks are present; production routing, full
+guards, and the real sidecar now protect active count 124. Widening/`qua`,
+truth/facts, and broader semantics receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

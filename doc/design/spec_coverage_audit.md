@@ -1327,6 +1327,20 @@ production routing, full guards, and the real sidecar now protect active runner
 123. Membership truth/facts, acceptance, proof/Core/ControlFlow/VC, other
 chains, and general semantics receive no credit.
 
+Task175 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 175 classifies
+the exact set-terminal local-mode long-chain type-assertion seam as `test_gap`,
+`source_drift`, and `design_drift`. It composes task 74's seven real expansions
+with task 152's normalized-reflexive type-assertion consumer. Intended credit
+is a raw `ChainMode6` subject result, independent formula-side builtin-set
+asserted input, ordinal 1 `BindingId(0)`, one terminal-`BaseMode`-RHS identity,
+one inferred term, and one fact/deferred-free checked type assertion without
+general reachability. Seven backlinks are present; production routing, full
+guards, and the real sidecar now protect active runner 124. Widening/`qua`,
+truth/facts, acceptance, proof/Core/ControlFlow/VC, other chains, and general
+semantics receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

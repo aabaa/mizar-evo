@@ -1083,6 +1083,16 @@ Chapter 4/7/13/14.5.3/16、structural-chain link、dedicated checker row を参�
 checked membership だけである。backlink 6 件、production routing、full guard、
 real sidecar が active count 123 を保護する。membership truth/fact と broader
 semantics は credit しない。
+task 175 は exact test-first sibling row
+`LongLocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;` を追加し、
+Chapter 3/4/7/13/14.2.3/16、structural-chain link、dedicated checker row を参照
+する。intended credit は real expansion 7 本、raw `ChainMode6` subject result、
+独立した formula-side builtin-set asserted input、ordinal 1 の `BindingId(0)`、
+terminal `BaseMode` RHS identity 1 個、1 inferred variable、general reachability
+を用いない 1 fact/deferred-free normalized-reflexive checked type assertion だけ
+である。backlink 7 件は存在し、production routing、full guard、real sidecar、
+active count 124 を保護する。widening/`qua`、truth/fact、broader
+semantics は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

@@ -791,6 +791,15 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    membership. The fixture, six backlinks, production routing, full guards,
    and a real sidecar now protect active case 123. Truth/facts,
    downstream payloads, other chains, and general semantics remain deferred,
+   task 175 specifies the exact long-chain type-assertion sibling by composing
+   task 74's seven-expansion producer with task 152's normalized-reflexive
+   consumer. It requires a raw `ChainMode6` subject, independent formula-side
+   builtin-set asserted input, ordinal 1 `BindingId(0)`, one terminal-
+   `BaseMode`-RHS identity, one inferred variable, and one fact/deferred-free
+   checked type assertion without general reachability. The fixture, seven
+   backlinks, production routing, full guards, and a real sidecar now protect
+   active case 124. Widening/`qua`, truth/facts, downstream
+   payloads, other chains, and general semantics remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

@@ -1207,6 +1207,21 @@ other chain shapes, and general unbounded semantics remain deferred. The
 fixture, expectation, six backlinks, exact routing, shared full structural
 guards, membership-specific corruption tests, and real sidecar now protect
 active runner 123.
+Task 175 specifies the exact normalized-reflexive type-assertion sibling with
+the same seven definitions, one `reserve x for ChainMode6;`, and only
+`LongLocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;`. The
+production route must consume all seven real expansions while preserving the
+raw `ChainMode6` subject result and independent formula-side builtin-set
+asserted input. It must resolve ordinal 1 `BindingId(0)`, normalize both roles
+to one terminal-`BaseMode`-RHS builtin-set identity, and record one `Inferred`
+variable plus one fact/deferred-free `Checked` type assertion without invoking
+general reachability. The Task 172 full structural guard matrix plus Task 175
+type-assertion-specific matched-output corruption and real-sidecar tests are
+mandatory. Widening/`qua`, assertion truth/facts, acceptance, closure/order,
+theorem/proof/Core/ControlFlow/VC, other chain shapes, and general unbounded
+semantics remain deferred. The test-first fixture, expectation, and seven
+backlinks plus production routing, type-assertion-specific corruption coverage,
+and the real sidecar now protect active runner 124.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

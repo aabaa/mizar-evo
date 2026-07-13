@@ -1093,6 +1093,18 @@ matrix plus membership-specific corruption and a real sidecar fail closed.
 Truth/facts and downstream or general semantics remain deferred. Production
 routing, full guards, and the real sidecar now protect active runner 123.
 
+Task 175 records the test-first long-chain type-assertion sibling. The
+production runner must accept only the same seven definitions, one
+`ChainMode6` reserve, and exact `x is set`; consume seven real expansions;
+retain raw subject and independent formula-side builtin-set asserted inputs;
+resolve ordinal 1 `BindingId(0)`; and require one terminal-`BaseMode`-RHS
+identity, one `Inferred` variable, and one fact/deferred-free normalized-
+reflexive `Checked` type assertion without general reachability. Task 172's
+full structural guard matrix plus type-assertion-specific corruption and a real
+sidecar must fail closed. Widening/`qua`, truth/facts, and downstream or general
+semantics remain deferred. The test-first row, production support, full guards,
+and the real sidecar now protect active runner 124.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent
