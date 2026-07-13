@@ -1105,6 +1105,18 @@ sidecar must fail closed. Widening/`qua`, truth/facts, and downstream or general
 semantics remain deferred. The test-first row, production support, full guards,
 and the real sidecar now protect active runner 124.
 
+Task 176 records the test-first builtin-object-terminal long-chain equality
+sibling. The production runner must accept only the exact seven definitions,
+one `ChainObjectMode6` reserve, and exact `z = z`; consume seven real
+expansions; retain four raw result/expected inputs; resolve ordinal 1/2
+`BindingId(0)`; and require one terminal-`BaseObjectMode`-RHS identity, two
+`Inferred` terms, two ordered operand-owned constraints, and one fact/deferred-
+free `Checked` equality without object/set coercion. Task 172's shared full
+structural guard matrix plus object-terminal/matched-output corruption and a
+real sidecar must fail closed. Truth/facts and downstream or general semantics
+remain deferred. The test-first row, production support, full guards, and the
+real sidecar now protect active runner 125.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

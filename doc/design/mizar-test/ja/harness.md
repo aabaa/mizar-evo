@@ -1063,6 +1063,17 @@ closed しなければならない。widening/`qua`、truth/fact、downstream/ge
 semantics は deferred のままである。test-first row、production support、full
 guard、real sidecar が active runner 124 を保護する。
 
+task 176 は test-first builtin-object-terminal long-chain equality sibling を
+記録する。production runner は exact definition 7 本、`ChainObjectMode6`
+reserve 1 個、exact `z = z` だけを受理し、real expansion 7 本、raw result/
+expected input 4 個、ordinal 1/2 の `BindingId(0)`、terminal
+`BaseObjectMode` RHS identity 1 個、2 `Inferred` term、ordered operand-owned
+constraint 2 個、object/set coercion を用いない 1 fact/deferred-free `Checked`
+equality を要求する。task 172 の shared full structural guard matrix、object-
+terminal/matched-output corruption、real sidecar は fail closed しなければならない。
+truth/fact と downstream/general semantics は deferred のままである。test-first
+row、production support、full guard、real sidecar が active runner 125 を保護する。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

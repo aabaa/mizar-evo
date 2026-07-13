@@ -1093,6 +1093,15 @@ terminal `BaseMode` RHS identity 1 個、1 inferred variable、general reachabil
 である。backlink 7 件は存在し、production routing、full guard、real sidecar、
 active count 124 を保護する。widening/`qua`、truth/fact、broader
 semantics は credit しない。
+task 176 は exact test-first sibling row
+`LongLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;` を追加し、
+Chapter 4/13/14.5.2/16、structural-chain link、dedicated checker row を参照する。
+intended credit は real expansion 7 本、raw `ChainObjectMode6` result/expected
+input 4 個、ordinal 1/2 の `BindingId(0)`、terminal `BaseObjectMode` RHS
+identity 1 個、2 inferred term、ordered operand-owned constraint 2 個、object/set
+coercion を用いない 1 fact/deferred-free checked equality だけである。backlink
+6 件、production routing、full guard、real sidecar が active count 125 を保護する。
+truth/fact と broader semantics は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

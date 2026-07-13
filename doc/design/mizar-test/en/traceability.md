@@ -1158,6 +1158,15 @@ and one fact/deferred-free normalized-reflexive checked type assertion without
 general reachability. Seven backlinks are present; production routing, full
 guards, and the real sidecar now protect active count 124. Widening/`qua`,
 truth/facts, and broader semantics receive no credit.
+Task 176 adds the exact test-first sibling row ending in
+`LongLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;`, with
+Chapter 4/13/14.5.2/16 and structural-chain links plus a dedicated checker row.
+Intended credit is seven real expansions, four raw `ChainObjectMode6` result/
+expected inputs, ordinal 1/2 `BindingId(0)`, one terminal-`BaseObjectMode`-RHS
+identity, two inferred terms, two ordered operand-owned constraints, and one
+fact/deferred-free checked equality without object/set coercion. Six backlinks
+are present; production routing, full guards, and the real sidecar now protect
+active count 125. Truth/facts and broader semantics receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

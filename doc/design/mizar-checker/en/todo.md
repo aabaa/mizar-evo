@@ -3139,6 +3139,23 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 74 and 152. Refs: Step 5; mizar-test task 10; specs 3, 4, 7,
       13, 14.2.3, and 16.
 
+176. **Add exact local-object-mode long-chain equality checker bridge.** [x]
+    - Promote only the Task 74 AST-bounded seven-definition object-terminal
+      chain, one `ChainObjectMode6` reserve, and the exact `z = z` theorem
+      label from the test-first fixture through Task 167's real object-
+      normalizing equality consumer.
+    - Acceptance: preserve seven real expansions, four raw
+      `ChainObjectMode6` result/expected inputs, ordinal 1/2 `BindingId(0)`,
+      one terminal-`BaseObjectMode`-RHS builtin-object identity, two inferred
+      terms, one fact/deferred-free checked equality, and two ordered operand-
+      owned constraints without object/set coercion. Require full exact/near-
+      miss/corruption/real-sidecar guards; do not fabricate truth/facts,
+      acceptance, closure, theorem/proof/CoreIr/ControlFlowIr/VC, or general
+      unbounded semantics.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 74 and 167. Refs: Step 5; mizar-test task 10; specs 3, 4, 7,
+      13, 14.5.2, and 16.
+
 ## Recommended Verification
 
 Run after each task:
