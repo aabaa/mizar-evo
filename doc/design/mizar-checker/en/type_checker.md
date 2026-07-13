@@ -1190,6 +1190,23 @@ and general unbounded semantics remain deferred.
 The fixture, expectation, six backlinks, exact routing, shared full guard
 matrix, Task 173 corruption tests, and real sidecar now protect active runner
 122.
+Task 174 specifies the exact membership sibling with the same seven
+definitions, followed by ordered `reserve x for ChainMode6;` and
+`reserve y for set;` declarations and only
+`LongLocalModeReservedVariableMembershipPayloadBoundary: x in y;`. The
+production route must consume all seven real expansions while preserving the
+raw `ChainMode6` left result and independent explicit-set right result and sole
+right expected input. It must resolve ordinal 2/3 `BindingId(0/1)`, normalize
+all three roles to one terminal-`BaseMode`-RHS builtin-set identity, leave the
+left expected input absent, and record two `Inferred` variables plus one fact/
+deferred-free `Checked` membership with exactly one right-owned constraint.
+The Task 172 full structural guard matrix plus Task 174 membership-specific
+matched-output corruption and real-sidecar tests are mandatory. Membership
+truth/facts, acceptance, closure/order, theorem/proof/Core/ControlFlow/VC,
+other chain shapes, and general unbounded semantics remain deferred. The
+fixture, expectation, six backlinks, exact routing, shared full structural
+guards, membership-specific corruption tests, and real sidecar now protect
+active runner 123.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

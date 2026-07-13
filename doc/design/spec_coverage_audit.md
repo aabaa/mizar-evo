@@ -1313,6 +1313,20 @@ inequality. Six backlinks, full guards, and a real sidecar now protect active ru
 desugaring/truth/facts, acceptance, proof/Core/ControlFlow/VC, other chains,
 and general semantics receive no credit.
 
+Task174 addendum for chapters `04.variables_and_constants.md`, `07.modes.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 174 classifies the exact set-terminal
+local-mode long-chain membership seam as `test_gap`, `source_drift`, and
+`design_drift`. It composes task 74's seven real expansions with task 164's
+right-only expected-set membership consumer. Intended credit is a raw
+`ChainMode6` left result, independent explicit-set right result and sole right
+expected input, ordinal 2/3 `BindingId(0/1)`, one terminal-`BaseMode`-RHS
+identity, no left expected input, two inferred terms, one right-owned
+constraint, and one fact/deferred-free checked membership. Six backlinks,
+production routing, full guards, and the real sidecar now protect active runner
+123. Membership truth/facts, acceptance, proof/Core/ControlFlow/VC, other
+chains, and general semantics receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

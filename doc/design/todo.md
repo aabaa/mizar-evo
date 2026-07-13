@@ -782,6 +782,15 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    constraints, and one fact/deferred-free checked inequality. Six backlinks,
    full guards, and a real sidecar now protect active case 122; desugaring/truth/facts,
    downstream payloads, other chains, and general semantics remain deferred,
+   task 174 specifies the exact long-chain membership sibling by composing task
+   74's seven-expansion producer with task 164's right-only expected-set
+   consumer. It requires a raw `ChainMode6` left result, independent explicit-
+   set right result and sole expected input, ordinal 2/3 `BindingId(0/1)`, one
+   terminal-`BaseMode`-RHS identity, no left expected input, two inferred
+   variables, one right-owned constraint, and one fact/deferred-free checked
+   membership. The fixture, six backlinks, production routing, full guards,
+   and a real sidecar now protect active case 123. Truth/facts,
+   downstream payloads, other chains, and general semantics remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

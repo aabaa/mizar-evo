@@ -1063,6 +1063,19 @@ ordered constraint 2 個を保持する。exact routing、full guard、real side
 active runner 122 を保護する。desugaring/truth/fact、acceptance、closure/order、theorem/proof/
 Core/ControlFlow/VC、別 chain、general semantics は open のままである。
 
+Task 174 MC-G020 current-state override: exact set-terminal local-mode long-chain left
+reserved-variable membership を `spec_gap` ではなく `test_gap`、
+`source_drift`、`design_drift` と分類する。Chapter 4、7、13、14.5.3、16 が
+test-first source を支え、task 74 が real seven-expansion producer、task 164 が
+right-only expected-set membership consumer を提供する。raw `ChainMode6` left
+result、独立した explicit-set right result と sole right expected input、ordinal
+2/3 の `BindingId(0/1)`、terminal `BaseMode` RHS identity 1 個、left expected
+input なし、2 `Inferred` term、1 fact/deferred-free checked membership、right-
+owned constraint 1 個を保持する。exact routing、membership-specific corruption
+test、shared full structural guard、real sidecar が active runner 123 を保護する。
+membership truth/fact、acceptance、closure/order、theorem/proof/Core/
+ControlFlow/VC、別 chain、general semantics は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

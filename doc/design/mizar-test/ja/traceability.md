@@ -1073,6 +1073,16 @@ ordinal 1/2 の `BindingId(0)`、terminal `BaseMode` RHS identity 1 個、2 infe
 variable、ordered constraint 2 個、1 fact/deferred-free pre-desugaring checked
 inequality だけである。backlink 6 件、full guard、real sidecar が active count
 122 を保護し、desugaring/truth/fact と broader semantics は credit しない。
+task 174 は exact test-first sibling row
+`LongLocalModeReservedVariableMembershipPayloadBoundary: x in y;` を追加し、
+Chapter 4/7/13/14.5.3/16、structural-chain link、dedicated checker row を参照
+する。intended credit は real expansion 7 本、raw `ChainMode6` left result、
+独立した explicit-set right result と sole right expected input、ordinal 2/3 の
+`BindingId(0/1)`、terminal `BaseMode` RHS identity 1 個、left expected input
+なし、2 inferred variable、right-owned constraint 1 個、1 fact/deferred-free
+checked membership だけである。backlink 6 件、production routing、full guard、
+real sidecar が active count 123 を保護する。membership truth/fact と broader
+semantics は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

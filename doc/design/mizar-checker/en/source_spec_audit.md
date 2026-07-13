@@ -1110,6 +1110,20 @@ and a real sidecar now protect active runner 122. Desugaring/truth/facts, accept
 order, theorem/proof/Core/ControlFlow/VC, other chains, and general semantics
 remain open.
 
+Task 174 MC-G020 current-state override: classify the exact set-terminal local-mode
+long-chain left reserved-variable membership as `test_gap`, `source_drift`, and
+`design_drift`, not `spec_gap`. Chapters 4, 7, 13, 14.5.3, and 16 support the
+test-first source; task 74 provides the real seven-expansion producer and task
+164 the right-only expected-set membership consumer. Preserve a raw
+`ChainMode6` left result, independent explicit-set right result and sole right
+expected input, ordinal 2/3 `BindingId(0/1)`, one terminal-`BaseMode`-RHS
+identity, no left expected input, two `Inferred` terms, one fact/deferred-free
+checked membership, and exactly one right-owned constraint. Exact routing,
+membership-specific corruption tests, shared full structural guards, and a real
+sidecar now protect active runner 123. Membership truth/facts, acceptance,
+closure/order, theorem/proof/Core/ControlFlow/VC, other chains, and general
+semantics remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

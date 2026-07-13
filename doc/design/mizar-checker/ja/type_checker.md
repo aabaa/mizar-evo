@@ -1128,6 +1128,21 @@ proof/Core/ControlFlow/VC、別 chain shape、general unbounded semantics は
 deferred のままである。
 fixture、expectation、backlink 6 件、exact routing、shared full guard matrix、
 task 173 corruption test、real sidecar が active runner 122 を保護する。
+task 174 は同じ definition 7 本、ordered `reserve x for ChainMode6;` と
+`reserve y for set;`、その後に
+`LongLocalModeReservedVariableMembershipPayloadBoundary: x in y;` だけが続く
+exact membership sibling を規定する。production route は real expansion 7 本
+すべてを消費し、raw `ChainMode6` left result と独立した explicit-set right
+result/sole right expected input を保持する。ordinal 2/3 の `BindingId(0/1)`、
+terminal `BaseMode` RHS builtin-set identity 1 個へ 3 role すべてを normalize
+し、left expected input は存在させず、2 `Inferred` variable、right-owned
+constraint 1 個、1 fact/deferred-free `Checked` membership を記録する。task 172
+の full structural guard matrix と task 174 membership-specific matched-output
+corruption/real-sidecar test を必須とする。membership truth/fact、acceptance、
+closure/order、theorem/proof/Core/ControlFlow/VC、別 chain shape、general
+unbounded semantics は deferred のままである。fixture、expectation、backlink
+6 件、exact routing、shared full structural guard、membership-specific corruption
+test、real sidecar が active runner 123 を保護する。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

@@ -1138,6 +1138,16 @@ roles, ordinal 1/2 `BindingId(0)`, one terminal-`BaseMode`-RHS identity, two
 inferred variables, two ordered constraints, and one fact/deferred-free pre-
 desugaring checked inequality. Six backlinks, full guards, and a real sidecar
 now protect active count 122; desugaring/truth/facts and broader semantics receive no credit.
+Task 174 adds the exact test-first sibling row ending in
+`LongLocalModeReservedVariableMembershipPayloadBoundary: x in y;`, with
+Chapter 4/7/13/14.5.3/16 and structural-chain links plus a dedicated checker
+row. Intended credit is seven real expansions, a raw `ChainMode6` left result,
+independent explicit-set right result and sole right expected input, ordinal
+2/3 `BindingId(0/1)`, one terminal-`BaseMode`-RHS identity, no left expected
+input, two inferred variables, one right-owned constraint, and one fact/
+deferred-free checked membership. Six backlinks, production routing, full
+guards, and the real sidecar now protect active count 123. Membership truth/
+facts and broader semantics receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

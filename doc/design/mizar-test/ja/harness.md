@@ -1041,6 +1041,17 @@ constraint 2 個、1 fact/deferred-free pre-desugaring `Checked` inequality を
 runner 122 を保護する。desugaring/truth/fact と downstream/general semantics は deferred のままで
 ある。
 
+task 174 は test-first long-chain membership sibling を記録する。production
+runner は同じ definition 7 本、ordered `ChainMode6`/`set` reserve、exact
+`x in y` だけを受理し、real expansion 7 本、raw left と独立した right result/
+sole expected input、ordinal 2/3 の `BindingId(0/1)`、terminal `BaseMode` RHS
+identity 1 個、left expected input なし、2 `Inferred` variable、right-owned
+constraint 1 個、1 fact/deferred-free `Checked` membership を要求する。task 172
+の full structural guard matrix、membership-specific corruption、real sidecar は
+fail closed する。truth/fact と downstream/general semantics は deferred のまま
+である。production routing、full guard、real sidecar が active runner 123 を
+保護する。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

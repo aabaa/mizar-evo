@@ -1082,6 +1082,17 @@ deferred-free pre-desugaring `Checked` inequality. Task 172's full guard matrix
 and real sidecar breadth now protect active runner 122. Desugaring/truth/facts
 and downstream or general semantics remain deferred.
 
+Task 174 records the test-first long-chain membership sibling. The production
+runner must accept only the same seven definitions, ordered `ChainMode6`/`set`
+reserves, and exact `x in y`; consume seven real expansions; retain the raw
+left plus independent right result/sole expected input; resolve ordinal 2/3
+`BindingId(0/1)`; and require one terminal-`BaseMode`-RHS identity, no left
+expected input, two `Inferred` variables, one right-owned constraint, and one
+fact/deferred-free `Checked` membership. Task 172's full structural guard
+matrix plus membership-specific corruption and a real sidecar fail closed.
+Truth/facts and downstream or general semantics remain deferred. Production
+routing, full guards, and the real sidecar now protect active runner 123.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

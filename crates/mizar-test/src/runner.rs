@@ -143,6 +143,9 @@ const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_
 const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
     &str =
     "type_elaboration.checker.local_mode_long_chain_reserved_variable_inequality.invalid_payload";
+const TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY:
+    &str =
+    "type_elaboration.checker.local_mode_long_chain_reserved_variable_membership.invalid_payload";
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.four_edge_local_mode_reserved_variable_inequality.invalid_payload";
 const TYPE_ELABORATION_FOUR_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY:
@@ -1064,6 +1067,13 @@ fn source_type_elaboration_detail_keys(
         return keys;
     }
     if let Some(keys) = source_local_mode_long_chain_reserved_variable_inequality_detail_keys(
+        ast,
+        module.clone(),
+        symbols,
+    ) {
+        return keys;
+    }
+    if let Some(keys) = source_local_mode_long_chain_reserved_variable_membership_detail_keys(
         ast,
         module.clone(),
         symbols,
@@ -2930,6 +2940,31 @@ const SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_CONFIG:
     right_expected_role: Some("long-local-mode-reserved-variable-inequality-right-expected"),
 };
 
+const SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "LongLocalModeReservedVariableMembershipPayloadBoundary",
+    operator: "in",
+    formula_kind: FormulaKind::Membership,
+    invalid_payload_key:
+        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 2,
+    binding_spellings: &["x", "y"],
+    binding_types: &[
+        SourceReservedVariableBuiltinType::Set,
+        SourceReservedVariableBuiltinType::Set,
+    ],
+    binding_source_mode_spellings: &[Some("ChainMode6"), None],
+    mode_definitions: SOURCE_LOCAL_MODE_LONG_CHAIN_DEFINITIONS,
+    left_binding_index: 0,
+    right_binding_index: 1,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: true,
+    left_result_role: "long-local-mode-reserved-variable-membership-left-result",
+    right_result_role: "long-local-mode-reserved-variable-membership-right-result",
+    left_expected_role: None,
+    right_expected_role: Some("long-local-mode-reserved-variable-membership-right-expected"),
+};
+
 const SOURCE_FOUR_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG:
     SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
     label: "FourEdgeLocalModeReservedVariableInequalityPayloadBoundary",
@@ -3835,6 +3870,19 @@ fn source_local_mode_long_chain_reserved_variable_inequality_detail_keys(
     ))
 }
 
+fn source_local_mode_long_chain_reserved_variable_membership_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_local_mode_long_chain_reserved_variable_membership(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
+    ))
+}
+
 fn source_four_edge_local_mode_reserved_variable_inequality_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -4567,6 +4615,17 @@ fn source_local_mode_long_chain_reserved_variable_inequality_output(
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload =
         extract_source_local_mode_long_chain_reserved_variable_inequality(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_local_mode_long_chain_reserved_variable_membership_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload =
+        extract_source_local_mode_long_chain_reserved_variable_membership(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -6514,6 +6573,19 @@ fn extract_source_local_mode_long_chain_reserved_variable_inequality(
         module,
         symbols,
         &SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_CONFIG,
+    )
+}
+
+fn extract_source_local_mode_long_chain_reserved_variable_membership(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_CONFIG,
     )
 }
 
@@ -10815,6 +10887,7 @@ mod tests {
         TYPE_ELABORATION_HETEROGENEOUS_RESERVE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
@@ -10874,6 +10947,7 @@ mod tests {
         extract_source_imported_predicate_functor_formula,
         extract_source_local_mode_long_chain_reserved_variable_equality,
         extract_source_local_mode_long_chain_reserved_variable_inequality,
+        extract_source_local_mode_long_chain_reserved_variable_membership,
         extract_source_local_mode_reserved_variable_equality,
         extract_source_local_mode_reserved_variable_inequality,
         extract_source_local_mode_reserved_variable_membership,
@@ -10931,6 +11005,7 @@ mod tests {
         source_imported_predicate_functor_formula_output,
         source_local_mode_long_chain_reserved_variable_equality_output,
         source_local_mode_long_chain_reserved_variable_inequality_output,
+        source_local_mode_long_chain_reserved_variable_membership_output,
         source_local_mode_reserved_variable_equality_output,
         source_local_mode_reserved_variable_inequality_output,
         source_local_mode_reserved_variable_membership_output,
@@ -42788,6 +42863,395 @@ mod tests {
             .unwrap();
         assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
         assert_eq!(normalized.source.range, terminal.source_range);
+    }
+    #[test]
+    fn source_local_mode_long_chain_reserved_variable_membership_consumes_seven_expansions() {
+        let source_id = source_id(174);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("local_mode_long_chain_reserved_variable_membership"),
+        );
+        let symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                ("BaseMode", SymbolKind::Mode),
+                ("ChainMode1", SymbolKind::Mode),
+                ("ChainMode2", SymbolKind::Mode),
+                ("ChainMode3", SymbolKind::Mode),
+                ("ChainMode4", SymbolKind::Mode),
+                ("ChainMode5", SymbolKind::Mode),
+                ("ChainMode6", SymbolKind::Mode),
+            ],
+        );
+        let exact_modes = || {
+            vec![
+                mode_definition_with_label(
+                    "BaseMode",
+                    "BaseModeDef",
+                    ReserveTypeShape::Builtin("set"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode1",
+                    "ChainMode1Def",
+                    ReserveTypeShape::QualifiedSymbol("BaseMode"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode2",
+                    "ChainMode2Def",
+                    ReserveTypeShape::QualifiedSymbol("ChainMode1"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode3",
+                    "ChainMode3Def",
+                    ReserveTypeShape::QualifiedSymbol("ChainMode2"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode4",
+                    "ChainMode4Def",
+                    ReserveTypeShape::QualifiedSymbol("ChainMode3"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode5",
+                    "ChainMode5Def",
+                    ReserveTypeShape::QualifiedSymbol("ChainMode4"),
+                ),
+                mode_definition_with_label(
+                    "ChainMode6",
+                    "ChainMode6Def",
+                    ReserveTypeShape::QualifiedSymbol("ChainMode5"),
+                ),
+            ]
+        };
+        let reserves = || {
+            vec![
+                reserve_item(vec!["x"], ReserveTypeShape::QualifiedSymbol("ChainMode6")),
+                reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+            ]
+        };
+        let theorem = IdentifierBinaryTheoremSpec {
+            status: None,
+            label: "LongLocalModeReservedVariableMembershipPayloadBoundary",
+            left: "x",
+            operator: "in",
+            right: "y",
+            recovered_label: false,
+        };
+        let exact = mode_then_reserve_identifier_binary_theorem_ast(
+            source_id,
+            exact_modes(),
+            reserves(),
+            theorem,
+        );
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+
+        let payload = extract_source_local_mode_long_chain_reserved_variable_membership(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact long-chain membership should extract");
+        assert_eq!(payload.reserve.mode_expansions.len(), 7);
+        assert_eq!(payload.reserve.bridge.bindings().len(), 2);
+        assert_eq!(payload.reserve.bridge.bindings()[0].spelling, "x");
+        assert_eq!(
+            payload.reserve.bridge.bindings()[0].type_spelling,
+            "ChainMode6"
+        );
+        assert_eq!(payload.reserve.bridge.bindings()[1].spelling, "y");
+        assert_eq!(payload.reserve.bridge.bindings()[1].type_spelling, "set");
+        assert_ne!(
+            payload.reserve.bridge.bindings()[0].type_range,
+            payload.reserve.bridge.bindings()[1].type_range
+        );
+        assert_eq!(payload.left_lookup_ordinal, 2);
+        assert_eq!(payload.right_lookup_ordinal, 3);
+
+        let output = source_local_mode_long_chain_reserved_variable_membership_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact long-chain membership should reach TermFormulaChecker");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("long-chain membership invariants should hold");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(1));
+        assert_eq!(output.left_result_input.spelling, "ChainMode6");
+        assert!(matches!(
+            output.left_result_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_eq!(
+            output.left_result_input.source_range,
+            output.payload.reserve.bridge.bindings()[0].type_range
+        );
+        assert!(output.left_expected_input.is_none());
+        assert_eq!(output.right_result_input.spelling, "set");
+        assert_eq!(output.right_result_input.head, TypeHeadInput::BuiltinSet);
+        let right_expected = output
+            .right_expected_input
+            .as_ref()
+            .expect("right expected-set input should exist");
+        assert_eq!(right_expected.spelling, "set");
+        assert_eq!(right_expected.head, TypeHeadInput::BuiltinSet);
+        assert_eq!(
+            output.right_result_input.source_range,
+            output.payload.reserve.bridge.bindings()[1].type_range
+        );
+        assert_eq!(
+            right_expected.source_range,
+            output.payload.reserve.bridge.bindings()[1].type_range
+        );
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some("BaseMode"))
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("BaseMode terminal expansion should exist");
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("one normalized terminal type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+        assert_eq!(output.term_formula.terms().len(), 2);
+        for (_, term) in output.term_formula.terms().iter() {
+            assert_eq!(term.kind, TermKind::Variable);
+            assert_eq!(term.status, TermStatus::Inferred);
+        }
+        let (_, formula) = output
+            .term_formula
+            .formulas()
+            .iter()
+            .next()
+            .expect("long-chain membership formula should be checked");
+        assert_eq!(formula.kind, FormulaKind::Membership);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(formula.expected_types.len(), 1);
+        assert_eq!(formula.expected_types[0].term, output.payload.right_site);
+        assert_eq!(
+            formula.expected_types[0].source_range,
+            output.payload.right_range
+        );
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+        assert!(output.term_formula.facts().is_empty());
+        assert!(output.term_formula.diagnostics().is_empty());
+        let type_roles = output
+            .term_formula
+            .type_entries()
+            .iter()
+            .filter_map(|(_, entry)| match &entry.owner {
+                TypedSiteRef::Role { role, .. } => Some(role.as_str().to_owned()),
+                _ => None,
+            })
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            type_roles,
+            BTreeSet::from([
+                "long-local-mode-reserved-variable-membership-left-result".to_owned(),
+                "long-local-mode-reserved-variable-membership-right-expected".to_owned(),
+                "long-local-mode-reserved-variable-membership-right-result".to_owned(),
+            ])
+        );
+
+        let invalid_key = || {
+            vec![TYPE_ELABORATION_LOCAL_MODE_LONG_CHAIN_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY.to_owned()]
+        };
+        for removed in [
+            "BaseMode",
+            "ChainMode1",
+            "ChainMode2",
+            "ChainMode3",
+            "ChainMode4",
+            "ChainMode5",
+            "ChainMode6",
+        ] {
+            let mut invalid = source_local_mode_long_chain_reserved_variable_membership_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce an expansion corruption target");
+            invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .retain(|symbol, _| source_mode_symbol_spelling(symbol) != Some(removed));
+            assert_eq!(
+                source_reserved_variable_formula_output_detail_keys(&invalid),
+                invalid_key()
+            );
+        }
+        let mut unexpected_left = source_local_mode_long_chain_reserved_variable_membership_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a left-expected corruption target");
+        unexpected_left.left_expected_input = unexpected_left.right_expected_input.clone();
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&unexpected_left),
+            invalid_key()
+        );
+        let mut missing_right = source_local_mode_long_chain_reserved_variable_membership_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a missing-right corruption target");
+        missing_right.right_expected_input = None;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&missing_right),
+            invalid_key()
+        );
+        let mut wrong_right = source_local_mode_long_chain_reserved_variable_membership_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a right-type corruption target");
+        wrong_right
+            .right_expected_input
+            .as_mut()
+            .expect("right expected input should exist")
+            .head = TypeHeadInput::BuiltinObject;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&wrong_right),
+            invalid_key()
+        );
+
+        for near_miss in [
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserves(),
+                IdentifierBinaryTheoremSpec {
+                    operator: "=",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserves(),
+                IdentifierBinaryTheoremSpec {
+                    status: Some("open"),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["x"], ReserveTypeShape::QualifiedSymbol("ChainMode6")),
+                ],
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![
+                    reserve_item(
+                        vec!["x"],
+                        ReserveTypeShape::QualifiedSymbolWithArgs("ChainMode6"),
+                    ),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                theorem,
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+    #[test]
+    fn active_local_mode_long_chain_reserved_variable_membership_fixture_consumes_seven_expansions()
+    {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0
+                    == "pass_type_elaboration_local_mode_long_chain_reserved_variable_membership_001"
+            })
+            .expect("Task 174 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 174 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 174 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_local_mode_long_chain_reserved_variable_membership_output(
+            &ast,
+            resolver.module,
+            &symbols,
+        )
+        .expect("Task 174 real AST should reach long-chain membership");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("Task 174 real AST should preserve every checked payload invariant");
+        assert_eq!(output.payload.reserve.mode_expansions.len(), 7);
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(1));
+        assert_eq!(output.payload.left_lookup_ordinal, 2);
+        assert_eq!(output.payload.right_lookup_ordinal, 3);
+        assert!(output.left_expected_input.is_none());
+        let (_, formula) = output
+            .term_formula
+            .formulas()
+            .iter()
+            .next()
+            .expect("Task 174 membership formula should be checked");
+        assert_eq!(formula.kind, FormulaKind::Membership);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(formula.expected_types.len(), 1);
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some("BaseMode"))
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("Task 174 BaseMode terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("Task 174 normalized set type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
     }
     #[test]
     fn source_four_edge_local_mode_reserved_variable_inequality_consumes_five_expansions() {

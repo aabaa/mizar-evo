@@ -2930,6 +2930,22 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 74、168。参照: Step 5、mizar-test task 10、specs 4、7、13、
       14.5.2、16。
 
+174. **Exact local-mode long-chain membership checker bridge を追加する。** [x]
+    - task 74 の set-terminal definition chain 7 本、ordered reserve `x` for
+      `ChainMode6` と `y` for explicit `set`、test-first fixture の exact
+      `x in y` theorem label だけを task 164 の real membership consumer へ渡す。
+    - Acceptance: real expansion 7 本、raw `ChainMode6` left と独立した explicit-
+      set right result/sole right expected input、ordinal 2/3 の
+      `BindingId(0/1)`、terminal `BaseMode` RHS builtin-set identity 1 個、left
+      expected input なし、2 inferred term、1 fact/deferred-free checked
+      membership、right-owned constraint 1 個を保持する。full exact/near-miss/
+      corruption/real-sidecar guard を必須とし、truth/fact、acceptance、closure、
+      theorem/proof/CoreIr/ControlFlowIr/VC、general unbounded semantics を捏造
+      しない。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 74、164。参照: Step 5、mizar-test task 10、specs 4、7、13、
+      14.5.3、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:
