@@ -659,7 +659,7 @@ acceptance/inhabitation, object-terminal, direct and longer chain formulas,
 inequality desugaring, implicit closure/order, truth/facts, theorem acceptance,
 proof, CoreIr, ControlFlowIr, and VC are not credited.
 
-Task133 addendum for chapters `03.types.md`, `04.variables_and_constants.md`,
+Task133 addendum for chapters `03.type_system.md`, `04.variables_and_constants.md`,
 `07.modes.md`, `13.term_expression.md`, `14.formulas.md`, and
 `16.theorems_and_proofs.md`: checker task 133 adds only the exact active
 type/well-formedness pass for a reserved identifier whose outer local mode
