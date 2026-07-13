@@ -4027,12 +4027,23 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
             .expected_outcome,
         ExpectedOutcome::Pass
     );
+    let multiple_reserve_declaration_inequality_case = active_type_elaboration_cases(&plan)
+        .find(|case| {
+            case.id.0 == "pass_type_elaboration_multiple_reserve_declaration_inequality_001"
+        })
+        .expect("Task161 multiple-reserve-declaration inequality bridge should be active");
+    assert_eq!(
+        multiple_reserve_declaration_inequality_case
+            .expectation
+            .expected_outcome,
+        ExpectedOutcome::Pass
+    );
 
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 111);
-    assert_eq!(report.passed_count(), 111);
+    assert_eq!(report.results.len(), 112);
+    assert_eq!(report.passed_count(), 112);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -4384,6 +4395,10 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     }));
     assert!(report.results.iter().any(|result| {
         result.id.0 == "pass_type_elaboration_multiple_reserve_declaration_equality_001"
+            && result.actual_detail_keys.is_empty()
+    }));
+    assert!(report.results.iter().any(|result| {
+        result.id.0 == "pass_type_elaboration_multiple_reserve_declaration_inequality_001"
             && result.actual_detail_keys.is_empty()
     }));
     assert!(report.results.iter().any(|result| {
@@ -8479,8 +8494,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 111"));
-    assert!(stdout.contains("passed: 111"));
+    assert!(stdout.contains("type-elaboration cases: 112"));
+    assert!(stdout.contains("passed: 112"));
     assert!(stdout.contains("failed: 0"));
 }
 

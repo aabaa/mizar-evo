@@ -1126,6 +1126,23 @@ facts, closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, VC,
 separate declarations, non-set types, and broader source shapes receive no
 credit.
 
+Task161 addendum for chapters `04.variables_and_constants.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 161 adds an active contract only
+for the exact multiple-reserve-declaration inequality source. Two reserve items
+must create `BindingId(0/1)` with distinct written builtin-set ranges; uses
+resolve at ordinals 2/3, and each range must survive across its operand's result
+and expected roles. All four roles then intern to one canonical builtin-set
+identity anchored at the earlier `x` range before two inferred terms and one
+fact/deferred-free pre-desugaring checked inequality with two ordered
+constraints. Classification is `test_gap`, `source_drift`, and `design_drift`;
+specification intent and existing expectations do not change. Production
+routing, corruption/near-miss coverage, and a real sidecar now guard the exact
+slice, so active runner contains 112 cases. Chapter 3, shared-range behavior,
+desugaring/
+truth/facts, closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr,
+VC, non-set types, and broader shapes receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

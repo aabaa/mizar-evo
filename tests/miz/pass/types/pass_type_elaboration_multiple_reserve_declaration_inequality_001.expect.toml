@@ -1,0 +1,19 @@
+schema_version = 1
+id = "pass_type_elaboration_multiple_reserve_declaration_inequality_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_multiple_reserve_declaration_inequality_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.multiple_reserve_declaration_inequality_source_bridge",
+]
+notes = "Spec-derived Task 161 intent for the exact multiple-reserve-declaration inequality source. Two independent reserve items create BindingId(0/1) with distinct written builtin-set type ranges; source-order lookups at ordinals 2/3 preserve the corresponding range across each operand's result and expected-type roles. The four raw roles intern to one canonical builtin-set identity anchored at the earlier x reserve range before two Inferred variables and one fact/deferred-free pre-desugaring Checked Inequality with two ordered operand-owned constraints. This does not credit inequality desugaring/truth/facts, implicit universal closure/order, theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, VC, shared-range behavior, non-set types, or broader reserve/formula shapes."

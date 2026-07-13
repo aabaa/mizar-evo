@@ -900,6 +900,17 @@ corruption/near-miss matrix、real frontend/resolver sidecar が contract を gu
 order、theorem/proof/Core/VC、separate declaration、non-set type、broader source shape
 は deferred のままにする。
 
+task 161 は exact active multiple-reserve-declaration inequality source
+`reserve x for set; reserve y for set; theorem
+MultipleReserveDeclarationInequalityPayloadBoundary: x <> y;` を規定する。runner
+は ordinal 2/3 の `BindingId(0/1)` と operand result/expected pair 2 組の distinct
+written range を保持し、全 4 role を earlier `x` range に canonical anchor された
+builtin-set identity 1 個へ intern して、2 `Inferred` variable と 2 ordered
+constraint を持つ 1 fact/deferred-free pre-desugaring `Checked` inequality を要求する。
+exact route guard、corruption/near-miss coverage、real sidecar が contract を guard する
+ため active type-elaboration は 112 cases である。shared range、non-set type、desugaring/
+truth/fact、closure/order、theorem/proof/Core/VC、broader shape は deferred のままとする。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

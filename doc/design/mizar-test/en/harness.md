@@ -937,6 +937,18 @@ contract, so the active type-elaboration runner contains 111 cases. Desugaring/
 truth/facts, closure/order, theorem/proof/Core/VC, separate declarations,
 non-set types, and broader source shapes remain deferred.
 
+Task 161 adds the exact active multiple-reserve-declaration inequality
+source `reserve x for set; reserve y for set; theorem
+MultipleReserveDeclarationInequalityPayloadBoundary: x <> y;`. The runner must
+retain `BindingId(0/1)` at ordinals 2/3 and distinct written ranges across the
+two operand result/expected pairs, intern all four roles to one canonical
+builtin-set identity anchored at the earlier `x` range, and require two
+`Inferred` variables plus one fact/deferred-free pre-desugaring `Checked`
+inequality with two ordered constraints. Exact route guards, corruption/near-
+miss coverage, and a real sidecar now guard the contract, so active type-
+elaboration contains 112 cases. Shared ranges, non-set types, desugaring/truth/facts,
+closure/order, theorem/proof/Core/VC, and broader shapes remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

@@ -904,6 +904,19 @@ separate declaration、broader shape は open のままである。test-first fi
 expectation/trace contract、production route、near-miss/corruption guard、real
 sidecar が exact slice を保護するため active count は 111 件である。
 
+Task 161 MC-G020 current-state override: exact multiple-reserve-declaration
+inequality は task 124 の two-item/two-binding/distinct-written-range producer と
+task 160 の pre-desugaring inequality consumer を compose する。`x/y` は ordinal
+2/3 で `BindingId(0/1)` へ解決され、各 operand の result/expected role は固有の
+written set range を保持しながら全 4 role を earlier `x` range に canonical anchor
+された builtin-set identity 1 個へ normalize し、2 `Inferred` term と 2 ordered
+constraint を持つ 1 fact/deferred-free `Checked` inequality を記録しなければならない。
+分類は `test_gap`、`source_drift`、`design_drift` であり `spec_gap` ではない。
+desugaring/truth/fact、closure/order、theorem acceptance、proof/Core/ControlFlow/VC、
+shared range、broader shape は open のままである。source/trace contract、production
+route、near-miss/corruption guard、real sidecar が exact slice を保護するため active
+count は 112 件である。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

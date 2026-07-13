@@ -990,6 +990,18 @@ Production routing, corruption/near-miss coverage, and the real frontend/
 resolver sidecar now protect the active row. Chapter 3,
 desugaring/truth/facts, closure/order, theorem acceptance, proof/Core/VC,
 separate declarations, and broader source shapes remain uncredited.
+Task 161 adds an active row for exactly `reserve x for set; reserve y
+for set; theorem MultipleReserveDeclarationInequalityPayloadBoundary: x <> y;`.
+It credits Chapters 4, 13, 14.5.2, and 16 only: two reserve items create
+distinct bindings and written ranges, uses resolve at ordinals 2/3, and both
+result/expected role pairs retain the corresponding range before interning to
+one canonical builtin-set identity anchored at the earlier `x` range. The
+intended result is two `Inferred` variables and one fact/deferred-free pre-
+desugaring `Checked` inequality with two ordered constraints. Production
+routing, corruption/near-miss coverage, and the real sidecar now protect the
+active row. Chapter 3, shared-range behavior, desugaring/truth/
+facts, closure/order, theorem acceptance, proof/Core/VC, and broader shapes
+remain uncredited.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
