@@ -408,7 +408,9 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    task 123's exact distinct-binding equality, and task 124's exact
    multiple-reserve-declaration equality, and task 125's exact heterogeneous
    reserve membership, task 126's exact direct-local-mode equality, and task
-   127's exact one-edge local-mode-chain equality,
+   127's exact one-edge local-mode-chain equality, task 128's exact direct
+   local-object-mode equality, and task 129's exact one-edge
+   local-object-mode-chain equality,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,
