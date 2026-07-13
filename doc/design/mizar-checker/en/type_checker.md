@@ -591,6 +591,15 @@ recorded. Missing/non-exact links and set-terminal, direct, or longer shapes
 fail closed; declaration acceptance/inhabitation, desugaring, closure/order,
 truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
 deferred.
+Task 134 applies the equality consumer to the exact two-edge bare-set chain
+`OuterTwoEdgeModeEquality -> MiddleTwoEdgeModeEquality -> BaseTwoEdgeModeEquality -> set`.
+Four raw outer-mode inputs retain written provenance while all three real
+AST-derived expansions normalize them to one terminal-RHS builtin-set identity
+before two `Inferred` variable terms and one fact-free `Checked` equality are
+recorded. Missing/non-exact links and object-terminal, direct, one-edge, or
+longer shapes fail closed; declaration acceptance/inhabitation, implicit
+closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
+and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

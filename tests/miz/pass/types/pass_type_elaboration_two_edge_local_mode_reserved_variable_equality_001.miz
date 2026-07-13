@@ -1,0 +1,14 @@
+definition
+  mode BaseTwoEdgeModeEqualityDef: BaseTwoEdgeModeEquality is set;
+end;
+
+definition
+  mode MiddleTwoEdgeModeEqualityDef: MiddleTwoEdgeModeEquality is BaseTwoEdgeModeEquality;
+end;
+
+definition
+  mode OuterTwoEdgeModeEqualityDef: OuterTwoEdgeModeEquality is MiddleTwoEdgeModeEquality;
+end;
+
+reserve z for OuterTwoEdgeModeEquality;
+theorem TwoEdgeLocalModeReservedVariableEqualityPayloadBoundary: z = z;

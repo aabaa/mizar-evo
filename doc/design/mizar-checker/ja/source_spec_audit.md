@@ -500,6 +500,15 @@ builtin-object identity を anchor して 2 `Inferred` term と 1 fact-free
 set-terminal、direct/longer chain、desugaring、closure/order、truth/fact、theorem
 acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
 
+Task 134 MC-G020 current-state override: exact two-edge set-terminal mode-chain
+equality は task 72 の real AST-derived expansion 3 個と task 127 の equality
+consumer を結合する。4 raw input は outer-mode provenance を保持し、recursive
+normalization は terminal RHS に 1 builtin-set identity を anchor して 2
+`Inferred` term と 1 fact-free `Checked` equality を生成する。declaration
+acceptance/inhabitation、object terminal、direct/one-edge/longer chain、implicit
+closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
+open のままである。
+
 Task 129 MC-G020 current-state override: exact one-edge object-terminal
 mode-chain equality は task 56 の real AST-derived expansion 2 個と task 127/128 の
 equality / builtin-object consumer を結合する。4 raw input は outer-mode provenance

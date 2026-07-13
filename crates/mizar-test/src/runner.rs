@@ -107,6 +107,8 @@ const TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVA
 const TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY:
     &str =
     "type_elaboration.checker.chained_local_object_mode_reserved_variable_inequality.invalid_payload";
+const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.two_edge_local_mode_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.local_object_mode_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY: &str =
@@ -938,6 +940,13 @@ fn source_type_elaboration_detail_keys(
     module: ResolverModuleId,
     symbols: &SymbolEnv,
 ) -> Vec<String> {
+    if let Some(keys) = source_two_edge_local_mode_reserved_variable_equality_detail_keys(
+        ast,
+        module.clone(),
+        symbols,
+    ) {
+        return keys;
+    }
     if let Some(keys) = source_chained_local_object_mode_reserved_variable_inequality_detail_keys(
         ast,
         module.clone(),
@@ -1526,6 +1535,44 @@ const SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
     right_expected_role: Some("chained-local-mode-reserved-variable-right-expected"),
 };
 
+const SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "TwoEdgeLocalModeReservedVariableEqualityPayloadBoundary",
+    operator: "=",
+    formula_kind: FormulaKind::Equality,
+    invalid_payload_key:
+        TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 1,
+    binding_spellings: &["z"],
+    binding_types: &[SourceReservedVariableBuiltinType::Set],
+    binding_source_mode_spellings: &[Some("OuterTwoEdgeModeEquality")],
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseTwoEdgeModeEqualityDef",
+            spelling: "BaseTwoEdgeModeEquality",
+            radix: SourceReservedVariableModeRadix::Builtin(SourceReservedVariableBuiltinType::Set),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleTwoEdgeModeEqualityDef",
+            spelling: "MiddleTwoEdgeModeEquality",
+            radix: SourceReservedVariableModeRadix::Mode("BaseTwoEdgeModeEquality"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterTwoEdgeModeEqualityDef",
+            spelling: "OuterTwoEdgeModeEquality",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleTwoEdgeModeEquality"),
+        },
+    ],
+    left_binding_index: 0,
+    right_binding_index: 0,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: false,
+    left_result_role: "two-edge-local-mode-reserved-variable-left-result",
+    right_result_role: "two-edge-local-mode-reserved-variable-right-result",
+    left_expected_role: Some("two-edge-local-mode-reserved-variable-left-expected"),
+    right_expected_role: Some("two-edge-local-mode-reserved-variable-right-expected"),
+};
+
 const SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_CONFIG:
     SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
     label: "ChainedLocalModeReservedVariableInequalityPayloadBoundary",
@@ -1797,6 +1844,19 @@ fn source_chained_local_mode_reserved_variable_equality_detail_keys(
     ))
 }
 
+fn source_two_edge_local_mode_reserved_variable_equality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_two_edge_local_mode_reserved_variable_equality(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
 fn source_chained_local_mode_reserved_variable_inequality_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -2051,6 +2111,17 @@ fn source_chained_local_mode_reserved_variable_equality_output(
 ) -> Option<SourceReservedVariableBinaryFormulaOutput> {
     let payload =
         extract_source_chained_local_mode_reserved_variable_equality(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_two_edge_local_mode_reserved_variable_equality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload =
+        extract_source_two_edge_local_mode_reserved_variable_equality(ast, module, symbols)?;
     build_source_reserved_variable_formula_output(payload, symbols).ok()
 }
 
@@ -3500,6 +3571,19 @@ fn extract_source_chained_local_mode_reserved_variable_equality(
         module,
         symbols,
         &SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
+    )
+}
+
+fn extract_source_two_edge_local_mode_reserved_variable_equality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_CONFIG,
     )
 }
 
@@ -7482,8 +7566,10 @@ mod tests {
         TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY,
-        TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY, active_type_elaboration_cases,
-        assemble_source_checker_handoff, assert_source_reserved_variable_formula_output,
+        TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY,
+        TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
+        active_type_elaboration_cases, assemble_source_checker_handoff,
+        assert_source_reserved_variable_formula_output,
         assert_source_reserved_variable_type_assertion_output,
         augment_type_elaboration_import_summaries, build_source_reserved_variable_formula_output,
         build_source_reserved_variable_type_assertion_output,
@@ -7505,8 +7591,9 @@ mod tests {
         extract_source_reserved_variable_equality, extract_source_reserved_variable_inequality,
         extract_source_reserved_variable_membership,
         extract_source_reserved_variable_type_assertion, extract_source_set_enumeration_formula,
-        resolve_visible_attribute, resolve_visible_type_head, resolver_symbol_collection,
-        run_frontend, source_builtin_type_assertion_formula_output,
+        extract_source_two_edge_local_mode_reserved_variable_equality, resolve_visible_attribute,
+        resolve_visible_type_head, resolver_symbol_collection, run_frontend,
+        source_builtin_type_assertion_formula_output,
         source_chained_local_mode_reserved_variable_equality_output,
         source_chained_local_mode_reserved_variable_inequality_output,
         source_chained_local_object_mode_reserved_variable_inequality_output,
@@ -7527,8 +7614,9 @@ mod tests {
         source_reserved_variable_inequality_output, source_reserved_variable_membership_output,
         source_reserved_variable_type_assertion_output,
         source_reserved_variable_type_assertion_result_detail_keys,
-        source_set_enumeration_formula_output, source_type_elaboration_detail_keys,
-        surface_nodes_with_kind, surface_site,
+        source_set_enumeration_formula_output,
+        source_two_edge_local_mode_reserved_variable_equality_output,
+        source_type_elaboration_detail_keys, surface_nodes_with_kind, surface_site,
     };
     use crate::harness::{DiscoveryConfig, TestProfile, ValidationMode, build_test_plan};
     use mizar_checker::binding_env::{BindingContextId, BindingId};
@@ -13452,6 +13540,377 @@ mod tests {
     }
 
     #[test]
+    fn source_two_edge_local_mode_reserved_variable_equality_consumes_three_expansions() {
+        let source_id = source_id(134);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("two_edge_local_mode_reserved_variable_equality"),
+        );
+        let symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                ("BaseTwoEdgeModeEquality", SymbolKind::Mode),
+                ("MiddleTwoEdgeModeEquality", SymbolKind::Mode),
+                ("OuterTwoEdgeModeEquality", SymbolKind::Mode),
+                ("ExtraTwoEdgeModeEquality", SymbolKind::Mode),
+            ],
+        );
+        let theorem = IdentifierBinaryTheoremSpec {
+            status: None,
+            label: "TwoEdgeLocalModeReservedVariableEqualityPayloadBoundary",
+            left: "z",
+            operator: "=",
+            right: "z",
+            recovered_label: false,
+        };
+        let reserve = || {
+            vec![reserve_item(
+                vec!["z"],
+                ReserveTypeShape::QualifiedSymbol("OuterTwoEdgeModeEquality"),
+            )]
+        };
+        let exact_modes = || {
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ]
+        };
+        let exact = mode_then_reserve_identifier_binary_theorem_ast(
+            source_id,
+            exact_modes(),
+            reserve(),
+            theorem,
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload = extract_source_two_edge_local_mode_reserved_variable_equality(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact two-edge local-mode equality should extract");
+        assert_eq!(payload.reserve.mode_expansions.len(), 3);
+        assert_eq!(payload.reserve.bridge.bindings().len(), 1);
+        assert_eq!(
+            payload.reserve.bridge.bindings()[0].type_spelling,
+            "OuterTwoEdgeModeEquality"
+        );
+        assert_eq!(payload.left_lookup_ordinal, 1);
+        assert_eq!(payload.right_lookup_ordinal, 2);
+
+        let output = source_two_edge_local_mode_reserved_variable_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact two-edge local-mode equality should reach TermFormulaChecker");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("two-edge local-mode equality invariants should hold");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(0));
+        for input in [
+            &output.left_result_input,
+            &output.right_result_input,
+            output
+                .left_expected_input
+                .as_ref()
+                .expect("left expected input should exist"),
+            output
+                .right_expected_input
+                .as_ref()
+                .expect("right expected input should exist"),
+        ] {
+            assert_eq!(input.spelling, "OuterTwoEdgeModeEquality");
+            assert!(matches!(input.head, TypeHeadInput::Symbol(_)));
+        }
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseTwoEdgeModeEquality")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("base mode terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("one normalized terminal type should exist");
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+
+        let mut invalid_output = source_two_edge_local_mode_reserved_variable_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a second checker output");
+        invalid_output
+            .payload
+            .reserve
+            .mode_expansions
+            .retain(|symbol, _| {
+                source_mode_symbol_spelling(symbol) != Some("BaseTwoEdgeModeEquality")
+            });
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&invalid_output),
+            vec![
+                TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY
+                    .to_owned()
+            ]
+        );
+
+        let near_miss_modes = [
+            vec![mode_definition(
+                "OuterTwoEdgeModeEquality",
+                ReserveTypeShape::Builtin("set"),
+            )],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition(
+                    "BaseTwoEdgeModeEquality",
+                    ReserveTypeShape::Builtin("object"),
+                ),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::AttributedSet),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                contextual_mode_definition(
+                    "BaseTwoEdgeModeEquality",
+                    ReserveTypeShape::Builtin("set"),
+                ),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                parameterized_mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                recovered_mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition_with_label(
+                    "BaseTwoEdgeModeEquality",
+                    "OtherDef",
+                    ReserveTypeShape::Builtin("set"),
+                ),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                mode_definition_with_label(
+                    "MiddleTwoEdgeModeEquality",
+                    "OtherDef",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition_with_label(
+                    "OuterTwoEdgeModeEquality",
+                    "OtherDef",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbolWithArgs("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("OuterTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+            vec![
+                mode_definition("BaseTwoEdgeModeEquality", ReserveTypeShape::Builtin("set")),
+                mode_definition(
+                    "ExtraTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "MiddleTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("ExtraTwoEdgeModeEquality"),
+                ),
+                mode_definition(
+                    "OuterTwoEdgeModeEquality",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeModeEquality"),
+                ),
+            ],
+        ];
+        for modes in near_miss_modes {
+            let near_miss = mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                modes,
+                reserve(),
+                theorem,
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        for near_miss in [
+            modes_then_empty_definition_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![reserve_item(
+                    vec!["z"],
+                    ReserveTypeShape::QualifiedSymbolWithArgs("OuterTwoEdgeModeEquality"),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_binary_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierBinaryTheoremSpec {
+                    operator: "<>",
+                    ..theorem
+                },
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
     fn source_chained_local_mode_reserved_variable_inequality_consumes_both_expansions() {
         let source_id = source_id(132);
         let module = ResolverModuleId::new(
@@ -15276,6 +15735,53 @@ mod tests {
         assert_eq!(output.term_formula.normalized_types().len(), 1);
     }
 
+    #[test]
+    fn active_two_edge_local_mode_reserved_variable_equality_fixture_consumes_three_expansions() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0
+                    == "pass_type_elaboration_two_edge_local_mode_reserved_variable_equality_001"
+            })
+            .expect("Task 134 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 134 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 134 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_two_edge_local_mode_reserved_variable_equality_output(
+            &ast,
+            resolver.module,
+            &symbols,
+        )
+        .expect("Task 134 real AST should reach the two-edge local-mode equality seam");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("Task 134 real AST should preserve every checked payload invariant");
+        assert_eq!(output.payload.reserve.mode_expansions.len(), 3);
+        assert!(matches!(
+            output.left_result_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+    }
     #[test]
     fn active_chained_local_mode_reserved_variable_inequality_fixture_consumes_both_expansions() {
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))

@@ -673,6 +673,19 @@ acceptance/inhabitation, set-terminal, direct and longer chain formulas,
 inequality desugaring, implicit closure/order, truth/facts, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC are not credited.
 
+Task134 addendum for chapters `04.variables_and_constants.md`, `07.modes.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 134 adds only the exact active
+type/well-formedness pass for a reserved identifier whose outer local mode
+normalizes through three real AST-derived two-edge set-terminal expansion links
+in an equality. Four raw outer-mode roles normalize to one terminal-RHS
+builtin-set identity, producing two inferred variables and one fact-free
+checked equality. The classified changes are `test_gap`, `source_drift`, and
+`design_drift`; no specification intent or existing expectation changes.
+Coverage remains partial: declaration acceptance/inhabitation, object-terminal,
+direct, one-edge and longer chain formulas, implicit closure/order, truth/facts,
+theorem acceptance, proof, CoreIr, ControlFlowIr, and VC are not credited.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |
