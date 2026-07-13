@@ -2484,6 +2484,12 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Reject every non-exact definition/radix/expansion, reserve, formula, terminal, chain depth, recovery, context, parameter, argument, cycle, and extra-item shape. Keep declaration acceptance/inhabitation, membership truth/facts, closure/order, theorem/proof/Core/VC, object-terminal behavior, and broader shapes deferred.
     - Add the spec-derived active `.miz`, expectation, trace row, unit/near-miss/corruption tests, real frontend/resolver sidecar, metadata, bilingual docs, and coverage audit updates. Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 73 and 143.
 
+159. **Add exact distinct-binding shared-reserve membership checker bridge.** [x]
+    - Add only `reserve x, y for set; theorem DistinctReservedVariableMembershipPayloadBoundary: x in y;`.
+    - Preserve one written set range across `BindingId(0/1)` at ordinals 2/3 and the left-result/right-result/right-expected roles; require no left expected input, one normalized builtin-set identity, two `Inferred` variables, and one fact/deferred-free `Checked` membership with one right-owned constraint.
+    - Reject non-exact reserve/formula and matched-output corruption. Keep truth/facts, closure/order, theorem/proof/Core/ControlFlow/VC, separate declarations, and broader shapes deferred.
+    - Added fixture/expectation/trace, unit/near-miss/corruption/real-sidecar tests, metadata, bilingual docs, and audit updates. The active runner now contains 110 cases. Updated Chapters 4, 13, 14, and 16. Deps: tasks 120, 123, and 125.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

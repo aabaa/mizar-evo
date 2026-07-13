@@ -925,6 +925,18 @@ order、theorem acceptance、proof/Core/ControlFlow/VC、object-terminal behavio
 broader chain depth は deferred のままである。source/trace contract、
 production route、独立した corruption matrix、real frontend/resolver sidecar
 が active bridge を保護する。
+task 159 は `reserve x, y for set; theorem
+DistinctReservedVariableMembershipPayloadBoundary: x in y;` だけを規定する。
+reserve item 1 個は shared written set range 1 個を持つ distinct
+`BindingId(0/1)` を作り、independent lookup は ordinal 2/3 を使う。left/right
+result と sole right expected role はその range を保持し、left expected role は
+なく、checker は normalized builtin-set identity 1 個、2 `Inferred` variable、
+right-owned constraint 1 個を持つ 1 fact/deferred-free `Checked` membership を
+記録する。exact source と matched-output corruption guard を必須とする。
+membership truth/fact、closure/order、theorem acceptance、proof/Core/VC、
+separate declaration、broader shape は deferred のままである。source/trace
+contract、production route、独立した corruption matrix、real frontend/resolver
+sidecar が active bridge を保護する。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

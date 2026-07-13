@@ -878,6 +878,19 @@ acceptance、proof/Core/ControlFlow/VC、object-terminal behavior、broader dept
 full near-miss/corruption matrix、real frontend/resolver sidecar が exact slice
 を guard し、active count は 109 件である。
 
+Task 159 MC-G020 current-state override: exact distinct-binding shared-
+reserve membership は task 123 の one-item/two-binding/shared-range producer と
+tasks 120/125 の right-only expected-set membership consumer を compose する。
+`x/y` は ordinal 2/3 で `BindingId(0/1)` へ解決され、left result、right result、
+sole right expected input は written set range 1 個を保持し、left expected input
+はなく、3 role は builtin-set identity 1 個へ normalize してから 2 `Inferred`
+term と right-owned constraint 1 個を持つ 1 fact/deferred-free `Checked`
+membership を記録する。分類は `test_gap`、`source_drift`、`design_drift` で
+`spec_gap` ではない。truth/fact、closure/order、theorem acceptance、proof/Core/
+ControlFlow/VC、separate declaration、broader shape は open のままである。
+fixture/expectation/trace row、production route、full near-miss/corruption
+matrix、real sidecar が exact slice を guard するため active count は 110 件である。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

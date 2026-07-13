@@ -976,6 +976,18 @@ CoreIr, ControlFlowIr, VC, object-terminal behavior, and broader chain depths
 remain deferred. The source/trace contract, production route, independent
 corruption matrix, and real frontend/resolver sidecar now protect the active
 bridge.
+Task 159 specifies only
+`reserve x, y for set; theorem DistinctReservedVariableMembershipPayloadBoundary: x in y;`.
+One reserve item creates distinct `BindingId(0/1)` values with one shared
+written set range; independent lookups use ordinals 2/3. The left/right result
+and sole right expected roles retain that range, no left expected role exists,
+and the checker records one normalized builtin-set identity, two `Inferred`
+variables, and one fact/deferred-free `Checked` membership with one right-owned
+constraint. Exact source and matched-output corruption guards are required.
+Membership truth/facts, closure/order, theorem acceptance, proof/Core/VC,
+separate declarations, and broader shapes remain deferred. The source/trace
+contract, production route, independent corruption matrix, and real frontend/
+resolver sidecar now protect the active bridge.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

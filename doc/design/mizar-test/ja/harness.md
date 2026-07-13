@@ -876,6 +876,18 @@ theorem/proof/Core/VC、object-terminal behavior、broader semantics は deferre
 miss/corruption matrix、real frontend/resolver sidecar が contract を guard
 するため active runner は 109 cases である。
 
+task 159 は exact active distinct-binding shared-reserve membership source
+`reserve x, y for set; theorem DistinctReservedVariableMembershipPayloadBoundary: x in y;`
+を規定する。runner は ordinal 2/3 の distinct `BindingId(0/1)` lookup と、両
+binding および left-result/right-result/right-expected role にわたる shared
+written set range 1 個を保持し、left expected input は持たず、raw role 3 個を
+shared-source-anchored builtin-set identity 1 個へ intern して、2 `Inferred`
+variable と 1 fact/deferred-free `Checked` membership、exactly one right-owned
+constraint を要求しなければならない。exact guard、corruption/near-miss
+matrix、real frontend/resolver sidecar が contract を guard するため active
+runner は 110 cases である。truth/fact、closure/order、theorem/proof/Core/VC、
+separate declaration、non-set type、broader source shape は deferred のままにする。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

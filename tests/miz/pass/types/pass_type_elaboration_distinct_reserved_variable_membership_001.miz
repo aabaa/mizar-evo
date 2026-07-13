@@ -1,0 +1,2 @@
+reserve x, y for set;
+theorem DistinctReservedVariableMembershipPayloadBoundary: x in y;

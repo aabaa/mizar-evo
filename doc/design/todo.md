@@ -643,6 +643,17 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    constraint. The fixture, expectation, trace row, production route, full near-
    miss/corruption matrix, and real frontend/resolver sidecar now guard the
    active contract as the 109th case,
+   task 159 adds an exact active distinct-binding shared-reserve membership
+   contract by composing task 123's one-item/two-binding/shared-range reserve
+   producer with tasks 120/125's right-only expected-set membership consumer.
+   The active slice preserves `BindingId(0/1)` at ordinals 2/3 and one written
+   builtin-set range across both bindings plus the left result, right result,
+   and sole right expected input, has no left expected input, and requires one
+   shared-source-anchored builtin-set identity, two inferred variables, one
+   fact/deferred-free checked membership, and exactly one right-owned
+   constraint. Production routing, the full near-miss/corruption matrix, and a
+   real frontend/resolver sidecar now guard the exact contract as the 110th
+   active case, and Chapter 3 receives no new credit,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -728,6 +739,7 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    and task 156's exact three-edge local-mode-chain inequality,
    and task 157's exact three-edge local-object-mode-chain inequality,
    and task 158's exact three-edge local-mode-chain left membership,
+   and task 159's exact distinct-binding shared-reserve membership,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,

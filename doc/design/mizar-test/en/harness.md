@@ -910,6 +910,20 @@ semantics remain deferred. The fixture, expectation, trace row, production
 route, full near-miss/corruption matrix, and real frontend/resolver sidecar now
 guard the contract, so the active type-elaboration runner contains 109 cases.
 
+Task 159 adds the exact active distinct-binding shared-reserve membership
+source
+`reserve x, y for set; theorem DistinctReservedVariableMembershipPayloadBoundary: x in y;`.
+The runner must retain distinct `BindingId(0/1)` lookups at ordinals 2/3 and one
+shared written set range across both bindings and the left-result/right-result/
+right-expected roles, keep the left expected input absent, intern all three
+roles to one shared-source-anchored builtin-set identity, and require two
+`Inferred` variables plus one fact/deferred-free `Checked` membership with
+exactly one right-owned constraint. Exact guards, the corruption/near-miss
+matrix, and a real frontend/resolver sidecar now guard the contract, so the
+active type-elaboration runner contains 110 cases. Truth/facts, closure/order,
+theorem/proof/Core/VC, separate declarations, non-set types, and broader source
+shapes remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

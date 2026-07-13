@@ -911,6 +911,19 @@ inhabitation、membership truth/fact、closure/order、theorem acceptance、proo
 Core/VC、object-terminal behavior、broader chain depth は credit しない。trace
 row、production route、独立した corruption matrix、real frontend/resolver
 sidecar が active row を保護する。
+task 159 は exact
+`reserve x, y for set; theorem DistinctReservedVariableMembershipPayloadBoundary: x in y;`
+の active row を追加する。credit するのは Chapters 4、13、14.5.3、16
+だけである。reserve item 1 個は shared written set range 1 個上に distinct
+binding を作り、identifier use 2 個は ordinal 2/3 で resolve され、left result
+と right result/sole expected-set input は shared-source-anchored builtin-set
+identity 1 個へ intern される前にその range を保持しなければならない。意図する
+checker result は 2 `Inferred` variable と 1 fact/deferred-free `Checked`
+membership、exactly one right-owned constraint、no left expected type である。
+production routing、corruption/near-miss coverage、real frontend/resolver
+sidecar が active row を保護する。Chapter 3、
+truth/fact、closure/order、theorem acceptance、proof/Core/VC、separate
+declaration、broader source shape は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

@@ -914,6 +914,20 @@ behavior, and broader depths remain open. The fixture, expectation, trace row,
 production route, full near-miss/corruption matrix, and real frontend/resolver
 sidecar now guard the exact slice, so the active count is 109.
 
+Task 159 MC-G020 current-state override: the exact distinct-binding
+shared-reserve membership composes task 123's one-item/two-binding/shared-range
+producer with tasks 120/125's right-only expected-set membership consumer.
+`x/y` resolve to `BindingId(0/1)` at ordinals 2/3; the left result, right
+result, and sole right expected input retain one written set range, no left
+expected input exists, and all three roles normalize to one builtin-set
+identity before two `Inferred` terms and one fact/deferred-free `Checked`
+membership with one right-owned constraint. Classification is `test_gap`,
+`source_drift`, and `design_drift`, not `spec_gap`. Truth/facts, closure/order,
+theorem acceptance, proof/Core/ControlFlow/VC, separate declarations, and
+broader shapes remain open. The fixture/expectation/trace row, production
+route, full near-miss/corruption matrix, and real sidecar now guard the exact
+slice, so the active count is 110.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

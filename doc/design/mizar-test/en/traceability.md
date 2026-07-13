@@ -965,6 +965,19 @@ Mode declaration acceptance/inhabitation, membership truth/facts, closure/order,
 theorem acceptance, proof, Core, VC, object-terminal behavior, and broader chain
 depths remain uncredited. The trace row, production route, independent
 corruption matrix, and real frontend/resolver sidecar now protect the active row.
+Task 159 adds an active row for exactly
+`reserve x, y for set; theorem DistinctReservedVariableMembershipPayloadBoundary: x in y;`.
+It credits Chapters 4, 13, 14.5.3, and 16 only: one reserve item creates
+distinct bindings over one shared written set range, the two identifier uses
+resolve at ordinals 2/3, and the left result plus right result/sole expected-set
+input must preserve that range before interning to one shared-source-anchored
+builtin-set identity. The intended checker result is two `Inferred` variables
+and one fact/deferred-free `Checked` membership with exactly one right-owned
+constraint and no left expected type. Production routing, corruption/near-miss
+coverage, and a real frontend/resolver sidecar now protect the active row.
+Chapter 3, truth/facts, closure/order, theorem acceptance,
+proof/Core/VC, separate declarations, and broader source shapes remain
+uncredited.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
