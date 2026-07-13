@@ -751,6 +751,20 @@ theorem/proof/Core/VC、broader semantics は deferred のままである。prod
 route と real sidecar が pass したため、active type-elaboration runner は
 100 cases である。
 
+task 150 は exact three-edge set-terminal local-mode-chain reserved-variable
+normalized-reflexive type assertion source を追加する。runner は raw
+`OuterThreeEdgeModeTypeAssertion` subject result と独立した formula-side
+builtin-set asserted source を保持し、real task 73 compatible expansion 4 本を
+`TermFormulaChecker` に渡して、terminal-RHS-anchored builtin-set identity 1
+個、`BindingId(0)`、source-order use ordinal 1、1 `Inferred` term、1 fact-free
+`Checked` type assertion を general reachability なしで要求しなければならない。
+exact source guard、独立した definition/four-link corruption、withheld-family
+near miss、real frontend/resolver sidecar で slice を保護する。mode declaration
+acceptance/inhabitation、formula-side local-mode asserted head、general
+reachability/widening/`qua`、truth/fact、closure/order、theorem/proof/Core/VC、
+broader semantics は deferred のままである。production route と real sidecar が
+pass したため active type-elaboration runner は 101 cases である。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

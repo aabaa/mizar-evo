@@ -1,0 +1,18 @@
+definition
+  mode BaseThreeEdgeModeTypeAssertionDef: BaseThreeEdgeModeTypeAssertion is set;
+end;
+
+definition
+  mode InnerThreeEdgeModeTypeAssertionDef: InnerThreeEdgeModeTypeAssertion is BaseThreeEdgeModeTypeAssertion;
+end;
+
+definition
+  mode MiddleThreeEdgeModeTypeAssertionDef: MiddleThreeEdgeModeTypeAssertion is InnerThreeEdgeModeTypeAssertion;
+end;
+
+definition
+  mode OuterThreeEdgeModeTypeAssertionDef: OuterThreeEdgeModeTypeAssertion is MiddleThreeEdgeModeTypeAssertion;
+end;
+
+reserve x for OuterThreeEdgeModeTypeAssertion;
+theorem ThreeEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;

@@ -781,6 +781,22 @@ extraction、general reachability/widening/`qua`、object/set coercion、truth/f
 theorem acceptance、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
 exact source guard、独立した definition/three-link corruption、real frontend/
 resolver sidecar が production route を保護する。
+task 150 は exact three-edge bare-set local-mode-chain reserved-variable
+normalized-reflexive type assertion bridge
+`BaseThreeEdgeModeTypeAssertion -> set; InnerThreeEdgeModeTypeAssertion -> BaseThreeEdgeModeTypeAssertion; MiddleThreeEdgeModeTypeAssertion -> InnerThreeEdgeModeTypeAssertion; OuterThreeEdgeModeTypeAssertion -> MiddleThreeEdgeModeTypeAssertion; reserve x for OuterThreeEdgeModeTypeAssertion; theorem ...: x is set;`
+だけを規定する。raw subject result は written outer-mode symbol/range、asserted
+builtin `set` は独立した formula source node を保持する。real task 73
+expansion 4 本を `TermFormulaChecker` に渡し、両 input を terminal definition
+RHS を canonical source とする builtin-set identity 1 個へ再帰的に normalize
+してから 1 `Inferred` variable term と 1 fact-free `Checked` type assertion を
+記録する。exact contract は `BindingId(0)` と source-order use ordinal 1 を
+要求する。definition label 4 個、chain radix 3 個、expansion entry 4 本を独立に
+guard し、missing/non-exact definition、reserve、formula は fail closed する。
+mode declaration acceptance/inhabitation、formula-side local-mode asserted-head
+extraction、general reachability/widening/`qua`、truth/fact、theorem acceptance、
+proof、CoreIr、ControlFlowIr、VC は deferred のままである。exact source guard、
+独立した definition/four-link corruption、real frontend/resolver sidecar で
+active production route を保護する。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

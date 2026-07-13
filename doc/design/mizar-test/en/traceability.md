@@ -852,6 +852,19 @@ mode asserted heads, general reachability/widening/`qua`, object/set coercion,
 truth/facts, closure/order, theorem acceptance, proof, Core, and VC remain
 uncredited. Exact source guards, independent definition/three-link corruption,
 and the real frontend/resolver sidecar protect the active row.
+Task 150 adds the following exact three-edge local-mode-chain reserved-
+variable type assertion pass row:
+`definition mode BaseThreeEdgeModeTypeAssertionDef: BaseThreeEdgeModeTypeAssertion is set; end; definition mode InnerThreeEdgeModeTypeAssertionDef: InnerThreeEdgeModeTypeAssertion is BaseThreeEdgeModeTypeAssertion; end; definition mode MiddleThreeEdgeModeTypeAssertionDef: MiddleThreeEdgeModeTypeAssertion is InnerThreeEdgeModeTypeAssertion; end; definition mode OuterThreeEdgeModeTypeAssertionDef: OuterThreeEdgeModeTypeAssertion is MiddleThreeEdgeModeTypeAssertion; end; reserve x for OuterThreeEdgeModeTypeAssertion; theorem ThreeEdgeLocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;`.
+The raw subject result retains its written outer-mode provenance, while the
+asserted builtin `set` retains its independently formula-anchored source node.
+All four real expansions must recursively normalize both inputs to one
+terminal-RHS builtin-set identity before one `Inferred` term and one fact-free
+`Checked` type assertion credit exact normalized-reflexive type/well-formedness
+only. Mode declaration acceptance/inhabitation, formula-side local-mode
+asserted heads, general reachability/widening/`qua`, truth/facts, closure/order,
+theorem acceptance, proof, Core, and VC remain uncredited. Exact source guards,
+independent definition/four-link corruption, and the real frontend/resolver
+sidecar protect the active row.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

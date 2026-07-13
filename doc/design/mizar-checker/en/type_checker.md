@@ -824,6 +824,23 @@ extraction, general reachability/widening/`qua`, object/set coercion, truth/
 facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
 deferred. Exact source guards, independent definition/three-link corruption,
 and the real frontend/resolver sidecar protect the production route.
+Task 150 adds only the exact three-edge bare-set local-mode-chain
+reserved-variable normalized-reflexive type assertion bridge
+`BaseThreeEdgeModeTypeAssertion -> set; InnerThreeEdgeModeTypeAssertion -> BaseThreeEdgeModeTypeAssertion; MiddleThreeEdgeModeTypeAssertion -> InnerThreeEdgeModeTypeAssertion; OuterThreeEdgeModeTypeAssertion -> MiddleThreeEdgeModeTypeAssertion; reserve x for OuterThreeEdgeModeTypeAssertion; theorem ...: x is set;`.
+The raw subject result must retain its written outer-mode symbol/range, while
+the asserted builtin `set` retains its independent formula source node. All
+four real Task 73 expansions must reach `TermFormulaChecker`; both inputs must
+recursively normalize to one builtin-set identity canonically anchored at the
+terminal definition RHS before one `Inferred` variable term and one fact-free
+`Checked` type assertion are recorded. The exact contract requires
+`BindingId(0)` and source-order use ordinal 1. All four definition labels,
+all three chain radices, and all four expansion entries require independent
+guards; missing or non-exact definitions, reserves, and formulas fail closed.
+Mode declaration acceptance/inhabitation, formula-side local-mode asserted-
+head extraction, general reachability/widening/`qua`, truth/facts, theorem
+acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred. Exact source
+guards, independent definition/four-link corruption, and the real frontend/
+resolver sidecar protect the active production route.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,
