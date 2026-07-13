@@ -939,6 +939,18 @@ acceptance/inhabitation, inequality desugaring, truth/facts, closure/order,
 theorem acceptance, proof, Core, and VC remain uncredited. The trace row,
 production route, independent corruption matrix, and real frontend/resolver
 sidecar now protect the active row.
+Task 157 adds the following exact three-edge local-object-mode-chain
+reserved-variable inequality pass row:
+`definition mode BaseThreeEdgeObjectModeInequalityDef: BaseThreeEdgeObjectModeInequality is object; end; definition mode InnerThreeEdgeObjectModeInequalityDef: InnerThreeEdgeObjectModeInequality is BaseThreeEdgeObjectModeInequality; end; definition mode MiddleThreeEdgeObjectModeInequalityDef: MiddleThreeEdgeObjectModeInequality is InnerThreeEdgeObjectModeInequality; end; definition mode OuterThreeEdgeObjectModeInequalityDef: OuterThreeEdgeObjectModeInequality is MiddleThreeEdgeObjectModeInequality; end; reserve z for OuterThreeEdgeObjectModeInequality; theorem ThreeEdgeLocalObjectModeReservedVariableInequalityPayloadBoundary: z <> z;`.
+Four raw result/expected inputs must retain the written outer-mode provenance;
+both operands must resolve to `BindingId(0)` at ordinals 1 and 2, and all four
+real expansions must normalize every role to one terminal-RHS builtin-object
+identity before two `Inferred` terms and one fact/deferred-free pre-desugaring
+`Checked` inequality credit exact type/well-formedness only. Mode declaration
+acceptance/inhabitation, object/set coercion, inequality desugaring, truth/
+facts, closure/order, theorem acceptance, proof, Core, and VC remain uncredited.
+The trace row, production route, independent corruption matrix, and real
+frontend/resolver sidecar now protect the active row.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

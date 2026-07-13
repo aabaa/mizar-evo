@@ -1,0 +1,18 @@
+definition
+  mode BaseThreeEdgeObjectModeInequalityDef: BaseThreeEdgeObjectModeInequality is object;
+end;
+
+definition
+  mode InnerThreeEdgeObjectModeInequalityDef: InnerThreeEdgeObjectModeInequality is BaseThreeEdgeObjectModeInequality;
+end;
+
+definition
+  mode MiddleThreeEdgeObjectModeInequalityDef: MiddleThreeEdgeObjectModeInequality is InnerThreeEdgeObjectModeInequality;
+end;
+
+definition
+  mode OuterThreeEdgeObjectModeInequalityDef: OuterThreeEdgeObjectModeInequality is MiddleThreeEdgeObjectModeInequality;
+end;
+
+reserve z for OuterThreeEdgeObjectModeInequality;
+theorem ThreeEdgeLocalObjectModeReservedVariableInequalityPayloadBoundary: z <> z;

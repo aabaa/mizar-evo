@@ -1051,6 +1051,25 @@ row, production route, full near-miss/corruption matrix, and real frontend/
 resolver sidecar now guard the exact slice, and the active runner contains 107
 cases.
 
+Task157 addendum for chapters `04.variables_and_constants.md`, `07.modes.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 157 adds only the exact
+type/well-formedness contract for a three-edge object-terminal local-mode-chain
+reserved-variable inequality. Four raw outer-mode result/expected inputs must
+retain written provenance; both operands must resolve to `BindingId(0)` at
+source-order ordinals 1 and 2, and all four real AST-derived expansions must
+normalize every role to one terminal-RHS builtin-object identity before two
+inferred terms and one fact/deferred-free pre-desugaring checked inequality.
+The classified changes are `test_gap`, `source_drift`, and `design_drift`;
+there is no specification intent or existing expectation change. Coverage
+remains partial: mode declaration acceptance/inhabitation, object/set coercion,
+inequality desugaring, truth/facts, implicit closure/order, theorem acceptance,
+proof, CoreIr, ControlFlowIr, and VC are not credited. Chapter 3 receives no
+new credit because this is not an explicit type-assertion or widening slice.
+The fixture, expectation, trace row, production route, full near-miss/
+corruption matrix, and real frontend/resolver sidecar now guard the exact
+slice, so the active runner contains 108 cases.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |
