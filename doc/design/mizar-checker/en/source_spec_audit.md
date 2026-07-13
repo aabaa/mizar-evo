@@ -970,6 +970,21 @@ ranges, and broader shapes remain open. The fixture/expectation/trace contract,
 production routing, near-miss/corruption guards, and a real sidecar now protect
 the exact slice, so the active count is 113.
 
+Task 163 MC-G020 current-state override: classify the exact three-edge local-object-
+mode-chain left membership as `test_gap`, `source_drift`, and `design_drift`,
+not `spec_gap`. Chapters 3, 4, 7, 13, 14.5.3, and 16 directly support the
+test-first source. Tasks 73/151/155/157 provide the real four-expansion object-
+terminal producer, and task 144 provides the real object-left/set-right
+membership consumer. The implementation preserves `BindingId(0/1)`
+at ordinals 2/3, the raw outer-mode left result, independent explicit-set right
+result and sole right expected input, no left expected input, distinct terminal-
+object-RHS and explicit-set identities, two `Inferred` terms, and one fact/
+deferred-free `Checked` membership with exactly one right-owned constraint.
+Truth/facts, object/set coercion, closure/order, theorem acceptance, proof/Core/
+ControlFlow/VC, other depths, and broader shapes remain open. Production
+routing, near-miss/corruption guards, and a real frontend/resolver sidecar now
+protect active runner 114.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

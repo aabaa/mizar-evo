@@ -959,6 +959,18 @@ production routing、corruption/near-miss coverage、real sidecar が active row
 保護するため active credit は 113 cases である。Chapter 3、shared-range
 behavior、membership truth/fact、closure/order、theorem acceptance、proof/Core/
 VC、broader shape は credit しない。
+task 163 は `object` に終端する definition chain 4 本、
+`reserve x for OuterThreeEdgeObjectModeMembership;`、`reserve y for set;`、
+`ThreeEdgeLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`
+だけの active row を追加する。Chapter 3、4、7、13、14.5.3、16 を既存
+Chapter 4/13/14/16 requirement row、three-edge-chain row、dedicated checker row
+を介して参照する。intended credit は real expansion 4 本、raw left / explicit-
+set right provenance、ordinal 2/3 の `BindingId(0/1)`、distinct object/set
+identity、no left expected input、2 inferred variable、exactly one right-owned
+constraint を持つ 1 fact-free checked membership だけである。production route、
+corruption/near-miss coverage、real sidecar、active count 114 がこれを保護し、
+coercion、truth/fact、closure/order、theorem/proof/Core/VC、他の depth、broader
+shape は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

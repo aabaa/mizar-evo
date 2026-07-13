@@ -1159,6 +1159,22 @@ coverage contains 113 cases. Chapter 3, shared-range behavior, membership truth/
 facts, closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, and
 broader shapes receive no credit.
 
+Task163 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 163 classifies
+the exact three-edge local-object-mode-chain left membership seam as
+`test_gap`, `source_drift`, and `design_drift`. The test-first contract composes
+the existing real four-expansion object-terminal producer with the real object-
+left/set-right membership consumer. Intended credit is limited to raw outer-
+mode left provenance, independent explicit-set right result/sole expected
+provenance, no left expected input, `BindingId(0/1)` at ordinals 2/3, distinct
+terminal-object-RHS and explicit-set identities, two inferred terms, and one
+fact/deferred-free checked membership with exactly one right-owned constraint.
+The fixture, six trace backlinks, production routing, corruption/near-miss
+coverage, and a real sidecar guard active count 114. Object/set
+coercion, truth/facts, closure/order, theorem acceptance, proof, CoreIr,
+ControlFlowIr, VC, other chain depths, and broader shapes receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

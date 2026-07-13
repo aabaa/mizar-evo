@@ -1026,6 +1026,23 @@ theorem acceptance, proof/Core/VC, shared ranges, and broader shapes remain
 deferred. The production route, independent corruption/near-miss coverage, and
 real frontend/resolver sidecar now implement and guard the contract, so the
 active count is 113.
+Task 163 specifies only the active source whose four unique, unrecovered,
+same-module, argument-free, source-preceding mode definitions form
+`OuterThreeEdgeObjectModeMembership -> MiddleThreeEdgeObjectModeMembership ->
+InnerThreeEdgeObjectModeMembership -> BaseThreeEdgeObjectModeMembership ->
+object`, followed by `reserve x` for the outer mode, `reserve y for set`, and
+`ThreeEdgeLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`.
+The implementation must resolve `x/y` to `BindingId(0/1)` at ordinals 2/3,
+preserve the raw outer-mode left result and independent explicit-set right
+result/sole expected input, expose no left expected input, consume all four
+real AST-derived expansions, and normalize to distinct terminal-object-RHS and
+explicit-set identities. It must then require two `Inferred` variables and one
+fact/deferred-free `Checked` membership with exactly one right-owned
+constraint. Exact route-order, near-miss, matched-output, expansion corruption,
+and real frontend/resolver sidecar guards protect the active route.
+Membership truth/facts, object/set coercion, closure/order, theorem acceptance,
+proof/Core/VC, other chain depths, and broader shapes remain deferred. The
+active runner contains 114 cases.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

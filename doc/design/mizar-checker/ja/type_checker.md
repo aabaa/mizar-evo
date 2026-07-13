@@ -962,6 +962,22 @@ membership truth/fact、closure/order、theorem acceptance、proof/Core/VC、sha
 range、broader shape は deferred のままである。production route、独立した
 corruption/near-miss coverage、real frontend/resolver sidecar が contract を実装し
 guard するため active count は 113 件である。
+task 163 は unique / unrecovered / same-module / argument-free / source-
+preceding な mode definition 4 個が
+`OuterThreeEdgeObjectModeMembership -> MiddleThreeEdgeObjectModeMembership ->
+InnerThreeEdgeObjectModeMembership -> BaseThreeEdgeObjectModeMembership ->
+object` を形成し、outer mode の `reserve x`、`reserve y for set`、
+`ThreeEdgeLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`
+が続く active source だけを規定する。実装は ordinal 2/3 の
+`BindingId(0/1)`、raw outer-mode left result、独立した explicit-set right result /
+sole expected input、no left expected input を保持し、real AST-derived expansion
+4 本をすべて消費して distinct terminal-object-RHS / explicit-set identity へ
+normalize しなければならない。その後 2 `Inferred` variable と exactly one
+right-owned constraint を持つ 1 fact/deferred-free `Checked` membership を要求する。
+exact route-order、near-miss、matched-output、expansion corruption、real
+frontend/resolver sidecar guard が active route を保護する。membership truth/fact、object/set
+coercion、closure/order、theorem acceptance、proof/Core/VC、他の chain depth、
+broader shape は deferred のままであり、active runner は 114 件である。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

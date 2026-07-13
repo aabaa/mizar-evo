@@ -962,6 +962,18 @@ frontend/resolver sidecar now guard the contract, so active type-elaboration
 contains 113 cases. Shared ranges, non-set types, membership truth/facts,
 closure/order, theorem/proof/Core/VC, and broader shapes remain deferred.
 
+Task 163 records the active exact three-edge local-object-mode membership
+source. The production runner must accept only the four-definition object-
+terminal chain plus ordered outer-mode/set reserves and the exact `x in y`
+label; consume all four real expansions; retain raw left and explicit-set right
+provenance; resolve `BindingId(0/1)` at ordinals 2/3; and require two normalized
+identities, no left expected input, two `Inferred` variables, and one fact/
+deferred-free `Checked` membership with exactly one right-owned constraint.
+Matched-output corruption, every definition-link near miss, and a real
+frontend/resolver sidecar fail closed around active runner 114.
+Object/set coercion, truth/facts, closure/order, theorem/proof/Core/VC, other
+depths, and broader shapes remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

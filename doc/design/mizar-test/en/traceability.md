@@ -1014,6 +1014,19 @@ right-owned constraint. Production routing, corruption/near-miss coverage, and
 the real sidecar now protect the active row, so active credit contains 113
 cases. Chapter 3, shared-range behavior, membership truth/facts, closure/order,
 theorem acceptance, proof/Core/VC, and broader shapes remain uncredited.
+Task 163 adds an active row for exactly the four-definition object-terminal
+chain ending in `object`, `reserve x for OuterThreeEdgeObjectModeMembership;`,
+`reserve y for set;`, and
+`ThreeEdgeLocalObjectModeReservedVariableMembershipPayloadBoundary: x in y;`.
+It references Chapters 3, 4, 7, 13, 14.5.3, and 16 through the existing Chapter
+4/13/14/16 requirement rows plus the three-edge-chain and dedicated checker
+rows. Intended credit is limited to four real expansions, raw left and explicit-
+set right provenance, `BindingId(0/1)` at ordinals 2/3, distinct object/set
+identities, no left expected input, two inferred variables, and one fact-free
+checked membership with exactly one right-owned constraint. Production routing,
+corruption/near-miss coverage, a real sidecar, and active count 114 now guard it;
+coercion, truth/facts, closure/order, theorem/proof/Core/VC, other depths, and
+broader shapes remain uncredited.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

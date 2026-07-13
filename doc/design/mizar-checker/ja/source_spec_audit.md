@@ -931,6 +931,20 @@ VC、shared range、broader shape は open のままである。fixture/expectat
 contract、production routing、near-miss/corruption guard、real sidecar が exact
 slice を保護するため active count は 113 件である。
 
+Task 163 MC-G020 current-state override: exact three-edge local-object-mode-chain
+left membership を `spec_gap` ではなく `test_gap`、`source_drift`、
+`design_drift` と分類する。Chapter 3、4、7、13、14.5.3、16 は test-first
+source を直接支える。task 73/151/155/157 は real four-expansion object-terminal
+producer、task 144 は real object-left/set-right membership consumer を提供する。
+実装は ordinal 2/3 の `BindingId(0/1)`、raw outer-mode left
+result、独立した explicit-set right result / sole right expected input、no left
+expected input、distinct terminal-object-RHS / explicit-set identity、2
+`Inferred` term、exactly one right-owned constraint を持つ 1 fact/deferred-free
+`Checked` membership を保持しなければならない。truth/fact、object/set
+coercion、closure/order、theorem acceptance、proof/Core/ControlFlow/VC、他の
+depth、broader shape は open のままである。production routing、near-miss/
+corruption guard、real frontend/resolver sidecar が active runner 114 を保護する。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral
