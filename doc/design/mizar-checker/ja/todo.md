@@ -2191,6 +2191,12 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - declaration acceptance/inhabitation、implicit closure/order、truth/fact、theorem acceptance、proof/Core/ControlFlow/VC は deferred のままにする。
     - Chapter 3、4、7、13、14、16 を更新する。依存: tasks 72、134。
 
+136. **Exact two-edge local-mode-chain reserved-variable inequality checker bridge を追加する。** [x]
+    - spec-derived `OuterTwoEdgeModeInequality -> MiddleTwoEdgeModeInequality -> BaseTwoEdgeModeInequality -> set`、outer reserve 1 個、`z <> z` theorem source だけを追加する。
+    - 4 raw outer-mode input と `BindingId(0)` を保持し、real expansion 3 本を消費し、terminal-RHS builtin-set identity 1 個、2 `Inferred` term、1 fact-free pre-desugaring `Checked` inequality を要求する。exact、link-corruption、withheld-family near-miss、real-sidecar guard を必須とする。
+    - mode declaration acceptance/inhabitation、inequality desugaring、implicit closure/order、truth/fact、theorem acceptance、proof/Core/ControlFlow/VC は deferred のままにする。
+    - Chapter 4、7、13、14、16 を更新する。依存: tasks 72、132。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

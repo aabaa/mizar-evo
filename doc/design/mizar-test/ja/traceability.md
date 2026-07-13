@@ -657,6 +657,13 @@ terminal-RHS builtin-object identity 1 個に normalize され、fact-free `Chec
 equality は exact type/well-formedness だけを credit する。declaration
 acceptance/inhabitation、implicit closure/order、truth、proof、Core、VC は credit
 しない。
+task 136 は exact two-edge local-mode-chain inequality pass row
+`definition mode BaseTwoEdgeModeInequalityDef: BaseTwoEdgeModeInequality is set; end; definition mode MiddleTwoEdgeModeInequalityDef: MiddleTwoEdgeModeInequality is BaseTwoEdgeModeInequality; end; definition mode OuterTwoEdgeModeInequalityDef: OuterTwoEdgeModeInequality is MiddleTwoEdgeModeInequality; end; reserve z for OuterTwoEdgeModeInequality; theorem TwoEdgeLocalModeReservedVariableInequalityPayloadBoundary: z <> z;`
+を追加する。4 raw outer-mode role は real expansion link 3 本を通じて
+terminal-RHS builtin-set identity 1 個に normalize され、fact-free
+pre-desugaring `Checked` inequality は exact type/well-formedness だけを credit
+する。mode declaration acceptance/inhabitation、inequality desugaring、implicit
+closure/order、truth、proof、Core、VC は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

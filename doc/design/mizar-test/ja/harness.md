@@ -559,6 +559,15 @@ Task-72-compatible real expansion 3 本を `TermFormulaChecker` に渡して ter
 real sidecar が slice を保護し、declaration acceptance/inhabitation、implicit
 closure/order、theorem/proof/Core/VC、broader semantics は deferred のままである。
 
+task 136 は exact two-edge set-terminal local-mode-chain inequality pass を
+追加する。runner は 4 raw `OuterTwoEdgeModeInequality` input を保持し、
+Task-72-compatible real expansion 3 本を `TermFormulaChecker` に渡して terminal
+`set` RHS 起点の builtin-set identity 1 個と fact-free pre-desugaring `Checked`
+inequality を要求する。exact chain guard、missing-link corruption、withheld-family
+near miss、real sidecar が slice を保護し、mode declaration
+acceptance/inhabitation、inequality desugaring、implicit closure/order、
+theorem/proof/Core/VC、broader semantics は deferred のままである。
+
 task 128 は exact direct local-object-mode reserved-variable equality pass を
 追加する。runner は task-55-compatible `LocalObjectMode -> object` definition 1 個を
 受理し、4 raw local object-mode input を保持して、その real AST-derived expansion

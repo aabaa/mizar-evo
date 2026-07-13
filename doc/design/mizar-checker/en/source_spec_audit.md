@@ -537,6 +537,16 @@ sibling semantics beyond task 134, direct, one-edge, or longer chains, implicit
 closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
 and VC remain open.
 
+Task 136 MC-G020 current-state override: exact two-edge set-terminal
+mode-chain inequality composes task 72's three real AST-derived expansions with
+task 132's pre-desugaring inequality consumer. Four raw inputs retain outer-mode
+provenance; recursive normalization anchors one terminal-RHS builtin-set
+identity and yields two `Inferred` terms plus one fact-free pre-desugaring
+`Checked` inequality. Mode declaration acceptance/inhabitation, object
+terminals, direct, one-edge, or longer chains, inequality desugaring, implicit
+closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
+and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

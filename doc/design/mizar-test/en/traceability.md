@@ -703,6 +703,13 @@ Four raw outer-mode roles normalize through all three real expansion links to
 one terminal-RHS builtin-object identity; a fact-free `Checked` equality
 credits only exact type/well-formedness, not declaration
 acceptance/inhabitation, implicit closure/order, truth, proof, Core, or VC.
+Task 136 adds the exact two-edge local-mode-chain inequality pass row
+`definition mode BaseTwoEdgeModeInequalityDef: BaseTwoEdgeModeInequality is set; end; definition mode MiddleTwoEdgeModeInequalityDef: MiddleTwoEdgeModeInequality is BaseTwoEdgeModeInequality; end; definition mode OuterTwoEdgeModeInequalityDef: OuterTwoEdgeModeInequality is MiddleTwoEdgeModeInequality; end; reserve z for OuterTwoEdgeModeInequality; theorem TwoEdgeLocalModeReservedVariableInequalityPayloadBoundary: z <> z;`.
+Four raw outer-mode roles normalize through all three real expansion links to
+one terminal-RHS builtin-set identity; a fact-free pre-desugaring `Checked`
+inequality credits only exact type/well-formedness, not mode declaration
+acceptance/inhabitation, inequality desugaring, implicit closure/order, truth,
+proof, Core, or VC.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

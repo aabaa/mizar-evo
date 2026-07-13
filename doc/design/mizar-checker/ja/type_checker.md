@@ -579,6 +579,15 @@ missing/non-exact link、set-terminal、direct、one-edge、longer shape は fai
 closed とし、declaration acceptance/inhabitation、implicit closure/order、
 truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は deferred の
 ままである。
+task 136 は pre-desugaring inequality consumer を exact two-edge bare-set chain
+`OuterTwoEdgeModeInequality -> MiddleTwoEdgeModeInequality -> BaseTwoEdgeModeInequality -> set`
+に適用する。4 raw outer-mode input は記述された provenance を保持し、real
+AST-derived expansion 3 本が terminal-RHS builtin-set identity 1 個へ normalize
+してから、2 `Inferred` variable term と 1 fact-free pre-desugaring `Checked`
+inequality を記録する。missing/non-exact link、object-terminal、direct、one-edge、
+longer shape は fail closed とし、mode declaration acceptance/inhabitation、
+inequality desugaring、implicit closure/order、truth/fact、theorem acceptance、
+proof、CoreIr、ControlFlowIr、VC は deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event
