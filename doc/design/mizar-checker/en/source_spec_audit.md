@@ -475,6 +475,15 @@ guard the route. Mode declaration checking/acceptance, inhabitation evidence,
 broader object-mode formulas, closure/order, truth/facts, theorem acceptance,
 proof, CoreIr, ControlFlowIr, and VC remain open.
 
+Task 129 MC-G020 current-state override: the exact one-edge object-terminal
+mode-chain equality combines task 56's two real AST-derived expansions with
+task 127/128 equality and builtin-object consumers. Four raw inputs retain
+outer-mode provenance; recursive normalization anchors one builtin-object
+identity at the terminal RHS and yields two `Inferred` terms plus one fact-free
+`Checked` equality. Declaration acceptance/inhabitation, longer chains,
+closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
+and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

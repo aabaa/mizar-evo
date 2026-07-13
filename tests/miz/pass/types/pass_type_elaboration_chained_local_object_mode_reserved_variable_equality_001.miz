@@ -1,0 +1,10 @@
+definition
+  mode BaseObjectModeDef: BaseObjectMode is object;
+end;
+
+definition
+  mode ChainObjectModeDef: ChainObjectMode is BaseObjectMode;
+end;
+
+reserve z for ChainObjectMode;
+theorem ChainedLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;

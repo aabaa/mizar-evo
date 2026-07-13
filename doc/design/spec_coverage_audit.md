@@ -205,6 +205,17 @@ credit mode-definition declaration checking/acceptance, inhabitation evidence,
 broader object-mode formulas, implicit closure/order, truth/facts, theorem
 acceptance, proof, CoreIr, ControlFlowIr, or VC; those remain deferred.
 
+Task129 current-state override for chapters 03, 04, 07, 13, 14, and 16: the
+exact `ChainObjectMode -> BaseObjectMode -> object` reserved-variable equality
+pass combines task 56's real one-edge expansion producer with tasks 127/128's
+recursive equality and builtin-object consumers. Four raw outer-mode inputs
+survive while both expansions normalize to one builtin-object identity anchored
+at the terminal RHS. Production invariants, invalid-link corruption, near
+misses, and a real sidecar guard this `test_gap`, `source_drift`, and
+`design_drift` repair. The chapters remain partial; declaration
+acceptance/inhabitation, longer chains, closure/order, truth/facts, theorem
+acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred.
+
 Task64 addendum for chapters `03.type_system.md`, `06.attributes.md`,
 `07.modes.md`, and `17.clusters_and_registrations.md`: checker task 64 adds
 active source-derived diagnostic coverage for an attributed local-mode reserve

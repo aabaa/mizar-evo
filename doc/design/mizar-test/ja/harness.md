@@ -523,6 +523,14 @@ withheld-family near miss、real sidecar が slice を guard する。mode decla
 acceptance/inhabitation、broader object-mode formula、closure/order、fact/truth、
 theorem acceptance、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
 
+task 129 は exact one-edge local-object-mode-chain equality pass を追加する。runner
+は 4 raw `ChainObjectMode` input を保持し、task-56 real expansion 2 個を
+`TermFormulaChecker` に渡して terminal `object` RHS に 1 builtin-object identity を
+anchor する。invalid-link corruption、withheld-family near miss、real sidecar が
+exact slice を guard する。declaration acceptance/inhabitation、longer chain、
+closure/order、fact/truth、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
+deferred のままである。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

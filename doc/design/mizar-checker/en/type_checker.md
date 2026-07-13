@@ -549,6 +549,17 @@ RHS. Exact block/label guards, an invalid key, withheld-family near misses, and
 a real sidecar protect the route. Mode declaration acceptance/inhabitation,
 closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
 and VC remain deferred.
+Task 129 is limited to the exact one-edge local-object-mode-chain equality
+sibling. The source reuses task 56's
+`ChainObjectMode -> BaseObjectMode -> object` producer, adds the exact outer-mode
+reserve and `ChainedLocalObjectModeReservedVariableEqualityPayloadBoundary:
+z = z;`, preserves four raw outer-mode inputs, and requires recursive
+`TypeNormalizer` consumption of both real expansions with terminal object-RHS
+provenance. Exact labels/block order/chain links, invalid-link corruption,
+withheld-family near misses, and a real sidecar protect the route. Mode
+declaration acceptance/inhabitation, longer-chain formulas, closure/order,
+truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
+deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

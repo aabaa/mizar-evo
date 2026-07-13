@@ -661,6 +661,13 @@ credits only the exact direct local-object-mode type/well-formedness handoff,
 not mode-definition declaration checking/acceptance, inhabitation evidence,
 broader object-mode formulas, closure/order, equality truth/facts, theorem
 acceptance, proof, CoreIr, ControlFlowIr, or VC.
+Task 129 adds the exact one-edge local-object-mode-chain pass row
+`definition mode BaseObjectModeDef: BaseObjectMode is object; end; definition mode ChainObjectModeDef: ChainObjectMode is BaseObjectMode; end; reserve z for ChainObjectMode; theorem ChainedLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;`.
+Four raw outer-mode roles survive while both real expansions normalize to one
+builtin-object identity anchored at the terminal RHS. This credits exact
+type/well-formedness only, not declaration acceptance/inhabitation, longer
+chains, closure/order, truth/facts, theorem acceptance, proof, CoreIr,
+ControlFlowIr, or VC.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

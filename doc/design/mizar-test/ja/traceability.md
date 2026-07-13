@@ -610,6 +610,13 @@ type/well-formedness handoff だけを credit し、mode-definition declaration
 checking/acceptance、inhabitation evidence、broader object-mode formula、
 closure/order、equality truth/fact、theorem acceptance、proof、CoreIr、
 ControlFlowIr、VC は credit しない。task 120 は
+task 129 は exact one-edge local-object-mode-chain pass row
+`definition mode BaseObjectModeDef: BaseObjectMode is object; end; definition mode ChainObjectModeDef: ChainObjectMode is BaseObjectMode; end; reserve z for ChainObjectMode; theorem ChainedLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;`
+を追加する。4 raw outer-mode role を保持し、両 real expansion は terminal RHS に
+anchor された 1 builtin-object identity に normalize される。exact
+type/well-formedness だけを credit し、declaration acceptance/inhabitation、longer
+chain、closure/order、truth/fact、theorem acceptance、proof、CoreIr、ControlFlowIr、
+VC は credit しない。task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。両 identifier result と右 membership expected type は記述された

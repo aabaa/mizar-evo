@@ -539,6 +539,14 @@ the slice. Mode declaration acceptance/inhabitation, broader object-mode
 formulas, closure/order, facts/truth, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC remain deferred.
 
+Task 129 adds the exact one-edge local-object-mode-chain equality pass. The
+runner retains four raw `ChainObjectMode` inputs, supplies both real task-56
+expansions to `TermFormulaChecker`, and anchors one builtin-object identity at
+the terminal `object` RHS. Invalid-link corruption, withheld-family near
+misses, and a real sidecar guard the exact slice. Declaration
+acceptance/inhabitation, longer chains, closure/order, facts/truth, theorem
+acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

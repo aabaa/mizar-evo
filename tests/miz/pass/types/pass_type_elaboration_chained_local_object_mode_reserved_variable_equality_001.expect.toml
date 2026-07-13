@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_chained_local_object_mode_reserved_variable_equality_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_chained_local_object_mode_reserved_variable_equality_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_expansion_chain_source_bridge",
+  "spec.en.checker.type_elaboration.chained_local_object_mode_reserved_variable_equality_source_bridge",
+]
+notes = "Spec-derived Task 129 intent: the exact theorem must reuse both real AST-derived Task 56 one-edge local-object-mode-chain expansions, preserve the outer ChainObjectMode symbol and written reserve range in four result/expected pre-normalization inputs, resolve both z terms to BindingId(0), and recursively normalize every role to one builtin-object identity whose canonical source is the terminal object RHS before producing two Inferred variables and one fact-free Checked equality. This does not credit mode definition declaration checking, accepted mode status or inhabitation evidence, set-terminal or longer-chain formulas, implicit closure/order, equality truth/facts, theorem acceptance, formula_statement, proof skeletons, CoreIr, ControlFlowIr, VC, or proof payloads."

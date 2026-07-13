@@ -2117,6 +2117,27 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       が変わらない限り source-layout update は不要。
     - 依存: tasks 55、126。mizar-test と full workspace を検証する。
 
+129. **Exact one-edge local-object-mode-chain reserved-variable equality checker bridge を追加する。** [x]
+    - task 56 の exact `BaseObjectMode -> object` と
+      `ChainObjectMode -> BaseObjectMode` definition block、
+      `reserve z for ChainObjectMode` 1 個、theorem
+      `ChainedLocalObjectModeReservedVariableEqualityPayloadBoundary: z = z;`
+      を再利用する spec-derived active pass fixture を追加する。
+    - acceptance: 4 raw result/expected input すべてに `ChainObjectMode`
+      symbol/range を保持し、両 real expansion を消費して全 role を terminal RHS
+      が canonical source の 1 builtin-`object` identity に normalize し、両 use を
+      `BindingId(0)` に解決する。
+    - 2 `Inferred` variable、1 fact-free `Checked` equality、production
+      validation、invalid-link corruption、withheld-family near miss、real
+      frontend/resolver sidecar を要求する。既存 expectation は rebaseline しない。
+    - この exact one-edge object-terminal equality type/well-formedness slice
+      だけを credit する。mode declaration acceptance/inhabitation、closure/order、
+      truth/fact、theorem acceptance、`formula_statement`、proof、CoreIr、
+      ControlFlowIr、VC は deferred のままにする。
+    - spec coverage audit の Chapter 3、4、7、13、14、16 を更新する。checker
+      source が変わらない限り source-layout 更新は不要である。
+    - 依存: tasks 56、127、128。mizar-test と full workspace を検証する。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。
