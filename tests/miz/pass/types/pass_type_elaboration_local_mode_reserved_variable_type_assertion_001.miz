@@ -1,0 +1,6 @@
+definition
+  mode LocalModeTypeAssertionDef: LocalModeTypeAssertion is set;
+end;
+
+reserve x for LocalModeTypeAssertion;
+theorem LocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;

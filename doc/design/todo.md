@@ -418,6 +418,14 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    one terminal-RHS builtin-object identity without declaration
    acceptance/inhabitation, inequality desugaring, closure/order, facts, or
    theorem acceptance,
+   task 138 adds the exact direct local-mode reserved-variable normalized-
+   reflexive type-assertion pass by combining task 55's real
+   `LocalModeTypeAssertion -> set` producer with task 122's type-assertion
+   consumer, retaining the raw local-mode subject and independent formula-side
+   builtin-set asserted source while the one real expansion normalizes both to
+   one terminal-RHS builtin-set identity without mode declaration
+   acceptance/inhabitation, general reachability/widening/`qua`, facts, or
+   theorem acceptance,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -473,6 +481,7 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    and task 135's exact two-edge local-object-mode-chain equality,
    and task 136's exact two-edge local-mode-chain inequality,
    and task 137's exact two-edge local-object-mode-chain inequality,
+   and task 138's exact direct local-mode normalized-reflexive type assertion,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,

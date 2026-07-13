@@ -326,6 +326,10 @@ regression test を追加した。
       checker task 137 の 4 raw outer-mode input、3 real expansion、terminal
       object-RHS provenance、fact-free pre-desugaring checked inequality を持つ
       exact two-edge local-object-mode-chain inequality active pass bridge、
+      checker task 138 の raw local-mode subject、独立した builtin-set asserted
+      type、1 real expansion、terminal set-RHS provenance、fact-free checked type
+      assertion を持つ exact direct local-mode reserved-variable type-assertion
+      active pass bridge、
       checker task 88 の proof skeleton
       extraction-gap boundary、checker task 89 の statement proof extraction-gap
       boundary、checker task 90 の predicate/functor definition extraction-gap

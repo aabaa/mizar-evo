@@ -557,6 +557,17 @@ terminals, direct, one-edge, or longer chains, inequality desugaring, implicit
 closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
 and VC remain open.
 
+Task 138 MC-G020 current-state override: the exact direct set-terminal
+local-mode reserved-variable type assertion composes task 55's real AST-derived
+`LocalModeTypeAssertion -> set` expansion with task 122's normalized-reflexive
+type-assertion consumer. The raw subject retains local-mode provenance, the
+asserted builtin `set` retains its independent formula source, and one real
+expansion normalizes both to one terminal-RHS builtin-set identity before one
+`Inferred` term and one fact-free `Checked` type assertion are recorded. Mode
+declaration acceptance/inhabitation, formula-side local-mode asserted heads,
+general reachability/widening/`qua`, truth/facts, theorem acceptance, proof,
+CoreIr, ControlFlowIr, and VC remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

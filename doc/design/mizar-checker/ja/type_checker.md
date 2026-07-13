@@ -598,6 +598,17 @@ inequality を記録する。missing/non-exact link、set-terminal、direct、on
 longer shape は fail closed とし、declaration acceptance/inhabitation、inequality
 desugaring、implicit closure/order、truth/fact、theorem acceptance、proof、CoreIr、
 ControlFlowIr、VC は deferred のままである。
+task 138 は normalized-reflexive type-assertion consumer を exact direct bare-set
+mode source
+`LocalModeTypeAssertion -> set; reserve x for LocalModeTypeAssertion; theorem ...: x is set;`
+に適用する。raw subject result は記述された local-mode symbol/range、asserted
+builtin `set` は独立した formula source node を保持し、real AST-derived expansion
+1 本を `TermFormulaChecker` に渡す。両 input は definition RHS を canonical source
+とする builtin-set identity 1 個へ normalize してから、1 `Inferred` variable term
+と 1 fact-free `Checked` type assertion を記録する。missing/non-exact expansion と
+formula-side local-mode asserted head は fail closed とし、mode declaration
+acceptance/inhabitation、general reachability/widening/`qua`、truth/fact、theorem
+acceptance、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

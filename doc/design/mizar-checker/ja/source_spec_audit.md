@@ -539,6 +539,17 @@ acceptance/inhabitation、set terminal、direct/one-edge/longer chain、inequali
 desugaring、implicit closure/order、truth/fact、theorem acceptance、proof、CoreIr、
 ControlFlowIr、VC は open のままである。
 
+Task 138 MC-G020 current-state override: exact direct set-terminal local-mode
+reserved-variable type assertion は task 55 の real AST-derived
+`LocalModeTypeAssertion -> set` expansion と task 122 の normalized-reflexive
+type-assertion consumer を結合する。raw subject は local-mode provenance、asserted
+builtin `set` は独立した formula source を保持し、real expansion 1 本が両 type を
+terminal-RHS builtin-set identity 1 個へ normalize してから、1 `Inferred` term と
+1 fact-free `Checked` type assertion を記録する。mode declaration
+acceptance/inhabitation、formula-side local-mode asserted head、general
+reachability/widening/`qua`、truth/fact、theorem acceptance、proof、CoreIr、
+ControlFlowIr、VC は open のままである。
+
 Task 129 MC-G020 current-state override: exact one-edge object-terminal
 mode-chain equality は task 56 の real AST-derived expansion 2 個と task 127/128 の
 equality / builtin-object consumer を結合する。4 raw input は outer-mode provenance

@@ -2358,6 +2358,12 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Keep declaration acceptance/inhabitation, inequality desugaring, implicit closure/order, truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
     - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 72 and 133.
 
+138. **Add exact direct-local-mode reserved-variable normalized-reflexive type assertion checker bridge.** [x]
+    - Add only the spec-derived `LocalModeTypeAssertion -> set`, one reserve of that mode, and `x is set` theorem source.
+    - Preserve the raw local-mode subject and independent formula-side builtin-set asserted-type inputs plus `BindingId(0)`, consume the one real expansion, anchor one terminal-RHS builtin-set identity, and require one `Inferred` term plus one fact-free `Checked` type assertion. Exact, expansion-corruption, withheld-family near-miss, and real-sidecar guards are required.
+    - Keep mode declaration acceptance/inhabitation, formula-side local-mode asserted heads, general reachability/widening/`qua`, truth/facts, theorem acceptance, proof/Core/ControlFlow/VC deferred.
+    - Update Chapters 3, 4, 7, 13, 14, and 16. Deps: tasks 55 and 122.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

@@ -577,6 +577,17 @@ withheld-family near miss、real sidecar が slice を保護し、declaration
 acceptance/inhabitation、inequality desugaring、implicit closure/order、
 theorem/proof/Core/VC、broader semantics は deferred のままである。
 
+task 138 は exact direct set-terminal local-mode reserved-variable type assertion
+pass を追加する。runner は raw `LocalModeTypeAssertion` subject input と独立した
+formula-side builtin-set asserted input を保持し、Task-55-compatible real
+expansion 1 本を `TermFormulaChecker` に渡して、terminal-RHS builtin-set identity
+1 個、`BindingId(0)`、1 `Inferred` term、1 fact-free `Checked` type assertion を
+要求する。exact source guard、missing-expansion corruption、withheld-family near
+miss、real sidecar が slice を保護し、mode declaration
+acceptance/inhabitation、formula-side local-mode asserted head、general
+reachability/widening/`qua`、theorem/proof/Core/VC、broader semantics は deferred
+のままである。active type-elaboration runner は 89 件である。
+
 task 128 は exact direct local-object-mode reserved-variable equality pass を
 追加する。runner は task-55-compatible `LocalObjectMode -> object` definition 1 個を
 受理し、4 raw local object-mode input を保持して、その real AST-derived expansion

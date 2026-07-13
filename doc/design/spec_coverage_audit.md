@@ -729,6 +729,21 @@ direct, one-edge and longer chain formulas, inequality desugaring, implicit
 closure/order, truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr,
 and VC are not credited.
 
+Task138 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 138 adds only
+the exact active normalized-reflexive type/well-formedness pass for a reserved
+identifier whose direct local-mode subject normalizes through one real
+AST-derived set-terminal expansion while the asserted builtin `set` retains an
+independent formula source. The raw local-mode subject and asserted-type input
+normalize to one terminal-RHS builtin-set identity, producing one inferred
+variable and one fact-free checked type assertion. The classified changes are
+`test_gap`, `source_drift`, and `design_drift`; no specification intent or
+existing expectation changes. Coverage remains partial: mode declaration
+acceptance/inhabitation, formula-side local-mode asserted heads, general
+reachability/widening/`qua`, truth/facts, theorem acceptance, proof, CoreIr,
+ControlFlowIr, and VC are not credited.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

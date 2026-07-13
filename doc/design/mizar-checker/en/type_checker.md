@@ -632,6 +632,18 @@ direct, one-edge, or longer shapes fail closed; declaration
 acceptance/inhabitation, inequality desugaring, implicit closure/order,
 truth/facts, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
 deferred.
+Task 138 applies the normalized-reflexive type-assertion consumer to the exact
+direct bare-set mode source
+`LocalModeTypeAssertion -> set; reserve x for LocalModeTypeAssertion; theorem ...: x is set;`.
+The raw subject result retains its written local-mode symbol and range, the
+asserted builtin `set` retains its independent formula source node, and the one
+real AST-derived expansion reaches `TermFormulaChecker`. Both inputs normalize
+to one builtin-set identity canonically anchored at the definition RHS before
+one `Inferred` variable term and one fact-free `Checked` type assertion are
+recorded. Missing/non-exact expansions and formula-side local-mode asserted
+heads fail closed; mode declaration acceptance/inhabitation, general
+reachability/widening/`qua`, truth/facts, theorem acceptance, proof, CoreIr,
+ControlFlowIr, and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

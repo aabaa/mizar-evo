@@ -671,6 +671,15 @@ terminal-RHS builtin-object identity 1 個に normalize され、fact-free
 pre-desugaring `Checked` inequality は exact type/well-formedness だけを credit
 する。declaration acceptance/inhabitation、inequality desugaring、implicit
 closure/order、truth、proof、Core、VC は credit しない。
+task 138 は exact direct local-mode reserved-variable type-assertion pass row
+`definition mode LocalModeTypeAssertionDef: LocalModeTypeAssertion is set; end; reserve x for LocalModeTypeAssertion; theorem LocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;`
+を追加する。raw subject は記述された local-mode provenance、asserted builtin
+`set` は独立した formula source を保持し、real expansion 1 本が両者を
+terminal-RHS builtin-set identity 1 個へ normalize する。1 `Inferred` term と 1
+fact-free `Checked` type assertion は exact normalized-reflexive
+type/well-formedness だけを credit し、mode declaration
+acceptance/inhabitation、formula-side local-mode asserted head、general
+reachability/widening/`qua`、truth、proof、Core、VC は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

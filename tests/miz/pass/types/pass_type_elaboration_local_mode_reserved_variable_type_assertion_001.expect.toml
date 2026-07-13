@@ -1,0 +1,21 @@
+schema_version = 1
+id = "pass_type_elaboration_local_mode_reserved_variable_type_assertion_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_local_mode_reserved_variable_type_assertion_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.03.type_expressions.builtin_type_assertion_checker_bridge",
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_expansion_source_bridge",
+  "spec.en.checker.type_elaboration.local_mode_reserved_variable_type_assertion_source_bridge",
+]
+notes = "Active Task 138 pass coverage for the exact direct local-mode reserved-variable normalized-reflexive type assertion. The reserve-side result retains its written local-mode symbol and source range while the formula-side asserted builtin set remains anchored to its independent source node. The subject normalizes through the one real AST-derived expansion to the same builtin-set identity, whose canonical source is the definition RHS. The checker resolves x to BindingId(0), records one Inferred variable and one fact-free Checked TypeAssertion, and does not use general reachability. This does not credit formula-side local-mode asserted-head extraction, mode declaration checking/acceptance/inhabitation, widening or qua, truth/facts, implicit closure, theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, or VC."

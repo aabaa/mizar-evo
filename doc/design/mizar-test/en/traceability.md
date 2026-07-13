@@ -717,6 +717,16 @@ one terminal-RHS builtin-object identity; a fact-free pre-desugaring `Checked`
 inequality credits only exact type/well-formedness, not declaration
 acceptance/inhabitation, inequality desugaring, implicit closure/order, truth,
 proof, Core, or VC.
+Task 138 adds the exact direct local-mode reserved-variable type-assertion pass
+row
+`definition mode LocalModeTypeAssertionDef: LocalModeTypeAssertion is set; end; reserve x for LocalModeTypeAssertion; theorem LocalModeReservedVariableTypeAssertionPayloadBoundary: x is set;`.
+The raw subject retains its written local-mode provenance while the asserted
+builtin `set` retains its independent formula source; one real expansion
+normalizes both to one terminal-RHS builtin-set identity. One `Inferred` term
+and one fact-free `Checked` type assertion credit only exact normalized-
+reflexive type/well-formedness, not mode declaration acceptance/inhabitation,
+formula-side local-mode asserted heads, general reachability/widening/`qua`,
+truth, proof, Core, or VC.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
