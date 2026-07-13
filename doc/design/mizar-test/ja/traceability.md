@@ -680,6 +680,16 @@ fact-free `Checked` type assertion は exact normalized-reflexive
 type/well-formedness だけを credit し、mode declaration
 acceptance/inhabitation、formula-side local-mode asserted head、general
 reachability/widening/`qua`、truth、proof、Core、VC は credit しない。
+task 139 は exact direct local-mode left reserved-variable membership pass row
+`definition mode LocalModeMembershipDef: LocalModeMembership is set; end; reserve x for LocalModeMembership; reserve y for set; theorem LocalModeReservedVariableMembershipPayloadBoundary: x in y;`
+を追加する。raw left result は記述された local-mode provenance、right result と
+sole expected-set input は独立した explicit reserve provenance を保持する。real
+expansion 1 本が left role を normalize し、right builtin-set role は直接
+normalize され、3 role すべてが terminal-RHS builtin-set identity 1 個へ intern
+する。2 `Inferred` term と 1 fact-free `Checked` membership は exact
+type/well-formedness だけを credit し、mode declaration
+acceptance/inhabitation、membership truth/fact、implicit closure/order、theorem
+acceptance、proof、Core、VC は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

@@ -568,6 +568,19 @@ declaration acceptance/inhabitation, formula-side local-mode asserted heads,
 general reachability/widening/`qua`, truth/facts, theorem acceptance, proof,
 CoreIr, ControlFlowIr, and VC remain open.
 
+Task 139 MC-G020 current-state override: the exact direct set-terminal
+local-mode left membership composes task 55's real AST-derived
+`LocalModeMembership -> set` expansion with task 120's right-only expected-set
+membership consumer and task 125's two-binding distinct-source form. The raw
+left result retains local-mode provenance, while the independent right result
+and sole expected-set input retain their explicit reserve provenance. One real
+expansion normalizes the left role, the right builtin-set roles normalize
+directly, and all three intern to one terminal-RHS builtin-set identity before
+two `Inferred` terms and one fact-free `Checked` membership are recorded. Mode
+declaration acceptance/inhabitation, membership truth/facts, implicit
+closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain
+open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

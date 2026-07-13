@@ -609,6 +609,21 @@ builtin `set` は独立した formula source node を保持し、real AST-derive
 formula-side local-mode asserted head は fail closed とし、mode declaration
 acceptance/inhabitation、general reachability/widening/`qua`、truth/fact、theorem
 acceptance、proof、CoreIr、ControlFlowIr、VC は deferred のままである。
+task 139 exact direct-local-mode left reserved-variable membership checker
+bridge は right-only expected-`set` membership consumer を
+`LocalModeMembership -> set; reserve x for LocalModeMembership; reserve y for set; theorem ...: x in y;`
+に適用する。raw left result は written local-mode symbol/range、right result と
+sole expected-`set` input は独立した explicit reserve range を保持する。real
+AST-derived expansion 1 本は left result を normalize し、right builtin-set role
+2 個は直接 normalize され、3 role は earlier definition RHS を canonical source
+とする builtin-set identity 1 個へ intern される。production validation は
+`BindingId(0/1)`、2 `Inferred` variable、1 fact-free `Checked` membership、right
+所有の expected constraint 1 個だけ、left expected input なしを要求する。
+independent expansion と right expected-`set` corruption test は task-specific
+invalid-payload key を報告する。missing/non-exact mode/reserve/formula は fail
+closed とし、mode declaration acceptance/inhabitation、membership truth/fact、
+implicit closure/order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は
+deferred のままである。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

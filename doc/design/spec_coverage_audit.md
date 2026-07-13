@@ -744,6 +744,22 @@ acceptance/inhabitation, formula-side local-mode asserted heads, general
 reachability/widening/`qua`, truth/facts, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC are not credited.
 
+Task139 addendum for chapters `04.variables_and_constants.md`, `07.modes.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 139 adds only the exact active
+type/well-formedness pass for a direct local-mode left membership operand with
+an independent explicit-set right operand. The raw left result retains its
+local-mode provenance, the right result and sole expected-set role retain
+their explicit reserve provenance, and one real AST-derived set-terminal
+expansion normalizes the left while the right roles normalize directly. All
+three intern to one terminal-RHS builtin-set identity, producing two inferred
+variables and one fact-free checked membership with no left expected type. The
+classified changes are `test_gap`, `source_drift`, and `design_drift`; no
+specification intent or existing expectation changes. Coverage remains
+partial: mode declaration acceptance/inhabitation, membership truth/facts,
+implicit closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, and
+VC are not credited.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

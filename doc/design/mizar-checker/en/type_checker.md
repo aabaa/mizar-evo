@@ -644,6 +644,21 @@ recorded. Missing/non-exact expansions and formula-side local-mode asserted
 heads fail closed; mode declaration acceptance/inhabitation, general
 reachability/widening/`qua`, truth/facts, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC remain deferred.
+Task 139 exact direct-local-mode left reserved-variable membership checker
+bridge applies the right-only expected-`set` membership consumer to
+`LocalModeMembership -> set; reserve x for LocalModeMembership; reserve y for set; theorem ...: x in y;`.
+The raw left result retains its written local-mode symbol/range, while the right
+result and sole expected-`set` input retain their independent explicit reserve
+range. The one real AST-derived expansion normalizes the left result; the two
+right builtin-set roles normalize directly, and all three intern to one
+builtin-set identity canonically anchored at the earlier definition RHS.
+Production validation requires `BindingId(0/1)`, two `Inferred` variables, one
+fact-free `Checked` membership, exactly one right-owned expected constraint,
+and no left expected input. Independent expansion and right expected-`set`
+corruption tests report the task-specific invalid-payload key. Missing/non-
+exact modes, reserves, or formulas fail closed; mode declaration
+acceptance/inhabitation, membership truth/facts, implicit closure/order,
+theorem acceptance, proof, CoreIr, ControlFlowIr, and VC remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

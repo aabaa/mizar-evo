@@ -625,7 +625,19 @@ corruption, withheld-family near misses, and a real sidecar protect the slice;
 mode declaration acceptance/inhabitation, formula-side local-mode asserted
 heads, general reachability/widening/`qua`, theorem/proof/Core/VC, and broader
 semantics remain deferred. The active type-elaboration runner contains 89
-cases.
+cases before Task 139.
+
+Task 139 adds the exact direct set-terminal local-mode left reserved-variable
+membership pass. The runner retains the raw `LocalModeMembership` left result
+and the independent explicit-set right result/expected input, supplies the one
+real Task-55-compatible expansion to `TermFormulaChecker`, and requires one
+terminal-RHS builtin-set identity, `BindingId(0/1)`, two `Inferred` terms, one
+fact-free `Checked` membership, only the right expected constraint, and no left
+expected input. Exact source guards, independent expansion/right-expected
+corruption, withheld-family near misses, and a real sidecar protect the slice;
+mode declaration acceptance/inhabitation, membership truth/facts, implicit
+closure/order, theorem/proof/Core/VC, and broader semantics remain deferred.
+The active type-elaboration runner contains 90 cases.
 
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.

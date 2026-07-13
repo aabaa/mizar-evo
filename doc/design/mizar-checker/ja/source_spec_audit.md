@@ -550,6 +550,18 @@ acceptance/inhabitation、formula-side local-mode asserted head、general
 reachability/widening/`qua`、truth/fact、theorem acceptance、proof、CoreIr、
 ControlFlowIr、VC は open のままである。
 
+Task 139 MC-G020 current-state override: exact direct set-terminal local-mode
+left membership は task 55 の real AST-derived
+`LocalModeMembership -> set` expansion、task 120 の right-only expected-set
+membership consumer、task 125 の two-binding distinct-source form を結合する。
+raw left result は local-mode provenance、独立した right result と sole
+expected-set input は explicit reserve provenance を保持する。real expansion 1 本が
+left role を normalize し、right builtin-set role は直接 normalize され、3 role
+すべてが terminal-RHS builtin-set identity 1 個へ intern してから、2 `Inferred`
+term と 1 fact-free `Checked` membership を記録する。mode declaration
+acceptance/inhabitation、membership truth/fact、implicit closure/order、theorem
+acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
+
 Task 129 MC-G020 current-state override: exact one-edge object-terminal
 mode-chain equality は task 56 の real AST-derived expansion 2 個と task 127/128 の
 equality / builtin-object consumer を結合する。4 raw input は outer-mode provenance

@@ -727,6 +727,17 @@ and one fact-free `Checked` type assertion credit only exact normalized-
 reflexive type/well-formedness, not mode declaration acceptance/inhabitation,
 formula-side local-mode asserted heads, general reachability/widening/`qua`,
 truth, proof, Core, or VC.
+Task 139 adds the exact direct local-mode left reserved-variable membership
+pass row
+`definition mode LocalModeMembershipDef: LocalModeMembership is set; end; reserve x for LocalModeMembership; reserve y for set; theorem LocalModeReservedVariableMembershipPayloadBoundary: x in y;`.
+The raw left result retains its written local-mode provenance, while the right
+result and sole expected-set input retain the independent explicit reserve
+provenance. One real expansion normalizes the left role, the right builtin-set
+roles normalize directly, and all three intern to one terminal-RHS builtin-set
+identity. Two `Inferred` terms and one fact-free `Checked` membership credit
+only exact type/well-formedness, not mode declaration acceptance/inhabitation,
+membership truth/facts, implicit closure/order, theorem acceptance, proof,
+Core, or VC.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
