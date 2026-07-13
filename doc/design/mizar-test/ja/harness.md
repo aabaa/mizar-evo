@@ -936,6 +936,19 @@ runner 114 を fail closed で保護する。object/set coercion、truth/fact、
 closure/order、theorem/proof/Core/VC、他の depth、broader shape は deferred の
 ままとする。
 
+task 164 は active exact four-edge local-mode membership source を記録する。
+production runner は set-terminal definition chain 5 本、ordered outermost-
+mode/set reserve、exact `x in y` label だけを受理し、real expansion 5 本を
+すべて消費し、raw left / explicit-set right provenance、ordinal 2/3 の
+`BindingId(0/1)`、terminal-set-RHS identity 1 個、no left expected input、2
+`Inferred` variable、exactly one right-owned constraint を持つ 1 fact/deferred-
+free `Checked` membership を要求しなければならない。matched-output
+corruption、各 definition-link/order/depth near miss、real frontend/resolver
+sidecar は fail closed でなければならない。truth/fact、closure/order、
+theorem/proof/Core/VC、object-terminal behavior、他 depth、broader shape は
+deferred のままである。exact route、full corruption/near-miss matrix、real
+sidecar が active runner 115 を保護する。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

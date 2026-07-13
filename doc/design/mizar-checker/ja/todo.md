@@ -2794,6 +2794,20 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 73、144、151、155、157。参照: Step 5、mizar-test task 10、
       specs 3、4、7、13、14.5.3、16。
 
+164. **Exact four-edge local-mode membership checker bridge を追加する。** [x]
+    - crate plan と test-first fixture に記録した spec-derived set-terminal
+      definition chain 5 本、ordered outermost-mode/set reserve、exact `x in y`
+      theorem label だけを昇格する。
+    - Acceptance: real expansion 5 本、raw left / explicit-set right provenance、
+      ordinal 2/3 の `BindingId(0/1)`、terminal-set-RHS identity 1 個、no left
+      expected type、2 inferred term、exactly one right-owned constraint を持つ
+      1 fact-free checked membership を保持する。exact/corruption/near-miss/
+      real frontend-resolver test を追加し、truth、closure、theorem、proof、
+      CoreIr、ControlFlowIr、VC を捏造しない。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 74、152、158。参照: Step 5、mizar-test task 10、specs 4、
+      7、13、14.5.3、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

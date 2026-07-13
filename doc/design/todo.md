@@ -694,6 +694,15 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    routing, full near-miss/corruption coverage, and the real sidecar guard
    active case 114; no coercion/truth/closure/theorem/proof/Core/ControlFlow/VC
    credit is claimed,
+   task 164 adds the exact active four-edge set-terminal local-mode-chain left
+   membership seam by composing tasks 74/152's real five-expansion producer
+   with task 158's right-only expected-set membership consumer. The test-first
+   contract requires raw outermost-mode left and explicit-set right provenance,
+   ordinal 2/3 `BindingId(0/1)`, one terminal-set-RHS identity, no left expected
+   input, two inferred variables, and one fact-free checked membership with
+   exactly one right-owned constraint. Fixture/expectation, six trace backlinks,
+   production routing, full near-miss/corruption coverage, and a real sidecar
+   now guard active case 115,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -792,6 +801,9 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    and task 163's exact active three-edge local-object-mode-chain left
    membership over the real four-expansion object-terminal producer and task
    144's object-left/set-right membership consumer,
+   and task 164's exact active four-edge set-terminal local-mode-chain left
+   membership over the real five-expansion producer and task 158's set-left/
+   set-right membership consumer,
    task 120 exact reserved-variable membership, and task 121 exact
    reserved-variable inequality, and task 122 exact reserved-variable type-
    assertion slices,

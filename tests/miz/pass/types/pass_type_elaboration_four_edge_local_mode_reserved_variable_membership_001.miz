@@ -1,0 +1,23 @@
+definition
+  mode BaseFourEdgeModeMembershipDef: BaseFourEdgeModeMembership is set;
+end;
+
+definition
+  mode InnerFourEdgeModeMembershipDef: InnerFourEdgeModeMembership is BaseFourEdgeModeMembership;
+end;
+
+definition
+  mode MiddleFourEdgeModeMembershipDef: MiddleFourEdgeModeMembership is InnerFourEdgeModeMembership;
+end;
+
+definition
+  mode OuterFourEdgeModeMembershipDef: OuterFourEdgeModeMembership is MiddleFourEdgeModeMembership;
+end;
+
+definition
+  mode TooDeepFourEdgeModeMembershipDef: TooDeepFourEdgeModeMembership is OuterFourEdgeModeMembership;
+end;
+
+reserve x for TooDeepFourEdgeModeMembership;
+reserve y for set;
+theorem FourEdgeLocalModeReservedVariableMembershipPayloadBoundary: x in y;

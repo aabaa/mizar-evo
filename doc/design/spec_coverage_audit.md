@@ -1175,6 +1175,22 @@ coverage, and a real sidecar guard active count 114. Object/set
 coercion, truth/facts, closure/order, theorem acceptance, proof, CoreIr,
 ControlFlowIr, VC, other chain depths, and broader shapes receive no credit.
 
+Task164 addendum for chapters `04.variables_and_constants.md`, `07.modes.md`,
+`13.term_expression.md`, `14.formulas.md`, and `16.theorems_and_proofs.md`:
+checker task 164 classifies the exact four-edge set-terminal local-mode-chain
+left membership seam as `test_gap`, `source_drift`, and `design_drift`. The
+test-first contract composes the existing real five-expansion producer with
+the real set-left/set-right membership consumer. Intended credit is limited to
+raw outermost-mode left provenance, independent explicit-set right result/sole
+expected provenance, no left expected input, `BindingId(0/1)` at ordinals 2/3,
+all five expansions, one terminal-set-RHS identity, two inferred terms, and one
+fact/deferred-free checked membership with exactly one right-owned constraint.
+The fixture, six trace backlinks, production routing, corruption/near-miss
+coverage, and a real sidecar now guard active runner 115.
+Truth/facts, closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr,
+VC, object-terminal behavior, other depths, and broader shapes receive no
+credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

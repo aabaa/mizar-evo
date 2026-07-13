@@ -974,6 +974,19 @@ frontend/resolver sidecar fail closed around active runner 114.
 Object/set coercion, truth/facts, closure/order, theorem/proof/Core/VC, other
 depths, and broader shapes remain deferred.
 
+Task 164 records the active exact four-edge local-mode membership source.
+The production runner must accept only the five-definition set-terminal chain
+plus ordered outermost-mode/set reserves and the exact `x in y` label; consume
+all five real expansions; retain raw left and explicit-set right provenance;
+resolve `BindingId(0/1)` at ordinals 2/3; and require one terminal-set-RHS
+identity, no left expected input, two `Inferred` variables, and one fact/
+deferred-free `Checked` membership with exactly one right-owned constraint.
+Matched-output corruption, every definition-link/order/depth near miss, and a
+real frontend/resolver sidecar must fail closed. Truth/facts, closure/order,
+theorem/proof/Core/VC, object-terminal behavior, other depths, and broader
+shapes remain deferred. The exact route, full corruption/near-miss matrix, and
+real sidecar now guard active runner 115.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent
