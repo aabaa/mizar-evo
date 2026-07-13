@@ -2293,6 +2293,12 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - mode declaration acceptance/inhabitation、formula-side local-mode asserted head、general reachability/widening/`qua`、truth/fact、implicit closure/order、theorem acceptance、proof/Core/ControlFlow/VC は deferred のままにする。
     - Chapter 3、4、7、13、14、16 を更新する。依存: tasks 74、122、150、151。
 
+153. **Exact four-edge local-object-mode-chain reserved-variable normalized-reflexive type assertion checker bridge を追加する。** [x]
+    - spec-derived `TooDeepFourEdgeObjectModeTypeAssertion -> OuterFourEdgeObjectModeTypeAssertion -> MiddleFourEdgeObjectModeTypeAssertion -> InnerFourEdgeObjectModeTypeAssertion -> BaseFourEdgeObjectModeTypeAssertion -> object`、outermost mode の reserve `x` 1 個、`x is object` theorem source だけを追加する。
+    - raw outermost-mode subject result と独立した formula-anchored builtin-object asserted type を保持し、`BindingId(0)` と source-order use ordinal 1 を要求し、real expansion 5 本を消費して terminal-RHS builtin-object identity 1 個、1 `Inferred` term、1 fact-free `Checked` type assertion を要求する。exact、definition/radix/expansion corruption、withheld-family near-miss、real-sidecar guard を必須とする。
+    - mode declaration acceptance/inhabitation、formula-side local-mode asserted head、general reachability/widening/`qua`、object/set coercion、truth/fact、closure/order、theorem acceptance、proof/Core/ControlFlow/VC は deferred のままにする。
+    - Chapter 3、4、7、13、14、16 を更新する。依存: tasks 74、122、151、152。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

@@ -1,0 +1,22 @@
+definition
+  mode BaseFourEdgeObjectModeTypeAssertionDef: BaseFourEdgeObjectModeTypeAssertion is object;
+end;
+
+definition
+  mode InnerFourEdgeObjectModeTypeAssertionDef: InnerFourEdgeObjectModeTypeAssertion is BaseFourEdgeObjectModeTypeAssertion;
+end;
+
+definition
+  mode MiddleFourEdgeObjectModeTypeAssertionDef: MiddleFourEdgeObjectModeTypeAssertion is InnerFourEdgeObjectModeTypeAssertion;
+end;
+
+definition
+  mode OuterFourEdgeObjectModeTypeAssertionDef: OuterFourEdgeObjectModeTypeAssertion is MiddleFourEdgeObjectModeTypeAssertion;
+end;
+
+definition
+  mode TooDeepFourEdgeObjectModeTypeAssertionDef: TooDeepFourEdgeObjectModeTypeAssertion is OuterFourEdgeObjectModeTypeAssertion;
+end;
+
+reserve x for TooDeepFourEdgeObjectModeTypeAssertion;
+theorem FourEdgeLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;

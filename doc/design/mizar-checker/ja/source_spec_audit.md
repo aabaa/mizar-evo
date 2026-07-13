@@ -739,24 +739,6 @@ acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
 production route と real frontend/resolver sidecar が exact active slice を
 guard する。
 
-Task 152 MC-G020 current-state override: exact four-edge set-terminal local-mode-chain
-reserved-variable type assertion は task 74 の real AST-derived
-`TooDeepFourEdgeModeTypeAssertion -> OuterFourEdgeModeTypeAssertion -> MiddleFourEdgeModeTypeAssertion -> InnerFourEdgeModeTypeAssertion -> BaseFourEdgeModeTypeAssertion -> set`
-expansion 5 本と、tasks 122 / 150 / 151 の identifier-result および独立した
-formula-anchored asserted-type consumer を composition する。raw subject result
-は written outermost-mode provenance、asserted builtin `set` は独立した formula
-source node を保持する。expansion 5 本が両 input を terminal definition RHS を
-canonical source とする builtin-set identity 1 個へ再帰的に normalize してから
-1 `Inferred` term と 1 fact-free `Checked` type assertion を記録する。この exact
-slice は `BindingId(0)` と source-order use ordinal 1 を要求し、non-exact
-definition、reserve、formula、各 expansion payload は fail closed する。分類は
-`test_gap`、`source_drift`、`design_drift` であり、`spec_gap` ではない。mode
-declaration acceptance/inhabitation、formula-side local-mode asserted-head
-extraction、general reachability/widening/`qua`、truth/fact、implicit closure/
-order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open のままで
-ある。production route と real frontend/resolver sidecar が exact active slice
-を guard する。
-
 Task 151 MC-G020 current-state override: exact three-edge object-terminal local-mode-
 chain reserved-variable type assertion は task 73 の real AST-derived
 `OuterThreeEdgeObjectModeTypeAssertion -> MiddleThreeEdgeObjectModeTypeAssertion -> InnerThreeEdgeObjectModeTypeAssertion -> BaseThreeEdgeObjectModeTypeAssertion -> object`
@@ -775,6 +757,42 @@ reachability/widening/`qua`、object/set coercion、truth/fact、implicit closur
 order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open のままである。
 production route と real frontend/resolver sidecar が exact active slice を
 guard する。
+
+Task 152 MC-G020 current-state override: exact four-edge set-terminal local-mode-chain
+reserved-variable type assertion は task 74 の real AST-derived
+`TooDeepFourEdgeModeTypeAssertion -> OuterFourEdgeModeTypeAssertion -> MiddleFourEdgeModeTypeAssertion -> InnerFourEdgeModeTypeAssertion -> BaseFourEdgeModeTypeAssertion -> set`
+expansion 5 本と、tasks 122 / 150 / 151 の identifier-result および独立した
+formula-anchored asserted-type consumer を composition する。raw subject result
+は written outermost-mode provenance、asserted builtin `set` は独立した formula
+source node を保持する。expansion 5 本が両 input を terminal definition RHS を
+canonical source とする builtin-set identity 1 個へ再帰的に normalize してから
+1 `Inferred` term と 1 fact-free `Checked` type assertion を記録する。この exact
+slice は `BindingId(0)` と source-order use ordinal 1 を要求し、non-exact
+definition、reserve、formula、各 expansion payload は fail closed する。分類は
+`test_gap`、`source_drift`、`design_drift` であり、`spec_gap` ではない。mode
+declaration acceptance/inhabitation、formula-side local-mode asserted-head
+extraction、general reachability/widening/`qua`、truth/fact、implicit closure/
+order、theorem acceptance、proof、CoreIr、ControlFlowIr、VC は open のままで
+ある。production route と real frontend/resolver sidecar が exact active slice
+を guard する。
+
+Task 153 MC-G020 current-state override: exact four-edge object-terminal local-mode-
+chain reserved-variable type assertion は task 74 の real AST-derived
+`TooDeepFourEdgeObjectModeTypeAssertion -> OuterFourEdgeObjectModeTypeAssertion -> MiddleFourEdgeObjectModeTypeAssertion -> InnerFourEdgeObjectModeTypeAssertion -> BaseFourEdgeObjectModeTypeAssertion -> object`
+expansion 5 本と、tasks 122/151/152 の identifier-result および独立した formula-
+side asserted-type consumer を合成する。raw subject result は written
+outermost-mode provenance を保持し、asserted builtin `object` は独立した formula
+source node を保持する。全 expansion は両 input を terminal definition RHS に
+canonical anchor された builtin-object identity 1 個へ再帰的に normalize し、1
+`Inferred` term と 1 fact-free `Checked` type assertion を記録する。この exact
+slice は `BindingId(0)` と source-order use ordinal 1 を要求し、non-exact
+definition/reserve/formula または expansion payload 5 本のいずれかで fail closed
+とする。分類は `test_gap`、`source_drift`、`design_drift` で `spec_gap` ではない。
+declaration acceptance/inhabitation、formula-side local asserted-head、general
+reachability/widening/`qua`、object/set coercion、truth/fact、closure/order、
+theorem acceptance、proof/Core/ControlFlow/VC は open のままである。production
+route と real sidecar が exact active slice を guard し、active count は 104 件で
+ある。
 
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。

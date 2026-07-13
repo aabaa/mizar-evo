@@ -891,6 +891,19 @@ asserted heads, general reachability/widening/`qua`, truth/facts, closure/order,
 theorem acceptance, proof, Core, and VC remain uncredited. Exact source guards,
 independent definition/five-link corruption, and the real frontend/resolver
 sidecar protect the active row.
+Task 153 adds the following exact four-edge local-object-mode-chain reserved-
+variable type assertion pass row:
+`definition mode BaseFourEdgeObjectModeTypeAssertionDef: BaseFourEdgeObjectModeTypeAssertion is object; end; definition mode InnerFourEdgeObjectModeTypeAssertionDef: InnerFourEdgeObjectModeTypeAssertion is BaseFourEdgeObjectModeTypeAssertion; end; definition mode MiddleFourEdgeObjectModeTypeAssertionDef: MiddleFourEdgeObjectModeTypeAssertion is InnerFourEdgeObjectModeTypeAssertion; end; definition mode OuterFourEdgeObjectModeTypeAssertionDef: OuterFourEdgeObjectModeTypeAssertion is MiddleFourEdgeObjectModeTypeAssertion; end; definition mode TooDeepFourEdgeObjectModeTypeAssertionDef: TooDeepFourEdgeObjectModeTypeAssertion is OuterFourEdgeObjectModeTypeAssertion; end; reserve x for TooDeepFourEdgeObjectModeTypeAssertion; theorem FourEdgeLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;`.
+The raw subject result must retain its written outermost-mode provenance, while
+the asserted builtin `object` retains its independently formula-anchored source
+node. All five real expansions must recursively normalize both inputs to one
+terminal-RHS builtin-object identity before one `Inferred` term and one fact-
+free `Checked` type assertion credit exact normalized-reflexive type/well-
+formedness only. Mode declaration acceptance/inhabitation, formula-side local-
+mode asserted heads, general reachability/widening/`qua`, object/set coercion,
+truth/facts, closure/order, theorem acceptance, proof, Core, and VC remain
+uncredited. Exact source guards, independent definition/five-link corruption,
+and the real frontend/resolver sidecar protect the active row.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
