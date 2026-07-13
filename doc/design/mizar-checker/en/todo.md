@@ -2478,6 +2478,12 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Keep mode declaration acceptance/inhabitation, object/set coercion, inequality desugaring, truth/facts, implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC deferred.
     - Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 73 and 137.
 
+158. **Add exact three-edge local-mode-chain left reserved-variable membership checker bridge.** [x]
+    - Add only the spec-derived `OuterThreeEdgeModeMembership -> MiddleThreeEdgeModeMembership -> InnerThreeEdgeModeMembership -> BaseThreeEdgeModeMembership -> set`, ordered reserves `x` for the outer mode and `y` for explicit `set`, and `x in y` theorem source.
+    - Preserve the raw outer-mode left result and independent explicit-set right result/sole expected input, resolve to `BindingId(0/1)` at source-order ordinals 2/3, consume all four real expansions, and normalize all three roles to one terminal-RHS builtin-set identity before two `Inferred` variables and one fact/deferred-free `Checked` membership. Exactly one right-owned constraint and no left expected type are required.
+    - Reject every non-exact definition/radix/expansion, reserve, formula, terminal, chain depth, recovery, context, parameter, argument, cycle, and extra-item shape. Keep declaration acceptance/inhabitation, membership truth/facts, closure/order, theorem/proof/Core/VC, object-terminal behavior, and broader shapes deferred.
+    - Add the spec-derived active `.miz`, expectation, trace row, unit/near-miss/corruption tests, real frontend/resolver sidecar, metadata, bilingual docs, and coverage audit updates. Update Chapters 4, 7, 13, 14, and 16. Deps: tasks 73 and 143.
+
 87. **Add source-derived term formula extraction-gap boundary.** [x]
     - Add a dedicated active `type_elaboration` boundary for a theorem formula
       containing source terms, such as

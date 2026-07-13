@@ -894,6 +894,26 @@ open. The fixture, expectation, trace row, production route, full near-miss/
 corruption matrix, and real frontend/resolver sidecar now guard the exact
 slice, so the active count is 108.
 
+Task 158 MC-G020 implementation specification: the exact three-edge set-
+terminal local-mode-chain left reserved-variable membership composes task 73's
+four real AST-derived
+`OuterThreeEdgeModeMembership -> MiddleThreeEdgeModeMembership -> InnerThreeEdgeModeMembership -> BaseThreeEdgeModeMembership -> set`
+expansions with task 143's two-binding, right-only expected-set membership
+consumer. The raw left result must retain outer-mode provenance; the independent
+right result and sole expected input must retain explicit-set reserve provenance,
+with no left expected input. Both operands resolve to `BindingId(0/1)` at
+source-order ordinals 2/3, and all four expansions normalize the three roles to
+one terminal-RHS builtin-set identity before two `Inferred` terms and one fact/
+deferred-free `Checked` membership with exactly one right-owned constraint.
+Independent definition/radix/expansion corruption, withheld-family near misses,
+and a real frontend/resolver sidecar are required. The classified changes are
+`test_gap`, `source_drift`, and `design_drift`; there is no `spec_gap`. Mode
+declaration acceptance/inhabitation, membership truth/facts, implicit closure/
+order, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, object-terminal
+behavior, and broader depths remain open. The fixture, expectation, trace row,
+production route, full near-miss/corruption matrix, and real frontend/resolver
+sidecar now guard the exact slice, so the active count is 109.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

@@ -630,6 +630,19 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    closure/order, or theorem acceptance. The production route, full near-miss/
    corruption matrix, and real frontend/resolver sidecar now guard the active
    108th case,
+   task 158 adds the exact active three-edge local-mode-chain left reserved-
+   variable membership contract by combining task 73's real
+   `OuterThreeEdgeModeMembership -> MiddleThreeEdgeModeMembership -> InnerThreeEdgeModeMembership -> BaseThreeEdgeModeMembership -> set`
+   producer with task 143's two-binding right-only expected-set membership
+   consumer. The intended slice retains the raw outer-mode left result and
+   independent explicit-set right result/sole expected input, has no left
+   expected type, resolves `x/y` to `BindingId(0/1)` at ordinals 2/3, and
+   consumes all four real expansions to normalize all three roles to one
+   terminal-RHS builtin-set identity before two inferred variables and one
+   fact/deferred-free checked membership with exactly one right-owned
+   constraint. The fixture, expectation, trace row, production route, full near-
+   miss/corruption matrix, and real frontend/resolver sidecar now guard the
+   active contract as the 109th case,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

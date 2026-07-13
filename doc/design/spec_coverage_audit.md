@@ -1070,6 +1070,27 @@ The fixture, expectation, trace row, production route, full near-miss/
 corruption matrix, and real frontend/resolver sidecar now guard the exact
 slice, so the active runner contains 108 cases.
 
+Task158 addendum for chapters `04.variables_and_constants.md`, `07.modes.md`,
+`13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 158 adds only the exact active
+type/well-formedness contract for a three-edge set-terminal local-mode-chain
+left reserved-variable membership with an independent explicit-set right
+operand. The raw left result must retain outer-mode provenance; the right result
+and sole expected-set input must retain explicit reserve provenance, with no
+left expected type. Both operands resolve to `BindingId(0/1)` at source-order
+ordinals 2/3, and four real AST-derived expansions normalize all three roles to
+one terminal-RHS builtin-set identity before two inferred terms and one fact/
+deferred-free checked membership with exactly one right-owned constraint. The
+classified changes are `test_gap`, `source_drift`, and `design_drift`; there is
+no change to specification intent or existing expectations. Mode declaration
+acceptance/inhabitation, membership truth/facts, implicit closure/order, theorem
+acceptance, proof, CoreIr, ControlFlowIr, VC, object-terminal behavior, and
+broader depths are not credited. Chapter 3 receives no new credit because this
+is not an explicit type-assertion or widening slice. The fixture, expectation,
+trace row, production route, full near-miss/corruption matrix, and real
+frontend/resolver sidecar now guard the exact slice, so the active runner
+contains 109 cases.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

@@ -1,0 +1,19 @@
+definition
+  mode BaseThreeEdgeModeMembershipDef: BaseThreeEdgeModeMembership is set;
+end;
+
+definition
+  mode InnerThreeEdgeModeMembershipDef: InnerThreeEdgeModeMembership is BaseThreeEdgeModeMembership;
+end;
+
+definition
+  mode MiddleThreeEdgeModeMembershipDef: MiddleThreeEdgeModeMembership is InnerThreeEdgeModeMembership;
+end;
+
+definition
+  mode OuterThreeEdgeModeMembershipDef: OuterThreeEdgeModeMembership is MiddleThreeEdgeModeMembership;
+end;
+
+reserve x for OuterThreeEdgeModeMembership;
+reserve y for set;
+theorem ThreeEdgeLocalModeReservedVariableMembershipPayloadBoundary: x in y;

@@ -897,6 +897,20 @@ inhabitation、object/set coercion、inequality desugaring、truth/fact、closur
 order、theorem acceptance、proof/Core/VC は credit しない。trace row、
 production route、独立した corruption matrix、real frontend/resolver sidecar
 が active row を保護する。
+task 158 は次の exact active three-edge local-mode-chain left reserved-
+variable membership pass row を追加する:
+`definition mode BaseThreeEdgeModeMembershipDef: BaseThreeEdgeModeMembership is set; end; definition mode InnerThreeEdgeModeMembershipDef: InnerThreeEdgeModeMembership is BaseThreeEdgeModeMembership; end; definition mode MiddleThreeEdgeModeMembershipDef: MiddleThreeEdgeModeMembership is InnerThreeEdgeModeMembership; end; definition mode OuterThreeEdgeModeMembershipDef: OuterThreeEdgeModeMembership is MiddleThreeEdgeModeMembership; end; reserve x for OuterThreeEdgeModeMembership; reserve y for set; theorem ThreeEdgeLocalModeReservedVariableMembershipPayloadBoundary: x in y;`
+raw left result は written outer-mode provenance、right result と sole expected-
+set input は独立した explicit reserve provenance を保持し、left expected type
+は持たない。operand を ordinal 2/3 で `BindingId(0/1)` へ解決し、続いて real
+expansion 4 本が 3 role を terminal-RHS builtin-set identity 1 個へ normalize
+してから、2 `Inferred` term、1 fact/deferred-free `Checked` membership、exactly
+one right-owned constraint が exact type/well-formedness だけを credit する。
+mode declaration acceptance/
+inhabitation、membership truth/fact、closure/order、theorem acceptance、proof/
+Core/VC、object-terminal behavior、broader chain depth は credit しない。trace
+row、production route、独立した corruption matrix、real frontend/resolver
+sidecar が active row を保護する。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

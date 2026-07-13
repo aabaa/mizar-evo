@@ -895,6 +895,21 @@ fixture, expectation, trace row, production route, full near-miss/corruption
 matrix, and real frontend/resolver sidecar now guard the active contract, so
 the active type-elaboration runner contains 108 cases.
 
+Task 158 adds the exact active three-edge set-terminal local-mode-chain left
+reserved-variable membership source. The runner must retain the raw
+`OuterThreeEdgeModeMembership` left result and independent explicit-set right
+result/sole expected input, keep the left expected input absent, resolve `x/y`
+to `BindingId(0/1)` at ordinals 2/3, and supply all four real task-73-compatible
+expansions to `TermFormulaChecker`. The active contract requires one terminal-
+RHS builtin-set identity, two `Inferred` variables, one fact/deferred-free
+`Checked` membership, and exactly one right-owned expected-type constraint.
+Exact source and independent definition/radix/expansion corruption guards are
+required; mode declaration acceptance/inhabitation, membership truth/facts,
+closure/order, theorem/proof/Core/VC, object-terminal behavior, and broader
+semantics remain deferred. The fixture, expectation, trace row, production
+route, full near-miss/corruption matrix, and real frontend/resolver sidecar now
+guard the contract, so the active type-elaboration runner contains 109 cases.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

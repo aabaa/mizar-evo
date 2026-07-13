@@ -2323,6 +2323,12 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - mode declaration acceptance/inhabitation、object/set coercion、inequality desugaring、truth/fact、closure/order、theorem acceptance、proof/Core/ControlFlow/VC は deferred のままとする。
     - Chapter 4、7、13、14、16 を更新する。依存: tasks 73、137。
 
+158. **Exact three-edge local-mode-chain left reserved-variable membership checker bridge を追加する。** [x]
+    - spec-derived `OuterThreeEdgeModeMembership -> MiddleThreeEdgeModeMembership -> InnerThreeEdgeModeMembership -> BaseThreeEdgeModeMembership -> set`、outer mode の `x` と explicit `set` の `y` から成る ordered reserve、`x in y` theorem source だけを追加する。
+    - raw outer-mode left result と独立した explicit-set right result/sole expected input を保持し、source-order ordinal 2/3 で `BindingId(0/1)` へ解決し、real expansion 4 本を消費して全 3 role を terminal-RHS builtin-set identity 1 個へ normalize してから 2 `Inferred` variable と 1 fact/deferred-free `Checked` membership を要求する。exactly one right-owned constraint と no left expected type を必須とする。
+    - 全 non-exact definition/radix/expansion、reserve、formula、terminal、chain depth、recovery、context、parameter、argument、cycle、extra-item shape を reject する。declaration acceptance/inhabitation、membership truth/fact、closure/order、theorem/proof/Core/VC、object-terminal behavior、broader shape は deferred のままにする。
+    - spec-derived active `.miz`、expectation、trace row、unit/near-miss/corruption tests、real frontend/resolver sidecar、metadata、bilingual docs、coverage audit を追加する。Chapter 4、7、13、14、16 を更新する。依存: tasks 73、143。
+
 87. **Source-derived term formula extraction-gap boundary を追加する。** [x]
     - `theorem TermFormulaPayloadBoundary: 1 = 1;` のように source term を含む
       theorem formula について、専用の active `type_elaboration` boundary を追加する。

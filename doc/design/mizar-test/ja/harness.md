@@ -861,6 +861,21 @@ Core/VC は deferred のままである。fixture、expectation、trace row、pr
 route、full near-miss/corruption matrix、real frontend/resolver sidecar が active
 contract を guard するため active runner は 108 cases である。
 
+task 158 は exact active three-edge set-terminal local-mode-chain left
+reserved-variable membership source を追加する。runner は raw
+`OuterThreeEdgeModeMembership` left result と独立した explicit-set right result/
+sole expected input を保持し、left expected input は持たず、`x/y` を ordinal
+2/3 で `BindingId(0/1)` へ解決し、real task-73-compatible expansion 4 本を
+`TermFormulaChecker` に渡す。active contract は terminal-RHS builtin-set
+identity 1 個、2 `Inferred` variable、1 fact/deferred-free `Checked` membership、
+exactly one right-owned expected-type constraint を要求する。exact source と
+独立した definition/radix/expansion corruption guard を必須とし、mode
+declaration acceptance/inhabitation、membership truth/fact、closure/order、
+theorem/proof/Core/VC、object-terminal behavior、broader semantics は deferred
+のままである。fixture、expectation、trace row、production route、full near-
+miss/corruption matrix、real frontend/resolver sidecar が contract を guard
+するため active runner は 109 cases である。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

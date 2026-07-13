@@ -958,6 +958,24 @@ facts, implicit closure/order, theorem acceptance, proof, CoreIr,
 ControlFlowIr, and VC remain deferred. The source and trace contract,
 production route, independent corruption matrix, and real frontend/resolver
 sidecar now protect the active bridge.
+Task 158 specifies only the exact three-edge bare-set local-mode-chain left
+reserved-variable membership bridge
+`BaseThreeEdgeModeMembership -> set; InnerThreeEdgeModeMembership -> BaseThreeEdgeModeMembership; MiddleThreeEdgeModeMembership -> InnerThreeEdgeModeMembership; OuterThreeEdgeModeMembership -> MiddleThreeEdgeModeMembership; reserve x for OuterThreeEdgeModeMembership; reserve y for set; theorem ...: x in y;`.
+The raw left result retains the written outer-mode source, while the right
+result and sole expected input retain the independent explicit-set reserve
+source; no left expected input exists. The checker resolves `x/y` independently
+to `BindingId(0/1)` at source-order ordinals 2/3. All four real task-73
+expansions normalize those three roles to one builtin-set identity canonically
+anchored at the terminal RHS before two `Inferred` variable terms and one fact/
+deferred-free `Checked` membership with exactly one right-owned expected-type
+constraint are recorded. Every definition label/radix and expansion entry
+requires an independent guard; non-exact chain, terminal, reserve, formula, or
+withheld shapes fail closed. Mode declaration acceptance/inhabitation,
+membership truth/facts, implicit closure/order, theorem acceptance, proof,
+CoreIr, ControlFlowIr, VC, object-terminal behavior, and broader chain depths
+remain deferred. The source/trace contract, production route, independent
+corruption matrix, and real frontend/resolver sidecar now protect the active
+bridge.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

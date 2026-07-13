@@ -908,6 +908,23 @@ set coercion、inequality desugaring、truth/fact、closure/order、theorem
 acceptance、proof/Core/ControlFlow/VC は deferred のままである。source と
 trace contract、production route、独立した corruption matrix、real frontend/
 resolver sidecar が active bridge を保護する。
+task 158 は exact three-edge bare-set local-mode-chain left reserved-variable
+membership bridge
+`BaseThreeEdgeModeMembership -> set; InnerThreeEdgeModeMembership -> BaseThreeEdgeModeMembership; MiddleThreeEdgeModeMembership -> InnerThreeEdgeModeMembership; OuterThreeEdgeModeMembership -> MiddleThreeEdgeModeMembership; reserve x for OuterThreeEdgeModeMembership; reserve y for set; theorem ...: x in y;`
+だけを規定する。raw left result は written outer-mode source、right result と
+sole expected input は独立した explicit-set reserve source を保持し、left
+expected input は持たない。checker は `x/y` を source-order ordinal 2/3 で
+独立に `BindingId(0/1)` へ解決する。task 73 の real expansion 4 本は 3 role
+を terminal RHS に canonical anchor された builtin-set identity 1 個へ normalize
+してから、2 `Inferred` variable term と exactly one right-owned expected-type
+constraint を持つ 1 fact/deferred-free `Checked` membership を記録する。全
+definition label/radix/expansion entry を独立に guard し、non-exact chain、
+terminal、reserve、formula、withheld shape は fail closed とする。mode
+declaration acceptance/inhabitation、membership truth/fact、implicit closure/
+order、theorem acceptance、proof/Core/ControlFlow/VC、object-terminal behavior、
+broader chain depth は deferred のままである。source/trace contract、
+production route、独立した corruption matrix、real frontend/resolver sidecar
+が active bridge を保護する。
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event
