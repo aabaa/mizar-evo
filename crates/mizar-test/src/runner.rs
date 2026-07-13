@@ -12813,6 +12813,23 @@ mod tests {
             .expect("terminal object expansion");
         assert_eq!(normalized.source.range, terminal.radix.source_range);
 
+        let mut partial_chain_output =
+            super::source_chained_local_object_mode_reserved_variable_equality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("third exact output");
+        partial_chain_output
+            .payload
+            .reserve
+            .mode_expansions
+            .retain(|symbol, _| source_mode_symbol_spelling(symbol) != Some("BaseObjectMode"));
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&partial_chain_output),
+            vec![super::TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY.to_owned()]
+        );
+
         let mut invalid_output =
             super::source_chained_local_object_mode_reserved_variable_equality_output(
                 &exact,
