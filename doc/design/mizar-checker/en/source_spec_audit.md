@@ -1062,6 +1062,21 @@ acceptance/inhabitation, desugaring/truth/facts, closure/order, theorem
 acceptance, proof/Core/ControlFlow/VC, object-terminal behavior, other depths,
 and broader shapes remain open.
 
+Task 169 MC-G020 current-state override: classify the exact four-edge
+object-terminal local-mode-chain inequality as `test_gap`, `source_drift`, and
+`design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.5.2, and 16 support
+the test-first source. Tasks 74/153 provide the real five-expansion producer
+and task 157 provides the pre-desugaring inequality consumer. Preserve
+`BindingId(0)` at ordinals 1/2, four raw outermost-mode result/expected inputs,
+all five source-derived expansions, one terminal-object-RHS identity, two
+`Inferred` terms, one fact/deferred-free pre-desugaring `Checked` inequality,
+and two ordered operand-owned expected constraints without object/set
+coercion. The fixture, six trace backlinks, production routing, full corruption
+coverage, and a real sidecar now protect active runner 120. Declaration
+acceptance/inhabitation, desugaring/truth/facts,
+closure/order, theorem acceptance, proof/Core/ControlFlow/VC, set-terminal
+behavior, other depths, and broader shapes remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

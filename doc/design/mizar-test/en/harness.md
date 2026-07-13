@@ -1041,6 +1041,21 @@ other depths, and broader shapes remain deferred. The fixture, expectation,
 six trace backlinks, production route, full guard matrix, and real sidecar now
 protect active runner 119.
 
+Task 169 records the active exact four-edge local-object-mode inequality
+source. The production runner must accept only the five-definition object-
+terminal chain, one outermost-mode reserve, and the exact `z <> z` label;
+consume all five real expansions; retain four raw result/expected inputs;
+resolve `BindingId(0)` at ordinals 1/2; and require one terminal-object-RHS
+identity, two `Inferred` variables, one fact/deferred-free pre-desugaring
+`Checked` inequality, and two ordered operand-owned expected constraints
+without object/set coercion. Matched-output corruption, every definition/link/
+order/depth near miss, and a real frontend/resolver sidecar must fail closed.
+Declaration acceptance/inhabitation, inequality desugaring/truth/facts,
+closure/order, theorem/proof/Core/VC, set-terminal behavior, other depths, and
+broader shapes remain deferred. The fixture, expectation, six trace backlinks,
+production route, full guard matrix, and real sidecar now protect active runner
+120.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

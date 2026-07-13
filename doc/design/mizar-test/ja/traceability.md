@@ -1036,6 +1036,20 @@ backlink 6 件、production routing、corruption/near-miss coverage、real sidec
 が active count 119 を保護する。declaration acceptance/inhabitation、
 inequality desugaring/truth/fact、closure/order、theorem/proof/Core/VC、object-
 terminal behavior、他 depth、broader shape は credit しない。
+task 169 は `object` に終端する definition chain 5 本、
+`reserve z for TooDeepFourEdgeObjectModeInequality;`、
+`FourEdgeLocalObjectModeReservedVariableInequalityPayloadBoundary: z <> z;`
+だけの active row を追加する。Chapter 3、4、7、13、14.5.2、16 を既存
+Chapter 4/13/14/16 requirement row、structural-chain row、dedicated checker row
+を介して参照する。intended credit は real expansion 5 本、raw outermost-
+mode result/expected input 4 個、ordinal 1/2 の `BindingId(0)`、terminal-
+object-RHS identity 1 個、2 inferred variable、1 fact/deferred-free pre-
+desugaring checked inequality、ordered operand-owned expected constraint 2 個
+を object/set coercion なしで保持する slice だけである。trace backlink 6 件、
+production routing、corruption/near-miss coverage、real sidecar が active
+count 120 を保護する。declaration acceptance/inhabitation、inequality desugaring/
+truth/fact、closure/order、theorem/proof/Core/VC、set-terminal behavior、他
+depth、broader shape は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

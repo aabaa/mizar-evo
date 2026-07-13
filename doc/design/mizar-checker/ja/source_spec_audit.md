@@ -1017,6 +1017,21 @@ declaration acceptance/inhabitation、desugaring/truth/
 fact、closure/order、theorem acceptance、proof/Core/ControlFlow/VC、object-
 terminal behavior、他 depth、broader shape は open のままである。
 
+Task 169 MC-G020 current-state override: exact four-edge object-terminal local-mode-chain
+inequality を `spec_gap` ではなく `test_gap`、`source_drift`、`design_drift`
+と分類する。Chapter 3、4、7、13、14.5.2、16 が test-first source を支え、
+tasks 74/153 が real five-expansion producer、task 157 が pre-desugaring
+inequality consumer を提供する。exact contract は ordinal 1/2 の
+`BindingId(0)`、raw outermost-mode result/expected input 4 個、source-derived
+expansion 5 本、terminal-object-RHS identity 1 個、2 `Inferred` term、1 fact/
+deferred-free pre-desugaring `Checked` inequality、ordered operand-owned
+expected constraint 2 個を object/set coercion なしで保持する。fixture、trace
+backlink 6 件、production routing、full corruption coverage、real sidecar が
+active runner 120 を保護する。declaration acceptance/
+inhabitation、desugaring/truth/fact、closure/order、theorem acceptance、proof/
+Core/ControlFlow/VC、set-terminal behavior、他 depth、broader shape は open の
+ままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

@@ -1134,6 +1134,24 @@ closure/order, theorem acceptance, proof/Core/VC, object-terminal behavior,
 other depths, and broader shapes stay deferred. Fixture/expectation, six trace
 backlinks, exact routing, full near-miss/corruption coverage, and the real
 frontend/resolver sidecar now protect active runner 119.
+Task 169 specifies the test-first source whose five unique, unrecovered,
+same-module, argument-free, source-preceding mode definitions form
+`TooDeepFourEdgeObjectModeInequality -> OuterFourEdgeObjectModeInequality ->
+MiddleFourEdgeObjectModeInequality -> InnerFourEdgeObjectModeInequality ->
+BaseFourEdgeObjectModeInequality -> object`, followed by one outermost-mode
+`reserve z` and
+`FourEdgeLocalObjectModeReservedVariableInequalityPayloadBoundary: z <> z;`.
+The implementation must resolve both uses to `BindingId(0)` at ordinals 1/2,
+preserve four raw result/expected inputs, consume five real expansions, and
+normalize every role to one terminal-object-RHS identity before two `Inferred`
+variables, one fact/deferred-free pre-desugaring `Checked` inequality, and two
+ordered operand-owned expected constraints without object/set coercion. Exact
+route-order, near-miss, matched-output, expansion-corruption, and real sidecar
+guards are mandatory. Declaration acceptance/inhabitation, inequality
+desugaring/truth/facts, closure/order, theorem acceptance, proof/Core/VC, set-
+terminal behavior, other depths, and broader shapes stay deferred. Fixture/
+expectation, six trace backlinks, exact routing, full near-miss/corruption
+coverage, and the real frontend/resolver sidecar now protect active runner 120.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

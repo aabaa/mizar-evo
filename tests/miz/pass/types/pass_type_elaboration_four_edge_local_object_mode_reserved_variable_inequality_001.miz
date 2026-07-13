@@ -1,0 +1,22 @@
+definition
+  mode BaseFourEdgeObjectModeInequalityDef: BaseFourEdgeObjectModeInequality is object;
+end;
+
+definition
+  mode InnerFourEdgeObjectModeInequalityDef: InnerFourEdgeObjectModeInequality is BaseFourEdgeObjectModeInequality;
+end;
+
+definition
+  mode MiddleFourEdgeObjectModeInequalityDef: MiddleFourEdgeObjectModeInequality is InnerFourEdgeObjectModeInequality;
+end;
+
+definition
+  mode OuterFourEdgeObjectModeInequalityDef: OuterFourEdgeObjectModeInequality is MiddleFourEdgeObjectModeInequality;
+end;
+
+definition
+  mode TooDeepFourEdgeObjectModeInequalityDef: TooDeepFourEdgeObjectModeInequality is OuterFourEdgeObjectModeInequality;
+end;
+
+reserve z for TooDeepFourEdgeObjectModeInequality;
+theorem FourEdgeLocalObjectModeReservedVariableInequalityPayloadBoundary: z <> z;

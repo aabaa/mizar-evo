@@ -1097,6 +1097,21 @@ sidecar now protect active count 119. Declaration acceptance/
 inhabitation, inequality desugaring/truth/facts, closure/order, theorem/proof/
 Core/VC, object-terminal behavior, other depths, and broader shapes receive no
 credit.
+Task 169 adds an active row for exactly the five-definition object-terminal
+chain ending in `object`,
+`reserve z for TooDeepFourEdgeObjectModeInequality;`, and
+`FourEdgeLocalObjectModeReservedVariableInequalityPayloadBoundary: z <> z;`.
+It references Chapters 3, 4, 7, 13, 14.5.2, and 16 through the existing Chapter
+4/13/14/16 requirement rows plus the structural-chain and dedicated checker
+rows. Intended credit is limited to five real expansions, four raw outermost-
+mode result/expected inputs, `BindingId(0)` at ordinals 1/2, one terminal-
+object-RHS identity, two inferred variables, one fact/deferred-free pre-
+desugaring checked inequality, and two ordered operand-owned expected
+constraints without object/set coercion. Six trace backlinks, production
+routing, corruption/near-miss coverage, and a real sidecar now protect active
+count 120. Declaration acceptance/inhabitation, inequality desugaring/
+truth/facts, closure/order, theorem/proof/Core/VC, set-terminal behavior, other
+depths, and broader shapes receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

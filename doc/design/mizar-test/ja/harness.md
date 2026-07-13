@@ -1002,6 +1002,20 @@ order、theorem/proof/Core/VC、object-terminal behavior、他 depth、broader s
 は deferred のままである。fixture/expectation、trace backlink 6 件、production
 route、full guard matrix、real sidecar が active runner 119 を保護する。
 
+task 169 は active exact four-edge local-object-mode inequality source を記録
+する。production runner は object-terminal definition chain 5 本、outermost
+mode reserve 1 個、exact `z <> z` label だけを受理し、real expansion 5 本を
+消費し、raw result/expected input 4 個、ordinal 1/2 の `BindingId(0)`、
+terminal-object-RHS identity 1 個、2 `Inferred` variable、1 fact/deferred-free
+pre-desugaring `Checked` inequality、ordered operand-owned expected constraint
+2 個を object/set coercion なしで要求しなければならない。matched-output
+corruption、各 definition/link/order/depth near miss、real frontend/resolver
+sidecar は fail closed でなければならない。declaration acceptance/
+inhabitation、inequality desugaring/truth/fact、closure/order、theorem/proof/
+Core/VC、set-terminal behavior、他 depth、broader shape は deferred のままで
+ある。fixture/expectation、trace backlink 6 件、production route、full guard
+matrix、real sidecar が active runner 120 を保護する。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order
