@@ -2117,3 +2117,8 @@ Key scenarios:
 - Test execution order is not semantic ordering.
 - The harness treats cache hits as compiler behavior to verify, not as proof authority.
 - Snapshot update mode is opt-in and must be visible in command output.
+
+
+## Task 201 Immediate-Radix Asserted-Head Harness Contract
+
+The Task 201 route is exact: two labeled, ordered bare mode definitions ending in builtin `set`; one `x` reserve of the outer mode; and one Base-mode formula-side type assertion. A closed relation keeps builtin and same-mode routes isolated and compares the asserted resolved symbol with the outer binding expansion's real immediate radix. The harness rejects missing/reordered/extra/deeper/recovered/contextual/parameterized/argument-bearing/attributed definitions, non-exact reserves or theorems, builtin/same-outer/object/unrelated/imported/ambiguous asserted heads, and independent expansion/binding/ordinal/head/spelling/site/range/immediate-edge/canonical corruptions. The immutable positive output and real frontend/resolver sidecar protect active runner 149. No general reachability, widening, `qua`, acceptance, truth/facts, proof, or downstream IR is activated.

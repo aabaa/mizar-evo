@@ -3590,6 +3590,41 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 74、179、187、196、198、199。参照: Step 5、mizar-test task
       10、specs 3、4、7、13、14、16。
 
+201. **Exact one-edge formula-side immediate-radix local-mode asserted-head checker bridge を追加する。** [x]
+    - `mode BaseModeRadixAssertedHeadDef: BaseModeRadixAssertedHead is set;`、
+      `mode OuterModeRadixAssertedHeadDef: OuterModeRadixAssertedHead is
+      BaseModeRadixAssertedHead;`、outer mode reserve 1 個、
+      `ChainedLocalModeRadixAssertedHeadPayloadBoundary: x is
+      BaseModeRadixAssertedHead;` だけを、Tasks 56/146 の real two-expansion
+      normalized type handoff と Task 184 の formula-side local-mode asserted-
+      head consumer の合成として閉じる。
+    - 受入条件: 既存の builtin asserted-type route は不変、既存の same-mode
+      asserted-head route は same-mode のまま保ち、この exact immediate-radix
+      edge だけを受理する explicit asserted-head relation を追加する。
+      distinct raw subject/asserted site/range/resolved symbol を保持し、real
+      expansion 2 個だけを消費し、ordinal 1 を `BindingId(0)` に解決し、known
+      entry 3 個を Base definition RHS anchor の builtin-set identity 1 個へ
+      normalize し、expected constraint 0 個、`Inferred` variable 1 個、fact/
+      candidate/diagnostic/deferred-free normalized-reflexive `Checked`
+      `TypeAssertion` 1 個を記録する。exact structural/provenance near miss、
+      独立した expansion/binding/ordinal/head/spelling/site/range/immediate-
+      edge/canonical corruption、Task 146/184 route isolation、immutable-output
+      check、real frontend/resolver sidecar を要求する。test-first active pass
+      fixture 1 件、shared backlink 5 件、dedicated backlink 1 件を追加し、既存
+      expectation を変更せず active runner を 148 から 149、cases を 363 から
+      364、requirements を 327 から 328 へ増やす。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap`
+      なし。object-terminal/deeper/unrelated/imported/attributed/argument-
+      bearing asserted head、general reachability/widening/`qua`、mode
+      declaration acceptance/inhabitation、assertion truth/fact、implicit
+      closure/order、theorem acceptance、broader term/formula/child-graph
+      semantics、proof/Core/ControlFlow/VC、general chain semantics は deferred
+      のままとする。Step 5 は active、Steps 6/7 は deferred のままとする。
+      checker source または module-layout change はない見込みである。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 56、146、184。参照: Step 5、mizar-test task 10、specs 3、4、
+      7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

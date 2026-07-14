@@ -1,0 +1,11 @@
+definition
+  mode BaseModeRadixAssertedHeadDef: BaseModeRadixAssertedHead is set;
+end;
+
+definition
+  mode OuterModeRadixAssertedHeadDef: OuterModeRadixAssertedHead is BaseModeRadixAssertedHead;
+end;
+
+reserve x for OuterModeRadixAssertedHead;
+theorem ChainedLocalModeRadixAssertedHeadPayloadBoundary:
+  x is BaseModeRadixAssertedHead;

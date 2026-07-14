@@ -1518,3 +1518,8 @@ Resolved decisions (kept for reference; details live in the linked docs):
   specified (plan step 8).
 - **ModuleSummary reuse timing.** Resolved at resolver task 24 via the
   canonical `mizar-artifact` `ModuleSummary` reader.
+
+
+## Step 5 Task 201 Addendum
+
+Task 201 closes the exact one-edge set-terminal immediate-radix asserted-head `test_gap`, narrow `source_drift`, and `design_drift` slice without a `spec_gap`. It composes Tasks 56/146's real two-expansion producer with Task 184's formula consumer for `BaseModeRadixAssertedHead -> set`, `OuterModeRadixAssertedHead -> BaseModeRadixAssertedHead`, one outer reserve, and `ChainedLocalModeRadixAssertedHeadPayloadBoundary: x is BaseModeRadixAssertedHead;`. A closed asserted-head relation preserves builtin and same-mode routes and admits only the resolved immediate radix. The active route preserves distinct Outer/Base provenance, resolves ordinal 1 to `BindingId(0)`, normalizes three known entries to one Base-definition-RHS builtin-set identity, and records one inferred variable plus one zero-constraint/fact/candidate/diagnostic/deferred checked assertion. Five shared plus one dedicated backlink and exact/corruption/isolation/real-sidecar guards protect active case 149 within 364 cases and 328 requirements. No existing expectation changed. Step 5 remains active; Steps 6/7 and broader asserted-head/proof/CoreIr/ControlFlowIr/VC semantics remain deferred. No checker source or module-layout change was required.

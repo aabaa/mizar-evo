@@ -1608,3 +1608,8 @@ consumer-specific runner または integration test が real execution を所有
 - Manifest は manually edit してよいが、validation は automated である。
 - Generated tests は committed expectation metadata を通じてのみ coverage に寄与できる。
 - Coverage は semantic evidence であり、line or branch coverage ではない。
+
+
+## task 201 traceability
+
+task 201 は shared Chapter 4/13/14.2.3/16 reference 4 件、shared Task 56 chain-producer reference 1 件、dedicated checker bridge reference 1 件を持つ exact active immediate-radix asserted-head row 1 件を追加する。credit は real AST-derived expansion 2 個、distinct Outer reserve-subject / Base formula asserted-type symbol/site/range、ordinal 1 から解決する `BindingId(0)`、Base-definition-RHS `BuiltinSet` 1 個へ normalize する known entry 3 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の `Checked` type assertion 1 個だけに限定する。exact route、provenance/corruption、Task 146/184 isolation、immutable-output、real sidecar test が active count 149 を保護する。plan は 364 cases / 328 requirements を持つ。broader asserted-head、declaration、theorem、formula-child、proof、CoreIr、ControlFlowIr、VC semantics は credit しない。

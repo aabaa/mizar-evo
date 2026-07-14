@@ -1879,3 +1879,8 @@ git diff --check
 
 Run broader Rust commands only if a later task edits source, tests, or
 expectation metadata.
+
+
+## Task 201 Coverage Addendum
+
+For chapters `03.type_system.md`, `04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`, `14.formulas.md`, and `16.theorems_and_proofs.md`, Task 201 classifies the exact one-edge set-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Tasks 56/146 provide the real two-expansion producer and Task 184 provides the formula consumer. Current credit is limited to the exact Base-to-set and Outer-to-Base definitions, outer reserve, Base asserted type, distinct raw symbols/sites/ranges, ordinal 1 / `BindingId(0)`, three known entries normalizing to one Base-definition-RHS builtin-set identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion. Five shared backlinks plus one dedicated row, the closed builtin/same-mode/immediate-radix relation, exact structural/provenance/corruption and Task 146/184 isolation guards, immutable output, and a real frontend/resolver sidecar protect active runner 149. The repository plan contains 364 cases and 328 requirements without changing existing expectations. Broader asserted heads, reachability/widening/`qua`, acceptance, truth/facts, closure/order, child graphs, proof/CoreIr/ControlFlowIr/VC, and general chains receive no credit. Step 5 remains active; Steps 6 and 7 remain deferred. No checker source or module-layout update was required.

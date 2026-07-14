@@ -1687,3 +1687,8 @@ consumer-specific runner or integration test owns real execution.
 - Generated tests can contribute coverage only through committed expectation
   metadata.
 - Coverage is semantic evidence, not line or branch coverage.
+
+
+## Task 201 Traceability
+
+Task 201 adds one exact active immediate-radix asserted-head row with four shared Chapter 4/13/14.2.3/16 references, the shared Task 56 chain-producer reference, and one dedicated checker bridge reference. Credit is limited to two real AST-derived expansions, distinct Outer reserve-subject and Base formula asserted-type symbols/sites/ranges, ordinal 1 resolving to `BindingId(0)`, three known entries normalizing to one Base-definition-RHS `BuiltinSet`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred `Checked` type assertion. Exact route, provenance/corruption, Task 146/184 isolation, immutable-output, and real sidecar tests protect active count 149. The plan contains 364 cases and 328 requirements. Broader asserted-head, declaration, theorem, formula-child, proof, CoreIr, ControlFlowIr, and VC semantics receive no credit.

@@ -2056,3 +2056,10 @@ lint-policy audit guard が同じ commit に含まれた時点で完了する。
 単体では crate completion を主張しない。task 33、task 34、closeout task は
 bilingual synchronization audit、module-boundary refactor gate、crate exit report を
 すでに記録している。
+
+
+## Task 201 MC-G020 current-state override
+
+Task 201 は exact one-edge set-terminal immediate-radix asserted-head seam を `test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とはしない。Chapters 3、4、7、13、14.2.3、16 は local definition 2 個、outer reserve、identifier subject、Base asserted type、theorem を直接 support する。Tasks 56/146 は real expansion 2 個、Task 184 は formula consumer を提供する。closed asserted-head relation は builtin/same-mode route を不変に保ち、resolved outer-to-base immediate edge だけを受理する。
+
+active route は distinct Outer/Base symbol/site/range を保持し、ordinal 1 を `BindingId(0)` に解決し、known entry 3 個を Base-definition-RHS `BuiltinSet` 1 個へ normalize し、expected constraint 0 個、`Inferred` variable 1 個、fact/candidate/diagnostic/deferred-free `Checked` assertion 1 個を記録する。shared backlink 5 個 + dedicated row 1 個が既存 expectation を変更せず、364 cases / 328 requirements 内の active runner 149 を保護する。exact structural/provenance、corruption、immutable-output、Task 146/184 isolation、real sidecar guard は executable である。broader asserted head/semantics、proof/CoreIr/ControlFlowIr/VC、general chain は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままである。checker source または module-layout change は不要であった。

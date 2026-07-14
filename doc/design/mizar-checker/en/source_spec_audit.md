@@ -2135,3 +2135,10 @@ committed with the crate plan, todo updates, and the lint-policy audit guard.
 The audit does not claim crate completion by itself; tasks 33, 34, and the
 closeout task have since recorded the bilingual synchronization audit,
 module-boundary refactor gate, and crate exit report.
+
+
+## Task 201 MC-G020 Current-State Override
+
+Task 201 classifies the exact one-edge set-terminal immediate-radix asserted-head seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly support the two local definitions, outer reserve, identifier subject, Base asserted type, and theorem. Tasks 56/146 supply two real expansions and Task 184 supplies the formula consumer. The closed asserted-head relation leaves builtin and same-mode routes unchanged and accepts only the resolved outer-to-base immediate edge.
+
+The active route preserves distinct Outer/Base symbols, sites, and ranges; resolves ordinal 1 to `BindingId(0)`; normalizes three known entries to one Base-definition-RHS `BuiltinSet`; and records one `Inferred` variable plus one fact/candidate/diagnostic/deferred-free `Checked` assertion with zero expected constraints. Five shared backlinks plus one dedicated row protect active runner 149 within 364 cases and 328 requirements without changing existing expectations. Exact structural/provenance, corruption, immutable-output, Task 146/184 isolation, and real sidecar guards are executable. Broader asserted heads and semantics, proof/CoreIr/ControlFlowIr/VC, and general chains remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source or module-layout change was required.

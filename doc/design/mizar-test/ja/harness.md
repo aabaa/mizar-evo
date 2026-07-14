@@ -2023,3 +2023,8 @@ key scenarios:
 - test execution order は semantic ordering ではない。
 - harness は cache hits を検証対象の compiler behavior として扱い、proof authority としては扱わない。
 - snapshot update mode は opt-in であり command output に見える形でなければならない。
+
+
+## task 201 immediate-radix asserted-head harness contract
+
+task 201 route は exact である。builtin `set` で終わる labeled/ordered bare mode definition 2 個、outer mode の `x` reserve 1 個、Base-mode formula-side type assertion 1 個だけを受理する。closed relation は builtin/same-mode route を isolate し、asserted resolved symbol と outer binding expansion の real immediate radix を比較する。harness は missing/reordered/extra/deeper/recovered/contextual/parameterized/argument-bearing/attributed definition、non-exact reserve/theorem、builtin/same-outer/object/unrelated/imported/ambiguous asserted head、独立した expansion/binding/ordinal/head/spelling/site/range/immediate-edge/canonical corruption を reject する。immutable positive output と real frontend/resolver sidecar が active runner 149 を保護する。general reachability、widening、`qua`、acceptance、truth/fact、proof、downstream IR は activate しない。
