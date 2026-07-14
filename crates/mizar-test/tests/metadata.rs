@@ -4406,6 +4406,21 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
             .expected_outcome,
         ExpectedOutcome::Pass
     );
+    let four_edge_local_object_mode_radix_asserted_head_case =
+        active_type_elaboration_cases(&plan)
+            .find(|case| {
+                case.id.0
+                    == "pass_type_elaboration_four_edge_local_object_mode_radix_asserted_head_001"
+            })
+            .expect(
+                "Task208 four-edge object-terminal immediate-radix asserted-head bridge should be active",
+            );
+    assert_eq!(
+        four_edge_local_object_mode_radix_asserted_head_case
+            .expectation
+            .expected_outcome,
+        ExpectedOutcome::Pass
+    );
     let four_edge_local_object_mode_asserted_head_case = active_type_elaboration_cases(&plan)
         .find(|case| {
             case.id.0
@@ -4545,8 +4560,8 @@ fn repository_type_elaboration_runner_executes_active_source_derived_seeds() {
     let report = run_type_elaboration_corpus(&config).unwrap();
 
     assert_eq!(report.error_count(), 0, "{:#?}", report.diagnostics);
-    assert_eq!(report.results.len(), 155);
-    assert_eq!(report.passed_count(), 155);
+    assert_eq!(report.results.len(), 156);
+    assert_eq!(report.passed_count(), 156);
     assert_eq!(report.failed_count(), 0);
     assert!(report.results.iter().any(|result| {
         result.id.0 == "fail_type_elaboration_non_builtin_type_gap_001"
@@ -8997,8 +9012,8 @@ fn type_elaboration_cli_reports_active_runner_summary() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("type-elaboration cases: 155"));
-    assert!(stdout.contains("passed: 155"));
+    assert!(stdout.contains("type-elaboration cases: 156"));
+    assert!(stdout.contains("passed: 156"));
     assert!(stdout.contains("failed: 0"));
 }
 
