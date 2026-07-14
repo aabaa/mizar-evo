@@ -1,0 +1,19 @@
+definition
+  mode BaseThreeEdgeModeRadixAssertedHeadDef: BaseThreeEdgeModeRadixAssertedHead is set;
+end;
+
+definition
+  mode InnerThreeEdgeModeRadixAssertedHeadDef: InnerThreeEdgeModeRadixAssertedHead is BaseThreeEdgeModeRadixAssertedHead;
+end;
+
+definition
+  mode MiddleThreeEdgeModeRadixAssertedHeadDef: MiddleThreeEdgeModeRadixAssertedHead is InnerThreeEdgeModeRadixAssertedHead;
+end;
+
+definition
+  mode OuterThreeEdgeModeRadixAssertedHeadDef: OuterThreeEdgeModeRadixAssertedHead is MiddleThreeEdgeModeRadixAssertedHead;
+end;
+
+reserve x for OuterThreeEdgeModeRadixAssertedHead;
+theorem ThreeEdgeLocalModeRadixAssertedHeadPayloadBoundary:
+  x is MiddleThreeEdgeModeRadixAssertedHead;
