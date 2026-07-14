@@ -3863,6 +3863,48 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 56, 147, 185, and 201. Refs: Step 5; mizar-test task 10; specs
       3, 4, 7, 13, 14, and 16.
 
+203. **Add exact two-edge set-terminal formula-side immediate-radix local-mode asserted-head checker bridge.** [x]
+    - Close only `mode BaseTwoEdgeModeRadixAssertedHeadDef:
+      BaseTwoEdgeModeRadixAssertedHead is set;`, `mode
+      MiddleTwoEdgeModeRadixAssertedHeadDef: MiddleTwoEdgeModeRadixAssertedHead
+      is BaseTwoEdgeModeRadixAssertedHead;`, `mode
+      OuterTwoEdgeModeRadixAssertedHeadDef: OuterTwoEdgeModeRadixAssertedHead is
+      MiddleTwoEdgeModeRadixAssertedHead;`, `reserve x for
+      OuterTwoEdgeModeRadixAssertedHead`, and
+      `TwoEdgeLocalModeRadixAssertedHeadPayloadBoundary: x is
+      MiddleTwoEdgeModeRadixAssertedHead` by
+      composing Task 72's real three-expansion set-terminal producer, Task
+      186's depth-matched formula consumer, and Task 201's unchanged closed
+      immediate-radix relation.
+    - Acceptance: preserve every existing builtin, same-mode, one-edge
+      immediate-radix, object-terminal, and same-Outer route; admit only this
+      exact Outer-to-Middle config. Preserve distinct raw Outer/Middle sites,
+      ranges, and resolved symbols; require the asserted symbol to equal the
+      outer expansion's immediate radix head; consume exactly three real
+      expansions; resolve ordinal 1 to `BindingId(0)`; normalize three known
+      entries to one Base-definition-RHS builtin-set identity; and record one
+      `Inferred` variable plus one fact/candidate/diagnostic/deferred-free
+      normalized-reflexive `Checked` `TypeAssertion` with zero expected
+      constraints. Require exact structural/provenance near misses, independent
+      expansion/binding/ordinal/head/spelling/site/range/immediate-edge/
+      `BuiltinObject`/canonical corruption, Tasks 72/186/201/202 route
+      isolation, immutable-output checks, and a real frontend/resolver sidecar.
+      Add one test-first active pass fixture with five shared and one dedicated
+      backlink, raising active runner 150 to 151, cases 365 to 366, and
+      requirements 329 to 330 without changing existing expectations.
+    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`; no
+      `spec_gap`. Keep assertion of Base across two links, the object-terminal
+      sibling, other depths, imported/attributed/argument-bearing asserted
+      heads, general reachability/widening/`qua`, mode declaration acceptance/
+      inhabitation, assertion truth/facts, implicit closure/order, theorem
+      acceptance, broader term/formula/child-graph semantics, proof/Core/
+      ControlFlow/VC, and general chain semantics deferred. Step 5 remains
+      active; Steps 6/7 remain deferred. No checker source or module-layout
+      change was required.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 72, 186, 201, and 202. Refs: Step 5; mizar-test task 10;
+      specs 3, 4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

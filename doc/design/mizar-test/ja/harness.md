@@ -2033,3 +2033,8 @@ task 201 route は exact である。builtin `set` で終わる labeled/ordered 
 ## task 202 object immediate-radix harness contract
 
 task 202 route は labeled/ordered bare object-mode definition 2 個、outer reserve 1 個、immediate Base radix の formula assertion 1 個だけを受理する。structural/provenance near miss、追加 set-terminal/object-chain shape、独立 payload/`BuiltinSet` corruption、unresolved/imported/ambiguous head を reject する。real owning-positive 後の Task202-negative check が Tasks 147/185/201 を isolate し、Task202 exact source も各 owning route から reject される。immutable output と real frontend/resolver sidecar が active runner 150 を保護する。coercion、reachability、acceptance、truth/fact、proof、downstream IR は activate しない。
+
+
+## task 203 two-edge immediate-radix harness contract
+
+task 203 route は labeled/ordered/bare set-terminal mode definition 3 個、Outer reserve 1 個、immediate Middle radix の formula assertion 1 個だけを受理する。全 nonidentity definition order、duplicate/misspelled definition、direct/one-edge/object/deeper shape、imported/ambiguous Base/Middle/Outer provenance、独立した expansion/binding/ordinal/head/site/range/immediate-edge/`BuiltinObject`/canonical corruption を reject する。bidirectional real-route check が Tasks 122/148/149/186/187/201/202 を isolate する。immutable output と real frontend/resolver sidecar が active runner 151 を保護する。harness は two-hop reachability、Base assertion、coercion、acceptance、truth/fact、proof、downstream IR を activate しない。

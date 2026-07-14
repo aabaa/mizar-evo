@@ -1697,3 +1697,8 @@ Task 201 adds one exact active immediate-radix asserted-head row with four share
 ## Task 202 Traceability
 
 Task 202 adds one exact object-terminal immediate-radix active row with four shared Chapter 4/13/14.2.3/16 references, the shared Task 56 chain-producer reference, and one dedicated checker reference. Credit is limited to two real expansions, distinct Outer/Base symbols/sites/ranges, ordinal 1 / `BindingId(0)`, three known entries normalizing to one Base-definition-RHS `BuiltinObject`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion without coercion. Exact/corruption, real Tasks 147/185/201 isolation, immutable-output, and sidecar tests protect active count 150. The plan has 365 cases and 329 requirements; broader semantics receive no credit.
+
+
+## Task 203 Traceability
+
+Task 203 adds one exact two-edge set-terminal immediate-radix active row with five shared Chapter 4/7/13/14.2.3/16 references and one dedicated checker reference. Credit is limited to three real expansions, distinct Outer/Middle symbols/sites/ranges, ordinal 1 / `BindingId(0)`, three known entries normalizing to one Base-definition-RHS `BuiltinSet`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion. Exact/corruption/order/duplicate/spelling/imported/ambiguous/deeper coverage, real Tasks 122/148/149/186/187/201/202 isolation, immutable output, and a real sidecar protect active count 151. The plan has 366 cases and 330 requirements without rebaselining existing expectations; two-hop Base assertion and broader semantics receive no credit.
