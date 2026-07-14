@@ -1,0 +1,23 @@
+definition
+  mode BaseFourEdgeModeRadixAssertedHeadDef: BaseFourEdgeModeRadixAssertedHead is set;
+end;
+
+definition
+  mode InnerFourEdgeModeRadixAssertedHeadDef: InnerFourEdgeModeRadixAssertedHead is BaseFourEdgeModeRadixAssertedHead;
+end;
+
+definition
+  mode MiddleFourEdgeModeRadixAssertedHeadDef: MiddleFourEdgeModeRadixAssertedHead is InnerFourEdgeModeRadixAssertedHead;
+end;
+
+definition
+  mode OuterFourEdgeModeRadixAssertedHeadDef: OuterFourEdgeModeRadixAssertedHead is MiddleFourEdgeModeRadixAssertedHead;
+end;
+
+definition
+  mode TooDeepFourEdgeModeRadixAssertedHeadDef: TooDeepFourEdgeModeRadixAssertedHead is OuterFourEdgeModeRadixAssertedHead;
+end;
+
+reserve x for TooDeepFourEdgeModeRadixAssertedHead;
+theorem FourEdgeLocalModeRadixAssertedHeadPayloadBoundary:
+  x is OuterFourEdgeModeRadixAssertedHead;
