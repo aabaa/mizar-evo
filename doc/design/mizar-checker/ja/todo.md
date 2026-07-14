@@ -3754,6 +3754,13 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-test` と workspace Rust verification。
     - 依存: tasks 74、179、200、202、204、206、208、209。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
 
+211. **Exact two-edge set-terminal formula-side two-hop local-mode asserted-head checker bridge を追加する。** [x]
+    - `BaseTwoHopModeAssertedHead -> set`、`MiddleTwoHopModeAssertedHead -> BaseTwoHopModeAssertedHead`、`OuterTwoHopModeAssertedHead -> MiddleTwoHopModeAssertedHead`、`reserve x for OuterTwoHopModeAssertedHead`、`TwoEdgeLocalModeTwoHopAssertedHeadPayloadBoundary: x is BaseTwoHopModeAssertedHead` だけを閉じる。Task 72 の real AST-derived expansion 3 個と既存 reserved-variable type-assertion producer/consumer を、新しい独立した closed two-link relation で合成する。
+    - relation は pairwise-distinct resolved symbol 3 個を持つ real bare Outer-to-Middle edge と Middle-to-Base edge を明示的に検証し、exact Base-to-builtin-set terminal も要求する。generic terminal traversal だけを relation evidence にしない。distinct raw Outer-subject/Base-asserted symbol/site/range、ordinal 1 / `BindingId(0)`、expansion 3 個、Base-definition-RHS builtin-set identity 1 個へ normalize する known entry 3 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。全5 nonidentity definition order、各 definition の missing/duplicate/label/spelling/radix/recovery/context/parameter/argument/attribute case、non-exact reserve/formula/extra-item case、same-Outer/immediate-Middle/builtin/local-other/object/deeper/argument-bearing/attributed asserted head、unrelated-import positive と全3 symbol の imported/ambiguous substitution、全 expansion、internal edge 2 本、terminal、binding、ordinal、subject/asserted head/spelling/site/range、canonical source の removal/独立 corruption、immutable output、real frontend/resolver sidecar、既存 type-assertion owner route 36 件すべてとの bidirectional isolation を要求する。test-first active fixture 1 件と shared 5 + dedicated 1 backlink を追加し、既存 expectation を変更せず active runner を 158 から 159、cases を 373 から 374、requirements を 337 から 338 へ増やす。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。object-terminal sibling、他 distance、imported-positive/attributed/argument-bearing asserted head、general reachability/widening/`qua`、mode declaration acceptance/inhabitation、assertion truth/fact、closure/order、theorem acceptance、broader term/formula/child-graph semantics、proof/Core/ControlFlow/VC、general chain semantics は deferred のままとする。Step 5 は active、Steps 6/7 は deferred。checker source/module-layout change は不要であった。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 72、148、186、203。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

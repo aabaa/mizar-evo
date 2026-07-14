@@ -1,0 +1,15 @@
+definition
+  mode BaseTwoHopModeAssertedHeadDef: BaseTwoHopModeAssertedHead is set;
+end;
+
+definition
+  mode MiddleTwoHopModeAssertedHeadDef: MiddleTwoHopModeAssertedHead is BaseTwoHopModeAssertedHead;
+end;
+
+definition
+  mode OuterTwoHopModeAssertedHeadDef: OuterTwoHopModeAssertedHead is MiddleTwoHopModeAssertedHead;
+end;
+
+reserve x for OuterTwoHopModeAssertedHead;
+theorem TwoEdgeLocalModeTwoHopAssertedHeadPayloadBoundary:
+  x is BaseTwoHopModeAssertedHead;
