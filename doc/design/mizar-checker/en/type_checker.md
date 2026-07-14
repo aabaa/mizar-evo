@@ -1748,6 +1748,30 @@ broader term/formula/child-graph semantics, proof/CoreIr/ControlFlowIr/VC, or
 general unbounded chain semantics. No checker source or module-layout change
 was required.
 
+Task 200 is limited to the exact seven-expansion object-terminal same-
+`ChainObjectMode6` asserted-head source with the existing ordered definitions
+`ChainObjectMode6 -> ChainObjectMode5 -> ChainObjectMode4 -> ChainObjectMode3
+-> ChainObjectMode2 -> ChainObjectMode1 -> BaseObjectMode -> object`, one
+reserve of `ChainObjectMode6`, and
+`LongLocalObjectModeAssertedHeadPayloadBoundary: x is ChainObjectMode6;`. The
+production route composes Tasks 74/179's real seven-expansion AST handoff with
+Tasks 187/196/198's same-symbol formula-side asserted-head consumer and Task
+199's depth-matched set-terminal sibling. It resolves ordinal 1 to
+`BindingId(0)`, preserves independent raw reserve-subject and formula asserted-
+type sites/ranges for the same symbol, and consumes exactly seven local bare
+argument/attribute/context/recovery-free expansions. Three known type entries
+normalize to one `BuiltinObject` identity canonically anchored at the
+`BaseObjectModeDef` RHS. The immutable result contains one `Inferred` variable,
+zero expected constraints/candidates/facts/diagnostics/deferred reasons, and
+one normalized-reflexive `Checked` `TypeAssertion` without object/set coercion.
+Full-reverse, connected-eighth-edge, structural/provenance, mutable-corruption,
+positive-output, route-isolation, and real frontend/resolver-sidecar guards
+protect active runner 148. This does not establish mode declaration acceptance,
+reachability/widening/`qua`, assertion truth or facts, implicit closure/order,
+theorem acceptance, broader term/formula/child-graph semantics, proof/CoreIr/
+ControlFlowIr/VC, or general unbounded chain semantics. No checker source or
+module-layout change was required.
+
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

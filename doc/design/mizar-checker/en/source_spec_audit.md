@@ -1642,6 +1642,33 @@ ControlFlow/VC, and general unbounded chain semantics remain open. Step 5 stays
 active; Steps 6/7 stay deferred. No checker source or module-layout change was
 required.
 
+Task 200 MC-G020 current-state override: the exact seven-expansion object-
+terminal same-`ChainObjectMode6` asserted head is a `test_gap`, narrow
+`source_drift`, and `design_drift`, not a `spec_gap`. Chapters 3, 4, 7, 13,
+14.2.3, and 16 directly support `BaseObjectMode -> object`, the six ordered
+local links through `ChainObjectMode6 -> ChainObjectMode5`, `reserve x for
+ChainObjectMode6`, and `LongLocalObjectModeAssertedHeadPayloadBoundary: x is
+ChainObjectMode6;`. Tasks 74/179 provide the real seven-expansion object-
+terminal producer, while Tasks 187/196/198 provide the same-symbol formula-
+side asserted-head consumer. The exact route preserves distinct raw subject
+and asserted sites/ranges for `ChainObjectMode6`, resolves ordinal 1 to
+`BindingId(0)`, consumes all seven AST-derived expansions, normalizes three
+known type entries to one `BaseObjectModeDef` RHS-anchored `BuiltinObject`
+identity, and records one `Inferred` variable plus one fact/candidate/
+diagnostic/deferred-free normalized-reflexive `Checked` type assertion with
+zero expected constraints and no object/set coercion. Five shared backlinks
+plus one dedicated row protect active runner 148 within 363 cases and 327
+requirements without changing an existing expectation. Per-link removal/
+reorder, complete reverse order, connected eighth-link, structural/provenance,
+unrelated local/imported/ambiguous asserted-head, mutable corruption, immutable-
+output, route-isolation, and real frontend/resolver sidecar guards complete the
+contract. Set-terminal/other-depth/imported/attributed/argument-bearing/other
+asserted heads, reachability/widening/`qua`, declaration or theorem acceptance,
+truth/facts, closure/order, broader term/formula/child-graph semantics, proof/
+Core/ControlFlow/VC, and general unbounded chain semantics remain open. Step 5
+stays active; Steps 6/7 stay deferred. No checker source or module-layout
+change was required.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

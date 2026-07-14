@@ -1573,6 +1573,33 @@ child-graph semantics、proof/Core/ControlFlow/VC、general unbounded chain
 semantics は open のままである。Step 5 は active、Steps 6/7 は deferred の
 まま。checker source または module-layout change は不要であった。
 
+Task 200 MC-G020 current-state override: exact seven-expansion object-terminal
+same-`ChainObjectMode6` asserted head は `test_gap`、narrow `source_drift`、
+`design_drift` であり、`spec_gap` ではない。Chapters 3、4、7、13、14.2.3、
+16 は `BaseObjectMode -> object`、`ChainObjectMode6 -> ChainObjectMode5` まで
+の ordered local link 6 個、`reserve x for ChainObjectMode6`、
+`LongLocalObjectModeAssertedHeadPayloadBoundary: x is ChainObjectMode6;` を
+直接 support する。Tasks 74/179 は real seven-expansion object-terminal
+producer、Tasks 187/196/198 は same-symbol formula-side asserted-head consumer
+を提供する。exact route は `ChainObjectMode6` の distinct raw subject/
+asserted site/range を保持し、ordinal 1 を `BindingId(0)` に解決し、AST-
+derived expansion 7 個を消費し、known type entry 3 個を
+`BaseObjectModeDef` RHS anchor の `BuiltinObject` identity 1 個へ normalize
+し、expected constraint 0 個、`Inferred` variable 1 個、fact/candidate/
+diagnostic/deferred-free normalized-reflexive `Checked` type assertion 1 個を
+object/set coercion なしで記録する。shared backlink 5 個 + dedicated row 1
+個により既存 expectation を変更せず 363 cases / 327 requirements 内の
+active runner 148 を保護する。per-link removal/reorder、complete reverse
+order、connected eighth-link、structural/provenance、unrelated local/imported/
+ambiguous asserted-head、mutable corruption、immutable-output、route-isolation、
+real frontend/resolver sidecar guard が contract を完成させる。set-terminal/
+other-depth/imported/attributed/argument-bearing/other asserted head、
+reachability/widening/`qua`、declaration/theorem acceptance、truth/fact、
+closure/order、broader term/formula/child-graph semantics、proof/Core/
+ControlFlow/VC、general unbounded chain semantics は open のままである。
+Step 5 は active、Steps 6/7 は deferred のまま。checker source または
+module-layout change は不要であった。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

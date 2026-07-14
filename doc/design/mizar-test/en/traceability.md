@@ -1496,6 +1496,28 @@ declaration/theorem acceptance, truth/facts, closure/order,
 `formula_statement`, proof, CoreIr, ControlFlowIr, VC, broader formula/child-
 graph semantics, and general unbounded chains receive no credit.
 
+Task 200 adds one exact active seven-expansion object-terminal same-
+`ChainObjectMode6` asserted-head row with `BaseObjectMode -> object`, six
+ordered local links through `ChainObjectMode6 -> ChainObjectMode5`, one
+`ChainObjectMode6` reserve, and
+`LongLocalObjectModeAssertedHeadPayloadBoundary: x is ChainObjectMode6;`, with
+four shared Chapter 4/13/14.2.3/16 references, one shared Task 74 structural-
+chain reference, and one dedicated checker bridge reference. Credit is limited
+to seven real AST-derived expansions, ordinal 1 resolving to `BindingId(0)`,
+distinct raw reserve-subject and formula asserted-type sites/ranges for the same
+symbol, three known type entries normalizing to one `BaseObjectModeDef` RHS-
+anchored `BuiltinObject` identity, one inferred variable, zero expected
+constraints/candidates/facts/diagnostics/deferred reasons, and one normalized-
+reflexive `Checked` type assertion without object/set coercion. Exact-route, per-
+link removal/reorder, complete-reverse, connected-eighth, structural/provenance
+near misses including unrelated local/imported/ambiguous asserted heads,
+`BuiltinSet`/canonical mutable corruption, immutable-output validation, and a
+real frontend/resolver sidecar protect active count 148. Set-terminal/other-
+depth/imported/attributed/argument-bearing/other asserted heads, reachability/
+widening/`qua`, declaration/theorem acceptance, truth/facts, closure/order,
+`formula_statement`, proof, CoreIr, ControlFlowIr, VC, broader formula/child-
+graph semantics, and general unbounded chains receive no credit.
+
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

@@ -1511,6 +1511,28 @@ reachability/widening/`qua`, declaration or theorem acceptance, truth/facts,
 closure/order, broader term/formula/child-graph semantics, proof, or downstream
 IR.
 
+Task 200 is restricted to the exact active seven-expansion object-terminal same-
+`ChainObjectMode6` asserted-head source with `BaseObjectMode -> object`, six
+ordered links through `ChainObjectMode6 -> ChainObjectMode5`, one
+`ChainObjectMode6` reserve, and
+`LongLocalObjectModeAssertedHeadPayloadBoundary: x is ChainObjectMode6;`. The
+active route consumes seven real AST-derived expansions and preserves
+independent raw reserve-subject and formula-side asserted-type sites/ranges for
+the same resolved symbol. It accepts only ordinal 1 resolving to `BindingId(0)`,
+three known type entries normalizing to one `BaseObjectModeDef` RHS-anchored
+builtin-object identity, one `Inferred` variable, zero expected constraints/
+candidates/facts/diagnostics/deferred reasons, and one normalized-reflexive
+`Checked` assertion without object/set coercion. Exact, per-link removal/
+reorder, complete-reverse, connected-eighth, structural, provenance,
+`BuiltinSet`/canonical corruption, immutable-output, route-isolation, and real
+frontend/resolver-sidecar tests guard all seven links and reject unrelated
+local, imported, and ambiguous asserted heads. Five shared backlinks plus one
+dedicated trace row protect active runner 148 without rebaselining an existing
+expectation. This does not activate set-terminal/other-depth/imported/
+attributed/argument-bearing/other asserted heads, reachability/widening/`qua`,
+declaration or theorem acceptance, truth/facts, closure/order, broader term/
+formula/child-graph semantics, proof, or downstream IR.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

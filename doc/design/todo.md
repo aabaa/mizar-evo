@@ -1176,6 +1176,30 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    semantics, and downstream payloads remain deferred; Step 5 remains active,
    Steps 6/7 remain deferred, and no checker source or module-layout change was
    required,
+   task 200 adds the exact seven-expansion object-terminal same-`ChainObjectMode6`
+   asserted-head bridge by composing Tasks 74/179's real object-terminal
+   producer with Tasks 187/196/198's formula-side same-symbol asserted-head
+   consumer. This `test_gap`, narrow `source_drift`, and `design_drift` slice
+   accepts only `BaseObjectMode -> object`, six ordered local links through
+   `ChainObjectMode6 -> ChainObjectMode5`, `reserve x for ChainObjectMode6`, and
+   theorem `LongLocalObjectModeAssertedHeadPayloadBoundary: x is
+   ChainObjectMode6;`; resolves ordinal 1 to `BindingId(0)`; preserves distinct
+   raw subject/asserted sites and ranges; consumes all seven AST-derived
+   expansions; interns one `BaseObjectModeDef` RHS-anchored builtin-object
+   identity across three known type entries; and records one inferred variable,
+   zero constraints/candidates/facts/diagnostics/deferred reasons, and one
+   normalized-reflexive checked type assertion without object/set coercion.
+   Five shared backlinks, one dedicated row, per-link removal/reorder, complete-
+   reverse/connected-eighth/structural/provenance near misses including unrelated
+   local/imported/ambiguous asserted heads, `BuiltinSet`/canonical corruption and
+   immutable-output guards, route isolation, and a real frontend/resolver sidecar
+   protect active case 148 within 363 cases and 327 requirements without changing
+   an existing expectation. Set-terminal/other-depth/imported/attributed/
+   argument-bearing/other asserted heads, reachability/widening/`qua`, declaration/
+   theorem acceptance, truth/facts, closure/order, broader term/formula/child-graph
+   semantics, proof/CoreIr/ControlFlowIr/VC, general unbounded chain semantics, and
+   downstream payloads remain deferred; Step 5 remains active, Steps 6/7 remain
+   deferred, and no checker source or module-layout change was required,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

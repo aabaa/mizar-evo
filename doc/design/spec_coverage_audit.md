@@ -1829,6 +1829,35 @@ general unbounded chain semantics, and downstream payloads receive no credit.
 Step 5 remains active; Steps 6 and 7 remain deferred. No checker source or
 module-layout update was required.
 
+Task200 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 200 classifies
+the exact seven-expansion object-terminal same-`ChainObjectMode6` asserted-head
+seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`.
+It composes Tasks 74/179's real seven-expansion object-terminal producer with
+Tasks 187/196/198's formula-side same-symbol asserted-head consumer. Current
+credit is limited to `BaseObjectMode -> object`, six ordered local links through
+`ChainObjectMode6 -> ChainObjectMode5`, `reserve x for ChainObjectMode6`,
+theorem `LongLocalObjectModeAssertedHeadPayloadBoundary: x is
+ChainObjectMode6;`, ordinal 1 resolving to `BindingId(0)`, distinct raw subject/
+asserted sites and ranges, all seven AST-derived expansions, three known type
+entries normalizing to one `BaseObjectModeDef` RHS-anchored builtin-object
+identity, one inferred variable, zero expected constraints/candidates/facts/
+diagnostics/deferred reasons, and one normalized-reflexive checked type
+assertion without object/set coercion. Five shared backlinks plus one dedicated
+row, production routing, isolated per-link removal/reorder, complete-reverse/
+connected-eighth/structural/provenance near misses including unrelated local/
+imported/ambiguous asserted heads, `BuiltinSet`/canonical corruption and
+immutable-output guards, and a real frontend/resolver sidecar protect active
+runner 148. The repository plan now contains 363 cases and 327 requirements
+without changing an existing expectation. Set-terminal/other-depth/imported/
+attributed/argument-bearing/other asserted heads, reachability/widening/`qua`,
+declaration/theorem acceptance, truth/facts, closure/order, broader term/
+formula/child-graph semantics, proof/CoreIr/ControlFlowIr/VC, general unbounded
+chain semantics, and downstream payloads receive no credit. Step 5 remains
+active; Steps 6 and 7 remain deferred. No checker source or module-layout
+update was required.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |
