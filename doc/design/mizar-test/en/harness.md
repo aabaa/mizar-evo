@@ -1246,6 +1246,25 @@ head, and general-chain coverage remain uncredited. Five shared trace backlinks
 plus one dedicated row protect active count 133. No module layout update was
 required.
 
+Task 186 adds the exact two-edge set-terminal same-outer-mode asserted-head
+pass case. The route accepts only ordered definitions
+`BaseTwoEdgeModeAssertedHead -> set`, `MiddleTwoEdgeModeAssertedHead ->
+BaseTwoEdgeModeAssertedHead`, and `OuterTwoEdgeModeAssertedHead ->
+MiddleTwoEdgeModeAssertedHead`, a matching outer-mode reserve, and exact
+`TwoEdgeLocalModeAssertedHeadPayloadBoundary: x is
+OuterTwoEdgeModeAssertedHead`. It retains distinct reserve/asserted ranges for
+the same symbol, consumes three real expansions, resolves ordinal 1 to
+`BindingId(0)`, interns three known entries to one terminal-base-RHS builtin-set
+identity, and requires one `Inferred` variable plus one fact/deferred-free
+normalized-reflexive `Checked` assertion without reachability, widening, or
+`qua`. Exact/near-miss, corruption, route-order, and real frontend/resolver-
+sidecar guards reject structural chain failures, imported/ambiguous provenance,
+collapsed provenance, and builtin-object corruption. Five shared plus one
+dedicated trace row protect active count 134. Object/deeper/imported semantics,
+declaration/attribute acceptance, broader terms/formulas/child graphs, truth/
+facts, proof/CoreIr/ControlFlowIr/VC, and general chain semantics remain
+uncredited. No module layout update is required.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

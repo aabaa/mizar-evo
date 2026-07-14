@@ -1194,6 +1194,19 @@ frontend/resolver sidecar が active count 133 を保護する。declaration/att
 acceptance、truth/fact、closure/order、theorem/proof/CoreIr/ControlFlowIr/VC、
 set-terminal/deeper/他 asserted-head chain、general chain semantics は credit
 しない。
+task 186 は exact active two-edge set-terminal same-outer-mode formula-side
+asserted-head row `TwoEdgeLocalModeAssertedHeadPayloadBoundary: x is
+OuterTwoEdgeModeAssertedHead;` を Chapter 3/4/7/13/14.2.3/16 と dedicated checker
+bridge reference とともに追加する。current credit は real expansion 3 本、同じ
+resolved outer symbol 向けの独立した raw reserve-subject/formula-side asserted
+input、ordinal 1 の `BindingId(0)`、terminal base-definition-RHS builtin-set
+identity 1 個へ intern する known type entry 3 個、1 inferred term、reachability、
+widening、`qua` を用いない 1 fact/deferred-free normalized-reflexive checked type
+assertion だけに限定する。shared backlink 5 件と dedicated row、production
+routing、exact/near-miss/corruption guard、real frontend/resolver sidecar が active
+count 134 を保護する。declaration/attribute acceptance、truth/fact、closure/order、
+theorem/proof/CoreIr/ControlFlowIr/VC、object-terminal/deeper/imported/他 asserted-
+head chain、general chain semantics は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

@@ -1242,6 +1242,36 @@ broader term/formula、child graph、theorem/proof/Core/ControlFlow/VC、deeper/
 asserted head、general chain semantics は open のままである。module layout 更新は
 不要である。
 
+Task 186 MC-G020 current-state override: exact two-edge set-terminal same-outer-
+mode asserted head を `spec_gap` ではなく `test_gap`、narrow `source_drift`、
+`design_drift` と分類する。Chapter 3、4、7、13、14.2.3、16 は `mode
+BaseTwoEdgeModeAssertedHeadDef: BaseTwoEdgeModeAssertedHead is set;`、`mode
+MiddleTwoEdgeModeAssertedHeadDef: MiddleTwoEdgeModeAssertedHead is
+BaseTwoEdgeModeAssertedHead;`、`mode OuterTwoEdgeModeAssertedHeadDef:
+OuterTwoEdgeModeAssertedHead is MiddleTwoEdgeModeAssertedHead;` を含む ordered
+definition block 3 個、`OuterTwoEdgeModeAssertedHead` の reserve 1 個、
+`TwoEdgeLocalModeAssertedHeadPayloadBoundary: x is
+OuterTwoEdgeModeAssertedHead;` を直接支える。task 72 は real two-edge expansion
+producer、tasks 148/184 は normalized set consumer と same-symbol formula-side
+asserted-head seam、task 185 は object-terminal sibling guard を提供する。exact
+route は同じ resolved outer symbol 向けの distinct raw reserve-subject/formula-
+side asserted site/range、real expansion 3 個、ordinal 1 の `BindingId(0)`、terminal
+`BaseTwoEdgeModeAssertedHead` definition RHS builtin-set identity 1 個へ intern
+する known type entry 3 個、reachability、widening、`qua` を用いない 1
+`Inferred` term と 1 fact/deferred-free normalized-reflexive `Checked` formula を
+保持しなければならない。exact/near-miss/corruption、production-route、real
+frontend/resolver-sidecar guard は各 missing expansion、wrong link/terminal/order/
+depth、duplicate、forward/recovered/contextual/parameterized/argument-bearing/
+attributed definition、direct/one-edge/deeper/object-terminal shape、non-exact
+reserve/formula、wrong subject、builtin/base/middle/other/attributed/argument-
+bearing asserted head、imported/ambiguous provenance、recovery、extra item、
+collapsed provenance、builtin-object output corruption を reject する。shared
+trace backlink 5 個と dedicated row 1 個が existing expectation を rebaseline
+せず active runner 134 を保護する。object-terminal/deeper/
+imported asserted head、declaration/attribute acceptance、broader term/formula/
+child graph、truth/fact、theorem/proof/Core/ControlFlow/VC、general chain
+semantics は open のままである。module layout 更新は不要である。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

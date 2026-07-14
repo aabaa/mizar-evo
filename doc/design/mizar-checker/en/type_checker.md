@@ -1393,6 +1393,33 @@ does not credit declaration or attribute acceptance, broader terms/formulas,
 child graphs, truth/facts, closure/order, theorem/proof/CoreIr/ControlFlowIr/VC,
 deeper/other asserted-head chains, or general chain semantics. No module layout
 update is required.
+Task 186 adds only the two-edge set-terminal same-outer-mode asserted-head
+slice. The exact source contains three ordered definition blocks with `mode
+BaseTwoEdgeModeAssertedHeadDef: BaseTwoEdgeModeAssertedHead is set;`, `mode
+MiddleTwoEdgeModeAssertedHeadDef: MiddleTwoEdgeModeAssertedHead is
+BaseTwoEdgeModeAssertedHead;`, and `mode OuterTwoEdgeModeAssertedHeadDef:
+OuterTwoEdgeModeAssertedHead is MiddleTwoEdgeModeAssertedHead;`, one outer-mode
+reserve, and only `TwoEdgeLocalModeAssertedHeadPayloadBoundary: x is
+OuterTwoEdgeModeAssertedHead;`. The producer retains distinct raw reserve-
+subject and formula-side asserted type-expression inputs with separate sites/
+ranges and the same resolved outer-mode symbol. Three real AST-derived
+expansions must normalize all three known type entries to one builtin-set
+identity canonically anchored at the `BaseTwoEdgeModeAssertedHead` definition
+RHS. The prepared consumer resolves ordinal 1 to `BindingId(0)`, records one
+`Inferred` variable and one fact/deferred-free normalized-reflexive `Checked`
+formula, and invokes neither reachability, widening, nor `qua`. Exact, near-
+miss, corruption, route-order, and real frontend/resolver-sidecar guards must
+reject each missing expansion, wrong links/terminal/order/depth, duplicates,
+forward/recovered/contextual/parameterized/argument-bearing/attributed
+definitions, direct/one-edge/deeper/object-terminal shapes, non-exact reserves/
+formulas, wrong subjects, builtin/base/middle/other/attributed/argument-bearing
+asserted heads, imported or ambiguous provenance, recovery, extra items,
+collapsed provenance, and builtin-object output corruption. Five shared trace
+backlinks plus one dedicated row protect active runner 134. This task
+does not credit object-terminal/deeper/imported asserted heads, declaration or
+attribute acceptance, broader terms/formulas/child graphs, truth/facts,
+closure/order, theorem/proof/CoreIr/ControlFlowIr/VC, or general chain
+semantics. No module layout update is required.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

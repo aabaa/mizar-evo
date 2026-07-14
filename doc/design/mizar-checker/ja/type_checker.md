@@ -1321,6 +1321,32 @@ active runner 133 を保護する。declaration/attribute
 acceptance、broader term/formula、child graph、truth/fact、closure/order、theorem/
 proof/CoreIr/ControlFlowIr/VC、deeper/他 asserted-head chain、general chain
 semantics は credit しない。module layout 更新は不要である。
+task 186 は two-edge set-terminal same-outer-mode asserted-head slice だけを追加する。
+exact source は `mode BaseTwoEdgeModeAssertedHeadDef:
+BaseTwoEdgeModeAssertedHead is set;`、`mode MiddleTwoEdgeModeAssertedHeadDef:
+MiddleTwoEdgeModeAssertedHead is BaseTwoEdgeModeAssertedHead;`、`mode
+OuterTwoEdgeModeAssertedHeadDef: OuterTwoEdgeModeAssertedHead is
+MiddleTwoEdgeModeAssertedHead;` を含む ordered definition block 3 個、outer-mode
+reserve 1 個、`TwoEdgeLocalModeAssertedHeadPayloadBoundary: x is
+OuterTwoEdgeModeAssertedHead;` だけを含む。producer は separate site/range と同じ
+resolved outer-mode symbol を持つ distinct raw reserve-subject/formula-side
+asserted type-expression input を保持する。real AST-derived expansion 3 個は known
+type entry 3 個すべてを `BaseTwoEdgeModeAssertedHead` definition RHS に canonical
+anchor された builtin-set identity 1 個へ normalize しなければならない。
+consumer は ordinal 1 を `BindingId(0)` に解決し、1 `Inferred` variable と 1
+fact/deferred-free normalized-reflexive `Checked` formula を記録し、reachability、
+widening、`qua` を起動してはならない。exact/near-miss/corruption/route-order/
+real frontend-resolver sidecar guard は各 missing expansion、wrong link/terminal/
+order/depth、duplicate、forward/recovered/contextual/parameterized/argument-
+bearing/attributed definition、direct/one-edge/deeper/object-terminal shape、non-
+exact reserve/formula、wrong subject、builtin/base/middle/other/attributed/
+argument-bearing asserted head、imported/ambiguous provenance、recovery、extra
+item、collapsed provenance、builtin-object output corruption を reject する。
+shared trace backlink 5 個と dedicated row 1 個が active runner 134 を保護する。
+object-terminal/deeper/imported asserted head、declaration/attribute acceptance、
+broader term/formula/child graph、truth/fact、closure/order、theorem/proof/CoreIr/
+ControlFlowIr/VC、general chain semantics は credit しない。module layout 更新は
+不要である。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

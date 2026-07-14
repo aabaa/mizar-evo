@@ -1198,6 +1198,24 @@ term/formula/child graph、truth/fact、theorem/proof/CoreIr/ControlFlowIr/VC、
 deeper/他 asserted head、general chain coverage は credit しない。module layout
 更新は不要だった。
 
+task 186 は exact two-edge set-terminal same-outer-mode asserted-head pass case
+を追加する。route は `BaseTwoEdgeModeAssertedHead -> set`、
+`MiddleTwoEdgeModeAssertedHead -> BaseTwoEdgeModeAssertedHead`、
+`OuterTwoEdgeModeAssertedHead -> MiddleTwoEdgeModeAssertedHead` の ordered
+definition、matching outer-mode reserve、exact
+`TwoEdgeLocalModeAssertedHeadPayloadBoundary: x is
+OuterTwoEdgeModeAssertedHead` だけを受理する。同じ symbol 向けの distinct
+reserve/asserted range、real expansion 3 個、ordinal 1 の `BindingId(0)`、terminal
+base RHS builtin-set identity 1 個へ intern する known entry 3 個、reachability、
+widening、`qua` を用いない 1 `Inferred` variable と 1 fact/deferred-free
+normalized-reflexive `Checked` assertion を要求する。exact/near-miss、corruption、
+route-order、real frontend/resolver-sidecar guard は structural chain failure、
+imported/ambiguous provenance、collapsed provenance、builtin-object corruption
+を reject する。shared 5 + dedicated 1 trace row が active count 134 を保護する。
+object/deeper/imported semantics、declaration/attribute acceptance、broader
+term/formula/child graph、truth/fact、proof/CoreIr/ControlFlowIr/VC、general chain
+semantics は credit しない。module layout 更新は不要である。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

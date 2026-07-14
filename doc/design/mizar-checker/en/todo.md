@@ -3341,6 +3341,28 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 56, 147, 183, and 184. Refs: Step 5; mizar-test task 10;
       specs 3, 4, 7, 13, 14, and 16.
 
+186. **Add exact two-edge formula-side local-mode asserted-head checker bridge.** [x]
+    - Close only three ordered definitions: `BaseTwoEdgeModeAssertedHead` is
+      `set`, `MiddleTwoEdgeModeAssertedHead` is `BaseTwoEdgeModeAssertedHead`,
+      and `OuterTwoEdgeModeAssertedHead` is `MiddleTwoEdgeModeAssertedHead`;
+      reserve `x` for the outer mode and check only
+      `TwoEdgeLocalModeAssertedHeadPayloadBoundary: x is
+      OuterTwoEdgeModeAssertedHead;`.
+    - Acceptance: retain distinct reserve/asserted sites and ranges for the
+      same outer symbol, consume three real expansions, resolve ordinal 1 to
+      `BindingId(0)`, normalize three known entries to one terminal-base-RHS
+      builtin-set identity, and produce one `Inferred` term plus one fact/
+      deferred-free normalized-reflexive `Checked` assertion without
+      reachability, widening, or `qua`. Require exact/near-miss/corruption/
+      real-sidecar guards, including imported/ambiguous provenance; raise
+      active runner 133 to 134 with five shared and one dedicated trace row.
+      Keep object/deeper/imported semantics, declarations/attributes, broader
+      terms/formulas/child graphs, truth/facts, proof/Core/ControlFlow/VC, and
+      general chain semantics deferred. No module layout update is required.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 72, 148, 184, and 185. Refs: Step 5; mizar-test task 10;
+      specs 3, 4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

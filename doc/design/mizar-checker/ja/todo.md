@@ -3151,6 +3151,26 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 56、147、183、184。参照: Step 5、mizar-test task 10、specs 3、
       4、7、13、14、16。
 
+186. **Two-edge formula-side local-mode asserted-head checker bridge を追加する。** [x]
+    - `BaseTwoEdgeModeAssertedHead` is `set`、`MiddleTwoEdgeModeAssertedHead` is
+      `BaseTwoEdgeModeAssertedHead`、`OuterTwoEdgeModeAssertedHead` is
+      `MiddleTwoEdgeModeAssertedHead` の ordered definition 3 個だけを閉じる。
+      outer mode に `x` を reserve し、`TwoEdgeLocalModeAssertedHeadPayloadBoundary:
+      x is OuterTwoEdgeModeAssertedHead;` だけを check する。
+    - Acceptance: 同じ outer symbol 向けの distinct reserve/asserted site/range、
+      real expansion 3 個、ordinal 1 の `BindingId(0)`、terminal base RHS builtin-
+      set identity 1 個へ normalize する known entry 3 個、reachability、widening、
+      `qua` を用いない 1 `Inferred` term と 1 fact/deferred-free normalized-
+      reflexive `Checked` assertion を保持する。imported/ambiguous provenance を
+      含む exact/near-miss/corruption/real-sidecar guard、shared 5 + dedicated 1
+      trace row を必須とし active runner を 133 から 134 に増やす。object/deeper/
+      imported semantics、declaration/attribute、broader term/formula/child graph、
+      truth/fact、proof/Core/ControlFlow/VC、general chain semantics は deferred の
+      ままとする。module layout 更新は不要である。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 72、148、184、185。参照: Step 5、mizar-test task 10、specs 3、
+      4、7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:
