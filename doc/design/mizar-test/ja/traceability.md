@@ -1623,3 +1623,8 @@ task 202 は shared Chapter 4/13/14.2.3/16 reference 4 件、shared Task 56 chai
 ## task 203 traceability
 
 task 203 は shared Chapter 4/7/13/14.2.3/16 reference 5 件と dedicated checker reference 1 件を持つ exact two-edge set-terminal immediate-radix active row 1 件を追加する。credit は real expansion 3 個、distinct Outer/Middle symbol/site/range、ordinal 1 / `BindingId(0)`、Base-definition-RHS `BuiltinSet` 1 個へ normalize する known entry 3 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個だけに限定する。exact/corruption/order/duplicate/spelling/imported/ambiguous/deeper coverage、real Tasks 122/148/149/186/187/201/202 isolation、immutable output、real sidecar が active count 151 を保護する。plan は既存 expectation を rebaseline せず 366 cases / 330 requirements を持ち、two-hop Base assertion と broader semantics は credit しない。
+
+
+## task 204 traceability
+
+task 204 は shared Chapter 4/7/13/14.2.3/16 reference 5 件と dedicated checker reference 1 件を持つ exact two-edge object-terminal immediate-radix active row 1 件を追加する。credit は real object expansion 3 個、distinct Outer/Middle symbol/site/range、ordinal 1 / `BindingId(0)`、Base-definition-RHS `BuiltinObject` 1 個へ normalize する known entry 3 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個だけに限定し、object/set coercion は行わない。exact/corruption/order/duplicate/spelling/imported/ambiguous/deeper coverage、real Tasks 189/145/147/149/187/202 および set Tasks 148/186/203 isolation、immutable output、real sidecar が active count 152 を保護する。plan は既存 expectation を rebaseline せず 367 cases / 331 requirements を持ち、two-hop Base assertion と broader semantics は credit しない。

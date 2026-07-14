@@ -1,0 +1,15 @@
+definition
+  mode BaseTwoEdgeObjectModeRadixAssertedHeadDef: BaseTwoEdgeObjectModeRadixAssertedHead is object;
+end;
+
+definition
+  mode MiddleTwoEdgeObjectModeRadixAssertedHeadDef: MiddleTwoEdgeObjectModeRadixAssertedHead is BaseTwoEdgeObjectModeRadixAssertedHead;
+end;
+
+definition
+  mode OuterTwoEdgeObjectModeRadixAssertedHeadDef: OuterTwoEdgeObjectModeRadixAssertedHead is MiddleTwoEdgeObjectModeRadixAssertedHead;
+end;
+
+reserve x for OuterTwoEdgeObjectModeRadixAssertedHead;
+theorem TwoEdgeLocalObjectModeRadixAssertedHeadPayloadBoundary:
+  x is MiddleTwoEdgeObjectModeRadixAssertedHead;

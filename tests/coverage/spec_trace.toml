@@ -717,6 +717,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_chained_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_radix_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
@@ -1790,6 +1791,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_chained_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_radix_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
@@ -1924,6 +1926,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_chained_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_radix_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
@@ -2272,6 +2275,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_chained_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_radix_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
@@ -3542,6 +3546,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_two_edge_chain_expansion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_radix_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_reserved_variable_inequality_001.expect.toml",
@@ -4605,6 +4610,19 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_asserted_head_001.expect.toml",
 ]
 notes = "Task 187 coverage is limited to the exact two-edge object-terminal same-outer-mode formula-side asserted-head normalized-reflexive type/well-formedness slice. The production route preserves independent raw reserve-subject and formula-side asserted inputs for the same OuterTwoEdgeObjectModeAssertedHead symbol, BindingId(0) at ordinal 1, three real expansions, and three known type entries interning to one terminal-base-definition-RHS builtin-object identity before one inferred variable and one fact/deferred-free checked type assertion without invoking general reachability, widening, qua, or object/set coercion. Exact/near-miss/corruption and a real frontend/resolver sidecar protect active runner 135. Mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, proof, attributed/argument-bearing/imported/set-terminal/deeper/other asserted-head shapes, general chain semantics, and downstream payloads remain uncredited."
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.two_edge_local_object_mode_radix_asserted_head_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 204 exact two-edge object-terminal formula-side immediate-radix local-mode asserted-head checker bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_radix_asserted_head_001.expect.toml",
+]
+notes = "Task 204 coverage is limited to the exact two-edge object-terminal immediate-radix formula-side local-mode asserted-head normalized-reflexive type/well-formedness slice. The production route must preserve independent raw reserve-subject OuterTwoEdgeObjectModeRadixAssertedHead and formula-side asserted MiddleTwoEdgeObjectModeRadixAssertedHead inputs at distinct sites/ranges, require the asserted symbol to equal the outer expansion's immediate radix head, resolve BindingId(0) at ordinal 1, consume three real expansions, and intern three known type entries to one terminal-BaseTwoEdgeObjectModeRadixAssertedHeadDef-RHS builtin-object identity before one inferred variable and one fact/candidate/diagnostic/deferred-free checked type assertion with zero expected constraints, no object/set coercion, and no two-hop/general reachability, widening, or qua. Task 72 owns producer integration; real Tasks 189/145/147/149/187/202 and set-terminal Tasks 148/186/203 must remain bidirectionally isolated. Exact structural/provenance/corruption guards and a real frontend/resolver sidecar must protect active runner 152. Mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, proof, other depths, two-hop Base/imported/attributed/argument-bearing/unrelated asserted-head shapes, broader term/formula/child-graph semantics, general chain semantics, and downstream payloads remain uncredited."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.two_edge_local_object_mode_reserved_variable_equality_source_bridge"

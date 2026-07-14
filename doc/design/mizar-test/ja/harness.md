@@ -2038,3 +2038,8 @@ task 202 route は labeled/ordered bare object-mode definition 2 個、outer res
 ## task 203 two-edge immediate-radix harness contract
 
 task 203 route は labeled/ordered/bare set-terminal mode definition 3 個、Outer reserve 1 個、immediate Middle radix の formula assertion 1 個だけを受理する。全 nonidentity definition order、duplicate/misspelled definition、direct/one-edge/object/deeper shape、imported/ambiguous Base/Middle/Outer provenance、独立した expansion/binding/ordinal/head/site/range/immediate-edge/`BuiltinObject`/canonical corruption を reject する。bidirectional real-route check が Tasks 122/148/149/186/187/201/202 を isolate する。immutable output と real frontend/resolver sidecar が active runner 151 を保護する。harness は two-hop reachability、Base assertion、coercion、acceptance、truth/fact、proof、downstream IR を activate しない。
+
+
+## task 204 two-edge object immediate-radix harness contract
+
+task 204 route は labeled/ordered/bare object-terminal mode definition 3 個、Outer reserve 1 個、immediate Middle radix の formula assertion 1 個だけを受理する。全 nonidentity definition order、duplicate/misspelled definition、direct/one-edge/set-terminal/deeper shape、imported/ambiguous Base/Middle/Outer provenance、独立した expansion/binding/ordinal/head/site/range/immediate-edge/`BuiltinSet`/canonical corruption を reject する。bidirectional real-route check が Tasks 189/145/147/149/187/202 および set Tasks 148/186/203 を isolate する。immutable output と real frontend/resolver sidecar が active runner 152 を保護する。harness は object/set coercion、two-hop reachability、Base assertion、acceptance、truth/fact、proof、downstream IR を activate しない。

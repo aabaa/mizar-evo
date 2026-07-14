@@ -2132,3 +2132,8 @@ The Task 202 route accepts only the two labeled ordered bare object-mode definit
 ## Task 203 Two-Edge Immediate-Radix Harness Contract
 
 The Task 203 route accepts only three labeled, ordered, bare set-terminal mode definitions, one Outer reserve, and one formula assertion of the immediate Middle radix. It rejects every nonidentity definition order, duplicate or misspelled definitions, direct/one-edge/object/deeper shapes, imported or ambiguous Base/Middle/Outer provenance, and independent expansion/binding/ordinal/head/site/range/immediate-edge/`BuiltinObject`/canonical corruption. Bidirectional real-route checks isolate Tasks 122/148/149/186/187/201/202. Immutable output and a real frontend/resolver sidecar protect active runner 151. The harness does not activate two-hop reachability, Base assertion, coercion, acceptance, truth/facts, proof, or downstream IR.
+
+
+## Task 204 Two-Edge Object Immediate-Radix Harness Contract
+
+The Task 204 route accepts only three labeled, ordered, bare object-terminal mode definitions, one Outer reserve, and one formula assertion of the immediate Middle radix. It rejects every nonidentity definition order, duplicate or misspelled definitions, direct/one-edge/set-terminal/deeper shapes, imported or ambiguous Base/Middle/Outer provenance, and independent expansion/binding/ordinal/head/site/range/immediate-edge/`BuiltinSet`/canonical corruption. Bidirectional real-route checks isolate Tasks 189/145/147/149/187/202 and set Tasks 148/186/203. Immutable output and a real frontend/resolver sidecar protect active runner 152. The harness does not activate object/set coercion, two-hop reachability, Base assertion, acceptance, truth/facts, proof, or downstream IR.
