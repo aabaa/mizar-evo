@@ -1182,6 +1182,23 @@ specific corruption tests, and real sidecar protect active runner 127.
 Truth/facts, acceptance, closure/order, theorem/proof/Core/ControlFlow/VC, other
 chains, and general semantics remain open.
 
+Task 179 MC-G020 current-state override: classify the exact builtin-object-terminal
+local-mode long-chain reserved-variable normalized-reflexive type assertion as
+`test_gap`, `source_drift`, and `design_drift`, not `spec_gap`. Chapters 3, 4,
+7, 13, 14.2.3, and 16 support the test-first source; Task 74 provides the real
+AST-bounded object-terminal chain producer and Task 153 the object-normalizing
+type-assertion consumer, while Task 175 supplies the seven-expansion sibling
+guard pattern. Preserve the raw `ChainObjectMode6` subject result, independent
+formula-side builtin-object asserted input, ordinal 1 `BindingId(0)`, all seven
+expansions, one terminal-object-RHS identity, one `Inferred` term, and one fact/
+deferred-free normalized-reflexive checked type assertion without general
+reachability or object/set coercion. The exact route, Task 172 shared guards,
+Task 153's real object consumer/source near misses, Task 175's matched-output
+guards adapted to reject a builtin-set asserted head or corrupted raw subject
+provenance, and a real sidecar protect active runner 128. Widening/`qua`, truth/facts,
+acceptance, closure/order, theorem/proof/Core/ControlFlow/VC, other chains, and
+general semantics remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

@@ -1098,6 +1098,20 @@ membership/object-specific corruption、real sidecar は fail closed する。tr
 downstream/general semantics は deferred のままである。fixture、production
 support、guard が active runner 127 を保護する。
 
+task 179 は builtin-object-terminal long-chain type-assertion sibling を support
+する。production runner は exact definition 7 本、`x` reserve for
+`ChainObjectMode6` 1 個、exact `x is object` だけを受理し、real expansion 7 本、
+raw subject result、独立した formula-side builtin-object asserted input、ordinal
+1 の `BindingId(0)`、terminal-object-RHS identity 1 個、1 `Inferred` term、
+general reachability と object/set coercion を用いない 1 fact/deferred-free
+normalized-reflexive `Checked` type assertion を要求しなければならない。task
+172 shared full structural guard matrix と task 153 の real object consumer/source
+near miss を再利用し、task 175 の matched-output guard は builtin-set asserted
+head と raw subject provenance corruption を reject し、real sidecar は fail
+closed する。truth/
+fact、acceptance、downstream/general semantics は deferred のままである。
+fixture、production support、full guard、real sidecar が active runner 128 を保護する。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

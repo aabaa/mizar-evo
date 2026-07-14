@@ -1271,6 +1271,24 @@ Truth/facts, acceptance, closure/order, theorem/proof/Core/ControlFlow/VC, other
 chain shapes, and general semantics remain deferred. The fixture, expectation,
 six backlinks, production routing, full guards, and real sidecar protect active
 runner 127.
+Task 179 specifies only the matching normalized-reflexive type-assertion sibling
+ending in
+`LongLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;`.
+The production route composes Task 74's AST-bounded chain producer with
+Task 153's object-normalizing type-assertion consumer, consumes all seven real
+expansions, preserves the raw `ChainObjectMode6` subject result and independent
+formula-side builtin-object asserted input, resolves ordinal 1 `BindingId(0)`,
+and normalizes both roles to one terminal-`BaseObjectMode`-RHS builtin-object
+identity. It records one `Inferred` term and one fact/deferred-free `Checked`
+type assertion without general reachability or object/set coercion. Task 172's
+shared seven-definition structural guard pattern and Task 153's real object
+consumer/source near misses are reused. Task 175's matched-output guards are
+adapted to reject a builtin-set asserted head and corrupted raw
+`ChainObjectMode6` subject provenance; a real-sidecar test protects the route.
+Widening/`qua`, truth/facts, acceptance, closure/order, theorem/
+proof/Core/ControlFlow/VC, other chain shapes, and general semantics remain
+deferred. The fixture, expectation, seven trace references, production routing,
+full guards, and real sidecar protect active runner 128.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

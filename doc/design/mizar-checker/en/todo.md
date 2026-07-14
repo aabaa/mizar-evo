@@ -3191,6 +3191,24 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 74 and 165. Refs: Step 5; mizar-test task 10; specs 3, 4, 7,
       13, 14.5.3, and 16.
 
+179. **Add exact local-object-mode long-chain type assertion checker bridge.** [x]
+    - Promote only the Task 74 AST-bounded seven-definition object-terminal
+      chain, one `ChainObjectMode6` reserve, and the exact `x is object` theorem
+      label from the test-first fixture through Task 153's real object-
+      normalizing type-assertion consumer.
+    - Acceptance: preserve seven real expansions, the raw `ChainObjectMode6`
+      subject result and independent formula-side builtin-object asserted
+      input, ordinal 1 `BindingId(0)`, one terminal-`BaseObjectMode`-RHS
+      builtin-object identity, one inferred term, and one fact/deferred-free
+      normalized-reflexive checked type assertion without general reachability
+      or object/set coercion. Require full exact/near-miss/corruption/real-
+      sidecar guards; do not fabricate widening/`qua`, truth/facts, acceptance,
+      closure, theorem/proof/CoreIr/ControlFlowIr/VC, or general unbounded
+      semantics.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 74, 153, and 175. Refs: Step 5; mizar-test task 10; specs 3,
+      4, 7, 13, 14.2.3, and 16.
+
 ## Recommended Verification
 
 Run after each task:

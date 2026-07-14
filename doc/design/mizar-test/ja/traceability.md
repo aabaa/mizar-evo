@@ -1123,6 +1123,16 @@ coercion を用いない 1 fact/deferred-free checked membership だけである
 backlink 6 件、production routing、full guard、real sidecar が active count 127 を
 保護する。
 truth/fact と broader semantics は credit しない。
+task 179 は matching exact active sibling row
+`LongLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;`
+を追加し、Chapter 3/4/13/14.2.3/16、structural-chain link、dedicated checker row
+を参照する。intended credit は real expansion 7 本、raw `ChainObjectMode6`
+subject result、独立した formula-side builtin-object asserted input、ordinal 1
+の `BindingId(0)`、terminal-object-RHS identity 1 個、1 inferred term、general
+reachability と object/set coercion を用いない 1 fact/deferred-free normalized-
+reflexive checked type assertion だけである。shared backlink 6 件、dedicated
+row、production routing、full guard、real sidecar が active count 128 を保護する。truth/
+fact、acceptance、broader semantics は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

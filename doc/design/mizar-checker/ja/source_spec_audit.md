@@ -1131,6 +1131,22 @@ membership/object-specific corruption test、real sidecar が active runner 127 
 保護する。truth/fact、acceptance、closure/order、theorem/proof/
 Core/ControlFlow/VC、別 chain、general semantics は open のままである。
 
+Task 179 MC-G020 current-state override: exact builtin-object-terminal local-mode
+long-chain reserved-variable normalized-reflexive type assertion を `spec_gap`
+ではなく `test_gap`、`source_drift`、`design_drift` と分類する。Chapter 3、4、
+7、13、14.2.3、16 が test-first source を支え、task 74 が real AST-bounded
+object-terminal chain producer、task 153 が object-normalizing type-assertion
+consumer、task 175 が seven-expansion sibling guard pattern を提供する。raw
+`ChainObjectMode6` subject result、独立した formula-side builtin-object asserted
+input、ordinal 1 の `BindingId(0)`、real expansion 7 本、terminal-object-RHS
+identity 1 個、1 `Inferred` term、general reachability と object/set coercion を
+用いない 1 fact/deferred-free normalized-reflexive checked type assertion を
+保持する。exact route、task 172 shared guard、task 153 の real object consumer/
+source near miss、builtin-set asserted head または raw subject provenance
+corruption を reject するよう task 175 から適応した matched-output guard、real
+sidecar が active runner 128 を保護する。widening/`qua`、truth/fact、acceptance、closure/order、theorem/proof/
+Core/ControlFlow/VC、別 chain、general semantics は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

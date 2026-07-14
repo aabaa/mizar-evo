@@ -1204,6 +1204,24 @@ sidecar test が route を保護する。truth/fact、acceptance、closure/order
 Core/ControlFlow/VC、別 chain shape、general semantics は deferred のままである。
 fixture、expectation、backlink 6 件、production routing、full guard、real sidecar が
 active runner 127 を保護する。
+task 179 は
+`LongLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;`
+で終わる matching normalized-reflexive type-assertion sibling だけを規定する。
+production route は task 74 の AST-bounded chain producer と task 153 の object-
+normalizing type-assertion consumer を合成し、real expansion 7 本、raw
+`ChainObjectMode6` subject result、独立した formula-side builtin-object asserted
+input、ordinal 1 の `BindingId(0)` を保持し、両 role を terminal
+`BaseObjectMode` RHS builtin-object identity 1 個へ normalize する。
+general reachability と object/set coercion を用いず、1 `Inferred` term と 1
+fact/deferred-free `Checked` type assertion を記録する。task 172 shared seven-
+definition structural guard pattern と task 153 の real object consumer/source
+near miss を再利用する。task 175 の matched-output guard は builtin-set asserted
+head と raw `ChainObjectMode6` subject provenance corruption を reject するよう
+適応し、real-sidecar test が route を保護する。widening/
+`qua`、truth/fact、acceptance、closure/order、theorem/proof/Core/ControlFlow/VC、
+別 chain shape、general semantics は deferred のままである。fixture、expectation、
+trace reference 7 件、production routing、full guard、real sidecar が active
+runner 128 を保護する。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

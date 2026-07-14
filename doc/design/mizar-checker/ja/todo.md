@@ -3011,6 +3011,23 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 74、165。参照: Step 5、mizar-test task 10、specs 3、4、7、13、
       14.5.3、16。
 
+179. **Exact local-object-mode long-chain type assertion checker bridge を追加する。** [x]
+    - task 74 の AST-bounded object-terminal definition chain 7 本、
+      `ChainObjectMode6` reserve 1 個、test-first fixture の exact `x is object`
+      theorem label だけを task 153 の real object-normalizing type-assertion
+      consumer へ渡す。
+    - Acceptance: real expansion 7 本、raw `ChainObjectMode6` subject result と
+      独立した formula-side builtin-object asserted input、ordinal 1 の
+      `BindingId(0)`、terminal `BaseObjectMode` RHS builtin-object identity 1 個、
+      1 inferred term、general reachability と object/set coercion を用いない
+      1 fact/deferred-free normalized-reflexive checked type assertion を保持する。
+      full exact/near-miss/corruption/real-sidecar guard を必須とし、widening/
+      `qua`、truth/fact、acceptance、closure、theorem/proof/CoreIr/ControlFlowIr/
+      VC、general unbounded semantics を捏造しない。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 74、153、175。参照: Step 5、mizar-test task 10、specs 3、4、7、
+      13、14.2.3、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

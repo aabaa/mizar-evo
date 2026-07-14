@@ -1188,6 +1188,16 @@ fact/deferred-free checked membership without object/set coercion. Six
 backlinks, production routing, full guards, and the real sidecar protect active
 count 127.
 Truth/facts and broader semantics receive no credit.
+Task 179 adds the matching exact active sibling row ending in
+`LongLocalObjectModeReservedVariableTypeAssertionPayloadBoundary: x is object;`,
+with Chapter 3/4/13/14.2.3/16 and structural-chain links plus a dedicated checker
+row. Intended credit is seven real expansions, a raw `ChainObjectMode6` subject
+result, an independent formula-side builtin-object asserted input, ordinal 1
+`BindingId(0)`, one terminal-object-RHS identity, one inferred term, and one
+fact/deferred-free normalized-reflexive checked type assertion without general
+reachability or object/set coercion. Six shared backlinks, the dedicated row,
+production routing, full guards, and the real sidecar protect active count 128. Truth/
+facts, acceptance, and broader semantics receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

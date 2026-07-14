@@ -831,6 +831,18 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    backlinks, production routing, full guards, and the real sidecar protect
    active case 127. Truth/facts, downstream payloads, other
    chains, and general semantics remain deferred,
+   task 179 specifies the matching builtin-object-terminal long-chain
+   normalized-reflexive type-assertion sibling by composing task 74's real AST-
+   bounded chain producer with task 153's object-normalizing type-assertion
+   consumer and task 175's seven-expansion sibling guard pattern. It requires
+   the raw `ChainObjectMode6` subject result, independent formula-side builtin-
+   object asserted input, ordinal 1 `BindingId(0)`, seven real expansions, one
+   terminal-object-RHS identity, one inferred term, and one fact/deferred-free
+   checked type assertion without general reachability or object/set coercion.
+   The fixture, six shared backlinks, dedicated row, production routing, full
+   guards, and the real sidecar protect active case 128. Truth/facts,
+   acceptance, downstream payloads, other chains, and
+   general semantics remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

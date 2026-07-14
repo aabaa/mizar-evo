@@ -1386,6 +1386,22 @@ membership without object/set coercion. Six backlinks, production routing, full
 guards, and the real sidecar protect active runner 127. Truth/facts, acceptance, proof/
 Core/ControlFlow/VC, other chains, and general semantics receive no credit.
 
+Task179 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 179 classifies
+the exact builtin-object-terminal local-mode long-chain reserved-variable
+normalized-reflexive type-assertion seam as `test_gap`, `source_drift`, and
+`design_drift`. It composes Task 74's real AST-bounded object-terminal chain
+producer with Task 153's real object-normalizing type-assertion consumer and
+Task 175's seven-expansion sibling guard pattern. Intended credit is the raw
+`ChainObjectMode6` subject result, independent formula-side builtin-object
+asserted input, ordinal 1 `BindingId(0)`, seven real expansions, one terminal-
+object-RHS identity, one inferred term, and one fact/deferred-free normalized-
+reflexive checked type assertion without general reachability or object/set
+coercion. Six shared backlinks, the dedicated row, production routing, full
+guards, and the real sidecar protect active runner 128. Truth/facts, acceptance, proof/
+Core/ControlFlow/VC, other chains, and general semantics receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

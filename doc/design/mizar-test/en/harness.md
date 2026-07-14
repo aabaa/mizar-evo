@@ -1143,6 +1143,21 @@ specific corruption and a real sidecar fail closed. Truth/facts and downstream/
 general semantics remain deferred. The fixture, production support, and guards
 protect active runner 127.
 
+Task 179 supports the builtin-object-terminal long-chain type-assertion
+sibling. The production runner accepts only the exact seven
+definitions, one `x` reserve for `ChainObjectMode6`, and exact `x is object`;
+consumes seven real expansions; retains the raw subject and independent formula-
+side builtin-object asserted input; resolves ordinal 1 `BindingId(0)`; and
+requires one terminal-object-RHS identity, one `Inferred` term, and one fact/
+deferred-free normalized-reflexive `Checked` type assertion without general
+reachability or object/set coercion. Task 172's shared full structural guard
+matrix and Task 153's real object consumer/source near misses are reused; Task
+175's matched-output guards reject a builtin-set asserted head and corrupted raw
+subject provenance, and a real sidecar fails closed.
+Truth/facts, acceptance, downstream/general
+semantics remain deferred. The fixture, production support, full guards, and
+real sidecar protect active runner 128.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent
