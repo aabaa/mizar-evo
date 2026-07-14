@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_chained_local_mode_asserted_head_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_chained_local_mode_asserted_head_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_expansion_chain_source_bridge",
+  "spec.en.checker.type_elaboration.chained_local_mode_asserted_head_source_bridge",
+]
+notes = "Spec-derived Task 184 intent for the exact one-edge set-terminal same-outer-mode formula-side asserted-head chain. The reserve-side subject result and formula-side asserted type retain distinct source sites/ranges while resolving to the same ChainModeAssertedHead symbol. Two real AST-derived expansions normalize all three known type entries to the same builtin-set identity canonically anchored at the BaseModeAssertedHeadDef RHS. The checker resolves x to BindingId(0) at source-order ordinal 1, records one Inferred variable and one fact/deferred-free normalized-reflexive Checked TypeAssertion, and uses no general reachability. This does not credit mode declaration checking/acceptance/inhabitation, widening or qua, truth/facts, implicit closure/order, theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, VC, object-terminal/deeper/attributed/argument-bearing/imported/other asserted heads, or general chain semantics."

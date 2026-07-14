@@ -1,0 +1,10 @@
+definition
+  mode BaseModeAssertedHeadDef: BaseModeAssertedHead is set;
+end;
+
+definition
+  mode ChainModeAssertedHeadDef: ChainModeAssertedHead is BaseModeAssertedHead;
+end;
+
+reserve x for ChainModeAssertedHead;
+theorem ChainedLocalModeAssertedHeadPayloadBoundary: x is ChainModeAssertedHead;

@@ -1158,6 +1158,25 @@ closed する。新規 active pass case は runner を 130 から 131 に
 増やす。declaration acceptance/inhabitation、truth/fact、theorem/proof/CoreIr/
 ControlFlowIr/VC、他 asserted-head family、general semantics は credit しない。
 
+task 184 は exact one-edge set-terminal same-outer-mode asserted-head pass case
+を追加する。production route は `mode BaseModeAssertedHeadDef:
+BaseModeAssertedHead is set;` と `mode ChainModeAssertedHeadDef:
+ChainModeAssertedHead is BaseModeAssertedHead;` を含む ordered definition
+block 2 個、matching outer-mode reserve 1 個、exact `x is ChainModeAssertedHead` だけを
+受理する。同じ resolved outer symbol について distinct raw reserve-
+subject/formula-side asserted site/range を保持し、real expansion 2 個を消費し、
+ordinal 1 を `BindingId(0)` に解決し、known type entry 3 個を terminal base-
+definition-RHS builtin-set identity 1 個へ intern し、general reachability を
+用いず、1 `Inferred` variable と 1 fact/deferred-free normalized-reflexive
+`Checked` type assertion を要求する。exact/near-miss、matched-
+output corruption、route-order、real frontend/resolver-sidecar test は wrong
+link/terminal/order/depth、builtin/base/other asserted head、attribute/argument、
+recovery、extra item、collapsed provenance で fail closed する。
+active pass count は 131 から 132 に増える。declaration acceptance/
+inhabitation、widening/`qua`、truth/fact、closure/order、theorem/proof/CoreIr/
+ControlFlowIr/VC、object/deeper/他 asserted-head chain、general chain semantics は
+credit しない。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

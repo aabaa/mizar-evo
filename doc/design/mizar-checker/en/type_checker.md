@@ -1350,6 +1350,26 @@ reject set terminals, builtin/other asserted heads, chains, attributes,
 arguments, recovery, extra items, and collapsed provenance. Declaration
 acceptance/inhabitation, truth/facts, theorem/proof/CoreIr/ControlFlowIr/VC,
 other asserted-head families, and general semantics remain deferred.
+Task 184 adds only the one-edge set-
+terminal same-outer-mode asserted-head sibling. The exact source contains two
+ordered definition blocks with `mode BaseModeAssertedHeadDef:
+BaseModeAssertedHead is set;` and `mode ChainModeAssertedHeadDef:
+ChainModeAssertedHead is BaseModeAssertedHead;`, one outer-mode reserve, and
+only `ChainedLocalModeAssertedHeadPayloadBoundary: x is
+ChainModeAssertedHead;`. The producer retains independent raw reserve-
+subject and formula-side asserted type-expression inputs with distinct sites/
+ranges and the same resolved outer-mode symbol. Both real AST-derived
+expansions normalize all three known type entries to one builtin-set
+identity canonically anchored at the base definition RHS. The prepared
+consumer resolves ordinal 1 to `BindingId(0)`, records one `Inferred`
+variable and one fact/deferred-free normalized-reflexive `Checked` formula, and
+does not invoke general reachability, widening, or `qua`. Exact, near-miss,
+corruption, route-order, and real frontend/resolver-sidecar guards reject
+wrong links/terminals/order/depth, builtin/base/other asserted heads,
+attributes, arguments, recovery, extra items, and collapsed provenance. This
+task does not credit declaration acceptance/inhabitation, truth/facts,
+closure/order, theorem/proof/CoreIr/ControlFlowIr/VC, object-terminal or deeper
+asserted-head chains, or general chain semantics.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

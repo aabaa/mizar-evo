@@ -1234,6 +1234,20 @@ corruption guards, and the real frontend/resolver sidecar protect active count
 131. Declaration acceptance/inhabitation, truth/facts, theorem/proof/CoreIr/
 ControlFlowIr/VC, other asserted-head families, and general semantics receive
 no credit.
+Task 184 adds the exact active one-edge set-terminal same-outer-mode formula-
+side asserted-head row `ChainedLocalModeAssertedHeadPayloadBoundary: x is
+ChainModeAssertedHead;`, with Chapter 3/4/7/13/14.2.3/16 and a dedicated
+checker bridge reference. Credit is limited to two real expansions,
+independent raw reserve-subject and formula-side asserted inputs for the same
+resolved outer symbol, ordinal 1 `BindingId(0)`, three known type entries
+interned to one terminal-base-definition-RHS builtin-set identity, one inferred
+term, and one fact/deferred-free normalized-reflexive checked type assertion
+without general reachability. Five shared backlinks plus the dedicated row,
+production routing, exact/near-miss/corruption guards, and the real frontend/
+resolver sidecar protect active count 132. Declaration acceptance/inhabitation,
+widening/`qua`, truth/facts, closure/order, theorem/proof/CoreIr/ControlFlowIr/
+VC, object/deeper/other asserted-head chains, and general chain semantics
+receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

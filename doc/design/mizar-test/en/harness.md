@@ -1205,6 +1205,25 @@ from 130 to 131. Declaration acceptance/inhabitation, truth/facts, theorem/
 proof/CoreIr/ControlFlowIr/VC, other asserted-head families, and general
 semantics remain uncredited.
 
+Task 184 adds the exact one-edge set-terminal same-outer-mode asserted-head
+pass case. The production route accepts only two ordered definition blocks
+with `mode BaseModeAssertedHeadDef: BaseModeAssertedHead is set;` and `mode
+ChainModeAssertedHeadDef: ChainModeAssertedHead is BaseModeAssertedHead;`, one
+matching outer-mode reserve, and exact `x is
+ChainModeAssertedHead`. It retains distinct raw reserve-subject and formula-
+side asserted sites/ranges for the same resolved outer symbol, consumes both
+real expansions, resolves ordinal 1 to `BindingId(0)`, and requires three known
+type entries interned to one terminal-base-definition-RHS builtin-set identity,
+one `Inferred` variable, and one fact/deferred-free normalized-reflexive
+`Checked` type assertion without general reachability. Exact/near-miss,
+matched-output corruption, route-order, and real frontend/resolver-sidecar
+tests fail closed for wrong links/terminals/order/depth, builtin/base/other
+asserted heads, attributes/arguments, recovery, extra items, and collapsed
+provenance. The active pass count rises from 131 to 132.
+Declaration acceptance/inhabitation, widening/`qua`, truth/facts, closure/order,
+theorem/proof/CoreIr/ControlFlowIr/VC, object/deeper/other asserted-head chains,
+and general chain semantics remain uncredited.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

@@ -1201,6 +1201,25 @@ guard が active runner 131 を保護する。
 declaration acceptance/inhabitation、truth/fact、theorem/proof/Core/ControlFlow/
 VC、他 asserted head/chain、general semantics は open のままである。
 
+Task 184 MC-G020 current-state override: exact one-edge set-terminal same-outer-mode
+asserted head は `spec_gap` ではなく `test_gap`、narrow `source_drift`、
+`design_drift` である。Chapter 3、4、7、13、14.2.3、16 は
+`mode BaseModeAssertedHeadDef: BaseModeAssertedHead is set;` と `mode
+ChainModeAssertedHeadDef: ChainModeAssertedHead is BaseModeAssertedHead;` を
+含む ordered definition block 2 個、outer-mode reserve 1 個、
+`ChainedLocalModeAssertedHeadPayloadBoundary: x is ChainModeAssertedHead;`
+から成る test-first source を直接支える。task 56 は real one-edge expansion
+producer、tasks 146/182 は normalized set consumer と same-symbol formula-side
+asserted-head producer を提供する。exact route は同じ outer symbol 向けの独立した
+raw reserve-subject/formula-side asserted input、real expansion 2 個、ordinal 1 の
+`BindingId(0)`、terminal base-definition-RHS builtin-set identity 1 個へ intern
+する known type entry 3 個、1 inferred term、general reachability を用いない
+1 fact/deferred-free checked formula を保持する。exact/near-miss/corruption、
+production-route、real sidecar guard が active runner 132 を保護する。
+declaration acceptance/inhabitation、widening/`qua`、truth/fact、closure/order、
+theorem/proof/Core/ControlFlow/VC、object/deeper/他 asserted head、general chain
+semantics は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

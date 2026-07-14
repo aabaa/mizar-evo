@@ -1280,6 +1280,25 @@ sidecar guard は set terminal、builtin/other asserted head、chain、attribute
 argument、recovery、extra item、collapsed provenance を reject する。
 declaration acceptance/inhabitation、truth/fact、theorem/proof/CoreIr/
 ControlFlowIr/VC、他 asserted-head family、general semantics は deferred のままである。
+task 184 は one-edge set-terminal
+same-outer-mode asserted-head sibling だけを追加する。exact source は `mode
+BaseModeAssertedHeadDef: BaseModeAssertedHead is set;` と `mode
+ChainModeAssertedHeadDef: ChainModeAssertedHead is BaseModeAssertedHead;` を
+含む ordered definition block 2 個、outer-mode reserve 1 個、
+`ChainedLocalModeAssertedHeadPayloadBoundary: x is ChainModeAssertedHead;`
+だけを含む。producer は distinct site/range と同じ resolved outer-mode symbol を
+持つ独立した raw reserve-subject/formula-side asserted type-expression input を
+保持する。real AST-derived expansion 2 個は known type entry 3 個
+すべてを base definition RHS に canonical anchor された builtin-set identity 1 個へ
+normalize する。prepared consumer は ordinal 1 を
+`BindingId(0)` に解決し、1 `Inferred` variable と 1 fact/deferred-free
+normalized-reflexive `Checked` formula を記録し、general reachability、widening、
+`qua` を起動しない。exact/near-miss/corruption/route-order/real
+frontend-resolver sidecar guard は wrong link/terminal/order/depth、builtin/base/
+other asserted head、attribute、argument、recovery、extra item、collapsed
+provenance を reject する。declaration acceptance/inhabitation、
+truth/fact、closure/order、theorem/proof/CoreIr/ControlFlowIr/VC、object-terminal/
+deeper asserted-head chain、general chain semantics は credit しない。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

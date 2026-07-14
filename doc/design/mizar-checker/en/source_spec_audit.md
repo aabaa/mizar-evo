@@ -1258,6 +1258,26 @@ active runner 131. Declaration acceptance/
 inhabitation, truth/facts, theorem/proof/Core/ControlFlow/VC, other asserted
 heads/chains, and general semantics remain open.
 
+Task 184 MC-G020 current-state override: the exact one-edge set-terminal same-outer-
+mode asserted head is a `test_gap`, narrow `source_drift`, and `design_drift`,
+not a `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly support the
+test-first source: two ordered definition blocks with `mode
+BaseModeAssertedHeadDef: BaseModeAssertedHead is set;` and `mode
+ChainModeAssertedHeadDef: ChainModeAssertedHead is BaseModeAssertedHead;`, one
+outer-mode reserve, and
+`ChainedLocalModeAssertedHeadPayloadBoundary: x is
+ChainModeAssertedHead;`. Task 56 supplies the real one-edge expansion producer;
+Tasks 146 and 182 supply the normalized set consumer and same-symbol formula-
+side asserted-head producer. The exact route preserves independent raw
+reserve-subject and formula-side asserted inputs for the same outer symbol,
+both real expansions, ordinal 1 `BindingId(0)`, three known type entries
+interned to one terminal-base-definition-RHS builtin-set identity, one inferred
+term, and one fact/deferred-free checked formula without general reachability.
+Exact/near-miss/corruption, production-route, and real sidecar guards protect
+active runner 132. Declaration acceptance/inhabitation, widening/`qua`, truth/facts,
+closure/order, theorem/proof/Core/ControlFlow/VC, object/deeper/other asserted
+heads, and general chain semantics remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

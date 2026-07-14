@@ -880,6 +880,20 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    frontend/resolver sidecar protect active case 131. Declaration acceptance/
    inhabitation, truth/facts, theorem/proof/CoreIr/ControlFlowIr/VC, other
    asserted-head families, and general semantics remain deferred,
+   task 184 adds the exact one-edge set-terminal same-outer-mode formula-side
+   asserted-head bridge by composing task 56's two real AST-derived expansions,
+   task 146's normalized set consumer, and task 182's same-symbol formula-side
+   asserted-head producer. The exact source retains independent raw reserve-
+   subject and formula-side asserted inputs for the same outer mode symbol,
+   ordinal 1 `BindingId(0)`, two real expansions, three known type entries
+   interned to one terminal-base-definition-RHS builtin-set identity, one
+   inferred term, and one fact/deferred-free checked type assertion without
+   general reachability. Five shared backlinks, the dedicated trace row,
+   production routing, exact/near-miss/corruption guards, and a real frontend/
+   resolver sidecar protect active case 132. Declaration acceptance/
+   inhabitation, widening/`qua`, truth/facts, closure/order, theorem/proof/
+   CoreIr/ControlFlowIr/VC, object-terminal/deeper/other asserted-head chains,
+   and general chain semantics remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
