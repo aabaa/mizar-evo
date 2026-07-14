@@ -854,6 +854,19 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    formula type/well-formedness only; falsehood/fact publication, theorem
    acceptance, proof-goal closure, implicit closure/child graph,
    `formula_statement`, proof, CoreIr, ControlFlowIr, and VC remain deferred,
+   task 182 adds the exact direct formula-side local-mode asserted-head bridge
+   by composing task 55's real AST-derived set-terminal expansion producer with
+   tasks 122/138's normalized-reflexive type-assertion consumer. The exact
+   source retains independent raw reserve-subject and formula-side asserted
+   inputs for the same resolved local-mode symbol, ordinal 1 `BindingId(0)`,
+   one real expansion, three known type entries interned to one terminal-
+   definition-RHS builtin-set identity, one inferred term, and one fact/
+   deferred-free checked type assertion without general reachability. Five
+   shared backlinks, the dedicated trace row, production routing, exact/near-
+   miss/corruption guards, and a real frontend/resolver sidecar protect active
+   case 130. Declaration acceptance/inhabitation, widening/`qua`, truth/facts,
+   theorem/proof/CoreIr/ControlFlowIr/VC, other asserted-head families, and
+   general semantics remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

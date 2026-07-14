@@ -1142,6 +1142,18 @@ diagnostic payload である。dedicated row、production route、exact/near-mis
 corruption guard、real sidecar が active count 129 を保護する。falsehood/fact
 publication、theorem acceptance、proof-goal closure、implicit closure/child
 graph、`formula_statement`、proof、CoreIr、ControlFlowIr、VC は credit しない。
+task 182 は exact active formula-side local-mode asserted-head row
+`LocalModeAssertedHeadPayloadBoundary: x is LocalModeAssertedHead;` を Chapter
+3/4/7/13/14.2.3/16 と dedicated checker bridge reference とともに追加する。
+current credit は direct set-terminal real expansion 1 本、同じ local-mode symbol
+へ resolve する独立した raw reserve-subject/formula-side asserted input、ordinal 1
+の `BindingId(0)`、terminal-definition-RHS builtin-set identity 1 個へ intern する
+known type entry 3 個、1 inferred term、general reachability を用いない 1 fact/
+deferred-free normalized-reflexive checked type assertion だけに限定する。shared
+backlink 5 件と dedicated row、production routing、exact/near-miss/corruption
+guard、real frontend/resolver sidecar が active count 130 を保護する。declaration
+acceptance/inhabitation、widening/`qua`、truth/fact、theorem/proof/CoreIr/
+ControlFlowIr/VC、他 asserted-head family、general semantics は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

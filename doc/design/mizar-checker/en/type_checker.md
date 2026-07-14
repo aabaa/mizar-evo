@@ -1316,6 +1316,24 @@ gap. The five existing fail-closed fixtures retain their evidence-query
 expectations; this repair does
 not add a `.miz` case, accept attributed types, provide evidence, or promote
 positive `empty object`.
+Task 182 adds the first formula-side local-mode asserted head. The exact
+source contains a `definition` block with `mode LocalModeAssertedHeadDef:
+LocalModeAssertedHead is set;`, one `reserve x for LocalModeAssertedHead;`, and only
+`LocalModeAssertedHeadPayloadBoundary: x is LocalModeAssertedHead;`. The
+producer preserves two independent raw type-expression inputs: the reserve-
+owned subject result and the formula-owned asserted type have distinct sites
+and ranges while resolving to the same real local-mode symbol. One real AST-
+derived mode expansion normalizes all three known type entries to one
+builtin-set identity canonically anchored at the definition RHS. The prepared
+type-assertion consumer resolves ordinal 1 to `BindingId(0)`, records one
+`Inferred` variable and one fact/deferred-free normalized-reflexive `Checked`
+formula, and uses no general reachability payload. Exact-source, near-miss,
+corruption, production-route, and real parser/resolver-sidecar guards
+reject builtin or other-mode asserted heads, attributed/argument-bearing heads,
+object terminals, chains, recovery, extra items, and collapsed provenance.
+This is type/well-formedness only; mode declaration acceptance/inhabitation,
+widening/`qua`, truth/facts, theorem acceptance, proof/CoreIr/ControlFlowIr/VC,
+other asserted-head families, and general semantics remain deferred.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

@@ -1415,6 +1415,24 @@ formula type/well-formedness only; falsehood/fact publication, theorem
 acceptance, proof-goal closure, implicit closure/child graphs,
 `formula_statement`, proof, CoreIr, ControlFlowIr, and VC receive no credit.
 
+Task182 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 182 classifies
+the exact direct formula-side local-mode asserted-head seam as `test_gap`,
+`source_drift`, and `design_drift`. It composes Task 55's real AST-derived
+set-terminal mode-expansion producer with Tasks 122/138's normalized-reflexive
+type-assertion consumer. Current credit is limited to independent raw reserve-
+subject and formula-side asserted inputs resolving to the same local-mode
+symbol, ordinal 1 `BindingId(0)`, one real expansion, three known type entries
+interned to one terminal-definition-RHS builtin-set identity, one inferred
+term, and one fact/deferred-free checked type assertion without general
+reachability. Five shared
+backlinks plus the dedicated row, production routing, exact/near-miss/
+corruption guards, and the real frontend/resolver sidecar protect active runner
+130. Declaration acceptance/inhabitation, widening/`qua`, truth/facts, theorem/
+proof/CoreIr/ControlFlowIr/VC, object-terminal or chained asserted heads, and
+general semantics receive no credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

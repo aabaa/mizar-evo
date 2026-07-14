@@ -1171,6 +1171,23 @@ formula type/well-formedness only, not falsehood/fact publication, theorem
 acceptance, proof-goal closure, child-graph extraction, `formula_statement`,
 proof, CoreIr, ControlFlowIr, or VC coverage.
 
+Task 182 adds the first formula-side local-mode asserted-head pass case. The
+production route accepts only one `definition` block containing `mode
+LocalModeAssertedHeadDef: LocalModeAssertedHead is set;`, one matching reserve,
+and exact `x is LocalModeAssertedHead`.
+It retains distinct raw reserve-subject and formula-side asserted sites/
+ranges for the same resolved mode symbol, consumes one real expansion, resolves
+ordinal 1 to `BindingId(0)`, and requires three known type entries interned to
+one terminal-RHS builtin-set identity, one `Inferred` variable, and one fact/
+deferred-free normalized-reflexive `Checked` type assertion. Exact/near-miss,
+matched-output corruption, route-order, and real frontend/resolver-sidecar
+tests fail closed for collapsed provenance, other asserted heads, and
+broader definitions/items. The new active pass case raises the runner from 129
+to 130; the real sidecar protects that case. It does not credit declaration
+acceptance/inhabitation,
+widening/`qua`, truth/facts, theorem/proof/CoreIr/ControlFlowIr/VC, child graphs,
+other asserted-head families, or general semantics.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

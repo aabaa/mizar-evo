@@ -1170,6 +1170,22 @@ falsehood/fact publication、theorem acceptance、proof-goal closure、implicit
 closure/child graph、`formula_statement`、proof、CoreIr、ControlFlowIr、VC は
 open のままである。
 
+Task 182 MC-G020 current-state override: exact direct formula-side local-mode
+asserted head は `spec_gap` ではなく `test_gap`、narrow `source_drift`、
+`design_drift` を閉じる。Chapter 3、4、7、13、14.2.3、16 は `mode
+LocalModeAssertedHeadDef: LocalModeAssertedHead is set;` を含む exact definition
+block と test-first source を直接支える。task 55 は
+real direct bare-mode expansion producer、tasks 122/138 は normalized-reflexive
+type-assertion consumer と direct local-mode subject route を提供する。exact source
+は同じ resolved mode 向けの独立した reserve-subject と formula-side asserted raw
+input、real expansion 1 個、ordinal 1 の `BindingId(0)`、terminal-RHS builtin-set
+identity 1 個へ intern する known type entry 3 個、1 inferred term、general
+reachability を用いない 1 fact/deferred-free checked formula を保持する。
+exact/near-miss/corruption、production-route、real sidecar guard が active runner
+130 を保護する。mode declaration acceptance/
+inhabitation、widening/`qua`、truth/fact、theorem/proof/Core/ControlFlow/VC、
+他 asserted head/chain、general semantics は open のままである。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

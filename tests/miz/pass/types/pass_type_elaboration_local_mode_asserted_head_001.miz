@@ -1,0 +1,6 @@
+definition
+  mode LocalModeAssertedHeadDef: LocalModeAssertedHead is set;
+end;
+
+reserve x for LocalModeAssertedHead;
+theorem LocalModeAssertedHeadPayloadBoundary: x is LocalModeAssertedHead;

@@ -1224,6 +1224,24 @@ active runner 129. Falsehood or fact publication, theorem acceptance, proof-
 goal closure, implicit closure/child graphs, `formula_statement`, proof,
 CoreIr, ControlFlowIr, and VC remain open.
 
+Task 182 MC-G020 current-state override: the exact direct formula-side local-
+mode asserted head closes `test_gap`, narrow `source_drift`, and `design_drift`,
+not `spec_gap`.
+Chapters 3, 4, 7, 13, 14.2.3, and 16 directly support the test-first source,
+including the exact definition block containing `mode LocalModeAssertedHeadDef:
+LocalModeAssertedHead is set;`.
+Task 55 supplies the real direct bare-mode expansion producer; Tasks 122 and
+138 supply the normalized-reflexive type-assertion consumer and direct local-
+mode subject route. The exact source preserves independent reserve-subject
+and formula-side asserted raw inputs for the same resolved mode, one real
+expansion, ordinal 1 `BindingId(0)`, three known type entries interned to one
+terminal-RHS builtin-set identity, one inferred term, and one fact/deferred-free
+checked formula without general reachability. Exact/near-miss/corruption,
+production-route, and real sidecar guards protect active runner 130. Mode
+declaration acceptance/inhabitation, widening/`qua`, truth/
+facts, theorem/proof/Core/ControlFlow/VC, other asserted heads/chains, and
+general semantics remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

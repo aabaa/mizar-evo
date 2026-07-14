@@ -3061,6 +3061,27 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 84、85、116、171。参照: Step 5、mizar-test task 10、specs
       3、6、11、12、17。
 
+182. **Exact formula-side local-mode asserted-head checker bridge を追加する。** [x]
+    - 既存 type-assertion matrix が cover しない最小 spec-derived source role として、
+      `mode LocalModeAssertedHeadDef: LocalModeAssertedHead is set;` を含む
+      exact definition block、その mode の reserve 1 個、builtin head ではなく同じ
+      local mode を assert する exact theorem を追加する。
+    - Acceptance: `LocalModeAssertedHeadPayloadBoundary: x is
+      LocalModeAssertedHead;` について、distinct source site/range と同じ resolved
+      local-mode symbol を持つ raw reserve-subject type と独立 formula-side asserted
+      `TypeExpressionInput` を保持する。real AST-derived expansion 1 個を消費し、
+      ordinal 1 を `BindingId(0)` に解決し、known type entry 3 個を terminal-
+      definition-RHS builtin-set identity 1 個へ intern し、general reachability なしで
+      1 inferred variable と 1 fact/deferred-free normalized-reflexive checked type
+      assertion を記録する。exact/near-miss/corruption/real-sidecar guard を必須とする。
+      builtin、other-mode、attributed、argument-bearing、object-terminal、chained、
+      recovered、broader source shape は deferred のままにし、declaration acceptance/
+      inhabitation、widening/`qua`、truth/fact、theorem acceptance、proof/CoreIr/
+      ControlFlowIr/VC、general semantics を主張しない。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 55、122、138。参照: Step 5、mizar-test task 10、specs 3、4、
+      7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

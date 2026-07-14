@@ -3243,6 +3243,29 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 84, 85, 116, and 171. Refs: Step 5; mizar-test task 10;
       specs 3, 6, 11, 12, and 17.
 
+182. **Add exact formula-side local-mode asserted-head checker bridge.** [x]
+    - Add the minimal spec-derived source role not covered by the existing
+      type-assertion matrix: an exact definition block containing `mode
+      LocalModeAssertedHeadDef: LocalModeAssertedHead is set;`, one reserve for
+      that mode, and an exact theorem asserting the same local mode rather than
+      a builtin head.
+    - Acceptance: for `LocalModeAssertedHeadPayloadBoundary: x is
+      LocalModeAssertedHead;`, preserve the raw reserve-subject type and the
+      independent formula-side asserted `TypeExpressionInput` with distinct
+      source sites/ranges but the same resolved local-mode symbol. Consume one
+      real AST-derived expansion, resolve ordinal 1 to `BindingId(0)`, intern
+      three known type entries to one terminal-definition-RHS builtin-set
+      identity, and record one inferred variable plus one fact/deferred-free
+      normalized-reflexive checked type assertion without general reachability.
+      Require exact/near-miss/corruption/real-sidecar guards. Keep builtin,
+      other-mode, attributed, argument-bearing, object-terminal, chained,
+      recovered, and broader source shapes deferred; do not claim declaration
+      acceptance/inhabitation, widening/`qua`, truth/facts, theorem acceptance,
+      proof/CoreIr/ControlFlowIr/VC, or general semantics.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 55, 122, and 138. Refs: Step 5; mizar-test task 10; specs 3,
+      4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

@@ -1125,6 +1125,23 @@ formedness だけであり、falsehood/fact publication、theorem acceptance、p
 goal closure、child-graph extraction、`formula_statement`、proof、CoreIr、
 ControlFlowIr、VC coverage ではない。
 
+task 182 は最初の formula-side local-mode asserted-head pass case を追加する。
+production route は `mode LocalModeAssertedHeadDef: LocalModeAssertedHead is
+set;` を含む `definition` block、matching reserve 1 個、exact `x is
+LocalModeAssertedHead` だけを受理する。
+同じ resolved mode symbol について distinct raw reserve-subject と formula-side
+asserted site/range を保持し、real expansion 1 個を消費し、ordinal 1 を
+`BindingId(0)` に解決し、terminal-RHS builtin-set identity 1 個へ intern する
+known type entry 3 個、1 `Inferred` variable、1 fact/deferred-free normalized-
+reflexive `Checked` type assertion を要求する。exact/near-miss、
+matched-output corruption、route-order、real frontend/resolver-sidecar tests は
+collapsed provenance、他 asserted head、broader definition/item で fail closed
+する。新規 active pass case は runner を 129 から 130 に増やし、
+real sidecar はその case を保護する。declaration acceptance/inhabitation、
+widening/`qua`、truth/fact、theorem/
+proof/CoreIr/ControlFlowIr/VC、child graph、他 asserted-head family、general
+semantics は credit しない。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order
