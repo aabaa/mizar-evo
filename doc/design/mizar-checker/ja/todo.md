@@ -3740,6 +3740,13 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-test` と workspace Rust verification。
     - 依存: tasks 74、153、198、202、204、206、207。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
 
+209. **Exact seven-expansion set-terminal formula-side immediate-radix local-mode asserted-head checker bridge を追加する。** [x]
+    - ordered `BaseMode -> set`、`ChainMode1 -> BaseMode` から `ChainMode6 -> ChainMode5`、`reserve x for ChainMode6`、`LongLocalModeRadixAssertedHeadPayloadBoundary: x is ChainMode5` だけを、Task 74 の real seven-expansion producer、Task 199 の formula consumer、変更しない closed immediate-radix relation を合成して閉じる。Task 175 は既存 builtin asserted-type sibling/owner route と reusable output guard を提供し、expansion producer ではない。
+    - distinct ChainMode6-subject/ChainMode5-asserted symbol/site/range を保持し、real immediate edge を要求し、ordinal 1 を `BindingId(0)` に解決し、expansion 7 個を消費し、known entry 3 個を BaseModeDef-RHS builtin-set identity 1 個へ normalize し、constraint/fact/candidate/diagnostic/deferred 0 個の inferred variable 1 個と checked assertion 1 個を出力する。全 5,039 nonidentity order、各 definition の missing/duplicate/label/spelling/radix/recovery/contextual/parameterized/argument-bearing/attributed probe、non-exact reserve binding/type と extra reserve、formula label/subject/negation/status/recovery/extra-item probe、same `ChainMode6`、multi-hop `ChainMode4` から `BaseMode`、builtin `set`/`object`、local-other、argument-bearing、attributed asserted head、connected eighth edge、unrelated-import positive、全7 symbol の imported/ambiguous substitution、全 expansion removal、独立 binding/ordinal/head/spelling/site/range/immediate-edge/internal-link/`BuiltinObject`/canonical corruption、immutable output、real sidecar、Task 209 実装前の既存 type-assertion owner route 34 件すべてとの bidirectional isolation を要求する。test-first fixture 1 件と shared 5 + dedicated 1 backlink を追加し、既存 expectation を変更せず active runner を 156 から 157、cases を 371 から 372、requirements を 335 から 336 へ増やす。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。multi-hop ChainMode4 から BaseMode、object sibling、imported positive expansion、attributed/argument-bearing head、general reachability/widening/`qua`、declaration/theorem acceptance、truth/fact、proof/Core/ControlFlow/VC、broader semantics は deferred のままとする。Step 5 は active、Steps 6/7 は deferred。checker source/module-layout change は不要であった。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 74、175、199、201、203、205、207、208。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:
