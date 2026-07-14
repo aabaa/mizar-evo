@@ -1603,6 +1603,33 @@ order, theorem acceptance, proof execution, CoreIr/ControlFlowIr/VC/proof
 payloads, shared-range shapes, and broader multiple-reserve object shapes
 remain deferred. No checker source or module-layout change was required.
 
+Task 194 is limited to the exact multiple-reserve-declaration builtin-object
+inequality `reserve x for object; reserve y for object; theorem
+MultipleObjectReserveDeclarationInequalityPayloadBoundary: x <> y;`. The
+production route composes Task 193's real ordered two-item/two-binding/distinct-
+written-object-range handoff with the pre-desugaring builtin-object inequality
+consumer. It resolves source-order uses at ordinals 2 and 3 to `BindingId(0)`
+and `BindingId(1)` and retains four distinct raw result/expected role sites
+whose type inputs preserve the two binding-owned written `object` ranges. All
+four raw inputs are argument/attribute-free `BuiltinObject` values and
+normalize to one known builtin-object identity canonically anchored at the
+earlier `x` reserve range. The immutable checker result contains two
+`Inferred` variables, six known type entries, one known normalized type, two
+operand-owned ordered expected constraints, zero candidates/facts/diagnostics/
+deferred reasons, and one pre-desugaring `Checked` `Inequality`. Exact and
+near-miss tests reject wrong labels, reversed/same/isolated-unknown operands,
+other operators, status/recovery/extra theorems, shared/reordered/mixed/extra
+reserve items, numeral operands, and attributed, argument-bearing, local/
+imported/ambiguous mode or structure heads. Corruption probes reject binding/
+ordinal/range/role/head/raw-source/canonical-source/expected-input or module
+drift, while positive checker-table assertions, route isolation, and a real
+frontend/resolver sidecar guard the active fixture. This is type/well-
+formedness checking only: inequality desugaring/equality truth, object/set
+coercion, facts, implicit closure/order, theorem acceptance, proof execution,
+CoreIr/ControlFlowIr/VC/proof payloads, shared-range shapes, and broader
+multiple-reserve object shapes remain deferred. No checker source or module-
+layout change was required.
+
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

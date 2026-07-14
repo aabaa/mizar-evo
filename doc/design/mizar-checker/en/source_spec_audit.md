@@ -1491,6 +1491,28 @@ ControlFlow/VC, shared-range shapes, and broader multiple-reserve object
 shapes remain open. Step 5 stays active; Steps 6/7 stay deferred. No checker
 source or module-layout change was required.
 
+Task 194 MC-G020 current-state override: exact multiple-reserve-declaration
+builtin-object inequality is a `test_gap`, narrow `source_drift`, and
+`design_drift`, not a `spec_gap`. Chapters 3, 4, 13, 14.5.2, and 16 directly
+support `reserve x for object; reserve y for object; theorem
+MultipleObjectReserveDeclarationInequalityPayloadBoundary: x <> y;`. Task 193
+provides the real ordered two-item/two-binding/distinct-written-object-range
+producer, while tasks 190/192 provide the real pre-desugaring builtin-object
+inequality consumer. The route resolves ordinals 2/3 to `BindingId(0/1)`,
+preserves two binding-owned written `object` ranges across four distinct raw
+result/expected roles, and records one earlier-`x`-range-anchored canonical
+builtin-object identity, two `Inferred` variables, six known type entries, two
+operand-owned ordered expected constraints, and one fact/candidate/diagnostic/
+deferred-free `Checked` inequality. Five shared backlinks plus one dedicated
+row protect active runner 142 without changing an existing expectation.
+Exact structural/provenance near misses, raw/canonical-source and other
+corruption probes, route isolation, immutable-output checks, and a real
+frontend/resolver sidecar guard the contract. Inequality desugaring/equality
+truth, object/set coercion, facts, implicit closure/order, theorem acceptance,
+proof/Core/ControlFlow/VC, shared-range shapes, and broader multiple-reserve
+object shapes remain open. Step 5 stays active; Steps 6/7 stay deferred. No
+checker source or module-layout change was required.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

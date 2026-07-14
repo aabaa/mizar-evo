@@ -1035,6 +1035,26 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    and broader multiple-reserve object shapes remain deferred; Step 5 remains
    active, Steps 6/7 remain deferred, and no checker source or module-layout
    change was required,
+   task 194 adds the exact multiple-reserve-declaration builtin-object
+   inequality bridge by composing Task 193's real ordered two-item/two-binding/
+   distinct-written-object-range producer with tasks 190/192's pre-desugaring
+   builtin-object inequality consumer. This `test_gap`, narrow `source_drift`,
+   and `design_drift` slice accepts only `reserve x for object; reserve y for
+   object; theorem MultipleObjectReserveDeclarationInequalityPayloadBoundary:
+   x <> y;`, resolves source-order ordinals 2/3 to `BindingId(0/1)`, retains two
+   ordered binding-owned written `object` ranges across four distinct raw
+   result/expected roles, interns one canonical builtin-object identity
+   anchored at the earlier `x` range, and records two inferred variables, six
+   known type entries, two ordered constraints, and one fact/candidate/
+   diagnostic/deferred-free pre-desugaring checked inequality. Five shared
+   backlinks, one dedicated row, structural/provenance near misses, corruption
+   and immutable-output guards, route isolation, and a real frontend/resolver
+   sidecar protect active case 142 within 357 cases and 321 requirements.
+   Inequality desugaring/equality truth, object/set coercion, facts, closure/
+   order, declaration/theorem acceptance, proof/CoreIr/ControlFlowIr/VC,
+   shared-range and broader multiple-reserve object shapes remain deferred;
+   Step 5 remains active, Steps 6/7 remain deferred, and no checker source or
+   module-layout change was required,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

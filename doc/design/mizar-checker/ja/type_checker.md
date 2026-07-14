@@ -1537,6 +1537,33 @@ ControlFlowIr/VC/proof payload、shared-range shape、broader multiple-reserve
 object shape は deferred のままである。checker source または module-layout
 change は不要であった。
 
+task 194 は exact multiple-reserve-declaration builtin-object inequality
+`reserve x for object; reserve y for object; theorem
+MultipleObjectReserveDeclarationInequalityPayloadBoundary: x <> y;` だけを対象と
+する。production route は Task 193 の real ordered two-item/two-binding/
+distinct-written-object-range handoff と pre-desugaring builtin-object
+inequality consumer を合成する。source-order use を ordinal 2 と 3 で
+`BindingId(0)` と `BindingId(1)` に解決し、raw type input が binding ごとの
+written `object` range 2 個を保持する distinct result/expected role site 4 個を
+残す。raw input 4 個はいずれも argument/attribute-free `BuiltinObject` であり、
+先行する `x` reserve range を canonical anchor とする known builtin-object
+identity 1 個へ normalize する。immutable checker result は `Inferred`
+variable 2 個、known type entry 6 個、known normalized type 1 個、operand-owned
+ordered expected constraint 2 個、candidate/fact/diagnostic/deferred reason 0
+個、pre-desugaring `Checked` `Inequality` 1 個を含む。exact/near-miss test は
+wrong label、reversed/same/isolated-unknown operand、other operator、status/
+recovery/extra theorem、shared/reordered/mixed/extra reserve item、numeral
+operand、attributed/argument-bearing/local/imported/ambiguous mode/structure
+head を reject する。corruption probe は binding/ordinal/range/role/head/raw-
+source/canonical-source/expected-input/module drift を reject し、positive
+checker-table assertion、route isolation、real frontend/resolver sidecar が
+active fixture を guard する。これは type/well-formedness checking のみで
+あり、inequality desugaring/equality truth、object/set coercion、fact、implicit
+closure/order、theorem acceptance、proof execution、CoreIr/ControlFlowIr/VC/
+proof payload、shared-range shape、broader multiple-reserve object shape は
+deferred のままである。checker source または module-layout change は不要で
+あった。
+
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

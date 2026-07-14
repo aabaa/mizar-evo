@@ -1,0 +1,3 @@
+reserve x for object;
+reserve y for object;
+theorem MultipleObjectReserveDeclarationInequalityPayloadBoundary: x <> y;

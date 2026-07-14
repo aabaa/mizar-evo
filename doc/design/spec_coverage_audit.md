@@ -1664,6 +1664,30 @@ ControlFlowIr/VC, shared-range and broader multiple-reserve object shapes, and
 downstream payloads receive no credit. Step 5 remains active; Steps 6 and 7
 remain deferred. No checker source or module-layout update was required.
 
+Task194 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 194 classifies the exact multiple-
+reserve-declaration builtin-object inequality seam as `test_gap`, narrow
+`source_drift`, and `design_drift`, not `spec_gap`. It composes Task 193's real
+ordered two-item/two-binding/distinct-written-object-range producer with tasks
+190/192's real pre-desugaring builtin-object inequality consumer. Current
+credit is limited to `reserve x for object; reserve y for object; theorem
+MultipleObjectReserveDeclarationInequalityPayloadBoundary: x <> y;`, source-
+order ordinal 2/3 lookups of `BindingId(0/1)`, two ordered binding-owned written
+`object` ranges across four distinct raw result/expected roles, one canonical
+builtin-object identity anchored at the earlier `x` reserve range, two inferred
+variables, six known type entries, two ordered expected constraints, and one
+fact/candidate/diagnostic/deferred-free pre-desugaring checked inequality. Five
+shared backlinks plus one dedicated row, production routing, isolated
+structural/provenance near misses, corruption and immutable-output guards, and
+a real frontend/resolver sidecar protect active runner 142. The repository
+plan now contains 357 cases and 321 requirements. Inequality desugaring/equality
+truth, object/set coercion, facts, closure/order, declaration/theorem
+acceptance, proof/CoreIr/ControlFlowIr/VC, shared-range and broader multiple-
+reserve object shapes, and downstream payloads receive no credit. Step 5
+remains active; Steps 6 and 7 remain deferred. No checker source or module-
+layout update was required.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

@@ -1338,6 +1338,24 @@ runner 141 を保護する。これは equality truth、object/set coercion、fa
 closure/order、theorem/proof acceptance、shared-range shape、downstream payload
 を activate しない。
 
+task 194 は exact active multiple-reserve-declaration builtin-object inequality
+source `reserve x for object; reserve y for object; theorem
+MultipleObjectReserveDeclarationInequalityPayloadBoundary: x <> y;` だけを対象と
+する。active route は Task 193 の ordered two-item/two-binding/distinct-written-
+object-range handoff と pre-desugaring builtin-object inequality consumer を
+合成し、ordinal 2/3 の local lookup と binding ごとの written range 2 個上の
+distinct raw result/expected role 4 個を保持し、先行する `x` range を anchor と
+する canonical builtin-object identity 1 個、`Inferred` variable term 2 個、
+known type entry 6 個、ordered expected constraint 2 個、fact/candidate/
+diagnostic/deferred-free `Checked` inequality 1 個だけを受理する。exact/near-
+miss/corruption と real frontend/resolver-sidecar test は source shape、distinct
+binding と ordered range、lookup ordering、raw role provenance、checker count/
+status、constraint、canonical source、route isolation、wrong builtin-set output
+を guard する。shared backlink 5 個 + dedicated trace row 1 個により既存
+expectation を rebaseline せず active runner 142 を保護する。これは inequality
+desugaring/equality truth、object/set coercion、fact、closure/order、theorem/
+proof acceptance、shared-range shape、downstream payload を activate しない。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

@@ -3347,6 +3347,34 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 48、119、124、188、191。参照: Step 5、mizar-test task 10、
       specs 3、4、13、14、16。
 
+194. **Exact multiple-reserve-declaration builtin-object inequality checker bridge を追加する。** [x]
+    - Task 193 の ordered two-item/two-binding/distinct-object-range producer と
+      real pre-desugaring builtin-object inequality consumer を合成し、`reserve
+      x for object; reserve y for object; theorem
+      MultipleObjectReserveDeclarationInequalityPayloadBoundary: x <> y;` だけを
+      閉じる。
+    - 受入条件: ordinal 2/3 を `BindingId(0/1)` に解決し、source-ordered
+      distinct written `object` range 2 個を distinct raw result/expected role
+      site 4 個に保持する。先行する `x` range を anchor とする builtin-object
+      identity 1 個、`Inferred` variable 2 個、known type entry 6 個、operand-
+      owned ordered constraint 2 個、fact/candidate/diagnostic/deferred-free
+      pre-desugaring `Checked` inequality 1 個を要求する。exact structural/
+      provenance near miss、binding/ordinal/range/role/head/raw-source/
+      canonical-source/expected-input/module corruption、route isolation、
+      positive immutable-output check、real frontend/resolver sidecar を必須と
+      する。test-first active pass fixture 1 件と shared 5 + dedicated 1 backlink
+      を追加し、既存 expectation を変更せず active runner を 141 から 142、
+      cases を 356 から 357、requirements を 320 から 321 へ増やす。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`。`spec_gap` は
+      ない。inequality desugaring/equality truth、object/set coercion、fact、
+      closure/order、declaration/theorem acceptance、proof/Core/ControlFlow/VC、
+      shared-range shape、broader reserve shape は deferred のままとする。
+      Step 5 は active、Steps 6/7 は deferred のまま。checker source と module-
+      layout change は不要であった。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 48、121、124、161、190、192、193。参照: Step 5、mizar-test
+      task 10、specs 3、4、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

@@ -3544,6 +3544,33 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 48, 119, 124, 188, and 191. Refs: Step 5; mizar-test task
       10; specs 3, 4, 13, 14, and 16.
 
+194. **Add exact multiple-reserve-declaration builtin-object inequality checker bridge.** [x]
+    - Close only `reserve x for object; reserve y for object; theorem
+      MultipleObjectReserveDeclarationInequalityPayloadBoundary: x <> y;` by
+      composing Task 193's ordered two-item/two-binding/distinct-object-range
+      producer with the real pre-desugaring builtin-object inequality consumer.
+    - Acceptance: resolve ordinals 2/3 to `BindingId(0/1)`; retain the two
+      source-ordered distinct written `object` ranges in four distinct raw
+      result/expected role sites; intern one builtin-object identity anchored at
+      the earlier `x` range; produce two `Inferred` variables, six known type
+      entries, two ordered operand-owned constraints, and one fact/candidate/
+      diagnostic/deferred-free pre-desugaring `Checked` inequality. Require
+      exact structural/provenance near misses, binding/ordinal/range/role/head/
+      raw-source/canonical-source/expected-input/module corruption, route
+      isolation, positive immutable-output checks, and a real frontend/resolver
+      sidecar. Add one test-first active pass fixture with five shared and one
+      dedicated backlink, raising active runner 141 to 142, cases 356 to 357,
+      and requirements 320 to 321 without changing existing expectations.
+    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
+      no `spec_gap`. Keep inequality desugaring/equality truth, object/set
+      coercion, facts, closure/order, declaration/theorem acceptance, proof/
+      Core/ControlFlow/VC, shared-range shapes, and broader reserve shapes
+      deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker
+      source or module-layout change was required.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 48, 121, 124, 161, 190, 192, and 193. Refs: Step 5;
+      mizar-test task 10; specs 3, 4, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:
