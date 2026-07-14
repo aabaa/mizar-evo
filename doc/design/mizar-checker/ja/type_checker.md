@@ -1459,6 +1459,32 @@ implicit closure/order、theorem acceptance、proof execution、CoreIr/
 ControlFlowIr/VC/proof payload は deferred のままである。checker source または
 module-layout change は不要であった。
 
+task 191 は exact distinct-binding shared-builtin-object equality `reserve x,
+y for object; theorem DistinctReservedObjectVariableEqualityPayloadBoundary:
+x = y;` だけを追加する。production route は real one-item/two-binding
+shared-range reserve handoff と既存 builtin-object binary-formula consumer を
+合成し、source-order ordinal 2/3 の use を `BindingId(0)` と
+`BindingId(1)` に解決し、raw type input が shared written `object` range 1 個
+を保持する distinct result/expected role site 4 個を維持しなければならない。
+raw input 4 個はいずれも argument/attribute-free `BuiltinObject` であり、
+reserve range を canonical anchor とする known builtin-object identity 1 個へ
+normalize する。immutable checker result は `Inferred` variable 2 個、known
+type entry 6 個、known normalized type 1 個、operand-owned ordered expected
+constraint 2 個、candidate/fact/diagnostic/deferred reason 0 個、`Checked`
+`Equality` 1 個を含まなければならない。exact/near-miss test は別 label、
+reversed/same/unknown operand、別 operator、status/recovery/extra item、single/
+extra/separate reserve binding、`set`、mode、structure、attributed、argument-
+bearing、imported、ambiguous reserve head を拒否する。task-local corruption
+probe は collapsed binding identity、ordinal drift、`BuiltinSet` substitution、
+collapsed role、誤った shared source projection、missing expected input を
+拒否し、positive count/status/constraint/canonical-source assertion と shared
+binary-formula output validator は immutable checker table を固定する。real
+frontend/resolver sidecar は active fixture を guard しなければならない。
+これは type/well-formedness checking のみである。equality truth、object/set
+coercion、fact、implicit closure/order、theorem acceptance、proof execution、
+CoreIr/ControlFlowIr/VC/proof payload は deferred のままとする。checker
+source または module-layout change は不要であった。
+
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

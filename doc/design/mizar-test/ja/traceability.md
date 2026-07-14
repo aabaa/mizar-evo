@@ -1265,6 +1265,21 @@ validation、real frontend/resolver sidecar guard が active count 138 を保護
 inequality desugaring/equality truth、object/set coercion、fact、closure/order、
 declaration/theorem acceptance、`formula_statement`、proof、CoreIr、
 ControlFlowIr、VC、downstream payload は credit しない。
+task 191 は exact active distinct-binding shared-builtin-object equality row
+`DistinctReservedObjectVariableEqualityPayloadBoundary: x = y;` を shared な
+Chapter 4/13/14.5.2/16/builtin-type bridge reference 5 件と dedicated checker
+bridge reference 1 件とともに追加する。credit は source-order ordinal 2 と 3
+から解決する `BindingId(0/1)`、両 binding と distinct result/expected role
+site 4 個にまたがる shared written `object` range 1 個、argument/attribute-free
+な raw `BuiltinObject` input 4 個、reserve range を anchor とする canonical
+normalized builtin-object identity 1 個、inferred variable term 2 個、known type
+entry 6 個、ordered expected constraint 2 個、fact/candidate/diagnostic/deferred-
+free な `Checked` equality 1 個だけに限定する。exact-route、structural/
+provenance near-miss、mutable payload-corruption、positive immutable-output
+validation、real frontend/resolver sidecar は active count 139 を保護する。
+equality truth、object/set coercion、fact、closure/
+order、declaration/theorem acceptance、`formula_statement`、proof、CoreIr、
+ControlFlowIr、VC、downstream payload は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

@@ -1333,6 +1333,21 @@ frontend/resolver sidecar guards protect active count 138. Inequality
 desugaring/equality truth, object/set coercion, facts, closure/order,
 declaration/theorem acceptance, `formula_statement`, proof, CoreIr,
 ControlFlowIr, VC, and downstream payloads receive no credit.
+Task 191 adds the exact active distinct-binding shared-builtin-object equality
+row `DistinctReservedObjectVariableEqualityPayloadBoundary: x = y;`, with five
+shared Chapter 4/13/14.5.2/16/builtin-type bridge references plus one dedicated
+checker bridge reference. Credit is limited to source-order ordinals 2 and 3
+resolving to `BindingId(0/1)`, one shared written `object` range across both
+bindings and four distinct result/expected role sites, four raw argument/
+attribute-free `BuiltinObject` inputs, one reserve-range-anchored canonical
+normalized builtin-object identity, two inferred variable terms, six known
+type entries, two ordered expected constraints, and one fact/candidate/
+diagnostic/deferred-free `Checked` equality. Exact-route, structural/provenance
+near-miss, mutable payload-corruption, positive immutable-output validation,
+and a real frontend/resolver sidecar protect active count 139.
+Equality truth, object/set coercion, facts, closure/order, declaration/theorem
+acceptance, `formula_statement`, proof, CoreIr, ControlFlowIr, VC, and
+downstream payloads receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

@@ -981,6 +981,22 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    desugaring/equality truth, object/set coercion, facts, closure/order,
    declaration/theorem acceptance, proof/CoreIr/ControlFlowIr/VC, and broader
    shapes remain deferred,
+   task 191 adds the exact distinct-binding shared-builtin-object equality
+   bridge by composing task 123's real one-item/two-binding shared-range reserve
+   producer with tasks 48/125/188's real builtin-object reserve,
+   normalization, and equality consumer. The route accepts only `reserve x, y
+   for object; theorem DistinctReservedObjectVariableEqualityPayloadBoundary:
+   x = y;`, resolves source-order ordinals 2/3 to `BindingId(0/1)`, preserves
+   one written `object` range across both bindings and four distinct result/
+   expected role sites, interns one reserve-range-anchored canonical builtin-
+   object identity, and records two inferred variables, six known type entries,
+   two ordered constraints, and one fact/candidate/diagnostic/deferred-free
+   checked equality. Five shared backlinks, one dedicated row, structural/
+   provenance near misses, corruption and immutable-output guards, and a real
+   frontend/resolver sidecar protect active case 139. Equality truth,
+   object/set coercion, facts, closure/order, declaration/theorem acceptance,
+   proof/CoreIr/ControlFlowIr/VC, and broader distinct-object shapes remain
+   deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

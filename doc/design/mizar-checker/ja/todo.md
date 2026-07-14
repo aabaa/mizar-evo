@@ -3268,6 +3268,32 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 48、121、125、128、188。参照: Step 5、mizar-test task 10、
       specs 3、4、13、14、16。
 
+191. **Exact distinct-binding shared-builtin-object equality checker bridge を追加する。** [x]
+    - real one-item/two-binding shared-range reserve producer と real builtin-
+      object equality consumer を合成し、`reserve x, y for object; theorem
+      DistinctReservedObjectVariableEqualityPayloadBoundary: x = y;` だけを
+      閉じる。
+    - Acceptance: source-order ordinal 2/3 の use を `BindingId(0/1)` へ
+      解決し、両 binding と distinct operand result/expected role site 4 個に
+      shared written `object` range 1 個を保持する。その reserve range を
+      anchor とする canonical builtin-object identity 1 個、`Inferred`
+      variable 2 個、known type entry 6 個、operand-owned ordered expected
+      constraint 2 個、fact/candidate/diagnostic/deferred-free `Checked`
+      equality 1 個を要求する。exact/near-miss、matched-output、canonical-
+      source、`BuiltinSet` corruption、route-order、real frontend/resolver-
+      sidecar guard を必須とする。test-first active pass fixture 1 件と
+      shared 5 + dedicated 1 trace backlink を追加し、既存 expectation を
+      変更せず active runner を 138 から 139 へ増やす。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`。`spec_gap` は
+      ない。equality truth、object/set coercion、fact、implicit closure/order、
+      declaration/theorem acceptance、proof/Core/ControlFlow/VC、broader
+      distinct-object source shape は deferred のままとする。Step 5 は
+      active、Steps 6/7 は deferred のまま。checker source または module-
+      layout change は不要であった。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 48、123、125、188。参照: Step 5、mizar-test task 10、
+      specs 3、4、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

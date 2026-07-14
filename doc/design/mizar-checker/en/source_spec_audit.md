@@ -1426,6 +1426,27 @@ theorem acceptance, proof/Core/ControlFlow/VC, and broader source shapes remain
 open. Step 5 stays active; Steps 6/7 stay deferred. No checker source or module
 layout update was required.
 
+Task 191 MC-G020 current-state override: exact distinct-binding shared-
+builtin-object equality is `test_gap`, narrow `source_drift`, and
+`design_drift`, not `spec_gap`. Chapters 3, 4, 13, 14.5.2, and 16 directly
+support `reserve x, y for object; theorem
+DistinctReservedObjectVariableEqualityPayloadBoundary: x = y;`. Task 123
+supplies the real one-item/two-binding shared-written-range producer, while
+Tasks 48/125/188 supply the real builtin-object reserve, normalization, and
+equality consumer. The route must resolve ordinals 2/3 to `BindingId(0/1)`,
+preserve one shared written `object` range across both bindings and four
+distinct result/expected role sites, intern one reserve-range-anchored
+canonical builtin-object identity, and record two `Inferred` variables, six
+known type entries, two ordered operand-owned expected constraints, and one
+fact/candidate/diagnostic/deferred-free `Checked` equality. Exact/near-miss,
+matched-output, canonical-source, `BuiltinSet` corruption, route-order, and a
+real frontend/resolver sidecar are present. Five shared trace backlinks plus
+one dedicated row protect active runner 139 without
+changing existing expectations. Equality truth, object/set coercion, facts,
+implicit closure/order, theorem acceptance, proof/Core/ControlFlow/VC, and
+broader distinct-object source shapes remain open. Step 5 stays active; Steps
+6/7 stay deferred. No checker source or module-layout change was required.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin
