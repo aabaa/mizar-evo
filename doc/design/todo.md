@@ -966,6 +966,21 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    protect active case 137. Reachability/widening/`qua`, object/set coercion,
    truth/facts, closure/order, declaration/theorem acceptance, proof/CoreIr/
    ControlFlowIr/VC, and broader shapes remain deferred,
+   task 190 adds the exact builtin-object same-binding pre-desugaring inequality
+   bridge by composing tasks 48/125/188's real written `object` reserve handoff,
+   task 121's exact inequality builder, and task 128's real builtin-object
+   normalization consumer. The route accepts only `reserve x for object;
+   theorem ReservedObjectVariableInequalityPayloadBoundary: x <> x;`, resolves
+   source-order ordinals 1/2 to `BindingId(0)`, preserves four distinct result/
+   expected role sites on the one written type range, interns one canonical
+   builtin-object identity, and records two inferred variables, six known type
+   entries, two ordered constraints, and one fact/candidate/diagnostic/
+   deferred-free checked inequality. Five shared backlinks, one dedicated row,
+   structural/provenance near misses, corruption and immutable-output guards,
+   and a real frontend/resolver sidecar protect active case 138. Inequality
+   desugaring/equality truth, object/set coercion, facts, closure/order,
+   declaration/theorem acceptance, proof/CoreIr/ControlFlowIr/VC, and broader
+   shapes remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

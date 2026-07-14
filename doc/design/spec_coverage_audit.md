@@ -1575,6 +1575,27 @@ theorem acceptance, proof/CoreIr/ControlFlowIr/VC, broader source shapes, and
 downstream payloads receive no credit. Step 5 remains active; Steps 6 and 7
 remain deferred.
 
+Task190 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 190 classifies the exact builtin-
+object same-binding pre-desugaring inequality seam as `test_gap`, narrow
+`source_drift`, and `design_drift`, not `spec_gap`. It composes tasks 48/125/
+188's real written-object reserve handoff, task 121's exact inequality builder,
+and task 128's real builtin-object normalization consumer. Current credit is
+limited to `reserve x for object; theorem
+ReservedObjectVariableInequalityPayloadBoundary: x <> x;`, source-order
+ordinal 1/2 lookups of `BindingId(0)`, four distinct result/expected role sites
+on the one written object range, one canonical builtin-object identity, two
+inferred variables, six known type entries, two ordered expected constraints,
+and one fact/candidate/diagnostic/deferred-free checked inequality. Five shared
+backlinks plus one dedicated row, production routing, structural/provenance
+near misses, corruption and positive immutable-output guards, and a real
+frontend/resolver sidecar protect active runner 138. Inequality desugaring/
+equality truth, object/set coercion, facts, closure/order, declaration/theorem
+acceptance, proof/CoreIr/ControlFlowIr/VC, broader source shapes, and downstream
+payloads receive no credit. Step 5 remains active; Steps 6 and 7 remain
+deferred. No checker source or module-layout update was required.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

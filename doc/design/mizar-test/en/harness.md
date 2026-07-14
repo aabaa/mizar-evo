@@ -1322,6 +1322,22 @@ Five shared backlinks plus one dedicated trace row must protect active runner
 reachability/widening/`qua`, object/set coercion, truth/facts, closure/order,
 theorem/proof acceptance, or downstream payloads.
 
+Task 190 adds only the exact active builtin-object inequality source `reserve x
+for object; theorem ReservedObjectVariableInequalityPayloadBoundary: x <> x;`.
+The active route must reuse the real source-derived object reserve handoff and
+the existing reserved-variable inequality consumer, retain ordinal 1/2 local
+lookups plus four distinct result/expected role sites on the written reserve
+range, and accept only one canonical builtin-object identity, two `Inferred`
+variable terms, six known type entries, two ordered expected constraints, and
+one fact/candidate/diagnostic/deferred-free pre-desugaring `Checked`
+inequality. Exact/near-miss/corruption and real frontend/resolver-sidecar tests
+must guard source shape, binding identity, lookup ordering, role provenance,
+checker counts/status, constraints, canonical source, and wrong builtin-set
+output. Five shared backlinks plus one dedicated trace row must protect active
+runner 138 without rebaselining an existing expectation. This does not
+activate inequality desugaring/equality truth, object/set coercion, facts,
+closure/order, theorem/proof acceptance, or downstream payloads.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

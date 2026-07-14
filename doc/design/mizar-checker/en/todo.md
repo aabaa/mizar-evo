@@ -3440,6 +3440,31 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 48, 122, 125, 145, and 188. Refs: Step 5; mizar-test task
       10; specs 3, 4, 13, 14, and 16.
 
+190. **Add exact builtin-object reserved-variable inequality checker bridge.** [x]
+    - Close only `reserve x for object; theorem
+      ReservedObjectVariableInequalityPayloadBoundary: x <> x;` by reusing
+      the real builtin-object reserve handoff and pre-desugaring inequality
+      checker consumer.
+    - Acceptance: resolve source-order uses at ordinals 1/2 to `BindingId(0)`;
+      preserve four distinct operand result/expected role sites on the one
+      written `object` range; intern one canonical builtin-object identity;
+      produce two `Inferred` variables, six known type entries, two ordered
+      expected constraints, and one fact/candidate/diagnostic/deferred-free
+      `Checked` inequality. Require exact/near-miss, matched-output,
+      canonical-source, `BuiltinSet` corruption, route-order, and real
+      frontend/resolver-sidecar guards. Add one spec-derived active pass
+      fixture with five shared and one dedicated trace backlink, raising
+      active runner 137 to 138 without changing existing expectations.
+    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
+      no `spec_gap`. Keep inequality desugaring/equality truth, object/set
+      coercion, facts, closure/order, theorem acceptance, proof/Core/
+      ControlFlow/VC, and broader source shapes deferred. Step 5 remains
+      active; Steps 6/7 remain deferred. No checker source or module-layout
+      change was required.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 48, 121, 125, 128, and 188. Refs: Step 5; mizar-test task
+      10; specs 3, 4, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

@@ -1497,6 +1497,31 @@ closure/order, theorem acceptance, proof execution, and CoreIr/ControlFlowIr/
 VC/proof payloads remain deferred. No checker source or module-layout change is
 required.
 
+Task 190 adds only the exact builtin-object reserved-variable inequality
+`reserve x for object; theorem
+ReservedObjectVariableInequalityPayloadBoundary: x <> x;`. The production
+route must reuse the real source reserve handoff and the existing reserved-
+variable binary-formula builder, resolve both source-order uses at ordinals 1
+and 2 to `BindingId(0)`, and retain four distinct result/expected role sites
+whose raw type inputs preserve the single written `object` range. All raw
+inputs must be argument/attribute-free `BuiltinObject` values and normalize to
+one known builtin-object identity canonically anchored at the written reserve
+type. The immutable checker result must contain two `Inferred` variables, six
+known type entries, one known normalized type, two ordered operand-owned
+expected constraints, zero candidates/facts/diagnostics/deferred reasons, and
+one pre-desugaring `Checked` `Inequality`. Exact/near-miss tests must reject
+another label, operand, operator, status/recovery/extra item, multiple bindings
+or reserves, and `set`, mode, structure, attributed, argument-bearing,
+imported, or ambiguous reserve heads. Task-local corruption probes must reject
+binding/ordinal drift, `BuiltinSet` substitution, collapsed roles, wrong source
+projection, and a missing expected input; positive count/status/constraint/
+canonical-source assertions plus the shared binary-formula output validator
+must pin immutable checker tables. A real frontend/resolver sidecar must guard
+the active fixture. This is type/well-formedness checking only: inequality
+desugaring/equality truth, object/set coercion, facts, implicit closure/order,
+theorem acceptance, proof execution, and CoreIr/ControlFlowIr/VC/proof payloads
+remain deferred. No checker source or module-layout change was required.
+
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

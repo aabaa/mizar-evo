@@ -1,0 +1,2 @@
+reserve x for object;
+theorem ReservedObjectVariableInequalityPayloadBoundary: x <> x;

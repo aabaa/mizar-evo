@@ -1434,6 +1434,31 @@ implicit closure/order、theorem acceptance、proof execution、CoreIr/ControlFl
 VC/proof payload は deferred のままとする。checker source と module layout の
 変更は不要である。
 
+task 190 は exact builtin-object reserved-variable inequality `reserve x for
+object; theorem ReservedObjectVariableInequalityPayloadBoundary: x <> x;`
+だけを追加する。production route は real source reserve handoff と既存の
+reserved-variable binary-formula builder を再利用し、source-order ordinal 1/2
+の両 use を `BindingId(0)` へ解決し、raw type input が written `object` range
+1 個を保持する distinct result/expected role site 4 個を維持しなければ
+ならない。すべての raw input は argument/attribute-free `BuiltinObject` で、
+written reserve type を canonical anchor とする known builtin-object identity
+1 個へ normalize しなければならない。immutable checker result は
+`Inferred` variable 2 個、known type entry 6 個、known normalized type 1 個、
+ordered operand-owned expected constraint 2 個、candidate/fact/diagnostic/
+deferred reason 0 個、pre-desugaring `Checked` `Inequality` 1 個を含まなければ
+ならない。exact/near-miss test は別 label/operand/operator、status/recovery/
+extra item、multiple binding/reserve、`set`、mode、structure、attributed、
+argument-bearing、imported、ambiguous reserve head を拒否する。task-local
+corruption probe は binding/ordinal drift、`BuiltinSet` substitution、collapsed
+role、wrong source projection、missing expected input を拒否し、positive count/
+status/constraint/canonical-source assertion と shared binary-formula output
+validator が immutable checker table を固定する。real frontend/resolver
+sidecar は active fixture を保護する。これは type/well-formedness checking
+のみであり、inequality desugaring/equality truth、object/set coercion、fact、
+implicit closure/order、theorem acceptance、proof execution、CoreIr/
+ControlFlowIr/VC/proof payload は deferred のままである。checker source または
+module-layout change は不要であった。
+
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event
