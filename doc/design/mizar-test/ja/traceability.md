@@ -1406,6 +1406,27 @@ immutable-output validation、real frontend/resolver sidecar は active count
 truth/fact、closure/order、`formula_statement`、proof、CoreIr、ControlFlowIr、
 VC、broader formula/child-graph semantics、general chain は credit しない。
 
+task 199 は `BaseMode -> set`、`ChainMode6 -> ChainMode5` までの ordered local
+link 6 個、`ChainMode6` reserve 1 個、
+`LongLocalModeAssertedHeadPayloadBoundary: x is ChainMode6;` を持つ exact
+active seven-expansion set-terminal same-`ChainMode6` asserted-head row を、
+shared Chapter 4/13/14.2.3/16 reference 4 件、shared Task 74 structural-chain
+reference 1 件、dedicated checker bridge reference 1 件とともに追加する。credit
+は real AST-derived expansion 7 個、ordinal 1 から解決する `BindingId(0)`、同じ
+symbol の distinct raw reserve-subject/formula asserted-type site/range、
+`BaseModeDef` RHS anchor の `BuiltinSet` identity 1 個へ normalize する known
+type entry 3 個、inferred variable 1 個、expected constraint/candidate/fact/
+diagnostic/deferred reason 0 個、normalized-reflexive `Checked` type assertion 1
+個だけに限定する。exact-route、per-link removal/reorder、complete-reverse、
+connected-eighth、unrelated local/imported/ambiguous asserted head を含む
+structural/provenance near-miss、`BuiltinObject`/canonical mutable corruption、
+immutable-output validation、real frontend/resolver sidecar は active count 147
+を保護する。object-terminal/other-depth/imported/attributed/argument-bearing/
+other asserted head、reachability/widening/`qua`、declaration/theorem acceptance、
+truth/fact、closure/order、`formula_statement`、proof、CoreIr、ControlFlowIr、
+VC、broader formula/child-graph semantics、general unbounded chain は credit
+しない。
+
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

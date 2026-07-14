@@ -1655,6 +1655,27 @@ truth/fact、implicit closure/order、theorem acceptance、broader term/formula/
 child-graph semantics、proof/CoreIr/ControlFlowIr/VC、general chain semantics
 を確立しない。checker source または module-layout change は不要であった。
 
+task 199 は既存の ordered definition `ChainMode6 -> ChainMode5 -> ChainMode4
+-> ChainMode3 -> ChainMode2 -> ChainMode1 -> BaseMode -> set`、`ChainMode6`
+reserve 1 個、`LongLocalModeAssertedHeadPayloadBoundary: x is ChainMode6;` を
+持つ exact seven-expansion set-terminal same-`ChainMode6` asserted-head source
+だけを対象とする。production route は Tasks 74/175 の real seven-expansion
+AST handoff と Tasks 186/195/197 の same-symbol formula-side asserted-head
+consumer を合成する。ordinal 1 を `BindingId(0)` に解決し、同じ symbol の
+raw reserve-subject と formula asserted-type の独立した site/range を保持し、
+local bare argument/attribute/context/recovery-free expansion 7 個だけを消費
+する。known type entry 3 個は `BaseModeDef` RHS を canonical anchor とする
+`BuiltinSet` identity 1 個へ normalize する。immutable result は `Inferred`
+variable 1 個、expected constraint/candidate/fact/diagnostic/deferred reason 0
+個、normalized-reflexive `Checked` `TypeAssertion` 1 個を含む。full-reverse、
+connected-eighth-edge、structural/provenance、mutable-corruption、positive-
+output、route-isolation、real frontend/resolver-sidecar guard が active runner
+147 を保護する。これは mode declaration acceptance、reachability/widening/
+`qua`、assertion truth/fact、implicit closure/order、theorem acceptance、
+broader term/formula/child-graph semantics、proof/CoreIr/ControlFlowIr/VC、
+general unbounded chain semantics を確立しない。checker source または
+module-layout change は不要であった。
+
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

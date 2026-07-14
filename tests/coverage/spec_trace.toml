@@ -718,6 +718,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_chained_local_mode_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_chained_local_mode_reserved_variable_inequality_001.expect.toml",
@@ -1786,6 +1787,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_membership_001.expect.toml",
@@ -1915,6 +1917,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_contradiction_formula_constant_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_reserved_variable_membership_001.expect.toml",
@@ -2258,6 +2261,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_contradiction_formula_constant_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_reserved_variable_membership_001.expect.toml",
@@ -3311,6 +3315,19 @@ tests = [
 ]
 
 [[requirement]]
+id = "spec.en.checker.type_elaboration.local_mode_long_chain_asserted_head_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 199 exact seven-expansion formula-side local-mode asserted-head checker bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_asserted_head_001.expect.toml",
+]
+notes = "Task 199 coverage is limited to the exact seven-expansion set-terminal same-ChainMode6 formula-side asserted-head normalized-reflexive type/well-formedness slice. The production route must preserve independent raw reserve-subject and formula-side asserted inputs for the same ChainMode6 symbol, BindingId(0) at ordinal 1, seven real expansions, and three known type entries interning to one terminal-BaseModeDef-RHS builtin-set identity before one inferred variable and one fact/candidate/diagnostic/deferred-free checked type assertion with zero expected constraints and no general reachability, widening, or qua. Full reverse, connected deeper, exact structural/provenance/corruption guards, and a real frontend/resolver sidecar must protect active runner 147. Mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, proof, attributed/argument-bearing/imported/object-terminal/other-depth/other asserted-head shapes, broader term/formula/child-graph semantics, general unbounded chain semantics, and downstream payloads remain uncredited."
+
+[[requirement]]
 id = "spec.en.checker.type_elaboration.local_mode_long_chain_reserved_variable_equality_source_bridge"
 source = "doc/design/mizar-checker/en/type_checker.md"
 section = "Task 172 exact local-mode long-chain reserved-variable equality checker bridge"
@@ -3426,6 +3443,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_local_mode_long_chain_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_reserved_variable_membership_001.expect.toml",

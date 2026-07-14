@@ -3721,6 +3721,39 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 74, 153, 187, 196, and 197. Refs: Step 5; mizar-test task
       10; specs 3, 4, 7, 13, 14, and 16.
 
+199. **Add exact seven-expansion set-terminal formula-side local-mode asserted-head checker bridge.** [x]
+    - Close only the existing seven ordered bare local mode definitions
+      `ChainMode6 -> ChainMode5 -> ChainMode4 -> ChainMode3 -> ChainMode2 ->
+      ChainMode1 -> BaseMode -> set`, one `reserve x for ChainMode6`, and theorem
+      `LongLocalModeAssertedHeadPayloadBoundary: x is ChainMode6;` by composing
+      Task 74/175's real seven-expansion set-terminal producer with Task 186/
+      195/197's same-symbol formula-side asserted-head consumer.
+    - Acceptance: retain distinct raw reserve-subject and formula-side asserted
+      sites/ranges for the same resolved `ChainMode6` symbol; consume exactly
+      seven real AST-derived expansions; resolve ordinal 1 to `BindingId(0)`;
+      normalize three known type entries to one canonical builtin-set identity
+      anchored at the `BaseModeDef` RHS; and record one `Inferred` variable plus
+      one fact/candidate/diagnostic/deferred-free normalized-reflexive `Checked`
+      `TypeAssertion` with no expected constraints or general reachability.
+      Require full reverse, a truly connected eighth edge, exact structural/
+      provenance near misses, independent seven-expansion/binding/ordinal/head/
+      spelling/site/range/canonical-source corruption, route isolation,
+      immutable-output checks, and a real frontend/resolver sidecar. Add one
+      test-first active pass fixture with five shared and one dedicated
+      backlink, raising active runner 146 to 147, cases 361 to 362, and
+      requirements 325 to 326 without changing existing expectations.
+    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
+      no `spec_gap`. Keep object-terminal/other-depth/imported/attributed/
+      argument-bearing/other asserted heads, reachability/widening/`qua`, mode
+      declaration acceptance/inhabitation, assertion truth/facts, implicit
+      closure/order, theorem acceptance, broader term/formula/child-graph
+      semantics, proof/Core/ControlFlow/VC, and general unbounded chain
+      semantics deferred. Step 5 remains active; Steps 6/7 remain deferred. No
+      checker source or module-layout change was required.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 74, 175, 186, 195, and 197. Refs: Step 5; mizar-test task 10;
+      specs 3, 4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

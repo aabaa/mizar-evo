@@ -1801,6 +1801,34 @@ semantics, and downstream payloads receive no credit. Step 5 remains active;
 Steps 6 and 7 remain deferred. No checker source or module-layout update was
 required.
 
+Task199 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 199 classifies
+the exact seven-expansion set-terminal same-`ChainMode6` asserted-head seam as
+`test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. It
+composes Tasks 74/175's real seven-expansion set-terminal producer with Tasks
+186/195/197's formula-side same-symbol asserted-head consumer. Current credit
+is limited to `BaseMode -> set`, six ordered local links through `ChainMode6 ->
+ChainMode5`, `reserve x for ChainMode6`, theorem
+`LongLocalModeAssertedHeadPayloadBoundary: x is ChainMode6;`, ordinal 1
+resolving to `BindingId(0)`, distinct raw subject/asserted sites and ranges, all
+seven AST-derived expansions, three known type entries normalizing to one
+`BaseModeDef` RHS-anchored builtin-set identity, one inferred variable, zero
+expected constraints/candidates/facts/diagnostics/deferred reasons, and one
+normalized-reflexive checked type assertion. Five shared backlinks plus one
+dedicated row, production routing, isolated per-link removal/reorder, complete-
+reverse/connected-eighth/structural/provenance near misses including unrelated
+local/imported/ambiguous asserted heads, `BuiltinObject`/canonical corruption
+and immutable-output guards, and a real frontend/resolver sidecar protect
+active runner 147. The repository plan now contains 362 cases and 326
+requirements without changing an existing expectation. Object-terminal/other-
+depth/imported/attributed/argument-bearing/other asserted heads, reachability/
+widening/`qua`, declaration/theorem acceptance, truth/facts, closure/order,
+broader term/formula/child-graph semantics, proof/CoreIr/ControlFlowIr/VC,
+general unbounded chain semantics, and downstream payloads receive no credit.
+Step 5 remains active; Steps 6 and 7 remain deferred. No checker source or
+module-layout update was required.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

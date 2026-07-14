@@ -1475,6 +1475,27 @@ theorem acceptance, truth/facts, closure/order, `formula_statement`, proof,
 CoreIr, ControlFlowIr, VC, broader formula/child-graph semantics, and general
 chains receive no credit.
 
+Task 199 adds one exact active seven-expansion set-terminal same-`ChainMode6`
+asserted-head row with `BaseMode -> set`, six ordered local links through
+`ChainMode6 -> ChainMode5`, one `ChainMode6` reserve, and
+`LongLocalModeAssertedHeadPayloadBoundary: x is ChainMode6;`, with four shared
+Chapter 4/13/14.2.3/16 references, one shared Task 74 structural-chain
+reference, and one dedicated checker bridge reference. Credit is limited to
+seven real AST-derived expansions, ordinal 1 resolving to `BindingId(0)`,
+distinct raw reserve-subject and formula asserted-type sites/ranges for the same
+symbol, three known type entries normalizing to one `BaseModeDef` RHS-anchored
+`BuiltinSet` identity, one inferred variable, zero expected constraints/
+candidates/facts/diagnostics/deferred reasons, and one normalized-reflexive
+`Checked` type assertion. Exact-route, per-link removal/reorder, complete-
+reverse, connected-eighth, structural/provenance near misses including
+unrelated local/imported/ambiguous asserted heads, `BuiltinObject`/canonical
+mutable corruption, immutable-output validation, and a real frontend/resolver
+sidecar protect active count 147. Object-terminal/other-depth/imported/
+attributed/argument-bearing/other asserted heads, reachability/widening/`qua`,
+declaration/theorem acceptance, truth/facts, closure/order,
+`formula_statement`, proof, CoreIr, ControlFlowIr, VC, broader formula/child-
+graph semantics, and general unbounded chains receive no credit.
+
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
