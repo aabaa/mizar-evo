@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_two_edge_local_object_mode_two_hop_asserted_head_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_two_edge_local_object_mode_two_hop_asserted_head_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_two_edge_chain_source_bridge",
+  "spec.en.checker.type_elaboration.two_edge_local_object_mode_two_hop_asserted_head_source_bridge",
+]
+notes = "Spec-derived Task 212 intent for the exact two-edge object-terminal formula-side two-hop local-mode asserted-head chain. The reserve-side subject retains OuterTwoHopObjectModeAssertedHead while the formula-side asserted type independently resolves BaseTwoHopObjectModeAssertedHead at a distinct source site/range. Three real AST-derived expansions provide the exact bare Outer-to-Middle and Middle-to-Base edges plus the Base-to-object terminal; the closed relation must validate both links explicitly rather than infer the assertion from generic terminal traversal alone. The checker resolves x to BindingId(0) at source-order ordinal 1, normalizes three known type entries to the BaseTwoHopObjectModeAssertedHeadDef-RHS builtin-object identity, and records one Inferred variable plus one fact/candidate/diagnostic/deferred-free normalized-reflexive Checked TypeAssertion with zero expected constraints and no object/set coercion. This does not credit general reachability, other distances, widening or qua, mode declaration checking/acceptance/inhabitation, assertion truth/facts, implicit closure/order, theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, VC, imported/attributed/argument-bearing asserted heads, broader term/formula/child-graph semantics, object/set coercion, or general chain semantics."
