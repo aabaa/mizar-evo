@@ -1333,6 +1333,38 @@ heads, declaration/attribute acceptance, broader terms/formulas/child graphs,
 truth/facts, theorem/proof/Core/ControlFlow/VC, and general chain semantics
 remain open. No module layout update is required.
 
+Task 187 MC-G020 current-state override: the exact two-edge object-terminal same-
+outer-mode asserted head is `test_gap`, narrow `source_drift`, and
+`design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 support
+three ordered definitions `mode BaseTwoEdgeObjectModeAssertedHeadDef:
+BaseTwoEdgeObjectModeAssertedHead is object;`, `mode
+MiddleTwoEdgeObjectModeAssertedHeadDef: MiddleTwoEdgeObjectModeAssertedHead is
+BaseTwoEdgeObjectModeAssertedHead;`, and `mode
+OuterTwoEdgeObjectModeAssertedHeadDef: OuterTwoEdgeObjectModeAssertedHead is
+MiddleTwoEdgeObjectModeAssertedHead;`, one
+outer-mode reserve, and `TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary: x
+is OuterTwoEdgeObjectModeAssertedHead;`. Tasks 72/149 supply the real object-
+terminal producer/consumer and Tasks 185/186 supply the same-symbol asserted-
+head route pattern. The exact route preserves distinct raw subject/asserted
+sites and ranges for the same local outer symbol, consumes three real
+expansions, resolves ordinal 1 to `BindingId(0)`, interns three known entries to
+one terminal-base-definition-RHS builtin-object identity, and records one
+`Inferred` term plus one fact/deferred-free normalized-reflexive `Checked`
+assertion with no expected constraints, reachability, widening, `qua`, or
+object/set coercion. Exact/near-miss/corruption, production-route, and real
+frontend/resolver-sidecar guards reject missing/wrong/duplicate/reordered/
+forward/recovered/contextual/parameterized/argument-bearing/attributed links
+or wrong labels, set-terminal/direct/one-edge/deeper shapes, builtin/base/
+middle/other asserted heads plus attributed/argument-bearing formula-side
+asserted heads, imported Base/Middle/Outer and imported/ambiguous asserted provenance,
+extra/collapsed provenance, and `BuiltinSet` output corruption. Five shared
+trace backlinks plus one dedicated row protect active runner 135.
+Positive imported semantics, declaration/attribute acceptance, broader terms/
+formulas/child graphs, truth/facts, implicit closure/order, theorem acceptance,
+proof/Core/ControlFlow/VC, and general chain semantics remain open. Step 5
+stays active; Steps 6/7 stay
+deferred. No module layout update is required.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

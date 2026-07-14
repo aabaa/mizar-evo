@@ -203,6 +203,8 @@ const TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_K
     "type_elaboration.checker.chained_local_object_mode_asserted_head.invalid_payload";
 const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.two_edge_local_mode_asserted_head.invalid_payload";
+const TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.two_edge_local_object_mode_asserted_head.invalid_payload";
 const TYPE_ELABORATION_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY:
     &str =
     "type_elaboration.checker.chained_local_mode_reserved_variable_type_assertion.invalid_payload";
@@ -1233,6 +1235,11 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) =
+        source_two_edge_local_object_mode_asserted_head_detail_keys(ast, module.clone(), symbols)
+    {
+        return keys;
+    }
     if let Some(keys) = source_chained_local_mode_reserved_variable_type_assertion_detail_keys(
         ast,
         module.clone(),
@@ -1881,6 +1888,38 @@ const SOURCE_TWO_EDGE_LOCAL_MODE_ASSERTED_HEAD_CONFIG: SourceReservedVariableTyp
         asserted_source_mode_spelling: Some("OuterTwoEdgeModeAssertedHead"),
         subject_result_role: "two-edge-local-mode-asserted-head-subject-result",
     };
+
+const SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_CONFIG:
+    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
+    label: "TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary",
+    invalid_payload_key:
+        TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
+    binding_spelling: "x",
+    binding_type: SourceReservedVariableBuiltinType::Object,
+    binding_source_mode_spelling: Some("OuterTwoEdgeObjectModeAssertedHead"),
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseTwoEdgeObjectModeAssertedHeadDef",
+            spelling: "BaseTwoEdgeObjectModeAssertedHead",
+            radix: SourceReservedVariableModeRadix::Builtin(
+                SourceReservedVariableBuiltinType::Object,
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "MiddleTwoEdgeObjectModeAssertedHeadDef",
+            spelling: "MiddleTwoEdgeObjectModeAssertedHead",
+            radix: SourceReservedVariableModeRadix::Mode("BaseTwoEdgeObjectModeAssertedHead"),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterTwoEdgeObjectModeAssertedHeadDef",
+            spelling: "OuterTwoEdgeObjectModeAssertedHead",
+            radix: SourceReservedVariableModeRadix::Mode("MiddleTwoEdgeObjectModeAssertedHead"),
+        },
+    ],
+    asserted_type: SourceReservedVariableBuiltinType::Object,
+    asserted_source_mode_spelling: Some("OuterTwoEdgeObjectModeAssertedHead"),
+    subject_result_role: "two-edge-local-object-mode-asserted-head-subject-result",
+};
 
 const SOURCE_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_CONFIG:
     SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
@@ -4608,6 +4647,19 @@ fn source_two_edge_local_mode_asserted_head_detail_keys(
     ))
 }
 
+fn source_two_edge_local_object_mode_asserted_head_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload = extract_source_two_edge_local_object_mode_asserted_head(ast, module, symbols)?;
+    let invalid_payload_key = payload.config.invalid_payload_key;
+    Some(source_reserved_variable_type_assertion_result_detail_keys(
+        build_source_reserved_variable_type_assertion_output(payload, symbols),
+        invalid_payload_key,
+    ))
+}
+
 fn source_chained_local_mode_reserved_variable_type_assertion_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -5429,6 +5481,16 @@ fn source_two_edge_local_mode_asserted_head_output(
 }
 
 #[cfg(test)]
+fn source_two_edge_local_object_mode_asserted_head_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertionOutput> {
+    let payload = extract_source_two_edge_local_object_mode_asserted_head(ast, module, symbols)?;
+    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
 fn source_chained_local_mode_reserved_variable_type_assertion_output(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -5865,6 +5927,7 @@ fn assert_source_reserved_variable_type_assertion_output(
         )
         || payload.config.asserted_source_mode_spelling.is_some()
             && output.asserted_type_input.head != source_binding.type_head
+        || output.asserted_type_input.site == output.subject_result_input.site
         || output.asserted_type_input.source_range == output.subject_result_input.source_range
     {
         return Err("reserved-variable type assertion input provenance mismatch".to_owned());
@@ -7647,6 +7710,19 @@ fn extract_source_two_edge_local_mode_asserted_head(
         module,
         symbols,
         &SOURCE_TWO_EDGE_LOCAL_MODE_ASSERTED_HEAD_CONFIG,
+    )
+}
+
+fn extract_source_two_edge_local_object_mode_asserted_head(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertion> {
+    extract_source_reserved_variable_type_assertion_with_config(
+        ast,
+        module,
+        symbols,
+        &SOURCE_TWO_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_CONFIG,
     )
 }
 
@@ -11926,6 +12002,7 @@ mod tests {
         TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
@@ -11997,6 +12074,7 @@ mod tests {
         extract_source_two_edge_local_mode_reserved_variable_inequality,
         extract_source_two_edge_local_mode_reserved_variable_membership,
         extract_source_two_edge_local_mode_reserved_variable_type_assertion,
+        extract_source_two_edge_local_object_mode_asserted_head,
         extract_source_two_edge_local_object_mode_reserved_variable_equality,
         extract_source_two_edge_local_object_mode_reserved_variable_inequality,
         extract_source_two_edge_local_object_mode_reserved_variable_membership,
@@ -12068,6 +12146,7 @@ mod tests {
         source_two_edge_local_mode_reserved_variable_inequality_output,
         source_two_edge_local_mode_reserved_variable_membership_output,
         source_two_edge_local_mode_reserved_variable_type_assertion_output,
+        source_two_edge_local_object_mode_asserted_head_output,
         source_two_edge_local_object_mode_reserved_variable_equality_output,
         source_two_edge_local_object_mode_reserved_variable_inequality_output,
         source_two_edge_local_object_mode_reserved_variable_membership_output,
@@ -33408,6 +33487,569 @@ mod tests {
     }
 
     #[test]
+    fn source_two_edge_local_object_mode_asserted_head_type_assertion_consumes_three_expansions() {
+        let source_id = source_id(187);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("two_edge_local_object_mode_asserted_head_type_assertion"),
+        );
+        let symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                ("BaseTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                ("MiddleTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                ("OuterTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                ("ExtraTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                ("OtherTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+            ],
+        );
+        let theorem = exact_two_edge_local_object_mode_asserted_head_spec();
+        let exact_modes = || {
+            vec![
+                mode_definition_with_label(
+                    "BaseTwoEdgeObjectModeAssertedHead",
+                    "BaseTwoEdgeObjectModeAssertedHeadDef",
+                    ReserveTypeShape::Builtin("object"),
+                ),
+                mode_definition_with_label(
+                    "MiddleTwoEdgeObjectModeAssertedHead",
+                    "MiddleTwoEdgeObjectModeAssertedHeadDef",
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeObjectModeAssertedHead"),
+                ),
+                mode_definition_with_label(
+                    "OuterTwoEdgeObjectModeAssertedHead",
+                    "OuterTwoEdgeObjectModeAssertedHeadDef",
+                    ReserveTypeShape::QualifiedSymbol("MiddleTwoEdgeObjectModeAssertedHead"),
+                ),
+            ]
+        };
+        let reserve = || {
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("OuterTwoEdgeObjectModeAssertedHead"),
+            )]
+        };
+        let exact = mode_then_reserve_identifier_type_assertion_theorem_ast(
+            source_id,
+            exact_modes(),
+            reserve(),
+            theorem,
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let payload = extract_source_two_edge_local_object_mode_asserted_head(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact Task 187 source should extract");
+        assert_eq!(payload.reserve.mode_expansions.len(), 3);
+        assert_eq!(payload.reserve.bridge.bindings().len(), 1);
+        assert_eq!(payload.subject_lookup_ordinal, 1);
+        let source_binding = &payload.reserve.bridge.bindings()[0];
+        assert_eq!(
+            source_binding.type_spelling,
+            "OuterTwoEdgeObjectModeAssertedHead"
+        );
+        assert_eq!(payload.asserted_type.spelling, source_binding.type_spelling);
+        assert_eq!(payload.asserted_type.head, source_binding.type_head);
+        assert!(matches!(source_binding.type_head, TypeHeadInput::Symbol(_)));
+        assert_ne!(source_binding.type_range, payload.asserted_type.range);
+
+        let output = source_two_edge_local_object_mode_asserted_head_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact Task 187 source should reach TermFormulaChecker");
+        assert_source_reserved_variable_type_assertion_output(&output)
+            .expect("Task 187 checker payload invariants should hold");
+        assert_eq!(output.subject_binding, BindingId::new(0));
+        assert_eq!(output.term_formula.type_entries().len(), 3);
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        assert_eq!(
+            output.subject_result_input.spelling,
+            "OuterTwoEdgeObjectModeAssertedHead"
+        );
+        assert_eq!(
+            output.asserted_type_input.spelling,
+            output.subject_result_input.spelling
+        );
+        assert_eq!(
+            output.asserted_type_input.head,
+            output.subject_result_input.head
+        );
+        assert_ne!(
+            output.asserted_type_input.site,
+            output.subject_result_input.site
+        );
+        assert_ne!(
+            output.asserted_type_input.source_range,
+            output.subject_result_input.source_range
+        );
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseTwoEdgeObjectModeAssertedHead")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("Task 187 terminal object expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .unwrap();
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinObject);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+        let (_, term) = output.term_formula.terms().iter().next().unwrap();
+        assert_eq!(term.status, TermStatus::Inferred);
+        assert!(term.deferred.is_empty());
+        let (_, formula) = output.term_formula.formulas().iter().next().unwrap();
+        assert_eq!(formula.kind, FormulaKind::TypeAssertion);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert!(formula.expected_types.is_empty());
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+
+        let assert_invalid_output = |invalid| {
+            let invalid_result =
+                assert_source_reserved_variable_type_assertion_output(&invalid).map(|()| invalid);
+            assert_eq!(
+                source_reserved_variable_type_assertion_result_detail_keys(
+                    invalid_result,
+                    TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
+                ),
+                vec![
+                    TYPE_ELABORATION_TWO_EDGE_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY
+                        .to_owned()
+                ]
+            );
+        };
+        for removed in [
+            "BaseTwoEdgeObjectModeAssertedHead",
+            "MiddleTwoEdgeObjectModeAssertedHead",
+            "OuterTwoEdgeObjectModeAssertedHead",
+        ] {
+            let mut invalid = source_two_edge_local_object_mode_asserted_head_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .unwrap();
+            invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .retain(|symbol, _| source_mode_symbol_spelling(symbol) != Some(removed));
+            assert_invalid_output(invalid);
+        }
+        let mut wrong_asserted_spelling = source_two_edge_local_object_mode_asserted_head_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .unwrap();
+        wrong_asserted_spelling.asserted_type_input.spelling =
+            "OtherTwoEdgeObjectModeAssertedHead".to_owned();
+        let mut builtin_set_asserted = source_two_edge_local_object_mode_asserted_head_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .unwrap();
+        builtin_set_asserted.asserted_type_input.head = TypeHeadInput::BuiltinSet;
+        let mut builtin_set_subject = source_two_edge_local_object_mode_asserted_head_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .unwrap();
+        builtin_set_subject.subject_result_input.head = TypeHeadInput::BuiltinSet;
+        let mut collapsed_ranges = source_two_edge_local_object_mode_asserted_head_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .unwrap();
+        collapsed_ranges.asserted_type_input.source_range =
+            collapsed_ranges.subject_result_input.source_range;
+        let mut collapsed_sites = source_two_edge_local_object_mode_asserted_head_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .unwrap();
+        collapsed_sites.asserted_type_input.site =
+            collapsed_sites.subject_result_input.site.clone();
+        for invalid in [
+            wrong_asserted_spelling,
+            builtin_set_asserted,
+            builtin_set_subject,
+            collapsed_ranges,
+            collapsed_sites,
+        ] {
+            assert_invalid_output(invalid);
+        }
+
+        let mut mode_near_misses = vec![
+            Vec::<ModeDefinitionSpec>::new(),
+            vec![exact_modes()[1], exact_modes()[2]],
+            vec![exact_modes()[0], exact_modes()[2]],
+            vec![exact_modes()[0], exact_modes()[1]],
+            vec![exact_modes()[2], exact_modes()[1], exact_modes()[0]],
+            {
+                let mut modes = exact_modes();
+                modes.push(modes[0]);
+                modes
+            },
+            {
+                let mut modes = exact_modes();
+                modes[0].rhs_shape = ReserveTypeShape::Builtin("set");
+                modes
+            },
+            {
+                let mut modes = exact_modes();
+                modes[1].rhs_shape =
+                    ReserveTypeShape::QualifiedSymbol("OuterTwoEdgeObjectModeAssertedHead");
+                modes
+            },
+            {
+                let mut modes = exact_modes();
+                modes[2].rhs_shape =
+                    ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeObjectModeAssertedHead");
+                modes
+            },
+            {
+                let mut modes = exact_modes();
+                modes[0].rhs_shape =
+                    ReserveTypeShape::QualifiedSymbol("OuterTwoEdgeObjectModeAssertedHead");
+                modes
+            },
+            {
+                let mut modes = exact_modes();
+                modes.insert(
+                    1,
+                    mode_definition_with_label(
+                        "ExtraTwoEdgeObjectModeAssertedHead",
+                        "ExtraTwoEdgeObjectModeAssertedHeadDef",
+                        ReserveTypeShape::QualifiedSymbol("BaseTwoEdgeObjectModeAssertedHead"),
+                    ),
+                );
+                modes[2].rhs_shape =
+                    ReserveTypeShape::QualifiedSymbol("ExtraTwoEdgeObjectModeAssertedHead");
+                modes
+            },
+            {
+                let mut modes = exact_modes();
+                modes[0].recovered = true;
+                modes
+            },
+            {
+                let mut modes = exact_modes();
+                modes[0].local_context = true;
+                modes
+            },
+            {
+                let mut modes = exact_modes();
+                modes[1].parameterized_pattern = true;
+                modes
+            },
+            {
+                let mut modes = exact_modes();
+                modes[1].rhs_shape =
+                    ReserveTypeShape::QualifiedSymbolWithArgs("BaseTwoEdgeObjectModeAssertedHead");
+                modes
+            },
+            {
+                let mut modes = exact_modes();
+                modes[0].rhs_shape = ReserveTypeShape::AttributedObject;
+                modes
+            },
+        ];
+        for index in 0..3 {
+            let mut modes = exact_modes();
+            modes[index].label = Some("WrongTwoEdgeObjectModeAssertedHeadDef");
+            mode_near_misses.push(modes);
+        }
+        for modes in mode_near_misses {
+            let near_miss = mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                modes,
+                reserve(),
+                theorem,
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+
+        let source_near_misses = [
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::QualifiedSymbolWithArgs("OuterTwoEdgeObjectModeAssertedHead"),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![reserve_item(
+                    vec!["x"],
+                    ReserveTypeShape::AttributedQualifiedSymbol(
+                        "OuterTwoEdgeObjectModeAssertedHead",
+                    ),
+                )],
+                theorem,
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![
+                    reserve_item(
+                        vec!["x"],
+                        ReserveTypeShape::QualifiedSymbol("OuterTwoEdgeObjectModeAssertedHead"),
+                    ),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                theorem,
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    subject: "y",
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::Builtin("object"),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::Builtin("set"),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(
+                        "BaseTwoEdgeObjectModeAssertedHead",
+                    ),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(
+                        "MiddleTwoEdgeObjectModeAssertedHead",
+                    ),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(
+                        "OtherTwoEdgeObjectModeAssertedHead",
+                    ),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbolWithArgs(
+                        "OuterTwoEdgeObjectModeAssertedHead",
+                    ),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::AttributedQualifiedSymbol(
+                        "OuterTwoEdgeObjectModeAssertedHead",
+                    ),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    negated: true,
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    status: Some("open"),
+                    ..theorem
+                },
+            ),
+            mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    recovered_label: true,
+                    ..theorem
+                },
+            ),
+            modes_then_empty_definition_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                theorem,
+            ),
+        ];
+        for near_miss in source_near_misses {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+
+        let imported_base = source_local_and_imported_symbols_env(
+            module.clone(),
+            &[
+                ("MiddleTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                ("OuterTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+            ],
+            &[("BaseTwoEdgeObjectModeAssertedHead", SymbolKind::Mode)],
+        );
+        let imported_middle = source_local_and_imported_symbols_env(
+            module.clone(),
+            &[
+                ("BaseTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                ("OuterTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+            ],
+            &[("MiddleTwoEdgeObjectModeAssertedHead", SymbolKind::Mode)],
+        );
+        let imported_outer = source_local_and_imported_symbols_env(
+            module.clone(),
+            &[
+                ("BaseTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                ("MiddleTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+            ],
+            &[("OuterTwoEdgeObjectModeAssertedHead", SymbolKind::Mode)],
+        );
+        let ambiguous_outer = source_local_and_imported_symbols_env(
+            module.clone(),
+            &[
+                ("BaseTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                ("MiddleTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+            ],
+            &[
+                ("OuterTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                ("OuterTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+            ],
+        );
+        for provenance_symbols in [
+            &imported_base,
+            &imported_middle,
+            &imported_outer,
+            &ambiguous_outer,
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&exact, module.clone(), provenance_symbols,),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+
+        for (asserted_spelling, asserted_symbols) in [
+            (
+                "ImportedTwoEdgeObjectModeAssertedHead",
+                source_local_and_imported_symbols_env(
+                    module.clone(),
+                    &[
+                        ("BaseTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                        ("MiddleTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                        ("OuterTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                    ],
+                    &[("ImportedTwoEdgeObjectModeAssertedHead", SymbolKind::Mode)],
+                ),
+            ),
+            (
+                "AmbiguousTwoEdgeObjectModeAssertedHead",
+                source_local_and_imported_symbols_env(
+                    module.clone(),
+                    &[
+                        ("BaseTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                        ("MiddleTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                        ("OuterTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                    ],
+                    &[
+                        ("AmbiguousTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                        ("AmbiguousTwoEdgeObjectModeAssertedHead", SymbolKind::Mode),
+                    ],
+                ),
+            ),
+        ] {
+            let near_miss = mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                IdentifierTypeAssertionTheoremSpec {
+                    asserted_type: ReserveTypeShape::QualifiedSymbol(asserted_spelling),
+                    ..theorem
+                },
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &asserted_symbols,),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
     fn source_three_edge_local_mode_reserved_variable_type_assertion_consumes_four_expansions() {
         let source_id = source_id(150);
         let module = ResolverModuleId::new(
@@ -37766,6 +38408,95 @@ mod tests {
         assert!(formula.expected_types.is_empty());
         assert!(formula.facts.is_empty());
         assert!(formula.deferred.is_empty());
+    }
+
+    #[test]
+    fn active_two_edge_local_object_mode_asserted_head_fixture_consumes_three_expansions() {
+        const CASE_ID: &str = "pass_type_elaboration_two_edge_local_object_mode_asserted_head_001";
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            workspace_root: workspace_root.clone(),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("Task 187 repository plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| case.id.0 == CASE_ID)
+            .expect("Task 187 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 187 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 187 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output =
+            source_two_edge_local_object_mode_asserted_head_output(&ast, resolver.module, &symbols)
+                .expect("Task 187 real AST should reach the exact object-terminal seam");
+        assert_source_reserved_variable_type_assertion_output(&output)
+            .expect("Task 187 real AST should preserve checker payload invariants");
+        assert_eq!(
+            (
+                output.payload.reserve.mode_expansions.len(),
+                output.subject_binding,
+                output.term_formula.type_entries().len(),
+                output.term_formula.normalized_types().len(),
+            ),
+            (3, BindingId::new(0), 3, 1)
+        );
+        assert_eq!(
+            output.subject_result_input.spelling,
+            "OuterTwoEdgeObjectModeAssertedHead"
+        );
+        assert_eq!(
+            output.asserted_type_input.spelling,
+            output.subject_result_input.spelling
+        );
+        assert_eq!(
+            output.asserted_type_input.head,
+            output.subject_result_input.head
+        );
+        assert_ne!(
+            output.asserted_type_input.site,
+            output.subject_result_input.site
+        );
+        assert!(matches!(
+            output.asserted_type_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_ne!(
+            output.asserted_type_input.source_range,
+            output.subject_result_input.source_range
+        );
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseTwoEdgeObjectModeAssertedHead")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("Task 187 terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .unwrap();
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinObject);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
     }
 
     #[test]
@@ -42757,6 +43488,18 @@ mod tests {
             label: "TwoEdgeLocalModeAssertedHeadPayloadBoundary",
             subject: "x",
             asserted_type: ReserveTypeShape::QualifiedSymbol("OuterTwoEdgeModeAssertedHead"),
+            recovered_label: false,
+            negated: false,
+        }
+    }
+
+    fn exact_two_edge_local_object_mode_asserted_head_spec()
+    -> IdentifierTypeAssertionTheoremSpec<'static> {
+        IdentifierTypeAssertionTheoremSpec {
+            status: None,
+            label: "TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary",
+            subject: "x",
+            asserted_type: ReserveTypeShape::QualifiedSymbol("OuterTwoEdgeObjectModeAssertedHead"),
             recovered_label: false,
             negated: false,
         }

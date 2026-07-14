@@ -1,0 +1,14 @@
+definition
+  mode BaseTwoEdgeObjectModeAssertedHeadDef: BaseTwoEdgeObjectModeAssertedHead is object;
+end;
+
+definition
+  mode MiddleTwoEdgeObjectModeAssertedHeadDef: MiddleTwoEdgeObjectModeAssertedHead is BaseTwoEdgeObjectModeAssertedHead;
+end;
+
+definition
+  mode OuterTwoEdgeObjectModeAssertedHeadDef: OuterTwoEdgeObjectModeAssertedHead is MiddleTwoEdgeObjectModeAssertedHead;
+end;
+
+reserve x for OuterTwoEdgeObjectModeAssertedHead;
+theorem TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is OuterTwoEdgeObjectModeAssertedHead;

@@ -1420,6 +1420,34 @@ does not credit object-terminal/deeper/imported asserted heads, declaration or
 attribute acceptance, broader terms/formulas/child graphs, truth/facts,
 closure/order, theorem/proof/CoreIr/ControlFlowIr/VC, or general chain
 semantics. No module layout update is required.
+Task 187 adds only the two-edge object-terminal same-outer-mode asserted-head
+slice. The exact source has three ordered definitions `mode
+BaseTwoEdgeObjectModeAssertedHeadDef: BaseTwoEdgeObjectModeAssertedHead is
+object;`, `mode MiddleTwoEdgeObjectModeAssertedHeadDef:
+MiddleTwoEdgeObjectModeAssertedHead is BaseTwoEdgeObjectModeAssertedHead;`, and
+`mode OuterTwoEdgeObjectModeAssertedHeadDef: OuterTwoEdgeObjectModeAssertedHead
+is MiddleTwoEdgeObjectModeAssertedHead;`, one outer-mode reserve, and only
+`TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+OuterTwoEdgeObjectModeAssertedHead;`. The producer retains distinct raw subject
+and asserted type-expression sites/ranges for the same local outer symbol.
+Three real AST-derived expansions normalize all three known entries to one
+builtin-object identity canonically anchored at the base definition RHS. The
+consumer resolves ordinal 1 to `BindingId(0)`, records one `Inferred` variable
+and one fact/deferred-free normalized-reflexive `Checked` assertion, and has no
+expected constraints, reachability, widening, `qua`, or object/set coercion.
+Exact, near-miss, corruption, route-order, and real frontend/resolver-sidecar
+guards reject missing/wrong/duplicate/reordered/forward/recovered/contextual/
+parameterized/argument-bearing/attributed links or wrong labels, set-terminal/
+direct/one-edge/deeper shapes, builtin/base/middle/other asserted heads plus
+attributed/argument-bearing formula-side asserted heads, imported Base/Middle/
+Outer and imported/ambiguous asserted provenance, extra/collapsed provenance,
+and `BuiltinSet` output corruption. Five shared backlinks plus one dedicated
+trace row protect active runner 135. Positive imported semantics,
+declaration/attribute acceptance, broader terms/formulas/child graphs, truth/
+facts, implicit closure/order, theorem acceptance, proof/CoreIr/ControlFlowIr/
+VC, deeper asserted heads, and general
+chain semantics remain uncredited. Step 5 stays active; Steps 6/7 stay deferred.
+No module layout update is required.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

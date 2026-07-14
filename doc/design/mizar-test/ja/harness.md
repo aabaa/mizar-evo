@@ -1216,6 +1216,30 @@ object/deeper/imported semantics、declaration/attribute acceptance、broader
 term/formula/child graph、truth/fact、proof/CoreIr/ControlFlowIr/VC、general chain
 semantics は credit しない。module layout 更新は不要である。
 
+task 187 は exact two-edge object-terminal same-outer-mode asserted-head pass
+case を追加する。route は ordered definition
+`mode BaseTwoEdgeObjectModeAssertedHeadDef: BaseTwoEdgeObjectModeAssertedHead is
+object;`、`mode MiddleTwoEdgeObjectModeAssertedHeadDef:
+MiddleTwoEdgeObjectModeAssertedHead is BaseTwoEdgeObjectModeAssertedHead;`、
+`mode OuterTwoEdgeObjectModeAssertedHeadDef: OuterTwoEdgeObjectModeAssertedHead
+is MiddleTwoEdgeObjectModeAssertedHead;`、
+matching outer reserve、exact `TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary:
+x is OuterTwoEdgeObjectModeAssertedHead` だけを受理する。同じ local symbol
+向けの distinct raw subject/asserted range、real expansion 3 個、ordinal 1 の
+`BindingId(0)`、base-definition-RHS builtin-object identity 1 個へ intern する
+known entry 3 個、expected constraint、reachability、widening、`qua`、object/set
+coercion を持たない 1 `Inferred` variable と 1 fact/deferred-free normalized-
+reflexive `Checked` assertion を要求する。exact/near-miss、corruption、route-
+order、real frontend/resolver-sidecar guard は imported Base/Middle/Outer、
+imported/ambiguous asserted head を含む全 non-exact link/depth/terminal/provenance
+shape、wrong label、attributed/argument-bearing formula-side asserted head と
+`BuiltinSet` output corruption を reject する。shared 5 + dedicated 1 trace row
+が active count 135 を保護する。positive imported semantics、
+declaration/attribute acceptance、broader term/formula/child graph、truth/fact、
+implicit closure/order、theorem acceptance、proof/CoreIr/ControlFlowIr/VC、
+general chain semantics は credit しない。Step 5 は active、Steps 6/7 は deferred
+のまま。module layout 更新は不要である。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

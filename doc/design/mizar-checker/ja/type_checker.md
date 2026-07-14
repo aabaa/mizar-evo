@@ -1347,6 +1347,34 @@ object-terminal/deeper/imported asserted head、declaration/attribute acceptance
 broader term/formula/child graph、truth/fact、closure/order、theorem/proof/CoreIr/
 ControlFlowIr/VC、general chain semantics は credit しない。module layout 更新は
 不要である。
+task 187 は two-edge object-terminal same-outer-mode asserted-head slice だけを
+追加する。exact source は ordered definition `mode
+BaseTwoEdgeObjectModeAssertedHeadDef: BaseTwoEdgeObjectModeAssertedHead is
+object;`、`mode MiddleTwoEdgeObjectModeAssertedHeadDef:
+MiddleTwoEdgeObjectModeAssertedHead is BaseTwoEdgeObjectModeAssertedHead;`、
+`mode OuterTwoEdgeObjectModeAssertedHeadDef: OuterTwoEdgeObjectModeAssertedHead
+is MiddleTwoEdgeObjectModeAssertedHead;`、
+outer-mode reserve 1 個、`TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+OuterTwoEdgeObjectModeAssertedHead;` だけを含む。producer は同じ local outer
+symbol 向けの distinct raw subject/asserted type-expression site/range を保持する。
+real AST-derived expansion 3 個は known entry 3 個すべてを base definition RHS
+に canonical anchor された builtin-object identity 1 個へ normalize する。
+consumer は ordinal 1 を `BindingId(0)` に解決し、expected constraint、
+reachability、widening、`qua`、object/set coercion を持たない 1 `Inferred`
+variable と 1 fact/deferred-free normalized-reflexive `Checked` assertion を
+記録する。exact/near-miss/corruption/route-order/real frontend-resolver sidecar
+guard は missing/wrong/duplicate/reordered/forward/recovered/contextual/
+parameterized/argument-bearing/attributed link または wrong label、set-terminal/
+direct/one-edge/deeper shape、builtin/base/middle/other asserted head および
+attributed/argument-bearing formula-side asserted head、imported Base/Middle/Outer、
+imported/ambiguous asserted provenance、extra/collapsed provenance、`BuiltinSet`
+output corruption を reject する。shared backlink 5 個と dedicated trace row 1 個
+が active runner 135 を保護する。positive imported semantics、declaration/
+attribute acceptance、broader term/formula/child graph、truth/fact、implicit
+closure/order、theorem acceptance、proof/CoreIr/ControlFlowIr/VC、deeper asserted
+head、general chain semantics は credit
+しない。Step 5 は active、Steps 6/7 は deferred のまま。module layout 更新は
+不要である。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

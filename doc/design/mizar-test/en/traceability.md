@@ -1276,6 +1276,21 @@ real frontend/resolver sidecar protect active count 134. Declaration/attribute
 acceptance, truth/facts, closure/order, theorem/proof/CoreIr/ControlFlowIr/VC,
 object-terminal/deeper/imported/other asserted-head chains, and general chain
 semantics receive no credit.
+Task 187 adds the exact active two-edge object-terminal same-outer-mode formula-
+side asserted-head row `TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+OuterTwoEdgeObjectModeAssertedHead;`, with Chapter 3/4/7/13/14.2.3/16 and a
+dedicated checker bridge reference. Credit is limited to three real expansions,
+independent raw reserve-subject and formula-side asserted sites/ranges for the
+same resolved local outer symbol, ordinal 1 `BindingId(0)`, three known type
+entries interned to one terminal-base-definition-RHS builtin-object identity,
+one inferred term, and one fact/deferred-free normalized-reflexive checked type
+assertion without reachability, widening, `qua`, or object/set coercion. Five
+shared backlinks plus the dedicated row, production routing, exact/near-miss/
+corruption guards, and the real frontend/resolver sidecar protect active count
+135. Positive imported semantics, declaration/attribute acceptance, truth/
+facts, closure/order, theorem/proof/CoreIr/ControlFlowIr/VC, set-terminal/
+deeper/other asserted-head chains, general chain semantics, and downstream
+payloads receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

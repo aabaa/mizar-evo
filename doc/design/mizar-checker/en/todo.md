@@ -3363,6 +3363,36 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 72, 148, 184, and 185. Refs: Step 5; mizar-test task 10;
       specs 3, 4, 7, 13, 14, and 16.
 
+187. **Add exact two-edge object-terminal formula-side local-mode asserted-head checker bridge.** [x]
+    - Close only three ordered definitions: `mode
+      BaseTwoEdgeObjectModeAssertedHeadDef: BaseTwoEdgeObjectModeAssertedHead is
+      object;`, `mode MiddleTwoEdgeObjectModeAssertedHeadDef:
+      MiddleTwoEdgeObjectModeAssertedHead is BaseTwoEdgeObjectModeAssertedHead;`,
+      and `mode OuterTwoEdgeObjectModeAssertedHeadDef:
+      OuterTwoEdgeObjectModeAssertedHead is MiddleTwoEdgeObjectModeAssertedHead;`.
+      Reserve `x` for the outer mode and check only
+      `TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+      OuterTwoEdgeObjectModeAssertedHead;`.
+    - Acceptance: retain distinct raw subject/asserted sites and ranges for the
+      same local outer symbol, consume exactly three real expansions, resolve
+      ordinal 1 to `BindingId(0)`, normalize three known entries to one terminal-
+      base-definition-RHS builtin-object identity, and produce one `Inferred`
+      term plus one fact/deferred-free normalized-reflexive `Checked` assertion
+      with no expected constraints, reachability, widening, `qua`, or object/set
+      coercion. Exact/near-miss/corruption/real-sidecar guards include
+      wrong labels, attributed/argument-bearing formula-side asserted heads,
+      imported Base/Middle/Outer, imported/ambiguous asserted provenance,
+      collapsed provenance, and `BuiltinSet` output corruption. Five shared and
+      one dedicated trace row protect active runner 135. Keep
+      positive imported semantics, declarations/attributes, broader terms/
+      formulas/child graphs, truth/facts, implicit closure/order, theorem
+      acceptance, proof/Core/ControlFlow/VC, and general chain semantics
+      deferred. Step 5 remains active; Steps 6/7 remain
+      deferred. No module layout update is required.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 72, 149, 185, and 186. Refs: Step 5; mizar-test task 10;
+      specs 3, 4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

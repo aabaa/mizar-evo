@@ -3171,6 +3171,35 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 72、148、184、185。参照: Step 5、mizar-test task 10、specs 3、
       4、7、13、14、16。
 
+187. **Two-edge object-terminal formula-side local-mode asserted-head checker bridge を追加する。** [x]
+    - `mode BaseTwoEdgeObjectModeAssertedHeadDef:
+      BaseTwoEdgeObjectModeAssertedHead is object;`、`mode
+      MiddleTwoEdgeObjectModeAssertedHeadDef: MiddleTwoEdgeObjectModeAssertedHead
+      is BaseTwoEdgeObjectModeAssertedHead;`、`mode
+      OuterTwoEdgeObjectModeAssertedHeadDef: OuterTwoEdgeObjectModeAssertedHead is
+      MiddleTwoEdgeObjectModeAssertedHead;` の ordered definition 3 個だけを
+      閉じる。outer mode に `x` を reserve し、
+      `TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+      OuterTwoEdgeObjectModeAssertedHead;` だけを check する。
+    - Acceptance: 同じ local outer symbol 向けの distinct raw subject/asserted
+      site/range、real expansion 3 個、ordinal 1 の `BindingId(0)`、terminal base-
+      definition-RHS builtin-object identity 1 個へ normalize する known entry
+      3 個、expected constraint、reachability、widening、`qua`、object/set coercion
+      を持たない 1 `Inferred` term と 1 fact/deferred-free normalized-reflexive
+      `Checked` assertion を保持する。wrong label、attributed/argument-bearing
+      formula-side asserted head、imported Base/Middle/Outer、imported/ambiguous
+      asserted provenance、collapsed provenance、`BuiltinSet` output
+      corruption を含む exact/near-miss/corruption/real-sidecar guard を備える。
+      shared 5 + dedicated 1 trace row が active runner 135 を保護する。positive
+      imported semantics、declaration/attribute、broader term/
+      formula/child graph、truth/fact、implicit closure/order、theorem acceptance、
+      proof/Core/ControlFlow/VC、general chain semantics は deferred のままとする。
+      Step 5 は active、Steps 6/7 は
+      deferred のまま。module layout 更新は不要である。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 72、149、185、186。参照: Step 5、mizar-test task 10、specs 3、
+      4、7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

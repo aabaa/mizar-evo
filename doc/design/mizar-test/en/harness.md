@@ -1265,6 +1265,31 @@ declaration/attribute acceptance, broader terms/formulas/child graphs, truth/
 facts, proof/CoreIr/ControlFlowIr/VC, and general chain semantics remain
 uncredited. No module layout update is required.
 
+Task 187 adds the exact two-edge object-terminal same-outer-mode asserted-head
+pass case. The route accepts only ordered definitions
+`mode BaseTwoEdgeObjectModeAssertedHeadDef: BaseTwoEdgeObjectModeAssertedHead is
+object;`, `mode MiddleTwoEdgeObjectModeAssertedHeadDef:
+MiddleTwoEdgeObjectModeAssertedHead is BaseTwoEdgeObjectModeAssertedHead;`, and
+`mode OuterTwoEdgeObjectModeAssertedHeadDef: OuterTwoEdgeObjectModeAssertedHead
+is MiddleTwoEdgeObjectModeAssertedHead;`, a matching outer reserve, and exact
+`TwoEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+OuterTwoEdgeObjectModeAssertedHead`. It preserves distinct raw subject/asserted
+ranges for the same local symbol, consumes three real expansions, resolves
+ordinal 1 to `BindingId(0)`, interns three known entries to one base-definition-
+RHS builtin-object identity, and requires one `Inferred` variable plus one fact/
+deferred-free normalized-reflexive `Checked` assertion with no expected
+constraints, reachability, widening, `qua`, or object/set coercion. Exact/near-
+miss, corruption, route-order, and real frontend/resolver-sidecar guards reject
+all non-exact link/depth/terminal/provenance shapes and `BuiltinSet` output
+corruption, including wrong labels, attributed/argument-bearing formula-side
+asserted heads, imported Base/Middle/Outer, and imported/ambiguous asserted
+heads. Five shared plus one dedicated trace row protect active count 135.
+Positive imported semantics, declaration/attribute acceptance, broader terms/
+formulas/child graphs, truth/facts, implicit closure/order, theorem acceptance,
+proof/CoreIr/ControlFlowIr/VC, and general chain semantics remain uncredited.
+Step 5 remains active; Steps 6/7 remain deferred. No module layout update is
+required.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent
