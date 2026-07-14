@@ -3224,6 +3224,25 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 112, 115, and 117. Refs: Step 5; mizar-test task 10; specs 14
       and 16.
 
+181. **Repair exact imported attributed-reserve routing.** [x]
+    - Repair the `source_undocumented_behavior` found after task 180: the
+      generic reserve extractor currently admits imported fixture attributes
+      beyond the five documented task-84/85/116/171 source shapes.
+    - Acceptance: if a reserve binding carries a `parser.type_fixtures`
+      imported attribute, require no unrelated top-level item and either one
+      exact single-binding source (positive `TypeCaseAttr set`, positive
+      `empty set`, negative `empty set`, or negative `empty object`) or the
+      already-traced ordered mixed source `reserve x for set; reserve y for non
+      empty set;`. Each attributed binding must have one argument-free
+      attribute. Keep those five existing `.miz` expectations unchanged.
+      Duplicate/mixed attributes, wrong polarity/head, and multiple bindings or
+      items outside the exact mixed source stay on the source extraction gap.
+      Add source-shaped unit regressions before the repair and do not promote
+      positive `empty object` or any evidence/acceptance semantics.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 84, 85, 116, and 171. Refs: Step 5; mizar-test task 10;
+      specs 3, 6, 11, 12, and 17.
+
 ## Recommended Verification
 
 Run after each task:

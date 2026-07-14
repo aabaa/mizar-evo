@@ -3042,6 +3042,25 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-test` と workspace Rust verification。
     - 依存: tasks 112、115、117。参照: Step 5、mizar-test task 10、specs 14、16。
 
+181. **Exact imported attributed-reserve routing を repair する。** [x]
+    - task 180 後に見つかった `source_undocumented_behavior` を repair する。
+      generic reserve extractor は現在、documented task-84/85/116/171 source
+      shape 5 件を超える imported fixture attribute を受理し得る。
+    - Acceptance: reserve binding が `parser.type_fixtures` imported attribute
+      を持つ場合、unrelated top-level item なし、single-binding exact source
+      （positive `TypeCaseAttr set`、positive `empty set`、negative `empty set`、
+      negative `empty object`）のいずれか、または既に trace 済みの ordered
+      mixed source `reserve x for set; reserve y for non empty set;` を要求する。
+      各 attributed binding は argument-free attribute 1 個を持つ。既存 `.miz`
+      expectation 5 件は変更しない。duplicate/mixed attribute、wrong polarity/
+      head、exact mixed source 外の multiple binding/item、extra definition は
+      source extraction gap に残す。repair 前に source-
+      shaped unit regression を追加し、positive `empty object` または evidence/
+      acceptance semantics を昇格しない。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 84、85、116、171。参照: Step 5、mizar-test task 10、specs
+      3、6、11、12、17。
+
 ## 推奨検証
 
 各タスクの後で実行する:

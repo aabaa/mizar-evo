@@ -1235,6 +1235,18 @@ candidate、fact、deferred reason、diagnostic を持たない 1 `Checked` form
 closure、implicit closure/child graph extraction、`formula_statement` activation、
 proof/CoreIr/ControlFlowIr/VC payload を主張しない。exact-source、near-miss/
 corruption、real parser/resolver-sidecar guard が route を保護しなければならない。
+task 181 は semantic promotion ではなく exactness repair である。reserve
+source bridge が real imported `parser.type_fixtures` attribute を観測する場合、
+既に credit された source 5 件、すなわち single-binding の positive
+`TypeCaseAttr set`、positive または negative `empty set`、negative
+`empty object` と、ordered mixed source `reserve x for set; reserve y for non
+empty set;` だけを受理しなければならない。exact-source gate は各 attributed
+binding の argument-free attribute 1 個と unrelated top-level item なしを要求
+する。duplicate/mixed attribute、wrong polarity/head、exact mixed source 外の
+multiple binding/item、extra definition は source extraction gap に残る。既存
+fail-closed fixture 5 件の evidence-query expectation は保持する。この repair は
+`.miz` case を追加せず、attributed type を accept せず、evidence を提供せず、
+positive `empty object` を昇格しない。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

@@ -357,6 +357,18 @@ positive `empty object`, imported attributes on symbol heads, imported module
 AST extraction, attributed-type admissibility/evidence or acceptance, or
 downstream payloads.
 
+Task 181 current-state repair: the source route shared by tasks 84, 85, 116,
+and 171 now admits only their five credited source shapes: four exact
+single-binding fixtures and the exact ordered mixed reserve fixture. A real
+`parser.type_fixtures` imported attribute requires the exact import/item
+layout, exact spelling, head and polarity, and no arguments; missing, wrong,
+or duplicate imports, duplicate or mixed attributes, broader binding/item/order
+shapes, definitions, and recovery nodes remain on the extraction gap. Existing
+expectations and runner count 129 are unchanged. This closes a
+`source_undocumented_behavior`; it does not promote positive `empty object`,
+attribute evidence or acceptance, imported module AST extraction, or downstream
+payloads.
+
 Task 86 / task 115 / task 117 addendum: task 86 records the formula-only theorem source
 `theorem FormulaPayloadBoundary: thesis;` after parser and resolver execution as
 the source-derived theorem/formula boundary. Task 115 supersedes only this exact
@@ -1652,6 +1664,12 @@ exact negative imported `empty`/builtin-`object` source now reaches the checker
 evidence-query diagnostic; positive `empty object`, imported attributes on
 symbol heads, imported module AST extraction, attribute evidence/acceptance,
 and downstream payloads remain deferred.
+
+Task 181 current-state override: imported attributed-reserve routing is now
+guarded by the exact five already credited task-84/85/116/171 source shapes.
+No corpus, expectation, traceability, runner-count, or semantic-coverage row is
+changed; broader imported attributed-reserve shapes remain recorded extraction
+gaps.
 
 ## Task 32 Classification
 

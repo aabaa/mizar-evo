@@ -1303,6 +1303,19 @@ publish falsehood or facts, accept the theorem, close a proof goal, extract an
 implicit closure or child graph, activate `formula_statement`, or create
 proof/CoreIr/ControlFlowIr/VC payloads. Exact-source, near-miss/corruption, and
 real parser/resolver-sidecar guards must protect the route.
+Task 181 is an exactness repair, not a semantic promotion. When the reserve
+source bridge observes a real imported `parser.type_fixtures` attribute, it
+must accept only the five already credited sources: the four single-binding
+shapes positive `TypeCaseAttr set`, positive or negative `empty set`, and
+negative `empty object`, plus the ordered mixed source `reserve x for set;
+reserve y for non empty set;`. The exact-source gate must require one
+argument-free attribute on each attributed binding and no unrelated top-level
+item. Duplicate or mixed attributes, wrong polarity/head, and multiple
+bindings/items outside that exact mixed source remain on the source extraction
+gap. The five existing fail-closed fixtures retain their evidence-query
+expectations; this repair does
+not add a `.miz` case, accept attributed types, provide evidence, or promote
+positive `empty object`.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

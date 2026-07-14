@@ -352,6 +352,16 @@ polarity、argument-free checker handoff だけである。positive `empty objec
 symbol head 上の imported attribute、imported module AST extraction、attributed-
 type admissibility/evidence または acceptance、downstream payload は credit しない。
 
+Task 181 current-state repair: tasks 84、85、116、171 が共有する source route は、
+credit 済み source shape 5 件、すなわち exact single-binding fixture 4 件と exact
+ordered mixed reserve fixture だけを受理する。real `parser.type_fixtures`
+imported attribute は exact import/item layout、spelling、head、polarity、argument
+なしを要求し、missing/wrong/duplicate import、duplicate/mixed attribute、broader
+binding/item/order shape、definition、recovery node は extraction gap に残す。
+既存 expectation と runner count 129 は変えない。この repair は
+`source_undocumented_behavior` を閉じるが、positive `empty object`、attribute
+evidence/acceptance、imported module AST extraction、downstream payload は昇格しない。
+
 Task 86 / task 115 / task 117 addendum: task 86 は
 `theorem FormulaPayloadBoundary: thesis;` という formula-only theorem source を
 parser / resolver 実行後の source-derived theorem/formula boundary として記録する。
@@ -1591,6 +1601,11 @@ extraction gap に残るという旧記述は supersede される。exact negati
 `empty`/builtin-`object` source は checker evidence-query diagnostic に到達する。
 positive `empty object`、symbol head 上の imported attribute、imported module AST
 extraction、attribute evidence/acceptance、downstream payload は deferred のまま。
+
+Task 181 current-state override: imported attributed-reserve routing は credit
+済み task-84/85/116/171 source shape 5 件だけを許す exact guard を持つ。
+corpus、expectation、traceability、runner count、semantic-coverage row は変更せず、
+broader imported attributed-reserve shape は記録済み extraction gap のままである。
 
 ## Task 32 Classification
 
