@@ -1365,6 +1365,25 @@ proof/Core/ControlFlow/VC, and general chain semantics remain open. Step 5
 stays active; Steps 6/7 stay
 deferred. No module layout update is required.
 
+Task 188 MC-G020 current-state override: exact builtin-object same-binding
+equality is `test_gap`, narrow `source_drift`, and `design_drift`, not
+`spec_gap`. Chapters 3, 4, 13, 14.5.2, and 16 directly support `reserve x for
+object; theorem ReservedObjectVariableEqualityPayloadBoundary: x = x;`. Tasks
+48/125 supply the real builtin-object reserve handoff, Task 119 supplies the
+exact same-binding equality route/builder, and Task 128 demonstrates the real
+builtin-object normalization consumer. The route must resolve ordinals 1/2 to
+`BindingId(0)`, preserve four distinct result/expected role sites on one
+written `object` range, intern one canonical builtin-object identity, and
+record two `Inferred` variables, two ordered expected constraints, and one
+fact/deferred-free `Checked` equality. Exact/near-miss, matched-output,
+canonical-source, `BuiltinSet` corruption, route-order, and real frontend/
+resolver-sidecar guards are required. Five shared trace backlinks plus one
+dedicated row protect active runner 136 without changing existing
+expectations. Object/set coercion, general/non-reflexive object
+equality, truth/facts, implicit closure/order, theorem acceptance, proof/Core/
+ControlFlow/VC, and broader source shapes remain open. Step 5 stays active;
+Steps 6/7 stay deferred. No module layout update is required.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

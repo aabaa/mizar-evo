@@ -1291,6 +1291,19 @@ corruption guards, and the real frontend/resolver sidecar protect active count
 facts, closure/order, theorem/proof/CoreIr/ControlFlowIr/VC, set-terminal/
 deeper/other asserted-head chains, general chain semantics, and downstream
 payloads receive no credit.
+Task 188 adds the exact active builtin-object reserved-variable equality row
+`ReservedObjectVariableEqualityPayloadBoundary: x = x;`, with five shared
+Chapter 4/13/14.5.2/16/checker bridge references plus one dedicated checker
+bridge reference. Credit is limited to source-order ordinals 1 and 2 resolving
+to `BindingId(0)`, four distinct result/expected role sites preserving the one
+written `object` type range, one canonical normalized builtin-object identity
+anchored at that reserve, two inferred variable terms, two ordered expected
+constraints, and one fact/deferred-free `Checked` equality without object/set
+coercion. Exact-route, provenance near-miss, mutable payload-corruption, shared
+immutable-output validation, and real frontend/resolver sidecar guards protect
+active count 136. General or non-reflexive object equality, truth/facts,
+closure/order, declaration/theorem acceptance, `formula_statement`, proof,
+CoreIr, ControlFlowIr, VC, and downstream payloads receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

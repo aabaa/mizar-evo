@@ -1290,6 +1290,21 @@ proof/CoreIr/ControlFlowIr/VC, and general chain semantics remain uncredited.
 Step 5 remains active; Steps 6/7 remain deferred. No module layout update is
 required.
 
+Task 188 adds only the exact active builtin-object equality source `reserve x
+for object; theorem ReservedObjectVariableEqualityPayloadBoundary: x = x;`.
+The active route must reuse the real source-derived object reserve handoff and
+the existing reserved-variable equality consumer, retain ordinal 1/2 local
+lookups plus four distinct result/expected role sites on the written reserve
+range, and accept only a single canonical builtin-object identity, two
+`Inferred` variable terms, two ordered expected constraints, and one fact/
+deferred-free `Checked` equality. Exact/near-miss/corruption and real frontend/
+resolver-sidecar tests guard source shape, binding identity, lookup ordering,
+role provenance, checker counts/status, constraints, canonical source, and
+wrong builtin-set output. Five shared backlinks plus one dedicated trace row
+protect active runner 136 without rebaselining an existing expectation. This
+does not activate general object equality, coercion,
+truth/facts, closure/order, theorem/proof acceptance, or downstream payloads.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

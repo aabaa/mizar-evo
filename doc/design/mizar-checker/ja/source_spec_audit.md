@@ -1302,6 +1302,24 @@ theorem acceptance、proof/Core/ControlFlow/VC、general chain semantics は ope
 のままである。Step 5 は active、
 Steps 6/7 は deferred のまま。module layout 更新は不要である。
 
+Task 188 MC-G020 current-state override: exact builtin-object same-binding
+equality を `spec_gap` ではなく `test_gap`、narrow `source_drift`、
+`design_drift` と分類する。Chapter 3、4、13、14.5.2、16 は `reserve x for
+object; theorem ReservedObjectVariableEqualityPayloadBoundary: x = x;` を直接
+支える。tasks 48/125 は real builtin-object reserve handoff、task 119 は exact
+same-binding equality route/builder、task 128 は real builtin-object normalization
+consumer を提供する。route は ordinal 1/2 を `BindingId(0)` に解決し、written
+`object` range 1 個上の distinct result/expected role site 4 個、canonical
+builtin-object identity 1 個、`Inferred` variable 2 個、ordered expected constraint
+2 個、fact/deferred-free `Checked` equality 1 個を保持しなければならない。
+exact/near-miss、matched-output、canonical-source、`BuiltinSet` corruption、
+route-order、real frontend/resolver-sidecar guard を必須とする。shared trace
+backlink 5 個 + dedicated row 1 個により既存 expectation を変更せず active runner
+136 を保護する。object/set coercion、general/non-reflexive object
+equality、truth/fact、implicit closure/order、theorem acceptance、proof/Core/
+ControlFlow/VC、broader source shape は open のままである。Step 5 は active、
+Steps 6/7 は deferred のまま。module layout 更新は不要である。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

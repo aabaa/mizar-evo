@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_reserved_object_variable_equality_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_reserved_object_variable_equality_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.builtin_type_expression_source_bridge",
+  "spec.en.checker.type_elaboration.reserved_object_variable_equality_source_bridge",
+]
+notes = "Active type_elaboration runner pass coverage for checker task 188: the exact builtin-object reserved-variable equality source reuses the real source reserve handoff and equality consumer, resolves both identifier uses at source-order ordinals 1 and 2 to BindingId(0), preserves four distinct result/expected role sites on the single written object range, and reaches one canonical builtin-object identity, two Inferred variable terms, two ordered expected constraints, and one fact/deferred-free Checked equality without diagnostics. Checked means type/well-formedness checked only; object/set coercion, general or non-reflexive object equality, truth/facts, implicit closure/order, declaration/theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, and VC payloads remain deferred."

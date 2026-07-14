@@ -1222,6 +1222,20 @@ positive imported semantics、declaration/attribute acceptance、truth/fact、
 closure/order、theorem/proof/CoreIr/ControlFlowIr/VC、set-terminal/deeper/他
 asserted-head chain、general chain semantics、downstream payload は credit
 しない。
+task 188 は exact active builtin-object reserved-variable equality row
+`ReservedObjectVariableEqualityPayloadBoundary: x = x;` を shared な Chapter
+4/13/14.5.2/16/checker bridge reference 5 件と dedicated checker bridge
+reference 1 件とともに追加する。current credit は source-order ordinal 1 と 2
+から解決する `BindingId(0)`、記述された 1 個の `object` type range を保持する
+distinct な result/expected role site 4 個、その reserve を anchor とする canonical
+normalized builtin-object identity 1 個、inferred variable term 2 個、ordered
+expected constraint 2 個、object/set coercion を用いない fact/deferred-free な
+`Checked` equality 1 個だけに限定する。exact-route、provenance near-miss、
+mutable payload-corruption、shared immutable-output validation、real frontend/
+resolver sidecar guard が active count 136 を保護する。general/non-reflexive
+object equality、truth/fact、closure/order、declaration/theorem acceptance、
+`formula_statement`、proof、CoreIr、ControlFlowIr、VC、downstream payload は
+credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

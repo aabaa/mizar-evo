@@ -937,6 +937,20 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    Positive imported semantics, declaration/attribute acceptance, truth/facts,
    closure/order, theorem/proof/CoreIr/ControlFlowIr/VC, set-terminal/deeper/
    other asserted-head chains, and general chain semantics remain deferred,
+   task 188 adds the exact builtin-object same-binding equality bridge by
+   composing tasks 48/125's real written `object` reserve handoff, task 119's
+   exact reserved-variable equality builder, and task 128's real builtin-object
+   normalization consumer. The route accepts only `reserve x for object;
+   theorem ReservedObjectVariableEqualityPayloadBoundary: x = x;`, resolves
+   source-order ordinals 1/2 to `BindingId(0)`, preserves four distinct result/
+   expected role sites on the one written type range, interns one canonical
+   builtin-object identity, and records two inferred variables, two ordered
+   constraints, and one fact/deferred-free checked equality. Five shared
+   backlinks, one dedicated row, structural/provenance near misses, corruption
+   and immutable-output guards, and a real frontend/resolver sidecar protect
+   active case 136. Object/set coercion, general/non-reflexive equality, truth/
+   facts, closure/order, declaration/theorem acceptance, proof/CoreIr/
+   ControlFlowIr/VC, and broader shapes remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

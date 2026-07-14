@@ -1448,6 +1448,29 @@ facts, implicit closure/order, theorem acceptance, proof/CoreIr/ControlFlowIr/
 VC, deeper asserted heads, and general
 chain semantics remain uncredited. Step 5 stays active; Steps 6/7 stay deferred.
 No module layout update is required.
+
+Task 188 adds only the exact builtin-object
+reserved-variable equality source `reserve x for object; theorem
+ReservedObjectVariableEqualityPayloadBoundary: x = x;`. The production route
+must reuse the real source reserve handoff and the existing reserved-variable
+binary-formula checker builder, resolve the two source-order uses at ordinals 1
+and 2 to `BindingId(0)`, and retain four distinct result/expected role sites
+whose type inputs all preserve the single written `object` range. The checker
+output must contain one canonical known builtin-object identity anchored at
+that written reserve type, two `Inferred` variable terms, two ordered operand-
+owned expected constraints, and one fact/deferred-free `Checked` equality.
+Exact/near-miss tests must reject another label, operand, operator, status/
+recovery/extra item, multiple bindings or reserve items, `set`, mode,
+structure, attributed, or argument-bearing reserve heads. Task-local negative
+probes must reject binding/ordinal drift, `BuiltinSet` head corruption,
+collapsed role sites, wrong source projection, and a missing expected input;
+positive count/status/constraint/canonical-source assertions plus the shared
+formula-output validator must pin the immutable checker output. A real
+frontend/resolver sidecar must guard the active fixture. This is type and well-
+formedness checking only: object/set coercion, non-reflexive or general object
+equality, truth/facts, implicit closure/order, theorem acceptance, proof
+execution, and CoreIr/ControlFlowIr/VC/proof payloads remain deferred.
+
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

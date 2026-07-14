@@ -1387,6 +1387,28 @@ inequality desugaring/truth/fact、closure/order、theorem acceptance、proof/Co
 separate declaration、broader shape は deferred のままである。source/trace
 contract、production route、独立した corruption coverage、real frontend/resolver
 sidecar が active bridge を保護する。
+
+task 188 は exact builtin-object reserved-variable
+equality source `reserve x for object; theorem
+ReservedObjectVariableEqualityPayloadBoundary: x = x;` だけを追加する。
+production route は real source reserve handoff と既存 reserved-variable binary-
+formula checker builder を再利用し、source-order use 2 個を ordinal 1/2 で
+`BindingId(0)` に解決し、single written `object` range をすべて保持する distinct
+result/expected role site 4 個を残さなければならない。checker output は written
+reserve type に anchor された canonical known builtin-object identity 1 個、
+`Inferred` variable term 2 個、operand-owned ordered expected constraint 2 個、
+fact/deferred-free `Checked` equality 1 個を含まなければならない。exact/near-
+miss test は別 label/operand/operator、status/recovery/extra item、multiple binding
+または reserve item、`set`、mode、structure、attributed、argument-bearing reserve
+head を reject する。task-local negative probe は binding/ordinal drift、
+`BuiltinSet` head corruption、collapsed role site、wrong source projection、missing
+expected input を reject し、positive count/status/constraint/canonical-source
+assertion と shared formula-output validator が immutable checker output を固定する。
+real frontend/resolver sidecar が active fixture を guard する。これは
+type/well-formedness checking だけであり、object/set coercion、non-reflexive または
+general object equality、truth/fact、implicit closure/order、theorem acceptance、
+proof execution、CoreIr/ControlFlowIr/VC/proof payload は deferred のままである。
+
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event
