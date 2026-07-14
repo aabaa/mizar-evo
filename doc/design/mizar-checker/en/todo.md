@@ -3314,6 +3314,33 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 56, 146, and 182. Refs: Step 5; mizar-test task 10; specs 3,
       4, 7, 13, 14, and 16.
 
+185. **Add exact one-edge object-terminal formula-side local-mode asserted-head checker bridge.** [x]
+    - Close only the object-terminal same-outer-mode one-edge chain composed
+      from two ordered definition blocks containing `mode
+      BaseObjectModeAssertedHeadDef: BaseObjectModeAssertedHead is object;` and
+      `mode ChainObjectModeAssertedHeadDef: ChainObjectModeAssertedHead is
+      BaseObjectModeAssertedHead;`, one reserve for `ChainObjectModeAssertedHead`,
+      and `ChainedLocalObjectModeAssertedHeadPayloadBoundary: x is
+      ChainObjectModeAssertedHead;`.
+    - Acceptance: preserve independent raw reserve-subject and formula-side
+      asserted inputs with distinct sites/ranges and the same resolved outer
+      mode symbol. Consume both real AST-derived expansions, resolve ordinal 1
+      to `BindingId(0)`, intern three known type entries to one terminal-base-
+      definition-RHS builtin-object identity, and record one inferred variable
+      plus one fact/deferred-free normalized-reflexive checked type assertion
+      without general reachability, widening, `qua`, or object/set coercion.
+      Require exact/near-miss/corruption/real-sidecar guards and five shared
+      trace backlinks plus one dedicated row; raise the active runner from 132
+      to 133. Keep set-terminal, direct, deeper, attributed, argument-bearing,
+      imported, recovered, and other asserted-head shapes outside this task; do
+      not claim declaration/attribute acceptance, broader term/formula or child-
+      graph semantics, truth/facts, theorem acceptance, closure/order, proof/
+      CoreIr/ControlFlowIr/VC, or general chain semantics. No module layout
+      update is required.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 56, 147, 183, and 184. Refs: Step 5; mizar-test task 10;
+      specs 3, 4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

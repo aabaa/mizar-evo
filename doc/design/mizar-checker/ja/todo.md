@@ -3126,6 +3126,31 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 56、146、182。参照: Step 5、mizar-test task 10、specs 3、4、
       7、13、14、16。
 
+185. **One-edge object-terminal formula-side local-mode asserted-head checker bridge を追加する。** [x]
+    - `mode BaseObjectModeAssertedHeadDef: BaseObjectModeAssertedHead is object;`
+      と `mode ChainObjectModeAssertedHeadDef: ChainObjectModeAssertedHead is
+      BaseObjectModeAssertedHead;` を含む ordered definition block 2 個、
+      `ChainObjectModeAssertedHead` の reserve 1 個、
+      `ChainedLocalObjectModeAssertedHeadPayloadBoundary: x is
+      ChainObjectModeAssertedHead;` から成る object-terminal same-outer-mode
+      one-edge chain だけを閉じる。
+    - Acceptance: distinct site/range と同じ resolved outer mode symbol を持つ
+      独立した raw reserve-subject/formula-side asserted input を保持する。real
+      AST-derived expansion 2 個を消費し、ordinal 1 を `BindingId(0)` に解決し、
+      known type entry 3 個を terminal base-definition-RHS builtin-object identity
+      1 個へ intern し、general reachability、widening、`qua`、object/set coercion
+      を用いず、1 inferred variable と 1 fact/deferred-free normalized-reflexive
+      checked type assertion を記録する。exact/near-miss/corruption/real-sidecar
+      guard と shared trace backlink 5 個 + dedicated row 1 個を必須とし、active
+      runner を 132 から 133 に増やす。set-terminal、direct、deeper、attributed、
+      argument-bearing、imported、recovered、他 asserted-head shape は task 外とし、
+      declaration/attribute acceptance、broader term/formula/child-graph semantics、
+      truth/fact、theorem acceptance、closure/order、proof/CoreIr/ControlFlowIr/VC、
+      general chain semantics を主張しない。module layout 更新は不要である。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 56、147、183、184。参照: Step 5、mizar-test task 10、specs 3、
+      4、7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

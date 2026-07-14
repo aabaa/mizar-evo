@@ -1220,6 +1220,28 @@ declaration acceptance/inhabitation、widening/`qua`、truth/fact、closure/orde
 theorem/proof/Core/ControlFlow/VC、object/deeper/他 asserted head、general chain
 semantics は open のままである。
 
+Task 185 MC-G020 current-state override: exact one-edge object-terminal same-outer-mode
+asserted head を `spec_gap` ではなく `test_gap`、narrow `source_drift`、
+`design_drift` と分類する。Chapter 3、4、7、13、14.2.3、16 は `mode
+BaseObjectModeAssertedHeadDef: BaseObjectModeAssertedHead is object;` と `mode
+ChainObjectModeAssertedHeadDef: ChainObjectModeAssertedHead is
+BaseObjectModeAssertedHead;` を含む ordered definition block 2 個、outer-mode
+reserve 1 個、`ChainedLocalObjectModeAssertedHeadPayloadBoundary: x is
+ChainObjectModeAssertedHead;` から成る test-first source を直接支える。task 56
+は real one-edge expansion producer、tasks 147/183/184 は normalized object
+consumer と same-symbol recursive formula-side asserted-head seam を提供する。
+exact route は同じ outer symbol 向けの独立した raw reserve-subject/formula-side
+asserted input、real expansion 2 個、ordinal 1 の `BindingId(0)`、terminal base-
+definition-RHS builtin-object identity 1 個へ intern する known type entry 3 個、
+1 inferred term、general reachability、widening、`qua`、object/set coercion を
+用いない 1 fact/deferred-free checked formula を保持する。exact/near-miss/
+corruption、production-route、real sidecar guard が active runner 133 を保護する。
+shared trace backlink 5 個と dedicated row 1 個が exact credit を担う。imported
+provenance、declaration/attribute acceptance、
+broader term/formula、child graph、theorem/proof/Core/ControlFlow/VC、deeper/他
+asserted head、general chain semantics は open のままである。module layout 更新は
+不要である。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

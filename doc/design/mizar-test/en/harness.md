@@ -1224,6 +1224,28 @@ Declaration acceptance/inhabitation, widening/`qua`, truth/facts, closure/order,
 theorem/proof/CoreIr/ControlFlowIr/VC, object/deeper/other asserted-head chains,
 and general chain semantics remain uncredited.
 
+Task 185 adds the exact one-edge object-terminal same-outer-mode asserted-head
+pass case. The production route accepts only two ordered definition
+blocks with `mode BaseObjectModeAssertedHeadDef: BaseObjectModeAssertedHead is
+object;` and `mode ChainObjectModeAssertedHeadDef:
+ChainObjectModeAssertedHead is BaseObjectModeAssertedHead;`, one matching outer-
+mode reserve, and exact `x is ChainObjectModeAssertedHead`. It must retain
+distinct raw reserve-subject and formula-side asserted ranges for the same
+resolved outer symbol, consume both real expansions, resolve ordinal 1 to
+`BindingId(0)`, and require three known type entries interned to one terminal-
+base-definition-RHS builtin-object identity, one `Inferred` variable, and one
+fact/deferred-free normalized-reflexive `Checked` type assertion without
+general reachability, widening, `qua`, or object/set coercion. Exact/near-miss,
+matched-output corruption, route-order, and real frontend/resolver-sidecar tests
+must fail closed for wrong links/terminals/order/depth, builtin/base/other
+asserted heads, attributes/arguments, imported provenance, recovery, extra
+items, collapsed provenance, and builtin-set output corruption. Imported/
+declaration/attribute, broader term/formula/child-
+graph, truth/fact, theorem/proof/CoreIr/ControlFlowIr/VC, deeper/other asserted-
+head, and general-chain coverage remain uncredited. Five shared trace backlinks
+plus one dedicated row protect active count 133. No module layout update was
+required.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

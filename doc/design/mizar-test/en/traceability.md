@@ -1248,6 +1248,20 @@ resolver sidecar protect active count 132. Declaration acceptance/inhabitation,
 widening/`qua`, truth/facts, closure/order, theorem/proof/CoreIr/ControlFlowIr/
 VC, object/deeper/other asserted-head chains, and general chain semantics
 receive no credit.
+Task 185 adds the exact active one-edge object-terminal same-outer-mode formula-
+side asserted-head row `ChainedLocalObjectModeAssertedHeadPayloadBoundary: x is
+ChainObjectModeAssertedHead;`, with Chapter 3/4/7/13/14.2.3/16 and a dedicated
+checker bridge reference. Credit is limited to two real expansions, independent
+raw reserve-subject and formula-side asserted inputs for the same resolved outer
+symbol, ordinal 1 `BindingId(0)`, three known type entries interned to one
+terminal-base-definition-RHS builtin-object identity, one inferred term, and one
+fact/deferred-free normalized-reflexive checked type assertion without general
+reachability, widening/`qua`, or object/set coercion. Five shared backlinks plus
+the dedicated row, production routing, exact/near-miss/corruption guards, and
+the real frontend/resolver sidecar protect active count 133. Declaration/
+attribute acceptance, truth/facts, closure/order, theorem/proof/CoreIr/
+ControlFlowIr/VC, set-terminal/deeper/other asserted-head chains, and general
+chain semantics receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

@@ -1472,6 +1472,27 @@ general chain semantics, and downstream payloads receive no credit. Task 146's
 formula-side builtin-set assertion and Task 182's direct same-mode assertion
 retain their separate exact credit.
 
+Task185 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 185 classifies
+the exact one-edge object-terminal same-outer-mode formula-side asserted-head
+seam as `test_gap`, `source_drift`, and `design_drift`. It composes Task 56's
+real AST-derived one-edge expansion producer with Task 147's normalized object
+consumer, Task 183's object same-symbol asserted-head producer, and Task 184's
+recursive asserted-head pattern. Current credit is limited to independent raw
+reserve-subject and formula-side asserted inputs for the same resolved outer
+symbol, ordinal 1 `BindingId(0)`, two real expansions, three known type entries
+interned to one terminal-base-definition-RHS builtin-object identity, one
+inferred term, and one fact/deferred-free checked type assertion without general
+reachability, widening/`qua`, or object/set coercion. Five shared backlinks plus
+the dedicated row, production routing, exact/near-miss/corruption guards, and
+the real frontend/resolver sidecar protect active runner 133. Declaration/
+attribute acceptance, truth/facts, closure/order, theorem/proof/CoreIr/
+ControlFlowIr/VC, imported/set-terminal/deeper/other asserted heads, general
+chain semantics, and downstream payloads receive no credit. Task 147's
+formula-side builtin-object assertion and Task 183's direct same-mode assertion
+retain their separate exact credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

@@ -1180,6 +1180,20 @@ miss/corruption guard、real frontend/resolver sidecar が active count 132 を�
 declaration acceptance/inhabitation、widening/`qua`、truth/fact、closure/order、
 theorem/proof/CoreIr/ControlFlowIr/VC、object/deeper/他 asserted-head chain、
 general chain semantics は credit しない。
+task 185 は exact active one-edge object-terminal same-outer-mode formula-side
+asserted-head row `ChainedLocalObjectModeAssertedHeadPayloadBoundary: x is
+ChainObjectModeAssertedHead;` を Chapter 3/4/7/13/14.2.3/16 と dedicated checker
+bridge reference とともに追加する。current credit は real expansion 2 本、同じ
+resolved outer symbol 向けの独立した raw reserve-subject/formula-side asserted
+input、ordinal 1 の `BindingId(0)`、terminal base-definition-RHS builtin-object
+identity 1 個へ intern する known type entry 3 個、1 inferred term、general
+reachability、widening/`qua`、object/set coercion を用いない 1 fact/deferred-free
+normalized-reflexive checked type assertion だけに限定する。shared backlink 5 件
+と dedicated row、production routing、exact/near-miss/corruption guard、real
+frontend/resolver sidecar が active count 133 を保護する。declaration/attribute
+acceptance、truth/fact、closure/order、theorem/proof/CoreIr/ControlFlowIr/VC、
+set-terminal/deeper/他 asserted-head chain、general chain semantics は credit
+しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

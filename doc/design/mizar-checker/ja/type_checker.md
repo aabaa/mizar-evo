@@ -1299,6 +1299,28 @@ other asserted head、attribute、argument、recovery、extra item、collapsed
 provenance を reject する。declaration acceptance/inhabitation、
 truth/fact、closure/order、theorem/proof/CoreIr/ControlFlowIr/VC、object-terminal/
 deeper asserted-head chain、general chain semantics は credit しない。
+task 185 は one-edge object-terminal same-outer-mode asserted-head sibling だけを
+追加する。exact source は `mode BaseObjectModeAssertedHeadDef:
+BaseObjectModeAssertedHead is object;` と `mode ChainObjectModeAssertedHeadDef:
+ChainObjectModeAssertedHead is BaseObjectModeAssertedHead;` を含む ordered
+definition block 2 個、outer-mode reserve 1 個、
+`ChainedLocalObjectModeAssertedHeadPayloadBoundary: x is
+ChainObjectModeAssertedHead;` だけを含む。producer は distinct site/range と同じ
+resolved outer-mode symbol を持つ独立した raw reserve-subject/formula-side
+asserted type-expression input を保持する。real AST-derived
+expansion 2 個は known type entry 3 個すべてを base definition RHS に canonical
+anchor された builtin-object identity 1 個へ normalize する。
+consumer は ordinal 1 を `BindingId(0)` に解決し、1 `Inferred`
+variable と 1 fact/deferred-free normalized-reflexive `Checked` formula を記録し、
+general reachability、widening、`qua`、object/set coercion を起動してはならない。
+exact/near-miss/corruption/route-order/real frontend-resolver sidecar guard は wrong
+link/terminal/order/depth、builtin/base/other asserted head、attribute、argument、
+imported provenance、recovery、extra item、collapsed provenance、builtin-set output
+corruption を reject する。shared trace backlink 5 個と dedicated row 1 個が
+active runner 133 を保護する。declaration/attribute
+acceptance、broader term/formula、child graph、truth/fact、closure/order、theorem/
+proof/CoreIr/ControlFlowIr/VC、deeper/他 asserted-head chain、general chain
+semantics は credit しない。module layout 更新は不要である。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

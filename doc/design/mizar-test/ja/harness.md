@@ -1177,6 +1177,27 @@ inhabitation、widening/`qua`、truth/fact、closure/order、theorem/proof/CoreI
 ControlFlowIr/VC、object/deeper/他 asserted-head chain、general chain semantics は
 credit しない。
 
+task 185 は exact one-edge object-terminal same-outer-mode asserted-head pass
+case を追加する。production route は `mode BaseObjectModeAssertedHeadDef:
+BaseObjectModeAssertedHead is object;` と `mode ChainObjectModeAssertedHeadDef:
+ChainObjectModeAssertedHead is BaseObjectModeAssertedHead;` を含む ordered
+definition block 2 個、matching outer-mode reserve 1 個、exact `x is
+ChainObjectModeAssertedHead` だけを受理してよい。同じ resolved outer symbol に
+ついて distinct raw reserve-subject/formula-side asserted range を保持し、real
+expansion 2 個を消費し、ordinal 1 を `BindingId(0)` に解決し、known type entry
+3 個を terminal base-definition-RHS builtin-object identity 1 個へ intern し、
+general reachability、widening、`qua`、object/set coercion を用いず、1
+`Inferred` variable と 1 fact/deferred-free normalized-reflexive `Checked` type
+assertion を要求する。exact/near-miss、matched-output corruption、route-order、
+real frontend/resolver-sidecar test は wrong link/terminal/order/depth、builtin/
+base/other asserted head、attribute/argument、imported provenance、recovery、
+extra item、collapsed provenance、builtin-set output corruption で fail closed
+する。shared trace backlink 5 個と dedicated row 1 個が active count 133 を
+保護する。imported/declaration/attribute、broader
+term/formula/child graph、truth/fact、theorem/proof/CoreIr/ControlFlowIr/VC、
+deeper/他 asserted head、general chain coverage は credit しない。module layout
+更新は不要だった。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

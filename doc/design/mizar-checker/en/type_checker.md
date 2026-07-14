@@ -1370,6 +1370,29 @@ attributes, arguments, recovery, extra items, and collapsed provenance. This
 task does not credit declaration acceptance/inhabitation, truth/facts,
 closure/order, theorem/proof/CoreIr/ControlFlowIr/VC, object-terminal or deeper
 asserted-head chains, or general chain semantics.
+Task 185 adds only the one-edge object-terminal same-outer-mode asserted-
+head sibling. The exact source contains two ordered definition blocks with
+`mode BaseObjectModeAssertedHeadDef: BaseObjectModeAssertedHead is object;` and
+`mode ChainObjectModeAssertedHeadDef: ChainObjectModeAssertedHead is
+BaseObjectModeAssertedHead;`, one outer-mode reserve, and only
+`ChainedLocalObjectModeAssertedHeadPayloadBoundary: x is
+ChainObjectModeAssertedHead;`. The producer retains independent raw reserve-
+subject and formula-side asserted type-expression inputs with distinct sites/
+ranges and the same resolved outer-mode symbol. Both real AST-derived expansions
+normalize all three known type entries to one builtin-object identity
+canonically anchored at the base definition RHS. The consumer resolves ordinal
+1 to `BindingId(0)`, records one `Inferred` variable and one fact/
+deferred-free normalized-reflexive `Checked` formula, and invoke neither general
+reachability, widening, `qua`, nor object/set coercion. Exact, near-miss,
+corruption, route-order, and real frontend/resolver-sidecar guards reject
+wrong links/terminals/order/depth, builtin/base/other asserted heads, attributes,
+arguments, imported provenance, recovery, extra items, collapsed provenance,
+and builtin-set output corruption. Five shared trace backlinks plus one
+dedicated row protect active runner 133. This task
+does not credit declaration or attribute acceptance, broader terms/formulas,
+child graphs, truth/facts, closure/order, theorem/proof/CoreIr/ControlFlowIr/VC,
+deeper/other asserted-head chains, or general chain semantics. No module layout
+update is required.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

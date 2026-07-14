@@ -1278,6 +1278,29 @@ active runner 132. Declaration acceptance/inhabitation, widening/`qua`, truth/fa
 closure/order, theorem/proof/Core/ControlFlow/VC, object/deeper/other asserted
 heads, and general chain semantics remain open.
 
+Task 185 MC-G020 current-state override: the exact one-edge object-terminal
+same-outer-mode asserted head is classified as `test_gap`, narrow
+`source_drift`, and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13,
+14.2.3, and 16 support the source: two ordered definition blocks with `mode
+BaseObjectModeAssertedHeadDef: BaseObjectModeAssertedHead is object;` and `mode
+ChainObjectModeAssertedHeadDef: ChainObjectModeAssertedHead is
+BaseObjectModeAssertedHead;`, one outer-mode reserve, and
+`ChainedLocalObjectModeAssertedHeadPayloadBoundary: x is
+ChainObjectModeAssertedHead;`. Task 56 supplies the real one-edge expansion
+producer; Tasks 147, 183, and 184 supply the normalized object consumer and
+same-symbol recursive formula-side asserted-head seam. The exact route
+preserves independent raw reserve-subject and formula-side asserted inputs for
+the same outer symbol, both real expansions, ordinal 1 `BindingId(0)`, three
+known type entries interned to one terminal-base-definition-RHS builtin-object
+identity, one inferred term, and one fact/deferred-free checked formula without
+general reachability, widening, `qua`, or object/set coercion. Exact/near-miss/
+corruption, production-route, and real sidecar guards protect active runner
+133. Five shared trace backlinks plus one dedicated row carry the exact credit.
+Imported provenance, declaration/attribute acceptance, broader terms/
+formulas, child graphs, theorem/proof/Core/ControlFlow/VC, deeper/other asserted
+heads, and general chain semantics remain open. No module layout update is
+required.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin
