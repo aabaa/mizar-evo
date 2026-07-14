@@ -1188,6 +1188,23 @@ acceptance/inhabitation,
 widening/`qua`, truth/facts, theorem/proof/CoreIr/ControlFlowIr/VC, child graphs,
 other asserted-head families, or general semantics.
 
+Task 183 adds the direct object-terminal formula-side local-mode asserted-head
+pass case. The production route accepts only one definition block with
+`mode LocalObjectModeAssertedHeadDef: LocalObjectModeAssertedHead is object;`,
+one matching reserve, and exact `x is LocalObjectModeAssertedHead`. It retains
+distinct raw reserve-subject and formula-side asserted sites/ranges for the
+same resolved symbol, consumes one real expansion, resolves ordinal 1 to
+`BindingId(0)`, and requires three known type entries interned to one terminal-
+RHS builtin-object identity, one `Inferred` variable, and one fact/deferred-free
+normalized-reflexive `Checked` type assertion without general reachability or
+object/set coercion. Exact/near-miss, matched-output corruption, route-order,
+and real frontend/resolver-sidecar tests fail closed for set terminals,
+builtin/other asserted heads, chains, attributes/arguments, recovery, extra
+items, and collapsed provenance. The new active pass case raises the runner
+from 130 to 131. Declaration acceptance/inhabitation, truth/facts, theorem/
+proof/CoreIr/ControlFlowIr/VC, other asserted-head families, and general
+semantics remain uncredited.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

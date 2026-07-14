@@ -1242,6 +1242,22 @@ declaration acceptance/inhabitation, widening/`qua`, truth/
 facts, theorem/proof/Core/ControlFlow/VC, other asserted heads/chains, and
 general semantics remain open.
 
+Task 183 MC-G020 current-state override: the exact direct object-terminal
+formula-side local-mode asserted head closes `test_gap`, narrow `source_drift`,
+and `design_drift`, not `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly
+support the exact source with `mode LocalObjectModeAssertedHeadDef:
+LocalObjectModeAssertedHead is object;`. Task 55 supplies the real bare-object
+mode expansion; Tasks 145 and 182 supply the normalized object consumer and
+same-symbol formula-side asserted-head producer. The exact route preserves
+independent raw reserve-subject and formula-side asserted inputs, one real
+expansion, ordinal 1 `BindingId(0)`, three known type entries interned to one
+terminal-RHS builtin-object identity, one inferred term, and one fact/deferred-
+free checked formula without general reachability or object/set coercion.
+Exact/near-miss/corruption, production-route, and real sidecar guards protect
+active runner 131. Declaration acceptance/
+inhabitation, truth/facts, theorem/proof/Core/ControlFlow/VC, other asserted
+heads/chains, and general semantics remain open.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

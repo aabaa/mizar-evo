@@ -1433,6 +1433,25 @@ corruption guards, and the real frontend/resolver sidecar protect active runner
 proof/CoreIr/ControlFlowIr/VC, object-terminal or chained asserted heads, and
 general semantics receive no credit.
 
+Task183 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 183 classifies
+the exact direct object-terminal formula-side local-mode asserted-head seam as
+`test_gap`, `source_drift`, and `design_drift`. It composes Task 55's real AST-
+derived object-terminal expansion producer with Task 145's normalized object
+consumer and Task 182's same-symbol asserted-head producer. Current credit is
+limited to independent raw reserve-subject and formula-side asserted inputs for
+the same resolved mode symbol, ordinal 1 `BindingId(0)`, one real expansion,
+three known type entries interned to one terminal-definition-RHS builtin-object
+identity, one inferred term, and one fact/deferred-free checked type assertion
+without general reachability or object/set coercion. Five shared backlinks plus
+the dedicated row, production routing, exact/near-miss/corruption guards, and
+the real frontend/resolver sidecar protect active runner 131. Declaration
+acceptance/inhabitation, truth/facts, theorem/proof/CoreIr/ControlFlowIr/VC,
+chained or broader asserted heads, and general semantics receive no credit.
+The exact direct set-terminal sibling retains Task 182's credit; Task 183 adds
+no new set-terminal credit.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

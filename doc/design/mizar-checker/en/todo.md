@@ -3266,6 +3266,30 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 55, 122, and 138. Refs: Step 5; mizar-test task 10; specs 3,
       4, 7, 13, 14, and 16.
 
+183. **Add exact object-terminal formula-side local-mode asserted-head checker bridge.** [x]
+    - Close the direct object-terminal sibling of task 182 with one exact
+      definition block containing `mode LocalObjectModeAssertedHeadDef:
+      LocalObjectModeAssertedHead is object;`, one reserve for that mode, and
+      `LocalObjectModeAssertedHeadPayloadBoundary: x is
+      LocalObjectModeAssertedHead;`.
+    - Acceptance: preserve independent raw reserve-subject and formula-side
+      asserted inputs with distinct sites/ranges and the same resolved mode
+      symbol. Consume one real AST-derived object-terminal expansion, resolve
+      ordinal 1 to `BindingId(0)`, intern three known type entries to one
+      definition-RHS-anchored builtin-object identity, and record one inferred
+      variable plus one fact/deferred-free normalized-reflexive checked type
+      assertion without general reachability or object/set coercion. Require
+      exact/near-miss/corruption/real-sidecar guards. Keep builtin, other-mode,
+      attributed, argument-bearing, chained, recovered, and broader source
+      shapes deferred. The exact direct set-terminal sibling remains credited
+      through task 182; task 183 adds no new set-terminal credit. Do not claim
+      declaration acceptance/inhabitation, truth/facts, theorem acceptance,
+      proof/CoreIr/
+      ControlFlowIr/VC, or general semantics.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 55, 145, and 182. Refs: Step 5; mizar-test task 10; specs 3,
+      4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

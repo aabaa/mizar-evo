@@ -1154,6 +1154,19 @@ backlink 5 件と dedicated row、production routing、exact/near-miss/corruptio
 guard、real frontend/resolver sidecar が active count 130 を保護する。declaration
 acceptance/inhabitation、widening/`qua`、truth/fact、theorem/proof/CoreIr/
 ControlFlowIr/VC、他 asserted-head family、general semantics は credit しない。
+task 183 は exact active object-terminal formula-side local-mode asserted-head
+row `LocalObjectModeAssertedHeadPayloadBoundary: x is LocalObjectModeAssertedHead;`
+を Chapter 3/4/7/13/14.2.3/16 と dedicated checker bridge reference とともに
+追加する。current credit は direct object-terminal real expansion 1 本、同じ
+resolved mode symbol 向けの独立した raw reserve-subject/formula-side asserted
+input、ordinal 1 の `BindingId(0)`、terminal-definition-RHS builtin-object
+identity 1 個へ intern する known type entry 3 個、1 inferred term、general
+reachability と object/set coercion を用いない 1 fact/deferred-free normalized-
+reflexive checked type assertion だけに限定する。shared backlink 5 件と dedicated
+row、production routing、exact/near-miss/corruption guard、real frontend/resolver
+sidecar が active count 131 を保護する。declaration acceptance/inhabitation、
+truth/fact、theorem/proof/CoreIr/ControlFlowIr/VC、他 asserted-head family、
+general semantics は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

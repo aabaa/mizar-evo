@@ -1142,6 +1142,22 @@ widening/`qua`、truth/fact、theorem/
 proof/CoreIr/ControlFlowIr/VC、child graph、他 asserted-head family、general
 semantics は credit しない。
 
+task 183 は direct object-terminal formula-side local-mode asserted-head pass
+case を追加する。production route は `mode LocalObjectModeAssertedHeadDef:
+LocalObjectModeAssertedHead is object;` を持つ definition block 1 個、matching
+reserve 1 個、exact `x is LocalObjectModeAssertedHead` だけを受理する。
+同じ resolved symbol について distinct raw reserve-subject/formula-side asserted
+site/range を保持し、real expansion 1 個を消費し、ordinal 1 を `BindingId(0)`
+に解決し、known type entry 3 個を terminal-RHS builtin-object identity 1 個へ
+intern し、general reachability と object/set coercion を用いず、1 `Inferred`
+variable と 1 fact/deferred-free normalized-reflexive `Checked` type assertion を
+要求する。exact/near-miss、matched-output corruption、route-order、
+real frontend/resolver-sidecar test は set terminal、builtin/other asserted head、
+chain、attribute/argument、recovery、extra item、collapsed provenance で fail
+closed する。新規 active pass case は runner を 130 から 131 に
+増やす。declaration acceptance/inhabitation、truth/fact、theorem/proof/CoreIr/
+ControlFlowIr/VC、他 asserted-head family、general semantics は credit しない。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

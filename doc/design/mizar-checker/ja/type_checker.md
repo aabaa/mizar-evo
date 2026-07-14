@@ -1265,6 +1265,21 @@ recovery、extra item、collapsed provenance を reject する。これは type/
 formedness のみであり、mode declaration acceptance/inhabitation、widening/`qua`、
 truth/fact、theorem acceptance、proof/CoreIr/ControlFlowIr/VC、他 asserted-head
 family、general semantics は deferred のままである。
+task 183 は direct object-terminal sibling を追加する。exact source は `mode
+LocalObjectModeAssertedHeadDef: LocalObjectModeAssertedHead is object;` を含む
+definition block 1 個、matching reserve 1 個、`LocalObjectModeAssertedHeadPayloadBoundary:
+x is LocalObjectModeAssertedHead;` だけを含む。producer は distinct site/range と
+同じ resolved mode symbol を持つ独立した raw reserve-subject/formula-side
+asserted type-expression input を保持する。real AST-derived
+expansion 1 個は known type entry 3 個すべてを definition RHS に canonical anchor
+された builtin-object identity 1 個へ normalize する。prepared consumer は ordinal
+1 を `BindingId(0)` に解決し、1 `Inferred` variable と 1 fact/deferred-free
+normalized-reflexive `Checked` formula を記録し、general reachability と object/set
+coercion を用いない。exact/near-miss/corruption/route-order/real frontend-resolver
+sidecar guard は set terminal、builtin/other asserted head、chain、attribute、
+argument、recovery、extra item、collapsed provenance を reject する。
+declaration acceptance/inhabitation、truth/fact、theorem/proof/CoreIr/
+ControlFlowIr/VC、他 asserted-head family、general semantics は deferred のままである。
 task 160 は source
 `reserve x, y for set; theorem DistinctReservedVariableInequalityPayloadBoundary: x <> y;`
 だけを規定する。reserve item 1 個は shared written set range 1 個を持つ distinct

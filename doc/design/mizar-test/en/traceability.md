@@ -1220,6 +1220,20 @@ exact/near-miss/corruption guards, and the real frontend/resolver sidecar
 protect active count 130. Declaration acceptance/inhabitation, widening/`qua`,
 truth/facts, theorem/proof/CoreIr/ControlFlowIr/VC, other asserted-head families,
 and general semantics receive no credit.
+Task 183 adds the exact active object-terminal formula-side local-mode
+asserted-head row `LocalObjectModeAssertedHeadPayloadBoundary: x is
+LocalObjectModeAssertedHead;`, with Chapter 3/4/7/13/14.2.3/16 and a dedicated
+checker bridge reference. Credit is limited to one real direct object-terminal
+expansion, independent raw reserve-subject and formula-side asserted inputs for
+the same resolved mode symbol, ordinal 1 `BindingId(0)`, three known type
+entries interned to one terminal-definition-RHS builtin-object identity, one
+inferred term, and one fact/deferred-free normalized-reflexive checked type
+assertion without general reachability or object/set coercion. Five shared
+backlinks plus the dedicated row, production routing, exact/near-miss/
+corruption guards, and the real frontend/resolver sidecar protect active count
+131. Declaration acceptance/inhabitation, truth/facts, theorem/proof/CoreIr/
+ControlFlowIr/VC, other asserted-head families, and general semantics receive
+no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the
