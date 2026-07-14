@@ -1688,6 +1688,34 @@ reserve object shapes, and downstream payloads receive no credit. Step 5
 remains active; Steps 6 and 7 remain deferred. No checker source or module-
 layout update was required.
 
+Task195 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 195 classifies
+the exact three-edge set-terminal same-outer-mode asserted-head seam as
+`test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. It
+composes Task 73's real four-expansion producer, Task 150's same-depth subject
+normalization evidence, and Task 186's formula-side same-symbol asserted-head
+consumer. Current credit is limited to four ordered local definitions `Outer
+-> Middle -> Inner -> Base -> set`, `reserve x for
+OuterThreeEdgeModeAssertedHead`, theorem
+`ThreeEdgeLocalModeAssertedHeadPayloadBoundary: x is
+OuterThreeEdgeModeAssertedHead;`, ordinal 1 resolving to `BindingId(0)`,
+distinct raw subject/asserted sites and ranges, all four AST-derived
+expansions, three known type entries normalizing to one base-definition-RHS-
+anchored builtin-set identity, one inferred variable, zero expected
+constraints/candidates/facts/diagnostics/deferred reasons, and one normalized-
+reflexive checked type assertion. Five shared backlinks plus one dedicated row,
+production routing, isolated structural/provenance near misses including
+unrelated local/imported/ambiguous asserted heads, corruption and immutable-
+output guards, and a real frontend/resolver sidecar protect active runner 143.
+The repository plan now contains 358 cases and 322 requirements. Object-
+terminal/deeper/imported/attributed/argument-bearing/other asserted heads,
+reachability/widening/`qua`, declaration/theorem acceptance, truth/facts,
+closure/order, broader term/formula/child-graph semantics, proof/CoreIr/
+ControlFlowIr/VC, general chain semantics, and downstream payloads receive no
+credit. Step 5 remains active; Steps 6 and 7 remain deferred. No checker source
+or module-layout update was required.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

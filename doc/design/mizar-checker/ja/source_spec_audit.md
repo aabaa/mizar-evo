@@ -1447,6 +1447,30 @@ proof/Core/ControlFlow/VC、shared-range shape、broader multiple-reserve object
 shape は open のままである。Step 5 は active、Steps 6/7 は deferred のまま。
 checker source または module-layout change は不要であった。
 
+Task 195 MC-G020 current-state override: exact three-edge set-terminal same-
+outer-mode asserted head は `test_gap`、narrow `source_drift`、`design_drift`
+であり、`spec_gap` ではない。Chapters 3、4、7、13、14.2.3、16 は ordered
+mode definition 4 個 `Outer -> Middle -> Inner -> Base -> set`、`reserve x for
+OuterThreeEdgeModeAssertedHead`、`ThreeEdgeLocalModeAssertedHeadPayloadBoundary:
+x is OuterThreeEdgeModeAssertedHead;` を直接 support する。Task 73 は real
+four-expansion producer、Task 150 は同じ深さの subject-side normalization、Task
+186 は same-symbol formula-side asserted-head consumer を提供する。exact route
+は outer symbol の distinct raw subject/asserted site/range を保持し、ordinal 1
+を `BindingId(0)` に解決し、AST-derived expansion 4 個を消費し、known type
+entry 3 個を base-definition-RHS anchor の `BuiltinSet` identity 1 個へ
+normalize し、expected constraint 0 個、`Inferred` variable 1 個、fact/
+candidate/diagnostic/deferred-free normalized-reflexive `Checked` type assertion
+1 個を記録する。shared backlink 5 個 + dedicated row 1 個により既存
+expectation を変更せず active runner 143 を保護する。structural/provenance
+near miss は unrelated local、imported、ambiguous asserted head を含み、
+corruption、immutable-output、route-isolation、real frontend/resolver sidecar
+guard が contract を完成させる。object-terminal/deeper/imported/attributed/
+argument-bearing/other asserted head、reachability/widening/`qua`、declaration/
+theorem acceptance、truth/fact、closure/order、broader term/formula/child-graph
+semantics、proof/Core/ControlFlow/VC、general chain semantics は open のままで
+ある。Step 5 は active、Steps 6/7 は deferred のまま。checker source または
+module-layout change は不要であった。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

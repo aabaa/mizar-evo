@@ -1411,6 +1411,25 @@ expectation. This does not activate inequality desugaring/equality truth,
 object/set coercion, facts, closure/order, theorem/proof acceptance, shared-
 range shapes, or downstream payloads.
 
+Task 195 is restricted to the exact active three-edge set-terminal same-outer-
+mode asserted-head source with four ordered definitions `Outer -> Middle ->
+Inner -> Base -> set`, one outer-mode reserve, and
+`ThreeEdgeLocalModeAssertedHeadPayloadBoundary: x is
+OuterThreeEdgeModeAssertedHead;`. The active route consumes four real AST-
+derived expansions and retains independent raw reserve-subject and formula-
+side asserted-type sites/ranges for the same resolved outer symbol. It accepts
+only ordinal 1 resolving to `BindingId(0)`, three known type entries normalizing
+to one base-definition-RHS-anchored builtin-set identity, one `Inferred`
+variable, zero expected constraints/candidates/facts/diagnostics/deferred
+reasons, and one normalized-reflexive `Checked` assertion. Exact, structural,
+provenance, corruption, immutable-output, route-isolation, and real frontend/
+resolver-sidecar tests guard all four links and reject unrelated local,
+imported, and ambiguous asserted heads. Five shared backlinks plus one
+dedicated trace row protect active runner 143 without rebaselining an existing
+expectation. This does not activate reachability/widening/`qua`, declaration or
+theorem acceptance, truth/facts, closure/order, broader term/formula/child-
+graph semantics, proof, or downstream IR.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

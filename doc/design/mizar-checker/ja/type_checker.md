@@ -1564,6 +1564,28 @@ proof payload、shared-range shape、broader multiple-reserve object shape は
 deferred のままである。checker source または module-layout change は不要で
 あった。
 
+task 195 は ordered definition 4 個 `Outer -> Middle -> Inner -> Base -> set`、
+`OuterThreeEdgeModeAssertedHead` reserve 1 個、
+`ThreeEdgeLocalModeAssertedHeadPayloadBoundary: x is
+OuterThreeEdgeModeAssertedHead;` を持つ exact three-edge set-terminal same-
+outer-mode asserted-head source だけを対象とする。production route は Task 73
+の real four-expansion AST handoff と Task 186 の same-symbol formula-side
+asserted-head consumer を合成する。ordinal 1 を `BindingId(0)` に解決し、outer
+symbol の raw reserve-subject と formula asserted-type の独立した site/range を
+保持し、local bare argument/attribute/context/recovery-free expansion 4 個だけを
+消費する。known type entry 3 個は base definition RHS を canonical anchor と
+する `BuiltinSet` identity 1 個へ normalize する。immutable result は
+`Inferred` variable 1 個、expected constraint 0 個、candidate/fact/diagnostic/
+deferred reason 0 個、normalized-reflexive `Checked` `TypeAssertion` 1 個を含む。
+exact structural/provenance guard は shorter、deeper、object-terminal、malformed、
+unrelated-local、imported、ambiguous asserted-head shape を reject し、独立した
+corruption probe、positive output check、route isolation、real frontend/resolver
+sidecar が active runner 143 を保護する。これは mode declaration acceptance、
+reachability/widening/`qua`、assertion truth/fact、implicit closure/order、theorem
+acceptance、broader term/formula/child-graph semantics、proof/CoreIr/
+ControlFlowIr/VC、general chain semantics を確立しない。checker source または
+module-layout change は不要であった。
+
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event
