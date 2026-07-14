@@ -1198,6 +1198,15 @@ fact/deferred-free normalized-reflexive checked type assertion without general
 reachability or object/set coercion. Six shared backlinks, the dedicated row,
 production routing, full guards, and the real sidecar protect active count 128. Truth/
 facts, acceptance, and broader semantics receive no credit.
+Task 180 adds the exact standalone pass row
+`SourceDerivedContradictionConstantBoundary: contradiction` with Chapter 14/16
+and a dedicated checker bridge reference. Intended credit is the real formula-
+leaf site/range, module-root context, one checked `FormulaKind::Contradiction`,
+and empty term/type/constraint/candidate/fact/deferred/diagnostic payload. The
+dedicated row, production route, exact/near-miss/corruption guards, and real
+sidecar protect active count 129. Falsehood/fact publication, theorem
+acceptance, proof-goal closure, implicit closure/child graphs,
+`formula_statement`, proof, CoreIr, ControlFlowIr, and VC receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

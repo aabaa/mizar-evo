@@ -1112,6 +1112,19 @@ closed する。truth/
 fact、acceptance、downstream/general semantics は deferred のままである。
 fixture、production support、full guard、real sidecar が active runner 128 を保護する。
 
+task 180 は standalone formula leaf
+`theorem SourceDerivedContradictionConstantBoundary: contradiction;` だけを
+support する。production route は real leaf site/range と module-root context を
+保持する exact extractor を追加し、deferred reason なしに
+`FormulaKind::Contradiction` を既存 checker consumer へ渡す。1 `Checked`
+formula と、空の term、asserted type、expected constraint、candidate、fact、
+deferred reason、diagnostic を要求する。wrong label/constant、status/recovery
+marker、extra item、duplicate theorem は既存 path に残り、real frontend/
+resolver sidecar が active runner 129 を保護する。これは formula type/well-
+formedness だけであり、falsehood/fact publication、theorem acceptance、proof-
+goal closure、child-graph extraction、`formula_statement`、proof、CoreIr、
+ControlFlowIr、VC coverage ではない。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

@@ -3209,6 +3209,21 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 74, 153, and 175. Refs: Step 5; mizar-test task 10; specs 3,
       4, 7, 13, 14.2.3, and 16.
 
+180. **Add exact source-derived contradiction formula-constant checker bridge.** [x]
+    - Promote only `theorem SourceDerivedContradictionConstantBoundary:
+      contradiction;` through a new standalone exact leaf extractor to the
+      existing `FormulaKind::Contradiction` consumer.
+    - Acceptance: preserve the real leaf site/range and module-root context and
+      record one checked formula with no terms, asserted type, expected
+      constraints, candidates, facts, deferred reasons, or diagnostics. Require
+      exact/near-miss/corruption/real-sidecar guards and keep Task 112/117
+      composite and thesis behavior unchanged. Do not claim truth/fact
+      publication, theorem acceptance, proof-goal closure, implicit closure or
+      child graphs, `formula_statement`, proof, CoreIr, ControlFlowIr, or VC.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 112, 115, and 117. Refs: Step 5; mizar-test task 10; specs 14
+      and 16.
+
 ## Recommended Verification
 
 Run after each task:

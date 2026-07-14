@@ -843,6 +843,17 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    guards, and the real sidecar protect active case 128. Truth/facts,
    acceptance, downstream payloads, other chains, and
    general semantics remain deferred,
+   task 180 adds the exact standalone
+   `SourceDerivedContradictionConstantBoundary: contradiction` formula-leaf
+   bridge. A dedicated extractor preserves the real leaf site/range and
+   module-root context and passes `FormulaKind::Contradiction` without a
+   deferred reason, producing one checked formula with empty term/type/
+   constraint/candidate/fact/deferred/diagnostic payload. The fixture,
+   dedicated trace row, production route, exact/near-miss/corruption guards,
+   and real frontend/resolver sidecar protect active case 129. This credits
+   formula type/well-formedness only; falsehood/fact publication, theorem
+   acceptance, proof-goal closure, implicit closure/child graph,
+   `formula_statement`, proof, CoreIr, ControlFlowIr, and VC remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
@@ -871,7 +882,9 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    expansion, registration item payloads, accepted activation/evidence status,
    redefinition payloads, notation alias relation payloads, redefinition target
    inference, coherence proof-obligation payloads, theorem acceptance,
-   formula constant semantic checking beyond task 117's exact constant-kind handoff,
+   formula constant semantic checking beyond task 180's exact standalone
+   contradiction type/well-formedness slice (including truth values and
+   `thesis` semantics),
    attributed-type evidence, imported predicate/functor semantic payloads,
    membership operand expected-type construction/checking beyond task 120's
    exact right-operand expected-`set` slice (task 108's numeral bridge still

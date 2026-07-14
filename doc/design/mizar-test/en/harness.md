@@ -1158,6 +1158,19 @@ Truth/facts, acceptance, downstream/general
 semantics remain deferred. The fixture, production support, full guards, and
 real sidecar protect active runner 128.
 
+Task 180 supports only the standalone formula leaf
+`theorem SourceDerivedContradictionConstantBoundary: contradiction;`. The
+production route adds an exact extractor that preserves the real leaf site/
+range and module-root context and passes `FormulaKind::Contradiction` to the
+existing checker consumer without a deferred reason. It requires one `Checked`
+formula and empty terms, asserted type, expected constraints, candidates,
+facts, deferred reasons, and diagnostics. Wrong labels/constants, status or
+recovery markers, extra items, and duplicate theorems remain on their existing
+paths; a real frontend/resolver sidecar protects active runner 129. This is
+formula type/well-formedness only, not falsehood/fact publication, theorem
+acceptance, proof-goal closure, child-graph extraction, `formula_statement`,
+proof, CoreIr, ControlFlowIr, or VC coverage.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

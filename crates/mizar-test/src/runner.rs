@@ -1429,6 +1429,9 @@ fn source_type_elaboration_detail_keys(
     if let Some(keys) = source_formula_statement_detail_keys(ast, module.clone(), symbols) {
         return keys;
     }
+    if let Some(keys) = source_contradiction_formula_detail_keys(ast, module.clone(), symbols) {
+        return keys;
+    }
     if let Some(keys) = source_builtin_binary_term_formula_detail_keys(ast, module.clone(), symbols)
     {
         return keys;
@@ -6178,6 +6181,15 @@ fn source_formula_statement_detail_keys(
     Some(term_formula_output_detail_keys(&output))
 }
 
+fn source_contradiction_formula_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let output = source_contradiction_formula_output(ast, module, symbols)?;
+    Some(term_formula_output_detail_keys(&output))
+}
+
 fn source_builtin_binary_term_formula_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -6301,6 +6313,27 @@ fn source_formula_statement_output(
         .with_deferred(vec![FormulaDeferredReason::MissingFormulaPayload])],
     );
     Some(output)
+}
+
+fn source_contradiction_formula_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<TermFormulaInferenceOutput> {
+    let payload = extract_source_contradiction_formula(ast)?;
+    let binding_env = source_module_binding_env(ast, module).ok()?;
+    let context = BindingContextId::new(0);
+    Some(TermFormulaChecker::default().infer(
+        symbols,
+        &binding_env,
+        [],
+        [FormulaInput::new(
+            payload.formula_site,
+            context,
+            payload.formula_range,
+            FormulaKind::Contradiction,
+        )],
+    ))
 }
 
 fn source_builtin_type_assertion_formula_output(
@@ -6536,6 +6569,26 @@ fn source_formula_connective_quantifier_output(
 }
 
 fn extract_source_formula_statement(ast: &SurfaceAst) -> Option<SourceFormulaStatement> {
+    extract_exact_source_formula_constant(
+        ast,
+        "FormulaPayloadBoundary",
+        SurfaceFormulaConstant::Thesis,
+    )
+}
+
+fn extract_source_contradiction_formula(ast: &SurfaceAst) -> Option<SourceFormulaStatement> {
+    extract_exact_source_formula_constant(
+        ast,
+        "SourceDerivedContradictionConstantBoundary",
+        SurfaceFormulaConstant::Contradiction,
+    )
+}
+
+fn extract_exact_source_formula_constant(
+    ast: &SurfaceAst,
+    expected_label: &str,
+    expected_constant: SurfaceFormulaConstant,
+) -> Option<SourceFormulaStatement> {
     if ast
         .nodes()
         .iter()
@@ -6551,7 +6604,12 @@ fn extract_source_formula_statement(ast: &SurfaceAst) -> Option<SourceFormulaSta
         return None;
     }
     let theorem_tokens = direct_token_texts(ast, theorem);
-    if theorem_tokens.as_slice() != ["theorem", "FormulaPayloadBoundary", ":", ";"] {
+    if theorem_tokens.len() != 4
+        || theorem_tokens[0] != "theorem"
+        || theorem_tokens[1] != expected_label
+        || theorem_tokens[2] != ":"
+        || theorem_tokens[3] != ";"
+    {
         return None;
     }
 
@@ -6568,10 +6626,22 @@ fn extract_source_formula_statement(ast: &SurfaceAst) -> Option<SourceFormulaSta
         return None;
     };
     let formula = ast.node(*formula_id)?;
-    if !matches!(
-        formula.kind,
-        SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis)
-    ) || direct_token_texts(ast, formula).as_slice() != ["thesis"]
+    let expected_spelling = match expected_constant {
+        SurfaceFormulaConstant::Thesis => "thesis",
+        SurfaceFormulaConstant::Contradiction => "contradiction",
+    };
+    let constant_matches = match expected_constant {
+        SurfaceFormulaConstant::Thesis => matches!(
+            formula.kind,
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Thesis)
+        ),
+        SurfaceFormulaConstant::Contradiction => matches!(
+            formula.kind,
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction)
+        ),
+    };
+    if !constant_matches
+        || direct_token_texts(ast, formula).as_slice() != [expected_spelling]
         || !structural_child_ids(ast, formula).is_empty()
     {
         return None;
@@ -11318,7 +11388,7 @@ mod tests {
         extract_source_chained_local_object_mode_reserved_variable_inequality,
         extract_source_chained_local_object_mode_reserved_variable_membership,
         extract_source_chained_local_object_mode_reserved_variable_type_assertion,
-        extract_source_distinct_reserved_variable_equality,
+        extract_source_contradiction_formula, extract_source_distinct_reserved_variable_equality,
         extract_source_distinct_reserved_variable_inequality,
         extract_source_distinct_reserved_variable_membership,
         extract_source_formula_connective_quantifier, extract_source_formula_statement,
@@ -11381,7 +11451,7 @@ mod tests {
         source_chained_local_object_mode_reserved_variable_inequality_output,
         source_chained_local_object_mode_reserved_variable_membership_output,
         source_chained_local_object_mode_reserved_variable_type_assertion_output,
-        source_distinct_reserved_variable_equality_output,
+        source_contradiction_formula_output, source_distinct_reserved_variable_equality_output,
         source_distinct_reserved_variable_inequality_output,
         source_distinct_reserved_variable_membership_output,
         source_formula_connective_quantifier_output, source_formula_statement_output,
@@ -31939,6 +32009,60 @@ mod tests {
     }
 
     #[test]
+    fn active_contradiction_formula_constant_fixture_preserves_real_checker_payload() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("repository test plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0 == "pass_type_elaboration_contradiction_formula_constant_001"
+            })
+            .expect("Task 180 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 180 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 180 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_contradiction_formula_output(&ast, resolver.module, &symbols)
+            .expect("Task 180 real AST should reach the standalone contradiction checker seam");
+        assert!(output.terms().is_empty());
+        assert_eq!(output.formulas().len(), 1);
+        assert!(output.candidate_sets().is_empty());
+        assert!(output.facts().is_empty());
+        assert!(output.diagnostics().is_empty());
+        let (_, formula) = output
+            .formulas()
+            .iter()
+            .next()
+            .expect("Task 180 contradiction formula should be checked");
+        assert_eq!(formula.kind, FormulaKind::Contradiction);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(formula.context, BindingContextId::new(0));
+        assert!(formula.terms.is_empty());
+        assert!(formula.asserted_type.is_none());
+        assert!(formula.expected_types.is_empty());
+        assert!(formula.candidate_set.is_none());
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+    }
+
+    #[test]
     fn active_distinct_reserved_variable_equality_fixture_preserves_real_checker_payload() {
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -34744,6 +34868,52 @@ mod tests {
             vec![expected_formula_statement_range],
             "missing formula payload diagnostic should be anchored to thesis"
         );
+        let contradiction_theorem =
+            formula_statement_theorem_ast(source_id, exact_contradiction_formula_spec());
+        assert_eq!(
+            source_type_elaboration_detail_keys(&contradiction_theorem, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        let contradiction_output =
+            source_contradiction_formula_output(&contradiction_theorem, module.clone(), &symbols)
+                .expect("exact standalone contradiction bridge should produce checker output");
+        let contradiction_payload = extract_source_contradiction_formula(&contradiction_theorem)
+            .expect("exact standalone contradiction bridge should extract source payload");
+        let expected_contradiction_range = range(source_id, 53, 66);
+        let expected_contradiction_sites = surface_sites_for_kind_ranges(
+            &contradiction_theorem,
+            SurfaceNodeKind::FormulaConstant(SurfaceFormulaConstant::Contradiction),
+            &[expected_contradiction_range],
+        );
+        assert_eq!(
+            contradiction_payload.formula_site,
+            expected_contradiction_sites[0]
+        );
+        assert_eq!(
+            contradiction_payload.formula_range,
+            expected_contradiction_range
+        );
+        assert!(contradiction_output.terms().is_empty());
+        assert_eq!(contradiction_output.formulas().len(), 1);
+        assert!(contradiction_output.diagnostics().is_empty());
+        let (_, checked_contradiction) = contradiction_output
+            .formulas()
+            .iter()
+            .next()
+            .expect("standalone contradiction should be checked");
+        assert_eq!(
+            checked_contradiction.site,
+            contradiction_payload.formula_site
+        );
+        assert_eq!(checked_contradiction.context, BindingContextId::new(0));
+        assert_eq!(checked_contradiction.kind, FormulaKind::Contradiction);
+        assert_eq!(checked_contradiction.status, FormulaStatus::Checked);
+        assert!(checked_contradiction.terms.is_empty());
+        assert!(checked_contradiction.asserted_type.is_none());
+        assert!(checked_contradiction.expected_types.is_empty());
+        assert!(checked_contradiction.candidate_set.is_none());
+        assert!(checked_contradiction.facts.is_empty());
+        assert!(checked_contradiction.deferred.is_empty());
         let equality_theorem =
             builtin_equality_theorem_ast(source_id, "TermFormulaPayloadBoundary", "1", "1");
         assert_eq!(
@@ -35985,6 +36155,51 @@ mod tests {
             proof_block_formula_theorem_ast(source_id, "FormulaPayloadBoundary"),
         ];
         for gap_case in formula_statement_gap_cases {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+        let contradiction_formula_gap_cases = vec![
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    label: "OtherPayloadBoundary",
+                    ..exact_contradiction_formula_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    constant: SurfaceFormulaConstant::Thesis,
+                    ..exact_contradiction_formula_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    status: Some("open"),
+                    ..exact_contradiction_formula_spec()
+                },
+            ),
+            formula_statement_theorem_ast(
+                source_id,
+                FormulaStatementTheoremSpec {
+                    recovered_label: true,
+                    ..exact_contradiction_formula_spec()
+                },
+            ),
+            reserve_then_exact_formula_constant_theorem_ast(
+                source_id,
+                vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("set"))],
+                exact_contradiction_formula_spec(),
+            ),
+            double_exact_formula_constant_theorem_ast(
+                source_id,
+                exact_contradiction_formula_spec(),
+            ),
+        ];
+        for gap_case in contradiction_formula_gap_cases {
             assert_eq!(
                 source_type_elaboration_detail_keys(&gap_case, module.clone(), &symbols),
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
@@ -38987,6 +39202,15 @@ mod tests {
         }
     }
 
+    fn exact_contradiction_formula_spec() -> FormulaStatementTheoremSpec<'static> {
+        FormulaStatementTheoremSpec {
+            status: None,
+            recovered_label: false,
+            label: "SourceDerivedContradictionConstantBoundary",
+            constant: SurfaceFormulaConstant::Contradiction,
+        }
+    }
+
     fn formula_statement_theorem_ast(
         source_id: SourceId,
         spec: FormulaStatementTheoremSpec<'_>,
@@ -39007,6 +39231,18 @@ mod tests {
         source_id: SourceId,
         items: Vec<ReserveItemSpec>,
     ) -> SurfaceAst {
+        reserve_then_exact_formula_constant_theorem_ast(
+            source_id,
+            items,
+            exact_formula_statement_spec(),
+        )
+    }
+
+    fn reserve_then_exact_formula_constant_theorem_ast(
+        source_id: SourceId,
+        items: Vec<ReserveItemSpec>,
+        spec: FormulaStatementTheoremSpec<'_>,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut offset = 0;
         let mut root_children = add_reserve_items(&mut builder, source_id, &mut offset, items);
@@ -39014,7 +39250,7 @@ mod tests {
             &mut builder,
             source_id,
             &mut offset,
-            exact_formula_statement_spec(),
+            spec,
         ));
         let root = builder.add_node(
             SurfaceNodeKind::Root,
@@ -39025,21 +39261,18 @@ mod tests {
     }
 
     fn double_formula_statement_theorem_ast(source_id: SourceId) -> SurfaceAst {
+        double_exact_formula_constant_theorem_ast(source_id, exact_formula_statement_spec())
+    }
+
+    fn double_exact_formula_constant_theorem_ast(
+        source_id: SourceId,
+        spec: FormulaStatementTheoremSpec<'_>,
+    ) -> SurfaceAst {
         let mut builder = SurfaceAstBuilder::new(source_id);
         let mut offset = 0;
         let items = vec![
-            add_formula_statement_theorem_item(
-                &mut builder,
-                source_id,
-                &mut offset,
-                exact_formula_statement_spec(),
-            ),
-            add_formula_statement_theorem_item(
-                &mut builder,
-                source_id,
-                &mut offset,
-                exact_formula_statement_spec(),
-            ),
+            add_formula_statement_theorem_item(&mut builder, source_id, &mut offset, spec),
+            add_formula_statement_theorem_item(&mut builder, source_id, &mut offset, spec),
         ];
         let root = builder.add_node(
             SurfaceNodeKind::Root,

@@ -3028,6 +3028,20 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 74、153、175。参照: Step 5、mizar-test task 10、specs 3、4、7、
       13、14.2.3、16。
 
+180. **Exact source-derived contradiction formula-constant checker bridge を追加する。** [x]
+    - `theorem SourceDerivedContradictionConstantBoundary: contradiction;`
+      だけを新規 standalone exact leaf extractor から既存
+      `FormulaKind::Contradiction` consumer へ渡す。
+    - Acceptance: real leaf site/range と module-root context を保持し、term、
+      asserted type、expected constraint、candidate、fact、deferred reason、
+      diagnostic を持たない 1 checked formula を記録する。exact/near-miss/
+      corruption/real-sidecar guard を必須とし、task 112/117 composite と thesis
+      behavior を変更しない。truth/fact publication、theorem acceptance、proof-
+      goal closure、implicit closure/child graph、`formula_statement`、proof、
+      CoreIr、ControlFlowIr、VC を主張しない。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 112、115、117。参照: Step 5、mizar-test task 10、specs 14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

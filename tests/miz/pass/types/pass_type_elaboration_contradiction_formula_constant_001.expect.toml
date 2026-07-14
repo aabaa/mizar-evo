@@ -1,0 +1,17 @@
+schema_version = 1
+id = "pass_type_elaboration_contradiction_formula_constant_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_contradiction_formula_constant_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.contradiction_formula_constant_source_bridge",
+]
+notes = "Active type_elaboration runner pass coverage for checker task 180: only the exact standalone `SourceDerivedContradictionConstantBoundary: contradiction` theorem passes the source-derived formula leaf site/range in module-root context to the existing FormulaKind::Contradiction consumer and records one Checked formula with no terms, asserted type, expected constraints, candidates, facts, deferred reasons, or diagnostics. Checked means formula type/well-formedness only; falsehood/fact publication, theorem acceptance, proof-goal closure, implicit closure/child graphs, formula_statement, proof, CoreIr, ControlFlowIr, and VC remain deferred."

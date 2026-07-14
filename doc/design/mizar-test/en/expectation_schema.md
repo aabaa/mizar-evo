@@ -686,6 +686,14 @@ credit formula constant semantic truth values, child-formula graph payloads,
 quantifier binder/context payloads, formula checking, recorded facts, theorem
 acceptance, a `formula_statement` runner, CoreIr, ControlFlowIr, VC, or proof
 payloads.
+Task 180 adds a separate exact pass sidecar for
+`SourceDerivedContradictionConstantBoundary: contradiction`. It carries no
+diagnostic payload because the standalone real leaf is checked without a
+deferred reason. Its `spec_refs` include Chapters 14 and 16 plus the dedicated
+checker bridge row. Pass status credits formula type/well-formedness only and
+does not credit falsehood/fact publication, theorem acceptance, proof-goal
+closure, implicit closure/child graphs, `formula_statement`, proof, CoreIr,
+ControlFlowIr, or VC.
 Task 88 permits proof-block theorem fail sidecars to use
 `failure_category = "external_dependency_gap"` with
 `rejection_reason = "proof_skeleton_payload_extraction_gap"` and

@@ -1133,6 +1133,15 @@ reachability と object/set coercion を用いない 1 fact/deferred-free normal
 reflexive checked type assertion だけである。shared backlink 6 件、dedicated
 row、production routing、full guard、real sidecar が active count 128 を保護する。truth/
 fact、acceptance、broader semantics は credit しない。
+task 180 は exact standalone pass row
+`SourceDerivedContradictionConstantBoundary: contradiction` を Chapter 14/16
+と dedicated checker bridge reference とともに追加する。intended credit は
+real formula-leaf site/range、module-root context、1 checked
+`FormulaKind::Contradiction`、空の term/type/constraint/candidate/fact/deferred/
+diagnostic payload である。dedicated row、production route、exact/near-miss/
+corruption guard、real sidecar が active count 129 を保護する。falsehood/fact
+publication、theorem acceptance、proof-goal closure、implicit closure/child
+graph、`formula_statement`、proof、CoreIr、ControlFlowIr、VC は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

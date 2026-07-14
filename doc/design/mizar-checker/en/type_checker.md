@@ -1289,6 +1289,20 @@ Widening/`qua`, truth/facts, acceptance, closure/order, theorem/
 proof/Core/ControlFlow/VC, other chain shapes, and general semantics remain
 deferred. The fixture, expectation, seven trace references, production routing,
 full guards, and real sidecar protect active runner 128.
+Task 180 specifies the exact formula-leaf sibling
+`theorem SourceDerivedContradictionConstantBoundary: contradiction;`. The
+source route adds a standalone exact leaf extractor by reusing Task 117's
+contradiction-kind mapping and Task 115's standalone theorem-shape validation
+pattern, then passes this leaf to the existing `FormulaKind::Contradiction`
+consumer without a synthetic missing-payload reason. The result must preserve
+the exact source site/range and module-root
+context and contain one `Checked` formula with no terms, asserted type,
+expected constraints, candidates, facts, deferred reasons, or diagnostics.
+This status means formula type/well-formedness checking only. It does not
+publish falsehood or facts, accept the theorem, close a proof goal, extract an
+implicit closure or child graph, activate `formula_statement`, or create
+proof/CoreIr/ControlFlowIr/VC payloads. Exact-source, near-miss/corruption, and
+real parser/resolver-sidecar guards must protect the route.
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,
