@@ -732,6 +732,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_chained_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
@@ -1808,6 +1809,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_chained_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
@@ -1931,6 +1933,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_chained_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
@@ -2267,6 +2270,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_chained_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
@@ -2822,6 +2826,7 @@ coverage = "pass"
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_builtin_type_expression_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multi_reserve_builtin_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
@@ -2975,6 +2980,19 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_equality_001.expect.toml",
 ]
 notes = "Task 191 coverage is limited to the exact distinct-binding shared-builtin-object equality type/well-formedness slice. The production route composes the real one-item/two-binding shared-range reserve producer with the builtin-object equality consumer, resolves source-order ordinals 2 and 3 to BindingId(0/1), preserves one shared written object range across both bindings and four distinct result/expected role sites, and requires one reserve-range-anchored canonical builtin-object identity, two Inferred variables, six known type entries, two ordered expected constraints, and one fact/candidate/diagnostic/deferred-free Checked equality. Exact/near-miss, matched-output, canonical-source, BuiltinSet corruption, route-order, and real frontend/resolver-sidecar guards protect active runner 139. Equality truth, object/set coercion, facts, closure/order, declaration/theorem acceptance, proof/CoreIr/ControlFlowIr/VC, and broader distinct-object source shapes remain uncredited."
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.distinct_reserved_object_variable_inequality_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 192 exact distinct-binding shared-builtin-object inequality checker bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_inequality_001.expect.toml",
+]
+notes = "Task 192 coverage is limited to the exact distinct-binding shared-builtin-object inequality type/well-formedness slice. The production route composes the real one-item/two-binding shared-range builtin-object producer with the pre-desugaring inequality consumer, resolves source-order ordinals 2 and 3 to BindingId(0/1), preserves one shared written object range across both bindings and four distinct result/expected role sites, and requires one reserve-range-anchored canonical builtin-object identity, two Inferred variables, six known type entries, two ordered expected constraints, and one fact/candidate/diagnostic/deferred-free Checked inequality. Exact/near-miss, matched-output, canonical-source, BuiltinSet corruption, route-order, and real frontend/resolver-sidecar guards protect active runner 140. Inequality desugaring/equality truth, object/set coercion, facts, closure/order, declaration/theorem acceptance, proof/CoreIr/ControlFlowIr/VC, and broader distinct-object source shapes remain uncredited."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.distinct_reserved_variable_equality_source_bridge"

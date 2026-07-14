@@ -1549,6 +1549,34 @@ implicit closure/order, theorem acceptance, proof execution, and CoreIr/
 ControlFlowIr/VC/proof payloads remain deferred. No checker source or module-
 layout change was required.
 
+Task 192 is limited to the exact distinct-binding shared-builtin-object
+inequality `reserve x, y for object; theorem
+DistinctReservedObjectVariableInequalityPayloadBoundary: x <> y;`. The
+production route must compose the real one-item/two-binding shared-range
+builtin-object reserve handoff with the existing pre-desugaring inequality
+consumer, resolve source-order uses at ordinals 2 and 3 to `BindingId(0)` and
+`BindingId(1)`, and retain four distinct result/expected role sites whose raw
+type inputs preserve the one shared written `object` range. All four raw
+inputs must be argument/attribute-free `BuiltinObject` values and normalize to
+one known builtin-object identity canonically anchored at the reserve range.
+The immutable checker result must contain two `Inferred` variables, six known
+type entries, one known normalized type, two ordered operand-owned expected
+constraints, zero candidates/facts/diagnostics/deferred reasons, and one
+`Checked` `Inequality`. Exact/near-miss tests must reject another label,
+reversed, same, isolated-left, or unknown operands, another operator, status/
+recovery/extra items, single/extra/separate reserve bindings, and `set`, mode,
+structure, attributed, argument-bearing, imported, or ambiguous reserve heads.
+Task-local corruption probes must reject collapsed binding identity, ordinal
+drift, `BuiltinSet` substitution, collapsed roles, wrong shared source
+projection, or a missing expected input; positive count/status/constraint/
+canonical-source assertions plus the shared binary-formula output validator
+must pin the immutable checker tables. A real frontend/resolver sidecar must
+guard the active fixture. This is type/well-formedness checking only:
+inequality desugaring/equality truth, object/set coercion, facts, implicit
+closure/order, theorem acceptance, proof execution, and CoreIr/ControlFlowIr/
+VC/proof payloads remain deferred. No checker source or module-layout change
+was required.
+
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

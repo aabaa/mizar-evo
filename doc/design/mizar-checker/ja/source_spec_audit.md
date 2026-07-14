@@ -1383,6 +1383,27 @@ broader distinct-object source shape は open のままである。Step 5 は ac
 Steps 6/7 は deferred のまま。checker source または module-layout change は
 不要であった。
 
+Task 192 MC-G020 current-state override: exact distinct-binding shared-
+builtin-object inequality は `test_gap`、narrow `source_drift`、
+`design_drift` であり、`spec_gap` ではない。Chapters 3、4、13、14.5.2、
+16 は `reserve x, y for object; theorem
+DistinctReservedObjectVariableInequalityPayloadBoundary: x <> y;` を直接
+support する。tasks 123/191 は real one-item/two-binding shared-written-range
+builtin-object producer を提供し、tasks 121/160/190 は real pre-desugaring
+inequality consumer を提供する。route は ordinal 2/3 を `BindingId(0/1)` に
+解決し、両 binding と distinct result/expected role site 4 個に shared written
+`object` range 1 個を保持し、その reserve range を anchor とする canonical
+builtin-object identity 1 個、`Inferred` variable 2 個、known type entry 6 個、
+operand-owned ordered expected constraint 2 個、fact/candidate/diagnostic/
+deferred-free `Checked` inequality 1 個を記録する。shared trace backlink 5 個 +
+dedicated row 1 個により既存 expectation を変更せず active runner 140 を
+保護する。exact/near-miss、matched-output、canonical-source、`BuiltinSet`
+corruption、route-order、real frontend/resolver sidecar が contract を guard する。
+inequality desugaring/equality truth、object/set coercion、fact、implicit closure/order、
+theorem acceptance、proof/Core/ControlFlow/VC、broader distinct-object source
+shape は open のままである。Step 5 は active、Steps 6/7 は deferred のまま。
+checker source または module-layout change は不要であった。
+
 Task 106 addendum: active `mizar-test` type-elaboration runner は task-87 の generic
 boundary のうち `theorem TermFormulaPayloadBoundary: 1 = 1;` を supersede する。
 unrecovered builtin equality theorem shape かつ structural Chapter 13 numeral

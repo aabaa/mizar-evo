@@ -3491,6 +3491,32 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 48, 123, 125, and 188. Refs: Step 5; mizar-test task 10;
       specs 3, 4, 13, 14, and 16.
 
+192. **Add exact distinct-binding shared-builtin-object inequality checker bridge.** [x]
+    - Close only `reserve x, y for object; theorem
+      DistinctReservedObjectVariableInequalityPayloadBoundary: x <> y;` by
+      composing the real one-item/two-binding shared-range builtin-object
+      producer with the real pre-desugaring inequality consumer.
+    - Acceptance: resolve source-order uses at ordinals 2/3 to
+      `BindingId(0/1)`; preserve one shared written `object` range across both
+      bindings and four distinct operand result/expected role sites; intern
+      one canonical builtin-object identity anchored at that reserve range;
+      produce two `Inferred` variables, six known type entries, two ordered
+      operand-owned expected constraints, and one fact/candidate/diagnostic/
+      deferred-free `Checked` inequality. Require exact/near-miss,
+      matched-output, canonical-source, `BuiltinSet` corruption, route-order,
+      and real frontend/resolver-sidecar guards. Add one test-first active pass
+      fixture with five shared and one dedicated trace backlink, raising the
+      active runner from 139 to 140 without changing existing expectations.
+    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
+      no `spec_gap`. Keep inequality desugaring/equality truth, object/set
+      coercion, facts, implicit closure/order, declaration/theorem acceptance,
+      proof/Core/ControlFlow/VC, and broader distinct-object source shapes
+      deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker
+      source or module-layout change was required.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 48, 121, 123, 160, 190, and 191. Refs: Step 5; mizar-test
+      task 10; specs 3, 4, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

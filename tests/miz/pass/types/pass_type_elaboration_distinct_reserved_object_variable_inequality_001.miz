@@ -1,0 +1,2 @@
+reserve x, y for object;
+theorem DistinctReservedObjectVariableInequalityPayloadBoundary: x <> y;

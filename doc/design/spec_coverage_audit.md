@@ -1618,6 +1618,29 @@ distinct-object source shapes, and downstream payloads receive no credit. Step
 5 remains active; Steps 6 and 7 remain deferred. No checker source or module-
 layout update was required.
 
+Task192 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 192 classifies the exact distinct-
+binding shared-builtin-object inequality seam as `test_gap`, narrow
+`source_drift`, and `design_drift`, not `spec_gap`. It composes tasks 123/191's
+real one-item/two-binding shared-range builtin-object producer with tasks 121/
+160/190's real pre-desugaring inequality consumer. Current credit is limited to
+`reserve x, y for object; theorem
+DistinctReservedObjectVariableInequalityPayloadBoundary: x <> y;`, source-
+order ordinal 2/3 lookups of `BindingId(0/1)`, one written `object` range across
+both bindings and four distinct result/expected role sites, one reserve-range-
+anchored canonical builtin-object identity, two inferred variables, six known
+type entries, two ordered expected constraints, and one fact/candidate/
+diagnostic/deferred-free checked inequality. Five shared backlinks plus one
+dedicated row, production routing, isolated structural/provenance near misses,
+corruption and positive immutable-output guards, and a real frontend/resolver
+sidecar protect active runner 140. The repository plan now contains 355 cases
+and 319 requirements. Inequality desugaring/equality truth, object/set coercion,
+facts, closure/order, declaration/theorem acceptance, proof/CoreIr/
+ControlFlowIr/VC, broader distinct-object source shapes, and downstream payloads
+receive no credit. Step 5 remains active; Steps 6 and 7 remain deferred. No
+checker source or module-layout update was required.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |
