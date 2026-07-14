@@ -1374,6 +1374,24 @@ rebaselining an existing expectation. This does not activate inequality
 desugaring/equality truth, object/set coercion, facts, closure/order, theorem/
 proof acceptance, or downstream payloads.
 
+Task 193 is restricted to the exact active multiple-reserve-declaration
+builtin-object equality source `reserve x for object; reserve y for object;
+theorem MultipleObjectReserveDeclarationEqualityPayloadBoundary: x = y;`.
+The active route composes the real two-item/two-binding/distinct-written-range
+reserve handoff with the builtin-object equality consumer, retains ordinal 2/3
+local lookups plus four distinct result/expected role sites over the two
+binding-owned written ranges, and accepts only one canonical builtin-object
+identity anchored at the earlier `x` range, two `Inferred` variable terms, six
+known type entries, two ordered expected constraints, and one fact/candidate/
+diagnostic/deferred-free `Checked` equality. Exact/near-miss/corruption and
+real frontend/resolver-sidecar tests guard source shape, distinct bindings and
+ranges, lookup ordering, raw role provenance, checker counts/status,
+constraints, canonical source, route isolation, and wrong builtin-set output.
+Five shared backlinks plus one dedicated trace row protect active runner 141
+without rebaselining an existing expectation. This does not activate equality
+truth, object/set coercion, facts, closure/order, theorem/proof acceptance,
+shared-range shapes, or downstream payloads.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

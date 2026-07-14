@@ -747,6 +747,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_multiple_object_reserve_declaration_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
@@ -1824,6 +1825,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_multiple_object_reserve_declaration_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
@@ -1948,6 +1950,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_multiple_object_reserve_declaration_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
@@ -2285,6 +2288,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_reserved_variable_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_multiple_object_reserve_declaration_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
@@ -2829,6 +2833,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_distinct_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_heterogeneous_reserve_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multi_reserve_builtin_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_multiple_object_reserve_declaration_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_inequality_001.expect.toml",
 ]
@@ -3545,6 +3550,19 @@ coverage = "pass"
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_reserved_variable_type_assertion_001.expect.toml",
 ]
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.multiple_object_reserve_declaration_equality_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 193 exact multiple-reserve-declaration builtin-object equality checker bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_multiple_object_reserve_declaration_equality_001.expect.toml",
+]
+notes = "Task 193 coverage is limited to the exact two-declaration builtin-object equality type/well-formedness slice. The production route composes the real two-item/two-binding/distinct-written-range reserve producer with the builtin-object equality consumer, resolves source-order ordinals 2 and 3 to BindingId(0/1), preserves the two binding-owned object ranges across four distinct result/expected role sites, and requires one canonical builtin-object identity anchored at the earlier x reserve range, two Inferred variables, six known type entries, two ordered expected constraints, and one fact/candidate/diagnostic/deferred-free Checked equality. Exact structural/provenance near misses, matched-output, canonical-source, BuiltinSet corruption, route-order, and real frontend/resolver-sidecar guards protect active runner 141. Equality truth, object/set coercion, facts, closure/order, declaration/theorem acceptance, proof/CoreIr/ControlFlowIr/VC, shared-range shapes, and broader multiple-reserve object shapes remain uncredited."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.multiple_reserve_declaration_equality_source_bridge"

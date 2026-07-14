@@ -1641,6 +1641,29 @@ ControlFlowIr/VC, broader distinct-object source shapes, and downstream payloads
 receive no credit. Step 5 remains active; Steps 6 and 7 remain deferred. No
 checker source or module-layout update was required.
 
+Task193 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 193 classifies the exact multiple-
+reserve-declaration builtin-object equality seam as `test_gap`, narrow
+`source_drift`, and `design_drift`, not `spec_gap`. It composes Task 124's real
+two-item/two-binding/distinct-written-range reserve producer with tasks 188/
+191's real builtin-object equality consumer. Current credit is limited to
+`reserve x for object; reserve y for object; theorem
+MultipleObjectReserveDeclarationEqualityPayloadBoundary: x = y;`, source-
+order ordinal 2/3 lookups of `BindingId(0/1)`, two binding-owned written
+`object` ranges across four distinct result/expected role sites, one canonical
+builtin-object identity anchored at the earlier `x` reserve range, two
+inferred variables, six known type entries, two ordered expected constraints,
+and one fact/candidate/diagnostic/deferred-free checked equality. Five shared
+backlinks plus one dedicated row, production routing, isolated structural/
+provenance near misses, corruption and immutable-output guards, and a real
+frontend/resolver sidecar protect active runner 141. The repository plan now
+contains 356 cases and 320 requirements. Equality truth, object/set coercion,
+facts, closure/order, declaration/theorem acceptance, proof/CoreIr/
+ControlFlowIr/VC, shared-range and broader multiple-reserve object shapes, and
+downstream payloads receive no credit. Step 5 remains active; Steps 6 and 7
+remain deferred. No checker source or module-layout update was required.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

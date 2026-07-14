@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_multiple_object_reserve_declaration_equality_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_multiple_object_reserve_declaration_equality_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.builtin_type_expression_source_bridge",
+  "spec.en.checker.type_elaboration.multiple_object_reserve_declaration_equality_source_bridge",
+]
+notes = "Spec-derived Task 193 active pass intent for the exact multiple-reserve-declaration builtin-object equality slice. Two reserve items preserve BindingId(0/1) and distinct written object ranges; source-order uses at ordinals 2/3 and four distinct operand result/expected roles retain their binding-owned provenance. The real checker contract must intern one canonical builtin-object identity anchored at the earlier x reserve range, infer two variables, record six known type entries and two ordered expected constraints, and produce one fact/candidate/diagnostic/deferred-free Checked equality. Checked means type/well-formedness only; equality truth, object/set coercion, facts, implicit closure/order, declaration/theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, VC, shared-range shapes, and broader multiple-reserve object shapes remain deferred."

@@ -1296,6 +1296,22 @@ inequality desugaring/equality truth、object/set
 coercion、fact、closure/order、declaration/theorem acceptance、
 `formula_statement`、proof、CoreIr、ControlFlowIr、VC、downstream payload は
 credit しない。
+task 193 は exact active multiple-reserve-declaration builtin-object equality
+row `reserve x for object; reserve y for object; theorem
+MultipleObjectReserveDeclarationEqualityPayloadBoundary: x = y;` を shared な
+Chapter 4/13/14.5.2/16/builtin-type bridge reference 5 件と dedicated checker
+bridge reference 1 件とともに追加する。credit は source-order ordinal 2 と 3
+から解決する `BindingId(0/1)`、distinct result/expected role site 4 個に
+またがる binding ごとの distinct written `object` range 2 個、argument/
+attribute-free な raw `BuiltinObject` input 4 個、先行する `x` range を anchor
+とする canonical normalized builtin-object identity 1 個、inferred variable
+term 2 個、known type entry 6 個、ordered expected constraint 2 個、fact/
+candidate/diagnostic/deferred-free な `Checked` equality 1 個だけに限定する。
+exact-route、structural/provenance near-miss、mutable payload-corruption、
+positive immutable-output validation、real frontend/resolver sidecar は active
+count 141 を保護する。equality truth、object/set coercion、fact、closure/order、
+declaration/theorem acceptance、`formula_statement`、proof、CoreIr、
+ControlFlowIr、VC、shared-range shape、downstream payload は credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

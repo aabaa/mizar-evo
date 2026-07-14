@@ -3517,6 +3517,33 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 48, 121, 123, 160, 190, and 191. Refs: Step 5; mizar-test
       task 10; specs 3, 4, 13, 14, and 16.
 
+193. **Add exact multiple-reserve-declaration builtin-object equality checker bridge.** [x]
+    - Close only `reserve x for object; reserve y for object; theorem
+      MultipleObjectReserveDeclarationEqualityPayloadBoundary: x = y;` by
+      composing Task 124's real two-item/two-binding/distinct-written-range
+      reserve producer with the real builtin-object equality consumer.
+    - Acceptance: resolve source-order uses at ordinals 2/3 to
+      `BindingId(0/1)`; retain the two distinct written `object` ranges in four
+      distinct operand result/expected role sites; intern one canonical
+      builtin-object identity anchored at the earlier `x` reserve range;
+      produce two `Inferred` variables, six known type entries, two ordered
+      operand-owned expected constraints, and one fact/candidate/diagnostic/
+      deferred-free `Checked` equality. Require exact structural/provenance
+      near misses, matched-output and canonical-source corruption probes,
+      `BuiltinSet` corruption, route-order isolation, and a real frontend/
+      resolver sidecar. Add one test-first active pass fixture with five shared
+      and one dedicated trace backlink, raising the active runner from 140 to
+      141 without changing existing expectations.
+    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
+      no `spec_gap`. Keep equality truth, object/set coercion, facts, implicit
+      closure/order, declaration/theorem acceptance, proof/Core/ControlFlow/
+      VC, shared-range and broader multiple-reserve source shapes deferred.
+      Step 5 remains active; Steps 6/7 remain deferred. No checker source or
+      module-layout change was required.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 48, 119, 124, 188, and 191. Refs: Step 5; mizar-test task
+      10; specs 3, 4, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

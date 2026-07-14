@@ -183,6 +183,8 @@ const TYPE_ELABORATION_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_EQUALITY_INVALID_PAYL
     "type_elaboration.checker.local_object_mode_reserved_variable_equality.invalid_payload";
 const TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.multiple_reserve_declaration_equality.invalid_payload";
+const TYPE_ELABORATION_MULTIPLE_OBJECT_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.multiple_object_reserve_declaration_equality.invalid_payload";
 const TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_INEQUALITY_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.multiple_reserve_declaration_inequality.invalid_payload";
 const TYPE_ELABORATION_MULTIPLE_RESERVE_DECLARATION_MEMBERSHIP_INVALID_PAYLOAD_KEY: &str =
@@ -1437,6 +1439,13 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) = source_multiple_object_reserve_declaration_equality_detail_keys(
+        ast,
+        module.clone(),
+        symbols,
+    ) {
+        return keys;
+    }
     if let Some(keys) =
         source_multiple_reserve_declaration_equality_detail_keys(ast, module.clone(), symbols)
     {
@@ -2519,6 +2528,31 @@ const SOURCE_MULTIPLE_RESERVE_DECLARATION_EQUALITY_CONFIG:
     right_result_role: "multiple-reserve-declaration-right-result",
     left_expected_role: Some("multiple-reserve-declaration-left-expected"),
     right_expected_role: Some("multiple-reserve-declaration-right-expected"),
+};
+
+const SOURCE_MULTIPLE_OBJECT_RESERVE_DECLARATION_EQUALITY_CONFIG:
+    SourceReservedVariableBinaryFormulaConfig = SourceReservedVariableBinaryFormulaConfig {
+    label: "MultipleObjectReserveDeclarationEqualityPayloadBoundary",
+    operator: "=",
+    formula_kind: FormulaKind::Equality,
+    invalid_payload_key:
+        TYPE_ELABORATION_MULTIPLE_OBJECT_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY,
+    reserve_item_count: 2,
+    binding_spellings: &["x", "y"],
+    binding_types: &[
+        SourceReservedVariableBuiltinType::Object,
+        SourceReservedVariableBuiltinType::Object,
+    ],
+    binding_source_mode_spellings: &[None, None],
+    mode_definitions: &[],
+    left_binding_index: 0,
+    right_binding_index: 1,
+    require_shared_type_range: false,
+    require_distinct_type_ranges: true,
+    left_result_role: "multiple-object-reserve-declaration-left-result",
+    right_result_role: "multiple-object-reserve-declaration-right-result",
+    left_expected_role: Some("multiple-object-reserve-declaration-left-expected"),
+    right_expected_role: Some("multiple-object-reserve-declaration-right-expected"),
 };
 
 const SOURCE_MULTIPLE_RESERVE_DECLARATION_INEQUALITY_CONFIG:
@@ -4701,6 +4735,19 @@ fn source_multiple_reserve_declaration_equality_detail_keys(
     ))
 }
 
+fn source_multiple_object_reserve_declaration_equality_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_multiple_object_reserve_declaration_equality(ast, module, symbols)?;
+    Some(source_reserved_variable_formula_result_detail_keys(
+        build_source_reserved_variable_formula_output(payload, symbols),
+        TYPE_ELABORATION_MULTIPLE_OBJECT_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY,
+    ))
+}
+
 fn source_multiple_reserve_declaration_inequality_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -5617,6 +5664,17 @@ fn source_multiple_reserve_declaration_equality_output(
 }
 
 #[cfg(test)]
+fn source_multiple_object_reserve_declaration_equality_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormulaOutput> {
+    let payload =
+        extract_source_multiple_object_reserve_declaration_equality(ast, module, symbols)?;
+    build_source_reserved_variable_formula_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
 fn source_multiple_reserve_declaration_inequality_output(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -6349,6 +6407,12 @@ fn assert_source_reserved_variable_formula_output(
         && source_bindings
             .windows(2)
             .any(|pair| pair[0].type_range != pair[1].type_range))
+        || (payload.config.require_distinct_type_ranges
+            && source_bindings.windows(2).any(|pair| {
+                pair[0].type_range == pair[1].type_range
+                    || (pair[0].type_range.start, pair[0].type_range.end)
+                        >= (pair[1].type_range.start, pair[1].type_range.end)
+            }))
         || output.handoff.binding_env.bindings().len() != source_bindings.len()
         || !output.handoff.binding_env.diagnostics().is_empty()
         || output
@@ -7878,6 +7942,19 @@ fn extract_source_multiple_reserve_declaration_equality(
     )
 }
 
+fn extract_source_multiple_object_reserve_declaration_equality(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableBinaryFormula> {
+    extract_source_reserved_variable_binary_formula(
+        ast,
+        module,
+        symbols,
+        &SOURCE_MULTIPLE_OBJECT_RESERVE_DECLARATION_EQUALITY_CONFIG,
+    )
+}
+
 fn extract_source_multiple_reserve_declaration_inequality(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -8371,9 +8448,11 @@ fn extract_source_reserved_variable_binary_formula(
                 .windows(2)
                 .any(|pair| pair[0].type_range != pair[1].type_range))
         || (config.require_distinct_type_ranges
-            && source_bindings
-                .windows(2)
-                .any(|pair| pair[0].type_range == pair[1].type_range))
+            && source_bindings.windows(2).any(|pair| {
+                pair[0].type_range == pair[1].type_range
+                    || (pair[0].type_range.start, pair[0].type_range.end)
+                        >= (pair[1].type_range.start, pair[1].type_range.end)
+            }))
     {
         return None;
     }
@@ -19542,6 +19621,521 @@ mod tests {
         for near_miss in near_misses {
             assert_eq!(
                 source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+    }
+
+    #[test]
+    fn source_multiple_object_reserve_declaration_equality_bridge_preserves_distinct_object_provenance()
+     {
+        let source_id = source_id(193);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("multiple_object_reserve_declaration_equality"),
+        );
+        let symbols = SymbolEnv::new(module.clone(), SymbolEnvIndexes::default());
+        let separate_reserves = || {
+            vec![
+                reserve_item(vec!["x"], ReserveTypeShape::Builtin("object")),
+                reserve_item(vec!["y"], ReserveTypeShape::Builtin("object")),
+            ]
+        };
+        let exact = reserve_then_identifier_equality_theorem_ast(
+            source_id,
+            separate_reserves(),
+            "MultipleObjectReserveDeclarationEqualityPayloadBoundary",
+            "x",
+            "y",
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        assert!(
+            super::extract_source_multiple_reserve_declaration_equality(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .is_none()
+        );
+        assert!(
+            super::extract_source_distinct_reserved_object_variable_equality(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .is_none()
+        );
+        let payload = super::extract_source_multiple_object_reserve_declaration_equality(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact multiple-object-reserve equality should extract");
+        assert_eq!(payload.reserve.bridge.bindings().len(), 2);
+        assert_eq!(payload.reserve.bridge.bindings()[0].spelling, "x");
+        assert_eq!(payload.reserve.bridge.bindings()[1].spelling, "y");
+        assert_eq!(payload.left_lookup_ordinal, 2);
+        assert_eq!(payload.right_lookup_ordinal, 3);
+        let left_type_range = payload.reserve.bridge.bindings()[0].type_range;
+        let right_type_range = payload.reserve.bridge.bindings()[1].type_range;
+        assert_ne!(left_type_range, right_type_range);
+        assert!(payload.reserve.bridge.bindings().iter().all(|binding| {
+            binding.type_spelling == "object" && binding.type_head == TypeHeadInput::BuiltinObject
+        }));
+
+        let output = super::source_multiple_object_reserve_declaration_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact multiple-object-reserve equality should reach the checker");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("multiple-object-reserve equality invariants should hold");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(1));
+        assert_ne!(output.left_binding, output.right_binding);
+        assert_eq!(output.handoff.binding_env.bindings().len(), 2);
+        assert_eq!(output.handoff.declarations.declarations().len(), 2);
+        let left_expected = output
+            .left_expected_input
+            .as_ref()
+            .expect("left expected object input should exist");
+        let right_expected = output
+            .right_expected_input
+            .as_ref()
+            .expect("right expected object input should exist");
+        let role_sites = [
+            &output.left_result_input.site,
+            &output.right_result_input.site,
+            &left_expected.site,
+            &right_expected.site,
+        ]
+        .into_iter()
+        .collect::<BTreeSet<_>>();
+        assert_eq!(role_sites.len(), 4);
+        for input in [&output.left_result_input, left_expected] {
+            assert_eq!(input.source_range, left_type_range);
+            assert_eq!(input.spelling, "object");
+            assert_eq!(input.head, TypeHeadInput::BuiltinObject);
+            assert!(input.args.is_empty());
+            assert!(input.attributes.is_empty());
+        }
+        for input in [&output.right_result_input, right_expected] {
+            assert_eq!(input.source_range, right_type_range);
+            assert_eq!(input.spelling, "object");
+            assert_eq!(input.head, TypeHeadInput::BuiltinObject);
+            assert!(input.args.is_empty());
+            assert!(input.attributes.is_empty());
+        }
+        assert_eq!(output.term_formula.terms().len(), 2);
+        for (site, binding) in [
+            (&payload.left_site, output.left_binding),
+            (&payload.right_site, output.right_binding),
+        ] {
+            let term = output
+                .term_formula
+                .terms()
+                .iter()
+                .map(|(_, term)| term)
+                .find(|term| &term.site == site)
+                .expect("multiple-object-reserve term should be checked");
+            assert_eq!(term.reference, Some(TermReference::Binding(binding)));
+            assert_eq!(term.status, TermStatus::Inferred);
+            assert!(term.deferred.is_empty());
+        }
+        assert_eq!(output.term_formula.type_entries().len(), 6);
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        assert!(output.term_formula.candidate_sets().is_empty());
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("multiple-object-reserve normalized identity should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinObject);
+        assert_eq!(normalized.source.range, left_type_range);
+        assert_eq!(normalized.source.spelling, "object");
+        let formula = output
+            .term_formula
+            .formulas()
+            .iter()
+            .map(|(_, formula)| formula)
+            .next()
+            .expect("multiple-object-reserve equality should be checked");
+        assert_eq!(formula.kind, FormulaKind::Equality);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(
+            formula.terms,
+            [payload.left_site.clone(), payload.right_site.clone()]
+        );
+        assert_eq!(formula.expected_types.len(), 2);
+        assert_eq!(formula.expected_types[0].term, payload.left_site);
+        assert_eq!(formula.expected_types[1].term, payload.right_site);
+        assert!(formula.candidate_set.is_none());
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+        assert!(output.term_formula.facts().is_empty());
+        assert!(output.term_formula.diagnostics().is_empty());
+
+        let invalid_key =
+            super::TYPE_ELABORATION_MULTIPLE_OBJECT_RESERVE_DECLARATION_EQUALITY_INVALID_PAYLOAD_KEY;
+        let mut wrong_binding = super::source_multiple_object_reserve_declaration_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a binding corruption target");
+        wrong_binding.right_binding = BindingId::new(0);
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&wrong_binding),
+            vec![invalid_key.to_owned()]
+        );
+        let mut wrong_ordinal = super::extract_source_multiple_object_reserve_declaration_equality(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce an ordinal corruption target");
+        wrong_ordinal.left_lookup_ordinal = wrong_ordinal.right_lookup_ordinal;
+        assert_eq!(
+            source_reserved_variable_formula_result_detail_keys(
+                build_source_reserved_variable_formula_output(wrong_ordinal, &symbols),
+                invalid_key,
+            ),
+            vec![invalid_key.to_owned()]
+        );
+        let mut collapsed_range =
+            super::source_multiple_object_reserve_declaration_equality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a range corruption target");
+        collapsed_range.right_result_input.source_range = left_type_range;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&collapsed_range),
+            vec![invalid_key.to_owned()]
+        );
+        let mut collapsed_role = super::source_multiple_object_reserve_declaration_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a role corruption target");
+        collapsed_role.left_expected_input.as_mut().unwrap().site =
+            collapsed_role.left_result_input.site.clone();
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&collapsed_role),
+            vec![invalid_key.to_owned()]
+        );
+        let mut wrong_head = super::source_multiple_object_reserve_declaration_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a builtin-head corruption target");
+        wrong_head.left_result_input.head = TypeHeadInput::BuiltinSet;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&wrong_head),
+            vec![invalid_key.to_owned()]
+        );
+        let mut wrong_source = super::source_multiple_object_reserve_declaration_equality_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a source corruption target");
+        wrong_source
+            .right_expected_input
+            .as_mut()
+            .unwrap()
+            .source_range = payload.right_range;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&wrong_source),
+            vec![invalid_key.to_owned()]
+        );
+        let mut canonical_source_payload =
+            super::extract_source_multiple_object_reserve_declaration_equality(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce a canonical-source corruption target");
+        let bridge_source_id = canonical_source_payload.reserve.bridge.source_id();
+        let bridge_module_id = canonical_source_payload.reserve.bridge.module_id().clone();
+        let bridge_source_range = canonical_source_payload.reserve.bridge.source_range();
+        let mut reordered_type_ranges = canonical_source_payload.reserve.bridge.bindings().to_vec();
+        reordered_type_ranges[0].type_range = right_type_range;
+        reordered_type_ranges[1].type_range = left_type_range;
+        canonical_source_payload.reserve.bridge = super::SourceReserveDeclarationBridge::new(
+            bridge_source_id,
+            bridge_module_id,
+            bridge_source_range,
+            reordered_type_ranges,
+        )
+        .expect("range-swapped reserve bridge should remain structurally constructible");
+        let canonical_source_corruption =
+            build_source_reserved_variable_formula_output(canonical_source_payload, &symbols)
+                .expect("range-swapped payload should reach immutable checker output validation");
+        let corrupted_bindings = canonical_source_corruption
+            .payload
+            .reserve
+            .bridge
+            .bindings();
+        assert_eq!(
+            canonical_source_corruption.left_result_input.source_range,
+            corrupted_bindings[0].type_range
+        );
+        assert_eq!(
+            canonical_source_corruption.right_result_input.source_range,
+            corrupted_bindings[1].type_range
+        );
+        let (_, corrupted_normalized) = canonical_source_corruption
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("corrupted output should still contain one normalized object identity");
+        assert_eq!(
+            corrupted_normalized.source.range,
+            corrupted_bindings[1].type_range
+        );
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&canonical_source_corruption),
+            vec![invalid_key.to_owned()]
+        );
+        let mut missing_expected =
+            super::source_multiple_object_reserve_declaration_equality_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .expect("exact source should produce an expected-input corruption target");
+        missing_expected.right_expected_input = None;
+        assert_eq!(
+            source_reserved_variable_formula_output_detail_keys(&missing_expected),
+            vec![invalid_key.to_owned()]
+        );
+        let pre_output = super::extract_source_multiple_object_reserve_declaration_equality(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact source should produce a pre-output payload");
+        let mismatched_symbols = SymbolEnv::new(
+            ResolverModuleId::new(PackageId::new("test"), ModulePath::new("other_module")),
+            SymbolEnvIndexes::default(),
+        );
+        assert_eq!(
+            source_reserved_variable_formula_result_detail_keys(
+                build_source_reserved_variable_formula_output(pre_output, &mismatched_symbols),
+                invalid_key,
+            ),
+            vec![invalid_key.to_owned()]
+        );
+
+        let exact_spec = IdentifierBinaryTheoremSpec {
+            status: None,
+            label: "MultipleObjectReserveDeclarationEqualityPayloadBoundary",
+            left: "x",
+            operator: "=",
+            right: "y",
+            recovered_label: false,
+        };
+        let near_misses = [
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                separate_reserves(),
+                "OtherPayloadBoundary",
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                separate_reserves(),
+                exact_spec.label,
+                "y",
+                "x",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                separate_reserves(),
+                exact_spec.label,
+                "x",
+                "x",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                separate_reserves(),
+                exact_spec.label,
+                "z",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                separate_reserves(),
+                exact_spec.label,
+                "x",
+                "z",
+            ),
+            reserve_then_identifier_binary_theorem_ast(
+                source_id,
+                separate_reserves(),
+                exact_spec.label,
+                "x",
+                "<>",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![reserve_item(
+                    vec!["x", "y"],
+                    ReserveTypeShape::Builtin("object"),
+                )],
+                exact_spec.label,
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("object")),
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("object")),
+                ],
+                exact_spec.label,
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("set")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("object")),
+                ],
+                exact_spec.label,
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("object")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("set")),
+                ],
+                exact_spec.label,
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::Builtin("object")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("object")),
+                    reserve_item(vec!["z"], ReserveTypeShape::Builtin("object")),
+                ],
+                exact_spec.label,
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::AttributedObject),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("object")),
+                ],
+                exact_spec.label,
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], ReserveTypeShape::QualifiedSymbolWithArgs("Mode")),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("object")),
+                ],
+                exact_spec.label,
+                "x",
+                "y",
+            ),
+            reserve_then_identifier_binary_theorem_ast_with_options(
+                source_id,
+                separate_reserves(),
+                IdentifierBinaryTheoremSpec {
+                    status: Some("registration"),
+                    ..exact_spec
+                },
+            ),
+            reserve_then_identifier_binary_theorem_ast_with_options(
+                source_id,
+                separate_reserves(),
+                IdentifierBinaryTheoremSpec {
+                    recovered_label: true,
+                    ..exact_spec
+                },
+            ),
+            reserve_then_two_identifier_binary_theorems_with_options_ast(
+                source_id,
+                separate_reserves(),
+                exact_spec,
+            ),
+            reserve_then_builtin_equality_theorem_ast(
+                source_id,
+                separate_reserves(),
+                exact_spec.label,
+                "1",
+                "1",
+            ),
+        ];
+        for near_miss in near_misses {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+
+        let provenance_near_misses = [
+            (
+                ReserveTypeShape::QualifiedSymbol("Mode"),
+                source_mode_symbol_env(module.clone()),
+            ),
+            (
+                ReserveTypeShape::QualifiedSymbol("Struct"),
+                source_structure_symbol_env(module.clone()),
+            ),
+            (
+                ReserveTypeShape::QualifiedSymbol("Mode"),
+                imported_mode_symbol_env(module.clone()),
+            ),
+            (
+                ReserveTypeShape::QualifiedSymbol("Struct"),
+                imported_structure_symbol_env(module.clone()),
+            ),
+            (
+                ReserveTypeShape::QualifiedSymbol("Mode"),
+                ambiguous_mode_symbol_env(module.clone()),
+            ),
+            (
+                ReserveTypeShape::QualifiedSymbol("Struct"),
+                ambiguous_structure_symbol_env(module.clone()),
+            ),
+        ];
+        for (reserve_type, near_miss_symbols) in provenance_near_misses {
+            let near_miss = reserve_then_identifier_equality_theorem_ast(
+                source_id,
+                vec![
+                    reserve_item(vec!["x"], reserve_type),
+                    reserve_item(vec!["y"], ReserveTypeShape::Builtin("object")),
+                ],
+                exact_spec.label,
+                "x",
+                "y",
+            );
+            assert_eq!(
+                source_type_elaboration_detail_keys(&near_miss, module.clone(), &near_miss_symbols,),
                 vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
             );
         }
@@ -38465,6 +39059,91 @@ mod tests {
         );
         assert!(output.left_expected_input.is_none());
         assert_eq!(output.term_formula.normalized_types().len(), 1);
+    }
+
+    #[test]
+    fn active_multiple_object_reserve_declaration_equality_fixture_preserves_real_checker_payload()
+    {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("Task 193 repository plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0
+                    == "pass_type_elaboration_multiple_object_reserve_declaration_equality_001"
+            })
+            .expect("Task 193 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 193 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 193 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = super::source_multiple_object_reserve_declaration_equality_output(
+            &ast,
+            resolver.module,
+            &symbols,
+        )
+        .expect("Task 193 real AST should reach the multiple-object-reserve equality seam");
+        assert_source_reserved_variable_formula_output(&output)
+            .expect("Task 193 real AST should preserve every checked payload invariant");
+        assert_eq!(output.left_binding, BindingId::new(0));
+        assert_eq!(output.right_binding, BindingId::new(1));
+        assert_eq!(output.payload.left_lookup_ordinal, 2);
+        assert_eq!(output.payload.right_lookup_ordinal, 3);
+        let left_range = output.payload.reserve.bridge.bindings()[0].type_range;
+        let right_range = output.payload.reserve.bridge.bindings()[1].type_range;
+        assert_ne!(left_range, right_range);
+        assert_eq!(output.left_result_input.source_range, left_range);
+        assert_eq!(
+            output.left_expected_input.as_ref().unwrap().source_range,
+            left_range
+        );
+        assert_eq!(output.right_result_input.source_range, right_range);
+        assert_eq!(
+            output.right_expected_input.as_ref().unwrap().source_range,
+            right_range
+        );
+        assert_eq!(output.term_formula.type_entries().len(), 6);
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("Task 193 normalized object identity should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinObject);
+        assert_eq!(normalized.source.range, left_range);
+        let (_, formula) = output
+            .term_formula
+            .formulas()
+            .iter()
+            .next()
+            .expect("Task 193 checked equality should exist");
+        assert_eq!(formula.kind, FormulaKind::Equality);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert_eq!(formula.expected_types.len(), 2);
+        assert!(formula.candidate_set.is_none());
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+        assert!(output.term_formula.candidate_sets().is_empty());
+        assert!(output.term_formula.facts().is_empty());
+        assert!(output.term_formula.diagnostics().is_empty());
     }
 
     #[test]

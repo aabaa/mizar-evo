@@ -1577,6 +1577,32 @@ closure/order, theorem acceptance, proof execution, and CoreIr/ControlFlowIr/
 VC/proof payloads remain deferred. No checker source or module-layout change
 was required.
 
+Task 193 is limited to the exact multiple-reserve-declaration builtin-object
+equality `reserve x for object; reserve y for object; theorem
+MultipleObjectReserveDeclarationEqualityPayloadBoundary: x = y;`. The
+production route composes Task 124's real two-item/two-binding/distinct-
+written-range reserve handoff with the builtin-object equality consumer,
+resolves source-order uses at ordinals 2 and 3 to `BindingId(0)` and
+`BindingId(1)`, and retains four distinct result/expected role sites whose raw
+type inputs preserve the two binding-owned written `object` ranges. All four
+raw inputs are argument/attribute-free `BuiltinObject` values and normalize
+to one known builtin-object identity canonically anchored at the earlier `x`
+reserve range. The immutable checker result contains two `Inferred`
+variables, six known type entries, one known normalized type, two ordered
+operand-owned expected constraints, zero candidates/facts/diagnostics/
+deferred reasons, and one `Checked` `Equality`. Exact and near-miss tests
+reject wrong labels, reversed/same/isolated-unknown operands, other operators,
+status/recovery/extra theorems, shared/reordered/mixed/extra reserve items,
+numeral operands, and attributed, argument-bearing, local/imported/ambiguous
+mode or structure heads. Corruption probes reject binding/ordinal/range/role/
+head/raw-source/canonical-source/expected-input or module drift, while
+positive checker-table and canonical-source assertions plus a real frontend/
+resolver sidecar guard the active fixture. This is type/well-formedness
+checking only: equality truth, object/set coercion, facts, implicit closure/
+order, theorem acceptance, proof execution, CoreIr/ControlFlowIr/VC/proof
+payloads, shared-range shapes, and broader multiple-reserve object shapes
+remain deferred. No checker source or module-layout change was required.
+
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

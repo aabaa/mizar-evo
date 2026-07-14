@@ -1016,6 +1016,25 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    ControlFlowIr/VC, and broader distinct-object shapes remain deferred; Step 5
    remains active, Steps 6/7 remain deferred, and no checker source or module-
    layout change was required,
+   task 193 adds the exact multiple-reserve-declaration builtin-object equality
+   bridge by composing Task 124's real two-item/two-binding/distinct-written-
+   range producer with tasks 188/191's builtin-object equality consumer. This
+   `test_gap`, narrow `source_drift`, and `design_drift` slice accepts only
+   `reserve x for object; reserve y for object; theorem
+   MultipleObjectReserveDeclarationEqualityPayloadBoundary: x = y;`, resolves
+   source-order ordinals 2/3 to `BindingId(0/1)`, retains two binding-owned
+   written `object` ranges across four distinct result/expected role sites,
+   interns one canonical builtin-object identity anchored at the earlier `x`
+   range, and records two inferred variables, six known type entries, two
+   ordered constraints, and one fact/candidate/diagnostic/deferred-free checked
+   equality. Five shared backlinks, one dedicated row, structural/provenance
+   near misses, corruption and immutable-output guards, and a real frontend/
+   resolver sidecar protect active case 141 within 356 cases and 320
+   requirements. Equality truth, object/set coercion, facts, closure/order,
+   declaration/theorem acceptance, proof/CoreIr/ControlFlowIr/VC, shared-range
+   and broader multiple-reserve object shapes remain deferred; Step 5 remains
+   active, Steps 6/7 remain deferred, and no checker source or module-layout
+   change was required,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
