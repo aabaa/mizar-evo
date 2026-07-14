@@ -219,6 +219,8 @@ const TYPE_ELABORATION_CHAINED_LOCAL_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &st
     "type_elaboration.checker.chained_local_mode_asserted_head.invalid_payload";
 const TYPE_ELABORATION_CHAINED_LOCAL_MODE_RADIX_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.chained_local_mode_radix_asserted_head.invalid_payload";
+const TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RADIX_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
+    "type_elaboration.checker.chained_local_object_mode_radix_asserted_head.invalid_payload";
 const TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
     "type_elaboration.checker.chained_local_object_mode_asserted_head.invalid_payload";
 const TYPE_ELABORATION_TWO_EDGE_LOCAL_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY: &str =
@@ -1258,6 +1260,13 @@ fn source_type_elaboration_detail_keys(
     {
         return keys;
     }
+    if let Some(keys) = source_chained_local_object_mode_radix_asserted_head_detail_keys(
+        ast,
+        module.clone(),
+        symbols,
+    ) {
+        return keys;
+    }
     if let Some(keys) =
         source_chained_local_object_mode_asserted_head_detail_keys(ast, module.clone(), symbols)
     {
@@ -1996,6 +2005,35 @@ const SOURCE_CHAINED_LOCAL_MODE_RADIX_ASSERTED_HEAD_CONFIG:
         "BaseModeRadixAssertedHead",
     ),
     subject_result_role: "chained-local-mode-radix-asserted-head-subject-result",
+};
+
+const SOURCE_CHAINED_LOCAL_OBJECT_MODE_RADIX_ASSERTED_HEAD_CONFIG:
+    SourceReservedVariableTypeAssertionConfig = SourceReservedVariableTypeAssertionConfig {
+    label: "ChainedLocalObjectModeRadixAssertedHeadPayloadBoundary",
+    invalid_payload_key:
+        TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RADIX_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
+    binding_spelling: "x",
+    binding_type: SourceReservedVariableBuiltinType::Object,
+    binding_source_mode_spelling: Some("OuterObjectModeRadixAssertedHead"),
+    mode_definitions: &[
+        SourceReservedVariableModeDefinition {
+            label: "BaseObjectModeRadixAssertedHeadDef",
+            spelling: "BaseObjectModeRadixAssertedHead",
+            radix: SourceReservedVariableModeRadix::Builtin(
+                SourceReservedVariableBuiltinType::Object,
+            ),
+        },
+        SourceReservedVariableModeDefinition {
+            label: "OuterObjectModeRadixAssertedHeadDef",
+            spelling: "OuterObjectModeRadixAssertedHead",
+            radix: SourceReservedVariableModeRadix::Mode("BaseObjectModeRadixAssertedHead"),
+        },
+    ],
+    asserted_type: SourceReservedVariableBuiltinType::Object,
+    asserted_head_relation: SourceReservedVariableAssertedHeadRelation::BindingImmediateRadix(
+        "BaseObjectModeRadixAssertedHead",
+    ),
+    subject_result_role: "chained-local-object-mode-radix-asserted-head-subject-result",
 };
 
 const SOURCE_CHAINED_LOCAL_OBJECT_MODE_ASSERTED_HEAD_CONFIG:
@@ -5233,6 +5271,20 @@ fn source_chained_local_mode_radix_asserted_head_detail_keys(
     ))
 }
 
+fn source_chained_local_object_mode_radix_asserted_head_detail_keys(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<Vec<String>> {
+    let payload =
+        extract_source_chained_local_object_mode_radix_asserted_head(ast, module, symbols)?;
+    let invalid_payload_key = payload.config.invalid_payload_key;
+    Some(source_reserved_variable_type_assertion_result_detail_keys(
+        build_source_reserved_variable_type_assertion_output(payload, symbols),
+        invalid_payload_key,
+    ))
+}
+
 fn source_chained_local_object_mode_asserted_head_detail_keys(
     ast: &SurfaceAst,
     module: ResolverModuleId,
@@ -6230,6 +6282,17 @@ fn source_chained_local_mode_radix_asserted_head_output(
     symbols: &SymbolEnv,
 ) -> Option<SourceReservedVariableTypeAssertionOutput> {
     let payload = extract_source_chained_local_mode_radix_asserted_head(ast, module, symbols)?;
+    build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
+}
+
+#[cfg(test)]
+fn source_chained_local_object_mode_radix_asserted_head_output(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertionOutput> {
+    let payload =
+        extract_source_chained_local_object_mode_radix_asserted_head(ast, module, symbols)?;
     build_source_reserved_variable_type_assertion_output(payload, symbols).ok()
 }
 
@@ -8682,6 +8745,19 @@ fn extract_source_chained_local_mode_radix_asserted_head(
         module,
         symbols,
         &SOURCE_CHAINED_LOCAL_MODE_RADIX_ASSERTED_HEAD_CONFIG,
+    )
+}
+
+fn extract_source_chained_local_object_mode_radix_asserted_head(
+    ast: &SurfaceAst,
+    module: ResolverModuleId,
+    symbols: &SymbolEnv,
+) -> Option<SourceReservedVariableTypeAssertion> {
+    extract_source_reserved_variable_type_assertion_with_config(
+        ast,
+        module,
+        symbols,
+        &SOURCE_CHAINED_LOCAL_OBJECT_MODE_RADIX_ASSERTED_HEAD_CONFIG,
     )
 }
 
@@ -13035,6 +13111,7 @@ mod tests {
         TYPE_ELABORATION_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_CHAINED_LOCAL_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
+        TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RADIX_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_INEQUALITY_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_MEMBERSHIP_INVALID_PAYLOAD_KEY,
         TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RESERVED_VARIABLE_TYPE_ASSERTION_INVALID_PAYLOAD_KEY,
@@ -13103,6 +13180,7 @@ mod tests {
         extract_source_chained_local_mode_reserved_variable_membership,
         extract_source_chained_local_mode_reserved_variable_type_assertion,
         extract_source_chained_local_object_mode_asserted_head,
+        extract_source_chained_local_object_mode_radix_asserted_head,
         extract_source_chained_local_object_mode_reserved_variable_inequality,
         extract_source_chained_local_object_mode_reserved_variable_membership,
         extract_source_chained_local_object_mode_reserved_variable_type_assertion,
@@ -13172,6 +13250,7 @@ mod tests {
         source_chained_local_mode_reserved_variable_membership_output,
         source_chained_local_mode_reserved_variable_type_assertion_output,
         source_chained_local_object_mode_asserted_head_output,
+        source_chained_local_object_mode_radix_asserted_head_output,
         source_chained_local_object_mode_reserved_variable_inequality_output,
         source_chained_local_object_mode_reserved_variable_membership_output,
         source_chained_local_object_mode_reserved_variable_type_assertion_output,
@@ -35553,6 +35632,681 @@ mod tests {
     }
 
     #[test]
+    fn source_chained_local_object_mode_radix_asserted_head_consumes_immediate_expansion() {
+        let source_id = source_id(202);
+        let module = ResolverModuleId::new(
+            PackageId::new("test"),
+            ModulePath::new("chained_local_object_mode_radix_asserted_head"),
+        );
+        let base_mode = "BaseObjectModeRadixAssertedHead";
+        let outer_mode = "OuterObjectModeRadixAssertedHead";
+        let symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                (base_mode, SymbolKind::Mode),
+                (outer_mode, SymbolKind::Mode),
+                ("DeeperObjectModeRadixAssertedHead", SymbolKind::Mode),
+                ("OtherObjectModeRadixAssertedHead", SymbolKind::Mode),
+            ],
+        );
+        let theorem = exact_chained_local_object_mode_radix_asserted_head_spec();
+        let exact_modes = || {
+            vec![
+                mode_definition_with_label(
+                    base_mode,
+                    "BaseObjectModeRadixAssertedHeadDef",
+                    ReserveTypeShape::Builtin("object"),
+                ),
+                mode_definition_with_label(
+                    outer_mode,
+                    "OuterObjectModeRadixAssertedHeadDef",
+                    ReserveTypeShape::QualifiedSymbol(base_mode),
+                ),
+            ]
+        };
+        let reserve = || {
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol(outer_mode),
+            )]
+        };
+        let exact = mode_then_reserve_identifier_type_assertion_theorem_ast(
+            source_id,
+            exact_modes(),
+            reserve(),
+            theorem,
+        );
+
+        assert_eq!(
+            source_type_elaboration_detail_keys(&exact, module.clone(), &symbols),
+            Vec::<String>::new()
+        );
+        assert!(
+            super::extract_source_reserved_object_variable_type_assertion(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .is_none()
+        );
+        assert!(
+            extract_source_chained_local_object_mode_asserted_head(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .is_none()
+        );
+        assert!(
+            extract_source_chained_local_object_mode_reserved_variable_type_assertion(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .is_none()
+        );
+        assert!(
+            extract_source_chained_local_mode_radix_asserted_head(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .is_none()
+        );
+        let payload = extract_source_chained_local_object_mode_radix_asserted_head(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact object one-edge immediate-radix asserted head should extract");
+        assert_eq!(payload.reserve.mode_expansions.len(), 2);
+        assert_eq!(payload.reserve.bridge.bindings().len(), 1);
+        assert_eq!(payload.subject_lookup_ordinal, 1);
+        let source_binding = &payload.reserve.bridge.bindings()[0];
+        assert_eq!(source_binding.type_spelling, outer_mode);
+        assert_eq!(payload.asserted_type.spelling, base_mode);
+        assert!(matches!(source_binding.type_head, TypeHeadInput::Symbol(_)));
+        assert!(matches!(
+            payload.asserted_type.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_ne!(payload.asserted_type.head, source_binding.type_head);
+        assert_ne!(payload.asserted_type_site, payload.subject_site);
+        assert_ne!(payload.asserted_type.range, source_binding.type_range);
+        let outer_expansion = payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(outer_mode))
+            .map(|(_, expansion)| expansion)
+            .expect("object outer binding expansion should exist");
+        assert_eq!(outer_expansion.radix.spelling, base_mode);
+        assert_eq!(outer_expansion.radix.head, payload.asserted_type.head);
+
+        let output = source_chained_local_object_mode_radix_asserted_head_output(
+            &exact,
+            module.clone(),
+            &symbols,
+        )
+        .expect("exact object immediate-radix asserted head should reach the checker");
+        assert_source_reserved_variable_type_assertion_output(&output)
+            .expect("Task 202 checker payload invariants should hold");
+        assert_eq!(output.subject_binding, BindingId::new(0));
+        assert_eq!(output.payload.subject_lookup_ordinal, 1);
+        assert_eq!(output.payload.reserve.mode_expansions.len(), 2);
+        assert_eq!(output.term_formula.type_entries().len(), 3);
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        assert_eq!(output.subject_result_input.spelling, outer_mode);
+        assert_eq!(output.asserted_type_input.spelling, base_mode);
+        assert_ne!(
+            output.subject_result_input.head,
+            output.asserted_type_input.head
+        );
+        assert!(matches!(
+            output.subject_result_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert!(matches!(
+            output.asserted_type_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_ne!(
+            output.subject_result_input.site,
+            output.asserted_type_input.site
+        );
+        assert_ne!(
+            output.subject_result_input.source_range,
+            output.asserted_type_input.source_range
+        );
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(base_mode))
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("object base terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("one normalized builtin-object type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinObject);
+        assert_ne!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+        let (_, term) = output.term_formula.terms().iter().next().unwrap();
+        assert_eq!(term.status, TermStatus::Inferred);
+        assert!(term.deferred.is_empty());
+        let (_, formula) = output.term_formula.formulas().iter().next().unwrap();
+        assert_eq!(formula.kind, FormulaKind::TypeAssertion);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert!(formula.expected_types.is_empty());
+        assert!(formula.candidate_set.is_none());
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+        assert!(output.term_formula.candidate_sets().is_empty());
+        assert!(output.term_formula.facts().is_empty());
+        assert!(output.term_formula.diagnostics().is_empty());
+
+        let assert_invalid_output = |invalid| {
+            let invalid_result =
+                assert_source_reserved_variable_type_assertion_output(&invalid).map(|()| invalid);
+            assert_eq!(
+                source_reserved_variable_type_assertion_result_detail_keys(
+                    invalid_result,
+                    TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RADIX_ASSERTED_HEAD_INVALID_PAYLOAD_KEY,
+                ),
+                vec![
+                    TYPE_ELABORATION_CHAINED_LOCAL_OBJECT_MODE_RADIX_ASSERTED_HEAD_INVALID_PAYLOAD_KEY
+                        .to_owned()
+                ]
+            );
+        };
+        for removed in [base_mode, outer_mode] {
+            let mut invalid = source_chained_local_object_mode_radix_asserted_head_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .unwrap();
+            invalid
+                .payload
+                .reserve
+                .mode_expansions
+                .retain(|symbol, _| source_mode_symbol_spelling(symbol) != Some(removed));
+            assert_invalid_output(invalid);
+        }
+        let exact_output = || {
+            source_chained_local_object_mode_radix_asserted_head_output(
+                &exact,
+                module.clone(),
+                &symbols,
+            )
+            .unwrap()
+        };
+        let mut corruptions = Vec::new();
+        let mut invalid = exact_output();
+        invalid.subject_binding = BindingId::new(1);
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        invalid.payload.subject_lookup_ordinal = 2;
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        invalid.subject_result_input.spelling = base_mode.to_owned();
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        invalid.subject_result_input.head = TypeHeadInput::BuiltinSet;
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        invalid.subject_result_input.site = invalid.asserted_type_input.site.clone();
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        invalid.subject_result_input.source_range = invalid.asserted_type_input.source_range;
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        invalid.asserted_type_input.spelling = "OtherObjectModeRadixAssertedHead".to_owned();
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        invalid.asserted_type_input.head = invalid.subject_result_input.head.clone();
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        invalid.asserted_type_input.head = TypeHeadInput::BuiltinSet;
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        invalid.asserted_type_input.site = invalid.subject_result_input.site.clone();
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        invalid.asserted_type_input.source_range = invalid.subject_result_input.source_range;
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        let binding_head = invalid.subject_result_input.head.clone();
+        let (_, outer_expansion) = invalid
+            .payload
+            .reserve
+            .mode_expansions
+            .iter_mut()
+            .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(outer_mode))
+            .unwrap();
+        outer_expansion.radix.spelling = outer_mode.to_owned();
+        outer_expansion.radix.head = binding_head;
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        let (_, base_expansion) = invalid
+            .payload
+            .reserve
+            .mode_expansions
+            .iter_mut()
+            .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(base_mode))
+            .unwrap();
+        base_expansion.radix.source_range = range(source_id, 0, 1);
+        corruptions.push(invalid);
+        let mut invalid = exact_output();
+        let (_, base_expansion) = invalid
+            .payload
+            .reserve
+            .mode_expansions
+            .iter_mut()
+            .find(|(symbol, _)| source_mode_symbol_spelling(symbol) == Some(base_mode))
+            .unwrap();
+        base_expansion.radix.spelling = "set".to_owned();
+        base_expansion.radix.head = TypeHeadInput::BuiltinSet;
+        corruptions.push(invalid);
+        for invalid in corruptions {
+            assert_invalid_output(invalid);
+        }
+        assert_source_reserved_variable_type_assertion_output(&exact_output())
+            .expect("corrupting cloned object outputs must not mutate the exact output");
+
+        let assert_extraction_gap = |ast, context: &str| {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&ast, module.clone(), &symbols),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()],
+                "{context}"
+            );
+        };
+        let mut mode_near_misses = vec![
+            Vec::<ModeDefinitionSpec>::new(),
+            vec![exact_modes()[0]],
+            vec![exact_modes()[1]],
+            vec![exact_modes()[1], exact_modes()[0]],
+            {
+                let mut modes = exact_modes();
+                modes.push(modes[0]);
+                modes
+            },
+            {
+                let mut modes = exact_modes();
+                modes.push(mode_definition_with_label(
+                    "UnusedObjectModeRadixAssertedHead",
+                    "UnusedObjectModeRadixAssertedHeadDef",
+                    ReserveTypeShape::QualifiedSymbol(base_mode),
+                ));
+                modes
+            },
+            vec![
+                mode_definition_with_label(
+                    base_mode,
+                    "BaseObjectModeRadixAssertedHeadDef",
+                    ReserveTypeShape::Builtin("set"),
+                ),
+                exact_modes()[1],
+            ],
+            vec![
+                exact_modes()[0],
+                mode_definition_with_label(
+                    outer_mode,
+                    "OuterObjectModeRadixAssertedHeadDef",
+                    ReserveTypeShape::QualifiedSymbol("OtherObjectModeRadixAssertedHead"),
+                ),
+            ],
+        ];
+        for index in 0..2 {
+            let mut wrong_label = exact_modes();
+            wrong_label[index].label = Some("WrongObjectModeRadixAssertedHeadDef");
+            mode_near_misses.push(wrong_label);
+            let mut recovered = exact_modes();
+            recovered[index].recovered = true;
+            mode_near_misses.push(recovered);
+            let mut contextual = exact_modes();
+            contextual[index].local_context = true;
+            mode_near_misses.push(contextual);
+            let mut parameterized = exact_modes();
+            parameterized[index].parameterized_pattern = true;
+            mode_near_misses.push(parameterized);
+            let mut args = exact_modes();
+            args[index].rhs_shape = if index == 0 {
+                ReserveTypeShape::QualifiedSymbolWithArgs("object")
+            } else {
+                ReserveTypeShape::QualifiedSymbolWithArgs(base_mode)
+            };
+            mode_near_misses.push(args);
+            let mut attrs = exact_modes();
+            attrs[index].rhs_shape = if index == 0 {
+                ReserveTypeShape::AttributedObject
+            } else {
+                ReserveTypeShape::AttributedQualifiedSymbol(base_mode)
+            };
+            mode_near_misses.push(attrs);
+        }
+        for (index, modes) in mode_near_misses.into_iter().enumerate() {
+            assert_extraction_gap(
+                mode_then_reserve_identifier_type_assertion_theorem_ast(
+                    source_id,
+                    modes,
+                    reserve(),
+                    theorem,
+                ),
+                &format!("object definition near miss {index}"),
+            );
+        }
+
+        let mut source_near_misses = Vec::new();
+        let mut deeper_modes = exact_modes();
+        deeper_modes.push(mode_definition_with_label(
+            "DeeperObjectModeRadixAssertedHead",
+            "DeeperObjectModeRadixAssertedHeadDef",
+            ReserveTypeShape::QualifiedSymbol(outer_mode),
+        ));
+        source_near_misses.push(mode_then_reserve_identifier_type_assertion_theorem_ast(
+            source_id,
+            deeper_modes,
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("DeeperObjectModeRadixAssertedHead"),
+            )],
+            IdentifierTypeAssertionTheoremSpec {
+                asserted_type: ReserveTypeShape::QualifiedSymbol(outer_mode),
+                ..theorem
+            },
+        ));
+        for bad_reserve in [
+            ReserveTypeShape::QualifiedSymbol(base_mode),
+            ReserveTypeShape::QualifiedSymbolWithArgs(outer_mode),
+            ReserveTypeShape::AttributedQualifiedSymbol(outer_mode),
+            ReserveTypeShape::Builtin("object"),
+            ReserveTypeShape::Builtin("set"),
+        ] {
+            source_near_misses.push(mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                vec![reserve_item(vec!["x"], bad_reserve)],
+                theorem,
+            ));
+        }
+        source_near_misses.push(mode_then_reserve_identifier_type_assertion_theorem_ast(
+            source_id,
+            exact_modes(),
+            vec![
+                reserve_item(vec!["x"], ReserveTypeShape::QualifiedSymbol(outer_mode)),
+                reserve_item(vec!["y"], ReserveTypeShape::Builtin("object")),
+            ],
+            theorem,
+        ));
+        for near_miss_theorem in [
+            IdentifierTypeAssertionTheoremSpec {
+                label: "OtherPayloadBoundary",
+                ..theorem
+            },
+            IdentifierTypeAssertionTheoremSpec {
+                subject: "y",
+                ..theorem
+            },
+            IdentifierTypeAssertionTheoremSpec {
+                asserted_type: ReserveTypeShape::QualifiedSymbol(outer_mode),
+                ..theorem
+            },
+            IdentifierTypeAssertionTheoremSpec {
+                asserted_type: ReserveTypeShape::Builtin("object"),
+                ..theorem
+            },
+            IdentifierTypeAssertionTheoremSpec {
+                asserted_type: ReserveTypeShape::Builtin("set"),
+                ..theorem
+            },
+            IdentifierTypeAssertionTheoremSpec {
+                asserted_type: ReserveTypeShape::QualifiedSymbol(
+                    "DeeperObjectModeRadixAssertedHead",
+                ),
+                ..theorem
+            },
+            IdentifierTypeAssertionTheoremSpec {
+                asserted_type: ReserveTypeShape::QualifiedSymbol(
+                    "OtherObjectModeRadixAssertedHead",
+                ),
+                ..theorem
+            },
+            IdentifierTypeAssertionTheoremSpec {
+                asserted_type: ReserveTypeShape::QualifiedSymbolWithArgs(base_mode),
+                ..theorem
+            },
+            IdentifierTypeAssertionTheoremSpec {
+                asserted_type: ReserveTypeShape::AttributedQualifiedSymbol(base_mode),
+                ..theorem
+            },
+            IdentifierTypeAssertionTheoremSpec {
+                negated: true,
+                ..theorem
+            },
+            IdentifierTypeAssertionTheoremSpec {
+                status: Some("registration"),
+                ..theorem
+            },
+            IdentifierTypeAssertionTheoremSpec {
+                recovered_label: true,
+                ..theorem
+            },
+        ] {
+            source_near_misses.push(mode_then_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                near_miss_theorem,
+            ));
+        }
+        source_near_misses.push(
+            modes_then_empty_definition_reserve_identifier_type_assertion_theorem_ast(
+                source_id,
+                exact_modes(),
+                reserve(),
+                theorem,
+            ),
+        );
+        for (index, near_miss) in source_near_misses.into_iter().enumerate() {
+            assert_extraction_gap(near_miss, &format!("object source near miss {index}"));
+        }
+
+        let unrelated_import = source_local_and_imported_symbols_env(
+            module.clone(),
+            &[
+                (base_mode, SymbolKind::Mode),
+                (outer_mode, SymbolKind::Mode),
+            ],
+            &[("UnrelatedObjectModeRadixAssertedHead", SymbolKind::Mode)],
+        );
+        assert!(
+            extract_source_chained_local_object_mode_radix_asserted_head(
+                &exact,
+                module.clone(),
+                &unrelated_import,
+            )
+            .is_some()
+        );
+        for asserted_head_symbols in [
+            source_local_and_imported_symbols_env(
+                module.clone(),
+                &[(outer_mode, SymbolKind::Mode)],
+                &[(base_mode, SymbolKind::Mode)],
+            ),
+            source_local_and_imported_symbols_env(
+                module.clone(),
+                &[(outer_mode, SymbolKind::Mode)],
+                &[(base_mode, SymbolKind::Mode), (base_mode, SymbolKind::Mode)],
+            ),
+        ] {
+            assert_eq!(
+                source_type_elaboration_detail_keys(&exact, module.clone(), &asserted_head_symbols,),
+                vec![TYPE_ELABORATION_PAYLOAD_EXTRACTION_GAP_KEY.to_owned()]
+            );
+        }
+
+        let task189 = reserve_then_identifier_type_assertion_theorem_ast(
+            source_id,
+            vec![reserve_item(vec!["x"], ReserveTypeShape::Builtin("object"))],
+            exact_reserved_object_identifier_type_assertion_spec(),
+        );
+        assert!(
+            super::extract_source_reserved_object_variable_type_assertion(
+                &task189,
+                module.clone(),
+                &symbols,
+            )
+            .is_some()
+        );
+        assert!(
+            extract_source_chained_local_object_mode_radix_asserted_head(
+                &task189,
+                module.clone(),
+                &symbols,
+            )
+            .is_none()
+        );
+
+        let task147_symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                ("BaseObjectModeTypeAssertion", SymbolKind::Mode),
+                ("ChainObjectModeTypeAssertion", SymbolKind::Mode),
+            ],
+        );
+        let task147 = mode_then_reserve_identifier_type_assertion_theorem_ast(
+            source_id,
+            [
+                mode_definition_with_label(
+                    "BaseObjectModeTypeAssertion",
+                    "BaseObjectModeTypeAssertionDef",
+                    ReserveTypeShape::Builtin("object"),
+                ),
+                mode_definition_with_label(
+                    "ChainObjectModeTypeAssertion",
+                    "ChainObjectModeTypeAssertionDef",
+                    ReserveTypeShape::QualifiedSymbol("BaseObjectModeTypeAssertion"),
+                ),
+            ],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("ChainObjectModeTypeAssertion"),
+            )],
+            exact_chained_local_object_mode_identifier_type_assertion_spec(),
+        );
+        assert!(
+            extract_source_chained_local_object_mode_reserved_variable_type_assertion(
+                &task147,
+                module.clone(),
+                &task147_symbols,
+            )
+            .is_some()
+        );
+        assert!(
+            extract_source_chained_local_object_mode_radix_asserted_head(
+                &task147,
+                module.clone(),
+                &task147_symbols,
+            )
+            .is_none()
+        );
+
+        let task185_symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                ("BaseObjectModeAssertedHead", SymbolKind::Mode),
+                ("ChainObjectModeAssertedHead", SymbolKind::Mode),
+            ],
+        );
+        let task185 = mode_then_reserve_identifier_type_assertion_theorem_ast(
+            source_id,
+            [
+                mode_definition_with_label(
+                    "BaseObjectModeAssertedHead",
+                    "BaseObjectModeAssertedHeadDef",
+                    ReserveTypeShape::Builtin("object"),
+                ),
+                mode_definition_with_label(
+                    "ChainObjectModeAssertedHead",
+                    "ChainObjectModeAssertedHeadDef",
+                    ReserveTypeShape::QualifiedSymbol("BaseObjectModeAssertedHead"),
+                ),
+            ],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("ChainObjectModeAssertedHead"),
+            )],
+            exact_chained_local_object_mode_asserted_head_spec(),
+        );
+        assert!(
+            extract_source_chained_local_object_mode_asserted_head(
+                &task185,
+                module.clone(),
+                &task185_symbols,
+            )
+            .is_some()
+        );
+        assert!(
+            extract_source_chained_local_object_mode_radix_asserted_head(
+                &task185,
+                module.clone(),
+                &task185_symbols,
+            )
+            .is_none()
+        );
+
+        let task201_symbols = source_local_symbols_env(
+            module.clone(),
+            &[
+                ("BaseModeRadixAssertedHead", SymbolKind::Mode),
+                ("OuterModeRadixAssertedHead", SymbolKind::Mode),
+            ],
+        );
+        let task201 = mode_then_reserve_identifier_type_assertion_theorem_ast(
+            source_id,
+            [
+                mode_definition_with_label(
+                    "BaseModeRadixAssertedHead",
+                    "BaseModeRadixAssertedHeadDef",
+                    ReserveTypeShape::Builtin("set"),
+                ),
+                mode_definition_with_label(
+                    "OuterModeRadixAssertedHead",
+                    "OuterModeRadixAssertedHeadDef",
+                    ReserveTypeShape::QualifiedSymbol("BaseModeRadixAssertedHead"),
+                ),
+            ],
+            vec![reserve_item(
+                vec!["x"],
+                ReserveTypeShape::QualifiedSymbol("OuterModeRadixAssertedHead"),
+            )],
+            exact_chained_local_mode_radix_asserted_head_spec(),
+        );
+        assert!(
+            extract_source_chained_local_mode_radix_asserted_head(
+                &task201,
+                module.clone(),
+                &task201_symbols,
+            )
+            .is_some()
+        );
+        assert!(
+            extract_source_chained_local_object_mode_radix_asserted_head(
+                &task201,
+                module.clone(),
+                &task201_symbols,
+            )
+            .is_none()
+        );
+    }
+
+    #[test]
     fn source_chained_local_object_mode_asserted_head_type_assertion_consumes_both_expansions() {
         let source_id = source_id(185);
         let module = ResolverModuleId::new(
@@ -45608,6 +46362,129 @@ mod tests {
     }
 
     #[test]
+    fn active_chained_local_object_mode_radix_asserted_head_fixture_consumes_immediate_expansion() {
+        let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .expect("mizar-test crate should live below the workspace root")
+            .to_path_buf();
+        let config = DiscoveryConfig {
+            workspace_root: workspace_root.clone(),
+            tests_root: workspace_root.join("tests"),
+            manifest_path: workspace_root.join("tests/coverage/spec_trace.toml"),
+            profile: TestProfile::Fast,
+            validation_mode: ValidationMode::Metadata,
+        };
+        let plan = build_test_plan(&config).expect("Task 202 repository plan should build");
+        let (ordinal, case) = active_type_elaboration_cases(&plan)
+            .enumerate()
+            .find(|(_, case)| {
+                case.id.0
+                    == "pass_type_elaboration_chained_local_object_mode_radix_asserted_head_001"
+            })
+            .expect("Task 202 active fixture should be discoverable");
+        let frontend = run_frontend(&workspace_root, case, ordinal)
+            .expect("Task 202 fixture should run through the real frontend");
+        assert!(frontend.diagnostics.is_empty());
+        let ast = frontend
+            .ast
+            .expect("Task 202 fixture should produce an AST");
+        let resolver = resolver_symbol_collection(&workspace_root, case, &ast);
+        assert!(resolver.detail_keys.is_empty());
+        let symbols =
+            augment_type_elaboration_import_summaries(&ast, &resolver.module, resolver.env);
+        let output = source_chained_local_object_mode_radix_asserted_head_output(
+            &ast,
+            resolver.module,
+            &symbols,
+        )
+        .expect("Task 202 real AST should reach the object immediate-radix asserted-head seam");
+        assert_source_reserved_variable_type_assertion_output(&output)
+            .expect("Task 202 real AST should preserve every checked payload invariant");
+        assert_eq!(output.payload.reserve.mode_expansions.len(), 2);
+        assert_eq!(output.subject_binding, BindingId::new(0));
+        assert_eq!(output.payload.subject_lookup_ordinal, 1);
+        assert_eq!(output.term_formula.type_entries().len(), 3);
+        assert_eq!(output.term_formula.normalized_types().len(), 1);
+        assert_eq!(
+            output.subject_result_input.spelling,
+            "OuterObjectModeRadixAssertedHead"
+        );
+        assert_eq!(
+            output.asserted_type_input.spelling,
+            "BaseObjectModeRadixAssertedHead"
+        );
+        assert_ne!(
+            output.subject_result_input.head,
+            output.asserted_type_input.head
+        );
+        assert!(matches!(
+            output.subject_result_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert!(matches!(
+            output.asserted_type_input.head,
+            TypeHeadInput::Symbol(_)
+        ));
+        assert_ne!(
+            output.subject_result_input.site,
+            output.asserted_type_input.site
+        );
+        assert_ne!(
+            output.subject_result_input.source_range,
+            output.asserted_type_input.source_range
+        );
+        let outer_expansion = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("OuterObjectModeRadixAssertedHead")
+            })
+            .map(|(_, expansion)| expansion)
+            .expect("Task 202 object outer binding expansion should exist");
+        assert_eq!(
+            outer_expansion.radix.spelling,
+            "BaseObjectModeRadixAssertedHead"
+        );
+        assert_eq!(outer_expansion.radix.head, output.asserted_type_input.head);
+        let terminal = output
+            .payload
+            .reserve
+            .mode_expansions
+            .iter()
+            .find(|(symbol, _)| {
+                source_mode_symbol_spelling(symbol) == Some("BaseObjectModeRadixAssertedHead")
+            })
+            .map(|(_, expansion)| &expansion.radix)
+            .expect("Task 202 object base terminal expansion should exist");
+        let (_, normalized) = output
+            .term_formula
+            .normalized_types()
+            .iter()
+            .next()
+            .expect("Task 202 normalized object type should exist");
+        assert_eq!(normalized.head, TypeHeadRef::BuiltinObject);
+        assert_ne!(normalized.head, TypeHeadRef::BuiltinSet);
+        assert_eq!(normalized.source.range, terminal.source_range);
+        assert_eq!(normalized.source.spelling, terminal.spelling);
+        let (_, term) = output.term_formula.terms().iter().next().unwrap();
+        assert_eq!(term.status, TermStatus::Inferred);
+        assert!(term.deferred.is_empty());
+        let (_, formula) = output.term_formula.formulas().iter().next().unwrap();
+        assert_eq!(formula.kind, FormulaKind::TypeAssertion);
+        assert_eq!(formula.status, FormulaStatus::Checked);
+        assert!(formula.expected_types.is_empty());
+        assert!(formula.candidate_set.is_none());
+        assert!(formula.facts.is_empty());
+        assert!(formula.deferred.is_empty());
+        assert!(output.term_formula.candidate_sets().is_empty());
+        assert!(output.term_formula.facts().is_empty());
+        assert!(output.term_formula.diagnostics().is_empty());
+    }
+
+    #[test]
     fn active_chained_local_object_mode_asserted_head_fixture_consumes_both_expansions() {
         let workspace_root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -51502,6 +52379,18 @@ mod tests {
             label: "ChainedLocalModeRadixAssertedHeadPayloadBoundary",
             subject: "x",
             asserted_type: ReserveTypeShape::QualifiedSymbol("BaseModeRadixAssertedHead"),
+            recovered_label: false,
+            negated: false,
+        }
+    }
+
+    fn exact_chained_local_object_mode_radix_asserted_head_spec()
+    -> IdentifierTypeAssertionTheoremSpec<'static> {
+        IdentifierTypeAssertionTheoremSpec {
+            status: None,
+            label: "ChainedLocalObjectModeRadixAssertedHeadPayloadBoundary",
+            subject: "x",
+            asserted_type: ReserveTypeShape::QualifiedSymbol("BaseObjectModeRadixAssertedHead"),
             recovered_label: false,
             negated: false,
         }

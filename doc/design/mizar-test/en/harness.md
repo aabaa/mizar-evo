@@ -2122,3 +2122,8 @@ Key scenarios:
 ## Task 201 Immediate-Radix Asserted-Head Harness Contract
 
 The Task 201 route is exact: two labeled, ordered bare mode definitions ending in builtin `set`; one `x` reserve of the outer mode; and one Base-mode formula-side type assertion. A closed relation keeps builtin and same-mode routes isolated and compares the asserted resolved symbol with the outer binding expansion's real immediate radix. The harness rejects missing/reordered/extra/deeper/recovered/contextual/parameterized/argument-bearing/attributed definitions, non-exact reserves or theorems, builtin/same-outer/object/unrelated/imported/ambiguous asserted heads, and independent expansion/binding/ordinal/head/spelling/site/range/immediate-edge/canonical corruptions. The immutable positive output and real frontend/resolver sidecar protect active runner 149. No general reachability, widening, `qua`, acceptance, truth/facts, proof, or downstream IR is activated.
+
+
+## Task 202 Object Immediate-Radix Harness Contract
+
+The Task 202 route accepts only the two labeled ordered bare object-mode definitions, one outer reserve, and one formula assertion of the immediate Base radix. It rejects structural/provenance near misses, additional set-terminal/object-chain shapes, independent payload and `BuiltinSet` corruption, and unresolved/imported/ambiguous heads. Real owning-positive then Task202-negative checks isolate Tasks 147/185/201, while the Task202 exact source is rejected by those owning routes. Immutable output and the real frontend/resolver sidecar protect active runner 150. No coercion, reachability, acceptance, truth/facts, proof, or downstream IR is activated.
