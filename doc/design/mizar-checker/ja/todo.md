@@ -3719,6 +3719,13 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-test` と workspace Rust verification。
     - 依存: tasks 73、195、201、203、204。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
 
+206. **Exact three-edge object-terminal formula-side immediate-radix local-mode asserted-head checker bridge を追加する。** [x]
+    - ordered definition 4 個 `BaseThreeEdgeObjectModeRadixAssertedHead -> object`、`InnerThreeEdgeObjectModeRadixAssertedHead -> BaseThreeEdgeObjectModeRadixAssertedHead`、`MiddleThreeEdgeObjectModeRadixAssertedHead -> InnerThreeEdgeObjectModeRadixAssertedHead`、`OuterThreeEdgeObjectModeRadixAssertedHead -> MiddleThreeEdgeObjectModeRadixAssertedHead`、`reserve x for OuterThreeEdgeObjectModeRadixAssertedHead`、`ThreeEdgeLocalObjectModeRadixAssertedHeadPayloadBoundary: x is MiddleThreeEdgeObjectModeRadixAssertedHead` だけを、Task 73 の real four-expansion object producer、Task 196 の formula consumer、Tasks 201/204/205 の変更しない closed immediate-radix relation を合成して閉じる。
+    - distinct raw Outer subject/Middle asserted symbol/site/range を保持し、asserted symbol が outer expansion の real immediate radix であることを要求し、ordinal 1 を `BindingId(0)` に解決し、expansion 4 個だけを消費し、known entry 3 個を Base-definition-RHS builtin-object identity 1 個へ normalize し、expected constraint 0 個、`Inferred` variable 1 個、fact/candidate/diagnostic/deferred-free normalized-reflexive `Checked` `TypeAssertion` 1 個を object/set coercion なしで記録する。Task 73 は producer integration を所有する。set Tasks 122/138/146/148/150/195/201/203/205 および object Tasks 189/145/147/149/151/196/202/204 との bidirectional route isolation、全 23 nonidentity definition order、exact structural/provenance near miss、各 definition の missing/duplicate/label/spelling/radix probe、独立した expansion/binding/ordinal/head/spelling/site/range/immediate-edge/internal-link/`BuiltinSet`/canonical corruption、immutable output、real frontend/resolver sidecar を要求する。test-first active fixture 1 件、shared backlink 5 件、dedicated backlink 1 件を追加し、既存 expectation を変更せず active runner を 153 から 154、cases を 368 から 369、requirements を 332 から 333 へ増やす。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。multi-hop Inner/Base assertion、other depth、imported/attributed/argument-bearing asserted head、general reachability/widening/`qua`、mode declaration acceptance/inhabitation、assertion truth/fact、closure/order、theorem acceptance、broader term/formula/child-graph semantics、proof/Core/ControlFlow/VC、general chain semantics は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままとする。checker source または module-layout change は不要であった。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 73、196、201、204、205。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

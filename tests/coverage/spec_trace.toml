@@ -720,6 +720,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_radix_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_asserted_head_001.expect.toml",
@@ -1795,6 +1796,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_radix_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_asserted_head_001.expect.toml",
@@ -1931,6 +1933,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_radix_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_asserted_head_001.expect.toml",
@@ -2281,6 +2284,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_radix_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_four_edge_local_object_mode_asserted_head_001.expect.toml",
@@ -3528,6 +3532,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_three_edge_chain_expansion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_radix_asserted_head_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_radix_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_mode_reserved_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_reserved_variable_type_assertion_001.expect.toml",
@@ -4490,6 +4495,19 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_asserted_head_001.expect.toml",
 ]
 notes = "Task 196 coverage is limited to the exact three-edge object-terminal same-outer-mode formula-side asserted-head normalized-reflexive type/well-formedness slice. The production route preserves independent raw reserve-subject and formula-side asserted inputs for the same OuterThreeEdgeObjectModeAssertedHead symbol, BindingId(0) at ordinal 1, four real expansions, and three known type entries interning to one terminal-base-definition-RHS builtin-object identity before one inferred variable and one fact/candidate/diagnostic/deferred-free checked type assertion with zero expected constraints and no general reachability, widening, qua, or object/set coercion. Exact/near-miss/corruption and a real frontend/resolver sidecar protect active runner 144. Mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, proof, attributed/argument-bearing/imported/set-terminal/deeper/other asserted-head shapes, broader term/formula/child-graph semantics, general chain semantics, and downstream payloads remain uncredited."
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.three_edge_local_object_mode_radix_asserted_head_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 206 exact three-edge object-terminal formula-side immediate-radix local-mode asserted-head checker bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_three_edge_local_object_mode_radix_asserted_head_001.expect.toml",
+]
+notes = "Task 206 coverage is limited to the exact three-edge object-terminal immediate-radix formula-side local-mode asserted-head normalized-reflexive type/well-formedness slice. The production route must preserve independent raw reserve-subject OuterThreeEdgeObjectModeRadixAssertedHead and formula-side asserted MiddleThreeEdgeObjectModeRadixAssertedHead inputs at distinct sites/ranges, require the asserted symbol to equal the outer expansion's immediate radix head, resolve BindingId(0) at ordinal 1, consume four real expansions, and intern three known type entries to one terminal-BaseThreeEdgeObjectModeRadixAssertedHeadDef-RHS builtin-object identity before one inferred variable and one fact/candidate/diagnostic/deferred-free checked type assertion with zero expected constraints, no object/set coercion, and no multi-hop/general reachability, widening, or qua. Task 73 owns producer integration; set Tasks 122/138/146/148/150/195/201/203/205 and object Tasks 189/145/147/149/151/196/202/204 must remain bidirectionally isolated. Exact structural/provenance/corruption guards and a real frontend/resolver sidecar must protect active runner 154. Mode declaration acceptance/inhabitation, assertion truth/facts, closure/order, theorem acceptance, proof, other depths, multi-hop Inner/Base/imported/attributed/argument-bearing/unrelated asserted-head shapes, broader term/formula/child-graph semantics, general chain semantics, and downstream payloads remain uncredited."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.three_edge_local_object_mode_reserved_variable_equality_source_bridge"
