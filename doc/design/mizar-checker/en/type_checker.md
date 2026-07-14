@@ -1653,6 +1653,30 @@ theorem acceptance, broader term/formula/child-graph semantics, proof/CoreIr/
 ControlFlowIr/VC, or general chain semantics. No checker source or module-layout
 change was required.
 
+Task 196 is limited to the exact three-edge object-terminal same-outer-mode
+asserted-head source with four ordered definitions `Outer -> Middle -> Inner ->
+Base -> object`, one reserve of `OuterThreeEdgeObjectModeAssertedHead`, and
+`ThreeEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+OuterThreeEdgeObjectModeAssertedHead;`. The production route composes Tasks
+73/151's real four-expansion object-terminal AST handoff with Task 187's same-
+symbol formula-side asserted-head consumer. It resolves ordinal 1 to
+`BindingId(0)`, preserves independent raw reserve-subject and formula asserted-
+type sites/ranges for the outer symbol, and consumes exactly four local bare
+argument/attribute/context/recovery-free expansions. Three known type entries
+normalize to one `BuiltinObject` identity canonically anchored at the base
+definition RHS. The immutable result contains one `Inferred` variable, zero
+expected constraints, zero candidates/facts/diagnostics/deferred reasons, and
+one normalized-reflexive `Checked` `TypeAssertion`, with no object/set
+coercion. Exact structural and provenance guards reject shorter, deeper, set-
+terminal, malformed, unrelated-local, imported, and ambiguous asserted-head
+shapes; independent `BuiltinSet`/canonical-source corruption probes, positive
+output checks, route isolation, and a real frontend/resolver sidecar guard
+active runner 144. This does not establish mode declaration acceptance,
+reachability/widening/`qua`, assertion truth or facts, implicit closure/order,
+theorem acceptance, broader term/formula/child-graph semantics, proof/CoreIr/
+ControlFlowIr/VC, or general chain semantics. No checker source or module-layout
+change was required.
+
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,

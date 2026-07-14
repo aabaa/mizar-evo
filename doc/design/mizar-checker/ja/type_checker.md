@@ -1586,6 +1586,29 @@ acceptance、broader term/formula/child-graph semantics、proof/CoreIr/
 ControlFlowIr/VC、general chain semantics を確立しない。checker source または
 module-layout change は不要であった。
 
+task 196 は ordered definition 4 個 `Outer -> Middle -> Inner -> Base ->
+object`、`OuterThreeEdgeObjectModeAssertedHead` reserve 1 個、
+`ThreeEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+OuterThreeEdgeObjectModeAssertedHead;` を持つ exact three-edge object-terminal
+same-outer-mode asserted-head source だけを対象とする。production route は
+Tasks 73/151 の real four-expansion object-terminal AST handoff と Task 187 の
+same-symbol formula-side asserted-head consumer を合成する。ordinal 1 を
+`BindingId(0)` に解決し、outer symbol の raw reserve-subject と formula
+asserted-type の独立した site/range を保持し、local bare argument/attribute/
+context/recovery-free expansion 4 個だけを消費する。known type entry 3 個は
+base definition RHS を canonical anchor とする `BuiltinObject` identity 1 個へ
+normalize する。immutable result は `Inferred` variable 1 個、expected
+constraint 0 個、candidate/fact/diagnostic/deferred reason 0 個、normalized-
+reflexive `Checked` `TypeAssertion` 1 個を含み、object/set coercion はない。
+exact structural/provenance guard は shorter、deeper、set-terminal、malformed、
+unrelated-local、imported、ambiguous asserted-head shape を reject し、独立した
+`BuiltinSet`/canonical-source corruption probe、positive output check、route
+isolation、real frontend/resolver sidecar が active runner 144 を保護する。これは
+mode declaration acceptance、reachability/widening/`qua`、assertion truth/fact、
+implicit closure/order、theorem acceptance、broader term/formula/child-graph
+semantics、proof/CoreIr/ControlFlowIr/VC、general chain semantics を確立しない。
+checker source または module-layout change は不要であった。
+
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

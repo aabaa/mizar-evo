@@ -1347,6 +1347,25 @@ reachability/widening/`qua`、declaration/theorem acceptance、truth/fact、clos
 order、`formula_statement`、proof、CoreIr、ControlFlowIr、VC、broader formula/
 child-graph semantics、general chain は credit しない。
 
+task 196 は ordered local definition 4 個 `Outer -> Middle -> Inner -> Base ->
+object`、outer-mode reserve 1 個、
+`ThreeEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+OuterThreeEdgeObjectModeAssertedHead;` を持つ exact active three-edge object-
+terminal same-outer-mode asserted-head row を、shared Chapter 4/7/13/14.2.3/16
+reference 5 件と dedicated checker bridge reference 1 件とともに追加する。
+credit は real AST-derived expansion 4 個、ordinal 1 から解決する
+`BindingId(0)`、同じ outer symbol の distinct raw reserve-subject/formula
+asserted-type site/range、base-definition-RHS anchor の `BuiltinObject` identity
+1 個へ normalize する known type entry 3 個、inferred variable 1 個、expected
+constraint/candidate/fact/diagnostic/deferred reason 0 個、normalized-reflexive
+`Checked` type assertion 1 個だけに限定し、object/set coercion はない。exact-
+route、unrelated local/imported/ambiguous asserted head を含む structural/
+provenance near-miss、`BuiltinSet`/canonical mutable corruption、immutable-
+output validation、real frontend/resolver sidecar は active count 144 を保護
+する。reachability/widening/`qua`、declaration/theorem acceptance、truth/fact、
+closure/order、`formula_statement`、proof、CoreIr、ControlFlowIr、VC、broader
+formula/child-graph semantics、general chain は credit しない。
+
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

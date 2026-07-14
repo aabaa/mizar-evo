@@ -3605,6 +3605,44 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 73, 150, 182, and 186. Refs: Step 5; mizar-test task 10;
       specs 3, 4, 7, 13, 14, and 16.
 
+196. **Add exact three-edge object-terminal formula-side local-mode asserted-head checker bridge.** [x]
+    - Close only four ordered local mode definitions
+      `BaseThreeEdgeObjectModeAssertedHead -> object`,
+      `InnerThreeEdgeObjectModeAssertedHead -> BaseThreeEdgeObjectModeAssertedHead`,
+      `MiddleThreeEdgeObjectModeAssertedHead -> InnerThreeEdgeObjectModeAssertedHead`,
+      and `OuterThreeEdgeObjectModeAssertedHead ->
+      MiddleThreeEdgeObjectModeAssertedHead`, one `reserve x for
+      OuterThreeEdgeObjectModeAssertedHead`, and theorem
+      `ThreeEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+      OuterThreeEdgeObjectModeAssertedHead;` by composing Task 73/151's real
+      four-expansion object-terminal producer with Task 187's same-outer
+      formula-side asserted-head consumer.
+    - Acceptance: retain distinct raw reserve-subject and formula-side asserted
+      sites/ranges for the same resolved outer mode symbol; consume exactly four
+      real AST-derived expansions; resolve ordinal 1 to `BindingId(0)`;
+      normalize three known type entries to one canonical builtin-object
+      identity anchored at the base definition RHS; and record one `Inferred`
+      variable plus one fact/candidate/diagnostic/deferred-free normalized-
+      reflexive `Checked` `TypeAssertion` with no expected constraints,
+      general reachability, or object/set coercion. Require exact structural/
+      provenance near misses, independent expansion/binding/ordinal/head/
+      spelling/range/canonical-source corruption, route isolation, positive
+      immutable-output checks, and a real frontend/resolver sidecar. Add one
+      test-first active pass fixture with five shared and one dedicated
+      backlink, raising active runner 143 to 144, cases 358 to 359, and
+      requirements 322 to 323 without changing existing expectations.
+    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
+      no `spec_gap`. Keep deeper/imported/attributed/argument-bearing/other
+      asserted-head shapes, reachability/widening/`qua`, mode declaration
+      acceptance/inhabitation, assertion truth/facts, implicit closure/order,
+      theorem acceptance, broader term/formula/child-graph semantics, proof/
+      Core/ControlFlow/VC, and general chain semantics deferred. Step 5 remains
+      active; Steps 6/7 remain deferred. No checker source or module-layout
+      change was required.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 73, 151, 187, and 195. Refs: Step 5; mizar-test task 10;
+      specs 3, 4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

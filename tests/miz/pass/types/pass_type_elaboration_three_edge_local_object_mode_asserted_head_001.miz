@@ -1,0 +1,18 @@
+definition
+  mode BaseThreeEdgeObjectModeAssertedHeadDef: BaseThreeEdgeObjectModeAssertedHead is object;
+end;
+
+definition
+  mode InnerThreeEdgeObjectModeAssertedHeadDef: InnerThreeEdgeObjectModeAssertedHead is BaseThreeEdgeObjectModeAssertedHead;
+end;
+
+definition
+  mode MiddleThreeEdgeObjectModeAssertedHeadDef: MiddleThreeEdgeObjectModeAssertedHead is InnerThreeEdgeObjectModeAssertedHead;
+end;
+
+definition
+  mode OuterThreeEdgeObjectModeAssertedHeadDef: OuterThreeEdgeObjectModeAssertedHead is MiddleThreeEdgeObjectModeAssertedHead;
+end;
+
+reserve x for OuterThreeEdgeObjectModeAssertedHead;
+theorem ThreeEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is OuterThreeEdgeObjectModeAssertedHead;

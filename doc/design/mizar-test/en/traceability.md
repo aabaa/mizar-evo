@@ -1415,6 +1415,25 @@ acceptance, truth/facts, closure/order, `formula_statement`, proof, CoreIr,
 ControlFlowIr, VC, broader formula/child-graph semantics, and general chains
 receive no credit.
 
+Task 196 adds one exact active three-edge object-terminal same-outer-mode
+asserted-head row with four ordered local definitions `Outer -> Middle -> Inner
+-> Base -> object`, one outer-mode reserve, and
+`ThreeEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+OuterThreeEdgeObjectModeAssertedHead;`, with five shared Chapter 4/7/13/14.2.3/
+16 references plus one dedicated checker bridge reference. Credit is limited
+to four real AST-derived expansions, ordinal 1 resolving to `BindingId(0)`,
+distinct raw reserve-subject and formula asserted-type sites/ranges for the
+same outer symbol, three known type entries normalizing to one base-definition-
+RHS-anchored `BuiltinObject` identity, one inferred variable, zero expected
+constraints/candidates/facts/diagnostics/deferred reasons, and one normalized-
+reflexive `Checked` type assertion without object/set coercion. Exact-route,
+structural/provenance near-misses including unrelated local/imported/ambiguous
+asserted heads, `BuiltinSet`/canonical mutable corruption, immutable-output
+validation, and a real frontend/resolver sidecar protect active count 144.
+Reachability/widening/`qua`, declaration/theorem acceptance, truth/facts,
+closure/order, `formula_statement`, proof, CoreIr, ControlFlowIr, VC, broader
+formula/child-graph semantics, and general chains receive no credit.
+
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

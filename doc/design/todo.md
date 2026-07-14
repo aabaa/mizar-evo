@@ -1078,6 +1078,29 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    chain semantics, and downstream payloads remain deferred; Step 5 remains
    active, Steps 6/7 remain deferred, and no checker source or module-layout
    change was required,
+   task 196 adds the exact three-edge object-terminal same-outer-mode asserted-
+   head bridge by composing Tasks 73/151's real four-expansion object producer
+   with Task 187's formula-side same-symbol asserted-head consumer. This
+   `test_gap`, narrow `source_drift`, and `design_drift` slice accepts only four
+   ordered local definitions `Outer -> Middle -> Inner -> Base -> object`,
+   `reserve x for OuterThreeEdgeObjectModeAssertedHead`, and theorem
+   `ThreeEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+   OuterThreeEdgeObjectModeAssertedHead;`; resolves ordinal 1 to `BindingId(0)`;
+   preserves distinct raw subject/asserted sites and ranges; consumes all four
+   AST-derived expansions; interns one base-definition-RHS-anchored builtin-
+   object identity across three known type entries; and records one inferred
+   variable, zero constraints/candidates/facts/diagnostics/deferred reasons,
+   and one normalized-reflexive checked type assertion without object/set
+   coercion. Five shared backlinks, one dedicated row, structural/provenance
+   near misses including unrelated local/imported/ambiguous asserted heads,
+   `BuiltinSet`/canonical corruption and immutable-output guards, route
+   isolation, and a real frontend/resolver sidecar protect active case 144
+   within 359 cases and 323 requirements. Deeper/imported/attributed/argument-
+   bearing/other asserted heads, reachability/widening/`qua`, declaration/
+   theorem acceptance, truth/facts, closure/order, broader term/formula/child-
+   graph semantics, proof/CoreIr/ControlFlowIr/VC, general chain semantics, and
+   downstream payloads remain deferred; Step 5 remains active, Steps 6/7 remain
+   deferred, and no checker source or module-layout change was required,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted
