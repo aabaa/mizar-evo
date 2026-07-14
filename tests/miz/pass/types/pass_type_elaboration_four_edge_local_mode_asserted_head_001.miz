@@ -1,0 +1,22 @@
+definition
+  mode BaseFourEdgeModeAssertedHeadDef: BaseFourEdgeModeAssertedHead is set;
+end;
+
+definition
+  mode InnerFourEdgeModeAssertedHeadDef: InnerFourEdgeModeAssertedHead is BaseFourEdgeModeAssertedHead;
+end;
+
+definition
+  mode MiddleFourEdgeModeAssertedHeadDef: MiddleFourEdgeModeAssertedHead is InnerFourEdgeModeAssertedHead;
+end;
+
+definition
+  mode OuterFourEdgeModeAssertedHeadDef: OuterFourEdgeModeAssertedHead is MiddleFourEdgeModeAssertedHead;
+end;
+
+definition
+  mode TooDeepFourEdgeModeAssertedHeadDef: TooDeepFourEdgeModeAssertedHead is OuterFourEdgeModeAssertedHead;
+end;
+
+reserve x for TooDeepFourEdgeModeAssertedHead;
+theorem FourEdgeLocalModeAssertedHeadPayloadBoundary: x is TooDeepFourEdgeModeAssertedHead;

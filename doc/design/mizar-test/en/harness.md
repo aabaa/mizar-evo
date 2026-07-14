@@ -1450,6 +1450,26 @@ activate reachability/widening/`qua`, declaration or theorem acceptance, truth/
 facts, closure/order, broader term/formula/child-graph semantics, proof, or
 downstream IR.
 
+Task 197 is restricted to the exact active four-edge set-terminal same-
+outermost-mode asserted-head source with five ordered definitions `TooDeep ->
+Outer -> Middle -> Inner -> Base -> set`, one outermost-mode reserve, and
+`FourEdgeLocalModeAssertedHeadPayloadBoundary: x is
+TooDeepFourEdgeModeAssertedHead;`. The active route consumes five real AST-
+derived expansions and preserves independent raw reserve-subject and formula-
+side asserted-type sites/ranges for the same resolved outermost symbol. It
+accepts only ordinal 1 resolving to `BindingId(0)`, three known type entries
+normalizing to one base-definition-RHS-anchored builtin-set identity, one
+`Inferred` variable, zero expected constraints/candidates/facts/diagnostics/
+deferred reasons, and one normalized-reflexive `Checked` assertion. Exact,
+full-reorder, connected-deeper, structural, provenance, `BuiltinObject`/
+canonical corruption, immutable-output, route-isolation, and real frontend/
+resolver-sidecar tests guard all five links and reject unrelated local,
+imported, and ambiguous asserted heads. Five shared backlinks plus one
+dedicated trace row protect active runner 145 without rebaselining an existing
+expectation. This does not activate reachability/widening/`qua`, declaration or
+theorem acceptance, truth/facts, closure/order, broader term/formula/child-
+graph semantics, proof, or downstream IR.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

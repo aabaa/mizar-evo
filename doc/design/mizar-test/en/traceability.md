@@ -1434,6 +1434,26 @@ Reachability/widening/`qua`, declaration/theorem acceptance, truth/facts,
 closure/order, `formula_statement`, proof, CoreIr, ControlFlowIr, VC, broader
 formula/child-graph semantics, and general chains receive no credit.
 
+Task 197 adds one exact active four-edge set-terminal same-outermost-mode
+asserted-head row with five ordered local definitions `TooDeep -> Outer ->
+Middle -> Inner -> Base -> set`, one outermost-mode reserve, and
+`FourEdgeLocalModeAssertedHeadPayloadBoundary: x is
+TooDeepFourEdgeModeAssertedHead;`, with four shared Chapter 4/13/14.2.3/16
+references, one shared Task 74 structural-chain reference, and one dedicated
+checker bridge reference. Credit is limited to five real AST-derived
+expansions, ordinal 1 resolving to `BindingId(0)`, distinct raw reserve-subject
+and formula asserted-type sites/ranges for the same outermost symbol, three
+known type entries normalizing to one base-definition-RHS-anchored `BuiltinSet`
+identity, one inferred variable, zero expected constraints/candidates/facts/
+diagnostics/deferred reasons, and one normalized-reflexive `Checked` type
+assertion. Exact-route, full-reorder, connected-deeper, structural/provenance
+near-misses including unrelated local/imported/ambiguous asserted heads,
+`BuiltinObject`/canonical mutable corruption, immutable-output validation, and
+a real frontend/resolver sidecar protect active count 145. Reachability/
+widening/`qua`, declaration/theorem acceptance, truth/facts, closure/order,
+`formula_statement`, proof, CoreIr, ControlFlowIr, VC, broader formula/child-
+graph semantics, and general chains receive no credit.
+
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

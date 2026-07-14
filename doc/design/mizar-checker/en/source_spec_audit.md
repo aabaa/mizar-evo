@@ -1564,6 +1564,32 @@ broader term/formula/child-graph semantics, proof/Core/ControlFlow/VC, and
 general chain semantics remain open. Step 5 stays active; Steps 6/7 stay
 deferred. No checker source or module-layout change was required.
 
+Task 197 MC-G020 current-state override: the exact four-edge set-terminal same-
+outermost-mode asserted head is a `test_gap`, narrow `source_drift`, and
+`design_drift`, not a `spec_gap`. Chapters 3, 4, 7, 13, 14.2.3, and 16 directly
+support five ordered mode definitions `TooDeep -> Outer -> Middle -> Inner ->
+Base -> set`, `reserve x for TooDeepFourEdgeModeAssertedHead`, and
+`FourEdgeLocalModeAssertedHeadPayloadBoundary: x is
+TooDeepFourEdgeModeAssertedHead;`. Tasks 74/152 provide the real five-expansion
+set-terminal producer, while Tasks 186/195 provide the same-symbol formula-side
+asserted-head consumer. The exact route preserves distinct raw subject and
+asserted sites/ranges for the outermost symbol, resolves ordinal 1 to
+`BindingId(0)`, consumes all five AST-derived expansions, normalizes three
+known type entries to one base-definition-RHS-anchored `BuiltinSet` identity,
+and records one `Inferred` variable plus one fact/candidate/diagnostic/deferred-
+free normalized-reflexive `Checked` type assertion with zero expected
+constraints. Five shared backlinks plus one dedicated row protect active
+runner 145 within 360 cases and 324 requirements without changing an existing
+expectation. Full reorder, connected deeper-chain, structural/provenance,
+unrelated local/imported/ambiguous asserted-head, mutable corruption,
+immutable-output, route-isolation, and real frontend/resolver sidecar guards
+complete the contract. Object-terminal/other-depth/imported/attributed/
+argument-bearing/other asserted heads, reachability/widening/`qua`, declaration
+or theorem acceptance, truth/facts, closure/order, broader term/formula/child-
+graph semantics, proof/Core/ControlFlow/VC, and general chain semantics remain
+open. Step 5 stays active; Steps 6/7 stay deferred. No checker source or module-
+layout change was required.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin
