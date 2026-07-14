@@ -1414,6 +1414,26 @@ reachability/widening/`qua`、declaration/theorem acceptance、truth/fact、
 closure/order、broader term/formula/child-graph semantics、proof、downstream IR
 を activate しない。
 
+task 198 は ordered definition 5 個 `TooDeep -> Outer -> Middle -> Inner ->
+Base -> object`、outermost-mode reserve 1 個、
+`FourEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+TooDeepFourEdgeObjectModeAssertedHead;` を持つ exact active four-edge object-
+terminal same-outermost-mode asserted-head source だけを対象とする。active
+route は real AST-derived expansion 5 個を消費し、同じ resolved outermost
+symbol の raw reserve-subject と formula-side asserted-type の独立した site/
+range を保持する。ordinal 1 から解決する `BindingId(0)`、base-definition-RHS
+anchor の builtin-object identity 1 個へ normalize する known type entry 3
+個、`Inferred` variable 1 個、expected constraint/candidate/fact/diagnostic/
+deferred reason 0 個、normalized-reflexive `Checked` assertion 1 個だけを
+object/set coercion なしで受理する。exact、full-reorder、connected-deeper、
+structural、provenance、`BuiltinSet`/canonical corruption、immutable-output、
+route-isolation、real frontend/resolver-sidecar test は全 5 link を guard し、
+unrelated local、imported、ambiguous asserted head を reject する。shared
+backlink 5 個 + dedicated trace row 1 個により既存 expectation を rebaseline
+せず active runner 146 を保護する。これは reachability/widening/`qua`、
+declaration/theorem acceptance、truth/fact、closure/order、broader term/formula/
+child-graph semantics、proof、downstream IR を activate しない。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

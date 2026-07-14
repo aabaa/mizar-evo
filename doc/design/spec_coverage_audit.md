@@ -1772,6 +1772,35 @@ general chain semantics, and downstream payloads receive no credit. Step 5
 remains active; Steps 6 and 7 remain deferred. No checker source or module-
 layout update was required.
 
+Task198 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `07.modes.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`: checker task 198 classifies
+the exact four-edge object-terminal same-outermost-mode asserted-head seam as
+`test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. It
+composes Tasks 74/153's real five-expansion object-terminal producer with Tasks
+187/196's formula-side same-symbol asserted-head consumer. Current credit is
+limited to five ordered local definitions `TooDeep -> Outer -> Middle -> Inner
+-> Base -> object`, `reserve x for TooDeepFourEdgeObjectModeAssertedHead`,
+theorem `FourEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+TooDeepFourEdgeObjectModeAssertedHead;`, ordinal 1 resolving to `BindingId(0)`,
+distinct raw subject/asserted sites and ranges, all five AST-derived
+expansions, three known type entries normalizing to one base-definition-RHS-
+anchored builtin-object identity, one inferred variable, zero expected
+constraints/candidates/facts/diagnostics/deferred reasons, and one normalized-
+reflexive checked type assertion without object/set coercion. Five shared
+backlinks plus one dedicated row, production routing, isolated full-reorder/
+connected-deeper/structural/provenance near misses including unrelated local/
+imported/ambiguous asserted heads, `BuiltinSet`/canonical corruption and
+immutable-output guards, and a real frontend/resolver sidecar protect active
+runner 146. The repository plan now contains 361 cases and 325 requirements
+without changing an existing expectation. Set-terminal/other-depth/imported/
+attributed/argument-bearing/other asserted heads, reachability/widening/`qua`,
+declaration/theorem acceptance, truth/facts, closure/order, broader term/
+formula/child-graph semantics, proof/CoreIr/ControlFlowIr/VC, general chain
+semantics, and downstream payloads receive no credit. Step 5 remains active;
+Steps 6 and 7 remain deferred. No checker source or module-layout update was
+required.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

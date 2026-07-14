@@ -3482,6 +3482,46 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 74、152、186、195。参照: Step 5、mizar-test task 10、
       specs 3、4、7、13、14、16。
 
+198. **Exact four-edge object-terminal formula-side local-mode asserted-head checker bridge を追加する。** [x]
+    - ordered local mode definition 5 個
+      `BaseFourEdgeObjectModeAssertedHead -> object`、
+      `InnerFourEdgeObjectModeAssertedHead -> BaseFourEdgeObjectModeAssertedHead`、
+      `MiddleFourEdgeObjectModeAssertedHead -> InnerFourEdgeObjectModeAssertedHead`、
+      `OuterFourEdgeObjectModeAssertedHead -> MiddleFourEdgeObjectModeAssertedHead`、
+      `TooDeepFourEdgeObjectModeAssertedHead ->
+      OuterFourEdgeObjectModeAssertedHead`、`reserve x for
+      TooDeepFourEdgeObjectModeAssertedHead` 1 個、theorem
+      `FourEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+      TooDeepFourEdgeObjectModeAssertedHead;` だけを、Task 74/153 の real
+      five-expansion object-terminal producer と Task 187/196 の same-
+      outermost formula-side asserted-head consumer の合成として閉じる。
+    - 受入条件: 同じ resolved outermost mode symbol に対する distinct raw
+      reserve-subject/formula-side asserted site/range を保持し、real AST-derived
+      expansion 5 個だけを消費し、ordinal 1 を `BindingId(0)` に解決し、known
+      type entry 3 個を base definition RHS に anchor した canonical builtin-
+      object identity 1 個へ normalize し、expected constraint、general
+      reachability、object/set coercion なしで `Inferred` variable 1 個と fact/
+      candidate/diagnostic/deferred-free normalized-reflexive `Checked`
+      `TypeAssertion` 1 個を記録する。full reorder、connected deeper、unrelated
+      local/imported/ambiguous asserted head を含む exact structural/provenance
+      near miss、独立した expansion/binding/ordinal/head/spelling/range/
+      canonical-source corruption、route isolation、positive immutable-output
+      check、real frontend/resolver sidecar を要求する。test-first active pass
+      fixture 1 件、shared backlink 5 件、dedicated backlink 1 件を追加し、既存
+      expectation を変更せず active runner を 145 から 146、cases を 360 から
+      361、requirements を 324 から 325 へ増やす。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap`
+      なし。set-terminal/other-depth/imported/attributed/argument-bearing/other
+      asserted-head shape、reachability/widening/`qua`、mode declaration
+      acceptance/inhabitation、assertion truth/fact、implicit closure/order、
+      theorem acceptance、broader term/formula/child-graph semantics、proof/
+      Core/ControlFlow/VC、general chain semantics は deferred のままとする。
+      Step 5 は active、Steps 6/7 は deferred のままとする。checker source
+      または module-layout change は不要であった。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 74、153、187、196、197。参照: Step 5、mizar-test task 10、
+      specs 3、4、7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

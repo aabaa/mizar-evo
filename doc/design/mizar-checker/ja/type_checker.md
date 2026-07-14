@@ -1632,6 +1632,29 @@ implicit closure/order、theorem acceptance、broader term/formula/child-graph
 semantics、proof/CoreIr/ControlFlowIr/VC、general chain semantics を確立しない。
 checker source または module-layout change は不要であった。
 
+task 198 は ordered definition 5 個 `TooDeep -> Outer -> Middle -> Inner ->
+Base -> object`、`TooDeepFourEdgeObjectModeAssertedHead` reserve 1 個、
+`FourEdgeLocalObjectModeAssertedHeadPayloadBoundary: x is
+TooDeepFourEdgeObjectModeAssertedHead;` を持つ exact four-edge object-terminal
+same-outermost-mode asserted-head source だけを対象とする。production route は
+Tasks 74/153 の real five-expansion AST handoff と Tasks 187/196 の same-symbol
+formula-side asserted-head consumer を合成する。ordinal 1 を `BindingId(0)` に
+解決し、outermost symbol の raw reserve-subject と formula asserted-type の
+独立した site/range を保持し、local bare argument/attribute/context/recovery-
+free expansion 5 個だけを消費する。known type entry 3 個は base definition
+RHS を canonical anchor とする `BuiltinObject` identity 1 個へ normalize する。
+immutable result は `Inferred` variable 1 個、expected constraint 0 個、
+candidate/fact/diagnostic/deferred reason 0 個、normalized-reflexive `Checked`
+`TypeAssertion` 1 個を含み、object/set coercion はない。exact structural/
+provenance guard は shorter、deeper、full-reordered、set-terminal、malformed、
+unrelated-local、imported、ambiguous asserted-head shape を reject し、独立した
+`BuiltinSet`/canonical-source corruption probe、positive output check、route
+isolation、real frontend/resolver sidecar が active runner 146 を保護する。
+これは mode declaration acceptance、reachability/widening/`qua`、assertion
+truth/fact、implicit closure/order、theorem acceptance、broader term/formula/
+child-graph semantics、proof/CoreIr/ControlFlowIr/VC、general chain semantics
+を確立しない。checker source または module-layout change は不要であった。
+
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event
