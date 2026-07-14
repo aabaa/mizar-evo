@@ -1866,10 +1866,12 @@ resolver execution with Chapter 13 set-enumeration term operands and Chapter 14
 builtin equality, then passes real source-derived checker payloads for four
 numeral item terms, two set-enumeration terms, and the equality formula before
 failing closed on missing numeric type payloads, missing set-enumeration
-result-type/sethood payloads, and partial formula checking. This does not claim
+result-type payloads, and partial formula checking. This does not claim
 broader set-enumeration term extraction, term inference, equality/formula
 checking, recorded facts, theorem acceptance, the dedicated `formula_statement`
-runner, CoreIr, ControlFlowIr, VC, or proof payloads.
+runner, CoreIr, ControlFlowIr, VC, or proof payloads. Sethood is not a missing
+set-enumeration payload: Chapter 13 assigns that requirement only to generator
+domains of set comprehensions.
 Task 112 supersedes task 99 only for the exact connective/quantifier theorem
 formula bridge:
 `theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`
@@ -2270,9 +2272,12 @@ Term rules:
 - structure constructors record supplied result payloads and degrade missing
   structure-field payloads as MC-G017; field coverage and value-type checking
   wait for resolver-exposed structure signatures;
-- set enumeration and set comprehension produce set-like types and record
-  deferred sethood requirements for generator domains when spec chapter 13
-  requires them;
+- set enumeration records a supplied set-like result type, or degrades on a
+  missing result-type payload; Chapter 13 imposes no generator-domain sethood
+  requirement on enumeration;
+- set comprehension likewise records a supplied result type, while missing
+  externally owned generator-domain evidence may be represented only by the
+  current coarse deferred sethood marker, not a per-generator payload;
 - `the T` records a choice-like typed term and a deferred non-emptiness
   requirement for `T` without assigning a proof-owned id;
 - source-written `qua` records the source view needed by later checking and a

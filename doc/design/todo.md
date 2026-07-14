@@ -1319,7 +1319,7 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    recorded facts, imported attribute assertion semantic payloads, imported
    attribute-level non-empty assertion semantic payloads, negated attribute
    admissibility/semantic checking, attribute admissibility/semantic checking,
-   set-enumeration result-type/sethood payload extraction beyond task 111,
+   set-enumeration result-type payload extraction beyond task 111,
    `formula_statement`, CoreIr, ControlFlowIr,
    VC, and proof payloads deferred).
 This wave has no fixed task list yet: it is promoted slice by slice, opening

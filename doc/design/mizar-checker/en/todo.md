@@ -2909,9 +2909,9 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
       extracts the four source-derived numeral item terms, two
       set-enumeration `TermInput`s, and one builtin equality `FormulaInput`
       from the AST; `TermFormulaChecker` then reports missing numeric type
-      payloads, missing set-enumeration result-type/sethood payloads, and
-      partial formula checking. The task must not fabricate sethood/result
-      types, equality facts/checking, theorem acceptance, `formula_statement`,
+      payloads, missing set-enumeration result-type payloads, and
+      partial formula checking. The task must not fabricate result types,
+      equality facts/checking, theorem acceptance, `formula_statement`,
       CoreIr, ControlFlowIr, VC, or proof payloads.
     - Verify: `cargo test -p mizar-test`; final workspace verification.
     - Deps: tasks 105, 106, 107, 108, 109, and 110. Refs: Step 5

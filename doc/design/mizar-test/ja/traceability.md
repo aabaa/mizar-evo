@@ -1499,7 +1499,7 @@ task 111 の fail case は parser / resolver 実行後の exact
 `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` checker handoff だけを credit
 する。つまり、4 つの numeral item term、2 つの set-enumeration term、1 つの
 equality formula の real checker payload だけである。broader set-enumeration
-term extraction、result-type/sethood payload、term inference、equality/formula
+term extraction、result-type payload、term inference、equality/formula
 checking、recorded fact、theorem acceptance、`formula_statement` runner support、
 CoreIr、ControlFlowIr、VC、proof payload は credit しない。
 task 112 / task 117 の fail case は parser / resolver 実行後の exact

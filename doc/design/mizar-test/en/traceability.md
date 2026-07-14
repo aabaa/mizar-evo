@@ -1568,7 +1568,7 @@ payloads. Task 111 fail cases credit only the exact
 `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` checker handoff after
 parser/resolver execution: real checker payloads for four numeral item terms,
 two set-enumeration terms, and one equality formula. They do not credit broader
-set-enumeration term extraction, result-type/sethood payloads, term inference,
+set-enumeration term extraction, result-type payloads, term inference,
 equality/formula checking, recorded facts, theorem acceptance,
 `formula_statement` runner support, CoreIr, ControlFlowIr, VC, or proof
 payloads. Task 112 / task 117 fail cases supersede task 99 only for the exact

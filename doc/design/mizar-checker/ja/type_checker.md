@@ -1793,11 +1793,13 @@ supersede する:
 set-enumeration term operand と Chapter 14 の builtin equality を伴って parser /
 resolver 実行まで到達し、4 つの numeral item term、2 つの set-enumeration
 term、equality formula の real source-derived checker payload を渡してから、
-missing numeric type payload、missing set-enumeration result-type/sethood
+missing numeric type payload、missing set-enumeration result-type
 payload、partial formula checking で fail closed する。broader
 set-enumeration term extraction、term inference、equality/formula checking、
 recorded fact、theorem acceptance、dedicated `formula_statement` runner、CoreIr、
-ControlFlowIr、VC、proof payload は主張しない。
+ControlFlowIr、VC、proof payload は主張しない。sethood は missing
+set-enumeration payload ではなく、Chapter 13 では set comprehension の
+generator domain だけに課される requirement である。
 task 112 は task 99 のうち exact connective / quantifier theorem formula bridge
 だけを supersede する:
 `theorem FormulaConnectiveQuantifierPayloadBoundary: contradiction implies for x being set holds not contradiction;`
@@ -2156,8 +2158,11 @@ term rules:
 - structure constructor は、供給された result payload を記録し、structure-field payload 欠落を
   MC-G017 として degrade する。field coverage と value-type checking は resolver-exposed
   structure signature を待つ;
-- set enumeration / set comprehension は set-like type を生成し、spec chapter 13 が要求する
-  場合 generator domain の deferred sethood requirement を記録する;
+- set enumeration は供給済みの set-like result type を記録し、result-type payload 欠落時は
+  degrade する。Chapter 13 は enumeration に generator-domain sethood requirement を課さない;
+- set comprehension も供給済み result type を記録する一方、外部 owner の generator-domain
+  evidence 欠落は、generator ごとの payload ではなく、現行の粗い deferred sethood marker
+  だけで表しうる;
 - `the T` は choice-like typed term と `T` の deferred non-emptiness requirement を記録するが、
   proof-owned id は割り当てない;
 - source-written `qua` は後続 checking が必要とする source view と deferred source-`qua`

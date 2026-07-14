@@ -325,10 +325,11 @@ active runner が 4 つの numeral item term、2 つの set-enumeration term、
 builtin equality formula の source-derived checker payload を渡してよい。real
 set-enumeration result type、term inference、equality/formula checking、recorded
 fact、theorem acceptance、`formula_statement` runner support が存在するまでは、
-missing numeric type payload、missing set-enumeration result-type/sethood
+missing numeric type payload、missing set-enumeration result-type
 payload、partial formula checking で fail closed しなければならない。runner は
-sethood/result payload、theorem acceptance、CoreIr、ControlFlowIr、VC、proof
-payload を合成してはならない。
+result payload、theorem acceptance、CoreIr、ControlFlowIr、VC、proof payload を
+合成してはならない。Chapter 13 の sethood requirement は enumeration ではなく
+set-comprehension generator domain に属する。
 
 Task 112 addendum for `type-elaboration`: Chapter 14 の implication、universal
 quantification、negation を使う exact theorem formula は parser / resolver まで
@@ -1552,7 +1553,7 @@ task 111 は task-105 set-enumeration theorem formula boundary のうち exact
 `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` source だけを supersede する。
 active `type_elaboration` runner は 4 つの numeral item term、2 つの
 set-enumeration term、builtin equality formula の real checker payload を渡し、
-missing numeric type payload、missing set-enumeration result-type/sethood
+missing numeric type payload、missing set-enumeration result-type
 payload、partial formula checking で fail closed する。deferred
 `formula_statement` runner obligation は満たさず、broader set-enumeration
 payload、term inference、equality/formula checking、fact、theorem acceptance、

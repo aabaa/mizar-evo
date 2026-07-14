@@ -2734,8 +2734,8 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
       から 4 つの source-derived numeral item term、2 つの set-enumeration
       `TermInput`、1 つの builtin equality `FormulaInput` を抽出する。
       `TermFormulaChecker` はその後 missing numeric type payload、missing
-      set-enumeration result-type/sethood payload、partial formula checking を
-      報告する。この task は sethood/result type、equality fact/checking、
+      set-enumeration result-type payload、partial formula checking を
+      報告する。この task は result type、equality fact/checking、
       theorem acceptance、`formula_statement`、CoreIr、ControlFlowIr、VC、proof
       payload を捏造してはならない。
     - 検証: `cargo test -p mizar-test`; final workspace verification。

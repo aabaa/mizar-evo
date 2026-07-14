@@ -328,11 +328,12 @@ Task 111 addendum for `type-elaboration`: the exact theorem formula
 resolver, then the active runner passes source-derived checker payloads for the
 four numeral item terms, two set-enumeration terms, and builtin equality
 formula. It must fail closed on missing numeric type payloads, missing
-set-enumeration result-type/sethood payloads, and partial formula checking
+set-enumeration result-type payloads, and partial formula checking
 until real set-enumeration result types, term inference, equality/formula
 checking, recorded facts, theorem acceptance, and `formula_statement` runner
-support exist. The runner must not synthesize sethood/result payloads, theorem
-acceptance, CoreIr, ControlFlowIr, VC, or proof payloads.
+support exist. The runner must not synthesize result payloads, theorem
+acceptance, CoreIr, ControlFlowIr, VC, or proof payloads. Chapter 13 sethood
+requirements belong to set-comprehension generator domains, not enumeration.
 
 Task 112 / task 117 addendum for `type-elaboration`: the exact theorem formula
 using Chapter 14 implication, universal quantification, negation, and
@@ -1614,7 +1615,7 @@ for the exact `SetEnumerationPayloadBoundary: {1, 2} = {1, 2}` source. The
 active `type_elaboration` runner now passes real checker payloads for four
 numeral item terms, two set-enumeration terms, and the builtin equality formula,
 then fails closed on missing numeric type payloads, missing set-enumeration
-result-type/sethood payloads, and partial formula checking. It does not satisfy
+result-type payloads, and partial formula checking. It does not satisfy
 the deferred `formula_statement` runner obligation and does not credit broader
 set-enumeration payloads, term inference, equality/formula checking, facts,
 theorem acceptance, CoreIr, ControlFlowIr, VC, or proof payloads.
