@@ -3747,6 +3747,13 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: `cargo test -p mizar-test` と workspace Rust verification。
     - 依存: tasks 74、175、199、201、203、205、207、208。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
 
+210. **Exact seven-expansion object-terminal formula-side immediate-radix local-mode asserted-head checker bridge を追加する。** [x]
+    - ordered `BaseObjectMode -> object`、`ChainObjectMode1 -> BaseObjectMode` から `ChainObjectMode6 -> ChainObjectMode5`、`reserve x for ChainObjectMode6`、`LongLocalObjectModeRadixAssertedHeadPayloadBoundary: x is ChainObjectMode5` だけを、Task 74 の real seven-expansion object producer、Task 200 の formula consumer、変更しない closed immediate-radix relation を合成して閉じる。Task 179 は builtin-object asserted-type sibling と reusable output guard、Task 209 は set-terminal immediate-radix sibling を提供する。
+    - distinct ChainObjectMode6-subject/ChainObjectMode5-asserted symbol/site/range を保持し、real immediate edge を要求し、ordinal 1 を `BindingId(0)` に解決し、expansion 7 個を消費し、known entry 3 個を BaseObjectModeDef-RHS builtin-object identity 1 個へ normalize し、object/set coercion なしで constraint/fact/candidate/diagnostic/deferred 0 個の inferred variable 1 個と checked assertion 1 個を出力する。全 5,039 nonidentity order、各 definition の missing/duplicate/label/spelling/radix/recovery/contextual/parameterized/argument-bearing/attributed probe、non-exact reserve binding/type、ChainObjectMode5/local-other/multi-binding reserve、extra reserve、formula label/subject/negation/status/recovery/extra-item probe、same `ChainObjectMode6`、multi-hop `ChainObjectMode4` から `BaseObjectMode`、builtin `object`/`set`、local-other、argument-bearing、attributed asserted head、connected eighth edge、unrelated-import positive、全7 symbol の imported/ambiguous substitution、全 expansion removal、独立 binding/ordinal/head/spelling/site/range/immediate-edge/internal-link/`BuiltinSet`/canonical corruption、immutable output、real sidecar、既存 type-assertion owner route 35 件すべてとの bidirectional isolation を要求する。test-first fixture 1 件と shared 5 + dedicated 1 backlink を追加し、既存 expectation を変更せず active runner を 157 から 158、cases を 372 から 373、requirements を 336 から 337 へ増やす。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。multi-hop ChainObjectMode4 から BaseObjectMode、imported positive expansion、attributed/argument-bearing head、general reachability/widening/`qua`、object/set coercion、declaration/theorem acceptance、truth/fact、proof/Core/ControlFlow/VC、broader semantics は deferred のままとする。Step 5 は active、Steps 6/7 は deferred。checker source/module-layout change は不要であった。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 74、179、200、202、204、206、208、209。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:
