@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_four_edge_local_mode_two_hop_asserted_head_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_four_edge_local_mode_two_hop_asserted_head_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_structural_chain_source_bridge",
+  "spec.en.checker.type_elaboration.four_edge_local_mode_two_hop_asserted_head_source_bridge",
+]
+notes = "Spec-derived Task 215 intent for the exact four-edge set-terminal formula-side two-hop local-mode asserted-head chain. The reserve-side subject retains TooDeepFourEdgeModeTwoHopAssertedHead while the formula-side asserted type independently resolves MiddleFourEdgeModeTwoHopAssertedHead at a distinct source site/range. Five real AST-derived set expansions provide the exact bare TooDeep-to-Outer and Outer-to-Middle relation edges plus the remaining Middle-to-Inner-to-Base-to-set normalization tail; the byte-for-byte unchanged BindingTwoHopRadix relation must validate the first two links explicitly and use the tail only for terminal normalization rather than infer relation evidence from generic traversal. The checker resolves x to BindingId(0) at source-order ordinal 1, normalizes three known type entries to the BaseFourEdgeModeTwoHopAssertedHeadDef-RHS builtin-set identity, and records one Inferred variable plus one fact/candidate/diagnostic/deferred-free normalized-reflexive Checked TypeAssertion with zero expected constraints. This does not credit general reachability, the Inner three-hop or Base full-distance assertion, other depths, widening or qua, mode declaration checking/acceptance/inhabitation, assertion truth/facts, implicit closure/order, theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, VC, imported/attributed/argument-bearing asserted heads, broader term/formula/child-graph semantics, or general chain semantics."
