@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_three_edge_local_object_mode_two_hop_asserted_head_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_three_edge_local_object_mode_two_hop_asserted_head_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_three_edge_chain_source_bridge",
+  "spec.en.checker.type_elaboration.three_edge_local_object_mode_two_hop_asserted_head_source_bridge",
+]
+notes = "Spec-derived Task 214 intent for the exact three-edge object-terminal formula-side two-hop local-mode asserted-head chain. The reserve-side subject retains OuterThreeEdgeObjectModeTwoHopAssertedHead while the formula-side asserted type independently resolves InnerThreeEdgeObjectModeTwoHopAssertedHead at a distinct source site/range. Four real AST-derived object expansions provide the exact bare Outer-to-Middle and Middle-to-Inner relation edges plus the remaining Inner-to-Base-to-object normalization tail; the unchanged closed relation must validate the first two links explicitly and use the tail only for terminal normalization rather than infer relation evidence from generic traversal. The checker resolves x to BindingId(0) at source-order ordinal 1, normalizes three known type entries to the BaseThreeEdgeObjectModeTwoHopAssertedHeadDef-RHS builtin-object identity, and records one Inferred variable plus one fact/candidate/diagnostic/deferred-free normalized-reflexive Checked TypeAssertion with zero expected constraints and no object/set coercion. This does not credit general reachability, the Base/full-distance assertion, other depths, widening or qua, mode declaration checking/acceptance/inhabitation, assertion truth/facts, implicit closure/order, theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, VC, imported/attributed/argument-bearing asserted heads, broader term/formula/child-graph semantics, object/set coercion, or general chain semantics."
