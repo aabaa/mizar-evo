@@ -1384,6 +1384,27 @@ equality, truth/facts, implicit closure/order, theorem acceptance, proof/Core/
 ControlFlow/VC, and broader source shapes remain open. Step 5 stays active;
 Steps 6/7 stay deferred. No module layout update is required.
 
+Task 189 MC-G020 current-state override: exact builtin-object same-binding
+normalized-reflexive type assertion is `test_gap`, narrow `source_drift`, and
+`design_drift`, not `spec_gap`. Chapters 3, 4, 13, 14.2.3, and 16 directly
+support `reserve x for object; theorem
+ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;`. Tasks
+48/125/188 supply the real builtin-object reserve handoff, Task 122 supplies
+the exact one-subject assertion route/builder, and Task 145 demonstrates its
+real builtin-object normalization consumer. The route must resolve ordinal 1
+to `BindingId(0)`, preserve distinct reserve-subject result and formula-side
+asserted sites/ranges, intern one canonical builtin-object identity anchored at
+the written reserve type, and record one `Inferred` variable, three known type
+entries, zero expected constraints, and one fact/deferred-free `Checked`
+assertion. Exact/near-miss, matched-output, canonical-source, `BuiltinSet`
+corruption, route-order, and real frontend/resolver-sidecar guards are
+required. Five shared trace backlinks plus one dedicated row protect
+active runner 137 without changing existing expectations. Reachability/
+widening/`qua`, object/set coercion, truth/facts, implicit closure/order,
+theorem acceptance, proof/Core/ControlFlow/VC, and broader source shapes remain
+open. Step 5 stays active; Steps 6/7 stay deferred. No module layout update was
+required.
+
 Task 106 addendum: the active `mizar-test` type-elaboration runner supersedes
 the task-87 generic boundary for
 `theorem TermFormulaPayloadBoundary: 1 = 1;`. For only the unrecovered builtin

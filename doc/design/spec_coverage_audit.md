@@ -1554,6 +1554,27 @@ object equality, truth/facts, closure/order, declaration/theorem acceptance,
 proof/CoreIr/ControlFlowIr/VC, broader source shapes, and downstream payloads
 receive no credit. Step 5 remains active; Steps 6 and 7 remain deferred.
 
+Task189 addendum for chapters `03.type_system.md`,
+`04.variables_and_constants.md`, `13.term_expression.md`, `14.formulas.md`, and
+`16.theorems_and_proofs.md`: checker task 189 classifies the exact builtin-
+object normalized-reflexive reserved-variable type-assertion seam as
+`test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`. It
+composes tasks 48/125/188's real written-object reserve handoff, task 122's
+exact assertion builder, and task 145's real builtin-object normalization
+consumer. Current credit is limited to `reserve x for object; theorem
+ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;`, source-order
+ordinal 1 lookup of `BindingId(0)`, distinct reserve-result and formula-side
+asserted object sites/ranges, one reserve-anchored canonical builtin-object
+identity, one inferred variable, three known type entries, zero expected
+constraints, and one fact/deferred-free checked assertion. Five shared
+backlinks plus one dedicated row, production routing, structural/provenance
+near misses, mutable corruption and positive immutable-output guards, and a
+real frontend/resolver sidecar protect active runner 137. Reachability/
+widening/`qua`, object/set coercion, truth/facts, closure/order, declaration/
+theorem acceptance, proof/CoreIr/ControlFlowIr/VC, broader source shapes, and
+downstream payloads receive no credit. Step 5 remains active; Steps 6 and 7
+remain deferred.
+
 ## Follow-Up Inventory
 
 | ID | Class | Owner | Action |

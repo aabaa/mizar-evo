@@ -1304,6 +1304,20 @@ immutable-output validation, and real frontend/resolver sidecar guards protect
 active count 136. General or non-reflexive object equality, truth/facts,
 closure/order, declaration/theorem acceptance, `formula_statement`, proof,
 CoreIr, ControlFlowIr, VC, and downstream payloads receive no credit.
+Task 189 adds the exact active builtin-object reserved-variable type-assertion
+row `ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;`, with
+five shared Chapter 3/4/13/14.2.3/16 references plus one dedicated checker
+bridge reference. Credit is limited to source-order ordinal 1 resolving to
+`BindingId(0)`, distinct reserve-result and formula-side asserted object sites/
+ranges, two raw argument/attribute-free `BuiltinObject` inputs, one canonical
+normalized identity anchored at the written reserve type, one inferred
+variable, three known type entries, zero expected constraints, and one fact/
+deferred-free `Checked` assertion. Exact-route, provenance near-miss, mutable
+payload-corruption, shared immutable-output validation, and real frontend/
+resolver sidecar guards protect active count 137. Reachability/widening/`qua`,
+object/set coercion, truth/facts, closure/order, declaration/theorem acceptance,
+`formula_statement`, proof, CoreIr, ControlFlowIr, VC, and downstream payloads
+receive no credit.
 Task 120 adds the matching exact pass row for
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`:
 both identifier results and the right membership expected type derive from the

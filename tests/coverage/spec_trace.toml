@@ -571,12 +571,13 @@ stage = "type_elaboration"
 status = "covered"
 required = true
 coverage = "pass_and_fail"
-notes = "Task 109 supersedes the exact builtin-set portion of checker task 102 by carrying the source-derived `set` TypeExpression node from `BuiltinTypeAssertionPayloadBoundary: 1 is set` as a checker TypeExpressionInput before failing closed on the numeral numeric-type payload gap. Task 122 adds the exact reserved-variable `x is set` pass: the asserted type remains anchored to the formula-side source node and the checker accepts only normalized reflexive identity with the independently reserve-derived ready subject type. Task 138 composes the real direct local-mode-to-set expansion with the same formula-side asserted-set producer and accepts only normalized reflexive identity anchored at the real RHS. Tasks 145-146 add the direct builtin-object and one-edge builtin-set chain siblings; task 147 adds the one-edge builtin-object chain sibling; tasks 148-149 add the two-edge builtin-set and builtin-object chain siblings. Those implemented siblings preserve independent formula-side asserted sources and accept only terminal-RHS normalized reflexive identity. Task 150 adds the three-edge builtin-set chain sibling; it preserves raw outer-mode and independent formula-side builtin-set provenance, consumes all four real expansions, and accepts only terminal-set-RHS normalized reflexive identity. Task 151 adds the three-edge builtin-object chain sibling; it preserves raw outer-mode and independent formula-side builtin-object provenance, consumes all four real expansions, and accepts only terminal-object-RHS normalized reflexive identity without object/set coercion. Task 152 adds the four-edge builtin-set chain sibling; it preserves raw outermost-mode and independent formula-side builtin-set provenance, consumes all five real expansions, and accepts only terminal-set-RHS normalized reflexive identity. Task 153 adds the matching four-edge builtin-object sibling with the same five real expansions and terminal-object-RHS normalized reflexive identity without object/set coercion. General reachability/widening, broader asserted types, attributes, arguments, facts, theorem acceptance, and proof/downstream payloads remain deferred."
+notes = "Task 109 supersedes the exact builtin-set portion of checker task 102 by carrying the source-derived `set` TypeExpression node from `BuiltinTypeAssertionPayloadBoundary: 1 is set` as a checker TypeExpressionInput before failing closed on the numeral numeric-type payload gap. Task 122 adds the exact reserved-variable `x is set` pass: the asserted type remains anchored to the formula-side source node and the checker accepts only normalized reflexive identity with the independently reserve-derived ready subject type. Task 138 composes the real direct local-mode-to-set expansion with the same formula-side asserted-set producer and accepts only normalized reflexive identity anchored at the real RHS. Tasks 145-146 add the direct builtin-object and one-edge builtin-set chain siblings; task 147 adds the one-edge builtin-object chain sibling; tasks 148-149 add the two-edge builtin-set and builtin-object chain siblings. Those implemented siblings preserve independent formula-side asserted sources and accept only terminal-RHS normalized reflexive identity. Task 150 adds the three-edge builtin-set chain sibling; it preserves raw outer-mode and independent formula-side builtin-set provenance, consumes all four real expansions, and accepts only terminal-set-RHS normalized reflexive identity. Task 151 adds the three-edge builtin-object chain sibling; it preserves raw outer-mode and independent formula-side builtin-object provenance, consumes all four real expansions, and accepts only terminal-object-RHS normalized reflexive identity without object/set coercion. Task 152 adds the four-edge builtin-set chain sibling; it preserves raw outermost-mode and independent formula-side builtin-set provenance, consumes all five real expansions, and accepts only terminal-set-RHS normalized reflexive identity. Task 153 adds the matching four-edge builtin-object sibling with the same five real expansions and terminal-object-RHS normalized reflexive identity without object/set coercion. Task 189 adds the direct written builtin-object reserve and independently formula-anchored builtin-object assertion sibling, accepting only one reserve-anchored normalized reflexive identity without reachability or object/set coercion. General reachability/widening, broader asserted types, attributes, arguments, facts, theorem acceptance, and proof/downstream payloads remain deferred."
 tests = [
   "tests/miz/pass/types/pass_type_elaboration_chained_local_mode_reserved_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_chained_local_object_mode_reserved_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_mode_reserved_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_local_object_mode_reserved_variable_type_assertion_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_mode_reserved_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_two_edge_local_object_mode_reserved_variable_type_assertion_001.expect.toml",
@@ -747,6 +748,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -1820,6 +1822,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -1940,6 +1943,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -2273,6 +2277,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_multiple_reserve_declaration_membership_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_membership_001.expect.toml",
@@ -4111,6 +4116,19 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
 ]
 notes = "Task 188 coverage is limited to the exact builtin-object same-binding equality type/well-formedness slice. The production route reuses the real object reserve handoff and equality consumer, resolves source-order ordinals 1 and 2 to BindingId(0), preserves four distinct result/expected role sites on the single written object range, and requires one canonical builtin-object identity, two Inferred variables, two ordered expected constraints, and one fact/deferred-free Checked equality. Exact/near-miss, matched-output, canonical-source, BuiltinSet corruption, route-order, and real frontend/resolver-sidecar guards protect active runner 136. Object/set coercion, general/non-reflexive object equality, truth/facts, closure/order, declaration/theorem acceptance, proof/CoreIr/ControlFlowIr/VC, and broader source shapes remain uncredited."
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.reserved_object_variable_type_assertion_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 189 exact builtin-object reserved-variable type-assertion checker bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
+]
+notes = "Task 189 coverage is limited to the exact builtin-object normalized-reflexive reserved-variable type/well-formedness slice. The production route reuses the real object reserve handoff and type-assertion consumer, resolves source-order ordinal 1 to BindingId(0), preserves distinct reserve-result and formula-side asserted object sites/ranges, and requires one reserve-anchored canonical builtin-object identity, one Inferred variable, three known type entries, zero expected constraints, and one fact/deferred-free Checked TypeAssertion. Exact/near-miss, matched-output, canonical-source, BuiltinSet corruption, route-order, and real frontend/resolver-sidecar guards must protect active runner 137. Reachability/widening/qua, object/set coercion, truth/facts, closure/order, declaration/theorem acceptance, proof/CoreIr/ControlFlowIr/VC, and broader source shapes remain uncredited."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.reserved_variable_equality_source_bridge"

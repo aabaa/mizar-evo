@@ -951,6 +951,21 @@ local structure reserve extraction-gap boundary slice, and task 70 added the
    active case 136. Object/set coercion, general/non-reflexive equality, truth/
    facts, closure/order, declaration/theorem acceptance, proof/CoreIr/
    ControlFlowIr/VC, and broader shapes remain deferred,
+   task 189 adds the exact builtin-object reserved-variable normalized-reflexive
+   type-assertion bridge by composing tasks 48/125/188's real written `object`
+   reserve handoff with task 122's assertion builder and task 145's real
+   builtin-object normalization consumer. The route accepts only `reserve x
+   for object; theorem ReservedObjectVariableTypeAssertionPayloadBoundary: x
+   is object;`, resolves source-order ordinal 1 to `BindingId(0)`, preserves
+   distinct reserve-result and formula-side asserted object sites/ranges,
+   interns one reserve-anchored canonical builtin-object identity, and records
+   one inferred variable, three known type entries, zero expected constraints,
+   and one fact/deferred-free checked assertion. Five shared backlinks, one
+   dedicated row, structural/provenance near misses, mutable corruption and
+   positive immutable-output guards, and a real frontend/resolver sidecar
+   protect active case 137. Reachability/widening/`qua`, object/set coercion,
+   truth/facts, closure/order, declaration/theorem acceptance, proof/CoreIr/
+   ControlFlowIr/VC, and broader shapes remain deferred,
    and task 109 supersedes task 102 for
    the exact builtin
    type assertion theorem source by passing real checker term/formula/asserted

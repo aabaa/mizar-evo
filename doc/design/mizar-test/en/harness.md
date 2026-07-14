@@ -1305,6 +1305,23 @@ protect active runner 136 without rebaselining an existing expectation. This
 does not activate general object equality, coercion,
 truth/facts, closure/order, theorem/proof acceptance, or downstream payloads.
 
+Task 189 adds only the exact active builtin-object type-assertion source
+`reserve x for object; theorem
+ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;`. The active
+route must reuse the real source-derived object reserve handoff and the
+existing reserved-variable type-assertion consumer, retain ordinal 1 local
+lookup plus distinct reserve-subject result and formula-side asserted sites/
+ranges, and accept only one reserve-anchored canonical builtin-object identity,
+one `Inferred` variable term, three known type entries, no expected
+constraints, and one fact/deferred-free `Checked` assertion. Exact/near-miss/
+corruption and real frontend/resolver-sidecar tests must guard source shape,
+binding identity, lookup order, raw input provenance, checker counts/status,
+the absence of constraints, canonical source, and wrong builtin-set output.
+Five shared backlinks plus one dedicated trace row must protect active runner
+137 without rebaselining an existing expectation. This does not activate
+reachability/widening/`qua`, object/set coercion, truth/facts, closure/order,
+theorem/proof acceptance, or downstream payloads.
+
 Task 120 adds the matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The active runner shares Task 119's match-before-build and independent

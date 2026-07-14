@@ -1236,6 +1236,20 @@ resolver sidecar guard が active count 136 を保護する。general/non-reflex
 object equality、truth/fact、closure/order、declaration/theorem acceptance、
 `formula_statement`、proof、CoreIr、ControlFlowIr、VC、downstream payload は
 credit しない。
+task 189 は exact active builtin-object reserved-variable type-assertion row
+`ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;` を shared な
+Chapter 3/4/13/14.2.3/16 reference 5 件と dedicated checker bridge reference 1 件
+とともに追加する。current credit は source-order ordinal 1 から解決する
+`BindingId(0)`、distinct reserve-result/formula-side asserted object site/range、
+argument/attribute-free な raw `BuiltinObject` input 2 個、written reserve type を
+anchor とする canonical normalized identity 1 個、inferred variable 1 個、known
+type entry 3 個、expected constraint 0 個、fact/deferred-free な `Checked` assertion
+1 個だけに限定する。exact-route、provenance near-miss、mutable payload-
+corruption、shared immutable-output validation、real frontend/resolver sidecar
+guard が active count 137 を保護する。reachability/widening/`qua`、object/set
+coercion、truth/fact、closure/order、declaration/theorem acceptance、
+`formula_statement`、proof、CoreIr、ControlFlowIr、VC、downstream payload は
+credit しない。
 task 120 は
 matching exact pass row
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`

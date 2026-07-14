@@ -1409,6 +1409,31 @@ type/well-formedness checking だけであり、object/set coercion、non-reflex
 general object equality、truth/fact、implicit closure/order、theorem acceptance、
 proof execution、CoreIr/ControlFlowIr/VC/proof payload は deferred のままである。
 
+task 189 は exact builtin-object reserved-variable type assertion
+`reserve x for object; theorem
+ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;` だけを追加する。
+production route は real source reserve handoff と既存 reserved-variable type-
+assertion builder を再利用し、subject を source-order ordinal 1 で
+`BindingId(0)` に解決し、reserve-derived subject result と formula-side asserted
+builtin `object` を distinct site/source range として保持しなければならない。
+raw input 2 個はいずれも argument/attribute-free `BuiltinObject` であり、written
+reserve type を canonical anchor とする known builtin-object identity 1 個へ
+normalize しなければならない。immutable checker result は `Inferred` variable
+1 個、known type entry 3 個、known normalized type 1 個、expected constraint/
+candidate/fact/diagnostic/deferred reason 0 個、`Checked` `TypeAssertion` 1 個を
+含まなければならない。exact/near-miss test は wrong label/subject、negation、
+status/recovery/extra item、multiple binding/reserve、`set`、mode、structure、
+attributed、argument-bearing、imported、ambiguous reserve/asserted head を reject
+する。task-local corruption probe は binding/ordinal drift、raw input いずれかの
+`BuiltinSet` 置換、collapsed/wrong source/site provenance を reject し、positive
+count/status/constraint/canonical-source assertion と shared type-assertion output
+validator が immutable checker table を固定する。real frontend/resolver sidecar
+は active fixture を guard する。これは normalized-reflexive type/well-formedness checking
+だけである。general reachability/widening/`qua`、object/set coercion、truth/fact、
+implicit closure/order、theorem acceptance、proof execution、CoreIr/ControlFlowIr/
+VC/proof payload は deferred のままとする。checker source と module layout の
+変更は不要である。
+
 task 120 は exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 だけについて、その real identifier-term seam を拡張する。同じ source-range event

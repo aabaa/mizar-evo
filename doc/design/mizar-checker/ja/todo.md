@@ -3222,6 +3222,29 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 依存: tasks 48、119、125、128。参照: Step 5、mizar-test task 10、specs 3、4、
       13、14、16。
 
+189. **Exact builtin-object reserved-variable type-assertion checker bridge を追加する。** [x]
+    - real builtin-object reserve handoff と normalized-reflexive type-assertion
+      checker consumer を再利用し、`reserve x for object; theorem
+      ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;` だけを
+      閉じる。
+    - Acceptance: source-order subject を ordinal 1 で `BindingId(0)` に解決し、
+      distinct reserve-subject result/formula-side asserted site/range、written
+      reserve type を anchor とする canonical builtin-object identity 1 個、
+      `Inferred` variable 1 個、known type entry 3 個、expected constraint 0 個、
+      fact/deferred-free `Checked` assertion 1 個を保持する。exact/near-miss、
+      matched-output、canonical-source、`BuiltinSet` corruption、route-order、
+      real frontend/resolver-sidecar guard を必須とする。shared trace backlink
+      5 個 + dedicated 1 個を持つ spec-derived active pass fixture 1 件を追加し、
+      既存 expectation を変更せず active runner 136 を 137 に増やす。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`。`spec_gap` はない。
+      reachability/widening/`qua`、object/set coercion、truth/fact、closure/order、
+      theorem acceptance、proof/Core/ControlFlow/VC、broader source shape は
+      deferred のままとする。Step 5 は active、Steps 6/7 は deferred のまま。
+      module layout 更新は不要であった。
+    - 検証: `cargo test -p mizar-test` と workspace Rust verification。
+    - 依存: tasks 48、122、125、145、188。参照: Step 5、mizar-test task 10、
+      specs 3、4、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:

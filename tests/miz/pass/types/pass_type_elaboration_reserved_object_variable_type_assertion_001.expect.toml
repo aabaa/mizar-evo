@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_reserved_object_variable_type_assertion_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_reserved_object_variable_type_assertion_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.03.type_expressions.builtin_type_assertion_checker_bridge",
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.reserved_object_variable_type_assertion_source_bridge",
+]
+notes = "Active type_elaboration runner pass intent for checker task 189: the exact builtin-object reserved-variable normalized-reflexive type assertion reuses the real source reserve handoff and type-assertion consumer, resolves the identifier subject at source-order ordinal 1 to BindingId(0), preserves distinct reserve-result and formula-side asserted object sites/ranges, and reaches one reserve-anchored canonical builtin-object identity, one Inferred variable, three known type entries, zero expected constraints, and one fact/deferred-free Checked TypeAssertion without diagnostics. Checked means type/well-formedness only; reachability/widening/qua, object/set coercion, truth/facts, implicit closure/order, declaration/theorem acceptance, formula_statement, proof, CoreIr, ControlFlowIr, and VC payloads remain deferred."

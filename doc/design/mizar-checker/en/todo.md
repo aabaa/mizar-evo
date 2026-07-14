@@ -3416,6 +3416,30 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Deps: tasks 48, 119, 125, and 128. Refs: Step 5; mizar-test task 10; specs 3,
       4, 13, 14, and 16.
 
+189. **Add exact builtin-object reserved-variable type-assertion checker bridge.** [x]
+    - Close only `reserve x for object; theorem
+      ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;` by
+      reusing the real builtin-object reserve handoff and normalized-reflexive
+      type-assertion checker consumer.
+    - Acceptance: resolve the source-order subject at ordinal 1 to
+      `BindingId(0)`; preserve distinct reserve-subject result and formula-side
+      asserted sites/ranges; intern one canonical builtin-object identity
+      anchored at the written reserve type; produce one `Inferred` variable,
+      three known type entries, zero expected constraints, and one fact/
+      deferred-free `Checked` assertion. Require exact/near-miss,
+      matched-output, canonical-source, `BuiltinSet` corruption, route-order,
+      and real frontend/resolver-sidecar guards. Add one spec-derived active
+      pass fixture with five shared and one dedicated trace backlink, raising
+      active runner 136 to 137 without changing existing expectations.
+    - Classification: `test_gap`, narrow `source_drift`, and `design_drift`;
+      no `spec_gap`. Keep reachability/widening/`qua`, object/set coercion,
+      truth/facts, closure/order, theorem acceptance, proof/Core/ControlFlow/
+      VC, and broader source shapes deferred. Step 5 remains active; Steps 6/7
+      remain deferred. No module layout update was required.
+    - Verify: `cargo test -p mizar-test` plus workspace Rust verification.
+    - Deps: tasks 48, 122, 125, 145, and 188. Refs: Step 5; mizar-test task
+      10; specs 3, 4, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:

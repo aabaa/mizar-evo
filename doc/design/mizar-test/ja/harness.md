@@ -1254,6 +1254,22 @@ backlink 5 個 + dedicated trace row 1 個により active runner 136 を保護�
 general object equality、coercion、truth/fact、closure/order、theorem/proof
 acceptance、downstream payload は active 化しない。
 
+task 189 は exact active builtin-object type-assertion source
+`reserve x for object; theorem
+ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;` だけを追加する。
+active route は real source-derived object reserve handoff と既存 reserved-variable
+type-assertion consumer を再利用し、ordinal 1 local lookup と distinct reserve-
+subject result/formula-side asserted site/range を保持し、reserve を anchor とする
+canonical builtin-object identity 1 個、`Inferred` variable term 1 個、known type
+entry 3 個、expected constraint 0 個、fact/deferred-free `Checked` assertion 1 個
+だけを受理する。exact/near-miss/corruption と real frontend/resolver-sidecar test
+は source shape、binding identity、lookup order、raw input provenance、checker
+count/status、constraint 不在、canonical source、wrong builtin-set output を guard
+しなければならない。既存 expectation を rebaseline せず、shared backlink 5 個 +
+dedicated trace row 1 個により active runner 137 を保護する。reachability/
+widening/`qua`、object/set coercion、truth/fact、closure/order、theorem/proof
+acceptance、downstream payload は active 化しない。
+
 task 120 は matching exact membership pass case
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`
 を追加する。active runner は task 119 の match-before-build と独立した source-order

@@ -1471,6 +1471,32 @@ formedness checking only: object/set coercion, non-reflexive or general object
 equality, truth/facts, implicit closure/order, theorem acceptance, proof
 execution, and CoreIr/ControlFlowIr/VC/proof payloads remain deferred.
 
+Task 189 adds only the exact builtin-object reserved-variable type assertion
+`reserve x for object; theorem
+ReservedObjectVariableTypeAssertionPayloadBoundary: x is object;`. The
+production route must reuse the real source reserve handoff and the existing
+reserved-variable type-assertion builder, resolve the subject at source-order
+ordinal 1 to `BindingId(0)`, and retain the reserve-derived subject result and
+formula-side asserted builtin `object` as distinct sites and source ranges.
+Both raw inputs must be argument/attribute-free `BuiltinObject` values and
+normalize to one known builtin-object identity canonically anchored at the
+written reserve type. The immutable checker result must contain one `Inferred`
+variable, three known type entries, one known normalized type, zero expected
+constraints/candidates/facts/diagnostics/deferred reasons, and one `Checked`
+`TypeAssertion`. Exact/near-miss tests must reject another label or subject,
+negation, status/recovery/extra items, multiple bindings or reserves, and
+`set`, mode, structure, attributed, argument-bearing, imported, or ambiguous
+reserve and asserted heads. Task-local corruption probes must reject binding/
+ordinal drift, `BuiltinSet` substitution on either raw input, collapsed or
+wrong source/site provenance; positive count/status/constraint/canonical-source
+assertions plus the shared type-assertion output validator must pin the
+immutable checker tables. A real frontend/resolver sidecar must guard the
+active fixture. This is normalized-reflexive type/well-formedness checking only:
+general reachability/widening/`qua`, object/set coercion, truth/facts, implicit
+closure/order, theorem acceptance, proof execution, and CoreIr/ControlFlowIr/
+VC/proof payloads remain deferred. No checker source or module-layout change is
+required.
+
 Task 120 extends that real identifier-term seam only for the exact source
 `reserve x for set; theorem ReservedVariableMembershipPayloadBoundary: x in x;`.
 The same source-range event ordering derives distinct lookup ordinals 1 and 2,
