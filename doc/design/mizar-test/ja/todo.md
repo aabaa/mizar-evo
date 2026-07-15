@@ -235,7 +235,8 @@ regression test を追加した。
       diagnostic range が未仕様の間の public-code gate、summary reporting、
       traceable seed fixture 2 件を追加した。この task は予定されたすべての
       消費側 runner が着地するまで open のままにする。
-    - 現在の task-10 ledger は、`mizar-parser` task 3（`parse-only`）、
+    - historical selected task-10 ledger は、`mizar-parser` task 3
+      （`parse-only`）、
       `mizar-resolve` task 23（`declaration-symbol`）、`mizar-checker` task 12
       （`type-elaboration` external-gap runner）、task 16（source-derived
       builtin type-expression normalization）、task 17（source-derived
@@ -337,6 +338,13 @@ regression test を追加した。
       checker task 92 の mode/structure definition extraction-gap boundary、
       checker task 93 の proof-local declaration extraction-gap boundary、checker task 94 の proof-local inline definition extraction-gap boundary、checker task 95 の registration block extraction-gap boundary、checker task 96 の redefinition/notation extraction-gap boundary も
       prepared/implemented increment として記録する。
+      この historical inline selection の latest-numbered checker entry は
+      task 138 である。checker tasks 139-228 の詳細 lifecycle は paired
+      [crate plan](./00.crate_plan.md)、[harness](./harness.md)、
+      [traceability](./traceability.md) で管理する。現在の active corpus は
+      391 cases / 355 requirements 内の type-elaboration case 176 件、
+      type-elaboration coverage 223/211、pass/fail 207/184 を持ち、Step 5 は
+      active、Steps 6/7 は deferred である。
       checker task 29、`mizar-vc` task 15、`mizar-atp`
       task 20、`mizar-kernel` task 17 は `paced/open` として記録し、placeholder
       runner や fake active fixture は作らない。

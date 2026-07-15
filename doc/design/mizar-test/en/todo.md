@@ -237,7 +237,8 @@ Keep `cargo test -p mizar-test` green after each task (see
       gating while resolver diagnostic ranges are unspecified, summary
       reporting, and two traceable seed fixtures. This task stays open until
       all planned consumer runners land.
-    - Current task-10 ledger records `mizar-parser` task 3 (`parse-only`),
+    - The historical selected task-10 ledger records `mizar-parser` task 3
+      (`parse-only`),
       `mizar-resolve` task 23 (`declaration-symbol`), `mizar-checker` task 12
       (`type-elaboration` external-gap runner), task 16
       (source-derived builtin type-expression normalization), task 17
@@ -373,6 +374,13 @@ Keep `cargo test -p mizar-test` green after each task (see
       registration block extraction-gap boundary, and checker task 96's
       redefinition/notation extraction-gap boundary as
       prepared/implemented increments.
+      This historical inline selection has checker task 138 as its
+      latest-numbered entry. Detailed lifecycle for checker tasks 139-228 is
+      maintained in the paired [crate plan](./00.crate_plan.md),
+      [harness](./harness.md), and [traceability](./traceability.md). The
+      current active corpus has 176 type-elaboration cases within 391 cases /
+      355 requirements, type-elaboration coverage 223/211, and pass/fail
+      207/184; Step 5 is active and Steps 6/7 are deferred.
       Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
       `paced/open`; no placeholder runner or fake active fixture is created for
