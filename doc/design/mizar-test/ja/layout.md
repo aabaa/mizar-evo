@@ -4,45 +4,41 @@
 
 ## 目的
 
-この module は Mizar Evo tests の filesystem layout と metadata contract を定義する。
+この module は Mizar Evo tests の filesystem discovery boundary と adjacent-sidecar layout contract を定義する。
 
 layout は large `.miz` corpora、fail-heavy regression testing、deterministic snapshots、expected outcomes の明確な ownership に向けて最適化されている。
 
 ## Public API
 
 ```rust
-pub struct TestCase {
-    pub id: TestCaseId,
-    pub path: TestPath,
-    pub kind: TestKind,
-    pub domain: TestDomain,
-    pub metadata: TestMetadata,
+pub struct DiscoveredLayout {
+    pub payloads: Vec<PathBuf>,
+    pub sidecars: Vec<PathBuf>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
 }
 
-#[non_exhaustive]
-pub enum TestKind {
-    Pass,
-    Fail,
-    Snapshot,
-    FuzzSeed,
-    PropertySeed,
-    Generated,
-}
+pub fn discover(
+    tests_root: &Path,
+) -> Result<DiscoveredLayout, std::io::Error>;
 
-pub struct TestMetadata {
-    pub expected_phase: Option<PipelinePhase>,
-    pub expected_failure: Option<FailureCategory>,
-    pub expected_rejection: Option<RejectionReason>,
-    pub expected_diagnostics: Vec<DiagnosticExpectation>,
-    pub snapshot_profiles: Vec<SnapshotProfile>,
-}
+pub fn unknown_roots(
+    tests_root: &Path,
+) -> Result<Vec<PathBuf>, std::io::Error>;
 ```
+
+これは public `mizar_test::layout` module surface であり、crate root では
+re-export しない。`DiscoveredLayout` は deterministic に sort した payload と
+sidecar path inventory、および layout diagnostics を持つ。`discover` は optional
+known root と adjacent sidecar の欠落を報告し、`unknown_roots` は sort 済み
+unknown-directory inventory を返す。harness はこの inventory に
+validation-mode policy を適用する。
 
 authoritative expectations は sidecar files に置く。fail、soundness、certificate、snapshot expectations は `.miz` frontend correctness に依存せず parse できなければならないため、sidecar を必須とする。inline metadata は parser が安全に無視できる non-authoritative tags に限って許可する。
 
-`TestKind` はこの layout API に現れる expectation-owned corpus role enum である。
-[expectation_schema.md](./expectation_schema.md) の public enum policy に従い、
-downstream caller 向けに `#[non_exhaustive]` のままとする。
+layout module は parsed test case または expectation metadata を所有しない。
+`TestCase` と `TestPlan` は harness-owned、`TestKind` と `Expectation` は
+expectation-schema-owned である。[harness.md](./harness.md) と
+[expectation_schema.md](./expectation_schema.md) を参照する。
 
 ## Directory Layout
 
@@ -150,20 +146,25 @@ expected output は contract である。current compiler behavior から silent
 test discovery:
 
 1. known test roots だけを walk する。
-2. paths を canonical relative path で sort する。
-3. executable payload files と sidecar metadata を pair する。
-4. every committed executable payload で metadata が missing の場合 reject する。
-5. deterministic `TestPlan` を構築する。
+2. discover した `PathBuf` values を deterministic に sort する。
+3. executable payload と sidecar の path inventory を別々に collect する。
+4. optional known root または adjacent sidecar の欠落を layout diagnostic として記録する。
+5. `DiscoveredLayout` を返す。harness が expectation を parse し、deterministic な `TestCase`/`TestPlan` projection を構築する。
 
 ## Tests
 
-key scenarios:
+required layout-focused scenarios:
 
 - discovery order が filesystems をまたいで stable
 - missing executable payload metadata は error
-- duplicate test ids は reject
-- generated / fuzz-minimized tests は discoverable だが origin で mark される
-- unknown directories は explicit harness mode に従って ignore または reject
+- optional known root の欠落は warning になる
+- unknown-directory inventory は deterministic に sort される
+
+raw payload/sidecar ordering、missing-known-root warning、複数 unknown-root
+ordering の direct module-level coverage は open のままである。現在の
+harness/expectation integration は missing-sidecar rejection を検証し、duplicate
+test id を reject し、generated / fuzz-minimized origin metadata を保持し、
+unknown directory に explicit validation-mode policy を適用する。
 
 ## Constraints and Assumptions
 

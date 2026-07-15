@@ -213,7 +213,7 @@ tree. They are downstream-facing metadata surfaces and must remain
 
 | Public enum | Owner | Decision |
 |---|---|---|
-| `TestKind` | `expectation` corpus role and layout surface | `#[non_exhaustive]` downstream forward-compatible surface. |
+| `TestKind` | `expectation` corpus role surfaced through `Expectation` and consumed by harness-owned `TestCase` | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `ExpectedOutcome` | `expectation` result contract | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `PipelinePhase` | `expectation` phase boundary ids | `#[non_exhaustive]` downstream forward-compatible surface. |
 | `Architecture22Gate` | `expectation` architecture-22 planned/active metadata gate | `#[non_exhaustive]` downstream forward-compatible surface. |

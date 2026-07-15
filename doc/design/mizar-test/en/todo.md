@@ -17,7 +17,7 @@ per [internal 07](../../internal/en/07.crate_module_layout.md).
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery/pairing and validation-mode unknown-root policy implemented; public API sync pending |
+| layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery, missing-sidecar diagnostics, and unknown-root inventory implemented; public API and ownership wording synchronized by task 238; direct raw-order/missing-root coverage remains MT-AUDIT-020 |
 | expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema, profile/provenance metadata retention, and fail/soundness rejection gates implemented; general snapshot hardening pending |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage ids and declared prerequisite validation implemented; richer admission policy pending |
 | traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs, coverage report/status gates, manifest ordering, obsolete-ref checks, prerequisite credit gates, and architecture-22 matrix summary implemented |
@@ -75,8 +75,9 @@ change. The prior trace manifest ordering conflict was repaired by
 
 Follow-up ownership from the audit:
 
-- `layout`: sync the documented Public API with `DiscoveredLayout` and the
-  harness-owned `TestCase`; keep unknown-root policy covered as new roots land.
+- `layout`: task 238 synchronizes the documented discovery API and
+  harness/expectation ownership. MT-AUDIT-020 owns direct raw-order and
+  missing-root coverage; keep unknown-root policy covered as new roots land.
 - `expectation_schema`: validate generated origin tables, certificate/kernel
   `rejection_reason`, diagnostic ordering, and the future general
   `[[snapshots]]` hash registry.

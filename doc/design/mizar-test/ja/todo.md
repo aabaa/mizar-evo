@@ -18,7 +18,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| layout | [layout.md](./layout.md) | `src/layout.rs`、`src/path_rules.rs` | [~] discovery/pairing と validation-mode unknown-root policy は実装済み。Public API 同期は未完 |
+| layout | [layout.md](./layout.md) | `src/layout.rs`、`src/path_rules.rs` | [~] discovery、missing-sidecar diagnostic、unknown-root inventory は実装済み。Public API と ownership wording は task 238 で同期済み。direct raw-order/missing-root coverage は MT-AUDIT-020 |
 | expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema、profile/provenance metadata retention、fail/soundness rejection gate は実装済み。general snapshot 強化は未完 |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage id と declared prerequisite validation は実装済み。より広い admission policy は未完 |
 | traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backref、coverage report/status gate、manifest ordering、obsolete-ref check、prerequisite credit gate、architecture-22 matrix summary は実装済み |
@@ -76,8 +76,9 @@ regression test を追加した。
 
 監査からの follow-up ownership:
 
-- `layout`: documented Public API を `DiscoveredLayout` と harness-owned
-  `TestCase` に同期する。新しい root が入るたび unknown-root policy を保つ。
+- `layout`: task 238 で documented discovery API と harness/expectation
+  ownership を同期済みである。MT-AUDIT-020 は direct raw-order と
+  missing-root coverage を所有する。新しい root が入るたび unknown-root policy を保つ。
 - `expectation_schema`: generated origin table、certificate/kernel
   `rejection_reason`、diagnostic ordering、将来の general `[[snapshots]]`
   hash registry を検証する。

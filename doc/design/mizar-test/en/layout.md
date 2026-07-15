@@ -4,46 +4,41 @@
 
 ## Purpose
 
-This module defines the filesystem layout and metadata contract for Mizar Evo tests.
+This module defines the filesystem discovery boundary and adjacent-sidecar layout contract for Mizar Evo tests.
 
 The layout is optimized for large `.miz` corpora, fail-heavy regression testing, deterministic snapshots, and clear ownership of expected outcomes.
 
 ## Public API
 
 ```rust
-pub struct TestCase {
-    pub id: TestCaseId,
-    pub path: TestPath,
-    pub kind: TestKind,
-    pub domain: TestDomain,
-    pub metadata: TestMetadata,
+pub struct DiscoveredLayout {
+    pub payloads: Vec<PathBuf>,
+    pub sidecars: Vec<PathBuf>,
+    pub diagnostics: Vec<ValidationDiagnostic>,
 }
 
-#[non_exhaustive]
-pub enum TestKind {
-    Pass,
-    Fail,
-    Snapshot,
-    FuzzSeed,
-    PropertySeed,
-    Generated,
-}
+pub fn discover(
+    tests_root: &Path,
+) -> Result<DiscoveredLayout, std::io::Error>;
 
-pub struct TestMetadata {
-    pub expected_phase: Option<PipelinePhase>,
-    pub expected_failure: Option<FailureCategory>,
-    pub expected_rejection: Option<RejectionReason>,
-    pub expected_diagnostics: Vec<DiagnosticExpectation>,
-    pub snapshot_profiles: Vec<SnapshotProfile>,
-}
+pub fn unknown_roots(
+    tests_root: &Path,
+) -> Result<Vec<PathBuf>, std::io::Error>;
 ```
+
+This is the public `mizar_test::layout` module surface; these items are not
+re-exported at the crate root. `DiscoveredLayout` contains deterministically
+sorted payload and sidecar path inventories plus layout diagnostics.
+`discover` reports missing optional known roots and missing adjacent sidecars,
+while `unknown_roots` returns the sorted unknown-directory inventory. The
+harness applies validation-mode policy to that inventory.
 
 Authoritative expectations live in sidecar files. Fail, soundness, certificate, and snapshot expectations must use sidecars because they must be parsed without depending on `.miz` frontend correctness. Inline metadata is allowed only for non-authoritative tags that the parser can ignore safely.
 
-`TestKind` is the expectation-owned corpus role enum surfaced in this layout
-API. It follows the public enum policy in
-[expectation_schema.md](./expectation_schema.md) and remains
-`#[non_exhaustive]` for downstream callers.
+The layout module does not own parsed test cases or expectation metadata.
+`TestCase` and `TestPlan` are harness-owned; `TestKind` and `Expectation` are
+expectation-schema-owned. See [harness.md](./harness.md) and
+[expectation_schema.md](./expectation_schema.md).
 
 ## Directory Layout
 
@@ -156,20 +151,25 @@ Expected output is a contract. It must not be regenerated silently from current 
 Test discovery:
 
 1. Walk only known test roots.
-2. Sort paths by canonical relative path.
-3. Pair executable payload files with sidecar metadata.
-4. Reject missing metadata for every committed executable payload.
-5. Build a deterministic `TestPlan`.
+2. Sort the discovered `PathBuf` values deterministically.
+3. Collect executable payload and sidecar path inventories separately.
+4. Record layout diagnostics for missing optional known roots or adjacent sidecars.
+5. Return `DiscoveredLayout`; the harness parses expectations and builds the deterministic `TestCase`/`TestPlan` projection.
 
 ## Tests
 
-Key scenarios:
+Required layout-focused scenarios:
 
 - discovery order is stable across filesystems;
 - missing executable payload metadata is an error;
-- duplicate test ids are rejected;
-- generated and fuzz-minimized tests are discoverable but marked by origin;
-- unknown directories are ignored or rejected according to explicit harness mode.
+- missing optional known roots produce warnings;
+- unknown-directory inventory is sorted deterministically.
+
+Direct module-level coverage remains open for raw payload/sidecar ordering,
+missing-known-root warnings, and multiple-unknown-root ordering. Current
+harness/expectation integration covers missing-sidecar rejection, rejects
+duplicate test ids, retains generated and fuzz-minimized origin metadata, and
+applies explicit validation-mode policy to unknown directories.
 
 ## Constraints and Assumptions
 
