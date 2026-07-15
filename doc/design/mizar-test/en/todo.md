@@ -375,7 +375,7 @@ Keep `cargo test -p mizar-test` green after each task (see
       redefinition/notation extraction-gap boundary as
       prepared/implemented increments.
       This historical inline selection has checker task 138 as its
-      latest-numbered entry. Detailed lifecycle for checker tasks 139-233 is
+      latest-numbered entry. Detailed lifecycle for checker tasks 139-234 is
       maintained in the paired [crate plan](./00.crate_plan.md),
       [harness](./harness.md), and [traceability](./traceability.md). The
       The active Task 233 corpus contains 180 type-elaboration cases within 395
@@ -383,6 +383,11 @@ Keep `cargo test -p mizar-test` green after each task (see
       pass/fail 211/184; Step 5 is active and Steps 6/7 are deferred. Checker
       task 233 supplies the latest active exact parenthesized builtin-object
       equality row without rebaselining an existing expectation.
+      Checker task 234 supplies the latest active exact seven-expansion
+      set-terminal full-distance six-hop asserted-head row. Its fixture and six
+      backlinks account for 396 cases / 360 requirements, type-elaboration
+      228/216, pass/fail 212/184, and active runner 181 without rebaselining an
+      existing expectation.
       Checker task 29, `mizar-vc` task 15,
       `mizar-atp` task 20, and `mizar-kernel` task 17 are recorded as
       `paced/open`; no placeholder runner or fake active fixture is created for

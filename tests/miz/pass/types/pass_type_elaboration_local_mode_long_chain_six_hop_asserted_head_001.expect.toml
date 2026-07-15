@@ -1,0 +1,20 @@
+schema_version = 1
+id = "pass_type_elaboration_local_mode_long_chain_six_hop_asserted_head_001"
+kind = "pass"
+stage = "type_elaboration"
+domain = "checker.type_elaboration"
+source = "pass_type_elaboration_local_mode_long_chain_six_hop_asserted_head_001.miz"
+expected_outcome = "pass"
+expected_phase = "type_check"
+diagnostic_codes = []
+diagnostic_payloads = []
+tags = ["active_type_elaboration"]
+spec_refs = [
+  "spec.en.04.variables_and_constants.reserved_theorem_variable_type_elaboration",
+  "spec.en.13.term_expressions.type_elaboration_payload_gap",
+  "spec.en.14.formulas.term_formula_payload_gap",
+  "spec.en.16.theorems_and_proofs.term_formula_payload_gap",
+  "spec.en.checker.type_elaboration.local_mode_structural_chain_source_bridge",
+  "spec.en.checker.type_elaboration.local_mode_long_chain_six_hop_asserted_head_source_bridge",
+]
+notes = "Spec-derived Task 234 intent for the exact seven-expansion set-terminal formula-side full-distance six-hop local-mode asserted-head chain. The reserve-side subject retains ChainMode6 while the formula-side asserted type independently resolves BaseMode at a distinct source site/range. The new closed BindingSixHopRadix relation must validate the six pairwise-distinct bare ChainMode6-to-ChainMode5, ChainMode5-to-ChainMode4, ChainMode4-to-ChainMode3, ChainMode3-to-ChainMode2, ChainMode2-to-ChainMode1, and ChainMode1-to-BaseMode links directly; BaseMode to set is terminal-normalization evidence only. Seven real AST-derived expansions must normalize three known type entries to the BaseModeDef-RHS builtin-set identity. The checker must resolve x to BindingId(0) at source-order ordinal 1 and record one Inferred variable plus one zero-constraint/fact/candidate/diagnostic/deferred Checked TypeAssertion. This does not credit generic reachability, widening or qua, mode declaration acceptance/inhabitation, assertion truth/facts, implicit closure/order, theorem acceptance, proof, CoreIr, ControlFlowIr, VC, object-terminal/imported-positive/attributed/argument-bearing/other asserted heads, broader term/formula/child-graph semantics, object/set coercion, or general chain semantics."

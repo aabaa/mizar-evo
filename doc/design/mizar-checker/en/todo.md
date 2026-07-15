@@ -4122,6 +4122,14 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - The test-first fixture and six backlinks account for active runner 180, 395 cases, 359 requirements, type-elaboration 227/215, and pass/fail 211/184 without changing existing expectations. No checker source or module-layout change was required.
     - Dependencies: Tasks 9, 119, 188, and 223. References: Step 5, mizar-test task 10, specs 3, 4, 13, 14, and 16.
 
+234. [x] **Bridge the exact seven-expansion set-terminal full-distance six-hop asserted head.**
+    - Add only the seven ordered bare `BaseMode -> set` through `ChainMode6 -> ChainMode5` definitions, one `ChainMode6` reserve, and `LongLocalModeSixHopAssertedHeadPayloadBoundary: x is BaseMode`. Compose Task 74's real expansion producer with Task 199's real formula/checker consumer.
+    - Add a closed `BindingSixHopRadix` relation that directly validates all six pairwise-distinct links through `BaseMode`; use `BaseMode -> set` only for terminal normalization. Preserve distinct subject/asserted provenance, ordinal 1 / `BindingId(0)`, seven real expansions, one BaseModeDef-RHS `BuiltinSet`, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion.
+    - Test all 5,039 nonidentity orders, the finite definition/reserve/formula/head/provenance/removal/corruption matrix, immutable output, a real sidecar, focused siblings, and bidirectional isolation against all 56 prior type-assertion owners.
+    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. Object-terminal six-hop, imported-positive/attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, child graphs, and broader semantics remain deferred. Step 5 remains active; Steps 6/7 remain deferred.
+    - The test-first fixture and six backlinks account for active runner 181, 396 cases, 360 requirements, type-elaboration 228/216, and pass/fail 212/184 without changing existing expectations. No checker source or module-layout change was required.
+    - Dependencies: Tasks 74, 199, 230, and 231. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:
