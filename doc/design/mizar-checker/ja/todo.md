@@ -3849,6 +3849,14 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - active fixture と backlink 5 件は、既存 expectation を変更せず active runner 171、386 cases、350 requirements、type-elaboration coverage 218/206、pass/fail 202/184 を計上する。focused、relevant-crate、workspace verification は成功した。checker source/module-layout change は不要であった。
     - 依存: Tasks 9、119。参照: Step 5、mizar-test task 10、specs 4、13、14、16。
 
+224. [x] **exact seven-expansion set-terminal two-hop asserted head を bridge する。**
+    - ordered bare definition 7 個 `BaseMode -> set` から `ChainMode6 -> ChainMode5`、`ChainMode6` reserve 1 個、`LongLocalModeTwoHopAssertedHeadPayloadBoundary: x is ChainMode4` だけを追加する。Task 74 の real expansion producer、Task 199 の formula/checker consumer、Task 211 の byte-for-byte unchanged `BindingTwoHopRadix` を合成し、Task 209 は immediate-edge sibling regression のみに使う。
+    - pairwise-distinct `ChainMode6 -> ChainMode5 -> ChainMode4` link を直接検証する。`ChainMode4 -> ChainMode3 -> ChainMode2 -> ChainMode1 -> BaseMode -> set` は cycle-safe terminal-normalization evidence のみに使う。distinct subject/asserted provenance、ordinal 1 / `BindingId(0)`、real expansion 7 個、BaseModeDef-RHS `BuiltinSet` 1 個、inferred variable 1 個、constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。
+    - 全5,039 nonidentity order、finite definition/reserve/formula/head/provenance/removal/corruption variant、relation link 2 本、全 tail link、terminal/canonical anchor/binding/ordinal/site/range、connected eighth-edge rejection、unrelated-import positive、immutable output、real sidecar、focused relation sibling、先行 type-assertion owner 48 件との bidirectional isolation を test する。
+    - 分類は `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。object-terminal、imported-positive definition、attributed/argument-bearing head、generic reachability/widening/`qua`、acceptance、truth/fact、proof/CoreIr/ControlFlowIr/VC、broader semantics は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままとする。
+    - test-first fixture と backlink 6 件は既存 expectation を変更せず active runner 172、387 cases、351 requirements、type-elaboration 219/207、pass/fail 203/184 を計上する。focused、relevant-crate、workspace verification は成功した。checker source/module-layout change は不要であった。
+    - Dependencies: Tasks 74, 199, 209, 211。References: Step 5、mizar-test task 10、specs 3, 4, 7, 13, 14, 16。
+
 ## 推奨検証
 
 各タスクの後で実行する:
