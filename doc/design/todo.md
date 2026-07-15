@@ -1703,3 +1703,28 @@ imported provenance receive no Task 242 credit; missing imported expansion/
 evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred.
 Step 5 stays active and Steps 6/7 stay deferred. No checker source/API/module-
 layout change was required.
+
+## Step 5 Task 243 Active Addendum
+
+Task 243 closes the exact single-left-parenthesized builtin-set reserved-variable
+membership `test_gap`, narrow `source_drift`, and `design_drift` slice without a
+`spec_gap`. The active source is only `reserve x for set; theorem
+ParenthesizedReservedVariableMembershipPayloadBoundary: (x) in x;`. Task 223
+supplies the real one-child `ParenthesizedTerm` producer and Task 120 the real
+reserve/`BindingEnv`/membership consumer, whose unchanged direct-right producer
+supplies the sole expected-set input. The route preserves independent wrapper/
+inner/right provenance, resolves ordinal 1/2 to `BindingId(0)`, reuses one
+written-`set`-anchored canonical `BuiltinSet` for two inferred terms, exactly
+five type entries, no left expected input, and one right-owned expected-set
+constraint, and produces one fact/candidate/diagnostic/deferred-free checked
+membership without an independent wrapper payload. Four shared plus one
+dedicated backlink, the finite matrix, all 56 prior binary-formula owners
+bidirectionally, focused Tasks 120/223/233/241/242, immutable output, and a real
+sidecar protect active case 185 within 400 cases / 364 requirements, type-
+elaboration 232/220, and pass/fail 216/184 without changing existing fixtures or
+expectations. The former extraction gap is discharged only for this exact
+source. Object-left/set-right parenthesized membership and active imported
+provenance receive no Task 243 credit; missing imported expansion/evidence/
+signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5
+stays active and Steps 6/7 stay deferred. No checker source/API/module-layout
+change was required.

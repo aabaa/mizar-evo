@@ -2239,3 +2239,26 @@ parenthesized membership と active imported provenance は globally deferred
 payload、proof/CoreIr/ControlFlowIr/VC、broader dependency のみ deferred。
 Step 5 は active、Steps 6/7 は deferred。checker source/API/module-layout
 change は不要であった。
+
+## Task 243 MC-G020 Active Override
+
+Task 243 は exact single-left-parenthesized builtin-set membership seam を
+`test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とは
+しない。Chapter 04/13/14/16 は reserved theorem-variable typing、type/FOL-
+transparent parenthesis、atomic membership、theorem formula を直接支える。
+Task 223 は real wrapper producer、Task 120 は変更しない direct-right
+expected-set producer を含む real membership consumer を供給する。credit は
+exact source、独立 wrapper/inner/right provenance、ordinal 1/2 の
+`BindingId(0)` lookup、written-set-anchored canonical `BuiltinSet` 1 個、inferred
+term 2 個、type entry 5 個、left expected input 0 個、right-owned expected-set
+constraint 1 個、独立 wrapper payload のない checked membership 1 個に限定
+する。shared 4 + dedicated 1 backlink、finite matrix、先行 owner 56 件との
+bidirectional isolation、immutable output、focused regression、real sidecar は
+active runner 185、400 cases / 364 requirements、type-elaboration 232/220、
+pass/fail 216/184 を既存 expectation の rebaseline なしで保護する。旧
+parenthesized-membership extraction gap の解除はこの exact source だけ。
+object-left/set-right parenthesized membership と active imported provenance は
+Task 243 credit 外。未成立 imported expansion/evidence/signature payload、
+proof/CoreIr/ControlFlowIr/VC、broader dependency は deferred。Step 5 は
+active、Steps 6/7 は deferred。checker source/API/module-layout change は不要
+であった。

@@ -641,3 +641,18 @@ cargo test -p mizar-proof
   242 の credit 外。未成立 imported expansion/evidence/signature payload と
   proof/CoreIr/ControlFlowIr/VC は deferred。Step 5 は active、Steps 6/7 は
   deferred。
+
+## Task 243 Active Addendum
+
+- [x] exact test-first builtin-set `(x) in x` fixture、Chapter 04/13/14/16 から
+  導く expectation、shared backlink 4 件、dedicated checker row 1 件を追加
+  する。既存 expectation は変更も rebaseline もしない。
+- [x] active metadata/CLI の runner 185 assertion を追加し、real frontend/
+  resolver/checker payload を exact/negative/corruption/immutable/focused
+  regression/先行 owner 56 件との bidirectional test で保護する。left expected
+  input 0 個と unexpected-left/wrong-right/missing-right corruption を検証する。
+- [x] 400 cases / 364 requirements、type-elaboration 232/220、pass/fail 216/184
+  を同期する。extraction gap の解除は exact source だけ。object-left/set-
+  right parenthesized membership と active imported provenance は Task 243 の
+  credit 外。未成立 imported expansion/evidence/signature payload と proof/
+  CoreIr/ControlFlowIr/VC は deferred。Step 5 は active、Steps 6/7 は deferred。

@@ -710,3 +710,19 @@ Check the task off here once tests pass.
   receive no Task 242 credit; missing imported expansion/evidence/signature
   payloads and proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains
   active; Steps 6/7 remain deferred.
+
+## Task 243 Active Addendum
+
+- [x] Add the exact test-first builtin-set `(x) in x` fixture, a Chapter 04/13/
+  14/16-derived expectation, four shared backlinks, and one dedicated checker
+  row without modifying or rebaselining existing expectations.
+- [x] Add active metadata/CLI assertions for runner 185 and protect the real
+  frontend/resolver/checker payload with exact/negative/corruption/immutable/
+  focused-regression and all-56-prior-owner bidirectional tests. Exercise no
+  left expected input and unexpected-left/wrong-right/missing-right corruptions.
+- [x] Synchronize 400 cases / 364 requirements, type-elaboration 232/220, and
+  pass/fail 216/184. Discharge the extraction gap only for the exact source.
+  Object-left/set-right parenthesized membership and active imported provenance
+  receive no Task 243 credit; missing imported expansion/evidence/signature
+  payloads and proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains
+  active; Steps 6/7 remain deferred.

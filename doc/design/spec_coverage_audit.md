@@ -2068,3 +2068,27 @@ and active imported provenance receive no Task 242 credit; missing imported
 expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain
 deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source/
 API/module-layout update was required.
+
+## Task 243 Exact Parenthesized Reserved-Variable Membership Coverage Addendum
+
+For chapters `04.variables_and_constants.md`, `13.term_expression.md`,
+`14.formulas.md`, and `16.theorems_and_proofs.md`, Task 243 classifies the exact
+single-left-parenthesized builtin-set membership seam as `test_gap`, narrow
+`source_drift`, and `design_drift`, not `spec_gap`. Task 223 supplies the real
+unrecovered one-child `ParenthesizedTerm` producer and Task 120 the real reserve/
+`BindingEnv`/membership consumer, including its unchanged direct-right expected-
+set producer. Credit is limited to the exact `(x) in x` source, independent
+wrapper/inner/right provenance, ordinal 1/2 `BindingId(0)` lookup, one written-
+set-anchored canonical `BuiltinSet`, two inferred terms, five type entries, no
+left expected input, one right-owned expected-set constraint, one fact/candidate/
+diagnostic/deferred-free checked membership, and no independent wrapper payload.
+Four shared backlinks plus one dedicated row, the finite matrix, all 56 prior
+binary-formula owners bidirectionally, immutable output, focused Tasks 120/223/
+233/241/242, and a real sidecar protect active runner 185. The active corpus has
+400 cases / 364 requirements, type-elaboration 232/220, and pass/fail 216/184
+without changing existing fixtures or expectations. The former extraction gap
+is discharged only for this exact source. Object-left/set-right parenthesized
+membership and active imported provenance receive no Task 243 credit; missing
+imported expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC
+remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker
+source/API/module-layout update was required.

@@ -1863,3 +1863,22 @@ and a real sidecar protect active count 184. The active corpus has 399 cases /
 rebaselining existing expectations. Parenthesized membership and active imported
 provenance receive no Task 242 credit; missing imported expansion/evidence/
 signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred.
+
+## Task 243 Active Traceability
+
+Task 243 adds one exact single-left-parenthesized builtin-set reserved-variable
+membership row with shared Chapter 04/13/14/16 references plus one dedicated
+checker reference. Credit is limited to one real unrecovered `ParenthesizedTerm`,
+one inner and one direct-right `x`, independent wrapper/inner/right metadata,
+ordinal 1/2 `BindingId(0)` lookup, transparent reuse of one written-`set`-
+anchored canonical `BuiltinSet`, two inferred terms, five type entries, no left
+expected input, one right-owned expected-set constraint supplied by Task 120's
+unchanged direct-right producer, and one checked membership without an
+independent wrapper payload. Four shared plus one dedicated backlink, the finite
+matrix, all 56 prior binary-formula owners, immutable output, focused Tasks 120/
+223/233/241/242, and a real sidecar protect active count 185. The active corpus
+has 400 cases / 364 requirements, type-elaboration 232/220, and pass/fail 216/184
+without rebaselining existing expectations. Only this exact source discharges
+the extraction gap. Object-left/set-right parenthesized membership and active
+imported provenance receive no Task 243 credit; missing imported expansion/
+evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred.

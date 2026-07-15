@@ -2199,3 +2199,25 @@ formula owner 55 件との bidirectional isolation、focused Tasks 190/223/233/
 241、real frontend/resolver sidecar を検証する。parenthesized membership と
 active imported provenance は Task 242 の credit 外。未成立 imported
 expansion/evidence/signature payload、proof、downstream IR は deferred。
+
+## Task 243 Parenthesized Reserved-Variable Membership Active Harness Contract
+
+active Task 243 route は builtin-set reserve 1 個と、left operand が identifier
+`x` 1 個だけを含む unrecovered `ParenthesizedTerm`、right operand が direct `x`
+である membership 1 個だけを受理する。独立 wrapper/inner/right metadata を
+保持し、二つの reference を ordinal 1/2 で `BindingId(0)` へ解決し、written
+`set` anchor の canonical `BuiltinSet` 1 個を既存 membership consumer へ透過
+的に渡す。変更しない direct-right producer が唯一の expected-set input を
+供給し、exact contract は type entry 5 個、left expected input 0 個、right-
+owned expected constraint 1 個を持つ。wrapper は独立 payload を持たない。
+matrix は全 direct/right/both/nested/empty/nonidentifier/recovered/malformed
+near miss、wrong label/operator/reserve/type/status/item、先行 parenthesized
+equality/inequality と object variant を reject し、provenance、lookup、result
+head、role/source range、canonical bridge、unexpected-left/wrong-right/missing-
+right expected input、matched config を独立に corrupt する。immutable output、
+mismatched module、先行 binary-formula owner 56 件との bidirectional isolation、
+focused Tasks 120/223/233/241/242、real frontend/resolver sidecar も検証する。
+extraction gap の解除はこの exact source だけ。object-left/set-right
+parenthesized membership と active imported provenance は Task 243 credit 外。
+未成立 imported expansion/evidence/signature payload、proof、downstream IR は
+deferred。

@@ -2882,3 +2882,36 @@ acceptance, child graphs, and downstream payloads receive no Task 242 credit.
 Missing imported expansion/evidence/signature payloads and proof/CoreIr/
 ControlFlowIr/VC remain deferred. No checker source/API/module-layout change was
 required.
+
+## Task 243 Active Exact Transparent Parenthesized Reserved-Variable Membership Checker Bridge
+
+The active source is exactly `reserve x for set; theorem
+ParenthesizedReservedVariableMembershipPayloadBoundary: (x) in x;`. Chapters
+04, 13, 14, and 16 derive reserved theorem-variable typing, type/FOL-transparent
+parenthesization, atomic membership, and the theorem formula. Task 223 supplies
+the real unrecovered one-child `ParenthesizedTerm`; Task 120 supplies the
+existing real membership consumer and its direct-right expected-set producer.
+
+The route validates one wrapper with one inner identifier `x` and one direct
+right `x`, resolves those references at ordinals 1/2 to `BindingId(0)`, and
+transparently reuses one written-`set`-anchored canonical `BuiltinSet`. Only the
+inner/right sites produce two inferred terms. The exact membership contract has
+five type entries and one right-owned expected-set constraint, with no left
+expected input; the wrapper produces no independent term/type/formula node. The
+result is one fact/candidate/diagnostic/deferred-free `Checked Membership`.
+
+The executable contract rejects direct/right/both/nested/empty/nonidentifier/
+recovered/malformed operands, wrong labels/operators/reserves/types/status/items,
+object reserve and prior parenthesized equality/inequality shapes; independently
+corrupts wrapper/inner/right/formula provenance, binding/ordinal, result head,
+roles/source ranges/canonical bridge, unexpected left expected input, wrong or
+missing right expected input, and matched prior configs; proves immutable output
+and mismatched-module rejection; isolates all 52 direct plus four parenthesized
+prior owners bidirectionally; retains focused Tasks 120/223/233/241/242 behavior;
+and uses the real frontend/resolver sidecar. This discharges the old extraction
+gap only for the exact source above. Object-left/set-right parenthesized
+membership, active imported provenance, arbitrary parentheses/precedence,
+formula grouping, truth/facts, acceptance, child graphs, and downstream payloads
+receive no Task 243 credit. Missing imported expansion/evidence/signature
+payloads and proof/CoreIr/ControlFlowIr/VC remain deferred. No checker source/
+API/module-layout change was required.

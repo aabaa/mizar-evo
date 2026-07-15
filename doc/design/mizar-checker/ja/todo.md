@@ -4007,3 +4007,24 @@ cargo test -p mizar-test
   credit 外。未成立 imported expansion/evidence/signature payload と proof/
   CoreIr/ControlFlowIr/VC は deferred。Step 5 は active、Steps 6/7 は deferred。
   checker source/API/module-layout update は不要。
+
+## Task 243 Active Addendum
+
+- [x] Task 223 の exact real builtin-set single-left `ParenthesizedTerm`
+  producer と Task 120 の real membership consumer を `(x) in x` だけに合成
+  する。独立 wrapper/inner/right provenance、ordinal 1/2 の `BindingId(0)`
+  lookup、canonical `BuiltinSet` 1 個、inferred term 2 個、type entry 5 個、
+  left expected input 0 個、変更しない direct-right producer の唯一の
+  expected-set constraint、独立 wrapper semantic node のない checked
+  membership 1 個を保持する。
+- [x] unique key/config と closed wrapper/route だけを Task 241 直後へ追加し、
+  先行 Task 188 route と Tasks 120/223/233/241/242 ownership を維持する。
+  先行 owner 56 件との bidirectional isolation、unexpected-left/wrong-right/
+  missing-right expected input を含む exact/near-miss/provenance/corruption、
+  immutable output、focused regression、real sidecar で保護する。
+- [x] runner 185、400/364、type-elaboration 232/220、pass/fail 216/184 を同期
+  する。extraction gap の解除はこの exact source だけ。object-left/set-right
+  parenthesized membership と active imported provenance は Task 243 credit
+  外。未成立 imported expansion/evidence/signature payload と proof/CoreIr/
+  ControlFlowIr/VC は deferred。Step 5 は active、Steps 6/7 は deferred。
+  checker source/API/module-layout update は不要。

@@ -2319,3 +2319,26 @@ outside Task 242 credit rather than globally deferred; only missing imported
 expansion/evidence/signature payloads, proof/CoreIr/ControlFlowIr/VC, and broader
 dependencies remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No
 checker source/API/module-layout change was required.
+
+## Task 243 MC-G020 Active Override
+
+Task 243 classifies the exact single-left-parenthesized builtin-set membership
+seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`.
+Chapters 04, 13, 14, and 16 directly support reserved theorem-variable typing,
+type/FOL-transparent parentheses, atomic membership, and the theorem formula.
+Task 223 supplies the real wrapper producer and Task 120 the real membership
+consumer, including its unchanged direct-right expected-set producer. Credit is
+limited to the exact source, independent wrapper/inner/right provenance, ordinal
+1/2 `BindingId(0)` lookup, one written-set-anchored canonical `BuiltinSet`, two
+inferred terms, five type entries, no left expected input, one right-owned
+expected-set constraint, one checked membership, and no independent wrapper
+payload. Four shared plus one dedicated backlink, the finite matrix, all 56
+prior owners bidirectionally, immutable output, focused regressions, and a real
+sidecar protect active runner 185 within 400 cases / 364 requirements, type-
+elaboration 232/220, and pass/fail 216/184 without rebaselining existing
+expectations. The former parenthesized-membership extraction gap is discharged
+only for this exact source. Object-left/set-right parenthesized membership and
+active imported provenance remain outside Task 243 credit; missing imported
+expansion/evidence/signature payloads, proof/CoreIr/ControlFlowIr/VC, and broader
+dependencies remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No
+checker source/API/module-layout change was required.

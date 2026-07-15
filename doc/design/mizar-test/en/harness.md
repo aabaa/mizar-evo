@@ -2295,3 +2295,26 @@ formula owners bidirectionally; retains focused Tasks 190/223/233/241; and uses
 a real frontend/resolver sidecar. Parenthesized membership and active imported
 provenance receive no Task 242 credit; missing imported expansion/evidence/
 signature payloads, proof, and downstream IR remain deferred.
+
+## Task 243 Parenthesized Reserved-Variable Membership Active Harness Contract
+
+The active Task 243 route accepts only one builtin-set reserve and one membership
+whose left operand is one unrecovered `ParenthesizedTerm` containing exactly one
+identifier `x` and whose right operand is direct `x`. It preserves independent
+wrapper/inner/right metadata, resolves the two references at ordinals 1/2 to
+`BindingId(0)`, and transparently feeds one written-`set`-anchored canonical
+`BuiltinSet` to the existing membership consumer. Its unchanged direct-right
+producer supplies the sole expected-set input: exactly five type entries, no
+left expected input, and one right-owned expected constraint. The wrapper has no
+independent payload. The matrix rejects all direct/right/both/nested/empty/
+nonidentifier/recovered/malformed near misses, wrong labels/operators/reserves/
+types/status/items, prior parenthesized equality/inequality and object variants;
+independently corrupts provenance, lookup, result head, roles/source ranges,
+canonical bridge, unexpected-left/wrong-right/missing-right expected input, and
+matched configs; proves immutable output and mismatched-module rejection;
+isolates all 56 prior binary-formula owners bidirectionally; retains focused
+Tasks 120/223/233/241/242; and uses a real frontend/resolver sidecar. Only this
+exact source discharges the extraction gap. Object-left/set-right parenthesized
+membership and active imported provenance receive no Task 243 credit; missing
+imported expansion/evidence/signature payloads, proof, and downstream IR remain
+deferred.

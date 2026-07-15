@@ -2734,3 +2734,35 @@ precedence、formula grouping、inequality desugaring/truth、acceptance、child
 graph、downstream payload は Task 242 の credit 外。未成立 imported expansion/
 evidence/signature payload と proof/CoreIr/ControlFlowIr/VC は deferred。
 checker source/API/module-layout change は不要であった。
+
+## Task 243 Active Exact Transparent Parenthesized Reserved-Variable Membership Checker Bridge
+
+active source は exact `reserve x for set; theorem
+ParenthesizedReservedVariableMembershipPayloadBoundary: (x) in x;`。Chapter
+04/13/14/16 から reserved theorem-variable typing、type/FOL-transparent
+parenthesization、atomic membership、theorem formula を直接導く。Task 223 は
+real unrecovered one-child `ParenthesizedTerm`、Task 120 は direct-right
+expected-set producer を含む既存 real membership consumer を供給する。
+
+route は inner identifier `x` 1 個の wrapper と direct right `x` 1 個を検証し、
+両 reference を ordinal 1/2 で `BindingId(0)` に解決し、written `set` anchor
+の canonical `BuiltinSet` 1 個を透過的に再利用する。inner/right site だけが
+inferred term 2 個を生成する。exact membership contract は type entry 5 個、
+right-owned expected-set constraint 1 個、left expected input 0 個を持ち、
+wrapper は独立 term/type/formula node を生成しない。結果は fact/candidate/
+diagnostic/deferred 0 個の `Checked Membership` 1 個である。
+
+executable contract は direct/right/both/nested/empty/nonidentifier/recovered/
+malformed operand、wrong label/operator/reserve/type/status/item、object reserve、
+先行 parenthesized equality/inequality shape を reject し、wrapper/inner/right/
+formula provenance、binding/ordinal、result head、role/source range/canonical
+bridge、unexpected left expected input、wrong/missing right expected input、先行
+matched config を独立に corrupt する。immutable output、mismatched module、
+direct 52 + parenthesized 4 owner との bidirectional isolation、focused Tasks
+120/223/233/241/242、real frontend/resolver sidecar も検証する。旧 extraction
+gap の解除は上記 exact source だけ。object-left/set-right parenthesized
+membership、active imported provenance、arbitrary parenthesis/precedence、formula
+grouping、truth/fact、acceptance、child graph、downstream payload は Task 243 の
+credit 外。未成立 imported expansion/evidence/signature payload と proof/
+CoreIr/ControlFlowIr/VC は deferred。checker source/API/module-layout change は
+不要であった。

@@ -4208,3 +4208,24 @@ Check the task off here once tests pass.
   Task 242 credit; missing imported expansion/evidence/signature payloads and
   proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains active; Steps
   6/7 remain deferred. No checker source/API/module-layout update is required.
+
+## Task 243 Active Addendum
+
+- [x] Compose Task 223's exact real builtin-set single-left `ParenthesizedTerm`
+  producer with Task 120's real membership consumer for only `(x) in x`.
+  Preserve independent wrapper/inner/right provenance, ordinal 1/2
+  `BindingId(0)` lookup, one canonical `BuiltinSet`, two inferred terms, five
+  type entries, no left expected input, the unchanged direct-right producer's
+  sole expected-set constraint, and one checked membership without an
+  independent wrapper semantic node.
+- [x] Add only a unique key/config and closed wrappers/route after Task 241 while
+  retaining the preceding Task 188 route and Tasks 120/223/233/241/242 ownership.
+  Protect all 56 prior owners bidirectionally, exact/near-miss/provenance/
+  corruption including unexpected-left/wrong-right/missing-right expected input,
+  immutable output, focused regressions, and a real sidecar.
+- [x] Synchronize runner 185, 400/364, type-elaboration 232/220, and pass/fail
+  216/184. Discharge the extraction gap only for this exact source. Object-left/
+  set-right parenthesized membership and active imported provenance are outside
+  Task 243 credit; missing imported expansion/evidence/signature payloads and
+  proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains active; Steps
+  6/7 remain deferred. No checker source/API/module-layout update is required.

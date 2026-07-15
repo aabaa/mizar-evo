@@ -1,0 +1,2 @@
+reserve x for set;
+theorem ParenthesizedReservedVariableMembershipPayloadBoundary: (x) in x;
