@@ -48,7 +48,7 @@ id = "spec.en.02.lexical.character_set.utf8_ascii_code"
 source = "doc/spec/en/02.lexical_structure.md"
 section = "2.1 Character Set and Encoding"
 stage = "lexical"
-status = "covered"
+status = "partial"
 required = true
 coverage = "pass_and_fail"
 tests = [
@@ -350,7 +350,7 @@ section = "2.3 Tokens and Lexicon"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "pass_and_fail"
+coverage = "pass"
 tests = [
   "tests/lexical/pass/pass_lexical_raw_empty_001.expect.toml",
   "tests/lexical/pass/pass_lexical_raw_layout_runs_001.expect.toml",
@@ -364,7 +364,7 @@ section = "2.7 Numerals and Literals"
 stage = "lexical"
 status = "covered"
 required = true
-coverage = "pass_and_fail"
+coverage = "pass"
 tests = [
   "tests/lexical/pass/pass_lexical_raw_numeral_like_001.expect.toml",
 ]
