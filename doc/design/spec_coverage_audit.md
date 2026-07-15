@@ -2044,3 +2044,27 @@ inequality desugaring/truth, acceptance, proof/CoreIr/ControlFlowIr/VC, child
 graphs, and downstream payloads receive no Task 241 credit. Step 5 remains
 active; Steps 6/7 remain deferred. No checker source/API/module-layout update was
 required.
+
+## Task 242 Exact Parenthesized Builtin-Object Reserved-Variable Inequality Coverage Addendum
+
+For chapters `03.type_system.md`, `04.variables_and_constants.md`,
+`13.term_expression.md`, `14.formulas.md`, and `16.theorems_and_proofs.md`, Task
+242 classifies the exact single-left-parenthesized builtin-object reserved-
+variable inequality seam as `test_gap`, narrow `source_drift`, and
+`design_drift`, not `spec_gap`. Task 233 supplies the real unrecovered one-child
+object `ParenthesizedTerm` producer and Task 190 the real builtin-object reserve/
+`BindingEnv`/inequality consumer. Credit is limited to the exact `(x) <> x`
+source, independent wrapper/inner/right provenance, ordinal 1/2 `BindingId(0)`
+lookup, one written-`object`-anchored canonical `BuiltinObject`, two inferred
+terms, six type entries, two ordered expected constraints, one fact/candidate/
+diagnostic/deferred-free checked inequality, no object/set coercion, and no
+independent wrapper term/type/formula node. Five shared backlinks plus one
+dedicated row, the finite structural/provenance/corruption matrix, all 55 prior
+binary-formula owners bidirectionally, immutable output, focused Tasks 190/223/
+233/241, and a real sidecar protect active runner 184. The active corpus contains
+399 cases / 363 requirements, type-elaboration 231/219, and pass/fail 215/184
+without changing existing fixtures or expectations. Parenthesized membership
+and active imported provenance receive no Task 242 credit; missing imported
+expansion/evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain
+deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source/
+API/module-layout update was required.

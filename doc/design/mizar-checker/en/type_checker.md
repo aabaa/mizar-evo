@@ -2846,3 +2846,39 @@ parentheses/precedence, formula grouping, closure/order, inequality desugaring/
 truth, acceptance, proof/CoreIr/ControlFlowIr/VC, child graphs, and downstream
 payloads receive no Task 241 credit. No checker source/API/module-layout change
 was required.
+
+## Task 242 Active Exact Transparent Parenthesized Builtin-Object Reserved-Variable Inequality Checker Bridge
+
+The active source is exactly `reserve x for object; theorem
+ParenthesizedReservedObjectVariableInequalityPayloadBoundary: (x) <> x;`.
+Chapters 03, 04, 13, 14, and 16 derive builtin-object typing, reserved theorem-
+variable typing, type/FOL-transparent parenthesization, atomic inequality, and
+the theorem formula. Task 233 supplies the real unrecovered one-child object
+`ParenthesizedTerm`; Task 190 supplies the existing real builtin-object
+inequality consumer.
+
+The route validates one wrapper with one inner identifier `x` and one direct
+right `x`, resolves the inner/right references at ordinals 1/2 to `BindingId(0)`,
+and transparently reuses one written-`object`-anchored canonical `BuiltinObject`.
+Only the inner/right sites produce two inferred terms, six type entries, and two
+ordered expected constraints; the wrapper produces no independent term/type/
+formula node. The result is one fact/candidate/diagnostic/deferred-free
+`Checked Inequality` before desugaring, without object/set coercion. A distinct
+Task 242 key/config/roles calls the unchanged private binary-formula parenthesis
+helpers. The preceding Task 188 route and Tasks 190/223/233/241 routes remain
+closed and unchanged.
+
+The executable contract rejects direct/right/both/nested/empty/nonidentifier/
+recovered/malformed operands, wrong labels/operators/reserves/types/status/items,
+exact parenthesized membership, and builtin-set variants; independently corrupts
+wrapper/source-wrapper, inner/right provenance, binding/ordinal, builtin head,
+roles/source ranges/canonical bridge, expected input, and matched Task 233/241
+configs; proves immutable output and mismatched-module rejection; isolates all
+52 direct plus three parenthesized prior owners bidirectionally; retains focused
+Tasks 190/223/233/241 behavior; and uses the real frontend/resolver sidecar.
+Parenthesized membership, imported or other parenthesized variants, arbitrary
+parentheses/precedence, formula grouping, inequality desugaring/truth,
+acceptance, child graphs, and downstream payloads receive no Task 242 credit.
+Missing imported expansion/evidence/signature payloads and proof/CoreIr/
+ControlFlowIr/VC remain deferred. No checker source/API/module-layout change was
+required.

@@ -2218,3 +2218,24 @@ parenthesized membership、imported/other parenthesized variant、inequality
 desugaring/truth、acceptance、proof/CoreIr/ControlFlowIr/VC、downstream payload
 は Task 241 の credit 外。Step 5 は active、Steps 6/7 は deferred。checker
 source/API/module-layout change は不要であった。
+
+## Task 242 MC-G020 Active Override
+
+Task 242 は exact single-left-parenthesized builtin-object inequality seam を
+`test_gap`、narrow `source_drift`、`design_drift` と分類し、`spec_gap` とは
+しない。Chapter 03/04/13/14/16 は builtin `object`、reserved theorem-variable
+typing、type/FOL-transparent parenthesis、atomic `<>`、theorem formula を直接
+支える。Task 233 は real wrapper producer、Task 190 は real object inequality
+consumer を供給する。credit は exact source、独立した wrapper/inner/right
+provenance、ordinal 1/2 の `BindingId(0)` lookup、canonical `BuiltinObject` 1
+個、inferred term 2 個、type entry 6 個、ordered expected constraint 2 個、
+checked inequality 1 個、独立 wrapper payload/object-set coercion なしに限定
+する。shared 5 + dedicated 1 backlink、finite matrix、先行 owner 55 件との
+bidirectional isolation、immutable output、focused regression、real sidecar は
+active runner 184、399 cases / 363 requirements、type-elaboration 231/219、
+pass/fail 215/184 を既存 expectation の rebaseline なしで保護する。
+parenthesized membership と active imported provenance は globally deferred
+ではなく Task 242 credit 外。未成立 imported expansion/evidence/signature
+payload、proof/CoreIr/ControlFlowIr/VC、broader dependency のみ deferred。
+Step 5 は active、Steps 6/7 は deferred。checker source/API/module-layout
+change は不要であった。

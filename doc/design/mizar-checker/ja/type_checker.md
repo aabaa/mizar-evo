@@ -2701,3 +2701,36 @@ parenthesized variant、arbitrary parenthesis/precedence、formula grouping、cl
 order、inequality desugaring/truth、acceptance、proof/CoreIr/ControlFlowIr/VC、
 child graph、downstream payload は Task 241 の credit 外。checker source/API/
 module-layout change は不要であった。
+
+## Task 242 Active Exact Transparent Parenthesized Builtin-Object Reserved-Variable Inequality Checker Bridge
+
+active source は exact `reserve x for object; theorem
+ParenthesizedReservedObjectVariableInequalityPayloadBoundary: (x) <> x;`。
+Chapter 03/04/13/14/16 から builtin-object typing、reserved theorem-variable
+typing、type/FOL-transparent parenthesization、atomic inequality、theorem formula
+を直接導く。Task 233 は real unrecovered one-child object `ParenthesizedTerm`、
+Task 190 は既存 real builtin-object inequality consumer を供給する。
+
+route は inner identifier `x` 1 個の wrapper と direct right `x` 1 個を検証し、
+inner/right reference を ordinal 1/2 で `BindingId(0)` に解決し、written
+`object` anchor の canonical `BuiltinObject` 1 個を透過的に再利用する。
+inner/right site だけが inferred term 2 個、type entry 6 個、ordered expected
+constraint 2 個を生成し、wrapper は独立 term/type/formula node を生成しない。
+結果は desugaring 前の fact/candidate/diagnostic/deferred 0 個の `Checked
+Inequality` 1 個で object/set coercion はない。distinct Task 242 key/config/
+role は unchanged private binary-formula parenthesis helper を呼ぶ。先行 Task
+188 route と Tasks 190/223/233/241 route は closed のまま変更しない。
+
+executable contract は direct/right/both/nested/empty/nonidentifier/recovered/
+malformed operand、wrong label/operator/reserve/type/status/item、exact
+parenthesized membership、builtin-set variant を reject し、wrapper/source-
+wrapper、inner/right provenance、binding/ordinal、builtin head、role/source
+range/canonical bridge、expected input、matched Task 233/241 config を独立に
+corrupt し、immutable output と mismatched-module rejection、direct 52 +
+parenthesized 3 owner との bidirectional isolation、focused Tasks 190/223/233/
+241 behavior、real frontend/resolver sidecar を検証する。parenthesized
+membership、imported/other parenthesized variant、arbitrary parenthesis/
+precedence、formula grouping、inequality desugaring/truth、acceptance、child
+graph、downstream payload は Task 242 の credit 外。未成立 imported expansion/
+evidence/signature payload と proof/CoreIr/ControlFlowIr/VC は deferred。
+checker source/API/module-layout change は不要であった。

@@ -793,6 +793,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
@@ -1913,6 +1914,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
@@ -2080,6 +2082,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
@@ -2460,6 +2463,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_type_assertion_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_variable_equality_001.expect.toml",
@@ -3006,6 +3010,7 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_equality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_reserved_object_variable_inequality_001.expect.toml",
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_equality_001.expect.toml",
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_inequality_001.expect.toml",
 ]
 
 [[requirement]]
@@ -4173,6 +4178,19 @@ tests = [
   "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_equality_001.expect.toml",
 ]
 notes = "Task 233 coverage is limited to the exact single-left-parenthesized builtin-object reserved-variable equality type/well-formedness slice. The real Task 223 ParenthesizedTerm producer and Task 188 builtin-object equality consumer compose without generalizing either owner: one unrecovered wrapper contains one identifier x, the inner and direct-right x resolve at source-order ordinals 1 and 2 to BindingId(0), and transparent lowering reuses one canonical BuiltinObject identity in the existing equality consumer without an object/set coercion or independent wrapper payload. The finite exact/near-miss/provenance/corruption matrix, immutable output, all 53 prior binary-formula owners bidirectionally, and a real frontend/resolver sidecar protect active runner 180. Arbitrary parenthesization or operands, precedence, formula grouping, closure/order materialization, equality truth/facts, theorem acceptance, proof/CoreIr/ControlFlowIr/VC, child graphs, and broader semantics remain uncredited."
+
+[[requirement]]
+id = "spec.en.checker.type_elaboration.parenthesized_reserved_object_variable_inequality_source_bridge"
+source = "doc/design/mizar-checker/en/type_checker.md"
+section = "Task 242 Active Exact Transparent Parenthesized Builtin-Object Reserved-Variable Inequality Checker Bridge"
+stage = "type_elaboration"
+status = "covered"
+required = true
+coverage = "pass"
+tests = [
+  "tests/miz/pass/types/pass_type_elaboration_parenthesized_reserved_object_variable_inequality_001.expect.toml",
+]
+notes = "Task 242 coverage is limited to the exact single-left-parenthesized builtin-object reserved-variable inequality type/well-formedness slice. The real Task 233 object ParenthesizedTerm producer and Task 190 builtin-object inequality consumer compose without generalizing either owner: one unrecovered wrapper contains one identifier x, the inner and direct-right x resolve at source-order ordinals 1 and 2 to BindingId(0), and transparent lowering reuses one canonical BuiltinObject identity in the existing inequality consumer without object/set coercion or an independent wrapper payload. The finite exact/near-miss/provenance/corruption matrix, immutable output, all 55 prior binary-formula owners bidirectionally, focused Tasks 190/233/241 regressions, and a real frontend/resolver sidecar protect active runner 184. Parenthesized membership, imported or other parenthesized variants, arbitrary parenthesization or operands, precedence, formula grouping, closure/order materialization, inequality desugaring or truth, theorem acceptance, proof/CoreIr/ControlFlowIr/VC, child graphs, and broader semantics receive no Task 242 credit."
 
 [[requirement]]
 id = "spec.en.checker.type_elaboration.parenthesized_reserved_variable_equality_source_bridge"

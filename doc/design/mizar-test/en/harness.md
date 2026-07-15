@@ -2275,3 +2275,23 @@ retains focused equality behavior; isolates all 54 prior binary-formula owners
 bidirectionally; and uses a real frontend/resolver sidecar. The harness does not
 activate arbitrary parenthesization/precedence, formula grouping, inequality
 desugaring/truth, acceptance, proof, child graphs, or downstream IR.
+
+## Task 242 Parenthesized Builtin-Object Inequality Active Harness Contract
+
+The active Task 242 route accepts only one builtin-object reserve and one
+inequality whose left operand is one unrecovered `ParenthesizedTerm` containing
+exactly one identifier `x` and whose right operand is direct `x`. It preserves
+independent wrapper/inner/right metadata, resolves the two references at
+ordinals 1/2 to `BindingId(0)`, and transparently feeds one written-`object`-
+anchored canonical `BuiltinObject` to the existing inequality consumer without
+an independent wrapper payload or object/set coercion. The matrix rejects all
+direct/right/both/nested/empty/nonidentifier/recovered/malformed near misses,
+wrong labels/operators/reserves/types/status/items, exact parenthesized
+membership, and builtin-set variants; independently corrupts wrapper/source-
+wrapper, inner/right provenance, lookup, builtin head, roles/source ranges,
+canonical bridge, expected input, and matched Task 233/241 configs; proves
+immutable output and mismatched-module rejection; isolates all 55 prior binary-
+formula owners bidirectionally; retains focused Tasks 190/223/233/241; and uses
+a real frontend/resolver sidecar. Parenthesized membership and active imported
+provenance receive no Task 242 credit; missing imported expansion/evidence/
+signature payloads, proof, and downstream IR remain deferred.

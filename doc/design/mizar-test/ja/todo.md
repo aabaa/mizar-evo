@@ -627,3 +627,17 @@ cargo test -p mizar-proof
   を同期する。parenthesized membership、imported/other parenthesized variant、
   proof/IR/VC、broader semantics は Task 241 の credit 外。Step 5 は active、
   Steps 6/7 は deferred。
+
+## Task 242 Active Addendum
+
+- [x] exact test-first builtin-object `(x) <> x` fixture、Chapter 03/04/13/14/16
+  から導く expectation、shared backlink 5 件、dedicated checker row 1 件を
+  追加する。既存 expectation は変更も rebaseline もしない。
+- [x] active metadata/CLI の runner 184 assertion を追加し、real frontend/
+  resolver/checker payload を exact/negative/corruption/immutable/focused
+  regression/先行 owner 55 件との bidirectional test で保護する。
+- [x] 399 cases / 363 requirements、type-elaboration 231/219、pass/fail 215/184
+  を同期する。parenthesized membership と active imported provenance は Task
+  242 の credit 外。未成立 imported expansion/evidence/signature payload と
+  proof/CoreIr/ControlFlowIr/VC は deferred。Step 5 は active、Steps 6/7 は
+  deferred。

@@ -1680,3 +1680,26 @@ imported/other parenthesized variants, desugaring/truth, acceptance, proof/IR/VC
 child graphs, and downstream payloads receive no Task 241 credit. Step 5 stays
 active and Steps 6/7 stay deferred. No checker source/API/module-layout change
 was required.
+
+## Step 5 Task 242 Active Addendum
+
+Task 242 closes the exact single-left-parenthesized builtin-object reserved-
+variable inequality `test_gap`, narrow `source_drift`, and `design_drift` slice
+without a `spec_gap`. The active source is only `reserve x for object; theorem
+ParenthesizedReservedObjectVariableInequalityPayloadBoundary: (x) <> x;`. Task
+233 supplies the real one-child object `ParenthesizedTerm` producer and Task 190
+the real builtin-object reserve/`BindingEnv`/inequality consumer. The route
+preserves independent wrapper/inner/right provenance, resolves ordinal 1/2 to
+`BindingId(0)`, reuses one written-`object`-anchored canonical `BuiltinObject`
+for two inferred terms, six type entries, and two ordered expected constraints,
+and produces one fact/candidate/diagnostic/deferred-free checked inequality
+without object/set coercion or an independent wrapper payload. Five shared plus
+one dedicated backlink, the finite exact/near-miss/provenance/corruption matrix,
+all 55 prior binary-formula owners bidirectionally, focused Tasks 190/223/233/
+241, immutable output, and a real sidecar protect active case 184 within 399
+cases / 363 requirements, type-elaboration 231/219, and pass/fail 215/184 without
+changing existing fixtures or expectations. Parenthesized membership and active
+imported provenance receive no Task 242 credit; missing imported expansion/
+evidence/signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred.
+Step 5 stays active and Steps 6/7 stay deferred. No checker source/API/module-
+layout change was required.

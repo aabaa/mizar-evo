@@ -696,3 +696,17 @@ Check the task off here once tests pass.
   and pass/fail 214/184 counts. Parenthesized membership, imported/other
   parenthesized variants, proof/IR/VC, and broader semantics receive no Task 241
   credit. Step 5 remains active; Steps 6/7 remain deferred.
+
+## Task 242 Active Addendum
+
+- [x] Add the exact test-first builtin-object `(x) <> x` fixture, a Chapter
+  03/04/13/14/16-derived expectation, five shared backlinks, and one dedicated
+  checker row without modifying or rebaselining existing expectations.
+- [x] Add active metadata/CLI assertions for runner 184 and protect the real
+  frontend/resolver/checker payload with exact/negative/corruption/immutable/
+  focused-regression and all-55-prior-owner bidirectional tests.
+- [x] Synchronize 399 cases / 363 requirements, type-elaboration 231/219, and
+  pass/fail 215/184. Parenthesized membership and active imported provenance
+  receive no Task 242 credit; missing imported expansion/evidence/signature
+  payloads and proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains
+  active; Steps 6/7 remain deferred.

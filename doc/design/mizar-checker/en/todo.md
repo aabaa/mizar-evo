@@ -4188,3 +4188,23 @@ Check the task off here once tests pass.
   desugaring/truth, acceptance, proof/CoreIr/ControlFlowIr/VC, and downstream
   payloads receive no Task 241 credit. Step 5 remains active; Steps 6/7 remain
   deferred. No checker source/API/module-layout update is required.
+
+## Task 242 Active Addendum
+
+- [x] Compose Task 233's exact real builtin-object single-left
+  `ParenthesizedTerm` producer with Task 190's real object inequality consumer
+  for only `(x) <> x`. Preserve independent wrapper/inner/right provenance,
+  ordinal 1/2 `BindingId(0)` lookup, one canonical `BuiltinObject`, two inferred
+  terms, six type entries, two ordered expected constraints, and one fact/
+  candidate/diagnostic/deferred-free checked inequality without object/set
+  coercion or an independent wrapper semantic node.
+- [x] Add only a unique key/config and closed wrappers/route after Task 233;
+  retain the preceding Task 188 route, the shared private binary-formula helper,
+  and Tasks 190/223/233/241 ownership unchanged. Protect all 55 prior owners
+  bidirectionally, exact/near-miss/provenance/corruption, immutable output,
+  focused regressions, and a real sidecar.
+- [x] Synchronize runner 184, 399/363, type-elaboration 231/219, and pass/fail
+  215/184. Parenthesized membership and active imported provenance are outside
+  Task 242 credit; missing imported expansion/evidence/signature payloads and
+  proof/CoreIr/ControlFlowIr/VC remain deferred. Step 5 remains active; Steps
+  6/7 remain deferred. No checker source/API/module-layout update is required.

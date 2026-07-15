@@ -1844,3 +1844,22 @@ count 183. The active corpus has 398 cases / 362 requirements, type-elaboration
 Parenthesized membership, imported/other parenthesized variants, desugaring/
 truth, acceptance, proof/IR/VC, child graphs, and broader semantics receive no
 Task 241 credit.
+
+## Task 242 Active Traceability
+
+Task 242 adds one exact single-left-parenthesized builtin-object reserved-
+variable inequality row with one Chapter-03-derived builtin-type bridge plus
+shared Chapter 04/13/14/16 references and one dedicated checker reference.
+Credit is limited to one real unrecovered `ParenthesizedTerm`, one inner and one
+direct-right `x`,
+independent wrapper/inner/right metadata, ordinal 1/2 `BindingId(0)` lookup,
+transparent reuse of one written-`object`-anchored canonical `BuiltinObject`,
+two inferred terms, six type entries, two ordered expected constraints, and one
+checked inequality without object/set coercion or an independent wrapper
+payload. Five shared plus one dedicated backlink, the finite matrix, all 55
+prior binary-formula owners, immutable output, focused Tasks 190/223/233/241,
+and a real sidecar protect active count 184. The active corpus has 399 cases /
+363 requirements, type-elaboration 231/219, and pass/fail 215/184 without
+rebaselining existing expectations. Parenthesized membership and active imported
+provenance receive no Task 242 credit; missing imported expansion/evidence/
+signature payloads and proof/CoreIr/ControlFlowIr/VC remain deferred.

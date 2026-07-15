@@ -2298,3 +2298,24 @@ other parenthesized variants, inequality desugaring/truth, acceptance, proof/
 CoreIr/ControlFlowIr/VC, and downstream payloads receive no Task 241 credit.
 Step 5 stays active; Steps 6/7 stay deferred. No checker source/API/module-layout
 change was required.
+
+## Task 242 MC-G020 Active Override
+
+Task 242 classifies the exact single-left-parenthesized builtin-object inequality
+seam as `test_gap`, narrow `source_drift`, and `design_drift`, not `spec_gap`.
+Chapters 03/04/13/14/16 directly support builtin `object`, reserved theorem-
+variable typing, type/FOL-transparent parentheses, atomic `<>`, and the theorem
+formula. Task 233 supplies the real wrapper producer and Task 190 the real object
+inequality consumer. Credit is limited to the exact source, independent wrapper/
+inner/right provenance, ordinal 1/2 `BindingId(0)` lookup, one canonical
+`BuiltinObject`, two inferred terms, six type entries, two ordered expected
+constraints, one checked inequality, and no independent wrapper payload or
+object/set coercion. Five shared plus one dedicated backlink, the finite matrix,
+all 55 prior owners bidirectionally, immutable output, focused regressions, and a
+real sidecar protect active runner 184 within 399 cases / 363 requirements,
+type-elaboration 231/219, and pass/fail 215/184 without rebaselining existing
+expectations. Parenthesized membership and active imported provenance remain
+outside Task 242 credit rather than globally deferred; only missing imported
+expansion/evidence/signature payloads, proof/CoreIr/ControlFlowIr/VC, and broader
+dependencies remain deferred. Step 5 stays active; Steps 6/7 stay deferred. No
+checker source/API/module-layout change was required.

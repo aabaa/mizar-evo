@@ -3987,3 +3987,23 @@ cargo test -p mizar-test
   truth、acceptance、proof/CoreIr/ControlFlowIr/VC、downstream payload は Task
   241 の credit 外。Step 5 は active、Steps 6/7 は deferred。checker
   source/API/module-layout update は不要。
+
+## Task 242 Active Addendum
+
+- [x] Task 233 の exact real builtin-object single-left `ParenthesizedTerm`
+  producer と Task 190 の real object inequality consumer を `(x) <> x` だけに
+  合成する。独立した wrapper/inner/right provenance、ordinal 1/2 の
+  `BindingId(0)` lookup、canonical `BuiltinObject` 1 個、inferred term 2 個、
+  type entry 6 個、ordered expected constraint 2 個、fact/candidate/diagnostic/
+  deferred 0 個の checked inequality 1 個を object/set coercion と独立 wrapper
+  semantic node なしで保持する。
+- [x] unique key/config と closed wrapper/route だけを Task 233 直後へ追加し、
+  先行 Task 188 route、shared private binary-formula helper、Tasks 190/223/233/
+  241 ownership を変更しない。先行 owner 55 件との bidirectional isolation、
+  exact/near-miss/provenance/corruption、immutable output、focused regression、
+  real sidecar で保護する。
+- [x] runner 184、399/363、type-elaboration 231/219、pass/fail 215/184 を同期
+  する。parenthesized membership と active imported provenance は Task 242
+  credit 外。未成立 imported expansion/evidence/signature payload と proof/
+  CoreIr/ControlFlowIr/VC は deferred。Step 5 は active、Steps 6/7 は deferred。
+  checker source/API/module-layout update は不要。
