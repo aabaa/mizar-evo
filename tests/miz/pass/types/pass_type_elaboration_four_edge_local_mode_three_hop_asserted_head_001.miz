@@ -1,0 +1,23 @@
+definition
+  mode BaseFourEdgeModeThreeHopAssertedHeadDef: BaseFourEdgeModeThreeHopAssertedHead is set;
+end;
+
+definition
+  mode InnerFourEdgeModeThreeHopAssertedHeadDef: InnerFourEdgeModeThreeHopAssertedHead is BaseFourEdgeModeThreeHopAssertedHead;
+end;
+
+definition
+  mode MiddleFourEdgeModeThreeHopAssertedHeadDef: MiddleFourEdgeModeThreeHopAssertedHead is InnerFourEdgeModeThreeHopAssertedHead;
+end;
+
+definition
+  mode OuterFourEdgeModeThreeHopAssertedHeadDef: OuterFourEdgeModeThreeHopAssertedHead is MiddleFourEdgeModeThreeHopAssertedHead;
+end;
+
+definition
+  mode TooDeepFourEdgeModeThreeHopAssertedHeadDef: TooDeepFourEdgeModeThreeHopAssertedHead is OuterFourEdgeModeThreeHopAssertedHead;
+end;
+
+reserve x for TooDeepFourEdgeModeThreeHopAssertedHead;
+theorem FourEdgeLocalModeThreeHopAssertedHeadPayloadBoundary:
+  x is InnerFourEdgeModeThreeHopAssertedHead;

@@ -4010,6 +4010,13 @@ Finding dispositions (every SSA id maps to a task or a recorded reason):
     - Verify: focused Task 218 and Tasks 211-217 regressions, `cargo test -p mizar-test`, `cargo test -p mizar-checker`, and workspace Rust verification.
     - Deps: tasks 73, 196, 211-217. Refs: Step 5; mizar-test task 10; specs 3, 4, 7, 13, 14, and 16.
 
+219. [x] **Bridge the exact four-edge set-terminal three-hop asserted head.**
+    - Closed only five ordered definitions `BaseFourEdgeModeThreeHopAssertedHead -> set`, `InnerFourEdgeModeThreeHopAssertedHead -> BaseFourEdgeModeThreeHopAssertedHead`, `MiddleFourEdgeModeThreeHopAssertedHead -> InnerFourEdgeModeThreeHopAssertedHead`, `OuterFourEdgeModeThreeHopAssertedHead -> MiddleFourEdgeModeThreeHopAssertedHead`, and `TooDeepFourEdgeModeThreeHopAssertedHead -> OuterFourEdgeModeThreeHopAssertedHead`, one TooDeep reserve, and `FourEdgeLocalModeThreeHopAssertedHeadPayloadBoundary: x is InnerFourEdgeModeThreeHopAssertedHead`. Composes Task 74's five real AST-derived set expansions with Task 197's formula/checker consumer and the byte-for-byte unchanged `BindingThreeHopRadix` relation from Task 217.
+    - Validates the pairwise-distinct TooDeep-to-Outer, Outer-to-Middle, and Middle-to-Inner links directly; the Inner-to-Base-to-set tail is terminal-normalization evidence only. Preserves distinct raw TooDeep/Inner symbol/site/range provenance, ordinal 1 / `BindingId(0)`, five real expansions, one Base-definition-RHS builtin-set identity, one inferred variable, and one zero-constraint/fact/candidate/diagnostic/deferred checked assertion. Covers all 119 nonidentity orders, the finite definition/reserve/formula/provenance/corruption matrix with separate guards for an unconnected unsupported deeper asserted head and an actual connected sixth-definition/sixth-edge asserted head, immutable output, a real sidecar, focused Tasks 211-218 regressions, and bidirectional isolation against all 44 prior type-assertion owner routes.
+    - Classification: `test_gap`, narrow `source_drift`, `design_drift`, no `spec_gap`. The object sibling, Base full-distance assertion, imported-positive/attributed/argument-bearing heads, generic reachability/widening/`qua`, acceptance, truth/facts, proof/CoreIr/ControlFlowIr/VC, and downstream payloads remain deferred. Step 5 remains active; Steps 6/7 remain deferred. No checker source/module-layout change was required.
+    - Verify focused Task 219 and Tasks 211-218 regressions, `cargo test -p mizar-test`, `cargo test -p mizar-checker`, and workspace Rust verification.
+    - Dependencies: Tasks 74, 197, and 211-218. References: Step 5, mizar-test task 10, specs 3, 4, 7, 13, 14, and 16.
+
 ## Recommended Verification
 
 Run after each task:
