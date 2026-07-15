@@ -17,7 +17,7 @@ per [internal 07](../../internal/en/07.crate_module_layout.md).
 
 | Module | Spec | Source | Status |
 |---|---|---|---|
-| layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery, missing-sidecar diagnostics, and unknown-root inventory implemented; public API and ownership wording synchronized by task 238; direct raw-order/missing-root coverage remains MT-AUDIT-020 |
+| layout | [layout.md](./layout.md) | `src/layout.rs`, `src/path_rules.rs` | [~] discovery, missing-sidecar diagnostics, and unknown-root inventory implemented; public API/ownership wording synchronized by task 238 and unreachable sidecar-name diagnostic removed by task 239; direct raw-order/missing-root coverage remains MT-AUDIT-020 |
 | expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema, profile/provenance metadata retention, and fail/soundness rejection gates implemented; general snapshot hardening pending |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage ids and declared prerequisite validation implemented; richer admission policy pending |
 | traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backrefs, coverage report/status gates, manifest ordering, obsolete-ref checks, prerequisite credit gates, and architecture-22 matrix summary implemented |

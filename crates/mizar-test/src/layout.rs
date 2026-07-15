@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 use crate::diagnostic::ValidationDiagnostic;
-use crate::expectation::{expectation_stem, payload_stem};
+use crate::expectation::payload_stem;
 use crate::path_rules::executable_payload_stem;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,18 +64,6 @@ pub fn discover(tests_root: &Path) -> Result<DiscoveredLayout, std::io::Error> {
                     "payload `{}` is missing adjacent expectation sidecar",
                     payload.display()
                 ),
-            ));
-        }
-    }
-
-    for sidecar in &sidecars {
-        if expectation_stem(sidecar).is_none() {
-            diagnostics.push(ValidationDiagnostic::error(
-                sidecar,
-                "layout",
-                "E-LAYOUT-BAD-SIDECAR-NAME",
-                "layout.sidecar_name",
-                "expectation sidecar must end in `.expect.toml`",
             ));
         }
     }

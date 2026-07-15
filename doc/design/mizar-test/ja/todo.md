@@ -18,7 +18,7 @@
 
 | モジュール | 仕様 | ソース | 状態 |
 |---|---|---|---|
-| layout | [layout.md](./layout.md) | `src/layout.rs`、`src/path_rules.rs` | [~] discovery、missing-sidecar diagnostic、unknown-root inventory は実装済み。Public API と ownership wording は task 238 で同期済み。direct raw-order/missing-root coverage は MT-AUDIT-020 |
+| layout | [layout.md](./layout.md) | `src/layout.rs`、`src/path_rules.rs` | [~] discovery、missing-sidecar diagnostic、unknown-root inventory は実装済み。task 238 で Public API / ownership wording を同期し、task 239 で到達不能な sidecar-name diagnostic を削除済み。direct raw-order/missing-root coverage は MT-AUDIT-020 |
 | expectation_schema | [expectation_schema.md](./expectation_schema.md) | `src/expectation.rs` | [~] core schema、profile/provenance metadata retention、fail/soundness rejection gate は実装済み。general snapshot 強化は未完 |
 | staged_model | [staged_model.md](./staged_model.md) | `src/staged_model.rs` | [~] stage id と declared prerequisite validation は実装済み。より広い admission policy は未完 |
 | traceability | [traceability.md](./traceability.md) | `src/traceability.rs` | [~] syntax/backref、coverage report/status gate、manifest ordering、obsolete-ref check、prerequisite credit gate、architecture-22 matrix summary は実装済み |
