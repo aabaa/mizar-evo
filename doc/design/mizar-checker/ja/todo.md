@@ -3817,6 +3817,14 @@ adversarial rejection corpus を記録した。以下のタスクは全所見を
     - 検証: focused Task 219 と Tasks 211-218 regression、`cargo test -p mizar-test`、`cargo test -p mizar-checker`、workspace Rust verification。
     - 依存: tasks 74、197、207、211-218。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
 
+220. [x] **Exact four-edge object-terminal three-hop asserted head を bridge する。**
+    - ordered definition 5 個 `BaseFourEdgeObjectModeThreeHopAssertedHead -> object`、`InnerFourEdgeObjectModeThreeHopAssertedHead -> BaseFourEdgeObjectModeThreeHopAssertedHead`、`MiddleFourEdgeObjectModeThreeHopAssertedHead -> InnerFourEdgeObjectModeThreeHopAssertedHead`、`OuterFourEdgeObjectModeThreeHopAssertedHead -> MiddleFourEdgeObjectModeThreeHopAssertedHead`、`TooDeepFourEdgeObjectModeThreeHopAssertedHead -> OuterFourEdgeObjectModeThreeHopAssertedHead`、TooDeep reserve 1 個、`FourEdgeLocalObjectModeThreeHopAssertedHeadPayloadBoundary: x is InnerFourEdgeObjectModeThreeHopAssertedHead` だけを閉じた。Task 74 の real AST-derived object expansion 5 個、Task 198 の formula/checker consumer、Task 208 の immediate-edge sibling guard、Task 217 由来の byte-for-byte 変更しない `BindingThreeHopRadix` relation を合成する。
+    - pairwise-distinct な TooDeep-to-Outer、Outer-to-Middle、Middle-to-Inner link を直接検証し、Inner-to-Base-to-object tail は terminal normalization evidence のみに保った。distinct raw TooDeep/Inner symbol/site/range provenance、ordinal 1 / `BindingId(0)`、real expansion 5 個、Base-definition-RHS builtin-object identity 1 個、inferred variable 1 個、object/set coercion なしの constraint/fact/candidate/diagnostic/deferred 0 個の checked assertion 1 個を保持する。全119 nonidentity order、unconnected unsupported deeper asserted head と actual connected sixth-definition/sixth-edge asserted head の独立 guard を含む finite definition/reserve/formula/provenance/corruption matrix、immutable output、real sidecar、Tasks 208 と 211-219 focused regression、先行 type-assertion owner route 45 件との bidirectional isolation を網羅した。
+    - 分類: `test_gap`、narrow `source_drift`、`design_drift`、`spec_gap` なし。Base full-distance assertion、imported-positive/attributed/argument-bearing head、generic reachability/widening/`qua`、acceptance、truth/fact、proof/CoreIr/ControlFlowIr/VC、object/set coercion、downstream payload は deferred のままとする。Step 5 は active、Steps 6/7 は deferred のままとする。checker source/module-layout change は不要であった。
+    - active fixture 1 件と shared 5 + dedicated 1 backlink により、既存 expectation を変更せず active runner 167 から 168、cases 382 から 383、requirements 346 から 347、type-elaboration coverage 214/202 から 215/203、pass/fail 198/184 から 199/184 へ増えた。
+    - focused Task 220、Tasks 208 と 211-219 regression、`cargo test -p mizar-test`、`cargo test -p mizar-checker`、`cargo fmt --check`、`cargo clippy --all-targets --all-features -- -D warnings`、`cargo test`、`git diff --check` は成功した。
+    - 依存: tasks 74、198、208、211-219。参照: Step 5、mizar-test task 10、specs 3、4、7、13、14、16。
+
 ## 推奨検証
 
 各タスクの後で実行する:
