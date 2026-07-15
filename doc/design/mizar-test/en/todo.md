@@ -378,7 +378,7 @@ Keep `cargo test -p mizar-test` green after each task (see
       latest-numbered entry. Detailed lifecycle for checker tasks 139-234 is
       maintained in the paired [crate plan](./00.crate_plan.md),
       [harness](./harness.md), and [traceability](./traceability.md). The
-      The active Task 233 corpus contains 180 type-elaboration cases within 395
+      active Task 233 corpus contains 180 type-elaboration cases within 395
       cases / 359 requirements, type-elaboration coverage 227/215, and
       pass/fail 211/184; Step 5 is active and Steps 6/7 are deferred. Checker
       task 233 supplies the latest active exact parenthesized builtin-object
